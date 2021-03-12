@@ -35,41 +35,52 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class AngleMeasurementTest {
     @Test
-    public void testBuilder() {
+    public void testConstructs() {
         double radians = 0.1234;
         double errorRadians = 0.5678;
         double confidence = 0.5;
 
-        AngleMeasurement.Builder builder = new AngleMeasurement.Builder();
-        tryBuild(builder, false);
-
-        builder.setRadians(radians);
-        tryBuild(builder, false);
-
-        builder.setErrorRadians(errorRadians);
-        tryBuild(builder, false);
-
-        builder.setConfidenceLevel(confidence);
-        AngleMeasurement measurement = tryBuild(builder, true);
-
+        AngleMeasurement measurement = new AngleMeasurement(radians, errorRadians, confidence);
         assertEquals(measurement.getRadians(), radians, 0);
         assertEquals(measurement.getErrorRadians(), errorRadians, 0);
         assertEquals(measurement.getConfidenceLevel(), confidence, 0);
     }
 
-    private AngleMeasurement tryBuild(AngleMeasurement.Builder builder, boolean expectSuccess) {
-        AngleMeasurement measurement = null;
+    @Test
+    public void testInvalidRadians() {
+        double radians = Math.PI + 0.01;
+        double errorRadians = 0.5678;
+        double confidence = 0.5;
+
+        constructExpectFailure(radians, errorRadians, confidence);
+        constructExpectFailure(-radians, errorRadians, confidence);
+    }
+
+    @Test
+    public void testInvalidErrorRadians() {
+        double radians = 0.1234;
+        double confidence = 0.5;
+
+        constructExpectFailure(radians, -0.01, confidence);
+        constructExpectFailure(-radians, Math.PI + 0.01, confidence);
+    }
+
+    @Test
+    public void testInvalidConfidence() {
+        double radians = 0.1234;
+        double errorRadians = 0.5678;
+
+        constructExpectFailure(radians, errorRadians, -0.01);
+        constructExpectFailure(radians, errorRadians, 1.01);
+    }
+
+    private void constructExpectFailure(double radians, double errorRadians, double confidence) {
         try {
-            measurement = builder.build();
-            if (!expectSuccess) {
-                fail("Expected AngleMeasurement.Builder.build() to fail, but it succeeded");
-            }
-        } catch (IllegalStateException e) {
-            if (expectSuccess) {
-                fail("Expected AngleMeasurement.Builder.build() to succeed, but it failed");
-            }
+            new AngleMeasurement(radians, errorRadians, confidence);
+            fail();
+        } catch (IllegalArgumentException e) {
+            // Expected
         }
-        return measurement;
     }
 
     @Test

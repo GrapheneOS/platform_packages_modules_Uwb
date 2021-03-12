@@ -41,25 +41,13 @@ public class AngleOfArrivalMeasurementTest {
         AngleMeasurement azimuth = UwbTestUtils.getAngleMeasurement();
         AngleMeasurement altitude = UwbTestUtils.getAngleMeasurement();
 
-        AngleOfArrivalMeasurement.Builder builder = new AngleOfArrivalMeasurement.Builder();
-        tryBuild(builder, false);
-
+        AngleOfArrivalMeasurement.Builder builder = new AngleOfArrivalMeasurement.Builder(azimuth);
         builder.setAltitude(altitude);
-        tryBuild(builder, false);
 
-        builder.setAzimuth(azimuth);
         AngleOfArrivalMeasurement measurement = tryBuild(builder, true);
 
         assertEquals(azimuth, measurement.getAzimuth());
         assertEquals(altitude, measurement.getAltitude());
-    }
-
-    private AngleMeasurement getAngleMeasurement(double radian, double error, double confidence) {
-        return new AngleMeasurement.Builder()
-                .setRadians(radian)
-                .setErrorRadians(error)
-                .setConfidenceLevel(confidence)
-                .build();
     }
 
     private AngleOfArrivalMeasurement tryBuild(AngleOfArrivalMeasurement.Builder builder,
