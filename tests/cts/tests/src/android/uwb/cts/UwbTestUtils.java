@@ -39,17 +39,15 @@ public class UwbTestUtils {
     }
 
     public static AngleMeasurement getAngleMeasurement() {
-        return new AngleMeasurement.Builder()
-                .setRadians(getDoubleInRange(-Math.PI, Math.PI))
-                .setErrorRadians(getDoubleInRange(0, Math.PI))
-                .setConfidenceLevel(getDoubleInRange(0, 1))
-                .build();
+        return new AngleMeasurement(
+                getDoubleInRange(-Math.PI, Math.PI),
+                getDoubleInRange(0, Math.PI),
+                getDoubleInRange(0, 1));
     }
 
     public static AngleOfArrivalMeasurement getAngleOfArrivalMeasurement() {
-        return new AngleOfArrivalMeasurement.Builder()
+        return new AngleOfArrivalMeasurement.Builder(getAngleMeasurement())
                 .setAltitude(getAngleMeasurement())
-                .setAzimuth(getAngleMeasurement())
                 .build();
     }
 
