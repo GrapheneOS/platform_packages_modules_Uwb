@@ -172,11 +172,11 @@ public class RangingSessionTest {
         session.start(PARAMS);
 
         verifyNoThrowIllegalState(session::stop);
-        verify(callback, times(1)).onStopped();
+        verify(callback, times(1)).onStopped(anyInt(), any());
 
         // Calling stop again should throw an illegal state
         verifyThrowIllegalState(session::stop);
-        verify(callback, times(1)).onStopped();
+        verify(callback, times(1)).onStopped(anyInt(), any());
     }
 
     @Test
@@ -202,7 +202,7 @@ public class RangingSessionTest {
         verify(callback, times(2)).onReconfigured(any());
         verifyOpenState(session, true);
 
-        session.onRangingStopped();
+        session.onRangingStopped(REASON, PARAMS);
         verifyNoThrowIllegalState(() -> session.reconfigure(PARAMS));
         verify(callback, times(3)).onReconfigured(any());
         verifyOpenState(session, true);
@@ -363,7 +363,7 @@ public class RangingSessionTest {
 
         @Override
         public Object answer(InvocationOnMock invocation) {
-            mSession.onRangingStopped();
+            mSession.onRangingStopped(REASON, PARAMS);
             return null;
         }
     }
