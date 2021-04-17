@@ -24,8 +24,5 @@
         android:label="CTS tests for android.uwb"
         android:targetPackage="android.uwb.cts" >
     </instrumentation>
-
-    <uses-permission android:name="android.permission.UWB_RANGING"/>
-    <uses-permission android:name="android.permission.UWB_PRIVILEGED"/>
 </manifest>
 
