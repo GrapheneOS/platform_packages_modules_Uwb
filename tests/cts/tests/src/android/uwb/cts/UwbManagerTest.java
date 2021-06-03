@@ -105,7 +105,7 @@ public class UwbManagerTest {
         try {
             // Needs UWB_PRIVILEGED permission which is held by shell.
             uiAutomation.adoptShellPermissionIdentity();
-            assertThat(mUwbManager.elapsedRealtimeResolutionNanos()).isGreaterThan(0L);
+            assertThat(mUwbManager.elapsedRealtimeResolutionNanos() >= 0L).isTrue();
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
