@@ -26,10 +26,8 @@ import android.annotation.SystemApi;
 import android.annotation.SystemService;
 import android.content.Context;
 import android.os.CancellationSignal;
-import android.os.IBinder;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
-import android.os.ServiceManager;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -148,29 +146,13 @@ public final class UwbManager {
      *
      * @param ctx Context of the client.
      * @param adapter an instance of an {@link android.uwb.IUwbAdapter}
+     * @hide
      */
-    private UwbManager(@NonNull Context ctx, @NonNull IUwbAdapter adapter) {
+    public UwbManager(@NonNull Context ctx, @NonNull IUwbAdapter adapter) {
         mContext = ctx;
         mUwbAdapter = adapter;
         mAdapterStateListener = new AdapterStateListener(adapter);
         mRangingManager = new RangingManager(adapter);
-    }
-
-    /**
-     * @hide
-     */
-    public static UwbManager getInstance(@NonNull Context ctx) {
-        IBinder b = ServiceManager.getService(SERVICE_NAME);
-        if (b == null) {
-            return null;
-        }
-
-        IUwbAdapter adapter = IUwbAdapter.Stub.asInterface(b);
-        if (adapter == null) {
-            return null;
-        }
-
-        return new UwbManager(ctx, adapter);
     }
 
     /**
