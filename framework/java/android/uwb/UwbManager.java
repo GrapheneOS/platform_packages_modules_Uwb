@@ -269,7 +269,6 @@ public final class UwbManager {
      * AdapterStateCallback#STATE_ENABLED_ACTIVE
      *
      * @return value representing current enabled/disabled state for UWB.
-     * @hide
      */
     public @AdapterStateCallback.State int getAdapterState() {
         return mAdapterStateListener.getAdapterState();
@@ -281,8 +280,6 @@ public final class UwbManager {
      * @param enabled value representing intent to disable or enable UWB. If true any subsequent
      * calls to IUwbAdapter#openRanging will be allowed. If false, all active ranging sessions will
      * be closed and subsequent calls to IUwbAdapter#openRanging will be disallowed.
-     *
-     * @hide
      */
     public void setUwbEnabled(boolean enabled) {
         mAdapterStateListener.setEnabled(enabled);
