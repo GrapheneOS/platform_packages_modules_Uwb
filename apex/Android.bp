@@ -22,12 +22,15 @@ apex_defaults {
     name: "com.android.uwb-defaults",
     bootclasspath_fragments: ["com.android.uwb-bootclasspath-fragment"],
     java_libs: [
-        // "service-uwb",
+        "service-uwb",
     ],
     key: "com.android.uwb.key",
     certificate: ":com.android.uwb.certificate",
-    min_sdk_version: "current",
-    updatable: true,
+    min_sdk_version: "current", // TODO: Move to 32 once SDK is finalized
+
+    // TODO(b/186585880): Fix all @hide dependencies.
+    updatable: false,
+
     // Indicates that pre-installed version of this apex can be compressed.
     // Whether it actually will be compressed is controlled on per-device basis.
     compressible: true,

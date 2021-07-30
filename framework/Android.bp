@@ -18,8 +18,8 @@ package {
 
 java_defaults {
     name: "uwb-module-sdk-version-defaults",
-    min_sdk_version: "current",
-    target_sdk_version: "current",
+    min_sdk_version: "current", // TODO: Move to 32 once SDK is finalized
+    target_sdk_version: "current", // TODO: Move to 32 once SDK is finalized
 }
 
 filegroup {
@@ -55,12 +55,9 @@ java_defaults {
     name: "framework-uwb-defaults",
     defaults: ["uwb-module-sdk-version-defaults"],
     static_libs: [
-        "modules-utils-build",
-        "androidx.annotation_annotation",
     ],
     libs: [
         "unsupportedappusage", // for android.compat.annotation.UnsupportedAppUsage
-        "framework-connectivity.stubs.module_lib",
     ],
     srcs: [
         ":framework-uwb-updatable-sources",
@@ -87,13 +84,16 @@ java_sdk_library {
         "framework-uwb-defaults",
     ],
 
-    // jarjar_rules: ":uwb-jarjar-rules",
+    jarjar_rules: ":uwb-jarjar-rules",
 
     installable: true,
     optimize: {
         enabled: false
     },
     hostdex: true, // for hiddenapi check
+
+    // TODO(b/186585880): Fix all @hide dependencies.
+    impl_library_visibility: ["//visibility:public"],
 
     apex_available: [
         "com.android.uwb",
@@ -106,4 +106,35 @@ java_sdk_library {
     lint: {
         strict_updatability_linting: true,
     },
+}
+
+// defaults for tests that need to build against framework-uwb's @hide APIs
+java_defaults {
+    name: "framework-uwb-test-defaults",
+    sdk_version: "module_current",
+    libs: [
+        "framework-uwb.impl",
+    ],
+}
+
+// TODO(b/186585880): Fix all @hide dependencies.
+// defaults for CTS tests that need to build against framework-uwb's @hide APIs
+java_defaults {
+    name: "framework-uwb-cts-defaults",
+    sdk_version: "core_current",
+    libs: [
+        // order matters: classes in framework-uwb are resolved before framework, meaning
+        // @hide APIs in framework-uwb are resolved before @SystemApi stubs in framework
+        "framework-uwb.impl",
+        "framework",
+
+        // if sdk_version="" this gets automatically included, but here we need to add manually.
+        "framework-res",
+    ],
+    defaults_visibility: ["//visibility:public"],
+}
+
+filegroup {
+    name: "uwb-jarjar-rules",
+    srcs: ["jarjar-rules.txt"],
 }
