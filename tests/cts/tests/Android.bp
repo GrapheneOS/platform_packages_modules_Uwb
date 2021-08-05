@@ -18,7 +18,7 @@ package {
 
 android_test {
     name: "CtsUwbTestCases",
-    defaults: ["cts_defaults"],
+    defaults: ["cts_defaults", "framework-uwb-cts-defaults"],
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
