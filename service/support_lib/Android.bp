@@ -1,0 +1,69 @@
+//
+// Copyright (C) 2021 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+java_defaults {
+    name: "support-lib-uwb-common-defaults",
+    defaults: ["uwb-module-sdk-version-defaults"],
+    // TODO(b/186585880): Fix all @hide dependencies.
+    // sdk_version: "module_current",
+    platform_apis: true,
+    libs: [
+        "framework-annotations-lib",
+        "framework-uwb-pre-jarjar",
+    ],
+    apex_available: [
+        "com.android.uwb",
+    ],
+}
+
+// TODO (b/196229900): Integrate the support library to the AOSP stack.
+java_library {
+    name: "com.uwb.support.base",
+    defaults: ["support-lib-uwb-common-defaults"],
+    srcs: [
+        "src/com/google/uwb/support/base/**/*.java",
+    ],
+    static_libs: [
+        "androidx.annotation_annotation",
+    ],
+}
+
+java_library {
+    name: "com.uwb.support.ccc",
+    defaults: ["support-lib-uwb-common-defaults"],
+    srcs: [
+        "src/com/google/uwb/support/ccc/**/*.java",
+    ],
+    static_libs: [
+        "androidx.annotation_annotation",
+        "com.uwb.support.base",
+    ],
+}
+
+java_library {
+    name: "com.uwb.support.fira",
+    defaults: ["support-lib-uwb-common-defaults"],
+    srcs: [
+        "src/com/google/uwb/support/fira/**/*.java",
+    ],
+    static_libs: [
+        "androidx.annotation_annotation",
+        "com.uwb.support.base",
+    ],
+ }
