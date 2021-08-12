@@ -1,4 +1,3 @@
-## TODO (b/188911079): Add jarjar rules for all static dependencies.
 ## used by service-uwb ##
 
 ## used by both framework-uwb and service-uwb ##
