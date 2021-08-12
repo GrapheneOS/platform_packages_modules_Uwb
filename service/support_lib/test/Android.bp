@@ -8,8 +8,8 @@ android_test {
     static_libs: [
         "androidx.test.ext.junit",
         "androidx.test.rules",
-        "com.google.uwb.support.ccc",
-        "com.google.uwb.support.fira",
+        "com.uwb.support.ccc",
+        "com.uwb.support.fira",
     ],
     platform_apis: true,
     certificate: "platform",
