@@ -24,6 +24,12 @@ apex_defaults {
     java_libs: [
         "service-uwb",
     ],
+    // TODO (b/195308730): Integrate native stack.
+    // multilib: {
+    //    both: {
+    //        jni_libs: ["libuwb_uci_jni"],
+    //    },
+    //},
     key: "com.android.uwb.key",
     certificate: ":com.android.uwb.certificate",
     min_sdk_version: "current", // TODO: Move to 32 once SDK is finalized

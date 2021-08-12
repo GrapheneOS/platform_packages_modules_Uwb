@@ -18,7 +18,7 @@ package {
 }
 
 java_defaults {
-    name: "service-uwb-common",
+    name: "service-uwb-common-defaults",
     defaults: ["uwb-module-sdk-version-defaults"],
     errorprone: {
         javacflags: ["-Xep:CheckReturnValue:ERROR"],
@@ -41,7 +41,7 @@ filegroup {
 java_library {
     name: "service-uwb-pre-jarjar",
     installable: false,
-    defaults: ["service-uwb-common"],
+    defaults: ["service-uwb-common-defaults"],
     srcs: [ ":service-uwb-srcs" ],
     // java_api_finder must accompany `srcs`
     plugins: ["java_api_finder"],
@@ -62,6 +62,8 @@ java_library {
 
     static_libs: [
         "androidx.annotation_annotation",
+        "com.uwb.support.ccc",
+        "com.uwb.support.fira",
     ],
 
     apex_available: [
@@ -73,7 +75,7 @@ java_library {
 // ============================================================
 java_library {
     name: "service-uwb",
-    defaults: ["service-uwb-common"],
+    defaults: ["service-uwb-common-defaults"],
     installable: true,
     static_libs: ["service-uwb-pre-jarjar"],
 
