@@ -24,7 +24,7 @@
             value="com.google.android.uwb.apex" />
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="com.android.server.uwb.test" />
-        <option name="runner" value="com.android.server.uwb.CustomTestRunner" />
+        <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
         <option name="hidden-api-checks" value="false"/>
     </test>
 

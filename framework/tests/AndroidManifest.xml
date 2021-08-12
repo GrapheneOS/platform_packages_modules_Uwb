@@ -23,7 +23,7 @@
 
     <!-- This is a self-instrumenting test package. -->
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
-                     android:targetPackage="android.uwb"
+                     android:targetPackage="android.uwb.test"
                      android:label="UWB Manager Tests">
     </instrumentation>
 

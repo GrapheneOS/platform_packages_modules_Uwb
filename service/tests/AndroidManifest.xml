@@ -31,7 +31,7 @@
         </activity>
     </application>
 
-    <instrumentation android:name="com.android.server.uwb.CustomTestRunner"
+    <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:targetPackage="com.android.server.uwb.test"
          android:label="Frameworks Wifi Tests">
     </instrumentation>

@@ -25,7 +25,7 @@
     <option name="test-tag" value="FrameworkUwbTests"/>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
-        <option name="package" value="android.uwb" />
+        <option name="package" value="android.uwb.test" />
         <option name="hidden-api-checks" value="false"/>
         <option name="runner" value="androidx.test.runner.AndroidJUnitRunner"/>
     </test>

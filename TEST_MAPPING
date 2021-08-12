@@ -1,0 +1,13 @@
+{
+  "presubmit": [
+    {
+      "name": "FrameworkUwbTests"
+    },
+    {
+      "name": "ServiceUwbTests"
+    },
+    {
+      "name": "CtsUwbTestCases"
+    }
+  ]
+}
