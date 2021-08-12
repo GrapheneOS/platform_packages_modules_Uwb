@@ -23,6 +23,7 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
+import android.os.SystemProperties;
 import android.util.ArrayMap;
 import android.util.Log;
 import android.uwb.IUwbAdapter;
@@ -33,6 +34,8 @@ import android.uwb.RangingSession;
 import android.uwb.SessionHandle;
 
 import com.android.internal.annotations.GuardedBy;
+import com.android.uwb.UwbService;
+import com.android.uwb.jni.NativeUwbManager;
 
 import java.util.Map;
 
@@ -231,6 +234,12 @@ public class UwbServiceImpl extends IUwbAdapter.Stub implements IBinder.DeathRec
     }
 
     private synchronized IUwbAdapter getVendorUwbAdapter() throws IllegalStateException {
+        // TODO(b/196225233): Remove this when qorvo stack is integrated.
+        if (SystemProperties.getBoolean("persist.uwb.enable_uci_stack", false)) {
+          Log.i(TAG, "Using the UCI stack");
+          return new UwbService(mContext, new NativeUwbManager()).getIUwbAdapter();
+        }
+        Log.i(TAG, "Using the legacy stack");
         if (mVendorUwbAdapter != null) return mVendorUwbAdapter;
         mVendorUwbAdapter = mUwbInjector.getVendorService();
         if (mVendorUwbAdapter == null) {

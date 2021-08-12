@@ -100,7 +100,7 @@ public class UwbService implements INativeUwbManager.DeviceNotification {
         Log.d(TAG, "Starting Uwb");
 
         mUwbAdapterService = new UwbAdapterService();
-        ServiceManager.addService(SERVICE_NAME, mUwbAdapterService);
+        // ServiceManager.addService(SERVICE_NAME, mUwbAdapterService);
 
         mUwbWakeLock = mContext.getSystemService(PowerManager.class).newWakeLock(
                 PowerManager.PARTIAL_WAKE_LOCK, "UwbService:mUwbWakeLock");
@@ -118,6 +118,11 @@ public class UwbService implements INativeUwbManager.DeviceNotification {
         mEnableDisableTask = new EnableDisableTask(handlerThread.getLooper());
 
         mEnableDisableTask.execute(TASK_ENABLE);
+    }
+
+    // TODO(b/196225233): Remove this when qorvo stack is integrated.
+    public IUwbAdapter.Stub getIUwbAdapter() {
+        return mUwbAdapterService;
     }
 
     private void updateState(int state, int reason) {
