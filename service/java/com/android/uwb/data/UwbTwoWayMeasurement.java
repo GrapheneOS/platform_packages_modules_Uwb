@@ -35,7 +35,7 @@ public class UwbTwoWayMeasurement {
     public UwbTwoWayMeasurement(byte[] macAddress, int status, int nLoS, int distance,
             int aoaAzimuth, int aoaAzimuthFom, int aoaElevation,
             int aoaElevationFom, int aoaDestAzimuth, int aoaDestAzimuthFom,
-            int aoaDestElevation, int aoaDestElevationFom, int slotIndex, byte[] rfu) {
+            int aoaDestElevation, int aoaDestElevationFom, int slotIndex) {
 
         this.mMacAddress = macAddress;
         this.mStatus = status;

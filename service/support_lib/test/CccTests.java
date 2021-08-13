@@ -34,6 +34,7 @@ import com.google.uwb.support.ccc.CccRangingError;
 import com.google.uwb.support.ccc.CccRangingReconfiguredParams;
 import com.google.uwb.support.ccc.CccRangingStartedParams;
 import com.google.uwb.support.ccc.CccSpecificationParams;
+import com.google.uwb.support.ccc.CccStartRangingParams;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -138,11 +139,36 @@ public class CccTests {
     }
 
     @Test
+    public void testStartRangingParams() {
+        int sessionId = 10;
+        int ranMultiplier = 128;
+
+        CccStartRangingParams params =
+                new CccStartRangingParams.Builder()
+                .setSessionId(sessionId)
+                .setRanMultiplier(ranMultiplier)
+                .build();
+
+        assertEquals(params.getSessionId(), sessionId);
+        assertEquals(params.getRanMultiplier(), ranMultiplier);
+
+        CccStartRangingParams fromBundle =
+                CccStartRangingParams.fromBundle(params.toBundle());
+
+        assertEquals(fromBundle.getSessionId(), sessionId);
+        assertEquals(fromBundle.getRanMultiplier(), ranMultiplier);
+
+        verifyProtocolPresent(params);
+        verifyBundlesEqual(params, fromBundle);
+    }
+
+    @Test
     public void testRangingStartedParams() {
         int hopModeKey = 98876444;
         int startingStsIndex = 246802468;
         @CccParams.SyncCodeIndex int syncCodeIndex = CccParams.SYNC_CODE_INDEX_10;
         long uwbTime0 = 50;
+        int ranMultiplier = 10;
 
         CccRangingStartedParams params =
                 new CccRangingStartedParams.Builder()
@@ -150,12 +176,14 @@ public class CccTests {
                         .setStartingStsIndex(startingStsIndex)
                         .setSyncCodeIndex(syncCodeIndex)
                         .setUwbTime0(uwbTime0)
+                        .setRanMultiplier(ranMultiplier)
                         .build();
 
         assertEquals(params.getHopModeKey(), hopModeKey);
         assertEquals(params.getStartingStsIndex(), startingStsIndex);
         assertEquals(params.getSyncCodeIndex(), syncCodeIndex);
         assertEquals(params.getUwbTime0(), uwbTime0);
+        assertEquals(params.getRanMultiplier(), ranMultiplier);
 
         CccRangingStartedParams fromBundle = CccRangingStartedParams.fromBundle(params.toBundle());
 
@@ -163,6 +191,7 @@ public class CccTests {
         assertEquals(fromBundle.getStartingStsIndex(), startingStsIndex);
         assertEquals(fromBundle.getSyncCodeIndex(), syncCodeIndex);
         assertEquals(fromBundle.getUwbTime0(), uwbTime0);
+        assertEquals(fromBundle.getRanMultiplier(), ranMultiplier);
 
         verifyProtocolPresent(params);
         verifyBundlesEqual(params, fromBundle);
@@ -261,7 +290,14 @@ public class CccTests {
         assertArrayEquals(fromBundle.getHoppingSequences().toArray(), hoppingSequences);
 
         verifyProtocolPresent(params);
-        verifyBundlesEqual(params, fromBundle);
+        assertTrue(params.equals(fromBundle));
+
+        // Add random channel to params builder to force inequality.
+        paramsBuilder.addChannel(0);
+        // Rebuild params.
+        params = paramsBuilder.build();
+        // Test that params and fromBundle are not equal.
+        assertTrue(!params.equals(fromBundle));
     }
 
     private void verifyProtocolPresent(Params params) {

@@ -536,7 +536,9 @@ public class FiraOpenSessionParams extends FiraParams {
         bundle.putBoolean(
                 KEY_IS_TX_ADAPTIVE_PAYLOAD_POWER_ENABLED, mIsTxAdaptivePayloadPowerEnabled);
         bundle.putInt(KEY_STS_CONFIG, mStsConfig);
-        bundle.putInt(KEY_SUB_SESSION_ID, mSubSessionId);
+        if (mStsConfig == STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY) {
+            bundle.putInt(KEY_SUB_SESSION_ID, mSubSessionId);
+        }
         bundle.putIntArray(KEY_VENDOR_ID, byteArrayToIntArray(mVendorId));
         bundle.putIntArray(KEY_STATIC_STS_IV, byteArrayToIntArray(mStaticStsIV));
         bundle.putBoolean(KEY_IS_KEY_ROTATION_ENABLED, mIsKeyRotationEnabled);

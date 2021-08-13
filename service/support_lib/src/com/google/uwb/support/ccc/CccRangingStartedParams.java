@@ -16,7 +16,6 @@
 
 package com.google.uwb.support.ccc;
 
-import android.annotation.SuppressLint;
 import android.os.Build.VERSION_CODES;
 import android.os.PersistableBundle;
 
@@ -24,13 +23,19 @@ import androidx.annotation.RequiresApi;
 
 import com.google.uwb.support.base.RequiredParam;
 
-/** Defines parameters for CCC start reports */
+/**
+ * Defines parameters for CCC start reports.  The start operation can optionally include a request
+ * to reconfigure the RAN multiplier.  On a reconfiguration, the CCC spec defines that the selected
+ * RAN multiplier shall be equal to or greater than the requested RAN multiplier, and therefore, on
+ * a reconfiguration, the selected RAN multiplier shall be populated in the CCC start report.
+ */
 @RequiresApi(VERSION_CODES.LOLLIPOP)
 public class CccRangingStartedParams extends CccParams {
     private final int mStartingStsIndex;
     private final long mUwbTime0;
     private final int mHopModeKey;
     @SyncCodeIndex private final int mSyncCodeIndex;
+    private final int mRanMultiplier;
 
     private static final int BUNDLE_VERSION_1 = 1;
     private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_1;
@@ -39,13 +44,14 @@ public class CccRangingStartedParams extends CccParams {
     private static final String KEY_UWB_TIME_0 = "uwb_time_0";
     private static final String KEY_HOP_MODE_KEY = "hop_mode_key";
     private static final String KEY_SYNC_CODE_INDEX = "sync_code_index";
+    private static final String KEY_RAN_MULTIPLIER = "ran_multiplier";
 
-    private CccRangingStartedParams(
-            int startingStsIndex, long uwbTime0, int hopModeKey, @SyncCodeIndex int syncCodeIndex) {
-        mStartingStsIndex = startingStsIndex;
-        mUwbTime0 = uwbTime0;
-        mHopModeKey = hopModeKey;
-        mSyncCodeIndex = syncCodeIndex;
+    private CccRangingStartedParams(Builder builder) {
+        mStartingStsIndex = builder.mStartingStsIndex.get();
+        mUwbTime0 = builder.mUwbTime0.get();
+        mHopModeKey = builder.mHopModeKey.get();
+        mSyncCodeIndex = builder.mSyncCodeIndex.get();
+        mRanMultiplier = builder.mRanMultiplier.get();
     }
 
     @Override
@@ -60,6 +66,7 @@ public class CccRangingStartedParams extends CccParams {
         bundle.putLong(KEY_UWB_TIME_0, mUwbTime0);
         bundle.putInt(KEY_HOP_MODE_KEY, mHopModeKey);
         bundle.putInt(KEY_SYNC_CODE_INDEX, mSyncCodeIndex);
+        bundle.putInt(KEY_RAN_MULTIPLIER, mRanMultiplier);
         return bundle;
     }
 
@@ -83,6 +90,7 @@ public class CccRangingStartedParams extends CccParams {
                 .setUwbTime0(bundle.getLong(KEY_UWB_TIME_0))
                 .setHopModeKey(bundle.getInt(KEY_HOP_MODE_KEY))
                 .setSyncCodeIndex(bundle.getInt(KEY_SYNC_CODE_INDEX))
+                .setRanMultiplier(bundle.getInt(KEY_RAN_MULTIPLIER))
                 .build();
     }
 
@@ -103,13 +111,17 @@ public class CccRangingStartedParams extends CccParams {
         return mSyncCodeIndex;
     }
 
+    public int getRanMultiplier() {
+        return mRanMultiplier;
+    }
+
     /** Builder */
     public static final class Builder {
         private RequiredParam<Integer> mStartingStsIndex = new RequiredParam<>();
         private RequiredParam<Long> mUwbTime0 = new RequiredParam<>();
         private RequiredParam<Integer> mHopModeKey = new RequiredParam<>();
-        @SuppressLint("SupportAnnotationUsage")
         @SyncCodeIndex private RequiredParam<Integer> mSyncCodeIndex = new RequiredParam<>();
+        private RequiredParam<Integer> mRanMultiplier = new RequiredParam<>();
 
         public Builder setStartingStsIndex(int startingStsIndex) {
             mStartingStsIndex.set(startingStsIndex);
@@ -131,12 +143,13 @@ public class CccRangingStartedParams extends CccParams {
             return this;
         }
 
+        public Builder setRanMultiplier(int ranMultiplier) {
+            mRanMultiplier.set(ranMultiplier);
+            return this;
+        }
+
         public CccRangingStartedParams build() {
-            return new CccRangingStartedParams(
-                    mStartingStsIndex.get(),
-                    mUwbTime0.get(),
-                    mHopModeKey.get(),
-                    mSyncCodeIndex.get());
+            return new CccRangingStartedParams(this);
         }
     }
 }

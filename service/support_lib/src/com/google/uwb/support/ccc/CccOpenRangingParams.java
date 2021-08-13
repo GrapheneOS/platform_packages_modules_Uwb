@@ -18,7 +18,6 @@ package com.google.uwb.support.ccc;
 
 import static com.android.internal.util.Preconditions.checkNotNull;
 
-import android.annotation.SuppressLint;
 import android.os.Build.VERSION_CODES;
 import android.os.PersistableBundle;
 
@@ -201,26 +200,19 @@ public class CccOpenRangingParams extends CccParams {
     /** Builder */
     public static final class Builder {
         private RequiredParam<CccProtocolVersion> mProtocolVersion = new RequiredParam<>();
-        @SuppressLint("SupportAnnotationUsage")
         @UwbConfig private RequiredParam<Integer> mUwbConfig = new RequiredParam<>();
         private RequiredParam<CccPulseShapeCombo> mPulseShapeCombo = new RequiredParam<>();
         private RequiredParam<Integer> mSessionId = new RequiredParam<>();
         private RequiredParam<Integer> mRanMultiplier = new RequiredParam<>();
-        @SuppressLint("SupportAnnotationUsage")
         @Channel private RequiredParam<Integer> mChannel = new RequiredParam<>();
-        @SuppressLint("SupportAnnotationUsage")
         @ChapsPerSlot private RequiredParam<Integer> mNumChapsPerSlot = new RequiredParam<>();
         private RequiredParam<Integer> mNumResponderNodes = new RequiredParam<>();
-        @SuppressLint("SupportAnnotationUsage")
         @SlotsPerRound private RequiredParam<Integer> mNumSlotsPerRound = new RequiredParam<>();
-        @SuppressLint("SupportAnnotationUsage")
         @SyncCodeIndex private RequiredParam<Integer> mSyncCodeIndex = new RequiredParam<>();
 
-        @SuppressLint("SupportAnnotationUsage")
-        @HoppingConfigMode private RequiredParam<Integer> mHoppingConfigMode =
-                new RequiredParam<>();
+        @HoppingConfigMode
+        private RequiredParam<Integer> mHoppingConfigMode = new RequiredParam<>();
 
-        @SuppressLint("SupportAnnotationUsage")
         @HoppingSequence private RequiredParam<Integer> mHoppingSequence = new RequiredParam<>();
 
         public Builder setProtocolVersion(CccProtocolVersion version) {

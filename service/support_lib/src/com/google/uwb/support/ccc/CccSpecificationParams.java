@@ -23,11 +23,13 @@ import android.os.PersistableBundle;
 
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
 import com.google.uwb.support.base.RequiredParam;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /** Defines parameters for CCC capability reports */
@@ -210,6 +212,39 @@ public class CccSpecificationParams extends CccParams {
     @HoppingConfigMode
     public List<Integer> getHoppingConfigModes() {
         return mHoppingConfigModes;
+    }
+
+    @Override
+    public boolean equals(@Nullable Object other) {
+        if (other instanceof CccSpecificationParams) {
+            CccSpecificationParams otherSpecificationParams = (CccSpecificationParams) other;
+            return otherSpecificationParams.mProtocolVersions.equals(mProtocolVersions)
+                && otherSpecificationParams.mPulseShapeCombos.equals(mPulseShapeCombos)
+                && otherSpecificationParams.mUwbConfigs.equals(mUwbConfigs)
+                && otherSpecificationParams.mRanMultiplier == mRanMultiplier
+                && otherSpecificationParams.mChapsPerSlot.equals(mChapsPerSlot)
+                && otherSpecificationParams.mSyncCodes.equals(mSyncCodes)
+                && otherSpecificationParams.mChannels.equals(mChannels)
+                && otherSpecificationParams.mHoppingConfigModes.equals(mHoppingConfigModes)
+                && otherSpecificationParams.mHoppingSequences.equals(mHoppingSequences);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(
+            new int[] {
+                mProtocolVersions.hashCode(),
+                mPulseShapeCombos.hashCode(),
+                mUwbConfigs.hashCode(),
+                mRanMultiplier,
+                mChapsPerSlot.hashCode(),
+                mSyncCodes.hashCode(),
+                mChannels.hashCode(),
+                mHoppingConfigModes.hashCode(),
+                mHoppingSequences.hashCode()
+            });
     }
 
     /** Builder */

@@ -31,7 +31,6 @@ const char* RANGING_DATA_CLASS_NAME = "com/android/uwb/data/UwbRangingData";
 const char* RANGING_MEASURES_CLASS_NAME = "com/android/uwb/data/UwbTwoWayMeasurement";
 /* ranging tdoa measures and multicast list update ntf events are implemented as per Fira specification.
        TODO support for these class to be added in service.*/
-const char* RANGING_TDoA_MEASURES_CLASS_NAME = "com/android/uwb/data/UwbTDoAMeasurement";
 const char* MULTICAST_UPDATE_LIST_DATA_CLASS_NAME = "com/android/uwb/data/UwbMulticastListUpdateStatus";
 
 UwbEventManager UwbEventManager::mObjUwbManager;
@@ -127,75 +126,6 @@ void UwbEventManager::onRangeDataNotificationReceived(tUWA_RANGE_DATA_NTF* rangi
                                         (int)ranging_ntf_data->no_of_measurements,
                                         rangeMeasuresArray);
 
-    } else {
-        JNI_TRACE_I("%s: ranging_measure_type = MEASUREMENT_TYPE_ONEWAY", fn);
-        jmethodID rngTdoaMeasuresCtor, rngDataCtorTdoa;
-        jobjectArray rangeTdoaMeasuresArray;
-
-        rangeTdoaMeasuresArray = env->NewObjectArray(ranging_ntf_data->no_of_measurements,
-                                                         mRangeTdoaMeasuresClass, NULL);
-
-        for(int i = 0; i < ranging_ntf_data->no_of_measurements; i++) {
-          jbyteArray tdoaMacAddress = NULL;
-          jbyteArray deviceInfoArray = NULL;
-          jbyteArray blinkPayloadData = NULL;
-          jbyteArray rfu = NULL;
-          /* Copy the data from structure to Java Object */
-          if(ranging_ntf_data->mac_addr_mode_indicator == SHORT_MAC_ADDRESS){
-              tdoaMacAddress = env->NewByteArray(2);
-              env->SetByteArrayRegion (tdoaMacAddress, 0, 2, (jbyte *)ranging_ntf_data->ranging_measures.tdoa_range_measr[i].mac_addr);
-              rfu = env->NewByteArray(12);
-              env->SetByteArrayRegion (rfu, 0, 12, (jbyte *)ranging_ntf_data->ranging_measures.tdoa_range_measr[i].rfu);
-          } else{
-              tdoaMacAddress = env->NewByteArray(8);
-              env->SetByteArrayRegion (tdoaMacAddress, 0, 8, (jbyte *)ranging_ntf_data->ranging_measures.tdoa_range_measr[i].mac_addr);
-              rfu = env->NewByteArray(6);
-              env->SetByteArrayRegion (rfu, 0, 6, (jbyte *)ranging_ntf_data->ranging_measures.tdoa_range_measr[i].rfu);
-          }
-          if(ranging_ntf_data->ranging_measures.tdoa_range_measr[i].device_info_size > 0) {
-             deviceInfoArray = env->NewByteArray(ranging_ntf_data->ranging_measures.tdoa_range_measr[i].device_info_size);
-             if(deviceInfoArray != NULL){
-                env->SetByteArrayRegion (deviceInfoArray, 0, ranging_ntf_data->ranging_measures.tdoa_range_measr[i].device_info_size, (jbyte *)ranging_ntf_data->ranging_measures.tdoa_range_measr[i].device_info);
-             }
-          }
-          if(ranging_ntf_data->ranging_measures.tdoa_range_measr[i].blink_payload_size > 0) {
-             blinkPayloadData = env->NewByteArray(ranging_ntf_data->ranging_measures.tdoa_range_measr[i].blink_payload_size);
-             if(blinkPayloadData != NULL) {
-                env->SetByteArrayRegion (blinkPayloadData, 0, ranging_ntf_data->ranging_measures.tdoa_range_measr[i].blink_payload_size, (jbyte *)ranging_ntf_data->ranging_measures.tdoa_range_measr[i].blink_payload_data);
-             }
-          }
-          rngTdoaMeasuresCtor = env->GetMethodID(mRangeTdoaMeasuresClass, "<init>", "([BIIIIIIJJ[B[B[B)V");
-
-          env->SetObjectArrayElement(rangeTdoaMeasuresArray,
-                                         i, env->NewObject(mRangeTdoaMeasuresClass,
-                                         rngTdoaMeasuresCtor,
-                                         tdoaMacAddress,
-                                         (int)ranging_ntf_data->ranging_measures.tdoa_range_measr[i].frame_type,
-                                         (int)ranging_ntf_data->ranging_measures.tdoa_range_measr[i].nLos,
-                                         (int)ranging_ntf_data->ranging_measures.tdoa_range_measr[i].aoa_azimuth,
-                                         (int)ranging_ntf_data->ranging_measures.tdoa_range_measr[i].aoa_azimuth_FOM,
-                                         (int)ranging_ntf_data->ranging_measures.tdoa_range_measr[i].aoa_elevation,
-                                         (int)ranging_ntf_data->ranging_measures.tdoa_range_measr[i].aoa_elevation_FOM,
-                                         (long)ranging_ntf_data->ranging_measures.tdoa_range_measr[i].timeStamp,
-                                         (long)ranging_ntf_data->ranging_measures.tdoa_range_measr[i].blink_frame_number,
-                                         rfu,
-                                         deviceInfoArray,
-                                         blinkPayloadData));
-
-        }
-
-
-          rngDataCtorTdoa = env->GetMethodID(mRangeDataClass, "<init>", "(JJIJIII[Lcom/android/uwb/data/UwbTDoAMeasurement;)V");
-          rangeDataObject = env->NewObject(mRangeDataClass,
-                                           rngDataCtorTdoa,
-                                           (long)ranging_ntf_data->seq_counter,
-                                           (long)ranging_ntf_data->session_id,
-                                           (int)ranging_ntf_data->rcr_indication,
-                                           (long)ranging_ntf_data->curr_range_interval,
-                                           ranging_ntf_data->ranging_measure_type,
-                                           ranging_ntf_data->mac_addr_mode_indicator,
-                                           (int)ranging_ntf_data->no_of_measurements,
-                                           rangeTdoaMeasuresArray);
     }
 
     if(mOnRangeDataNotificationReceived != NULL) {
@@ -416,7 +346,6 @@ void UwbEventManager::doLoadSymbols(JNIEnv* env, jobject thiz) {
 
         uwb_jni_cache_jclass(env, RANGING_DATA_CLASS_NAME, &mRangeDataClass);
         uwb_jni_cache_jclass(env, RANGING_MEASURES_CLASS_NAME, &mRangingTwoWayMeasuresClass);
-        uwb_jni_cache_jclass(env, RANGING_TDoA_MEASURES_CLASS_NAME, &mRangeTdoaMeasuresClass);
         uwb_jni_cache_jclass(env, MULTICAST_UPDATE_LIST_DATA_CLASS_NAME, &mMulticastUpdateListDataClass);
     }
     JNI_TRACE_I("%s: exit", fn);

@@ -16,7 +16,6 @@
 
 package com.google.uwb.support.ccc;
 
-import android.annotation.SuppressLint;
 import android.os.Build.VERSION_CODES;
 import android.os.PersistableBundle;
 
@@ -75,7 +74,6 @@ public class CccRangingError extends CccParams {
 
     /** Builder */
     public static final class Builder {
-        @SuppressLint("SupportAnnotationUsage")
         @ProtocolError private RequiredParam<Integer> mError = new RequiredParam<>();
 
         public Builder setError(@ProtocolError int error) {

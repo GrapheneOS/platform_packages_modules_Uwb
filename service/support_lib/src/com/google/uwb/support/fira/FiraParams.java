@@ -23,6 +23,7 @@ import android.uwb.UwbAddress;
 import androidx.annotation.IntDef;
 import androidx.annotation.RequiresApi;
 
+import com.google.uwb.support.base.FlagEnum;
 import com.google.uwb.support.base.Params;
 
 import java.lang.annotation.Retention;
@@ -124,14 +125,14 @@ public abstract class FiraParams extends Params {
     /** Device type defined in FiRa */
     @IntDef(
             value = {
-                RANGING_DEVICE_TYPE_CONTROLLER,
                 RANGING_DEVICE_TYPE_CONTROLEE,
+                RANGING_DEVICE_TYPE_CONTROLLER,
             })
     public @interface RangingDeviceType {}
 
-    public static final int RANGING_DEVICE_TYPE_CONTROLLER = 0;
+    public static final int RANGING_DEVICE_TYPE_CONTROLEE = 0;
 
-    public static final int RANGING_DEVICE_TYPE_CONTROLEE = 1;
+    public static final int RANGING_DEVICE_TYPE_CONTROLLER = 1;
 
     /** Device role defined in FiRa */
     @IntDef(
@@ -472,6 +473,241 @@ public abstract class FiraParams extends Params {
     public static final int MULTICAST_LIST_UPDATE_ACTION_ADD = 0;
     public static final int MULTICAST_LIST_UPDATE_ACTION_DELETE = 1;
 
+    /** Capability related definitions starts from here */
+    @IntDef(
+            value = {
+                DEVICE_CLASS_1,
+                DEVICE_CLASS_2,
+                DEVICE_CLASS_3,
+            })
+    public @interface DeviceClass {}
+
+    public static final int DEVICE_CLASS_1 = 1; // Controller & controlee
+    public static final int DEVICE_CLASS_2 = 2; // Controller
+    public static final int DEVICE_CLASS_3 = 3; // Controlee
+
+    public enum AoaCapabilityFlag implements FlagEnum {
+        HAS_AZIMUTH_SUPPORT(1),
+        HAS_ELEVATION_SUPPORT(1 << 1),
+        HAS_FOM_SUPPORT(1 << 2),
+        HAS_FULL_AZIMUTH_SUPPORT(1 << 3);
+
+        private final int mValue;
+
+        private AoaCapabilityFlag(int value) {
+            mValue = value;
+        }
+
+        @Override
+        public int getValue() {
+            return mValue;
+        }
+    }
+
+    public enum DeviceRoleCapabilityFlag implements FlagEnum {
+        HAS_CONTROLEE_INITIATOR_SUPPORT(1),
+        HAS_CONTROLEE_RESPONDER_SUPPORT(1 << 1),
+        HAS_CONTROLLER_INITIATOR_SUPPORT(1 << 2),
+        HAS_CONTROLLER_RESPONDER_SUPPORT(1 << 3);
+
+        private final int mValue;
+
+        private DeviceRoleCapabilityFlag(int value) {
+            mValue = value;
+        }
+
+        @Override
+        public int getValue() {
+            return mValue;
+        }
+    }
+
+    public enum MacFcsCrcCapabilityFlag implements FlagEnum {
+        HAS_CRC_16_SUPPORT(1),
+        HAS_CRC_32_SUPPORT(1 << 1);
+
+        private final int mValue;
+
+        private MacFcsCrcCapabilityFlag(int value) {
+            mValue = value;
+        }
+
+        @Override
+        public int getValue() {
+            return mValue;
+        }
+    }
+
+    public enum MultiNodeCapabilityFlag implements FlagEnum {
+        HAS_UNICAST_SUPPORT(1),
+        HAS_ONE_TO_MANY_SUPPORT(1 << 1),
+        HAS_MANY_TO_MANY_SUPPORT(1 << 2);
+
+        private final int mValue;
+
+        private MultiNodeCapabilityFlag(int value) {
+            mValue = value;
+        }
+
+        @Override
+        public int getValue() {
+            return mValue;
+        }
+    }
+
+    public enum PreambleCapabilityFlag implements FlagEnum {
+        HAS_32_SYMBOLS_SUPPORT(1),
+        HAS_64_SYMBOLS_SUPPORT(1 << 1);
+
+        private final int mValue;
+
+        private PreambleCapabilityFlag(int value) {
+            mValue = value;
+        }
+
+        @Override
+        public int getValue() {
+            return mValue;
+        }
+    }
+
+    public enum PrfCapabilityFlag implements FlagEnum {
+        HAS_BPRF_SUPPORT(1),
+        HAS_HPRF_SUPPORT(1 << 1);
+
+        private final int mValue;
+
+        private PrfCapabilityFlag(int value) {
+            mValue = value;
+        }
+
+        @Override
+        public int getValue() {
+            return mValue;
+        }
+    }
+
+    public enum RangingRoundCapabilityFlag implements FlagEnum {
+        HAS_DS_TWR_SUPPORT(1),
+        HAS_SS_TWR_SUPPORT(1 << 1);
+
+        private final int mValue;
+
+        private RangingRoundCapabilityFlag(int value) {
+            mValue = value;
+        }
+
+        @Override
+        public int getValue() {
+            return mValue;
+        }
+    }
+
+    public enum RframeCapabilityFlag implements FlagEnum {
+        HAS_SP0_RFRAME_SUPPORT(1),
+        HAS_SP1_RFRAME_SUPPORT(1 << 1),
+        HAS_SP3_RFRAME_SUPPORT(1 << 3);
+
+        private final int mValue;
+
+        private RframeCapabilityFlag(int value) {
+            mValue = value;
+        }
+
+        @Override
+        public int getValue() {
+            return mValue;
+        }
+    }
+
+    public enum SfdCapabilityFlag implements FlagEnum {
+        HAS_SFD0_SUPPORT(1),
+        HAS_SFD1_SUPPORT(1 << 1),
+        HAS_SFD2_SUPPORT(1 << 2),
+        HAS_SFD3_SUPPORT(1 << 3),
+        HAS_SFD4_SUPPORT(1 << 4);
+
+        private final int mValue;
+
+        private SfdCapabilityFlag(int value) {
+            mValue = value;
+        }
+
+        @Override
+        public int getValue() {
+            return mValue;
+        }
+    }
+
+    public enum StsCapabilityFlag implements FlagEnum {
+        HAS_STATIC_STS_SUPPORT(1),
+        HAS_DYNAMIC_STS_SUPPORT(1 << 1),
+        HAS_DYNAMIC_STS_INDIVIDUAL_CONTROLEE_KEY_SUPPORT(1 << 2);
+
+        private final int mValue;
+
+        private StsCapabilityFlag(int value) {
+            mValue = value;
+        }
+
+        @Override
+        public int getValue() {
+            return mValue;
+        }
+    }
+
+    public enum StsSegmentsCapabilityFlag implements FlagEnum {
+        HAS_0_SEGMENT_SUPPORT(1),
+        HAS_1_SEGMENT_SUPPORT(1 << 1),
+        HAS_2_SEGMENT_SUPPORT(1 << 2);
+
+        private final int mValue;
+
+        private StsSegmentsCapabilityFlag(int value) {
+            mValue = value;
+        }
+
+        @Override
+        public int getValue() {
+            return mValue;
+        }
+    }
+
+    public enum BprfPhrDataRateCapabilityFlag implements FlagEnum {
+        HAS_6M81_SUPPORT(1),
+        HAS_850K_SUPPORT(1 << 1);
+
+        private final int mValue;
+
+        private BprfPhrDataRateCapabilityFlag(int value) {
+            mValue = value;
+        }
+
+        @Override
+        public int getValue() {
+            return mValue;
+        }
+    }
+
+    public enum PsduDataRateCapabilityFlag implements FlagEnum {
+        HAS_6M81_SUPPORT(1),
+        HAS_7M80_SUPPORT(1 << 1),
+        HAS_27M2_SUPPORT(1 << 2),
+        HAS_31M2_SUPPORT(1 << 3);
+
+        private final int mValue;
+
+        private PsduDataRateCapabilityFlag(int value) {
+            mValue = value;
+        }
+
+        @Override
+        public int getValue() {
+            return mValue;
+        }
+    }
+
+    // Helper functions
     protected static UwbAddress longToUwbAddress(long value, int length) {
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
         buffer.putLong(value);

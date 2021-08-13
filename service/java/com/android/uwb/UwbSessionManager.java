@@ -600,7 +600,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         private void reconfigurations(SessionHandle sessionHandle, Params param) {
             FiraRangingReconfigureParams rangingReconfigureParams =
                     (FiraRangingReconfigureParams) param;
-            UwbSession uwbSession = getUwbSession(rangingReconfigureParams.getSessionId());
+            UwbSession uwbSession = getUwbSession(getSessionId(sessionHandle));
             ExecutorService executor = Executors.newSingleThreadExecutor();
             FutureTask<Integer> cmdTask = new FutureTask<>(
                     () -> {
@@ -615,7 +615,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                 - FW send notification depends on session status
                              */
                             status = mNativeUwbManager.controllerMulticastListUpdate(
-                                    rangingReconfigureParams.getSessionId(),
+                                    getSessionId(sessionHandle),
                                     rangingReconfigureParams.getAction(),
                                     rangingReconfigureParams.getSubSessionIdList().length,
                                     Arrays.copyOf(
