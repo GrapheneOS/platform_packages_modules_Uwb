@@ -22,7 +22,7 @@
 #include "IntervalTimer.h"
 
 #include <android-base/stringprintf.h>
-#include <base/logging.h>
+#include <android-base/logging.h>
 
 using android::base::StringPrintf;
 

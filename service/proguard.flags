@@ -2,4 +2,5 @@
 # TODO: This could be optimized in the future to only keep the critical
 # entry points and then let proguard strip out any unused code within
 # the service.
+-keep class com.android.uwb.** { *; }
 -keep class com.android.server.uwb.** { *; }

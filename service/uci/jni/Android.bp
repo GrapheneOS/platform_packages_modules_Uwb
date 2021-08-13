@@ -32,21 +32,26 @@ cc_library_shared {
         "utils",
     ],
     shared_libs: [
-        "libnativehelper",
-        "libcutils",
-        "libutils",
+        "libbinder_ndk",
         "liblog",
-        // TODO (b/195308730): Statically include this.
-        "libuwb-uci",
-        "libchrome",
-        "libbase",
+        "libnativehelper",
     ],
     static_libs: [
-	"libxml2",
+        "android.system.suspend-V1-ndk",
+        "android.hardware.uwb-V1-ndk_platform",
+        "libbase",
+        "libcutils",
+        "libpower",
+        "libutils",
+        "libuwb-uci",
+        "libxml2",
     ],
     product_variables: {
         debuggable: {
             cflags: ["-DDCHECK_ALWAYS_ON"],
         },
     },
+    apex_available: [
+        "com.android.uwb",
+    ],
 }
