@@ -31,9 +31,12 @@ import android.os.ServiceManager;
 import android.permission.PermissionManager;
 import android.provider.Settings;
 import android.util.AtomicFile;
+import android.util.Log;
 import android.uwb.IUwbAdapter;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 /**
  * To be used for dependency injection (especially helps mocking static dependencies).
@@ -70,9 +73,17 @@ public class UwbInjector {
      * @return Returns the vendor service handle.
      */
     public IUwbAdapter getVendorService() {
-        IBinder b = ServiceManager.getService(VENDOR_SERVICE_NAME);
-        if (b == null) return null;
-        return IUwbAdapter.Stub.asInterface(b);
+        // TODO(b/196225233): Remove this when qorvo stack is integrated.
+        try {
+            Method getServiceMethod = ServiceManager.class.getMethod("getService", String.class);
+            IBinder b = (IBinder) getServiceMethod.invoke(null, VENDOR_SERVICE_NAME);
+            if (b == null) return null;
+            return IUwbAdapter.Stub.asInterface(b);
+        } catch (NoSuchMethodException | IllegalAccessException | IllegalArgumentException
+                | InvocationTargetException e) {
+            Log.e(TAG, "Reflection failure", e);
+            return null;
+        }
     }
 
     /**

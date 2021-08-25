@@ -20,9 +20,7 @@ package {
 java_defaults {
     name: "support-lib-uwb-common-defaults",
     defaults: ["uwb-module-sdk-version-defaults"],
-    // TODO(b/186585880): Fix all @hide dependencies.
-    // sdk_version: "module_current",
-    platform_apis: true,
+    sdk_version: "module_current",
     libs: [
         "framework-annotations-lib",
         "framework-uwb-pre-jarjar",
