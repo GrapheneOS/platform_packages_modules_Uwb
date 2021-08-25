@@ -1,4 +1,5 @@
-## TODO (b/188911079): Add jarjar rules for all static dependencies.
 ## used by service-uwb ##
+rule androidx.annotation.** com.android.x.uwb.@0
+rule com.google.uwb.support.** com.android.x.uwb.@0
 
 ## used by both framework-uwb and service-uwb ##

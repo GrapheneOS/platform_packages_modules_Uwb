@@ -41,6 +41,7 @@ java_library {
     ],
     static_libs: [
         "androidx.annotation_annotation",
+        "modules-utils-preconditions",
     ],
 }
 
@@ -53,6 +54,7 @@ java_library {
     static_libs: [
         "androidx.annotation_annotation",
         "com.uwb.support.base",
+        "modules-utils-preconditions",
     ],
 }
 
@@ -65,5 +67,6 @@ java_library {
     static_libs: [
         "androidx.annotation_annotation",
         "com.uwb.support.base",
+        "modules-utils-preconditions",
     ],
  }

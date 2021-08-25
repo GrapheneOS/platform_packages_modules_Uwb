@@ -234,19 +234,20 @@ public class UwbServiceImpl extends IUwbAdapter.Stub implements IBinder.DeathRec
     }
 
     private synchronized IUwbAdapter getVendorUwbAdapter() throws IllegalStateException {
+        if (mVendorUwbAdapter != null) return mVendorUwbAdapter;
         // TODO(b/196225233): Remove this when qorvo stack is integrated.
         if (SystemProperties.getBoolean("persist.uwb.enable_uci_stack", false)) {
           Log.i(TAG, "Using the UCI stack");
-          return new UwbService(mContext, new NativeUwbManager()).getIUwbAdapter();
+          mVendorUwbAdapter = new UwbService(mContext, new NativeUwbManager()).getIUwbAdapter();
+        } else {
+            Log.i(TAG, "Using the legacy stack");
+            mVendorUwbAdapter = mUwbInjector.getVendorService();
+            if (mVendorUwbAdapter == null) {
+                throw new IllegalStateException("No vendor service found!");
+            }
+            Log.i(TAG, "Retrieved vendor service");
+            linkToVendorServiceDeath();
         }
-        Log.i(TAG, "Using the legacy stack");
-        if (mVendorUwbAdapter != null) return mVendorUwbAdapter;
-        mVendorUwbAdapter = mUwbInjector.getVendorService();
-        if (mVendorUwbAdapter == null) {
-            throw new IllegalStateException("No vendor service found!");
-        }
-        Log.i(TAG, "Retrieved vendor service");
-        linkToVendorServiceDeath();
         return mVendorUwbAdapter;
     }
 

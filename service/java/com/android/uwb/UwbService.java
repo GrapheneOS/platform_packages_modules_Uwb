@@ -179,7 +179,7 @@ public class UwbService implements INativeUwbManager.DeviceNotification {
         IntentFilter filter = new IntentFilter(Intent.ACTION_SHUTDOWN);
         filter.addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED);
         try {
-            mContext.registerReceiverAsUser(mReceiver, UserHandle.ALL, filter, null, null);
+            mContext.registerReceiverForAllUsers(mReceiver, filter, null, null);
         } catch (SecurityException e) {
             Log.e(TAG, "fail to register intents");
         }
