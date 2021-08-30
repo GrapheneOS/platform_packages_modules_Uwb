@@ -20,26 +20,47 @@ import static android.Manifest.permission.UWB_RANGING;
 import static android.content.PermissionChecker.PERMISSION_GRANTED;
 
 import android.annotation.NonNull;
+import android.content.ApexEnvironment;
 import android.content.AttributionSource;
 import android.content.Context;
 import android.content.PermissionChecker;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.ServiceManager;
+import android.util.AtomicFile;
 import android.uwb.IUwbAdapter;
 
+import java.io.File;
 
 /**
  * To be used for dependency injection (especially helps mocking static dependencies).
  */
 public class UwbInjector {
     private static final String TAG = "UwbInjector";
-
+    private static final String APEX_NAME = "com.android.uwb";
     private static final String VENDOR_SERVICE_NAME = "uwb_vendor";
 
     private final Context mContext;
+    private final UwbSettingsStore mUwbSettingsStore;
+    private final Looper mLooper;
 
     public UwbInjector(@NonNull Context context) {
+        // Create UWB service thread.
+        HandlerThread uwbHandlerThread = new HandlerThread("UwbService");
+        uwbHandlerThread.start();
+        mLooper = uwbHandlerThread.getLooper();
+
         mContext = context;
+        mUwbSettingsStore = new UwbSettingsStore(
+                context, new Handler(mLooper),
+                new AtomicFile(new File(getDeviceProtectedDataDir(),
+                        UwbSettingsStore.FILE_NAME)));
+    }
+
+    public UwbSettingsStore getUwbSettingsStore() {
+        return mUwbSettingsStore;
     }
 
     /**
@@ -79,5 +100,13 @@ public class UwbInjector {
         int permissionCheckResult = PermissionChecker.checkPermissionForDataDelivery(
                 mContext, UWB_RANGING, -1, attributionSource, message);
         return permissionCheckResult == PERMISSION_GRANTED;
+    }
+
+    /**
+     * Get device protected storage dir for the UWB apex.
+     */
+    @NonNull
+    public File getDeviceProtectedDataDir() {
+        return ApexEnvironment.getApexEnvironment(APEX_NAME).getDeviceProtectedDataDir();
     }
 }

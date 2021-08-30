@@ -16,6 +16,8 @@
 
 package com.android.server.uwb;
 
+import static android.content.pm.PackageManager.PERMISSION_GRANTED;
+
 import android.annotation.NonNull;
 import android.content.AttributionSource;
 import android.content.Context;
@@ -37,6 +39,8 @@ import com.android.internal.annotations.GuardedBy;
 import com.android.uwb.UwbService;
 import com.android.uwb.jni.NativeUwbManager;
 
+import java.io.FileDescriptor;
+import java.io.PrintWriter;
 import java.util.Map;
 
 /**
@@ -47,6 +51,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub implements IBinder.DeathRec
 
     private final Context mContext;
     private final UwbInjector mUwbInjector;
+    private final UwbSettingsStore mUwbSettingsStore;
     /**
      * Map for storing the callbacks wrapper for each session.
      */
@@ -233,7 +238,8 @@ public class UwbServiceImpl extends IUwbAdapter.Stub implements IBinder.DeathRec
         mVendorUwbAdapter = null;
     }
 
-    private synchronized IUwbAdapter getVendorUwbAdapter() throws IllegalStateException {
+    private synchronized IUwbAdapter getVendorUwbAdapter()
+            throws IllegalStateException, RemoteException {
         if (mVendorUwbAdapter != null) return mVendorUwbAdapter;
         // TODO(b/196225233): Remove this when qorvo stack is integrated.
         if (SystemProperties.getBoolean("persist.uwb.enable_uci_stack", false)) {
@@ -248,12 +254,35 @@ public class UwbServiceImpl extends IUwbAdapter.Stub implements IBinder.DeathRec
             Log.i(TAG, "Retrieved vendor service");
             linkToVendorServiceDeath();
         }
+        // TODO(b/197963882): Migrate UWB settings state from Android 12 on upgrade to Android 13.
+        // TODO(b/196225233): Remove this when the AOSP -> vendor bridge is removed.
+        getVendorUwbAdapter().setEnabled(getPersistedToggleState());
         return mVendorUwbAdapter;
     }
 
     UwbServiceImpl(@NonNull Context context, @NonNull UwbInjector uwbInjector) {
         mContext = context;
         mUwbInjector = uwbInjector;
+        mUwbSettingsStore = uwbInjector.getUwbSettingsStore();
+    }
+
+    /**
+     * Initialize the stack after boot completed.
+     */
+    public void initialize() {
+        mUwbSettingsStore.initialize();
+    }
+
+    @Override
+    protected void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
+        if (mContext.checkCallingOrSelfPermission(android.Manifest.permission.DUMP)
+                != PERMISSION_GRANTED) {
+            pw.println("Permission Denial: can't dump UwbService from from pid="
+                    + Binder.getCallingPid()
+                    + ", uid=" + Binder.getCallingUid());
+            return;
+        }
+        mUwbSettingsStore.dump(fd, pw, args);
     }
 
     private void enforceUwbPrivilegedPermission() {
@@ -335,6 +364,15 @@ public class UwbServiceImpl extends IUwbAdapter.Stub implements IBinder.DeathRec
 
     @Override
     public synchronized void setEnabled(boolean enabled) throws RemoteException {
+        persistToggleState(enabled);
         getVendorUwbAdapter().setEnabled(enabled);
+    }
+
+    private void persistToggleState(boolean enabled) {
+        mUwbSettingsStore.put(UwbSettingsStore.SETTINGS_TOGGLE_STATE, enabled);
+    }
+
+    private boolean getPersistedToggleState() {
+        return mUwbSettingsStore.get(UwbSettingsStore.SETTINGS_TOGGLE_STATE);
     }
 }

@@ -39,4 +39,11 @@ public class UwbService extends SystemService {
         Log.i(TAG, "Registering " + Context.UWB_SERVICE);
         publishBinderService(Context.UWB_SERVICE, mImpl);
     }
+
+    @Override
+    public void onBootPhase(int phase) {
+        if (phase == SystemService.PHASE_BOOT_COMPLETED) {
+            mImpl.initialize();
+        }
+    }
 }
