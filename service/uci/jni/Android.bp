@@ -38,7 +38,7 @@ cc_library_shared {
     ],
     static_libs: [
         "android.system.suspend-V1-ndk",
-        "android.hardware.uwb-V1-ndk_platform",
+        "android.hardware.uwb-V1-ndk",
         "libbase",
         "libcutils",
         "libpower",
