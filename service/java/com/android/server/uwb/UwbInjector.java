@@ -29,6 +29,7 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.ServiceManager;
+import android.provider.Settings;
 import android.util.AtomicFile;
 import android.uwb.IUwbAdapter;
 
@@ -56,7 +57,7 @@ public class UwbInjector {
         mUwbSettingsStore = new UwbSettingsStore(
                 context, new Handler(mLooper),
                 new AtomicFile(new File(getDeviceProtectedDataDir(),
-                        UwbSettingsStore.FILE_NAME)));
+                        UwbSettingsStore.FILE_NAME)), this);
     }
 
     public UwbSettingsStore getUwbSettingsStore() {
@@ -108,5 +109,14 @@ public class UwbInjector {
     @NonNull
     public File getDeviceProtectedDataDir() {
         return ApexEnvironment.getApexEnvironment(APEX_NAME).getDeviceProtectedDataDir();
+    }
+
+    /**
+     * Get integer value from Settings.
+     *
+     * @throws Settings.SettingNotFoundException
+     */
+    public int getSettingsInt(@NonNull String key) throws Settings.SettingNotFoundException {
+        return Settings.Global.getInt(mContext.getContentResolver(), key);
     }
 }

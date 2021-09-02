@@ -17,13 +17,17 @@
 package com.android.server.uwb;
 
 import static com.android.server.uwb.UwbSettingsStore.SETTINGS_TOGGLE_STATE;
+import static com.android.server.uwb.UwbSettingsStore.SETTINGS_TOGGLE_STATE_KEY_FOR_MIGRATION;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.validateMockitoUsage;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -34,6 +38,7 @@ import android.os.Handler;
 import android.os.PersistableBundle;
 import android.os.test.TestLooper;
 import android.platform.test.annotations.Presubmit;
+import android.provider.Settings;
 import android.test.suitebuilder.annotation.SmallTest;
 import android.util.AtomicFile;
 
@@ -48,6 +53,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 
 
@@ -60,6 +66,7 @@ import java.io.FileOutputStream;
 public class UwbSettingsStoreTest {
     @Mock private Context mContext;
     @Mock private AtomicFile mAtomicFile;
+    @Mock private UwbInjector mUwbInjector;
 
     private TestLooper mLooper;
     private UwbSettingsStore mUwbSettingsStore;
@@ -72,8 +79,8 @@ public class UwbSettingsStoreTest {
 
         FileOutputStream fos = mock(FileOutputStream.class);
         when(mAtomicFile.startWrite()).thenReturn(fos);
-        mUwbSettingsStore =
-                new UwbSettingsStore(mContext, new Handler(mLooper.getLooper()), mAtomicFile);
+        mUwbSettingsStore = new UwbSettingsStore(
+                mContext, new Handler(mLooper.getLooper()), mAtomicFile, mUwbInjector);
     }
 
     /**
@@ -86,10 +93,10 @@ public class UwbSettingsStoreTest {
 
     @Test
     public void testSetterGetter() throws Exception {
-        assertThat((Boolean) mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).isTrue();
+        assertThat(mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).isTrue();
         mUwbSettingsStore.put(SETTINGS_TOGGLE_STATE, false);
         mLooper.dispatchAll();
-        assertThat((Boolean) mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).isFalse();
+        assertThat(mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).isFalse();
 
         // Confirm that file writes have been triggered.
         verify(mAtomicFile).startWrite();
@@ -120,8 +127,49 @@ public class UwbSettingsStoreTest {
 
         // Trigger file read.
         mUwbSettingsStore.initialize();
+        mLooper.dispatchAll();
 
-        assertThat((Boolean) mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).isFalse();
+        // Return the persisted value.
+        assertThat(mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).isFalse();
+
+        // No write should be triggered on load.
+        verify(mAtomicFile, never()).startWrite();
+    }
+
+    @Test
+    public void testMigrationWhenStoreFileEmptyOrNotFound() throws Exception {
+        doThrow(new FileNotFoundException()).when(mAtomicFile).openRead();
+
+        // Toggle off before migration.
+        when(mUwbInjector.getSettingsInt(SETTINGS_TOGGLE_STATE_KEY_FOR_MIGRATION)).thenReturn(0);
+
+        // Trigger file read.
+        mUwbSettingsStore.initialize();
+        mLooper.dispatchAll();
+
+        // Return the migrated value.
+        assertThat(mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).isFalse();
+
+        // Write should be triggered after migration.
+        verify(mAtomicFile, times(1)).startWrite();
+    }
+
+
+    @Test
+    public void testNoMigrationLoadFromStoreWhenStoreFileEmptyOrNotFound() throws Exception {
+        doThrow(new FileNotFoundException()).when(mAtomicFile).openRead();
+        doThrow(new Settings.SettingNotFoundException("")).when(mUwbInjector).getSettingsInt(
+                SETTINGS_TOGGLE_STATE_KEY_FOR_MIGRATION);
+
+        // Trigger file read.
+        mUwbSettingsStore.initialize();
+        mLooper.dispatchAll();
+
+        // Return the default value.
+        assertThat(mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).isTrue();
+
+        // No write should be triggered on load since no migration was done.
+        verify(mAtomicFile, never()).startWrite();
     }
 
     private byte[] createXmlForParsing(String key, Boolean value) throws Exception {

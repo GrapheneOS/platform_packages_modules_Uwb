@@ -21,10 +21,12 @@ import android.annotation.Nullable;
 import android.content.Context;
 import android.os.Handler;
 import android.os.PersistableBundle;
+import android.provider.Settings;
 import android.util.AtomicFile;
 import android.util.Log;
 
 import com.android.internal.annotations.GuardedBy;
+import com.android.internal.annotations.VisibleForTesting;
 import com.android.server.uwb.util.FileUtils;
 
 
@@ -65,6 +67,12 @@ public class UwbSettingsStore {
      */
     private static final String VERSION_KEY = "version";
 
+    /**
+     * Constant copied over from {@link android.provider.Settings} since existing key is @hide.
+     */
+    @VisibleForTesting
+    public static final String SETTINGS_TOGGLE_STATE_KEY_FOR_MIGRATION = "uwb_enabled";
+
     // List of all allowed keys.
     private static final ArrayList<Key> sKeys = new ArrayList<>();
 
@@ -80,6 +88,7 @@ public class UwbSettingsStore {
     private final Context mContext;
     private final Handler mHandler;
     private final AtomicFile mAtomicFile;
+    private final UwbInjector mUwbInjector;
 
     private final Object mLock = new Object();
     @GuardedBy("mLock")
@@ -103,10 +112,11 @@ public class UwbSettingsStore {
     }
 
     public UwbSettingsStore(@NonNull Context context, @NonNull Handler handler, @NonNull
-            AtomicFile atomicFile) {
+            AtomicFile atomicFile, UwbInjector uwbInjector) {
         mContext = context;
         mHandler = handler;
         mAtomicFile = atomicFile;
+        mUwbInjector = uwbInjector;
     }
 
     /**
@@ -115,6 +125,21 @@ public class UwbSettingsStore {
     public void initialize() {
         Log.i(TAG, "Reading from store file: " + mAtomicFile.getBaseFile());
         readFromStoreFile();
+        // Migrate toggle settings from Android 12 to Android 13.
+        boolean isStoreEmpty;
+        synchronized (mLock) {
+            isStoreEmpty = mSettings.isEmpty();
+        }
+        if (isStoreEmpty) {
+            try {
+                boolean toggleEnabled =
+                        mUwbInjector.getSettingsInt(SETTINGS_TOGGLE_STATE_KEY_FOR_MIGRATION) == 1;
+                Log.i(TAG, "Migrate settings toggle from older release: " + toggleEnabled);
+                put(SETTINGS_TOGGLE_STATE, toggleEnabled);
+            } catch (Settings.SettingNotFoundException e) {
+                /* ignore */
+            }
+        }
         invokeAllListeners();
     }
 
