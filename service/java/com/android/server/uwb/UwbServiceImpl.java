@@ -364,6 +364,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub implements IBinder.DeathRec
 
     @Override
     public synchronized void setEnabled(boolean enabled) throws RemoteException {
+        enforceUwbPrivilegedPermission();
         persistToggleState(enabled);
         getVendorUwbAdapter().setEnabled(enabled);
     }

@@ -334,6 +334,17 @@ public class UwbServiceImplTest {
     }
 
     @Test
+    public void testThrowSecurityExceptionWhenSetUwbEnabledCalledWithoutUwbPrivilegedPermission()
+            throws Exception {
+        doThrow(new SecurityException()).when(mContext).enforceCallingOrSelfPermission(
+                eq(UWB_PRIVILEGED), any());
+        try {
+            mUwbServiceImpl.setEnabled(true);
+            fail();
+        } catch (SecurityException e) { /* pass */ }
+    }
+
+    @Test
     public void testThrowSecurityExceptionWhenOpenRangingCalledWithoutUwbRangingPermission()
             throws Exception {
         doThrow(new SecurityException()).when(mUwbInjector).enforceUwbRangingPermissionForPreflight(

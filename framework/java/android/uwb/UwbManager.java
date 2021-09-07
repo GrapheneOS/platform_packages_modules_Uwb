@@ -275,12 +275,38 @@ public final class UwbManager {
     }
 
     /**
-     * Disables or enables UWB for a user
+     * Whether UWB is enabled or disabled.
      *
-     * @param enabled value representing intent to disable or enable UWB. If true any subsequent
-     * calls to IUwbAdapter#openRanging will be allowed. If false, all active ranging sessions will
-     * be closed and subsequent calls to IUwbAdapter#openRanging will be disallowed.
+     * <p>
+     * If disabled, this could indicate that either
+     * <li> User has toggled UWB off from settings, OR </li>
+     * <li> UWB subsystem has shut down due to a fatal error. </li>
+     * </p>
+     *
+     * @return true if enabled, false otherwise.
+     *
+     * @see #getAdapterState()
+     * @see #setUwbEnabled(boolean)
      */
+    public boolean isUwbEnabled() {
+        int adapterState = getAdapterState();
+        return adapterState == AdapterStateCallback.STATE_ENABLED_ACTIVE
+                || adapterState == AdapterStateCallback.STATE_ENABLED_INACTIVE;
+
+    }
+
+    /**
+     * Disables or enables UWB by the user.
+     *
+     * If enabled any subsequent calls to
+     * {@link #openRangingSession(PersistableBundle, Executor, RangingSession.Callback)} will be
+     * allowed. If disabled, all active ranging sessions will be closed and subsequent calls to
+     * {@link #openRangingSession(PersistableBundle, Executor, RangingSession.Callback)} will be
+     * disallowed.
+     *
+     * @param enabled value representing intent to disable or enable UWB.
+     */
+    @RequiresPermission(permission.UWB_PRIVILEGED)
     public void setUwbEnabled(boolean enabled) {
         mAdapterStateListener.setEnabled(enabled);
     }
