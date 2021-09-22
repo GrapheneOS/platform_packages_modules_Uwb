@@ -46,6 +46,8 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import com.android.compatibility.common.util.ShellIdentityUtils;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -72,6 +74,13 @@ public class UwbManagerTest {
         mUwbManager = mContext.getSystemService(UwbManager.class);
         assumeTrue(UwbTestUtils.isUwbSupported(mContext));
         assertThat(mUwbManager).isNotNull();
+
+        // Ensure UWB is toggled on.
+        ShellIdentityUtils.invokeWithShellPermissions(() -> {
+            if (!mUwbManager.isUwbEnabled()) {
+                mUwbManager.setUwbEnabled(true);
+            }
+        });
     }
 
     @Test
@@ -284,6 +293,45 @@ public class UwbManagerTest {
         } catch (SecurityException e) {
             /* pass */
             Log.i(TAG, "Failed with expected security exception: " + e);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    private class AdapterStateCallback implements UwbManager.AdapterStateCallback {
+        private final CountDownLatch mCountDownLatch;
+        public int state;
+        public int reason;
+
+        AdapterStateCallback(@NonNull CountDownLatch countDownLatch) {
+            mCountDownLatch = countDownLatch;
+        }
+
+        public void onStateChanged(@State int state, @StateChangedReason int reason) {
+            this.state = state;
+            this.reason = reason;
+            mCountDownLatch.countDown();
+        }
+    }
+
+    @Test
+    public void testUwbStateToggle() throws Exception {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        AdapterStateCallback adapterStateCallback = new AdapterStateCallback(countDownLatch);
+        try {
+            // Needs UWB_PRIVILEGED permission which is held by shell.
+            uiAutomation.adoptShellPermissionIdentity();
+            mUwbManager.registerAdapterStateCallback(
+                    Executors.newSingleThreadExecutor(), adapterStateCallback);
+            assertThat(mUwbManager.isUwbEnabled()).isTrue();
+            // Toggle the state
+            mUwbManager.setUwbEnabled(false);
+            // Wait for the on start failed callback.
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(mUwbManager.isUwbEnabled()).isFalse();
+            assertThat(adapterStateCallback.state).isEqualTo(
+                    UwbManager.AdapterStateCallback.STATE_DISABLED);
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
