@@ -29,4 +29,10 @@
         <option name="hidden-api-checks" value="false"/>
         <option name="runner" value="androidx.test.runner.AndroidJUnitRunner"/>
     </test>
+
+    <!-- Only run FrameworksUwbTests in MTS if the Uwb Mainline module is installed. -->
+    <object type="module_controller"
+            class="com.android.tradefed.testtype.suite.module.MainlineTestModuleController">
+        <option name="mainline-module-package-name" value="com.google.android.uwb" />
+    </object>
 </configuration>
