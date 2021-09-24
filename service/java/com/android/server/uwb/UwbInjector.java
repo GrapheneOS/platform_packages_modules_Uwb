@@ -132,4 +132,11 @@ public class UwbInjector {
     public int getSettingsInt(@NonNull String key) throws Settings.SettingNotFoundException {
         return Settings.Global.getInt(mContext.getContentResolver(), key);
     }
+
+    /**
+     * Get integer value from Settings.
+     */
+    public int getSettingsInt(@NonNull String key, int defValue) {
+        return Settings.Global.getInt(mContext.getContentResolver(), key, defValue);
+    }
 }

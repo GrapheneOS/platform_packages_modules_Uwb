@@ -41,6 +41,7 @@ import android.platform.test.annotations.Presubmit;
 import android.provider.Settings;
 import android.test.suitebuilder.annotation.SmallTest;
 import android.util.AtomicFile;
+import android.uwb.UwbManager;
 
 import androidx.test.runner.AndroidJUnit4;
 
@@ -141,7 +142,8 @@ public class UwbSettingsStoreTest {
         doThrow(new FileNotFoundException()).when(mAtomicFile).openRead();
 
         // Toggle off before migration.
-        when(mUwbInjector.getSettingsInt(SETTINGS_TOGGLE_STATE_KEY_FOR_MIGRATION)).thenReturn(0);
+        when(mUwbInjector.getSettingsInt(SETTINGS_TOGGLE_STATE_KEY_FOR_MIGRATION)).thenReturn(
+                UwbManager.AdapterStateCallback.STATE_DISABLED);
 
         // Trigger file read.
         mUwbSettingsStore.initialize();

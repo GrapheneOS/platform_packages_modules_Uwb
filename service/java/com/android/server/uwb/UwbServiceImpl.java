@@ -20,12 +20,16 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
 import android.annotation.NonNull;
 import android.content.AttributionSource;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.os.SystemProperties;
+import android.provider.Settings;
 import android.util.ArrayMap;
 import android.util.Log;
 import android.uwb.IUwbAdapter;
@@ -254,9 +258,8 @@ public class UwbServiceImpl extends IUwbAdapter.Stub implements IBinder.DeathRec
             Log.i(TAG, "Retrieved vendor service");
             linkToVendorServiceDeath();
         }
-        // TODO(b/197963882): Migrate UWB settings state from Android 12 on upgrade to Android 13.
         // TODO(b/196225233): Remove this when the AOSP -> vendor bridge is removed.
-        getVendorUwbAdapter().setEnabled(getPersistedToggleState());
+        getVendorUwbAdapter().setEnabled(isUwbEnabled());
         return mVendorUwbAdapter;
     }
 
@@ -264,6 +267,8 @@ public class UwbServiceImpl extends IUwbAdapter.Stub implements IBinder.DeathRec
         mContext = context;
         mUwbInjector = uwbInjector;
         mUwbSettingsStore = uwbInjector.getUwbSettingsStore();
+
+        registerAirplaneModeReceiver();
     }
 
     /**
@@ -365,15 +370,43 @@ public class UwbServiceImpl extends IUwbAdapter.Stub implements IBinder.DeathRec
     @Override
     public synchronized void setEnabled(boolean enabled) throws RemoteException {
         enforceUwbPrivilegedPermission();
-        persistToggleState(enabled);
-        getVendorUwbAdapter().setEnabled(enabled);
+        persistUwbToggleState(enabled);
+        getVendorUwbAdapter().setEnabled(isUwbEnabled());
     }
 
-    private void persistToggleState(boolean enabled) {
+    private void persistUwbToggleState(boolean enabled) {
         mUwbSettingsStore.put(UwbSettingsStore.SETTINGS_TOGGLE_STATE, enabled);
     }
 
-    private boolean getPersistedToggleState() {
+    private boolean isUwbToggleEnabled() {
         return mUwbSettingsStore.get(UwbSettingsStore.SETTINGS_TOGGLE_STATE);
+    }
+
+    /** Returns true if airplane mode is turned on. */
+    private boolean isAirplaneModeOn() {
+        return mUwbInjector.getSettingsInt(
+                Settings.Global.AIRPLANE_MODE_ON, 0) == 1;
+    }
+
+    /** Returns true if UWB is enabled - based on UWB and APM toggle */
+    private boolean isUwbEnabled() {
+        return isUwbToggleEnabled() && !isAirplaneModeOn();
+    }
+
+    private void registerAirplaneModeReceiver() {
+        mContext.registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                handleAirplaneModeEvent();
+            }
+        }, new IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED));
+    }
+
+    private void handleAirplaneModeEvent() {
+        try {
+            getVendorUwbAdapter().setEnabled(isUwbEnabled());
+        } catch (RemoteException e) {
+            Log.e(TAG, "Unable to set UWB Adapter state.", e);
+        }
     }
 }

@@ -16,6 +16,8 @@
 
 package com.android.server.uwb;
 
+import static android.uwb.UwbManager.AdapterStateCallback.STATE_ENABLED_ACTIVE;
+
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.content.Context;
@@ -133,7 +135,8 @@ public class UwbSettingsStore {
         if (isStoreEmpty) {
             try {
                 boolean toggleEnabled =
-                        mUwbInjector.getSettingsInt(SETTINGS_TOGGLE_STATE_KEY_FOR_MIGRATION) == 1;
+                        mUwbInjector.getSettingsInt(SETTINGS_TOGGLE_STATE_KEY_FOR_MIGRATION)
+                                == STATE_ENABLED_ACTIVE;
                 Log.i(TAG, "Migrate settings toggle from older release: " + toggleEnabled);
                 put(SETTINGS_TOGGLE_STATE, toggleEnabled);
             } catch (Settings.SettingNotFoundException e) {
