@@ -28,6 +28,10 @@ java_defaults {
     apex_available: [
         "com.android.uwb",
     ],
+    visibility : [
+        "//external/sl4a/Common",
+        "//packages/modules/Uwb/service:__subpackages__",
+    ]
 }
 
 // TODO (b/196229900): Integrate the support library to the AOSP stack.
