@@ -29,6 +29,7 @@ import com.android.uwb.UwbSessionManager.UwbSession;
 import com.android.uwb.data.UwbRangingData;
 import com.android.uwb.data.UwbTwoWayMeasurement;
 import com.android.uwb.data.UwbUciConstants;
+import com.android.uwb.params.TlvUtil;
 import com.android.uwb.util.UwbUtil;
 
 import com.google.uwb.support.fira.FiraParams;
@@ -143,6 +144,7 @@ public class UwbSessionNotificationManager {
     }
 
     public void onRangingReconfigured(UwbSession uwbSession, int reasonCode) {
+        Log.d(TAG, "call onRangingReconfigured");
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
         try {
@@ -194,7 +196,8 @@ public class UwbSessionNotificationManager {
         List<RangingMeasurement> rangingMeasurements = new ArrayList<>();
         UwbTwoWayMeasurement[] uwbTwoWayMeasurement = rangingData.getRangingTwoWayMeasures();
         for (int i = 0; i < rangingData.getNoOfRangingMeasures(); ++i) {
-            UwbAddress macAddress = UwbAddress.fromBytes(uwbTwoWayMeasurement[i].getMacAddress());
+            UwbAddress macAddress = UwbAddress.fromBytes(TlvUtil.getReverseBytes(
+                    uwbTwoWayMeasurement[i].getMacAddress()));
             int rangingStatus = uwbTwoWayMeasurement[i].getRangingStatus();
             // TODO(b/186727830): Retrieve this.
             long elapsedRealtimeNanos = 0;

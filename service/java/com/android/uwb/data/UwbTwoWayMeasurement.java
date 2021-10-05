@@ -23,13 +23,13 @@ public class UwbTwoWayMeasurement {
     public int mNLoS;
     public int mDistance;
     public float mAoaAzimuth;
-    public byte mAoaAzimuthFom;
+    public int mAoaAzimuthFom;
     public float mAoaElevation;
-    public byte mAoaElevationFom;
+    public int mAoaElevationFom;
     public float mAoaDestAzimuth;
-    public byte mAoaDestAzimuthFom;
+    public int mAoaDestAzimuthFom;
     public float mAoaDestElevation;
-    public byte mAoaDestElevationFom;
+    public int mAoaDestElevationFom;
     public int mSlotIndex;
 
     public UwbTwoWayMeasurement(byte[] macAddress, int status, int nLoS, int distance,
@@ -41,18 +41,14 @@ public class UwbTwoWayMeasurement {
         this.mStatus = status;
         this.mNLoS = nLoS;
         this.mDistance = distance;
-        this.mAoaAzimuth = UwbUtil.convertQFormatToFloat(
-                UwbUtil.twos_compliment(aoaAzimuth, 16), 9, 7);
-        this.mAoaAzimuthFom = (byte) aoaAzimuthFom;
-        this.mAoaElevation = UwbUtil.convertQFormatToFloat(
-                UwbUtil.twos_compliment(aoaElevation, 16), 9, 7);
-        this.mAoaElevationFom = (byte) aoaElevationFom;
-        this.mAoaDestAzimuth = UwbUtil.convertQFormatToFloat(
-                UwbUtil.twos_compliment(aoaDestAzimuth, 16), 9, 7);
-        this.mAoaDestAzimuthFom = (byte) aoaDestAzimuthFom;
-        this.mAoaDestElevation = UwbUtil.convertQFormatToFloat(
-                UwbUtil.twos_compliment(aoaDestElevation, 16), 9, 7);
-        this.mAoaDestElevationFom = (byte) aoaDestElevationFom;
+        this.mAoaAzimuth = toFloatFromQFormat(aoaAzimuth);
+        this.mAoaAzimuthFom = aoaAzimuthFom;
+        this.mAoaElevation = toFloatFromQFormat(aoaElevation);
+        this.mAoaElevationFom = aoaElevationFom;
+        this.mAoaDestAzimuth = toFloatFromQFormat(aoaDestAzimuth);
+        this.mAoaDestAzimuthFom = aoaDestAzimuthFom;
+        this.mAoaDestElevation = toFloatFromQFormat(aoaDestElevation);
+        this.mAoaDestElevationFom = aoaDestElevationFom;
         this.mSlotIndex = slotIndex;
     }
 
@@ -76,7 +72,7 @@ public class UwbTwoWayMeasurement {
         return mAoaAzimuth;
     }
 
-    public byte getAoaAzimuthFom() {
+    public int getAoaAzimuthFom() {
         return mAoaAzimuthFom;
     }
 
@@ -84,7 +80,7 @@ public class UwbTwoWayMeasurement {
         return mAoaElevation;
     }
 
-    public byte getAoaElevationFom() {
+    public int getAoaElevationFom() {
         return mAoaElevationFom;
     }
 
@@ -92,7 +88,7 @@ public class UwbTwoWayMeasurement {
         return mAoaDestAzimuth;
     }
 
-    public float getAoaDestAzimuthFom() {
+    public int getAoaDestAzimuthFom() {
         return mAoaDestAzimuthFom;
     }
 
@@ -100,12 +96,17 @@ public class UwbTwoWayMeasurement {
         return mAoaDestElevation;
     }
 
-    public float getAoaDestElevationFom() {
+    public int getAoaDestElevationFom() {
         return mAoaDestElevationFom;
     }
 
     public int getSlotIndex() {
         return mSlotIndex;
+    }
+
+    private float toFloatFromQFormat(int value) {
+        return UwbUtil.convertQFormatToFloat(UwbUtil.twos_compliment(value, 16),
+                9, 7);
     }
 
     public String toString() {

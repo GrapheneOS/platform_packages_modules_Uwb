@@ -30,5 +30,6 @@ public class UwbCccConstants {
     public static final String KEY_UWB_TIME_0 = "uwb_time_0";
     public static final String KEY_HOP_MODE_KEY = "hop_mode_key";
     public static final String KEY_SYNC_CODE_INDEX = "sync_code_index";
+    public static final String KEY_RAN_MULTIPLIER = "ran_multiplier";
     /* CCC Hopping [E]*/
 }

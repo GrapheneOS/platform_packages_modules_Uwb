@@ -23,6 +23,7 @@ import com.android.uwb.data.UwbUciConstants;
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccRangingError;
+import com.google.uwb.support.fira.FiraStateChangeReasonCode;
 import com.google.uwb.support.fira.FiraStatusCode;
 
 public class UwbSessionNotificationHelper {
@@ -93,7 +94,7 @@ public class UwbSessionNotificationHelper {
         if (protocolName.equals(CccParams.PROTOCOL_NAME)) {
             c = new CccRangingError.Builder().setError(reason).build();
         } else {
-            c = new FiraStatusCode.Builder().setStatusCode(reason).build();
+            c = new FiraStateChangeReasonCode.Builder().setReasonCode(reason).build();
         }
         return c.toBundle();
     }
