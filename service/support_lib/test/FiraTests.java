@@ -23,6 +23,7 @@ import static com.google.uwb.support.fira.FiraParams.MAC_ADDRESS_MODE_8_BYTES;
 import static com.google.uwb.support.fira.FiraParams.MAC_FCS_TYPE_CRC_32;
 import static com.google.uwb.support.fira.FiraParams.MEASUREMENT_REPORT_TYPE_INITIATOR_TO_RESPONDER;
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE;
+import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_STATUS_ERROR_MULTICAST_LIST_FULL;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_MANY_TO_MANY;
 import static com.google.uwb.support.fira.FiraParams.PREAMBLE_DURATION_T32_SYMBOLS;
 import static com.google.uwb.support.fira.FiraParams.PRF_MODE_HPRF;
@@ -33,6 +34,7 @@ import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROL
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE;
 import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP1;
 import static com.google.uwb.support.fira.FiraParams.SFD_ID_VALUE_3;
+import static com.google.uwb.support.fira.FiraParams.STATE_CHANGE_REASON_CODE_ERROR_INVALID_RANGING_INTERVAL;
 import static com.google.uwb.support.fira.FiraParams.STATUS_CODE_ERROR_ADDRESS_ALREADY_PRESENT;
 import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY;
 import static com.google.uwb.support.fira.FiraParams.STS_LENGTH_128_SYMBOLS;
@@ -49,11 +51,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import com.google.uwb.support.base.Params;
+import com.google.uwb.support.fira.FiraMulticastListUpdateStatusCode;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
+import com.google.uwb.support.fira.FiraStateChangeReasonCode;
 import com.google.uwb.support.fira.FiraStatusCode;
 
 import org.junit.Test;
@@ -298,24 +302,31 @@ public class FiraTests {
                         .setAction(action)
                         .setAddressList(addressList)
                         .setSubSessionIdList(subSessionIdList)
-                        .setBlockStrideLength(blockStrideLength)
-                        .setRangeDataNtfConfig(rangeDataNtfConfig)
-                        .setRangeDataProximityNear(rangeDataProximityNear)
-                        .setRangeDataProximityFar(rangeDataProximityFar)
                         .build();
 
         assertEquals((int) params.getAction(), action);
         assertArrayEquals(params.getAddressList(), addressList);
         assertArrayEquals(params.getSubSessionIdList(), subSessionIdList);
-        assertEquals((int) params.getBlockStrideLength(), blockStrideLength);
-        assertEquals((int) params.getRangeDataNtfConfig(), rangeDataNtfConfig);
-        assertEquals((int) params.getRangeDataProximityNear(), rangeDataProximityNear);
-        assertEquals((int) params.getRangeDataProximityFar(), rangeDataProximityFar);
         FiraRangingReconfigureParams fromBundle =
                 FiraRangingReconfigureParams.fromBundle(params.toBundle());
         assertEquals((int) fromBundle.getAction(), action);
         assertArrayEquals(fromBundle.getAddressList(), addressList);
         assertArrayEquals(fromBundle.getSubSessionIdList(), subSessionIdList);
+        verifyProtocolPresent(params);
+        verifyBundlesEqual(params, fromBundle);
+
+        params =
+                new FiraRangingReconfigureParams.Builder()
+                        .setBlockStrideLength(blockStrideLength)
+                        .setRangeDataNtfConfig(rangeDataNtfConfig)
+                        .setRangeDataProximityNear(rangeDataProximityNear)
+                        .setRangeDataProximityFar(rangeDataProximityFar)
+                        .build();
+        assertEquals((int) params.getBlockStrideLength(), blockStrideLength);
+        assertEquals((int) params.getRangeDataNtfConfig(), rangeDataNtfConfig);
+        assertEquals((int) params.getRangeDataProximityNear(), rangeDataProximityNear);
+        assertEquals((int) params.getRangeDataProximityFar(), rangeDataProximityFar);
+        fromBundle = FiraRangingReconfigureParams.fromBundle(params.toBundle());
         assertEquals((int) fromBundle.getBlockStrideLength(), blockStrideLength);
         assertEquals((int) fromBundle.getRangeDataNtfConfig(), rangeDataNtfConfig);
         assertEquals((int) fromBundle.getRangeDataProximityNear(), rangeDataProximityNear);
@@ -330,9 +341,41 @@ public class FiraTests {
         int statusCode = STATUS_CODE_ERROR_ADDRESS_ALREADY_PRESENT;
         FiraStatusCode params = new FiraStatusCode.Builder().setStatusCode(statusCode).build();
         assertEquals(params.getStatusCode(), statusCode);
-
+        assertTrue(FiraStatusCode.isBundleValid(params.toBundle()));
         FiraStatusCode fromBundle = FiraStatusCode.fromBundle(params.toBundle());
         assertEquals(fromBundle.getStatusCode(), statusCode);
+
+        verifyProtocolPresent(params);
+        verifyBundlesEqual(params, fromBundle);
+    }
+
+    @Test
+    public void testMulticastListUpdateStatusCode() {
+        int statusCode = MULTICAST_LIST_UPDATE_STATUS_ERROR_MULTICAST_LIST_FULL;
+        FiraMulticastListUpdateStatusCode params =
+                new FiraMulticastListUpdateStatusCode.Builder().setStatusCode(statusCode).build();
+        assertEquals(params.getStatusCode(), statusCode);
+        assertTrue(FiraMulticastListUpdateStatusCode.isBundleValid(params.toBundle()));
+
+        FiraMulticastListUpdateStatusCode fromBundle =
+                FiraMulticastListUpdateStatusCode.fromBundle(params.toBundle());
+        assertEquals(fromBundle.getStatusCode(), statusCode);
+
+        verifyProtocolPresent(params);
+        verifyBundlesEqual(params, fromBundle);
+    }
+
+    @Test
+    public void testStateChangeReasonCode() {
+        int reasonCode = STATE_CHANGE_REASON_CODE_ERROR_INVALID_RANGING_INTERVAL;
+        FiraStateChangeReasonCode params =
+                new FiraStateChangeReasonCode.Builder().setReasonCode(reasonCode).build();
+        assertEquals(reasonCode, params.getReasonCode());
+        assertTrue(FiraStateChangeReasonCode.isBundleValid(params.toBundle()));
+
+        FiraStateChangeReasonCode fromBundle =
+                FiraStateChangeReasonCode.fromBundle(params.toBundle());
+        assertEquals(reasonCode, fromBundle.getReasonCode());
 
         verifyProtocolPresent(params);
         verifyBundlesEqual(params, fromBundle);

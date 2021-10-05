@@ -20,17 +20,17 @@ import android.os.PersistableBundle;
 
 import com.google.uwb.support.base.RequiredParam;
 
-/** FiRa status code defined in Table 32 */
-public class FiraStatusCode extends FiraParams {
+/** FiRa State Change code defined in UCI 1.2 Table 15 */
+public class FiraStateChangeReasonCode extends FiraParams {
     private static final int BUNDLE_VERSION_1 = 1;
     private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_1;
 
-    @StatusCode private final int mStatusCode;
+    @StateChangeReasonCode private final int mReasonCode;
 
-    private static final String KEY_STATUS_CODE = "status_code";
+    private static final String KEY_REASON_CODE = "reason_code";
 
-    private FiraStatusCode(@StatusCode int statusCode) {
-        mStatusCode = statusCode;
+    private FiraStateChangeReasonCode(@StateChangeReasonCode int reasonCode) {
+        mReasonCode = reasonCode;
     }
 
     @Override
@@ -38,19 +38,19 @@ public class FiraStatusCode extends FiraParams {
         return BUNDLE_VERSION_CURRENT;
     }
 
-    @StatusCode
-    public int getStatusCode() {
-        return mStatusCode;
+    @StateChangeReasonCode
+    public int getReasonCode() {
+        return mReasonCode;
     }
 
     @Override
     public PersistableBundle toBundle() {
         PersistableBundle bundle = super.toBundle();
-        bundle.putInt(KEY_STATUS_CODE, mStatusCode);
+        bundle.putInt(KEY_REASON_CODE, mReasonCode);
         return bundle;
     }
 
-    public static FiraStatusCode fromBundle(PersistableBundle bundle) {
+    public static FiraStateChangeReasonCode fromBundle(PersistableBundle bundle) {
         if (!isCorrectProtocol(bundle)) {
             throw new IllegalArgumentException("Invalid protocol");
         }
@@ -64,25 +64,27 @@ public class FiraStatusCode extends FiraParams {
         }
     }
 
-    private static FiraStatusCode parseVersion1(PersistableBundle bundle) {
-        return new FiraStatusCode.Builder().setStatusCode(bundle.getInt(KEY_STATUS_CODE)).build();
+    private static FiraStateChangeReasonCode parseVersion1(PersistableBundle bundle) {
+        return new FiraStateChangeReasonCode.Builder()
+                .setReasonCode(bundle.getInt(KEY_REASON_CODE))
+                .build();
     }
 
     public static boolean isBundleValid(PersistableBundle bundle) {
-        return bundle.containsKey(KEY_STATUS_CODE);
+        return bundle.containsKey(KEY_REASON_CODE);
     }
 
     /** Builder */
     public static class Builder {
-        private final RequiredParam<Integer> mStatusCode = new RequiredParam<>();
+        private final RequiredParam<Integer> mReasonCode = new RequiredParam<>();
 
-        public FiraStatusCode.Builder setStatusCode(int statusCode) {
-            mStatusCode.set(statusCode);
+        public FiraStateChangeReasonCode.Builder setReasonCode(int reasonCode) {
+            mReasonCode.set(reasonCode);
             return this;
         }
 
-        public FiraStatusCode build() {
-            return new FiraStatusCode(mStatusCode.get());
+        public FiraStateChangeReasonCode build() {
+            return new FiraStateChangeReasonCode(mReasonCode.get());
         }
     }
 }

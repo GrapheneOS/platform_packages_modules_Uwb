@@ -462,6 +462,29 @@ public abstract class FiraParams extends Params {
     public static final int STATUS_CODE_RANGING_RX_MAC_IE_DEC_FAILED = 0x26;
     public static final int STATUS_CODE_RANGING_RX_MAC_IE_MISSING = 0x27;
 
+    /** State change reason codes defined in UCI table-15 */
+    @IntDef(
+            value = {
+                STATE_CHANGE_REASON_CODE_BY_COMMANDS,
+                STATE_CHANGE_REASON_CODE_MAX_RR_RETRY_REACHED,
+                STATE_CHANGE_REASON_CODE_ERROR_SLOT_LENGTH_NOT_SUPPORTED,
+                STATE_CHANGE_REASON_CODE_ERROR_INSUFFICIENT_SLOTS_PER_RR,
+                STATE_CHANGE_REASON_CODE_ERROR_MAC_ADDRESS_MODE_NOT_SUPPORTED,
+                STATE_CHANGE_REASON_CODE_ERROR_INVALID_RANGING_INTERVAL,
+                STATE_CHANGE_REASON_CODE_ERROR_INVALID_STS_CONFIG,
+                STATE_CHANGE_REASON_CODE_ERROR_INVALID_RFRAME_CONFIG,
+            })
+    public @interface StateChangeReasonCode {}
+
+    public static final int STATE_CHANGE_REASON_CODE_BY_COMMANDS = 0;
+    public static final int STATE_CHANGE_REASON_CODE_MAX_RR_RETRY_REACHED = 1;
+    public static final int STATE_CHANGE_REASON_CODE_ERROR_SLOT_LENGTH_NOT_SUPPORTED = 0x20;
+    public static final int STATE_CHANGE_REASON_CODE_ERROR_INSUFFICIENT_SLOTS_PER_RR = 0x21;
+    public static final int STATE_CHANGE_REASON_CODE_ERROR_MAC_ADDRESS_MODE_NOT_SUPPORTED = 0x22;
+    public static final int STATE_CHANGE_REASON_CODE_ERROR_INVALID_RANGING_INTERVAL = 0x23;
+    public static final int STATE_CHANGE_REASON_CODE_ERROR_INVALID_STS_CONFIG = 0x24;
+    public static final int STATE_CHANGE_REASON_CODE_ERROR_INVALID_RFRAME_CONFIG = 0x25;
+
     /** Multicast controlee add/delete actions defined in UCI */
     @IntDef(
             value = {
@@ -472,6 +495,20 @@ public abstract class FiraParams extends Params {
 
     public static final int MULTICAST_LIST_UPDATE_ACTION_ADD = 0;
     public static final int MULTICAST_LIST_UPDATE_ACTION_DELETE = 1;
+
+    @IntDef(
+            value = {
+                MULTICAST_LIST_UPDATE_STATUS_OK,
+                MULTICAST_LIST_UPDATE_STATUS_ERROR_MULTICAST_LIST_FULL,
+                MULTICAST_LIST_UPDATE_STATUS_ERROR_KEY_FETCH_FAIL,
+                MULTICAST_LIST_UPDATE_STATUS_ERROR_SUB_SESSION_ID_NOT_FOUND,
+            })
+    public @interface MulticastListUpdateStatus {}
+
+    public static final int MULTICAST_LIST_UPDATE_STATUS_OK = 0;
+    public static final int MULTICAST_LIST_UPDATE_STATUS_ERROR_MULTICAST_LIST_FULL = 1;
+    public static final int MULTICAST_LIST_UPDATE_STATUS_ERROR_KEY_FETCH_FAIL = 2;
+    public static final int MULTICAST_LIST_UPDATE_STATUS_ERROR_SUB_SESSION_ID_NOT_FOUND = 3;
 
     /** Capability related definitions starts from here */
     @IntDef(
