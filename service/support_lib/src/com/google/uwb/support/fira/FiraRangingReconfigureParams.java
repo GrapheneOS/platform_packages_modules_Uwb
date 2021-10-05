@@ -31,7 +31,6 @@ public class FiraRangingReconfigureParams extends FiraParams {
     private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_1;
 
     @Nullable @MulticastListUpdateAction private final Integer mAction;
-    @MacAddressMode private final int mMacAddressMode;
     @Nullable private final UwbAddress[] mAddressList;
     @Nullable private final int[] mSubSessionIdList;
 
@@ -53,16 +52,14 @@ public class FiraRangingReconfigureParams extends FiraParams {
             "update_range_data_proximity_far";
 
     private FiraRangingReconfigureParams(
-            @MulticastListUpdateAction int action,
-            @MacAddressMode int macAddressMode,
-            UwbAddress[] addressList,
+            @Nullable @MulticastListUpdateAction Integer action,
+            @Nullable UwbAddress[] addressList,
             @Nullable int[] subSessionIdList,
-            Integer blockStrideLength,
-            Integer rangeDataNtfConfig,
-            Integer rangeDataProximityNear,
-            Integer rangeDataProximityFar) {
+            @Nullable Integer blockStrideLength,
+            @Nullable Integer rangeDataNtfConfig,
+            @Nullable Integer rangeDataProximityNear,
+            @Nullable Integer rangeDataProximityFar) {
         mAction = action;
-        mMacAddressMode = macAddressMode;
         mAddressList = addressList;
         mSubSessionIdList = subSessionIdList;
         mBlockStrideLength = blockStrideLength;
@@ -76,14 +73,10 @@ public class FiraRangingReconfigureParams extends FiraParams {
         return BUNDLE_VERSION_CURRENT;
     }
 
+    @Nullable
     @MulticastListUpdateAction
     public Integer getAction() {
         return mAction;
-    }
-
-    @MacAddressMode
-    public int getMacAddressMode() {
-        return mMacAddressMode;
     }
 
     @Nullable
@@ -122,7 +115,6 @@ public class FiraRangingReconfigureParams extends FiraParams {
         if (mAction != null) {
             requireNonNull(mAddressList);
             bundle.putInt(KEY_ACTION, mAction);
-            bundle.putInt(KEY_MAC_ADDRESS_MODE, mMacAddressMode);
 
             long[] addressList = new long[mAddressList.length];
             int i = 0;
@@ -259,9 +251,9 @@ public class FiraRangingReconfigureParams extends FiraParams {
 
         private void checkAddressList() {
             checkArgument(mAddressList != null && mAddressList.length > 0);
-            for (int i = 0; i < mAddressList.length; i++) {
-                requireNonNull(mAddressList[i]);
-                checkArgument(mAddressList[i].size() == mAddressList[0].size());
+            for (UwbAddress uwbAddress : mAddressList) {
+                requireNonNull(uwbAddress);
+                checkArgument(uwbAddress.size() == UwbAddress.SHORT_ADDRESS_BYTE_LENGTH);
             }
 
             checkArgument(
@@ -269,13 +261,14 @@ public class FiraRangingReconfigureParams extends FiraParams {
         }
 
         public FiraRangingReconfigureParams build() {
-            int macAddressMode = 0;
             if (mAction != null) {
                 checkAddressList();
-                macAddressMode =
-                        mAddressList[0].size() == UwbAddress.SHORT_ADDRESS_BYTE_LENGTH
-                                ? MAC_ADDRESS_MODE_2_BYTES
-                                : MAC_ADDRESS_MODE_8_BYTES;
+                // Either update the address list or update ranging parameters. Not both.
+                checkArgument(
+                        mBlockStrideLength == null
+                                && mRangeDataNtfConfig == null
+                                && mRangeDataProximityNear == null
+                                && mRangeDataProximityFar == null);
             } else {
                 checkArgument(
                         mBlockStrideLength != null
@@ -286,7 +279,6 @@ public class FiraRangingReconfigureParams extends FiraParams {
 
             return new FiraRangingReconfigureParams(
                     mAction,
-                    macAddressMode,
                     mAddressList,
                     mSubSessionIdList,
                     mBlockStrideLength,

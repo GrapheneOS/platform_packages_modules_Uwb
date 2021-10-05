@@ -40,18 +40,6 @@ public class UwbRangingData {
         this.mRangingTwoWayMeasures = rangingTwoWayMeasures;
     }
 
-    public UwbRangingData(long seqCounter, long sessionId, int rcrIndication,
-            long currRangingInterval,
-            byte rangingMeasuresType, byte macAddressMode, int noOfRangingMeasures) {
-        this.mSeqCounter = seqCounter;
-        this.mSessionId = sessionId;
-        this.mRcrIndication = rcrIndication;
-        this.mCurrRangingInterval = currRangingInterval;
-        this.mRangingMeasuresType = rangingMeasuresType;
-        this.mMacAddressMode = macAddressMode;
-        this.mNoOfRangingMeasures = noOfRangingMeasures;
-    }
-
     public long getSequenceCounter() {
         return mSeqCounter;
     }

@@ -20,16 +20,16 @@ import android.os.PersistableBundle;
 
 import com.google.uwb.support.base.RequiredParam;
 
-/** FiRa status code defined in Table 32 */
-public class FiraStatusCode extends FiraParams {
+/** FiRa Multicast List update status code defined in UCI 1.0 Table 27 */
+public class FiraMulticastListUpdateStatusCode extends FiraParams {
     private static final int BUNDLE_VERSION_1 = 1;
     private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_1;
 
-    @StatusCode private final int mStatusCode;
+    @MulticastListUpdateStatus private final int mStatusCode;
 
-    private static final String KEY_STATUS_CODE = "status_code";
+    private static final String KEY_STATUS_CODE = "multicast_list_update_status_code";
 
-    private FiraStatusCode(@StatusCode int statusCode) {
+    private FiraMulticastListUpdateStatusCode(@MulticastListUpdateStatus int statusCode) {
         mStatusCode = statusCode;
     }
 
@@ -38,7 +38,7 @@ public class FiraStatusCode extends FiraParams {
         return BUNDLE_VERSION_CURRENT;
     }
 
-    @StatusCode
+    @MulticastListUpdateStatus
     public int getStatusCode() {
         return mStatusCode;
     }
@@ -50,7 +50,7 @@ public class FiraStatusCode extends FiraParams {
         return bundle;
     }
 
-    public static FiraStatusCode fromBundle(PersistableBundle bundle) {
+    public static FiraMulticastListUpdateStatusCode fromBundle(PersistableBundle bundle) {
         if (!isCorrectProtocol(bundle)) {
             throw new IllegalArgumentException("Invalid protocol");
         }
@@ -64,25 +64,27 @@ public class FiraStatusCode extends FiraParams {
         }
     }
 
-    private static FiraStatusCode parseVersion1(PersistableBundle bundle) {
-        return new FiraStatusCode.Builder().setStatusCode(bundle.getInt(KEY_STATUS_CODE)).build();
-    }
-
     public static boolean isBundleValid(PersistableBundle bundle) {
         return bundle.containsKey(KEY_STATUS_CODE);
+    }
+
+    private static FiraMulticastListUpdateStatusCode parseVersion1(PersistableBundle bundle) {
+        return new FiraMulticastListUpdateStatusCode.Builder()
+                .setStatusCode(bundle.getInt(KEY_STATUS_CODE))
+                .build();
     }
 
     /** Builder */
     public static class Builder {
         private final RequiredParam<Integer> mStatusCode = new RequiredParam<>();
 
-        public FiraStatusCode.Builder setStatusCode(int statusCode) {
+        public FiraMulticastListUpdateStatusCode.Builder setStatusCode(int statusCode) {
             mStatusCode.set(statusCode);
             return this;
         }
 
-        public FiraStatusCode build() {
-            return new FiraStatusCode(mStatusCode.get());
+        public FiraMulticastListUpdateStatusCode build() {
+            return new FiraMulticastListUpdateStatusCode(mStatusCode.get());
         }
     }
 }

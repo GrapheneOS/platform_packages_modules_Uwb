@@ -15,6 +15,8 @@
  */
 package com.android.uwb;
 
+import static com.android.uwb.data.UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS;
+
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -36,6 +38,7 @@ import com.android.uwb.data.UwbRangingData;
 import com.android.uwb.data.UwbUciConstants;
 import com.android.uwb.jni.INativeUwbManager;
 import com.android.uwb.jni.NativeUwbManager;
+import com.android.uwb.params.TlvUtil;
 
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccParams;
@@ -100,10 +103,14 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             UwbMulticastListUpdateStatus multicastListUpdateStatus) {
         Log.d(TAG, "onMulticastListUpdateNotificationReceived");
         UwbSession uwbSession = getUwbSession((int) multicastListUpdateStatus.getSessionId());
+        if (uwbSession == null) {
+            Log.d(TAG, "onSessionStatusNotificationReceived - invalid session");
+            return;
+        }
 
-        //TODO - check success or fail for each subsession_id
-        mSessionNotificationManager.onRangingReconfigured(uwbSession,
-                UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS);
+        synchronized (uwbSession.getWaitObj()) {
+            uwbSession.getWaitObj().notify();
+        }
     }
 
     @Override
@@ -153,7 +160,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
     private int setAppConfigurations(UwbSession uwbSession) {
         return mConfigurationManager.setAppConfigurations(uwbSession.getSessionId(),
-                uwbSession.getProtocolName(), uwbSession.getParams());
+                uwbSession.getParams());
     }
 
     public synchronized void initSession(SessionHandle sessionHandle, int sessionId,
@@ -235,7 +242,15 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                 parameters.getInt(UwbCccConstants.KEY_STARTING_STS_INDEX))
                         .setSyncCodeIndex(parameters.getInt(UwbCccConstants.KEY_SYNC_CODE_INDEX))
                         .setUwbTime0(parameters.getLong(UwbCccConstants.KEY_UWB_TIME_0))
+                        .setRanMultiplier(parameters.getInt(UwbCccConstants.KEY_RAN_MULTIPLIER))
                         .build();
+
+                status = mConfigurationManager.setAppConfigurations(sessionId, params);
+
+                if (status != UwbUciConstants.STATUS_CODE_OK) {
+                    mSessionNotificationManager.onRangingStartFailed(uwbSession, status);
+                    return;
+                }
             }
 
             mEventTask.execute(SESSION_START_RANGING, uwbSession);
@@ -266,7 +281,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         } else if (currentSessionState == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
             Log.i(TAG, "session is already idle state");
             mSessionNotificationManager.onRangingStopped(uwbSession,
-                    UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS);
+                    REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS);
         } else {
             int status = UwbUciConstants.STATUS_CODE_REJECTED;
             mSessionNotificationManager.onRangingStopFailed(uwbSession, status);
@@ -327,7 +342,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         for (Map.Entry<Integer, UwbSession> sessionEntry : mSessionTable.entrySet()) {
             UwbSession uwbSession = sessionEntry.getValue();
             mSessionNotificationManager.onRangingClosed(uwbSession,
-                    UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS);
+                    REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS);
             removeSession(uwbSession);
         }
         mNativeUwbManager.resetDevice(UwbUciConstants.UWBS_RESET);
@@ -511,7 +526,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                     .equals(CccParams.PROTOCOL_NAME)) {
                                 status = mConfigurationManager.setAppConfigurations(
                                         uwbSession.getSessionId(),
-                                        uwbSession.getProtocolName(),
                                         uwbSession.getParams());
                                 if (status != UwbUciConstants.STATUS_CODE_OK) {
                                     mSessionNotificationManager.onRangingStartFailed(
@@ -606,22 +620,41 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                     () -> {
                         int status = UwbUciConstants.STATUS_CODE_FAILED;
                         synchronized (uwbSession.getWaitObj()) {
-                            ByteBuffer dstAddressList = ByteBuffer.allocate(1024);
-                            for (UwbAddress address : rangingReconfigureParams.getAddressList()) {
-                                dstAddressList.put(address.toBytes());
-                            }
-                            /*
-                                TODO - Add synchornized lock after UWB FW is fixed
-                                - FW send notification depends on session status
-                             */
-                            status = mNativeUwbManager.controllerMulticastListUpdate(
-                                    getSessionId(sessionHandle),
-                                    rangingReconfigureParams.getAction(),
-                                    rangingReconfigureParams.getSubSessionIdList().length,
-                                    Arrays.copyOf(
-                                            dstAddressList.array(), dstAddressList.position()),
-                                    rangingReconfigureParams.getSubSessionIdList());
+                            // Handle SESSION_UPDATE_CONTROLLER_MULTICAST_LIST_CMD
+                            ByteBuffer dstAddressList = null;
+                            if (rangingReconfigureParams.getAction() != null) {
+                                Log.d(TAG, "call multicastlist update");
+                                dstAddressList = ByteBuffer.allocate(256);
+                                for (UwbAddress address :
+                                        rangingReconfigureParams.getAddressList()) {
+                                    dstAddressList.put(TlvUtil.getReverseBytes(address.toBytes()));
+                                }
+                                status = mNativeUwbManager.controllerMulticastListUpdate(
+                                        uwbSession.getSessionId(),
+                                        rangingReconfigureParams.getAction(),
+                                        rangingReconfigureParams.getSubSessionIdList().length,
+                                        Arrays.copyOf(dstAddressList.array(),
+                                                dstAddressList.position()),
+                                        rangingReconfigureParams.getSubSessionIdList());
+                                if (status != UwbUciConstants.STATUS_CODE_OK) {
+                                    return status;
+                                }
+                                /*
+                                    TODO - Add synchornized lock after UWB FW is fixed
+                                    - FW send notification depends on session status
+                                */
 
+                                //uwbSession.getWaitObj().wait();
+                            }
+
+                            status = mConfigurationManager.setAppConfigurations(
+                                    uwbSession.getSessionId(), param);
+                            Log.d(TAG, "status: " + status);
+                            if (status != UwbUciConstants.STATUS_CODE_OK) {
+                                return status;
+                            }
+                            mSessionNotificationManager.onRangingReconfigured(uwbSession,
+                                    REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS);
                             return status;
                         }
                     });
@@ -631,9 +664,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             int status = UwbUciConstants.STATUS_CODE_FAILED;
             try {
                 status = cmdTask.get(
-                        IUwbAdapter.RANGING_SESSION_CLOSE_THRESHOLD_MS, TimeUnit.MILLISECONDS);
+                        IUwbAdapter.RANGING_SESSION_OPEN_THRESHOLD_MS, TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
-                Log.i(TAG, "Failed to Reocnfigurations - status : TIMEOUT");
+                Log.i(TAG, "Failed to Reconfigure - status : TIMEOUT");
                 executor.shutdownNow();
                 mSessionNotificationManager.onRangingReconfigureFailed(uwbSession, status);
             } catch (InterruptedException e) {
@@ -641,9 +674,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             } catch (ExecutionException e) {
                 e.printStackTrace();
             }
-
             if (status != UwbUciConstants.STATUS_CODE_OK) {
-                Log.i(TAG, "Failed to Reocnfigurations : " + status);
+                Log.i(TAG, "Failed to Reconfigure : " + status);
                 mSessionNotificationManager.onRangingReconfigureFailed(uwbSession, status);
             }
         }
@@ -691,10 +723,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         private final IUwbRangingCallbacks mIUwbRangingCallbacks;
         private final String mProtocolName;
         private final IBinder mIBinder;
+        private final Object mWaitObj;
+        public boolean isWait;
         private Params mParams;
         private int mSessionState;
-        private Object mWaitObj;
-        public boolean isWait;
 
         UwbSession(SessionHandle sessionHandle, int sessionId, String protocolName,
                 Params params, IUwbRangingCallbacks iUwbRangingCallbacks) {

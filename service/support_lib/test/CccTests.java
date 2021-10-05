@@ -145,15 +145,14 @@ public class CccTests {
 
         CccStartRangingParams params =
                 new CccStartRangingParams.Builder()
-                .setSessionId(sessionId)
-                .setRanMultiplier(ranMultiplier)
-                .build();
+                        .setSessionId(sessionId)
+                        .setRanMultiplier(ranMultiplier)
+                        .build();
 
         assertEquals(params.getSessionId(), sessionId);
         assertEquals(params.getRanMultiplier(), ranMultiplier);
 
-        CccStartRangingParams fromBundle =
-                CccStartRangingParams.fromBundle(params.toBundle());
+        CccStartRangingParams fromBundle = CccStartRangingParams.fromBundle(params.toBundle());
 
         assertEquals(fromBundle.getSessionId(), sessionId);
         assertEquals(fromBundle.getRanMultiplier(), ranMultiplier);

@@ -29,8 +29,6 @@ import android.os.Message;
 import android.os.PersistableBundle;
 import android.os.PowerManager;
 import android.os.RemoteException;
-import android.os.ServiceManager;
-import android.os.UserHandle;
 import android.provider.Settings;
 import android.util.Log;
 import android.uwb.IUwbAdapter;
@@ -38,7 +36,6 @@ import android.uwb.IUwbAdapterStateCallbacks;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.SessionHandle;
 import android.uwb.StateChangeReason;
-import android.uwb.UwbManager;
 import android.uwb.UwbManager.AdapterStateCallback;
 
 import com.android.uwb.data.UwbUciConstants;
@@ -75,7 +72,6 @@ public class UwbService implements INativeUwbManager.DeviceNotification {
             String action = intent.getAction();
             if (action.equals(Intent.ACTION_SHUTDOWN)) {
                 Log.i(TAG, "Device shutdown");
-
             } else if (action.equals(Intent.ACTION_AIRPLANE_MODE_CHANGED)) {
                 if (Settings.System.getInt(mContext.getContentResolver(),
                         Settings.Global.AIRPLANE_MODE_ON, 0) == 1) {
@@ -139,9 +135,32 @@ public class UwbService implements INativeUwbManager.DeviceNotification {
         }
     }
 
+    String getDeviceStateString(int state) {
+        String ret = "";
+        switch (state) {
+            case UwbUciConstants.DEVICE_STATE_OFF:
+                ret = "OFF";
+                break;
+            case UwbUciConstants.DEVICE_STATE_READY:
+                ret = "READY";
+                break;
+            case UwbUciConstants.DEVICE_STATE_ACTIVE:
+                ret = "ACTIVE";
+                break;
+            case UwbUciConstants.DEVICE_STATE_ERROR:
+                ret = "ERROR";
+                break;
+        }
+        return ret;
+    }
+
     @Override
     public void onDeviceStatusNotificationReceived(int deviceState) {
-        Log.i(TAG, "onDeviceStatusNotificationReceived = " + deviceState);
+        handleDeviceStatusNotification(deviceState);
+    }
+
+    void handleDeviceStatusNotification(int deviceState) {
+        Log.i(TAG, "handleDeviceStatusNotification = " + getDeviceStateString(deviceState));
         int state = AdapterStateCallback.STATE_DISABLED;
         int reason = StateChangeReason.UNKNOWN;
 
@@ -355,6 +374,8 @@ public class UwbService implements INativeUwbManager.DeviceNotification {
                                 StateChangeReason.SYSTEM_POLICY);
                     } else {
                         Log.i(TAG, "Initialization success");
+                        /* TODO : keep it until MW, FW fix b/196943897 */
+                        handleDeviceStatusNotification(UwbUciConstants.DEVICE_STATE_READY);
                     }
                 } finally {
                     mUwbWakeLock.release();
@@ -383,6 +404,8 @@ public class UwbService implements INativeUwbManager.DeviceNotification {
                     Log.w(TAG, "Error disabling UWB");
                 } else {
                     Log.i(TAG, "Deinitialization success");
+                    /* UWBS_STATUS_OFF is not the valid state. so handle device state directly */
+                    handleDeviceStatusNotification(UwbUciConstants.DEVICE_STATE_OFF);
                 }
             } finally {
                 mUwbWakeLock.release();

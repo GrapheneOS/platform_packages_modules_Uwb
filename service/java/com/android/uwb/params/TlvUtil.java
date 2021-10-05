@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.uwb.util;
+package com.android.uwb.params;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 public class TlvUtil {
-    static final String TAG = "TlvUtil";
-
     public static final byte[] getBytes(byte data) {
         ByteBuffer buffer = ByteBuffer.allocate(Byte.BYTES).put(data);
         return buffer.array();
@@ -61,6 +59,14 @@ public class TlvUtil {
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES).order(
                 ByteOrder.LITTLE_ENDIAN).putLong(data);
         return buffer.array();
+    }
+
+    public static final byte[] getReverseBytes(byte[] data) {
+        byte[] buffer = new byte[data.length];
+        for (int i = 0; i < data.length; i++) {
+            buffer[i] = data[data.length - 1 - i];
+        }
+        return buffer;
     }
 
     public static final byte[] getBytes(int data, int start, int length) {

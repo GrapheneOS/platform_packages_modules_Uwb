@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.uwb.util;
+package com.android.uwb.params;
 
 import com.android.uwb.config.ConfigParam;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 public class TlvBuffer {
@@ -33,7 +34,6 @@ public class TlvBuffer {
     }
 
     public byte[] getByteArray() {
-        byte[] tlvArray = new byte[mBuffer.limit()];
         return mBuffer.array();
     }
 
@@ -44,6 +44,12 @@ public class TlvBuffer {
     public static final class Builder {
         ByteBuffer mBuffer = ByteBuffer.allocate(MAX_BUFFER_SIZE);
         int mNoOfParams = 0;
+        ByteOrder mOrder = ByteOrder.BIG_ENDIAN;
+
+        public TlvBuffer.Builder putOrder(ByteOrder order) {
+            mOrder = order;
+            return this;
+        }
 
         public TlvBuffer.Builder putByte(int tagType, byte b) {
             addHeader(tagType, Byte.BYTES);
@@ -90,7 +96,6 @@ public class TlvBuffer {
                     this.mNoOfParams);
         }
 
-        // add Header
         private void addHeader(int tagType, int length) {
             mBuffer.put(ConfigParam.getTagBytes(tagType));
             mBuffer.put((byte) length);
