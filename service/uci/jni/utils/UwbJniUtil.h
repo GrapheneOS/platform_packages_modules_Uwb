@@ -20,11 +20,11 @@
 #include <semaphore.h>
 #include <sys/queue.h>
 
-#define JNI_NULL  0
+#define JNI_NULL 0
 
 struct uwb_jni_native_data {
   /* Our VM */
-  JavaVM* vm;
+  JavaVM *vm;
   jobject manager;
   jclass mRangeDataClass;
   jclass rangingTwoWayMeasuresClass;
@@ -35,12 +35,13 @@ struct uwb_jni_native_data {
   jclass multicastUpdateListDataClass;
 };
 
-jint JNI_OnLoad(JavaVM* jvm, void* reserved);
+jint JNI_OnLoad(JavaVM *jvm, void *reserved);
 
-int uwb_jni_cache_jclass(JNIEnv* env, const char* clsname, jclass* cached_jclass);
+int uwb_jni_cache_jclass(JNIEnv *env, const char *clsname,
+                         jclass *cached_jclass);
 
 namespace android {
-int register_com_android_uwb_dhimpl_UwbNativeManager(JNIEnv* env);
-int register_com_android_uwb_dhimpl_NxpUwbNativeManager(JNIEnv* env);
-int register_com_android_uwb_dhimpl_UwbRfTestNativeManager(JNIEnv* env);
-}
+int register_com_android_uwb_dhimpl_UwbNativeManager(JNIEnv *env);
+int register_com_android_uwb_dhimpl_NxpUwbNativeManager(JNIEnv *env);
+int register_com_android_uwb_dhimpl_UwbRfTestNativeManager(JNIEnv *env);
+} // namespace android

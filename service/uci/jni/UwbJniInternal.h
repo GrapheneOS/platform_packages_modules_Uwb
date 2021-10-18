@@ -19,14 +19,15 @@
 #ifndef _UWBAPI_INTERNAL_H_
 #define _UWBAPI_INTERNAL_H_
 
-#include "UwbJniTypes.h"
 #include <nativehelper/ScopedLocalRef.h>
+
+#include "UwbJniTypes.h"
 #include "UwbJniUtil.h"
 #include "uwa_api.h"
 
 namespace android {
 
-#define UWB_CMD_TIMEOUT            4000  // JNI API wait timout
+#define UWB_CMD_TIMEOUT 4000 // JNI API wait timout
 
 /* extern declarations */
 extern bool uwb_debug_enabled;
@@ -34,6 +35,6 @@ extern bool gIsUwaEnabled;
 
 void clearRfTestContext();
 void uwaRfTestDeviceManagementCallback(uint8_t dmEvent,
-                                 tUWA_DM_TEST_CBACK_DATA* eventData);
-}
+                                       tUWA_DM_TEST_CBACK_DATA *eventData);
+} // namespace android
 #endif

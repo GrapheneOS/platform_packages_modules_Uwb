@@ -20,11 +20,12 @@
  */
 
 #include "Mutex.h"
-#include "UwbJniUtil.h"
-#include <string.h>
 
 #include <android-base/stringprintf.h>
 #include <android-base/logging.h>
+#include <string.h>
+
+#include "UwbJniUtil.h"
 
 using android::base::StringPrintf;
 
@@ -119,4 +120,4 @@ bool Mutex::tryLock() {
 ** Returns:         Handle of the mutex.
 **
 *******************************************************************************/
-pthread_mutex_t* Mutex::nativeHandle() { return &mMutex; }
+pthread_mutex_t *Mutex::nativeHandle() { return &mMutex; }

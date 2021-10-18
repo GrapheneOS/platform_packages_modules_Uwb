@@ -19,14 +19,14 @@
 #ifndef _UWB_JNI_TYPES_
 #define _UWB_JNI_TYPES_
 
+#include <array>
+#include <deque>
 #include <map>
 #include <mutex>
-#include <deque>
-#include <array>
 #include <numeric>
-#include <map>
-#include "uci_defs.h"
+
 #include "SyncEvent.h"
+#include "uci_defs.h"
 #include "uwa_api.h"
 
 typedef struct UwbDeviceInfo {
@@ -37,13 +37,14 @@ typedef struct UwbDeviceInfo {
 } deviceInfo_t;
 
 typedef struct conformanceTestData {
-    SyncEvent ConfigEvt;
-    tUWA_STATUS wstatus;
-    uint8_t rsp_data[CONFORMANCE_TEST_MAX_UCI_PKT_LENGTH];
-    uint8_t rsp_len;
-}conformanceTestData_t;
+  SyncEvent ConfigEvt;
+  tUWA_STATUS wstatus;
+  uint8_t rsp_data[CONFORMANCE_TEST_MAX_UCI_PKT_LENGTH];
+  uint8_t rsp_len;
+} conformanceTestData_t;
 
-/* Session Data contains M distance samples of N Anchors in order to provide averaged distance for every anchor */
+/* Session Data contains M distance samples of N Anchors in order to provide
+ * averaged distance for every anchor */
 /* N is Maximum Number of Anchors(MAX_NUM_RESPONDERS) */
 /* Where M is sampling Rate, the Max value is defined by Service */
 typedef struct sessionRangingData {

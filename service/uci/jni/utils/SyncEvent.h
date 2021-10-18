@@ -27,10 +27,10 @@ using namespace std;
 
 class SyncEvent;
 
-extern std::list<SyncEvent*> syncEventList;
+extern std::list<SyncEvent *> syncEventList;
 
 class SyncEvent {
- public:
+public:
   /*******************************************************************************
   **
   ** Function:        ~SyncEvent
@@ -80,7 +80,7 @@ class SyncEvent {
   **
   ** Function:        notifyOne
   **
-  ** Description:     Notify a blocked thread that the event has occured.
+  ** Description:     Notify a blocked thread that the event has occurred.
   *Unblocks it.
   **                  Deregisters cached event.
   ** Returns:         None.
@@ -92,9 +92,9 @@ class SyncEvent {
   **
   ** Function:        notify
   **
-  ** Description:     Notify a blocked thread that the event has occured.
+  ** Description:     Notify a blocked thread that the event has occurred.
   *Unblocks it.
-  **                  This function wont deregister cached event
+  **                  This function won't deregister cached event
   ** Returns:         None.
   **
   *******************************************************************************/
@@ -113,7 +113,7 @@ class SyncEvent {
 
   /********Implement equality operator for SyncEvent
    * Class***********************/
-  bool operator==(const SyncEvent& event) { return (this == &event); }
+  bool operator==(const SyncEvent &event) { return (this == &event); }
 
   /*******************************************************************************
   **
@@ -130,7 +130,7 @@ class SyncEvent {
   **
   ** Function:        notifyAll
   **
-  ** Description:     Notify all blocked thread that the event has occured.
+  ** Description:     Notify all blocked thread that the event has occurred.
   *Unblocks it.
   **                  clears the event cache
   ** Returns:         None.
@@ -149,7 +149,7 @@ class SyncEvent {
   *******************************************************************************/
   void removeEvent();
 
- private:
+private:
   CondVar mCondVar;
   Mutex mMutex;
   bool mWait = false;
@@ -166,7 +166,7 @@ class SyncEvent {
 **
 *****************************************************************************/
 class SyncEventGuard {
- public:
+public:
   /*******************************************************************************
   **
   ** Function:        SyncEventGuard
@@ -176,8 +176,8 @@ class SyncEventGuard {
   ** Returns:         None.
   **
   *******************************************************************************/
-  SyncEventGuard(SyncEvent& event) : mEvent(event) {
-    event.start();  // automatically start operation
+  SyncEventGuard(SyncEvent &event) : mEvent(event) {
+    event.start(); // automatically start operation
   };
 
   /*******************************************************************************
@@ -190,9 +190,9 @@ class SyncEventGuard {
   **
   *******************************************************************************/
   ~SyncEventGuard() {
-    mEvent.end();  // automatically end operation
+    mEvent.end(); // automatically end operation
   };
 
- private:
-  SyncEvent& mEvent;
+private:
+  SyncEvent &mEvent;
 };

@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-#include "UwbJniInternal.h"
 #include "UwbJniUtil.h"
-#include "JniLog.h"
 
 #include <nativehelper/JNIHelp.h>
 #include <nativehelper/ScopedLocalRef.h>
+
+#include "JniLog.h"
+#include "UwbJniInternal.h"
 
 /*******************************************************************************
 **
@@ -33,18 +34,20 @@
 ** Returns:         JNI version.
 **
 *******************************************************************************/
-jint JNI_OnLoad(JavaVM* jvm, void*) {
+jint JNI_OnLoad(JavaVM *jvm, void *) {
   JNI_TRACE_I("%s: enter", __func__);
-  JNIEnv* env = NULL;
+  JNIEnv *env = NULL;
 
   JNI_TRACE_I("UWB Service: loading uci JNI");
 
   // Check JNI version
-  if (jvm->GetEnv((void**)&env, JNI_VERSION_1_6)) return JNI_ERR;
+  if (jvm->GetEnv((void **)&env, JNI_VERSION_1_6))
+    return JNI_ERR;
 
   if (android::register_com_android_uwb_dhimpl_UwbNativeManager(env) == -1)
     return JNI_ERR;
-  if (android::register_com_android_uwb_dhimpl_UwbRfTestNativeManager(env) == -1)
+  if (android::register_com_android_uwb_dhimpl_UwbRfTestNativeManager(env) ==
+      -1)
     return JNI_ERR;
 
   JNI_TRACE_I("%s: exit", __func__);
@@ -62,7 +65,8 @@ jint JNI_OnLoad(JavaVM* jvm, void*) {
 ** Returns:         Status code.
 **
 *******************************************************************************/
-int uwb_jni_cache_jclass(JNIEnv* env, const char* className, jclass* cachedJclass) {
+int uwb_jni_cache_jclass(JNIEnv *env, const char *className,
+                         jclass *cachedJclass) {
   jclass cls = env->FindClass(className);
   if (cls == NULL) {
     JNI_TRACE_E("%s: find class error", __func__);

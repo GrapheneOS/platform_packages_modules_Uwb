@@ -22,7 +22,7 @@
 
 using android::base::StringPrintf;
 
-std::list<SyncEvent*> syncEventList;
+std::list<SyncEvent *> syncEventList;
 std::mutex syncEventListMutex;
 
 SyncEvent::~SyncEvent() { mWait = false; }
@@ -46,7 +46,8 @@ bool SyncEvent::wait(long millisec) {
   addEvent();
   while (mWait) {
     retVal = mCondVar.wait(mMutex, millisec);
-    if (!retVal) mWait = false;
+    if (!retVal)
+      mWait = false;
   }
   return retVal;
 }
@@ -69,23 +70,25 @@ void SyncEvent::end() {
 
 void SyncEvent::addEvent() {
   std::lock_guard<std::mutex> guard(
-      syncEventListMutex);  // with lock access list
+      syncEventListMutex); // with lock access list
   bool contains = (std::find(syncEventList.begin(), syncEventList.end(),
                              this) != syncEventList.end());
-  if (!contains) syncEventList.push_back(this);
+  if (!contains)
+    syncEventList.push_back(this);
 }
 
 void SyncEvent::removeEvent() {
   std::lock_guard<std::mutex> guard(
-      syncEventListMutex);  // with lock access list
+      syncEventListMutex); // with lock access list
   syncEventList.remove(this);
 }
 
 void SyncEvent::notifyAll() {
   std::lock_guard<std::mutex> guard(
-      syncEventListMutex);  // with lock access list
-  for (auto& i : syncEventList) {
-    if (i != NULL) i->notify();
+      syncEventListMutex); // with lock access list
+  for (auto &i : syncEventList) {
+    if (i != NULL)
+      i->notify();
   }
   syncEventList.clear();
 }

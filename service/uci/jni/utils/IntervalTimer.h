@@ -22,7 +22,7 @@
 #include <time.h>
 
 class IntervalTimer {
- public:
+public:
   typedef void (*TIMER_FUNC)(union sigval);
 
   IntervalTimer();
@@ -31,7 +31,7 @@ class IntervalTimer {
   void kill();
   bool create(TIMER_FUNC);
 
- private:
+private:
   timer_t mTimerId;
   TIMER_FUNC mCb;
 };

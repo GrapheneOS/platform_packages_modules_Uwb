@@ -23,41 +23,43 @@ namespace android {
 
 class UwbEventManager {
 public:
-    static UwbEventManager& getInstance();
-    void doLoadSymbols(JNIEnv* env, jobject o);
+  static UwbEventManager &getInstance();
+  void doLoadSymbols(JNIEnv *env, jobject o);
 
-    void onDeviceStateNotificationReceived(uint8_t state);
-    void onRangeDataNotificationReceived(tUWA_RANGE_DATA_NTF* ranging_ntf_data);
-    void onRawUciNotificationReceived(uint8_t* data, uint16_t length);
-    void onSessionStatusNotificationReceived(uint32_t sessionId, uint8_t state, uint8_t reasonCode);
-    void onCoreGenericErrorNotificationReceived(uint8_t state);
-    void onMulticastListUpdateNotificationReceived(tUWA_SESSION_UPDATE_MULTICAST_LIST_NTF *multicast_list_ntf);
-    void onBlinkDataTxNotificationReceived(uint8_t state);
+  void onDeviceStateNotificationReceived(uint8_t state);
+  void onRangeDataNotificationReceived(tUWA_RANGE_DATA_NTF *ranging_ntf_data);
+  void onRawUciNotificationReceived(uint8_t *data, uint16_t length);
+  void onSessionStatusNotificationReceived(uint32_t sessionId, uint8_t state,
+                                           uint8_t reasonCode);
+  void onCoreGenericErrorNotificationReceived(uint8_t state);
+  void onMulticastListUpdateNotificationReceived(
+      tUWA_SESSION_UPDATE_MULTICAST_LIST_NTF *multicast_list_ntf);
+  void onBlinkDataTxNotificationReceived(uint8_t state);
 
 private:
-    UwbEventManager();
+  UwbEventManager();
 
-    static UwbEventManager mObjUwbManager;
+  static UwbEventManager mObjUwbManager;
 
-    JavaVM *mVm;
+  JavaVM *mVm;
 
-    jclass mClass;     // Reference to Java  class
-    jobject mObject;    // Weak ref to Java object to call on
+  jclass mClass;   // Reference to Java  class
+  jobject mObject; // Weak ref to Java object to call on
 
-    jclass mRangeDataClass;
-    jclass mRangingTwoWayMeasuresClass;
-    jclass mRangeTdoaMeasuresClass;
-    jclass mMulticastUpdateListDataClass;
+  jclass mRangeDataClass;
+  jclass mRangingTwoWayMeasuresClass;
+  jclass mRangeTdoaMeasuresClass;
+  jclass mMulticastUpdateListDataClass;
 
-    jmethodID mOnRangeDataNotificationReceived;
-    jmethodID mOnSessionStatusNotificationReceived;
-    jmethodID mOnCoreGenericErrorNotificationReceived;
-    jmethodID mOnMulticastListUpdateNotificationReceived;
-    //TODO following native methods to be implemented in native layer.
-    jmethodID mOnDeviceStateNotificationReceived;
-    jmethodID mOnBlinkDataTxNotificationReceived;
-    jmethodID mOnRawUciNotificationReceived;
+  jmethodID mOnRangeDataNotificationReceived;
+  jmethodID mOnSessionStatusNotificationReceived;
+  jmethodID mOnCoreGenericErrorNotificationReceived;
+  jmethodID mOnMulticastListUpdateNotificationReceived;
+  // TODO following native methods to be implemented in native layer.
+  jmethodID mOnDeviceStateNotificationReceived;
+  jmethodID mOnBlinkDataTxNotificationReceived;
+  jmethodID mOnRawUciNotificationReceived;
 };
 
-}
+} // namespace android
 #endif
