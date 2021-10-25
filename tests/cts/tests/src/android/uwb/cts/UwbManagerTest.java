@@ -18,6 +18,8 @@ package android.uwb.cts;
 
 import static android.Manifest.permission.UWB_PRIVILEGED;
 import static android.Manifest.permission.UWB_RANGING;
+import static android.uwb.UwbManager.AdapterStateCallback.STATE_DISABLED;
+import static android.uwb.UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -325,13 +327,14 @@ public class UwbManagerTest {
             mUwbManager.registerAdapterStateCallback(
                     Executors.newSingleThreadExecutor(), adapterStateCallback);
             assertThat(mUwbManager.isUwbEnabled()).isTrue();
+            assertThat(mUwbManager.getAdapterState()).isEqualTo(STATE_ENABLED_INACTIVE);
             // Toggle the state
             mUwbManager.setUwbEnabled(false);
             // Wait for the on start failed callback.
             assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
             assertThat(mUwbManager.isUwbEnabled()).isFalse();
-            assertThat(adapterStateCallback.state).isEqualTo(
-                    UwbManager.AdapterStateCallback.STATE_DISABLED);
+            assertThat(adapterStateCallback.state).isEqualTo(STATE_DISABLED);
+            assertThat(mUwbManager.getAdapterState()).isEqualTo(STATE_DISABLED);
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
