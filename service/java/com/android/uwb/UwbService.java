@@ -282,7 +282,7 @@ public class UwbService implements INativeUwbManager.DeviceNotification {
                 Log.i(TAG, "UWB is not enabled");
                 return;
             }
-            mSessionManager.reconfigurations(sessionHandle, params);
+            mSessionManager.reconfigure(sessionHandle, params);
             return;
         }
 

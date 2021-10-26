@@ -20,14 +20,16 @@ public class UwbMulticastListUpdateStatus {
     private long mSessionId;
     private int mRemainingSize;
     private int mNumOfControlees;
+    private int [] mContolleeMacAddress;
     private long[] mSubSessionId;
     private int[] mStatus;
 
     public UwbMulticastListUpdateStatus(long sessionID, int remainingSize, int numOfControlees,
-            long[] subSessionId, int[] status) {
+            int[] contolleeMacAddress, long[] subSessionId, int[] status) {
         this.mSessionId = sessionID;
         this.mRemainingSize = remainingSize;
         this.mNumOfControlees = numOfControlees;
+        this.mContolleeMacAddress = contolleeMacAddress;
         this.mSubSessionId = subSessionId;
         this.mStatus = status;
     }
@@ -44,6 +46,10 @@ public class UwbMulticastListUpdateStatus {
         return mNumOfControlees;
     }
 
+    public int[] getContolleeMacAddress() {
+        return mContolleeMacAddress;
+    }
+
     public long[] getSubSessionId() {
         return mSubSessionId;
     }
@@ -58,6 +64,7 @@ public class UwbMulticastListUpdateStatus {
                 + " SessionID =" + mSessionId
                 + ", RemainingSize =" + mRemainingSize
                 + ", NumOfControlee =" + mNumOfControlees
+                + ", MacAddress =" + Arrays.toString(mContolleeMacAddress)
                 + ", SubSessionId =" + Arrays.toString(mSubSessionId)
                 + ", Status =" + Arrays.toString(mStatus)
                 + '}';

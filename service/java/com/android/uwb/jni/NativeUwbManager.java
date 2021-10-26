@@ -224,15 +224,20 @@ public class NativeUwbManager {
      *                     0x01 - removing
      * @param noOfControlee : The number(n) of Controlees
      * @param address       : address list of Controlees
-     * @param subSessionIds : Specific sub-session ID list of Controlees
+     * @param subSessionId : Specific sub-session ID list of Controlees
      * @return : refer to SESSION_SET_APP_CONFIG_RSP
      * in the Table 16: Control messages to set Application configurations
      */
     public byte controllerMulticastListUpdate(int sessionId, int action, int noOfControlee,
-            byte[] address, int[]subSessionIds) {
+            byte[] address, int[]subSessionId) {
+        /**
+         * TODO:
+         * 1. change address type short[] to byte[]
+         * 2. call native function after jni function is implemented correctly
+         */
         synchronized (mSessionFnLock) {
             return nativeControllerMulticastListUpdate(sessionId, (byte) action,
-                    (byte) noOfControlee, address, subSessionIds);
+                    (byte) noOfControlee, address, subSessionId);
         }
     }
 
@@ -266,5 +271,5 @@ public class NativeUwbManager {
             int appConfigParamLen, byte[] appConfigParams);
 
     private native byte nativeControllerMulticastListUpdate(int sessionId, byte action,
-            byte noOfControlee, byte[] address, int[]subSessionIds);
+            byte noOfControlee, byte[] address, int[]subSessionId);
 }
