@@ -96,7 +96,9 @@ public class NativeUwbManager {
     }
 
     public synchronized long getTimestampResolutionNanos() {
-        return nativeGetTimestampResolutionNanos();
+        return 0L;
+        /* TODO: Not Implemented in native stack
+        return nativeGetTimestampResolutionNanos(); */
     }
 
     public UwbSpecificationInfo getSpecificationInfo() {
@@ -228,14 +230,9 @@ public class NativeUwbManager {
      */
     public byte controllerMulticastListUpdate(int sessionId, int action, int noOfControlee,
             byte[] address, int[]subSessionIds) {
-    /*TODO :
-       1. change address type short[] to byte[]
-       2. call native function after jni function is implemented correctly
-     */
         synchronized (mSessionFnLock) {
-            return (byte) 0x00;
-            /*return nativeControllerMulticastListUpdate(sessionId, action, noOfControlee,
-                    address, subSessionIds);*/
+            return nativeControllerMulticastListUpdate(sessionId, (byte) action,
+                    (byte) noOfControlee, address, subSessionIds);
         }
     }
 
@@ -268,7 +265,6 @@ public class NativeUwbManager {
     private native byte[] nativeSetAppConfigurations(int sessionId, int noOfParams,
             int appConfigParamLen, byte[] appConfigParams);
 
-    /*
-    private native byte nativeControllerMulticastListUpdate(int sessionId, int action,
-            int noOfControlee, byte[] address, int[]subSessionIds);*/
+    private native byte nativeControllerMulticastListUpdate(int sessionId, byte action,
+            byte noOfControlee, byte[] address, int[]subSessionIds);
 }
