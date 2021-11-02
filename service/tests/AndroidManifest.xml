@@ -21,8 +21,8 @@
     <application android:debuggable="true"
          android:largeHeap="true">
         <uses-library android:name="android.test.runner"/>
-        <activity android:label="WifiTestDummyLabel"
-             android:name="WifiTestDummyName"
+        <activity android:label="UwbTestDummyLabel"
+             android:name="UwbTestDummyName"
              android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -33,7 +33,7 @@
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:targetPackage="com.android.server.uwb.test"
-         android:label="Frameworks Wifi Tests">
+         android:label="Frameworks Uwb Tests">
     </instrumentation>
 
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>

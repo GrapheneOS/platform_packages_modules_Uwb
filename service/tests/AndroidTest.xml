@@ -13,7 +13,7 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<configuration description="Runs Frameworks Wifi Tests.">
+<configuration description="Runs Frameworks Uwb Tests.">
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="test-file-name" value="ServiceUwbTests.apk" />
     </target_preparer>

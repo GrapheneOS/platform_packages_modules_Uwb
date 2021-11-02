@@ -31,7 +31,7 @@ public class UwbService extends SystemService {
 
     public UwbService(Context context) {
         super(context);
-        mImpl = new UwbServiceImpl(context, new UwbInjector(context));
+        mImpl = new UwbServiceImpl(context, new UwbInjector(new UwbContext(context)));
     }
 
     @Override

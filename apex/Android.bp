@@ -29,6 +29,9 @@ apex_defaults {
            jni_libs: ["libuwb_uci_jni"],
        },
     },
+    apps: [
+        "ServiceUwbResources",
+    ],
     key: "com.android.uwb.key",
     certificate: ":com.android.uwb.certificate",
     min_sdk_version: "current", // TODO: Move to 32 once SDK is finalized

@@ -22,7 +22,7 @@ import static android.permission.PermissionManager.PERMISSION_GRANTED;
 import android.annotation.NonNull;
 import android.content.ApexEnvironment;
 import android.content.AttributionSource;
-import android.content.Context;
+import android.content.pm.ApplicationInfo;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -46,12 +46,19 @@ public class UwbInjector {
     private static final String APEX_NAME = "com.android.uwb";
     private static final String VENDOR_SERVICE_NAME = "uwb_vendor";
 
-    private final Context mContext;
+    /**
+     * The path where the Uwb apex is mounted.
+     * Current value = "/apex/com.android.uwb"
+     */
+    private static final String UWB_APEX_PATH =
+            new File("/apex", APEX_NAME).getAbsolutePath();
+
+    private final UwbContext mContext;
     private final PermissionManager mPermissionManager;
     private final UwbSettingsStore mUwbSettingsStore;
     private final Looper mLooper;
 
-    public UwbInjector(@NonNull Context context) {
+    public UwbInjector(@NonNull UwbContext context) {
         // Create UWB service thread.
         HandlerThread uwbHandlerThread = new HandlerThread("UwbService");
         uwbHandlerThread.start();
@@ -138,5 +145,13 @@ public class UwbInjector {
      */
     public int getSettingsInt(@NonNull String key, int defValue) {
         return Settings.Global.getInt(mContext.getContentResolver(), key, defValue);
+    }
+
+    /**
+     * Returns true if the app is in the Uwb apex, false otherwise.
+     * Checks if the app's path starts with "/apex/com.android.uwb".
+     */
+    public static boolean isAppInUwbApex(ApplicationInfo appInfo) {
+        return appInfo.sourceDir.startsWith(UWB_APEX_PATH);
     }
 }

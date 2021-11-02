@@ -54,6 +54,7 @@ java_library {
     libs: [
         "framework-annotations-lib",
         "framework-uwb-pre-jarjar",
+        "ServiceUwbResources",
     ],
 
     static_libs: [
