@@ -67,9 +67,11 @@ public class UwbTestUtils {
         return new RangingMeasurement.Builder()
                 .setDistanceMeasurement(getDistanceMeasurement())
                 .setAngleOfArrivalMeasurement(getAngleOfArrivalMeasurement())
+                .setDestinationAngleOfArrivalMeasurement(getAngleOfArrivalMeasurement())
                 .setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos())
                 .setRemoteDeviceAddress(address != null ? address : getUwbAddress(false))
                 .setStatus(RangingMeasurement.RANGING_STATUS_SUCCESS)
+                .setLineOfSight(RangingMeasurement.NLOS)
                 .build();
     }
 

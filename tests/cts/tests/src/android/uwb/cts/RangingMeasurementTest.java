@@ -45,7 +45,10 @@ public class RangingMeasurementTest {
         UwbAddress address = UwbTestUtils.getUwbAddress(false);
         long time = SystemClock.elapsedRealtimeNanos();
         AngleOfArrivalMeasurement angleMeasurement = UwbTestUtils.getAngleOfArrivalMeasurement();
+        AngleOfArrivalMeasurement destinationAngleMeasurement =
+                UwbTestUtils.getAngleOfArrivalMeasurement();
         DistanceMeasurement distanceMeasurement = UwbTestUtils.getDistanceMeasurement();
+        int los = RangingMeasurement.NLOS;
 
         RangingMeasurement.Builder builder = new RangingMeasurement.Builder();
 
@@ -58,17 +61,26 @@ public class RangingMeasurementTest {
         builder.setAngleOfArrivalMeasurement(angleMeasurement);
         tryBuild(builder, false);
 
+        builder.setDestinationAngleOfArrivalMeasurement(destinationAngleMeasurement);
+        tryBuild(builder, false);
+
         builder.setDistanceMeasurement(distanceMeasurement);
         tryBuild(builder, false);
 
         builder.setRemoteDeviceAddress(address);
+        tryBuild(builder, true);
+
+        builder.setLineOfSight(los);
         RangingMeasurement measurement = tryBuild(builder, true);
 
         assertEquals(status, measurement.getStatus());
         assertEquals(address, measurement.getRemoteDeviceAddress());
         assertEquals(time, measurement.getElapsedRealtimeNanos());
         assertEquals(angleMeasurement, measurement.getAngleOfArrivalMeasurement());
+        assertEquals(destinationAngleMeasurement,
+                measurement.getDestinationAngleOfArrivalMeasurement());
         assertEquals(distanceMeasurement, measurement.getDistanceMeasurement());
+        assertEquals(los, measurement.getLineOfSight());
     }
 
     private RangingMeasurement tryBuild(RangingMeasurement.Builder builder,
