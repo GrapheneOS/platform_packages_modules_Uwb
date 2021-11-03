@@ -29,6 +29,7 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.ServiceManager;
 import android.os.SystemClock;
+import android.os.SystemProperties;
 import android.permission.PermissionManager;
 import android.provider.Settings;
 import android.util.AtomicFile;
@@ -92,6 +93,13 @@ public class UwbInjector {
             Log.e(TAG, "Reflection failure", e);
             return null;
         }
+    }
+
+    /**
+     * @return Returns whether the UCI stack is enabled or not.
+     */
+    public boolean isUciStackEnabled() {
+        return SystemProperties.getBoolean("persist.uwb.enable_uci_stack", false);
     }
 
     /**

@@ -130,6 +130,15 @@ public final class AngleOfArrivalMeasurement implements Parcelable {
                 }
             };
 
+    /** @hide **/
+    @Override
+    public String toString() {
+        return "AngleOfArrivalMeasurement["
+                + "azimuth: " + mAzimuthAngleMeasurement
+                + ", altitude: " + mAltitudeAngleMeasurement
+                + "]";
+    }
+
     /**
      * Builder class for {@link AngleOfArrivalMeasurement}.
      */

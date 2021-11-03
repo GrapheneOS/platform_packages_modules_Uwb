@@ -41,15 +41,21 @@ public final class RangingMeasurement implements Parcelable {
     private final long mElapsedRealtimeNanos;
     private final DistanceMeasurement mDistanceMeasurement;
     private final AngleOfArrivalMeasurement mAngleOfArrivalMeasurement;
+    private final AngleOfArrivalMeasurement mDestinationAngleOfArrivalMeasurement;
+    private final @LineOfSight int mLineOfSight;
 
     private RangingMeasurement(@NonNull UwbAddress remoteDeviceAddress, @Status int status,
             long elapsedRealtimeNanos, @Nullable DistanceMeasurement distanceMeasurement,
-            @Nullable AngleOfArrivalMeasurement angleOfArrivalMeasurement) {
+            @Nullable AngleOfArrivalMeasurement angleOfArrivalMeasurement,
+            @Nullable AngleOfArrivalMeasurement destinationAngleOfArrivalMeasurement,
+            @LineOfSight int lineOfSight) {
         mRemoteDeviceAddress = remoteDeviceAddress;
         mStatus = status;
         mElapsedRealtimeNanos = elapsedRealtimeNanos;
         mDistanceMeasurement = distanceMeasurement;
         mAngleOfArrivalMeasurement = angleOfArrivalMeasurement;
+        mDestinationAngleOfArrivalMeasurement = destinationAngleOfArrivalMeasurement;
+        mLineOfSight = lineOfSight;
     }
 
     /**
@@ -136,6 +142,51 @@ public final class RangingMeasurement implements Parcelable {
     }
 
     /**
+     * Get the angle of arrival measurement at the destination.
+     *
+     * @return an {@link AngleOfArrivalMeasurement} or null if {@link #getStatus()} !=
+     *         {@link #RANGING_STATUS_SUCCESS}
+     */
+    @Nullable
+    public AngleOfArrivalMeasurement getDestinationAngleOfArrivalMeasurement() {
+        return mDestinationAngleOfArrivalMeasurement;
+    }
+
+    /**
+     * @hide
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef(value = {
+            LOS,
+            NLOS,
+            LOS_UNDETERMINED})
+    public @interface LineOfSight {}
+
+    /**
+     * If measurement was in line of sight.
+     */
+    public static final int LOS = 0;
+
+    /**
+     * If measurement was not in line of sight.
+     */
+    public static final int NLOS = 1;
+
+    /**
+     * Unable to determine whether the measurement was in line of sight or not.
+     */
+    public static final int LOS_UNDETERMINED = 0xFF;
+
+    /**
+     * Get whether the measurement was in Line of sight or non-line of sight.
+     *
+     * @return whether the measurement was in line of sight or not
+     */
+    public @LineOfSight int getLineOfSight() {
+        return mLineOfSight;
+    }
+
+    /**
      * @hide
      */
     @Override
@@ -150,7 +201,10 @@ public final class RangingMeasurement implements Parcelable {
                     && mStatus == other.getStatus()
                     && mElapsedRealtimeNanos == other.getElapsedRealtimeNanos()
                     && mDistanceMeasurement.equals(other.getDistanceMeasurement())
-                    && mAngleOfArrivalMeasurement.equals(other.getAngleOfArrivalMeasurement());
+                    && mAngleOfArrivalMeasurement.equals(other.getAngleOfArrivalMeasurement())
+                    && mDestinationAngleOfArrivalMeasurement.equals(
+                            other.getDestinationAngleOfArrivalMeasurement())
+                    && mLineOfSight == other.getLineOfSight();
         }
         return false;
     }
@@ -161,7 +215,8 @@ public final class RangingMeasurement implements Parcelable {
     @Override
     public int hashCode() {
         return Objects.hash(mRemoteDeviceAddress, mStatus, mElapsedRealtimeNanos,
-                mDistanceMeasurement, mAngleOfArrivalMeasurement);
+                mDistanceMeasurement, mAngleOfArrivalMeasurement,
+                mDestinationAngleOfArrivalMeasurement, mLineOfSight);
     }
 
     @Override
@@ -176,6 +231,8 @@ public final class RangingMeasurement implements Parcelable {
         dest.writeLong(mElapsedRealtimeNanos);
         dest.writeParcelable(mDistanceMeasurement, flags);
         dest.writeParcelable(mAngleOfArrivalMeasurement, flags);
+        dest.writeParcelable(mDestinationAngleOfArrivalMeasurement, flags);
+        dest.writeInt(mLineOfSight);
     }
 
     public static final @android.annotation.NonNull Creator<RangingMeasurement> CREATOR =
@@ -191,6 +248,9 @@ public final class RangingMeasurement implements Parcelable {
                             in.readParcelable(DistanceMeasurement.class.getClassLoader()));
                     builder.setAngleOfArrivalMeasurement(
                             in.readParcelable(AngleOfArrivalMeasurement.class.getClassLoader()));
+                    builder.setDestinationAngleOfArrivalMeasurement(
+                            in.readParcelable(AngleOfArrivalMeasurement.class.getClassLoader()));
+                    builder.setLineOfSight(in.readInt());
                     return builder.build();
                 }
 
@@ -199,6 +259,17 @@ public final class RangingMeasurement implements Parcelable {
                     return new RangingMeasurement[size];
                 }
     };
+
+    /** @hide **/
+    @Override
+    public String toString() {
+        return "RangingMeasurement["
+                + "distance measurement: " + mDistanceMeasurement
+                + ", aoa measurement: " + mAngleOfArrivalMeasurement
+                + ", dest aoa measurement: " + mDestinationAngleOfArrivalMeasurement
+                + ", lineOfSight: " + mLineOfSight
+                + "]";
+    }
 
     /**
      * Builder for a {@link RangingMeasurement} object.
@@ -209,6 +280,8 @@ public final class RangingMeasurement implements Parcelable {
         private long mElapsedRealtimeNanos = -1L;
         private DistanceMeasurement mDistanceMeasurement = null;
         private AngleOfArrivalMeasurement mAngleOfArrivalMeasurement = null;
+        private AngleOfArrivalMeasurement mDestinationAngleOfArrivalMeasurement = null;
+        private @LineOfSight int mLineOfSight;
 
         /**
          * Set the remote device address that this measurement is for
@@ -271,6 +344,30 @@ public final class RangingMeasurement implements Parcelable {
         }
 
         /**
+         * Set the {@link AngleOfArrivalMeasurement} at the destination.
+         *
+         * @param angleOfArrivalMeasurement the angle of arrival measurement for this ranging
+         *                                  measurement
+         */
+        @NonNull
+        public Builder setDestinationAngleOfArrivalMeasurement(
+                @NonNull AngleOfArrivalMeasurement angleOfArrivalMeasurement) {
+            mDestinationAngleOfArrivalMeasurement = angleOfArrivalMeasurement;
+            return this;
+        }
+
+        /**
+         * Set whether the measurement was in Line of sight or non-line of sight.
+         *
+         * @param lineOfSight whether the measurement was in line of sight or not
+         */
+        @NonNull
+        public Builder setLineOfSight(@LineOfSight int lineOfSight) {
+            mLineOfSight = lineOfSight;
+            return this;
+        }
+
+        /**
          * Build the {@link RangingMeasurement} object
          *
          * @throws IllegalStateException if a distance or angle of arrival measurement is provided
@@ -290,6 +387,8 @@ public final class RangingMeasurement implements Parcelable {
                     throw new IllegalStateException(
                             "Angle of Arrival must be null if ranging is not successful");
                 }
+
+                // Destination AOA is optional according to the spec.
             }
 
             if (mRemoteDeviceAddress == null) {
@@ -302,7 +401,8 @@ public final class RangingMeasurement implements Parcelable {
             }
 
             return new RangingMeasurement(mRemoteDeviceAddress, mStatus, mElapsedRealtimeNanos,
-                    mDistanceMeasurement, mAngleOfArrivalMeasurement);
+                    mDistanceMeasurement, mAngleOfArrivalMeasurement,
+                    mDestinationAngleOfArrivalMeasurement, mLineOfSight);
         }
     }
 }

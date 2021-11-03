@@ -104,6 +104,14 @@ public final class RangingReport implements Parcelable {
                 }
     };
 
+    /** @hide **/
+    @Override
+    public String toString() {
+        return "RangingReport["
+                + "measurements: " + mRangingMeasurements
+                + "]";
+    }
+
     /**
      * Builder for {@link RangingReport} object
      */

@@ -154,4 +154,14 @@ public final class AngleMeasurement implements Parcelable {
                     return new AngleMeasurement[size];
                 }
     };
+
+    /** @hide **/
+    @Override
+    public String toString() {
+        return "AngleMeasurement["
+                + "radians: " + mRadians
+                + ", errorRadians: " + mErrorRadians
+                + ", confidenceLevel: " + mConfidenceLevel
+                + "]";
+    }
 }

@@ -45,12 +45,17 @@ package android.uwb {
   public final class RangingMeasurement implements android.os.Parcelable {
     method public int describeContents();
     method @Nullable public android.uwb.AngleOfArrivalMeasurement getAngleOfArrivalMeasurement();
+    method @Nullable public android.uwb.AngleOfArrivalMeasurement getDestinationAngleOfArrivalMeasurement();
     method @Nullable public android.uwb.DistanceMeasurement getDistanceMeasurement();
     method public long getElapsedRealtimeNanos();
+    method public int getLineOfSight();
     method @NonNull public android.uwb.UwbAddress getRemoteDeviceAddress();
     method public int getStatus();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field @NonNull public static final android.os.Parcelable.Creator<android.uwb.RangingMeasurement> CREATOR;
+    field public static final int LOS = 0; // 0x0
+    field public static final int LOS_UNDETERMINED = 255; // 0xff
+    field public static final int NLOS = 1; // 0x1
     field public static final int RANGING_STATUS_FAILURE_OUT_OF_RANGE = 1; // 0x1
     field public static final int RANGING_STATUS_FAILURE_UNKNOWN_ERROR = -1; // 0xffffffff
     field public static final int RANGING_STATUS_SUCCESS = 0; // 0x0
@@ -60,8 +65,10 @@ package android.uwb {
     ctor public RangingMeasurement.Builder();
     method @NonNull public android.uwb.RangingMeasurement build();
     method @NonNull public android.uwb.RangingMeasurement.Builder setAngleOfArrivalMeasurement(@NonNull android.uwb.AngleOfArrivalMeasurement);
+    method @NonNull public android.uwb.RangingMeasurement.Builder setDestinationAngleOfArrivalMeasurement(@NonNull android.uwb.AngleOfArrivalMeasurement);
     method @NonNull public android.uwb.RangingMeasurement.Builder setDistanceMeasurement(@NonNull android.uwb.DistanceMeasurement);
     method @NonNull public android.uwb.RangingMeasurement.Builder setElapsedRealtimeNanos(long);
+    method @NonNull public android.uwb.RangingMeasurement.Builder setLineOfSight(int);
     method @NonNull public android.uwb.RangingMeasurement.Builder setRemoteDeviceAddress(@NonNull android.uwb.UwbAddress);
     method @NonNull public android.uwb.RangingMeasurement.Builder setStatus(int);
   }

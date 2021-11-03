@@ -46,7 +46,6 @@ android_test {
 
     jarjar_rules: ":uwb-jarjar-rules",
 
-    sdk_version: "module_current",
     libs: [
         "android.test.runner",
         "android.test.base",
@@ -54,16 +53,16 @@ android_test {
         "framework-uwb-pre-jarjar",
     ],
 
-    // these are needed for Extended Mockito
     jni_libs: [
+        // these are needed for Extended Mockito
         "libdexmakerjvmtiagent",
         "libstaticjvmtiagent",
+        "libuwb_uci_jni",
     ],
     compile_multilib: "both",
 
     min_sdk_version: "current", // TODO: Move to 32 once SDK is finalized
-    target_sdk_version: "current", // TODO: Move to 32 once SDK is finalized
-    privileged: true,
+
     test_suites: [
         "general-tests",
         "mts-uwb",

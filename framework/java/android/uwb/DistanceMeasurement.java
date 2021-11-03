@@ -133,6 +133,16 @@ public final class DistanceMeasurement implements Parcelable {
                 }
     };
 
+    /** @hide **/
+    @Override
+    public String toString() {
+        return "DistanceMeasurement["
+                + "meters: " + mMeters
+                + ", errorMeters: " + mErrorMeters
+                + ", confidenceLevel: " + mConfidenceLevel
+                + "]";
+    }
+
     /**
      * Builder to get a {@link DistanceMeasurement} object.
      */

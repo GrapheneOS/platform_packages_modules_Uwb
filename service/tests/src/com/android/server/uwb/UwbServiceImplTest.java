@@ -93,6 +93,7 @@ public class UwbServiceImplTest {
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
         when(mUwbInjector.getVendorService()).thenReturn(mVendorService);
+        when(mUwbInjector.isUciStackEnabled()).thenReturn(false);
         when(mUwbInjector.checkUwbRangingPermissionForDataDelivery(any(), any())).thenReturn(true);
         when(mVendorService.asBinder()).thenReturn(mVendorServiceBinder);
         when(mUwbInjector.getUwbSettingsStore()).thenReturn(mUwbSettingsStore);
