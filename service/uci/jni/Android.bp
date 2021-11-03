@@ -55,3 +55,36 @@ cc_library_shared {
         "com.android.uwb",
     ],
 }
+
+rust_ffi_shared {
+    name: "libuwb_uci_jni_rust",
+    crate_name: "uwb_uci_jni_rust",
+    min_sdk_version: "current",
+    srcs: ["rust/lib.rs"],
+    rustlibs: [
+        "libjni",
+        "liblog_rust",
+        "libbinder_rs",
+        "liblogger",
+        "libuwb_uci_rust",
+    ],
+    shared_libs: [
+        "libbinder_ndk",
+        "liblog",
+        "libnativehelper",
+    ],
+    prefer_rlib: true,
+    static_libs: [
+        "android.system.suspend-V1-ndk",
+        "android.hardware.uwb-V1-ndk",
+        "libbase",
+        "libcutils",
+        "libpower",
+        "libutils",
+        "libuwb-uci",
+        "libxml2",
+    ],
+    apex_available: [
+        "com.android.uwb",
+    ]
+}
