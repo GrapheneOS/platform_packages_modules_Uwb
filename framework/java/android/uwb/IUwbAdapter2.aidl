@@ -21,6 +21,7 @@ import android.os.PersistableBundle;
 import android.uwb.IUwbAdapterStateCallbacks;
 import android.uwb.IUwbRangingCallbacks2;
 import android.uwb.SessionHandle;
+import android.uwb.UwbAddress;
 
 /**
  * @hide
@@ -152,30 +153,122 @@ interface IUwbAdapter2 {
    */
   void closeRanging(in SessionHandle sessionHandle);
 
-   /**
-     * Disables or enables UWB for a user
-     *
-     * The provided callback's IUwbAdapterStateCallbacks#onAdapterStateChanged
-     * function must be called immediately following state change.
-     *
-     * @param enabled value representing intent to disable or enable UWB. If
-     * true, any subsequent calls to #openRanging will be allowed. If false,
-     * all active ranging sessions will be closed and subsequent calls to
-     * #openRanging will be disallowed.
-     */
-    void setEnabled(boolean enabled);
+  /**
+   * Add a new controlee to an ongoing session.
+   * <p>This call may be made when the session is open.
+   *
+   * <p>On successfully adding a new controlee to the session
+   * {@link RangingSession.Callback#onControleeAdded(PersistableBundle)} is invoked.
+   *
+   * <p>On failure to add a new controlee to the session,
+   * {@link RangingSession.Callback#onControleeAddFailed(int, PersistableBundle)}is invoked.
+   *
+   * @param sessionHandle the session handle to close ranging for
+   * @param params the parameters for the new controlee.
+   */
+  void addControlee(in SessionHandle sessionHandle, in PersistableBundle params);
 
-   /**
-    * Returns the current enabled/disabled UWB state.
-    *
-    * Possible values are:
-    * IUwbAdapterState#STATE_DISABLED
-    * IUwbAdapterState#STATE_ENABLED_ACTIVE
-    * IUwbAdapterState#STATE_ENABLED_INACTIVE
-    *
-    * @return value representing enabled/disabled UWB state.
-    */
-   int getAdapterState();
+  /**
+   * Remove an existing controlee from an ongoing session.
+   * <p>This call may be made when the session is open.
+   *
+   * <p>On successfully removing an existing controlee from the session
+   * {@link RangingSession.Callback#onControleeRemoved(PersistableBundle)} is invoked.
+   *
+   * <p>On failure to remove an existing controlee from the session,
+   * {@link RangingSession.Callback#onControleeRemoveFailed(int, PersistableBundle)}is invoked.
+   *
+   * @param sessionHandle the session handle to close ranging for
+   * @param params the parameters for the existing controlee.
+   */
+  void removeControlee(in SessionHandle sessionHandle, in PersistableBundle params);
+
+  /**
+   * Suspends an ongoing ranging session.
+   *
+   * <p>A session that has been suspended may be resumed by calling
+   * {@link RangingSession#resume(PersistableBundle)} without the need to open a new session.
+   *
+   * <p>Suspending a {@link RangingSession} is useful when the lower layers should skip a few
+   * ranging rounds for a session without stopping it.
+   *
+   * <p>If the {@link RangingSession} is no longer needed, use {@link RangingSession#stop()} or
+   * {@link RangingSession#close()} to completely close the session.
+   *
+   * <p>On successfully suspending the session,
+   * {@link RangingSession.Callback#onSuspended(PersistableBundle)} is invoked.
+   *
+   * <p>On failure to suspend the session,
+   * {@link RangingSession.Callback#onSuspendFailed(int, PersistableBundle)} is invoked.
+   *
+   * @param sessionHandle the session handle to close ranging for
+   * @param params protocol specific parameters for suspending the session.
+   */
+  void suspend(in SessionHandle sessionHandle, in PersistableBundle params);
+
+  /**
+   * Resumes a suspended ranging session.
+   *
+   * <p>A session that has been previously suspended using
+   * {@link RangingSession#suspend(PersistableBundle)} can be resumed by calling
+   * {@link RangingSession#resume(PersistableBundle)}.
+   *
+   * <p>On successfully resuming the session,
+   * {@link RangingSession.Callback#onResumed(PersistableBundle)} is invoked.
+   *
+   * <p>On failure to suspend the session,
+   * {@link RangingSession.Callback#onResumeFailed(int, PersistableBundle)} is invoked.
+   *
+   * @param sessionHandle the session handle to close ranging for
+   * @param params protocol specific parameters the resuming the session.
+   */
+  void resume(in SessionHandle sessionHandle, in PersistableBundle params);
+
+  /**
+   * Send data to a remote device which is part of this ongoing session.
+   * The data is sent by piggybacking the provided data over RRM (initiator -> responder) or
+   * RIM (responder -> initiator).
+   * <p>This is only functional on a FIRA 2.0 compliant device.
+   *
+   * <p>On successfully sending the data,
+   * {@link RangingSession.Callback#onDataSent(UwbAddress, PersistableBundle)} is invoked.
+   *
+   * <p>On failure to send the data,
+   * {@link RangingSession.Callback#onDataSendFailed(UwbAddress, int, PersistableBundle)} is
+   * invoked.
+   *
+   * @param sessionHandle the session handle to close ranging for
+   * @param remoteDeviceAddress remote device's address.
+   * @param params protocol specific parameters the sending the data.
+   * @param data Raw data to be sent.
+   */
+  void sendData(in SessionHandle sessionHandle, in UwbAddress remoteDeviceAddress,
+          in PersistableBundle params, in byte[] data);
+
+  /**
+   * Disables or enables UWB for a user
+   *
+   * The provided callback's IUwbAdapterStateCallbacks#onAdapterStateChanged
+   * function must be called immediately following state change.
+   *
+   * @param enabled value representing intent to disable or enable UWB. If
+   * true, any subsequent calls to #openRanging will be allowed. If false,
+   * all active ranging sessions will be closed and subsequent calls to
+   * #openRanging will be disallowed.
+   */
+  void setEnabled(boolean enabled);
+
+  /**
+   * Returns the current enabled/disabled UWB state.
+   *
+   * Possible values are:
+   * IUwbAdapterState#STATE_DISABLED
+   * IUwbAdapterState#STATE_ENABLED_ACTIVE
+   * IUwbAdapterState#STATE_ENABLED_INACTIVE
+   *
+   * @return value representing enabled/disabled UWB state.
+   */
+  int getAdapterState();
 
   /**
    * The maximum allowed time to open a ranging session.

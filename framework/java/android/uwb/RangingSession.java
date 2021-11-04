@@ -94,7 +94,10 @@ public final class RangingSession implements AutoCloseable {
                 REASON_GENERIC_ERROR,
                 REASON_MAX_SESSIONS_REACHED,
                 REASON_SYSTEM_POLICY,
-                REASON_PROTOCOL_SPECIFIC_ERROR})
+                REASON_PROTOCOL_SPECIFIC_ERROR,
+                REASON_MAX_CONTROLEE_REACHED,
+                REASON_MAX_RR_RETRY_REACHED,
+                REASON_DATA_SIZE_TOO_LARGE})
         @interface Reason {}
 
         /**
@@ -125,9 +128,8 @@ public final class RangingSession implements AutoCloseable {
         int REASON_GENERIC_ERROR = 4;
 
         /**
-         * Indicates that the number of currently open sessions is equal to
-         * {@link UwbManager#getMaxSimultaneousSessions()} and additional sessions may not be
-         * opened.
+         * Indicates that the number of currently open sessions supported by the device and
+         * additional sessions may not be opened.
          */
         int REASON_MAX_SESSIONS_REACHED = 5;
 
@@ -142,6 +144,23 @@ public final class RangingSession implements AutoCloseable {
          * consulted for additional information.
          */
         int REASON_PROTOCOL_SPECIFIC_ERROR = 7;
+
+        /**
+         * Indicates that the session has reached the max number of controllees supported by the
+         * device. This is applicable to only one to many sessions and sent in response to a
+         * request to add a new controlee to an ongoing session.
+         */
+        int REASON_MAX_CONTROLEE_REACHED = 8;
+
+        /**
+         * Indicates that the max number of retry attempts for a ranging attempt has been reached.
+         */
+        int REASON_MAX_RR_RETRY_REACHED = 9;
+
+        /**
+         * Indicates that the size of the data being sent or received is too large.
+         */
+        int REASON_DATA_SIZE_TOO_LARGE = 10;
 
         /**
          * Invoked when {@link UwbManager#openRangingSession(PersistableBundle, Executor, Callback)}
@@ -220,6 +239,112 @@ public final class RangingSession implements AutoCloseable {
          * @param rangingReport ranging report for this interval's measurements
          */
         void onReportReceived(@NonNull RangingReport rangingReport);
+
+        /**
+         * Invoked when a new controlee is added to an ongoing one-to many session.
+         *
+         * @param parameters protocol specific parameters for the new controlee
+         */
+        default void onControleeAdded(@NonNull PersistableBundle parameters) {}
+
+        /**
+         * Invoked when a new controlee is added to an ongoing one-to many session.
+         *
+         * @param reason reason for the controlee add failure
+         * @param parameters protocol specific parameters related to the failure
+         */
+        default void onControleeAddFailed(
+                @Reason int reason, @NonNull PersistableBundle parameters) {}
+
+        /**
+         * Invoked when an existing controlee is removed from an ongoing one-to many session.
+         *
+         * @param parameters protocol specific parameters for the existing controlee
+         */
+        default void onControleeRemoved(@NonNull PersistableBundle parameters) {}
+
+        /**
+         * Invoked when a new controlee is added to an ongoing one-to many session.
+         *
+         * @param reason reason for the controlee remove failure
+         * @param parameters protocol specific parameters related to the failure
+         */
+        default void onControleeRemoveFailed(
+                @Reason int reason, @NonNull PersistableBundle parameters) {}
+
+        /**
+         * Invoked when an ongoing session is successfully suspended.
+         *
+         * @param parameters protocol specific parameters sent for suspension
+         */
+        default void onSuspended(@NonNull PersistableBundle parameters) {}
+
+        /**
+         * Invoked when an ongoing session suspension fails.
+         *
+         * @param reason reason for the suspension failure
+         * @param parameters protocol specific parameters for suspension failure
+         */
+        default void onSuspendFailed(@Reason int reason, @NonNull PersistableBundle parameters) {}
+
+        /**
+         * Invoked when a suspended session is successfully resumed.
+         *
+         * @param parameters protocol specific parameters sent for suspension
+         */
+        default void onResumed(@NonNull PersistableBundle parameters) {}
+
+        /**
+         * Invoked when a suspended session resumption fails.
+         *
+         * @param reason reason for the resumption failure
+         * @param parameters protocol specific parameters for resumption failure
+         */
+        default void onResumeFailed(@Reason int reason, @NonNull PersistableBundle parameters) {}
+
+        /**
+         * Invoked when data is successfully sent via {@link RangingSession#sendData(UwbAddress,
+         * PersistableBundle, byte[])}.
+         *
+         * @param remoteDeviceAddress remote device's address
+         * @param parameters protocol specific parameters sent for suspension
+         */
+        default void onDataSent(@NonNull UwbAddress remoteDeviceAddress,
+                @NonNull PersistableBundle parameters) {}
+
+        /**
+         * Invoked when data send to a remote device via {@link RangingSession#sendData(UwbAddress,
+         * PersistableBundle, byte[])} fails.
+         *
+         * @param remoteDeviceAddress remote device's address
+         * @param reason reason for the resumption failure
+         * @param parameters protocol specific parameters for resumption failure
+         */
+        default void onDataSendFailed(@NonNull UwbAddress remoteDeviceAddress,
+                @Reason int reason, @NonNull PersistableBundle parameters) {}
+
+        /**
+         * Invoked when data is received successfully from a remote device.
+         * The data is received piggybacked over RRM (initiator -> responder) or
+         * RIM (responder -> initiator).
+         * <p> This is only functional on a FIRA 2.0 compliant device.
+         *
+         * @param remoteDeviceAddress remote device's address
+         * @param data Raw data received
+         * @param parameters protocol specific parameters for the received data
+         */
+        default void onDataReceived(@NonNull UwbAddress remoteDeviceAddress,
+                @NonNull PersistableBundle parameters, @NonNull byte[] data) {}
+
+        /**
+         * Invoked when data receive from a remote device fails.
+         *
+         * @param remoteDeviceAddress remote device's address
+         * @param reason reason for the resumption failure
+         * @param parameters protocol specific parameters for resumption failure
+         */
+        default void onDataReceiveFailed(@NonNull UwbAddress remoteDeviceAddress,
+                @Reason int reason, @NonNull PersistableBundle parameters) {}
     }
 
     /**
@@ -357,6 +482,152 @@ public final class RangingSession implements AutoCloseable {
     }
 
     /**
+     * Add a new controlee to an ongoing session.
+     * <p>This call may be made when the session is open.
+     *
+     * <p>On successfully adding a new controlee to the session
+     * {@link RangingSession.Callback#onControleeAdded(PersistableBundle)} is invoked.
+     *
+     * <p>On failure to add a new controlee to the session,
+     * {@link RangingSession.Callback#onControleeAddFailed(int, PersistableBundle)} is invoked.
+     *
+     * @param params the parameters for the new controlee
+     */
+    @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
+    public void addControlee(@NonNull PersistableBundle params) {
+        if (mState == State.CLOSED) {
+            mExecutor.execute(() -> mCallback.onControleeAddFailed(
+                    Callback.REASON_LOCAL_REQUEST, new PersistableBundle()));
+            return;
+        }
+
+        try {
+            mAdapter.addControlee(mSessionHandle, params);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Remove an existing controlee from an ongoing session.
+     * <p>This call may be made when the session is open.
+     *
+     * <p>On successfully removing an existing controlee from the session
+     * {@link RangingSession.Callback#onControleeRemoved(PersistableBundle)} is invoked.
+     *
+     * <p>On failure to remove an existing controlee from the session,
+     * {@link RangingSession.Callback#onControleeRemoveFailed(int, PersistableBundle)} is invoked.
+     *
+     * @param params the parameters for the existing controlee
+     */
+    @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
+    public void removeControlee(@NonNull PersistableBundle params) {
+        if (mState == State.CLOSED) {
+            mExecutor.execute(() -> mCallback.onControleeAddFailed(
+                    Callback.REASON_LOCAL_REQUEST, new PersistableBundle()));
+            return;
+        }
+
+        try {
+            mAdapter.removeControlee(mSessionHandle, params);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Suspends an ongoing ranging session.
+     *
+     * <p>A session that has been suspended may be resumed by calling
+     * {@link RangingSession#resume(PersistableBundle)} without the need to open a new session.
+     *
+     * <p>Suspending a {@link RangingSession} is useful when the lower layers should skip a few
+     * ranging rounds for a session without stopping it.
+     *
+     * <p>If the {@link RangingSession} is no longer needed, use {@link RangingSession#stop()} or
+     * {@link RangingSession#close()} to completely close the session.
+     *
+     * <p>On successfully suspending the session,
+     * {@link RangingSession.Callback#onRangingSuspended(PersistableBundle)} is invoked.
+     *
+     * <p>On failure to suspend the session,
+     * {@link RangingSession.Callback#onRangingSuspendFailed(int, PersistableBundle)} is invoked.
+     *
+     * @param params protocol specific parameters for suspending the session
+     */
+    @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
+    public void suspend(@NonNull PersistableBundle params) {
+        if (mState != State.ACTIVE) {
+            throw new IllegalStateException();
+        }
+
+        try {
+            mAdapter.suspend(mSessionHandle, params);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Resumes a suspended ranging session.
+     *
+     * <p>A session that has been previously suspended using
+     * {@link RangingSession#suspend(PersistableBundle)} can be resumed by calling
+     * {@link RangingSession#resume(PersistableBundle)}.
+     *
+     * <p>On successfully resuming the session,
+     * {@link RangingSession.Callback#onRangingResumed(PersistableBundle)} is invoked.
+     *
+     * <p>On failure to suspend the session,
+     * {@link RangingSession.Callback#onRangingResumeFailed(int, PersistableBundle)} is invoked.
+     *
+     * @param params protocol specific parameters the resuming the session
+     */
+    @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
+    public void resume(@NonNull PersistableBundle params) {
+        if (mState != State.ACTIVE) {
+            throw new IllegalStateException();
+        }
+
+        try {
+            mAdapter.resume(mSessionHandle, params);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Send data to a remote device which is part of this ongoing session.
+     * The data is sent by piggybacking the provided data over RRM (initiator -> responder) or
+     * RIM (responder -> initiator).
+     * <p>This is only functional on a FIRA 2.0 compliant device.
+     *
+     * <p>On successfully sending the data,
+     * {@link RangingSession.Callback#onDataSent(UwbAddress, PersistableBundle)} is invoked.
+     *
+     * <p>On failure to send the data,
+     * {@link RangingSession.Callback#onDataSendFailed(UwbAddress, int, PersistableBundle)} is
+     * invoked.
+     *
+     * @param remoteDeviceAddress remote device's address
+     * @param params protocol specific parameters the sending the data
+     * @param data Raw data to be sent
+     */
+    @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
+    public void sendData(@NonNull UwbAddress remoteDeviceAddress,
+            @NonNull PersistableBundle params, @NonNull byte[] data) {
+        if (mState != State.ACTIVE) {
+            throw new IllegalStateException();
+        }
+
+        try {
+            mAdapter.sendData(mSessionHandle, remoteDeviceAddress, params, data);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
      * @hide
      */
     public void onRangingOpened() {
@@ -480,6 +751,158 @@ public final class RangingSession implements AutoCloseable {
         }
 
         executeCallback(() -> mCallback.onReportReceived(report));
+    }
+
+    /**
+     * @hide
+     */
+    public void onControleeAdded(@NonNull PersistableBundle params) {
+        if (!isOpen()) {
+            Log.w(TAG, "onControleeAdded invoked for non-open session");
+            return;
+        }
+
+        executeCallback(() -> mCallback.onControleeAdded(params));
+    }
+
+    /**
+     * @hide
+     */
+    public void onControleeAddFailed(@Callback.Reason int reason,
+            @NonNull PersistableBundle params) {
+        if (!isOpen()) {
+            Log.w(TAG, "onControleeAddFailed invoked for non-open session");
+            return;
+        }
+
+        executeCallback(() -> mCallback.onControleeAddFailed(reason, params));
+    }
+
+    /**
+     * @hide
+     */
+    public void onControleeRemoved(@NonNull PersistableBundle params) {
+        if (!isOpen()) {
+            Log.w(TAG, "onControleeRemoved invoked for non-open session");
+            return;
+        }
+
+        executeCallback(() -> mCallback.onControleeRemoved(params));
+    }
+
+    /**
+     * @hide
+     */
+    public void onControleeRemoveFailed(@Callback.Reason int reason,
+            @NonNull PersistableBundle params) {
+        if (!isOpen()) {
+            Log.w(TAG, "onControleeRemoveFailed invoked for non-open session");
+            return;
+        }
+
+        executeCallback(() -> mCallback.onControleeRemoveFailed(reason, params));
+    }
+
+    /**
+     * @hide
+     */
+    public void onRangingSuspended(@NonNull PersistableBundle params) {
+        if (!isOpen()) {
+            Log.w(TAG, "onRangingSuspended invoked for non-open session");
+            return;
+        }
+
+        executeCallback(() -> mCallback.onSuspended(params));
+    }
+
+    /**
+     * @hide
+     */
+    public void onRangingSuspendFailed(@Callback.Reason int reason,
+            @NonNull PersistableBundle params) {
+        if (!isOpen()) {
+            Log.w(TAG, "onRangingSuspendFailed invoked for non-open session");
+            return;
+        }
+
+        executeCallback(() -> mCallback.onSuspendFailed(reason, params));
+    }
+
+    /**
+     * @hide
+     */
+    public void onRangingResumed(@NonNull PersistableBundle params) {
+        if (!isOpen()) {
+            Log.w(TAG, "onRangingResumed invoked for non-open session");
+            return;
+        }
+
+        executeCallback(() -> mCallback.onResumed(params));
+    }
+
+    /**
+     * @hide
+     */
+    public void onRangingResumeFailed(@Callback.Reason int reason,
+            @NonNull PersistableBundle params) {
+        if (!isOpen()) {
+            Log.w(TAG, "onRangingResumeFailed invoked for non-open session");
+            return;
+        }
+
+        executeCallback(() -> mCallback.onResumeFailed(reason, params));
+    }
+
+    /**
+     * @hide
+     */
+    public void onDataSent(@NonNull UwbAddress remoteDeviceAddress,
+            @NonNull PersistableBundle params) {
+        if (!isOpen()) {
+            Log.w(TAG, "onDataSent invoked for non-open session");
+            return;
+        }
+
+        executeCallback(() -> mCallback.onDataSent(remoteDeviceAddress, params));
+    }
+
+    /**
+     * @hide
+     */
+    public void onDataSendFailed(@NonNull UwbAddress remoteDeviceAddress,
+            @Callback.Reason int reason, @NonNull PersistableBundle params) {
+        if (!isOpen()) {
+            Log.w(TAG, "onDataSendFailed invoked for non-open session");
+            return;
+        }
+
+        executeCallback(() -> mCallback.onDataSendFailed(remoteDeviceAddress, reason, params));
+    }
+
+    /**
+     * @hide
+     */
+    public void onDataReceived(@NonNull UwbAddress remoteDeviceAddress,
+            @NonNull PersistableBundle params, @NonNull byte[] data) {
+        if (!isOpen()) {
+            Log.w(TAG, "onDataReceived invoked for non-open session");
+            return;
+        }
+
+        executeCallback(() -> mCallback.onDataReceived(remoteDeviceAddress, params, data));
+    }
+
+    /**
+     * @hide
+     */
+    public void onDataReceiveFailed(@NonNull UwbAddress remoteDeviceAddress,
+            @Callback.Reason int reason, @NonNull PersistableBundle params) {
+        if (!isOpen()) {
+            Log.w(TAG, "onDataReceiveFailed invoked for non-open session");
+            return;
+        }
+
+        executeCallback(() -> mCallback.onDataReceiveFailed(remoteDeviceAddress, reason, params));
     }
 
     /**

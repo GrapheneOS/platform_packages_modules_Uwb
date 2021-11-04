@@ -39,6 +39,7 @@ import android.uwb.IUwbRangingCallbacks2;
 import android.uwb.RangingReport;
 import android.uwb.RangingSession;
 import android.uwb.SessionHandle;
+import android.uwb.UwbAddress;
 
 import com.android.internal.annotations.GuardedBy;
 import com.android.uwb.UwbService;
@@ -364,6 +365,37 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
     public void closeRanging(SessionHandle sessionHandle) throws RemoteException {
         enforceUwbPrivilegedPermission();
         getVendorUwbAdapter().closeRanging(sessionHandle);
+    }
+
+    @Override
+    public void addControlee(SessionHandle sessionHandle, PersistableBundle params) {
+        enforceUwbPrivilegedPermission();
+        // TODO(b/200678461): Implement this.
+    }
+
+    @Override
+    public void removeControlee(SessionHandle sessionHandle, PersistableBundle params) {
+        enforceUwbPrivilegedPermission();
+        // TODO(b/200678461): Implement this.
+    }
+
+    @Override
+    public void suspend(SessionHandle sessionHandle, PersistableBundle params) {
+        enforceUwbPrivilegedPermission();
+        // TODO(b/200678461): Implement this.
+    }
+
+    @Override
+    public void resume(SessionHandle sessionHandle, PersistableBundle params) {
+        enforceUwbPrivilegedPermission();
+        // TODO(b/200678461): Implement this.
+    }
+
+    @Override
+    public void sendData(SessionHandle sessionHandle, UwbAddress remoteDeviceAddress,
+            PersistableBundle params, byte[] data) {
+        enforceUwbPrivilegedPermission();
+        // TODO(b/200678461): Implement this.
     }
 
     @Override

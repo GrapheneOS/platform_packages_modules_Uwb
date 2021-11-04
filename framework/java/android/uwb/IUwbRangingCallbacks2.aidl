@@ -20,6 +20,7 @@ import android.os.PersistableBundle;
 import android.uwb.RangingChangeReason;
 import android.uwb.RangingReport;
 import android.uwb.SessionHandle;
+import android.uwb.UwbAddress;
 
 /**
  * @hide
@@ -137,4 +138,123 @@ oneway interface IUwbRangingCallbacks2 {
    * @param result the ranging report
    */
   void onRangingResult(in SessionHandle sessionHandle, in RangingReport result);
+
+  /**
+   * Invoked when a new controlee is added to an ongoing one-to many session.
+   *
+   * @param sessionHandle the session the callback is being invoked for
+   * @param parameters protocol specific parameters for the new controlee.
+   */
+  void onControleeAdded(in SessionHandle sessionHandle, in PersistableBundle parameters);
+
+  /**
+   * Invoked when a new controlee is added to an ongoing one-to many session.
+   *
+   * @param sessionHandle the session the callback is being invoked for
+   * @param reason reason for the controlee add failure.
+   * @param parameters protocol specific parameters related to the failure.
+   */
+  void onControleeAddFailed(in SessionHandle sessionHandle,
+          RangingChangeReason reason, in PersistableBundle parameters);
+
+  /**
+   * Invoked when an existing controlee is removed from an ongoing one-to many session.
+   *
+   * @param sessionHandle the session the callback is being invoked for
+   * @param parameters protocol specific parameters for the existing controlee.
+   */
+  void onControleeRemoved(in SessionHandle sessionHandle, in PersistableBundle parameters);
+
+  /**
+   * Invoked when a new controlee is added to an ongoing one-to many session.
+   *
+   * @param sessionHandle the session the callback is being invoked for
+   * @param reason reason for the controlee remove failure.
+   * @param parameters protocol specific parameters related to the failure.
+   */
+  void onControleeRemoveFailed(in SessionHandle sessionHandle,
+          RangingChangeReason reason, in PersistableBundle parameters);
+
+  /**
+   * Invoked when an ongoing session is successfully suspended.
+   *
+   * @param sessionHandle the session the callback is being invoked for
+   * @param parameters protocol specific parameters sent for suspension.
+   */
+  void onRangingSuspended(in SessionHandle sessionHandle, in PersistableBundle parameters);
+
+  /**
+   * Invoked when an ongoing session suspension fails.
+   *
+   * @param sessionHandle the session the callback is being invoked for
+   * @param reason reason for the suspension failure.
+   * @param parameters protocol specific parameters for suspension failure.
+   */
+  void onRangingSuspendFailed(in SessionHandle sessionHandle,
+          RangingChangeReason reason, in PersistableBundle parameters);
+
+  /**
+   * Invoked when a suspended session is successfully resumed.
+   *
+   * @param parameters protocol specific parameters sent for suspension.
+   */
+  void onRangingResumed(in SessionHandle sessionHandle, in PersistableBundle parameters);
+
+  /**
+   * Invoked when a suspended session resumption fails.
+   *
+   * @param sessionHandle the session the callback is being invoked for
+   * @param reason reason for the resumption failure.
+   * @param parameters protocol specific parameters for resumption failure.
+   */
+  void onRangingResumeFailed(in SessionHandle sessionHandle,
+          RangingChangeReason reason, in PersistableBundle parameters);
+
+  /**
+   * Invoked when data is successfully sent via {@link RangingSession#sendData(UwbAddress,
+   * PersistableBundle, byte[])}.
+   *
+   * @param sessionHandle the session the callback is being invoked for
+   * @param remoteDeviceAddress remote device's address.
+   * @param parameters protocol specific parameters sent for suspension.
+   */
+  void onDataSent(in SessionHandle sessionHandle, in UwbAddress remoteDeviceAddress,
+          in PersistableBundle parameters);
+
+  /**
+   * Invoked when data send to a remote device via {@link RangingSession#sendData(UwbAddress,
+   * PersistableBundle, byte[])} fails.
+   *
+   * @param sessionHandle the session the callback is being invoked for
+   * @param remoteDeviceAddress remote device's address.
+   * @param reason reason for the resumption failure.
+   * @param parameters protocol specific parameters for resumption failure.
+   */
+  void onDataSendFailed(in SessionHandle sessionHandle, in UwbAddress remoteDeviceAddress,
+          RangingChangeReason reason, in PersistableBundle parameters);
+
+  /**
+   * Invoked when data is received successfully from a remote device.
+   * The data is received piggybacked over RRM (initiator -> responder) or
+   * RIM (responder -> initiator).
+   * <p> This is only functional on a FIRA 2.0 compliant device.
+   *
+   * @param sessionHandle the session the callback is being invoked for
+   * @param remoteDeviceAddress remote device's address.
+   * @param data Raw data received.
+   * @param parameters protocol specific parameters for the received data.
+   */
+  void onDataReceived(in SessionHandle sessionHandle, in UwbAddress remoteDeviceAddress,
+          in PersistableBundle parameters, in byte[] data);
+
+  /**
+   * Invoked when data receive from a remote device fails.
+   *
+   * @param sessionHandle the session the callback is being invoked for
+   * @param remoteDeviceAddress remote device's address.
+   * @param reason reason for the resumption failure.
+   * @param parameters protocol specific parameters for resumption failure.
+   */
+  void onDataReceiveFailed(in SessionHandle sessionHandle, in UwbAddress remoteDeviceAddress,
+          RangingChangeReason reason, in PersistableBundle parameters);
 }

@@ -88,26 +88,46 @@ package android.uwb {
   }
 
   public final class RangingSession implements java.lang.AutoCloseable {
+    method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void addControlee(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void close();
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void reconfigure(@NonNull android.os.PersistableBundle);
+    method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void removeControlee(@NonNull android.os.PersistableBundle);
+    method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void resume(@NonNull android.os.PersistableBundle);
+    method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void sendData(@NonNull android.uwb.UwbAddress, @NonNull android.os.PersistableBundle, @NonNull byte[]);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void start(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void stop();
+    method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void suspend(@NonNull android.os.PersistableBundle);
   }
 
   public static interface RangingSession.Callback {
     method public void onClosed(int, @NonNull android.os.PersistableBundle);
+    method public default void onControleeAddFailed(int, @NonNull android.os.PersistableBundle);
+    method public default void onControleeAdded(@NonNull android.os.PersistableBundle);
+    method public default void onControleeRemoveFailed(int, @NonNull android.os.PersistableBundle);
+    method public default void onControleeRemoved(@NonNull android.os.PersistableBundle);
+    method public default void onDataReceiveFailed(@NonNull android.uwb.UwbAddress, int, @NonNull android.os.PersistableBundle);
+    method public default void onDataReceived(@NonNull android.uwb.UwbAddress, @NonNull android.os.PersistableBundle, @NonNull byte[]);
+    method public default void onDataSendFailed(@NonNull android.uwb.UwbAddress, int, @NonNull android.os.PersistableBundle);
+    method public default void onDataSent(@NonNull android.uwb.UwbAddress, @NonNull android.os.PersistableBundle);
     method public void onOpenFailed(int, @NonNull android.os.PersistableBundle);
     method public void onOpened(@NonNull android.uwb.RangingSession);
     method public void onReconfigureFailed(int, @NonNull android.os.PersistableBundle);
     method public void onReconfigured(@NonNull android.os.PersistableBundle);
     method public void onReportReceived(@NonNull android.uwb.RangingReport);
+    method public default void onResumeFailed(int, @NonNull android.os.PersistableBundle);
+    method public default void onResumed(@NonNull android.os.PersistableBundle);
     method public void onStartFailed(int, @NonNull android.os.PersistableBundle);
     method public void onStarted(@NonNull android.os.PersistableBundle);
     method public void onStopFailed(int, @NonNull android.os.PersistableBundle);
     method public void onStopped(int, @NonNull android.os.PersistableBundle);
+    method public default void onSuspendFailed(int, @NonNull android.os.PersistableBundle);
+    method public default void onSuspended(@NonNull android.os.PersistableBundle);
     field public static final int REASON_BAD_PARAMETERS = 3; // 0x3
+    field public static final int REASON_DATA_SIZE_TOO_LARGE = 10; // 0xa
     field public static final int REASON_GENERIC_ERROR = 4; // 0x4
     field public static final int REASON_LOCAL_REQUEST = 1; // 0x1
+    field public static final int REASON_MAX_CONTROLEE_REACHED = 8; // 0x8
+    field public static final int REASON_MAX_RR_RETRY_REACHED = 9; // 0x9
     field public static final int REASON_MAX_SESSIONS_REACHED = 5; // 0x5
     field public static final int REASON_PROTOCOL_SPECIFIC_ERROR = 7; // 0x7
     field public static final int REASON_REMOTE_REQUEST = 2; // 0x2
