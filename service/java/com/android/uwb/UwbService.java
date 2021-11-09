@@ -230,7 +230,8 @@ public class UwbService implements INativeUwbManager.DeviceNotification {
         }
 
         @Override
-        public PersistableBundle getSpecificationInfo() throws RemoteException {
+        public PersistableBundle getSpecificationInfo()
+                throws RemoteException {
             if (mUwbSpecificationInfo == null) {
                 mUwbSpecificationInfo = mNativeUwbManager.getSpecificationInfo();
             }
