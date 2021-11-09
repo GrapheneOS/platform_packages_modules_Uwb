@@ -38,6 +38,8 @@ import android.uwb.SessionHandle;
 import android.uwb.StateChangeReason;
 import android.uwb.UwbManager.AdapterStateCallback;
 
+import com.android.server.uwb.UwbInjector;
+import com.android.server.uwb.UwbMetrics;
 import com.android.uwb.data.UwbUciConstants;
 import com.android.uwb.info.UwbSpecificationInfo;
 import com.android.uwb.jni.INativeUwbManager;
@@ -86,11 +88,13 @@ public class UwbService implements INativeUwbManager.DeviceNotification {
     };
     private final UwbSessionManager mSessionManager;
     private final NativeUwbManager mNativeUwbManager;
+    private final UwbMetrics mUwbMetrics;
     private UwbSpecificationInfo mUwbSpecificationInfo = null;
     private /* @UwbManager.AdapterStateCallback.State */ int mState;
     private @StateChangeReason int mLastStateChangedReason;
 
-    public UwbService(Context uwbApplicationContext, NativeUwbManager nativeUwbManager) {
+    public UwbService(Context uwbApplicationContext, NativeUwbManager nativeUwbManager,
+            UwbMetrics uwbMetrics, UwbInjector uwbInjector) {
         mContext = uwbApplicationContext;
 
         Log.d(TAG, "Starting Uwb");
@@ -104,7 +108,8 @@ public class UwbService implements INativeUwbManager.DeviceNotification {
         mNativeUwbManager = nativeUwbManager;
 
         mNativeUwbManager.setDeviceListener(this);
-        mSessionManager = new UwbSessionManager(mNativeUwbManager);
+        mUwbMetrics = uwbMetrics;
+        mSessionManager = new UwbSessionManager(mNativeUwbManager, mUwbMetrics);
 
         initIntentFilter();
         updateState(AdapterStateCallback.STATE_DISABLED, StateChangeReason.SYSTEM_BOOT);

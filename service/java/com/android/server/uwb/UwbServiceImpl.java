@@ -58,6 +58,7 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
     private final Context mContext;
     private final UwbInjector mUwbInjector;
     private final UwbSettingsStore mUwbSettingsStore;
+    private final UwbMetrics mUwbMetrics;
     /**
      * Map for storing the callbacks wrapper for each session.
      */
@@ -249,8 +250,9 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
         if (mVendorUwbAdapter != null) return mVendorUwbAdapter;
         // TODO(b/196225233): Remove this when qorvo stack is integrated.
         if (SystemProperties.getBoolean("persist.uwb.enable_uci_stack", false)) {
-          Log.i(TAG, "Using the UCI stack");
-          mVendorUwbAdapter = new UwbService(mContext, new NativeUwbManager()).getIUwbAdapter();
+            Log.i(TAG, "Using the UCI stack");
+            mVendorUwbAdapter = new UwbService(mContext, new NativeUwbManager(), mUwbMetrics,
+                    mUwbInjector).getIUwbAdapter();
         } else {
             Log.i(TAG, "Using the legacy stack");
             mVendorUwbAdapter = mUwbInjector.getVendorService();
@@ -269,7 +271,7 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
         mContext = context;
         mUwbInjector = uwbInjector;
         mUwbSettingsStore = uwbInjector.getUwbSettingsStore();
-
+        mUwbMetrics = new UwbMetrics(uwbInjector);
         registerAirplaneModeReceiver();
     }
 
@@ -290,6 +292,7 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
             return;
         }
         mUwbSettingsStore.dump(fd, pw, args);
+        mUwbMetrics.dump(fd, pw, args);
     }
 
     private void enforceUwbPrivilegedPermission() {

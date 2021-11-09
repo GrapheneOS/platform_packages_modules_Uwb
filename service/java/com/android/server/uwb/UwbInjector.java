@@ -28,6 +28,7 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.ServiceManager;
+import android.os.SystemClock;
 import android.permission.PermissionManager;
 import android.provider.Settings;
 import android.util.AtomicFile;
@@ -153,5 +154,23 @@ public class UwbInjector {
      */
     public static boolean isAppInUwbApex(ApplicationInfo appInfo) {
         return appInfo.sourceDir.startsWith(UWB_APEX_PATH);
+    }
+
+    /**
+     * Get the current time of the clock in milliseconds.
+     *
+     * @return Current time in milliseconds.
+     */
+    public long getWallClockMillis() {
+        return System.currentTimeMillis();
+    }
+
+    /**
+     * Returns milliseconds since boot, including time spent in sleep.
+     *
+     * @return Current time since boot in milliseconds.
+     */
+    public long getElapsedSinceBootMillis() {
+        return SystemClock.elapsedRealtime();
     }
 }
