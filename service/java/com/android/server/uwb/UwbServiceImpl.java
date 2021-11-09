@@ -33,8 +33,10 @@ import android.provider.Settings;
 import android.util.ArrayMap;
 import android.util.Log;
 import android.uwb.IUwbAdapter;
+import android.uwb.IUwbAdapter2;
 import android.uwb.IUwbAdapterStateCallbacks;
 import android.uwb.IUwbRangingCallbacks;
+import android.uwb.IUwbRangingCallbacks2;
 import android.uwb.RangingReport;
 import android.uwb.RangingSession;
 import android.uwb.SessionHandle;
@@ -48,9 +50,9 @@ import java.io.PrintWriter;
 import java.util.Map;
 
 /**
- * Implementation of {@link android.uwb.IUwbAdapter} binder service.
+ * Implementation of {@link android.uwb.IUwbAdapter2} binder service.
  */
-public class UwbServiceImpl extends IUwbAdapter.Stub implements IBinder.DeathRecipient{
+public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRecipient{
     private static final String TAG = "UwbServiceImpl";
 
     private final Context mContext;
@@ -77,12 +79,12 @@ public class UwbServiceImpl extends IUwbAdapter.Stub implements IBinder.DeathRec
             implements IBinder.DeathRecipient {
         private final AttributionSource mAttributionSource;
         private final SessionHandle mSessionHandle;
-        private final IUwbRangingCallbacks mExternalCb;
+        private final IUwbRangingCallbacks2 mExternalCb;
         private boolean mIsValid;
 
         UwbRangingCallbacksWrapper(@NonNull AttributionSource attributionSource,
                 @NonNull SessionHandle sessionHandle,
-                @NonNull IUwbRangingCallbacks externalCb) {
+                @NonNull IUwbRangingCallbacks2 externalCb) {
             mAttributionSource = attributionSource;
             mSessionHandle = sessionHandle;
             mExternalCb = externalCb;
@@ -323,7 +325,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub implements IBinder.DeathRec
 
     @Override
     public void openRanging(AttributionSource attributionSource,
-            SessionHandle sessionHandle, IUwbRangingCallbacks rangingCallbacks,
+            SessionHandle sessionHandle, IUwbRangingCallbacks2 rangingCallbacks,
             PersistableBundle parameters) throws RemoteException {
         enforceUwbPrivilegedPermission();
         mUwbInjector.enforceUwbRangingPermissionForPreflight(attributionSource);

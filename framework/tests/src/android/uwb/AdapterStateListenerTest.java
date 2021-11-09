@@ -46,7 +46,7 @@ import java.util.concurrent.Executor;
 @RunWith(AndroidJUnit4.class)
 public class AdapterStateListenerTest {
 
-    IUwbAdapter mUwbAdapter = mock(IUwbAdapter.class);
+    IUwbAdapter2 mUwbAdapter = mock(IUwbAdapter2.class);
 
     Answer mRegisterSuccessAnswer = new Answer() {
         public Object answer(InvocationOnMock invocation) {

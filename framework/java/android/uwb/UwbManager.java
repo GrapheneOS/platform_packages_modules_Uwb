@@ -48,7 +48,7 @@ public final class UwbManager {
     private static final String SERVICE_NAME = Context.UWB_SERVICE;
 
     private final Context mContext;
-    private final IUwbAdapter mUwbAdapter;
+    private final IUwbAdapter2 mUwbAdapter;
     private final AdapterStateListener mAdapterStateListener;
     private final RangingManager mRangingManager;
 
@@ -145,10 +145,10 @@ public final class UwbManager {
      * Use <code>Context.getSystemService(UwbManager.class)</code> to get an instance.
      *
      * @param ctx Context of the client.
-     * @param adapter an instance of an {@link android.uwb.IUwbAdapter}
+     * @param adapter an instance of an {@link android.uwb.IUwbAdapter2}
      * @hide
      */
-    public UwbManager(@NonNull Context ctx, @NonNull IUwbAdapter adapter) {
+    public UwbManager(@NonNull Context ctx, @NonNull IUwbAdapter2 adapter) {
         mContext = ctx;
         mUwbAdapter = adapter;
         mAdapterStateListener = new AdapterStateListener(adapter);

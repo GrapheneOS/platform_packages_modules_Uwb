@@ -34,7 +34,7 @@ import java.util.concurrent.Executor;
 public class AdapterStateListener extends IUwbAdapterStateCallbacks.Stub {
     private static final String TAG = "Uwb.StateListener";
 
-    private final IUwbAdapter mAdapter;
+    private final IUwbAdapter2 mAdapter;
     private boolean mIsRegistered = false;
 
     private final Map<AdapterStateCallback, Executor> mCallbackMap = new HashMap<>();
@@ -44,7 +44,7 @@ public class AdapterStateListener extends IUwbAdapterStateCallbacks.Stub {
     @State
     private int mAdapterState = AdapterStateCallback.STATE_DISABLED;
 
-    public AdapterStateListener(@NonNull IUwbAdapter adapter) {
+    public AdapterStateListener(@NonNull IUwbAdapter2 adapter) {
         mAdapter = adapter;
     }
 

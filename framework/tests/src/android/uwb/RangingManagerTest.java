@@ -53,7 +53,7 @@ public class RangingManagerTest {
 
     @Test
     public void testOpenSession_OpenRangingInvoked() throws RemoteException {
-        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        IUwbAdapter2 adapter = mock(IUwbAdapter2.class);
         RangingManager rangingManager = new RangingManager(adapter);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         rangingManager.openSession(ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback);
@@ -63,7 +63,7 @@ public class RangingManagerTest {
 
     @Test
     public void testOnRangingOpened_InvalidSessionHandle() throws RemoteException {
-        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        IUwbAdapter2 adapter = mock(IUwbAdapter2.class);
         RangingManager rangingManager = new RangingManager(adapter);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
 
@@ -73,7 +73,7 @@ public class RangingManagerTest {
 
     @Test
     public void testOnRangingOpened_MultipleSessionsRegistered() throws RemoteException {
-        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        IUwbAdapter2 adapter = mock(IUwbAdapter2.class);
         RangingSession.Callback callback1 = mock(RangingSession.Callback.class);
         RangingSession.Callback callback2 = mock(RangingSession.Callback.class);
         ArgumentCaptor<SessionHandle> sessionHandleCaptor =
@@ -101,7 +101,7 @@ public class RangingManagerTest {
 
     @Test
     public void testCorrectCallbackInvoked() throws RemoteException {
-        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        IUwbAdapter2 adapter = mock(IUwbAdapter2.class);
         RangingManager rangingManager = new RangingManager(adapter);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
 
@@ -144,7 +144,7 @@ public class RangingManagerTest {
 
     @Test
     public void testOnRangingClosed_MultipleSessionsRegistered() throws RemoteException {
-        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        IUwbAdapter2 adapter = mock(IUwbAdapter2.class);
         // Verify that if multiple sessions are registered, only the session that is
         // requested to close receives the associated callbacks
         RangingSession.Callback callback1 = mock(RangingSession.Callback.class);
@@ -175,7 +175,7 @@ public class RangingManagerTest {
 
     @Test
     public void testOnRangingReport_MultipleSessionsRegistered() throws RemoteException {
-        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        IUwbAdapter2 adapter = mock(IUwbAdapter2.class);
         RangingSession.Callback callback1 = mock(RangingSession.Callback.class);
         RangingSession.Callback callback2 = mock(RangingSession.Callback.class);
 
@@ -230,7 +230,7 @@ public class RangingManagerTest {
 
     private void runReason(@RangingChangeReason int reasonIn,
             @RangingSession.Callback.Reason int reasonOut) throws RemoteException {
-        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        IUwbAdapter2 adapter = mock(IUwbAdapter2.class);
         RangingManager rangingManager = new RangingManager(adapter);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
 

@@ -19,14 +19,17 @@ package android.uwb;
 import android.content.AttributionSource;
 import android.os.PersistableBundle;
 import android.uwb.IUwbAdapterStateCallbacks;
-import android.uwb.IUwbRangingCallbacks;
+import android.uwb.IUwbRangingCallbacks2;
 import android.uwb.SessionHandle;
 
 /**
  * @hide
- * TODO(b/196225233): Remove this when qorvo stack is integrated.
+ * TODO(b/196225233): Rename this to IUwbAdapter when qorvo stack is integrated.
+ * Temporary AIDL interface name for the interface between UwbManager & UwbService.
+ * The existing IUwbAdapter interface is kept behind for providing backwards
+ * compatibility with the old UWB architecture.
  */
-interface IUwbAdapter {
+interface IUwbAdapter2 {
   /*
    * Register the callbacks used to notify the framework of events and data
    *
@@ -86,7 +89,7 @@ interface IUwbAdapter {
    */
   void openRanging(in AttributionSource attributionSource,
                    in SessionHandle sessionHandle,
-                   in IUwbRangingCallbacks rangingCallbacks,
+                   in IUwbRangingCallbacks2 rangingCallbacks,
                    in PersistableBundle parameters);
 
   /**
