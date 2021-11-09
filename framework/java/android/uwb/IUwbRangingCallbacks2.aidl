@@ -23,9 +23,12 @@ import android.uwb.SessionHandle;
 
 /**
  * @hide
- * TODO(b/196225233): Remove this when qorvo stack is integrated.
+ * TODO(b/196225233): Rename this to IUwbRangingCallbacks when qorvo stack is integrated.
+ * Temporary AIDL interface name for the interface between UwbManager & UwbService.
+ * The existing IUwbAdapter interface is kept behind for providing backwards
+ * compatibility with the old UWB architecture.
  */
-oneway interface IUwbRangingCallbacks {
+oneway interface IUwbRangingCallbacks2 {
   /**
    * Called when the ranging session has been opened
    *

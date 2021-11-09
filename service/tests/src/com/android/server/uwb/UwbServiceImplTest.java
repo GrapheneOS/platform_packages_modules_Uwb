@@ -50,6 +50,7 @@ import android.test.suitebuilder.annotation.SmallTest;
 import android.uwb.IUwbAdapter;
 import android.uwb.IUwbAdapterStateCallbacks;
 import android.uwb.IUwbRangingCallbacks;
+import android.uwb.IUwbRangingCallbacks2;
 import android.uwb.RangingReport;
 import android.uwb.RangingSession;
 import android.uwb.SessionHandle;
@@ -153,7 +154,7 @@ public class UwbServiceImplTest {
     @Test
     public void testOpenRanging() throws Exception {
         final SessionHandle sessionHandle = new SessionHandle(5);
-        final IUwbRangingCallbacks cb = mock(IUwbRangingCallbacks.class);
+        final IUwbRangingCallbacks2 cb = mock(IUwbRangingCallbacks2.class);
         final PersistableBundle parameters = new PersistableBundle();
         final IBinder cbBinder = mock(IBinder.class);
         when(cb.asBinder()).thenReturn(cbBinder);
@@ -207,7 +208,7 @@ public class UwbServiceImplTest {
     @Test
     public void testRangingCallbacks() throws Exception {
         final SessionHandle sessionHandle = new SessionHandle(5);
-        final IUwbRangingCallbacks cb = mock(IUwbRangingCallbacks.class);
+        final IUwbRangingCallbacks2 cb = mock(IUwbRangingCallbacks2.class);
         final PersistableBundle parameters = new PersistableBundle();
         final IBinder cbBinder = mock(IBinder.class);
         when(cb.asBinder()).thenReturn(cbBinder);
@@ -268,7 +269,7 @@ public class UwbServiceImplTest {
     @Test
     public void testHandleClientDeath() throws Exception {
         final SessionHandle sessionHandle = new SessionHandle(5);
-        final IUwbRangingCallbacks cb = mock(IUwbRangingCallbacks.class);
+        final IUwbRangingCallbacks2 cb = mock(IUwbRangingCallbacks2.class);
         final PersistableBundle parameters = new PersistableBundle();
         final IBinder cbBinder = mock(IBinder.class);
         when(cb.asBinder()).thenReturn(cbBinder);
@@ -302,7 +303,7 @@ public class UwbServiceImplTest {
     @Test
     public void testHandleVendorServiceDeath() throws Exception {
         final SessionHandle sessionHandle = new SessionHandle(5);
-        final IUwbRangingCallbacks cb = mock(IUwbRangingCallbacks.class);
+        final IUwbRangingCallbacks2 cb = mock(IUwbRangingCallbacks2.class);
         final PersistableBundle parameters = new PersistableBundle();
         final IBinder cbBinder = mock(IBinder.class);
         when(cb.asBinder()).thenReturn(cbBinder);
@@ -360,7 +361,7 @@ public class UwbServiceImplTest {
                 any());
 
         final SessionHandle sessionHandle = new SessionHandle(5);
-        final IUwbRangingCallbacks cb = mock(IUwbRangingCallbacks.class);
+        final IUwbRangingCallbacks2 cb = mock(IUwbRangingCallbacks2.class);
         final PersistableBundle parameters = new PersistableBundle();
         final IBinder cbBinder = mock(IBinder.class);
         when(cb.asBinder()).thenReturn(cbBinder);
@@ -373,7 +374,7 @@ public class UwbServiceImplTest {
     @Test
     public void testOnRangingResultCallbackNotSentWithoutUwbRangingPermission() throws Exception {
         final SessionHandle sessionHandle = new SessionHandle(5);
-        final IUwbRangingCallbacks cb = mock(IUwbRangingCallbacks.class);
+        final IUwbRangingCallbacks2 cb = mock(IUwbRangingCallbacks2.class);
         final PersistableBundle parameters = new PersistableBundle();
         final IBinder cbBinder = mock(IBinder.class);
         when(cb.asBinder()).thenReturn(cbBinder);

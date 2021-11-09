@@ -49,7 +49,7 @@ import java.util.concurrent.Executor;
 public final class RangingSession implements AutoCloseable {
     private static final String TAG = "Uwb.RangingSession";
     private final SessionHandle mSessionHandle;
-    private final IUwbAdapter mAdapter;
+    private final IUwbAdapter2 mAdapter;
     private final Executor mExecutor;
     private final Callback mCallback;
 
@@ -225,7 +225,7 @@ public final class RangingSession implements AutoCloseable {
     /**
      * @hide
      */
-    public RangingSession(Executor executor, Callback callback, IUwbAdapter adapter,
+    public RangingSession(Executor executor, Callback callback, IUwbAdapter2 adapter,
             SessionHandle sessionHandle) {
         mState = State.INIT;
         mExecutor = executor;
