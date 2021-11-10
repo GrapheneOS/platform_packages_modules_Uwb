@@ -15,6 +15,7 @@
  */
 package com.android.uwb.jni;
 
+import android.os.SystemProperties;
 import android.util.Log;
 
 import com.android.uwb.data.UwbMulticastListUpdateStatus;
@@ -38,7 +39,12 @@ public class NativeUwbManager {
     }
 
     protected void loadLibrary() {
-        System.loadLibrary("uwb_uci_jni");
+        // TODO(b/197341298): Remove this when rust native stack is ready.
+        if (SystemProperties.getBoolean("persist.uwb.enable_uci_rust_stack", false)) {
+            System.loadLibrary("uwb_uci_jni_rust");
+        } else {
+            System.loadLibrary("uwb_uci_jni");
+        }
         nativeInit();
     }
 
