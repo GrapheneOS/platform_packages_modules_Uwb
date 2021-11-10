@@ -67,6 +67,7 @@ import java.util.concurrent.TimeUnit;
 @AppModeFull(reason = "Cannot get UwbManager in instant app mode")
 public class UwbManagerTest {
     private static final String TAG = "UwbManagerTest";
+    private static final String CHIP_ID = "chipId";
 
     private final Context mContext = InstrumentationRegistry.getContext();
     private UwbManager mUwbManager;
@@ -100,9 +101,35 @@ public class UwbManagerTest {
     }
 
     @Test
+    public void testGetSpecificationInfoWithChipId() {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        try {
+            // Needs UWB_PRIVILEGED permission which is held by shell.
+            uiAutomation.adoptShellPermissionIdentity();
+            PersistableBundle persistableBundle = mUwbManager.getSpecificationInfo(CHIP_ID);
+            assertThat(persistableBundle).isNotNull();
+            assertThat(persistableBundle.isEmpty()).isFalse();
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
     public void testGetSpecificationInfoWithoutUwbPrivileged() {
         try {
             mUwbManager.getSpecificationInfo();
+            // should fail if the call was successful without UWB_PRIVILEGED permission.
+            fail();
+        } catch (SecurityException e) {
+            /* pass */
+            Log.i(TAG, "Failed with expected security exception: " + e);
+        }
+    }
+
+    @Test
+    public void testGetSpecificationInfoWithChipIdWithoutUwbPrivileged() {
+        try {
+            mUwbManager.getSpecificationInfo(CHIP_ID);
             // should fail if the call was successful without UWB_PRIVILEGED permission.
             fail();
         } catch (SecurityException e) {
@@ -125,9 +152,33 @@ public class UwbManagerTest {
     }
 
     @Test
+    public void testElapsedRealtimeResolutionNanosWithChipId() {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        try {
+            // Needs UWB_PRIVILEGED permission which is held by shell.
+            uiAutomation.adoptShellPermissionIdentity();
+            assertThat(mUwbManager.elapsedRealtimeResolutionNanos(CHIP_ID) >= 0L).isTrue();
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
     public void testElapsedRealtimeResolutionNanosWithoutUwbPrivileged() {
         try {
             mUwbManager.elapsedRealtimeResolutionNanos();
+            // should fail if the call was successful without UWB_PRIVILEGED permission.
+            fail();
+        } catch (SecurityException e) {
+            /* pass */
+            Log.i(TAG, "Failed with expected security exception: " + e);
+        }
+    }
+
+    @Test
+    public void testElapsedRealtimeResolutionNanosWithChipIdWithoutUwbPrivileged() {
+        try {
+            mUwbManager.elapsedRealtimeResolutionNanos(CHIP_ID);
             // should fail if the call was successful without UWB_PRIVILEGED permission.
             fail();
         } catch (SecurityException e) {
@@ -201,6 +252,33 @@ public class UwbManagerTest {
         }
     }
 
+    @Test
+    public void testOpenRangingSessionWithChipIdWithBadParams() throws Exception {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        CancellationSignal cancellationSignal = null;
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        RangingSessionCallback rangingSessionCallback = new RangingSessionCallback(countDownLatch);
+        try {
+            // Needs UWB_PRIVILEGED & UWB_RANGING permission which is held by shell.
+            uiAutomation.adoptShellPermissionIdentity();
+            // Try to start a ranging session with invalid params, should fail.
+            cancellationSignal = mUwbManager.openRangingSession(
+                    new PersistableBundle(),
+                    Executors.newSingleThreadExecutor(),
+                    rangingSessionCallback,
+                    CHIP_ID);
+            // Wait for the on start failed callback.
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.onOpenedCalled).isFalse();
+            assertThat(rangingSessionCallback.onOpenFailedCalled).isTrue();
+        } finally {
+            if (cancellationSignal != null) {
+                cancellationSignal.cancel();
+            }
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
     /**
      * Simulates the app holding UWB_RANGING permission, but not UWB_PRIVILEGED.
      */
@@ -223,6 +301,26 @@ public class UwbManagerTest {
         }
     }
 
+    @Test
+    public void testOpenRangingSessionWithChipIdWithoutUwbPrivileged() {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        try {
+            // Only hold UWB_RANGING permission
+            uiAutomation.adoptShellPermissionIdentity(UWB_RANGING);
+            mUwbManager.openRangingSession(new PersistableBundle(),
+                    Executors.newSingleThreadExecutor(),
+                    new RangingSessionCallback(new CountDownLatch(1)),
+                    CHIP_ID);
+            // should fail if the call was successful without UWB_PRIVILEGED permission.
+            fail();
+        } catch (SecurityException e) {
+            /* pass */
+            Log.i(TAG, "Failed with expected security exception: " + e);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
     /**
      * Simulates the app holding UWB_PRIVILEGED permission, but not UWB_RANGING.
      */
@@ -235,6 +333,26 @@ public class UwbManagerTest {
             mUwbManager.openRangingSession(new PersistableBundle(),
                     Executors.newSingleThreadExecutor(),
                     new RangingSessionCallback(new CountDownLatch(1)));
+            // should fail if the call was successful without UWB_RANGING permission.
+            fail();
+        } catch (SecurityException e) {
+            /* pass */
+            Log.i(TAG, "Failed with expected security exception: " + e);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    public void testOpenRangingSessionWithChipIdWithoutUwbRanging() {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        try {
+            // Needs UWB_PRIVILEGED permission which is held by shell.
+            uiAutomation.adoptShellPermissionIdentity(UWB_PRIVILEGED);
+            mUwbManager.openRangingSession(new PersistableBundle(),
+                    Executors.newSingleThreadExecutor(),
+                    new RangingSessionCallback(new CountDownLatch(1)),
+                    CHIP_ID);
             // should fail if the call was successful without UWB_RANGING permission.
             fail();
         } catch (SecurityException e) {
@@ -290,6 +408,31 @@ public class UwbManagerTest {
             uwbManagerWithUwbRangingRenounced.openRangingSession(new PersistableBundle(),
                     Executors.newSingleThreadExecutor(),
                     new RangingSessionCallback(new CountDownLatch(1)));
+            // should fail if the call was successful without UWB_RANGING permission.
+            fail();
+        } catch (SecurityException e) {
+            /* pass */
+            Log.i(TAG, "Failed with expected security exception: " + e);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    public void testOpenRangingSessionWithChipIdWithoutUwbRangingInNextAttributeSource() {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        try {
+            // Only hold UWB_PRIVILEGED permission
+            uiAutomation.adoptShellPermissionIdentity();
+            Context shellContextWithUwbRangingRenounced =
+                    createShellContextWithRenouncedPermissionsAndAttributionSource(
+                            Set.of(UWB_RANGING));
+            UwbManager uwbManagerWithUwbRangingRenounced =
+                    shellContextWithUwbRangingRenounced.getSystemService(UwbManager.class);
+            uwbManagerWithUwbRangingRenounced.openRangingSession(new PersistableBundle(),
+                    Executors.newSingleThreadExecutor(),
+                    new RangingSessionCallback(new CountDownLatch(1)),
+                    CHIP_ID);
             // should fail if the call was successful without UWB_RANGING permission.
             fail();
         } catch (SecurityException e) {
