@@ -15,6 +15,8 @@
  */
 package com.android.uwb.data;
 
+import static android.hardware.uwb.fira_android.UwbVendorSessionInitSessionType.CCC;
+
 import com.google.uwb.support.fira.FiraParams;
 
 public class UwbUciConstants {
@@ -33,7 +35,7 @@ public class UwbUciConstants {
      */
     public static final byte SESSION_TYPE_RANGING = 0x00;
     public static final byte SESSION_TYPE_DATA_TRANSFER = 0x01;
-    public static final byte SESSION_TYPE_CCC = (byte) 0xA0;
+    public static final byte SESSION_TYPE_CCC = (byte) CCC;
     public static final byte SESSION_TYPE_DEVICE_TEST_MODE = (byte) 0xD0;
 
     /**
