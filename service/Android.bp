@@ -34,6 +34,7 @@ filegroup {
     name: "service-uwb-srcs",
     srcs: [
         "java/**/*.java",
+        ":statslog-uwb-java-gen",
     ],
 }
 
@@ -55,6 +56,7 @@ java_library {
         "framework-annotations-lib",
         "framework-uwb-pre-jarjar",
         "ServiceUwbResources",
+        "framework-statsd.stubs.module_lib",
     ],
 
     static_libs: [
@@ -102,4 +104,15 @@ java_library {
     apex_available: [
         "com.android.uwb",
     ],
+}
+
+// Statsd auto-generated code
+// ============================================================
+genrule {
+    name: "statslog-uwb-java-gen",
+    tools: ["stats-log-api-gen"],
+    cmd: "$(location stats-log-api-gen) --java $(out) --module uwb " +
+         " --javaPackage com.android.server.uwb.proto --javaClass UwbStatsLog" +
+         " --minApiLevel 33",
+    out: ["com/android/server/uwb/proto/UwbStatsLog.java"],
 }
