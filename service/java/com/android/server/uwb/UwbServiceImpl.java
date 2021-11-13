@@ -45,6 +45,7 @@ import com.android.internal.annotations.GuardedBy;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -315,12 +316,14 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
     @Override
     public long getTimestampResolutionNanos(String chipId) throws RemoteException {
         enforceUwbPrivilegedPermission();
+        checkValidChipId(chipId);
         return getVendorUwbAdapter().getTimestampResolutionNanos();
     }
 
     @Override
     public PersistableBundle getSpecificationInfo(String chipId) throws RemoteException {
         enforceUwbPrivilegedPermission();
+        checkValidChipId(chipId);
         return getVendorUwbAdapter().getSpecificationInfo();
     }
 
@@ -412,6 +415,16 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
         getVendorUwbAdapter().setEnabled(isUwbEnabled());
     }
 
+    @Override
+    public List<String> getChipIds() {
+        return mUwbInjector.getNativeUwbManager().getChipIds();
+    }
+
+    @Override
+    public String getDefaultChipId() {
+        return mUwbInjector.getNativeUwbManager().getDefaultChipId();
+    }
+
     private void persistUwbToggleState(boolean enabled) {
         mUwbSettingsStore.put(UwbSettingsStore.SETTINGS_TOGGLE_STATE, enabled);
     }
@@ -445,6 +458,12 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
             getVendorUwbAdapter().setEnabled(isUwbEnabled());
         } catch (RemoteException e) {
             Log.e(TAG, "Unable to set UWB Adapter state.", e);
+        }
+    }
+
+    private void checkValidChipId(String chipId) {
+        if (chipId != null && !getChipIds().contains(chipId)) {
+            throw new IllegalArgumentException("invalid chipId: " + chipId);
         }
     }
 }

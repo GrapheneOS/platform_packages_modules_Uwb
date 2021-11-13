@@ -23,6 +23,8 @@ import com.android.uwb.data.UwbRangingData;
 import com.android.uwb.data.UwbUciConstants;
 import com.android.uwb.info.UwbSpecificationInfo;
 
+import java.util.List;
+
 public class NativeUwbManager {
     private static final String TAG = NativeUwbManager.class.getSimpleName();
 
@@ -254,12 +256,41 @@ public class NativeUwbManager {
      */
     public byte setCountryCode(byte[] countryCode) {
         synchronized (mSessionFnLock) {
-             /**
-              * TODO: Add support fo this
-              * return nativeSetCountryCode(countryCode);
-              */
+            /**
+             * TODO: Add support fo this
+             * return nativeSetCountryCode(countryCode);
+             */
             return UwbUciConstants.STATUS_CODE_FAILED;
         }
+    }
+
+    /**
+     * Returns a list of UWB chip identifiers.
+     *
+     * Callers can invoke methods on a specific UWB chip by passing its {@code chipId} to the
+     * method.
+     *
+     * @return list of UWB chip identifiers for a multi-HAL system, or a list of a single chip
+     * identifier for a single HAL system.
+     */
+    public List<String> getChipIds() {
+        // TODO(b/206150133): Get list of chip ids from configuration file
+        return List.of(getDefaultChipId());
+    }
+
+    /**
+     * Returns the default UWB chip identifier.
+     *
+     * If callers do not pass a specific {@code chipId} to UWB methods, then the method will be
+     * invoked on the default chip, which is determined at system initialization from a
+     * configuration file.
+     *
+     * @return default UWB chip identifier for a multi-HAL system, or the identifier of the only UWB
+     * chip in a single HAL system.
+     */
+    public String getDefaultChipId() {
+        // TODO(b/206150133): Get list of chip ids from configuration file
+        return "defaultChipId";
     }
 
     private native boolean nativeInit();

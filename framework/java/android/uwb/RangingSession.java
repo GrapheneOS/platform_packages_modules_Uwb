@@ -52,6 +52,7 @@ public final class RangingSession implements AutoCloseable {
     private final IUwbAdapter2 mAdapter;
     private final Executor mExecutor;
     private final Callback mCallback;
+    private final String mChipId;
 
     private enum State {
         /**
@@ -352,11 +353,20 @@ public final class RangingSession implements AutoCloseable {
      */
     public RangingSession(Executor executor, Callback callback, IUwbAdapter2 adapter,
             SessionHandle sessionHandle) {
+        this(executor, callback, adapter, sessionHandle, /* chipId= */ null);
+    }
+
+    /**
+     * @hide
+     */
+    public RangingSession(Executor executor, Callback callback, IUwbAdapter2 adapter,
+            SessionHandle sessionHandle, String chipId) {
         mState = State.INIT;
         mExecutor = executor;
         mCallback = callback;
         mAdapter = adapter;
         mSessionHandle = sessionHandle;
+        mChipId = chipId;
     }
 
     /**
