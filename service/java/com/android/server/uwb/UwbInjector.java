@@ -36,9 +36,13 @@ import android.util.AtomicFile;
 import android.util.Log;
 import android.uwb.IUwbAdapter;
 
+import com.android.uwb.UwbService;
+import com.android.uwb.jni.NativeUwbManager;
+
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Locale;
 
 /**
  * To be used for dependency injection (especially helps mocking static dependencies).
@@ -47,6 +51,7 @@ public class UwbInjector {
     private static final String TAG = "UwbInjector";
     private static final String APEX_NAME = "com.android.uwb";
     private static final String VENDOR_SERVICE_NAME = "uwb_vendor";
+    private static final String BOOT_DEFAULT_UWB_COUNTRY_CODE = "ro.boot.uwbcountrycode";
 
     /**
      * The path where the Uwb apex is mounted.
@@ -56,9 +61,14 @@ public class UwbInjector {
             new File("/apex", APEX_NAME).getAbsolutePath();
 
     private final UwbContext mContext;
+    private final Looper mLooper;
     private final PermissionManager mPermissionManager;
     private final UwbSettingsStore mUwbSettingsStore;
-    private final Looper mLooper;
+    private final NativeUwbManager mNativeUwbManager;
+    private final UwbCountryCode mUwbCountryCode;
+    // TODO(b/196225233): Make these final when qorvo stack is integrated.
+    private UwbService mUwbService;
+    private final UwbMetrics mUwbMetrics;
 
     public UwbInjector(@NonNull UwbContext context) {
         // Create UWB service thread.
@@ -72,10 +82,34 @@ public class UwbInjector {
                 context, new Handler(mLooper),
                 new AtomicFile(new File(getDeviceProtectedDataDir(),
                         UwbSettingsStore.FILE_NAME)), this);
+        mNativeUwbManager = new NativeUwbManager();
+        mUwbCountryCode =
+                new UwbCountryCode(mContext, mNativeUwbManager, new Handler(mLooper), this);
+        mUwbMetrics = new UwbMetrics(this);
     }
 
     public UwbSettingsStore getUwbSettingsStore() {
         return mUwbSettingsStore;
+    }
+
+    public NativeUwbManager getNativeUwbManager() {
+        return mNativeUwbManager;
+    }
+
+    public UwbCountryCode getUwbCountryCode() {
+        return mUwbCountryCode;
+    }
+
+    public UwbMetrics getUwbMetrics() {
+        return mUwbMetrics;
+    }
+
+    public UwbService getUwbService() {
+        // TODO(b/196225233): Remove this lazy initialization when qorvo stack is integrated.
+        if (mUwbService == null) {
+            mUwbService = new UwbService(mContext, mNativeUwbManager, mUwbMetrics, mUwbCountryCode);
+        }
+        return mUwbService;
     }
 
     /**
@@ -180,5 +214,25 @@ public class UwbInjector {
      */
     public long getElapsedSinceBootMillis() {
         return SystemClock.elapsedRealtime();
+    }
+
+    /**
+     * Is this a valid country code
+     * @param countryCode A 2-Character alphanumeric country code.
+     * @return true if the countryCode is valid, false otherwise.
+     */
+    private static boolean isValidCountryCode(String countryCode) {
+        return countryCode != null && countryCode.length() == 2
+                && countryCode.chars().allMatch(Character::isLetterOrDigit);
+    }
+
+    /**
+     * Default country code stored in system property
+     *
+     * @return Country code if available, null otherwise.
+     */
+    public String getOemDefaultCountryCode() {
+        String country = SystemProperties.get(BOOT_DEFAULT_UWB_COUNTRY_CODE);
+        return isValidCountryCode(country) ? country.toUpperCase(Locale.US) : null;
     }
 }
