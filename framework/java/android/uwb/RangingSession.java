@@ -495,10 +495,8 @@ public final class RangingSession implements AutoCloseable {
      */
     @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
     public void addControlee(@NonNull PersistableBundle params) {
-        if (mState == State.CLOSED) {
-            mExecutor.execute(() -> mCallback.onControleeAddFailed(
-                    Callback.REASON_LOCAL_REQUEST, new PersistableBundle()));
-            return;
+        if (mState != State.ACTIVE && mState != State.IDLE) {
+            throw new IllegalStateException();
         }
 
         try {
@@ -522,10 +520,8 @@ public final class RangingSession implements AutoCloseable {
      */
     @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
     public void removeControlee(@NonNull PersistableBundle params) {
-        if (mState == State.CLOSED) {
-            mExecutor.execute(() -> mCallback.onControleeAddFailed(
-                    Callback.REASON_LOCAL_REQUEST, new PersistableBundle()));
-            return;
+        if (mState != State.ACTIVE && mState != State.IDLE) {
+            throw new IllegalStateException();
         }
 
         try {
