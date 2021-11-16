@@ -34,6 +34,7 @@ import android.uwb.IUwbAdapter2;
 import android.uwb.RangingReport;
 import android.uwb.RangingSession;
 import android.uwb.SessionHandle;
+import android.uwb.UwbAddress;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
@@ -53,6 +54,7 @@ import java.util.concurrent.Executor;
 public class RangingSessionTest {
     private static final Executor EXECUTOR = UwbTestUtils.getExecutor();
     private static final PersistableBundle PARAMS = new PersistableBundle();
+    private static final UwbAddress UWB_ADDRESS = UwbAddress.fromBytes(new byte[] {0x00, 0x56});
     private static final @RangingSession.Callback.Reason int REASON =
             RangingSession.Callback.REASON_GENERIC_ERROR;
 
@@ -180,13 +182,18 @@ public class RangingSessionTest {
     }
 
     @Test
-    public void testReconfigure_OnlyWhenOpened() throws RemoteException {
+    public void testCallbacks_OnlyWhenOpened() throws RemoteException {
         SessionHandle handle = new SessionHandle(123);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         IUwbAdapter2 adapter = mock(IUwbAdapter2.class);
         RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
         doAnswer(new StartAnswer(session)).when(adapter).startRanging(any(), any());
         doAnswer(new ReconfigureAnswer(session)).when(adapter).reconfigureRanging(any(), any());
+        doAnswer(new SuspendAnswer(session)).when(adapter).suspend(any(), any());
+        doAnswer(new ResumeAnswer(session)).when(adapter).resume(any(), any());
+        doAnswer(new ControleeAddAnswer(session)).when(adapter).addControlee(any(), any());
+        doAnswer(new ControleeRemoveAnswer(session)).when(adapter).removeControlee(any(), any());
+        doAnswer(new DataSendAnswer(session)).when(adapter).sendData(any(), any(), any(), any());
 
         verifyThrowIllegalState(() -> session.reconfigure(PARAMS));
         verify(callback, times(0)).onReconfigured(any());
@@ -195,22 +202,68 @@ public class RangingSessionTest {
         session.onRangingOpened();
         verifyNoThrowIllegalState(() -> session.reconfigure(PARAMS));
         verify(callback, times(1)).onReconfigured(any());
+        verifyThrowIllegalState(() -> session.suspend(PARAMS));
+        verify(callback, times(0)).onSuspended(any());
+        verifyThrowIllegalState(() -> session.resume(PARAMS));
+        verify(callback, times(0)).onResumed(any());
+        verifyNoThrowIllegalState(() -> session.addControlee(PARAMS));
+        verify(callback, times(1)).onControleeAdded(any());
+        verifyNoThrowIllegalState(() -> session.removeControlee(PARAMS));
+        verify(callback, times(1)).onControleeRemoved(any());
+        verifyThrowIllegalState(() -> session.sendData(
+                UWB_ADDRESS, PARAMS, new byte[] {0x05, 0x1}));
+        verify(callback, times(0)).onDataSent(any(), any());
         verifyOpenState(session, true);
 
         session.onRangingStarted(PARAMS);
         verifyNoThrowIllegalState(() -> session.reconfigure(PARAMS));
         verify(callback, times(2)).onReconfigured(any());
+        verifyNoThrowIllegalState(() -> session.suspend(PARAMS));
+        verify(callback, times(1)).onSuspended(any());
+        verifyNoThrowIllegalState(() -> session.resume(PARAMS));
+        verify(callback, times(1)).onResumed(any());
+        verifyNoThrowIllegalState(() -> session.addControlee(PARAMS));
+        verify(callback, times(2)).onControleeAdded(any());
+        verifyNoThrowIllegalState(() -> session.removeControlee(PARAMS));
+        verify(callback, times(2)).onControleeRemoved(any());
+        verifyNoThrowIllegalState(() -> session.sendData(
+                UWB_ADDRESS, PARAMS, new byte[] {0x05, 0x1}));
+        verify(callback, times(1)).onDataSent(any(), any());
         verifyOpenState(session, true);
+
+        session.onDataReceived(UWB_ADDRESS, PARAMS, new byte[] {0x5, 0x7});
+        verify(callback, times(1)).onDataReceived(any(), any(), any());
 
         session.onRangingStopped(REASON, PARAMS);
         verifyNoThrowIllegalState(() -> session.reconfigure(PARAMS));
         verify(callback, times(3)).onReconfigured(any());
+        verifyThrowIllegalState(() -> session.suspend(PARAMS));
+        verify(callback, times(1)).onSuspended(any());
+        verifyThrowIllegalState(() -> session.resume(PARAMS));
+        verify(callback, times(1)).onResumed(any());
+        verifyNoThrowIllegalState(() -> session.addControlee(PARAMS));
+        verify(callback, times(3)).onControleeAdded(any());
+        verifyNoThrowIllegalState(() -> session.removeControlee(PARAMS));
+        verify(callback, times(3)).onControleeRemoved(any());
+        verifyThrowIllegalState(() -> session.sendData(
+                UWB_ADDRESS, PARAMS, new byte[] {0x05, 0x1}));
+        verify(callback, times(1)).onDataSent(any(), any());
         verifyOpenState(session, true);
-
 
         session.onRangingClosed(REASON, PARAMS);
         verifyThrowIllegalState(() -> session.reconfigure(PARAMS));
         verify(callback, times(3)).onReconfigured(any());
+        verifyThrowIllegalState(() -> session.suspend(PARAMS));
+        verify(callback, times(1)).onSuspended(any());
+        verifyThrowIllegalState(() -> session.resume(PARAMS));
+        verify(callback, times(1)).onResumed(any());
+        verifyThrowIllegalState(() -> session.addControlee(PARAMS));
+        verify(callback, times(3)).onControleeAdded(any());
+        verifyThrowIllegalState(() -> session.removeControlee(PARAMS));
+        verify(callback, times(3)).onControleeRemoved(any());
+        verifyThrowIllegalState(() -> session.sendData(
+                UWB_ADDRESS, PARAMS, new byte[] {0x05, 0x1}));
+        verify(callback, times(1)).onDataSent(any(), any());
         verifyOpenState(session, false);
     }
 
@@ -352,6 +405,66 @@ public class RangingSessionTest {
         @Override
         public Object answer(InvocationOnMock invocation) {
             mSession.onRangingReconfigured(PARAMS);
+            return null;
+        }
+    }
+
+    class SuspendAnswer extends AdapterAnswer {
+        SuspendAnswer(RangingSession session) {
+            super(session);
+        }
+
+        @Override
+        public Object answer(InvocationOnMock invocation) {
+            mSession.onRangingSuspended(PARAMS);
+            return null;
+        }
+    }
+
+    class ResumeAnswer extends AdapterAnswer {
+        ResumeAnswer(RangingSession session) {
+            super(session);
+        }
+
+        @Override
+        public Object answer(InvocationOnMock invocation) {
+            mSession.onRangingResumed(PARAMS);
+            return null;
+        }
+    }
+
+    class ControleeAddAnswer extends AdapterAnswer {
+        ControleeAddAnswer(RangingSession session) {
+            super(session);
+        }
+
+        @Override
+        public Object answer(InvocationOnMock invocation) {
+            mSession.onControleeAdded(PARAMS);
+            return null;
+        }
+    }
+
+    class ControleeRemoveAnswer extends AdapterAnswer {
+        ControleeRemoveAnswer(RangingSession session) {
+            super(session);
+        }
+
+        @Override
+        public Object answer(InvocationOnMock invocation) {
+            mSession.onControleeRemoved(PARAMS);
+            return null;
+        }
+    }
+
+    class DataSendAnswer extends AdapterAnswer {
+        DataSendAnswer(RangingSession session) {
+            super(session);
+        }
+
+        @Override
+        public Object answer(InvocationOnMock invocation) {
+            mSession.onDataSent(UWB_ADDRESS, PARAMS);
             return null;
         }
     }
