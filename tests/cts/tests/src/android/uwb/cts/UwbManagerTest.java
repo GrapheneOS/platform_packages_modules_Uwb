@@ -25,6 +25,7 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -67,7 +68,7 @@ import java.util.concurrent.TimeUnit;
 @AppModeFull(reason = "Cannot get UwbManager in instant app mode")
 public class UwbManagerTest {
     private static final String TAG = "UwbManagerTest";
-    private static final String CHIP_ID = "chipId";
+    private static final String CHIP_ID = "defaultChipId";
 
     private final Context mContext = InstrumentationRegistry.getContext();
     private UwbManager mUwbManager;
@@ -109,6 +110,19 @@ public class UwbManagerTest {
             PersistableBundle persistableBundle = mUwbManager.getSpecificationInfo(CHIP_ID);
             assertThat(persistableBundle).isNotNull();
             assertThat(persistableBundle.isEmpty()).isFalse();
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    public void testGetSpecificationInfoWithInvalidChipId() {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        try {
+            // Needs UWB_PRIVILEGED permission which is held by shell.
+            uiAutomation.adoptShellPermissionIdentity();
+            assertThrows(IllegalArgumentException.class,
+                    () -> mUwbManager.getSpecificationInfo("invalidChipId"));
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
@@ -158,6 +172,19 @@ public class UwbManagerTest {
             // Needs UWB_PRIVILEGED permission which is held by shell.
             uiAutomation.adoptShellPermissionIdentity();
             assertThat(mUwbManager.elapsedRealtimeResolutionNanos(CHIP_ID) >= 0L).isTrue();
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    public void testElapsedRealtimeResolutionNanosWithInvalidChipId() {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        try {
+            // Needs UWB_PRIVILEGED permission which is held by shell.
+            uiAutomation.adoptShellPermissionIdentity();
+            assertThrows(IllegalArgumentException.class,
+                    () -> mUwbManager.elapsedRealtimeResolutionNanos("invalidChipId"));
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
@@ -227,7 +254,26 @@ public class UwbManagerTest {
     }
 
     @Test
-    public void testOpenRangingSessionWithBadParams() throws Exception {
+    public void testOpenRangingSessionWithInvalidChipId() {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        RangingSessionCallback rangingSessionCallback = new RangingSessionCallback(countDownLatch);
+        try {
+            // Needs UWB_PRIVILEGED & UWB_RANGING permission which is held by shell.
+            uiAutomation.adoptShellPermissionIdentity();
+            // Try to start a ranging session with invalid params, should fail.
+            assertThrows(IllegalArgumentException.class, () -> mUwbManager.openRangingSession(
+                    new PersistableBundle(),
+                    Executors.newSingleThreadExecutor(),
+                    rangingSessionCallback,
+                    "invalidChipId"));
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    public void testOpenRangingSessionWithChipIdWithBadParams() throws Exception {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         CancellationSignal cancellationSignal = null;
         CountDownLatch countDownLatch = new CountDownLatch(1);
@@ -239,7 +285,8 @@ public class UwbManagerTest {
             cancellationSignal = mUwbManager.openRangingSession(
                     new PersistableBundle(),
                     Executors.newSingleThreadExecutor(),
-                    rangingSessionCallback);
+                    rangingSessionCallback,
+                    CHIP_ID);
             // Wait for the on start failed callback.
             assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
             assertThat(rangingSessionCallback.onOpenedCalled).isFalse();
@@ -253,7 +300,7 @@ public class UwbManagerTest {
     }
 
     @Test
-    public void testOpenRangingSessionWithChipIdWithBadParams() throws Exception {
+    public void testOpenRangingSessionWithInvalidChipIdWithBadParams() throws Exception {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         CancellationSignal cancellationSignal = null;
         CountDownLatch countDownLatch = new CountDownLatch(1);
