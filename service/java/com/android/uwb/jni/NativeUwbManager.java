@@ -256,11 +256,7 @@ public class NativeUwbManager {
      */
     public byte setCountryCode(byte[] countryCode) {
         synchronized (mSessionFnLock) {
-            /**
-             * TODO: Add support fo this
-             * return nativeSetCountryCode(countryCode);
-             */
-            return UwbUciConstants.STATUS_CODE_FAILED;
+            return nativeSetCountryCode(countryCode);
         }
     }
 
