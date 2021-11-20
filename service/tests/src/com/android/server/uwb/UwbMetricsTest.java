@@ -16,6 +16,7 @@
 
 package com.android.server.uwb;
 
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.validateMockitoUsage;
 import static org.mockito.Mockito.when;
 
@@ -53,6 +54,13 @@ import java.io.PrintWriter;
 @SmallTest
 @Presubmit
 public class UwbMetricsTest {
+    private static final int CHANNEL_DEFAULT = 5;
+    private static final int DISTANCE_DEFAULT_CM = 100;
+    private static final int ELEVATION_DEFAULT_DEGREE = 50;
+    private static final int AZIMUTH_DEFAULT_DEGREE = 56;
+    private static final int ELEVATION_FOM_DEFAULT = 90;
+    private static final int AZIMUTH_FOM_DEFAULT = 60;
+    private static final int NLOS_DEFAULT = 1;
     @Mock
     private UwbInjector mUwbInjector;
     private UwbTwoWayMeasurement[] mTwoWayMeasurements = new UwbTwoWayMeasurement[1];
@@ -67,19 +75,12 @@ public class UwbMetricsTest {
 
     private UwbMetrics mUwbMetrics;
     private MockitoSession mMockSession;
+    private long mElapsedTimeMs;
 
-    private static final int CHANNEL_DEFAULT = 5;
-    private static final int DISTANCE_DEFAULT_CM = 100;
-    private static final int ELEVATION_DEFAULT_DEGREE = 50;
-    private static final int AZIMUTH_DEFAULT_DEGREE = 56;
-    private static final int ELEVATION_FOM_DEFAULT = 90;
-    private static final int AZIMUTH_FOM_DEFAULT = 60;
-    private static final int NLOS_DEFAULT = 1;
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-
-        when(mUwbInjector.getElapsedSinceBootMillis()).thenReturn(1000L);
+        setElapsedTimeMs(1000L);
         mTwoWayMeasurements[0] = mTwoWayMeasurement;
         when(mRangingData.getNoOfRangingMeasures()).thenReturn(1);
         when(mRangingData.getRangingMeasuresType()).thenReturn(
@@ -120,6 +121,16 @@ public class UwbMetricsTest {
         mMockSession.finishMocking();
     }
 
+    private void setElapsedTimeMs(long elapsedTimeMs) {
+        mElapsedTimeMs = elapsedTimeMs;
+        when(mUwbInjector.getElapsedSinceBootMillis()).thenReturn(mElapsedTimeMs);
+    }
+
+    private void addElapsedTimeMs(long durationMs) {
+        mElapsedTimeMs += durationMs;
+        when(mUwbInjector.getElapsedSinceBootMillis()).thenReturn(mElapsedTimeMs);
+    }
+
     @Test
     public void testlogRangingSessionInitFiraSuccess() throws Exception {
         mUwbMetrics.logRangingSessionInitEvent(mUwbSession, UwbUciConstants.STATUS_CODE_OK);
@@ -153,6 +164,7 @@ public class UwbMetricsTest {
 
     @Test
     public void testLoggingRangingResultValidDistanceAngle() throws Exception {
+        addElapsedTimeMs(UwbMetrics.RANGING_RESULT_LOG_INTERVAL_MIN_MS);
         mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
                 mRangingData);
 
@@ -168,7 +180,24 @@ public class UwbMetricsTest {
     }
 
     @Test
+    public void testLoggingRangingResultSmallLoggingInterval() throws Exception {
+        mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
+                mRangingData);
+
+        ExtendedMockito.verify(() -> UwbStatsLog.write(
+                UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED,
+                UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
+                UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__NLOS__NLOS,
+                true, DISTANCE_DEFAULT_CM, DISTANCE_DEFAULT_CM / 50,
+                UwbMetrics.DISTANCE_FOM_DEFAULT,
+                true, AZIMUTH_DEFAULT_DEGREE, AZIMUTH_DEFAULT_DEGREE / 10, AZIMUTH_FOM_DEFAULT,
+                true, ELEVATION_DEFAULT_DEGREE, ELEVATION_DEFAULT_DEGREE / 10, ELEVATION_FOM_DEFAULT
+        ), times(0));
+    }
+
+    @Test
     public void testLoggingRangingResultInvalidDistance() throws Exception {
+        addElapsedTimeMs(UwbMetrics.RANGING_RESULT_LOG_INTERVAL_MIN_MS);
         when(mTwoWayMeasurement.getDistance()).thenReturn(UwbMetrics.INVALID_DISTANCE);
         when(mTwoWayMeasurement.getAoaAzimuth()).thenReturn((float) -10.0);
         when(mTwoWayMeasurement.getAoaAzimuthFom()).thenReturn(0);
@@ -183,10 +212,10 @@ public class UwbMetricsTest {
                 UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED,
                 UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__CCC,
                 UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__NLOS__LOS,
-                false, UwbMetrics.INVALID_DISTANCE, UwbMetrics.INVALID_DISTANCE / 50,
+                false, UwbMetrics.INVALID_DISTANCE, 0,
                 UwbMetrics.DISTANCE_FOM_DEFAULT,
-                false, -10, -1, 0,
-                false, -20, -2, 0
+                false, -10, 0, 0,
+                false, -20, 0, 0
         ));
     }
 
@@ -196,8 +225,9 @@ public class UwbMetricsTest {
         mUwbMetrics.logRangingSessionInitEvent(mUwbSession,
                 UwbUciConstants.STATUS_CODE_INVALID_PARAM);
 
+        addElapsedTimeMs(UwbMetrics.RANGING_RESULT_LOG_INTERVAL_MIN_MS);
         mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__CCC, mRangingData);
-
+        addElapsedTimeMs(UwbMetrics.RANGING_RESULT_LOG_INTERVAL_MIN_MS);
         mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
                 mRangingData);
 
