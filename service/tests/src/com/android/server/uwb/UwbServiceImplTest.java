@@ -138,7 +138,8 @@ public class UwbServiceImplTest {
     public void testGetTimestampResolutionNanos() throws Exception {
         final long timestamp = 34L;
         when(mVendorService.getTimestampResolutionNanos()).thenReturn(timestamp);
-        assertThat(mUwbServiceImpl.getTimestampResolutionNanos()).isEqualTo(timestamp);
+        assertThat(mUwbServiceImpl.getTimestampResolutionNanos(/* chipId= */ null))
+                .isEqualTo(timestamp);
 
         verify(mVendorService).getTimestampResolutionNanos();
     }
@@ -147,7 +148,8 @@ public class UwbServiceImplTest {
     public void testGetSpecificationInfo() throws Exception {
         final PersistableBundle specification = new PersistableBundle();
         when(mVendorService.getSpecificationInfo()).thenReturn(specification);
-        assertThat(mUwbServiceImpl.getSpecificationInfo()).isEqualTo(specification);
+        assertThat(mUwbServiceImpl.getSpecificationInfo(/* chipId= */ null))
+                .isEqualTo(specification);
 
         verify(mVendorService).getSpecificationInfo();
     }
@@ -160,7 +162,8 @@ public class UwbServiceImplTest {
         final IBinder cbBinder = mock(IBinder.class);
         when(cb.asBinder()).thenReturn(cbBinder);
 
-        mUwbServiceImpl.openRanging(ATTRIBUTION_SOURCE, sessionHandle, cb, parameters);
+        mUwbServiceImpl.openRanging(
+                ATTRIBUTION_SOURCE, sessionHandle, cb, parameters, /* chipId= */ null);
 
         verify(mVendorService).openRanging(
                 eq(ATTRIBUTION_SOURCE), eq(sessionHandle), mRangingCbCaptor.capture(),
@@ -214,7 +217,8 @@ public class UwbServiceImplTest {
         final IBinder cbBinder = mock(IBinder.class);
         when(cb.asBinder()).thenReturn(cbBinder);
 
-        mUwbServiceImpl.openRanging(ATTRIBUTION_SOURCE, sessionHandle, cb, parameters);
+        mUwbServiceImpl.openRanging(
+                ATTRIBUTION_SOURCE, sessionHandle, cb, parameters, /* chipId= */ null);
 
         verify(mVendorService).openRanging(
                 eq(ATTRIBUTION_SOURCE), eq(sessionHandle), mRangingCbCaptor.capture(),
@@ -275,7 +279,8 @@ public class UwbServiceImplTest {
         final IBinder cbBinder = mock(IBinder.class);
         when(cb.asBinder()).thenReturn(cbBinder);
 
-        mUwbServiceImpl.openRanging(ATTRIBUTION_SOURCE, sessionHandle, cb, parameters);
+        mUwbServiceImpl.openRanging(
+                ATTRIBUTION_SOURCE, sessionHandle, cb, parameters, /* chipId= */ null);
 
         verify(mVendorService).openRanging(
                 eq(ATTRIBUTION_SOURCE), eq(sessionHandle), mRangingCbCaptor.capture(),
@@ -309,7 +314,8 @@ public class UwbServiceImplTest {
         final IBinder cbBinder = mock(IBinder.class);
         when(cb.asBinder()).thenReturn(cbBinder);
 
-        mUwbServiceImpl.openRanging(ATTRIBUTION_SOURCE, sessionHandle, cb, parameters);
+        mUwbServiceImpl.openRanging(
+                ATTRIBUTION_SOURCE, sessionHandle, cb, parameters, /* chipId= */ null);
 
         verify(mVendorServiceBinder).linkToDeath(mVendorServiceDeathCaptor.capture(), anyInt());
         assertThat(mVendorServiceDeathCaptor.getValue()).isNotNull();
@@ -367,7 +373,8 @@ public class UwbServiceImplTest {
         final IBinder cbBinder = mock(IBinder.class);
         when(cb.asBinder()).thenReturn(cbBinder);
         try {
-            mUwbServiceImpl.openRanging(ATTRIBUTION_SOURCE, sessionHandle, cb, parameters);
+            mUwbServiceImpl.openRanging(
+                    ATTRIBUTION_SOURCE, sessionHandle, cb, parameters, /* chipId= */ null);
             fail();
         } catch (SecurityException e) { /* pass */ }
     }
@@ -380,7 +387,8 @@ public class UwbServiceImplTest {
         final IBinder cbBinder = mock(IBinder.class);
         when(cb.asBinder()).thenReturn(cbBinder);
 
-        mUwbServiceImpl.openRanging(ATTRIBUTION_SOURCE, sessionHandle, cb, parameters);
+        mUwbServiceImpl.openRanging(
+                ATTRIBUTION_SOURCE, sessionHandle, cb, parameters, /* chipId= */ null);
 
         verify(mVendorService).openRanging(
                 eq(ATTRIBUTION_SOURCE), eq(sessionHandle), mRangingCbCaptor.capture(),

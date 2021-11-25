@@ -54,16 +54,20 @@ interface IUwbAdapter2 {
   /**
    * Get the accuracy of the ranging timestamps
    *
+   * @param chipId identifier of UWB chip for multi-HAL devices
+   *
    * @return accuracy of the ranging timestamps in nanoseconds
    */
-  long getTimestampResolutionNanos();
+  long getTimestampResolutionNanos(in String chipId);
 
   /**
    * Provides the capabilities and features of the device
    *
+   * @param chipId identifier of UWB chip for multi-HAL devices
+   *
    * @return specification specific capabilities and features of the device
    */
-  PersistableBundle getSpecificationInfo();
+  PersistableBundle getSpecificationInfo(in String chipId);
 
   /**
    * Request to open a new ranging session
@@ -87,11 +91,13 @@ interface IUwbAdapter2 {
    * @param sessionHandle the session handle to open ranging for
    * @param rangingCallbacks the callbacks used to deliver ranging information
    * @param parameters the configuration to use for ranging
+   * @param chipId identifier of UWB chip for multi-HAL devices
    */
   void openRanging(in AttributionSource attributionSource,
                    in SessionHandle sessionHandle,
                    in IUwbRangingCallbacks2 rangingCallbacks,
-                   in PersistableBundle parameters);
+                   in PersistableBundle parameters,
+                   in String chipId);
 
   /**
    * Request to start ranging

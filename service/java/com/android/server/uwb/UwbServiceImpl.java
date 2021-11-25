@@ -315,21 +315,24 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
     }
 
     @Override
-    public long getTimestampResolutionNanos() throws RemoteException {
+    public long getTimestampResolutionNanos(String chipId) throws RemoteException {
         enforceUwbPrivilegedPermission();
         return getVendorUwbAdapter().getTimestampResolutionNanos();
     }
 
     @Override
-    public PersistableBundle getSpecificationInfo() throws RemoteException {
+    public PersistableBundle getSpecificationInfo(String chipId) throws RemoteException {
         enforceUwbPrivilegedPermission();
         return getVendorUwbAdapter().getSpecificationInfo();
     }
 
     @Override
     public void openRanging(AttributionSource attributionSource,
-            SessionHandle sessionHandle, IUwbRangingCallbacks2 rangingCallbacks,
-            PersistableBundle parameters) throws RemoteException {
+            SessionHandle sessionHandle,
+            IUwbRangingCallbacks2 rangingCallbacks,
+            PersistableBundle parameters,
+            String chipId) throws RemoteException {
+
         enforceUwbPrivilegedPermission();
         mUwbInjector.enforceUwbRangingPermissionForPreflight(attributionSource);
 
@@ -338,7 +341,8 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
         synchronized (mCallbacksMap) {
             mCallbacksMap.put(sessionHandle, wrapperCb);
         }
-        getVendorUwbAdapter().openRanging(attributionSource, sessionHandle, wrapperCb, parameters);
+        getVendorUwbAdapter()
+                .openRanging(attributionSource, sessionHandle, wrapperCb, parameters);
     }
 
     @Override

@@ -17,6 +17,7 @@
 package android.uwb;
 
 import android.annotation.NonNull;
+import android.annotation.Nullable;
 import android.content.AttributionSource;
 import android.os.CancellationSignal;
 import android.os.PersistableBundle;
@@ -50,20 +51,26 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks2.Stub {
      * @param executor {@link Executor} to run callbacks
      * @param callbacks {@link RangingSession.Callback} to associate with the {@link RangingSession}
      *                  that is being opened.
+     * @param chipId identifier of UWB chip for multi-HAL devices
      * @return a {@link CancellationSignal} that may be used to cancel the opening of the
      *         {@link RangingSession}.
      */
     public CancellationSignal openSession(@NonNull AttributionSource attributionSource,
             @NonNull PersistableBundle params,
             @NonNull Executor executor,
-            @NonNull RangingSession.Callback callbacks) {
+            @NonNull RangingSession.Callback callbacks,
+            @Nullable String chipId) {
         synchronized (this) {
             SessionHandle sessionHandle = new SessionHandle(mNextSessionId++);
             RangingSession session =
                     new RangingSession(executor, callbacks, mAdapter, sessionHandle);
             mRangingSessionTable.put(sessionHandle, session);
             try {
-                mAdapter.openRanging(attributionSource, sessionHandle, this, params);
+                mAdapter.openRanging(attributionSource,
+                        sessionHandle,
+                        this,
+                        params,
+                        chipId);
             } catch (RemoteException e) {
                 throw e.rethrowFromSystemServer();
             }

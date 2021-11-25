@@ -198,8 +198,28 @@ public final class UwbManager {
     @NonNull
     @RequiresPermission(permission.UWB_PRIVILEGED)
     public PersistableBundle getSpecificationInfo() {
+        return getSpecificationInfoInternal(/* chipId= */ null);
+    }
+
+    /**
+     * Get a {@link PersistableBundle} with the supported UWB protocols and parameters.
+     *
+     * @see #getSpecificationInfo() if you don't need multi-HAL support
+     *
+     * @param chipId identifier of UWB chip for multi-HAL devices
+     *
+     * @return {@link PersistableBundle} of the device's supported UWB protocols and parameters
+     */
+    // TODO(b/205614701): Add documentation about how to find the relevant chipId
+    @NonNull
+    @RequiresPermission(permission.UWB_PRIVILEGED)
+    public PersistableBundle getSpecificationInfo(@NonNull String chipId) {
+        return getSpecificationInfoInternal(chipId);
+    }
+
+    private PersistableBundle getSpecificationInfoInternal(String chipId) {
         try {
-            return mUwbAdapter.getSpecificationInfo();
+            return mUwbAdapter.getSpecificationInfo(chipId);
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();
         }
@@ -215,8 +235,27 @@ public final class UwbManager {
     @SuppressLint("MethodNameUnits")
     @RequiresPermission(permission.UWB_PRIVILEGED)
     public long elapsedRealtimeResolutionNanos() {
+        return elapsedRealtimeResolutionNanosInternal(/* chipId= */ null);
+    }
+
+    /**
+     * Get the timestamp resolution for events in nanoseconds
+     *
+     * @see #elapsedRealtimeResolutionNanos() if you don't need multi-HAL support
+     *
+     * @param chipId identifier of UWB chip for multi-HAL devices
+     *
+     * @return the timestamp resolution in nanoseconds
+     */
+    @SuppressLint("MethodNameUnits")
+    @RequiresPermission(permission.UWB_PRIVILEGED)
+    public long elapsedRealtimeResolutionNanos(@NonNull String chipId) {
+        return elapsedRealtimeResolutionNanosInternal(chipId);
+    }
+
+    private long elapsedRealtimeResolutionNanosInternal(String chipId) {
         try {
-            return mUwbAdapter.getTimestampResolutionNanos();
+            return mUwbAdapter.getTimestampResolutionNanos(chipId);
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();
         }
@@ -256,8 +295,42 @@ public final class UwbManager {
     public CancellationSignal openRangingSession(@NonNull PersistableBundle parameters,
             @NonNull @CallbackExecutor Executor executor,
             @NonNull RangingSession.Callback callbacks) {
+        return openRangingSessionInternal(parameters, executor, callbacks, /* chipId= */ null);
+    }
+
+    /**
+     * Open a {@link RangingSession} with the given parameters
+     *
+     * @see #openRangingSession(PersistableBundle, Executor, RangingSession.Callback) if you don't
+     * need multi-HAL support
+     *
+     * @param parameters the parameters that define the ranging session
+     * @param executor {@link Executor} to run callbacks
+     * @param callbacks {@link RangingSession.Callback} to associate with the
+     *                  {@link RangingSession} that is being opened.
+     * @param chipId identifier of UWB chip for multi-HAL devices
+     *
+     * @return an {@link CancellationSignal} that is able to be used to cancel the opening of a
+     *         {@link RangingSession} that has been requested through {@link #openRangingSession}
+     *         but has not yet been made available by
+     *         {@link RangingSession.Callback#onOpened(RangingSession)}.
+     */
+    @NonNull
+    @RequiresPermission(allOf = {
+            permission.UWB_PRIVILEGED,
+            permission.UWB_RANGING
+    })
+    public CancellationSignal openRangingSession(@NonNull PersistableBundle parameters,
+            @NonNull @CallbackExecutor Executor executor,
+            @NonNull RangingSession.Callback callbacks,
+            @SuppressLint("ListenerLast") @NonNull String chipId) {
+        return openRangingSessionInternal(parameters, executor, callbacks, chipId);
+    }
+
+    private CancellationSignal openRangingSessionInternal(PersistableBundle parameters,
+            Executor executor, RangingSession.Callback callbacks, String chipId) {
         return mRangingManager.openSession(
-                mContext.getAttributionSource(), parameters, executor, callbacks);
+                mContext.getAttributionSource(), parameters, executor, callbacks, chipId);
     }
 
     /**
