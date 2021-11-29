@@ -247,6 +247,21 @@ public class NativeUwbManager {
         }
     }
 
+    /**
+     * Set country code.
+     *
+     * @param countryCode 2 char ISO country code
+     */
+    public byte setCountryCode(byte[] countryCode) {
+        synchronized (mSessionFnLock) {
+             /**
+              * TODO: Add support fo this
+              * return nativeSetCountryCode(countryCode);
+              */
+            return UwbUciConstants.STATUS_CODE_FAILED;
+        }
+    }
+
     private native boolean nativeInit();
 
     private native boolean nativeDoInitialize();
@@ -278,4 +293,6 @@ public class NativeUwbManager {
 
     private native byte nativeControllerMulticastListUpdate(int sessionId, byte action,
             byte noOfControlee, byte[] address, int[]subSessionId);
+
+    private native byte nativeSetCountryCode(byte[] countryCode);
 }

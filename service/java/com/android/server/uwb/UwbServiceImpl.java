@@ -42,8 +42,6 @@ import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
 
 import com.android.internal.annotations.GuardedBy;
-import com.android.uwb.UwbService;
-import com.android.uwb.jni.NativeUwbManager;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
@@ -58,7 +56,7 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
     private final Context mContext;
     private final UwbInjector mUwbInjector;
     private final UwbSettingsStore mUwbSettingsStore;
-    private final UwbMetrics mUwbMetrics;
+
     /**
      * Map for storing the callbacks wrapper for each session.
      */
@@ -251,8 +249,7 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
         // TODO(b/196225233): Remove this when qorvo stack is integrated.
         if (mUwbInjector.isUciStackEnabled()) {
             Log.i(TAG, "Using the UCI stack");
-            mVendorUwbAdapter = new UwbService(mContext, new NativeUwbManager(), mUwbMetrics,
-                    mUwbInjector).getIUwbAdapter();
+            mVendorUwbAdapter = mUwbInjector.getUwbService().getIUwbAdapter();
         } else {
             Log.i(TAG, "Using the legacy stack");
             mVendorUwbAdapter = mUwbInjector.getVendorService();
@@ -263,7 +260,7 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
             linkToVendorServiceDeath();
         }
         // TODO(b/196225233): Remove this when the AOSP -> vendor bridge is removed.
-        getVendorUwbAdapter().setEnabled(isUwbEnabled());
+        mVendorUwbAdapter.setEnabled(isUwbEnabled());
         return mVendorUwbAdapter;
     }
 
@@ -271,7 +268,6 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
         mContext = context;
         mUwbInjector = uwbInjector;
         mUwbSettingsStore = uwbInjector.getUwbSettingsStore();
-        mUwbMetrics = new UwbMetrics(uwbInjector);
         registerAirplaneModeReceiver();
     }
 
@@ -280,6 +276,7 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
      */
     public void initialize() {
         mUwbSettingsStore.initialize();
+        if (mUwbInjector.isUciStackEnabled()) mUwbInjector.getUwbCountryCode().initialize();
     }
 
     @Override
@@ -292,7 +289,8 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
             return;
         }
         mUwbSettingsStore.dump(fd, pw, args);
-        mUwbMetrics.dump(fd, pw, args);
+        mUwbInjector.getUwbMetrics().dump(fd, pw, args);
+        mUwbInjector.getUwbCountryCode().dump(fd, pw, args);
     }
 
     private void enforceUwbPrivilegedPermission() {
