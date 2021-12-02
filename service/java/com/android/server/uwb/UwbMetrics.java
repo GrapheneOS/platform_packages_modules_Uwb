@@ -42,10 +42,12 @@ public class UwbMetrics {
     private static final int MAX_RANGING_REPORTS = 1024;
     public static final int DISTANCE_FOM_DEFAULT = 100;
     public static final int INVALID_DISTANCE = 0xFFFF;
+    public static final long RANGING_RESULT_LOG_INTERVAL_MIN_MS = 5_000;
     private final UwbInjector mUwbInjector;
     private final Deque<RangingSessionStats> mRangingSessionList = new ArrayDeque<>();
     private final Deque<RangingReportEvent> mRangingReportList = new ArrayDeque<>();
     private int mNumApps = 0;
+    private long mLastRangingDataLogTimeMs;
     private final Object mLock = new Object();
     /**
      * The class storing the stats of a ranging session.
@@ -232,12 +234,9 @@ public class UwbMetrics {
 
         int sessionId = (int) rangingData.getSessionId();
         int distanceCm = measurement.getDistance();
-        int distance50Cm = distanceCm / 50;
         int azimuthDegree = (int) measurement.getAoaAzimuth();
-        int azimuth10Degree = azimuthDegree / 10;
         int azimuthFom = measurement.getAoaAzimuthFom();
         int elevationDegree = (int) measurement.getAoaElevation();
-        int elevation10Degree = elevationDegree / 10;
         int elevationFom = measurement.getAoaElevationFom();
         int nlos = getNlos(measurement);
 
@@ -248,9 +247,18 @@ public class UwbMetrics {
                 azimuthDegree, azimuthFom, elevationDegree, elevationFom);
         mRangingReportList.add(report);
 
+        long currTimeMs = mUwbInjector.getElapsedSinceBootMillis();
+        if ((currTimeMs - mLastRangingDataLogTimeMs) < RANGING_RESULT_LOG_INTERVAL_MIN_MS) {
+            return;
+        }
+        mLastRangingDataLogTimeMs = currTimeMs;
+
         boolean isDistanceValid = distanceCm != INVALID_DISTANCE;
         boolean isAzimuthValid = azimuthFom > 0;
         boolean isElevationValid = elevationFom > 0;
+        int distance50Cm = isDistanceValid ? distanceCm / 50 : 0;
+        int azimuth10Degree = isAzimuthValid ? azimuthDegree / 10 : 0;
+        int elevation10Degree = isElevationValid ? elevationDegree / 10 : 0;
         UwbStatsLog.write(UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED, profileType, nlos,
                 isDistanceValid, distanceCm, distance50Cm, DISTANCE_FOM_DEFAULT,
                 isAzimuthValid, azimuthDegree, azimuth10Degree, azimuthFom,
