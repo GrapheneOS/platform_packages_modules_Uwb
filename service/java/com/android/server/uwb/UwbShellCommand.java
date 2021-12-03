@@ -61,6 +61,7 @@ import androidx.annotation.Nullable;
 
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.modules.utils.BasicShellCommandHandler;
+import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.util.ArrayUtils;
 
 import com.google.uwb.support.base.Params;
@@ -155,12 +156,14 @@ public class UwbShellCommand extends BasicShellCommandHandler {
 
     private final UwbServiceImpl mUwbService;
     private final UwbCountryCode mUwbCountryCode;
+    private final NativeUwbManager mNativeUwbManager;
     private final Context mContext;
 
     UwbShellCommand(UwbInjector uwbInjector, UwbServiceImpl uwbService, Context context) {
         mUwbService = uwbService;
         mContext = context;
         mUwbCountryCode = uwbInjector.getUwbCountryCode();
+        mNativeUwbManager = uwbInjector.getNativeUwbManager();
     }
 
     private static String bundleToString(@Nullable PersistableBundle bundle) {
@@ -775,6 +778,10 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     pw.println("CCC Specification info: " + bundleToString(ccc_bundle));
                     return 0;
                 }
+                case "get-power-stats": {
+                    pw.println(mNativeUwbManager.getPowerStats());
+                    return 0;
+                }
                 default:
                     return handleDefaultCommands(cmd);
             }
@@ -867,6 +874,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
     private void onHelpPrivileged(PrintWriter pw) {
         pw.println("  force-country-code enabled <two-letter code> | disabled ");
         pw.println("    Sets country code to <two-letter code> or left for normal value");
+        pw.println("  get-power-stats");
+        pw.println("    Get power stats");
     }
 
     @Override
