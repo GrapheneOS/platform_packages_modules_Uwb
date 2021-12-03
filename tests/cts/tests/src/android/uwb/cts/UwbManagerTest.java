@@ -492,17 +492,26 @@ public class UwbManagerTest {
 
     private class AdapterStateCallback implements UwbManager.AdapterStateCallback {
         private final CountDownLatch mCountDownLatch;
+        private final @State Integer mWaitForState;
         public int state;
         public int reason;
 
-        AdapterStateCallback(@NonNull CountDownLatch countDownLatch) {
+        AdapterStateCallback(@NonNull CountDownLatch countDownLatch,
+                @Nullable @State Integer waitForState) {
             mCountDownLatch = countDownLatch;
+            mWaitForState = waitForState;
         }
 
         public void onStateChanged(@State int state, @StateChangedReason int reason) {
             this.state = state;
             this.reason = reason;
-            mCountDownLatch.countDown();
+            if (mWaitForState != null) {
+                if (mWaitForState == state) {
+                    mCountDownLatch.countDown();
+                }
+            } else {
+                mCountDownLatch.countDown();
+            }
         }
     }
 
@@ -510,7 +519,8 @@ public class UwbManagerTest {
     public void testUwbStateToggle() throws Exception {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         CountDownLatch countDownLatch = new CountDownLatch(1);
-        AdapterStateCallback adapterStateCallback = new AdapterStateCallback(countDownLatch);
+        AdapterStateCallback adapterStateCallback =
+                new AdapterStateCallback(countDownLatch, STATE_DISABLED);
         try {
             // Needs UWB_PRIVILEGED permission which is held by shell.
             uiAutomation.adoptShellPermissionIdentity();
