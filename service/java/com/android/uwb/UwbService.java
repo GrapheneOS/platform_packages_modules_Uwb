@@ -34,6 +34,7 @@ import android.util.Log;
 import android.uwb.IUwbAdapter;
 import android.uwb.IUwbAdapterStateCallbacks;
 import android.uwb.IUwbRangingCallbacks;
+import android.uwb.RangingChangeReason;
 import android.uwb.SessionHandle;
 import android.uwb.StateChangeReason;
 import android.uwb.UwbManager.AdapterStateCallback;
@@ -270,6 +271,10 @@ public class UwbService implements INativeUwbManager.DeviceNotification {
                         cccOpenRangingParams, rangingCallbacks);
             } else {
                 Log.e(TAG, "openRanging - Wrong parameters");
+                try {
+                    rangingCallbacks.onRangingOpenFailed(sessionHandle,
+                            RangingChangeReason.BAD_PARAMETERS, new PersistableBundle());
+                } catch (RemoteException e) { }
             }
         }
 
