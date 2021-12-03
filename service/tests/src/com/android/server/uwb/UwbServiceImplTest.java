@@ -24,6 +24,8 @@ import static com.android.server.uwb.UwbSettingsStore.SETTINGS_TOGGLE_STATE;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -57,6 +59,8 @@ import android.uwb.SessionHandle;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.uwb.jni.NativeUwbManager;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -64,6 +68,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import java.util.List;
 
 /**
  * Tests for {@link UwbServiceImpl}.
@@ -88,6 +94,7 @@ public class UwbServiceImplTest {
     @Captor private ArgumentCaptor<BroadcastReceiver> mApmModeBroadcastReceiver;
 
     private UwbServiceImpl mUwbServiceImpl;
+    private NativeUwbManager mNativeUwbManager;
 
     @Before
     public void setUp() throws Exception {
@@ -99,6 +106,9 @@ public class UwbServiceImplTest {
         when(mUwbInjector.getUwbSettingsStore()).thenReturn(mUwbSettingsStore);
         when(mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).thenReturn(true);
         when(mUwbInjector.getSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0)).thenReturn(0);
+
+        mNativeUwbManager = new NativeUwbManager();
+        when(mUwbInjector.getNativeUwbManager()).thenReturn(mNativeUwbManager);
 
         mUwbServiceImpl = new UwbServiceImpl(mContext, mUwbInjector);
 
@@ -145,6 +155,22 @@ public class UwbServiceImplTest {
     }
 
     @Test
+    public void testGetTimestampResolutionNanos_validChipId() throws Exception {
+        final long timestamp = 34L;
+        when(mVendorService.getTimestampResolutionNanos()).thenReturn(timestamp);
+        assertThat(mUwbServiceImpl.getTimestampResolutionNanos("defaultChipId"))
+                .isEqualTo(timestamp);
+
+        verify(mVendorService).getTimestampResolutionNanos();
+    }
+
+    @Test
+    public void testGetTimestampResolutionNanos_invalidChipId() {
+        assertThrows(IllegalArgumentException.class,
+                () -> mUwbServiceImpl.getTimestampResolutionNanos("invalidChipId"));
+    }
+
+    @Test
     public void testGetSpecificationInfo() throws Exception {
         final PersistableBundle specification = new PersistableBundle();
         when(mVendorService.getSpecificationInfo()).thenReturn(specification);
@@ -152,6 +178,22 @@ public class UwbServiceImplTest {
                 .isEqualTo(specification);
 
         verify(mVendorService).getSpecificationInfo();
+    }
+
+    @Test
+    public void testGetSpecificationInfo_validChipId() throws Exception {
+        final PersistableBundle specification = new PersistableBundle();
+        when(mVendorService.getSpecificationInfo()).thenReturn(specification);
+        assertThat(mUwbServiceImpl.getSpecificationInfo("defaultChipId"))
+                .isEqualTo(specification);
+
+        verify(mVendorService).getSpecificationInfo();
+    }
+
+    @Test
+    public void testGetSpecificationInfo_invalidChipId() {
+        assertThrows(IllegalArgumentException.class,
+                () -> mUwbServiceImpl.getSpecificationInfo("invalidChipId"));
     }
 
     @Test
@@ -462,5 +504,16 @@ public class UwbServiceImplTest {
         mApmModeBroadcastReceiver.getValue().onReceive(
                 mContext, new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED));
         verify(mVendorService, times(3)).setEnabled(true);
+    }
+
+    @Test
+    public void testGetDefaultChipId() {
+        assertEquals("defaultChipId", mUwbServiceImpl.getDefaultChipId());
+    }
+
+    @Test
+    public void testGetChipIds() {
+        assertThat(List.of("defaultChipId"))
+                .containsExactlyElementsIn(mUwbServiceImpl.getChipIds());
     }
 }

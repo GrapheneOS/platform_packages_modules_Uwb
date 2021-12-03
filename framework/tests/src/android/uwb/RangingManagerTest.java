@@ -16,12 +16,15 @@
 
 package android.uwb;
 
+import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 
 import android.content.AttributionSource;
 import android.os.PersistableBundle;
@@ -33,7 +36,9 @@ import androidx.test.filters.SmallTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
+import java.util.List;
 import java.util.concurrent.Executor;
 
 /**
@@ -50,6 +55,7 @@ public class RangingManagerTest {
     private static final String PACKAGE_NAME = "com.uwb.test";
     private static final AttributionSource ATTRIBUTION_SOURCE =
             new AttributionSource.Builder(UID).setPackageName(PACKAGE_NAME).build();
+    private static final String VALID_CHIP_ID = "validChipId";
 
     @Test
     public void testOpenSession_OpenRangingInvoked() throws RemoteException {
@@ -57,9 +63,34 @@ public class RangingManagerTest {
         RangingManager rangingManager = new RangingManager(adapter);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         rangingManager.openSession(
-                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback, /* chipId= */ null);
+                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback, /* chipIds= */ null);
         verify(adapter, times(1)).openRanging(
                 eq(ATTRIBUTION_SOURCE), any(), any(), any(), eq(/* chipId= */ null));
+    }
+
+    @Test
+    public void testOpenSession_validChipId_OpenRangingInvoked() throws RemoteException {
+        IUwbAdapter2 adapter = mock(IUwbAdapter2.class);
+        when(adapter.getChipIds()).thenReturn(List.of(VALID_CHIP_ID));
+        RangingManager rangingManager = new RangingManager(adapter);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        rangingManager.openSession(
+                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback, VALID_CHIP_ID);
+        verify(adapter, times(1)).openRanging(
+                eq(ATTRIBUTION_SOURCE), any(), any(), any(), eq(VALID_CHIP_ID));
+    }
+
+    @Test
+    public void testOpenSession_invalidChipId_IllegalArgumentException() throws RemoteException {
+        String invalidChipId = "invalidChipId";
+        IUwbAdapter2 adapter = mock(IUwbAdapter2.class);
+        Mockito.when(adapter.getChipIds()).thenReturn(List.of(VALID_CHIP_ID));
+        RangingManager rangingManager = new RangingManager(adapter);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        assertThrows(IllegalArgumentException.class, () -> rangingManager.openSession(
+                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback, invalidChipId));
+        verify(adapter, times(0))
+                .openRanging(eq(ATTRIBUTION_SOURCE), any(), any(), any(), eq(invalidChipId));
     }
 
     @Test
@@ -82,14 +113,14 @@ public class RangingManagerTest {
 
         RangingManager rangingManager = new RangingManager(adapter);
         rangingManager.openSession(
-                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback1, /* chipId= */ null);
+                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback1, /* chipIds= */ null);
         verify(adapter, times(1)).openRanging(
                 eq(ATTRIBUTION_SOURCE), sessionHandleCaptor.capture(), any(), any(),
                 eq(/* chipId= */ null));
         SessionHandle sessionHandle1 = sessionHandleCaptor.getValue();
 
         rangingManager.openSession(
-                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback2, /* chipId= */ null);
+                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback2, /* chipIds= */ null);
         verify(adapter, times(2)).openRanging(
                 eq(ATTRIBUTION_SOURCE), sessionHandleCaptor.capture(), any(), any(),
                 eq(/* chipId= */ null));
@@ -114,7 +145,7 @@ public class RangingManagerTest {
                 ArgumentCaptor.forClass(SessionHandle.class);
 
         rangingManager.openSession(
-                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback, /* chipId= */ null);
+                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback, /* chipIds= */ null);
         verify(adapter, times(1)).openRanging(
                 eq(ATTRIBUTION_SOURCE), sessionHandleCaptor.capture(), any(), any(),
                 eq(/* chipId= */ null));
@@ -162,14 +193,14 @@ public class RangingManagerTest {
                 ArgumentCaptor.forClass(SessionHandle.class);
 
         rangingManager.openSession(
-                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback1, /* chipId= */ null);
+                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback1, /* chipIds= */ null);
         verify(adapter, times(1)).openRanging(
                 eq(ATTRIBUTION_SOURCE), sessionHandleCaptor.capture(), any(), any(),
                 eq(/* chipId= */ null));
         SessionHandle sessionHandle1 = sessionHandleCaptor.getValue();
 
         rangingManager.openSession(
-                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback2, /* chipId= */ null);
+                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback2, /* chipIds= */ null);
         verify(adapter, times(2)).openRanging(
                 eq(ATTRIBUTION_SOURCE), sessionHandleCaptor.capture(), any(), any(),
                 eq(/* chipId= */ null));
@@ -195,7 +226,7 @@ public class RangingManagerTest {
 
         RangingManager rangingManager = new RangingManager(adapter);
         rangingManager.openSession(
-                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback1, /* chipId= */ null);
+                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback1, /* chipIds= */ null);
         verify(adapter, times(1)).openRanging(
                 eq(ATTRIBUTION_SOURCE), sessionHandleCaptor.capture(), any(), any(),
                 eq(/* chipId= */ null));
@@ -203,7 +234,7 @@ public class RangingManagerTest {
 
         rangingManager.onRangingStarted(sessionHandle1, PARAMS);
         rangingManager.openSession(
-                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback2, /* chipId= */ null);
+                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback2, /* chipIds= */ null);
         verify(adapter, times(2)).openRanging(
                 eq(ATTRIBUTION_SOURCE), sessionHandleCaptor.capture(), any(), any(),
                 eq(/* chipId= */ null));
@@ -253,7 +284,7 @@ public class RangingManagerTest {
                 ArgumentCaptor.forClass(SessionHandle.class);
 
         rangingManager.openSession(
-                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback, /* chipId= */ null);
+                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback, /* chipIds= */ null);
         verify(adapter, times(1)).openRanging(
                 eq(ATTRIBUTION_SOURCE), sessionHandleCaptor.capture(), any(), any(),
                 eq(/* chipId= */ null));
@@ -264,7 +295,7 @@ public class RangingManagerTest {
 
         // Open a new session
         rangingManager.openSession(
-                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback, /* chipId= */ null);
+                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback, /* chipIds= */ null);
         verify(adapter, times(2)).openRanging(
                 eq(ATTRIBUTION_SOURCE), sessionHandleCaptor.capture(), any(), any(),
                 eq(/* chipId= */ null));

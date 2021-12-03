@@ -25,6 +25,7 @@ import android.os.RemoteException;
 import android.util.Log;
 
 import java.util.Hashtable;
+import java.util.List;
 import java.util.concurrent.Executor;
 
 /**
@@ -51,7 +52,8 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks2.Stub {
      * @param executor {@link Executor} to run callbacks
      * @param callbacks {@link RangingSession.Callback} to associate with the {@link RangingSession}
      *                  that is being opened.
-     * @param chipId identifier of UWB chip for multi-HAL devices
+     * @param chipId identifier of UWB chip to be used in ranging session, or {@code null} if
+     *                the default chip should be used
      * @return a {@link CancellationSignal} that may be used to cancel the opening of the
      *         {@link RangingSession}.
      */
@@ -60,10 +62,22 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks2.Stub {
             @NonNull Executor executor,
             @NonNull RangingSession.Callback callbacks,
             @Nullable String chipId) {
+        if (chipId != null) {
+            try {
+                List<String> validChipIds = mAdapter.getChipIds();
+                if (!validChipIds.contains(chipId)) {
+                    throw new IllegalArgumentException("openSession - received invalid chipId: "
+                            + chipId);
+                }
+            } catch (RemoteException e)  {
+                e.rethrowFromSystemServer();
+            }
+        }
+
         synchronized (this) {
             SessionHandle sessionHandle = new SessionHandle(mNextSessionId++);
             RangingSession session =
-                    new RangingSession(executor, callbacks, mAdapter, sessionHandle);
+                    new RangingSession(executor, callbacks, mAdapter, sessionHandle, chipId);
             mRangingSessionTable.put(sessionHandle, session);
             try {
                 mAdapter.openRanging(attributionSource,
