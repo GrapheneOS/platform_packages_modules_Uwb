@@ -22,6 +22,7 @@
           coreApp="true"
           android:versionCode="1"
           android:versionName="T-initial">
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="@string/uwbResourcesAppLabel"
         android:defaultToDeviceProtectedStorage="true"
