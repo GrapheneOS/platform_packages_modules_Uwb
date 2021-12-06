@@ -51,6 +51,7 @@ package android.uwb {
     method public int getLineOfSight();
     method public int getMeasurementFocus();
     method @NonNull public android.uwb.UwbAddress getRemoteDeviceAddress();
+    method @IntRange(from=android.uwb.RangingMeasurement.RSSI_UNKNOWN, to=android.uwb.RangingMeasurement.RSSI_MAX) public int getRssiDbm();
     method public int getStatus();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field @NonNull public static final android.os.Parcelable.Creator<android.uwb.RangingMeasurement> CREATOR;
@@ -64,6 +65,9 @@ package android.uwb {
     field public static final int RANGING_STATUS_FAILURE_OUT_OF_RANGE = 1; // 0x1
     field public static final int RANGING_STATUS_FAILURE_UNKNOWN_ERROR = -1; // 0xffffffff
     field public static final int RANGING_STATUS_SUCCESS = 0; // 0x0
+    field public static final int RSSI_MAX = -1; // 0xffffffff
+    field public static final int RSSI_MIN = -127; // 0xffffff81
+    field public static final int RSSI_UNKNOWN = -128; // 0xffffff80
   }
 
   public static final class RangingMeasurement.Builder {
@@ -76,6 +80,7 @@ package android.uwb {
     method @NonNull public android.uwb.RangingMeasurement.Builder setLineOfSight(int);
     method @NonNull public android.uwb.RangingMeasurement.Builder setMeasurementFocus(int);
     method @NonNull public android.uwb.RangingMeasurement.Builder setRemoteDeviceAddress(@NonNull android.uwb.UwbAddress);
+    method @NonNull public android.uwb.RangingMeasurement.Builder setRssiDbm(@IntRange(from=android.uwb.RangingMeasurement.RSSI_UNKNOWN, to=android.uwb.RangingMeasurement.RSSI_MAX) int);
     method @NonNull public android.uwb.RangingMeasurement.Builder setStatus(int);
   }
 
