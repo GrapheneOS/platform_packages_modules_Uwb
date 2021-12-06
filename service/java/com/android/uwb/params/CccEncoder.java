@@ -100,6 +100,13 @@ public class CccEncoder extends TlvEncoder {
                 .putByte(ConfigParam.PULSESHAPE_COMBO,
                         params.getPulseShapeCombo().toBytes()[0]) // PULSESHAPE_COMBO
                 .putShort(ConfigParam.URSK_TTL, (short) 0x2D0) // URSK_TTL
+                // T(Slotk) =  N(Chap_per_Slot) * T(Chap)
+                // T(Chap) = 400RSTU
+                // reference : digital key release 3 20.2 MAC Time Grid
+                .putShort(ConfigParam.SLOT_DURATION,
+                        (short) (params.getNumChapsPerSlot() * 400)) // SLOT_DURATION
+                .putByte(ConfigParam.PREAMBLE_CODE_INDEX,
+                        (byte) params.getSyncCodeIndex()) // PREAMBLE_CODE_INDEX
                 .build();
 
         return tlvBuffer;
