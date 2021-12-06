@@ -43,12 +43,13 @@ public final class RangingMeasurement implements Parcelable {
     private final AngleOfArrivalMeasurement mAngleOfArrivalMeasurement;
     private final AngleOfArrivalMeasurement mDestinationAngleOfArrivalMeasurement;
     private final @LineOfSight int mLineOfSight;
+    private final @MeasurementFocus int mMeasurementFocus;
 
     private RangingMeasurement(@NonNull UwbAddress remoteDeviceAddress, @Status int status,
             long elapsedRealtimeNanos, @Nullable DistanceMeasurement distanceMeasurement,
             @Nullable AngleOfArrivalMeasurement angleOfArrivalMeasurement,
             @Nullable AngleOfArrivalMeasurement destinationAngleOfArrivalMeasurement,
-            @LineOfSight int lineOfSight) {
+            @LineOfSight int lineOfSight, @MeasurementFocus int measurementFocus) {
         mRemoteDeviceAddress = remoteDeviceAddress;
         mStatus = status;
         mElapsedRealtimeNanos = elapsedRealtimeNanos;
@@ -56,6 +57,7 @@ public final class RangingMeasurement implements Parcelable {
         mAngleOfArrivalMeasurement = angleOfArrivalMeasurement;
         mDestinationAngleOfArrivalMeasurement = destinationAngleOfArrivalMeasurement;
         mLineOfSight = lineOfSight;
+        mMeasurementFocus = measurementFocus;
     }
 
     /**
@@ -189,6 +191,49 @@ public final class RangingMeasurement implements Parcelable {
     /**
      * @hide
      */
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef(value = {
+            MEASUREMENT_FOCUS_NONE,
+            MEASUREMENT_FOCUS_RANGE,
+            MEASUREMENT_FOCUS_ANGLE_OF_ARRIVAL_AZIMUTH,
+            MEASUREMENT_FOCUS_ANGLE_OF_ARRIVAL_ELEVATION})
+    public @interface MeasurementFocus {}
+
+    /**
+     * Ranging measurement was done with no particular focus in terms of antennae selection.
+     */
+    public static final int MEASUREMENT_FOCUS_NONE = 0;
+
+    /**
+     * Ranging measurement was done with a focus on range calculation in terms of antennae
+     * selection.
+     */
+    public static final int MEASUREMENT_FOCUS_RANGE = 1;
+
+    /**
+     * Ranging measurement was done with a focus on ANGLE_OF_ARRIVAL azimuth calculation in terms of
+     * antennae selection.
+     */
+    public static final int MEASUREMENT_FOCUS_ANGLE_OF_ARRIVAL_AZIMUTH = 1;
+
+    /**
+     * Ranging measurement was done with a focus on ANGLE_OF_ARRIVAL azimuth calculation in terms of
+     * antennae selection.
+     */
+    public static final int MEASUREMENT_FOCUS_ANGLE_OF_ARRIVAL_ELEVATION = 2;
+
+    /**
+     * Gets the measurement focus in terms of antennae used for this measurement.
+     *
+     * @return focus of this measurement.
+     */
+    public @MeasurementFocus int getMeasurementFocus() {
+        return mMeasurementFocus;
+    }
+
+    /**
+     * @hide
+     */
     @Override
     public boolean equals(@Nullable Object obj) {
         if (this == obj) {
@@ -204,7 +249,8 @@ public final class RangingMeasurement implements Parcelable {
                     && mAngleOfArrivalMeasurement.equals(other.getAngleOfArrivalMeasurement())
                     && mDestinationAngleOfArrivalMeasurement.equals(
                             other.getDestinationAngleOfArrivalMeasurement())
-                    && mLineOfSight == other.getLineOfSight();
+                    && mLineOfSight == other.getLineOfSight()
+                    && mMeasurementFocus == other.getMeasurementFocus();
         }
         return false;
     }
@@ -216,7 +262,7 @@ public final class RangingMeasurement implements Parcelable {
     public int hashCode() {
         return Objects.hash(mRemoteDeviceAddress, mStatus, mElapsedRealtimeNanos,
                 mDistanceMeasurement, mAngleOfArrivalMeasurement,
-                mDestinationAngleOfArrivalMeasurement, mLineOfSight);
+                mDestinationAngleOfArrivalMeasurement, mLineOfSight, mMeasurementFocus);
     }
 
     @Override
@@ -233,6 +279,7 @@ public final class RangingMeasurement implements Parcelable {
         dest.writeParcelable(mAngleOfArrivalMeasurement, flags);
         dest.writeParcelable(mDestinationAngleOfArrivalMeasurement, flags);
         dest.writeInt(mLineOfSight);
+        dest.writeInt(mMeasurementFocus);
     }
 
     public static final @android.annotation.NonNull Creator<RangingMeasurement> CREATOR =
@@ -251,6 +298,7 @@ public final class RangingMeasurement implements Parcelable {
                     builder.setDestinationAngleOfArrivalMeasurement(
                             in.readParcelable(AngleOfArrivalMeasurement.class.getClassLoader()));
                     builder.setLineOfSight(in.readInt());
+                    builder.setMeasurementFocus(in.readInt());
                     return builder.build();
                 }
 
@@ -281,7 +329,8 @@ public final class RangingMeasurement implements Parcelable {
         private DistanceMeasurement mDistanceMeasurement = null;
         private AngleOfArrivalMeasurement mAngleOfArrivalMeasurement = null;
         private AngleOfArrivalMeasurement mDestinationAngleOfArrivalMeasurement = null;
-        private @LineOfSight int mLineOfSight;
+        private @LineOfSight int mLineOfSight = LOS_UNDETERMINED;
+        private @MeasurementFocus int mMeasurementFocus = MEASUREMENT_FOCUS_NONE;
 
         /**
          * Set the remote device address that this measurement is for
@@ -368,6 +417,17 @@ public final class RangingMeasurement implements Parcelable {
         }
 
         /**
+         * Sets the measurement focus in terms of antennae used for this measurement.
+         *
+         * @param measurementFocus focus of this measurement.
+         */
+        @NonNull
+        public Builder setMeasurementFocus(@MeasurementFocus int measurementFocus) {
+            mMeasurementFocus = measurementFocus;
+            return this;
+        }
+
+        /**
          * Build the {@link RangingMeasurement} object
          *
          * @throws IllegalStateException if a distance or angle of arrival measurement is provided
@@ -402,7 +462,7 @@ public final class RangingMeasurement implements Parcelable {
 
             return new RangingMeasurement(mRemoteDeviceAddress, mStatus, mElapsedRealtimeNanos,
                     mDistanceMeasurement, mAngleOfArrivalMeasurement,
-                    mDestinationAngleOfArrivalMeasurement, mLineOfSight);
+                    mDestinationAngleOfArrivalMeasurement, mLineOfSight, mMeasurementFocus);
         }
     }
 }
