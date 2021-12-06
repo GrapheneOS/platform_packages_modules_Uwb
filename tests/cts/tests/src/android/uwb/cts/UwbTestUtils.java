@@ -72,6 +72,7 @@ public class UwbTestUtils {
                 .setRemoteDeviceAddress(address != null ? address : getUwbAddress(false))
                 .setStatus(RangingMeasurement.RANGING_STATUS_SUCCESS)
                 .setLineOfSight(RangingMeasurement.NLOS)
+                .setMeasurementFocus(RangingMeasurement.MEASUREMENT_FOCUS_RANGE)
                 .build();
     }
 

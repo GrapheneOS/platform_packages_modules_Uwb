@@ -49,6 +49,7 @@ public class RangingMeasurementTest {
                 UwbTestUtils.getAngleOfArrivalMeasurement();
         DistanceMeasurement distanceMeasurement = UwbTestUtils.getDistanceMeasurement();
         int los = RangingMeasurement.NLOS;
+        int measurementFocus = RangingMeasurement.MEASUREMENT_FOCUS_RANGE;
 
         RangingMeasurement.Builder builder = new RangingMeasurement.Builder();
 
@@ -71,6 +72,9 @@ public class RangingMeasurementTest {
         tryBuild(builder, true);
 
         builder.setLineOfSight(los);
+        tryBuild(builder, true);
+
+        builder.setMeasurementFocus(measurementFocus);
         RangingMeasurement measurement = tryBuild(builder, true);
 
         assertEquals(status, measurement.getStatus());
@@ -81,6 +85,7 @@ public class RangingMeasurementTest {
                 measurement.getDestinationAngleOfArrivalMeasurement());
         assertEquals(distanceMeasurement, measurement.getDistanceMeasurement());
         assertEquals(los, measurement.getLineOfSight());
+        assertEquals(measurementFocus, measurement.getMeasurementFocus());
     }
 
     private RangingMeasurement tryBuild(RangingMeasurement.Builder builder,
