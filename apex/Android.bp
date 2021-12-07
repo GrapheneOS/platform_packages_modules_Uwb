@@ -25,9 +25,12 @@ apex_defaults {
         "service-uwb",
     ],
     multilib: {
-       both: {
-           jni_libs: ["libuwb_uci_jni"],
-       },
+        both: {
+            jni_libs: [
+               "libuwb_uci_jni",
+               "libuwb_uci_jni_rust",
+            ],
+        },
     },
     apps: [
         "ServiceUwbResources",
