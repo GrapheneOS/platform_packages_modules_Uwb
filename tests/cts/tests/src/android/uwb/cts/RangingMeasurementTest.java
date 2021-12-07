@@ -17,6 +17,7 @@
 package android.uwb.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.os.Parcel;
@@ -38,6 +39,8 @@ import org.junit.runner.RunWith;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class RangingMeasurementTest {
+    private static final int TEST_RSSI_DBM = -80;
+    private static final int INVALID_RSSI_DBM = -129;
 
     @Test
     public void testBuilder() {
@@ -50,6 +53,7 @@ public class RangingMeasurementTest {
         DistanceMeasurement distanceMeasurement = UwbTestUtils.getDistanceMeasurement();
         int los = RangingMeasurement.NLOS;
         int measurementFocus = RangingMeasurement.MEASUREMENT_FOCUS_RANGE;
+
 
         RangingMeasurement.Builder builder = new RangingMeasurement.Builder();
 
@@ -66,6 +70,9 @@ public class RangingMeasurementTest {
         tryBuild(builder, false);
 
         builder.setDistanceMeasurement(distanceMeasurement);
+        tryBuild(builder, false);
+
+        builder.setRssiDbm(TEST_RSSI_DBM);
         tryBuild(builder, false);
 
         builder.setRemoteDeviceAddress(address);
@@ -86,6 +93,18 @@ public class RangingMeasurementTest {
         assertEquals(distanceMeasurement, measurement.getDistanceMeasurement());
         assertEquals(los, measurement.getLineOfSight());
         assertEquals(measurementFocus, measurement.getMeasurementFocus());
+        assertEquals(TEST_RSSI_DBM, measurement.getRssiDbm());
+    }
+
+    @Test
+    public void testInvalidRssi() {
+        RangingMeasurement.Builder builder = new RangingMeasurement.Builder();
+        try {
+            builder.setRssiDbm(INVALID_RSSI_DBM);
+            fail("Expected RangingMeasurement.Builder.setRssiDbm() to fail");
+        } catch (Exception e) {
+            assertTrue(e.getMessage().contains("Invalid"));
+        }
     }
 
     private RangingMeasurement tryBuild(RangingMeasurement.Builder builder,

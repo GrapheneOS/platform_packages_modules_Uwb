@@ -73,6 +73,7 @@ public class UwbTestUtils {
                 .setStatus(RangingMeasurement.RANGING_STATUS_SUCCESS)
                 .setLineOfSight(RangingMeasurement.NLOS)
                 .setMeasurementFocus(RangingMeasurement.MEASUREMENT_FOCUS_RANGE)
+                .setRssiDbm(-85)
                 .build();
     }
 
