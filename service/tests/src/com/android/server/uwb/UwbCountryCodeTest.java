@@ -108,4 +108,20 @@ public class UwbCountryCodeTest {
         verify(mNativeUwbManager).setCountryCode(
                 TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
     }
+
+    @Test
+    public void testForceOverrideCodeWhenTelephonyAvailable() {
+        when(mTelephonyManager.getNetworkCountryIso()).thenReturn(TEST_COUNTRY_CODE);
+        mUwbCountryCode.initialize();
+
+        clearInvocations(mNativeUwbManager);
+        mUwbCountryCode.setOverrideCountryCode("JP");
+        verify(mNativeUwbManager).setCountryCode(
+                "JP".getBytes(StandardCharsets.UTF_8));
+
+        clearInvocations(mNativeUwbManager);
+        mUwbCountryCode.clearOverrideCountryCode();
+        verify(mNativeUwbManager).setCountryCode(
+                TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
+    }
 }

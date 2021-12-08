@@ -130,6 +130,13 @@ public class UwbInjector {
     }
 
     /**
+     * Create a UwbShellCommand instance.
+     */
+    public UwbShellCommand makeUwbShellCommand(UwbServiceImpl uwbService) {
+        return new UwbShellCommand(this, uwbService, mContext);
+    }
+
+    /**
      * @return Returns whether the UCI stack is enabled or not.
      */
     public boolean isUciStackEnabled() {

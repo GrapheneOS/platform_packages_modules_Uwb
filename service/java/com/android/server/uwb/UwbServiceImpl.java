@@ -26,6 +26,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Binder;
 import android.os.IBinder;
+import android.os.ParcelFileDescriptor;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.provider.Settings;
@@ -424,6 +425,16 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
     @Override
     public String getDefaultChipId() {
         return mUwbInjector.getNativeUwbManager().getDefaultChipId();
+    }
+
+    @Override
+    public int handleShellCommand(@NonNull ParcelFileDescriptor in,
+            @NonNull ParcelFileDescriptor out, @NonNull ParcelFileDescriptor err,
+            @NonNull String[] args) {
+
+        UwbShellCommand shellCommand =  mUwbInjector.makeUwbShellCommand(this);
+        return shellCommand.exec(this, in.getFileDescriptor(), out.getFileDescriptor(),
+                err.getFileDescriptor(), args);
     }
 
     private void persistUwbToggleState(boolean enabled) {

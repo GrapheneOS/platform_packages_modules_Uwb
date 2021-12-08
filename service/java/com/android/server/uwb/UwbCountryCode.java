@@ -51,10 +51,10 @@ public class UwbCountryCode {
     private final UwbInjector mUwbInjector;
 
     private String mTelephonyCountryCode = null;
+    private String mOverrideCountryCode = null;
     private String mCountryCode = null;
     private String mCountryCodeUpdatedTimestamp = null;
     private String mTelephonyCountryTimestamp = null;
-    private String mReadyTimestamp = null;
 
     public UwbCountryCode(
             Context context, NativeUwbManager nativeUwbManager, Handler handler,
@@ -109,6 +109,9 @@ public class UwbCountryCode {
 
 
     private String pickCountryCode() {
+        if (mOverrideCountryCode != null) {
+            return mOverrideCountryCode;
+        }
         if (mTelephonyCountryCode != null) {
             return mTelephonyCountryCode;
         }
@@ -134,14 +137,57 @@ public class UwbCountryCode {
     }
 
     /**
+     * Get country code
+     *
+     * @return true if the country code is set successfully, false otherwise.
+     */
+    public String getCountryCode() {
+        return mCountryCode;
+    }
+
+    /**
+     * Is this a valid country code
+     * @param countryCode A 2-Character alphanumeric country code.
+     * @return true if the countryCode is valid, false otherwise.
+     */
+    public static boolean isValid(String countryCode) {
+        return countryCode != null && countryCode.length() == 2
+                && countryCode.chars().allMatch(Character::isLetterOrDigit);
+    }
+
+    /**
+     * This call will override any existing country code.
+     * This is for test purpose only and we should disallow any update from
+     * telephony in this mode.
+     * @param countryCode A 2-Character alphanumeric country code.
+     */
+    public synchronized void setOverrideCountryCode(String countryCode) {
+        if (TextUtils.isEmpty(countryCode)) {
+            Log.d(TAG, "Fail to override country code because"
+                    + "the received country code is empty");
+            return;
+        }
+        mOverrideCountryCode = countryCode.toUpperCase(Locale.US);
+        setCountryCode();
+    }
+
+    /**
+     * This is for clearing the country code previously set through #setOverrideCountryCode() method
+     */
+    public synchronized void clearOverrideCountryCode() {
+        mOverrideCountryCode = null;
+        setCountryCode();
+    }
+
+    /**
      * Method to dump the current state of this UwbCountryCode object.
      */
     public synchronized void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
         pw.println("DefaultCountryCode(system property): "
                 + mUwbInjector.getOemDefaultCountryCode());
+        pw.println("mOverrideCountryCode: " + mOverrideCountryCode);
         pw.println("mTelephonyCountryCode: " + mTelephonyCountryCode);
         pw.println("mTelephonyCountryTimestamp: " + mTelephonyCountryTimestamp);
-        pw.println("mReadyTimestamp: " + mReadyTimestamp);
         pw.println("mCountryCode: " + mCountryCode);
         pw.println("mCountryCodeUpdatedTimestamp: " + mCountryCodeUpdatedTimestamp);
     }
