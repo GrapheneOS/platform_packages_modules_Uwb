@@ -1,9 +1,10 @@
 //! jni for uwb native stack
 use jni::JNIEnv;
-use jni::objects::{JClass, JValue};
+use jni::objects::{JClass, JObject, JValue};
 use jni::sys::{jboolean, jbyte, jbyteArray, jint, jintArray, jlong, jobject};
 use log::{error, info, warn};
 use uwb_uci_rust::adaptation::{THalUwbEntry, UwbAdaptation, UwbErr};
+use uwb_uci_rust::uci::{Dispatcher, JNICommand};
 
 /// Initialize UWB
 #[no_mangle]
@@ -23,9 +24,9 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetMaxSes
 
 /// Turn on UWB. initialize the GKI module and HAL module for UWB device.
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeDoInitialize(_env: JNIEnv, _class: JClass) -> jboolean {
+pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeDoInitialize(env: JNIEnv, obj: JObject) -> jboolean {
     info!("Java_com_android_uwb_jni_NativeUwbManager_nativeDoInitialize: enter");
-    match do_initialize() {
+    match do_initialize(env, obj) {
         Ok(()) => true as jboolean,
         Err(err) => {
             error!("Initialize failed with: {:?}", err);
@@ -38,6 +39,7 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeDoInitial
 #[no_mangle]
 pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeDoDeinitialize(_env: JNIEnv, _class: JClass) -> jboolean {
     info!("Java_com_android_uwb_jni_NativeUwbManager_nativeDoDeinitialize: enter");
+    // TODO: implement this function
     true as jboolean
 }
 
@@ -52,6 +54,7 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetTimest
 #[no_mangle]
 pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetSpecificationInfo(env: JNIEnv, _class: JClass) -> jobject {
     info!("Java_com_android_uwb_jni_NativeUwbManager_nativeGetSpecificationInfo: enter");
+    // TODO: implement this function
     let uwb_specification_info_class = env.find_class("com/android/uwb/info/UwbSpecificationInfo").unwrap();
     let specification_info = env.new_object(uwb_specification_info_class, "(IIIIIIIIIIII)V", &[JValue::Int(1); 12]).unwrap();
     *specification_info
@@ -61,6 +64,7 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetSpecif
 #[no_mangle]
 pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeResetDevice(_env: JNIEnv, _class: JClass, _reset_config: jbyte) -> jbyte {
     info!("Java_com_android_uwb_jni_NativeUwbManager_nativeResetDevice: enter");
+    // TODO: implement this function
     0
 }
 
@@ -68,6 +72,7 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeResetDevi
 #[no_mangle]
 pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeSessionInit(_env: JNIEnv, _class: JClass, _session_id: jint, _session_type: jbyte) -> jbyte {
     info!("Java_com_android_uwb_jni_NativeUwbManager_nativeSessionInit: enter");
+    // TODO: implement this function
     0
 }
 
@@ -75,6 +80,7 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeSessionIn
 #[no_mangle]
 pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeSessionDeInit(_env: JNIEnv, _class: JClass, _session_id: jint) -> jbyte {
     info!("Java_com_android_uwb_jni_NativeUwbManager_nativeSessionDeInit: enter");
+    // TODO: implement this function
     0
 }
 
@@ -82,6 +88,7 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeSessionDe
 #[no_mangle]
 pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetSessionCount(_env: JNIEnv, _class: JClass) -> jbyte {
     info!("Java_com_android_uwb_jni_NativeUwbManager_nativeGetSessionCount: enter");
+    // TODO: implement this function
     0
 }
 
@@ -89,6 +96,7 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetSessio
 #[no_mangle]
 pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeRangingStart(_env: JNIEnv, _class: JClass, _session_id: jint) -> jbyte {
     info!("Java_com_android_uwb_jni_NativeUwbManager_nativeRangingStart: enter");
+    // TODO: implement this function
     0
 }
 
@@ -96,6 +104,7 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeRangingSt
 #[no_mangle]
 pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeRangingStop(_env: JNIEnv, _class: JClass, _session_id: jint) -> jbyte {
     info!("Java_com_android_uwb_jni_NativeUwbManager_nativeRangingStop: enter");
+    // TODO: implement this function
     0
 }
 
@@ -103,6 +112,7 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeRangingSt
 #[no_mangle]
 pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetSessionState(_env: JNIEnv, _class: JClass, _session_id: jint) -> jbyte {
     info!("Java_com_android_uwb_jni_NativeUwbManager_nativeGetSessionState: enter");
+    // TODO: implement this function
     0
 }
 
@@ -110,6 +120,7 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetSessio
 #[no_mangle]
 pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeSetAppConfigurations(env: JNIEnv, _class: JClass, _session_id: jint, _no_of_params: jint, _app_config_param_len: jint, _app_config_params: jbyteArray) -> jbyteArray {
     info!("Java_com_android_uwb_jni_NativeUwbManager_nativeSetAppConfigurations: enter");
+    // TODO: implement this function
     let buf = [1; 10];
     env.byte_array_from_slice(&buf).unwrap()
 }
@@ -118,6 +129,7 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeSetAppCon
 #[no_mangle]
 pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeControllerMulticastListUpdate(_env: JNIEnv, _class: JClass, _session_id: jint, _action: jbyte, _no_of_controlee: jbyte, _address: jbyteArray, _sub_session_id: jintArray) -> jbyte {
     info!("Java_com_android_uwb_jni_NativeUwbManager_nativeControllerMulticastListUpdate: enter");
+    // TODO: implement this function
     0
 }
 
@@ -125,10 +137,13 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeControlle
 #[no_mangle]
 pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeSetCountryCode(_env: JNIEnv, _class: JClass, _country_code: jbyteArray) -> jbyte {
     info!("Java_com_android_uwb_jni_NativeUwbManager_nativeSetCountryCode: enter");
+    // TODO: implement this function
     0
 }
 
-fn do_initialize() -> Result<(), UwbErr> {
+fn do_initialize(env: JNIEnv, obj: JObject) -> Result<(), UwbErr> {
+    let dispatcher = get_dispatcher(env, obj)?;
+    dispatcher.send_jni_command(JNICommand::UwaDmApiEnable).map_err(|_| UwbErr::Undefined)?;
     let mut uwb_adaptation = UwbAdaptation::new(THalUwbEntry::default(), None);
     uwb_adaptation.initialize();
     let hal_func_entries = uwb_adaptation.get_hal_entry_funcs();
@@ -139,7 +154,7 @@ fn do_initialize() -> Result<(), UwbErr> {
     uwa_get_device_info()?;
     match set_core_device_configurations() {
         Ok(()) => {
-            info!("set_core_device_configurations is SUCCESS");
+            info!("set_core_device_configurations is success");
             return Ok(());
         },
         _ => info!("set_core_device_configurations is failed"),
@@ -150,6 +165,25 @@ fn do_initialize() -> Result<(), UwbErr> {
     };
     uwb_adaptation.finalize(false);
     Err(UwbErr::Failed)
+}
+
+fn get_dispatcher<'a>(env: JNIEnv, obj: JObject) -> Result<&'a mut Dispatcher, UwbErr> {
+    let dispatcher_ptr_value = env.get_field(obj, "mDispatcherPointer", "J").map_err(|_| UwbErr::Undefined)?;
+    let dispatcher_ptr = dispatcher_ptr_value.j().map_err(|_| UwbErr::Undefined)?;
+    // Safety: dispatcher pointer must not be a null pointer and it must point to a valid dispatcher object.
+    // This can be ensured because the dispatcher is created in an earlier stage and
+    // won't be deleted before calling doDeinitialize.
+    unsafe { Ok(&mut *(dispatcher_ptr as *mut Dispatcher)) }
+}
+
+/// create a dispatcher instance
+#[no_mangle]
+pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeDispatcherNew(_env: JNIEnv, _class: JClass) -> jlong {
+    let dispatcher = match Dispatcher::new() {
+        Ok(dispatcher) => dispatcher,
+        Err(_err) => panic!("Fail to create dispatcher"),
+    };
+    Box::into_raw(Box::new(dispatcher)) as jlong
 }
 
 // TODO: Implement these functions
