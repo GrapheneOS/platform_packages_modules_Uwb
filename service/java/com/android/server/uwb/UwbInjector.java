@@ -69,6 +69,7 @@ public class UwbInjector {
     // TODO(b/196225233): Make these final when qorvo stack is integrated.
     private UwbService mUwbService;
     private final UwbMetrics mUwbMetrics;
+    private final DeviceConfigFacade mDeviceConfigFacade;
 
     public UwbInjector(@NonNull UwbContext context) {
         // Create UWB service thread.
@@ -86,6 +87,7 @@ public class UwbInjector {
         mUwbCountryCode =
                 new UwbCountryCode(mContext, mNativeUwbManager, new Handler(mLooper), this);
         mUwbMetrics = new UwbMetrics(this);
+        mDeviceConfigFacade = new DeviceConfigFacade(new Handler(mLooper), this);
     }
 
     public UwbSettingsStore getUwbSettingsStore() {
@@ -102,6 +104,10 @@ public class UwbInjector {
 
     public UwbMetrics getUwbMetrics() {
         return mUwbMetrics;
+    }
+
+    public DeviceConfigFacade getDeviceConfigFacade() {
+        return mDeviceConfigFacade;
     }
 
     public UwbService getUwbService() {
