@@ -38,6 +38,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import android.content.AttributionSource;
@@ -79,9 +81,12 @@ import java.util.List;
 @Presubmit
 public class UwbServiceImplTest {
     private static final int UID = 343453;
+    private static final int UID_2 = 343453;
     private static final String PACKAGE_NAME = "com.uwb.test";
     private static final AttributionSource ATTRIBUTION_SOURCE =
             new AttributionSource.Builder(UID).setPackageName(PACKAGE_NAME).build();
+    private static final AttributionSource ATTRIBUTION_SOURCE_2 =
+            new AttributionSource.Builder(UID_2).setPackageName(PACKAGE_NAME).build();
 
     @Mock private IUwbAdapter mVendorService;
     @Mock private IBinder mVendorServiceBinder;
@@ -89,6 +94,7 @@ public class UwbServiceImplTest {
     @Mock private UwbInjector mUwbInjector;
     @Mock private UwbSettingsStore mUwbSettingsStore;
     @Captor private ArgumentCaptor<IUwbRangingCallbacks> mRangingCbCaptor;
+    @Captor private ArgumentCaptor<IUwbRangingCallbacks> mRangingCbCaptor2;
     @Captor private ArgumentCaptor<IBinder.DeathRecipient> mClientDeathCaptor;
     @Captor private ArgumentCaptor<IBinder.DeathRecipient> mVendorServiceDeathCaptor;
     @Captor private ArgumentCaptor<BroadcastReceiver> mApmModeBroadcastReceiver;
@@ -223,6 +229,7 @@ public class UwbServiceImplTest {
         verify(mVendorService).startRanging(sessionHandle, parameters);
     }
 
+
     @Test
     public void testReconfigureRanging() throws Exception {
         final SessionHandle sessionHandle = new SessionHandle(5);
@@ -311,6 +318,48 @@ public class UwbServiceImplTest {
                 sessionHandle, RangingSession.Callback.REASON_GENERIC_ERROR, parameters);
         verify(cb).onRangingClosed(
                 sessionHandle, RangingSession.Callback.REASON_GENERIC_ERROR, parameters);
+    }
+
+    @Test
+    public void testRangingCallbacksFromDifferentUidWithSameSessionHandle() throws Exception {
+        final SessionHandle sessionHandle = new SessionHandle(5);
+        final IUwbRangingCallbacks2 cb1 = mock(IUwbRangingCallbacks2.class);
+        final IUwbRangingCallbacks2 cb2 = mock(IUwbRangingCallbacks2.class);
+        final PersistableBundle parameters = new PersistableBundle();
+        final IBinder cbBinder1 = mock(IBinder.class);
+        final IBinder cbBinder2 = mock(IBinder.class);
+        when(cb1.asBinder()).thenReturn(cbBinder1);
+        when(cb2.asBinder()).thenReturn(cbBinder2);
+
+        mUwbServiceImpl.openRanging(
+                ATTRIBUTION_SOURCE, sessionHandle, cb1, parameters, /* chipId= */ null);
+
+        verify(mVendorService).openRanging(
+                eq(ATTRIBUTION_SOURCE), eq(sessionHandle), mRangingCbCaptor.capture(),
+                eq(parameters));
+        assertThat(mRangingCbCaptor.getValue()).isNotNull();
+        verify(cb1).asBinder();
+        verify(cbBinder1).linkToDeath(any(), anyInt());
+
+        mUwbServiceImpl.openRanging(
+                ATTRIBUTION_SOURCE_2, sessionHandle, cb2, parameters, /* chipId= */ null);
+
+        verify(mVendorService, times(2)).openRanging(
+                eq(ATTRIBUTION_SOURCE_2), eq(sessionHandle), mRangingCbCaptor2.capture(),
+                eq(parameters));
+        assertThat(mRangingCbCaptor2.getValue()).isNotNull();
+        verify(cb2).asBinder();
+        verify(cbBinder2).linkToDeath(any(), anyInt());
+
+        // Invoke vendor service callbacks and ensure that the corresponding app callback is
+        // invoked.
+        mRangingCbCaptor.getValue().onRangingOpened(sessionHandle);
+        verify(cb1).onRangingOpened(sessionHandle);
+        verifyZeroInteractions(cb2);
+
+        mRangingCbCaptor2.getValue().onRangingOpened(sessionHandle);
+        verify(cb2).onRangingOpened(sessionHandle);
+        verifyNoMoreInteractions(cb1);
     }
 
     @Test

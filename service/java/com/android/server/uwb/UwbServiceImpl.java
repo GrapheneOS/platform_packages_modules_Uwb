@@ -62,7 +62,8 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
      * Map for storing the callbacks wrapper for each session.
      */
     @GuardedBy("mCallbacksMap")
-    private final Map<SessionHandle, UwbRangingCallbacksWrapper> mCallbacksMap = new ArrayMap<>();
+    private final Map<UwbClientSessionHandle, UwbRangingCallbacksWrapper> mCallbacksMap =
+            new ArrayMap<>();
 
     /**
      * Used for caching the vendor implementation of {@link IUwbAdapter} interface.
@@ -77,16 +78,13 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
      */
     private class UwbRangingCallbacksWrapper extends IUwbRangingCallbacks.Stub
             implements IBinder.DeathRecipient {
-        private final AttributionSource mAttributionSource;
-        private final SessionHandle mSessionHandle;
+        private final UwbClientSessionHandle mUwbClientSessionHandle;
         private final IUwbRangingCallbacks2 mExternalCb;
         private boolean mIsValid;
 
-        UwbRangingCallbacksWrapper(@NonNull AttributionSource attributionSource,
-                @NonNull SessionHandle sessionHandle,
+        UwbRangingCallbacksWrapper(@NonNull UwbClientSessionHandle uwbSessionInfo,
                 @NonNull IUwbRangingCallbacks2 externalCb) {
-            mAttributionSource = attributionSource;
-            mSessionHandle = sessionHandle;
+            mUwbClientSessionHandle = uwbSessionInfo;
             mExternalCb = externalCb;
             mIsValid = true;
 
@@ -106,7 +104,7 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
         private void removeClientAndUnlinkToDeath() {
             // Remove from the map.
             synchronized (mCallbacksMap) {
-                mCallbacksMap.remove(mSessionHandle);
+                mCallbacksMap.remove(mUwbClientSessionHandle);
             }
             IBinder binder = mExternalCb.asBinder();
             binder.unlinkToDeath(this, 0);
@@ -189,10 +187,10 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
             final long ident = Binder.clearCallingIdentity();
             try {
                 boolean permissionGranted = mUwbInjector.checkUwbRangingPermissionForDataDelivery(
-                        mAttributionSource, "uwb ranging result");
+                        mUwbClientSessionHandle.getAttributionSource(), "uwb ranging result");
                 if (!permissionGranted) {
                     Log.e(TAG, "Not delivering ranging result because of permission denial"
-                            + mSessionHandle);
+                            + mUwbClientSessionHandle.getSessionHandle());
                     return;
                 }
             } finally {
@@ -204,11 +202,12 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
         @Override
         public synchronized void binderDied() {
             if (!mIsValid) return;
-            Log.i(TAG, "Client died: ending session: " + mSessionHandle);
+            Log.i(TAG, "Client died: ending session: "
+                    + mUwbClientSessionHandle.getSessionHandle());
             try {
                 removeClientAndUnlinkToDeath();
-                stopRanging(mSessionHandle);
-                closeRanging(mSessionHandle);
+                stopRanging(mUwbClientSessionHandle.getSessionHandle());
+                closeRanging(mUwbClientSessionHandle.getSessionHandle());
             } catch (RemoteException e) {
                 Log.e(TAG, "Remote exception while handling client death", e);
             }
@@ -228,11 +227,11 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
     public void binderDied() {
         Log.i(TAG, "Vendor service died: sending session close callbacks");
         synchronized (mCallbacksMap) {
-            for (Map.Entry<SessionHandle, UwbRangingCallbacksWrapper> e
+            for (Map.Entry<UwbClientSessionHandle, UwbRangingCallbacksWrapper> e
                     : mCallbacksMap.entrySet()) {
                 try {
                     e.getValue().mExternalCb.onRangingClosed(
-                            e.getKey(), RangingSession.Callback.REASON_UNKNOWN,
+                            e.getKey().getSessionHandle(), RangingSession.Callback.REASON_UNKNOWN,
                             new PersistableBundle());
                 } catch (RemoteException ex) {
                     Log.e(TAG, "Failed to send session close callback " + e.getKey(), ex);
@@ -337,10 +336,12 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
         enforceUwbPrivilegedPermission();
         mUwbInjector.enforceUwbRangingPermissionForPreflight(attributionSource);
 
+        final UwbClientSessionHandle uwbSessionInfo =
+                new UwbClientSessionHandle(sessionHandle, attributionSource);
         UwbRangingCallbacksWrapper wrapperCb =
-                new UwbRangingCallbacksWrapper(attributionSource, sessionHandle, rangingCallbacks);
+                new UwbRangingCallbacksWrapper(uwbSessionInfo, rangingCallbacks);
         synchronized (mCallbacksMap) {
-            mCallbacksMap.put(sessionHandle, wrapperCb);
+            mCallbacksMap.put(uwbSessionInfo, wrapperCb);
         }
         getVendorUwbAdapter()
                 .openRanging(attributionSource, sessionHandle, wrapperCb, parameters);
