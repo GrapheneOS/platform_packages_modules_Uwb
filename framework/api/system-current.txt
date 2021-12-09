@@ -49,12 +49,17 @@ package android.uwb {
     method @Nullable public android.uwb.DistanceMeasurement getDistanceMeasurement();
     method public long getElapsedRealtimeNanos();
     method public int getLineOfSight();
+    method public int getMeasurementFocus();
     method @NonNull public android.uwb.UwbAddress getRemoteDeviceAddress();
     method public int getStatus();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field @NonNull public static final android.os.Parcelable.Creator<android.uwb.RangingMeasurement> CREATOR;
     field public static final int LOS = 0; // 0x0
     field public static final int LOS_UNDETERMINED = 255; // 0xff
+    field public static final int MEASUREMENT_FOCUS_ANGLE_OF_ARRIVAL_AZIMUTH = 1; // 0x1
+    field public static final int MEASUREMENT_FOCUS_ANGLE_OF_ARRIVAL_ELEVATION = 2; // 0x2
+    field public static final int MEASUREMENT_FOCUS_NONE = 0; // 0x0
+    field public static final int MEASUREMENT_FOCUS_RANGE = 1; // 0x1
     field public static final int NLOS = 1; // 0x1
     field public static final int RANGING_STATUS_FAILURE_OUT_OF_RANGE = 1; // 0x1
     field public static final int RANGING_STATUS_FAILURE_UNKNOWN_ERROR = -1; // 0xffffffff
@@ -69,6 +74,7 @@ package android.uwb {
     method @NonNull public android.uwb.RangingMeasurement.Builder setDistanceMeasurement(@NonNull android.uwb.DistanceMeasurement);
     method @NonNull public android.uwb.RangingMeasurement.Builder setElapsedRealtimeNanos(long);
     method @NonNull public android.uwb.RangingMeasurement.Builder setLineOfSight(int);
+    method @NonNull public android.uwb.RangingMeasurement.Builder setMeasurementFocus(int);
     method @NonNull public android.uwb.RangingMeasurement.Builder setRemoteDeviceAddress(@NonNull android.uwb.UwbAddress);
     method @NonNull public android.uwb.RangingMeasurement.Builder setStatus(int);
   }
