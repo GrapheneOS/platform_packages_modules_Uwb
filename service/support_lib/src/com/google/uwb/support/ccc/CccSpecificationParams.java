@@ -32,7 +32,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/** Defines parameters for CCC capability reports */
+/**
+ * Defines parameters for CCC capability reports
+ *
+ * <p>This is returned as a bundle from the service API {@link UwbManager#getSpecificationInfo}.
+ */
 @RequiresApi(VERSION_CODES.LOLLIPOP)
 public class CccSpecificationParams extends CccParams {
     private static final int BUNDLE_VERSION_1 = 1;

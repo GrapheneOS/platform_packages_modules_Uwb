@@ -23,7 +23,20 @@ import androidx.annotation.RequiresApi;
 
 import com.google.uwb.support.base.RequiredParam;
 
-/** Defines parameters for CCC error reports */
+/**
+ * Defines parameters for CCC error reports
+ *
+ * <p>This passed as a bundle to the following callbacks, if the reason is {@link
+ * RangingSession.Callback.Reason#REASON_PROTOCOL_SPECIFIC_ERROR}:
+ *
+ * <ul>
+ *   <li>{@link RangingSession.Callback#onOpenFailed}
+ *   <li>{@link RangingSession.Callback#onStartFailed}
+ *   <li>{@link RangingSession.Callback#onReconfigureFailed}
+ *   <li>{@link RangingSession.Callback#onStopFailed}
+ *   <li>Any other {@code on*Failed} callback method.
+ * </ul>
+ */
 @RequiresApi(VERSION_CODES.LOLLIPOP)
 public class CccRangingError extends CccParams {
     @ProtocolError private final int mError;

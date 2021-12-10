@@ -20,6 +20,7 @@ import android.os.Build.VERSION_CODES;
 import android.os.PersistableBundle;
 
 import androidx.annotation.IntDef;
+import androidx.annotation.IntRange;
 import androidx.annotation.RequiresApi;
 
 import com.google.uwb.support.base.Params;
@@ -101,35 +102,8 @@ public abstract class CccParams extends Params {
 
     /** Sync Codes */
     @Retention(RetentionPolicy.SOURCE)
-    @IntDef(
-            value = {
-                SYNC_CODE_INDEX_9,
-                SYNC_CODE_INDEX_10,
-                SYNC_CODE_INDEX_11,
-                SYNC_CODE_INDEX_12,
-                SYNC_CODE_INDEX_13,
-                SYNC_CODE_INDEX_14,
-                SYNC_CODE_INDEX_15,
-                SYNC_CODE_INDEX_16,
-                SYNC_CODE_INDEX_21,
-                SYNC_CODE_INDEX_22,
-                SYNC_CODE_INDEX_23,
-                SYNC_CODE_INDEX_24,
-            })
+    @IntRange(from = 1, to = 32)
     public @interface SyncCodeIndex {}
-
-    public static final int SYNC_CODE_INDEX_9 = 0x01 << 9;
-    public static final int SYNC_CODE_INDEX_10 = 0x01 << 10;
-    public static final int SYNC_CODE_INDEX_11 = 0x01 << 11;
-    public static final int SYNC_CODE_INDEX_12 = 0x01 << 12;
-    public static final int SYNC_CODE_INDEX_13 = 0x01 << 13;
-    public static final int SYNC_CODE_INDEX_14 = 0x01 << 14;
-    public static final int SYNC_CODE_INDEX_15 = 0x01 << 15;
-    public static final int SYNC_CODE_INDEX_16 = 0x01 << 16;
-    public static final int SYNC_CODE_INDEX_21 = 0x01 << 21;
-    public static final int SYNC_CODE_INDEX_22 = 0x01 << 22;
-    public static final int SYNC_CODE_INDEX_23 = 0x01 << 23;
-    public static final int SYNC_CODE_INDEX_24 = 0x01 << 24;
 
     /** Hopping Config */
     @Retention(RetentionPolicy.SOURCE)
@@ -217,9 +191,13 @@ public abstract class CccParams extends Params {
             value = {
                 PROTOCOL_ERROR_UNKNOWN,
                 PROTOCOL_ERROR_SE_BUSY,
+                PROTOCOL_ERROR_LIFECYCLE,
+                PROTOCOL_ERROR_NOT_FOUND,
             })
     public @interface ProtocolError {}
 
     public static final int PROTOCOL_ERROR_UNKNOWN = 0;
     public static final int PROTOCOL_ERROR_SE_BUSY = 1;
+    public static final int PROTOCOL_ERROR_LIFECYCLE = 2;
+    public static final int PROTOCOL_ERROR_NOT_FOUND = 3;
 }
