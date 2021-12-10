@@ -42,7 +42,6 @@ public class UwbMetrics {
     private static final int MAX_RANGING_REPORTS = 1024;
     public static final int DISTANCE_FOM_DEFAULT = 100;
     public static final int INVALID_DISTANCE = 0xFFFF;
-    public static final long RANGING_RESULT_LOG_INTERVAL_MIN_MS = 5_000;
     private final UwbInjector mUwbInjector;
     private final Deque<RangingSessionStats> mRangingSessionList = new ArrayDeque<>();
     private final Deque<RangingReportEvent> mRangingReportList = new ArrayDeque<>();
@@ -248,7 +247,8 @@ public class UwbMetrics {
         mRangingReportList.add(report);
 
         long currTimeMs = mUwbInjector.getElapsedSinceBootMillis();
-        if ((currTimeMs - mLastRangingDataLogTimeMs) < RANGING_RESULT_LOG_INTERVAL_MIN_MS) {
+        if ((currTimeMs - mLastRangingDataLogTimeMs) < mUwbInjector.getDeviceConfigFacade()
+                .getRangingResultLogIntervalMs()) {
             return;
         }
         mLastRangingDataLogTimeMs = currTimeMs;

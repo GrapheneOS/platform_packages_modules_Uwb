@@ -63,6 +63,8 @@ public class UwbMetricsTest {
     private static final int NLOS_DEFAULT = 1;
     @Mock
     private UwbInjector mUwbInjector;
+    @Mock
+    private DeviceConfigFacade mDeviceConfigFacade;
     private UwbTwoWayMeasurement[] mTwoWayMeasurements = new UwbTwoWayMeasurement[1];
     @Mock
     private UwbTwoWayMeasurement mTwoWayMeasurement;
@@ -104,6 +106,9 @@ public class UwbMetricsTest {
         when(mTwoWayMeasurement.getAoaElevation()).thenReturn((float) ELEVATION_DEFAULT_DEGREE);
         when(mTwoWayMeasurement.getAoaElevationFom()).thenReturn(ELEVATION_FOM_DEFAULT);
         when(mTwoWayMeasurement.getNLoS()).thenReturn(NLOS_DEFAULT);
+        when(mDeviceConfigFacade.getRangingResultLogIntervalMs())
+                .thenReturn(DeviceConfigFacade.DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
+        when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
 
         mUwbMetrics = new UwbMetrics(mUwbInjector);
         mMockSession = ExtendedMockito.mockitoSession()
@@ -164,7 +169,7 @@ public class UwbMetricsTest {
 
     @Test
     public void testLoggingRangingResultValidDistanceAngle() throws Exception {
-        addElapsedTimeMs(UwbMetrics.RANGING_RESULT_LOG_INTERVAL_MIN_MS);
+        addElapsedTimeMs(DeviceConfigFacade.DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
         mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
                 mRangingData);
 
@@ -197,7 +202,7 @@ public class UwbMetricsTest {
 
     @Test
     public void testLoggingRangingResultInvalidDistance() throws Exception {
-        addElapsedTimeMs(UwbMetrics.RANGING_RESULT_LOG_INTERVAL_MIN_MS);
+        addElapsedTimeMs(DeviceConfigFacade.DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
         when(mTwoWayMeasurement.getDistance()).thenReturn(UwbMetrics.INVALID_DISTANCE);
         when(mTwoWayMeasurement.getAoaAzimuth()).thenReturn((float) -10.0);
         when(mTwoWayMeasurement.getAoaAzimuthFom()).thenReturn(0);
@@ -225,9 +230,9 @@ public class UwbMetricsTest {
         mUwbMetrics.logRangingSessionInitEvent(mUwbSession,
                 UwbUciConstants.STATUS_CODE_INVALID_PARAM);
 
-        addElapsedTimeMs(UwbMetrics.RANGING_RESULT_LOG_INTERVAL_MIN_MS);
+        addElapsedTimeMs(DeviceConfigFacade.DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
         mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__CCC, mRangingData);
-        addElapsedTimeMs(UwbMetrics.RANGING_RESULT_LOG_INTERVAL_MIN_MS);
+        addElapsedTimeMs(DeviceConfigFacade.DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
         mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
                 mRangingData);
 
