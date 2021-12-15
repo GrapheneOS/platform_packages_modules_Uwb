@@ -30,41 +30,50 @@ public class UwbSpecificationInfo {
     /*  UCI generic device info */
     public int mUciMajorVersion;
     private int mUciMinorVersion;
+    private int mUciMaintenanceVersion;
 
     private int mMacMajorVersion;
     private int mMacMinorVersion;
+    private int mMacMaintenanceVersion;
 
     private int mPhyMajorVersion;
     private int mPhyMinorVersion;
+    private int mPhyMaintenanceVersion;
 
     private int mUciTestMajorVersion;
     private int mUciTestMinorVersion;
+    private int mUciTestMaintenanceVersion;
 
     private int mFiRaMajorVersion = 1;
     private int mFiRaMinorVersion = 1;
     private int mCccMajorVersion = 1;
     private int mCccMinorVersion = 0;
 
-    public UwbSpecificationInfo(int uciMajorVersion, int uciMinorVersion, int macMajorVersion,
-            int macMinorVersion, int phyMajorVersion, int phyMinorVersion, int uciTestMajorVersion,
-            int uciTestMinorVersion, int fiRaMajorVersion, int fiRaMinorVersion,
+    public UwbSpecificationInfo(int uciMajorVersion,  int uciMaintenanceVersion,
+            int uciMinorVersion, int macMajorVersion, int macMinorVersion,
+            int macMaintenanceVersion, int phyMajorVersion, int phyMinorVersion,
+            int phyMaintenanceVersion, int uciTestMajorVersion, int uciTestMinorVersion,
+            int uciTestMaintenanceVersion, int fiRaMajorVersion, int fiRaMinorVersion,
             int cccMajorVersion, int cccMinorVersion) {
         /* Generic */
         this.mUciMajorVersion = uciMajorVersion;
         this.mUciMinorVersion = uciMinorVersion;
+        this.mUciMaintenanceVersion = uciMaintenanceVersion;
         this.mMacMajorVersion = macMajorVersion;
         this.mMacMinorVersion = macMinorVersion;
+        this.mMacMaintenanceVersion = macMaintenanceVersion;
         this.mPhyMajorVersion = phyMajorVersion;
         this.mPhyMinorVersion = phyMinorVersion;
+        this.mPhyMaintenanceVersion = phyMaintenanceVersion;
 
         this.mUciTestMajorVersion = uciTestMajorVersion;
         this.mUciTestMinorVersion = uciTestMinorVersion;
+        this.mUciTestMaintenanceVersion = uciTestMaintenanceVersion;
 
         this.mFiRaMajorVersion = fiRaMajorVersion;
         this.mFiRaMinorVersion = fiRaMinorVersion;
         this.mCccMajorVersion = cccMajorVersion;
         this.mCccMinorVersion = cccMinorVersion;
-
     }
 
     public PersistableBundle toBundle() {
@@ -74,13 +83,17 @@ public class UwbSpecificationInfo {
         bundle.putString(KEY_CCC_SPECIFICATION_INFO,
                 this.mCccMajorVersion + "." + this.mCccMinorVersion);
         bundle.putString(KEY_UCI_SPECIFICATION_INFO,
-                this.mUciMajorVersion + "." + this.mUciMinorVersion);
+                this.mUciMajorVersion + "." + this.mUciMinorVersion
+                        + "." + this.mUciMaintenanceVersion);
         bundle.putString(KEY_MAC_SPECIFICATION_INFO,
-                this.mMacMajorVersion + "." + this.mMacMinorVersion);
+                this.mMacMajorVersion + "." + this.mMacMinorVersion
+                        + "." + this.mMacMaintenanceVersion);
         bundle.putString(KEY_PHY_SPECIFICATION_INFO,
-                this.mPhyMajorVersion + "." + this.mPhyMinorVersion);
+                this.mPhyMajorVersion + "." + this.mPhyMinorVersion
+                        + "." + this.mPhyMaintenanceVersion);
         bundle.putString(KEY_UCITEST_SPECIFICATION_INFO,
-                this.mUciTestMajorVersion + "." + this.mUciTestMinorVersion);
+                this.mUciTestMajorVersion + "." + this.mUciTestMinorVersion
+                        + "." + this.mUciTestMaintenanceVersion);
         return bundle;
     }
 }
