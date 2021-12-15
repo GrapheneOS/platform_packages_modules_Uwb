@@ -74,7 +74,7 @@ public class UwbManagerTest {
     private String mDefaultChipId;
 
     @Before
-    public void setup() {
+    public void setup() throws Exception {
         mUwbManager = mContext.getSystemService(UwbManager.class);
         assumeTrue(UwbTestUtils.isUwbSupported(mContext));
         assertThat(mUwbManager).isNotNull();
@@ -82,10 +82,28 @@ public class UwbManagerTest {
         // Ensure UWB is toggled on.
         ShellIdentityUtils.invokeWithShellPermissions(() -> {
             if (!mUwbManager.isUwbEnabled()) {
-                mUwbManager.setUwbEnabled(true);
+                try {
+                    setUwbEnabledAndWaitForCompletion(true);
+                } catch (Exception e) {
+                    fail("Exception while processing UWB toggle " + e);
+                }
             }
             mDefaultChipId = mUwbManager.getDefaultChipId();
         });
+    }
+
+    // Should be invoked with shell permissions.
+    private void setUwbEnabledAndWaitForCompletion(boolean enabled) throws Exception {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        int adapterState = enabled ? STATE_ENABLED_INACTIVE : STATE_DISABLED;
+        AdapterStateCallback adapterStateCallback =
+                new AdapterStateCallback(countDownLatch, adapterState);
+        mUwbManager.registerAdapterStateCallback(
+                Executors.newSingleThreadExecutor(), adapterStateCallback);
+        mUwbManager.setUwbEnabled(enabled);
+        assertThat(countDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
+        assertThat(mUwbManager.isUwbEnabled()).isEqualTo(enabled);
+        assertThat(adapterStateCallback.state).isEqualTo(adapterState);
     }
 
     @Test
@@ -521,22 +539,13 @@ public class UwbManagerTest {
     @Test
     public void testUwbStateToggle() throws Exception {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        AdapterStateCallback adapterStateCallback =
-                new AdapterStateCallback(countDownLatch, STATE_DISABLED);
         try {
             // Needs UWB_PRIVILEGED permission which is held by shell.
             uiAutomation.adoptShellPermissionIdentity();
-            mUwbManager.registerAdapterStateCallback(
-                    Executors.newSingleThreadExecutor(), adapterStateCallback);
             assertThat(mUwbManager.isUwbEnabled()).isTrue();
             assertThat(mUwbManager.getAdapterState()).isEqualTo(STATE_ENABLED_INACTIVE);
             // Toggle the state
-            mUwbManager.setUwbEnabled(false);
-            // Wait for the on start failed callback.
-            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
-            assertThat(mUwbManager.isUwbEnabled()).isFalse();
-            assertThat(adapterStateCallback.state).isEqualTo(STATE_DISABLED);
+            setUwbEnabledAndWaitForCompletion(false);
             assertThat(mUwbManager.getAdapterState()).isEqualTo(STATE_DISABLED);
         } finally {
             uiAutomation.dropShellPermissionIdentity();
