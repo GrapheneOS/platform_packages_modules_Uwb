@@ -21,7 +21,12 @@ import android.os.PersistableBundle;
 
 import androidx.annotation.RequiresApi;
 
-/** Defines parameters for CCC reconfigure operation */
+/**
+ * Defines parameters for CCC reconfigure operation
+ *
+ * <p>This is passed as a bundle to the client callback {@link
+ * RangingSession.Callback#onReconfigured}.
+ */
 @RequiresApi(VERSION_CODES.LOLLIPOP)
 public class CccRangingReconfiguredParams extends CccParams {
 

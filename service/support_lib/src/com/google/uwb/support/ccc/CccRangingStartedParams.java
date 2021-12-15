@@ -24,10 +24,12 @@ import androidx.annotation.RequiresApi;
 import com.google.uwb.support.base.RequiredParam;
 
 /**
- * Defines parameters for CCC start reports.  The start operation can optionally include a request
- * to reconfigure the RAN multiplier.  On a reconfiguration, the CCC spec defines that the selected
- * RAN multiplier shall be equal to or greater than the requested RAN multiplier, and therefore, on
- * a reconfiguration, the selected RAN multiplier shall be populated in the CCC start report.
+ * Defines parameters for CCC start reports. The start operation can optionally include a request to
+ * reconfigure the RAN multiplier. On a reconfiguration, the CCC spec defines that the selected RAN
+ * multiplier shall be equal to or greater than the requested RAN multiplier, and therefore, on a
+ * reconfiguration, the selected RAN multiplier shall be populated in the CCC start report.
+ *
+ * <p>This is passed as a bundle to the client callback {@link RangingSession.Callback#onStarted}.
  */
 @RequiresApi(VERSION_CODES.LOLLIPOP)
 public class CccRangingStartedParams extends CccParams {

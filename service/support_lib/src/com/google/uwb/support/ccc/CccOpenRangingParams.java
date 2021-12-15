@@ -26,7 +26,11 @@ import androidx.annotation.RequiresApi;
 
 import com.google.uwb.support.base.RequiredParam;
 
-/** Defines parameters for CCC open operation */
+/**
+ * Defines parameters for CCC open operation
+ *
+ * <p>This is passed as a bundle to the service API {@link UwbManager#openRangingSession}.
+ */
 @RequiresApi(VERSION_CODES.LOLLIPOP)
 public class CccOpenRangingParams extends CccParams {
     private static final int BUNDLE_VERSION_1 = 1;

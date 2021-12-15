@@ -24,10 +24,12 @@ import androidx.annotation.RequiresApi;
 import com.google.uwb.support.base.RequiredParam;
 
 /**
- * Defines optional parameters for CCC start operation.  These parameters are only required if
- * a reconfiguration of the RAN multiplier is required.  These parameters are used to support the
- * Configurable_Ranging_Recovery_RQ message in the CCC specification.  Start, or start with RAN
+ * Defines optional parameters for CCC start operation. These parameters are only required if a
+ * reconfiguration of the RAN multiplier is required. These parameters are used to support the
+ * Configurable_Ranging_Recovery_RQ message in the CCC specification. Start, or start with RAN
  * multiplier reconfiguration can only be called on a stopped session.
+ *
+ * <p>This is passed as a bundle to the service API {@link RangingSession#start}.
  */
 @RequiresApi(VERSION_CODES.LOLLIPOP)
 public class CccStartRangingParams extends CccParams {
