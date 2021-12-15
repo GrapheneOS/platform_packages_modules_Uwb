@@ -32,6 +32,7 @@ import com.android.uwb.data.UwbUciConstants;
 import com.android.uwb.params.TlvUtil;
 import com.android.uwb.util.UwbUtil;
 
+import com.google.uwb.support.base.Params;
 import com.google.uwb.support.fira.FiraParams;
 
 import java.util.ArrayList;
@@ -83,13 +84,11 @@ public class UwbSessionNotificationManager {
         }
     }
 
-    public void onRangingStarted(UwbSession uwbSession, int reasonCode) {
+    public void onRangingStarted(UwbSession uwbSession, Params rangingStartedParams) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
         try {
-            uwbRangingCallbacks.onRangingStarted(sessionHandle,
-                    UwbSessionNotificationHelper.convertReasonToParam(uwbSession.getProtocolName(),
-                            reasonCode));
+            uwbRangingCallbacks.onRangingStarted(sessionHandle, rangingStartedParams.toBundle());
             Log.i(TAG, "IUwbRangingCallbacks - onRangingStarted");
         } catch (Exception e) {
             Log.e(TAG, "IUwbRangingCallbacks - onRangingStarted : Failed");

@@ -232,6 +232,23 @@ public class NativeUwbManager {
     }
 
     /**
+     * Get APP Configuration Parameters for the requested UWB session
+     *
+     * @param noOfParams        : The number (n) of APP Configuration Parameters
+     * @param appConfigParamLen : The length of APP Configuration Parameters
+     * @param appConfigIds      : APP Configuration Parameter
+     * @return : refer to SESSION_GET_APP_CONFIG_RSP in the Table 16: Control messages to get
+     * Application configurations
+     */
+    public byte[] getAppConfigurations(int sessionId, int noOfParams, int appConfigParamLen,
+            byte[] appConfigIds) {
+        synchronized (mSetAppConfigFnLock) {
+            return nativeGetAppConfigurations(sessionId, noOfParams, appConfigParamLen,
+                    appConfigIds);
+        }
+    }
+
+    /**
      * Update Multicast list for the requested UWB session
      *
      * @param sessionId  : Session ID to which multicast list to be updated
@@ -328,6 +345,9 @@ public class NativeUwbManager {
     private native byte nativeGetSessionState(int sessionId);
 
     private native byte[] nativeSetAppConfigurations(int sessionId, int noOfParams,
+            int appConfigParamLen, byte[] appConfigParams);
+
+    private native byte[] nativeGetAppConfigurations(int sessionId, int noOfParams,
             int appConfigParamLen, byte[] appConfigParams);
 
     private native byte nativeControllerMulticastListUpdate(int sessionId, byte action,

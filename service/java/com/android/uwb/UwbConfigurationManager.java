@@ -16,14 +16,19 @@
 package com.android.uwb;
 
 import android.util.Log;
+import android.util.Pair;
 
 import com.android.uwb.data.UwbUciConstants;
 import com.android.uwb.jni.NativeUwbManager;
 import com.android.uwb.params.TlvBuffer;
+import com.android.uwb.params.TlvDecoder;
+import com.android.uwb.params.TlvDecoderBuffer;
 import com.android.uwb.params.TlvEncoder;
 import com.android.uwb.util.UwbUtil;
 
 import com.google.uwb.support.base.Params;
+
+import java.util.Arrays;
 
 public class UwbConfigurationManager {
     private static final String TAG = "UwbConfManager";
@@ -38,10 +43,10 @@ public class UwbConfigurationManager {
         int status = UwbUciConstants.STATUS_CODE_FAILED;
         TlvBuffer tlvBuffer = null;
 
-        Log.d(TAG, "protocol: " + params.getProtocolName());
+        Log.d(TAG, "setAppConfigurations for protocol: " + params.getProtocolName());
         TlvEncoder encoder = TlvEncoder.getEncoder(params.getProtocolName());
         if (encoder == null) {
-            Log.d(TAG, "unsupported parameter type");
+            Log.d(TAG, "unsupported encoder protocol type");
             return status;
         }
 
@@ -63,7 +68,50 @@ public class UwbConfigurationManager {
             // Number of reconfig params FiraRangingReconfigureParams can be null
             status = UwbUciConstants.STATUS_CODE_OK;
         }
-
         return status;
+    }
+
+    /**
+     * Retrieve app configurations from UWBS.
+     */
+    public <T extends Params> Pair<Integer, T> getAppConfigurations(int sessionId,
+            String protocolName, byte[] appConfigIds, Class<T> paramType) {
+        int status;
+        Log.d(TAG, "getAppConfigurations for protocol: " + protocolName);
+
+        byte[] getAppConfig = mNativeUwbManager.getAppConfigurations(sessionId,
+                appConfigIds.length, appConfigIds.length, appConfigIds);
+        Log.i(TAG, "getAppConfigurations respData: " + UwbUtil.toHexString(getAppConfig));
+        if ((getAppConfig != null) && (getAppConfig.length > 0)) {
+            status = getAppConfig[0];
+        } else {
+            Log.e(TAG, "getAppConfigList is null or size of getAppConfigList is zero");
+            return Pair.create(UwbUciConstants.STATUS_CODE_FAILED, null);
+        }
+        TlvDecoder decoder = TlvDecoder.getDecoder(protocolName);
+        if (decoder == null) {
+            Log.d(TAG, "unsupported decoder protocol type");
+            return Pair.create(status, null);
+        }
+
+        int numOfConfigs = getAppConfig[1];
+        TlvDecoderBuffer tlvs =
+                new TlvDecoderBuffer(Arrays.copyOfRange(getAppConfig, 2, getAppConfig.length),
+                        numOfConfigs);
+        if (!tlvs.parse()) {
+            Log.e(TAG, "Failed to parse getAppConfigList tlvs");
+            return Pair.create(UwbUciConstants.STATUS_CODE_FAILED, null);
+        }
+        T params = null;
+        try {
+            params = decoder.getParams(tlvs, paramType);
+        } catch (IllegalStateException e) {
+            Log.e(TAG, "Failed to decode", e);
+        }
+        if (params == null) {
+            Log.d(TAG, "Failed to get params from getAppConfigList tlvs");
+            return Pair.create(UwbUciConstants.STATUS_CODE_FAILED, null);
+        }
+        return Pair.create(UwbUciConstants.STATUS_CODE_OK, params);
     }
 }

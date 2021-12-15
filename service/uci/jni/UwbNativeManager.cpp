@@ -1885,6 +1885,8 @@ static JNINativeMethod gMethods[] = {
     {"nativeSessionDeInit", "(I)B", (void *)uwbNativeManager_sessionDeInit},
     {"nativeSetAppConfigurations", "(III[B)[B",
      (void *)uwbNativeManager_setAppConfigurations},
+    {"nativeGetAppConfigurations", "(III[B)[B",
+     (void *)uwbNativeManager_getAppConfigurations},
     {"nativeRangingStart", "(I)B", (void *)uwbNativeManager_startRanging},
     {"nativeRangingStop", "(I)B", (void *)uwbNativeManager_stopRanging},
     {"nativeGetSessionCount", "()B", (void *)uwbNativeManager_getSessionCount},
