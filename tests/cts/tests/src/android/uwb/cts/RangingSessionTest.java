@@ -75,6 +75,29 @@ public class RangingSessionTest {
     }
 
     @Test
+    public void testOnRangingOpened_OnServiceDiscoveredConnectedCalled() {
+        SessionHandle handle = new SessionHandle(123);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        IUwbAdapter2 adapter = mock(IUwbAdapter2.class);
+        RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
+        verifyOpenState(session, false);
+
+        session.onRangingOpened();
+        verifyOpenState(session, true);
+
+        // Verify that the onOpenSuccess callback was invoked
+        verify(callback, times(1)).onOpened(eq(session));
+        verify(callback, times(0)).onClosed(anyInt(), any());
+
+        session.onServiceDiscovered(PARAMS);
+        verify(callback, times(1)).onServiceDiscovered(eq(PARAMS));
+
+        session.onServiceConnected(PARAMS);
+        verify(callback, times(1)).onServiceConnected(eq(PARAMS));
+    }
+
+
+    @Test
     public void testOnRangingOpened_CannotOpenClosedSession() {
         SessionHandle handle = new SessionHandle(123);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
