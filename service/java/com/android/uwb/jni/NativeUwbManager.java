@@ -35,6 +35,7 @@ public class NativeUwbManager {
     public final Object mSetAppConfigFnLock = new Object();
     protected INativeUwbManager.DeviceNotification mDeviceListener;
     protected INativeUwbManager.SessionNotification mSessionListener;
+    private long mDispatcherPointer;
 
     public NativeUwbManager() {
         loadLibrary();
@@ -91,6 +92,9 @@ public class NativeUwbManager {
      * @return : If this returns true, UWB is on
      */
     public synchronized boolean doInitialize() {
+        if (SystemProperties.getBoolean("persist.uwb.enable_uci_rust_stack", false)) {
+            this.mDispatcherPointer = nativeDispatcherNew();
+        }
         return nativeDoInitialize();
     }
 
@@ -100,6 +104,7 @@ public class NativeUwbManager {
      * @return : If this returns true, UWB is off
      */
     public synchronized boolean doDeinitialize() {
+        // TODO: Destroy the dispatcher instance here.
         return nativeDoDeinitialize();
     }
 
@@ -288,6 +293,8 @@ public class NativeUwbManager {
         // TODO(b/206150133): Get list of chip ids from configuration file
         return "defaultChipId";
     }
+
+    private native long nativeDispatcherNew();
 
     private native boolean nativeInit();
 
