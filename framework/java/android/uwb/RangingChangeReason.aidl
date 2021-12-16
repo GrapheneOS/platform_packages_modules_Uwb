@@ -18,6 +18,7 @@ package android.uwb;
 
 /**
  * @hide
+ * TODO(b/211025367): Remove this class and use direct API values.
  */
 @Backing(type="int")
 enum RangingChangeReason {
@@ -59,5 +60,10 @@ enum RangingChangeReason {
    * The provided parameters were invalid
    */
   BAD_PARAMETERS,
+
+  /**
+   * Max ranging round retries reached.
+   */
+  MAX_RR_RETRY_REACHED,
 }
 

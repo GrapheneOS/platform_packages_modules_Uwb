@@ -41,6 +41,10 @@ import java.util.concurrent.Executor;
  *
  * <p>To get a {@link UwbManager}, call the <code>Context.getSystemService(UwbManager.class)</code>.
  *
+ * <p> Note: This API surface uses opaque {@link PersistableBundle} params. These params are to be
+ * created using the Google provided support library. The support library is present in this
+ * location on AOSP: <code>packages/modules/Uwb/service/support_lib/</code>
+ *
  * @hide
  */
 @SystemApi
@@ -268,6 +272,13 @@ public final class UwbManager {
      * {@link RangingSession} object used to control ranging when the session is successfully
      * opened.
      *
+     * if this session uses FIRA defined profile (not custom profile), this triggers:
+     *   - OOB discovery using service UUID
+     *   - OOB connection establishment after discovery for session params
+     *     negotiation.
+     *   - Secure element interactions needed for dynamic STS based session establishment.
+     *   - Setup the UWB session based on the parameters negotiated via OOB.
+     *
      * <p>If a session cannot be opened, then
      * {@link RangingSession.Callback#onClosed(int, PersistableBundle)} will be invoked with the
      * appropriate {@link RangingSession.Callback.Reason}.
@@ -419,6 +430,82 @@ public final class UwbManager {
     public String getDefaultChipId() {
         try {
             return mUwbAdapter.getDefaultChipId();
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Register the UWB service profile.
+     * This profile instance is persisted by the platform until explicitly removed
+     * using {@link #removeServiceProfile(PersistableBundle)}
+     *
+     * @param parameters the parameters that define the service profile.
+     * @return Protocol specific params to be used as handle for triggering the profile.
+     */
+    @RequiresPermission(permission.UWB_PRIVILEGED)
+    @NonNull
+    public PersistableBundle addServiceProfile(@NonNull PersistableBundle parameters) {
+        try {
+            return mUwbAdapter.addServiceProfile(parameters);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Successfully removed the service profile.
+     */
+    public static final int REMOVE_SERVICE_PROFILE_SUCCESS = 0;
+
+    /**
+     * Failed to remove service since the service profile is unknown.
+     */
+    public static final int REMOVE_SERVICE_PROFILE_ERROR_UNKNOWN_SERVICE = 1;
+
+    /**
+     * Failed to remove service due to some internal error while processing the request.
+     */
+    public static final int REMOVE_SERVICE_PROFILE_ERROR_INTERNAL = 2;
+
+    /**
+     * @hide
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef(value = {
+            REMOVE_SERVICE_PROFILE_SUCCESS,
+            REMOVE_SERVICE_PROFILE_ERROR_UNKNOWN_SERVICE,
+            REMOVE_SERVICE_PROFILE_ERROR_INTERNAL
+    })
+    @interface RemoveServiceProfile {}
+
+    /**
+     * Remove the service profile registered with {@link #addServiceProfile} and
+     * all related resources.
+     *
+     * @param parameters the parameters that define the service profile.
+     *
+     * @return true if the service profile is removed, false otherwise.
+     */
+    @RequiresPermission(permission.UWB_PRIVILEGED)
+    public @RemoveServiceProfile int removeServiceProfile(@NonNull PersistableBundle parameters) {
+        try {
+            return mUwbAdapter.removeServiceProfile(parameters);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Get all service profiles initialized with {@link #addServiceProfile}
+     *
+     * @return the parameters that define the service profiles.
+     */
+    @RequiresPermission(permission.UWB_PRIVILEGED)
+    @NonNull
+    public PersistableBundle getAllServiceProfiles() {
+        try {
+            return mUwbAdapter.getAllServiceProfiles();
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();
         }

@@ -51,6 +51,8 @@ public class RangingManagerTest {
     private static final Executor EXECUTOR = UwbTestUtils.getExecutor();
     private static final PersistableBundle PARAMS = new PersistableBundle();
     private static final @RangingChangeReason int REASON = RangingChangeReason.UNKNOWN;
+    private static final UwbAddress ADDRESS = UwbAddress.fromBytes(new byte[]{0x0, 0x1});
+    private static final byte[] DATA = new byte[]{0x0, 0x1};
     private static final int UID = 343453;
     private static final String PACKAGE_NAME = "com.uwb.test";
     private static final AttributionSource ATTRIBUTION_SOURCE =
@@ -175,6 +177,42 @@ public class RangingManagerTest {
 
         rangingManager.onRangingStopFailed(handle, REASON, PARAMS);
         verify(callback, times(1)).onStopFailed(eq(REASON), eq(PARAMS));
+
+        rangingManager.onControleeAdded(handle, PARAMS);
+        verify(callback, times(1)).onControleeAdded(eq(PARAMS));
+
+        rangingManager.onControleeAddFailed(handle, REASON, PARAMS);
+        verify(callback, times(1)).onControleeAddFailed(
+                eq(REASON), eq(PARAMS));
+
+        rangingManager.onControleeRemoved(handle, PARAMS);
+        verify(callback, times(1)).onControleeRemoved(eq(PARAMS));
+
+        rangingManager.onControleeRemoveFailed(handle, REASON, PARAMS);
+        verify(callback, times(1)).onControleeRemoveFailed(
+                eq(REASON), eq(PARAMS));
+
+        rangingManager.onDataSent(handle, ADDRESS, PARAMS);
+        verify(callback, times(1)).onDataSent(
+                eq(ADDRESS), eq(PARAMS));
+
+        rangingManager.onDataSendFailed(handle, ADDRESS, REASON, PARAMS);
+        verify(callback, times(1)).onDataSendFailed(
+                eq(ADDRESS), eq(REASON), eq(PARAMS));
+
+        rangingManager.onDataReceived(handle, ADDRESS, PARAMS, DATA);
+        verify(callback, times(1)).onDataReceived(
+                eq(ADDRESS), eq(PARAMS), eq(DATA));
+
+        rangingManager.onDataReceiveFailed(handle, ADDRESS, REASON, PARAMS);
+        verify(callback, times(1)).onDataReceiveFailed(
+                eq(ADDRESS), eq(REASON), eq(PARAMS));
+
+        rangingManager.onServiceDiscovered(handle, PARAMS);
+        verify(callback, times(1)).onServiceDiscovered(eq(PARAMS));
+
+        rangingManager.onServiceConnected(handle, PARAMS);
+        verify(callback, times(1)).onServiceConnected(eq(PARAMS));
 
         rangingManager.onRangingClosed(handle, REASON, PARAMS);
         verify(callback, times(1)).onClosed(eq(REASON), eq(PARAMS));
