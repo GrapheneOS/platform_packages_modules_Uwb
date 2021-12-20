@@ -93,10 +93,6 @@ java_library {
         shrink: true,
         proguard_flags_files: ["proguard.flags"],
     },
-    dex_preopt: {
-        enabled: false,
-        app_image: false,
-    },
 
     visibility: [
         "//packages/modules/Uwb/apex",
