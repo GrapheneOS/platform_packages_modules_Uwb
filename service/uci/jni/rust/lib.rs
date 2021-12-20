@@ -3,7 +3,8 @@ use jni::JNIEnv;
 use jni::objects::{JObject, JValue};
 use jni::sys::{jboolean, jbyte, jbyteArray, jint, jintArray, jlong, jobject};
 use log::{error, info, warn};
-use uwb_uci_rust::adaptation::{THalUwbEntry, UwbAdaptation, UwbErr};
+use uwb_uci_rust::adaptation::{THalUwbEntry, UwbAdaptation};
+use uwb_uci_rust::error::UwbErr;
 use uwb_uci_rust::uci::{Dispatcher, JNICommand};
 
 const STATUS_OK: i8 = 0;
@@ -172,13 +173,13 @@ fn do_initialize(env: JNIEnv, obj: JObject) -> Result<(), UwbErr> {
         _ => warn!("UWA_disable(false) is failed."),
     };
     uwb_adaptation.finalize(false);
-    Err(UwbErr::Failed)
+    Err(UwbErr::failed())
 }
 
 fn do_deinitialize(env: JNIEnv, obj: JObject) -> Result<(), UwbErr> {
     let dispatcher = get_dispatcher(env, obj)?;
-    dispatcher.send_jni_command(JNICommand::UwaDisable(true)).map_err(|_| UwbErr::Undefined)?;
-    dispatcher.send_jni_command(JNICommand::Exit).map_err(|_| UwbErr::Undefined)?;
+    dispatcher.send_jni_command(JNICommand::UwaDisable(true))?;
+    dispatcher.send_jni_command(JNICommand::Exit)?;
     Ok(())
 }
 
@@ -207,26 +208,26 @@ fn get_session_state(env: JNIEnv, obj: JObject, session_id: u32) -> Result<(), U
 }
 
 fn multicast_list_update(env: JNIEnv, obj: JObject, session_id: u32, action: u8, no_of_controlee: u8, address: jbyteArray, sub_session_id: &jintArray) -> Result<(), UwbErr> {
-    let address_list = env.convert_byte_array(address).map_err(|_| UwbErr::Undefined)?;
+    let address_list = env.convert_byte_array(address)?;
     let sub_session_id_list: &mut [i32] = &mut [];
-    env.get_int_array_region(*sub_session_id, 0, sub_session_id_list).map_err(|_| UwbErr::Undefined)?;
+    env.get_int_array_region(*sub_session_id, 0, sub_session_id_list)?;
     dispatch_command(env, obj, JNICommand::UwaSessionUpdateMulticastList{session_id, action, no_of_controlee, address_list, sub_session_id_list: sub_session_id_list.to_vec()})
 }
 
 fn set_country_code(env: JNIEnv, obj: JObject, country_code: jbyteArray) -> Result<(), UwbErr> {
-    let code = env.convert_byte_array(country_code).map_err(|_| UwbErr::Undefined)?;
+    let code = env.convert_byte_array(country_code)?;
     dispatch_command(env, obj, JNICommand::UwaSetCountryCode{code})
 }
 
 fn dispatch_command(env: JNIEnv, obj: JObject, command: JNICommand) -> Result<(), UwbErr> {
     let dispatcher = get_dispatcher(env, obj)?;
-    dispatcher.send_jni_command(command).map_err(|_| UwbErr::Undefined)?;
+    dispatcher.send_jni_command(command)?;
     Ok(())
 }
 
 fn get_dispatcher<'a>(env: JNIEnv, obj: JObject) -> Result<&'a mut Dispatcher, UwbErr> {
-    let dispatcher_ptr_value = env.get_field(obj, "mDispatcherPointer", "J").map_err(|_| UwbErr::Undefined)?;
-    let dispatcher_ptr = dispatcher_ptr_value.j().map_err(|_| UwbErr::Undefined)?;
+    let dispatcher_ptr_value = env.get_field(obj, "mDispatcherPointer", "J")?;
+    let dispatcher_ptr = dispatcher_ptr_value.j()?;
     // Safety: dispatcher pointer must not be a null pointer and it must point to a valid dispatcher object.
     // This can be ensured because the dispatcher is created in an earlier stage and
     // won't be deleted before calling doDeinitialize.
@@ -280,9 +281,9 @@ fn clear_all_session_context() {
 }
 
 fn uwa_disable(_para: bool) -> Result<(), UwbErr> {
-    Err(UwbErr::Refused)
+    Err(UwbErr::refused())
 }
 
 fn set_core_device_configurations() -> Result<(), UwbErr> {
-    Err(UwbErr::Failed)
+    Err(UwbErr::failed())
 }
