@@ -21,9 +21,7 @@ package {
 apex_defaults {
     name: "com.android.uwb-defaults",
     bootclasspath_fragments: ["com.android.uwb-bootclasspath-fragment"],
-    java_libs: [
-        "service-uwb",
-    ],
+    systemserverclasspath_fragments: ["com.android.uwb-systemserverclasspath-fragment"],
     multilib: {
         both: {
             jni_libs: [
@@ -68,6 +66,7 @@ android_app_certificate {
 sdk {
     name: "uwb-module-sdk",
     bootclasspath_fragments: ["com.android.uwb-bootclasspath-fragment"],
+    systemserverclasspath_fragments: ["com.android.uwb-systemserverclasspath-fragment"],
 }
 
 // Encapsulate the contributions made by the com.android.uwb to the bootclasspath.
@@ -89,4 +88,10 @@ bootclasspath_fragment {
     additional_stubs: [
         "android-non-updatable",
     ],
+}
+
+systemserverclasspath_fragment {
+    name: "com.android.uwb-systemserverclasspath-fragment",
+    standalone_contents: ["service-uwb"],
+    apex_available: ["com.android.uwb"],
 }
