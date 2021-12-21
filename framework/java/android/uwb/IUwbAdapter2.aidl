@@ -19,6 +19,7 @@ package android.uwb;
 import android.content.AttributionSource;
 import android.os.PersistableBundle;
 import android.uwb.IUwbAdapterStateCallbacks;
+import android.uwb.IUwbAdfProvisionStateCallbacks;
 import android.uwb.IUwbRangingCallbacks2;
 import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
@@ -305,6 +306,15 @@ interface IUwbAdapter2 {
   int removeServiceProfile(in PersistableBundle parameters);
 
   PersistableBundle getAllServiceProfiles();
+
+  PersistableBundle getAdfProvisioningAuthorities(in PersistableBundle parameters);
+
+  PersistableBundle getAdfCertificateAndInfo(in PersistableBundle parameters);
+
+  void provisionProfileAdfByScript(in PersistableBundle serviceProfileBundle,
+            in IUwbAdfProvisionStateCallbacks callback);
+
+  int removeProfileAdf(in PersistableBundle serviceProfileBundle);
 
   /**
    * The maximum allowed time to open a ranging session.

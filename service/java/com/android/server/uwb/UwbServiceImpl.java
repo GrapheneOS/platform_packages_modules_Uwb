@@ -35,6 +35,7 @@ import android.util.Log;
 import android.uwb.IUwbAdapter;
 import android.uwb.IUwbAdapter2;
 import android.uwb.IUwbAdapterStateCallbacks;
+import android.uwb.IUwbAdfProvisionStateCallbacks;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.IUwbRangingCallbacks2;
 import android.uwb.RangingReport;
@@ -450,6 +451,37 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
 
     @Override
     public PersistableBundle getAllServiceProfiles() {
+        enforceUwbPrivilegedPermission();
+        // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
+    }
+
+    @NonNull
+    @Override
+    public PersistableBundle getAdfProvisioningAuthorities(@NonNull PersistableBundle parameters) {
+        enforceUwbPrivilegedPermission();
+        // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
+    }
+
+    @NonNull
+    @Override
+    public PersistableBundle getAdfCertificateAndInfo(@NonNull PersistableBundle parameters) {
+        enforceUwbPrivilegedPermission();
+        // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
+    }
+
+    @Override
+    public void provisionProfileAdfByScript(@NonNull PersistableBundle serviceProfileBundle,
+            @NonNull IUwbAdfProvisionStateCallbacks callback) {
+        enforceUwbPrivilegedPermission();
+        // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
+    }
+
+    @Override
+    public int removeProfileAdf(@NonNull PersistableBundle serviceProfileBundle) {
         enforceUwbPrivilegedPermission();
         // TODO(b/200678461): Implement this.
         throw new IllegalStateException("Not implemented");
