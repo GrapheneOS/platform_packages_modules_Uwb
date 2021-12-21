@@ -49,6 +49,9 @@ public class NativeUwbManager {
             System.loadLibrary("uwb_uci_jni");
         }
         nativeInit();
+        if (SystemProperties.getBoolean("persist.uwb.enable_uci_rust_stack", false)) {
+            this.mDispatcherPointer = nativeDispatcherNew();
+        }
     }
 
     public void setDeviceListener(INativeUwbManager.DeviceNotification deviceListener) {
@@ -92,9 +95,6 @@ public class NativeUwbManager {
      * @return : If this returns true, UWB is on
      */
     public synchronized boolean doInitialize() {
-        if (SystemProperties.getBoolean("persist.uwb.enable_uci_rust_stack", false)) {
-            this.mDispatcherPointer = nativeDispatcherNew();
-        }
         return nativeDoInitialize();
     }
 
@@ -104,8 +104,11 @@ public class NativeUwbManager {
      * @return : If this returns true, UWB is off
      */
     public synchronized boolean doDeinitialize() {
-        // TODO: Destroy the dispatcher instance here.
-        return nativeDoDeinitialize();
+        boolean res = nativeDoDeinitialize();
+        if (res && SystemProperties.getBoolean("persist.uwb.enable_uci_rust_stack", false)) {
+            nativeDispatcherDestroy();
+        }
+        return res;
     }
 
     public synchronized long getTimestampResolutionNanos() {
@@ -295,6 +298,8 @@ public class NativeUwbManager {
     }
 
     private native long nativeDispatcherNew();
+
+    private native void nativeDispatcherDestroy();
 
     private native boolean nativeInit();
 
