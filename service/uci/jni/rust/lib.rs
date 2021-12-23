@@ -116,6 +116,15 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeSetAppCon
     env.byte_array_from_slice(&buf).unwrap()
 }
 
+/// get app configurations
+#[no_mangle]
+pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetAppConfigurations(env: JNIEnv, _obj: JObject, _session_id: jint, _no_of_params: jint, _app_config_param_len: jint, _app_config_params: jbyteArray) -> jbyteArray {
+    info!("Java_com_android_uwb_jni_NativeUwbManager_nativeGetAppConfigurations: enter");
+    // TODO: implement this function
+    let buf = [1; 10];
+    env.byte_array_from_slice(&buf).unwrap()
+}
+
 /// update multicast list
 #[no_mangle]
 pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeControllerMulticastListUpdate(env: JNIEnv, obj: JObject, session_id: jint, action: jbyte, no_of_controlee: jbyte, address: jbyteArray, sub_session_id: jintArray) -> jbyte {
