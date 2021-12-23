@@ -235,6 +235,43 @@ public class UwbManagerTest {
         }
     }
 
+    @Test
+    public void testAddServiceProfileWithoutUwbPrivileged() {
+        try {
+            mUwbManager.addServiceProfile(new PersistableBundle());
+            // should fail if the call was successful without UWB_PRIVILEGED permission.
+            fail();
+        } catch (SecurityException e) {
+            /* pass */
+            Log.i(TAG, "Failed with expected security exception: " + e);
+        }
+    }
+
+    @Test
+    public void testRemoveServiceProfileWithoutUwbPrivileged() {
+        try {
+            mUwbManager.removeServiceProfile(new PersistableBundle());
+            // should fail if the call was successful without UWB_PRIVILEGED permission.
+            fail();
+        } catch (SecurityException e) {
+            /* pass */
+            Log.i(TAG, "Failed with expected security exception: " + e);
+        }
+    }
+
+
+    @Test
+    public void testGetAllServiceProfilesWithoutUwbPrivileged() {
+        try {
+            mUwbManager.getAllServiceProfiles();
+            // should fail if the call was successful without UWB_PRIVILEGED permission.
+            fail();
+        } catch (SecurityException e) {
+            /* pass */
+            Log.i(TAG, "Failed with expected security exception: " + e);
+        }
+    }
+
     private class RangingSessionCallback implements RangingSession.Callback {
         private final CountDownLatch mCountDownLatch;
 
