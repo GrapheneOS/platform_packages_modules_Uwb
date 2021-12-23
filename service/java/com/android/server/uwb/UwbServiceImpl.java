@@ -378,24 +378,28 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
     public void addControlee(SessionHandle sessionHandle, PersistableBundle params) {
         enforceUwbPrivilegedPermission();
         // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
     }
 
     @Override
     public void removeControlee(SessionHandle sessionHandle, PersistableBundle params) {
         enforceUwbPrivilegedPermission();
         // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
     }
 
     @Override
     public void suspend(SessionHandle sessionHandle, PersistableBundle params) {
         enforceUwbPrivilegedPermission();
         // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
     }
 
     @Override
     public void resume(SessionHandle sessionHandle, PersistableBundle params) {
         enforceUwbPrivilegedPermission();
         // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
     }
 
     @Override
@@ -403,6 +407,7 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
             PersistableBundle params, byte[] data) {
         enforceUwbPrivilegedPermission();
         // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
     }
 
     @Override
@@ -419,12 +424,35 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
 
     @Override
     public List<String> getChipIds() {
+        enforceUwbPrivilegedPermission();
         return mUwbInjector.getNativeUwbManager().getChipIds();
     }
 
     @Override
     public String getDefaultChipId() {
+        enforceUwbPrivilegedPermission();
         return mUwbInjector.getNativeUwbManager().getDefaultChipId();
+    }
+
+    @Override
+    public PersistableBundle addServiceProfile(@NonNull PersistableBundle parameters) {
+        enforceUwbPrivilegedPermission();
+        // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
+    }
+
+    @Override
+    public int removeServiceProfile(@NonNull PersistableBundle parameters) {
+        enforceUwbPrivilegedPermission();
+        // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
+    }
+
+    @Override
+    public PersistableBundle getAllServiceProfiles() {
+        enforceUwbPrivilegedPermission();
+        // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
     }
 
     @Override

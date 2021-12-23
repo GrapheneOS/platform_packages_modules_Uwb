@@ -423,6 +423,38 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks2.Stub {
         }
     }
 
+    @Override
+    public void onServiceDiscovered(SessionHandle sessionHandle,
+            @NonNull PersistableBundle parameters) {
+        synchronized (this) {
+            if (!hasSession(sessionHandle)) {
+                Log.w(TAG, "onServiceDiscovered - received unexpected SessionHandle: "
+                        + sessionHandle);
+                return;
+            }
+
+            RangingSession session = mRangingSessionTable.get(sessionHandle);
+            session.onServiceDiscovered(parameters);
+        }
+    }
+
+
+    @Override
+    public void onServiceConnected(SessionHandle sessionHandle,
+            @NonNull PersistableBundle parameters) {
+        synchronized (this) {
+            if (!hasSession(sessionHandle)) {
+                Log.w(TAG, "onServiceConnected - received unexpected SessionHandle: "
+                        + sessionHandle);
+                return;
+            }
+
+            RangingSession session = mRangingSessionTable.get(sessionHandle);
+            session.onServiceConnected(parameters);
+        }
+    }
+
+    // TODO(b/211025367): Remove this conversion and use direct API values.
     @RangingSession.Callback.Reason
     private static int convertToReason(@RangingChangeReason int reason) {
         switch (reason) {
@@ -443,6 +475,9 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks2.Stub {
 
             case RangingChangeReason.BAD_PARAMETERS:
                 return RangingSession.Callback.REASON_BAD_PARAMETERS;
+
+            case RangingChangeReason.MAX_RR_RETRY_REACHED:
+                return RangingSession.Callback.REASON_MAX_RR_RETRY_REACHED;
 
             case RangingChangeReason.UNKNOWN:
             default:

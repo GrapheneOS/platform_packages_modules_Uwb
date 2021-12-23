@@ -96,9 +96,12 @@ public final class RangingSession implements AutoCloseable {
                 REASON_MAX_SESSIONS_REACHED,
                 REASON_SYSTEM_POLICY,
                 REASON_PROTOCOL_SPECIFIC_ERROR,
-                REASON_MAX_CONTROLEE_REACHED,
                 REASON_MAX_RR_RETRY_REACHED,
-                REASON_DATA_SIZE_TOO_LARGE})
+                REASON_SERVICE_DISCOVERY_FAILURE,
+                REASON_SERVICE_CONNECTION_FAILURE,
+                REASON_SE_NOT_SUPPORTED,
+                REASON_SE_INTERACTION_FAILURE,
+        })
         @interface Reason {}
 
         /**
@@ -147,21 +150,59 @@ public final class RangingSession implements AutoCloseable {
         int REASON_PROTOCOL_SPECIFIC_ERROR = 7;
 
         /**
-         * Indicates that the session has reached the max number of controllees supported by the
-         * device. This is applicable to only one to many sessions and sent in response to a
-         * request to add a new controlee to an ongoing session.
-         */
-        int REASON_MAX_CONTROLEE_REACHED = 8;
-
-        /**
          * Indicates that the max number of retry attempts for a ranging attempt has been reached.
          */
         int REASON_MAX_RR_RETRY_REACHED = 9;
 
         /**
+         * Indicates a failure to discover the service after activation.
+         */
+        int REASON_SERVICE_DISCOVERY_FAILURE = 10;
+
+        /**
+         * Indicates a failure to connect to the service after discovery.
+         */
+        int REASON_SERVICE_CONNECTION_FAILURE = 11;
+
+        /**
+         * The device doesn’t support FiRA Applet.
+         */
+        int REASON_SE_NOT_SUPPORTED = 12;
+
+        /**
+         * SE interactions failed.
+         */
+        int REASON_SE_INTERACTION_FAILURE = 13;
+
+        /**
+         * @hide
+         */
+        @Retention(RetentionPolicy.SOURCE)
+        @IntDef(value = {
+                CONTROLLEE_FAILURE_REASON_MAX_CONTROLEE_REACHED,
+        })
+        @interface ControlleeFailureReason {}
+
+        /**
+         * Indicates that the session has reached the max number of controllees supported by the
+         * device. This is applicable to only one to many sessions and sent in response to a
+         * request to add a new controlee to an ongoing session.
+         */
+        int CONTROLLEE_FAILURE_REASON_MAX_CONTROLEE_REACHED = 0;
+
+        /**
+         * @hide
+         */
+        @Retention(RetentionPolicy.SOURCE)
+        @IntDef(value = {
+                DATA_FAILURE_REASON_DATA_SIZE_TOO_LARGE,
+        })
+        @interface DataFailureReason {}
+
+        /**
          * Indicates that the size of the data being sent or received is too large.
          */
-        int REASON_DATA_SIZE_TOO_LARGE = 10;
+        int DATA_FAILURE_REASON_DATA_SIZE_TOO_LARGE = 10;
 
         /**
          * Invoked when {@link UwbManager#openRangingSession(PersistableBundle, Executor, Callback)}
@@ -181,13 +222,21 @@ public final class RangingSession implements AutoCloseable {
         void onOpenFailed(@Reason int reason, @NonNull PersistableBundle params);
 
         /**
-         * Invoked when {@link RangingSession#start(PersistableBundle)} is successful
+         * Invoked either,
+         *  - when {@link RangingSession#start(PersistableBundle)} is successful if the session is
+         *    using a custom profile, OR
+         *  - when platform starts ranging after OOB discovery + negotiation if the session is
+         *    using a platform defined profile.
          * @param sessionInfo session specific parameters from the lower layers
          */
         void onStarted(@NonNull PersistableBundle sessionInfo);
 
         /**
-         * Invoked when {@link RangingSession#start(PersistableBundle)} fails
+         * Invoked either,
+         *   - when {@link RangingSession#start(PersistableBundle)} fails if
+         *     the session is using a custom profile, OR
+         *   - when platform fails ranging after OOB discovery + negotiation if the
+         *     session is using a platform defined profile.
          *
          * @param reason the failure reason
          * @param params protocol specific parameters
@@ -255,7 +304,7 @@ public final class RangingSession implements AutoCloseable {
          * @param parameters protocol specific parameters related to the failure
          */
         default void onControleeAddFailed(
-                @Reason int reason, @NonNull PersistableBundle parameters) {}
+                @ControlleeFailureReason int reason, @NonNull PersistableBundle parameters) {}
 
         /**
          * Invoked when an existing controlee is removed from an ongoing one-to many session.
@@ -271,7 +320,7 @@ public final class RangingSession implements AutoCloseable {
          * @param parameters protocol specific parameters related to the failure
          */
         default void onControleeRemoveFailed(
-                @Reason int reason, @NonNull PersistableBundle parameters) {}
+                @ControlleeFailureReason int reason, @NonNull PersistableBundle parameters) {}
 
         /**
          * Invoked when an ongoing session is successfully suspended.
@@ -322,7 +371,7 @@ public final class RangingSession implements AutoCloseable {
          * @param parameters protocol specific parameters for resumption failure
          */
         default void onDataSendFailed(@NonNull UwbAddress remoteDeviceAddress,
-                @Reason int reason, @NonNull PersistableBundle parameters) {}
+                @DataFailureReason int reason, @NonNull PersistableBundle parameters) {}
 
         /**
          * Invoked when data is received successfully from a remote device.
@@ -341,11 +390,33 @@ public final class RangingSession implements AutoCloseable {
          * Invoked when data receive from a remote device fails.
          *
          * @param remoteDeviceAddress remote device's address
-         * @param reason reason for the resumption failure
+         * @param reason reason for the reception failure
          * @param parameters protocol specific parameters for resumption failure
          */
         default void onDataReceiveFailed(@NonNull UwbAddress remoteDeviceAddress,
-                @Reason int reason, @NonNull PersistableBundle parameters) {}
+                @DataFailureReason int reason, @NonNull PersistableBundle parameters) {}
+
+        /**
+         * Invoked when service is discovered via OOB.
+         * <p>
+         * If this a one to many session, this can be invoked multiple times to indicate different
+         * peers being discovered.
+         * </p>
+         *
+         * @param parameters protocol specific params for discovered service.
+         */
+        default void onServiceDiscovered(@NonNull PersistableBundle parameters) {}
+
+        /**
+         * Invoked when service is connected via OOB.
+         * <p>
+         * If this a one to many session, this can be invoked multiple times to indicate different
+         * peers being connected.
+         * </p>
+         *
+         * @param parameters protocol specific params for connected service.
+         */
+        default void onServiceConnected(@NonNull PersistableBundle parameters) {}
     }
 
     /**
@@ -377,13 +448,27 @@ public final class RangingSession implements AutoCloseable {
     }
 
     /**
-     * Begins ranging for the session.
+     * If the session uses custom profile,
+     *    Begins ranging for the session.
+     *    <p>On successfully starting a ranging session,
+     *    {@link RangingSession.Callback#onStarted(PersistableBundle)} is invoked.
+     *    <p>On failure to start the session,
+     *    {@link RangingSession.Callback#onStartFailed(int, PersistableBundle)}
+     *    is invoked.
      *
-     * <p>On successfully starting a ranging session,
-     * {@link RangingSession.Callback#onStarted(PersistableBundle)} is invoked.
-     *
-     * <p>On failure to start the session,
-     * {@link RangingSession.Callback#onStartFailed(int, PersistableBundle)} is invoked.
+     * If the session uses platform defined profile (like PACS),
+     *    Begins OOB discovery for the service. Once the service is discovered,
+     *    UWB session params are negotiated via OOB and a UWB session will be
+     *    started.
+     *    <p>On successfully discovering a service,
+     *    {@link RangingSession.Callback#onServiceDiscovered(PersistableBundle)} is invoked.
+     *    <p>On successfully connecting to a service,
+     *    {@link RangingSession.Callback#onServiceConnected(PersistableBundle)} is invoked.
+     *    <p>On successfully starting a ranging session,
+     *    {@link RangingSession.Callback#onStarted(PersistableBundle)} is invoked.
+     *    <p>On failure to start the session,
+     *    {@link RangingSession.Callback#onStartFailed(int, PersistableBundle)}
+     *    is invoked.
      *
      * @param params configuration parameters for starting the session
      */
@@ -774,7 +859,7 @@ public final class RangingSession implements AutoCloseable {
     /**
      * @hide
      */
-    public void onControleeAddFailed(@Callback.Reason int reason,
+    public void onControleeAddFailed(@Callback.ControlleeFailureReason int reason,
             @NonNull PersistableBundle params) {
         if (!isOpen()) {
             Log.w(TAG, "onControleeAddFailed invoked for non-open session");
@@ -799,7 +884,7 @@ public final class RangingSession implements AutoCloseable {
     /**
      * @hide
      */
-    public void onControleeRemoveFailed(@Callback.Reason int reason,
+    public void onControleeRemoveFailed(@Callback.ControlleeFailureReason int reason,
             @NonNull PersistableBundle params) {
         if (!isOpen()) {
             Log.w(TAG, "onControleeRemoveFailed invoked for non-open session");
@@ -876,7 +961,7 @@ public final class RangingSession implements AutoCloseable {
      * @hide
      */
     public void onDataSendFailed(@NonNull UwbAddress remoteDeviceAddress,
-            @Callback.Reason int reason, @NonNull PersistableBundle params) {
+            @Callback.DataFailureReason int reason, @NonNull PersistableBundle params) {
         if (!isOpen()) {
             Log.w(TAG, "onDataSendFailed invoked for non-open session");
             return;
@@ -902,13 +987,37 @@ public final class RangingSession implements AutoCloseable {
      * @hide
      */
     public void onDataReceiveFailed(@NonNull UwbAddress remoteDeviceAddress,
-            @Callback.Reason int reason, @NonNull PersistableBundle params) {
+            @Callback.DataFailureReason int reason, @NonNull PersistableBundle params) {
         if (!isOpen()) {
             Log.w(TAG, "onDataReceiveFailed invoked for non-open session");
             return;
         }
 
         executeCallback(() -> mCallback.onDataReceiveFailed(remoteDeviceAddress, reason, params));
+    }
+
+    /**
+     * @hide
+     */
+    public void onServiceDiscovered(@NonNull PersistableBundle params) {
+        if (!isOpen()) {
+            Log.w(TAG, "onServiceDiscovered invoked for non-open session");
+            return;
+        }
+
+        executeCallback(() -> mCallback.onServiceDiscovered(params));
+    }
+
+    /**
+     * @hide
+     */
+    public void onServiceConnected(@NonNull PersistableBundle params) {
+        if (!isOpen()) {
+            Log.w(TAG, "onServiceConnected invoked for non-open session");
+            return;
+        }
+
+        executeCallback(() -> mCallback.onServiceConnected(params));
     }
 
     /**
