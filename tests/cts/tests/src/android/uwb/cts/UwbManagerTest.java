@@ -272,6 +272,83 @@ public class UwbManagerTest {
         }
     }
 
+    @Test
+    public void testGetAdfProvisioningAuthoritiesWithoutUwbPrivileged() {
+        try {
+            mUwbManager.getAdfProvisioningAuthorities(new PersistableBundle());
+            // should fail if the call was successful without UWB_PRIVILEGED permission.
+            fail();
+        } catch (SecurityException e) {
+            /* pass */
+            Log.i(TAG, "Failed with expected security exception: " + e);
+        }
+    }
+
+    @Test
+    public void testGetAdfCertificateInfoWithoutUwbPrivileged() {
+        try {
+            mUwbManager.getAdfCertificateInfo(new PersistableBundle());
+            // should fail if the call was successful without UWB_PRIVILEGED permission.
+            fail();
+        } catch (SecurityException e) {
+            /* pass */
+            Log.i(TAG, "Failed with expected security exception: " + e);
+        }
+    }
+
+    private class AdfProvisionStateCallback extends UwbManager.AdfProvisionStateCallback {
+        private final CountDownLatch mCountDownLatch;
+
+        public boolean onSuccessCalled;
+        public boolean onFailedCalled;
+
+        AdfProvisionStateCallback(@NonNull CountDownLatch countDownLatch) {
+            mCountDownLatch = countDownLatch;
+        }
+
+        @Override
+        public void onProfileAdfsProvisioned(@NonNull PersistableBundle params) {
+            onSuccessCalled = true;
+            mCountDownLatch.countDown();
+        }
+
+        @Override
+        public void onProfileAdfsProvisionFailed(int reason, @NonNull PersistableBundle params) {
+            onFailedCalled = true;
+            mCountDownLatch.countDown();
+        }
+    }
+
+    @Test
+    public void testProvisionProfileAdfByScriptWithoutUwbPrivileged() {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        AdfProvisionStateCallback adfProvisionStateCallback =
+                new AdfProvisionStateCallback(countDownLatch);
+        try {
+            mUwbManager.provisionProfileAdfByScript(
+                    new PersistableBundle(),
+                    Executors.newSingleThreadExecutor(),
+                    adfProvisionStateCallback);
+            // should fail if the call was successful without UWB_PRIVILEGED permission.
+            fail();
+        } catch (SecurityException e) {
+            /* pass */
+            Log.i(TAG, "Failed with expected security exception: " + e);
+        }
+    }
+
+    @Test
+    public void testRemoveProfileAdfWithoutUwbPrivileged() {
+        try {
+            mUwbManager.removeProfileAdf(new PersistableBundle());
+            // should fail if the call was successful without UWB_PRIVILEGED permission.
+            fail();
+        } catch (SecurityException e) {
+            /* pass */
+            Log.i(TAG, "Failed with expected security exception: " + e);
+        }
+    }
+
     private class RangingSessionCallback implements RangingSession.Callback {
         private final CountDownLatch mCountDownLatch;
 
