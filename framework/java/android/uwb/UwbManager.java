@@ -20,14 +20,19 @@ import android.Manifest.permission;
 import android.annotation.CallbackExecutor;
 import android.annotation.IntDef;
 import android.annotation.NonNull;
+import android.annotation.Nullable;
 import android.annotation.RequiresPermission;
 import android.annotation.SuppressLint;
 import android.annotation.SystemApi;
 import android.annotation.SystemService;
 import android.content.Context;
+import android.os.Binder;
 import android.os.CancellationSignal;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
+import android.util.Log;
+
+import com.android.internal.annotations.GuardedBy;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -50,7 +55,7 @@ import java.util.concurrent.Executor;
 @SystemApi
 @SystemService(Context.UWB_SERVICE)
 public final class UwbManager {
-    private static final String SERVICE_NAME = Context.UWB_SERVICE;
+    private static final String TAG = "UwbManager";
 
     private final Context mContext;
     private final IUwbAdapter2 mUwbAdapter;
@@ -144,6 +149,137 @@ public final class UwbManager {
          * @param reason the reason for the state change
          */
         void onStateChanged(@State int state, @StateChangedReason int reason);
+    }
+
+    /**
+     * Abstract class for receiving ADF provisioning state.
+     * Should be extended by applications and set when calling
+     * {@link UwbManager#provisionProfileAdfByScript(PersistableBundle, Executor,
+     * AdfProvisionStateCallback)}
+     */
+    public abstract static class AdfProvisionStateCallback {
+        private final AdfProvisionStateCallbackProxy mAdfProvisionStateCallbackProxy;
+
+        public AdfProvisionStateCallback() {
+            mAdfProvisionStateCallbackProxy = new AdfProvisionStateCallbackProxy();
+        }
+
+        /**
+         * @hide
+         */
+        @Retention(RetentionPolicy.SOURCE)
+        @IntDef(value = {
+                REASON_INVALID_OID,
+                REASON_SE_FAILURE,
+                REASON_UNKNOWN
+        })
+        @interface Reason { }
+
+        /**
+         * Indicates that the OID provided was not valid.
+         */
+        public static final int REASON_INVALID_OID = 0;
+
+        /**
+         * Indicates that there was some SE (secure element) failure while provisioning.
+         */
+        public static final int REASON_SE_FAILURE = 1;
+
+        /**
+         * No known reason for the failure.
+         */
+        public static final int REASON_UNKNOWN = 2;
+
+        /**
+         * Invoked when {@link UwbManager#provisionProfileAdfByScript(PersistableBundle, Executor,
+         * AdfProvisionStateCallback)} is successful.
+         *
+         * @param params protocol specific params that provide the caller with provisioning info
+         **/
+        public abstract void onProfileAdfsProvisioned(@NonNull PersistableBundle params);
+
+        /**
+         * Invoked when {@link UwbManager#provisionProfileAdfByScript(PersistableBundle, Executor,
+         * AdfProvisionStateCallback)} fails.
+         *
+         * @param reason Reason for failure
+         * @param params protocol specific parameters to indicate failure reason
+         */
+        public abstract void onProfileAdfsProvisionFailed(
+                @Reason int reason, @NonNull PersistableBundle params);
+
+        /*package*/
+        @NonNull
+        AdfProvisionStateCallbackProxy getProxy() {
+            return mAdfProvisionStateCallbackProxy;
+        }
+
+        private static class AdfProvisionStateCallbackProxy extends
+                IUwbAdfProvisionStateCallbacks.Stub {
+            private final Object mLock = new Object();
+            @Nullable
+            @GuardedBy("mLock")
+            private Executor mExecutor;
+            @Nullable
+            @GuardedBy("mLock")
+            private AdfProvisionStateCallback mCallback;
+
+            AdfProvisionStateCallbackProxy() {
+                mCallback = null;
+                mExecutor = null;
+            }
+
+            /*package*/ void initProxy(@NonNull Executor executor,
+                    @NonNull AdfProvisionStateCallback callback) {
+                synchronized (mLock) {
+                    mExecutor = executor;
+                    mCallback = callback;
+                }
+            }
+
+            /*package*/ void cleanUpProxy() {
+                synchronized (mLock) {
+                    mExecutor = null;
+                    mCallback = null;
+                }
+            }
+
+            @Override
+            public void onProfileAdfsProvisioned(@NonNull PersistableBundle params) {
+                Log.v(TAG, "AdfProvisionStateCallbackProxy: onProfileAdfsProvisioned : " + params);
+                AdfProvisionStateCallback callback;
+                Executor executor;
+                synchronized (mLock) {
+                    executor = mExecutor;
+                    callback = mCallback;
+                }
+                if (callback == null || executor == null) {
+                    return;
+                }
+                Binder.clearCallingIdentity();
+                executor.execute(() -> callback.onProfileAdfsProvisioned(params));
+                cleanUpProxy();
+            }
+
+            @Override
+            public void onProfileAdfsProvisionFailed(@AdfProvisionStateCallback.Reason int reason,
+                    @NonNull PersistableBundle params) {
+                Log.v(TAG, "AdfProvisionStateCallbackProxy: onProfileAdfsProvisionFailed : "
+                        + reason + ", " + params);
+                AdfProvisionStateCallback callback;
+                Executor executor;
+                synchronized (mLock) {
+                    executor = mExecutor;
+                    callback = mCallback;
+                }
+                if (callback == null || executor == null) {
+                    return;
+                }
+                Binder.clearCallingIdentity();
+                executor.execute(() -> callback.onProfileAdfsProvisionFailed(reason, params));
+                cleanUpProxy();
+            }
+        }
     }
 
     /**
@@ -506,6 +642,107 @@ public final class UwbManager {
     public PersistableBundle getAllServiceProfiles() {
         try {
             return mUwbAdapter.getAllServiceProfiles();
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Get the list of ADF (application defined file) provisioning authorities available for the UWB
+     * applet in SE (secure element).
+     *
+     * @param serviceProfileBundle Parameters representing the profile to use.
+     * @return The list of key information of ADF provisioning authority defined in FiRa
+     * CSML 8.2.2.7.2.4 and 8.2.2.14.4.1.2.
+     */
+    @RequiresPermission(permission.UWB_PRIVILEGED)
+    @NonNull
+    public PersistableBundle getAdfProvisioningAuthorities(
+            @NonNull PersistableBundle serviceProfileBundle) {
+        try {
+            return mUwbAdapter.getAdfProvisioningAuthorities(serviceProfileBundle);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Get certificate information for the UWB applet in SE (secure element) that can be used to
+     * provision ADF (application defined file).
+     *
+     * @param serviceProfileBundle Parameters representing the profile to use.
+     * @return The Fira applet certificate information defined in FiRa CSML 7.3.4.3 and
+     * 8.2.2.14.4.1.1
+     */
+    @RequiresPermission(permission.UWB_PRIVILEGED)
+    @NonNull
+    public PersistableBundle getAdfCertificateInfo(
+            @NonNull PersistableBundle serviceProfileBundle) {
+        try {
+            return mUwbAdapter.getAdfCertificateAndInfo(serviceProfileBundle);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Mechanism to provision ADFs (application defined file) in the UWB applet present in SE
+     * (secure element) for a profile instance.
+     *
+     * @param serviceProfileBundle Parameters representing the profile to use.
+     * @param executor an {@link Executor} to execute given callback
+     * @param callback user implementation of the {@link AdapterStateCallback}
+     */
+    public void provisionProfileAdfByScript(@NonNull PersistableBundle serviceProfileBundle,
+            @NonNull @CallbackExecutor Executor executor,
+            @NonNull AdfProvisionStateCallback callback) {
+        if (executor == null) throw new IllegalArgumentException("executor must not be null");
+        if (callback == null) throw new IllegalArgumentException("callback must not be null");
+        AdfProvisionStateCallback.AdfProvisionStateCallbackProxy proxy = callback.getProxy();
+        proxy.initProxy(executor, callback);
+        try {
+            mUwbAdapter.provisionProfileAdfByScript(serviceProfileBundle, proxy);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Successfully removed the profile ADF.
+     */
+    public static final int REMOVE_PROFILE_ADF_SUCCESS = 0;
+
+    /**
+     * Failed to remove ADF since the service profile is unknown.
+     */
+    public static final int REMOVE_PROFILE_ADF_ERROR_UNKNOWN_SERVICE = 1;
+
+    /**
+     * Failed to remove ADF due to some internal error while processing the request.
+     */
+    public static final int REMOVE_PROFILE_ADF_ERROR_INTERNAL = 2;
+
+    /**
+     * @hide
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef(value = {
+            REMOVE_PROFILE_ADF_SUCCESS,
+            REMOVE_PROFILE_ADF_ERROR_UNKNOWN_SERVICE,
+            REMOVE_PROFILE_ADF_ERROR_INTERNAL
+    })
+    @interface RemoveProfileAdf {}
+
+    /**
+     * Remove the ADF (application defined file) provisioned by {@link #provisionProfileAdfByScript}
+     *
+     * @param serviceProfileBundle Parameters representing the profile to use.
+     * @return true if the ADF is removed, false otherwise.
+     */
+    @RequiresPermission(permission.UWB_PRIVILEGED)
+    public @RemoveProfileAdf int removeProfileAdf(@NonNull PersistableBundle serviceProfileBundle) {
+        try {
+            return mUwbAdapter.removeProfileAdf(serviceProfileBundle);
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();
         }
