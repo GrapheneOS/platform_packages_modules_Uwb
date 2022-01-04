@@ -3,7 +3,7 @@ use jni::JNIEnv;
 use jni::objects::{JObject, JValue};
 use jni::sys::{jboolean, jbyte, jbyteArray, jint, jintArray, jlong, jobject};
 use log::{error, info, warn};
-use uwb_uci_rust::adaptation::{THalUwbEntry, UwbAdaptation};
+use uwb_uci_rust::adaptation::UwbAdaptation;
 use uwb_uci_rust::error::UwbErr;
 use uwb_uci_rust::uci::{Dispatcher, JNICommand};
 
@@ -162,10 +162,9 @@ fn byte_result_helper(result: Result<(), UwbErr>, function_name: &str) -> jbyte 
 
 fn do_initialize(env: JNIEnv, obj: JObject) -> Result<(), UwbErr> {
     dispatch_command(env, obj, JNICommand::UwaEnable)?;
-    let mut uwb_adaptation = UwbAdaptation::new(THalUwbEntry::default(), None);
+    let mut uwb_adaptation = UwbAdaptation::new(None);
     uwb_adaptation.initialize();
-    let hal_func_entries = uwb_adaptation.get_hal_entry_funcs();
-    uwa_init(hal_func_entries); // todo: implement this
+    uwa_init(); // todo: implement this
     clear_all_session_context(); // todo: implement this
     uwa_enable()?; // todo: implement this, and add a lock here
     uwb_adaptation.core_initialization()?;
@@ -273,7 +272,7 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeDispatche
 }
 
 // TODO: Implement these functions
-fn uwa_init(_hal_func_entries: THalUwbEntry) {
+fn uwa_init() {
 
 }
 
