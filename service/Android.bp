@@ -57,6 +57,7 @@ java_library {
         "framework-uwb-pre-jarjar",
         "ServiceUwbResources",
         "framework-statsd.stubs.module_lib",
+        "framework-wifi.stubs.module_lib",
     ],
 
     static_libs: [
@@ -65,6 +66,7 @@ java_library {
         "com.uwb.support.ccc",
         "com.uwb.support.fira",
         "modules-utils-shell-command-handler",
+        "modules-utils-handlerexecutor",
     ],
 
     apex_available: [
