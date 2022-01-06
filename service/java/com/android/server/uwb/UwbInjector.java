@@ -113,7 +113,8 @@ public class UwbInjector {
     public UwbService getUwbService() {
         // TODO(b/196225233): Remove this lazy initialization when qorvo stack is integrated.
         if (mUwbService == null) {
-            mUwbService = new UwbService(mContext, mNativeUwbManager, mUwbMetrics, mUwbCountryCode);
+            mUwbService = new UwbService(mContext, mNativeUwbManager, mUwbMetrics, mUwbCountryCode,
+                    mLooper);
         }
         return mUwbService;
     }

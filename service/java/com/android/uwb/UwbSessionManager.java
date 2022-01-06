@@ -18,7 +18,6 @@ package com.android.uwb;
 import static com.android.uwb.data.UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS;
 
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
@@ -78,17 +77,15 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     private final int mMaxSessionNumber;
     private final EventTask mEventTask;
 
-    public UwbSessionManager(NativeUwbManager nativeUwbManager, UwbMetrics uwbMetrics) {
+    public UwbSessionManager(NativeUwbManager nativeUwbManager, UwbMetrics uwbMetrics,
+            Looper serviceLooper) {
         mNativeUwbManager = nativeUwbManager;
         mNativeUwbManager.setSessionListener(this);
         mUwbMetrics = uwbMetrics;
         mConfigurationManager = new UwbConfigurationManager(nativeUwbManager);
         mSessionNotificationManager = new UwbSessionNotificationManager();
         mMaxSessionNumber = mNativeUwbManager.getMaxSessionNumber();
-
-        HandlerThread handlerThread = new HandlerThread("EventTask", Thread.MAX_PRIORITY);
-        handlerThread.start();
-        mEventTask = new EventTask(handlerThread.getLooper());
+        mEventTask = new EventTask(serviceLooper);
     }
 
     @Override

@@ -22,7 +22,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
@@ -96,7 +95,7 @@ public class UwbService implements INativeUwbManager.DeviceNotification {
     private @StateChangeReason int mLastStateChangedReason;
 
     public UwbService(Context uwbApplicationContext, NativeUwbManager nativeUwbManager,
-            UwbMetrics uwbMetrics, UwbCountryCode uwbCountryCode) {
+            UwbMetrics uwbMetrics, UwbCountryCode uwbCountryCode, Looper serviceLooper) {
         mContext = uwbApplicationContext;
 
         Log.d(TAG, "Starting Uwb");
@@ -112,15 +111,12 @@ public class UwbService implements INativeUwbManager.DeviceNotification {
         mNativeUwbManager.setDeviceListener(this);
         mUwbMetrics = uwbMetrics;
         mUwbCountryCode = uwbCountryCode;
-        mSessionManager = new UwbSessionManager(mNativeUwbManager, mUwbMetrics);
+        mSessionManager = new UwbSessionManager(mNativeUwbManager, mUwbMetrics, serviceLooper);
 
         initIntentFilter();
         updateState(AdapterStateCallback.STATE_DISABLED, StateChangeReason.SYSTEM_BOOT);
 
-        HandlerThread handlerThread = new HandlerThread("EnableDisableTask", Thread.MAX_PRIORITY);
-        handlerThread.start();
-        mEnableDisableTask = new EnableDisableTask(handlerThread.getLooper());
-
+        mEnableDisableTask = new EnableDisableTask(serviceLooper);
         mEnableDisableTask.execute(TASK_ENABLE);
     }
 
