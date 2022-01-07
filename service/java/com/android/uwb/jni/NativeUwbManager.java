@@ -49,9 +49,6 @@ public class NativeUwbManager {
             System.loadLibrary("uwb_uci_jni");
         }
         nativeInit();
-        if (SystemProperties.getBoolean("persist.uwb.enable_uci_rust_stack", false)) {
-            this.mDispatcherPointer = nativeDispatcherNew();
-        }
     }
 
     public void setDeviceListener(INativeUwbManager.DeviceNotification deviceListener) {
@@ -95,6 +92,10 @@ public class NativeUwbManager {
      * @return : If this returns true, UWB is on
      */
     public synchronized boolean doInitialize() {
+        if (SystemProperties.getBoolean("persist.uwb.enable_uci_rust_stack", false)
+                && this.mDispatcherPointer == 0L) {
+            this.mDispatcherPointer = nativeDispatcherNew();
+        }
         return nativeDoInitialize();
     }
 
