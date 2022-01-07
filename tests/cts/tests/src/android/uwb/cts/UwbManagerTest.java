@@ -55,6 +55,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -98,12 +99,16 @@ public class UwbManagerTest {
         int adapterState = enabled ? STATE_ENABLED_INACTIVE : STATE_DISABLED;
         AdapterStateCallback adapterStateCallback =
                 new AdapterStateCallback(countDownLatch, adapterState);
-        mUwbManager.registerAdapterStateCallback(
-                Executors.newSingleThreadExecutor(), adapterStateCallback);
-        mUwbManager.setUwbEnabled(enabled);
-        assertThat(countDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
-        assertThat(mUwbManager.isUwbEnabled()).isEqualTo(enabled);
-        assertThat(adapterStateCallback.state).isEqualTo(adapterState);
+        try {
+            mUwbManager.registerAdapterStateCallback(
+                    Executors.newSingleThreadExecutor(), adapterStateCallback);
+            mUwbManager.setUwbEnabled(enabled);
+            assertThat(countDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
+            assertThat(mUwbManager.isUwbEnabled()).isEqualTo(enabled);
+            assertThat(adapterStateCallback.state).isEqualTo(adapterState);
+        } finally {
+            mUwbManager.unregisterAdapterStateCallback(adapterStateCallback);
+        }
     }
 
     @Test
@@ -130,6 +135,20 @@ public class UwbManagerTest {
                     mUwbManager.getSpecificationInfo(mDefaultChipId);
             assertThat(persistableBundle).isNotNull();
             assertThat(persistableBundle.isEmpty()).isFalse();
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    public void testGetChipIds() {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        try {
+            // Needs UWB_PRIVILEGED permission which is held by shell.
+            uiAutomation.adoptShellPermissionIdentity();
+            List<String> chipIds = mUwbManager.getChipIds();
+            assertThat(chipIds).isNotEmpty();
+            assertThat(chipIds).contains(mDefaultChipId);
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
@@ -288,6 +307,18 @@ public class UwbManagerTest {
     public void testGetAdfCertificateInfoWithoutUwbPrivileged() {
         try {
             mUwbManager.getAdfCertificateInfo(new PersistableBundle());
+            // should fail if the call was successful without UWB_PRIVILEGED permission.
+            fail();
+        } catch (SecurityException e) {
+            /* pass */
+            Log.i(TAG, "Failed with expected security exception: " + e);
+        }
+    }
+
+    @Test
+    public void testChipIdsWithoutUwbPrivileged() {
+        try {
+            mUwbManager.getChipIds();
             // should fail if the call was successful without UWB_PRIVILEGED permission.
             fail();
         } catch (SecurityException e) {
