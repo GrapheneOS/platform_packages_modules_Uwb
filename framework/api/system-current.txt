@@ -57,8 +57,8 @@ package android.uwb {
     field @NonNull public static final android.os.Parcelable.Creator<android.uwb.RangingMeasurement> CREATOR;
     field public static final int LOS = 0; // 0x0
     field public static final int LOS_UNDETERMINED = 255; // 0xff
-    field public static final int MEASUREMENT_FOCUS_ANGLE_OF_ARRIVAL_AZIMUTH = 1; // 0x1
-    field public static final int MEASUREMENT_FOCUS_ANGLE_OF_ARRIVAL_ELEVATION = 2; // 0x2
+    field public static final int MEASUREMENT_FOCUS_ANGLE_OF_ARRIVAL_AZIMUTH = 2; // 0x2
+    field public static final int MEASUREMENT_FOCUS_ANGLE_OF_ARRIVAL_ELEVATION = 3; // 0x3
     field public static final int MEASUREMENT_FOCUS_NONE = 0; // 0x0
     field public static final int MEASUREMENT_FOCUS_RANGE = 1; // 0x1
     field public static final int NLOS = 1; // 0x1
@@ -101,13 +101,13 @@ package android.uwb {
   public final class RangingSession implements java.lang.AutoCloseable {
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void addControlee(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void close();
+    method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void pause(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void reconfigure(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void removeControlee(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void resume(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void sendData(@NonNull android.uwb.UwbAddress, @NonNull android.os.PersistableBundle, @NonNull byte[]);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void start(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void stop();
-    method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void suspend(@NonNull android.os.PersistableBundle);
   }
 
   public static interface RangingSession.Callback {
@@ -122,6 +122,8 @@ package android.uwb {
     method public default void onDataSent(@NonNull android.uwb.UwbAddress, @NonNull android.os.PersistableBundle);
     method public void onOpenFailed(int, @NonNull android.os.PersistableBundle);
     method public void onOpened(@NonNull android.uwb.RangingSession);
+    method public default void onPauseFailed(int, @NonNull android.os.PersistableBundle);
+    method public default void onPaused(@NonNull android.os.PersistableBundle);
     method public void onReconfigureFailed(int, @NonNull android.os.PersistableBundle);
     method public void onReconfigured(@NonNull android.os.PersistableBundle);
     method public void onReportReceived(@NonNull android.uwb.RangingReport);
@@ -133,9 +135,7 @@ package android.uwb {
     method public void onStarted(@NonNull android.os.PersistableBundle);
     method public void onStopFailed(int, @NonNull android.os.PersistableBundle);
     method public void onStopped(int, @NonNull android.os.PersistableBundle);
-    method public default void onSuspendFailed(int, @NonNull android.os.PersistableBundle);
-    method public default void onSuspended(@NonNull android.os.PersistableBundle);
-    field public static final int CONTROLLEE_FAILURE_REASON_MAX_CONTROLEE_REACHED = 0; // 0x0
+    field public static final int CONTROLEE_FAILURE_REASON_MAX_CONTROLEE_REACHED = 0; // 0x0
     field public static final int DATA_FAILURE_REASON_DATA_SIZE_TOO_LARGE = 10; // 0xa
     field public static final int REASON_BAD_PARAMETERS = 3; // 0x3
     field public static final int REASON_GENERIC_ERROR = 4; // 0x4
