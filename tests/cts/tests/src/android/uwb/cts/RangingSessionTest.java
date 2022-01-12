@@ -236,7 +236,7 @@ public class RangingSessionTest {
                 any(), any(), any(), any(), any());
         doAnswer(new StartAnswer(session)).when(adapter).startRanging(any(), any());
         doAnswer(new ReconfigureAnswer(session)).when(adapter).reconfigureRanging(any(), any());
-        doAnswer(new SuspendAnswer(session)).when(adapter).suspend(any(), any());
+        doAnswer(new PauseAnswer(session)).when(adapter).pause(any(), any());
         doAnswer(new ResumeAnswer(session)).when(adapter).resume(any(), any());
         doAnswer(new ControleeAddAnswer(session)).when(adapter).addControlee(any(), any());
         doAnswer(new ControleeRemoveAnswer(session)).when(adapter).removeControlee(any(), any());
@@ -253,8 +253,8 @@ public class RangingSessionTest {
         verify(callback, times(1)).onOpened(any());
         verifyNoThrowIllegalState(() -> session.reconfigure(PARAMS));
         verify(callback, times(1)).onReconfigured(any());
-        verifyThrowIllegalState(() -> session.suspend(PARAMS));
-        verify(callback, times(0)).onSuspended(any());
+        verifyThrowIllegalState(() -> session.pause(PARAMS));
+        verify(callback, times(0)).onPaused(any());
         verifyThrowIllegalState(() -> session.resume(PARAMS));
         verify(callback, times(0)).onResumed(any());
         verifyNoThrowIllegalState(() -> session.addControlee(PARAMS));
@@ -277,10 +277,10 @@ public class RangingSessionTest {
         verifyNoThrowIllegalState(() -> session.reconfigure(null));
         verify(callback, times(1)).onReconfigureFailed(
                 eq(REASON_BAD_PARAMETERS), any());
-        verifyNoThrowIllegalState(() -> session.suspend(PARAMS));
-        verify(callback, times(1)).onSuspended(any());
-        verifyNoThrowIllegalState(() -> session.suspend(null));
-        verify(callback, times(1)).onSuspendFailed(
+        verifyNoThrowIllegalState(() -> session.pause(PARAMS));
+        verify(callback, times(1)).onPaused(any());
+        verifyNoThrowIllegalState(() -> session.pause(null));
+        verify(callback, times(1)).onPauseFailed(
                 eq(REASON_BAD_PARAMETERS), any());
         verifyNoThrowIllegalState(() -> session.resume(PARAMS));
         verify(callback, times(1)).onResumed(any());
@@ -318,8 +318,8 @@ public class RangingSessionTest {
 
         verifyNoThrowIllegalState(() -> session.reconfigure(PARAMS));
         verify(callback, times(3)).onReconfigured(any());
-        verifyThrowIllegalState(() -> session.suspend(PARAMS));
-        verify(callback, times(1)).onSuspended(any());
+        verifyThrowIllegalState(() -> session.pause(PARAMS));
+        verify(callback, times(1)).onPaused(any());
         verifyThrowIllegalState(() -> session.resume(PARAMS));
         verify(callback, times(1)).onResumed(any());
         verifyNoThrowIllegalState(() -> session.addControlee(PARAMS));
@@ -336,8 +336,8 @@ public class RangingSessionTest {
 
         verifyThrowIllegalState(() -> session.reconfigure(PARAMS));
         verify(callback, times(3)).onReconfigured(any());
-        verifyThrowIllegalState(() -> session.suspend(PARAMS));
-        verify(callback, times(1)).onSuspended(any());
+        verifyThrowIllegalState(() -> session.pause(PARAMS));
+        verify(callback, times(1)).onPaused(any());
         verifyThrowIllegalState(() -> session.resume(PARAMS));
         verify(callback, times(1)).onResumed(any());
         verifyThrowIllegalState(() -> session.addControlee(PARAMS));
@@ -518,8 +518,8 @@ public class RangingSessionTest {
         }
     }
 
-    class SuspendAnswer extends AdapterAnswer {
-        SuspendAnswer(RangingSession session) {
+    class PauseAnswer extends AdapterAnswer {
+        PauseAnswer(RangingSession session) {
             super(session);
         }
 
@@ -527,9 +527,9 @@ public class RangingSessionTest {
         public Object answer(InvocationOnMock invocation) {
             PersistableBundle argParams = invocation.getArgument(1);
             if (argParams != null) {
-                mSession.onRangingSuspended(PARAMS);
+                mSession.onRangingPaused(PARAMS);
             } else {
-                mSession.onRangingSuspendFailed(REASON_BAD_PARAMETERS, PARAMS);
+                mSession.onRangingPauseFailed(REASON_BAD_PARAMETERS, PARAMS);
             }
             return null;
         }
