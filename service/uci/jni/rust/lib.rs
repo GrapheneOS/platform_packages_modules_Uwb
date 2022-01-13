@@ -3,6 +3,7 @@ use jni::JNIEnv;
 use jni::objects::{JObject, JValue};
 use jni::sys::{jboolean, jbyte, jbyteArray, jint, jintArray, jlong, jobject};
 use log::{error, info, warn};
+use uwb_uci_rust::event_manager::EventManager;
 use uwb_uci_rust::error::UwbErr;
 use uwb_uci_rust::uci::{BlockingJNICommand, Dispatcher, JNICommand, uci_hrcv::UciResponse};
 use uwb_uci_packets::StatusCode;
@@ -259,8 +260,9 @@ fn get_dispatcher<'a>(env: JNIEnv, obj: JObject) -> Result<&'a mut Dispatcher, U
 
 /// create a dispatcher instance
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeDispatcherNew(_env: JNIEnv, _obj: JObject) -> jlong {
-    let dispatcher = match Dispatcher::new() {
+pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeDispatcherNew(env: JNIEnv, obj: JObject) -> jlong {
+    let eventmanager = EventManager::new(env, obj).expect("Failed to create event manager");
+    let dispatcher = match Dispatcher::new(eventmanager) {
         Ok(dispatcher) => dispatcher,
         Err(_err) => panic!("Fail to create dispatcher"),
     };
