@@ -3,9 +3,8 @@ use jni::JNIEnv;
 use jni::objects::{JObject, JValue};
 use jni::sys::{jboolean, jbyte, jbyteArray, jint, jintArray, jlong, jobject};
 use log::{error, info, warn};
-use uwb_uci_rust::adaptation::UwbAdaptation;
 use uwb_uci_rust::error::UwbErr;
-use uwb_uci_rust::uci::{Dispatcher, JNICommand};
+use uwb_uci_rust::uci::{BlockingJNICommand, Dispatcher, JNICommand, uci_hrcv::UciResponse};
 
 const STATUS_OK: i8 = 0;
 const STATUS_FAILED: i8 = 2;
@@ -162,13 +161,16 @@ fn byte_result_helper(result: Result<(), UwbErr>, function_name: &str) -> jbyte 
 
 fn do_initialize(env: JNIEnv, obj: JObject) -> Result<(), UwbErr> {
     dispatch_command(env, obj, JNICommand::UwaEnable)?;
-    let mut uwb_adaptation = UwbAdaptation::new(None);
-    uwb_adaptation.initialize();
     uwa_init(); // todo: implement this
     clear_all_session_context(); // todo: implement this
     uwa_enable()?; // todo: implement this, and add a lock here
-    uwb_adaptation.core_initialization()?;
-    uwa_get_device_info()?;
+    match uwa_get_device_info(env, obj) {
+        Ok(device_info) => info!("Get the device info: {:?}", device_info),
+        Err(e) => {
+            warn!("Failed to get device info with: {:?}", e);
+            return Err(UwbErr::failed());
+        },
+    }
     match set_core_device_configurations() {
         Ok(()) => {
             info!("set_core_device_configurations is success");
@@ -180,7 +182,6 @@ fn do_initialize(env: JNIEnv, obj: JObject) -> Result<(), UwbErr> {
         Ok(()) => info!("UWA_disable(false) success."),
         _ => warn!("UWA_disable(false) is failed."),
     };
-    uwb_adaptation.finalize(false);
     Err(UwbErr::failed())
 }
 
@@ -236,6 +237,10 @@ fn dispatch_command(env: JNIEnv, obj: JObject, command: JNICommand) -> Result<()
 fn get_dispatcher<'a>(env: JNIEnv, obj: JObject) -> Result<&'a mut Dispatcher, UwbErr> {
     let dispatcher_ptr_value = env.get_field(obj, "mDispatcherPointer", "J")?;
     let dispatcher_ptr = dispatcher_ptr_value.j()?;
+    if dispatcher_ptr == 0i64 {
+        warn!("The dispatcher is not initialized.");
+        return Err(UwbErr::NoneDispatcher);
+    }
     // Safety: dispatcher pointer must not be a null pointer and it must point to a valid dispatcher object.
     // This can be ensured because the dispatcher is created in an earlier stage and
     // won't be deleted before calling doDeinitialize.
@@ -276,8 +281,10 @@ fn uwa_init() {
 
 }
 
-fn uwa_get_device_info() -> Result<(), UwbErr> {
-    Ok(())
+fn uwa_get_device_info(env: JNIEnv, obj: JObject) -> Result<UciResponse, UwbErr> {
+    let dispatcher = get_dispatcher(env, obj)?;
+    let res = dispatcher.block_on_jni_command(BlockingJNICommand::GetDeviceInfo)?;
+    Ok(res)
 }
 
 fn uwa_enable() -> Result<(), UwbErr> {
@@ -293,5 +300,5 @@ fn uwa_disable(_para: bool) -> Result<(), UwbErr> {
 }
 
 fn set_core_device_configurations() -> Result<(), UwbErr> {
-    Err(UwbErr::failed())
+    Ok(())
 }
