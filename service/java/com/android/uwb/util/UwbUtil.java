@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 package com.android.uwb.util;
-
+// TODO: deprecated UwbUtil, consider to use com.android.server.uwb.util.Hex
+// and com.android.server.uwb.util.DataTypeConversionUtil
 public final class UwbUtil {
     private static final char[] HEXCHARS = {'0', '1', '2', '3', '4', '5', '6', '7',
             '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
