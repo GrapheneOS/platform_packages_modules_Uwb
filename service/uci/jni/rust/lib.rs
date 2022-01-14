@@ -5,6 +5,7 @@ use jni::sys::{jboolean, jbyte, jbyteArray, jint, jintArray, jlong, jobject};
 use log::{error, info, warn};
 use uwb_uci_rust::error::UwbErr;
 use uwb_uci_rust::uci::{BlockingJNICommand, Dispatcher, JNICommand, uci_hrcv::UciResponse};
+use uwb_uci_packets::StatusCode;
 
 const STATUS_OK: i8 = 0;
 const STATUS_FAILED: i8 = 2;
@@ -193,7 +194,16 @@ fn do_deinitialize(env: JNIEnv, obj: JObject) -> Result<(), UwbErr> {
 }
 
 fn session_init(env: JNIEnv, obj: JObject, session_id: u32, session_type: u8) -> Result<(), UwbErr> {
-    dispatch_command(env, obj, JNICommand::UwaSessionInit(session_id, session_type))
+    let dispatcher = get_dispatcher(env, obj)?;
+    let res = match dispatcher.block_on_jni_command(BlockingJNICommand::UwaSessionInit(session_id, session_type))? {
+        UciResponse::SessionInitRsp(data) => data,
+        _ => return Err(UwbErr::failed()),
+    };
+    info!("session_init_response: {:?}", res);
+    match res.status {
+        StatusCode::UciStatusOk => Ok(()),
+        _ => Err(UwbErr::failed()),
+    }
 }
 
 fn session_deinit(env: JNIEnv, obj: JObject, session_id: u32) -> Result<(), UwbErr> {
