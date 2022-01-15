@@ -21,7 +21,10 @@ package {
 android_test {
     name: "ServiceUwbTests",
 
-    srcs: [ "**/*.java" ],
+    srcs: [
+        ":framework-uwb-test-util-srcs",
+        "**/*.java"
+    ],
 
     dxflags: ["--multi-dex"],
 

@@ -25,6 +25,7 @@ import android.os.PersistableBundle;
 import android.uwb.UwbAddress;
 
 import androidx.annotation.IntRange;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.uwb.support.base.RequiredParam;
@@ -788,6 +789,58 @@ public class FiraOpenSessionParams extends FiraParams {
 
         /** Not defined in UCI, we use Azimuth-only as default */
         @AoaType private int mAoaType = AOA_TYPE_AZIMUTH;
+
+        public Builder() {}
+
+        public Builder(@NonNull Builder builder) {
+            mProtocolVersion.set(builder.mProtocolVersion.get());
+            mSessionId.set(builder.mSessionId.get());
+            mDeviceType.set(builder.mDeviceType.get());
+            mDeviceRole.set(builder.mDeviceRole.get());
+            mRangingRoundUsage = builder.mRangingRoundUsage;
+            mMultiNodeMode.set(builder.mMultiNodeMode.get());
+            mDeviceAddress = builder.mDeviceAddress;
+            mDestAddressList = builder.mDestAddressList;
+            mInitiationTimeMs = builder.mInitiationTimeMs;
+            mSlotDurationRstu = builder.mSlotDurationRstu;
+            mSlotsPerRangingRound = builder.mSlotsPerRangingRound;
+            mRangingIntervalMs = builder.mRangingIntervalMs;
+            mBlockStrideLength = builder.mBlockStrideLength;
+            mHoppingMode = builder.mHoppingMode;
+            mMaxRangingRoundRetries = builder.mMaxRangingRoundRetries;
+            mSessionPriority = builder.mSessionPriority;
+            mMacAddressMode = builder.mMacAddressMode;
+            mHasResultReportPhase = builder.mHasResultReportPhase;
+            mMeasurementReportType = builder.mMeasurementReportType;
+            mInBandTerminationAttemptCount = builder.mInBandTerminationAttemptCount;
+            mChannelNumber = builder.mChannelNumber;
+            mPreambleCodeIndex = builder.mPreambleCodeIndex;
+            mRframeConfig = builder.mRframeConfig;
+            mPrfMode = builder.mPrfMode;
+            mPreambleDuration = builder.mPreambleDuration;
+            mSfdId = builder.mSfdId;
+            mStsSegmentCount = builder.mStsSegmentCount;
+            mStsLength = builder.mStsLength;
+            mPsduDataRate = builder.mPsduDataRate;
+            mBprfPhrDataRate = builder.mBprfPhrDataRate;
+            mFcsType = builder.mFcsType;
+            mIsTxAdaptivePayloadPowerEnabled = builder.mIsTxAdaptivePayloadPowerEnabled;
+            mStsConfig = builder.mStsConfig;
+            if (builder.mSubSessionId.isSet()) mSubSessionId.set(builder.mSubSessionId.get());
+            mVendorId = builder.mVendorId;
+            mStaticStsIV = builder.mStaticStsIV;
+            mIsKeyRotationEnabled = builder.mIsKeyRotationEnabled;
+            mKeyRotationRate = builder.mKeyRotationRate;
+            mAoaResultRequest = builder.mAoaResultRequest;
+            mRangeDataNtfConfig = builder.mRangeDataNtfConfig;
+            mRangeDataNtfProximityNear = builder.mRangeDataNtfProximityNear;
+            mRangeDataNtfProximityFar = builder.mRangeDataNtfProximityFar;
+            mHasTimeOfFlightReport = builder.mHasTimeOfFlightReport;
+            mHasAngleOfArrivalAzimuthReport = builder.mHasAngleOfArrivalAzimuthReport;
+            mHasAngleOfArrivalElevationReport = builder.mHasAngleOfArrivalElevationReport;
+            mHasAngleOfArrivalFigureOfMeritReport = builder.mHasAngleOfArrivalFigureOfMeritReport;
+            mAoaType = builder.mAoaType;
+        }
 
         public FiraOpenSessionParams.Builder setProtocolVersion(FiraProtocolVersion version) {
             mProtocolVersion.set(version);

@@ -16,18 +16,66 @@
 
 package com.android.server.uwb;
 
+import static android.uwb.UwbAddress.SHORT_ADDRESS_BYTE_LENGTH;
 
+import static com.google.uwb.support.ccc.CccParams.CHAPS_PER_SLOT_3;
+import static com.google.uwb.support.ccc.CccParams.HOPPING_CONFIG_MODE_ADAPTIVE;
+import static com.google.uwb.support.ccc.CccParams.HOPPING_CONFIG_MODE_CONTINUOUS;
+import static com.google.uwb.support.ccc.CccParams.HOPPING_SEQUENCE_AES;
+import static com.google.uwb.support.ccc.CccParams.HOPPING_SEQUENCE_DEFAULT;
+import static com.google.uwb.support.ccc.CccParams.PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE;
+import static com.google.uwb.support.ccc.CccParams.SLOTS_PER_ROUND_6;
+import static com.google.uwb.support.ccc.CccParams.UWB_CHANNEL_9;
+import static com.google.uwb.support.fira.FiraParams.HOPPING_MODE_DISABLE;
+import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
+import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_UNICAST;
+import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_INITIATOR;
+import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_RESPONDER;
+import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLEE;
+import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLLER;
+import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
+import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DS_TWR_NON_DEFERRED_MODE;
+import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE;
+import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_NON_DEFERRED_MODE;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
+import android.annotation.NonNull;
 import android.content.Context;
 import android.os.Binder;
+import android.os.PersistableBundle;
 import android.os.Process;
 import android.os.RemoteException;
+import android.util.ArrayMap;
+import android.util.Pair;
+import android.uwb.IUwbRangingCallbacks2;
+import android.uwb.RangingReport;
+import android.uwb.SessionHandle;
+import android.uwb.UwbAddress;
 import android.uwb.UwbManager;
 
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.modules.utils.BasicShellCommandHandler;
 import com.android.server.uwb.util.ArrayUtils;
 
+import com.google.uwb.support.base.Params;
+import com.google.uwb.support.ccc.CccOpenRangingParams;
+import com.google.uwb.support.ccc.CccParams;
+import com.google.uwb.support.ccc.CccPulseShapeCombo;
+import com.google.uwb.support.fira.FiraOpenSessionParams;
+import com.google.uwb.support.fira.FiraParams;
+
 import java.io.PrintWriter;
+import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Interprets and executes 'adb shell cmd uwb [args]'.
@@ -43,13 +91,58 @@ import java.io.PrintWriter;
 public class UwbShellCommand extends BasicShellCommandHandler {
     @VisibleForTesting
     public static String SHELL_PACKAGE_NAME = "com.android.shell";
+    private static final long RANGE_CTL_TIMEOUT_MILLIS = 10_000;
 
     // These don't require root access.
     // However, these do perform permission checks in the corresponding UwbService methods.
     private static final String[] NON_PRIVILEGED_COMMANDS = {
             "status",
-            "get-country-code"
+            "get-country-code",
+            "enable-uwb",
+            "disable-uwb",
+            "start-fira-ranging-session",
+            "start-ccc-ranging-session",
+            "get-ranging-session-reports",
+            "get-all-ranging-session-reports",
+            "stop-ranging-session",
+            "stop-all-ranging-sessions",
     };
+
+    @VisibleForTesting
+    public static final FiraOpenSessionParams.Builder DEFAULT_FIRA_OPEN_SESSION_PARAMS =
+            new FiraOpenSessionParams.Builder()
+                    .setProtocolVersion(FiraParams.PROTOCOL_VERSION_1_1)
+                    .setSessionId(0)
+                    .setDeviceType(RANGING_DEVICE_TYPE_CONTROLLER)
+                    .setDeviceRole(RANGING_DEVICE_ROLE_RESPONDER)
+                    .setDeviceAddress(UwbAddress.fromBytes(new byte[] { 0x4, 0x6}))
+                    .setDestAddressList(Arrays.asList(UwbAddress.fromBytes(new byte[] { 0x4, 0x6})))
+                    .setMultiNodeMode(MULTI_NODE_MODE_UNICAST)
+                    .setRangingRoundUsage(RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE)
+                    .setVendorId(new byte[]{0x5, 0x78})
+                    .setStaticStsIV(new byte[]{0x1a, 0x55, 0x77, 0x47, 0x7e, 0x7d});
+
+    @VisibleForTesting
+    public static final CccOpenRangingParams.Builder DEFAULT_CCC_OPEN_RANGING_PARAMS =
+            new CccOpenRangingParams.Builder()
+                    .setProtocolVersion(CccParams.PROTOCOL_VERSION_1_0)
+                    .setUwbConfig(CccParams.UWB_CONFIG_0)
+                    .setPulseShapeCombo(
+                            new CccPulseShapeCombo(
+                                    PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE,
+                                    PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE))
+                    .setSessionId(0)
+                    .setRanMultiplier(4)
+                    .setChannel(UWB_CHANNEL_9)
+                    .setNumChapsPerSlot(CHAPS_PER_SLOT_3)
+                    .setNumResponderNodes(1)
+                    .setNumSlotsPerRound(SLOTS_PER_ROUND_6)
+                    .setSyncCodeIndex(1)
+                    .setHoppingConfigMode(HOPPING_MODE_DISABLE)
+                    .setHoppingSequence(HOPPING_SEQUENCE_DEFAULT);
+
+    private static final Map<Integer, SessionInfo> sSessionIdToInfo = new ArrayMap<>();
+    private static int sSessionHandleIdNext = 0;
 
     private final UwbServiceImpl mUwbService;
     private final UwbCountryCode mUwbCountryCode;
@@ -59,6 +152,399 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         mUwbService = uwbService;
         mContext = context;
         mUwbCountryCode = uwbInjector.getUwbCountryCode();
+    }
+
+    private static final class UwbRangingCallbacks extends IUwbRangingCallbacks2.Stub {
+        private final SessionInfo mSessionInfo;
+        private final PrintWriter mPw;
+        private final CompletableFuture mRangingOpenedFuture;
+        private final CompletableFuture mRangingStartedFuture;
+        private final CompletableFuture mRangingStoppedFuture;
+        private final CompletableFuture mRangingClosedFuture;
+
+        UwbRangingCallbacks(@NonNull SessionInfo sessionInfo, @NonNull PrintWriter pw,
+                @NonNull CompletableFuture rangingOpenedFuture,
+                @NonNull CompletableFuture rangingStartedFuture,
+                @NonNull CompletableFuture rangingStoppedFuture,
+                @NonNull CompletableFuture rangingClosedFuture) {
+            mSessionInfo = sessionInfo;
+            mPw = pw;
+            mRangingOpenedFuture = rangingOpenedFuture;
+            mRangingStartedFuture = rangingStartedFuture;
+            mRangingStoppedFuture = rangingStoppedFuture;
+            mRangingClosedFuture = rangingClosedFuture;
+        }
+
+        public void onRangingOpened(SessionHandle sessionHandle) {
+            mPw.println("Ranging session opened");
+            mRangingOpenedFuture.complete(true);
+        }
+
+        public void onRangingOpenFailed(SessionHandle sessionHandle, int reason,
+                PersistableBundle params) {
+            mPw.println("Ranging session open failed with reason: " + reason + " and params: "
+                    + params);
+            mRangingOpenedFuture.complete(false);
+        }
+
+        public void onRangingStarted(SessionHandle sessionHandle, PersistableBundle params) {
+            mPw.println("Ranging session started with params: " + params);
+            mRangingStartedFuture.complete(true);
+        }
+
+        public void onRangingStartFailed(SessionHandle sessionHandle, int reason,
+                PersistableBundle params) {
+            mPw.println("Ranging session start failed with reason: " + reason + " and params: "
+                    + params);
+            mRangingStartedFuture.complete(false);
+        }
+
+        public void onRangingReconfigured(SessionHandle sessionHandle, PersistableBundle params) {}
+
+        public void onRangingReconfigureFailed(SessionHandle sessionHandle, int reason,
+                PersistableBundle params) {}
+
+        public void onRangingStopped(SessionHandle sessionHandle, int reason,
+                PersistableBundle params) {
+            mPw.println("Ranging session stopped with reason: " + reason + " and params: "
+                    + params);
+            mRangingStoppedFuture.complete(true);
+        }
+
+        public void onRangingStopFailed(SessionHandle sessionHandle, int reason,
+                PersistableBundle params) {
+            mPw.println("Ranging session stop failed with reason: " + reason + " and params: "
+                    + params);
+            mRangingStoppedFuture.complete(false);
+        }
+
+        public void onRangingClosed(SessionHandle sessionHandle, int reason,
+                PersistableBundle params) {
+            mPw.println("Ranging session closed with reason: " + reason + " and params: "
+                    + params);
+            sSessionIdToInfo.remove(mSessionInfo.sessionId);
+            mRangingClosedFuture.complete(true);
+        }
+
+        public void onRangingResult(SessionHandle sessionHandle, RangingReport rangingReport) {
+            mPw.println("Ranging Result: " + rangingReport);
+            mSessionInfo.addRangingReport(rangingReport);
+        }
+
+        public void onControleeAdded(SessionHandle sessionHandle, PersistableBundle params) {}
+
+        public void onControleeAddFailed(SessionHandle sessionHandle, int reason,
+                PersistableBundle params) {}
+
+        public void onControleeRemoved(SessionHandle sessionHandle, PersistableBundle params) {}
+
+        public void onControleeRemoveFailed(SessionHandle sessionHandle, int reason,
+                PersistableBundle params) {}
+
+        public void onRangingSuspended(SessionHandle sessionHandle, PersistableBundle params) {}
+
+        public void onRangingSuspendFailed(SessionHandle sessionHandle, int reason,
+                PersistableBundle params) {}
+
+        public void onRangingResumed(SessionHandle sessionHandle, PersistableBundle params) {}
+
+        public void onRangingResumeFailed(SessionHandle sessionHandle, int reason,
+                PersistableBundle params) {}
+
+        public void onDataSent(SessionHandle sessionHandle, UwbAddress uwbAddress,
+                PersistableBundle params) {}
+
+        public void onDataSendFailed(SessionHandle sessionHandle, UwbAddress uwbAddress, int reason,
+                PersistableBundle params) {}
+
+        public void onDataReceived(SessionHandle sessionHandle, UwbAddress uwbAddress,
+                PersistableBundle params, byte[] data) {}
+
+        public void onDataReceiveFailed(SessionHandle sessionHandle, UwbAddress uwbAddress,
+                int reason, PersistableBundle params) {}
+
+        public void onServiceDiscovered(SessionHandle sessionHandle, PersistableBundle params) {}
+
+        public void onServiceConnected(SessionHandle sessionHandle, PersistableBundle params) {}
+    }
+
+
+    private class SessionInfo {
+        private static final int LAST_NUM_RANGING_REPORTS = 20;
+
+        public final SessionHandle sessionHandle;
+        public final int sessionId;
+        public final Params openRangingParams;
+        public final UwbRangingCallbacks uwbRangingCbs;
+        public final ArrayDeque<RangingReport> lastRangingReports =
+                new ArrayDeque<>(LAST_NUM_RANGING_REPORTS);
+
+        public final CompletableFuture<Boolean> rangingOpenedFuture = new CompletableFuture<>();
+        public CompletableFuture<Boolean> rangingStartedFuture = new CompletableFuture<>();
+        public CompletableFuture<Boolean> rangingStoppedFuture = new CompletableFuture<>();
+        public final CompletableFuture<Boolean> rangingClosedFuture = new CompletableFuture<>();
+
+        SessionInfo(int sessionId, int sSessionHandleIdNext, @NonNull Params openRangingParams,
+                @NonNull PrintWriter pw) {
+            this.sessionId = sessionId;
+            sessionHandle = new SessionHandle(sSessionHandleIdNext);
+            this.openRangingParams = openRangingParams;
+            uwbRangingCbs = new UwbRangingCallbacks(this, pw, rangingOpenedFuture,
+                    rangingStartedFuture, rangingStoppedFuture, rangingClosedFuture);
+        }
+
+        public void addRangingReport(@NonNull RangingReport rangingReport) {
+            if (lastRangingReports.size() == LAST_NUM_RANGING_REPORTS) {
+                lastRangingReports.remove();
+            }
+            lastRangingReports.add(rangingReport);
+        }
+    }
+
+    private Pair<FiraOpenSessionParams, Boolean> buildFiraOpenSessionParams() {
+        FiraOpenSessionParams.Builder builder =
+                new FiraOpenSessionParams.Builder(DEFAULT_FIRA_OPEN_SESSION_PARAMS);
+        boolean shouldBlockCall = false;
+        String option = getNextOption();
+        while (option != null) {
+            if (option.equals("-b")) {
+                shouldBlockCall = true;
+            }
+            if (option.equals("-i")) {
+                builder.setSessionId(Integer.parseInt(getNextArgRequired()));
+            }
+            if (option.equals("-t")) {
+                String type = getNextArgRequired();
+                if (type.equals("controller")) {
+                    builder.setDeviceType(RANGING_DEVICE_TYPE_CONTROLLER);
+                } else if (type.equals("controlee")) {
+                    builder.setDeviceType(RANGING_DEVICE_TYPE_CONTROLEE);
+                } else {
+                    throw new IllegalArgumentException("Unknown device type: " + type);
+                }
+            }
+            if (option.equals("-r")) {
+                String role = getNextArgRequired();
+                if (role.equals("initiator")) {
+                    builder.setDeviceType(RANGING_DEVICE_ROLE_INITIATOR);
+                } else if (role.equals("responder")) {
+                    builder.setDeviceType(RANGING_DEVICE_ROLE_RESPONDER);
+                } else {
+                    throw new IllegalArgumentException("Unknown device role: " + role);
+                }
+            }
+            if (option.equals("-a")) {
+                builder.setDeviceAddress(
+                        UwbAddress.fromBytes(
+                                ByteBuffer.allocate(SHORT_ADDRESS_BYTE_LENGTH)
+                                        .putShort(Short.parseShort(getNextArgRequired()))
+                                        .array()));
+            }
+            if (option.equals("-d")) {
+                String[] destAddressesString = getNextArgRequired().split(",");
+                List<UwbAddress> destAddresses = new ArrayList<>();
+                for (String destAddressString : destAddressesString) {
+                    destAddresses.add(UwbAddress.fromBytes(
+                            ByteBuffer.allocate(SHORT_ADDRESS_BYTE_LENGTH)
+                                    .putShort(Short.parseShort(destAddressString))
+                                    .array()));
+                }
+                builder.setDestAddressList(destAddresses);
+                builder.setMultiNodeMode(destAddresses.size() > 1
+                        ? MULTI_NODE_MODE_ONE_TO_MANY
+                        : MULTI_NODE_MODE_UNICAST);
+            }
+            if (option.equals("-u")) {
+                String usage = getNextArgRequired();
+                if (usage.equals("ds-twr")) {
+                    builder.setRangingRoundUsage(RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE);
+                } else if (usage.equals("ss-twr")) {
+                    builder.setRangingRoundUsage(RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE);
+                } else if (usage.equals("ds-twr-non-deferred")) {
+                    builder.setRangingRoundUsage(RANGING_ROUND_USAGE_DS_TWR_NON_DEFERRED_MODE);
+                } else if (usage.equals("ss-twr-non-deferred")) {
+                    builder.setRangingRoundUsage(RANGING_ROUND_USAGE_SS_TWR_NON_DEFERRED_MODE);
+                } else {
+                    throw new IllegalArgumentException("Unknown round usage: " + usage);
+                }
+            }
+            option = getNextOption();
+        }
+        // TODO: Add remaining params if needed.
+        return Pair.create(builder.build(), shouldBlockCall);
+    }
+
+    private void startFiraRangingSession(PrintWriter pw) throws Exception {
+        Pair<FiraOpenSessionParams, Boolean> firaOpenSessionParams = buildFiraOpenSessionParams();
+        startRangingSession(
+                firaOpenSessionParams.first, firaOpenSessionParams.first.getSessionId(),
+                firaOpenSessionParams.second, pw);
+    }
+
+    private Pair<CccOpenRangingParams, Boolean> buildCccOpenRangingParams() {
+        CccOpenRangingParams.Builder builder =
+                new CccOpenRangingParams.Builder(DEFAULT_CCC_OPEN_RANGING_PARAMS);
+        boolean shouldBlockCall = false;
+        String option = getNextOption();
+        while (option != null) {
+            if (option.equals("-b")) {
+                shouldBlockCall = true;
+            }
+            if (option.equals("-u")) {
+                builder.setUwbConfig(Integer.parseInt(getNextArgRequired()));
+            }
+            if (option.equals("-p")) {
+                String[] pulseComboString = getNextArgRequired().split(",");
+                if (pulseComboString.length != 2) {
+                    throw new IllegalArgumentException("Erroneous pulse combo: "
+                            + Arrays.toString(pulseComboString));
+                }
+                builder.setPulseShapeCombo(new CccPulseShapeCombo(
+                        Integer.parseInt(pulseComboString[0]),
+                        Integer.parseInt(pulseComboString[1])));
+            }
+            if (option.equals("-i")) {
+                builder.setSessionId(Integer.parseInt(getNextArgRequired()));
+            }
+            if (option.equals("-r")) {
+                builder.setRanMultiplier(Integer.parseInt(getNextArgRequired()));
+            }
+            if (option.equals("-c")) {
+                builder.setChannel(Integer.parseInt(getNextArgRequired()));
+            }
+            if (option.equals("-p")) {
+                builder.setNumChapsPerSlot(Integer.parseInt(getNextArgRequired()));
+            }
+            if (option.equals("-n")) {
+                builder.setNumResponderNodes(Integer.parseInt(getNextArgRequired()));
+            }
+            if (option.equals("-o")) {
+                builder.setNumSlotsPerRound(Integer.parseInt(getNextArgRequired()));
+            }
+            if (option.equals("-s")) {
+                builder.setSyncCodeIndex(Integer.parseInt(getNextArgRequired()));
+            }
+            if (option.equals("-h")) {
+                String hoppingConfigMode = getNextArgRequired();
+                if (hoppingConfigMode.equals("none")) {
+                    builder.setHoppingConfigMode(HOPPING_MODE_DISABLE);
+                } else if (hoppingConfigMode.equals("continuous")) {
+                    builder.setHoppingConfigMode(HOPPING_CONFIG_MODE_CONTINUOUS);
+                } else if (hoppingConfigMode.equals("adaptive")) {
+                    builder.setHoppingConfigMode(HOPPING_CONFIG_MODE_ADAPTIVE);
+                } else {
+                    throw new IllegalArgumentException("Unknown hopping config mode: "
+                            + hoppingConfigMode);
+                }
+            }
+            if (option.equals("-a")) {
+                String hoppingSequence = getNextArgRequired();
+                if (hoppingSequence.equals("default")) {
+                    builder.setHoppingSequence(HOPPING_SEQUENCE_DEFAULT);
+                } else if (hoppingSequence.equals("aes")) {
+                    builder.setHoppingConfigMode(HOPPING_SEQUENCE_AES);
+                } else {
+                    throw new IllegalArgumentException("Unknown hopping sequence: "
+                            + hoppingSequence);
+                }
+            }
+            option = getNextOption();
+        }
+        // TODO: Add remaining params if needed.
+        return Pair.create(builder.build(), shouldBlockCall);
+    }
+
+    private void startCccRangingSession(PrintWriter pw) throws Exception {
+        Pair<CccOpenRangingParams, Boolean> cccOpenRangingParams = buildCccOpenRangingParams();
+        startRangingSession(
+                cccOpenRangingParams.first, cccOpenRangingParams.first.getSessionId(),
+                cccOpenRangingParams.second, pw);
+    }
+
+    private void startRangingSession(@NonNull Params openRangingSessionParams, int sessionId,
+            boolean shouldBlockCall, @NonNull PrintWriter pw) throws Exception {
+        if (sSessionIdToInfo.containsKey(sessionId)) {
+            pw.println("Session with session ID: " + sessionId
+                    + " already ongoing. Stop that session before you start a new session");
+            return;
+        }
+        SessionInfo sessionInfo =
+                new SessionInfo(sessionId, sSessionHandleIdNext++, openRangingSessionParams, pw);
+        mUwbService.openRanging(
+                mContext.getAttributionSource(), sessionInfo.sessionHandle,
+                sessionInfo.uwbRangingCbs,
+                openRangingSessionParams.toBundle(),
+                null);
+        boolean openCompleted = false;
+        try {
+            openCompleted = sessionInfo.rangingOpenedFuture.get(
+                    RANGE_CTL_TIMEOUT_MILLIS, MILLISECONDS);
+        } catch (InterruptedException | CancellationException | TimeoutException
+                | ExecutionException e) {
+        }
+        if (!openCompleted) {
+            pw.println("Failed to open ranging session. Aborting!");
+            return;
+        }
+        pw.println("Ranging session opened with params: " + openRangingSessionParams.toBundle());
+
+        mUwbService.startRanging(sessionInfo.sessionHandle, new PersistableBundle());
+        boolean startCompleted = false;
+        try {
+            startCompleted = sessionInfo.rangingStartedFuture.get(
+                    RANGE_CTL_TIMEOUT_MILLIS, MILLISECONDS);
+        } catch (InterruptedException | CancellationException | TimeoutException
+                | ExecutionException e) {
+        }
+        if (!startCompleted) {
+            pw.println("Failed to start ranging session. Aborting!");
+            return;
+        }
+        pw.println("Ranging session started for sessionId: " + sessionId);
+        sSessionIdToInfo.put(sessionId, sessionInfo);
+        while (shouldBlockCall) {
+            Thread.sleep(RANGE_CTL_TIMEOUT_MILLIS);
+        }
+    }
+
+    private void stopRangingSession(PrintWriter pw) throws RemoteException {
+        int sessionId = Integer.parseInt(getNextArgRequired());
+        stopRangingSession(pw, sessionId);
+    }
+
+    private void stopRangingSession(PrintWriter pw, int sessionId) throws RemoteException {
+        SessionInfo sessionInfo = sSessionIdToInfo.get(sessionId);
+        if (sessionInfo == null) {
+            pw.println("No active session with session ID: " + sessionId + " found");
+            return;
+        }
+        mUwbService.stopRanging(sessionInfo.sessionHandle);
+        boolean stopCompleted = false;
+        try {
+            stopCompleted = sessionInfo.rangingStoppedFuture.get(
+                    RANGE_CTL_TIMEOUT_MILLIS, MILLISECONDS);
+        } catch (InterruptedException | CancellationException | TimeoutException
+                | ExecutionException e) {
+        }
+        if (!stopCompleted) {
+            pw.println("Failed to stop ranging session. Aborting!");
+            return;
+        }
+        pw.println("Ranging session stopped");
+
+        mUwbService.closeRanging(sessionInfo.sessionHandle);
+        boolean closeCompleted = false;
+        try {
+            closeCompleted = sessionInfo.rangingClosedFuture.get(
+                    RANGE_CTL_TIMEOUT_MILLIS, MILLISECONDS);
+        } catch (InterruptedException | CancellationException | TimeoutException
+                | ExecutionException e) {
+        }
+        if (!closeCompleted) {
+            pw.println("Failed to close ranging session. Aborting!");
+            return;
+        }
+        pw.println("Ranging session closed");
     }
 
     @Override
@@ -97,22 +583,65 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                         return 0;
                     }
                 }
-                case "get-country-code": {
-                    pw.println("Uwb Country Code = "
-                            + mUwbCountryCode.getCountryCode());
+                case "get-country-code":
+                    pw.println("Uwb Country Code = " + mUwbCountryCode.getCountryCode());
                     return 0;
-                }
                 case "status":
                     printStatus(pw);
                     return 0;
+                case "enable-uwb":
+                    mUwbService.setEnabled(true);
+                    return 0;
+                case "disable-uwb":
+                    mUwbService.setEnabled(false);
+                    return 0;
+                case "start-fira-ranging-session":
+                    startFiraRangingSession(pw);
+                    return 0;
+                case "start-ccc-ranging-session":
+                    startCccRangingSession(pw);
+                    return 0;
+                case "get-ranging-session-reports": {
+                    int sessionId = Integer.parseInt(getNextArgRequired());
+                    SessionInfo sessionInfo = sSessionIdToInfo.get(sessionId);
+                    if (sessionInfo == null) {
+                        pw.println("No active session with session ID: " + sessionId + " found");
+                        return -1;
+                    }
+                    pw.println("Last Ranging results:");
+                    for (RangingReport rangingReport : sessionInfo.lastRangingReports) {
+                        pw.println(rangingReport);
+                    }
+                    return 0;
+                }
+                case "get-all-ranging-session-reports": {
+                    for (SessionInfo sessionInfo: sSessionIdToInfo.values()) {
+                        pw.println("Last Ranging results for sessionId " + sessionInfo.sessionId
+                                + ":");
+                        for (RangingReport rangingReport : sessionInfo.lastRangingReports) {
+                            pw.println(rangingReport);
+                        }
+                    }
+                    return 0;
+                }
+                case "stop-ranging-session":
+                    stopRangingSession(pw);
+                    return 0;
+                case "stop-all-ranging-sessions": {
+                    for (int sessionId : sSessionIdToInfo.keySet()) {
+                        stopRangingSession(pw, sessionId);
+                    }
+                    return 0;
+                }
                 default:
                     return handleDefaultCommands(cmd);
             }
         } catch (IllegalArgumentException e) {
-            pw.println("Invalid args for " + cmd + ": " + e);
+            pw.println("Invalid args for " + cmd + ": ");
+            e.printStackTrace(pw);
             return -1;
         } catch (Exception e) {
-            pw.println("Exception while executing UwbShellCommand: ");
+            pw.println("Exception while executing UwbShellCommand" + cmd + ": ");
             e.printStackTrace(pw);
             return -1;
         }
@@ -142,6 +671,46 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         pw.println("    Gets status of UWB stack");
         pw.println("  get-country-code");
         pw.println("    Gets country code as a two-letter string");
+        pw.println("  enable-uwb");
+        pw.println("    Toggle UWB on");
+        pw.println("  disable-uwb");
+        pw.println("    Toggle UWB off");
+        pw.println("  start-fira-ranging-session"
+                + " [-b](blocking call)"
+                + " [-i <sessionId>](session-id)"
+                + " [-t controller|controlee](device-type)"
+                + " [-r initiator|responder](device-role)"
+                + " [-a <deviceAddress>](device-address)"
+                + " [-d <destAddress-1, destAddress-2,...>](dest-addresses)"
+                + " [-u ds-twr|ss-twr|ds-twr-non-deferred|ss-twr-non-deferred](round-usage)");
+        pw.println("    Starts a FIRA ranging session with the provided params."
+                + " Note: default behavior is to cache the latest ranging reports which can be"
+                + " retrieved using |get-ranging-session-reports|");
+        pw.println("  start-ccc-ranging-session"
+                + " [-b](blocking call)"
+                + " Ranging reports will be displayed on screen)"
+                + " [-u 0|1](uwb-config)"
+                + " [-p <tx>,<rx>](pulse-shape-combo)"
+                + " [-i <sessionId>](session-id)"
+                + " [-r <ran_multiplier>](ran-multiplier)"
+                + " [-c <channel>](channel)"
+                + " [-p <num-chaps-per-slot>](num-chaps-per-slot)"
+                + " [-n <num-responder-nodes>](num-responder-nodes)"
+                + " [-o <num-slots-per-round>](num-slots-per-round)"
+                + " [-s <sync-code-index>](sync-code-index)"
+                + " [-h none|continuous|adaptive](hopping-config-mode)"
+                + " [-a default|aes](hopping-sequence)");
+        pw.println("    Starts a CCC ranging session with the provided params."
+                + " Note: default behavior is to cache the latest ranging reports which can be"
+                + " retrieved using |get-ranging-session-reports|");
+        pw.println("  get-ranging-session-reports <sessionId>");
+        pw.println("    Displays latest cached ranging reports for an ongoing ranging session");
+        pw.println("  get-all-ranging-session-reports");
+        pw.println("    Displays latest cached ranging reports for all ongoing ranging session");
+        pw.println("  stop-ranging-session <sessionId>");
+        pw.println("    Stops an ongoing ranging session");
+        pw.println("  stop-all-ranging-sessions");
+        pw.println("    Stops all ongoing ranging sessions");
     }
 
     private void onHelpPrivileged(PrintWriter pw) {
@@ -160,5 +729,11 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             onHelpPrivileged(pw);
         }
         pw.println();
+    }
+
+    @VisibleForTesting
+    public void reset() {
+        sSessionHandleIdNext = 0;
+        sSessionIdToInfo.clear();
     }
 }

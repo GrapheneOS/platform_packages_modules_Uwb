@@ -19,6 +19,13 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
+filegroup {
+    name: "framework-uwb-test-util-srcs",
+    srcs: [
+        "src/android/uwb/UwbTestUtils.java",
+    ],
+}
+
 android_test {
     name: "FrameworkUwbTests",
 
