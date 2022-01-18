@@ -1,8 +1,9 @@
 //! jni for uwb native stack
+use android_logger::FilterBuilder;
 use jni::JNIEnv;
 use jni::objects::{JObject, JValue};
 use jni::sys::{jboolean, jbyte, jbyteArray, jint, jintArray, jlong, jobject};
-use log::{error, info, warn};
+use log::{error, info, warn, LevelFilter};
 use uwb_uci_rust::event_manager::EventManager;
 use uwb_uci_rust::error::UwbErr;
 use uwb_uci_rust::uci::{BlockingJNICommand, Dispatcher, JNICommand, uci_hrcv::UciResponse};
@@ -14,8 +15,12 @@ const STATUS_FAILED: i8 = 2;
 /// Initialize UWB
 #[no_mangle]
 pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeInit(_env: JNIEnv, _obj: JObject) -> jboolean {
-    logger::init(
-        logger::Config::default().with_tag_on_device("uwb").with_min_level(log::Level::Trace),
+    let crates_log_lvl_filter = FilterBuilder::new()
+            .filter(None, LevelFilter::Trace) // default log level
+            .filter(Some("jni"), LevelFilter::Info) // reduced log level for jni crate
+            .build();
+    android_logger::init_once(
+        android_logger::Config::default().with_tag("uwb").with_min_level(log::Level::Trace).with_filter(crates_log_lvl_filter),
     );
     info!("Java_com_android_uwb_jni_NativeUwbManager_nativeInit: enter");
     true as jboolean
