@@ -108,6 +108,7 @@ public class NativeUwbManager {
         boolean res = nativeDoDeinitialize();
         if (res && SystemProperties.getBoolean("persist.uwb.enable_uci_rust_stack", false)) {
             nativeDispatcherDestroy();
+            this.mDispatcherPointer = 0L;
         }
         return res;
     }

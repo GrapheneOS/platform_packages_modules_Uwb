@@ -56,12 +56,19 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetTimest
 
 /// retrieve the UWB device specific information etc.
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetSpecificationInfo(env: JNIEnv, _obj: JObject) -> jobject {
+pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetSpecificationInfo(env: JNIEnv, obj: JObject) -> jobject {
     info!("Java_com_android_uwb_jni_NativeUwbManager_nativeGetSpecificationInfo: enter");
-    // TODO: implement this function
     let uwb_specification_info_class = env.find_class("com/android/uwb/info/UwbSpecificationInfo").unwrap();
-    let specification_info = env.new_object(uwb_specification_info_class, "(IIIIIIIIIIII)V", &[JValue::Int(1); 12]).unwrap();
-    *specification_info
+    match get_specification_info(env, obj) {
+        Ok(para) => {
+            let specification_info = env.new_object(uwb_specification_info_class, "(IIIIIIIIIIIIIIII)V", &para).unwrap();
+            *specification_info
+        },
+        Err(e) => {
+            error!("Get specification info failed with: {:?}", e);
+            *JObject::null()
+        }
+    }
 }
 
 /// reset the device
@@ -90,7 +97,13 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeSessionDe
 #[no_mangle]
 pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetSessionCount(env: JNIEnv, obj: JObject) -> jbyte {
     info!("Java_com_android_uwb_jni_NativeUwbManager_nativeGetSessionCount: enter");
-    byte_result_helper(get_session_count(env, obj), "GetSessionCount")
+    match get_session_count(env, obj) {
+        Ok(count) => count,
+        Err(e) => {
+            error!("GetSessionCount failed with {:?}", e);
+            -1
+        }
+    }
 }
 
 ///  start the ranging
@@ -111,7 +124,13 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeRangingSt
 #[no_mangle]
 pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetSessionState(env: JNIEnv, obj: JObject, session_id: jint) -> jbyte {
     info!("Java_com_android_uwb_jni_NativeUwbManager_nativeGetSessionState: enter");
-    byte_result_helper(get_session_state(env, obj, session_id as u32), "GetSessionState")
+    match get_session_state(env, obj, session_id as u32) {
+        Ok(state) => state,
+        Err(e) => {
+            error!("GetSessionState failed with {:?}", e);
+            -1
+        }
+    }
 }
 
 /// set app configurations
@@ -136,7 +155,7 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetAppCon
 #[no_mangle]
 pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeControllerMulticastListUpdate(env: JNIEnv, obj: JObject, session_id: jint, action: jbyte, no_of_controlee: jbyte, address: jbyteArray, sub_session_id: jintArray) -> jbyte {
     info!("Java_com_android_uwb_jni_NativeUwbManager_nativeControllerMulticastListUpdate: enter");
-    byte_result_helper(multicast_list_update(env, obj, session_id as u32, action as u8, no_of_controlee as u8, address, &sub_session_id), "ControllerMulticastListUpdate")
+    byte_result_helper(multicast_list_update(env, obj, session_id as u32, action as u8, no_of_controlee as u8, address, sub_session_id), "ControllerMulticastListUpdate")
 }
 
 /// set country code
@@ -167,12 +186,17 @@ fn byte_result_helper(result: Result<(), UwbErr>, function_name: &str) -> jbyte 
 }
 
 fn do_initialize(env: JNIEnv, obj: JObject) -> Result<(), UwbErr> {
-    dispatch_command(env, obj, JNICommand::UwaEnable)?;
+    let dispatcher = get_dispatcher(env, obj)?;
+    dispatcher.send_jni_command(JNICommand::UwaEnable)?;
     uwa_init(); // todo: implement this
     clear_all_session_context(); // todo: implement this
     uwa_enable()?; // todo: implement this, and add a lock here
-    match uwa_get_device_info(env, obj) {
-        Ok(device_info) => info!("Get the device info: {:?}", device_info),
+    match uwa_get_device_info(dispatcher) {
+        Ok(res) => {
+            if let UciResponse::GetDeviceInfoRsp(device_info) = res {
+                dispatcher.device_info = Some(device_info);
+            }
+        },
         Err(e) => {
             warn!("Failed to get device info with: {:?}", e);
             return Err(UwbErr::failed());
@@ -199,55 +223,122 @@ fn do_deinitialize(env: JNIEnv, obj: JObject) -> Result<(), UwbErr> {
     Ok(())
 }
 
+fn get_specification_info<'a>(env: JNIEnv, obj: JObject) -> Result<[JValue<'a>; 16], UwbErr> {
+    let mut para = [JValue::Int(0); 16];
+    let dispatcher = get_dispatcher(env, obj)?;
+    if dispatcher.device_info.is_none() {
+        warn!("Fail to get specification info.");
+        return Err(UwbErr::failed());
+    }
+    if let Some(data) = &dispatcher.device_info {
+        para = [
+            JValue::Int((data.uci_version & 0xFF).into()),
+            JValue::Int(((data.uci_version >> 8) & 0xF).into()),
+            JValue::Int(((data.uci_version >> 12) & 0xF).into()),
+            JValue::Int((data.mac_version & 0xFF).into()),
+            JValue::Int(((data.mac_version >> 8) & 0xF).into()),
+            JValue::Int(((data.mac_version >> 12) & 0xF).into()),
+            JValue::Int((data.phy_version & 0xFF).into()),
+            JValue::Int(((data.phy_version >> 8) & 0xF).into()),
+            JValue::Int(((data.phy_version >> 12) & 0xF).into()),
+            JValue::Int((data.uci_test_version & 0xFF).into()),
+            JValue::Int(((data.uci_test_version >> 8) & 0xF).into()),
+            JValue::Int(((data.uci_test_version >> 12) & 0xF).into()),
+            JValue::Int(1), // fira_major_version
+            JValue::Int(0), // fira_minor_version
+            JValue::Int(1), // ccc_major_version
+            JValue::Int(0) // ccc_minor_version
+        ];
+    }
+    Ok(para)
+}
+
 fn session_init(env: JNIEnv, obj: JObject, session_id: u32, session_type: u8) -> Result<(), UwbErr> {
     let dispatcher = get_dispatcher(env, obj)?;
     let res = match dispatcher.block_on_jni_command(BlockingJNICommand::UwaSessionInit(session_id, session_type))? {
         UciResponse::SessionInitRsp(data) => data,
         _ => return Err(UwbErr::failed()),
     };
-    info!("session_init_response: {:?}", res);
-    match res.status {
-        StatusCode::UciStatusOk => Ok(()),
+    status_code_to_res(res.status)
+}
+
+fn session_deinit(env: JNIEnv, obj: JObject, session_id: u32) -> Result<(), UwbErr> {
+    let dispatcher = get_dispatcher(env, obj)?;
+    let res = match dispatcher.block_on_jni_command(BlockingJNICommand::UwaSessionDeinit(session_id))? {
+        UciResponse::SessionDeinitRsp(data) => data,
+        _ => return Err(UwbErr::failed()),
+    };
+    status_code_to_res(res.status)
+}
+
+fn get_session_count(env: JNIEnv, obj: JObject) -> Result<jbyte, UwbErr> {
+    let dispatcher = get_dispatcher(env, obj)?;
+    match dispatcher.block_on_jni_command(BlockingJNICommand::UwaSessionGetCount)? {
+        UciResponse::SessionGetCountRsp(data) => {
+            Ok(data.session_count as jbyte)
+        },
         _ => Err(UwbErr::failed()),
     }
 }
 
-fn session_deinit(env: JNIEnv, obj: JObject, session_id: u32) -> Result<(), UwbErr> {
-    dispatch_command(env, obj, JNICommand::UwaSessionDeinit(session_id))
-}
-
-fn get_session_count(env: JNIEnv, obj: JObject) -> Result<(), UwbErr> {
-    dispatch_command(env, obj, JNICommand::UwaSessionGetCount)
-}
-
 fn ranging_start(env: JNIEnv, obj: JObject, session_id: u32) -> Result<(), UwbErr> {
-    dispatch_command(env, obj, JNICommand::UwaStartRange(session_id))
+    let dispatcher = get_dispatcher(env, obj)?;
+    let res = match dispatcher.block_on_jni_command(BlockingJNICommand::UwaStartRange(session_id))? {
+        UciResponse::RangeStartRsp(data) => data,
+        _ => return Err(UwbErr::failed()),
+    };
+    status_code_to_res(res.status)
 }
 
 fn ranging_stop(env: JNIEnv, obj: JObject, session_id: u32) -> Result<(), UwbErr> {
-    dispatch_command(env, obj, JNICommand::UwaStopRange(session_id))
+    let dispatcher = get_dispatcher(env, obj)?;
+    let res = match dispatcher.block_on_jni_command(BlockingJNICommand::UwaStopRange(session_id))? {
+        UciResponse::RangeStopRsp(data) => data,
+        _ => return Err(UwbErr::failed()),
+    };
+    status_code_to_res(res.status)
 }
 
-fn get_session_state(env: JNIEnv, obj: JObject, session_id: u32) -> Result<(), UwbErr> {
-    dispatch_command(env, obj, JNICommand::UwaGetSessionState(session_id))
+fn get_session_state(env: JNIEnv, obj: JObject, session_id: u32) -> Result<jbyte, UwbErr> {
+    let dispatcher = get_dispatcher(env, obj)?;
+    match dispatcher.block_on_jni_command(BlockingJNICommand::UwaGetSessionState(session_id))? {
+        UciResponse::SessionGetStateRsp(data) => {
+            Ok(data.session_state as jbyte)
+        },
+        _ => Err(UwbErr::failed()),
+    }
 }
 
-fn multicast_list_update(env: JNIEnv, obj: JObject, session_id: u32, action: u8, no_of_controlee: u8, address: jbyteArray, sub_session_id: &jintArray) -> Result<(), UwbErr> {
+fn multicast_list_update(env: JNIEnv, obj: JObject, session_id: u32, action: u8, no_of_controlee: u8, address: jbyteArray, sub_session_id: jintArray) -> Result<(), UwbErr> {
     let address_list = env.convert_byte_array(address)?;
-    let sub_session_id_list: &mut [i32] = &mut [];
-    env.get_int_array_region(*sub_session_id, 0, sub_session_id_list)?;
-    dispatch_command(env, obj, JNICommand::UwaSessionUpdateMulticastList{session_id, action, no_of_controlee, address_list, sub_session_id_list: sub_session_id_list.to_vec()})
+    let mut sub_session_id_list = vec![0i32; env.get_array_length(sub_session_id)?.try_into().unwrap()];
+    env.get_int_array_region(sub_session_id, 0, &mut sub_session_id_list)?;
+    let dispatcher = get_dispatcher(env, obj)?;
+    let res = match dispatcher.block_on_jni_command(BlockingJNICommand::UwaSessionUpdateMulticastList{session_id, action, no_of_controlee, address_list, sub_session_id_list: sub_session_id_list.to_vec()})? {
+        UciResponse::SessionUpdateControllerMulticastListRsp(data) => data,
+        _ => return Err(UwbErr::failed()),
+    };
+    status_code_to_res(res.status)
 }
 
 fn set_country_code(env: JNIEnv, obj: JObject, country_code: jbyteArray) -> Result<(), UwbErr> {
     let code = env.convert_byte_array(country_code)?;
-    dispatch_command(env, obj, JNICommand::UwaSetCountryCode{code})
+    if code.len() != 2 {
+        return Err(UwbErr::failed());
+    }
+    let dispatcher = get_dispatcher(env, obj)?;
+    let res = match dispatcher.block_on_jni_command(BlockingJNICommand::UwaSetCountryCode { code })? {
+        UciResponse::AndroidSetCountryCodeRsp(data) => data,
+        _ => return Err(UwbErr::failed()),
+    };
+    status_code_to_res(res.status)
 }
 
-fn dispatch_command(env: JNIEnv, obj: JObject, command: JNICommand) -> Result<(), UwbErr> {
-    let dispatcher = get_dispatcher(env, obj)?;
-    dispatcher.send_jni_command(command)?;
-    Ok(())
+fn status_code_to_res(status: StatusCode) -> Result<(), UwbErr> {
+    match status {
+        StatusCode::UciStatusOk => Ok(()),
+        _ => Err(UwbErr::failed()),
+    }
 }
 
 fn get_dispatcher<'a>(env: JNIEnv, obj: JObject) -> Result<&'a mut Dispatcher, UwbErr> {
@@ -298,8 +389,7 @@ fn uwa_init() {
 
 }
 
-fn uwa_get_device_info(env: JNIEnv, obj: JObject) -> Result<UciResponse, UwbErr> {
-    let dispatcher = get_dispatcher(env, obj)?;
+fn uwa_get_device_info(dispatcher: &Dispatcher) -> Result<UciResponse, UwbErr> {
     let res = dispatcher.block_on_jni_command(BlockingJNICommand::GetDeviceInfo)?;
     Ok(res)
 }
