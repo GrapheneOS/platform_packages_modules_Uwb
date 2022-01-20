@@ -23,6 +23,7 @@ import android.uwb.IUwbAdfProvisionStateCallbacks;
 import android.uwb.IUwbRangingCallbacks2;
 import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
+import android.uwb.IUwbVendorUciCallback;
 
 /**
  * @hide
@@ -44,7 +45,26 @@ interface IUwbAdapter2 {
    */
   void registerAdapterStateCallbacks(in IUwbAdapterStateCallbacks adapterStateCallbacks);
 
-  /*
+   /*
+    * Register the callbacks used to notify the framework of events and data
+    *
+    * The provided callback's IUwbUciVendorCallback#onVendorNotificationReceived
+    * function must be called immediately following vendorNotification received
+    *
+    * @param callbacks callback to provide Notification data updates to the framework
+    */
+   void registerVendorExtensionCallback(in IUwbVendorUciCallback callbacks);
+
+   /*
+    * Unregister the callbacks used to notify the framework of events and data
+    *
+    * Calling this function with an unregistered callback is a no-op
+    *
+    * @param callbacks callback to unregister
+    */
+   void unregisterVendorExtensionCallback(in IUwbVendorUciCallback callbacks);
+
+   /*
    * Unregister the callbacks used to notify the framework of events and data
    *
    * Calling this function with an unregistered callback is a no-op
@@ -315,6 +335,8 @@ interface IUwbAdapter2 {
             in IUwbAdfProvisionStateCallbacks callback);
 
   int removeProfileAdf(in PersistableBundle serviceProfileBundle);
+
+  int sendVendorUciMessage(int gid, int oid, in byte[] payload);
 
   /**
    * The maximum allowed time to open a ranging session.

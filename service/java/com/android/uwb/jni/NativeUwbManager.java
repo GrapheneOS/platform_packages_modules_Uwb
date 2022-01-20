@@ -38,6 +38,8 @@ public class NativeUwbManager {
     protected INativeUwbManager.DeviceNotification mDeviceListener;
     protected INativeUwbManager.SessionNotification mSessionListener;
     private long mDispatcherPointer;
+    protected INativeUwbManager.VendorNotification mVendorListener;
+
 
     public NativeUwbManager(@NonNull UwbInjector uwbInjector) {
         mUwbInjector = uwbInjector;
@@ -60,6 +62,10 @@ public class NativeUwbManager {
 
     public void setSessionListener(INativeUwbManager.SessionNotification sessionListener) {
         mSessionListener = sessionListener;
+    }
+
+    public void setVendorListener(INativeUwbManager.VendorNotification vendorListener) {
+        mVendorListener = vendorListener;
     }
 
     public void onDeviceStatusNotificationReceived(int deviceState) {
@@ -288,6 +294,11 @@ public class NativeUwbManager {
         synchronized (mSessionFnLock) {
             return nativeSetCountryCode(countryCode);
         }
+    }
+
+    public byte sendRawUci(int gid, int oid, byte[] payload) {
+        // TODO(b/210933436): Implement native stack.
+        return UwbUciConstants.STATUS_CODE_OK;
     }
 
     /**

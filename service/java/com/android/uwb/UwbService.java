@@ -33,6 +33,7 @@ import android.util.Log;
 import android.uwb.IUwbAdapter;
 import android.uwb.IUwbAdapterStateCallbacks;
 import android.uwb.IUwbRangingCallbacks;
+import android.uwb.IUwbVendorUciCallback;
 import android.uwb.RangingChangeReason;
 import android.uwb.SessionHandle;
 import android.uwb.StateChangeReason;
@@ -52,7 +53,8 @@ import com.google.uwb.support.fira.FiraParams;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-public class UwbService implements INativeUwbManager.DeviceNotification {
+public class UwbService implements INativeUwbManager.DeviceNotification,
+        INativeUwbManager.VendorNotification {
     private static final String TAG = "UwbService";
 
     private static final String SERVICE_NAME = "uwb";
@@ -93,6 +95,7 @@ public class UwbService implements INativeUwbManager.DeviceNotification {
     private UwbSpecificationInfo mUwbSpecificationInfo = null;
     private /* @UwbManager.AdapterStateCallback.State */ int mState;
     private @StateChangeReason int mLastStateChangedReason;
+    private  IUwbVendorUciCallback mCallBack = null;
 
     public UwbService(Context uwbApplicationContext, NativeUwbManager nativeUwbManager,
             UwbMetrics uwbMetrics, UwbCountryCode uwbCountryCode, Looper serviceLooper) {
@@ -109,6 +112,7 @@ public class UwbService implements INativeUwbManager.DeviceNotification {
         mNativeUwbManager = nativeUwbManager;
 
         mNativeUwbManager.setDeviceListener(this);
+        mNativeUwbManager.setVendorListener(this);
         mUwbMetrics = uwbMetrics;
         mUwbCountryCode = uwbCountryCode;
         mSessionManager = new UwbSessionManager(mNativeUwbManager, mUwbMetrics, serviceLooper);
@@ -156,6 +160,15 @@ public class UwbService implements INativeUwbManager.DeviceNotification {
                 break;
         }
         return ret;
+    }
+
+    @Override
+    public void onVendorUciNotificationReceived(int gid, int oid, byte[] payload)
+            throws RemoteException {
+        Log.i(TAG, "onVendorUciNotificationReceived");
+        if (mCallBack != null) {
+            mCallBack.onVendorNotificationReceived(gid, oid, payload);
+        }
     }
 
     @Override
@@ -227,6 +240,19 @@ public class UwbService implements INativeUwbManager.DeviceNotification {
             adapter.getBinder().unlinkToDeath(adapter, 0);
             mAdapterMap.remove(pid);
         }
+
+        public void registerVendorExtensionCallback(IUwbVendorUciCallback callbacks)
+                throws RemoteException {
+            Log.e(TAG, "Register the callback");
+            mCallBack = callbacks;
+        }
+
+        public void unregisterVendorExtensionCallback(IUwbVendorUciCallback callbacks)
+                throws RemoteException {
+            Log.e(TAG, "Unregister the callback");
+            mCallBack = null;
+        }
+
 
         @Override
         public PersistableBundle getSpecificationInfo()
@@ -332,6 +358,14 @@ public class UwbService implements INativeUwbManager.DeviceNotification {
             }
 
             mEnableDisableTask.execute(task);
+        }
+
+        public synchronized int sendVendorUciMessage(int gid, int oid, byte[] payload) {
+            if ((!isUwbEnabled())) {
+                Log.e(TAG, "sendRawUci : Uwb is not enabled");
+                return UwbUciConstants.STATUS_CODE_FAILED;
+            }
+            return mNativeUwbManager.sendRawUci(gid, oid, payload);
         }
     }
 

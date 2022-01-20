@@ -19,6 +19,7 @@ package android.uwb;
 import android.Manifest.permission;
 import android.annotation.CallbackExecutor;
 import android.annotation.IntDef;
+import android.annotation.IntRange;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.RequiresPermission;
@@ -61,6 +62,7 @@ public final class UwbManager {
     private final IUwbAdapter2 mUwbAdapter;
     private final AdapterStateListener mAdapterStateListener;
     private final RangingManager mRangingManager;
+    private final UwbVendorUciCallbackListener mUwbVendorUciCallbackListener;
 
     /**
      * Interface for receiving UWB adapter state changes
@@ -283,6 +285,22 @@ public final class UwbManager {
     }
 
     /**
+     * Interface for receiving vendor UCI responses and notifications.
+     */
+    public interface UwbVendorUciCallback {
+        /**
+         * Invoked when a vendor specific UCI notification and response is received.
+         *
+         * @param gid Group ID of the command. This needs to be one of the vendor reserved GIDs from
+         *            the UCI specification.
+         * @param oid Opcode ID of the command. This is left to the OEM / vendor to decide.
+         * @param payload containing vendor Uci message payload.
+         */
+        void onVendorUciMessage(
+                @IntRange(from = 9, to = 15) int gid, int oid, @NonNull byte[] payload);
+    }
+
+    /**
      * Use <code>Context.getSystemService(UwbManager.class)</code> to get an instance.
      *
      * @param ctx Context of the client.
@@ -294,6 +312,7 @@ public final class UwbManager {
         mUwbAdapter = adapter;
         mAdapterStateListener = new AdapterStateListener(adapter);
         mRangingManager = new RangingManager(adapter);
+        mUwbVendorUciCallbackListener = new UwbVendorUciCallbackListener(adapter);
     }
 
     /**
@@ -326,6 +345,37 @@ public final class UwbManager {
     @RequiresPermission(permission.UWB_PRIVILEGED)
     public void unregisterAdapterStateCallback(@NonNull AdapterStateCallback callback) {
         mAdapterStateListener.unregister(callback);
+    }
+
+    /**
+     * Register an {@link UwbVendorUciCallback} to listen for UWB vendor responses and notifications
+     * <p>The provided callback will be invoked by the given {@link Executor}.
+     *
+     * <p>When first registering a callback, the callbacks's
+     * {@link UwbVendorUciCallback#onVendorUciCallBack(byte[])} is immediately invoked to
+     * notify the vendor notification.
+     *
+     * @param executor an {@link Executor} to execute given callback
+     * @param callback user implementation of the {@link UwbVendorUciCallback}
+     */
+    @RequiresPermission(permission.UWB_PRIVILEGED)
+    public void registerUwbVendorUciCallback(@NonNull @CallbackExecutor Executor executor,
+            @NonNull UwbVendorUciCallback callback) {
+        mUwbVendorUciCallbackListener.register(executor, callback);
+    }
+
+    /**
+     * Unregister the specified {@link UwbVendorUciCallback}
+     *
+     * <p>The same {@link UwbVendorUciCallback} object used when calling
+     * {@link #registerUwbVendorUciCallback(Executor, UwbVendorUciCallback)} must be used.
+     *
+     * <p>Callbacks are automatically unregistered when application process goes away
+     *
+     * @param callback user implementation of the {@link UwbVendorUciCallback}
+     */
+    public void unregisterUwbVendorUciCallback(@NonNull UwbVendorUciCallback callback) {
+        mUwbVendorUciCallbackListener.unregister(callback);
     }
 
     /**
@@ -743,6 +793,67 @@ public final class UwbManager {
     public @RemoveProfileAdf int removeProfileAdf(@NonNull PersistableBundle serviceProfileBundle) {
         try {
             return mUwbAdapter.removeProfileAdf(serviceProfileBundle);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Successfully sent the UCI message.
+     */
+    public static final int SEND_VENDOR_UCI_SUCCESS = 0;
+
+    /**
+     * Failed to send the UCI message because of an error returned from the HAL interface.
+     */
+    public static final int SEND_VENDOR_UCI_ERROR_HW = 1;
+
+    /**
+     * Failed to send the UCI message since UWB is toggled off.
+     */
+    public static final int SEND_VENDOR_UCI_ERROR_OFF = 2;
+
+    /**
+     * Failed to send the UCI message since UWB UCI command is malformed.
+     * GID.
+     */
+    public static final int SEND_VENDOR_UCI_ERROR_INVALID_ARGS = 3;
+
+    /**
+     * Failed to send the UCI message since UWB GID used is invalid.
+     */
+    public static final int SEND_VENDOR_UCI_ERROR_INVALID_GID = 4;
+
+    /**
+     * @hide
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef(value = {
+            SEND_VENDOR_UCI_SUCCESS,
+            SEND_VENDOR_UCI_ERROR_HW,
+            SEND_VENDOR_UCI_ERROR_OFF,
+            SEND_VENDOR_UCI_ERROR_INVALID_ARGS,
+            SEND_VENDOR_UCI_ERROR_INVALID_GID,
+    })
+    @interface SendVendorUciStatus {}
+
+    /**
+     * Send Vendor specific Uci Messages.
+     *
+     * The format of the UCI messages are defined in the UCI specification. The platform is
+     * responsible for fragmenting the payload if necessary.
+     *
+     * @param gid Group ID of the command. This needs to be one of the vendor reserved GIDs from
+     *            the UCI specification.
+     * @param oid Opcode ID of the command. This is left to the OEM / vendor to decide.
+     * @param payload containing vendor Uci message payload.
+     */
+    @NonNull
+    @RequiresPermission(permission.UWB_PRIVILEGED)
+    public @SendVendorUciStatus int sendVendorUciMessage(
+            @IntRange(from = 9, to = 15) int gid, int oid, @NonNull byte[] payload) {
+        try {
+            return mUwbAdapter.sendVendorUciMessage(gid, oid, payload);
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();
         }
