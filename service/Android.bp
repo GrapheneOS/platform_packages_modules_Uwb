@@ -67,6 +67,7 @@ java_library {
         "com.uwb.support.fira",
         "modules-utils-shell-command-handler",
         "modules-utils-handlerexecutor",
+        "guava",
     ],
 
     apex_available: [
