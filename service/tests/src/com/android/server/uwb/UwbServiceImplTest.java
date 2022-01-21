@@ -83,6 +83,7 @@ public class UwbServiceImplTest {
     private static final int UID = 343453;
     private static final int UID_2 = 343453;
     private static final String PACKAGE_NAME = "com.uwb.test";
+    private static final String DEFAULT_CHIP_ID = "defaultChipId";
     private static final AttributionSource ATTRIBUTION_SOURCE =
             new AttributionSource.Builder(UID).setPackageName(PACKAGE_NAME).build();
     private static final AttributionSource ATTRIBUTION_SOURCE_2 =
@@ -93,6 +94,7 @@ public class UwbServiceImplTest {
     @Mock private Context mContext;
     @Mock private UwbInjector mUwbInjector;
     @Mock private UwbSettingsStore mUwbSettingsStore;
+    @Mock private NativeUwbManager mNativeUwbManager;
     @Captor private ArgumentCaptor<IUwbRangingCallbacks> mRangingCbCaptor;
     @Captor private ArgumentCaptor<IUwbRangingCallbacks> mRangingCbCaptor2;
     @Captor private ArgumentCaptor<IBinder.DeathRecipient> mClientDeathCaptor;
@@ -100,7 +102,6 @@ public class UwbServiceImplTest {
     @Captor private ArgumentCaptor<BroadcastReceiver> mApmModeBroadcastReceiver;
 
     private UwbServiceImpl mUwbServiceImpl;
-    private NativeUwbManager mNativeUwbManager;
 
     @Before
     public void setUp() throws Exception {
@@ -111,9 +112,9 @@ public class UwbServiceImplTest {
         when(mVendorService.asBinder()).thenReturn(mVendorServiceBinder);
         when(mUwbInjector.getUwbSettingsStore()).thenReturn(mUwbSettingsStore);
         when(mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).thenReturn(true);
+        when(mNativeUwbManager.getChipIds()).thenReturn(List.of(DEFAULT_CHIP_ID));
+        when(mNativeUwbManager.getDefaultChipId()).thenReturn(DEFAULT_CHIP_ID);
         when(mUwbInjector.getSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0)).thenReturn(0);
-
-        mNativeUwbManager = new NativeUwbManager();
         when(mUwbInjector.getNativeUwbManager()).thenReturn(mNativeUwbManager);
 
         mUwbServiceImpl = new UwbServiceImpl(mContext, mUwbInjector);
@@ -164,7 +165,7 @@ public class UwbServiceImplTest {
     public void testGetTimestampResolutionNanos_validChipId() throws Exception {
         final long timestamp = 34L;
         when(mVendorService.getTimestampResolutionNanos()).thenReturn(timestamp);
-        assertThat(mUwbServiceImpl.getTimestampResolutionNanos("defaultChipId"))
+        assertThat(mUwbServiceImpl.getTimestampResolutionNanos(DEFAULT_CHIP_ID))
                 .isEqualTo(timestamp);
 
         verify(mVendorService).getTimestampResolutionNanos();
@@ -190,7 +191,7 @@ public class UwbServiceImplTest {
     public void testGetSpecificationInfo_validChipId() throws Exception {
         final PersistableBundle specification = new PersistableBundle();
         when(mVendorService.getSpecificationInfo()).thenReturn(specification);
-        assertThat(mUwbServiceImpl.getSpecificationInfo("defaultChipId"))
+        assertThat(mUwbServiceImpl.getSpecificationInfo(DEFAULT_CHIP_ID))
                 .isEqualTo(specification);
 
         verify(mVendorService).getSpecificationInfo();
@@ -557,12 +558,12 @@ public class UwbServiceImplTest {
 
     @Test
     public void testGetDefaultChipId() {
-        assertEquals("defaultChipId", mUwbServiceImpl.getDefaultChipId());
+        assertEquals(DEFAULT_CHIP_ID, mUwbServiceImpl.getDefaultChipId());
     }
 
     @Test
     public void testGetChipIds() {
-        assertThat(List.of("defaultChipId"))
+        assertThat(List.of(DEFAULT_CHIP_ID))
                 .containsExactlyElementsIn(mUwbServiceImpl.getChipIds());
     }
 }

@@ -83,7 +83,7 @@ public class UwbInjector {
                 context, new Handler(mLooper),
                 new AtomicFile(new File(getDeviceProtectedDataDir(),
                         UwbSettingsStore.FILE_NAME)), this);
-        mNativeUwbManager = new NativeUwbManager();
+        mNativeUwbManager = new NativeUwbManager(this);
         mUwbCountryCode =
                 new UwbCountryCode(mContext, mNativeUwbManager, new Handler(mLooper), this);
         mUwbMetrics = new UwbMetrics(this);
@@ -148,6 +148,13 @@ public class UwbInjector {
      */
     public boolean isUciStackEnabled() {
         return SystemProperties.getBoolean("persist.uwb.enable_uci_stack", false);
+    }
+
+    /**
+     * @return Returns whether the UCI rust stack is enabled or not.
+     */
+    public boolean isUciRustStackEnabled() {
+        return SystemProperties.getBoolean("persist.uwb.enable_uci_rust_stack", false);
     }
 
     /**

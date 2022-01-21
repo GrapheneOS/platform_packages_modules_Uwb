@@ -35,8 +35,8 @@ import com.android.uwb.jni.NativeUwbManager;
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -47,7 +47,8 @@ import java.util.Objects;
  */
 public class UwbCountryCode {
     private static final String TAG = "UwbCountryCode";
-    private static final SimpleDateFormat FORMATTER = new SimpleDateFormat("MM-dd HH:mm:ss.SSS");
+    private static final DateTimeFormatter FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
     private final Context mContext;
     private final Handler mHandler;
@@ -116,7 +117,7 @@ public class UwbCountryCode {
             return false;
         }
         Log.d(TAG, "Set telephony country code to: " + countryCode);
-        mTelephonyCountryTimestamp = FORMATTER.format(new Date(System.currentTimeMillis()));
+        mTelephonyCountryTimestamp = LocalDateTime.now().format(FORMATTER);
         // Empty country code.
         if (TextUtils.isEmpty(countryCode)) {
             Log.d(TAG, "Received empty telephony country code, reset to default country code");
@@ -129,7 +130,7 @@ public class UwbCountryCode {
 
     private boolean setWifiCountryCode(String countryCode) {
         Log.d(TAG, "Set wifi country code to: " + countryCode);
-        mWifiCountryTimestamp = FORMATTER.format(new Date(System.currentTimeMillis()));
+        mWifiCountryTimestamp = LocalDateTime.now().format(FORMATTER);
         // Empty country code.
         if (TextUtils.isEmpty(countryCode)) {
             Log.d(TAG, "Received empty wifi country code, reset to default country code");
@@ -169,10 +170,15 @@ public class UwbCountryCode {
             return false;
         }
         Log.d(TAG, "setCountryCode to " + country);
-        mCountryCode = country;
-        mCountryCodeUpdatedTimestamp = FORMATTER.format(new Date(System.currentTimeMillis()));
         int status = mNativeUwbManager.setCountryCode(country.getBytes(StandardCharsets.UTF_8));
-        return (status != UwbUciConstants.STATUS_CODE_OK);
+        boolean success = (status == UwbUciConstants.STATUS_CODE_OK);
+        if (!success) {
+            Log.i(TAG, "Failed to set country code");
+            return false;
+        }
+        mCountryCode = country;
+        mCountryCodeUpdatedTimestamp = LocalDateTime.now().format(FORMATTER);
+        return true;
     }
 
     /**

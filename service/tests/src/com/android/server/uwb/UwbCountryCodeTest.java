@@ -29,6 +29,7 @@ import android.telephony.TelephonyManager;
 
 import androidx.test.filters.SmallTest;
 
+import com.android.uwb.data.UwbUciConstants;
 import com.android.uwb.jni.NativeUwbManager;
 
 import org.junit.Before;
@@ -73,6 +74,8 @@ public class UwbCountryCodeTest {
                 .thenReturn(mTelephonyManager);
         when(mContext.getSystemService(WifiManager.class))
                 .thenReturn(mWifiManager);
+        when(mNativeUwbManager.setCountryCode(any())).thenReturn(
+                (byte) UwbUciConstants.STATUS_CODE_OK);
         mUwbCountryCode = new UwbCountryCode(
                 mContext, mNativeUwbManager, new Handler(mTestLooper.getLooper()), mUwbInjector);
     }
