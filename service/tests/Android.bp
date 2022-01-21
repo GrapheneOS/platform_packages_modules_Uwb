@@ -64,7 +64,7 @@ android_test {
     ],
     compile_multilib: "both",
 
-    min_sdk_version: "current", // TODO: Move to 32 once SDK is finalized
+    min_sdk_version: "Tiramisu",
 
     test_suites: [
         "general-tests",
