@@ -52,6 +52,7 @@ import androidx.test.filters.SmallTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -327,6 +328,18 @@ public class UwbManagerTest {
         }
     }
 
+    @Test
+    public void testSendVendorUciWithoutUwbPrivileged() {
+        try {
+            mUwbManager.sendVendorUciMessage(10, 0, new byte[0]);
+            // should fail if the call was successful without UWB_PRIVILEGED permission.
+            fail();
+        } catch (SecurityException e) {
+            /* pass */
+            Log.i(TAG, "Failed with expected security exception: " + e);
+        }
+    }
+
     private class AdfProvisionStateCallback extends UwbManager.AdfProvisionStateCallback {
         private final CountDownLatch mCountDownLatch;
 
@@ -377,6 +390,64 @@ public class UwbManagerTest {
         } catch (SecurityException e) {
             /* pass */
             Log.i(TAG, "Failed with expected security exception: " + e);
+        }
+    }
+
+    private class UwbVendorUciCallback implements UwbManager.UwbVendorUciCallback {
+        @Override
+        public void onVendorUciMessage(int gid, int oid, byte[] payload) { }
+    }
+
+    @Test
+    public void testRegisterVendorUciCallbackWithoutUwbPrivileged() {
+        UwbManager.UwbVendorUciCallback cb = new UwbVendorUciCallback();
+        try {
+            mUwbManager.registerUwbVendorUciCallback(
+                    Executors.newSingleThreadExecutor(), cb);
+            // should fail if the call was successful without UWB_PRIVILEGED permission.
+            fail();
+        } catch (SecurityException e) {
+            /* pass */
+            Log.i(TAG, "Failed with expected security exception: " + e);
+        }
+    }
+
+    @Test
+    @Ignore("Not implemented yet")
+    public void testUnregisterVendorUciCallbackWithoutUwbPrivileged() {
+        UwbManager.UwbVendorUciCallback cb = new UwbVendorUciCallback();
+        try {
+            mUwbManager.registerUwbVendorUciCallback(
+                    Executors.newSingleThreadExecutor(), cb);
+        } catch (SecurityException e) {
+            /* pass */
+        }
+        try {
+            mUwbManager.unregisterUwbVendorUciCallback(cb);
+            // should fail if the call was successful without UWB_PRIVILEGED permission.
+            fail();
+        } catch (SecurityException e) {
+            /* pass */
+            Log.i(TAG, "Failed with expected security exception: " + e);
+        }
+    }
+
+    @Test
+    public void testInvalidCallbackUnregisterVendorUciCallback() {
+        UwbManager.UwbVendorUciCallback cb = new UwbVendorUciCallback();
+        try {
+            mUwbManager.registerUwbVendorUciCallback(
+                    Executors.newSingleThreadExecutor(), cb);
+        } catch (SecurityException e) {
+            /* registration failed */
+        }
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        try {
+            // Needs UWB_PRIVILEGED permission which is held by shell.
+            uiAutomation.adoptShellPermissionIdentity();
+            mUwbManager.unregisterUwbVendorUciCallback(cb);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
         }
     }
 
