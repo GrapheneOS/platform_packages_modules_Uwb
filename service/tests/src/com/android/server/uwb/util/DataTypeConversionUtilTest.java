@@ -18,6 +18,7 @@ package com.android.server.uwb.util;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import androidx.test.filters.SmallTest;
@@ -76,5 +77,56 @@ public class DataTypeConversionUtilTest {
         assertThat(DataTypeConversionUtil.hexStringToByteArray(hexString))
                 .isEqualTo(new byte[] { (byte) 0x01, (byte) 0x02, (byte) 0x03, (byte) 0x04,
                         (byte) 0x0A, (byte) 0x0B, (byte) 0x0C, (byte) 0x0D });
+    }
+
+    @Test
+    public void oneByteArbitraryByteArrayToI32() {
+        byte[] lengthBytes = {(byte) 178};
+        int actual = DataTypeConversionUtil.arbitraryByteArrayToI32(lengthBytes);
+
+        int expected = 178;
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void twoBytesArbitraryByteArrayToI32() {
+        byte[] lengthBytes = {(byte) 0x01, (byte) 0x1A};
+        int actual = DataTypeConversionUtil.arbitraryByteArrayToI32(lengthBytes);
+
+        int expected = 282;
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void threeBytesArbitraryByteArrayToI32() {
+        byte[] lengthBytes = {(byte) 0x01, (byte) 0x01, (byte) 0x1A};
+        int actual = DataTypeConversionUtil.arbitraryByteArrayToI32(lengthBytes);
+
+        int expected = 65818;
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void fourBytesArbitraryByteArrayToI32() {
+        byte[] lengthBytes = {(byte) 0x01, (byte) 0x01, (byte) 0x01, (byte) 0x1A};
+        int actual = DataTypeConversionUtil.arbitraryByteArrayToI32(lengthBytes);
+
+        int expected = 16843034;
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void fiveBytesArbitraryByteArrayToI32() {
+        assertThrows(
+                NumberFormatException.class,
+                () -> DataTypeConversionUtil.arbitraryByteArrayToI32(
+                        new byte[] {
+                                (byte) 0x01, (byte) 0x01, (byte) 0x01, (byte) 0x1A, (byte) 0x01 }));
+
+        assertThrows(
+                NumberFormatException.class,
+                () -> DataTypeConversionUtil.arbitraryByteArrayToI32(
+                        new byte[0]));
+
     }
 }
