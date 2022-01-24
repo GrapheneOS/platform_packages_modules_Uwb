@@ -3,7 +3,7 @@ use android_logger::FilterBuilder;
 use jni::JNIEnv;
 use jni::objects::{JObject, JValue};
 use jni::sys::{jboolean, jbyte, jbyteArray, jint, jintArray, jlong, jobject};
-use log::{error, info, warn, LevelFilter};
+use log::{error, info, LevelFilter};
 use uwb_uci_rust::event_manager::EventManager;
 use uwb_uci_rust::error::UwbErr;
 use uwb_uci_rust::uci::{Dispatcher, JNICommand, uci_hrcv::UciResponse};
@@ -225,7 +225,7 @@ fn do_initialize(env: JNIEnv, obj: JObject) -> Result<(), UwbErr> {
             }
         },
         Err(e) => {
-            warn!("GetDeviceInfo failed with: {:?}", e);
+            error!("GetDeviceInfo failed with: {:?}", e);
             return Err(UwbErr::failed());
         },
     }
@@ -238,7 +238,7 @@ fn do_initialize(env: JNIEnv, obj: JObject) -> Result<(), UwbErr> {
     };
     match uwa_disable(false) {
         Ok(()) => info!("UWA_disable(false) success."),
-        _ => warn!("UWA_disable(false) is failed."),
+        _ => error!("UWA_disable(false) is failed."),
     };
     Err(UwbErr::failed())
 }
@@ -341,7 +341,6 @@ fn set_app_configurations(env: JNIEnv, obj: JObject, session_id: u32, no_of_para
     let dispatcher = get_dispatcher(env, obj)?;
     match dispatcher.block_on_jni_command(JNICommand::UciSetAppConfig{session_id, no_of_params, app_config_param_len, app_configs})? {
         UciResponse::SessionSetAppConfigRsp(data) => {
-            info!("The response: {:?}!!!!!!", data);
             Ok(data)
         },
         _ => Err(UwbErr::failed()),
@@ -353,7 +352,6 @@ fn get_app_configurations(env: JNIEnv, obj: JObject, session_id: u32, no_of_para
     let dispatcher = get_dispatcher(env, obj)?;
     match dispatcher.block_on_jni_command(JNICommand::UciGetAppConfig{session_id, no_of_params, app_config_param_len, app_configs})? {
         UciResponse::SessionGetAppConfigRsp(data) => {
-            info!("The response: {:?}!!!!!!", data);
             Ok(data)
         },
         _ => Err(UwbErr::failed()),
@@ -396,7 +394,7 @@ fn get_dispatcher<'a>(env: JNIEnv, obj: JObject) -> Result<&'a mut Dispatcher, U
     let dispatcher_ptr_value = env.get_field(obj, "mDispatcherPointer", "J")?;
     let dispatcher_ptr = dispatcher_ptr_value.j()?;
     if dispatcher_ptr == 0i64 {
-        warn!("The dispatcher is not initialized.");
+        error!("The dispatcher is not initialized.");
         return Err(UwbErr::NoneDispatcher);
     }
     // Safety: dispatcher pointer must not be a null pointer and it must point to a valid dispatcher object.
