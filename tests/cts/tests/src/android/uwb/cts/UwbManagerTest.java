@@ -395,7 +395,9 @@ public class UwbManagerTest {
 
     private class UwbVendorUciCallback implements UwbManager.UwbVendorUciCallback {
         @Override
-        public void onVendorUciMessage(int gid, int oid, byte[] payload) { }
+        public void onVendorUciResponse(int gid, int oid, byte[] payload) { }
+        @Override
+        public void onVendorUciNotification(int gid, int oid, byte[] payload) { }
     }
 
     @Test
