@@ -93,6 +93,19 @@ public class DataTypeConversionUtil {
     }
 
     /**
+     * Convert the byte array with arbitrary size less than 5 to int using big endian.
+     */
+    public static int arbitraryByteArrayToI32(byte[] bytes) {
+        if (bytes.length > 4 || bytes.length < 1) {
+            throw new NumberFormatException("Expected length less than 4 but was " + bytes.length);
+        }
+        ByteBuffer byteBuffer = ByteBuffer.allocate(Integer.BYTES);
+        byteBuffer.position(Integer.BYTES - bytes.length);
+        byteBuffer.put(bytes).rewind();
+        return byteBuffer.getInt();
+    }
+
+    /**
      * Convert the int to byte array using big endian.
      */
     public static byte[] i32ToByteArray(int n) {

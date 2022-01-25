@@ -16,7 +16,6 @@
 package com.android.server.uwb.secure.iso7816;
 
 import androidx.annotation.Nullable;
-import androidx.annotation.VisibleForTesting;
 
 import com.android.server.uwb.secure.iso7816.TlvDatum.Tag;
 import com.android.server.uwb.util.DataTypeConversionUtil;
@@ -148,7 +147,7 @@ public class TlvParser {
                 break;
             default: // fall out
         }
-        int length = bytesToValue(lengthBytes);
+        int length = DataTypeConversionUtil.arbitraryByteArrayToI32(lengthBytes);
 
         byte[] value = byteArrayWrapper.read(length);
         if (isConstructedTag(tag[0])) {
@@ -156,15 +155,6 @@ public class TlvParser {
         } else {
             return new TlvDatum(new Tag(tag), value);
         }
-    }
-
-    @VisibleForTesting
-    static int bytesToValue(byte[] lengthBytes) {
-        int result = 0;
-        for (byte lengthByte : lengthBytes) {
-            result = (result << 8) | DataTypeConversionUtil.unsignedByteToInt(lengthByte);
-        }
-        return result;
     }
 
     private static boolean isConstructedTag(byte firstTagByte) {

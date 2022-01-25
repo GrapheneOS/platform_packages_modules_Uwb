@@ -18,14 +18,12 @@ package com.android.server.uwb.secure.iso7816;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.android.server.uwb.secure.iso7816.TlvDatum.Tag;
 import com.android.server.uwb.util.DataTypeConversionUtil;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import org.junit.Test;
 
@@ -43,22 +41,6 @@ public class TlvParserTest {
                 ResponseApdu.fromResponse(
                         DataTypeConversionUtil.hexStringToByteArray(
                                 "6F1AA50F870101500A4D6173746572436172648407A00000000410109000"));
-        TlvDatum subSubTlvDatum1 =
-                new TlvDatum(
-                        new Tag((byte) 0x50),
-                        DataTypeConversionUtil.hexStringToByteArray("4D617374657243617264"));
-        TlvDatum subSubTlvDatum2 =
-                new TlvDatum(new Tag((byte) 0x87),
-                        DataTypeConversionUtil.hexStringToByteArray("01"));
-        TlvDatum subTlvDatum1 =
-                new TlvDatum(
-                        new Tag((byte) 0x84),
-                        DataTypeConversionUtil.hexStringToByteArray("A0000000041010"));
-        TlvDatum subTlvDatum2 =
-                new TlvDatum(
-                        new Tag((byte) 0xA5),
-                        ImmutableMap.of(subSubTlvDatum1.tag, Arrays.asList(subSubTlvDatum1),
-                                subSubTlvDatum2.tag, Arrays.asList(subSubTlvDatum2)));
         TlvDatum actual = TlvParser.parseTlvs(responseApdu).get(new Tag((byte) 0x6F)).get(0);
 
         TlvDatum expected = new TlvDatum(new Tag((byte) 0x6F),
@@ -92,42 +74,6 @@ public class TlvParserTest {
         List<TlvDatum> expected = Arrays.asList(subTlvDatum1, subTlvDatum2, subTlvDatum3);
 
         assertTlvDatumListEquals(expected, actual);
-    }
-
-    @Test
-    public void testBytesToValue1Byte() {
-        byte[] lengthBytes = {(byte) 178};
-        int actual = TlvParser.bytesToValue(lengthBytes);
-
-        int expected = 178;
-        assertEquals(expected, actual);
-    }
-
-    @Test
-    public void testBytesToValue2Bytes() {
-        byte[] lengthBytes = {(byte) 0x01, (byte) 0x1A};
-        int actual = TlvParser.bytesToValue(lengthBytes);
-
-        int expected = 282;
-        assertEquals(expected, actual);
-    }
-
-    @Test
-    public void testBytesToValue3Bytes() {
-        byte[] lengthBytes = {(byte) 0x01, (byte) 0x01, (byte) 0x1A};
-        int actual = TlvParser.bytesToValue(lengthBytes);
-
-        int expected = 65818;
-        assertEquals(expected, actual);
-    }
-
-    @Test
-    public void testBytesToValue4Bytes() {
-        byte[] lengthBytes = {(byte) 0x01, (byte) 0x01, (byte) 0x01, (byte) 0x1A};
-        int actual = TlvParser.bytesToValue(lengthBytes);
-
-        int expected = 16843034;
-        assertEquals(expected, actual);
     }
 
     @Test
