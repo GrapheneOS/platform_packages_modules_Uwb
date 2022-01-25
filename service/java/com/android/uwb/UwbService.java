@@ -163,6 +163,15 @@ public class UwbService implements INativeUwbManager.DeviceNotification,
     }
 
     @Override
+    public void onVendorUciResponseReceived(int gid, int oid, byte[] payload)
+            throws RemoteException {
+        Log.i(TAG, "onVendorUciResponseReceived");
+        if (mCallBack != null) {
+            mCallBack.onVendorResponseReceived(gid, oid, payload);
+        }
+    }
+
+    @Override
     public void onVendorUciNotificationReceived(int gid, int oid, byte[] payload)
             throws RemoteException {
         Log.i(TAG, "onVendorUciNotificationReceived");

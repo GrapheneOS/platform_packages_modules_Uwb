@@ -72,6 +72,27 @@ public final class UwbVendorUciCallbackListener extends IUwbVendorUciCallback.St
             }
         }
     }
+
+    @Override
+    public void onVendorResponseReceived(int gid, int oid, @NonNull byte[] payload)
+            throws RemoteException {
+        synchronized (this) {
+            final long identity = Binder.clearCallingIdentity();
+            try {
+                for (UwbVendorUciCallback callback : mCallbackMap.keySet()) {
+                    // sendCallback(cb,data);
+                    Executor executor = mCallbackMap.get(callback);
+                    //final long identity = Binder.clearCallingIdentity();
+                    executor.execute(() -> callback.onVendorUciResponse(gid, oid, payload));
+                }
+            } catch (RuntimeException ex) {
+                throw ex;
+            } finally {
+                Binder.restoreCallingIdentity(identity);
+            }
+        }
+    }
+
     @Override
     public void onVendorNotificationReceived(int gid, int oid, @NonNull byte[] payload)
             throws RemoteException {
@@ -82,7 +103,7 @@ public final class UwbVendorUciCallbackListener extends IUwbVendorUciCallback.St
                     // sendCallback(cb,data);
                     Executor executor = mCallbackMap.get(callback);
                     //final long identity = Binder.clearCallingIdentity();
-                    executor.execute(() -> callback.onVendorUciMessage(gid, oid, payload));
+                    executor.execute(() -> callback.onVendorUciNotification(gid, oid, payload));
                 }
             } catch (RuntimeException ex) {
                 throw ex;

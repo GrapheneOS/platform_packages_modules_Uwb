@@ -222,7 +222,8 @@ package android.uwb {
   }
 
   public static interface UwbManager.UwbVendorUciCallback {
-    method public void onVendorUciMessage(@IntRange(from=9, to=15) int, int, @NonNull byte[]);
+    method public void onVendorUciNotification(@IntRange(from=9, to=15) int, int, @NonNull byte[]);
+    method public void onVendorUciResponse(@IntRange(from=9, to=15) int, int, @NonNull byte[]);
   }
 
 }
