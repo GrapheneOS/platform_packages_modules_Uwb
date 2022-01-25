@@ -144,17 +144,17 @@ public class UwbInjector {
     }
 
     /**
-     * @return Returns whether the UCI stack is enabled or not.
+     * @return Returns whether the UCI stack is enabled or not (Disabled by default).
      */
     public boolean isUciStackEnabled() {
         return SystemProperties.getBoolean("persist.uwb.enable_uci_stack", false);
     }
 
     /**
-     * @return Returns whether the UCI rust stack is enabled or not.
+     * @return Returns whether the UCI rust stack is enabled or not (Enabled by default).
      */
     public boolean isUciRustStackEnabled() {
-        return SystemProperties.getBoolean("persist.uwb.enable_uci_rust_stack", false);
+        return SystemProperties.getBoolean("persist.uwb.enable_uci_rust_stack", true);
     }
 
     /**
