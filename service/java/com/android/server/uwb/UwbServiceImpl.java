@@ -279,6 +279,10 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
      */
     public void initialize() {
         mUwbSettingsStore.initialize();
+        // Initialize the UWB stack state.
+        try {
+            getVendorUwbAdapter();
+        } catch (RemoteException e) { }
         if (mUwbInjector.isUciStackEnabled()) mUwbInjector.getUwbCountryCode().initialize();
     }
 
