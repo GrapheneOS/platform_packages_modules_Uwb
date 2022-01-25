@@ -289,14 +289,25 @@ public final class UwbManager {
      */
     public interface UwbVendorUciCallback {
         /**
-         * Invoked when a vendor specific UCI notification and response is received.
+         * Invoked when a vendor specific UCI response is received.
          *
          * @param gid Group ID of the command. This needs to be one of the vendor reserved GIDs from
          *            the UCI specification.
          * @param oid Opcode ID of the command. This is left to the OEM / vendor to decide.
          * @param payload containing vendor Uci message payload.
          */
-        void onVendorUciMessage(
+        void onVendorUciResponse(
+                @IntRange(from = 9, to = 15) int gid, int oid, @NonNull byte[] payload);
+
+        /**
+         * Invoked when a vendor specific UCI notification is received.
+         *
+         * @param gid Group ID of the command. This needs to be one of the vendor reserved GIDs from
+         *            the UCI specification.
+         * @param oid Opcode ID of the command. This is left to the OEM / vendor to decide.
+         * @param payload containing vendor Uci message payload.
+         */
+        void onVendorUciNotification(
                 @IntRange(from = 9, to = 15) int gid, int oid, @NonNull byte[] payload);
     }
 
