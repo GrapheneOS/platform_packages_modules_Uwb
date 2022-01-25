@@ -7,7 +7,7 @@ use log::{error, info, LevelFilter};
 use uwb_uci_rust::event_manager::EventManager;
 use uwb_uci_rust::error::UwbErr;
 use uwb_uci_rust::uci::{Dispatcher, JNICommand, uci_hrcv::UciResponse};
-use uwb_uci_packets::{StatusCode, SessionGetAppConfigRspBuilder, SessionSetAppConfigRspBuilder};
+use uwb_uci_packets::{StatusCode, SessionGetAppConfigRspPacket, SessionSetAppConfigRspPacket};
 
 const STATUS_OK: i8 = 0;
 const STATUS_FAILED: i8 = 2;
@@ -139,13 +139,13 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeSetAppCon
     info!("Java_com_android_uwb_jni_NativeUwbManager_nativeSetAppConfigurations: enter");
     match set_app_configurations(env, obj, session_id as u32, no_of_params as u32, app_config_param_len as u32, app_config_params) {
         Ok(data) => {
-            let mut buf = vec![0u8; data.cfg_status.len() + 2];
-            buf[0] = data.status as u8;
-            buf[1] = data.cfg_status.len() as u8;
-            if !data.cfg_status.is_empty() {
-                for idx in 0..data.cfg_status.len() {
-                    buf[idx * 2 + 2] = data.cfg_status[idx].cfg_id as u8;
-                    buf[idx * 2 + 3] = data.cfg_status[idx].status as u8;
+            let mut buf = vec![0u8; data.get_cfg_status().len() + 2];
+            buf[0] = data.get_status() as u8;
+            buf[1] = data.get_cfg_status().len() as u8;
+            if !data.get_cfg_status().is_empty() {
+                for idx in 0..data.get_cfg_status().len() {
+                    buf[idx * 2 + 2] = data.get_cfg_status()[idx].cfg_id as u8;
+                    buf[idx * 2 + 3] = data.get_cfg_status()[idx].status as u8;
                 }
             }
             env.byte_array_from_slice(&buf).unwrap()
@@ -163,8 +163,8 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetAppCon
     info!("Java_com_android_uwb_jni_NativeUwbManager_nativeGetAppConfigurations: enter");
     match get_app_configurations(env, obj, session_id as u32, no_of_params as u32, app_config_param_len as u32, app_config_params) {
         Ok(data) => {
-            let mut buf: Vec<u8> = vec![data.status as u8, data.tlvs.len() as u8];
-            for tlv in data.tlvs {
+            let mut buf: Vec<u8> = vec![data.get_status() as u8, data.get_tlvs().len() as u8];
+            for tlv in data.get_tlvs() {
                 buf.push(tlv.cfg_id as u8);
                 buf.push(tlv.v.len() as u8);
                 buf.extend(&tlv.v);
@@ -259,18 +259,18 @@ fn get_specification_info<'a>(env: JNIEnv, obj: JObject) -> Result<[JValue<'a>; 
     }
     if let Some(data) = &dispatcher.device_info {
         para = [
-            JValue::Int((data.uci_version & 0xFF).into()),
-            JValue::Int(((data.uci_version >> 8) & 0xF).into()),
-            JValue::Int(((data.uci_version >> 12) & 0xF).into()),
-            JValue::Int((data.mac_version & 0xFF).into()),
-            JValue::Int(((data.mac_version >> 8) & 0xF).into()),
-            JValue::Int(((data.mac_version >> 12) & 0xF).into()),
-            JValue::Int((data.phy_version & 0xFF).into()),
-            JValue::Int(((data.phy_version >> 8) & 0xF).into()),
-            JValue::Int(((data.phy_version >> 12) & 0xF).into()),
-            JValue::Int((data.uci_test_version & 0xFF).into()),
-            JValue::Int(((data.uci_test_version >> 8) & 0xF).into()),
-            JValue::Int(((data.uci_test_version >> 12) & 0xF).into()),
+            JValue::Int((data.get_uci_version() & 0xFF).into()),
+            JValue::Int(((data.get_uci_version() >> 8) & 0xF).into()),
+            JValue::Int(((data.get_uci_version() >> 12) & 0xF).into()),
+            JValue::Int((data.get_mac_version() & 0xFF).into()),
+            JValue::Int(((data.get_mac_version() >> 8) & 0xF).into()),
+            JValue::Int(((data.get_mac_version() >> 12) & 0xF).into()),
+            JValue::Int((data.get_phy_version() & 0xFF).into()),
+            JValue::Int(((data.get_phy_version() >> 8) & 0xF).into()),
+            JValue::Int(((data.get_phy_version() >> 12) & 0xF).into()),
+            JValue::Int((data.get_uci_test_version() & 0xFF).into()),
+            JValue::Int(((data.get_uci_test_version() >> 8) & 0xF).into()),
+            JValue::Int(((data.get_uci_test_version() >> 12) & 0xF).into()),
             JValue::Int(1), // fira_major_version
             JValue::Int(0), // fira_minor_version
             JValue::Int(1), // ccc_major_version
@@ -286,7 +286,7 @@ fn session_init(env: JNIEnv, obj: JObject, session_id: u32, session_type: u8) ->
         UciResponse::SessionInitRsp(data) => data,
         _ => return Err(UwbErr::failed()),
     };
-    status_code_to_res(res.status)
+    status_code_to_res(res.get_status())
 }
 
 fn session_deinit(env: JNIEnv, obj: JObject, session_id: u32) -> Result<(), UwbErr> {
@@ -295,14 +295,14 @@ fn session_deinit(env: JNIEnv, obj: JObject, session_id: u32) -> Result<(), UwbE
         UciResponse::SessionDeinitRsp(data) => data,
         _ => return Err(UwbErr::failed()),
     };
-    status_code_to_res(res.status)
+    status_code_to_res(res.get_status())
 }
 
 fn get_session_count(env: JNIEnv, obj: JObject) -> Result<jbyte, UwbErr> {
     let dispatcher = get_dispatcher(env, obj)?;
     match dispatcher.block_on_jni_command(JNICommand::UciSessionGetCount)? {
         UciResponse::SessionGetCountRsp(data) => {
-            Ok(data.session_count as jbyte)
+            Ok(data.get_session_count() as jbyte)
         },
         _ => Err(UwbErr::failed()),
     }
@@ -314,7 +314,7 @@ fn ranging_start(env: JNIEnv, obj: JObject, session_id: u32) -> Result<(), UwbEr
         UciResponse::RangeStartRsp(data) => data,
         _ => return Err(UwbErr::failed()),
     };
-    status_code_to_res(res.status)
+    status_code_to_res(res.get_status())
 }
 
 fn ranging_stop(env: JNIEnv, obj: JObject, session_id: u32) -> Result<(), UwbErr> {
@@ -323,20 +323,20 @@ fn ranging_stop(env: JNIEnv, obj: JObject, session_id: u32) -> Result<(), UwbErr
         UciResponse::RangeStopRsp(data) => data,
         _ => return Err(UwbErr::failed()),
     };
-    status_code_to_res(res.status)
+    status_code_to_res(res.get_status())
 }
 
 fn get_session_state(env: JNIEnv, obj: JObject, session_id: u32) -> Result<jbyte, UwbErr> {
     let dispatcher = get_dispatcher(env, obj)?;
     match dispatcher.block_on_jni_command(JNICommand::UciGetSessionState(session_id))? {
         UciResponse::SessionGetStateRsp(data) => {
-            Ok(data.session_state as jbyte)
+            Ok(data.get_session_state() as jbyte)
         },
         _ => Err(UwbErr::failed()),
     }
 }
 
-fn set_app_configurations(env: JNIEnv, obj: JObject, session_id: u32, no_of_params: u32, app_config_param_len: u32, app_config_params: jintArray) -> Result<SessionSetAppConfigRspBuilder, UwbErr> {
+fn set_app_configurations(env: JNIEnv, obj: JObject, session_id: u32, no_of_params: u32, app_config_param_len: u32, app_config_params: jintArray) -> Result<SessionSetAppConfigRspPacket, UwbErr> {
     let app_configs = env.convert_byte_array(app_config_params)?;
     let dispatcher = get_dispatcher(env, obj)?;
     match dispatcher.block_on_jni_command(JNICommand::UciSetAppConfig{session_id, no_of_params, app_config_param_len, app_configs})? {
@@ -347,7 +347,7 @@ fn set_app_configurations(env: JNIEnv, obj: JObject, session_id: u32, no_of_para
     }
 }
 
-fn get_app_configurations(env: JNIEnv, obj: JObject, session_id: u32, no_of_params: u32, app_config_param_len: u32, app_config_params: jintArray) -> Result<SessionGetAppConfigRspBuilder, UwbErr> {
+fn get_app_configurations(env: JNIEnv, obj: JObject, session_id: u32, no_of_params: u32, app_config_param_len: u32, app_config_params: jintArray) -> Result<SessionGetAppConfigRspPacket, UwbErr> {
     let app_configs = env.convert_byte_array(app_config_params)?;
     let dispatcher = get_dispatcher(env, obj)?;
     match dispatcher.block_on_jni_command(JNICommand::UciGetAppConfig{session_id, no_of_params, app_config_param_len, app_configs})? {
@@ -367,7 +367,7 @@ fn multicast_list_update(env: JNIEnv, obj: JObject, session_id: u32, action: u8,
         UciResponse::SessionUpdateControllerMulticastListRsp(data) => data,
         _ => return Err(UwbErr::failed()),
     };
-    status_code_to_res(res.status)
+    status_code_to_res(res.get_status())
 }
 
 fn set_country_code(env: JNIEnv, obj: JObject, country_code: jbyteArray) -> Result<(), UwbErr> {
@@ -380,7 +380,7 @@ fn set_country_code(env: JNIEnv, obj: JObject, country_code: jbyteArray) -> Resu
         UciResponse::AndroidSetCountryCodeRsp(data) => data,
         _ => return Err(UwbErr::failed()),
     };
-    status_code_to_res(res.status)
+    status_code_to_res(res.get_status())
 }
 
 fn status_code_to_res(status: StatusCode) -> Result<(), UwbErr> {
