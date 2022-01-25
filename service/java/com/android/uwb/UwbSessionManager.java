@@ -450,6 +450,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
 
         private void openRanging(UwbSession uwbSession) {
+            // TODO(b/211445008): Consolidate to a single uwb thread.
             ExecutorService executor = Executors.newSingleThreadExecutor();
             FutureTask<Integer> initSessionTask = new FutureTask<>(
                     () -> {
@@ -518,6 +519,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
 
         private void startRanging(UwbSession uwbSession) {
+            // TODO(b/211445008): Consolidate to a single uwb thread.
             ExecutorService executor = Executors.newSingleThreadExecutor();
             FutureTask<Integer> startRangingTask = new FutureTask<>(
                     () -> {
@@ -589,6 +591,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
 
         private void stopRanging(UwbSession uwbSession) {
+            // TODO(b/211445008): Consolidate to a single uwb thread.
             ExecutorService executor = Executors.newSingleThreadExecutor();
             FutureTask<Integer> stopRangingTask = new FutureTask<>(
                     () -> {
@@ -632,6 +635,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         private void reconfigure(SessionHandle sessionHandle, Params param) {
             FiraRangingReconfigureParams rangingReconfigureParams =
                     (FiraRangingReconfigureParams) param;
+            // TODO(b/211445008): Consolidate to a single uwb thread.
             UwbSession uwbSession = getUwbSession(getSessionId(sessionHandle));
             ExecutorService executor = Executors.newSingleThreadExecutor();
             FutureTask<Integer> cmdTask = new FutureTask<>(
@@ -723,6 +727,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
 
         private void close(UwbSession uwbSession) {
+            // TODO(b/211445008): Consolidate to a single uwb thread.
             ExecutorService executor = Executors.newSingleThreadExecutor();
             FutureTask<Integer> closeTask = new FutureTask<>(
                     (Callable<Integer>) () -> {

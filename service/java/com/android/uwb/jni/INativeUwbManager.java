@@ -75,11 +75,6 @@ public interface INativeUwbManager {
 
     interface VendorNotification {
         /**
-         * Interface for receiving Vendor UCI responses.
-         */
-        void onVendorUciResponseReceived(int gid, int oid, byte[] payload)
-                throws RemoteException;
-        /**
          * Interface for receiving Vendor UCI notifications.
          */
         void onVendorUciNotificationReceived(int gid, int oid, byte[] payload)

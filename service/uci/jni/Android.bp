@@ -67,6 +67,7 @@ rust_ffi_shared {
         "liblog_rust",
         "libbinder_rs",
         "liblogger",
+        "libnum_traits",
         "libuwb_uci_packets",
         "libuwb_uci_rust",
     ],

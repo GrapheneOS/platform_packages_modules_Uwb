@@ -22,6 +22,7 @@ import com.android.server.uwb.UwbInjector;
 import com.android.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.uwb.data.UwbRangingData;
 import com.android.uwb.data.UwbUciConstants;
+import com.android.uwb.data.UwbVendorUciResponse;
 import com.android.uwb.info.UwbSpecificationInfo;
 
 import java.util.List;
@@ -296,9 +297,11 @@ public class NativeUwbManager {
         }
     }
 
-    public byte sendRawUci(int gid, int oid, byte[] payload) {
-        // TODO(b/210933436): Implement native stack.
-        return UwbUciConstants.STATUS_CODE_OK;
+    @NonNull
+    public UwbVendorUciResponse sendRawVendorCmd(int gid, int oid, byte[] payload) {
+        synchronized (mSessionFnLock) {
+            return nativeSendRawVendorCmd(gid, oid, payload);
+        }
     }
 
     /**
@@ -370,4 +373,6 @@ public class NativeUwbManager {
             byte noOfControlee, byte[] address, int[]subSessionId);
 
     private native byte nativeSetCountryCode(byte[] countryCode);
+
+    private native UwbVendorUciResponse nativeSendRawVendorCmd(int gid, int oid, byte[] payload);
 }
