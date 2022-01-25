@@ -37,4 +37,12 @@ public class ArrayUtils {
         }
         return -1;
     }
+
+    /**
+     * Checks if given array is null or has zero elements.
+     */
+    public static boolean isEmpty(@Nullable int[] array) {
+        return array == null || array.length == 0;
+    }
+
 }
