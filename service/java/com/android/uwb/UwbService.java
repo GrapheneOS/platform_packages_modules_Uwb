@@ -53,6 +53,10 @@ import com.google.uwb.support.fira.FiraParams;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Implementation of {@link android.uwb.IUwbAdapter2} binder service.
+ * TODO(b/196225233): Merge with {@link com.android.uwb.server.UwbServiceImpl}.
+ */
 public class UwbService implements INativeUwbManager.DeviceNotification,
         INativeUwbManager.VendorNotification {
     private static final String TAG = "UwbService";
@@ -117,11 +121,13 @@ public class UwbService implements INativeUwbManager.DeviceNotification,
         mUwbCountryCode = uwbCountryCode;
         mSessionManager = new UwbSessionManager(mNativeUwbManager, mUwbMetrics, serviceLooper);
 
-        initIntentFilter();
+        // TODO(b/196225233):  Let UwbServiceImpl handle APM mode.
+        // initIntentFilter();
         updateState(AdapterStateCallback.STATE_DISABLED, StateChangeReason.SYSTEM_BOOT);
 
         mEnableDisableTask = new EnableDisableTask(serviceLooper);
-        mEnableDisableTask.execute(TASK_ENABLE);
+        // TODO(b/196225233): Let UwbServiceImpl initialize the stack based on toggle state.
+        // mEnableDisableTask.execute(TASK_ENABLE);
     }
 
     // TODO(b/196225233): Remove this when qorvo stack is integrated.
@@ -361,9 +367,9 @@ public class UwbService implements INativeUwbManager.DeviceNotification,
             int task = enabled ? TASK_ENABLE : TASK_DISABLE;
 
             if (enabled && isUwbEnabled()) {
-                throw new RemoteException("Uwb is already enabled");
+                Log.w(TAG, "Uwb is already enabled");
             } else if (!enabled && !isUwbEnabled()) {
-                throw new RemoteException("Uwb is already disabled");
+                Log.w(TAG, "Uwb is already disabled");
             }
 
             mEnableDisableTask.execute(task);

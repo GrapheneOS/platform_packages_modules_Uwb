@@ -53,6 +53,7 @@ import java.util.Map;
 
 /**
  * Implementation of {@link android.uwb.IUwbAdapter2} binder service.
+ * TODO(b/196225233): Merge with {@link com.android.uwb.UwbService}.
  */
 public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRecipient{
     private static final String TAG = "UwbServiceImpl";
@@ -279,7 +280,15 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
      */
     public void initialize() {
         mUwbSettingsStore.initialize();
-        if (mUwbInjector.isUciStackEnabled()) mUwbInjector.getUwbCountryCode().initialize();
+        if (mUwbInjector.isUciStackEnabled()) {
+            // Initialize the UCI stack at bootup.
+            try {
+                getVendorUwbAdapter();
+            } catch (RemoteException e) {
+                Log.e(TAG, "Unable to get vendor adapter.", e);
+            }
+            mUwbInjector.getUwbCountryCode().initialize();
+        }
     }
 
     @Override
