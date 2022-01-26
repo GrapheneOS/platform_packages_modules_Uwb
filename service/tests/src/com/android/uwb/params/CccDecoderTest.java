@@ -40,7 +40,7 @@ public class CccDecoderTest {
     private static final byte[] TEST_TLV_DATA =
             UwbUtil.getByteArray("0a0400010002"
                             + "a01001000200000000000000000000000000"
-                            + "2b0400010002"
+                            + "a1080001000200010002"
                             + "090400010002"
                             + "140101");
     private static final int TEST_TLV_NUM_PARAMS = 5;
@@ -58,7 +58,7 @@ public class CccDecoderTest {
 
         assertThat(cccRangingStartedParams.getStartingStsIndex()).isEqualTo(0x00010002);
         assertThat(cccRangingStartedParams.getHopModeKey()).isEqualTo(0x00020001);
-        assertThat(cccRangingStartedParams.getUwbTime0()).isEqualTo(0x00010002);
+        assertThat(cccRangingStartedParams.getUwbTime0()).isEqualTo(0x0001000200010002L);
         assertThat(cccRangingStartedParams.getRanMultiplier()).isEqualTo(0x00010002 / 96);
     }
 }

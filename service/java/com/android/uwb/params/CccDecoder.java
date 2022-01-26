@@ -44,7 +44,7 @@ public class CccDecoder extends TlvDecoder {
                 .setStartingStsIndex(tlvs.getInt(ConfigParam.STS_INDEX))
                 .setHopModeKey(hopModeKeyInt)
                 //  UWB_Time0 0 - 0xFFFFFFFFFFFFFFFF  UWB_INITIATION_TIME
-                .setUwbTime0(tlvs.getInt(ConfigParam.UWB_INITIATION_TIME))
+                .setUwbTime0(tlvs.getLong(ConfigParam.UWB_TIME0))
                 // RANGING_INTERVAL = RAN_Multiplier * 96
                 .setRanMultiplier(tlvs.getInt(ConfigParam.RANGING_INTERVAL) / 96)
                 .setSyncCodeIndex(tlvs.getByte(ConfigParam.PREAMBLE_CODE_INDEX))

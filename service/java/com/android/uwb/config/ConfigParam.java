@@ -16,10 +16,12 @@
 
 package com.android.uwb.config;
 
+import static android.hardware.uwb.fira_android.UwbVendorSessionSetAppConfigCmdParams.CCC_HOP_MODE_KEY;
 import static android.hardware.uwb.fira_android.UwbVendorSessionSetAppConfigCmdParams.CCC_PULSESHAPE_COMBO;
 import static android.hardware.uwb.fira_android.UwbVendorSessionSetAppConfigCmdParams.CCC_RANGING_PROTOCOL_VER;
 import static android.hardware.uwb.fira_android.UwbVendorSessionSetAppConfigCmdParams.CCC_URSK_TTL;
 import static android.hardware.uwb.fira_android.UwbVendorSessionSetAppConfigCmdParams.CCC_UWB_CONFIG_ID;
+import static android.hardware.uwb.fira_android.UwbVendorSessionSetAppConfigCmdParams.CCC_UWB_TIME0;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -87,8 +89,9 @@ public class ConfigParam {
     public static final int PULSESHAPE_COMBO = CCC_PULSESHAPE_COMBO;
     public static final int URSK_TTL = CCC_URSK_TTL;
     //StartedParams
-    public static final int HOP_MODE_KEY = 0xA0;
+    public static final int HOP_MODE_KEY = CCC_HOP_MODE_KEY;
     public static final int HOP_MODE_KEY_BYTE = 16;
+    public static final int UWB_TIME0 = CCC_UWB_TIME0;
 
     public static final int RANGING_PROTOCOL_VER_BYTE_COUNT = 2;
 
