@@ -65,6 +65,7 @@ java_library {
         "android.hardware.uwb.fira_android-V1-java",
         "com.uwb.support.ccc",
         "com.uwb.support.fira",
+        "com.uwb.support.multichip",
         "modules-utils-shell-command-handler",
         "modules-utils-handlerexecutor",
         "guava",
