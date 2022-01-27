@@ -51,6 +51,8 @@ import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
+import com.google.uwb.support.multichip.ChipInfoParams;
+
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -142,14 +144,15 @@ public class UwbManagerTest {
     }
 
     @Test
-    public void testGetChipIds() {
+    public void testGetChipInfos() {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         try {
             // Needs UWB_PRIVILEGED permission which is held by shell.
             uiAutomation.adoptShellPermissionIdentity();
-            List<String> chipIds = mUwbManager.getChipIds();
-            assertThat(chipIds).isNotEmpty();
-            assertThat(chipIds).contains(mDefaultChipId);
+            List<PersistableBundle> chipInfos = mUwbManager.getChipInfos();
+            assertThat(chipInfos).hasSize(1);
+            ChipInfoParams chipInfoParams = ChipInfoParams.fromBundle(chipInfos.get(0));
+            assertThat(chipInfoParams.getChipId()).isEqualTo(mDefaultChipId);
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
@@ -317,9 +320,9 @@ public class UwbManagerTest {
     }
 
     @Test
-    public void testChipIdsWithoutUwbPrivileged() {
+    public void testGetChipInfosWithoutUwbPrivileged() {
         try {
-            mUwbManager.getChipIds();
+            mUwbManager.getChipInfos();
             // should fail if the call was successful without UWB_PRIVILEGED permission.
             fail();
         } catch (SecurityException e) {
