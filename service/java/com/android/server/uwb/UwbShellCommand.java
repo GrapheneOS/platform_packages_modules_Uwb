@@ -54,6 +54,8 @@ import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
 import android.uwb.UwbManager;
 
+import androidx.annotation.Nullable;
+
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.modules.utils.BasicShellCommandHandler;
 import com.android.server.uwb.util.ArrayUtils;
@@ -106,6 +108,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             "get-all-ranging-session-reports",
             "stop-ranging-session",
             "stop-all-ranging-sessions",
+            "get-specification-info"
     };
 
     @VisibleForTesting
@@ -154,6 +157,16 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         mUwbCountryCode = uwbInjector.getUwbCountryCode();
     }
 
+    private static String bundleToString(@Nullable PersistableBundle bundle) {
+        if (bundle != null) {
+            // Need to defuse any local bundles before printing. Use isEmpty() triggers unparcel.
+            bundle.isEmpty();
+            return bundle.toString();
+        } else {
+            return "null";
+        }
+    }
+
     private static final class UwbRangingCallbacks extends IUwbRangingCallbacks2.Stub {
         private final SessionInfo mSessionInfo;
         private final PrintWriter mPw;
@@ -183,19 +196,19 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         public void onRangingOpenFailed(SessionHandle sessionHandle, int reason,
                 PersistableBundle params) {
             mPw.println("Ranging session open failed with reason: " + reason + " and params: "
-                    + params);
+                    + bundleToString(params));
             mRangingOpenedFuture.complete(false);
         }
 
         public void onRangingStarted(SessionHandle sessionHandle, PersistableBundle params) {
-            mPw.println("Ranging session started with params: " + params);
+            mPw.println("Ranging session started with params: " + bundleToString(params));
             mRangingStartedFuture.complete(true);
         }
 
         public void onRangingStartFailed(SessionHandle sessionHandle, int reason,
                 PersistableBundle params) {
             mPw.println("Ranging session start failed with reason: " + reason + " and params: "
-                    + params);
+                    + bundleToString(params));
             mRangingStartedFuture.complete(false);
         }
 
@@ -207,21 +220,21 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         public void onRangingStopped(SessionHandle sessionHandle, int reason,
                 PersistableBundle params) {
             mPw.println("Ranging session stopped with reason: " + reason + " and params: "
-                    + params);
+                    + bundleToString(params));
             mRangingStoppedFuture.complete(true);
         }
 
         public void onRangingStopFailed(SessionHandle sessionHandle, int reason,
                 PersistableBundle params) {
             mPw.println("Ranging session stop failed with reason: " + reason + " and params: "
-                    + params);
+                    + bundleToString(params));
             mRangingStoppedFuture.complete(false);
         }
 
         public void onRangingClosed(SessionHandle sessionHandle, int reason,
                 PersistableBundle params) {
             mPw.println("Ranging session closed with reason: " + reason + " and params: "
-                    + params);
+                    + bundleToString(params));
             sSessionIdToInfo.remove(mSessionInfo.sessionId);
             mRangingClosedFuture.complete(true);
         }
@@ -486,7 +499,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             pw.println("Failed to open ranging session. Aborting!");
             return;
         }
-        pw.println("Ranging session opened with params: " + openRangingSessionParams.toBundle());
+        pw.println("Ranging session opened with params: "
+                + bundleToString(openRangingSessionParams.toBundle()));
 
         mUwbService.startRanging(sessionInfo.sessionHandle, new PersistableBundle());
         boolean startCompleted = false;
@@ -633,6 +647,16 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     }
                     return 0;
                 }
+                case "get-specification-info": {
+                    PersistableBundle bundle = mUwbService.getSpecificationInfo(null);
+                    PersistableBundle fira_bundle = bundle.getPersistableBundle(
+                            FiraParams.PROTOCOL_NAME);
+                    PersistableBundle ccc_bundle = bundle.getPersistableBundle(
+                            CccParams.PROTOCOL_NAME);
+                    pw.println("FIRA Specification info: " + bundleToString(fira_bundle));
+                    pw.println("CCC Specification info: " + bundleToString(ccc_bundle));
+                    return 0;
+                }
                 default:
                     return handleDefaultCommands(cmd);
             }
@@ -711,6 +735,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         pw.println("    Stops an ongoing ranging session");
         pw.println("  stop-all-ranging-sessions");
         pw.println("    Stops all ongoing ranging sessions");
+        pw.println("  get-specification-info");
+        pw.println("    Gets specification info from uwb chip");
     }
 
     private void onHelpPrivileged(PrintWriter pw) {

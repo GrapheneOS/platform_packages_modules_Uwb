@@ -237,6 +237,9 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                 throws RemoteException {
             if (mUwbSpecificationInfo == null) {
                 mUwbSpecificationInfo = mNativeUwbManager.getSpecificationInfo();
+                // TODO (b/208678993): This needs to be fetched correctly from the HAL.
+                // For now, this is faking info from the legacy stack.
+                Log.i(TAG, "Faking SpecificationInfo, needs to be fixed!");
             }
             return mUwbSpecificationInfo.toBundle();
         }
