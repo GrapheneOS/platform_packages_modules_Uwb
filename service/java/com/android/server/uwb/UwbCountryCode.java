@@ -29,8 +29,8 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.android.modules.utils.HandlerExecutor;
-import com.android.uwb.data.UwbUciConstants;
-import com.android.uwb.jni.NativeUwbManager;
+import com.android.server.uwb.data.UwbUciConstants;
+import com.android.server.uwb.jni.NativeUwbManager;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;

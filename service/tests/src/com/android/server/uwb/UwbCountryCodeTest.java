@@ -29,8 +29,8 @@ import android.telephony.TelephonyManager;
 
 import androidx.test.filters.SmallTest;
 
-import com.android.uwb.data.UwbUciConstants;
-import com.android.uwb.jni.NativeUwbManager;
+import com.android.server.uwb.data.UwbUciConstants;
+import com.android.server.uwb.jni.NativeUwbManager;
 
 import org.junit.Before;
 import org.junit.Test;

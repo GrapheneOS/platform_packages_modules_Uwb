@@ -15,7 +15,7 @@ const STATUS_FAILED: i8 = 2;
 
 /// Initialize UWB
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeInit(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeInit(
     _env: JNIEnv,
     _obj: JObject,
 ) -> jboolean {
@@ -29,59 +29,59 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeInit(
             .with_min_level(log::Level::Trace)
             .with_filter(crates_log_lvl_filter),
     );
-    info!("Java_com_android_uwb_jni_NativeUwbManager_nativeInit: enter");
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeInit: enter");
     true as jboolean
 }
 
 /// Get max session number
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetMaxSessionNumber(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetMaxSessionNumber(
     _env: JNIEnv,
     _obj: JObject,
 ) -> jint {
-    info!("Java_com_android_uwb_jni_NativeUwbManager_nativeGetMaxSessionNumber: enter");
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetMaxSessionNumber: enter");
     5
 }
 
 /// Turn on UWB. initialize the GKI module and HAL module for UWB device.
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeDoInitialize(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDoInitialize(
     env: JNIEnv,
     obj: JObject,
 ) -> jboolean {
-    info!("Java_com_android_uwb_jni_NativeUwbManager_nativeDoInitialize: enter");
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeDoInitialize: enter");
     boolean_result_helper(do_initialize(env, obj), "DoInitialize")
 }
 
 /// Turn off UWB. Deinitilize the GKI and HAL module, power of the UWB device.
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeDoDeinitialize(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDoDeinitialize(
     env: JNIEnv,
     obj: JObject,
 ) -> jboolean {
-    info!("Java_com_android_uwb_jni_NativeUwbManager_nativeDoDeinitialize: enter");
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeDoDeinitialize: enter");
     boolean_result_helper(do_deinitialize(env, obj), "DoDeinitialize")
 }
 
 /// get nanos
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetTimestampResolutionNanos(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetTimestampResolutionNanos(
     _env: JNIEnv,
     _obj: JObject,
 ) -> jlong {
-    info!("Java_com_android_uwb_jni_NativeUwbManager_nativeGetTimestampResolutionNanos: enter");
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetTimestampResolutionNanos: enter");
     0
 }
 
 /// retrieve the UWB device specific information etc.
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetSpecificationInfo(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetSpecificationInfo(
     env: JNIEnv,
     obj: JObject,
 ) -> jobject {
-    info!("Java_com_android_uwb_jni_NativeUwbManager_nativeGetSpecificationInfo: enter");
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetSpecificationInfo: enter");
     let uwb_specification_info_class =
-        env.find_class("com/android/uwb/info/UwbSpecificationInfo").unwrap();
+        env.find_class("com/android/server/uwb/info/UwbSpecificationInfo").unwrap();
     match get_specification_info(env, obj) {
         Ok(para) => {
             let specification_info =
@@ -97,46 +97,46 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetSpecif
 
 /// reset the device
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeResetDevice(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeResetDevice(
     _env: JNIEnv,
     _obj: JObject,
     _reset_config: jbyte,
 ) -> jbyte {
-    info!("Java_com_android_uwb_jni_NativeUwbManager_nativeResetDevice: enter");
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeResetDevice: enter");
     // TODO: implement this function
     0
 }
 
 /// init the session
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeSessionInit(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSessionInit(
     env: JNIEnv,
     obj: JObject,
     session_id: jint,
     session_type: jbyte,
 ) -> jbyte {
-    info!("Java_com_android_uwb_jni_NativeUwbManager_nativeSessionInit: enter");
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeSessionInit: enter");
     byte_result_helper(session_init(env, obj, session_id as u32, session_type as u8), "SessionInit")
 }
 
 /// deinit the session
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeSessionDeInit(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSessionDeInit(
     env: JNIEnv,
     obj: JObject,
     session_id: jint,
 ) -> jbyte {
-    info!("Java_com_android_uwb_jni_NativeUwbManager_nativeSessionDeInit: enter");
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeSessionDeInit: enter");
     byte_result_helper(session_deinit(env, obj, session_id as u32), "SessionDeInit")
 }
 
 /// get session count
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetSessionCount(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetSessionCount(
     env: JNIEnv,
     obj: JObject,
 ) -> jbyte {
-    info!("Java_com_android_uwb_jni_NativeUwbManager_nativeGetSessionCount: enter");
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetSessionCount: enter");
     match get_session_count(env, obj) {
         Ok(count) => count,
         Err(e) => {
@@ -148,34 +148,34 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetSessio
 
 ///  start the ranging
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeRangingStart(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeRangingStart(
     env: JNIEnv,
     obj: JObject,
     session_id: jint,
 ) -> jbyte {
-    info!("Java_com_android_uwb_jni_NativeUwbManager_nativeRangingStart: enter");
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeRangingStart: enter");
     byte_result_helper(ranging_start(env, obj, session_id as u32), "RangingStart")
 }
 
 /// stop the ranging
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeRangingStop(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeRangingStop(
     env: JNIEnv,
     obj: JObject,
     session_id: jint,
 ) -> jbyte {
-    info!("Java_com_android_uwb_jni_NativeUwbManager_nativeRangingStop: enter");
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeRangingStop: enter");
     byte_result_helper(ranging_stop(env, obj, session_id as u32), "RangingStop")
 }
 
 /// get the session state
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetSessionState(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetSessionState(
     env: JNIEnv,
     obj: JObject,
     session_id: jint,
 ) -> jbyte {
-    info!("Java_com_android_uwb_jni_NativeUwbManager_nativeGetSessionState: enter");
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetSessionState: enter");
     match get_session_state(env, obj, session_id as u32) {
         Ok(state) => state,
         Err(e) => {
@@ -187,7 +187,7 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetSessio
 
 /// set app configurations
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeSetAppConfigurations(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSetAppConfigurations(
     env: JNIEnv,
     obj: JObject,
     session_id: jint,
@@ -195,7 +195,7 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeSetAppCon
     app_config_param_len: jint,
     app_config_params: jbyteArray,
 ) -> jbyteArray {
-    info!("Java_com_android_uwb_jni_NativeUwbManager_nativeSetAppConfigurations: enter");
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeSetAppConfigurations: enter");
     match set_app_configurations(
         env,
         obj,
@@ -225,7 +225,7 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeSetAppCon
 
 /// get app configurations
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetAppConfigurations(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetAppConfigurations(
     env: JNIEnv,
     obj: JObject,
     session_id: jint,
@@ -233,7 +233,7 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetAppCon
     app_config_param_len: jint,
     app_config_params: jbyteArray,
 ) -> jbyteArray {
-    info!("Java_com_android_uwb_jni_NativeUwbManager_nativeGetAppConfigurations: enter");
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetAppConfigurations: enter");
     match get_app_configurations(
         env,
         obj,
@@ -260,7 +260,7 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeGetAppCon
 
 /// update multicast list
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeControllerMulticastListUpdate(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeControllerMulticastListUpdate(
     env: JNIEnv,
     obj: JObject,
     session_id: jint,
@@ -269,7 +269,7 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeControlle
     address: jbyteArray,
     sub_session_id: jintArray,
 ) -> jbyte {
-    info!("Java_com_android_uwb_jni_NativeUwbManager_nativeControllerMulticastListUpdate: enter");
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeControllerMulticastListUpdate: enter");
     byte_result_helper(
         multicast_list_update(
             env,
@@ -286,27 +286,27 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeControlle
 
 /// set country code
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeSetCountryCode(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSetCountryCode(
     env: JNIEnv,
     obj: JObject,
     country_code: jbyteArray,
 ) -> jbyte {
-    info!("Java_com_android_uwb_jni_NativeUwbManager_nativeSetCountryCode: enter");
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeSetCountryCode: enter");
     byte_result_helper(set_country_code(env, obj, country_code), "SetCountryCode")
 }
 
 /// set country code
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeSendRawVendorCmd(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSendRawVendorCmd(
     env: JNIEnv,
     obj: JObject,
     gid: jint,
     oid: jint,
     payload: jbyteArray,
 ) -> jobject {
-    info!("Java_com_android_uwb_jni_NativeUwbManager_nativeRawVendor: enter");
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeRawVendor: enter");
     let uwb_vendor_uci_response_class =
-        env.find_class("com/android/uwb/data/UwbVendorUciResponse").unwrap();
+        env.find_class("com/android/server/uwb/data/UwbVendorUciResponse").unwrap();
     match send_raw_vendor_cmd(
         env,
         obj,
@@ -611,7 +611,7 @@ fn get_dispatcher<'a>(env: JNIEnv, obj: JObject) -> Result<&'a mut Dispatcher, U
 
 /// create a dispatcher instance
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeDispatcherNew(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDispatcherNew(
     env: JNIEnv,
     obj: JObject,
 ) -> jlong {
@@ -625,7 +625,7 @@ pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeDispatche
 
 /// destroy the dispatcher instance
 #[no_mangle]
-pub extern "system" fn Java_com_android_uwb_jni_NativeUwbManager_nativeDispatcherDestroy(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDispatcherDestroy(
     env: JNIEnv,
     obj: JObject,
 ) {

@@ -61,7 +61,7 @@ import android.uwb.SessionHandle;
 
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.uwb.jni.NativeUwbManager;
+import com.android.server.uwb.jni.NativeUwbManager;
 
 import com.google.uwb.support.multichip.ChipInfoParams;
 

@@ -256,7 +256,7 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
         // TODO(b/196225233): Remove this when qorvo stack is integrated.
         if (mUwbInjector.isUciStackEnabled()) {
             Log.i(TAG, "Using the UCI stack");
-            mVendorUwbAdapter = mUwbInjector.getUwbService().getIUwbAdapter();
+            mVendorUwbAdapter = mUwbInjector.getUwbServiceCore().getIUwbAdapter();
         } else {
             Log.i(TAG, "Using the legacy stack");
             mVendorUwbAdapter = mUwbInjector.getVendorService();

@@ -36,8 +36,7 @@ import android.util.AtomicFile;
 import android.util.Log;
 import android.uwb.IUwbAdapter;
 
-import com.android.uwb.UwbService;
-import com.android.uwb.jni.NativeUwbManager;
+import com.android.server.uwb.jni.NativeUwbManager;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
@@ -67,7 +66,7 @@ public class UwbInjector {
     private final NativeUwbManager mNativeUwbManager;
     private final UwbCountryCode mUwbCountryCode;
     // TODO(b/196225233): Make these final when qorvo stack is integrated.
-    private UwbService mUwbService;
+    private UwbServiceCore mUwbService;
     private final UwbMetrics mUwbMetrics;
     private final DeviceConfigFacade mDeviceConfigFacade;
 
@@ -110,11 +109,11 @@ public class UwbInjector {
         return mDeviceConfigFacade;
     }
 
-    public UwbService getUwbService() {
+    public UwbServiceCore getUwbServiceCore() {
         // TODO(b/196225233): Remove this lazy initialization when qorvo stack is integrated.
         if (mUwbService == null) {
-            mUwbService = new UwbService(mContext, mNativeUwbManager, mUwbMetrics, mUwbCountryCode,
-                    mLooper);
+            mUwbService = new UwbServiceCore(mContext, mNativeUwbManager, mUwbMetrics,
+                    mUwbCountryCode, mLooper);
         }
         return mUwbService;
     }
