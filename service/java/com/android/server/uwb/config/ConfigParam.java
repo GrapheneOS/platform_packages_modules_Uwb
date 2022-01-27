@@ -16,12 +16,12 @@
 
 package com.android.server.uwb.config;
 
-import static android.hardware.uwb.fira_android.UwbVendorSessionSetAppConfigCmdParams.CCC_HOP_MODE_KEY;
-import static android.hardware.uwb.fira_android.UwbVendorSessionSetAppConfigCmdParams.CCC_PULSESHAPE_COMBO;
-import static android.hardware.uwb.fira_android.UwbVendorSessionSetAppConfigCmdParams.CCC_RANGING_PROTOCOL_VER;
-import static android.hardware.uwb.fira_android.UwbVendorSessionSetAppConfigCmdParams.CCC_URSK_TTL;
-import static android.hardware.uwb.fira_android.UwbVendorSessionSetAppConfigCmdParams.CCC_UWB_CONFIG_ID;
-import static android.hardware.uwb.fira_android.UwbVendorSessionSetAppConfigCmdParams.CCC_UWB_TIME0;
+import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.CCC_HOP_MODE_KEY;
+import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.CCC_PULSESHAPE_COMBO;
+import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.CCC_RANGING_PROTOCOL_VER;
+import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.CCC_URSK_TTL;
+import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.CCC_UWB_CONFIG_ID;
+import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.CCC_UWB_TIME0;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
