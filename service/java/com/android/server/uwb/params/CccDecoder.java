@@ -29,7 +29,8 @@ import java.nio.ByteOrder;
  */
 public class CccDecoder extends TlvDecoder {
     @Override
-    public <T extends Params> T getParams(TlvDecoderBuffer tlvs, Class<T> paramsType) {
+    public <T extends Params> T getParams(TlvDecoderBuffer tlvs, Class<T> paramsType)
+            throws IllegalArgumentException {
         if (CccRangingStartedParams.class.equals(paramsType)) {
             return (T) getCccRangingStartedParamsFromTlvBuffer(tlvs);
         }

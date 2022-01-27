@@ -105,7 +105,7 @@ public class UwbConfigurationManager {
         T params = null;
         try {
             params = decoder.getParams(tlvs, paramType);
-        } catch (IllegalStateException e) {
+        } catch (IllegalArgumentException e) {
             Log.e(TAG, "Failed to decode", e);
         }
         if (params == null) {

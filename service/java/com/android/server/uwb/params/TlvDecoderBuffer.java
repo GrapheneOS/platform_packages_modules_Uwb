@@ -119,12 +119,11 @@ public class TlvDecoderBuffer {
     private Tlv getTlv(int tagType) {
         byte[] tagTypeByte = ConfigParam.getTagBytes(tagType);
         if (tagTypeByte.length > 1) {
-            Log.e(TAG, "Invalid tagType: " + tagTypeByte);
-            return null;
+            throw new IllegalArgumentException("Invalid tagType: " + tagTypeByte);
         }
         Tlv tlv = mTlvs.get(tagTypeByte[0]);
         if (tlv == null) {
-            throw new IllegalStateException("Tag type: " + tagType + " not present");
+            throw new IllegalArgumentException("Tag type: " + tagType + " not present");
         }
         return tlv;
     }
@@ -132,52 +131,52 @@ public class TlvDecoderBuffer {
     public Byte getByte(int tagType) {
         Tlv tlv = getTlv(tagType);
         if (tlv.length != Byte.BYTES) {
-            Log.wtf(TAG, "Mismatch in value type, expected byte found len: " + tlv.length);
-            return null;
+            throw new IllegalArgumentException(
+                    "Mismatch in value type, expected byte found len: " + tlv.length);
         }
         try {
             return ByteBuffer.wrap(tlv.value).get();
         } catch (BufferUnderflowException e) {
-            return null;
+            throw new IllegalArgumentException(e);
         }
     }
 
     public Short getShort(int tagType) {
         Tlv tlv = getTlv(tagType);
         if (tlv.length != Short.BYTES) {
-            Log.wtf(TAG, "Mismatch in value type, expected short found len: " + tlv.length);
-            return null;
+            throw new IllegalArgumentException(
+                    "Mismatch in value type, expected short found len: " + tlv.length);
         }
         try {
             return ByteBuffer.wrap(tlv.value).getShort();
         } catch (BufferUnderflowException e) {
-            return null;
+            throw new IllegalArgumentException(e);
         }
     }
 
     public Integer getInt(int tagType) {
         Tlv tlv = getTlv(tagType);
         if (tlv.length != Integer.BYTES) {
-            Log.wtf(TAG, "Mismatch in value type, expected int found len: " + tlv.length);
-            return null;
+            throw new IllegalArgumentException(
+                    "Mismatch in value type, expected int found len: " + tlv.length);
         }
         try {
             return ByteBuffer.wrap(tlv.value).getInt();
         } catch (BufferUnderflowException e) {
-            return null;
+            throw new IllegalArgumentException(e);
         }
     }
 
     public Long getLong(int tagType) {
         Tlv tlv = getTlv(tagType);
         if (tlv.length != Long.BYTES) {
-            Log.wtf(TAG, "Mismatch in value type, expected long found len: " + tlv.length);
-            return null;
+            throw new IllegalArgumentException(
+                    "Mismatch in value long, expected int found len: " + tlv.length);
         }
         try {
             return ByteBuffer.wrap(tlv.value).getLong();
         } catch (BufferUnderflowException e) {
-            return null;
+            throw new IllegalArgumentException(e);
         }
     }
 
@@ -188,7 +187,7 @@ public class TlvDecoderBuffer {
             ByteBuffer.wrap(tlv.value).get(value);
             return value;
         } catch (BufferUnderflowException e) {
-            return null;
+            throw new IllegalArgumentException(e);
         }
     }
 }
