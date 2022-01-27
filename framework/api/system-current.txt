@@ -171,7 +171,7 @@ package android.uwb {
     method @NonNull @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public android.os.PersistableBundle getAdfCertificateInfo(@NonNull android.os.PersistableBundle);
     method @NonNull @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public android.os.PersistableBundle getAdfProvisioningAuthorities(@NonNull android.os.PersistableBundle);
     method @NonNull @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public android.os.PersistableBundle getAllServiceProfiles();
-    method @NonNull @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public java.util.List<java.lang.String> getChipIds();
+    method @NonNull @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public java.util.List<android.os.PersistableBundle> getChipInfos();
     method @NonNull @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public String getDefaultChipId();
     method @NonNull @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public android.os.PersistableBundle getSpecificationInfo();
     method @NonNull @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public android.os.PersistableBundle getSpecificationInfo(@NonNull String);

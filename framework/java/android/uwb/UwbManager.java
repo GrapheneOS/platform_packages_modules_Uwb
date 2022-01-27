@@ -16,6 +16,8 @@
 
 package android.uwb;
 
+import static com.android.internal.util.Preconditions.checkNotNull;
+
 import android.Manifest.permission;
 import android.annotation.CallbackExecutor;
 import android.annotation.IntDef;
@@ -416,6 +418,7 @@ public final class UwbManager {
     @NonNull
     @RequiresPermission(permission.UWB_PRIVILEGED)
     public PersistableBundle getSpecificationInfo(@NonNull String chipId) {
+        checkNotNull(chipId);
         return getSpecificationInfoInternal(chipId);
     }
 
@@ -452,6 +455,7 @@ public final class UwbManager {
     @SuppressLint("MethodNameUnits")
     @RequiresPermission(permission.UWB_PRIVILEGED)
     public long elapsedRealtimeResolutionNanos(@NonNull String chipId) {
+        checkNotNull(chipId);
         return elapsedRealtimeResolutionNanosInternal(chipId);
     }
 
@@ -533,6 +537,7 @@ public final class UwbManager {
             @NonNull @CallbackExecutor Executor executor,
             @NonNull RangingSession.Callback callbacks,
             @SuppressLint("ListenerLast") @NonNull String chipId) {
+        checkNotNull(chipId);
         return openRangingSessionInternal(parameters, executor, callbacks, chipId);
     }
 
@@ -593,20 +598,27 @@ public final class UwbManager {
         mAdapterStateListener.setEnabled(enabled);
     }
 
+
     /**
-     * Returns a list of UWB chip identifiers.
+     * Returns a list of UWB chip infos in a {@link PersistableBundle}.
      *
      * Callers can invoke methods on a specific UWB chip by passing its {@code chipId} to the
-     * method.
+     * method, which can be determined by calling:
+     * <pre>
+     * List<PersistableBundle> chipInfos = getChipInfos();
+     * for (PersistableBundle chipInfo : chipInfos) {
+     *     String chipId = ChipInfoParams.fromBundle(chipInfo).getChipId();
+     * }
+     * </pre>
      *
-     * @return list of UWB chip identifiers for a multi-HAL system, or a list of a single chip
-     * identifier for a single HAL system.
+     * @return list of {@link PersistableBundle} containing info about UWB chips for a multi-HAL
+     * system, or a list of info for a single chip for a single HAL system.
      */
     @RequiresPermission(permission.UWB_PRIVILEGED)
     @NonNull
-    public List<String> getChipIds() {
+    public List<PersistableBundle> getChipInfos() {
         try {
-            return mUwbAdapter.getChipIds();
+            return mUwbAdapter.getChipInfos();
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();
         }

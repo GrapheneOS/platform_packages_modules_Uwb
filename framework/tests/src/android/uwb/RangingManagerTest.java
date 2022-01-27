@@ -25,7 +25,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-
 import android.content.AttributionSource;
 import android.os.PersistableBundle;
 import android.os.RemoteException;

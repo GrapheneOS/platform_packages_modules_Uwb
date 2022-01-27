@@ -46,8 +46,11 @@ import android.uwb.UwbAddress;
 
 import com.android.internal.annotations.GuardedBy;
 
+import com.google.uwb.support.multichip.ChipInfoParams;
+
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -466,9 +469,25 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
     }
 
     @Override
+    public List<PersistableBundle> getChipInfos() {
+        enforceUwbPrivilegedPermission();
+        List<ChipInfoParams> chipInfoParamsList = mUwbInjector.getNativeUwbManager().getChipInfos();
+        List<PersistableBundle> chipInfos = new ArrayList<>();
+        for (ChipInfoParams chipInfoParams : chipInfoParamsList) {
+            chipInfos.add(chipInfoParams.toBundle());
+        }
+        return chipInfos;
+    }
+
+    @Override
     public List<String> getChipIds() {
         enforceUwbPrivilegedPermission();
-        return mUwbInjector.getNativeUwbManager().getChipIds();
+        List<ChipInfoParams> chipInfoParamsList = mUwbInjector.getNativeUwbManager().getChipInfos();
+        List<String> chipIds = new ArrayList<>();
+        for (ChipInfoParams chipInfoParams : chipInfoParamsList) {
+            chipIds.add(chipInfoParams.getChipId());
+        }
+        return chipIds;
     }
 
     @Override

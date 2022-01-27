@@ -299,14 +299,22 @@ interface IUwbAdapter2 {
   int getAdapterState();
 
   /**
-   * Returns a list of UWB chip identifiers.
+   * Returns a list of UWB chip infos in a {@link PersistableBundle}.
    *
    * Callers can invoke methods on a specific UWB chip by passing its {@code chipId} to the
-   * method.
+   * method, which can be determined by calling:
+   * <pre>
+   * List<PersistableBundle> chipInfos = getChipInfos();
+   * for (PersistableBundle chipInfo : chipInfos) {
+   *     String chipId = ChipInfoParams.fromBundle(chipInfo).getChipId();
+   * }
+   * </pre>
    *
-   * @return list of UWB chip identifiers for a multi-HAL system, or a list of a single chip
-   * identifier for a single HAL system.
+   * @return list of {@link PersistableBundle} containing info about UWB chips for a multi-HAL
+   * system, or a list of info for a single chip for a single HAL system.
    */
+  List<PersistableBundle> getChipInfos();
+
   List<String> getChipIds();
 
   /**

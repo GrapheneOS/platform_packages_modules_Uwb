@@ -57,10 +57,10 @@ filegroup {
 java_defaults {
     name: "framework-uwb-defaults",
     defaults: ["uwb-module-sdk-version-defaults"],
-    static_libs: [
-    ],
+    static_libs : [],
     libs: [
         "unsupportedappusage", // for android.compat.annotation.UnsupportedAppUsage
+        "modules-utils-preconditions",
     ],
     srcs: [
         ":framework-uwb-updatable-sources",
@@ -73,7 +73,7 @@ java_library {
     name: "framework-uwb-pre-jarjar",
     defaults: ["framework-uwb-defaults"],
     sdk_version: "module_Tiramisu",
-    libs: ["framework-annotations-lib"],
+    libs: ["framework-annotations-lib",],
     // java_api_finder must accompany `srcs` (`srcs` defined in `framework-uwb-defaults`)
     plugins: ["java_api_finder"],
     installable: false,
@@ -86,7 +86,6 @@ java_sdk_library {
         "framework-module-defaults",
         "framework-uwb-defaults",
     ],
-
     jarjar_rules: ":uwb-jarjar-rules",
 
     installable: true,
