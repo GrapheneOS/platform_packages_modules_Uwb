@@ -7,7 +7,7 @@ use log::{error, info, LevelFilter};
 use num_traits::ToPrimitive;
 use uwb_uci_packets::{SessionGetAppConfigRspPacket, SessionSetAppConfigRspPacket, StatusCode};
 use uwb_uci_rust::error::UwbErr;
-use uwb_uci_rust::event_manager::EventManager;
+use uwb_uci_rust::event_manager::EventManagerImpl as  EventManager;
 use uwb_uci_rust::uci::{uci_hrcv::UciResponse, Dispatcher, JNICommand};
 
 const STATUS_OK: i8 = 0;
