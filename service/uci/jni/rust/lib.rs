@@ -69,7 +69,9 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGe
     _env: JNIEnv,
     _obj: JObject,
 ) -> jlong {
-    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetTimestampResolutionNanos: enter");
+    info!(
+        "Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetTimestampResolutionNanos: enter"
+    );
     0
 }
 
@@ -205,16 +207,24 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
         app_config_params,
     ) {
         Ok(data) => {
-            let mut buf = vec![0u8; data.get_cfg_status().len() + 2];
-            buf[0] = data.get_status() as u8;
-            buf[1] = data.get_cfg_status().len() as u8;
-            if !data.get_cfg_status().is_empty() {
-                for idx in 0..data.get_cfg_status().len() {
-                    buf[idx * 2 + 2] = data.get_cfg_status()[idx].cfg_id as u8;
-                    buf[idx * 2 + 3] = data.get_cfg_status()[idx].status as u8;
-                }
+            let uwb_config_status_class =
+                env.find_class("com/android/server/uwb/data/UwbConfigStatusData").unwrap();
+            let mut buf: Vec<u8> = Vec::new();
+            for iter in data.get_cfg_status() {
+                buf.push(iter.cfg_id as u8);
+                buf.push(iter.status as u8);
             }
-            env.byte_array_from_slice(&buf).unwrap()
+            let cfg_jbytearray = env.byte_array_from_slice(&buf).unwrap();
+            let uwb_config_status_object = env.new_object(
+                uwb_config_status_class,
+                "(II[B)V",
+                &[
+                    JValue::Int(data.get_status().to_i32().unwrap()),
+                    JValue::Int(data.get_cfg_status().len().to_i32().unwrap()),
+                    JValue::Object(JObject::from(cfg_jbytearray)),
+                ],
+            );
+            *uwb_config_status_object.unwrap()
         }
         Err(e) => {
             error!("SetAppConfig failed with: {:?}", e);
@@ -243,13 +253,25 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGe
         app_config_params,
     ) {
         Ok(data) => {
-            let mut buf: Vec<u8> = vec![data.get_status() as u8, data.get_tlvs().len() as u8];
+            let uwb_tlv_info_class =
+                env.find_class("com/android/server/uwb/data/UwbTlvData").unwrap();
+            let mut buf: Vec<u8> = Vec::new();
             for tlv in data.get_tlvs() {
                 buf.push(tlv.cfg_id as u8);
                 buf.push(tlv.v.len() as u8);
                 buf.extend(&tlv.v);
             }
-            env.byte_array_from_slice(&buf).unwrap()
+            let tlv_jbytearray = env.byte_array_from_slice(&buf).unwrap();
+            let uwb_tlv_info_object = env.new_object(
+                uwb_tlv_info_class,
+                "(II[B)V",
+                &[
+                    JValue::Int(data.get_status().to_i32().unwrap()),
+                    JValue::Int(data.get_tlvs().len().to_i32().unwrap()),
+                    JValue::Object(JObject::from(tlv_jbytearray)),
+                ],
+            );
+            *uwb_tlv_info_object.unwrap()
         }
         Err(e) => {
             error!("GetAppConfig failed with: {:?}", e);

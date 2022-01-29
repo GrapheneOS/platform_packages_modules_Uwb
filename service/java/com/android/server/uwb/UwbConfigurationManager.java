@@ -18,17 +18,16 @@ package com.android.server.uwb;
 import android.util.Log;
 import android.util.Pair;
 
+import com.android.server.uwb.data.UwbConfigStatusData;
+import com.android.server.uwb.data.UwbTlvData;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.params.TlvBuffer;
 import com.android.server.uwb.params.TlvDecoder;
 import com.android.server.uwb.params.TlvDecoderBuffer;
 import com.android.server.uwb.params.TlvEncoder;
-import com.android.server.uwb.util.UwbUtil;
 
 import com.google.uwb.support.base.Params;
-
-import java.util.Arrays;
 
 public class UwbConfigurationManager {
     private static final String TAG = "UwbConfManager";
@@ -54,12 +53,12 @@ public class UwbConfigurationManager {
 
         if (tlvBuffer.getNoOfParams() != 0) {
             byte[] tlvByteArray = tlvBuffer.getByteArray();
-            byte[] appConfig = mNativeUwbManager.setAppConfigurations(sessionId,
+            UwbConfigStatusData appConfig = mNativeUwbManager.setAppConfigurations(sessionId,
                     tlvBuffer.getNoOfParams(),
                     tlvByteArray.length, tlvByteArray);
-            Log.i(TAG, "setAppConfigurations respData: " + UwbUtil.toHexString(appConfig));
-            if ((appConfig != null) && (appConfig.length > 0)) {
-                status = appConfig[0];
+            Log.i(TAG, "setAppConfigurations respData: " + appConfig.toString());
+            if (appConfig != null) {
+                status = appConfig.getStatus();
             } else {
                 Log.e(TAG, "appConfigList is null or size of appConfigList is zero");
                 status = UwbUciConstants.STATUS_CODE_FAILED;
@@ -79,11 +78,11 @@ public class UwbConfigurationManager {
         int status;
         Log.d(TAG, "getAppConfigurations for protocol: " + protocolName);
 
-        byte[] getAppConfig = mNativeUwbManager.getAppConfigurations(sessionId,
-                appConfigIds.length, appConfigIds.length, appConfigIds);
-        Log.i(TAG, "getAppConfigurations respData: " + UwbUtil.toHexString(getAppConfig));
-        if ((getAppConfig != null) && (getAppConfig.length > 0)) {
-            status = getAppConfig[0];
+        UwbTlvData getAppConfig = mNativeUwbManager.getAppConfigurations(sessionId,
+                    appConfigIds.length, appConfigIds.length, appConfigIds);
+        Log.i(TAG, "getAppConfigurations respData: " + getAppConfig.toString());
+        if (getAppConfig != null) {
+            status = getAppConfig.getStatus();
         } else {
             Log.e(TAG, "getAppConfigList is null or size of getAppConfigList is zero");
             return Pair.create(UwbUciConstants.STATUS_CODE_FAILED, null);
@@ -94,10 +93,9 @@ public class UwbConfigurationManager {
             return Pair.create(status, null);
         }
 
-        int numOfConfigs = getAppConfig[1];
+        int numOfConfigs = getAppConfig.getLength();
         TlvDecoderBuffer tlvs =
-                new TlvDecoderBuffer(Arrays.copyOfRange(getAppConfig, 2, getAppConfig.length),
-                        numOfConfigs);
+                new TlvDecoderBuffer(getAppConfig.getTlv(), numOfConfigs);
         if (!tlvs.parse()) {
             Log.e(TAG, "Failed to parse getAppConfigList tlvs");
             return Pair.create(UwbUciConstants.STATUS_CODE_FAILED, null);

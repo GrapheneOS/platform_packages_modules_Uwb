@@ -19,8 +19,10 @@ import android.annotation.NonNull;
 import android.util.Log;
 
 import com.android.server.uwb.UwbInjector;
+import com.android.server.uwb.data.UwbConfigStatusData;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbRangingData;
+import com.android.server.uwb.data.UwbTlvData;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.data.UwbVendorUciResponse;
 import com.android.server.uwb.info.UwbSpecificationInfo;
@@ -233,11 +235,10 @@ public class NativeUwbManager {
      * @param noOfParams        : The number (n) of APP Configuration Parameters
      * @param appConfigParamLen : The length of APP Configuration Parameters
      * @param appConfigParams   : APP Configuration Parameter
-     * @return : refer to SESSION_SET_APP_CONFIG_RSP in the Table 16: Control messages to set
-     * Application configurations
+     * @return : {@link UwbConfigStatusData} : Contains statuses for all cfg_id
      */
-    public byte[] setAppConfigurations(int sessionId, int noOfParams, int appConfigParamLen,
-            byte[] appConfigParams) {
+    public UwbConfigStatusData setAppConfigurations(int sessionId, int noOfParams,
+            int appConfigParamLen, byte[] appConfigParams) {
         synchronized (mSetAppConfigFnLock) {
             return nativeSetAppConfigurations(sessionId, noOfParams, appConfigParamLen,
                     appConfigParams);
@@ -250,10 +251,9 @@ public class NativeUwbManager {
      * @param noOfParams        : The number (n) of APP Configuration Parameters
      * @param appConfigParamLen : The length of APP Configuration Parameters
      * @param appConfigIds      : APP Configuration Parameter
-     * @return : refer to SESSION_GET_APP_CONFIG_RSP in the Table 16: Control messages to get
-     * Application configurations
+     * @return :  {@link UwbTlvData} : All tlvs that are to be decoded
      */
-    public byte[] getAppConfigurations(int sessionId, int noOfParams, int appConfigParamLen,
+    public UwbTlvData getAppConfigurations(int sessionId, int noOfParams, int appConfigParamLen,
             byte[] appConfigIds) {
         synchronized (mSetAppConfigFnLock) {
             return nativeGetAppConfigurations(sessionId, noOfParams, appConfigParamLen,
@@ -373,10 +373,10 @@ public class NativeUwbManager {
 
     private native byte nativeGetSessionState(int sessionId);
 
-    private native byte[] nativeSetAppConfigurations(int sessionId, int noOfParams,
+    private native UwbConfigStatusData nativeSetAppConfigurations(int sessionId, int noOfParams,
             int appConfigParamLen, byte[] appConfigParams);
 
-    private native byte[] nativeGetAppConfigurations(int sessionId, int noOfParams,
+    private native UwbTlvData nativeGetAppConfigurations(int sessionId, int noOfParams,
             int appConfigParamLen, byte[] appConfigParams);
 
     private native byte nativeControllerMulticastListUpdate(int sessionId, byte action,
