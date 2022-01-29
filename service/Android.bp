@@ -35,6 +35,7 @@ filegroup {
     srcs: [
         "java/**/*.java",
         ":statslog-uwb-java-gen",
+        ":uwb_config"
     ],
 }
 

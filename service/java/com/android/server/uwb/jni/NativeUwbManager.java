@@ -27,10 +27,6 @@ import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.data.UwbVendorUciResponse;
 import com.android.server.uwb.info.UwbSpecificationInfo;
 
-import com.google.uwb.support.multichip.ChipInfoParams;
-
-import java.util.List;
-
 public class NativeUwbManager {
     private static final String TAG = NativeUwbManager.class.getSimpleName();
 
@@ -44,7 +40,6 @@ public class NativeUwbManager {
     protected INativeUwbManager.SessionNotification mSessionListener;
     private long mDispatcherPointer;
     protected INativeUwbManager.VendorNotification mVendorListener;
-
 
     public NativeUwbManager(@NonNull UwbInjector uwbInjector) {
         mUwbInjector = uwbInjector;
@@ -310,43 +305,6 @@ public class NativeUwbManager {
         synchronized (mGlobalStateFnLock) {
             return nativeSendRawVendorCmd(gid, oid, payload);
         }
-    }
-
-    /**
-     * Returns a list of UWB chip infos in a {@link ChipInfoParams} object.
-     *
-     * Callers can invoke methods on a specific UWB chip by passing its {@code chipId} to the
-     * method, which can be determined by calling:
-     * <pre>
-     * List<ChipInfoParams> chipInfos = getChipInfos();
-     * for (ChipInfoParams chipInfo : chipInfos) {
-     *     String chipId = chipInfo.getChipId();
-     * }
-     * </pre>
-     *
-     * @return list of {@link ChipInfoParams} containing info about UWB chips for a multi-HAL
-     * system, or a list of info for a single chip for a single HAL system.
-     */
-    public List<ChipInfoParams> getChipInfos() {
-        // TODO(b/206150133): Get list of chip ids from configuration file
-        ChipInfoParams chipInfo =
-                ChipInfoParams.createBuilder().setChipId(getDefaultChipId()).build();
-        return List.of(chipInfo);
-    }
-
-    /**
-     * Returns the default UWB chip identifier.
-     *
-     * If callers do not pass a specific {@code chipId} to UWB methods, then the method will be
-     * invoked on the default chip, which is determined at system initialization from a
-     * configuration file.
-     *
-     * @return default UWB chip identifier for a multi-HAL system, or the identifier of the only UWB
-     * chip in a single HAL system.
-     */
-    public String getDefaultChipId() {
-        // TODO(b/206150133): Get list of chip ids from configuration file
-        return "defaultChipId";
     }
 
     private native long nativeDispatcherNew();

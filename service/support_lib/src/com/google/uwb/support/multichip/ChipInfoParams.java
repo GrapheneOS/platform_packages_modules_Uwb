@@ -25,10 +25,20 @@ public final class ChipInfoParams {
     private static final String KEY_CHIP_ID = "KEY_CHIP_ID";
     private static final String UNKNOWN_CHIP_ID = "UNKNOWN_CHIP_ID";
 
-    private final String mChipId;
+    private static final String KEY_POSITION_X = "KEY_POSITION_X";
+    private static final String KEY_POSITION_Y = "KEY_POSITION_Y";
+    private static final String KEY_POSITION_Z = "KEY_POSITION_Z";
 
-    private ChipInfoParams(String chipId) {
+    private final String mChipId;
+    private final double mPositionX;
+    private final double mPositionY;
+    private final double mPositionZ;
+
+    private ChipInfoParams(String chipId, double positionX, double positionY, double positionZ) {
         mChipId = chipId;
+        mPositionX = positionX;
+        mPositionY = positionY;
+        mPositionZ = positionZ;
     }
 
     /** Returns a String identifier of the chip. */
@@ -36,17 +46,38 @@ public final class ChipInfoParams {
         return mChipId;
     }
 
+    /** Returns the x position of the chip as a double in meters. */
+    public double getPositionX() {
+        return mPositionX;
+    }
+
+    /** Returns the y position of the chip as a double in meters. */
+    public double getPositionY() {
+        return mPositionY;
+    }
+
+    /** Returns the z position of the chip as a double in meters. */
+    public double getPositionZ() {
+        return mPositionZ;
+    }
+
     /** Returns a {@link PersistableBundle} representation of the object. */
     public PersistableBundle toBundle() {
         PersistableBundle bundle = new PersistableBundle();
         bundle.putString(KEY_CHIP_ID, mChipId);
+        bundle.putDouble(KEY_POSITION_X, mPositionX);
+        bundle.putDouble(KEY_POSITION_Y, mPositionY);
+        bundle.putDouble(KEY_POSITION_Z, mPositionZ);
         return bundle;
     }
 
     /** Creates a new {@link ChipInfoParams} from a {@link PersistableBundle}. */
     public static ChipInfoParams fromBundle(PersistableBundle bundle) {
         String chipId = bundle.getString(KEY_CHIP_ID, UNKNOWN_CHIP_ID);
-        return new ChipInfoParams(chipId);
+        double positionX = bundle.getDouble(KEY_POSITION_X, 0.0);
+        double positionY = bundle.getDouble(KEY_POSITION_Y, 0.0);
+        double positionZ = bundle.getDouble(KEY_POSITION_Z, 0.0);
+        return new ChipInfoParams(chipId, positionX, positionY, positionZ);
     }
 
     /** Creates and returns a {@link Builder}. */
@@ -60,10 +91,31 @@ public final class ChipInfoParams {
      */
     public static class Builder {
         String mChipId = UNKNOWN_CHIP_ID;
+        double mPositionX = 0.0;
+        double mPositionY = 0.0;
+        double mPositionZ = 0.0;
 
         /** Sets String identifier of chip */
         public Builder setChipId(String chipId) {
             mChipId = chipId;
+            return this;
+        }
+
+        /** Sets the x position of the chip measured in meters. */
+        public Builder setPositionX(double positionX) {
+            mPositionX = positionX;
+            return this;
+        }
+
+        /** Sets the y position of the chip measured in meters. */
+        public Builder setPositionY(double positionY) {
+            mPositionY = positionY;
+            return this;
+        }
+
+        /** Sets the z position of the chip measured in meters. */
+        public Builder setPositionZ(double positionZ) {
+            mPositionZ = positionZ;
             return this;
         }
 
@@ -72,7 +124,7 @@ public final class ChipInfoParams {
          * {@link android.uwb.UwbManager#getChipInfos()}.
          */
         public ChipInfoParams build()  {
-            return new ChipInfoParams(mChipId);
+            return new ChipInfoParams(mChipId, mPositionX, mPositionY, mPositionZ);
         }
     }
 }

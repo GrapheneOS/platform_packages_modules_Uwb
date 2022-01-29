@@ -283,6 +283,7 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
      */
     public void initialize() {
         mUwbSettingsStore.initialize();
+        mUwbInjector.getMultichipData().initialize();
         if (mUwbInjector.isUciStackEnabled()) {
             // Initialize the UCI stack at bootup.
             try {
@@ -471,7 +472,7 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
     @Override
     public List<PersistableBundle> getChipInfos() {
         enforceUwbPrivilegedPermission();
-        List<ChipInfoParams> chipInfoParamsList = mUwbInjector.getNativeUwbManager().getChipInfos();
+        List<ChipInfoParams> chipInfoParamsList = mUwbInjector.getMultichipData().getChipInfos();
         List<PersistableBundle> chipInfos = new ArrayList<>();
         for (ChipInfoParams chipInfoParams : chipInfoParamsList) {
             chipInfos.add(chipInfoParams.toBundle());
@@ -482,7 +483,7 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
     @Override
     public List<String> getChipIds() {
         enforceUwbPrivilegedPermission();
-        List<ChipInfoParams> chipInfoParamsList = mUwbInjector.getNativeUwbManager().getChipInfos();
+        List<ChipInfoParams> chipInfoParamsList = mUwbInjector.getMultichipData().getChipInfos();
         List<String> chipIds = new ArrayList<>();
         for (ChipInfoParams chipInfoParams : chipInfoParamsList) {
             chipIds.add(chipInfoParams.getChipId());
@@ -493,7 +494,7 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
     @Override
     public String getDefaultChipId() {
         enforceUwbPrivilegedPermission();
-        return mUwbInjector.getNativeUwbManager().getDefaultChipId();
+        return mUwbInjector.getMultichipData().getDefaultChipId();
     }
 
     @Override

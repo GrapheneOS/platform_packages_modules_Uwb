@@ -304,6 +304,6 @@ public class CccTests {
     }
 
     private void verifyBundlesEqual(Params params, Params fromBundle) {
-        PersistableBundle.kindofEquals(params.toBundle(), fromBundle.toBundle());
+        assertTrue(PersistableBundle.kindofEquals(params.toBundle(), fromBundle.toBundle()));
     }
 }

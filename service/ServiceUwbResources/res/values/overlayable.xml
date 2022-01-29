@@ -20,6 +20,8 @@
         <policy type="product|system|vendor">
 
           <!-- Params from config.xml that can be overlaid -->
+            <item name="config_isMultichip" type="bool" />
+            <item name="config_multichipConfigPath" type="string" />
           <!-- Params from config.xml that can be overlaid -->
 
           <!-- Params from strings.xml that can be overlaid -->

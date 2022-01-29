@@ -37,6 +37,7 @@ import android.util.Log;
 import android.uwb.IUwbAdapter;
 
 import com.android.server.uwb.jni.NativeUwbManager;
+import com.android.server.uwb.multchip.UwbMultichipData;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
@@ -69,6 +70,7 @@ public class UwbInjector {
     private UwbServiceCore mUwbService;
     private final UwbMetrics mUwbMetrics;
     private final DeviceConfigFacade mDeviceConfigFacade;
+    private final UwbMultichipData mUwbMultichipData;
 
     public UwbInjector(@NonNull UwbContext context) {
         // Create UWB service thread.
@@ -87,6 +89,7 @@ public class UwbInjector {
                 new UwbCountryCode(mContext, mNativeUwbManager, new Handler(mLooper), this);
         mUwbMetrics = new UwbMetrics(this);
         mDeviceConfigFacade = new DeviceConfigFacade(new Handler(mLooper), this);
+        mUwbMultichipData = new UwbMultichipData(mContext);
     }
 
     public UwbSettingsStore getUwbSettingsStore() {
@@ -107,6 +110,10 @@ public class UwbInjector {
 
     public DeviceConfigFacade getDeviceConfigFacade() {
         return mDeviceConfigFacade;
+    }
+
+    public UwbMultichipData getMultichipData() {
+        return mUwbMultichipData;
     }
 
     public UwbServiceCore getUwbServiceCore() {

@@ -54,6 +54,7 @@ android_test {
         "android.test.base",
         "android.test.mock",
         "framework-uwb-pre-jarjar",
+        "ServiceUwbResources",
     ],
 
     jni_libs: [
