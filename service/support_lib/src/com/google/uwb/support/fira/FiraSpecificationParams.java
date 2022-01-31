@@ -185,14 +185,17 @@ public class FiraSpecificationParams extends FiraParams {
         return mHasNonDeferredModeSupport;
     }
 
+    // TODO(b/209053358): This is not present in CR 237 & hence not populated.
     public boolean hasTxAdaptivePayloadPowerSupport() {
         return mHasTxAdaptivePayloadPowerSupport;
     }
 
+    // TODO(b/209053358): This is not present in CR 237 & hence not populated.
     public int getInitiationTimeMs() {
         return mInitiationTimeMs;
     }
 
+    // TODO(b/209053358): This is not present in CR 237 & hence not populated.
     public EnumSet<MacFcsCrcCapabilityFlag> getMacFcsCrcCapabilities() {
         return mMacFcsCrcCapabilities;
     }
@@ -201,6 +204,7 @@ public class FiraSpecificationParams extends FiraParams {
         return mMultiNodeCapabilities;
     }
 
+    // TODO(b/209053358): This is not present in CR 237 & hence not populated.
     public EnumSet<PreambleCapabilityFlag> getPreambleCapabilities() {
         return mPreambleCapabilities;
     }
@@ -217,6 +221,7 @@ public class FiraSpecificationParams extends FiraParams {
         return mRframeCapabilities;
     }
 
+    // TODO(b/209053358): This is not present in CR 237 & hence not populated.
     public EnumSet<SfdCapabilityFlag> getSfdCapabilities() {
         return mSfdCapabilities;
     }
@@ -225,10 +230,12 @@ public class FiraSpecificationParams extends FiraParams {
         return mStsCapabilities;
     }
 
+    // TODO(b/209053358): This is not present in CR 237 & hence not populated.
     public EnumSet<StsSegmentsCapabilityFlag> getStsSegmentsCapabilities() {
         return mStsSegmentsCapabilities;
     }
 
+    // TODO(b/209053358): This is not present in CR 237 & hence not populated.
     public EnumSet<BprfPhrDataRateCapabilityFlag> getBprfPhrDataRateCapabilities() {
         return mBprfPhrDataRateCapabilities;
     }

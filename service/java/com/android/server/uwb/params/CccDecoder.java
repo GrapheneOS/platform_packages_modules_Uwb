@@ -16,15 +16,15 @@
 
 package com.android.server.uwb.params;
 
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.CCC_SUPPORTED_CHANNELS;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.CCC_SUPPORTED_CHAPS_PER_SLOT;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.CCC_SUPPORTED_HOPPING_CONFIG_MODES;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.CCC_SUPPORTED_HOPPING_SEQUENCES;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.CCC_SUPPORTED_PULSE_SHAPE_COMBOS;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.CCC_SUPPORTED_RAN_MULTIPLIER;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.CCC_SUPPORTED_SYNC_CODES;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.CCC_SUPPORTED_UWB_CONFIGS;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.CCC_SUPPORTED_VERSIONS;
+import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_CHANNELS;
+import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_CHAPS_PER_SLOT;
+import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_HOPPING_CONFIG_MODES;
+import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_HOPPING_SEQUENCES;
+import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_PULSE_SHAPE_COMBOS;
+import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_RAN_MULTIPLIER;
+import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_SYNC_CODES;
+import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_UWB_CONFIGS;
+import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_VERSIONS;
 
 import com.android.server.uwb.config.ConfigParam;
 

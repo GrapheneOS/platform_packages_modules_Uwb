@@ -16,31 +16,67 @@
 
 package com.android.server.uwb.params;
 
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.INITIATION_TIME_MS;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.SUPPORTED_AOA_MODES;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.SUPPORTED_BPRF_PHR_DATA_RATES;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.SUPPORTED_CHANNELS;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.SUPPORTED_DEVICE_ROLES;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.SUPPORTED_MAC_FCS_CRC_TYPES;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.SUPPORTED_MULTI_NODE_MODES;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.SUPPORTED_PREAMBLE_MODES;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.SUPPORTED_PRF_MODES;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.SUPPORTED_PSDU_DATA_RATES;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.SUPPORTED_RANGING_ROUND_USAGE_MODES;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.SUPPORTED_RFRAME_MODES;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.SUPPORTED_SFD_IDS;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.SUPPORTED_STS_MODES;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.SUPPORTED_STS_SEGEMENTS;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.SUPPORTS_ADAPTIVE_PAYLOAD_POWER;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.SUPPORTS_BLOCK_STRIDING;
-import static android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes.SUPPORTS_NON_DEFERRED_MODE;
+import static com.android.server.uwb.config.CapabilityParam.AOA_AZIMUTH_180;
+import static com.android.server.uwb.config.CapabilityParam.AOA_AZIMUTH_90;
+import static com.android.server.uwb.config.CapabilityParam.AOA_ELEVATION;
+import static com.android.server.uwb.config.CapabilityParam.AOA_FOM;
+import static com.android.server.uwb.config.CapabilityParam.BLOCK_STRIDING;
+import static com.android.server.uwb.config.CapabilityParam.CC_CONSTRAINT_LENGTH_K3;
+import static com.android.server.uwb.config.CapabilityParam.CC_CONSTRAINT_LENGTH_K7;
+import static com.android.server.uwb.config.CapabilityParam.CHANNEL_10;
+import static com.android.server.uwb.config.CapabilityParam.CHANNEL_12;
+import static com.android.server.uwb.config.CapabilityParam.CHANNEL_13;
+import static com.android.server.uwb.config.CapabilityParam.CHANNEL_14;
+import static com.android.server.uwb.config.CapabilityParam.CHANNEL_5;
+import static com.android.server.uwb.config.CapabilityParam.CHANNEL_6;
+import static com.android.server.uwb.config.CapabilityParam.CHANNEL_8;
+import static com.android.server.uwb.config.CapabilityParam.CHANNEL_9;
+import static com.android.server.uwb.config.CapabilityParam.DS_TWR_DEFERRED;
+import static com.android.server.uwb.config.CapabilityParam.DS_TWR_NON_DEFERRED;
+import static com.android.server.uwb.config.CapabilityParam.DYNAMIC_STS;
+import static com.android.server.uwb.config.CapabilityParam.DYNAMIC_STS_RESPONDER_SPECIFIC_SUBSESSION_KEY;
+import static com.android.server.uwb.config.CapabilityParam.INITIATOR;
+import static com.android.server.uwb.config.CapabilityParam.MANY_TO_MANY;
+import static com.android.server.uwb.config.CapabilityParam.ONE_TO_MANY;
+import static com.android.server.uwb.config.CapabilityParam.RESPONDER;
+import static com.android.server.uwb.config.CapabilityParam.SP0;
+import static com.android.server.uwb.config.CapabilityParam.SP1;
+import static com.android.server.uwb.config.CapabilityParam.SP3;
+import static com.android.server.uwb.config.CapabilityParam.SS_TWR_DEFERRED;
+import static com.android.server.uwb.config.CapabilityParam.SS_TWR_NON_DEFERRED;
+import static com.android.server.uwb.config.CapabilityParam.STATIC_STS;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_AOA;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_BLOCK_STRIDING;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_BPRF_PARAMETER_SETS;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_CC_CONSTRAINT_LENGTH;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_CHANNELS;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_DEVICE_ROLES;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_EXTENDED_MAC_ADDRESS;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_FIRA_MAC_VERSION_RANGE;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_FIRA_PHY_VERSION_RANGE;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_HPRF_PARAMETER_SETS;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MULTI_NODE_MODES;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_RANGING_METHOD;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_RFRAME_CONFIG;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_STS_CONFIG;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_UWB_INITIATION_TIME;
+import static com.android.server.uwb.config.CapabilityParam.UNICAST;
+import static com.android.server.uwb.config.CapabilityParam.UWB_INITIATION_TIME;
 
-import com.google.uwb.support.base.FlagEnum;
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.fira.FiraParams.DeviceRoleCapabilityFlag;
+import com.google.uwb.support.fira.FiraParams.MultiNodeCapabilityFlag;
+import com.google.uwb.support.fira.FiraParams.PsduDataRateCapabilityFlag;
+import com.google.uwb.support.fira.FiraParams.RangingRoundCapabilityFlag;
+import com.google.uwb.support.fira.FiraParams.RframeCapabilityFlag;
+import com.google.uwb.support.fira.FiraParams.StsCapabilityFlag;
+import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.fira.FiraSpecificationParams;
 
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.stream.IntStream;
 
 public class FiraDecoder extends TlvDecoder {
@@ -52,61 +88,188 @@ public class FiraDecoder extends TlvDecoder {
         return null;
     }
 
+    private static boolean isBitSet(int flags, int mask) {
+        return (flags & mask) != 0;
+    }
+
     // TODO(b/208678993): Plumb the output of GetCapsInfo to getSpecificationInfo API using this.
     public FiraSpecificationParams getFiraSpecificationParamsFromTlvBuffer(TlvDecoderBuffer tlvs) {
         FiraSpecificationParams.Builder builder = new FiraSpecificationParams.Builder();
-        byte[] channels = tlvs.getByteArray(SUPPORTED_CHANNELS);
-        builder.setSupportedChannels(
-                IntStream.range(0, channels.length)
-                        .map(i -> channels[i])
-                        .boxed()
-                        .collect(Collectors.toList()));
-        int aoaModes = tlvs.getInt(SUPPORTED_AOA_MODES);
-        builder.setAoaCapabilities(
-                FlagEnum.toEnumSet(aoaModes, FiraParams.AoaCapabilityFlag.values()));
-        int deviceRoles = tlvs.getInt(SUPPORTED_DEVICE_ROLES);
-        builder.setDeviceRoleCapabilities(
-                FlagEnum.toEnumSet(deviceRoles, FiraParams.DeviceRoleCapabilityFlag.values()));
-        builder.hasBlockStridingSupport(tlvs.getByte(SUPPORTS_BLOCK_STRIDING) == 1);
-        builder.hasNonDeferredModeSupport(tlvs.getByte(SUPPORTS_NON_DEFERRED_MODE) == 1);
-        builder.hasTxAdaptivePayloadPowerSupport(
-                tlvs.getByte(SUPPORTS_ADAPTIVE_PAYLOAD_POWER) == 1);
-        builder.setInitiationTimeMs(tlvs.getInt(INITIATION_TIME_MS));
-        int macFcsCrcTypes = tlvs.getInt(SUPPORTED_MAC_FCS_CRC_TYPES);
-        builder.setMacFcsCrcCapabilities(
-                FlagEnum.toEnumSet(macFcsCrcTypes, FiraParams.MacFcsCrcCapabilityFlag.values()));
-        int multiNodeModes = tlvs.getInt(SUPPORTED_MULTI_NODE_MODES);
-        builder.setMultiNodeCapabilities(
-                FlagEnum.toEnumSet(multiNodeModes, FiraParams.MultiNodeCapabilityFlag.values()));
-        int preambleModes = tlvs.getInt(SUPPORTED_PREAMBLE_MODES);
-        builder.setPreambleCapabilities(
-                FlagEnum.toEnumSet(preambleModes, FiraParams.PreambleCapabilityFlag.values()));
-        int prfModes = tlvs.getInt(SUPPORTED_PRF_MODES);
-        builder.setPrfCapabilities(
-                FlagEnum.toEnumSet(prfModes, FiraParams.PrfCapabilityFlag.values()));
-        int rangingRoundUsages = tlvs.getInt(SUPPORTED_RANGING_ROUND_USAGE_MODES);
-        builder.setRangingRoundCapabilities(
-                FlagEnum.toEnumSet(rangingRoundUsages,
-                        FiraParams.RangingRoundCapabilityFlag.values()));
-        int rframeModes = tlvs.getInt(SUPPORTED_RFRAME_MODES);
-        builder.setRframeCapabilities(
-                FlagEnum.toEnumSet(rframeModes, FiraParams.RframeCapabilityFlag.values()));
-        int sfdIds = tlvs.getInt(SUPPORTED_SFD_IDS);
-        builder.setSfdCapabilities(
-                FlagEnum.toEnumSet(sfdIds, FiraParams.SfdCapabilityFlag.values()));
-        int stsModes = tlvs.getInt(SUPPORTED_STS_MODES);
-        builder.setStsCapabilities(
-                FlagEnum.toEnumSet(stsModes, FiraParams.StsCapabilityFlag.values()));
-        int stsSegments = tlvs.getInt(SUPPORTED_STS_SEGEMENTS);
-        builder.setStsSegmentsCapabilities(
-                FlagEnum.toEnumSet(stsSegments, FiraParams.StsSegmentsCapabilityFlag.values()));
-        int bprfPhrDataRates = tlvs.getInt(SUPPORTED_BPRF_PHR_DATA_RATES);
-        builder.setBprfPhrDataRateCapabilities(
-                FlagEnum.toEnumSet(bprfPhrDataRates,
-                        FiraParams.BprfPhrDataRateCapabilityFlag.values()));
-        int psduDataRates = tlvs.getInt(SUPPORTED_PSDU_DATA_RATES);
-        builder.setPsduDataRateCapabilities(
-                FlagEnum.toEnumSet(psduDataRates, FiraParams.PsduDataRateCapabilityFlag.values()));
+        byte[] phyVersions = tlvs.getByteArray(SUPPORTED_FIRA_PHY_VERSION_RANGE);
+        builder.setMinPhyVersionSupported(FiraProtocolVersion.fromBytes(phyVersions, 0));
+        builder.setMaxPhyVersionSupported(FiraProtocolVersion.fromBytes(phyVersions, 2));
+        byte[] macVersions = tlvs.getByteArray(SUPPORTED_FIRA_MAC_VERSION_RANGE);
+        builder.setMinMacVersionSupported(FiraProtocolVersion.fromBytes(macVersions, 0));
+        builder.setMaxMacVersionSupported(FiraProtocolVersion.fromBytes(macVersions, 2));
+
+        byte deviceRolesUci = tlvs.getByte(SUPPORTED_DEVICE_ROLES);
+        EnumSet<DeviceRoleCapabilityFlag> deviceRoles =
+                EnumSet.noneOf(DeviceRoleCapabilityFlag.class);
+        if (isBitSet(deviceRolesUci, INITIATOR)) {
+            // This assumes both controller + controlee is supported.
+            deviceRoles.add(DeviceRoleCapabilityFlag.HAS_CONTROLLER_INITIATOR_SUPPORT);
+            deviceRoles.add(DeviceRoleCapabilityFlag.HAS_CONTROLEE_INITIATOR_SUPPORT);
+        }
+        if (isBitSet(deviceRolesUci, RESPONDER)) {
+            // This assumes both controller + controlee is supported.
+            deviceRoles.add(DeviceRoleCapabilityFlag.HAS_CONTROLLER_RESPONDER_SUPPORT);
+            deviceRoles.add(DeviceRoleCapabilityFlag.HAS_CONTROLEE_RESPONDER_SUPPORT);
+        }
+        builder.setDeviceRoleCapabilities(deviceRoles);
+
+        byte rangingMethodUci = tlvs.getByte(SUPPORTED_RANGING_METHOD);
+        EnumSet<RangingRoundCapabilityFlag> rangingRoundFlag = EnumSet.noneOf(
+                RangingRoundCapabilityFlag.class);
+        if (isBitSet(rangingMethodUci, DS_TWR_DEFERRED)) {
+            rangingRoundFlag.add(RangingRoundCapabilityFlag.HAS_DS_TWR_SUPPORT);
+        }
+        if (isBitSet(rangingMethodUci, SS_TWR_DEFERRED)) {
+            rangingRoundFlag.add(RangingRoundCapabilityFlag.HAS_SS_TWR_SUPPORT);
+        }
+        builder.setRangingRoundCapabilities(rangingRoundFlag);
+
+        // TODO(b/209053358): This does not align with UCI spec.
+        if (isBitSet(rangingMethodUci, DS_TWR_NON_DEFERRED)
+                || isBitSet(rangingMethodUci, SS_TWR_NON_DEFERRED)) {
+            builder.hasNonDeferredModeSupport(true);
+        }
+
+        byte stsConfigUci = tlvs.getByte(SUPPORTED_STS_CONFIG);
+        EnumSet<StsCapabilityFlag> stsCapabilityFlag = EnumSet.noneOf(StsCapabilityFlag.class);
+        if (isBitSet(stsConfigUci, STATIC_STS)) {
+            stsCapabilityFlag.add(StsCapabilityFlag.HAS_STATIC_STS_SUPPORT);
+        }
+        if (isBitSet(stsConfigUci, DYNAMIC_STS)) {
+            stsCapabilityFlag.add(StsCapabilityFlag.HAS_DYNAMIC_STS_SUPPORT);
+        }
+        if (isBitSet(stsConfigUci, DYNAMIC_STS_RESPONDER_SPECIFIC_SUBSESSION_KEY)) {
+            stsCapabilityFlag.add(
+                    StsCapabilityFlag.HAS_DYNAMIC_STS_INDIVIDUAL_CONTROLEE_KEY_SUPPORT);
+        }
+        builder.setStsCapabilities(stsCapabilityFlag);
+
+        byte multiNodeUci = tlvs.getByte(SUPPORTED_MULTI_NODE_MODES);
+        EnumSet<MultiNodeCapabilityFlag> multiNodeFlag =
+                EnumSet.noneOf(MultiNodeCapabilityFlag.class);
+        if (isBitSet(multiNodeUci, UNICAST)) {
+            multiNodeFlag.add(MultiNodeCapabilityFlag.HAS_UNICAST_SUPPORT);
+        }
+        if (isBitSet(multiNodeUci, ONE_TO_MANY)) {
+            multiNodeFlag.add(MultiNodeCapabilityFlag.HAS_ONE_TO_MANY_SUPPORT);
+        }
+        if (isBitSet(multiNodeUci, MANY_TO_MANY)) {
+            multiNodeFlag.add(MultiNodeCapabilityFlag.HAS_MANY_TO_MANY_SUPPORT);
+        }
+        builder.setMultiNodeCapabilities(multiNodeFlag);
+
+        byte blockStridingUci = tlvs.getByte(SUPPORTED_BLOCK_STRIDING);
+        if (isBitSet(blockStridingUci, BLOCK_STRIDING)) {
+            builder.hasBlockStridingSupport(true);
+        }
+
+        byte initiationTimeUci = tlvs.getByte(SUPPORTED_UWB_INITIATION_TIME);
+        if (isBitSet(initiationTimeUci, UWB_INITIATION_TIME)) {
+            // TODO(b/209053358): This does not align with UCI spec.
+            builder.setInitiationTimeMs(1);
+        }
+
+        byte channelsUci = tlvs.getByte(SUPPORTED_CHANNELS);
+        List<Integer> channels = new ArrayList<>();
+        if (isBitSet(channelsUci, CHANNEL_5)) {
+            channels.add(5);
+        }
+        if (isBitSet(channelsUci, CHANNEL_6)) {
+            channels.add(6);
+        }
+        if (isBitSet(channelsUci, CHANNEL_8)) {
+            channels.add(8);
+        }
+        if (isBitSet(channelsUci, CHANNEL_9)) {
+            channels.add(9);
+        }
+        if (isBitSet(channelsUci, CHANNEL_10)) {
+            channels.add(10);
+        }
+        if (isBitSet(channelsUci, CHANNEL_12)) {
+            channels.add(12);
+        }
+        if (isBitSet(channelsUci, CHANNEL_13)) {
+            channels.add(13);
+        }
+        if (isBitSet(channelsUci, CHANNEL_14)) {
+            channels.add(14);
+        }
+        builder.setSupportedChannels(channels);
+
+        byte rframeConfigUci = tlvs.getByte(SUPPORTED_RFRAME_CONFIG);
+        EnumSet<RframeCapabilityFlag> rframeConfigFlag =
+                EnumSet.noneOf(RframeCapabilityFlag.class);
+        if (isBitSet(rframeConfigUci, SP0)) {
+            rframeConfigFlag.add(RframeCapabilityFlag.HAS_SP0_RFRAME_SUPPORT);
+        }
+        if (isBitSet(rframeConfigUci, SP1)) {
+            rframeConfigFlag.add(RframeCapabilityFlag.HAS_SP1_RFRAME_SUPPORT);
+        }
+        if (isBitSet(rframeConfigUci, SP3)) {
+            rframeConfigFlag.add(RframeCapabilityFlag.HAS_SP3_RFRAME_SUPPORT);
+        }
+        builder.setRframeCapabilities(rframeConfigFlag);
+
+        byte bprfSets = tlvs.getByte(SUPPORTED_BPRF_PARAMETER_SETS);
+        byte[] hprfSets = tlvs.getByteArray(SUPPORTED_HPRF_PARAMETER_SETS);
+        EnumSet<FiraParams.PrfCapabilityFlag> prfFlag =
+                EnumSet.noneOf(FiraParams.PrfCapabilityFlag.class);
+        boolean hasBprfSupport = bprfSets != 0;
+        if (hasBprfSupport) {
+            prfFlag.add(FiraParams.PrfCapabilityFlag.HAS_BPRF_SUPPORT);
+        }
+        boolean hasHprfSupport =
+                IntStream.range(0, hprfSets.length).parallel().anyMatch(i -> hprfSets[i] != 0);
+        if (hasHprfSupport) {
+            prfFlag.add(FiraParams.PrfCapabilityFlag.HAS_HPRF_SUPPORT);
+        }
+        builder.setPrfCapabilities(prfFlag);
+
+        byte ccConstraintUci = tlvs.getByte(SUPPORTED_CC_CONSTRAINT_LENGTH);
+        EnumSet<PsduDataRateCapabilityFlag> psduRateFlag =
+                EnumSet.noneOf(PsduDataRateCapabilityFlag.class);
+        if (isBitSet(ccConstraintUci, CC_CONSTRAINT_LENGTH_K3) && hasBprfSupport) {
+            psduRateFlag.add(PsduDataRateCapabilityFlag.HAS_6M81_SUPPORT);
+        }
+        if (isBitSet(ccConstraintUci, CC_CONSTRAINT_LENGTH_K7) && hasBprfSupport) {
+            psduRateFlag.add(PsduDataRateCapabilityFlag.HAS_7M80_SUPPORT);
+        }
+        if (isBitSet(ccConstraintUci, CC_CONSTRAINT_LENGTH_K3) && hasHprfSupport) {
+            psduRateFlag.add(PsduDataRateCapabilityFlag.HAS_27M2_SUPPORT);
+        }
+        if (isBitSet(ccConstraintUci, CC_CONSTRAINT_LENGTH_K7) && hasHprfSupport) {
+            psduRateFlag.add(PsduDataRateCapabilityFlag.HAS_31M2_SUPPORT);
+        }
+        builder.setPsduDataRateCapabilities(psduRateFlag);
+
+        // TODO(b/209053358): This does not align with UCI spec. Need to figure out a mapping.
+        EnumSet<FiraParams.BprfPhrDataRateCapabilityFlag> bprfPhRDataRateFlag =
+                EnumSet.noneOf(FiraParams.BprfPhrDataRateCapabilityFlag.class);
+
+        byte aoaUci = tlvs.getByte(SUPPORTED_AOA);
+        EnumSet<FiraParams.AoaCapabilityFlag> aoaFlag =
+                EnumSet.noneOf(FiraParams.AoaCapabilityFlag.class);
+        if (isBitSet(aoaUci, AOA_AZIMUTH_90)) {
+            aoaFlag.add(FiraParams.AoaCapabilityFlag.HAS_AZIMUTH_SUPPORT);
+        }
+        if (isBitSet(aoaUci, AOA_AZIMUTH_180)) {
+            aoaFlag.add(FiraParams.AoaCapabilityFlag.HAS_FULL_AZIMUTH_SUPPORT);
+        }
+        if (isBitSet(aoaUci, AOA_ELEVATION)) {
+            aoaFlag.add(FiraParams.AoaCapabilityFlag.HAS_ELEVATION_SUPPORT);
+        }
+        if (isBitSet(aoaUci, AOA_FOM)) {
+            aoaFlag.add(FiraParams.AoaCapabilityFlag.HAS_FOM_SUPPORT);
+        }
+        builder.setAoaCapabilities(aoaFlag);
+
+        // TODO(b/209053358): This is not present in the FiraSpecificationParams.
+        byte extendedMacUci = tlvs.getByte(SUPPORTED_EXTENDED_MAC_ADDRESS);
         return builder.build();
     }
 }
