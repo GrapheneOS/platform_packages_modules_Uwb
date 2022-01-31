@@ -403,30 +403,23 @@ public class FiraTests {
                 EnumSet.allOf(FiraParams.DeviceRoleCapabilityFlag.class);
         boolean hasBlockStridingSupport = true;
         boolean hasNonDeferredModeSupport = true;
-        boolean hasTxAdaptivePayloadPowerSupport = true;
-        int initiationTimeMs = 500;
-        EnumSet<FiraParams.MacFcsCrcCapabilityFlag> macFcsCrcCapabilities =
-                EnumSet.allOf(FiraParams.MacFcsCrcCapabilityFlag.class);
+        boolean hasInitiationTimeSupport = true;
         EnumSet<FiraParams.MultiNodeCapabilityFlag> multiNodeCapabilities =
                 EnumSet.allOf(FiraParams.MultiNodeCapabilityFlag.class);
-        EnumSet<FiraParams.PreambleCapabilityFlag> preambleCapabilities =
-                EnumSet.allOf(FiraParams.PreambleCapabilityFlag.class);
         EnumSet<FiraParams.PrfCapabilityFlag> prfCapabilities =
                 EnumSet.allOf(FiraParams.PrfCapabilityFlag.class);
         EnumSet<FiraParams.RangingRoundCapabilityFlag> rangingRoundCapabilities =
                 EnumSet.allOf(FiraParams.RangingRoundCapabilityFlag.class);
         EnumSet<FiraParams.RframeCapabilityFlag> rframeCapabilities =
                 EnumSet.allOf(FiraParams.RframeCapabilityFlag.class);
-        EnumSet<FiraParams.SfdCapabilityFlag> sfdCapabilities =
-                EnumSet.allOf(FiraParams.SfdCapabilityFlag.class);
         EnumSet<FiraParams.StsCapabilityFlag> stsCapabilities =
                 EnumSet.allOf(FiraParams.StsCapabilityFlag.class);
-        EnumSet<FiraParams.StsSegmentsCapabilityFlag> stsSegmentsCapabilities =
-                EnumSet.allOf(FiraParams.StsSegmentsCapabilityFlag.class);
-        EnumSet<FiraParams.BprfPhrDataRateCapabilityFlag> bprfPhrDataRateCapabilities =
-                EnumSet.allOf(FiraParams.BprfPhrDataRateCapabilityFlag.class);
         EnumSet<FiraParams.PsduDataRateCapabilityFlag> psduDataRateCapabilities =
                 EnumSet.allOf(FiraParams.PsduDataRateCapabilityFlag.class);
+        EnumSet<FiraParams.BprfParameterSetCapabilityFlag> bprfCapabilities =
+                EnumSet.allOf(FiraParams.BprfParameterSetCapabilityFlag.class);
+        EnumSet<FiraParams.HprfParameterSetCapabilityFlag> hprfCapabilities =
+                EnumSet.allOf(FiraParams.HprfParameterSetCapabilityFlag.class);
 
         FiraSpecificationParams params =
                 new FiraSpecificationParams.Builder()
@@ -439,19 +432,15 @@ public class FiraTests {
                         .setDeviceRoleCapabilities(deviceRoleCapabilities)
                         .hasBlockStridingSupport(hasBlockStridingSupport)
                         .hasNonDeferredModeSupport(hasNonDeferredModeSupport)
-                        .hasTxAdaptivePayloadPowerSupport(hasTxAdaptivePayloadPowerSupport)
-                        .setInitiationTimeMs(initiationTimeMs)
-                        .setMacFcsCrcCapabilities(macFcsCrcCapabilities)
+                        .hasInitiationTimeSupport(hasInitiationTimeSupport)
                         .setMultiNodeCapabilities(multiNodeCapabilities)
-                        .setPreambleCapabilities(preambleCapabilities)
                         .setPrfCapabilities(prfCapabilities)
                         .setRangingRoundCapabilities(rangingRoundCapabilities)
                         .setRframeCapabilities(rframeCapabilities)
-                        .setSfdCapabilities(sfdCapabilities)
                         .setStsCapabilities(stsCapabilities)
-                        .setStsSegmentsCapabilities(stsSegmentsCapabilities)
-                        .setBprfPhrDataRateCapabilities(bprfPhrDataRateCapabilities)
                         .setPsduDataRateCapabilities(psduDataRateCapabilities)
+                        .setBprfParameterSetCapabilities(bprfCapabilities)
+                        .setHprfParameterSetCapabilities(hprfCapabilities)
                         .build();
         assertEquals(minPhyVersionSupported, params.getMinPhyVersionSupported());
         assertEquals(maxPhyVersionSupported, params.getMaxPhyVersionSupported());
@@ -462,19 +451,15 @@ public class FiraTests {
         assertEquals(deviceRoleCapabilities, params.getDeviceRoleCapabilities());
         assertEquals(hasBlockStridingSupport, params.hasBlockStridingSupport());
         assertEquals(hasNonDeferredModeSupport, params.hasNonDeferredModeSupport());
-        assertEquals(hasTxAdaptivePayloadPowerSupport, params.hasTxAdaptivePayloadPowerSupport());
-        assertEquals(initiationTimeMs, params.getInitiationTimeMs());
-        assertEquals(macFcsCrcCapabilities, params.getMacFcsCrcCapabilities());
+        assertEquals(hasInitiationTimeSupport, params.hasInitiationTimeSupport());
         assertEquals(multiNodeCapabilities, params.getMultiNodeCapabilities());
-        assertEquals(preambleCapabilities, params.getPreambleCapabilities());
         assertEquals(prfCapabilities, params.getPrfCapabilities());
         assertEquals(rangingRoundCapabilities, params.getRangingRoundCapabilities());
         assertEquals(rframeCapabilities, params.getRframeCapabilities());
-        assertEquals(sfdCapabilities, params.getSfdCapabilities());
         assertEquals(stsCapabilities, params.getStsCapabilities());
-        assertEquals(stsSegmentsCapabilities, params.getStsSegmentsCapabilities());
-        assertEquals(bprfPhrDataRateCapabilities, params.getBprfPhrDataRateCapabilities());
         assertEquals(psduDataRateCapabilities, params.getPsduDataRateCapabilities());
+        assertEquals(bprfCapabilities, params.getBprfParameterSetCapabilities());
+        assertEquals(hprfCapabilities, params.getHprfParameterSetCapabilities());
 
         FiraSpecificationParams fromBundle = FiraSpecificationParams.fromBundle(params.toBundle());
         assertEquals(minPhyVersionSupported, fromBundle.getMinPhyVersionSupported());
@@ -486,20 +471,15 @@ public class FiraTests {
         assertEquals(deviceRoleCapabilities, fromBundle.getDeviceRoleCapabilities());
         assertEquals(hasBlockStridingSupport, fromBundle.hasBlockStridingSupport());
         assertEquals(hasNonDeferredModeSupport, fromBundle.hasNonDeferredModeSupport());
-        assertEquals(
-                hasTxAdaptivePayloadPowerSupport, fromBundle.hasTxAdaptivePayloadPowerSupport());
-        assertEquals(initiationTimeMs, fromBundle.getInitiationTimeMs());
-        assertEquals(macFcsCrcCapabilities, fromBundle.getMacFcsCrcCapabilities());
+        assertEquals(hasInitiationTimeSupport, params.hasInitiationTimeSupport());
         assertEquals(multiNodeCapabilities, fromBundle.getMultiNodeCapabilities());
-        assertEquals(preambleCapabilities, fromBundle.getPreambleCapabilities());
         assertEquals(prfCapabilities, fromBundle.getPrfCapabilities());
         assertEquals(rangingRoundCapabilities, fromBundle.getRangingRoundCapabilities());
         assertEquals(rframeCapabilities, fromBundle.getRframeCapabilities());
-        assertEquals(sfdCapabilities, fromBundle.getSfdCapabilities());
         assertEquals(stsCapabilities, fromBundle.getStsCapabilities());
-        assertEquals(stsSegmentsCapabilities, fromBundle.getStsSegmentsCapabilities());
-        assertEquals(bprfPhrDataRateCapabilities, fromBundle.getBprfPhrDataRateCapabilities());
         assertEquals(psduDataRateCapabilities, fromBundle.getPsduDataRateCapabilities());
+        assertEquals(bprfCapabilities, fromBundle.getBprfParameterSetCapabilities());
+        assertEquals(hprfCapabilities, fromBundle.getHprfParameterSetCapabilities());
 
         verifyProtocolPresent(params);
         verifyBundlesEqual(params, fromBundle);

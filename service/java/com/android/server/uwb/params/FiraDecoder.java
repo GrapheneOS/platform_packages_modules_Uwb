@@ -63,9 +63,12 @@ import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_UWB_INITIA
 import static com.android.server.uwb.config.CapabilityParam.UNICAST;
 import static com.android.server.uwb.config.CapabilityParam.UWB_INITIATION_TIME;
 
+import com.google.uwb.support.base.FlagEnum;
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.fira.FiraParams.BprfParameterSetCapabilityFlag;
 import com.google.uwb.support.fira.FiraParams.DeviceRoleCapabilityFlag;
+import com.google.uwb.support.fira.FiraParams.HprfParameterSetCapabilityFlag;
 import com.google.uwb.support.fira.FiraParams.MultiNodeCapabilityFlag;
 import com.google.uwb.support.fira.FiraParams.PsduDataRateCapabilityFlag;
 import com.google.uwb.support.fira.FiraParams.RangingRoundCapabilityFlag;
@@ -74,6 +77,7 @@ import com.google.uwb.support.fira.FiraParams.StsCapabilityFlag;
 import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.fira.FiraSpecificationParams;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -169,8 +173,7 @@ public class FiraDecoder extends TlvDecoder {
 
         byte initiationTimeUci = tlvs.getByte(SUPPORTED_UWB_INITIATION_TIME);
         if (isBitSet(initiationTimeUci, UWB_INITIATION_TIME)) {
-            // TODO(b/209053358): This does not align with UCI spec.
-            builder.setInitiationTimeMs(1);
+            builder.hasInitiationTimeSupport(true);
         }
 
         byte channelsUci = tlvs.getByte(SUPPORTED_CHANNELS);
@@ -217,6 +220,16 @@ public class FiraDecoder extends TlvDecoder {
 
         byte bprfSets = tlvs.getByte(SUPPORTED_BPRF_PARAMETER_SETS);
         byte[] hprfSets = tlvs.getByteArray(SUPPORTED_HPRF_PARAMETER_SETS);
+        builder.setBprfParameterSetCapabilities(
+                FlagEnum.toEnumSet(Integer.valueOf(bprfSets),
+                        BprfParameterSetCapabilityFlag.values()));
+        // Extend the 5 bytes from HAL to 8 bytes for long.
+        long hprfSetFlags = new BigInteger(hprfSets).longValue();
+        builder.setHprfParameterSetCapabilities(
+                FlagEnum.longToEnumSet(
+                        hprfSetFlags,
+                        HprfParameterSetCapabilityFlag.values()));
+
         EnumSet<FiraParams.PrfCapabilityFlag> prfFlag =
                 EnumSet.noneOf(FiraParams.PrfCapabilityFlag.class);
         boolean hasBprfSupport = bprfSets != 0;
@@ -246,10 +259,6 @@ public class FiraDecoder extends TlvDecoder {
             psduRateFlag.add(PsduDataRateCapabilityFlag.HAS_31M2_SUPPORT);
         }
         builder.setPsduDataRateCapabilities(psduRateFlag);
-
-        // TODO(b/209053358): This does not align with UCI spec. Need to figure out a mapping.
-        EnumSet<FiraParams.BprfPhrDataRateCapabilityFlag> bprfPhRDataRateFlag =
-                EnumSet.noneOf(FiraParams.BprfPhrDataRateCapabilityFlag.class);
 
         byte aoaUci = tlvs.getByte(SUPPORTED_AOA);
         EnumSet<FiraParams.AoaCapabilityFlag> aoaFlag =

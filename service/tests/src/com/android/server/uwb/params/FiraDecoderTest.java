@@ -16,19 +16,17 @@
 
 package com.android.server.uwb.params;
 
-
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.uwb.support.fira.FiraParams.AoaCapabilityFlag.HAS_AZIMUTH_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.AoaCapabilityFlag.HAS_ELEVATION_SUPPORT;
+import static com.google.uwb.support.fira.FiraParams.AoaCapabilityFlag.HAS_FOM_SUPPORT;
+import static com.google.uwb.support.fira.FiraParams.AoaCapabilityFlag.HAS_FULL_AZIMUTH_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.DeviceRoleCapabilityFlag.HAS_CONTROLEE_INITIATOR_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.DeviceRoleCapabilityFlag.HAS_CONTROLEE_RESPONDER_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.DeviceRoleCapabilityFlag.HAS_CONTROLLER_INITIATOR_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.DeviceRoleCapabilityFlag.HAS_CONTROLLER_RESPONDER_SUPPORT;
-import static com.google.uwb.support.fira.FiraParams.MacFcsCrcCapabilityFlag.HAS_CRC_16_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.MultiNodeCapabilityFlag.HAS_ONE_TO_MANY_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.MultiNodeCapabilityFlag.HAS_UNICAST_SUPPORT;
-import static com.google.uwb.support.fira.FiraParams.PreambleCapabilityFlag.HAS_32_SYMBOLS_SUPPORT;
-import static com.google.uwb.support.fira.FiraParams.PreambleCapabilityFlag.HAS_64_SYMBOLS_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.PrfCapabilityFlag.HAS_BPRF_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.PrfCapabilityFlag.HAS_HPRF_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.PsduDataRateCapabilityFlag.HAS_27M2_SUPPORT;
@@ -40,13 +38,8 @@ import static com.google.uwb.support.fira.FiraParams.RangingRoundCapabilityFlag.
 import static com.google.uwb.support.fira.FiraParams.RframeCapabilityFlag.HAS_SP0_RFRAME_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.RframeCapabilityFlag.HAS_SP1_RFRAME_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.RframeCapabilityFlag.HAS_SP3_RFRAME_SUPPORT;
-import static com.google.uwb.support.fira.FiraParams.SfdCapabilityFlag.HAS_SFD0_SUPPORT;
-import static com.google.uwb.support.fira.FiraParams.SfdCapabilityFlag.HAS_SFD1_SUPPORT;
-import static com.google.uwb.support.fira.FiraParams.SfdCapabilityFlag.HAS_SFD2_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.StsCapabilityFlag.HAS_DYNAMIC_STS_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.StsCapabilityFlag.HAS_STATIC_STS_SUPPORT;
-import static com.google.uwb.support.fira.FiraParams.StsSegmentsCapabilityFlag.HAS_0_SEGMENT_SUPPORT;
-import static com.google.uwb.support.fira.FiraParams.StsSegmentsCapabilityFlag.HAS_1_SEGMENT_SUPPORT;
 
 import android.platform.test.annotations.Presubmit;
 import android.test.suitebuilder.annotation.SmallTest;
@@ -55,7 +48,8 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.server.uwb.util.UwbUtil;
 
-import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.fira.FiraParams.BprfParameterSetCapabilityFlag;
+import com.google.uwb.support.fira.FiraParams.HprfParameterSetCapabilityFlag;
 import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.fira.FiraSpecificationParams;
 
@@ -87,8 +81,8 @@ public class FiraDecoderTest {
                     + "0B0109"
                     + "0C010B"
                     + "0D0103"
-                    + "0E0103"
-                    + "0F050300000000"
+                    + "0E0101"
+                    + "0F050000000003"
                     + "10010F"
                     + "110101");
     private static final int TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS = 18;
@@ -140,5 +134,16 @@ public class FiraDecoderTest {
                 EnumSet.of(HAS_BPRF_SUPPORT, HAS_HPRF_SUPPORT));
         assertThat(firaSpecificationParams.getPsduDataRateCapabilities()).isEqualTo(
                 EnumSet.of(HAS_6M81_SUPPORT, HAS_7M80_SUPPORT, HAS_27M2_SUPPORT, HAS_31M2_SUPPORT));
+
+        assertThat(firaSpecificationParams.getAoaCapabilities()).isEqualTo(
+                EnumSet.of(HAS_AZIMUTH_SUPPORT, HAS_ELEVATION_SUPPORT, HAS_FULL_AZIMUTH_SUPPORT,
+                        HAS_FOM_SUPPORT));
+
+        assertThat(firaSpecificationParams.getBprfParameterSetCapabilities()).isEqualTo(
+                EnumSet.of(BprfParameterSetCapabilityFlag.HAS_SET_1_SUPPORT));
+
+        assertThat(firaSpecificationParams.getHprfParameterSetCapabilities()).isEqualTo(
+                EnumSet.of(HprfParameterSetCapabilityFlag.HAS_SET_1_SUPPORT,
+                        HprfParameterSetCapabilityFlag.HAS_SET_2_SUPPORT));
     }
 }
