@@ -262,6 +262,17 @@ public class NativeUwbManager {
     }
 
     /**
+     * Get Core Capabilities information
+     *
+     * @return :  {@link UwbTlvData} : All tlvs that are to be decoded
+     */
+    public UwbTlvData getCapsInfo() {
+        synchronized (mSetAppConfigFnLock) {
+            return nativeGetCapsInfo();
+        }
+    }
+
+    /**
      * Update Multicast list for the requested UWB session
      *
      * @param sessionId  : Session ID to which multicast list to be updated
@@ -378,6 +389,8 @@ public class NativeUwbManager {
 
     private native UwbTlvData nativeGetAppConfigurations(int sessionId, int noOfParams,
             int appConfigParamLen, byte[] appConfigParams);
+
+    private native UwbTlvData nativeGetCapsInfo();
 
     private native byte nativeControllerMulticastListUpdate(int sessionId, byte action,
             byte noOfControlee, byte[] address, int[]subSessionId);
