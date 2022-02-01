@@ -17,6 +17,9 @@ package com.android.server.uwb.info;
 
 import android.os.PersistableBundle;
 
+/***
+ * TODO: Should we remove this since it is no longer used?
+ */
 public class UwbSpecificationInfo {
 
     private static final String KEY_FIRA_SPECIFICATION_INFO = "fira_stack_info";

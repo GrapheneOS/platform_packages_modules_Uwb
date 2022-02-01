@@ -17,10 +17,7 @@
 package com.android.server.uwb;
 
 import android.content.AttributionSource;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -28,8 +25,8 @@ import android.os.Message;
 import android.os.PersistableBundle;
 import android.os.PowerManager;
 import android.os.RemoteException;
-import android.provider.Settings;
 import android.util.Log;
+import android.util.Pair;
 import android.uwb.IUwbAdapter;
 import android.uwb.IUwbAdapterStateCallbacks;
 import android.uwb.IUwbRangingCallbacks;
@@ -41,14 +38,15 @@ import android.uwb.UwbManager.AdapterStateCallback;
 
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.data.UwbVendorUciResponse;
-import com.android.server.uwb.info.UwbSpecificationInfo;
 import com.android.server.uwb.jni.INativeUwbManager;
 import com.android.server.uwb.jni.NativeUwbManager;
 
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
+import com.google.uwb.support.ccc.CccSpecificationParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.fira.FiraSpecificationParams;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -80,16 +78,19 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     private final EnableDisableTask mEnableDisableTask;
 
     private final UwbSessionManager mSessionManager;
+    private final UwbConfigurationManager mConfigurationManager;
     private final NativeUwbManager mNativeUwbManager;
     private final UwbMetrics mUwbMetrics;
     private final UwbCountryCode mUwbCountryCode;
-    private UwbSpecificationInfo mUwbSpecificationInfo = null;
+    private PersistableBundle mUwbSpecificationInfo = null;
     private /* @UwbManager.AdapterStateCallback.State */ int mState;
     private @StateChangeReason int mLastStateChangedReason;
     private  IUwbVendorUciCallback mCallBack = null;
 
     public UwbServiceCore(Context uwbApplicationContext, NativeUwbManager nativeUwbManager,
-            UwbMetrics uwbMetrics, UwbCountryCode uwbCountryCode, Looper serviceLooper) {
+            UwbMetrics uwbMetrics, UwbCountryCode uwbCountryCode,
+            UwbSessionManager uwbSessionManager, UwbConfigurationManager uwbConfigurationManager,
+            Looper serviceLooper) {
         mContext = uwbApplicationContext;
 
         Log.d(TAG, "Starting Uwb");
@@ -105,7 +106,8 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         mNativeUwbManager.setVendorListener(this);
         mUwbMetrics = uwbMetrics;
         mUwbCountryCode = uwbCountryCode;
-        mSessionManager = new UwbSessionManager(mNativeUwbManager, mUwbMetrics, serviceLooper);
+        mSessionManager = uwbSessionManager;
+        mConfigurationManager = uwbConfigurationManager;
 
         updateState(AdapterStateCallback.STATE_DISABLED, StateChangeReason.SYSTEM_BOOT);
 
@@ -231,17 +233,36 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             mCallBack = null;
         }
 
+        private void updateSpecificationInfo() {
+            Pair<Integer, FiraSpecificationParams> firaSpecificationParams =
+                    mConfigurationManager.getCapsInfo(
+                            FiraParams.PROTOCOL_NAME, FiraSpecificationParams.class);
+            if (firaSpecificationParams.first != UwbUciConstants.STATUS_CODE_OK)  {
+                Log.e(TAG, "Failed to retrieve FIRA specifications");
+            }
+            Pair<Integer, CccSpecificationParams> cccSpecificationParams =
+                    mConfigurationManager.getCapsInfo(
+                            CccParams.PROTOCOL_NAME, CccSpecificationParams.class);
+            if (cccSpecificationParams.first != UwbUciConstants.STATUS_CODE_OK)  {
+                Log.e(TAG, "Failed to retrieve CCC specifications");
+            }
+            // If neither of the capabilities are fetched correctly, don't cache anything.
+            if (firaSpecificationParams.first == UwbUciConstants.STATUS_CODE_OK
+                    || cccSpecificationParams.first == UwbUciConstants.STATUS_CODE_OK) {
+                mUwbSpecificationInfo = new PersistableBundle();
+                mUwbSpecificationInfo.putPersistableBundle(
+                        FiraParams.PROTOCOL_NAME, firaSpecificationParams.second.toBundle());
+                mUwbSpecificationInfo.putPersistableBundle(
+                        CccParams.PROTOCOL_NAME, cccSpecificationParams.second.toBundle());
+            }
+        }
 
         @Override
-        public PersistableBundle getSpecificationInfo()
-                throws RemoteException {
+        public PersistableBundle getSpecificationInfo() throws RemoteException {
             if (mUwbSpecificationInfo == null) {
-                mUwbSpecificationInfo = mNativeUwbManager.getSpecificationInfo();
-                // TODO (b/208678993): This needs to be fetched correctly from the HAL.
-                // For now, this is faking info from the legacy stack.
-                Log.i(TAG, "Faking SpecificationInfo, needs to be fixed!");
+                updateSpecificationInfo();
             }
-            return mUwbSpecificationInfo.toBundle();
+            return mUwbSpecificationInfo;
         }
 
         @Override

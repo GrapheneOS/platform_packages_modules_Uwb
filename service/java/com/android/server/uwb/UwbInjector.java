@@ -112,8 +112,13 @@ public class UwbInjector {
     public UwbServiceCore getUwbServiceCore() {
         // TODO(b/196225233): Remove this lazy initialization when qorvo stack is integrated.
         if (mUwbService == null) {
+            UwbConfigurationManager uwbConfigurationManager =
+                    new UwbConfigurationManager(mNativeUwbManager);
+            UwbSessionManager uwbSessionManager =
+                    new UwbSessionManager(uwbConfigurationManager, mNativeUwbManager, mUwbMetrics,
+                            mLooper);
             mUwbService = new UwbServiceCore(mContext, mNativeUwbManager, mUwbMetrics,
-                    mUwbCountryCode, mLooper);
+                    mUwbCountryCode, uwbSessionManager, uwbConfigurationManager, mLooper);
         }
         return mUwbService;
     }
