@@ -15,6 +15,9 @@
  */
 package com.android.server.uwb.util;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -50,14 +53,19 @@ public class DataTypeConversionUtil {
     /**
      * Convert the byte array to hex string.
      */
-    public static String byteArrayToHexString(byte[] response) {
+    @NonNull
+    public static String byteArrayToHexString(@Nullable byte[] response) {
+        if (response == null) {
+            return "";
+        }
         return byteArrayToHexString(response, 0, response.length);
     }
 
     /**
      * Convertt part of the byte array to hex string.
      */
-    public static String byteArrayToHexString(byte[] response, int startIndex, int endIndex) {
+    public static String byteArrayToHexString(
+            byte[] response, int startIndex, int endIndex) {
         char[] hex = new char[(endIndex - startIndex) * 2];
         int v;
         for (int i = 0; i < endIndex - startIndex; i++) {

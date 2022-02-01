@@ -72,6 +72,11 @@ public class DataTypeConversionUtilTest {
     }
 
     @Test
+    public void byteArrayToHexString_null() {
+        assertThat(DataTypeConversionUtil.byteArrayToHexString(null)).isEmpty();
+    }
+
+    @Test
     public void hexStringToByteArray_success() {
         String hexString = "010203040A0B0C0D";
         assertThat(DataTypeConversionUtil.hexStringToByteArray(hexString))
