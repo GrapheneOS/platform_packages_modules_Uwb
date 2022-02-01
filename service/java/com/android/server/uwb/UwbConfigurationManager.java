@@ -75,16 +75,36 @@ public class UwbConfigurationManager {
      */
     public <T extends Params> Pair<Integer, T> getAppConfigurations(int sessionId,
             String protocolName, byte[] appConfigIds, Class<T> paramType) {
-        int status;
-        Log.d(TAG, "getAppConfigurations for protocol: " + protocolName);
 
+        Log.d(TAG, "getAppConfigurations for protocol: " + protocolName);
         UwbTlvData getAppConfig = mNativeUwbManager.getAppConfigurations(sessionId,
                     appConfigIds.length, appConfigIds.length, appConfigIds);
         Log.i(TAG, "getAppConfigurations respData: " + getAppConfig.toString());
-        if (getAppConfig != null) {
-            status = getAppConfig.getStatus();
+        return decodeTLV(protocolName, getAppConfig, paramType);
+    }
+
+    /**
+     * Retrieve capability information from UWBS.
+     */
+    public <T extends Params> Pair<Integer, T> getCapsInfo(String protocolName,
+            Class<T> paramType) {
+
+        Log.d(TAG, "getCapsInfo for protocol: " + protocolName);
+        UwbTlvData capsInfo = mNativeUwbManager.getCapsInfo();
+        Log.i(TAG, "getCapsInfo respData: " + capsInfo.toString());
+        return decodeTLV(protocolName, capsInfo, paramType);
+    }
+
+    /**
+     * Common decode TLV function based on protocol
+     */
+    public <T extends Params> Pair<Integer, T> decodeTLV(String protocolName,
+            UwbTlvData tlvData, Class<T> paramType) {
+        int status;
+        if (tlvData != null) {
+            status = tlvData.getStatus();
         } else {
-            Log.e(TAG, "getAppConfigList is null or size of getAppConfigList is zero");
+            Log.e(TAG, "TlvData is null or size of TlvData is zero");
             return Pair.create(UwbUciConstants.STATUS_CODE_FAILED, null);
         }
         TlvDecoder decoder = TlvDecoder.getDecoder(protocolName);
@@ -93,11 +113,10 @@ public class UwbConfigurationManager {
             return Pair.create(status, null);
         }
 
-        int numOfConfigs = getAppConfig.getLength();
-        TlvDecoderBuffer tlvs =
-                new TlvDecoderBuffer(getAppConfig.getTlv(), numOfConfigs);
+        int numOfTlvs = tlvData.getLength();
+        TlvDecoderBuffer tlvs = new TlvDecoderBuffer(tlvData.getTlv(), numOfTlvs);
         if (!tlvs.parse()) {
-            Log.e(TAG, "Failed to parse getAppConfigList tlvs");
+            Log.e(TAG, "Failed to parse tlvs");
             return Pair.create(UwbUciConstants.STATUS_CODE_FAILED, null);
         }
         T params = null;
@@ -107,7 +126,7 @@ public class UwbConfigurationManager {
             Log.e(TAG, "Failed to decode", e);
         }
         if (params == null) {
-            Log.d(TAG, "Failed to get params from getAppConfigList tlvs");
+            Log.d(TAG, "Failed to get params from tlvs");
             return Pair.create(UwbUciConstants.STATUS_CODE_FAILED, null);
         }
         return Pair.create(UwbUciConstants.STATUS_CODE_OK, params);

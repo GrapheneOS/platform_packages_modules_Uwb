@@ -5,9 +5,11 @@ use jni::sys::{jboolean, jbyte, jbyteArray, jint, jintArray, jlong, jobject};
 use jni::JNIEnv;
 use log::{error, info, LevelFilter};
 use num_traits::ToPrimitive;
-use uwb_uci_packets::{SessionGetAppConfigRspPacket, SessionSetAppConfigRspPacket, StatusCode};
+use uwb_uci_packets::{
+    GetCapsInfoRspPacket, SessionGetAppConfigRspPacket, SessionSetAppConfigRspPacket, StatusCode,
+};
 use uwb_uci_rust::error::UwbErr;
-use uwb_uci_rust::event_manager::EventManagerImpl as  EventManager;
+use uwb_uci_rust::event_manager::EventManagerImpl as EventManager;
 use uwb_uci_rust::uci::{uci_hrcv::UciResponse, Dispatcher, JNICommand};
 
 const STATUS_OK: i8 = 0;
@@ -275,6 +277,42 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGe
         }
         Err(e) => {
             error!("GetAppConfig failed with: {:?}", e);
+            *JObject::null()
+        }
+    }
+}
+
+/// get capability info
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetCapsInfo(
+    env: JNIEnv,
+    obj: JObject,
+) -> jbyteArray {
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetCapsInfo: enter");
+    match get_caps_info(env, obj) {
+        Ok(data) => {
+            let uwb_tlv_info_class =
+                env.find_class("com/android/server/uwb/data/UwbTlvData").unwrap();
+            let mut buf: Vec<u8> = Vec::new();
+            for tlv in data.get_tlvs() {
+                buf.push(tlv.t as u8);
+                buf.push(tlv.v.len() as u8);
+                buf.extend(&tlv.v);
+            }
+            let tlv_jbytearray = env.byte_array_from_slice(&buf).unwrap();
+            let uwb_tlv_info_object = env.new_object(
+                uwb_tlv_info_class,
+                "(II[B)V",
+                &[
+                    JValue::Int(data.get_status().to_i32().unwrap()),
+                    JValue::Int(data.get_tlvs().len().to_i32().unwrap()),
+                    JValue::Object(JObject::from(tlv_jbytearray)),
+                ],
+            );
+            *uwb_tlv_info_object.unwrap()
+        }
+        Err(e) => {
+            error!("GetCapsInfo failed with: {:?}", e);
             *JObject::null()
         }
     }
@@ -552,6 +590,14 @@ fn get_app_configurations(
         app_configs,
     })? {
         UciResponse::SessionGetAppConfigRsp(data) => Ok(data),
+        _ => Err(UwbErr::failed()),
+    }
+}
+
+fn get_caps_info(env: JNIEnv, obj: JObject) -> Result<GetCapsInfoRspPacket, UwbErr> {
+    let dispatcher = get_dispatcher(env, obj)?;
+    match dispatcher.block_on_jni_command(JNICommand::UciGetCapsInfo)? {
+        UciResponse::GetCapsInfoRsp(data) => Ok(data),
         _ => Err(UwbErr::failed()),
     }
 }
