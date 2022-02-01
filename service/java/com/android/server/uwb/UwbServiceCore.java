@@ -82,7 +82,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     private final NativeUwbManager mNativeUwbManager;
     private final UwbMetrics mUwbMetrics;
     private final UwbCountryCode mUwbCountryCode;
-    private PersistableBundle mUwbSpecificationInfo = null;
+    private final PersistableBundle mUwbSpecificationInfo = new PersistableBundle();
     private /* @UwbManager.AdapterStateCallback.State */ int mState;
     private @StateChangeReason int mLastStateChangedReason;
     private  IUwbVendorUciCallback mCallBack = null;
@@ -249,7 +249,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             // If neither of the capabilities are fetched correctly, don't cache anything.
             if (firaSpecificationParams.first == UwbUciConstants.STATUS_CODE_OK
                     || cccSpecificationParams.first == UwbUciConstants.STATUS_CODE_OK) {
-                mUwbSpecificationInfo = new PersistableBundle();
+                mUwbSpecificationInfo.clear();
                 mUwbSpecificationInfo.putPersistableBundle(
                         FiraParams.PROTOCOL_NAME, firaSpecificationParams.second.toBundle());
                 mUwbSpecificationInfo.putPersistableBundle(
@@ -259,7 +259,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
 
         @Override
         public PersistableBundle getSpecificationInfo() throws RemoteException {
-            if (mUwbSpecificationInfo == null) {
+            if (mUwbSpecificationInfo.isEmpty()) {
                 updateSpecificationInfo();
             }
             return mUwbSpecificationInfo;
