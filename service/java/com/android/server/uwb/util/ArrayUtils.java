@@ -18,6 +18,7 @@ package com.android.server.uwb.util;
 
 import android.annotation.Nullable;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -45,4 +46,11 @@ public class ArrayUtils {
         return array == null || array.length == 0;
     }
 
+    public static short[] toPrimitive(List<Short> list) {
+        short[] array = new short[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            array[i] = list.get(i).shortValue();
+        }
+        return array;
+    }
 }

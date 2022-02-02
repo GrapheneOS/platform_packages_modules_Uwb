@@ -280,21 +280,16 @@ public class NativeUwbManager {
      *                     0x00 - Adding
      *                     0x01 - removing
      * @param noOfControlee : The number(n) of Controlees
-     * @param address       : address list of Controlees
-     * @param subSessionId : Specific sub-session ID list of Controlees
+     * @param addresses     : address list of Controlees
+     * @param subSessionIds : Specific sub-session ID list of Controlees
      * @return : refer to SESSION_SET_APP_CONFIG_RSP
      * in the Table 16: Control messages to set Application configurations
      */
     public byte controllerMulticastListUpdate(int sessionId, int action, int noOfControlee,
-            byte[] address, int[]subSessionId) {
-        /**
-         * TODO:
-         * 1. change address type short[] to byte[]
-         * 2. call native function after jni function is implemented correctly
-         */
+            short[] addresses, int[]subSessionIds) {
         synchronized (mSessionFnLock) {
             return nativeControllerMulticastListUpdate(sessionId, (byte) action,
-                    (byte) noOfControlee, address, subSessionId);
+                    (byte) noOfControlee, addresses, subSessionIds);
         }
     }
 
@@ -393,7 +388,7 @@ public class NativeUwbManager {
     private native UwbTlvData nativeGetCapsInfo();
 
     private native byte nativeControllerMulticastListUpdate(int sessionId, byte action,
-            byte noOfControlee, byte[] address, int[]subSessionId);
+            byte noOfControlee, short[] address, int[]subSessionId);
 
     private native byte nativeSetCountryCode(byte[] countryCode);
 

@@ -27,6 +27,8 @@ import static com.google.uwb.support.ccc.CccParams.PULSE_SHAPE_SYMMETRICAL_ROOT_
 import static com.google.uwb.support.ccc.CccParams.SLOTS_PER_ROUND_6;
 import static com.google.uwb.support.ccc.CccParams.UWB_CHANNEL_9;
 import static com.google.uwb.support.fira.FiraParams.HOPPING_MODE_DISABLE;
+import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
+import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_UNICAST;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_INITIATOR;
@@ -66,6 +68,7 @@ import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccPulseShapeCombo;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
@@ -104,11 +107,12 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             "disable-uwb",
             "start-fira-ranging-session",
             "start-ccc-ranging-session",
+            "reconfigure-fira-ranging-session",
             "get-ranging-session-reports",
             "get-all-ranging-session-reports",
             "stop-ranging-session",
             "stop-all-ranging-sessions",
-            "get-specification-info"
+            "get-specification-info",
     };
 
     @VisibleForTesting
@@ -174,18 +178,21 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         private final CompletableFuture mRangingStartedFuture;
         private final CompletableFuture mRangingStoppedFuture;
         private final CompletableFuture mRangingClosedFuture;
+        private final CompletableFuture mRangingReconfiguredFuture;
 
         UwbRangingCallbacks(@NonNull SessionInfo sessionInfo, @NonNull PrintWriter pw,
                 @NonNull CompletableFuture rangingOpenedFuture,
                 @NonNull CompletableFuture rangingStartedFuture,
                 @NonNull CompletableFuture rangingStoppedFuture,
-                @NonNull CompletableFuture rangingClosedFuture) {
+                @NonNull CompletableFuture rangingClosedFuture,
+                @NonNull CompletableFuture rangingReconfiguredFuture) {
             mSessionInfo = sessionInfo;
             mPw = pw;
             mRangingOpenedFuture = rangingOpenedFuture;
             mRangingStartedFuture = rangingStartedFuture;
             mRangingStoppedFuture = rangingStoppedFuture;
             mRangingClosedFuture = rangingClosedFuture;
+            mRangingReconfiguredFuture = rangingReconfiguredFuture;
         }
 
         public void onRangingOpened(SessionHandle sessionHandle) {
@@ -212,10 +219,18 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             mRangingStartedFuture.complete(false);
         }
 
-        public void onRangingReconfigured(SessionHandle sessionHandle, PersistableBundle params) {}
+        public void onRangingReconfigured(SessionHandle sessionHandle, PersistableBundle params) {
+            mPw.println("Ranging reconfigured with params: " + bundleToString(params));
+            mRangingReconfiguredFuture.complete(true);
+        }
 
         public void onRangingReconfigureFailed(SessionHandle sessionHandle, int reason,
-                PersistableBundle params) {}
+                PersistableBundle params) {
+            mPw.println("Ranging reconfigure failed with reason: " + reason + " and params: "
+                    + bundleToString(params));
+            mRangingReconfiguredFuture.complete(true);
+
+        }
 
         public void onRangingStopped(SessionHandle sessionHandle, int reason,
                 PersistableBundle params) {
@@ -293,9 +308,11 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 new ArrayDeque<>(LAST_NUM_RANGING_REPORTS);
 
         public final CompletableFuture<Boolean> rangingOpenedFuture = new CompletableFuture<>();
-        public CompletableFuture<Boolean> rangingStartedFuture = new CompletableFuture<>();
-        public CompletableFuture<Boolean> rangingStoppedFuture = new CompletableFuture<>();
+        public final CompletableFuture<Boolean> rangingStartedFuture = new CompletableFuture<>();
+        public final CompletableFuture<Boolean> rangingStoppedFuture = new CompletableFuture<>();
         public final CompletableFuture<Boolean> rangingClosedFuture = new CompletableFuture<>();
+        public final CompletableFuture<Boolean> rangingReconfiguredFuture =
+                new CompletableFuture<>();
 
         SessionInfo(int sessionId, int sSessionHandleIdNext, @NonNull Params openRangingParams,
                 @NonNull PrintWriter pw) {
@@ -303,7 +320,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             sessionHandle = new SessionHandle(sSessionHandleIdNext);
             this.openRangingParams = openRangingParams;
             uwbRangingCbs = new UwbRangingCallbacks(this, pw, rangingOpenedFuture,
-                    rangingStartedFuture, rangingStoppedFuture, rangingClosedFuture);
+                    rangingStartedFuture, rangingStoppedFuture, rangingClosedFuture,
+                    rangingReconfiguredFuture);
         }
 
         public void addRangingReport(@NonNull RangingReport rangingReport) {
@@ -561,6 +579,73 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         pw.println("Ranging session closed");
     }
 
+    private FiraRangingReconfigureParams buildFiraReconfigureParams() {
+        FiraRangingReconfigureParams.Builder builder =
+                new FiraRangingReconfigureParams.Builder();
+        // defaults
+        builder.setAction(MULTICAST_LIST_UPDATE_ACTION_ADD);
+
+        String option = getNextOption();
+        while (option != null) {
+            if (option.equals("-a")) {
+                String action = getNextArgRequired();
+                if (action.equals("add")) {
+                    builder.setAction(MULTICAST_LIST_UPDATE_ACTION_ADD);
+                } else if (action.equals("delete")) {
+                    builder.setAction(MULTICAST_LIST_UPDATE_ACTION_DELETE);
+                } else {
+                    throw new IllegalArgumentException("Unexpected action " + action);
+                }
+            }
+            if (option.equals("-d")) {
+                String[] destAddressesString = getNextArgRequired().split(",");
+                List<UwbAddress> destAddresses = new ArrayList<>();
+                for (String destAddressString : destAddressesString) {
+                    destAddresses.add(UwbAddress.fromBytes(
+                            ByteBuffer.allocate(SHORT_ADDRESS_BYTE_LENGTH)
+                                    .putShort(Short.parseShort(destAddressString))
+                                    .array()));
+                }
+                builder.setAddressList(destAddresses.toArray(new UwbAddress[0]));
+            }
+            if (option.equals("-s")) {
+                String[] subSessionIdsString = getNextArgRequired().split(",");
+                List<Integer> subSessionIds = new ArrayList<>();
+                for (String subSessionIdString : subSessionIdsString) {
+                    subSessionIds.add(Integer.parseInt(subSessionIdString));
+                }
+                builder.setSubSessionIdList(subSessionIds.stream().mapToInt(s -> s).toArray());
+            }
+            option = getNextOption();
+        }
+        // TODO: Add remaining params if needed.
+        return builder.build();
+    }
+
+    private void reconfigureFiraRangingSession(PrintWriter pw) throws RemoteException {
+        int sessionId = Integer.parseInt(getNextArgRequired());
+        SessionInfo sessionInfo = sSessionIdToInfo.get(sessionId);
+        if (sessionInfo == null) {
+            pw.println("No active session with session ID: " + sessionId + " found");
+            return;
+        }
+        FiraRangingReconfigureParams params = buildFiraReconfigureParams();
+
+        mUwbService.reconfigureRanging(sessionInfo.sessionHandle, params.toBundle());
+        boolean reconfigureCompleted = false;
+        try {
+            reconfigureCompleted = sessionInfo.rangingClosedFuture.get(
+                    RANGE_CTL_TIMEOUT_MILLIS, MILLISECONDS);
+        } catch (InterruptedException | CancellationException | TimeoutException
+                | ExecutionException e) {
+        }
+        if (!reconfigureCompleted) {
+            pw.println("Failed to reconfigure ranging session. Aborting!");
+            return;
+        }
+        pw.println("Ranging session reconfigured");
+    }
+
     @Override
     public int onCommand(String cmd) {
         // Treat no command as help command.
@@ -614,6 +699,9 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     return 0;
                 case "start-ccc-ranging-session":
                     startCccRangingSession(pw);
+                    return 0;
+                case "reconfigure-fira-ranging-session":
+                    reconfigureFiraRangingSession(pw);
                     return 0;
                 case "get-ranging-session-reports": {
                     int sessionId = Integer.parseInt(getNextArgRequired());
@@ -727,6 +815,11 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         pw.println("    Starts a CCC ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
                 + " retrieved using |get-ranging-session-reports|");
+        pw.println("  reconfigure-fira-ranging-session"
+                + " <sessionId>"
+                + " [-a add|delete](action)"
+                + " [-d <destAddress-1, destAddress-2,...>](dest-addresses)"
+                + " [-s <subSessionId-1, subSessionId-2,...>](sub-sessionIds)");
         pw.println("  get-ranging-session-reports <sessionId>");
         pw.println("    Displays latest cached ranging reports for an ongoing ranging session");
         pw.println("  get-all-ranging-session-reports");

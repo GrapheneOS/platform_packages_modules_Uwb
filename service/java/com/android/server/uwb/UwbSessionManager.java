@@ -48,7 +48,8 @@ import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -643,15 +644,16 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                         int status = UwbUciConstants.STATUS_CODE_FAILED;
                         synchronized (uwbSession.getWaitObj()) {
                             // Handle SESSION_UPDATE_CONTROLLER_MULTICAST_LIST_CMD
-                            ByteBuffer dstAddressList = null;
                             if (rangingReconfigureParams.getAction() != null) {
                                 Log.d(TAG, "call multicastlist update");
-                                dstAddressList = ByteBuffer.allocate(256);
-                                int destAddressListSize =
+                                int dstAddressListSize =
                                         rangingReconfigureParams.getAddressList().length;
+                                List<Short> dstAddressList = new ArrayList<>();
                                 for (UwbAddress address :
                                         rangingReconfigureParams.getAddressList()) {
-                                    dstAddressList.put(TlvUtil.getReverseBytes(address.toBytes()));
+                                    dstAddressList.add(ByteBuffer.wrap(
+                                            TlvUtil.getReverseBytes(address.toBytes()))
+                                            .getShort(0));
                                 }
                                 int[] subSessionIdList = null;
                                 if (!ArrayUtils.isEmpty(
@@ -660,15 +662,14 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                         rangingReconfigureParams.getSubSessionIdList();
                                 } else {
                                     // Set to 0's for the UCI stack.
-                                    subSessionIdList = new int[destAddressListSize];
+                                    subSessionIdList = new int[dstAddressListSize];
                                 }
 
                                 status = mNativeUwbManager.controllerMulticastListUpdate(
                                         uwbSession.getSessionId(),
                                         rangingReconfigureParams.getAction(),
                                         subSessionIdList.length,
-                                        Arrays.copyOf(dstAddressList.array(),
-                                                dstAddressList.position()),
+                                        ArrayUtils.toPrimitive(dstAddressList),
                                         subSessionIdList);
                                 if (status != UwbUciConstants.STATUS_CODE_OK) {
                                     return status;

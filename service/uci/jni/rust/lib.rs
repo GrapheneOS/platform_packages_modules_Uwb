@@ -1,7 +1,7 @@
 //! jni for uwb native stack
 use android_logger::FilterBuilder;
 use jni::objects::{JObject, JValue};
-use jni::sys::{jboolean, jbyte, jbyteArray, jint, jintArray, jlong, jobject};
+use jni::sys::{jboolean, jbyte, jbyteArray, jint, jintArray, jlong, jobject, jshortArray};
 use jni::JNIEnv;
 use log::{error, info, LevelFilter};
 use num_traits::ToPrimitive;
@@ -326,8 +326,8 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeCo
     session_id: jint,
     action: jbyte,
     no_of_controlee: jbyte,
-    address: jbyteArray,
-    sub_session_id: jintArray,
+    addresses: jshortArray,
+    sub_session_ids: jintArray,
 ) -> jbyte {
     info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeControllerMulticastListUpdate: enter");
     byte_result_helper(
@@ -337,8 +337,8 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeCo
             session_id as u32,
             action as u8,
             no_of_controlee as u8,
-            address,
-            sub_session_id,
+            addresses,
+            sub_session_ids,
         ),
         "ControllerMulticastListUpdate",
     )
@@ -608,19 +608,20 @@ fn multicast_list_update(
     session_id: u32,
     action: u8,
     no_of_controlee: u8,
-    address: jbyteArray,
-    sub_session_id: jintArray,
+    addresses: jshortArray,
+    sub_session_ids: jintArray,
 ) -> Result<(), UwbErr> {
-    let address_list = env.convert_byte_array(address)?;
+    let mut address_list = vec![0i16; env.get_array_length(addresses)?.try_into().unwrap()];
+    env.get_short_array_region(addresses, 0, &mut address_list)?;
     let mut sub_session_id_list =
-        vec![0i32; env.get_array_length(sub_session_id)?.try_into().unwrap()];
-    env.get_int_array_region(sub_session_id, 0, &mut sub_session_id_list)?;
+        vec![0i32; env.get_array_length(sub_session_ids)?.try_into().unwrap()];
+    env.get_int_array_region(sub_session_ids, 0, &mut sub_session_id_list)?;
     let dispatcher = get_dispatcher(env, obj)?;
     let res = match dispatcher.block_on_jni_command(JNICommand::UciSessionUpdateMulticastList {
         session_id,
         action,
         no_of_controlee,
-        address_list,
+        address_list: address_list.to_vec(),
         sub_session_id_list: sub_session_id_list.to_vec(),
     })? {
         UciResponse::SessionUpdateControllerMulticastListRsp(data) => data,
