@@ -36,7 +36,7 @@ public class NativeUwbManager {
 
     public final Object mSessionFnLock = new Object();
     public final Object mSessionCountFnLock = new Object();
-    public final Object mGetRangingCountFnLock = new Object();
+    public final Object mGlobalStateFnLock = new Object();
     public final Object mGetSessionStatusFnLock = new Object();
     public final Object mSetAppConfigFnLock = new Object();
     private final UwbInjector mUwbInjector;
@@ -267,7 +267,7 @@ public class NativeUwbManager {
      * @return :  {@link UwbTlvData} : All tlvs that are to be decoded
      */
     public UwbTlvData getCapsInfo() {
-        synchronized (mSetAppConfigFnLock) {
+        synchronized (mGlobalStateFnLock) {
             return nativeGetCapsInfo();
         }
     }
@@ -305,14 +305,14 @@ public class NativeUwbManager {
      */
     public byte setCountryCode(byte[] countryCode) {
         Log.i(TAG, "setCountryCode: " + new String(countryCode));
-        synchronized (mSessionFnLock) {
+        synchronized (mGlobalStateFnLock) {
             return nativeSetCountryCode(countryCode);
         }
     }
 
     @NonNull
     public UwbVendorUciResponse sendRawVendorCmd(int gid, int oid, byte[] payload) {
-        synchronized (mSessionFnLock) {
+        synchronized (mGlobalStateFnLock) {
             return nativeSendRawVendorCmd(gid, oid, payload);
         }
     }
