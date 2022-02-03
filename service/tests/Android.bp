@@ -70,18 +70,4 @@ android_test {
         "general-tests",
         "mts-uwb",
     ],
-
-    // For coverage
-    jacoco: {
-        exclude_filter: [
-        ],
-        include_filter: [
-            "com.android.server.uwb.UwbInjector",
-            "com.android.server.uwb.UwbInjector$*",
-            "com.android.server.uwb.UwbService",
-            "com.android.server.uwb.UwbService$*",
-            "com.android.server.uwb.UwbServiceImpl",
-            "com.android.server.uwb.UwbServiceImpl$*",
-        ],
-    },
 }
