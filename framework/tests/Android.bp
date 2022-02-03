@@ -36,11 +36,6 @@ android_test {
 
     srcs: ["**/*.java"],
 
-    jacoco: {
-        include_filter: ["android.uwb.*"],
-        exclude_filter: [],
-    },
-
     static_libs: [
         "androidx.test.core",
         "androidx.test.ext.junit",
