@@ -36,6 +36,8 @@ import android.uwb.SessionHandle;
 import android.uwb.StateChangeReason;
 import android.uwb.UwbManager.AdapterStateCallback;
 
+import androidx.annotation.Nullable;
+
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.data.UwbVendorUciResponse;
 import com.android.server.uwb.jni.INativeUwbManager;
@@ -62,7 +64,7 @@ import java.util.concurrent.TimeoutException;
  * TODO(b/196225233): Merge with {@link com.android.uwb.server.UwbServiceImpl}.
  */
 public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
-        INativeUwbManager.VendorNotification {
+        INativeUwbManager.VendorNotification, UwbCountryCode.CountryCodeChangedListener {
     private static final String TAG = "UwbServiceCore";
 
     private static final int TASK_ENABLE = 1;
@@ -107,6 +109,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         mNativeUwbManager.setVendorListener(this);
         mUwbMetrics = uwbMetrics;
         mUwbCountryCode = uwbCountryCode;
+        mUwbCountryCode.addListener(this);
         mSessionManager = uwbSessionManager;
         mConfigurationManager = uwbConfigurationManager;
 
@@ -203,6 +206,13 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     @Override
     public void onCoreGenericErrorNotificationReceived(int status) {
         Log.e(TAG, "onCoreGenericErrorNotificationReceived status = " + status);
+    }
+
+    @Override
+    public void onCountryCodeChanged(@Nullable String countryCode) {
+        // Clear the cached capabilities on country code changes.
+        Log.v(TAG, "Clearing cached specification params on country code change");
+        mUwbSpecificationInfo.clear();
     }
 
     public final class UwbAdapterService extends IUwbAdapter.Stub {
@@ -416,6 +426,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             }
             return status;
         }
+
     }
 
     private class EnableDisableTask extends Handler {

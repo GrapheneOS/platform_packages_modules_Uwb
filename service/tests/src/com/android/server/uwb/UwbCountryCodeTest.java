@@ -89,6 +89,18 @@ public class UwbCountryCodeTest {
     }
 
     @Test
+    public void testInitializeCountryCodeFromTelephonyVerifyListener() {
+        UwbCountryCode.CountryCodeChangedListener listener = mock(
+                UwbCountryCode.CountryCodeChangedListener.class);
+        mUwbCountryCode.addListener(listener);
+        when(mTelephonyManager.getNetworkCountryIso()).thenReturn(TEST_COUNTRY_CODE);
+        mUwbCountryCode.initialize();
+        verify(mNativeUwbManager).setCountryCode(
+                TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
+        verify(listener).onCountryCodeChanged(TEST_COUNTRY_CODE);
+    }
+
+    @Test
     public void testSetCountryCodeFromTelephony() {
         when(mTelephonyManager.getNetworkCountryIso()).thenReturn(TEST_COUNTRY_CODE);
         mUwbCountryCode.initialize();

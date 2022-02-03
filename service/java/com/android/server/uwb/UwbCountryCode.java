@@ -26,7 +26,10 @@ import android.net.wifi.WifiManager.ActiveCountryCodeChangedCallback;
 import android.os.Handler;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
+import android.util.ArraySet;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
 
 import com.android.modules.utils.HandlerExecutor;
 import com.android.server.uwb.data.UwbUciConstants;
@@ -39,6 +42,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Provide functions for making changes to UWB country code.
@@ -55,6 +59,7 @@ public class UwbCountryCode {
     private final TelephonyManager mTelephonyManager;
     private final NativeUwbManager mNativeUwbManager;
     private final UwbInjector mUwbInjector;
+    private final Set<CountryCodeChangedListener> mListeners = new ArraySet<>();
 
     private String mTelephonyCountryCode = null;
     private String mWifiCountryCode = null;
@@ -63,6 +68,10 @@ public class UwbCountryCode {
     private String mCountryCodeUpdatedTimestamp = null;
     private String mTelephonyCountryTimestamp = null;
     private String mWifiCountryTimestamp = null;
+
+    public interface CountryCodeChangedListener {
+        void onCountryCodeChanged(@Nullable String newCountryCode);
+    }
 
     public UwbCountryCode(
             Context context, NativeUwbManager nativeUwbManager, Handler handler,
@@ -107,6 +116,10 @@ public class UwbCountryCode {
                 + mUwbInjector.getOemDefaultCountryCode());
         setTelephonyCountryCode(mTelephonyManager.getNetworkCountryIso());
         // Current Wifi country code update is sent immediately on registration.
+    }
+
+    public void addListener(@NonNull CountryCodeChangedListener listener) {
+        mListeners.add(listener);
     }
 
     private boolean setTelephonyCountryCode(String countryCode) {
@@ -178,6 +191,9 @@ public class UwbCountryCode {
         }
         mCountryCode = country;
         mCountryCodeUpdatedTimestamp = LocalDateTime.now().format(FORMATTER);
+        for (CountryCodeChangedListener listener : mListeners) {
+            listener.onCountryCodeChanged(country);
+        }
         return true;
     }
 
