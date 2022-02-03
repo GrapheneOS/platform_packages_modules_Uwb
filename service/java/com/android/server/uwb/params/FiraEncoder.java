@@ -107,6 +107,14 @@ public class FiraEncoder extends TlvEncoder {
                 // .putInt(ConfigParam.SUB_SESSION_ID, params.getSubSessionId())
                 .putByte(ConfigParam.BPRF_PHR_DATA_RATE, (byte) params.getBprfPhrDataRate())
                 .putByte(ConfigParam.STS_LENGTH, (byte) params.getStsLength())
+                /** TODO (b/205730040): This seems to be breaking qorvo's HAL (re-enable later)
+                .putShort(ConfigParam.NUM_RANGE_MEASUREMENTS,
+                        (short) params.getNumOfMsrmtFocusOnRange())
+                .putShort(ConfigParam.NUM_AOA_AZIMUTH_MEASUREMENTS,
+                        (short) params.getNumOfMsrmtFocusOnAoaAzimuth())
+                .putShort(ConfigParam.NUM_AOA_ELEVATION_MEASUREMENTS,
+                        (short) params.getNumOfMsrmtFocusOnAoaElevation())
+                 */
                 .build();
         return tlvBuffer;
     }

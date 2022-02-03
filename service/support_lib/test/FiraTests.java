@@ -16,7 +16,7 @@
 
 package com.google.uwb.support;
 
-import static com.google.uwb.support.fira.FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS;
+import static com.google.uwb.support.fira.FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_INTERLEAVED;
 import static com.google.uwb.support.fira.FiraParams.AOA_TYPE_AZIMUTH_AND_ELEVATION;
 import static com.google.uwb.support.fira.FiraParams.BPRF_PHR_DATA_RATE_6M81;
 import static com.google.uwb.support.fira.FiraParams.MAC_ADDRESS_MODE_8_BYTES;
@@ -114,7 +114,7 @@ public class FiraTests {
         byte[] staticStsIV = new byte[] {(byte) 0xDF, (byte) 0xCE, (byte) 0xAB, 0x12, 0x34, 0x56};
         boolean isKeyRotationEnabled = true;
         int keyRotationRate = 15;
-        int aoaResultRequest = AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS;
+        int aoaResultRequest = AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_INTERLEAVED;
         int rangeDataNtfConfig = RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY;
         int rangeDataNtfProximityNear = 50;
         int rangeDataNtfProximityFar = 200;
@@ -123,6 +123,9 @@ public class FiraTests {
         boolean hasAngleOfArrivalElevationReport = true;
         boolean hasAngleOfArrivalFigureOfMeritReport = true;
         int aoaType = AOA_TYPE_AZIMUTH_AND_ELEVATION;
+        int numOfMsrmtFocusOnRange = 1;
+        int numOfMsrmtFocusOnAoaAzimuth = 2;
+        int numOfMsrmtFocusOnAoaElevation = 3;
 
         FiraOpenSessionParams params =
                 new FiraOpenSessionParams.Builder()
@@ -173,6 +176,10 @@ public class FiraTests {
                         .setHasAngleOfArrivalFigureOfMeritReport(
                                 hasAngleOfArrivalFigureOfMeritReport)
                         .setAoaType(aoaType)
+                        .setMeasurementFocusRatio(
+                                numOfMsrmtFocusOnRange,
+                                numOfMsrmtFocusOnAoaAzimuth,
+                                numOfMsrmtFocusOnAoaElevation)
                         .build();
 
         assertEquals(params.getProtocolVersion(), protocolVersion);
@@ -227,6 +234,9 @@ public class FiraTests {
                 params.hasAngleOfArrivalFigureOfMeritReport(),
                 hasAngleOfArrivalFigureOfMeritReport);
         assertEquals(params.getAoaType(), aoaType);
+        assertEquals(params.getNumOfMsrmtFocusOnRange(), numOfMsrmtFocusOnRange);
+        assertEquals(params.getNumOfMsrmtFocusOnAoaAzimuth(), numOfMsrmtFocusOnAoaAzimuth);
+        assertEquals(params.getNumOfMsrmtFocusOnAoaElevation(), numOfMsrmtFocusOnAoaElevation);
 
         FiraOpenSessionParams fromBundle = FiraOpenSessionParams.fromBundle(params.toBundle());
 
@@ -280,6 +290,9 @@ public class FiraTests {
                 fromBundle.hasAngleOfArrivalFigureOfMeritReport(),
                 hasAngleOfArrivalFigureOfMeritReport);
         assertEquals(fromBundle.getAoaType(), aoaType);
+        assertEquals(fromBundle.getNumOfMsrmtFocusOnRange(), numOfMsrmtFocusOnRange);
+        assertEquals(fromBundle.getNumOfMsrmtFocusOnAoaAzimuth(), numOfMsrmtFocusOnAoaAzimuth);
+        assertEquals(fromBundle.getNumOfMsrmtFocusOnAoaElevation(), numOfMsrmtFocusOnAoaElevation);
 
         verifyProtocolPresent(params);
         verifyBundlesEqual(params, fromBundle);

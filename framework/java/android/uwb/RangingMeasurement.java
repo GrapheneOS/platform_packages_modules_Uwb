@@ -215,30 +215,30 @@ public final class RangingMeasurement implements Parcelable {
     public @interface MeasurementFocus {}
 
     /**
-     * Ranging measurement was done with no particular focus in terms of antennae selection.
+     * Ranging measurement was done with no particular focus in terms of antenna selection.
      */
     public static final int MEASUREMENT_FOCUS_NONE = 0;
 
     /**
-     * Ranging measurement was done with a focus on range calculation in terms of antennae
+     * Ranging measurement was done with a focus on range calculation in terms of antenna
      * selection.
      */
     public static final int MEASUREMENT_FOCUS_RANGE = 1;
 
     /**
      * Ranging measurement was done with a focus on ANGLE_OF_ARRIVAL azimuth calculation in terms of
-     * antennae selection.
+     * antenna selection.
      */
     public static final int MEASUREMENT_FOCUS_ANGLE_OF_ARRIVAL_AZIMUTH = 1;
 
     /**
      * Ranging measurement was done with a focus on ANGLE_OF_ARRIVAL azimuth calculation in terms of
-     * antennae selection.
+     * antenna selection.
      */
     public static final int MEASUREMENT_FOCUS_ANGLE_OF_ARRIVAL_ELEVATION = 2;
 
     /**
-     * Gets the measurement focus in terms of antennae used for this measurement.
+     * Gets the measurement focus in terms of antenna used for this measurement.
      *
      * @return focus of this measurement.
      */
@@ -437,7 +437,7 @@ public final class RangingMeasurement implements Parcelable {
         }
 
         /**
-         * Sets the measurement focus in terms of antennae used for this measurement.
+         * Sets the measurement focus in terms of antenna used for this measurement.
          *
          * @param measurementFocus focus of this measurement.
          */

@@ -21,6 +21,7 @@ import static com.google.uwb.support.fira.FiraParams.AoaCapabilityFlag.HAS_AZIMU
 import static com.google.uwb.support.fira.FiraParams.AoaCapabilityFlag.HAS_ELEVATION_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.AoaCapabilityFlag.HAS_FOM_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.AoaCapabilityFlag.HAS_FULL_AZIMUTH_SUPPORT;
+import static com.google.uwb.support.fira.FiraParams.AoaCapabilityFlag.HAS_INTERLEAVING_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.DeviceRoleCapabilityFlag.HAS_CONTROLEE_INITIATOR_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.DeviceRoleCapabilityFlag.HAS_CONTROLEE_RESPONDER_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.DeviceRoleCapabilityFlag.HAS_CONTROLLER_INITIATOR_SUPPORT;
@@ -84,8 +85,9 @@ public class FiraDecoderTest {
                     + "0E0101"
                     + "0F050000000003"
                     + "10010F"
-                    + "110101");
-    private static final int TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS = 18;
+                    + "110101"
+                    + "E30101");
+    private static final int TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS = 19;
     private final FiraDecoder mFiraDecoder = new FiraDecoder();
 
     @Test
@@ -137,7 +139,7 @@ public class FiraDecoderTest {
 
         assertThat(firaSpecificationParams.getAoaCapabilities()).isEqualTo(
                 EnumSet.of(HAS_AZIMUTH_SUPPORT, HAS_ELEVATION_SUPPORT, HAS_FULL_AZIMUTH_SUPPORT,
-                        HAS_FOM_SUPPORT));
+                        HAS_FOM_SUPPORT, HAS_INTERLEAVING_SUPPORT));
 
         assertThat(firaSpecificationParams.getBprfParameterSetCapabilities()).isEqualTo(
                 EnumSet.of(BprfParameterSetCapabilityFlag.HAS_SET_1_SUPPORT));

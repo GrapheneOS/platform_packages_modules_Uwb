@@ -26,6 +26,7 @@ import static com.google.uwb.support.ccc.CccParams.HOPPING_SEQUENCE_DEFAULT;
 import static com.google.uwb.support.ccc.CccParams.PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE;
 import static com.google.uwb.support.ccc.CccParams.SLOTS_PER_ROUND_6;
 import static com.google.uwb.support.ccc.CccParams.UWB_CHANNEL_9;
+import static com.google.uwb.support.fira.FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_INTERLEAVED;
 import static com.google.uwb.support.fira.FiraParams.HOPPING_MODE_DISABLE;
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE;
@@ -398,6 +399,23 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 } else {
                     throw new IllegalArgumentException("Unknown round usage: " + usage);
                 }
+            }
+            if (option.equals("-z")) {
+                String[] interleaveRatioString = getNextArgRequired().split(",");
+                if (interleaveRatioString.length != 3) {
+                    throw new IllegalArgumentException("Unexpected interleaving ratio: "
+                            +  Arrays.toString(interleaveRatioString)
+                            + " expected to be <numRange, numAoaAzimuth, numAoaElevation>");
+                }
+                int numOfRangeMsrmts = Integer.parseInt(interleaveRatioString[0]);
+                int numOfAoaAzimuthMrmts = Integer.parseInt(interleaveRatioString[1]);
+                int numOfAoaElevationMrmts = Integer.parseInt(interleaveRatioString[2]);
+                // Set to interleaving mode
+                builder.setAoaResultRequest(AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_INTERLEAVED);
+                builder.setMeasurementFocusRatio(
+                        numOfRangeMsrmts,
+                        numOfAoaAzimuthMrmts,
+                        numOfAoaElevationMrmts);
             }
             option = getNextOption();
         }
@@ -794,7 +812,9 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " [-r initiator|responder](device-role)"
                 + " [-a <deviceAddress>](device-address)"
                 + " [-d <destAddress-1, destAddress-2,...>](dest-addresses)"
-                + " [-u ds-twr|ss-twr|ds-twr-non-deferred|ss-twr-non-deferred](round-usage)");
+                + " [-u ds-twr|ss-twr|ds-twr-non-deferred|ss-twr-non-deferred](round-usage)"
+                + " [-z <numRangeMrmts, numAoaAzimuthMrmts, numAoaElevationMrmts>"
+                + "(interleaving-ratio)");
         pw.println("    Starts a FIRA ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
                 + " retrieved using |get-ranging-session-reports|");

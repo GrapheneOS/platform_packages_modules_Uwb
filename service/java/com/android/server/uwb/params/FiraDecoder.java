@@ -20,6 +20,7 @@ import static com.android.server.uwb.config.CapabilityParam.AOA_AZIMUTH_180;
 import static com.android.server.uwb.config.CapabilityParam.AOA_AZIMUTH_90;
 import static com.android.server.uwb.config.CapabilityParam.AOA_ELEVATION;
 import static com.android.server.uwb.config.CapabilityParam.AOA_FOM;
+import static com.android.server.uwb.config.CapabilityParam.AOA_RESULT_REQ_INTERLEAVING;
 import static com.android.server.uwb.config.CapabilityParam.BLOCK_STRIDING;
 import static com.android.server.uwb.config.CapabilityParam.CC_CONSTRAINT_LENGTH_K3;
 import static com.android.server.uwb.config.CapabilityParam.CC_CONSTRAINT_LENGTH_K7;
@@ -46,6 +47,7 @@ import static com.android.server.uwb.config.CapabilityParam.SS_TWR_DEFERRED;
 import static com.android.server.uwb.config.CapabilityParam.SS_TWR_NON_DEFERRED;
 import static com.android.server.uwb.config.CapabilityParam.STATIC_STS;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_AOA;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_AOA_RESULT_REQ_INTERLEAVING;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_BLOCK_STRIDING;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_BPRF_PARAMETER_SETS;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_CC_CONSTRAINT_LENGTH;
@@ -274,6 +276,10 @@ public class FiraDecoder extends TlvDecoder {
         }
         if (isBitSet(aoaUci, AOA_FOM)) {
             aoaFlag.add(FiraParams.AoaCapabilityFlag.HAS_FOM_SUPPORT);
+        }
+        byte aoaInterleavingUci = tlvs.getByte(SUPPORTED_AOA_RESULT_REQ_INTERLEAVING);
+        if (isBitSet(aoaInterleavingUci, AOA_RESULT_REQ_INTERLEAVING)) {
+            aoaFlag.add(FiraParams.AoaCapabilityFlag.HAS_INTERLEAVING_SUPPORT);
         }
         builder.setAoaCapabilities(aoaFlag);
 

@@ -19,6 +19,8 @@ package com.google.uwb.support.fira;
 import static com.android.internal.util.Preconditions.checkArgument;
 import static com.android.internal.util.Preconditions.checkNotNull;
 
+import static com.google.uwb.support.fira.FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_INTERLEAVED;
+
 import static java.util.Objects.requireNonNull;
 
 import android.os.PersistableBundle;
@@ -99,6 +101,9 @@ public class FiraOpenSessionParams extends FiraParams {
     private final boolean mHasAngleOfArrivalAzimuthReport;
     private final boolean mHasAngleOfArrivalElevationReport;
     private final boolean mHasAngleOfArrivalFigureOfMeritReport;
+    private final int mNumOfMsrmtFocusOnRange;
+    private final int mNumOfMsrmtFocusOnAoaAzimuth;
+    private final int mNumOfMsrmtFocusOnAoaElevation;
 
     private static final int BUNDLE_VERSION_1 = 1;
     private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_1;
@@ -155,6 +160,12 @@ public class FiraOpenSessionParams extends FiraParams {
     private static final String KEY_HAS_RESULT_REPORT_PHASE = "has_result_report_phase";
     private static final String KEY_MEASUREMENT_REPORT_TYPE = "measurement_report_type";
     private static final String KEY_AOA_TYPE = "aoa_type";
+    private static final String KEY_NUM_OF_MSRMT_FOCUS_ON_RANGE =
+            "num_of_msrmt_focus_on_range";
+    private static final String KEY_NUM_OF_MSRMT_FOCUS_ON_AOA_AZIMUTH =
+            "num_of_msrmt_focus_on_aoa_azimuth";
+    private static final String KEY_NUM_OF_MSRMT_FOCUS_ON_AOA_ELEVATION =
+            "num_of_msrmt_focus_on_aoa_elevation";
 
     private FiraOpenSessionParams(
             FiraProtocolVersion protocolVersion,
@@ -203,7 +214,10 @@ public class FiraOpenSessionParams extends FiraParams {
             boolean hasAngleOfArrivalAzimuthReport,
             boolean hasAngleOfArrivalElevationReport,
             boolean hasAngleOfArrivalFigureOfMeritReport,
-            @AoaType int aoaType) {
+            @AoaType int aoaType,
+            int numOfMsrmtFocusOnRange,
+            int numOfMsrmtFocusOnAoaAzimuth,
+            int numOfMsrmtFocusOnAoaElevation) {
         mProtocolVersion = protocolVersion;
         mSessionId = sessionId;
         mDeviceType = deviceType;
@@ -251,6 +265,9 @@ public class FiraOpenSessionParams extends FiraParams {
         mHasAngleOfArrivalElevationReport = hasAngleOfArrivalElevationReport;
         mHasAngleOfArrivalFigureOfMeritReport = hasAngleOfArrivalFigureOfMeritReport;
         mAoaType = aoaType;
+        mNumOfMsrmtFocusOnRange = numOfMsrmtFocusOnRange;
+        mNumOfMsrmtFocusOnAoaAzimuth = numOfMsrmtFocusOnAoaAzimuth;
+        mNumOfMsrmtFocusOnAoaElevation = numOfMsrmtFocusOnAoaElevation;
     }
 
     @Override
@@ -466,6 +483,18 @@ public class FiraOpenSessionParams extends FiraParams {
         return mAoaType;
     }
 
+    public int getNumOfMsrmtFocusOnRange() {
+        return mNumOfMsrmtFocusOnRange;
+    }
+
+    public int getNumOfMsrmtFocusOnAoaAzimuth() {
+        return mNumOfMsrmtFocusOnAoaAzimuth;
+    }
+
+    public int getNumOfMsrmtFocusOnAoaElevation() {
+        return mNumOfMsrmtFocusOnAoaElevation;
+    }
+
     @Nullable
     private static int[] byteArrayToIntArray(@Nullable byte[] bytes) {
         if (bytes == null) {
@@ -556,6 +585,9 @@ public class FiraOpenSessionParams extends FiraParams {
                 KEY_HAS_ANGLE_OF_ARRIVAL_FIGURE_OF_MERIT_REPORT,
                 mHasAngleOfArrivalFigureOfMeritReport);
         bundle.putInt(KEY_AOA_TYPE, mAoaType);
+        bundle.putInt(KEY_NUM_OF_MSRMT_FOCUS_ON_RANGE, mNumOfMsrmtFocusOnRange);
+        bundle.putInt(KEY_NUM_OF_MSRMT_FOCUS_ON_AOA_AZIMUTH, mNumOfMsrmtFocusOnAoaAzimuth);
+        bundle.putInt(KEY_NUM_OF_MSRMT_FOCUS_ON_AOA_ELEVATION, mNumOfMsrmtFocusOnAoaElevation);
         return bundle;
     }
 
@@ -643,6 +675,10 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setHasAngleOfArrivalFigureOfMeritReport(
                         bundle.getBoolean(KEY_HAS_ANGLE_OF_ARRIVAL_FIGURE_OF_MERIT_REPORT))
                 .setAoaType(bundle.getInt(KEY_AOA_TYPE))
+                .setMeasurementFocusRatio(
+                        bundle.getInt(KEY_NUM_OF_MSRMT_FOCUS_ON_RANGE),
+                        bundle.getInt(KEY_NUM_OF_MSRMT_FOCUS_ON_AOA_AZIMUTH),
+                        bundle.getInt(KEY_NUM_OF_MSRMT_FOCUS_ON_AOA_ELEVATION))
                 .build();
     }
 
@@ -789,6 +825,11 @@ public class FiraOpenSessionParams extends FiraParams {
 
         /** Not defined in UCI, we use Azimuth-only as default */
         @AoaType private int mAoaType = AOA_TYPE_AZIMUTH;
+
+        /** Interleaving ratios are not set by default */
+        private int mNumOfMsrmtFocusOnRange = 0;
+        private int mNumOfMsrmtFocusOnAoaAzimuth = 0;
+        private int mNumOfMsrmtFocusOnAoaElevation = 0;
 
         public Builder() {}
 
@@ -1094,6 +1135,28 @@ public class FiraOpenSessionParams extends FiraParams {
             return this;
         }
 
+       /**
+        * After the session has been started, the device starts by
+        * performing numOfMsrmtFocusOnRange range-only measurements (no
+        * AoA), then it proceeds with numOfMsrmtFocusOnAoaAzimuth AoA
+        * azimuth measurements followed by numOfMsrmtFocusOnAoaElevation
+        * AoA elevation measurements.
+        * If this is not invoked, the focus of each measurement is left
+        * to the UWB vendor.
+        *
+        * Only valid when {@link #setAoaResultRequest(int)} is set to
+        * {@link FiraParams#AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_INTERLEAVED}.
+        */
+        public FiraOpenSessionParams.Builder setMeasurementFocusRatio(
+                int numOfMsrmtFocusOnRange,
+                int numOfMsrmtFocusOnAoaAzimuth,
+                int numOfMsrmtFocusOnAoaElevation) {
+            mNumOfMsrmtFocusOnRange = numOfMsrmtFocusOnRange;
+            mNumOfMsrmtFocusOnAoaAzimuth = numOfMsrmtFocusOnAoaAzimuth;
+            mNumOfMsrmtFocusOnAoaElevation = numOfMsrmtFocusOnAoaElevation;
+            return this;
+        }
+
         private void checkAddress() {
             checkArgument(
                     mMacAddressMode == MAC_ADDRESS_MODE_2_BYTES
@@ -1126,9 +1189,23 @@ public class FiraOpenSessionParams extends FiraParams {
             }
         }
 
+        private void checkInterleavingRatio() {
+            if (mAoaResultRequest != AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_INTERLEAVED) {
+                checkArgument(mNumOfMsrmtFocusOnRange == 0);
+                checkArgument(mNumOfMsrmtFocusOnAoaAzimuth == 0);
+                checkArgument(mNumOfMsrmtFocusOnAoaElevation == 0);
+            } else {
+                // at-least one of the ratio params should be set for interleaving mode.
+                checkArgument(mNumOfMsrmtFocusOnRange > 0
+                        || mNumOfMsrmtFocusOnAoaAzimuth > 0
+                        || mNumOfMsrmtFocusOnAoaElevation > 0);
+            }
+        }
+
         public FiraOpenSessionParams build() {
             checkAddress();
             checkStsConfig();
+            checkInterleavingRatio();
             return new FiraOpenSessionParams(
                     mProtocolVersion.get(),
                     mSessionId.get(),
@@ -1176,7 +1253,10 @@ public class FiraOpenSessionParams extends FiraParams {
                     mHasAngleOfArrivalAzimuthReport,
                     mHasAngleOfArrivalElevationReport,
                     mHasAngleOfArrivalFigureOfMeritReport,
-                    mAoaType);
+                    mAoaType,
+                    mNumOfMsrmtFocusOnRange,
+                    mNumOfMsrmtFocusOnAoaAzimuth,
+                    mNumOfMsrmtFocusOnAoaElevation);
         }
     }
 }

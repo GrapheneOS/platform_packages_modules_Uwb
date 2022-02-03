@@ -40,6 +40,8 @@ public class CapabilityParam {
     public static final int SUPPORTED_HPRF_PARAMETER_SETS = 0x0F;
     public static final int SUPPORTED_AOA = 0x10;
     public static final int SUPPORTED_EXTENDED_MAC_ADDRESS = 0x11;
+    public static final int SUPPORTED_AOA_RESULT_REQ_INTERLEAVING =
+            UwbVendorCapabilityTlvTypes.SUPPORTED_AOA_RESULT_REQ_ANTENNA_INTERLEAVING;
 
     // CCC specific
     public static final int CCC_SUPPORTED_VERSIONS =
@@ -108,4 +110,7 @@ public class CapabilityParam {
 
     public static final int NO_EXTENDED_MAC = 0x0;
     public static final int EXTENDED_MAC = 0x1;
+
+    public static final int NO_AOA_RESULT_REQ_INTERLEAVING = 0x0;
+    public static final int AOA_RESULT_REQ_INTERLEAVING = 0x1;
 }
