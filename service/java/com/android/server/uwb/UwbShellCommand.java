@@ -120,7 +120,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
     public static final FiraOpenSessionParams.Builder DEFAULT_FIRA_OPEN_SESSION_PARAMS =
             new FiraOpenSessionParams.Builder()
                     .setProtocolVersion(FiraParams.PROTOCOL_VERSION_1_1)
-                    .setSessionId(0)
+                    .setSessionId(1)
                     .setDeviceType(RANGING_DEVICE_TYPE_CONTROLLER)
                     .setDeviceRole(RANGING_DEVICE_ROLE_RESPONDER)
                     .setDeviceAddress(UwbAddress.fromBytes(new byte[] { 0x4, 0x6}))
@@ -139,7 +139,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                             new CccPulseShapeCombo(
                                     PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE,
                                     PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE))
-                    .setSessionId(0)
+                    .setSessionId(1)
                     .setRanMultiplier(4)
                     .setChannel(UWB_CHANNEL_9)
                     .setNumChapsPerSlot(CHAPS_PER_SLOT_3)

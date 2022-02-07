@@ -37,7 +37,6 @@ apex_defaults {
     certificate: ":com.android.uwb.certificate",
     min_sdk_version: "Tiramisu",
 
-    // TODO(b/186585880): Fix all @hide dependencies.
     updatable: true,
 
     // Indicates that pre-installed version of this apex can be compressed.
