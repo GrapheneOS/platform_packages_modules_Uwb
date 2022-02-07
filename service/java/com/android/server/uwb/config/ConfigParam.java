@@ -22,6 +22,10 @@ import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvType
 import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.CCC_URSK_TTL;
 import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.CCC_UWB_CONFIG_ID;
 import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.CCC_UWB_TIME0;
+import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.NB_OF_AZIMUTH_MEASUREMENTS;
+import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.NB_OF_ELEVATION_MEASUREMENTS;
+import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.NB_OF_RANGE_MEASUREMENTS;
+import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvValues.AOA_RESULT_REQ_ANTENNA_INTERLEAVING;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -78,9 +82,13 @@ public class ConfigParam {
     public static final int BPRF_PHR_DATA_RATE = 0x31;
     public static final int MAX_NUMBER_OF_MEASUREMENTS = 0x32;
     public static final int STS_LENGTH = 0x35;
+    public static final int NUM_RANGE_MEASUREMENTS = NB_OF_RANGE_MEASUREMENTS;
+    public static final int NUM_AOA_AZIMUTH_MEASUREMENTS = NB_OF_AZIMUTH_MEASUREMENTS;
+    public static final int NUM_AOA_ELEVATION_MEASUREMENTS = NB_OF_ELEVATION_MEASUREMENTS;
 
     public static final int VENDOR_ID_BYTE_COUNT = 2;
     public static final int STATIC_STS_IV_BYTE_COUNT = 6;
+    public static final int AOA_RESULT_REQ_INTERLEAVING = AOA_RESULT_REQ_ANTENNA_INTERLEAVING;
 
     // CCC
     //OpenParams

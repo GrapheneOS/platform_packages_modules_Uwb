@@ -289,12 +289,21 @@ public abstract class FiraParams extends Params {
             value = {
                 AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT,
                 AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS,
+                AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_AZIMUTH_ONLY,
+                AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_ELEVATION_ONLY,
+                AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_INTERLEAVED,
             })
     public @interface AoaResultRequestMode {}
 
     public static final int AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT = 0;
 
     public static final int AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS = 1;
+
+    public static final int AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_AZIMUTH_ONLY = 2;
+
+    public static final int AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_ELEVATION_ONLY = 3;
+
+    public static final int AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_INTERLEAVED = 0xF0;
 
     /** STS Segment count */
     @IntDef(
@@ -527,7 +536,8 @@ public abstract class FiraParams extends Params {
         HAS_AZIMUTH_SUPPORT(1),
         HAS_ELEVATION_SUPPORT(1 << 1),
         HAS_FOM_SUPPORT(1 << 2),
-        HAS_FULL_AZIMUTH_SUPPORT(1 << 3);
+        HAS_FULL_AZIMUTH_SUPPORT(1 << 3),
+        HAS_INTERLEAVING_SUPPORT(1 << 4);
 
         private final long mValue;
 
