@@ -22,6 +22,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
+/***
+ * This assumes little endian data and 1 byte tags. This is intended for handling UCI interface
+ * data.
+ */
 public class TlvBuffer {
     private static final String TAG = "TlvBuffer";
     private static final int MAX_BUFFER_SIZE = 512;

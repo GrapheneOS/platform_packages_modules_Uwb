@@ -26,11 +26,17 @@ import com.android.server.uwb.util.UwbUtil;
 
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 
+/***
+ * This assumes little endian data and 1 byte tags. This is intended for handling UCI interface
+ * data.
+ * @see com.android.server.uwb.secure.iso7816.TlvParser
+ */
 public class TlvDecoderBuffer {
     private static final String TAG = "TlvDecoderBuffer";
     private final ByteBuffer mBuffer;
@@ -148,7 +154,7 @@ public class TlvDecoderBuffer {
                     "Mismatch in value type, expected short found len: " + tlv.length);
         }
         try {
-            return ByteBuffer.wrap(tlv.value).getShort();
+            return ByteBuffer.wrap(tlv.value).order(ByteOrder.LITTLE_ENDIAN).getShort();
         } catch (BufferUnderflowException e) {
             throw new IllegalArgumentException(e);
         }
@@ -161,7 +167,7 @@ public class TlvDecoderBuffer {
                     "Mismatch in value type, expected int found len: " + tlv.length);
         }
         try {
-            return ByteBuffer.wrap(tlv.value).getInt();
+            return ByteBuffer.wrap(tlv.value).order(ByteOrder.LITTLE_ENDIAN).getInt();
         } catch (BufferUnderflowException e) {
             throw new IllegalArgumentException(e);
         }
@@ -174,7 +180,7 @@ public class TlvDecoderBuffer {
                     "Mismatch in value long, expected int found len: " + tlv.length);
         }
         try {
-            return ByteBuffer.wrap(tlv.value).getLong();
+            return ByteBuffer.wrap(tlv.value).order(ByteOrder.LITTLE_ENDIAN).getLong();
         } catch (BufferUnderflowException e) {
             throw new IllegalArgumentException(e);
         }

@@ -91,8 +91,8 @@ public class TlvDecoderBufferTest {
         assertThat(tlvDecoderBuffer.parse()).isTrue();
 
         assertThat(tlvDecoderBuffer.getByte(1)).isEqualTo(0x2);
-        assertThat(tlvDecoderBuffer.getShort(8)).isEqualTo(0x6009);
-        assertThat(tlvDecoderBuffer.getInt(9)).isEqualTo(0xC8000000);
+        assertThat(tlvDecoderBuffer.getShort(8)).isEqualTo(0x0960);
+        assertThat(tlvDecoderBuffer.getInt(9)).isEqualTo(0x000000C8);
         assertThat(tlvDecoderBuffer.getByteArray(40)).isEqualTo(UwbUtil.getByteArray(
                 "010203040506"));
     }
