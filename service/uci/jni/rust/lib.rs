@@ -428,9 +428,6 @@ fn byte_result_helper(result: Result<(), UwbErr>, function_name: &str) -> jbyte 
 fn do_initialize(env: JNIEnv, obj: JObject) -> Result<(), UwbErr> {
     let dispatcher = get_dispatcher(env, obj)?;
     dispatcher.send_jni_command(JNICommand::Enable)?;
-    uwa_init(); // todo: implement this
-    clear_all_session_context(); // todo: implement this
-    uwa_enable()?; // todo: implement this, and add a lock here
     match uwa_get_device_info(dispatcher) {
         Ok(res) => {
             if let UciResponse::GetDeviceInfoRsp(device_info) = res {
@@ -442,18 +439,7 @@ fn do_initialize(env: JNIEnv, obj: JObject) -> Result<(), UwbErr> {
             return Err(UwbErr::failed());
         }
     }
-    match set_core_device_configurations() {
-        Ok(()) => {
-            info!("set_core_device_configurations is success");
-            return Ok(());
-        }
-        Err(e) => error!("set_core_device_configurations failed with: {:?}", e),
-    };
-    match uwa_disable(false) {
-        Ok(()) => info!("UWA_disable(false) success."),
-        _ => error!("UWA_disable(false) is failed."),
-    };
-    Err(UwbErr::failed())
+    Ok(())
 }
 
 fn do_deinitialize(env: JNIEnv, obj: JObject) -> Result<(), UwbErr> {
@@ -684,12 +670,20 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDi
     env: JNIEnv,
     obj: JObject,
 ) -> jlong {
-    let eventmanager = EventManager::new(env, obj).expect("Failed to create event manager");
-    let dispatcher = match Dispatcher::new(eventmanager) {
-        Ok(dispatcher) => dispatcher,
-        Err(_err) => panic!("Fail to create dispatcher"),
+    let eventmanager = match EventManager::new(env, obj) {
+        Ok(evtmgr) => evtmgr,
+        Err(err) => {
+            error!("Fail to create event manager{:?}", err);
+            return *JObject::null() as jlong;
+        }
     };
-    Box::into_raw(Box::new(dispatcher)) as jlong
+    match Dispatcher::new(eventmanager) {
+        Ok(dispatcher) => Box::into_raw(Box::new(dispatcher)) as jlong,
+        Err(err) => {
+            error!("Fail to create dispatcher {:?}", err);
+            *JObject::null() as jlong
+        }
+    }
 }
 
 /// destroy the dispatcher instance
@@ -705,7 +699,13 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDi
             return;
         }
     };
-    let dispatcher_ptr = dispatcher_ptr_value.j().expect("Failed to get the pointer!");
+    let dispatcher_ptr = match dispatcher_ptr_value.j() {
+        Ok(value) => value,
+        Err(err) => {
+            error!("Failed to get the pointer with: {:?}", err);
+            return;
+        }
+    };
     // Safety: dispatcher pointer must not be a null pointer and must point to a valid dispatcher object.
     // This can be ensured because the dispatcher is created in an earlier stage and
     // won't be deleted before calling this destroy function.
@@ -714,24 +714,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDi
     info!("The dispatcher successfully destroyed.");
 }
 
-// TODO: Implement these functions
-fn uwa_init() {}
-
 fn uwa_get_device_info(dispatcher: &Dispatcher) -> Result<UciResponse, UwbErr> {
     let res = dispatcher.block_on_jni_command(JNICommand::UciGetDeviceInfo)?;
     Ok(res)
-}
-
-fn uwa_enable() -> Result<(), UwbErr> {
-    Ok(())
-}
-
-fn clear_all_session_context() {}
-
-fn uwa_disable(_para: bool) -> Result<(), UwbErr> {
-    Err(UwbErr::refused())
-}
-
-fn set_core_device_configurations() -> Result<(), UwbErr> {
-    Ok(())
 }
