@@ -16,15 +16,43 @@
 
 package com.android.server.uwb.params;
 
+import static com.android.server.uwb.config.CapabilityParam.CCC_CHANNEL_5;
+import static com.android.server.uwb.config.CapabilityParam.CCC_CHANNEL_9;
+import static com.android.server.uwb.config.CapabilityParam.CCC_CHAPS_PER_SLOT_12;
+import static com.android.server.uwb.config.CapabilityParam.CCC_CHAPS_PER_SLOT_24;
+import static com.android.server.uwb.config.CapabilityParam.CCC_CHAPS_PER_SLOT_3;
+import static com.android.server.uwb.config.CapabilityParam.CCC_CHAPS_PER_SLOT_4;
+import static com.android.server.uwb.config.CapabilityParam.CCC_CHAPS_PER_SLOT_6;
+import static com.android.server.uwb.config.CapabilityParam.CCC_CHAPS_PER_SLOT_8;
+import static com.android.server.uwb.config.CapabilityParam.CCC_CHAPS_PER_SLOT_9;
+import static com.android.server.uwb.config.CapabilityParam.CCC_HOPPING_CONFIG_MODE_ADAPTIVE;
+import static com.android.server.uwb.config.CapabilityParam.CCC_HOPPING_CONFIG_MODE_CONTINUOUS;
+import static com.android.server.uwb.config.CapabilityParam.CCC_HOPPING_CONFIG_MODE_NONE;
+import static com.android.server.uwb.config.CapabilityParam.CCC_HOPPING_SEQUENCE_AES;
+import static com.android.server.uwb.config.CapabilityParam.CCC_HOPPING_SEQUENCE_DEFAULT;
 import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_CHANNELS;
 import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_CHAPS_PER_SLOT;
-import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_HOPPING_CONFIG_MODES;
-import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_HOPPING_SEQUENCES;
+import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_HOPPING_CONFIG_MODES_AND_SEQUENCES;
 import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_PULSE_SHAPE_COMBOS;
 import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_RAN_MULTIPLIER;
 import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_SYNC_CODES;
 import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_UWB_CONFIGS;
 import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_VERSIONS;
+
+import static com.google.uwb.support.ccc.CccParams.CHAPS_PER_SLOT_12;
+import static com.google.uwb.support.ccc.CccParams.CHAPS_PER_SLOT_24;
+import static com.google.uwb.support.ccc.CccParams.CHAPS_PER_SLOT_3;
+import static com.google.uwb.support.ccc.CccParams.CHAPS_PER_SLOT_4;
+import static com.google.uwb.support.ccc.CccParams.CHAPS_PER_SLOT_6;
+import static com.google.uwb.support.ccc.CccParams.CHAPS_PER_SLOT_8;
+import static com.google.uwb.support.ccc.CccParams.CHAPS_PER_SLOT_9;
+import static com.google.uwb.support.ccc.CccParams.HOPPING_CONFIG_MODE_ADAPTIVE;
+import static com.google.uwb.support.ccc.CccParams.HOPPING_CONFIG_MODE_CONTINUOUS;
+import static com.google.uwb.support.ccc.CccParams.HOPPING_CONFIG_MODE_NONE;
+import static com.google.uwb.support.ccc.CccParams.HOPPING_SEQUENCE_AES;
+import static com.google.uwb.support.ccc.CccParams.HOPPING_SEQUENCE_DEFAULT;
+import static com.google.uwb.support.ccc.CccParams.UWB_CHANNEL_5;
+import static com.google.uwb.support.ccc.CccParams.UWB_CHANNEL_9;
 
 import com.android.server.uwb.config.ConfigParam;
 
@@ -51,6 +79,10 @@ public class CccDecoder extends TlvDecoder {
             return (T) getCccSpecificationParamsFromTlvBuffer(tlvs);
         }
         return null;
+    }
+
+    private static boolean isBitSet(int flags, int mask) {
+        return (flags & mask) != 0;
     }
 
     public CccRangingStartedParams getCccRangingStartedParamsFromTlvBuffer(TlvDecoderBuffer tlvs) {
@@ -88,25 +120,58 @@ public class CccDecoder extends TlvDecoder {
             builder.addPulseShapeCombo(CccPulseShapeCombo.fromBytes(pulse_shape_combos, i));
         }
         builder.setRanMultiplier(tlvs.getInt(CCC_SUPPORTED_RAN_MULTIPLIER));
-        byte[] chaps_per_slot = tlvs.getByteArray(CCC_SUPPORTED_CHAPS_PER_SLOT);
-        for (int i = 0; i < chaps_per_slot.length; i++) {
-            builder.addChapsPerSlot(chaps_per_slot[i]);
+        byte chapsPerslot = tlvs.getByte(CCC_SUPPORTED_CHAPS_PER_SLOT);
+        if (isBitSet(chapsPerslot, CCC_CHAPS_PER_SLOT_3)) {
+            builder.addChapsPerSlot(CHAPS_PER_SLOT_3);
         }
-        byte[] sync_codes = tlvs.getByteArray(CCC_SUPPORTED_SYNC_CODES);
-        for (int i = 0; i < sync_codes.length; i++) {
-            builder.addSyncCode(sync_codes[i]);
+        if (isBitSet(chapsPerslot, CCC_CHAPS_PER_SLOT_4)) {
+            builder.addChapsPerSlot(CHAPS_PER_SLOT_4);
         }
-        byte[] channels = tlvs.getByteArray(CCC_SUPPORTED_CHANNELS);
-        for (int i = 0; i < channels.length; i++) {
-            builder.addChannel(channels[i]);
+        if (isBitSet(chapsPerslot, CCC_CHAPS_PER_SLOT_6)) {
+            builder.addChapsPerSlot(CHAPS_PER_SLOT_6);
         }
-        byte[] hoppingConfigModes = tlvs.getByteArray(CCC_SUPPORTED_HOPPING_CONFIG_MODES);
-        for (int i = 0; i < hoppingConfigModes.length; i++) {
-            builder.addHoppingConfigMode(hoppingConfigModes[i]);
+        if (isBitSet(chapsPerslot, CCC_CHAPS_PER_SLOT_8)) {
+            builder.addChapsPerSlot(CHAPS_PER_SLOT_8);
         }
-        byte[] hoppingSequences = tlvs.getByteArray(CCC_SUPPORTED_HOPPING_SEQUENCES);
-        for (int i = 0; i < hoppingSequences.length; i++) {
-            builder.addHoppingSequence(hoppingSequences[i]);
+        if (isBitSet(chapsPerslot, CCC_CHAPS_PER_SLOT_9)) {
+            builder.addChapsPerSlot(CHAPS_PER_SLOT_9);
+        }
+        if (isBitSet(chapsPerslot, CCC_CHAPS_PER_SLOT_12)) {
+            builder.addChapsPerSlot(CHAPS_PER_SLOT_12);
+        }
+        if (isBitSet(chapsPerslot, CCC_CHAPS_PER_SLOT_24)) {
+            builder.addChapsPerSlot(CHAPS_PER_SLOT_24);
+        }
+        // Don't use TlvDecodeBuffer#getInt() to avoid conversion to little endian.
+        int syncCodes = ByteBuffer.wrap(tlvs.getByteArray(CCC_SUPPORTED_SYNC_CODES)).getInt();
+        for (int i = 0; i < 32; i++) {
+            if (isBitSet(syncCodes, 1 << i)) {
+                builder.addSyncCode(i + 1);
+            }
+        }
+        byte channels = tlvs.getByte(CCC_SUPPORTED_CHANNELS);
+        if (isBitSet(channels, CCC_CHANNEL_5)) {
+            builder.addChannel(UWB_CHANNEL_5);
+        }
+        if (isBitSet(channels, CCC_CHANNEL_9)) {
+            builder.addChannel(UWB_CHANNEL_9);
+        }
+        byte hoppingConfigModesAndSequences =
+                tlvs.getByte(CCC_SUPPORTED_HOPPING_CONFIG_MODES_AND_SEQUENCES);
+        if (isBitSet(hoppingConfigModesAndSequences, CCC_HOPPING_CONFIG_MODE_NONE)) {
+            builder.addHoppingConfigMode(HOPPING_CONFIG_MODE_NONE);
+        }
+        if (isBitSet(hoppingConfigModesAndSequences, CCC_HOPPING_CONFIG_MODE_CONTINUOUS)) {
+            builder.addHoppingConfigMode(HOPPING_CONFIG_MODE_CONTINUOUS);
+        }
+        if (isBitSet(hoppingConfigModesAndSequences, CCC_HOPPING_CONFIG_MODE_ADAPTIVE)) {
+            builder.addHoppingConfigMode(HOPPING_CONFIG_MODE_ADAPTIVE);
+        }
+        if (isBitSet(hoppingConfigModesAndSequences, CCC_HOPPING_SEQUENCE_AES)) {
+            builder.addHoppingSequence(HOPPING_SEQUENCE_AES);
+        }
+        if (isBitSet(hoppingConfigModesAndSequences, CCC_HOPPING_SEQUENCE_DEFAULT)) {
+            builder.addHoppingSequence(HOPPING_SEQUENCE_DEFAULT);
         }
         return builder.build();
     }
