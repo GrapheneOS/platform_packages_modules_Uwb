@@ -80,12 +80,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
     public UwbSessionManager(UwbConfigurationManager uwbConfigurationManager,
             NativeUwbManager nativeUwbManager, UwbMetrics uwbMetrics,
+            UwbSessionNotificationManager uwbSessionNotificationManager,
             Looper serviceLooper) {
         mNativeUwbManager = nativeUwbManager;
         mNativeUwbManager.setSessionListener(this);
         mUwbMetrics = uwbMetrics;
         mConfigurationManager = uwbConfigurationManager;
-        mSessionNotificationManager = new UwbSessionNotificationManager();
+        mSessionNotificationManager = uwbSessionNotificationManager;
         mMaxSessionNumber = mNativeUwbManager.getMaxSessionNumber();
         mEventTask = new EventTask(serviceLooper);
     }

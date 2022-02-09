@@ -55,6 +55,7 @@ import android.util.Pair;
 import android.uwb.AdapterState;
 import android.uwb.IUwbAdapterStateCallbacks;
 import android.uwb.IUwbRangingCallbacks;
+import android.uwb.IUwbVendorUciCallback;
 import android.uwb.SessionHandle;
 import android.uwb.StateChangeReason;
 import android.uwb.UwbAddress;
@@ -428,14 +429,54 @@ public class UwbServiceCoreTest {
     public void testSendVendorUciCommand() throws Exception {
         enableUwb();
 
+        int gid = 0;
+        int oid = 0;
+        byte[] payload = new byte[0];
         UwbVendorUciResponse rsp = new UwbVendorUciResponse(
-                (byte) UwbUciConstants.STATUS_CODE_OK, 0, 0, new byte[0]);
+                (byte) UwbUciConstants.STATUS_CODE_OK, gid, oid, payload);
         when(mNativeUwbManager.sendRawVendorCmd(anyInt(), anyInt(), any()))
                 .thenReturn(rsp);
+
+        IUwbVendorUciCallback vendorCb = mock(IUwbVendorUciCallback.class);
+        // TODO(b/196225233): Remove this casting when qorvo stack is integrated.
+        ((UwbServiceCore.UwbAdapterService) mUwbServiceCore.getIUwbAdapter())
+                .registerVendorExtensionCallback(vendorCb);
 
         // TODO(b/196225233): Remove this casting when qorvo stack is integrated.
         assertThat(((UwbServiceCore.UwbAdapterService) mUwbServiceCore.getIUwbAdapter())
                 .sendVendorUciMessage(0, 0, new byte[0]))
                 .isEqualTo(UwbUciConstants.STATUS_CODE_OK);
+
+        verify(vendorCb).onVendorResponseReceived(gid, oid, payload);
+    }
+
+    @Test
+    public void testDeviceStateCallback() throws Exception {
+        IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
+        when(cb.asBinder()).thenReturn(mock(IBinder.class));
+        mUwbServiceCore.getIUwbAdapter().registerAdapterStateCallbacks(cb);
+
+        enableUwb();
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
+                StateChangeReason.SYSTEM_POLICY);
+
+        mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ACTIVE);
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_ACTIVE,
+                StateChangeReason.SESSION_STARTED);
+    }
+
+    @Test
+    public void testVendorUciNotificationCallback() throws Exception {
+        enableUwb();
+
+        IUwbVendorUciCallback vendorCb = mock(IUwbVendorUciCallback.class);
+        // TODO(b/196225233): Remove this casting when qorvo stack is integrated.
+        ((UwbServiceCore.UwbAdapterService) mUwbServiceCore.getIUwbAdapter())
+                .registerVendorExtensionCallback(vendorCb);
+        int gid = 0;
+        int oid = 0;
+        byte[] payload = new byte[0];
+        mUwbServiceCore.onVendorUciNotificationReceived(gid, oid, payload);
+        verify(vendorCb).onVendorNotificationReceived(gid, oid, payload);
     }
 }

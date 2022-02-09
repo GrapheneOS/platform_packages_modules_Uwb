@@ -121,9 +121,11 @@ public class UwbInjector {
         if (mUwbService == null) {
             UwbConfigurationManager uwbConfigurationManager =
                     new UwbConfigurationManager(mNativeUwbManager);
+            UwbSessionNotificationManager uwbSessionNotificationManager =
+                    new UwbSessionNotificationManager();
             UwbSessionManager uwbSessionManager =
                     new UwbSessionManager(uwbConfigurationManager, mNativeUwbManager, mUwbMetrics,
-                            mLooper);
+                            uwbSessionNotificationManager, mLooper);
             mUwbService = new UwbServiceCore(mContext, mNativeUwbManager, mUwbMetrics,
                     mUwbCountryCode, uwbSessionManager, uwbConfigurationManager, mLooper);
         }
