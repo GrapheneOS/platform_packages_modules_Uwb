@@ -58,16 +58,15 @@ public class CccDecoderTest {
                             + "140101");
     private static final int TEST_CCC_RANGING_OPENED_TLV_NUM_PARAMS = 5;
     private static final byte[] TEST_CCC_SPECIFICATION_TLV_DATA =
-            UwbUtil.getByteArray("a0020102"
-                    + "a10100"
-                    + "a20112"
-                    + "a3040a000000"
-                    + "a4020309"
-                    + "a5020208"
-                    + "a6020509"
-                    + "a70101"
-                    + "a8020102");
-    private static final int TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS = 9;
+            UwbUtil.getByteArray("a00111"
+                    + "a10400000082"
+                    + "a20168"
+                    + "a30103"
+                    + "a4020102"
+                    + "a50100"
+                    + "a60112"
+                    + "a7040a000000");
+    private static final int TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS = 8;
     private final CccDecoder mCccDecoder = new CccDecoder();
 
     @Test

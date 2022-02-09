@@ -17,6 +17,7 @@
 package com.android.server.uwb.config;
 
 import android.hardware.uwb.fira_android.UwbVendorCapabilityTlvTypes;
+import android.hardware.uwb.fira_android.UwbVendorCapabilityTlvValues;
 
 public class CapabilityParam {
     /**
@@ -58,10 +59,8 @@ public class CapabilityParam {
              UwbVendorCapabilityTlvTypes.CCC_SUPPORTED_SYNC_CODES;
     public static final int CCC_SUPPORTED_CHANNELS =
              UwbVendorCapabilityTlvTypes.CCC_SUPPORTED_CHANNELS;
-    public static final int CCC_SUPPORTED_HOPPING_SEQUENCES =
-             UwbVendorCapabilityTlvTypes.CCC_SUPPORTED_HOPPING_SEQUENCES;
-    public static final int CCC_SUPPORTED_HOPPING_CONFIG_MODES =
-             UwbVendorCapabilityTlvTypes.CCC_SUPPORTED_HOPPING_CONFIG_MODES;
+    public static final int CCC_SUPPORTED_HOPPING_CONFIG_MODES_AND_SEQUENCES =
+             UwbVendorCapabilityTlvTypes.CCC_SUPPORTED_HOPPING_CONFIG_MODES_AND_SEQUENCES;
 
     public static final int RESPONDER = 0x01;
     public static final int INITIATOR = 0x02;
@@ -113,4 +112,34 @@ public class CapabilityParam {
 
     public static final int NO_AOA_RESULT_REQ_INTERLEAVING = 0x0;
     public static final int AOA_RESULT_REQ_INTERLEAVING = 0x1;
+
+    public static final int CCC_CHANNEL_5 = (int) UwbVendorCapabilityTlvValues.CCC_CHANNEL_5;
+    public static final int CCC_CHANNEL_9 = (int) UwbVendorCapabilityTlvValues.CCC_CHANNEL_9;
+
+    public static final int CCC_CHAPS_PER_SLOT_3 =
+            (int) UwbVendorCapabilityTlvValues.CHAPS_PER_SLOT_3;
+    public static final int CCC_CHAPS_PER_SLOT_4 =
+            (int) UwbVendorCapabilityTlvValues.CHAPS_PER_SLOT_4;
+    public static final int CCC_CHAPS_PER_SLOT_6 =
+            (int) UwbVendorCapabilityTlvValues.CHAPS_PER_SLOT_6;
+    public static final int CCC_CHAPS_PER_SLOT_8 =
+            (int) UwbVendorCapabilityTlvValues.CHAPS_PER_SLOT_8;
+    public static final int CCC_CHAPS_PER_SLOT_9 =
+            (int) UwbVendorCapabilityTlvValues.CHAPS_PER_SLOT_9;
+    public static final int CCC_CHAPS_PER_SLOT_12 =
+            (int) UwbVendorCapabilityTlvValues.CHAPS_PER_SLOT_12;
+    public static final int CCC_CHAPS_PER_SLOT_24 =
+            (int) UwbVendorCapabilityTlvValues.CHAPS_PER_SLOT_24;
+
+    public static final int CCC_HOPPING_CONFIG_MODE_NONE =
+            (int) UwbVendorCapabilityTlvValues.HOPPING_CONFIG_MODE_NONE;
+    public static final int CCC_HOPPING_CONFIG_MODE_CONTINUOUS =
+            (int) UwbVendorCapabilityTlvValues.HOPPING_CONFIG_MODE_CONTINUOUS;
+    public static final int CCC_HOPPING_CONFIG_MODE_ADAPTIVE =
+            (int) UwbVendorCapabilityTlvValues.HOPPING_CONFIG_MODE_ADAPTIVE;
+
+    public static final int CCC_HOPPING_SEQUENCE_AES =
+            (int) UwbVendorCapabilityTlvValues.HOPPING_SEQUENCE_AES;
+    public static final int CCC_HOPPING_SEQUENCE_DEFAULT =
+            (int) UwbVendorCapabilityTlvValues.HOPPING_SEQUENCE_DEFAULT;
 }
