@@ -16,13 +16,14 @@
 
 package com.android.server.uwb;
 
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.uwb.support.ccc.CccParams.CHAPS_PER_SLOT_3;
+import static com.google.uwb.support.ccc.CccParams.HOPPING_CONFIG_MODE_NONE;
 import static com.google.uwb.support.ccc.CccParams.HOPPING_SEQUENCE_DEFAULT;
 import static com.google.uwb.support.ccc.CccParams.PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE;
 import static com.google.uwb.support.ccc.CccParams.SLOTS_PER_ROUND_6;
 import static com.google.uwb.support.ccc.CccParams.UWB_CHANNEL_9;
-import static com.google.uwb.support.fira.FiraParams.HOPPING_MODE_DISABLE;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_UNICAST;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_RESPONDER;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLLER;
@@ -129,7 +130,7 @@ public class UwbServiceCoreTest {
                     .setNumResponderNodes(1)
                     .setNumSlotsPerRound(SLOTS_PER_ROUND_6)
                     .setSyncCodeIndex(1)
-                    .setHoppingConfigMode(HOPPING_MODE_DISABLE)
+                    .setHoppingConfigMode(HOPPING_CONFIG_MODE_NONE)
                     .setHoppingSequence(HOPPING_SEQUENCE_DEFAULT);
     @Mock private Context mContext;
     @Mock private NativeUwbManager mNativeUwbManager;

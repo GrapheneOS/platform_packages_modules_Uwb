@@ -16,9 +16,6 @@
 
 package com.android.server.uwb.params;
 
-import static com.android.server.uwb.params.TlvUtil.getBytesWithRightPadding;
-import static com.android.server.uwb.params.TlvUtil.getLeBytes;
-
 import com.android.server.uwb.config.ConfigParam;
 import com.android.server.uwb.data.UwbCccConstants;
 import com.android.server.uwb.data.UwbUciConstants;
@@ -26,7 +23,6 @@ import com.android.server.uwb.data.UwbUciConstants;
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
-import com.google.uwb.support.ccc.CccRangingStartedParams;
 import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.fira.FiraParams;
 
@@ -37,10 +33,6 @@ public class CccEncoder extends TlvEncoder {
             return getTlvBufferFromCccOpenRangingParams(param);
         }
 
-        if (param instanceof CccRangingStartedParams) {
-            return getTlvBufferFromCccRangingStartedParams(param);
-        }
-
         if (param instanceof CccStartRangingParams) {
             return getTlvBufferFromCccStartRangingParams(param);
         }
@@ -48,7 +40,7 @@ public class CccEncoder extends TlvEncoder {
         return null;
     }
 
-    public TlvBuffer getTlvBufferFromCccOpenRangingParams(Params baseParam) {
+    private TlvBuffer getTlvBufferFromCccOpenRangingParams(Params baseParam) {
         CccOpenRangingParams params = (CccOpenRangingParams) baseParam;
         int hoppingConfig = params.getHoppingConfigMode();
         int hoppingSequence = params.getHoppingSequence();
@@ -112,24 +104,7 @@ public class CccEncoder extends TlvEncoder {
         return tlvBuffer;
     }
 
-    private TlvBuffer getTlvBufferFromCccRangingStartedParams(Params baseParam) {
-        CccRangingStartedParams params = (CccRangingStartedParams) baseParam;
-        TlvBuffer tlvBuffer = new TlvBuffer.Builder()
-                .putInt(ConfigParam.STS_INDEX,
-                        params.getStartingStsIndex()) // STS_Index0  0 - 0x3FFFFFFFF
-                .putByteArray(ConfigParam.HOP_MODE_KEY, getBytesWithRightPadding(
-                        ConfigParam.HOP_MODE_KEY_BYTE, getLeBytes(params.getHopModeKey())))
-                //  UWB_Time0 0 - 0xFFFFFFFFFFFFFFFF  UWB_INITIATION_TIME
-                .putInt(ConfigParam.UWB_INITIATION_TIME, (int) params.getUwbTime0())
-                .putInt(ConfigParam.RANGING_INTERVAL,
-                        params.getRanMultiplier() * 96) //RANGING_INTERVAL = RAN_Multiplier * 96
-                .build();
-
-        return tlvBuffer;
-    }
-
-    public TlvBuffer getTlvBufferFromCccStartRangingParams(Params baseParam) {
-
+    private TlvBuffer getTlvBufferFromCccStartRangingParams(Params baseParam) {
         CccStartRangingParams params = (CccStartRangingParams) baseParam;
 
         TlvBuffer tlvBuffer = new TlvBuffer.Builder()
