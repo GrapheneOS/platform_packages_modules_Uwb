@@ -96,4 +96,22 @@ public class CccEncoderTest {
         assertThat(tlvs.getNoOfParams()).isEqualTo(1);
         assertThat(tlvs.getByteArray()).isEqualTo(TEST_CCC_START_RANGING_TLV_DATA);
     }
+
+    @Test
+    public void testCccOpenRangingParamsViaTlvEncoder() throws Exception {
+        CccOpenRangingParams params = TEST_CCC_OPEN_RANGING_PARAMS.build();
+        TlvBuffer tlvs = TlvEncoder.getEncoder(CccParams.PROTOCOL_NAME).getTlvBuffer(params);
+
+        assertThat(tlvs.getNoOfParams()).isEqualTo(17);
+        assertThat(tlvs.getByteArray()).isEqualTo(TEST_CCC_OPEN_RANGING_TLV_DATA);
+    }
+
+    @Test
+    public void testCccStartRangingParamsViaTlvEncoder() throws Exception {
+        CccStartRangingParams params = TEST_CCC_START_RANGING_PARAMS.build();
+        TlvBuffer tlvs = TlvEncoder.getEncoder(CccParams.PROTOCOL_NAME).getTlvBuffer(params);
+
+        assertThat(tlvs.getNoOfParams()).isEqualTo(1);
+        assertThat(tlvs.getByteArray()).isEqualTo(TEST_CCC_START_RANGING_TLV_DATA);
+    }
 }

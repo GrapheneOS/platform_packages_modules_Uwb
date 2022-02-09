@@ -97,4 +97,22 @@ public class FiraEncoderTest {
         assertThat(tlvs.getNoOfParams()).isEqualTo(4);
         assertThat(tlvs.getByteArray()).isEqualTo(TEST_FIRA_RECONFIGURE_TLV_DATA);
     }
+
+    @Test
+    public void testFiraOpenSesisonParamsViaTlvEncoder() throws Exception {
+        FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS.build();
+        TlvBuffer tlvs = TlvEncoder.getEncoder(FiraParams.PROTOCOL_NAME).getTlvBuffer(params);
+
+        assertThat(tlvs.getNoOfParams()).isEqualTo(40);
+        assertThat(tlvs.getByteArray()).isEqualTo(TEST_FIRA_OPEN_SESSION_TLV_DATA);
+    }
+
+    @Test
+    public void testFiraRangingReconfigureParamsViaTlvEncoder() throws Exception {
+        FiraRangingReconfigureParams params = TEST_FIRA_RECONFIGURE_PARAMS.build();
+        TlvBuffer tlvs = TlvEncoder.getEncoder(FiraParams.PROTOCOL_NAME).getTlvBuffer(params);
+
+        assertThat(tlvs.getNoOfParams()).isEqualTo(4);
+        assertThat(tlvs.getByteArray()).isEqualTo(TEST_FIRA_RECONFIGURE_TLV_DATA);
+    }
 }

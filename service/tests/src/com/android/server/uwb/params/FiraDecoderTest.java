@@ -49,6 +49,7 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.server.uwb.util.UwbUtil;
 
+import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraParams.BprfParameterSetCapabilityFlag;
 import com.google.uwb.support.fira.FiraParams.HprfParameterSetCapabilityFlag;
 import com.google.uwb.support.fira.FiraProtocolVersion;
@@ -90,15 +91,7 @@ public class FiraDecoderTest {
     private static final int TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS = 19;
     private final FiraDecoder mFiraDecoder = new FiraDecoder();
 
-    @Test
-    public void testGetFiraSpecification() throws Exception {
-        TlvDecoderBuffer tlvDecoderBuffer =
-                new TlvDecoderBuffer(
-                        TEST_FIRA_SPECIFICATION_TLV_DATA, TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS);
-        assertThat(tlvDecoderBuffer.parse()).isTrue();
-
-        FiraSpecificationParams firaSpecificationParams = mFiraDecoder.getParams(
-                tlvDecoderBuffer, FiraSpecificationParams.class);
+    private void verifyFiraSpecification(FiraSpecificationParams firaSpecificationParams) {
         assertThat(firaSpecificationParams).isNotNull();
 
         assertThat(firaSpecificationParams.getMinPhyVersionSupported()).isEqualTo(
@@ -147,5 +140,30 @@ public class FiraDecoderTest {
         assertThat(firaSpecificationParams.getHprfParameterSetCapabilities()).isEqualTo(
                 EnumSet.of(HprfParameterSetCapabilityFlag.HAS_SET_1_SUPPORT,
                         HprfParameterSetCapabilityFlag.HAS_SET_2_SUPPORT));
+    }
+
+    @Test
+    public void testGetFiraSpecification() throws Exception {
+        TlvDecoderBuffer tlvDecoderBuffer =
+                new TlvDecoderBuffer(
+                        TEST_FIRA_SPECIFICATION_TLV_DATA, TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS);
+        assertThat(tlvDecoderBuffer.parse()).isTrue();
+
+        FiraSpecificationParams firaSpecificationParams = mFiraDecoder.getParams(
+                tlvDecoderBuffer, FiraSpecificationParams.class);
+        verifyFiraSpecification(firaSpecificationParams);
+    }
+
+    @Test
+    public void testGetFiraSpecificationViaTlvDecoder() throws Exception {
+        TlvDecoderBuffer tlvDecoderBuffer =
+                new TlvDecoderBuffer(
+                        TEST_FIRA_SPECIFICATION_TLV_DATA, TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS);
+        assertThat(tlvDecoderBuffer.parse()).isTrue();
+
+        FiraSpecificationParams firaSpecificationParams = TlvDecoder
+                .getDecoder(FiraParams.PROTOCOL_NAME)
+                .getParams(tlvDecoderBuffer, FiraSpecificationParams.class);
+        verifyFiraSpecification(firaSpecificationParams);
     }
 }
