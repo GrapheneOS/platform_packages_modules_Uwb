@@ -33,6 +33,7 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.server.uwb.util.UwbUtil;
 
+import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccProtocolVersion;
 import com.google.uwb.support.ccc.CccPulseShapeCombo;
 import com.google.uwb.support.ccc.CccRangingStartedParams;
@@ -69,15 +70,7 @@ public class CccDecoderTest {
     private static final int TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS = 8;
     private final CccDecoder mCccDecoder = new CccDecoder();
 
-    @Test
-    public void testGetCccRangingOpened() throws Exception {
-        TlvDecoderBuffer tlvDecoderBuffer =
-                new TlvDecoderBuffer(
-                        TEST_CCC_RANGING_OPENED_TLV_DATA, TEST_CCC_RANGING_OPENED_TLV_NUM_PARAMS);
-        assertThat(tlvDecoderBuffer.parse()).isTrue();
-
-        CccRangingStartedParams cccRangingStartedParams = mCccDecoder.getParams(
-                tlvDecoderBuffer, CccRangingStartedParams.class);
+    private void verifyCccRangingOpend(CccRangingStartedParams cccRangingStartedParams) {
         assertThat(cccRangingStartedParams).isNotNull();
 
         assertThat(cccRangingStartedParams.getStartingStsIndex()).isEqualTo(0x00010002);
@@ -86,15 +79,7 @@ public class CccDecoderTest {
         assertThat(cccRangingStartedParams.getRanMultiplier()).isEqualTo(0x00010002 / 96);
     }
 
-    @Test
-    public void testGetCccSpecification() throws Exception {
-        TlvDecoderBuffer tlvDecoderBuffer =
-                new TlvDecoderBuffer(
-                        TEST_CCC_SPECIFICATION_TLV_DATA, TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS);
-        assertThat(tlvDecoderBuffer.parse()).isTrue();
-
-        CccSpecificationParams cccSpecificationParams = mCccDecoder.getParams(
-                tlvDecoderBuffer, CccSpecificationParams.class);
+    private void verifyCccSpecification(CccSpecificationParams cccSpecificationParams) {
         assertThat(cccSpecificationParams).isNotNull();
 
         assertThat(cccSpecificationParams.getProtocolVersions()).isEqualTo(List.of(
@@ -113,5 +98,55 @@ public class CccDecoderTest {
                 List.of(HOPPING_CONFIG_MODE_CONTINUOUS, HOPPING_CONFIG_MODE_ADAPTIVE));
         assertThat(cccSpecificationParams.getHoppingSequences()).isEqualTo(
                 List.of(HOPPING_SEQUENCE_AES));
+    }
+
+    @Test
+    public void testGetCccRangingOpened() throws Exception {
+        TlvDecoderBuffer tlvDecoderBuffer =
+                new TlvDecoderBuffer(
+                        TEST_CCC_RANGING_OPENED_TLV_DATA, TEST_CCC_RANGING_OPENED_TLV_NUM_PARAMS);
+        assertThat(tlvDecoderBuffer.parse()).isTrue();
+
+        CccRangingStartedParams cccRangingStartedParams = mCccDecoder.getParams(
+                tlvDecoderBuffer, CccRangingStartedParams.class);
+        verifyCccRangingOpend(cccRangingStartedParams);
+    }
+
+    @Test
+    public void testGetCccSpecification() throws Exception {
+        TlvDecoderBuffer tlvDecoderBuffer =
+                new TlvDecoderBuffer(
+                        TEST_CCC_SPECIFICATION_TLV_DATA, TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS);
+        assertThat(tlvDecoderBuffer.parse()).isTrue();
+
+        CccSpecificationParams cccSpecificationParams = mCccDecoder.getParams(
+                tlvDecoderBuffer, CccSpecificationParams.class);
+        verifyCccSpecification(cccSpecificationParams);
+    }
+
+    @Test
+    public void testGetCccRangingOpenedViaTlvDecoder() throws Exception {
+        TlvDecoderBuffer tlvDecoderBuffer =
+                new TlvDecoderBuffer(
+                        TEST_CCC_RANGING_OPENED_TLV_DATA, TEST_CCC_RANGING_OPENED_TLV_NUM_PARAMS);
+        assertThat(tlvDecoderBuffer.parse()).isTrue();
+
+        CccRangingStartedParams cccRangingStartedParams = TlvDecoder
+                .getDecoder(CccParams.PROTOCOL_NAME)
+                .getParams(tlvDecoderBuffer, CccRangingStartedParams.class);
+        verifyCccRangingOpend(cccRangingStartedParams);
+    }
+
+    @Test
+    public void testGetCccSpecificationViaTlvDecoder() throws Exception {
+        TlvDecoderBuffer tlvDecoderBuffer =
+                new TlvDecoderBuffer(
+                        TEST_CCC_SPECIFICATION_TLV_DATA, TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS);
+        assertThat(tlvDecoderBuffer.parse()).isTrue();
+
+        CccSpecificationParams cccSpecificationParams = TlvDecoder
+                .getDecoder(CccParams.PROTOCOL_NAME)
+                .getParams(tlvDecoderBuffer, CccSpecificationParams.class);
+        verifyCccSpecification(cccSpecificationParams);
     }
 }
