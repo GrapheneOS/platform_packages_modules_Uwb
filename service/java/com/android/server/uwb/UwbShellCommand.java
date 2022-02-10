@@ -67,6 +67,7 @@ import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccPulseShapeCombo;
+import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
@@ -426,7 +427,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
     private void startFiraRangingSession(PrintWriter pw) throws Exception {
         Pair<FiraOpenSessionParams, Boolean> firaOpenSessionParams = buildFiraOpenSessionParams();
         startRangingSession(
-                firaOpenSessionParams.first, firaOpenSessionParams.first.getSessionId(),
+                firaOpenSessionParams.first, null, firaOpenSessionParams.first.getSessionId(),
                 firaOpenSessionParams.second, pw);
     }
 
@@ -504,13 +505,20 @@ public class UwbShellCommand extends BasicShellCommandHandler {
     }
 
     private void startCccRangingSession(PrintWriter pw) throws Exception {
-        Pair<CccOpenRangingParams, Boolean> cccOpenRangingParams = buildCccOpenRangingParams();
+        Pair<CccOpenRangingParams, Boolean> cccOpenRangingParamsAndBlocking =
+                buildCccOpenRangingParams();
+        CccOpenRangingParams cccOpenRangingParams = cccOpenRangingParamsAndBlocking.first;
+        CccStartRangingParams cccStartRangingParams = new CccStartRangingParams.Builder()
+                .setSessionId(cccOpenRangingParams.getSessionId())
+                .setRanMultiplier(cccOpenRangingParams.getRanMultiplier())
+                .build();
         startRangingSession(
-                cccOpenRangingParams.first, cccOpenRangingParams.first.getSessionId(),
-                cccOpenRangingParams.second, pw);
+                cccOpenRangingParams, cccStartRangingParams, cccOpenRangingParams.getSessionId(),
+                cccOpenRangingParamsAndBlocking.second, pw);
     }
 
-    private void startRangingSession(@NonNull Params openRangingSessionParams, int sessionId,
+    private void startRangingSession(@NonNull Params openRangingSessionParams,
+            @Nullable Params startRangingSessionParams, int sessionId,
             boolean shouldBlockCall, @NonNull PrintWriter pw) throws Exception {
         if (sSessionIdToInfo.containsKey(sessionId)) {
             pw.println("Session with session ID: " + sessionId
@@ -538,7 +546,11 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         pw.println("Ranging session opened with params: "
                 + bundleToString(openRangingSessionParams.toBundle()));
 
-        mUwbService.startRanging(sessionInfo.sessionHandle, new PersistableBundle());
+        mUwbService.startRanging(
+                sessionInfo.sessionHandle,
+                startRangingSessionParams != null
+                        ? startRangingSessionParams.toBundle()
+                        : new PersistableBundle());
         boolean startCompleted = false;
         try {
             startCompleted = sessionInfo.rangingStartedFuture.get(
