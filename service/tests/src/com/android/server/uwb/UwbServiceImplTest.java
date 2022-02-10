@@ -53,11 +53,14 @@ import android.provider.Settings;
 import android.test.suitebuilder.annotation.SmallTest;
 import android.uwb.IUwbAdapter;
 import android.uwb.IUwbAdapterStateCallbacks;
+import android.uwb.IUwbAdfProvisionStateCallbacks;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.IUwbRangingCallbacks2;
+import android.uwb.IUwbVendorUciCallback;
 import android.uwb.RangingReport;
 import android.uwb.RangingSession;
 import android.uwb.SessionHandle;
+import android.uwb.UwbAddress;
 
 import androidx.test.runner.AndroidJUnit4;
 
@@ -616,5 +619,161 @@ public class UwbServiceImplTest {
             mUwbServiceImpl.getChipInfos();
             fail();
         } catch (SecurityException e) { /* pass */ }
+    }
+
+    @Test
+    public void testAddControlee() throws Exception {
+        final SessionHandle sessionHandle = new SessionHandle(5);
+        final PersistableBundle parameters = new PersistableBundle();
+
+        try {
+            mUwbServiceImpl.addControlee(sessionHandle, parameters);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testRemoveControlee() throws Exception {
+        final SessionHandle sessionHandle = new SessionHandle(5);
+        final PersistableBundle parameters = new PersistableBundle();
+
+        try {
+            mUwbServiceImpl.removeControlee(sessionHandle, parameters);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testAddServiceProfile() throws Exception {
+        final PersistableBundle parameters = new PersistableBundle();
+
+        try {
+            mUwbServiceImpl.addServiceProfile(parameters);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testGetAdfCertificateAndInfo() throws Exception {
+        final PersistableBundle parameters = new PersistableBundle();
+
+        try {
+            mUwbServiceImpl.getAdfCertificateAndInfo(parameters);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testGetAdfProvisioningAuthorities() throws Exception {
+        final PersistableBundle parameters = new PersistableBundle();
+
+        try {
+            mUwbServiceImpl.getAdfProvisioningAuthorities(parameters);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testGetAllServiceProfiles() throws Exception {
+        try {
+            mUwbServiceImpl.getAllServiceProfiles();
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testProvisionProfileAdfByScript() throws Exception {
+        final PersistableBundle parameters = new PersistableBundle();
+        final IUwbAdfProvisionStateCallbacks cb = mock(IUwbAdfProvisionStateCallbacks.class);
+
+        try {
+            mUwbServiceImpl.provisionProfileAdfByScript(parameters, cb);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testRegisterVendorExtensionCallback() throws Exception {
+        final IUwbVendorUciCallback cb = mock(IUwbVendorUciCallback.class);
+
+        try {
+            mUwbServiceImpl.registerVendorExtensionCallback(cb);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testUnregisterVendorExtensionCallback() throws Exception {
+        final IUwbVendorUciCallback cb = mock(IUwbVendorUciCallback.class);
+
+        try {
+            mUwbServiceImpl.unregisterVendorExtensionCallback(cb);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testRemoveProfileAdf() throws Exception {
+        final PersistableBundle parameters = new PersistableBundle();
+
+        try {
+            mUwbServiceImpl.removeProfileAdf(parameters);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testRemoveServiceProfile() throws Exception {
+        final PersistableBundle parameters = new PersistableBundle();
+
+        try {
+            mUwbServiceImpl.removeServiceProfile(parameters);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testResume() throws Exception {
+        final SessionHandle sessionHandle = new SessionHandle(5);
+        final PersistableBundle parameters = new PersistableBundle();
+
+        try {
+            mUwbServiceImpl.resume(sessionHandle, parameters);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testSuspend() throws Exception {
+        final SessionHandle sessionHandle = new SessionHandle(5);
+        final PersistableBundle parameters = new PersistableBundle();
+
+        try {
+            mUwbServiceImpl.suspend(sessionHandle, parameters);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testSendData() throws Exception {
+        final SessionHandle sessionHandle = new SessionHandle(5);
+        final UwbAddress mUwbAddress = mock(UwbAddress.class);
+        final PersistableBundle parameters = new PersistableBundle();
+
+        try {
+            mUwbServiceImpl.sendData(sessionHandle, mUwbAddress, parameters, null);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testSendVendorUciMessage() throws Exception {
+        final int gid = 0;
+        final int oid = 0;
+
+        try {
+            mUwbServiceImpl.sendVendorUciMessage(gid, oid, null);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
     }
 }
