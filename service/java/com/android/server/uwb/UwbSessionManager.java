@@ -31,6 +31,8 @@ import android.uwb.RangingChangeReason;
 import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
 
+import androidx.annotation.VisibleForTesting;
+
 import com.android.server.uwb.data.UwbCccConstants;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbRangingData;
@@ -70,7 +72,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     private static final int SESSION_RECONFIG_RANGING = 4;
     private static final int SESSION_CLOSE = 5;
 
-    private final ConcurrentHashMap<Integer, UwbSession> mSessionTable = new ConcurrentHashMap();
+    // TODO: don't expose the internal field for testing.
+    @VisibleForTesting
+    final ConcurrentHashMap<Integer, UwbSession> mSessionTable = new ConcurrentHashMap();
     private final NativeUwbManager mNativeUwbManager;
     private final UwbMetrics mUwbMetrics;
     private final UwbSessionNotificationManager mSessionNotificationManager;
@@ -191,7 +195,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
 
         byte sessionType = getSessionType(protocolName);
-        UwbSession uwbSession = new UwbSession(sessionHandle, sessionId, protocolName, params,
+        UwbSession uwbSession =  createUwbSession(sessionHandle, sessionId, protocolName, params,
                 rangingCallbacks);
 
         try {
@@ -209,6 +213,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         mSessionTable.put(sessionId, uwbSession);
         mEventTask.execute(SESSION_OPEN_RANGING, uwbSession);
         return;
+    }
+
+    // TODO: use UwbInjector.
+    @VisibleForTesting
+    UwbSession createUwbSession(SessionHandle sessionHandle, int sessionId, String protocolName,
+            Params params, IUwbRangingCallbacks iUwbRangingCallbacks) {
+        return new UwbSession(sessionHandle, sessionId, protocolName, params, iUwbRangingCallbacks);
     }
 
     public synchronized void deInitSession(SessionHandle sessionHandle) {
