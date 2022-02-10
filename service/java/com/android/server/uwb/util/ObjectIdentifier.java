@@ -43,7 +43,7 @@ public class ObjectIdentifier {
         if (this == that) {
             return true;
         }
-        if (that == null || that.getClass() != this.getClass()) {
+        if (that == null || !(that instanceof ObjectIdentifier)) {
             return false;
         }
 
