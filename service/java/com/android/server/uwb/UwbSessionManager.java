@@ -100,8 +100,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         long sessionId = rangingData.getSessionId();
         UwbSession uwbSession = getUwbSession((int) sessionId);
         if (uwbSession != null) {
-            mSessionNotificationManager.onRangingResult(uwbSession, rangingData);
             mUwbMetrics.logRangingResult(uwbSession.getProfileType(), rangingData);
+            mSessionNotificationManager.onRangingResult(uwbSession, rangingData);
         } else {
             Log.i(TAG, "Session is not initialized or Ranging Data is Null");
         }
@@ -139,13 +139,14 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             setCurrentSessionState((int) sessionId, state);
         }
 
-        //TODO : process only error handling in this switch function
+        //TODO : process only error handling in this switch function, b/218921154
         switch (state) {
             case UwbUciConstants.UWB_SESSION_STATE_IDLE:
                 if (prevState == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
                     if (reasonCode
                             == UwbUciConstants.REASON_MAX_RANGING_ROUND_RETRY_COUNT_REACHED) {
                         mSessionNotificationManager.onRangingStopped(uwbSession, reasonCode);
+                        mUwbMetrics.longRangingStopEvent(uwbSession);
                     }
                 } else if (prevState == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
                     //mSessionNotificationManager.onRangingReconfigureFailed(
@@ -176,12 +177,15 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             String protocolName, Params params, IUwbRangingCallbacks rangingCallbacks)
             throws RemoteException {
         Log.i(TAG, "initSession() : Enter - sessionId : " + sessionId);
-
+        UwbSession uwbSession =  createUwbSession(sessionHandle, sessionId, protocolName, params,
+                rangingCallbacks);
         if (isExistedSession(sessionId)) {
             Log.i(TAG, "Duplicated sessionId");
             rangingCallbacks.onRangingOpenFailed(sessionHandle, RangingChangeReason.UNKNOWN,
                     UwbSessionNotificationHelper.convertStatusToParam(protocolName,
                             UwbUciConstants.STATUS_CODE_ERROR_SESSION_DUPLICATE));
+            mUwbMetrics.logRangingInitEvent(uwbSession,
+                    UwbUciConstants.STATUS_CODE_ERROR_SESSION_DUPLICATE);
             return;
         }
 
@@ -191,12 +195,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                     RangingChangeReason.MAX_SESSIONS_REACHED,
                     UwbSessionNotificationHelper.convertStatusToParam(protocolName,
                             UwbUciConstants.STATUS_CODE_ERROR_MAX_SESSIONS_EXCEEDED));
+            mUwbMetrics.logRangingInitEvent(uwbSession,
+                    UwbUciConstants.STATUS_CODE_ERROR_MAX_SESSIONS_EXCEEDED);
             return;
         }
 
         byte sessionType = getSessionType(protocolName);
-        UwbSession uwbSession =  createUwbSession(sessionHandle, sessionId, protocolName, params,
-                rangingCallbacks);
 
         try {
             uwbSession.getBinder().linkToDeath(uwbSession, 0);
@@ -206,6 +210,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             rangingCallbacks.onRangingOpenFailed(sessionHandle, RangingChangeReason.UNKNOWN,
                     UwbSessionNotificationHelper.convertStatusToParam(protocolName,
                             UwbUciConstants.STATUS_CODE_FAILED));
+            mUwbMetrics.logRangingInitEvent(uwbSession,
+                    UwbUciConstants.STATUS_CODE_FAILED);
             removeSession(uwbSession);
             return;
         }
@@ -270,6 +276,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             Log.i(TAG, "session can't start ranging");
             mSessionNotificationManager.onRangingStartFailed(
                     uwbSession, UwbUciConstants.STATUS_CODE_FAILED);
+            mUwbMetrics.longRangingStartEvent(uwbSession, UwbUciConstants.STATUS_CODE_FAILED);
         }
     }
 
@@ -290,6 +297,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             Log.i(TAG, "session is already idle state");
             mSessionNotificationManager.onRangingStopped(uwbSession,
                     REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS);
+            mUwbMetrics.longRangingStopEvent(uwbSession);
         } else {
             int status = UwbUciConstants.STATUS_CODE_REJECTED;
             mSessionNotificationManager.onRangingStopFailed(uwbSession, status);
@@ -340,6 +348,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                         + " is failed to stop ranging");
             } else {
                 UwbSession uwbSession = sessionEntry.getValue();
+                mUwbMetrics.longRangingStopEvent(uwbSession);
                 uwbSession.setSessionState(UwbUciConstants.UWB_SESSION_STATE_IDLE);
             }
         }
@@ -351,6 +360,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             UwbSession uwbSession = sessionEntry.getValue();
             mSessionNotificationManager.onRangingClosed(uwbSession,
                     REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS);
+            mUwbMetrics.logRangingCloseEvent(uwbSession, UwbUciConstants.STATUS_CODE_OK);
             removeSession(uwbSession);
         }
 
@@ -475,7 +485,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                     getSessionType(uwbSession.getParams().getProtocolName()));
 
                             if (status != UwbUciConstants.STATUS_CODE_OK) {
-                                mUwbMetrics.logRangingSessionInitEvent(uwbSession, status);
                                 return status;
                             }
 
@@ -485,7 +494,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                     == UwbUciConstants.UWB_SESSION_STATE_INIT) {
                                 status = UwbSessionManager.this.setAppConfigurations(uwbSession);
                                 if (status != UwbUciConstants.STATUS_CODE_OK) {
-                                    mUwbMetrics.logRangingSessionInitEvent(uwbSession, status);
                                     return status;
                                 }
 
@@ -498,10 +506,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                 } else {
                                     status = UwbUciConstants.STATUS_CODE_FAILED;
                                 }
-                                mUwbMetrics.logRangingSessionInitEvent(uwbSession, status);
                                 return status;
                             }
-                            mUwbMetrics.logRangingSessionInitEvent(uwbSession, status);
                             return status;
                         }
                     });
@@ -521,12 +527,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 e.printStackTrace();
             }
 
-
+            mUwbMetrics.logRangingInitEvent(uwbSession, status);
             if (status != UwbUciConstants.STATUS_CODE_OK) {
                 Log.i(TAG, "Failed to initialize session - status : " + status);
                 mSessionNotificationManager.onRangingOpenFailed(uwbSession, status);
                 mNativeUwbManager.deInitSession(uwbSession.getSessionId());
-                mUwbMetrics.logRangingSessionInitEvent(uwbSession, status);
                 removeSession(uwbSession);
             }
             Log.i(TAG, "sessionInit() : finish - sessionId : " + uwbSession.getSessionId());
@@ -602,6 +607,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             } catch (ExecutionException e) {
                 e.printStackTrace();
             }
+            mUwbMetrics.longRangingStartEvent(uwbSession, status);
         }
 
         private void stopRanging(UwbSession uwbSession) {
@@ -643,6 +649,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 e.printStackTrace();
             } catch (ExecutionException e) {
                 e.printStackTrace();
+            }
+            if (status != UwbUciConstants.STATUS_CODE_FAILED) {
+                mUwbMetrics.longRangingStopEvent(uwbSession);
             }
         }
 
@@ -773,6 +782,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             } catch (ExecutionException e) {
                 e.printStackTrace();
             }
+            mUwbMetrics.logRangingCloseEvent(uwbSession, status);
             removeSession(uwbSession);
             Log.i(TAG, "deinit finish : status :" + status);
         }
