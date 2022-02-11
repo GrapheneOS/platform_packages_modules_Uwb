@@ -354,7 +354,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             removeSession(uwbSession);
         }
 
-        mNativeUwbManager.resetDevice(UwbUciConstants.UWBS_RESET);
+        // Not resetting chip on UWB toggle off.
+        // mNativeUwbManager.resetDevice(UwbUciConstants.UWBS_RESET);
     }
 
     public void setCurrentSessionState(int sessionId, int state) {

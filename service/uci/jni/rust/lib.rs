@@ -101,14 +101,13 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGe
 
 /// reset the device
 #[no_mangle]
-pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeResetDevice(
-    _env: JNIEnv,
-    _obj: JObject,
-    _reset_config: jbyte,
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDeviceReset(
+    env: JNIEnv,
+    obj: JObject,
+    reset_config: jbyte,
 ) -> jbyte {
-    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeResetDevice: enter");
-    // TODO: implement this function
-    0
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeDeviceReset: enter");
+    byte_result_helper(reset_device(env, obj, reset_config as u8), "ResetDevice")
 }
 
 /// init the session
@@ -717,4 +716,13 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDi
 fn uwa_get_device_info(dispatcher: &Dispatcher) -> Result<UciResponse, UwbErr> {
     let res = dispatcher.block_on_jni_command(JNICommand::UciGetDeviceInfo)?;
     Ok(res)
+}
+
+fn reset_device(env: JNIEnv, obj: JObject, reset_config: u8) -> Result<(), UwbErr> {
+    let dispatcher = get_dispatcher(env, obj)?;
+    let res = match dispatcher.block_on_jni_command(JNICommand::UciDeviceReset { reset_config })? {
+        UciResponse::DeviceResetRsp(data) => data,
+        _ => return Err(UwbErr::failed()),
+    };
+    status_code_to_res(res.get_status())
 }
