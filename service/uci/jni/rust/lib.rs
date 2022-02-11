@@ -6,7 +6,10 @@ use jni::JNIEnv;
 use log::{error, info, LevelFilter};
 use num_traits::ToPrimitive;
 use uwb_uci_packets::{
-    GetCapsInfoRspPacket, SessionGetAppConfigRspPacket, SessionSetAppConfigRspPacket, StatusCode,
+    GetCapsInfoRspPacket, Packet, SessionGetAppConfigRspPacket, SessionSetAppConfigRspPacket,
+    StatusCode, UciResponseChild, UciResponsePacket, UciVendor_9_ResponseChild,
+    UciVendor_A_ResponseChild, UciVendor_B_ResponseChild, UciVendor_E_ResponseChild,
+    UciVendor_F_ResponseChild,
 };
 use uwb_uci_rust::error::UwbErr;
 use uwb_uci_rust::event_manager::EventManagerImpl as EventManager;
@@ -628,17 +631,50 @@ fn set_country_code(env: JNIEnv, obj: JObject, country_code: jbyteArray) -> Resu
     status_code_to_res(res.get_status())
 }
 
+fn get_vendor_uci_payload(data: UciResponsePacket) -> Result<Vec<u8>, UwbErr> {
+    match data.specialize() {
+        UciResponseChild::UciVendor_9_Response(evt) => match evt.specialize() {
+            UciVendor_9_ResponseChild::Payload(payload) => Ok(payload.to_vec()),
+            UciVendor_9_ResponseChild::None => Ok(Vec::new()),
+        },
+        UciResponseChild::UciVendor_A_Response(evt) => match evt.specialize() {
+            UciVendor_A_ResponseChild::Payload(payload) => Ok(payload.to_vec()),
+            UciVendor_A_ResponseChild::None => Ok(Vec::new()),
+        },
+        UciResponseChild::UciVendor_B_Response(evt) => match evt.specialize() {
+            UciVendor_B_ResponseChild::Payload(payload) => Ok(payload.to_vec()),
+            UciVendor_B_ResponseChild::None => Ok(Vec::new()),
+        },
+        UciResponseChild::UciVendor_E_Response(evt) => match evt.specialize() {
+            UciVendor_E_ResponseChild::Payload(payload) => Ok(payload.to_vec()),
+            UciVendor_E_ResponseChild::None => Ok(Vec::new()),
+        },
+        UciResponseChild::UciVendor_F_Response(evt) => match evt.specialize() {
+            UciVendor_F_ResponseChild::Payload(payload) => Ok(payload.to_vec()),
+            UciVendor_F_ResponseChild::None => Ok(Vec::new()),
+        },
+        _ => {
+            error!("Invalid vendor response with gid {:?}", data.get_group_id());
+            Err(UwbErr::Specialize(data.to_vec()))
+        }
+    }
+}
+
 fn send_raw_vendor_cmd(
     env: JNIEnv,
     obj: JObject,
     gid: u32,
     oid: u32,
     payload: jbyteArray,
-) -> Result<(u32, u32, Vec<u8>), UwbErr> {
+) -> Result<(i32, i32, Vec<u8>), UwbErr> {
     let payload = env.convert_byte_array(payload)?;
     let dispatcher = get_dispatcher(env, obj)?;
     match dispatcher.block_on_jni_command(JNICommand::UciRawVendorCmd { gid, oid, payload })? {
-        UciResponse::RawVendorRsp { gid, oid, payload } => Ok((gid, oid, payload)),
+        UciResponse::RawVendorRsp(response) => Ok((
+            response.get_group_id().to_i32().unwrap(),
+            response.get_opcode().to_i32().unwrap(),
+            get_vendor_uci_payload(response)?,
+        )),
         _ => Err(UwbErr::failed()),
     }
 }
