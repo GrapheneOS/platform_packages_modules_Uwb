@@ -34,6 +34,7 @@ android_test {
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
         "mockito-target-minus-junit4",
+        "com.uwb.support.fira",
         "com.uwb.support.multichip",
     ],
     srcs: ["src/**/*.java"],

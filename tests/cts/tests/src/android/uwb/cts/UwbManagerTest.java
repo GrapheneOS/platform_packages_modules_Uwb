@@ -43,6 +43,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 import android.uwb.RangingReport;
 import android.uwb.RangingSession;
+import android.uwb.UwbAddress;
 import android.uwb.UwbManager;
 
 import androidx.test.InstrumentationRegistry;
@@ -51,6 +52,9 @@ import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
+import com.google.uwb.support.fira.FiraOpenSessionParams;
+import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.multichip.ChipInfoParams;
 
 import org.junit.Before;
@@ -457,13 +461,20 @@ public class UwbManagerTest {
     }
 
     private class RangingSessionCallback implements RangingSession.Callback {
-        private final CountDownLatch mCountDownLatch;
+        private CountDownLatch mCountDownLatch;
 
         public boolean onOpenedCalled;
         public boolean onOpenFailedCalled;
+        public boolean onStartedCalled;
+        public boolean onStartFailedCalled;
         public RangingSession rangingSession;
+        public RangingReport rangingReport;
 
         RangingSessionCallback(@NonNull CountDownLatch countDownLatch) {
+            mCountDownLatch = countDownLatch;
+        }
+
+        public void replaceCountDownLatch(@NonNull CountDownLatch countDownLatch) {
             mCountDownLatch = countDownLatch;
         }
 
@@ -478,9 +489,15 @@ public class UwbManagerTest {
             mCountDownLatch.countDown();
         }
 
-        public void onStarted(@NonNull PersistableBundle sessionInfo) { }
+        public void onStarted(@NonNull PersistableBundle sessionInfo) {
+            onStartedCalled = true;
+            mCountDownLatch.countDown();
+        }
 
-        public void onStartFailed(@Reason int reason, @NonNull PersistableBundle params) { }
+        public void onStartFailed(@Reason int reason, @NonNull PersistableBundle params) {
+            onStartFailedCalled = true;
+            mCountDownLatch.countDown();
+        }
 
         public void onReconfigured(@NonNull PersistableBundle params) { }
 
@@ -492,7 +509,10 @@ public class UwbManagerTest {
 
         public void onClosed(@Reason int reason, @NonNull PersistableBundle parameters) { }
 
-        public void onReportReceived(@NonNull RangingReport rangingReport) { }
+        public void onReportReceived(@NonNull RangingReport rangingReport) {
+            this.rangingReport = rangingReport;
+            mCountDownLatch.countDown();
+        }
     }
 
     @Test
@@ -728,6 +748,60 @@ public class UwbManagerTest {
             /* pass */
             Log.i(TAG, "Failed with expected security exception: " + e);
         } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    public void testFiraRangingSession() throws Exception {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        CancellationSignal cancellationSignal = null;
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        RangingSessionCallback rangingSessionCallback = new RangingSessionCallback(countDownLatch);
+        FiraOpenSessionParams firaOpenSessionParams = new FiraOpenSessionParams.Builder()
+                .setProtocolVersion(new FiraProtocolVersion(1, 1))
+                .setSessionId(1)
+                .setStsConfig(FiraParams.STS_CONFIG_STATIC)
+                .setVendorId(new byte[]{0x5, 0x6})
+                .setStaticStsIV(new byte[]{0x5, 0x6, 0x9, 0xa, 0x4, 0x6})
+                .setDeviceType(FiraParams.RANGING_DEVICE_TYPE_CONTROLLER)
+                .setDeviceRole(FiraParams.RANGING_DEVICE_ROLE_INITIATOR)
+                .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_UNICAST)
+                .setDeviceAddress(UwbAddress.fromBytes(new byte[] {0x5, 6}))
+                .setDestAddressList(List.of(UwbAddress.fromBytes(new byte[] {0x5, 6})))
+                .build();
+        try {
+            // Needs UWB_PRIVILEGED & UWB_RANGING permission which is held by shell.
+            uiAutomation.adoptShellPermissionIdentity();
+            // Try to start a ranging session with invalid params, should fail.
+            cancellationSignal = mUwbManager.openRangingSession(
+                    firaOpenSessionParams.toBundle(),
+                    Executors.newSingleThreadExecutor(),
+                    rangingSessionCallback,
+                    mDefaultChipId);
+            // Wait for the on opened callback.
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.onOpenedCalled).isTrue();
+            assertThat(rangingSessionCallback.onOpenFailedCalled).isFalse();
+            assertThat(rangingSessionCallback.rangingSession).isNotNull();
+
+            countDownLatch = new CountDownLatch(1);
+            rangingSessionCallback.replaceCountDownLatch(countDownLatch);
+            rangingSessionCallback.rangingSession.start(new PersistableBundle());
+            // Wait for the on started callback.
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.onStartedCalled).isTrue();
+            assertThat(rangingSessionCallback.onStartFailedCalled).isFalse();
+
+            countDownLatch = new CountDownLatch(1);
+            rangingSessionCallback.replaceCountDownLatch(countDownLatch);
+            // Wait for the on ranging report callback.
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.rangingReport).isNotNull();
+        } finally {
+            if (cancellationSignal != null) {
+                cancellationSignal.cancel();
+            }
             uiAutomation.dropShellPermissionIdentity();
         }
     }
