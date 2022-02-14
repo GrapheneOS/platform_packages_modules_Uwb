@@ -29,6 +29,7 @@ java_defaults {
         "com.android.uwb",
     ],
     visibility : [
+        "//cts/tests/uwb",
         "//external/sl4a/Common",
         "//packages/modules/Uwb/service:__subpackages__",
     ]
