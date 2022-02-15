@@ -23,6 +23,7 @@ import android.annotation.NonNull;
 import android.content.ApexEnvironment;
 import android.content.AttributionSource;
 import android.content.pm.ApplicationInfo;
+import android.os.Binder;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -178,7 +179,8 @@ public class UwbInjector {
     public void enforceUwbRangingPermissionForPreflight(
             @NonNull AttributionSource attributionSource) {
         if (!attributionSource.checkCallingUid()) {
-            throw new SecurityException("Invalid attribution source " + attributionSource);
+            throw new SecurityException("Invalid attribution source " + attributionSource
+                    + ", callingUid: " + Binder.getCallingUid());
         }
         int permissionCheckResult = mPermissionManager.checkPermissionForPreflight(
                 UWB_RANGING, attributionSource);
