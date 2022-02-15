@@ -18,8 +18,8 @@ package {
 
 java_defaults {
     name: "uwb-module-sdk-version-defaults",
-    min_sdk_version: "current", // TODO: Move to 32 once SDK is finalized
-    target_sdk_version: "current", // TODO: Move to 32 once SDK is finalized
+    min_sdk_version: "Tiramisu",
+    target_sdk_version: "Tiramisu",
 }
 
 filegroup {
@@ -57,10 +57,10 @@ filegroup {
 java_defaults {
     name: "framework-uwb-defaults",
     defaults: ["uwb-module-sdk-version-defaults"],
-    static_libs: [
-    ],
+    static_libs : [],
     libs: [
         "unsupportedappusage", // for android.compat.annotation.UnsupportedAppUsage
+        "modules-utils-preconditions",
     ],
     srcs: [
         ":framework-uwb-updatable-sources",
@@ -72,8 +72,8 @@ java_defaults {
 java_library {
     name: "framework-uwb-pre-jarjar",
     defaults: ["framework-uwb-defaults"],
-    sdk_version: "module_current",
-    libs: ["framework-annotations-lib"],
+    sdk_version: "module_Tiramisu",
+    libs: ["framework-annotations-lib",],
     // java_api_finder must accompany `srcs` (`srcs` defined in `framework-uwb-defaults`)
     plugins: ["java_api_finder"],
     installable: false,
@@ -86,7 +86,6 @@ java_sdk_library {
         "framework-module-defaults",
         "framework-uwb-defaults",
     ],
-
     jarjar_rules: ":uwb-jarjar-rules",
 
     installable: true,
@@ -114,7 +113,7 @@ java_sdk_library {
 // defaults for tests that need to build against framework-uwb's @hide APIs
 java_defaults {
     name: "framework-uwb-test-defaults",
-    sdk_version: "module_current",
+    sdk_version: "module_Tiramisu",
     libs: [
         "framework-uwb.impl",
     ],
@@ -124,7 +123,7 @@ java_defaults {
 // defaults for CTS tests that need to build against framework-uwb's @hide APIs
 java_defaults {
     name: "framework-uwb-cts-defaults",
-    sdk_version: "core_current",
+    sdk_version: "core_Tiramisu",
     libs: [
         // order matters: classes in framework-uwb are resolved before framework, meaning
         // @hide APIs in framework-uwb are resolved before @SystemApi stubs in framework

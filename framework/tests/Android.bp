@@ -19,20 +19,22 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
+filegroup {
+    name: "framework-uwb-test-util-srcs",
+    srcs: [
+        "src/android/uwb/UwbTestUtils.java",
+    ],
+}
+
 android_test {
     name: "FrameworkUwbTests",
 
     defaults: ["framework-uwb-test-defaults"],
 
-    min_sdk_version: "current", // TODO: Move to 32 once SDK is finalized
-    target_sdk_version: "current", // TODO: Move to 32 once SDK is finalized
+    min_sdk_version: "Tiramisu",
+    target_sdk_version: "Tiramisu",
 
     srcs: ["**/*.java"],
-
-    jacoco: {
-        include_filter: ["android.uwb.*"],
-        exclude_filter: [],
-    },
 
     static_libs: [
         "androidx.test.core",

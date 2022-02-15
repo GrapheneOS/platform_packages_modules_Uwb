@@ -21,7 +21,10 @@ package {
 android_test {
     name: "ServiceUwbTests",
 
-    srcs: [ "**/*.java" ],
+    srcs: [
+        ":framework-uwb-test-util-srcs",
+        "**/*.java"
+    ],
 
     dxflags: ["--multi-dex"],
 
@@ -51,6 +54,7 @@ android_test {
         "android.test.base",
         "android.test.mock",
         "framework-uwb-pre-jarjar",
+        "ServiceUwbResources",
     ],
 
     jni_libs: [
@@ -61,24 +65,10 @@ android_test {
     ],
     compile_multilib: "both",
 
-    min_sdk_version: "current", // TODO: Move to 32 once SDK is finalized
+    min_sdk_version: "Tiramisu",
 
     test_suites: [
         "general-tests",
         "mts-uwb",
     ],
-
-    // For coverage
-    jacoco: {
-        exclude_filter: [
-        ],
-        include_filter: [
-            "com.android.server.uwb.UwbInjector",
-            "com.android.server.uwb.UwbInjector$*",
-            "com.android.server.uwb.UwbService",
-            "com.android.server.uwb.UwbService$*",
-            "com.android.server.uwb.UwbServiceImpl",
-            "com.android.server.uwb.UwbServiceImpl$*",
-        ],
-    },
 }

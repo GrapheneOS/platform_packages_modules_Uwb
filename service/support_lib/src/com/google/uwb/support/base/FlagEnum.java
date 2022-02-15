@@ -21,18 +21,42 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Flags backed by long value.
+ * If all the enum values fit in a integer, you can use
+ * {@link #toInt(Set)} and {@link #toEnumSet(int, Enum[])} safely. Otherwise, those methods will
+ * throw an {@link ArithmeticException} on overflow.
+ */
 public interface FlagEnum {
-    int getValue();
+    long getValue();
 
     static <E extends Enum<E> & FlagEnum> int toInt(Set<E> enumSet) {
         int value = 0;
+        for (E flag : enumSet) {
+            value |= Math.toIntExact(flag.getValue());
+        }
+        return value;
+    }
+
+    static <E extends Enum<E> & FlagEnum> EnumSet<E> toEnumSet(int flags, E[] values) {
+        List<E> flagList = new ArrayList<>();
+        for (E value : values) {
+            if ((flags & Math.toIntExact(value.getValue())) != 0) {
+                flagList.add(value);
+            }
+        }
+        return EnumSet.copyOf(flagList);
+    }
+
+    static <E extends Enum<E> & FlagEnum> long toLong(Set<E> enumSet) {
+        long value = 0;
         for (E flag : enumSet) {
             value |= flag.getValue();
         }
         return value;
     }
 
-    static <E extends Enum<E> & FlagEnum> EnumSet<E> toEnumSet(int flags, E[] values) {
+    static <E extends Enum<E> & FlagEnum> EnumSet<E> longToEnumSet(long flags, E[] values) {
         List<E> flagList = new ArrayList<>();
         for (E value : values) {
             if ((flags & value.getValue()) != 0) {

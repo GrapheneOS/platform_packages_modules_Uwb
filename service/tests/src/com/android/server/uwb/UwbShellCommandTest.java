@@ -16,26 +16,48 @@
 
 package com.android.server.uwb;
 
+import static android.uwb.RangingSession.Callback.REASON_LOCAL_REQUEST;
+
+import static com.android.server.uwb.UwbShellCommand.DEFAULT_CCC_OPEN_RANGING_PARAMS;
+import static com.android.server.uwb.UwbShellCommand.DEFAULT_FIRA_OPEN_SESSION_PARAMS;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.validateMockitoUsage;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import android.annotation.NonNull;
+import android.annotation.Nullable;
 import android.content.Context;
 import android.os.Binder;
+import android.os.PersistableBundle;
 import android.os.Process;
+import android.util.Pair;
+import android.uwb.IUwbRangingCallbacks2;
+import android.uwb.RangingMeasurement;
+import android.uwb.RangingReport;
+import android.uwb.SessionHandle;
 import android.uwb.UwbManager;
+import android.uwb.UwbTestUtils;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.google.uwb.support.base.Params;
+import com.google.uwb.support.ccc.CccOpenRangingParams;
+import com.google.uwb.support.ccc.CccStartRangingParams;
+import com.google.uwb.support.fira.FiraOpenSessionParams;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -70,6 +92,7 @@ public class UwbShellCommandTest {
 
     @After
     public void tearDown() throws Exception {
+        mUwbShellCommand.reset();
         validateMockitoUsage();
     }
 
@@ -128,5 +151,218 @@ public class UwbShellCommandTest {
                 new Binder(), new FileDescriptor(), new FileDescriptor(), new FileDescriptor(),
                 new String[]{"get-country-code"});
         verify(mUwbCountryCode).getCountryCode();
+    }
+
+    @Test
+    public void testEnableUwb() throws Exception {
+        mUwbShellCommand.exec(
+                new Binder(), new FileDescriptor(), new FileDescriptor(), new FileDescriptor(),
+                new String[]{"enable-uwb"});
+        verify(mUwbService).setEnabled(true);
+    }
+
+    @Test
+    public void testDisableUwb() throws Exception {
+        mUwbShellCommand.exec(
+                new Binder(), new FileDescriptor(), new FileDescriptor(), new FileDescriptor(),
+                new String[]{"disable-uwb"});
+        verify(mUwbService).setEnabled(false);
+    }
+
+    private static class MutableCb {
+        public IUwbRangingCallbacks2 cb;
+        public void setCb(IUwbRangingCallbacks2 cb) {
+            this.cb = cb;
+        }
+    }
+
+    private Pair<IUwbRangingCallbacks2, SessionHandle> triggerAndVerifyRangingStart(
+            String[] rangingStartCmd, @NonNull Params openRangingParams) throws Exception {
+        return triggerAndVerifyRangingStart(rangingStartCmd, openRangingParams, null);
+    }
+
+    private Pair<IUwbRangingCallbacks2, SessionHandle> triggerAndVerifyRangingStart(
+            String[] rangingStartCmd, @NonNull Params openRangingParams, @Nullable Params
+            startRangingParams) throws Exception {
+        final MutableCb cbCaptor = new MutableCb();
+        doAnswer(invocation -> {
+            cbCaptor.setCb(invocation.getArgument(2));
+            cbCaptor.cb.onRangingOpened(invocation.getArgument(0));
+            return true;
+        }).when(mUwbService).openRanging(any(), any(), any(), any(), any());
+        doAnswer(invocation -> {
+            cbCaptor.cb.onRangingStarted(invocation.getArgument(0), new PersistableBundle());
+            return true;
+        }).when(mUwbService).startRanging(any(), any());
+
+        mUwbShellCommand.exec(
+                new Binder(), new FileDescriptor(), new FileDescriptor(), new FileDescriptor(),
+                rangingStartCmd);
+
+        ArgumentCaptor<SessionHandle> sessionHandleCaptor =
+                ArgumentCaptor.forClass(SessionHandle.class);
+        ArgumentCaptor<PersistableBundle> paramsCaptor =
+                ArgumentCaptor.forClass(PersistableBundle.class);
+
+        verify(mUwbService).openRanging(
+                any(), sessionHandleCaptor.capture(), any(), paramsCaptor.capture(), any());
+        // PersistableBundle does not implement equals, so use toString equals.
+        assertThat(paramsCaptor.getValue().toString())
+                .isEqualTo(openRangingParams.toBundle().toString());
+
+        verify(mUwbService).startRanging(
+                eq(sessionHandleCaptor.getValue()), paramsCaptor.capture());
+        assertThat(paramsCaptor.getValue().toString())
+                .isEqualTo(startRangingParams != null
+                        ? startRangingParams.toBundle().toString()
+                        : new PersistableBundle().toString());
+
+        return Pair.create(cbCaptor.cb, sessionHandleCaptor.getValue());
+    }
+
+    private void triggerAndVerifyRangingStop(
+            String[] rangingStopCmd, IUwbRangingCallbacks2 cb, SessionHandle sessionHandle)
+            throws Exception {
+        doAnswer(invocation -> {
+            cb.onRangingStopped(sessionHandle, REASON_LOCAL_REQUEST, new PersistableBundle());
+            return true;
+        }).when(mUwbService).stopRanging(any());
+        doAnswer(invocation -> {
+            cb.onRangingClosed(
+                    sessionHandle, REASON_LOCAL_REQUEST,
+                    new PersistableBundle());
+            return true;
+        }).when(mUwbService).closeRanging(any());
+
+        mUwbShellCommand.exec(
+                new Binder(), new FileDescriptor(), new FileDescriptor(), new FileDescriptor(),
+                rangingStopCmd);
+
+        verify(mUwbService).stopRanging(sessionHandle);
+        verify(mUwbService).closeRanging(sessionHandle);
+    }
+
+    private CccStartRangingParams getCccStartRangingParamsFromOpenRangingParams(
+            @NonNull CccOpenRangingParams openRangingParams) {
+        return new CccStartRangingParams.Builder()
+                .setSessionId(openRangingParams.getSessionId())
+                .setRanMultiplier(openRangingParams.getRanMultiplier())
+                .build();
+    }
+
+    @Test
+    public void testStartFiraRanging() throws Exception {
+        triggerAndVerifyRangingStart(
+                new String[]{"start-fira-ranging-session"},
+                DEFAULT_FIRA_OPEN_SESSION_PARAMS.build());
+    }
+
+    @Test
+    public void testStartFiraRangingWithNonDefaultParams() throws Exception {
+        FiraOpenSessionParams.Builder openSessionParamsBuilder =
+                new FiraOpenSessionParams.Builder(DEFAULT_FIRA_OPEN_SESSION_PARAMS);
+        openSessionParamsBuilder.setSessionId(5);
+        triggerAndVerifyRangingStart(
+                new String[]{"start-fira-ranging-session", "-i", "5"},
+                openSessionParamsBuilder.build());
+    }
+
+    private RangingMeasurement getRangingMeasurement() {
+        return new RangingMeasurement.Builder()
+                .setStatus(RangingMeasurement.RANGING_STATUS_SUCCESS)
+                .setElapsedRealtimeNanos(67)
+                .setDistanceMeasurement(UwbTestUtils.getDistanceMeasurement())
+                .setAngleOfArrivalMeasurement(UwbTestUtils.getAngleOfArrivalMeasurement())
+                .setRemoteDeviceAddress(UwbTestUtils.getUwbAddress(true))
+                .build();
+    }
+
+    @Test
+    public void testRangingReportFiraRanging() throws Exception {
+        Pair<IUwbRangingCallbacks2, SessionHandle> cbAndSessionHandle =
+                triggerAndVerifyRangingStart(
+                        new String[]{"start-fira-ranging-session"},
+                        DEFAULT_FIRA_OPEN_SESSION_PARAMS.build());
+        int sessionId = DEFAULT_FIRA_OPEN_SESSION_PARAMS.build().getSessionId();
+        cbAndSessionHandle.first.onRangingResult(
+                cbAndSessionHandle.second,
+                new RangingReport.Builder().addMeasurement(getRangingMeasurement()).build());
+        mUwbShellCommand.exec(
+                new Binder(), new FileDescriptor(), new FileDescriptor(), new FileDescriptor(),
+                new String[]{"get-ranging-session-reports", String.valueOf(sessionId)});
+    }
+
+    @Test
+    public void testRangingReportAllFiraRanging() throws Exception {
+        Pair<IUwbRangingCallbacks2, SessionHandle> cbAndSessionHandle =
+                triggerAndVerifyRangingStart(
+                        new String[]{"start-fira-ranging-session"},
+                        DEFAULT_FIRA_OPEN_SESSION_PARAMS.build());
+        cbAndSessionHandle.first.onRangingResult(
+                cbAndSessionHandle.second,
+                new RangingReport.Builder().addMeasurement(getRangingMeasurement()).build());
+        mUwbShellCommand.exec(
+                new Binder(), new FileDescriptor(), new FileDescriptor(), new FileDescriptor(),
+                new String[]{"get-all-ranging-session-reports"});
+    }
+
+    @Test
+    public void testStopFiraRanging() throws Exception {
+        Pair<IUwbRangingCallbacks2, SessionHandle> cbAndSessionHandle =
+                triggerAndVerifyRangingStart(
+                        new String[]{"start-fira-ranging-session"},
+                        DEFAULT_FIRA_OPEN_SESSION_PARAMS.build());
+        int sessionId = DEFAULT_FIRA_OPEN_SESSION_PARAMS.build().getSessionId();
+        triggerAndVerifyRangingStop(
+                new String[]{"stop-ranging-session", String.valueOf(sessionId)},
+                cbAndSessionHandle.first, cbAndSessionHandle.second);
+    }
+
+    @Test
+    public void testStartCccRanging() throws Exception {
+        CccOpenRangingParams openSessionParams = DEFAULT_CCC_OPEN_RANGING_PARAMS.build();
+        triggerAndVerifyRangingStart(
+                new String[]{"start-ccc-ranging-session"},
+                openSessionParams,
+                getCccStartRangingParamsFromOpenRangingParams(openSessionParams));
+    }
+
+    @Test
+    public void testStartCccRangingWithNonDefaultParams() throws Exception {
+        CccOpenRangingParams.Builder openSessionParamsBuilder =
+                new CccOpenRangingParams.Builder(DEFAULT_CCC_OPEN_RANGING_PARAMS);
+        openSessionParamsBuilder.setSessionId(5);
+        CccOpenRangingParams openSessionParams = openSessionParamsBuilder.build();
+        triggerAndVerifyRangingStart(
+                new String[]{"start-ccc-ranging-session", "-i", "5"},
+                openSessionParams,
+                getCccStartRangingParamsFromOpenRangingParams(openSessionParams));
+    }
+
+    @Test
+    public void testStopCccRanging() throws Exception {
+        CccOpenRangingParams openSessionParams = DEFAULT_CCC_OPEN_RANGING_PARAMS.build();
+        Pair<IUwbRangingCallbacks2, SessionHandle> cbAndSessionHandle =
+                triggerAndVerifyRangingStart(
+                        new String[]{"start-ccc-ranging-session"},
+                        openSessionParams,
+                        getCccStartRangingParamsFromOpenRangingParams(openSessionParams));
+        int sessionId = openSessionParams.getSessionId();
+        triggerAndVerifyRangingStop(
+                new String[]{"stop-ranging-session", String.valueOf(sessionId)},
+                cbAndSessionHandle.first, cbAndSessionHandle.second);
+    }
+
+    @Test
+    public void testStopAllRanging() throws Exception {
+        CccOpenRangingParams openSessionParams = DEFAULT_CCC_OPEN_RANGING_PARAMS.build();
+        Pair<IUwbRangingCallbacks2, SessionHandle> cbAndSessionHandle =
+                triggerAndVerifyRangingStart(
+                        new String[]{"start-ccc-ranging-session"},
+                        openSessionParams,
+                        getCccStartRangingParamsFromOpenRangingParams(openSessionParams));
+        triggerAndVerifyRangingStop(
+                new String[]{"stop-all-ranging-sessions"},
+                cbAndSessionHandle.first, cbAndSessionHandle.second);
     }
 }

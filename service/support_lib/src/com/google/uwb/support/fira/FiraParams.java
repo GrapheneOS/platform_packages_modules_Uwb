@@ -289,12 +289,21 @@ public abstract class FiraParams extends Params {
             value = {
                 AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT,
                 AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS,
+                AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_AZIMUTH_ONLY,
+                AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_ELEVATION_ONLY,
+                AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_INTERLEAVED,
             })
     public @interface AoaResultRequestMode {}
 
     public static final int AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT = 0;
 
     public static final int AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS = 1;
+
+    public static final int AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_AZIMUTH_ONLY = 2;
+
+    public static final int AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_ELEVATION_ONLY = 3;
+
+    public static final int AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_INTERLEAVED = 0xF0;
 
     /** STS Segment count */
     @IntDef(
@@ -527,16 +536,17 @@ public abstract class FiraParams extends Params {
         HAS_AZIMUTH_SUPPORT(1),
         HAS_ELEVATION_SUPPORT(1 << 1),
         HAS_FOM_SUPPORT(1 << 2),
-        HAS_FULL_AZIMUTH_SUPPORT(1 << 3);
+        HAS_FULL_AZIMUTH_SUPPORT(1 << 3),
+        HAS_INTERLEAVING_SUPPORT(1 << 4);
 
-        private final int mValue;
+        private final long mValue;
 
-        private AoaCapabilityFlag(int value) {
+        private AoaCapabilityFlag(long value) {
             mValue = value;
         }
 
         @Override
-        public int getValue() {
+        public long getValue() {
             return mValue;
         }
     }
@@ -547,30 +557,14 @@ public abstract class FiraParams extends Params {
         HAS_CONTROLLER_INITIATOR_SUPPORT(1 << 2),
         HAS_CONTROLLER_RESPONDER_SUPPORT(1 << 3);
 
-        private final int mValue;
+        private final long mValue;
 
-        private DeviceRoleCapabilityFlag(int value) {
+        private DeviceRoleCapabilityFlag(long value) {
             mValue = value;
         }
 
         @Override
-        public int getValue() {
-            return mValue;
-        }
-    }
-
-    public enum MacFcsCrcCapabilityFlag implements FlagEnum {
-        HAS_CRC_16_SUPPORT(1),
-        HAS_CRC_32_SUPPORT(1 << 1);
-
-        private final int mValue;
-
-        private MacFcsCrcCapabilityFlag(int value) {
-            mValue = value;
-        }
-
-        @Override
-        public int getValue() {
+        public long getValue() {
             return mValue;
         }
     }
@@ -580,30 +574,14 @@ public abstract class FiraParams extends Params {
         HAS_ONE_TO_MANY_SUPPORT(1 << 1),
         HAS_MANY_TO_MANY_SUPPORT(1 << 2);
 
-        private final int mValue;
+        private final long mValue;
 
-        private MultiNodeCapabilityFlag(int value) {
+        private MultiNodeCapabilityFlag(long value) {
             mValue = value;
         }
 
         @Override
-        public int getValue() {
-            return mValue;
-        }
-    }
-
-    public enum PreambleCapabilityFlag implements FlagEnum {
-        HAS_32_SYMBOLS_SUPPORT(1),
-        HAS_64_SYMBOLS_SUPPORT(1 << 1);
-
-        private final int mValue;
-
-        private PreambleCapabilityFlag(int value) {
-            mValue = value;
-        }
-
-        @Override
-        public int getValue() {
+        public long getValue() {
             return mValue;
         }
     }
@@ -612,14 +590,14 @@ public abstract class FiraParams extends Params {
         HAS_BPRF_SUPPORT(1),
         HAS_HPRF_SUPPORT(1 << 1);
 
-        private final int mValue;
+        private final long mValue;
 
-        private PrfCapabilityFlag(int value) {
+        private PrfCapabilityFlag(long value) {
             mValue = value;
         }
 
         @Override
-        public int getValue() {
+        public long getValue() {
             return mValue;
         }
     }
@@ -628,14 +606,14 @@ public abstract class FiraParams extends Params {
         HAS_DS_TWR_SUPPORT(1),
         HAS_SS_TWR_SUPPORT(1 << 1);
 
-        private final int mValue;
+        private final long mValue;
 
-        private RangingRoundCapabilityFlag(int value) {
+        private RangingRoundCapabilityFlag(long value) {
             mValue = value;
         }
 
         @Override
-        public int getValue() {
+        public long getValue() {
             return mValue;
         }
     }
@@ -645,33 +623,14 @@ public abstract class FiraParams extends Params {
         HAS_SP1_RFRAME_SUPPORT(1 << 1),
         HAS_SP3_RFRAME_SUPPORT(1 << 3);
 
-        private final int mValue;
+        private final long mValue;
 
-        private RframeCapabilityFlag(int value) {
+        private RframeCapabilityFlag(long value) {
             mValue = value;
         }
 
         @Override
-        public int getValue() {
-            return mValue;
-        }
-    }
-
-    public enum SfdCapabilityFlag implements FlagEnum {
-        HAS_SFD0_SUPPORT(1),
-        HAS_SFD1_SUPPORT(1 << 1),
-        HAS_SFD2_SUPPORT(1 << 2),
-        HAS_SFD3_SUPPORT(1 << 3),
-        HAS_SFD4_SUPPORT(1 << 4);
-
-        private final int mValue;
-
-        private SfdCapabilityFlag(int value) {
-            mValue = value;
-        }
-
-        @Override
-        public int getValue() {
+        public long getValue() {
             return mValue;
         }
     }
@@ -681,47 +640,14 @@ public abstract class FiraParams extends Params {
         HAS_DYNAMIC_STS_SUPPORT(1 << 1),
         HAS_DYNAMIC_STS_INDIVIDUAL_CONTROLEE_KEY_SUPPORT(1 << 2);
 
-        private final int mValue;
+        private final long mValue;
 
-        private StsCapabilityFlag(int value) {
+        private StsCapabilityFlag(long value) {
             mValue = value;
         }
 
         @Override
-        public int getValue() {
-            return mValue;
-        }
-    }
-
-    public enum StsSegmentsCapabilityFlag implements FlagEnum {
-        HAS_0_SEGMENT_SUPPORT(1),
-        HAS_1_SEGMENT_SUPPORT(1 << 1),
-        HAS_2_SEGMENT_SUPPORT(1 << 2);
-
-        private final int mValue;
-
-        private StsSegmentsCapabilityFlag(int value) {
-            mValue = value;
-        }
-
-        @Override
-        public int getValue() {
-            return mValue;
-        }
-    }
-
-    public enum BprfPhrDataRateCapabilityFlag implements FlagEnum {
-        HAS_6M81_SUPPORT(1),
-        HAS_850K_SUPPORT(1 << 1);
-
-        private final int mValue;
-
-        private BprfPhrDataRateCapabilityFlag(int value) {
-            mValue = value;
-        }
-
-        @Override
-        public int getValue() {
+        public long getValue() {
             return mValue;
         }
     }
@@ -732,14 +658,83 @@ public abstract class FiraParams extends Params {
         HAS_27M2_SUPPORT(1 << 2),
         HAS_31M2_SUPPORT(1 << 3);
 
-        private final int mValue;
+        private final long mValue;
 
-        private PsduDataRateCapabilityFlag(int value) {
+        private PsduDataRateCapabilityFlag(long value) {
             mValue = value;
         }
 
         @Override
-        public int getValue() {
+        public long getValue() {
+            return mValue;
+        }
+    }
+
+    public enum BprfParameterSetCapabilityFlag implements FlagEnum {
+        HAS_SET_1_SUPPORT(1),
+        HAS_SET_2_SUPPORT(1 << 1),
+        HAS_SET_3_SUPPORT(1 << 2),
+        HAS_SET_4_SUPPORT(1 << 3),
+        HAS_SET_5_SUPPORT(1 << 4),
+        HAS_SET_6_SUPPORT(1 << 5);
+
+        private final long mValue;
+
+        private BprfParameterSetCapabilityFlag(long value) {
+            mValue = value;
+        }
+
+        @Override
+        public long getValue() {
+            return mValue;
+        }
+    }
+
+    public enum HprfParameterSetCapabilityFlag implements FlagEnum {
+        HAS_SET_1_SUPPORT(1L),
+        HAS_SET_2_SUPPORT(1L << 1),
+        HAS_SET_3_SUPPORT(1L << 2),
+        HAS_SET_4_SUPPORT(1L << 3),
+        HAS_SET_5_SUPPORT(1L << 4),
+        HAS_SET_6_SUPPORT(1L << 5),
+        HAS_SET_7_SUPPORT(1L << 6),
+        HAS_SET_8_SUPPORT(1L << 7),
+        HAS_SET_9_SUPPORT(1L << 8),
+        HAS_SET_10_SUPPORT(1L << 9),
+        HAS_SET_11_SUPPORT(1L << 10),
+        HAS_SET_12_SUPPORT(1L << 11),
+        HAS_SET_13_SUPPORT(1L << 12),
+        HAS_SET_14_SUPPORT(1L << 13),
+        HAS_SET_15_SUPPORT(1L << 14),
+        HAS_SET_16_SUPPORT(1L << 15),
+        HAS_SET_17_SUPPORT(1L << 16),
+        HAS_SET_18_SUPPORT(1L << 17),
+        HAS_SET_19_SUPPORT(1L << 18),
+        HAS_SET_20_SUPPORT(1L << 19),
+        HAS_SET_21_SUPPORT(1L << 20),
+        HAS_SET_22_SUPPORT(1L << 21),
+        HAS_SET_23_SUPPORT(1L << 22),
+        HAS_SET_24_SUPPORT(1L << 23),
+        HAS_SET_25_SUPPORT(1L << 24),
+        HAS_SET_26_SUPPORT(1L << 25),
+        HAS_SET_27_SUPPORT(1L << 26),
+        HAS_SET_28_SUPPORT(1L << 27),
+        HAS_SET_29_SUPPORT(1L << 28),
+        HAS_SET_30_SUPPORT(1L << 29),
+        HAS_SET_31_SUPPORT(1L << 30),
+        HAS_SET_32_SUPPORT(1L << 31),
+        HAS_SET_33_SUPPORT(1L << 32),
+        HAS_SET_34_SUPPORT(1L << 33),
+        HAS_SET_35_SUPPORT(1L << 34);
+
+        private final long mValue;
+
+        private HprfParameterSetCapabilityFlag(long value) {
+            mValue = value;
+        }
+
+        @Override
+        public long getValue() {
             return mValue;
         }
     }

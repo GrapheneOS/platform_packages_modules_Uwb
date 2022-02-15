@@ -950,7 +950,7 @@ jobject uwbNativeManager_getSpecificationInfo(JNIEnv *env, jobject obj) {
       "com/android/uwb/info/UwbSpecificationInfo";
   jclass deviceDataClass = env->FindClass(DEVICE_DATA_CLASS_NAME);
   jmethodID constructor =
-      env->GetMethodID(deviceDataClass, "<init>", "(IIIIIIIIIIII)V");
+      env->GetMethodID(deviceDataClass, "<init>", "(IIIIIIIIIIIIIIII)V");
   if (constructor == JNI_NULL) {
     JNI_TRACE_E("%s: jni cannot find the method deviceInfoClass", fn);
     return NULL;
@@ -974,7 +974,9 @@ jobject uwbNativeManager_getSpecificationInfo(JNIEnv *env, jobject obj) {
   return env->NewObject(deviceDataClass, constructor, uciMajor, uciMaintenance,
                         uciMinor, macMajor, macMaintenance, macMinor, phyMajor,
                         phyMaintenance, phyMinor, uciTestMajor,
-                        uciTestMaintenance, uciTestMinor);
+                        uciTestMaintenance, uciTestMinor,
+                        1 /* firaMajorVersion */, 0 /* firaMinorVersion */,
+                        1 /* cccMajorVersion */, 0 /* cccMinorVersion*/);
 }
 
 /*******************************************************************************
@@ -1883,6 +1885,8 @@ static JNINativeMethod gMethods[] = {
     {"nativeSessionDeInit", "(I)B", (void *)uwbNativeManager_sessionDeInit},
     {"nativeSetAppConfigurations", "(III[B)[B",
      (void *)uwbNativeManager_setAppConfigurations},
+    {"nativeGetAppConfigurations", "(III[B)[B",
+     (void *)uwbNativeManager_getAppConfigurations},
     {"nativeRangingStart", "(I)B", (void *)uwbNativeManager_startRanging},
     {"nativeRangingStop", "(I)B", (void *)uwbNativeManager_stopRanging},
     {"nativeGetSessionCount", "()B", (void *)uwbNativeManager_getSessionCount},

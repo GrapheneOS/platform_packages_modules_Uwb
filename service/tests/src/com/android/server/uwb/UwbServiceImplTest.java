@@ -53,15 +53,21 @@ import android.provider.Settings;
 import android.test.suitebuilder.annotation.SmallTest;
 import android.uwb.IUwbAdapter;
 import android.uwb.IUwbAdapterStateCallbacks;
+import android.uwb.IUwbAdfProvisionStateCallbacks;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.IUwbRangingCallbacks2;
+import android.uwb.IUwbVendorUciCallback;
 import android.uwb.RangingReport;
 import android.uwb.RangingSession;
 import android.uwb.SessionHandle;
+import android.uwb.UwbAddress;
 
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.uwb.jni.NativeUwbManager;
+import com.android.server.uwb.jni.NativeUwbManager;
+import com.android.server.uwb.multchip.UwbMultichipData;
+
+import com.google.uwb.support.multichip.ChipInfoParams;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -83,6 +89,9 @@ public class UwbServiceImplTest {
     private static final int UID = 343453;
     private static final int UID_2 = 343453;
     private static final String PACKAGE_NAME = "com.uwb.test";
+    private static final String DEFAULT_CHIP_ID = "defaultChipId";
+    private static final ChipInfoParams DEFAULT_CHIP_INFO_PARAMS =
+            ChipInfoParams.createBuilder().setChipId(DEFAULT_CHIP_ID).build();
     private static final AttributionSource ATTRIBUTION_SOURCE =
             new AttributionSource.Builder(UID).setPackageName(PACKAGE_NAME).build();
     private static final AttributionSource ATTRIBUTION_SOURCE_2 =
@@ -93,6 +102,8 @@ public class UwbServiceImplTest {
     @Mock private Context mContext;
     @Mock private UwbInjector mUwbInjector;
     @Mock private UwbSettingsStore mUwbSettingsStore;
+    @Mock private NativeUwbManager mNativeUwbManager;
+    @Mock private UwbMultichipData mUwbMultichipData;
     @Captor private ArgumentCaptor<IUwbRangingCallbacks> mRangingCbCaptor;
     @Captor private ArgumentCaptor<IUwbRangingCallbacks> mRangingCbCaptor2;
     @Captor private ArgumentCaptor<IBinder.DeathRecipient> mClientDeathCaptor;
@@ -100,7 +111,6 @@ public class UwbServiceImplTest {
     @Captor private ArgumentCaptor<BroadcastReceiver> mApmModeBroadcastReceiver;
 
     private UwbServiceImpl mUwbServiceImpl;
-    private NativeUwbManager mNativeUwbManager;
 
     @Before
     public void setUp() throws Exception {
@@ -111,9 +121,10 @@ public class UwbServiceImplTest {
         when(mVendorService.asBinder()).thenReturn(mVendorServiceBinder);
         when(mUwbInjector.getUwbSettingsStore()).thenReturn(mUwbSettingsStore);
         when(mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).thenReturn(true);
+        when(mUwbMultichipData.getChipInfos()).thenReturn(List.of(DEFAULT_CHIP_INFO_PARAMS));
+        when(mUwbMultichipData.getDefaultChipId()).thenReturn(DEFAULT_CHIP_ID);
+        when(mUwbInjector.getMultichipData()).thenReturn(mUwbMultichipData);
         when(mUwbInjector.getSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0)).thenReturn(0);
-
-        mNativeUwbManager = new NativeUwbManager();
         when(mUwbInjector.getNativeUwbManager()).thenReturn(mNativeUwbManager);
 
         mUwbServiceImpl = new UwbServiceImpl(mContext, mUwbInjector);
@@ -164,7 +175,7 @@ public class UwbServiceImplTest {
     public void testGetTimestampResolutionNanos_validChipId() throws Exception {
         final long timestamp = 34L;
         when(mVendorService.getTimestampResolutionNanos()).thenReturn(timestamp);
-        assertThat(mUwbServiceImpl.getTimestampResolutionNanos("defaultChipId"))
+        assertThat(mUwbServiceImpl.getTimestampResolutionNanos(DEFAULT_CHIP_ID))
                 .isEqualTo(timestamp);
 
         verify(mVendorService).getTimestampResolutionNanos();
@@ -190,7 +201,7 @@ public class UwbServiceImplTest {
     public void testGetSpecificationInfo_validChipId() throws Exception {
         final PersistableBundle specification = new PersistableBundle();
         when(mVendorService.getSpecificationInfo()).thenReturn(specification);
-        assertThat(mUwbServiceImpl.getSpecificationInfo("defaultChipId"))
+        assertThat(mUwbServiceImpl.getSpecificationInfo(DEFAULT_CHIP_ID))
                 .isEqualTo(specification);
 
         verify(mVendorService).getSpecificationInfo();
@@ -557,12 +568,212 @@ public class UwbServiceImplTest {
 
     @Test
     public void testGetDefaultChipId() {
-        assertEquals("defaultChipId", mUwbServiceImpl.getDefaultChipId());
+        assertEquals(DEFAULT_CHIP_ID, mUwbServiceImpl.getDefaultChipId());
+    }
+
+    @Test
+    public void testThrowSecurityExceptionWhenGetDefaultChipIdWithoutUwbPrivilegedPermission()
+            throws Exception {
+        doThrow(new SecurityException()).when(mContext).enforceCallingOrSelfPermission(
+                eq(UWB_PRIVILEGED), any());
+        try {
+            mUwbServiceImpl.getDefaultChipId();
+            fail();
+        } catch (SecurityException e) { /* pass */ }
     }
 
     @Test
     public void testGetChipIds() {
-        assertThat(List.of("defaultChipId"))
-                .containsExactlyElementsIn(mUwbServiceImpl.getChipIds());
+        List<String> chipIds = mUwbServiceImpl.getChipIds();
+        assertThat(chipIds).containsExactly(DEFAULT_CHIP_ID);
+    }
+
+    @Test
+    public void testThrowSecurityExceptionWhenGetChipIdsWithoutUwbPrivilegedPermission()
+            throws Exception {
+        doThrow(new SecurityException()).when(mContext).enforceCallingOrSelfPermission(
+                eq(UWB_PRIVILEGED), any());
+        try {
+            mUwbServiceImpl.getChipIds();
+            fail();
+        } catch (SecurityException e) { /* pass */ }
+    }
+
+    @Test
+    public void testGetChipInfos() {
+        List<PersistableBundle> chipInfos = mUwbServiceImpl.getChipInfos();
+        assertThat(chipInfos).hasSize(1);
+        ChipInfoParams chipInfoParams = ChipInfoParams.fromBundle(chipInfos.get(0));
+        assertThat(chipInfoParams.getChipId()).isEqualTo(DEFAULT_CHIP_ID);
+        assertThat(chipInfoParams.getPositionX()).isEqualTo(0.);
+        assertThat(chipInfoParams.getPositionY()).isEqualTo(0.);
+        assertThat(chipInfoParams.getPositionZ()).isEqualTo(0.);
+    }
+
+    @Test
+    public void testThrowSecurityExceptionWhenGetChipInfosWithoutUwbPrivilegedPermission()
+            throws Exception {
+        doThrow(new SecurityException()).when(mContext).enforceCallingOrSelfPermission(
+                eq(UWB_PRIVILEGED), any());
+        try {
+            mUwbServiceImpl.getChipInfos();
+            fail();
+        } catch (SecurityException e) { /* pass */ }
+    }
+
+    @Test
+    public void testAddControlee() throws Exception {
+        final SessionHandle sessionHandle = new SessionHandle(5);
+        final PersistableBundle parameters = new PersistableBundle();
+
+        try {
+            mUwbServiceImpl.addControlee(sessionHandle, parameters);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testRemoveControlee() throws Exception {
+        final SessionHandle sessionHandle = new SessionHandle(5);
+        final PersistableBundle parameters = new PersistableBundle();
+
+        try {
+            mUwbServiceImpl.removeControlee(sessionHandle, parameters);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testAddServiceProfile() throws Exception {
+        final PersistableBundle parameters = new PersistableBundle();
+
+        try {
+            mUwbServiceImpl.addServiceProfile(parameters);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testGetAdfCertificateAndInfo() throws Exception {
+        final PersistableBundle parameters = new PersistableBundle();
+
+        try {
+            mUwbServiceImpl.getAdfCertificateAndInfo(parameters);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testGetAdfProvisioningAuthorities() throws Exception {
+        final PersistableBundle parameters = new PersistableBundle();
+
+        try {
+            mUwbServiceImpl.getAdfProvisioningAuthorities(parameters);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testGetAllServiceProfiles() throws Exception {
+        try {
+            mUwbServiceImpl.getAllServiceProfiles();
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testProvisionProfileAdfByScript() throws Exception {
+        final PersistableBundle parameters = new PersistableBundle();
+        final IUwbAdfProvisionStateCallbacks cb = mock(IUwbAdfProvisionStateCallbacks.class);
+
+        try {
+            mUwbServiceImpl.provisionProfileAdfByScript(parameters, cb);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testRegisterVendorExtensionCallback() throws Exception {
+        final IUwbVendorUciCallback cb = mock(IUwbVendorUciCallback.class);
+
+        try {
+            mUwbServiceImpl.registerVendorExtensionCallback(cb);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testUnregisterVendorExtensionCallback() throws Exception {
+        final IUwbVendorUciCallback cb = mock(IUwbVendorUciCallback.class);
+
+        try {
+            mUwbServiceImpl.unregisterVendorExtensionCallback(cb);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testRemoveProfileAdf() throws Exception {
+        final PersistableBundle parameters = new PersistableBundle();
+
+        try {
+            mUwbServiceImpl.removeProfileAdf(parameters);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testRemoveServiceProfile() throws Exception {
+        final PersistableBundle parameters = new PersistableBundle();
+
+        try {
+            mUwbServiceImpl.removeServiceProfile(parameters);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testResume() throws Exception {
+        final SessionHandle sessionHandle = new SessionHandle(5);
+        final PersistableBundle parameters = new PersistableBundle();
+
+        try {
+            mUwbServiceImpl.resume(sessionHandle, parameters);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testSuspend() throws Exception {
+        final SessionHandle sessionHandle = new SessionHandle(5);
+        final PersistableBundle parameters = new PersistableBundle();
+
+        try {
+            mUwbServiceImpl.suspend(sessionHandle, parameters);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testSendData() throws Exception {
+        final SessionHandle sessionHandle = new SessionHandle(5);
+        final UwbAddress mUwbAddress = mock(UwbAddress.class);
+        final PersistableBundle parameters = new PersistableBundle();
+
+        try {
+            mUwbServiceImpl.sendData(sessionHandle, mUwbAddress, parameters, null);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
+    }
+
+    @Test
+    public void testSendVendorUciMessage() throws Exception {
+        final int gid = 0;
+        final int oid = 0;
+
+        try {
+            mUwbServiceImpl.sendVendorUciMessage(gid, oid, null);
+            fail();
+        } catch (IllegalStateException e) { /* pass */ }
     }
 }

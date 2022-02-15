@@ -16,24 +16,33 @@
 
 package com.android.server.uwb;
 
+import android.annotation.NonNull;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.wifi.WifiManager;
+import android.net.wifi.WifiManager.ActiveCountryCodeChangedCallback;
 import android.os.Handler;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
+import android.util.ArraySet;
 import android.util.Log;
 
-import com.android.uwb.data.UwbUciConstants;
-import com.android.uwb.jni.NativeUwbManager;
+import androidx.annotation.Nullable;
+
+import com.android.modules.utils.HandlerExecutor;
+import com.android.server.uwb.data.UwbUciConstants;
+import com.android.server.uwb.jni.NativeUwbManager;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * Provide functions for making changes to UWB country code.
@@ -42,19 +51,27 @@ import java.util.Locale;
  */
 public class UwbCountryCode {
     private static final String TAG = "UwbCountryCode";
-    private static final SimpleDateFormat FORMATTER = new SimpleDateFormat("MM-dd HH:mm:ss.SSS");
+    private static final DateTimeFormatter FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
     private final Context mContext;
     private final Handler mHandler;
     private final TelephonyManager mTelephonyManager;
     private final NativeUwbManager mNativeUwbManager;
     private final UwbInjector mUwbInjector;
+    private final Set<CountryCodeChangedListener> mListeners = new ArraySet<>();
 
     private String mTelephonyCountryCode = null;
+    private String mWifiCountryCode = null;
     private String mOverrideCountryCode = null;
     private String mCountryCode = null;
     private String mCountryCodeUpdatedTimestamp = null;
     private String mTelephonyCountryTimestamp = null;
+    private String mWifiCountryTimestamp = null;
+
+    public interface CountryCodeChangedListener {
+        void onCountryCodeChanged(@Nullable String newCountryCode);
+    }
 
     public UwbCountryCode(
             Context context, NativeUwbManager nativeUwbManager, Handler handler,
@@ -64,6 +81,16 @@ public class UwbCountryCode {
         mNativeUwbManager = nativeUwbManager;
         mHandler = handler;
         mUwbInjector = uwbInjector;
+    }
+
+    private class WifiCountryCodeCallback implements ActiveCountryCodeChangedCallback {
+        public void onActiveCountryCodeChanged(@NonNull String countryCode) {
+            setWifiCountryCode(countryCode);
+        }
+
+        public void onCountryCodeInactive() {
+            setWifiCountryCode("");
+        }
     }
 
     /**
@@ -82,10 +109,17 @@ public class UwbCountryCode {
                 },
                 new IntentFilter(TelephonyManager.ACTION_NETWORK_COUNTRY_CHANGED),
                 null, mHandler);
+        mContext.getSystemService(WifiManager.class).registerActiveCountryCodeChangedCallback(
+                new HandlerExecutor(mHandler), new WifiCountryCodeCallback());
 
         Log.d(TAG, "Default country code from system property is "
                 + mUwbInjector.getOemDefaultCountryCode());
         setTelephonyCountryCode(mTelephonyManager.getNetworkCountryIso());
+        // Current Wifi country code update is sent immediately on registration.
+    }
+
+    public void addListener(@NonNull CountryCodeChangedListener listener) {
+        mListeners.add(listener);
     }
 
     private boolean setTelephonyCountryCode(String countryCode) {
@@ -96,10 +130,10 @@ public class UwbCountryCode {
             return false;
         }
         Log.d(TAG, "Set telephony country code to: " + countryCode);
-        mTelephonyCountryTimestamp = FORMATTER.format(new Date(System.currentTimeMillis()));
+        mTelephonyCountryTimestamp = LocalDateTime.now().format(FORMATTER);
         // Empty country code.
         if (TextUtils.isEmpty(countryCode)) {
-            Log.d(TAG, "Received empty country code, reset to default country code");
+            Log.d(TAG, "Received empty telephony country code, reset to default country code");
             mTelephonyCountryCode = null;
         } else {
             mTelephonyCountryCode = countryCode.toUpperCase(Locale.US);
@@ -107,6 +141,18 @@ public class UwbCountryCode {
         return setCountryCode();
     }
 
+    private boolean setWifiCountryCode(String countryCode) {
+        Log.d(TAG, "Set wifi country code to: " + countryCode);
+        mWifiCountryTimestamp = LocalDateTime.now().format(FORMATTER);
+        // Empty country code.
+        if (TextUtils.isEmpty(countryCode)) {
+            Log.d(TAG, "Received empty wifi country code, reset to default country code");
+            mWifiCountryCode = null;
+        } else {
+            mWifiCountryCode = countryCode.toUpperCase(Locale.US);
+        }
+        return setCountryCode();
+    }
 
     private String pickCountryCode() {
         if (mOverrideCountryCode != null) {
@@ -114,6 +160,9 @@ public class UwbCountryCode {
         }
         if (mTelephonyCountryCode != null) {
             return mTelephonyCountryCode;
+        }
+        if (mWifiCountryCode != null) {
+            return mWifiCountryCode;
         }
         return mUwbInjector.getOemDefaultCountryCode();
     }
@@ -129,11 +178,23 @@ public class UwbCountryCode {
             Log.i(TAG, "No valid country code");
             return false;
         }
+        if (Objects.equals(country, mCountryCode)) {
+            Log.i(TAG, "Ignoring already set country code: " + country);
+            return false;
+        }
         Log.d(TAG, "setCountryCode to " + country);
-        mCountryCode = country;
-        mCountryCodeUpdatedTimestamp = FORMATTER.format(new Date(System.currentTimeMillis()));
         int status = mNativeUwbManager.setCountryCode(country.getBytes(StandardCharsets.UTF_8));
-        return (status != UwbUciConstants.STATUS_CODE_OK);
+        boolean success = (status == UwbUciConstants.STATUS_CODE_OK);
+        if (!success) {
+            Log.i(TAG, "Failed to set country code");
+            return false;
+        }
+        mCountryCode = country;
+        mCountryCodeUpdatedTimestamp = LocalDateTime.now().format(FORMATTER);
+        for (CountryCodeChangedListener listener : mListeners) {
+            listener.onCountryCodeChanged(country);
+        }
+        return true;
     }
 
     /**
@@ -188,6 +249,8 @@ public class UwbCountryCode {
         pw.println("mOverrideCountryCode: " + mOverrideCountryCode);
         pw.println("mTelephonyCountryCode: " + mTelephonyCountryCode);
         pw.println("mTelephonyCountryTimestamp: " + mTelephonyCountryTimestamp);
+        pw.println("mWifiCountryCode: " + mWifiCountryCode);
+        pw.println("mWifiCountryTimestamp: " + mWifiCountryTimestamp);
         pw.println("mCountryCode: " + mCountryCode);
         pw.println("mCountryCodeUpdatedTimestamp: " + mCountryCodeUpdatedTimestamp);
     }

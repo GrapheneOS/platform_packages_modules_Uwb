@@ -35,8 +35,10 @@ import android.util.Log;
 import android.uwb.IUwbAdapter;
 import android.uwb.IUwbAdapter2;
 import android.uwb.IUwbAdapterStateCallbacks;
+import android.uwb.IUwbAdfProvisionStateCallbacks;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.IUwbRangingCallbacks2;
+import android.uwb.IUwbVendorUciCallback;
 import android.uwb.RangingReport;
 import android.uwb.RangingSession;
 import android.uwb.SessionHandle;
@@ -44,13 +46,17 @@ import android.uwb.UwbAddress;
 
 import com.android.internal.annotations.GuardedBy;
 
+import com.google.uwb.support.multichip.ChipInfoParams;
+
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Implementation of {@link android.uwb.IUwbAdapter2} binder service.
+ * TODO(b/196225233): Merge with {@link com.android.uwb.UwbService}.
  */
 public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRecipient{
     private static final String TAG = "UwbServiceImpl";
@@ -250,7 +256,7 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
         // TODO(b/196225233): Remove this when qorvo stack is integrated.
         if (mUwbInjector.isUciStackEnabled()) {
             Log.i(TAG, "Using the UCI stack");
-            mVendorUwbAdapter = mUwbInjector.getUwbService().getIUwbAdapter();
+            mVendorUwbAdapter = mUwbInjector.getUwbServiceCore().getIUwbAdapter();
         } else {
             Log.i(TAG, "Using the legacy stack");
             mVendorUwbAdapter = mUwbInjector.getVendorService();
@@ -277,7 +283,16 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
      */
     public void initialize() {
         mUwbSettingsStore.initialize();
-        if (mUwbInjector.isUciStackEnabled()) mUwbInjector.getUwbCountryCode().initialize();
+        mUwbInjector.getMultichipData().initialize();
+        if (mUwbInjector.isUciStackEnabled()) {
+            // Initialize the UCI stack at bootup.
+            try {
+                getVendorUwbAdapter();
+            } catch (RemoteException e) {
+                Log.e(TAG, "Unable to get vendor adapter.", e);
+            }
+            mUwbInjector.getUwbCountryCode().initialize();
+        }
     }
 
     @Override
@@ -305,6 +320,27 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
         enforceUwbPrivilegedPermission();
         getVendorUwbAdapter().registerAdapterStateCallbacks(adapterStateCallbacks);
     }
+
+    @Override
+    public void registerVendorExtensionCallback(IUwbVendorUciCallback callbacks)
+            throws RemoteException {
+        Log.i(TAG, "Register the callback");
+        enforceUwbPrivilegedPermission();
+        // TODO(b/210933436): Implement this.
+        throw new IllegalStateException("Not implemented");
+        /** getVendorUwbAdapter().registerVendorExtensionCallback(callbacks); */
+    }
+
+    @Override
+    public void unregisterVendorExtensionCallback(IUwbVendorUciCallback callbacks)
+            throws RemoteException {
+        Log.i(TAG, "Unregister the callback");
+        enforceUwbPrivilegedPermission();
+        // TODO(b/210933436): Implement this.
+        throw new IllegalStateException("Not implemented");
+        /** getVendorUwbAdapter().unregisterVendorExtensionCallback(callbacks); */
+    }
+
 
     @Override
     public void unregisterAdapterStateCallbacks(IUwbAdapterStateCallbacks adapterStateCallbacks)
@@ -375,27 +411,42 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
     }
 
     @Override
+    public synchronized int sendVendorUciMessage(int gid, int oid, byte[] payload)
+            throws RemoteException {
+        enforceUwbPrivilegedPermission();
+        // TODO(b/210933436): Implement this.
+        throw new IllegalStateException("Not implemented");
+        /**
+        return getVendorUwbAdapter().sendVendorUciMessage(rawUCi);
+         **/
+    }
+
+    @Override
     public void addControlee(SessionHandle sessionHandle, PersistableBundle params) {
         enforceUwbPrivilegedPermission();
         // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
     }
 
     @Override
     public void removeControlee(SessionHandle sessionHandle, PersistableBundle params) {
         enforceUwbPrivilegedPermission();
         // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
     }
 
     @Override
     public void suspend(SessionHandle sessionHandle, PersistableBundle params) {
         enforceUwbPrivilegedPermission();
         // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
     }
 
     @Override
     public void resume(SessionHandle sessionHandle, PersistableBundle params) {
         enforceUwbPrivilegedPermission();
         // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
     }
 
     @Override
@@ -403,6 +454,7 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
             PersistableBundle params, byte[] data) {
         enforceUwbPrivilegedPermission();
         // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
     }
 
     @Override
@@ -418,13 +470,83 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub implements IBinder.DeathRe
     }
 
     @Override
+    public List<PersistableBundle> getChipInfos() {
+        enforceUwbPrivilegedPermission();
+        List<ChipInfoParams> chipInfoParamsList = mUwbInjector.getMultichipData().getChipInfos();
+        List<PersistableBundle> chipInfos = new ArrayList<>();
+        for (ChipInfoParams chipInfoParams : chipInfoParamsList) {
+            chipInfos.add(chipInfoParams.toBundle());
+        }
+        return chipInfos;
+    }
+
+    @Override
     public List<String> getChipIds() {
-        return mUwbInjector.getNativeUwbManager().getChipIds();
+        enforceUwbPrivilegedPermission();
+        List<ChipInfoParams> chipInfoParamsList = mUwbInjector.getMultichipData().getChipInfos();
+        List<String> chipIds = new ArrayList<>();
+        for (ChipInfoParams chipInfoParams : chipInfoParamsList) {
+            chipIds.add(chipInfoParams.getChipId());
+        }
+        return chipIds;
     }
 
     @Override
     public String getDefaultChipId() {
-        return mUwbInjector.getNativeUwbManager().getDefaultChipId();
+        enforceUwbPrivilegedPermission();
+        return mUwbInjector.getMultichipData().getDefaultChipId();
+    }
+
+    @Override
+    public PersistableBundle addServiceProfile(@NonNull PersistableBundle parameters) {
+        enforceUwbPrivilegedPermission();
+        // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
+    }
+
+    @Override
+    public int removeServiceProfile(@NonNull PersistableBundle parameters) {
+        enforceUwbPrivilegedPermission();
+        // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
+    }
+
+    @Override
+    public PersistableBundle getAllServiceProfiles() {
+        enforceUwbPrivilegedPermission();
+        // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
+    }
+
+    @NonNull
+    @Override
+    public PersistableBundle getAdfProvisioningAuthorities(@NonNull PersistableBundle parameters) {
+        enforceUwbPrivilegedPermission();
+        // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
+    }
+
+    @NonNull
+    @Override
+    public PersistableBundle getAdfCertificateAndInfo(@NonNull PersistableBundle parameters) {
+        enforceUwbPrivilegedPermission();
+        // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
+    }
+
+    @Override
+    public void provisionProfileAdfByScript(@NonNull PersistableBundle serviceProfileBundle,
+            @NonNull IUwbAdfProvisionStateCallbacks callback) {
+        enforceUwbPrivilegedPermission();
+        // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
+    }
+
+    @Override
+    public int removeProfileAdf(@NonNull PersistableBundle serviceProfileBundle) {
+        enforceUwbPrivilegedPermission();
+        // TODO(b/200678461): Implement this.
+        throw new IllegalStateException("Not implemented");
     }
 
     @Override

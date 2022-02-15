@@ -10,6 +10,7 @@ android_test {
         "androidx.test.rules",
         "com.uwb.support.ccc",
         "com.uwb.support.fira",
+        "com.uwb.support.multichip",
     ],
     platform_apis: true,
     certificate: "platform",

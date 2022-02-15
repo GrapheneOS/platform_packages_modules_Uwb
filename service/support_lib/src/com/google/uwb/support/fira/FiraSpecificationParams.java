@@ -46,15 +46,9 @@ public class FiraSpecificationParams extends FiraParams {
 
     private final boolean mHasNonDeferredModeSupport;
 
-    private final boolean mHasTxAdaptivePayloadPowerSupport;
-
-    private final int mInitiationTimeMs;
-
-    private final EnumSet<MacFcsCrcCapabilityFlag> mMacFcsCrcCapabilities;
+    private final boolean mHasInitiationTimeSupport;
 
     private final EnumSet<MultiNodeCapabilityFlag> mMultiNodeCapabilities;
-
-    private final EnumSet<PreambleCapabilityFlag> mPreambleCapabilities;
 
     private final EnumSet<PrfCapabilityFlag> mPrfCapabilities;
 
@@ -62,15 +56,13 @@ public class FiraSpecificationParams extends FiraParams {
 
     private final EnumSet<RframeCapabilityFlag> mRframeCapabilities;
 
-    private final EnumSet<SfdCapabilityFlag> mSfdCapabilities;
-
     private final EnumSet<StsCapabilityFlag> mStsCapabilities;
 
-    private final EnumSet<StsSegmentsCapabilityFlag> mStsSegmentsCapabilities;
-
-    private final EnumSet<BprfPhrDataRateCapabilityFlag> mBprfPhrDataRateCapabilities;
-
     private final EnumSet<PsduDataRateCapabilityFlag> mPsduDataRateCapabilities;
+
+    private final EnumSet<BprfParameterSetCapabilityFlag> mBprfParameterSetCapabilities;
+
+    private final EnumSet<HprfParameterSetCapabilityFlag> mHprfParameterSetCapabilities;
 
     private static final String KEY_MIN_PHY_VERSION = "min_phy_version";
     private static final String KEY_MAX_PHY_VERSION = "max_phy_version";
@@ -82,20 +74,17 @@ public class FiraSpecificationParams extends FiraParams {
     private static final String KEY_DEVICE_ROLE_CAPABILITIES = "device_role_capabilities";
     private static final String KEY_BLOCK_STRIDING_SUPPORT = "block_striding";
     private static final String KEY_NON_DEFERRED_MODE_SUPPORT = "non_deferred_mode";
-    private static final String KEY_TX_ADAPTIVE_PAYLOAD_POWER_SUPPORT = "tx_adaptive_payload_power";
-    private static final String KEY_INITIATION_TIME_MS = "initiation_time_ms";
-    private static final String KEY_FCS_CRC_CAPABILITIES = "fcs_crc_capabilities";
+    private static final String KEY_INITIATION_TIME_SUPPORT = "initiation_time";
     private static final String KEY_MULTI_NODE_CAPABILITIES = "multi_node_capabilities";
-    private static final String KEY_PREAMBLE_CAPABILITIES = "preamble_capabilities";
     private static final String KEY_PRF_CAPABILITIES = "prf_capabilities";
     private static final String KEY_RANGING_ROUND_CAPABILITIES = "ranging_round_capabilities";
     private static final String KEY_RFRAME_CAPABILITIES = "rframe_capabilities";
-    private static final String KEY_SFD_CAPABILITIES = "sfd_capabilities";
     private static final String KEY_STS_CAPABILITIES = "sts_capabilities";
-    private static final String KEY_STS_SEGMENT_CAPABILITIES = "sts_segment_capabilities";
-    private static final String KEY_BPRF_PHR_DATA_RATE_CAPABILITIES =
-            "bprf_phr_data_rate_capabilities";
     private static final String KEY_PSDU_DATA_RATE_CAPABILITIES = "psdu_data_rate_capabilities";
+    private static final String KEY_BPRF_PARAMETER_SET_CAPABILITIES =
+            "bprf_parameter_set_capabilities";
+    private static final String KEY_HPRF_PARAMETER_SET_CAPABILITIES =
+            "hprf_parameter_set_capabilities";
 
     private FiraSpecificationParams(
             FiraProtocolVersion minPhyVersionSupported,
@@ -107,19 +96,15 @@ public class FiraSpecificationParams extends FiraParams {
             EnumSet<DeviceRoleCapabilityFlag> deviceRoleCapabilities,
             boolean hasBlockStridingSupport,
             boolean hasNonDeferredModeSupport,
-            boolean hasTxAdaptivePayloadPowerSupport,
-            int initiationTimeMs,
-            EnumSet<MacFcsCrcCapabilityFlag> macFcsCrcCapabilities,
+            boolean hasInitiationTimeSupport,
             EnumSet<MultiNodeCapabilityFlag> multiNodeCapabilities,
-            EnumSet<PreambleCapabilityFlag> preambleCapabilities,
             EnumSet<PrfCapabilityFlag> prfCapabilities,
             EnumSet<RangingRoundCapabilityFlag> rangingRoundCapabilities,
             EnumSet<RframeCapabilityFlag> rframeCapabilities,
-            EnumSet<SfdCapabilityFlag> sfdCapabilities,
             EnumSet<StsCapabilityFlag> stsCapabilities,
-            EnumSet<StsSegmentsCapabilityFlag> stsSegmentsCapabilities,
-            EnumSet<BprfPhrDataRateCapabilityFlag> bprfPhrDataRateCapabilities,
-            EnumSet<PsduDataRateCapabilityFlag> psduDataRateCapabilities) {
+            EnumSet<PsduDataRateCapabilityFlag> psduDataRateCapabilities,
+            EnumSet<BprfParameterSetCapabilityFlag> bprfParameterSetCapabilities,
+            EnumSet<HprfParameterSetCapabilityFlag> hprfParameterSetCapabilities) {
         mMinPhyVersionSupported = minPhyVersionSupported;
         mMaxPhyVersionSupported = maxPhyVersionSupported;
         mMinMacVersionSupported = minMacVersionSupported;
@@ -129,19 +114,15 @@ public class FiraSpecificationParams extends FiraParams {
         mDeviceRoleCapabilities = deviceRoleCapabilities;
         mHasBlockStridingSupport = hasBlockStridingSupport;
         mHasNonDeferredModeSupport = hasNonDeferredModeSupport;
-        mHasTxAdaptivePayloadPowerSupport = hasTxAdaptivePayloadPowerSupport;
-        mInitiationTimeMs = initiationTimeMs;
-        mMacFcsCrcCapabilities = macFcsCrcCapabilities;
+        mHasInitiationTimeSupport = hasInitiationTimeSupport;
         mMultiNodeCapabilities = multiNodeCapabilities;
-        mPreambleCapabilities = preambleCapabilities;
         mPrfCapabilities = prfCapabilities;
         mRangingRoundCapabilities = rangingRoundCapabilities;
         mRframeCapabilities = rframeCapabilities;
-        mSfdCapabilities = sfdCapabilities;
         mStsCapabilities = stsCapabilities;
-        mStsSegmentsCapabilities = stsSegmentsCapabilities;
-        mBprfPhrDataRateCapabilities = bprfPhrDataRateCapabilities;
         mPsduDataRateCapabilities = psduDataRateCapabilities;
+        mBprfParameterSetCapabilities = bprfParameterSetCapabilities;
+        mHprfParameterSetCapabilities = hprfParameterSetCapabilities;
     }
 
     @Override
@@ -185,24 +166,12 @@ public class FiraSpecificationParams extends FiraParams {
         return mHasNonDeferredModeSupport;
     }
 
-    public boolean hasTxAdaptivePayloadPowerSupport() {
-        return mHasTxAdaptivePayloadPowerSupport;
-    }
-
-    public int getInitiationTimeMs() {
-        return mInitiationTimeMs;
-    }
-
-    public EnumSet<MacFcsCrcCapabilityFlag> getMacFcsCrcCapabilities() {
-        return mMacFcsCrcCapabilities;
+    public boolean hasInitiationTimeSupport() {
+        return mHasInitiationTimeSupport;
     }
 
     public EnumSet<MultiNodeCapabilityFlag> getMultiNodeCapabilities() {
         return mMultiNodeCapabilities;
-    }
-
-    public EnumSet<PreambleCapabilityFlag> getPreambleCapabilities() {
-        return mPreambleCapabilities;
     }
 
     public EnumSet<PrfCapabilityFlag> getPrfCapabilities() {
@@ -217,24 +186,20 @@ public class FiraSpecificationParams extends FiraParams {
         return mRframeCapabilities;
     }
 
-    public EnumSet<SfdCapabilityFlag> getSfdCapabilities() {
-        return mSfdCapabilities;
-    }
-
     public EnumSet<StsCapabilityFlag> getStsCapabilities() {
         return mStsCapabilities;
     }
 
-    public EnumSet<StsSegmentsCapabilityFlag> getStsSegmentsCapabilities() {
-        return mStsSegmentsCapabilities;
-    }
-
-    public EnumSet<BprfPhrDataRateCapabilityFlag> getBprfPhrDataRateCapabilities() {
-        return mBprfPhrDataRateCapabilities;
-    }
-
     public EnumSet<PsduDataRateCapabilityFlag> getPsduDataRateCapabilities() {
         return mPsduDataRateCapabilities;
+    }
+
+    public EnumSet<BprfParameterSetCapabilityFlag> getBprfParameterSetCapabilities() {
+        return mBprfParameterSetCapabilities;
+    }
+
+    public EnumSet<HprfParameterSetCapabilityFlag> getHprfParameterSetCapabilities() {
+        return mHprfParameterSetCapabilities;
     }
 
     private static int[] toIntArray(List<Integer> data) {
@@ -257,20 +222,17 @@ public class FiraSpecificationParams extends FiraParams {
         bundle.putInt(KEY_DEVICE_ROLE_CAPABILITIES, FlagEnum.toInt(mDeviceRoleCapabilities));
         bundle.putBoolean(KEY_BLOCK_STRIDING_SUPPORT, mHasBlockStridingSupport);
         bundle.putBoolean(KEY_NON_DEFERRED_MODE_SUPPORT, mHasNonDeferredModeSupport);
-        bundle.putBoolean(KEY_TX_ADAPTIVE_PAYLOAD_POWER_SUPPORT, mHasTxAdaptivePayloadPowerSupport);
-        bundle.putInt(KEY_INITIATION_TIME_MS, mInitiationTimeMs);
-        bundle.putInt(KEY_FCS_CRC_CAPABILITIES, FlagEnum.toInt(mMacFcsCrcCapabilities));
+        bundle.putBoolean(KEY_INITIATION_TIME_SUPPORT, mHasInitiationTimeSupport);
         bundle.putInt(KEY_MULTI_NODE_CAPABILITIES, FlagEnum.toInt(mMultiNodeCapabilities));
-        bundle.putInt(KEY_PREAMBLE_CAPABILITIES, FlagEnum.toInt(mPreambleCapabilities));
         bundle.putInt(KEY_PRF_CAPABILITIES, FlagEnum.toInt(mPrfCapabilities));
         bundle.putInt(KEY_RANGING_ROUND_CAPABILITIES, FlagEnum.toInt(mRangingRoundCapabilities));
         bundle.putInt(KEY_RFRAME_CAPABILITIES, FlagEnum.toInt(mRframeCapabilities));
-        bundle.putInt(KEY_SFD_CAPABILITIES, FlagEnum.toInt(mSfdCapabilities));
         bundle.putInt(KEY_STS_CAPABILITIES, FlagEnum.toInt(mStsCapabilities));
-        bundle.putInt(KEY_STS_SEGMENT_CAPABILITIES, FlagEnum.toInt(mStsSegmentsCapabilities));
-        bundle.putInt(
-                KEY_BPRF_PHR_DATA_RATE_CAPABILITIES, FlagEnum.toInt(mBprfPhrDataRateCapabilities));
         bundle.putInt(KEY_PSDU_DATA_RATE_CAPABILITIES, FlagEnum.toInt(mPsduDataRateCapabilities));
+        bundle.putInt(KEY_BPRF_PARAMETER_SET_CAPABILITIES,
+                FlagEnum.toInt(mBprfParameterSetCapabilities));
+        bundle.putLong(KEY_HPRF_PARAMETER_SET_CAPABILITIES,
+                FlagEnum.toLong(mHprfParameterSetCapabilities));
 
         return bundle;
     }
@@ -319,21 +281,11 @@ public class FiraSpecificationParams extends FiraParams {
                                 DeviceRoleCapabilityFlag.values()))
                 .hasBlockStridingSupport(bundle.getBoolean(KEY_BLOCK_STRIDING_SUPPORT))
                 .hasNonDeferredModeSupport(bundle.getBoolean(KEY_NON_DEFERRED_MODE_SUPPORT))
-                .hasTxAdaptivePayloadPowerSupport(
-                        bundle.getBoolean(KEY_TX_ADAPTIVE_PAYLOAD_POWER_SUPPORT))
-                .setInitiationTimeMs(bundle.getInt(KEY_INITIATION_TIME_MS))
-                .setMacFcsCrcCapabilities(
-                        FlagEnum.toEnumSet(
-                                bundle.getInt(KEY_FCS_CRC_CAPABILITIES),
-                                MacFcsCrcCapabilityFlag.values()))
+                .hasInitiationTimeSupport(bundle.getBoolean(KEY_INITIATION_TIME_SUPPORT))
                 .setMultiNodeCapabilities(
                         FlagEnum.toEnumSet(
                                 bundle.getInt(KEY_MULTI_NODE_CAPABILITIES),
                                 MultiNodeCapabilityFlag.values()))
-                .setPreambleCapabilities(
-                        FlagEnum.toEnumSet(
-                                bundle.getInt(KEY_PREAMBLE_CAPABILITIES),
-                                PreambleCapabilityFlag.values()))
                 .setPrfCapabilities(
                         FlagEnum.toEnumSet(
                                 bundle.getInt(KEY_PRF_CAPABILITIES), PrfCapabilityFlag.values()))
@@ -345,24 +297,21 @@ public class FiraSpecificationParams extends FiraParams {
                         FlagEnum.toEnumSet(
                                 bundle.getInt(KEY_RFRAME_CAPABILITIES),
                                 RframeCapabilityFlag.values()))
-                .setSfdCapabilities(
-                        FlagEnum.toEnumSet(
-                                bundle.getInt(KEY_SFD_CAPABILITIES), SfdCapabilityFlag.values()))
                 .setStsCapabilities(
                         FlagEnum.toEnumSet(
                                 bundle.getInt(KEY_STS_CAPABILITIES), StsCapabilityFlag.values()))
-                .setStsSegmentsCapabilities(
-                        FlagEnum.toEnumSet(
-                                bundle.getInt(KEY_STS_SEGMENT_CAPABILITIES),
-                                StsSegmentsCapabilityFlag.values()))
-                .setBprfPhrDataRateCapabilities(
-                        FlagEnum.toEnumSet(
-                                bundle.getInt(KEY_BPRF_PHR_DATA_RATE_CAPABILITIES),
-                                BprfPhrDataRateCapabilityFlag.values()))
                 .setPsduDataRateCapabilities(
                         FlagEnum.toEnumSet(
                                 bundle.getInt(KEY_PSDU_DATA_RATE_CAPABILITIES),
                                 PsduDataRateCapabilityFlag.values()))
+                .setBprfParameterSetCapabilities(
+                        FlagEnum.toEnumSet(
+                                bundle.getInt(KEY_BPRF_PARAMETER_SET_CAPABILITIES),
+                                BprfParameterSetCapabilityFlag.values()))
+                .setHprfParameterSetCapabilities(
+                        FlagEnum.longToEnumSet(
+                                bundle.getLong(KEY_HPRF_PARAMETER_SET_CAPABILITIES),
+                                HprfParameterSetCapabilityFlag.values()))
                 .build();
     }
 
@@ -389,21 +338,11 @@ public class FiraSpecificationParams extends FiraParams {
 
         private boolean mHasNonDeferredModeSupport = false;
 
-        private boolean mHasTxAdaptivePayloadPowerSupport = false;
-
-        private int mInitiationTimeMs = 0;
-
-        // CRC16 should be used for BPRF
-        private final EnumSet<MacFcsCrcCapabilityFlag> mMacFcsCrcCapabilities =
-                EnumSet.of(MacFcsCrcCapabilityFlag.HAS_CRC_16_SUPPORT);
+        private boolean mHasInitiationTimeSupport = false;
 
         // Unicast support is mandatory
         private final EnumSet<MultiNodeCapabilityFlag> mMultiNodeCapabilities =
                 EnumSet.of(MultiNodeCapabilityFlag.HAS_UNICAST_SUPPORT);
-
-        // 64-bit preamble is mandatory
-        private final EnumSet<PreambleCapabilityFlag> mPreambleCapabilities =
-                EnumSet.of(PreambleCapabilityFlag.HAS_64_SYMBOLS_SUPPORT);
 
         // BPRF mode is mandatory
         private final EnumSet<PrfCapabilityFlag> mPrfCapabilities =
@@ -417,27 +356,19 @@ public class FiraSpecificationParams extends FiraParams {
         private final EnumSet<RframeCapabilityFlag> mRframeCapabilities =
                 EnumSet.of(RframeCapabilityFlag.HAS_SP3_RFRAME_SUPPORT);
 
-        // SFD2 is mandatory
-        private final EnumSet<SfdCapabilityFlag> mSfdCapabilities =
-                EnumSet.of(SfdCapabilityFlag.HAS_SFD2_SUPPORT);
-
         // STATIC STS is mandatory
         private final EnumSet<StsCapabilityFlag> mStsCapabilities =
                 EnumSet.of(StsCapabilityFlag.HAS_STATIC_STS_SUPPORT);
 
-        // 0 or 1 STS segments are mandatory
-        private final EnumSet<StsSegmentsCapabilityFlag> mStsSegmentsCapabilities =
-                EnumSet.of(
-                        StsSegmentsCapabilityFlag.HAS_0_SEGMENT_SUPPORT,
-                        StsSegmentsCapabilityFlag.HAS_1_SEGMENT_SUPPORT);
-
-        // 850k PHY Header data rate is mandatory
-        private final EnumSet<BprfPhrDataRateCapabilityFlag> mBprfPhrDataRateCapabilities =
-                EnumSet.of(BprfPhrDataRateCapabilityFlag.HAS_850K_SUPPORT);
-
         // 6.81Mb/s PSDU data rate is mandatory
         private final EnumSet<PsduDataRateCapabilityFlag> mPsduDataRateCapabilities =
                 EnumSet.of(PsduDataRateCapabilityFlag.HAS_6M81_SUPPORT);
+
+        private final EnumSet<BprfParameterSetCapabilityFlag> mBprfParameterSetCapabilities =
+                EnumSet.noneOf(BprfParameterSetCapabilityFlag.class);
+
+        private final EnumSet<HprfParameterSetCapabilityFlag> mHprfParameterSetCapabilities =
+                EnumSet.noneOf(HprfParameterSetCapabilityFlag.class);
 
         public FiraSpecificationParams.Builder setMinPhyVersionSupported(
                 FiraProtocolVersion version) {
@@ -491,31 +422,14 @@ public class FiraSpecificationParams extends FiraParams {
             return this;
         }
 
-        public FiraSpecificationParams.Builder hasTxAdaptivePayloadPowerSupport(boolean value) {
-            mHasTxAdaptivePayloadPowerSupport = value;
-            return this;
-        }
-
-        public FiraSpecificationParams.Builder setInitiationTimeMs(int initiationTimeMs) {
-            mInitiationTimeMs = initiationTimeMs;
-            return this;
-        }
-
-        public FiraSpecificationParams.Builder setMacFcsCrcCapabilities(
-                Collection<MacFcsCrcCapabilityFlag> macFcsCrcCapabilities) {
-            mMacFcsCrcCapabilities.addAll(macFcsCrcCapabilities);
+        public FiraSpecificationParams.Builder hasInitiationTimeSupport(boolean value) {
+            mHasInitiationTimeSupport = value;
             return this;
         }
 
         public FiraSpecificationParams.Builder setMultiNodeCapabilities(
                 Collection<MultiNodeCapabilityFlag> multiNodeCapabilities) {
             mMultiNodeCapabilities.addAll(multiNodeCapabilities);
-            return this;
-        }
-
-        public FiraSpecificationParams.Builder setPreambleCapabilities(
-                Collection<PreambleCapabilityFlag> preambleCapabilities) {
-            mPreambleCapabilities.addAll(preambleCapabilities);
             return this;
         }
 
@@ -537,33 +451,27 @@ public class FiraSpecificationParams extends FiraParams {
             return this;
         }
 
-        public FiraSpecificationParams.Builder setSfdCapabilities(
-                Collection<SfdCapabilityFlag> sfdCapabilities) {
-            mSfdCapabilities.addAll(sfdCapabilities);
-            return this;
-        }
-
         public FiraSpecificationParams.Builder setStsCapabilities(
                 Collection<StsCapabilityFlag> stsCapabilities) {
             mStsCapabilities.addAll(stsCapabilities);
             return this;
         }
 
-        public FiraSpecificationParams.Builder setStsSegmentsCapabilities(
-                Collection<StsSegmentsCapabilityFlag> stsSegmentsCapabilities) {
-            mStsSegmentsCapabilities.addAll(stsSegmentsCapabilities);
-            return this;
-        }
-
-        public FiraSpecificationParams.Builder setBprfPhrDataRateCapabilities(
-                Collection<BprfPhrDataRateCapabilityFlag> bprfPhrDataRateCapabilities) {
-            mBprfPhrDataRateCapabilities.addAll(bprfPhrDataRateCapabilities);
-            return this;
-        }
-
         public FiraSpecificationParams.Builder setPsduDataRateCapabilities(
                 Collection<PsduDataRateCapabilityFlag> psduDataRateCapabilities) {
             mPsduDataRateCapabilities.addAll(psduDataRateCapabilities);
+            return this;
+        }
+
+        public FiraSpecificationParams.Builder setBprfParameterSetCapabilities(
+                Collection<BprfParameterSetCapabilityFlag> bprfParameterSetCapabilities) {
+            mBprfParameterSetCapabilities.addAll(bprfParameterSetCapabilities);
+            return this;
+        }
+
+        public FiraSpecificationParams.Builder setHprfParameterSetCapabilities(
+                Collection<HprfParameterSetCapabilityFlag> hprfParameterSetCapabilities) {
+            mHprfParameterSetCapabilities.addAll(hprfParameterSetCapabilities);
             return this;
         }
 
@@ -582,19 +490,15 @@ public class FiraSpecificationParams extends FiraParams {
                     mDeviceRoleCapabilities,
                     mHasBlockStridingSupport,
                     mHasNonDeferredModeSupport,
-                    mHasTxAdaptivePayloadPowerSupport,
-                    mInitiationTimeMs,
-                    mMacFcsCrcCapabilities,
+                    mHasInitiationTimeSupport,
                     mMultiNodeCapabilities,
-                    mPreambleCapabilities,
                     mPrfCapabilities,
                     mRangingRoundCapabilities,
                     mRframeCapabilities,
-                    mSfdCapabilities,
                     mStsCapabilities,
-                    mStsSegmentsCapabilities,
-                    mBprfPhrDataRateCapabilities,
-                    mPsduDataRateCapabilities);
+                    mPsduDataRateCapabilities,
+                    mBprfParameterSetCapabilities,
+                    mHprfParameterSetCapabilities);
         }
     }
 }

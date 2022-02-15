@@ -5,7 +5,7 @@ package {
 cc_library_shared {
     name: "libuwb_uci_jni",
 
-    min_sdk_version: "current", // TODO: Move to 32 once SDK is finalized
+    min_sdk_version: "Tiramisu",
 
     cflags:
      ["-DNXP_EXTNS=TRUE"]  + [
@@ -59,13 +59,16 @@ cc_library_shared {
 rust_ffi_shared {
     name: "libuwb_uci_jni_rust",
     crate_name: "uwb_uci_jni_rust",
-    min_sdk_version: "current",
+    min_sdk_version: "Tiramisu",
     srcs: ["rust/lib.rs"],
     rustlibs: [
+        "libandroid_logger",
         "libjni",
         "liblog_rust",
         "libbinder_rs",
         "liblogger",
+        "libnum_traits",
+        "libuwb_uci_packets",
         "libuwb_uci_rust",
     ],
     shared_libs: [

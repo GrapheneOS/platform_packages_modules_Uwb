@@ -15,11 +15,13 @@
  */
 package com.android.server.uwb;
 
+import android.util.SparseArray;
+
+import com.android.server.uwb.UwbSessionManager.UwbSession;
+import com.android.server.uwb.data.UwbRangingData;
+import com.android.server.uwb.data.UwbTwoWayMeasurement;
+import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.proto.UwbStatsLog;
-import com.android.uwb.UwbSessionManager.UwbSession;
-import com.android.uwb.data.UwbRangingData;
-import com.android.uwb.data.UwbTwoWayMeasurement;
-import com.android.uwb.data.UwbUciConstants;
 
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
@@ -42,12 +44,19 @@ public class UwbMetrics {
     private static final int MAX_RANGING_REPORTS = 1024;
     public static final int DISTANCE_FOM_DEFAULT = 100;
     public static final int INVALID_DISTANCE = 0xFFFF;
+    private static final int ONE_SECOND_IN_MS = 1000;
+    private static final int TEN_SECOND_IN_MS = 10 * 1000;
+    private static final int ONE_MIN_IN_MS = 60 * 1000;
+    private static final int TEN_MIN_IN_MS = 600 * 1000;
+    private static final int ONE_HOUR_IN_MS = 3600 * 1000;
     private final UwbInjector mUwbInjector;
     private final Deque<RangingSessionStats> mRangingSessionList = new ArrayDeque<>();
+    private final SparseArray<RangingSessionStats> mOpenedSessionMap = new SparseArray<>();
     private final Deque<RangingReportEvent> mRangingReportList = new ArrayDeque<>();
     private int mNumApps = 0;
     private long mLastRangingDataLogTimeMs;
     private final Object mLock = new Object();
+
     /**
      * The class storing the stats of a ranging session.
      */
@@ -68,7 +77,6 @@ public class UwbMetrics {
 
         RangingSessionStats(int sessionId) {
             mSessionId = sessionId;
-            mStartTimeMs = mUwbInjector.getElapsedSinceBootMillis();
         }
 
         /**
@@ -123,7 +131,7 @@ public class UwbMetrics {
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
-            sb.append("startTime=");
+            sb.append("rangingStartTime=");
             Calendar c = Calendar.getInstance();
             synchronized (mLock) {
                 c.setTimeInMillis(mStartTimeMs);
@@ -131,7 +139,14 @@ public class UwbMetrics {
                         String.format("%tm-%td %tH:%tM:%tS.%tL", c, c, c, c, c, c));
                 sb.append(", sessionId=").append(mSessionId);
                 sb.append(", initLatencyMs=").append(mInitLatencyMs);
+                sb.append(", activeDurationMs=").append(mActiveDuration);
+                sb.append(", rangingCount=").append(mRangingcount);
+                sb.append(", validRangingCount=").append(mValidRangingCount);
                 sb.append(", initStatus=").append(mInitStatus);
+                sb.append(", channel=").append(mChannel);
+                sb.append(", initiator=").append(mIsInitiator);
+                sb.append(", controller=").append(mIsController);
+                sb.append(", discoveredByFramework=").append(mIsDiscoveredByFramework);
                 return sb.toString();
             }
         }
@@ -188,7 +203,7 @@ public class UwbMetrics {
     /**
      * Log the ranging session initialization event
      */
-    public void logRangingSessionInitEvent(UwbSession uwbSession, int status) {
+    public void logRangingInitEvent(UwbSession uwbSession, int status) {
         synchronized (mLock) {
             // If past maximum events, start removing the oldest
             while (mRangingSessionList.size() >= MAX_RANGING_SESSIONS) {
@@ -198,6 +213,7 @@ public class UwbMetrics {
             session.parseParams(uwbSession.getParams());
             session.convertInitStatus(status);
             mRangingSessionList.add(session);
+            mOpenedSessionMap.put(uwbSession.getSessionId(), session);
             UwbStatsLog.write(UwbStatsLog.UWB_SESSION_INITED, uwbSession.getProfileType(),
                     session.mStsType, session.mIsInitiator,
                     session.mIsController, session.mIsDiscoveredByFramework, session.mIsOutOfBand,
@@ -207,62 +223,182 @@ public class UwbMetrics {
     }
 
     /**
+     * Log the ranging session start event
+     */
+    public void longRangingStartEvent(UwbSession uwbSession, int status) {
+        // add status count b/218921154
+        synchronized (mLock) {
+            RangingSessionStats session = mOpenedSessionMap.get(uwbSession.getSessionId());
+            if (session == null) {
+                return;
+            }
+            if (status != UwbUciConstants.STATUS_CODE_OK) {
+                session.mStartTimeMs = 0;
+                return;
+            }
+            session.mStartTimeMs = mUwbInjector.getElapsedSinceBootMillis();
+        }
+    }
+
+    /**
+     * Log the ranging session stop event
+     */
+    public void longRangingStopEvent(UwbSession uwbSession) {
+        // add status count b/218921154
+        synchronized (mLock) {
+            RangingSessionStats session = mOpenedSessionMap.get(uwbSession.getSessionId());
+            if (session == null) {
+                return;
+            }
+            if (session.mStartTimeMs == 0) {
+                return;
+            }
+            session.mActiveDuration += (int) (mUwbInjector.getElapsedSinceBootMillis()
+                    - session.mStartTimeMs);
+            session.mStartTimeMs = 0;
+        }
+    }
+
+    /**
+     * Log the ranging session close event
+     */
+    public void logRangingCloseEvent(UwbSession uwbSession, int status) {
+        synchronized (mLock) {
+            RangingSessionStats session = mOpenedSessionMap.get(uwbSession.getSessionId());
+            if (session == null) {
+                return;
+            }
+            if (status != UwbUciConstants.STATUS_CODE_OK) {
+                return;
+            }
+            // Ranging may close without stop event
+            if (session.mStartTimeMs != 0) {
+                session.mActiveDuration += (int) (mUwbInjector.getElapsedSinceBootMillis()
+                        - session.mStartTimeMs);
+                session.mStartTimeMs = 0;
+            }
+            UwbStatsLog.write(UwbStatsLog.UWB_SESSION_CLOSED, uwbSession.getProfileType(),
+                    session.mStsType, session.mIsInitiator,
+                    session.mIsController, session.mIsDiscoveredByFramework, session.mIsOutOfBand,
+                    session.mActiveDuration, getDurationBucket(session.mActiveDuration),
+                    session.mRangingcount, session.mValidRangingCount,
+                    getCountBucket(session.mRangingcount),
+                    getCountBucket(session.mValidRangingCount));
+            mOpenedSessionMap.delete(uwbSession.getSessionId());
+        }
+    }
+
+    private int getDurationBucket(int durationMs) {
+        if (durationMs <= ONE_SECOND_IN_MS) {
+            return UwbStatsLog.UWB_SESSION_CLOSED__DURATION_BUCKET__WITHIN_ONE_SEC;
+        } else if (durationMs <= TEN_SECOND_IN_MS) {
+            return UwbStatsLog.UWB_SESSION_CLOSED__DURATION_BUCKET__ONE_TO_TEN_SEC;
+        } else if (durationMs <= ONE_MIN_IN_MS) {
+            return UwbStatsLog.UWB_SESSION_CLOSED__DURATION_BUCKET__TEN_SEC_TO_ONE_MIN;
+        } else if (durationMs <= TEN_MIN_IN_MS) {
+            return UwbStatsLog.UWB_SESSION_CLOSED__DURATION_BUCKET__ONE_TO_TEN_MIN;
+        } else if (durationMs <= ONE_HOUR_IN_MS) {
+            return UwbStatsLog.UWB_SESSION_CLOSED__DURATION_BUCKET__TEN_MIN_TO_ONE_HOUR;
+        } else {
+            return UwbStatsLog.UWB_SESSION_CLOSED__DURATION_BUCKET__MORE_THAN_ONE_HOUR;
+        }
+    }
+
+    private int getCountBucket(int count) {
+        if (count <= 0) {
+            return UwbStatsLog.UWB_SESSION_CLOSED__RANGING_COUNT_BUCKET__ZERO;
+        } else if (count <= 5) {
+            return UwbStatsLog.UWB_SESSION_CLOSED__RANGING_COUNT_BUCKET__ONE_TO_FIVE;
+        } else if (count <= 20) {
+            return UwbStatsLog.UWB_SESSION_CLOSED__RANGING_COUNT_BUCKET__FIVE_TO_TWENTY;
+        } else if (count <= 100) {
+            return UwbStatsLog.UWB_SESSION_CLOSED__RANGING_COUNT_BUCKET__TWENTY_TO_ONE_HUNDRED;
+        } else if (count <= 500) {
+            return UwbStatsLog
+                    .UWB_SESSION_CLOSED__RANGING_COUNT_BUCKET__ONE_HUNDRED_TO_FIVE_HUNDRED;
+        } else {
+            return UwbStatsLog.UWB_SESSION_CLOSED__RANGING_COUNT_BUCKET__MORE_THAN_FIVE_HUNDRED;
+        }
+    }
+
+    /**
      * Log the usage of API from a new App
      */
     public void logNewAppUsage() {
-        mNumApps++;
+        synchronized (mLock) {
+            mNumApps++;
+        }
     }
 
     /**
      * Log the ranging measurement result
      */
     public void logRangingResult(int profileType, UwbRangingData rangingData) {
-        if (rangingData.getRangingMeasuresType()
-                != UwbUciConstants.RANGING_MEASUREMENT_TYPE_TWO_WAY
-                || rangingData.getNoOfRangingMeasures() < 1) {
-            return;
+        synchronized (mLock) {
+            if (rangingData.getRangingMeasuresType()
+                    != UwbUciConstants.RANGING_MEASUREMENT_TYPE_TWO_WAY
+                    || rangingData.getNoOfRangingMeasures() < 1) {
+                return;
+            }
+
+            UwbTwoWayMeasurement[] uwbTwoWayMeasurement = rangingData.getRangingTwoWayMeasures();
+            UwbTwoWayMeasurement measurement = uwbTwoWayMeasurement[0];
+
+            int sessionId = (int) rangingData.getSessionId();
+            RangingSessionStats session = mOpenedSessionMap.get(sessionId);
+            if (session != null) {
+                session.mRangingcount++;
+            }
+
+            int rangingStatus = measurement.getRangingStatus();
+            if (rangingStatus != UwbUciConstants.STATUS_CODE_OK) {
+                return;
+            }
+
+            if (session != null) {
+                session.mValidRangingCount++;
+                if (session.mValidRangingCount == 1) {
+                    writeFirstRangingStats(profileType, session);
+                }
+            }
+            int distanceCm = measurement.getDistance();
+            int azimuthDegree = (int) measurement.getAoaAzimuth();
+            int azimuthFom = measurement.getAoaAzimuthFom();
+            int elevationDegree = (int) measurement.getAoaElevation();
+            int elevationFom = measurement.getAoaElevationFom();
+            int nlos = getNlos(measurement);
+
+            while (mRangingReportList.size() >= MAX_RANGING_REPORTS) {
+                mRangingReportList.removeFirst();
+            }
+            RangingReportEvent report = new RangingReportEvent(sessionId, nlos, distanceCm,
+                    azimuthDegree, azimuthFom, elevationDegree, elevationFom);
+            mRangingReportList.add(report);
+
+            long currTimeMs = mUwbInjector.getElapsedSinceBootMillis();
+            if ((currTimeMs - mLastRangingDataLogTimeMs) < mUwbInjector.getDeviceConfigFacade()
+                    .getRangingResultLogIntervalMs()) {
+                return;
+            }
+            mLastRangingDataLogTimeMs = currTimeMs;
+
+            boolean isDistanceValid = distanceCm != INVALID_DISTANCE;
+            boolean isAzimuthValid = azimuthFom > 0;
+            boolean isElevationValid = elevationFom > 0;
+            int distance50Cm = isDistanceValid ? distanceCm / 50 : 0;
+            int azimuth10Degree = isAzimuthValid ? azimuthDegree / 10 : 0;
+            int elevation10Degree = isElevationValid ? elevationDegree / 10 : 0;
+            UwbStatsLog.write(UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED, profileType, nlos,
+                    isDistanceValid, distanceCm, distance50Cm, DISTANCE_FOM_DEFAULT,
+                    isAzimuthValid, azimuthDegree, azimuth10Degree, azimuthFom,
+                    isElevationValid, elevationDegree, elevation10Degree, elevationFom);
         }
+    }
 
-        UwbTwoWayMeasurement[] uwbTwoWayMeasurement = rangingData.getRangingTwoWayMeasures();
-        UwbTwoWayMeasurement measurement = uwbTwoWayMeasurement[0];
-
-        int rangingStatus = measurement.getRangingStatus();
-        if (rangingStatus != FiraParams.STATUS_CODE_OK) {
-            return;
-        }
-
-        int sessionId = (int) rangingData.getSessionId();
-        int distanceCm = measurement.getDistance();
-        int azimuthDegree = (int) measurement.getAoaAzimuth();
-        int azimuthFom = measurement.getAoaAzimuthFom();
-        int elevationDegree = (int) measurement.getAoaElevation();
-        int elevationFom = measurement.getAoaElevationFom();
-        int nlos = getNlos(measurement);
-
-        while (mRangingReportList.size() >= MAX_RANGING_REPORTS) {
-            mRangingReportList.removeFirst();
-        }
-        RangingReportEvent report = new RangingReportEvent(sessionId, nlos, distanceCm,
-                azimuthDegree, azimuthFom, elevationDegree, elevationFom);
-        mRangingReportList.add(report);
-
-        long currTimeMs = mUwbInjector.getElapsedSinceBootMillis();
-        if ((currTimeMs - mLastRangingDataLogTimeMs) < mUwbInjector.getDeviceConfigFacade()
-                .getRangingResultLogIntervalMs()) {
-            return;
-        }
-        mLastRangingDataLogTimeMs = currTimeMs;
-
-        boolean isDistanceValid = distanceCm != INVALID_DISTANCE;
-        boolean isAzimuthValid = azimuthFom > 0;
-        boolean isElevationValid = elevationFom > 0;
-        int distance50Cm = isDistanceValid ? distanceCm / 50 : 0;
-        int azimuth10Degree = isAzimuthValid ? azimuthDegree / 10 : 0;
-        int elevation10Degree = isElevationValid ? elevationDegree / 10 : 0;
-        UwbStatsLog.write(UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED, profileType, nlos,
-                isDistanceValid, distanceCm, distance50Cm, DISTANCE_FOM_DEFAULT,
-                isAzimuthValid, azimuthDegree, azimuth10Degree, azimuthFom,
-                isElevationValid, elevationDegree, elevation10Degree, elevationFom);
+    private void writeFirstRangingStats(int profileType, RangingSessionStats session) {
+        int latencyMs = (int) (mUwbInjector.getElapsedSinceBootMillis() - session.mStartTimeMs);
+        UwbStatsLog.write(UwbStatsLog.UWB_FIRST_RANGING_RECEIVED,
+                profileType, latencyMs, latencyMs / 200);
     }
 
     private int getNlos(UwbTwoWayMeasurement measurement) {
@@ -285,6 +421,10 @@ public class UwbMetrics {
             pw.println("mRangingSessionList");
             for (RangingSessionStats stats: mRangingSessionList) {
                 pw.println(stats.toString());
+            }
+            pw.println("mOpenedSessionMap");
+            for (int i = 0; i < mOpenedSessionMap.size(); i++) {
+                pw.println(mOpenedSessionMap.valueAt(i).toString());
             }
             pw.println("mRangingReportList");
             for (RangingReportEvent event: mRangingReportList) {

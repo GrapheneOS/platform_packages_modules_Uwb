@@ -20,7 +20,7 @@ package {
 java_defaults {
     name: "support-lib-uwb-common-defaults",
     defaults: ["uwb-module-sdk-version-defaults"],
-    sdk_version: "module_current",
+    sdk_version: "module_Tiramisu",
     libs: [
         "framework-annotations-lib",
         "framework-uwb-pre-jarjar",
@@ -71,4 +71,15 @@ java_library {
         "com.uwb.support.base",
         "modules-utils-preconditions",
     ],
+ }
+
+java_library {
+    name: "com.uwb.support.multichip",
+    defaults: ["support-lib-uwb-common-defaults"],
+    srcs: [
+        "src/com/google/uwb/support/multichip/**/*.java",
+    ],
+    static_libs: [
+    ],
+    visibility: ["//cts/tests/uwb"],
  }

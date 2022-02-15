@@ -28,6 +28,7 @@ import android.uwb.UwbAddress;
  * Temporary AIDL interface name for the interface between UwbManager & UwbService.
  * The existing IUwbAdapter interface is kept behind for providing backwards
  * compatibility with the old UWB architecture.
+ * TODO(b/211025367): Remove all the duplicate javadocs here.
  */
 oneway interface IUwbRangingCallbacks2 {
   /**
@@ -257,4 +258,8 @@ oneway interface IUwbRangingCallbacks2 {
    */
   void onDataReceiveFailed(in SessionHandle sessionHandle, in UwbAddress remoteDeviceAddress,
           RangingChangeReason reason, in PersistableBundle parameters);
+
+  void onServiceDiscovered(in SessionHandle sessionHandle, in PersistableBundle parameters);
+
+  void onServiceConnected(in SessionHandle sessionHandle, in PersistableBundle parameters);
 }

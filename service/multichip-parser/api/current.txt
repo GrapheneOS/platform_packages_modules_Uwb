@@ -8,13 +8,6 @@ package com.android.uwb {
     method public void setSharedLib(String);
   }
 
-  public class ChipGroupsInfo {
-    ctor public ChipGroupsInfo();
-    method public java.util.List<com.android.uwb.ChipGroupInfo> getChipGroup();
-    method public String getDefaultChipId();
-    method public void setDefaultChipId(String);
-  }
-
   public class ChipInfo {
     ctor public ChipInfo();
     method public String getId();
@@ -33,8 +26,16 @@ package com.android.uwb {
     method public void setZ(java.math.BigDecimal);
   }
 
+  public class UwbChipConfig {
+    ctor public UwbChipConfig();
+    method public java.util.List<com.android.uwb.ChipGroupInfo> getChipGroup();
+    method public String getDefaultChipId();
+    method public void setDefaultChipId(String);
+  }
+
   public class XmlParser {
     ctor public XmlParser();
+    method public static com.android.uwb.UwbChipConfig read(java.io.InputStream) throws javax.xml.datatype.DatatypeConfigurationException, java.io.IOException, org.xmlpull.v1.XmlPullParserException;
     method public static String readText(org.xmlpull.v1.XmlPullParser) throws java.io.IOException, org.xmlpull.v1.XmlPullParserException;
     method public static void skip(org.xmlpull.v1.XmlPullParser) throws java.io.IOException, org.xmlpull.v1.XmlPullParserException;
   }

@@ -56,7 +56,7 @@ public class CccTests {
         @CccParams.ChapsPerSlot int chapsPerSlot = CccParams.CHAPS_PER_SLOT_6;
         int numResponderNodes = 9;
         @CccParams.SlotsPerRound int numSlotsPerRound = CccParams.SLOTS_PER_ROUND_12;
-        @CccParams.SyncCodeIndex int syncCodeIdx = CccParams.SYNC_CODE_INDEX_22;
+        @CccParams.SyncCodeIndex int syncCodeIdx = 22;
         @CccParams.HoppingConfigMode int hoppingConfigMode = CccParams.HOPPING_CONFIG_MODE_ADAPTIVE;
         @CccParams.HoppingSequence int hoppingSequence = CccParams.HOPPING_SEQUENCE_AES;
 
@@ -165,7 +165,7 @@ public class CccTests {
     public void testRangingStartedParams() {
         int hopModeKey = 98876444;
         int startingStsIndex = 246802468;
-        @CccParams.SyncCodeIndex int syncCodeIndex = CccParams.SYNC_CODE_INDEX_10;
+        @CccParams.SyncCodeIndex int syncCodeIndex = 10;
         long uwbTime0 = 50;
         int ranMultiplier = 10;
 
@@ -222,7 +222,7 @@ public class CccTests {
         Integer[] chapsPerSlots =
                 new Integer[] {CccParams.CHAPS_PER_SLOT_4, CccParams.CHAPS_PER_SLOT_12};
         Integer[] syncCodes =
-                new Integer[] {CccParams.SYNC_CODE_INDEX_10, CccParams.SYNC_CODE_INDEX_23};
+                new Integer[] {10, 23};
         Integer[] channels = new Integer[] {CccParams.UWB_CHANNEL_5, CccParams.UWB_CHANNEL_9};
         Integer[] hoppingConfigModes =
                 new Integer[] {
@@ -304,6 +304,6 @@ public class CccTests {
     }
 
     private void verifyBundlesEqual(Params params, Params fromBundle) {
-        PersistableBundle.kindofEquals(params.toBundle(), fromBundle.toBundle());
+        assertTrue(PersistableBundle.kindofEquals(params.toBundle(), fromBundle.toBundle()));
     }
 }
