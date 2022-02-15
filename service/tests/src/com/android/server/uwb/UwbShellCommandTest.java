@@ -33,6 +33,7 @@ import static org.mockito.Mockito.when;
 
 import android.annotation.NonNull;
 import android.annotation.Nullable;
+import android.content.AttributionSource;
 import android.content.Context;
 import android.os.Binder;
 import android.os.PersistableBundle;
@@ -170,10 +171,7 @@ public class UwbShellCommandTest {
     }
 
     private static class MutableCb {
-        public IUwbRangingCallbacks2 cb;
-        public void setCb(IUwbRangingCallbacks2 cb) {
-            this.cb = cb;
-        }
+        @Nullable public IUwbRangingCallbacks2 cb;
     }
 
     private Pair<IUwbRangingCallbacks2, SessionHandle> triggerAndVerifyRangingStart(
@@ -186,8 +184,8 @@ public class UwbShellCommandTest {
             startRangingParams) throws Exception {
         final MutableCb cbCaptor = new MutableCb();
         doAnswer(invocation -> {
-            cbCaptor.setCb(invocation.getArgument(2));
-            cbCaptor.cb.onRangingOpened(invocation.getArgument(0));
+            cbCaptor.cb = invocation.getArgument(2);
+            cbCaptor.cb.onRangingOpened(invocation.getArgument(1));
             return true;
         }).when(mUwbService).openRanging(any(), any(), any(), any(), any());
         doAnswer(invocation -> {
@@ -205,7 +203,10 @@ public class UwbShellCommandTest {
                 ArgumentCaptor.forClass(PersistableBundle.class);
 
         verify(mUwbService).openRanging(
-                any(), sessionHandleCaptor.capture(), any(), paramsCaptor.capture(), any());
+                eq(new AttributionSource.Builder(Process.SHELL_UID)
+                        .setPackageName(UwbShellCommand.SHELL_PACKAGE_NAME)
+                        .build()),
+                sessionHandleCaptor.capture(), any(), paramsCaptor.capture(), any());
         // PersistableBundle does not implement equals, so use toString equals.
         assertThat(paramsCaptor.getValue().toString())
                 .isEqualTo(openRangingParams.toBundle().toString());

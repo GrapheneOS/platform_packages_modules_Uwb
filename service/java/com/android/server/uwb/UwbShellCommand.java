@@ -44,6 +44,7 @@ import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import android.annotation.NonNull;
+import android.content.AttributionSource;
 import android.content.Context;
 import android.os.Binder;
 import android.os.PersistableBundle;
@@ -531,7 +532,10 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         SessionInfo sessionInfo =
                 new SessionInfo(sessionId, sSessionHandleIdNext++, openRangingSessionParams, pw);
         mUwbService.openRanging(
-                mContext.getAttributionSource(), sessionInfo.sessionHandle,
+                new AttributionSource.Builder(Process.SHELL_UID)
+                        .setPackageName(SHELL_PACKAGE_NAME)
+                        .build(),
+                sessionInfo.sessionHandle,
                 sessionInfo.uwbRangingCbs,
                 openRangingSessionParams.toBundle(),
                 null);
