@@ -574,7 +574,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                                     CccParams.PROTOCOL_NAME,
                                                     new byte[0],
                                                     CccRangingStartedParams.class);
-                                    if (status != UwbUciConstants.STATUS_CODE_OK) {
+                                    if (statusAndParams.first != UwbUciConstants.STATUS_CODE_OK) {
                                         Log.e(TAG, "Failed to get CCC ranging started params");
                                     }
                                     rangingStartedParams = statusAndParams.second;
@@ -582,6 +582,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                 mSessionNotificationManager.onRangingStarted(
                                         uwbSession, rangingStartedParams);
                             } else {
+                                status = UwbUciConstants.STATUS_CODE_FAILED;
                                 mSessionNotificationManager.onRangingStartFailed(
                                         uwbSession, UwbUciConstants.STATUS_CODE_FAILED);
                             }
