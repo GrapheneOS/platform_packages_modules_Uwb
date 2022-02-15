@@ -118,7 +118,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
         uwbSession.setMulticastListUpdateStatus(multicastListUpdateStatus);
         synchronized (uwbSession.getWaitObj()) {
-            uwbSession.getWaitObj().notify();
+            uwbSession.getWaitObj().blockingNotify();
         }
     }
 
@@ -135,7 +135,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
         int prevState = uwbSession.getSessionState();
         synchronized (uwbSession.getWaitObj()) {
-            uwbSession.getWaitObj().notify();
+            uwbSession.getWaitObj().blockingNotify();
             setCurrentSessionState((int) sessionId, state);
         }
 
@@ -483,12 +483,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                             status = mNativeUwbManager.initSession(
                                     uwbSession.getSessionId(),
                                     getSessionType(uwbSession.getParams().getProtocolName()));
-
                             if (status != UwbUciConstants.STATUS_CODE_OK) {
                                 return status;
                             }
 
-                            uwbSession.getWaitObj().wait();
+                            uwbSession.getWaitObj().blockingWait();
                             status = UwbUciConstants.STATUS_CODE_FAILED;
                             if (uwbSession.getSessionState()
                                     == UwbUciConstants.UWB_SESSION_STATE_INIT) {
@@ -497,7 +496,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                     return status;
                                 }
 
-                                uwbSession.getWaitObj().wait();
+                                uwbSession.getWaitObj().blockingWait();
                                 status = UwbUciConstants.STATUS_CODE_FAILED;
                                 if (uwbSession.getSessionState()
                                         == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
@@ -511,7 +510,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                             return status;
                         }
                     });
-
             executor.submit(initSessionTask);
 
             int status = UwbUciConstants.STATUS_CODE_FAILED;
@@ -562,7 +560,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                         uwbSession, status);
                                 return status;
                             }
-                            uwbSession.getWaitObj().wait();
+                            uwbSession.getWaitObj().blockingWait();
                             if (uwbSession.getSessionState()
                                     == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
                                 // TODO: Ensure |rangingStartedParams| is valid for FIRA sessions
@@ -622,7 +620,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                 mSessionNotificationManager.onRangingStopFailed(uwbSession, status);
                                 return status;
                             }
-                            uwbSession.getWaitObj().wait();
+                            uwbSession.getWaitObj().blockingWait();
                             if (uwbSession.getSessionState()
                                     == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
                                 mSessionNotificationManager.onRangingStopped(uwbSession, status);
@@ -697,7 +695,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                     return status;
                                 }
 
-                                uwbSession.getWaitObj().wait();
+                                uwbSession.getWaitObj().blockingWait();
 
                                 UwbMulticastListUpdateStatus multicastList =
                                         uwbSession.getMulticastListUpdateStatus();
@@ -761,7 +759,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                 mSessionNotificationManager.onRangingClosed(uwbSession, status);
                                 return status;
                             }
-                            uwbSession.getWaitObj().wait();
+                            uwbSession.getWaitObj().blockingWait();
                             Log.i(TAG, "onRangingClosed - status : " + status);
                             mSessionNotificationManager.onRangingClosed(uwbSession, status);
                         }
@@ -794,7 +792,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         private final IUwbRangingCallbacks mIUwbRangingCallbacks;
         private final String mProtocolName;
         private final IBinder mIBinder;
-        private final Object mWaitObj;
+        private final WaitObj mWaitObj;
         public boolean isWait;
         private Params mParams;
         private int mSessionState;
@@ -810,7 +808,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             this.mIBinder = iUwbRangingCallbacks.asBinder();
             this.mSessionState = UwbUciConstants.UWB_SESSION_STATE_DEINIT;
             this.mParams = params;
-            this.mWaitObj = new Object();
+            this.mWaitObj = new WaitObj();
             this.isWait = false;
             this.mProfileType = convertProtolNameToProfileType(protocolName);
         }
@@ -874,7 +872,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             return mIBinder;
         }
 
-        public Object getWaitObj() {
+        public WaitObj getWaitObj() {
             return mWaitObj;
         }
 
@@ -893,6 +891,22 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                     + "Error");
                 }
             }
+        }
+    }
+
+    // TODO: refactor the async operation flow.
+    // Wrapper for unit test.
+    @VisibleForTesting
+    static class WaitObj {
+        WaitObj() {
+        }
+
+        void blockingWait() throws InterruptedException {
+            wait();
+        }
+
+        void blockingNotify() {
+            notify();
         }
     }
 }
