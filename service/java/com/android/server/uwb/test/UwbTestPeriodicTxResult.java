@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package com.android.server.uwb.test;
+/* UwbTestPeriodicTxResult is unused now*/
+/*package com.android.server.uwb.test;
 
 public class UwbTestPeriodicTxResult {
     public int mStatus;
@@ -37,4 +38,4 @@ public class UwbTestPeriodicTxResult {
                 + " Status = " + mStatus
                 + '}';
     }
-}
+}*/

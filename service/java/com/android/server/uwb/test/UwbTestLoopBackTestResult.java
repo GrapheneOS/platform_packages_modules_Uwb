@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package com.android.server.uwb.test;
+/* UwbTestLoopBackTestResult is unused now*/
+/*package com.android.server.uwb.test;
 
 import com.android.server.uwb.util.UwbUtil;
 
@@ -29,13 +30,13 @@ public class UwbTestLoopBackTestResult {
     public  int mPhr;
     public  byte[] mPsduData;
 
-    /* Vendor Specific Data */
+    *//* Vendor Specific Data *//*
     public byte[] mVendorExtnData;
 
     public UwbTestLoopBackTestResult(int status, long txtsInt, int txtsFrac, long rxtsInt,
             int rxtsFrac, int aoaAzimuth, int aoaElevation,  int phr, byte[] psduData,
             byte[] vendorExtnData) {
-        /* Vendor Specific data  */
+        *//* Vendor Specific data  *//*
         this.mStatus = status;
         this.mTxtsInt = txtsInt;
         this.mTxtsFrac = txtsFrac;
@@ -48,7 +49,7 @@ public class UwbTestLoopBackTestResult {
         this.mPhr = phr;
         this.mPsduData = psduData;
 
-        /* Vendor Specific Data */
+        *//* Vendor Specific Data *//*
         this.mVendorExtnData = vendorExtnData;
 
     }
@@ -90,7 +91,7 @@ public class UwbTestLoopBackTestResult {
         return mPsduData;
     }
 
-    /* Vendor Specific Data */
+    *//* Vendor Specific Data *//*
 
     public byte[] getVendorExtnData() {
         return mVendorExtnData;
@@ -108,8 +109,8 @@ public class UwbTestLoopBackTestResult {
                 + ", AoaElevation = " + mAoaElevation
                 + ", Phr = " + mPhr
                 + ", PsduData = " + UwbUtil.toHexString(mPsduData)
-                + /* Vendor Specific Data */
+                + *//* Vendor Specific Data *//*
                 ", VendorExtnData = " + UwbUtil.toHexString(mVendorExtnData)
                 + '}';
     }
-}
+}*/

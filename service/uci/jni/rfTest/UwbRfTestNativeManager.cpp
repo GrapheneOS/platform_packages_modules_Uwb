@@ -16,7 +16,8 @@
  * limitations under the License.
  */
 
-#include "JniLog.h"
+/* UwbRfTestNativeManager is unused now*/
+/*#include "JniLog.h"
 #include "ScopedJniEnv.h"
 #include "SyncEvent.h"
 #include "UwbAdaptation.h"
@@ -32,7 +33,7 @@ const char *UWB_RFTEST_NATIVE_MANAGER_CLASS_NAME =
 
 static UwbRfTestManager &uwbRfTestManager = UwbRfTestManager::getInstance();
 
-/*******************************************************************************
+*//*******************************************************************************
 **
 ** Function:        uwbRfTestNativeManager_setTestConfigurations()
 **
@@ -51,7 +52,7 @@ static UwbRfTestManager &uwbRfTestManager = UwbRfTestManager::getInstance();
 ** Returns:         Returns byte array
 **
 **
-*******************************************************************************/
+*******************************************************************************//*
 jbyteArray uwbRfTestNativeManager_setTestConfigurations(
     JNIEnv *env, jobject o, jint sessionId, jint noOfParams, jint testConfigLen,
     jbyteArray testConfigArray) {
@@ -59,7 +60,7 @@ jbyteArray uwbRfTestNativeManager_setTestConfigurations(
                                                 testConfigLen, testConfigArray);
 }
 
-/*******************************************************************************
+*//*******************************************************************************
 **
 ** Function:        uwbRfTestNativeManager_getTestConfigurations
 **
@@ -74,7 +75,7 @@ jbyteArray uwbRfTestNativeManager_setTestConfigurations(
 **
 ** Returns:         Returns byte array
 **
-*******************************************************************************/
+*******************************************************************************//*
 jbyteArray uwbRfTestNativeManager_getTestConfigurations(
     JNIEnv *env, jobject o, jint sessionId, jint noOfParams, jint testConfigLen,
     jbyteArray testConfigArray) {
@@ -82,7 +83,7 @@ jbyteArray uwbRfTestNativeManager_getTestConfigurations(
                                                 testConfigLen, testConfigArray);
 }
 
-/*******************************************************************************
+*//*******************************************************************************
 **
 ** Function:        uwbRfTestNativeManager_startPerRxTest
 **
@@ -94,13 +95,13 @@ jbyteArray uwbRfTestNativeManager_getTestConfigurations(
 **
 ** Returns:      UWA_STATUS_OK if success  else returns
 **                  UWA_STATUS_FAILED
-*******************************************************************************/
+*******************************************************************************//*
 jbyte uwbRfTestNativeManager_startPerRxTest(JNIEnv *env, jobject o,
                                             jbyteArray refPsduData) {
   return uwbRfTestManager.startPerRxTest(env, o, refPsduData);
 }
 
-/*******************************************************************************
+*//*******************************************************************************
 **
 ** Function:        uwbRfTestNativeManager_startPeriodicTxTest
 **
@@ -113,13 +114,13 @@ jbyte uwbRfTestNativeManager_startPerRxTest(JNIEnv *env, jobject o,
 ** Returns:      UWA_STATUS_OK if success  else returns
 **                  UWA_STATUS_FAILED
 **
-*******************************************************************************/
+*******************************************************************************//*
 jbyte uwbRfTestNativeManager_startPeriodicTxTest(JNIEnv *env, jobject o,
                                                  jbyteArray psduData) {
   return uwbRfTestManager.startPeriodicTxTest(env, o, psduData);
 }
 
-/*******************************************************************************
+*//*******************************************************************************
 **
 ** Function:        uwbRfTestNativeManager_startUwbLoopBackTest
 **
@@ -132,13 +133,13 @@ jbyte uwbRfTestNativeManager_startPeriodicTxTest(JNIEnv *env, jobject o,
 ** Returns:      UWA_STATUS_OK if success  else returns
 **                  UWA_STATUS_FAILED
 **
-*******************************************************************************/
+*******************************************************************************//*
 jbyte uwbRfTestNativeManager_startUwbLoopBackTest(JNIEnv *env, jobject o,
                                                   jbyteArray psduData) {
   return uwbRfTestManager.startUwbLoopBackTest(env, o, psduData);
 }
 
-/*******************************************************************************
+*//*******************************************************************************
 **
 ** Function:        uwbRfTestNativeManager_stopRfTest
 **
@@ -149,12 +150,12 @@ jbyte uwbRfTestNativeManager_startUwbLoopBackTest(JNIEnv *env, jobject o,
 **
 ** Returns:      UWA_STATUS_OK if success  else returns
 **                  UWA_STATUS_FAILED
-*******************************************************************************/
+*******************************************************************************//*
 jbyte uwbRfTestNativeManager_stopRfTest(JNIEnv *env, jobject o) {
   return uwbRfTestManager.stopRfTest(env, o);
 }
 
-/*******************************************************************************
+*//*******************************************************************************
 **
 ** Function:        uwbRfTestNativeManager_startRxTest
 **
@@ -165,12 +166,12 @@ jbyte uwbRfTestNativeManager_stopRfTest(JNIEnv *env, jobject o) {
 **
 ** Returns:      UWA_STATUS_OK if success  else returns
 **                  UWA_STATUS_FAILED
-*******************************************************************************/
+*******************************************************************************//*
 jbyte uwbRfTestNativeManager_startRxTest(JNIEnv *env, jobject o) {
   return uwbRfTestManager.startRxTest(env, o);
 }
 
-/*******************************************************************************
+*//*******************************************************************************
 **
 ** Function:        uwbRfTestNativeManager_init
 **
@@ -181,18 +182,18 @@ jbyte uwbRfTestNativeManager_startRxTest(JNIEnv *env, jobject o) {
 **
 ** Returns:         True if ok.
 **
-*******************************************************************************/
+*******************************************************************************//*
 jboolean uwbRfTestNativeManager_init(JNIEnv *env, jobject o) {
   uwbRfTestManager.doLoadSymbols(env, o);
   return JNI_TRUE;
 }
 
-/*****************************************************************************
+*//*****************************************************************************
 **
 ** JNI functions for android
 ** UWB service layer has to invoke these APIs to get required functionality
 **
-*****************************************************************************/
+*****************************************************************************//*
 static JNINativeMethod gMethods[] = {
     {"nativeInit", "()Z", (void *)uwbRfTestNativeManager_init},
     {"nativeSetTestConfigurations", "(III[B)[B",
@@ -208,7 +209,7 @@ static JNINativeMethod gMethods[] = {
     {"nativeStartRxTest", "()B", (void *)uwbRfTestNativeManager_startRxTest},
     {"nativeStopRfTest", "()B", (void *)uwbRfTestNativeManager_stopRfTest}};
 
-/*******************************************************************************
+*//*******************************************************************************
 **
 ** Function:        register_UwbRfTestNativeManager
 **
@@ -219,7 +220,7 @@ static JNINativeMethod gMethods[] = {
 **
 ** Returns:         Status of registration (JNI version).
 **
-*******************************************************************************/
+*******************************************************************************//*
 int register_com_android_uwb_dhimpl_UwbRfTestNativeManager(JNIEnv *env) {
   JNI_TRACE_I("%s: enter", __func__);
   return jniRegisterNativeMethods(env, UWB_RFTEST_NATIVE_MANAGER_CLASS_NAME,
@@ -227,4 +228,4 @@ int register_com_android_uwb_dhimpl_UwbRfTestNativeManager(JNIEnv *env) {
                                   sizeof(gMethods) / sizeof(gMethods[0]));
 }
 
-} // namespace android
+} // namespace android*/

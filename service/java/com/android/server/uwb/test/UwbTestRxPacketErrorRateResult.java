@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package com.android.server.uwb.test;
+/* UwbTestRxPacketErrorRateResult is unused now*/
+/*package com.android.server.uwb.test;
 
 import com.android.server.uwb.util.UwbUtil;
 
@@ -33,7 +34,7 @@ public class UwbTestRxPacketErrorRateResult {
     public long mPsduBitError;
     public long mStsFound;
     public long mEof;
-    /* Vendor Specific Data */
+    *//* Vendor Specific Data *//*
     public byte[] mVendorExtnData;
 
     public UwbTestRxPacketErrorRateResult(int status, long attempts, long acqDetect,
@@ -55,7 +56,7 @@ public class UwbTestRxPacketErrorRateResult {
         this.mStsFound = stsFound;
         this.mEof = eof;
 
-        /* Vendor Specific Data */
+        *//* Vendor Specific Data *//*
         this.mVendorExtnData = vendorExtnData;
     }
 
@@ -115,7 +116,7 @@ public class UwbTestRxPacketErrorRateResult {
         return mEof;
     }
 
-    /* Vendor Specific Data */
+    *//* Vendor Specific Data *//*
 
     public byte[] getVendorExtnData() {
         return mVendorExtnData;
@@ -143,4 +144,4 @@ public class UwbTestRxPacketErrorRateResult {
                 + '}';
     }
 
-}
+}*/
