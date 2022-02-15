@@ -124,6 +124,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             new FiraOpenSessionParams.Builder()
                     .setProtocolVersion(FiraParams.PROTOCOL_VERSION_1_1)
                     .setSessionId(1)
+                    .setChannelNumber(9)
                     .setDeviceType(RANGING_DEVICE_TYPE_CONTROLLER)
                     .setDeviceRole(RANGING_DEVICE_ROLE_RESPONDER)
                     .setDeviceAddress(UwbAddress.fromBytes(new byte[] { 0x4, 0x6}))
@@ -349,6 +350,9 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             }
             if (option.equals("-i")) {
                 builder.setSessionId(Integer.parseInt(getNextArgRequired()));
+            }
+            if (option.equals("-c")) {
+                builder.setChannelNumber(Integer.parseInt(getNextArgRequired()));
             }
             if (option.equals("-t")) {
                 String type = getNextArgRequired();
@@ -831,6 +835,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         pw.println("  start-fira-ranging-session"
                 + " [-b](blocking call)"
                 + " [-i <sessionId>](session-id)"
+                + " [-c <channel>](channel)"
                 + " [-t controller|controlee](device-type)"
                 + " [-r initiator|responder](device-role)"
                 + " [-a <deviceAddress>](device-address)"
