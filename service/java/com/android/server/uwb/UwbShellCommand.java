@@ -26,6 +26,10 @@ import static com.google.uwb.support.ccc.CccParams.HOPPING_SEQUENCE_DEFAULT;
 import static com.google.uwb.support.ccc.CccParams.PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE;
 import static com.google.uwb.support.ccc.CccParams.SLOTS_PER_ROUND_6;
 import static com.google.uwb.support.ccc.CccParams.UWB_CHANNEL_9;
+import static com.google.uwb.support.fira.FiraParams.AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT;
+import static com.google.uwb.support.fira.FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS;
+import static com.google.uwb.support.fira.FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_AZIMUTH_ONLY;
+import static com.google.uwb.support.fira.FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_ELEVATION_ONLY;
 import static com.google.uwb.support.fira.FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_INTERLEAVED;
 import static com.google.uwb.support.fira.FiraParams.HOPPING_MODE_DISABLE;
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
@@ -425,6 +429,22 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                         numOfRangeMsrmts,
                         numOfAoaAzimuthMrmts,
                         numOfAoaElevationMrmts);
+            }
+            if (option.equals("-e")) {
+                String aoaType = getNextArgRequired();
+                if (aoaType.equals("none")) {
+                    builder.setAoaResultRequest(AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT);
+                } else if (aoaType.equals("enabled")) {
+                    builder.setAoaResultRequest(AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS);
+                } else if (aoaType.equals("azimuth-only")) {
+                    builder.setAoaResultRequest(
+                        AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_AZIMUTH_ONLY);
+                } else if (aoaType.equals("elevation-only")) {
+                    builder.setAoaResultRequest(
+                        AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_ELEVATION_ONLY);
+                } else {
+                    throw new IllegalArgumentException("Unknown aoa type: " + aoaType);
+                }
             }
             option = getNextOption();
         }
@@ -842,7 +862,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " [-d <destAddress-1, destAddress-2,...>](dest-addresses)"
                 + " [-u ds-twr|ss-twr|ds-twr-non-deferred|ss-twr-non-deferred](round-usage)"
                 + " [-z <numRangeMrmts, numAoaAzimuthMrmts, numAoaElevationMrmts>"
-                + "(interleaving-ratio)");
+                + "(interleaving-ratio)"
+                + " [-e none|enabled|azimuth-only|elevation-only](aoa type)");
         pw.println("    Starts a FIRA ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
                 + " retrieved using |get-ranging-session-reports|");
