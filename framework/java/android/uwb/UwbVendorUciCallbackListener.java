@@ -80,9 +80,7 @@ public final class UwbVendorUciCallbackListener extends IUwbVendorUciCallback.St
             final long identity = Binder.clearCallingIdentity();
             try {
                 for (UwbVendorUciCallback callback : mCallbackMap.keySet()) {
-                    // sendCallback(cb,data);
                     Executor executor = mCallbackMap.get(callback);
-                    //final long identity = Binder.clearCallingIdentity();
                     executor.execute(() -> callback.onVendorUciResponse(gid, oid, payload));
                 }
             } catch (RuntimeException ex) {
@@ -100,9 +98,7 @@ public final class UwbVendorUciCallbackListener extends IUwbVendorUciCallback.St
             final long identity = Binder.clearCallingIdentity();
             try {
                 for (UwbVendorUciCallback callback : mCallbackMap.keySet()) {
-                    // sendCallback(cb,data);
                     Executor executor = mCallbackMap.get(callback);
-                    //final long identity = Binder.clearCallingIdentity();
                     executor.execute(() -> callback.onVendorUciNotification(gid, oid, payload));
                 }
             } catch (RuntimeException ex) {
