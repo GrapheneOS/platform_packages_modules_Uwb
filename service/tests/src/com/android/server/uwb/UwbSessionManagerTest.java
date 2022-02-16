@@ -764,4 +764,134 @@ public class UwbSessionManagerTest {
                         eq(UwbUciConstants.STATUS_CODE_FAILED));
         verify(mNativeUwbManager).deInitSession(eq(TEST_SESSION_ID));
     }
+
+    private UwbSession prepareExistingUwbSession() throws Exception {
+        UwbSession uwbSession = setUpUwbSessionForExecution();
+        mUwbSessionManager.initSession(uwbSession.getSessionHandle(),
+                TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
+                uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks());
+        mTestLooper.nextMessage(); // remove the OPEN_RANGING msg;
+
+        assertThat(mTestLooper.isIdle()).isFalse();
+
+        return uwbSession;
+    }
+
+    @Test
+    public void startRanging_sessionStateIdle() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        // set up for start ranging
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE)
+                .when(uwbSession).getSessionState();
+
+        mUwbSessionManager.startRanging(
+                uwbSession.getSessionHandle(), uwbSession.getParams().toBundle());
+
+        assertThat(mTestLooper.isIdle()).isTrue();
+        assertThat(mTestLooper.nextMessage().what).isEqualTo(2); // SESSION_START_RANGING
+    }
+
+    @Test
+    public void startRanging_sessionStateActive() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        // set up for start ranging
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE)
+                .when(uwbSession).getSessionState();
+
+        mUwbSessionManager.startRanging(
+                uwbSession.getSessionHandle(), uwbSession.getParams().toBundle());
+
+        assertThat(mTestLooper.isIdle()).isFalse();
+        verify(mUwbSessionNotificationManager).onRangingStarted(eq(uwbSession), any());
+    }
+
+    @Test
+    public void startRanging_sessionStateError() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        // set up for start ranging
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_ERROR)
+                .when(uwbSession).getSessionState();
+
+        mUwbSessionManager.startRanging(
+                uwbSession.getSessionHandle(), uwbSession.getParams().toBundle());
+
+        assertThat(mTestLooper.isIdle()).isFalse();
+        verify(mUwbSessionNotificationManager).onRangingStartFailed(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
+        verify(mUwbMetrics).longRangingStartEvent(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
+    }
+
+    @Test
+    public void execStartRanging_success() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        // set up for start ranging
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE, UwbUciConstants.UWB_SESSION_STATE_ACTIVE)
+                .when(uwbSession).getSessionState();
+        when(mNativeUwbManager.startRanging(eq(TEST_SESSION_ID)))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.startRanging(
+                uwbSession.getSessionHandle(), uwbSession.getParams().toBundle());
+        mTestLooper.dispatchAll();
+
+        verify(mUwbSessionNotificationManager).onRangingStarted(eq(uwbSession), any());
+        verify(mUwbMetrics).longRangingStartEvent(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
+    }
+
+    @Test
+    public void execStartRanging_executionException() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        // set up for start ranging
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE, UwbUciConstants.UWB_SESSION_STATE_ACTIVE)
+                .when(uwbSession).getSessionState();
+        when(mNativeUwbManager.startRanging(eq(TEST_SESSION_ID)))
+                .thenThrow(new IllegalStateException());
+
+        mUwbSessionManager.startRanging(
+                uwbSession.getSessionHandle(), uwbSession.getParams().toBundle());
+        mTestLooper.dispatchAll();
+
+        verify(mUwbMetrics).longRangingStartEvent(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
+    }
+
+    @Test
+    public void execStartRanging_nativeStartRangingFailed() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        // set up for start ranging
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE, UwbUciConstants.UWB_SESSION_STATE_ACTIVE)
+                .when(uwbSession).getSessionState();
+        when(mNativeUwbManager.startRanging(eq(TEST_SESSION_ID)))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_FAILED);
+
+        mUwbSessionManager.startRanging(
+                uwbSession.getSessionHandle(), uwbSession.getParams().toBundle());
+        mTestLooper.dispatchAll();
+
+        verify(mUwbSessionNotificationManager).onRangingStartFailed(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
+        verify(mUwbMetrics).longRangingStartEvent(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
+    }
+
+    @Test
+    public void execStartRanging_wrongSessionState() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        // set up for start ranging
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE, UwbUciConstants.UWB_SESSION_STATE_ERROR)
+                .when(uwbSession).getSessionState();
+        when(mNativeUwbManager.startRanging(eq(TEST_SESSION_ID)))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.startRanging(
+                uwbSession.getSessionHandle(), uwbSession.getParams().toBundle());
+        mTestLooper.dispatchAll();
+
+        verify(mUwbSessionNotificationManager).onRangingStartFailed(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
+        verify(mUwbMetrics).longRangingStartEvent(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
+    }
 }
