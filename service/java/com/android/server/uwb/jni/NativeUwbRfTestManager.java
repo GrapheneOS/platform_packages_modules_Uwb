@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.server.uwb.jni;
+
+/* NativeUwbRfTestManager is unused now*/
+/*package com.android.server.uwb.jni;
 
 import android.util.Log;
 
@@ -97,4 +99,4 @@ public class NativeUwbRfTestManager {
             int testConfigParamLen, byte[] testConfigParams);
     private native byte[] nativeGetTestConfigurations(int sessionId, int noOfParams,
             int testConfigParamLen, byte[] testConfigParams);
-}
+}*/

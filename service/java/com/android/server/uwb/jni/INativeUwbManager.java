@@ -19,10 +19,10 @@ import android.os.RemoteException;
 
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbRangingData;
-import com.android.server.uwb.test.UwbTestLoopBackTestResult;
+/*import com.android.server.uwb.test.UwbTestLoopBackTestResult;
 import com.android.server.uwb.test.UwbTestPeriodicTxResult;
 import com.android.server.uwb.test.UwbTestRxPacketErrorRateResult;
-import com.android.server.uwb.test.UwbTestRxResult;
+import com.android.server.uwb.test.UwbTestRxResult;*/
 
 public interface INativeUwbManager {
     /**
@@ -80,11 +80,11 @@ public interface INativeUwbManager {
         void onVendorUciNotificationReceived(int gid, int oid, byte[] payload)
                 throws RemoteException;
     }
-
-    interface RfTestNotification {
+    /* Unused now */
+    /*interface RfTestNotification {
         void onPeriodicTxDataNotificationReceived(UwbTestPeriodicTxResult periodicTxData);
         void onPerRxDataNotificationReceived(UwbTestRxPacketErrorRateResult perRxData);
         void onLoopBackTestDataNotificationReceived(UwbTestLoopBackTestResult uwbLoopBackData);
         void onRxTestDataNotificationReceived(UwbTestRxResult rxData);
-    }
+    }*/
 }

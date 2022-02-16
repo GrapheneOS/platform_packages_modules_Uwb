@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package com.android.server.uwb.test;
+/* UwbTestRxResult is unused now*/
+/*package com.android.server.uwb.test;
 
 import com.android.server.uwb.util.UwbUtil;
 
@@ -44,7 +45,7 @@ public class UwbTestRxResult {
         this.mPhr = phr;
         this.mPsduData = psduData;
 
-        /* Vendor Specific Data */
+        *//* Vendor Specific Data *//*
         this.mVendorExtnData = vendorExtnData;
 
     }
@@ -81,7 +82,7 @@ public class UwbTestRxResult {
         return mPsduData;
     }
 
-    /* Vendor Specific Data */
+    *//* Vendor Specific Data *//*
 
     public byte[] getVendorExtnData() {
         return mVendorExtnData;
@@ -101,4 +102,4 @@ public class UwbTestRxResult {
                 + ", VendorExtnData = " + UwbUtil.toHexString(mVendorExtnData)
                 + '}';
     }
-}
+}*/
