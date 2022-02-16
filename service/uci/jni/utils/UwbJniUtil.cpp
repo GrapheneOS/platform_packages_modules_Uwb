@@ -46,9 +46,9 @@ jint JNI_OnLoad(JavaVM *jvm, void *) {
 
   if (android::register_com_android_uwb_dhimpl_UwbNativeManager(env) == -1)
     return JNI_ERR;
-  if (android::register_com_android_uwb_dhimpl_UwbRfTestNativeManager(env) ==
+  /*if (android::register_com_android_uwb_dhimpl_UwbRfTestNativeManager(env) ==
       -1)
-    return JNI_ERR;
+    return JNI_ERR;*/
 
   JNI_TRACE_I("%s: exit", __func__);
   return JNI_VERSION_1_6;

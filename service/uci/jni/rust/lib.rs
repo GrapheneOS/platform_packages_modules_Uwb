@@ -407,6 +407,27 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
     }
 }
 
+/// retrieve the UWB power stats
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetPowerStats(
+    env: JNIEnv,
+    obj: JObject,
+) -> jobject {
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetPowerStats: enter");
+    let uwb_power_stats_class =
+        env.find_class("com/android/server/uwb/info/UwbPowerStats").unwrap();
+    match get_power_stats(env, obj) {
+        Ok(para) => {
+            let power_stats = env.new_object(uwb_power_stats_class, "(IIII)V", &para).unwrap();
+            *power_stats
+        }
+        Err(e) => {
+            error!("Get power stats failed with: {:?}", e);
+            *JObject::null()
+        }
+    }
+}
+
 fn boolean_result_helper(result: Result<(), UwbErr>, function_name: &str) -> jboolean {
     match result {
         Ok(()) => true as jboolean,
@@ -747,6 +768,19 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDi
     // This function will early return if the instance is already destroyed.
     let _boxed_dispatcher = unsafe { Box::from_raw(dispatcher_ptr as *mut Dispatcher) };
     info!("The dispatcher successfully destroyed.");
+}
+
+fn get_power_stats<'a>(env: JNIEnv, obj: JObject) -> Result<[JValue<'a>; 4], UwbErr> {
+    let dispatcher = get_dispatcher(env, obj)?;
+    match dispatcher.block_on_jni_command(JNICommand::UciGetPowerStats)? {
+        UciResponse::AndroidGetPowerStatsRsp(data) => Ok([
+            JValue::Int(data.get_stats().idle_time_ms as i32),
+            JValue::Int(data.get_stats().tx_time_ms as i32),
+            JValue::Int(data.get_stats().rx_time_ms as i32),
+            JValue::Int(data.get_stats().total_wake_count as i32),
+        ]),
+        _ => Err(UwbErr::failed()),
+    }
 }
 
 fn uwa_get_device_info(dispatcher: &Dispatcher) -> Result<UciResponse, UwbErr> {
