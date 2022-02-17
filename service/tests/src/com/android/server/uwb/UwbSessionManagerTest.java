@@ -894,4 +894,103 @@ public class UwbSessionManagerTest {
         verify(mUwbMetrics).longRangingStartEvent(
                 eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
     }
+
+    @Test
+    public void stopRanging_sessionStateActive() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        // set up for stop ranging
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE).when(uwbSession).getSessionState();
+
+        mUwbSessionManager.stopRanging(uwbSession.getSessionHandle());
+
+        assertThat(mTestLooper.nextMessage().what).isEqualTo(3); // SESSION_STOP_RANGING
+    }
+
+    @Test
+    public void stopRanging_sessionStateIdle() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        // set up for stop ranging
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE).when(uwbSession).getSessionState();
+
+        mUwbSessionManager.stopRanging(uwbSession.getSessionHandle());
+
+        verify(mUwbSessionNotificationManager).onRangingStopped(
+                eq(uwbSession),
+                eq(UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS));
+        verify(mUwbMetrics).longRangingStopEvent(eq(uwbSession));
+    }
+
+    @Test
+    public void stopRanging_sessionStateError() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        // set up for stop ranging
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_ERROR).when(uwbSession).getSessionState();
+
+        mUwbSessionManager.stopRanging(uwbSession.getSessionHandle());
+
+        verify(mUwbSessionNotificationManager).onRangingStopFailed(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_REJECTED));
+    }
+
+    @Test
+    public void execStopRanging_success() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE, UwbUciConstants.UWB_SESSION_STATE_IDLE)
+                .when(uwbSession).getSessionState();
+        when(mNativeUwbManager.stopRanging(eq(TEST_SESSION_ID)))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.stopRanging(uwbSession.getSessionHandle());
+        mTestLooper.dispatchNext();
+
+        verify(mUwbSessionNotificationManager)
+                .onRangingStopped(eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
+        verify(mUwbMetrics).longRangingStopEvent(eq(uwbSession));
+    }
+
+    @Test
+    public void execStopRanging_exception() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE, UwbUciConstants.UWB_SESSION_STATE_IDLE)
+                .when(uwbSession).getSessionState();
+        when(mNativeUwbManager.stopRanging(eq(TEST_SESSION_ID)))
+                .thenThrow(new IllegalStateException());
+
+        mUwbSessionManager.stopRanging(uwbSession.getSessionHandle());
+        mTestLooper.dispatchNext();
+
+        verify(mUwbSessionNotificationManager, never()).onRangingStopped(any(), anyInt());
+    }
+
+    @Test
+    public void execStopRanging_nativeFailed() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE, UwbUciConstants.UWB_SESSION_STATE_IDLE)
+                .when(uwbSession).getSessionState();
+        when(mNativeUwbManager.stopRanging(eq(TEST_SESSION_ID)))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_FAILED);
+
+        mUwbSessionManager.stopRanging(uwbSession.getSessionHandle());
+        mTestLooper.dispatchNext();
+
+        verify(mUwbSessionNotificationManager)
+                .onRangingStopFailed(eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
+        verify(mUwbMetrics, never()).longRangingStopEvent(eq(uwbSession));
+    }
+
+    @Test
+    public void execStopRanging_wrongSessionState() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE, UwbUciConstants.UWB_SESSION_STATE_ERROR)
+                .when(uwbSession).getSessionState();
+        when(mNativeUwbManager.stopRanging(eq(TEST_SESSION_ID)))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.stopRanging(uwbSession.getSessionHandle());
+        mTestLooper.dispatchNext();
+
+        verify(mUwbSessionNotificationManager)
+                .onRangingStopFailed(eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
+        verify(mUwbMetrics, never()).longRangingStopEvent(eq(uwbSession));
+    }
 }

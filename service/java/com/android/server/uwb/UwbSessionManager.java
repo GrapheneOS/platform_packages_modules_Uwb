@@ -626,6 +626,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                     == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
                                 mSessionNotificationManager.onRangingStopped(uwbSession, status);
                             } else {
+                                status = UwbUciConstants.STATUS_CODE_FAILED;
                                 mSessionNotificationManager.onRangingStopFailed(
                                         uwbSession, UwbUciConstants.STATUS_CODE_FAILED);
                             }
