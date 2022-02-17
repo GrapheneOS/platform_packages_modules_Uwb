@@ -28,17 +28,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import android.content.AttributionSource;
@@ -53,10 +48,7 @@ import android.test.suitebuilder.annotation.SmallTest;
 import android.uwb.IUwbAdapterStateCallbacks;
 import android.uwb.IUwbAdfProvisionStateCallbacks;
 import android.uwb.IUwbRangingCallbacks;
-import android.uwb.IUwbRangingCallbacks2;
 import android.uwb.IUwbVendorUciCallback;
-import android.uwb.RangingReport;
-import android.uwb.RangingSession;
 import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
 
@@ -85,18 +77,14 @@ import java.util.List;
 @Presubmit
 public class UwbServiceImplTest {
     private static final int UID = 343453;
-    private static final int UID_2 = 343453;
     private static final String PACKAGE_NAME = "com.uwb.test";
     private static final String DEFAULT_CHIP_ID = "defaultChipId";
     private static final ChipInfoParams DEFAULT_CHIP_INFO_PARAMS =
             ChipInfoParams.createBuilder().setChipId(DEFAULT_CHIP_ID).build();
     private static final AttributionSource ATTRIBUTION_SOURCE =
             new AttributionSource.Builder(UID).setPackageName(PACKAGE_NAME).build();
-    private static final AttributionSource ATTRIBUTION_SOURCE_2 =
-            new AttributionSource.Builder(UID_2).setPackageName(PACKAGE_NAME).build();
 
     @Mock private UwbServiceCore mUwbServiceCore;
-    @Mock private IBinder mUwbServiceCoreBinder;
     @Mock private Context mContext;
     @Mock private UwbInjector mUwbInjector;
     @Mock private UwbSettingsStore mUwbSettingsStore;
@@ -113,7 +101,6 @@ public class UwbServiceImplTest {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-        when(mUwbInjector.checkUwbRangingPermissionForDataDelivery(any(), any())).thenReturn(true);
         when(mUwbInjector.getUwbSettingsStore()).thenReturn(mUwbSettingsStore);
         when(mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).thenReturn(true);
         when(mUwbMultichipData.getChipInfos()).thenReturn(List.of(DEFAULT_CHIP_INFO_PARAMS));
@@ -201,7 +188,7 @@ public class UwbServiceImplTest {
     @Test
     public void testOpenRanging() throws Exception {
         final SessionHandle sessionHandle = new SessionHandle(5);
-        final IUwbRangingCallbacks2 cb = mock(IUwbRangingCallbacks2.class);
+        final IUwbRangingCallbacks cb = mock(IUwbRangingCallbacks.class);
         final PersistableBundle parameters = new PersistableBundle();
         final IBinder cbBinder = mock(IBinder.class);
         when(cb.asBinder()).thenReturn(cbBinder);
@@ -255,145 +242,6 @@ public class UwbServiceImplTest {
     }
 
     @Test
-    public void testRangingCallbacks() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
-        final IUwbRangingCallbacks2 cb = mock(IUwbRangingCallbacks2.class);
-        final PersistableBundle parameters = new PersistableBundle();
-        final IBinder cbBinder = mock(IBinder.class);
-        when(cb.asBinder()).thenReturn(cbBinder);
-
-        mUwbServiceImpl.openRanging(
-                ATTRIBUTION_SOURCE, sessionHandle, cb, parameters, /* chipId= */ null);
-
-        verify(mUwbServiceCore).openRanging(
-                eq(ATTRIBUTION_SOURCE), eq(sessionHandle), mRangingCbCaptor.capture(),
-                eq(parameters));
-        assertThat(mRangingCbCaptor.getValue()).isNotNull();
-
-        // Invoke vendor service callbacks and ensure that the corresponding app callback is
-        // invoked.
-        mRangingCbCaptor.getValue().onRangingOpened(sessionHandle);
-        verify(cb).onRangingOpened(sessionHandle);
-
-        mRangingCbCaptor.getValue().onRangingOpenFailed(
-                sessionHandle, RangingSession.Callback.REASON_GENERIC_ERROR, parameters);
-        verify(cb).onRangingOpenFailed(
-                sessionHandle, RangingSession.Callback.REASON_GENERIC_ERROR, parameters);
-
-        mRangingCbCaptor.getValue().onRangingStarted(sessionHandle, parameters);
-        verify(cb).onRangingStarted(sessionHandle, parameters);
-
-        mRangingCbCaptor.getValue().onRangingStartFailed(
-                sessionHandle, RangingSession.Callback.REASON_GENERIC_ERROR, parameters);
-        verify(cb).onRangingStartFailed(
-                sessionHandle, RangingSession.Callback.REASON_GENERIC_ERROR, parameters);
-
-        mRangingCbCaptor.getValue().onRangingReconfigured(sessionHandle, parameters);
-        verify(cb).onRangingReconfigured(sessionHandle, parameters);
-
-        mRangingCbCaptor.getValue().onRangingReconfigureFailed(
-                sessionHandle, RangingSession.Callback.REASON_GENERIC_ERROR, parameters);
-        verify(cb).onRangingReconfigureFailed(
-                sessionHandle, RangingSession.Callback.REASON_GENERIC_ERROR, parameters);
-
-        mRangingCbCaptor.getValue().onRangingStopped(
-                sessionHandle, RangingSession.Callback.REASON_GENERIC_ERROR, parameters);
-        verify(cb).onRangingStopped(
-                sessionHandle, RangingSession.Callback.REASON_GENERIC_ERROR, parameters);
-
-        mRangingCbCaptor.getValue().onRangingStopFailed(
-                sessionHandle, RangingSession.Callback.REASON_GENERIC_ERROR, parameters);
-        verify(cb).onRangingStopFailed(
-                sessionHandle, RangingSession.Callback.REASON_GENERIC_ERROR, parameters);
-
-        final RangingReport rangingReport = new RangingReport.Builder().build();
-        mRangingCbCaptor.getValue().onRangingResult(sessionHandle, rangingReport);
-        verify(cb).onRangingResult(sessionHandle, rangingReport);
-
-        mRangingCbCaptor.getValue().onRangingClosed(
-                sessionHandle, RangingSession.Callback.REASON_GENERIC_ERROR, parameters);
-        verify(cb).onRangingClosed(
-                sessionHandle, RangingSession.Callback.REASON_GENERIC_ERROR, parameters);
-    }
-
-    @Test
-    public void testRangingCallbacksFromDifferentUidWithSameSessionHandle() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
-        final IUwbRangingCallbacks2 cb1 = mock(IUwbRangingCallbacks2.class);
-        final IUwbRangingCallbacks2 cb2 = mock(IUwbRangingCallbacks2.class);
-        final PersistableBundle parameters = new PersistableBundle();
-        final IBinder cbBinder1 = mock(IBinder.class);
-        final IBinder cbBinder2 = mock(IBinder.class);
-        when(cb1.asBinder()).thenReturn(cbBinder1);
-        when(cb2.asBinder()).thenReturn(cbBinder2);
-
-        mUwbServiceImpl.openRanging(
-                ATTRIBUTION_SOURCE, sessionHandle, cb1, parameters, /* chipId= */ null);
-
-        verify(mUwbServiceCore).openRanging(
-                eq(ATTRIBUTION_SOURCE), eq(sessionHandle), mRangingCbCaptor.capture(),
-                eq(parameters));
-        assertThat(mRangingCbCaptor.getValue()).isNotNull();
-        verify(cb1).asBinder();
-        verify(cbBinder1).linkToDeath(any(), anyInt());
-
-        mUwbServiceImpl.openRanging(
-                ATTRIBUTION_SOURCE_2, sessionHandle, cb2, parameters, /* chipId= */ null);
-
-        verify(mUwbServiceCore, times(2)).openRanging(
-                eq(ATTRIBUTION_SOURCE_2), eq(sessionHandle), mRangingCbCaptor2.capture(),
-                eq(parameters));
-        assertThat(mRangingCbCaptor2.getValue()).isNotNull();
-        verify(cb2).asBinder();
-        verify(cbBinder2).linkToDeath(any(), anyInt());
-
-        // Invoke vendor service callbacks and ensure that the corresponding app callback is
-        // invoked.
-        mRangingCbCaptor.getValue().onRangingOpened(sessionHandle);
-        verify(cb1).onRangingOpened(sessionHandle);
-        verifyZeroInteractions(cb2);
-
-        mRangingCbCaptor2.getValue().onRangingOpened(sessionHandle);
-        verify(cb2).onRangingOpened(sessionHandle);
-        verifyNoMoreInteractions(cb1);
-    }
-
-    @Test
-    public void testHandleClientDeath() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
-        final IUwbRangingCallbacks2 cb = mock(IUwbRangingCallbacks2.class);
-        final PersistableBundle parameters = new PersistableBundle();
-        final IBinder cbBinder = mock(IBinder.class);
-        when(cb.asBinder()).thenReturn(cbBinder);
-
-        mUwbServiceImpl.openRanging(
-                ATTRIBUTION_SOURCE, sessionHandle, cb, parameters, /* chipId= */ null);
-
-        verify(mUwbServiceCore).openRanging(
-                eq(ATTRIBUTION_SOURCE), eq(sessionHandle), mRangingCbCaptor.capture(),
-                eq(parameters));
-        assertThat(mRangingCbCaptor.getValue()).isNotNull();
-
-        verify(cbBinder).linkToDeath(mClientDeathCaptor.capture(), anyInt());
-        assertThat(mClientDeathCaptor.getValue()).isNotNull();
-
-        clearInvocations(cb);
-
-        // Invoke cb, ensure it reaches the client.
-        mRangingCbCaptor.getValue().onRangingOpened(sessionHandle);
-        verify(cb).onRangingOpened(sessionHandle);
-
-        // Trigger client death and ensure the session is stopped.
-        mClientDeathCaptor.getValue().binderDied();
-        verify(mUwbServiceCore).stopRanging(sessionHandle);
-        verify(mUwbServiceCore).closeRanging(sessionHandle);
-
-        // Invoke cb, it should be ignored.
-        mRangingCbCaptor.getValue().onRangingStarted(sessionHandle, parameters);
-        verify(cb, never()).onRangingStarted(any(), any());
-    }
-
-    @Test
     public void testThrowSecurityExceptionWhenCalledWithoutUwbPrivilegedPermission()
             throws Exception {
         doThrow(new SecurityException()).when(mContext).enforceCallingOrSelfPermission(
@@ -423,7 +271,7 @@ public class UwbServiceImplTest {
                 any());
 
         final SessionHandle sessionHandle = new SessionHandle(5);
-        final IUwbRangingCallbacks2 cb = mock(IUwbRangingCallbacks2.class);
+        final IUwbRangingCallbacks cb = mock(IUwbRangingCallbacks.class);
         final PersistableBundle parameters = new PersistableBundle();
         final IBinder cbBinder = mock(IBinder.class);
         when(cb.asBinder()).thenReturn(cbBinder);
@@ -432,30 +280,6 @@ public class UwbServiceImplTest {
                     ATTRIBUTION_SOURCE, sessionHandle, cb, parameters, /* chipId= */ null);
             fail();
         } catch (SecurityException e) { /* pass */ }
-    }
-
-    @Test
-    public void testOnRangingResultCallbackNotSentWithoutUwbRangingPermission() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
-        final IUwbRangingCallbacks2 cb = mock(IUwbRangingCallbacks2.class);
-        final PersistableBundle parameters = new PersistableBundle();
-        final IBinder cbBinder = mock(IBinder.class);
-        when(cb.asBinder()).thenReturn(cbBinder);
-
-        mUwbServiceImpl.openRanging(
-                ATTRIBUTION_SOURCE, sessionHandle, cb, parameters, /* chipId= */ null);
-
-        verify(mUwbServiceCore).openRanging(
-                eq(ATTRIBUTION_SOURCE), eq(sessionHandle), mRangingCbCaptor.capture(),
-                eq(parameters));
-        assertThat(mRangingCbCaptor.getValue()).isNotNull();
-
-        when(mUwbInjector.checkUwbRangingPermissionForDataDelivery(any(), any())).thenReturn(false);
-
-        // Ensure the ranging cb is not delivered to the client.
-        final RangingReport rangingReport = new RangingReport.Builder().build();
-        mRangingCbCaptor.getValue().onRangingResult(sessionHandle, rangingReport);
-        verify(cb, never()).onRangingResult(sessionHandle, rangingReport);
     }
 
     @Test

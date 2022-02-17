@@ -56,7 +56,7 @@ import java.util.concurrent.Executor;
 public class UwbManagerTest {
 
     @Mock private Context mContext;
-    @Mock private IUwbAdapter2 mIUwbAdapter;
+    @Mock private IUwbAdapter mIUwbAdapter;
     @Mock private AdapterStateCallback mAdapterStateCallback;
     @Mock private AdapterStateCallback mAdapterStateCallback2;
     @Mock private UwbVendorUciCallback mUwbVendorUciCallback;

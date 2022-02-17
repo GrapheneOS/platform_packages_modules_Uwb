@@ -18,6 +18,7 @@ package com.android.server.uwb;
 import static com.android.server.uwb.data.UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS;
 
 import android.annotation.Nullable;
+import android.content.AttributionSource;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -26,7 +27,7 @@ import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.util.Log;
 import android.util.Pair;
-import android.uwb.IUwbAdapter2;
+import android.uwb.IUwbAdapter;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.RangingChangeReason;
 import android.uwb.SessionHandle;
@@ -174,12 +175,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 uwbSession.getParams());
     }
 
-    public synchronized void initSession(SessionHandle sessionHandle, int sessionId,
+    public synchronized void initSession(AttributionSource attributionSource,
+            SessionHandle sessionHandle, int sessionId,
             String protocolName, Params params, IUwbRangingCallbacks rangingCallbacks)
             throws RemoteException {
         Log.i(TAG, "initSession() : Enter - sessionId : " + sessionId);
-        UwbSession uwbSession =  createUwbSession(sessionHandle, sessionId, protocolName, params,
-                rangingCallbacks);
+        UwbSession uwbSession =  createUwbSession(attributionSource, sessionHandle, sessionId,
+                protocolName, params, rangingCallbacks);
         if (isExistedSession(sessionId)) {
             Log.i(TAG, "Duplicated sessionId");
             rangingCallbacks.onRangingOpenFailed(sessionHandle, RangingChangeReason.UNKNOWN,
@@ -224,9 +226,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
     // TODO: use UwbInjector.
     @VisibleForTesting
-    UwbSession createUwbSession(SessionHandle sessionHandle, int sessionId, String protocolName,
-            Params params, IUwbRangingCallbacks iUwbRangingCallbacks) {
-        return new UwbSession(sessionHandle, sessionId, protocolName, params, iUwbRangingCallbacks);
+    UwbSession createUwbSession(AttributionSource attributionSource, SessionHandle sessionHandle,
+            int sessionId, String protocolName, Params params,
+            IUwbRangingCallbacks iUwbRangingCallbacks) {
+        return new UwbSession(attributionSource, sessionHandle, sessionId, protocolName, params,
+                iUwbRangingCallbacks);
     }
 
     public synchronized void deInitSession(SessionHandle sessionHandle) {
@@ -511,7 +515,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             int status = UwbUciConstants.STATUS_CODE_FAILED;
             try {
                 status = initSessionTask.get(
-                        IUwbAdapter2.RANGING_SESSION_OPEN_THRESHOLD_MS, TimeUnit.MILLISECONDS);
+                        IUwbAdapter.RANGING_SESSION_OPEN_THRESHOLD_MS, TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
                 executor.shutdownNow();
                 Log.i(TAG, "Failed to initialize session - status : TIMEOUT");
@@ -591,7 +595,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             int status = UwbUciConstants.STATUS_CODE_FAILED;
             try {
                 status = startRangingTask.get(
-                        IUwbAdapter2.RANGING_SESSION_START_THRESHOLD_MS, TimeUnit.MILLISECONDS);
+                        IUwbAdapter.RANGING_SESSION_START_THRESHOLD_MS, TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
                 Log.i(TAG, "Failed to Start Ranging - status : TIMEOUT");
                 executor.shutdownNow();
@@ -635,7 +639,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             int status = UwbUciConstants.STATUS_CODE_FAILED;
             try {
                 status = stopRangingTask.get(
-                        IUwbAdapter2.RANGING_SESSION_START_THRESHOLD_MS, TimeUnit.MILLISECONDS);
+                        IUwbAdapter.RANGING_SESSION_START_THRESHOLD_MS, TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
                 Log.i(TAG, "Failed to Stop Ranging - status : TIMEOUT");
                 executor.shutdownNow();
@@ -728,7 +732,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             int status = UwbUciConstants.STATUS_CODE_FAILED;
             try {
                 status = cmdTask.get(
-                        IUwbAdapter2.RANGING_SESSION_OPEN_THRESHOLD_MS, TimeUnit.MILLISECONDS);
+                        IUwbAdapter.RANGING_SESSION_OPEN_THRESHOLD_MS, TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
                 Log.i(TAG, "Failed to Reconfigure - status : TIMEOUT");
                 executor.shutdownNow();
@@ -766,7 +770,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             int status = UwbUciConstants.STATUS_CODE_FAILED;
             try {
                 status = closeTask.get(
-                        IUwbAdapter2.RANGING_SESSION_CLOSE_THRESHOLD_MS, TimeUnit.MILLISECONDS);
+                        IUwbAdapter.RANGING_SESSION_CLOSE_THRESHOLD_MS, TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
                 Log.i(TAG, "Failed to Stop Ranging - status : TIMEOUT");
                 executor.shutdownNow();
@@ -783,6 +787,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     }
 
     public class UwbSession implements IBinder.DeathRecipient {
+        private final AttributionSource mAttributionSource;
         private final SessionHandle mSessionHandle;
         private final int mSessionId;
         private final IUwbRangingCallbacks mIUwbRangingCallbacks;
@@ -795,8 +800,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         private UwbMulticastListUpdateStatus mMulticastListUpdateStatus;
         private final int mProfileType;
 
-        UwbSession(SessionHandle sessionHandle, int sessionId, String protocolName,
-                Params params, IUwbRangingCallbacks iUwbRangingCallbacks) {
+        UwbSession(AttributionSource attributionSource, SessionHandle sessionHandle, int sessionId,
+                String protocolName, Params params, IUwbRangingCallbacks iUwbRangingCallbacks) {
+            this.mAttributionSource = attributionSource;
             this.mSessionHandle = sessionHandle;
             this.mSessionId = sessionId;
             this.mProtocolName = protocolName;
@@ -807,6 +813,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             this.mWaitObj = new WaitObj();
             this.isWait = false;
             this.mProfileType = convertProtolNameToProfileType(protocolName);
+        }
+
+        public AttributionSource getAttributionSource() {
+            return this.mAttributionSource;
         }
 
         public int getSessionId() {
@@ -895,6 +905,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
             synchronized (UwbSessionManager.this) {
                 int status = mNativeUwbManager.deInitSession(getSessionId());
+                mUwbMetrics.logRangingCloseEvent(this, status);
                 if (status == UwbUciConstants.STATUS_CODE_OK) {
                     removeSession(this);
                     Log.i(TAG, "binderDied : Session count currently is " + getSessionCount());

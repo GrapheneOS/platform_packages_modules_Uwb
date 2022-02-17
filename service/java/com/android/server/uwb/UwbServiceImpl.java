@@ -25,24 +25,18 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Binder;
-import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.provider.Settings;
-import android.util.ArrayMap;
 import android.util.Log;
-import android.uwb.IUwbAdapter2;
+import android.uwb.IUwbAdapter;
 import android.uwb.IUwbAdapterStateCallbacks;
 import android.uwb.IUwbAdfProvisionStateCallbacks;
 import android.uwb.IUwbRangingCallbacks;
-import android.uwb.IUwbRangingCallbacks2;
 import android.uwb.IUwbVendorUciCallback;
-import android.uwb.RangingReport;
 import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
-
-import com.android.internal.annotations.GuardedBy;
 
 import com.google.uwb.support.multichip.ChipInfoParams;
 
@@ -50,170 +44,18 @@ import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
- * Implementation of {@link android.uwb.IUwbAdapter2} binder service.
+ * Implementation of {@link android.uwb.IUwbAdapter} binder service.
  */
-public class UwbServiceImpl extends IUwbAdapter2.Stub {
+public class UwbServiceImpl extends IUwbAdapter.Stub {
     private static final String TAG = "UwbServiceImpl";
 
     private final Context mContext;
     private final UwbInjector mUwbInjector;
     private final UwbSettingsStore mUwbSettingsStore;
-
-    /**
-     * Map for storing the callbacks wrapper for each session.
-     */
-    @GuardedBy("mCallbacksMap")
-    private final Map<UwbClientSessionHandle, UwbRangingCallbacksWrapper> mCallbacksMap =
-            new ArrayMap<>();
-
     private final UwbServiceCore mUwbServiceCore;
 
-    /**
-     * Wrapper for callback registered with vendor service. This wrapper is needed for performing
-     * permission check before sending the callback to the external app.
-     *
-     * Access to these callbacks are synchronized.
-     */
-    private class UwbRangingCallbacksWrapper extends IUwbRangingCallbacks.Stub
-            implements IBinder.DeathRecipient {
-        private final UwbClientSessionHandle mUwbClientSessionHandle;
-        private final IUwbRangingCallbacks2 mExternalCb;
-        private boolean mIsValid;
-
-        UwbRangingCallbacksWrapper(@NonNull UwbClientSessionHandle uwbSessionInfo,
-                @NonNull IUwbRangingCallbacks2 externalCb) {
-            mUwbClientSessionHandle = uwbSessionInfo;
-            mExternalCb = externalCb;
-            mIsValid = true;
-
-            // Link to death for external callback.
-            linkToDeath();
-        }
-
-        private void linkToDeath() {
-            IBinder binder = mExternalCb.asBinder();
-            try {
-                binder.linkToDeath(this, 0);
-            } catch (RemoteException e) {
-                Log.e(TAG, "Unable to link to client death event.", e);
-            }
-        }
-
-        private void removeClientAndUnlinkToDeath() {
-            // Remove from the map.
-            synchronized (mCallbacksMap) {
-                mCallbacksMap.remove(mUwbClientSessionHandle);
-            }
-            IBinder binder = mExternalCb.asBinder();
-            binder.unlinkToDeath(this, 0);
-            mIsValid = false;
-        }
-
-
-        @Override
-        public synchronized void onRangingOpened(SessionHandle sessionHandle)
-                throws RemoteException {
-            if (!mIsValid) return;
-            mExternalCb.onRangingOpened(sessionHandle);
-        }
-
-        @Override
-        public synchronized void onRangingOpenFailed(SessionHandle sessionHandle,
-                int reason, PersistableBundle parameters) throws RemoteException {
-            if (!mIsValid) return;
-            mExternalCb.onRangingOpenFailed(sessionHandle, reason, parameters);
-        }
-
-        @Override
-        public synchronized void onRangingStarted(SessionHandle sessionHandle,
-                PersistableBundle parameters)
-                throws RemoteException {
-            if (!mIsValid) return;
-            mExternalCb.onRangingStarted(sessionHandle, parameters);
-        }
-
-        @Override
-        public synchronized void onRangingStartFailed(SessionHandle sessionHandle,
-                int reason, PersistableBundle parameters) throws RemoteException {
-            if (!mIsValid) return;
-            mExternalCb.onRangingStartFailed(sessionHandle, reason, parameters);
-        }
-
-        @Override
-        public synchronized void onRangingReconfigured(SessionHandle sessionHandle,
-                PersistableBundle parameters)
-                throws RemoteException {
-            if (!mIsValid) return;
-            mExternalCb.onRangingReconfigured(sessionHandle, parameters);
-        }
-
-        @Override
-        public synchronized void onRangingReconfigureFailed(SessionHandle sessionHandle,
-                int reason, PersistableBundle parameters) throws RemoteException {
-            if (!mIsValid) return;
-            mExternalCb.onRangingReconfigureFailed(sessionHandle, reason, parameters);
-        }
-
-        @Override
-        public synchronized void onRangingStopped(SessionHandle sessionHandle, int reason,
-                PersistableBundle parameters)
-                throws RemoteException {
-            if (!mIsValid) return;
-            mExternalCb.onRangingStopped(sessionHandle, reason, parameters);
-        }
-
-        @Override
-        public synchronized void onRangingStopFailed(SessionHandle sessionHandle, int reason,
-                PersistableBundle parameters) throws RemoteException {
-            if (!mIsValid) return;
-            mExternalCb.onRangingStopFailed(sessionHandle, reason, parameters);
-        }
-
-        @Override
-        public synchronized void onRangingClosed(SessionHandle sessionHandle, int reason,
-                PersistableBundle parameters) throws RemoteException {
-            if (!mIsValid) return;
-            mExternalCb.onRangingClosed(sessionHandle, reason, parameters);
-            removeClientAndUnlinkToDeath();
-        }
-
-        @Override
-        public synchronized void onRangingResult(SessionHandle sessionHandle,
-                RangingReport rangingReport)
-                throws RemoteException {
-            if (!mIsValid) return;
-            final long ident = Binder.clearCallingIdentity();
-            try {
-                boolean permissionGranted = mUwbInjector.checkUwbRangingPermissionForDataDelivery(
-                        mUwbClientSessionHandle.getAttributionSource(), "uwb ranging result");
-                if (!permissionGranted) {
-                    Log.e(TAG, "Not delivering ranging result because of permission denial"
-                            + mUwbClientSessionHandle.getSessionHandle());
-                    return;
-                }
-            } finally {
-                Binder.restoreCallingIdentity(ident);
-            }
-            mExternalCb.onRangingResult(sessionHandle, rangingReport);
-        }
-
-        @Override
-        public synchronized void binderDied() {
-            if (!mIsValid) return;
-            Log.i(TAG, "Client died: ending session: "
-                    + mUwbClientSessionHandle.getSessionHandle());
-            try {
-                removeClientAndUnlinkToDeath();
-                stopRanging(mUwbClientSessionHandle.getSessionHandle());
-                closeRanging(mUwbClientSessionHandle.getSessionHandle());
-            } catch (RemoteException e) {
-                Log.e(TAG, "Remote exception while handling client death", e);
-            }
-        }
-    }
 
     UwbServiceImpl(@NonNull Context context, @NonNull UwbInjector uwbInjector) {
         mContext = context;
@@ -305,22 +147,13 @@ public class UwbServiceImpl extends IUwbAdapter2.Stub {
     @Override
     public void openRanging(AttributionSource attributionSource,
             SessionHandle sessionHandle,
-            IUwbRangingCallbacks2 rangingCallbacks,
+            IUwbRangingCallbacks rangingCallbacks,
             PersistableBundle parameters,
             String chipId) throws RemoteException {
 
         enforceUwbPrivilegedPermission();
         mUwbInjector.enforceUwbRangingPermissionForPreflight(attributionSource);
-
-        final UwbClientSessionHandle uwbSessionInfo =
-                new UwbClientSessionHandle(sessionHandle, attributionSource);
-        UwbRangingCallbacksWrapper wrapperCb =
-                new UwbRangingCallbacksWrapper(uwbSessionInfo, rangingCallbacks);
-        synchronized (mCallbacksMap) {
-            mCallbacksMap.put(uwbSessionInfo, wrapperCb);
-        }
-        mUwbServiceCore
-                .openRanging(attributionSource, sessionHandle, wrapperCb, parameters);
+        mUwbServiceCore.openRanging(attributionSource, sessionHandle, rangingCallbacks, parameters);
     }
 
     @Override

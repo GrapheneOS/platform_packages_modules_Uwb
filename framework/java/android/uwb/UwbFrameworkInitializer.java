@@ -40,7 +40,7 @@ public class UwbFrameworkInitializer {
                 Context.UWB_SERVICE,
                 UwbManager.class,
                 (context, serviceBinder) -> {
-                    IUwbAdapter2 adapter = IUwbAdapter2.Stub.asInterface(serviceBinder);
+                    IUwbAdapter adapter = IUwbAdapter.Stub.asInterface(serviceBinder);
                     return new UwbManager(context, adapter);
                 }
         );

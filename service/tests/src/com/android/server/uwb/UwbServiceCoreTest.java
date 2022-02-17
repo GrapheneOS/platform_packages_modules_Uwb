@@ -323,12 +323,13 @@ public class UwbServiceCoreTest {
 
         SessionHandle sessionHandle = mock(SessionHandle.class);
         IUwbRangingCallbacks cb = mock(IUwbRangingCallbacks.class);
+        AttributionSource attributionSource = mock(AttributionSource.class);
         FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS.build();
         mUwbServiceCore.openRanging(
-                mock(AttributionSource.class), sessionHandle, cb,
-                params.toBundle());
+                attributionSource, sessionHandle, cb, params.toBundle());
 
         verify(mUwbSessionManager).initSession(
+                eq(attributionSource),
                 eq(sessionHandle), eq(params.getSessionId()), eq(FiraParams.PROTOCOL_NAME),
                 argThat(p -> ((FiraOpenSessionParams) p).getSessionId() == params.getSessionId()),
                 eq(cb));
@@ -342,11 +343,12 @@ public class UwbServiceCoreTest {
         SessionHandle sessionHandle = mock(SessionHandle.class);
         IUwbRangingCallbacks cb = mock(IUwbRangingCallbacks.class);
         CccOpenRangingParams params = TEST_CCC_OPEN_RANGING_PARAMS.build();
+        AttributionSource attributionSource = mock(AttributionSource.class);
         mUwbServiceCore.openRanging(
-                mock(AttributionSource.class), sessionHandle, cb,
-                params.toBundle());
+                attributionSource, sessionHandle, cb, params.toBundle());
 
         verify(mUwbSessionManager).initSession(
+                eq(attributionSource),
                 eq(sessionHandle), eq(params.getSessionId()), eq(CccParams.PROTOCOL_NAME),
                 argThat(p -> ((CccOpenRangingParams) p).getSessionId() == params.getSessionId()),
                 eq(cb));

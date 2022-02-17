@@ -280,13 +280,13 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             FiraOpenSessionParams firaOpenSessionParams = FiraOpenSessionParams.fromBundle(
                     params);
             sessionId = firaOpenSessionParams.getSessionId();
-            mSessionManager.initSession(sessionHandle, sessionId,
+            mSessionManager.initSession(attributionSource, sessionHandle, sessionId,
                     firaOpenSessionParams.getProtocolName(),
                     firaOpenSessionParams, rangingCallbacks);
         } else if (CccParams.isCorrectProtocol(params)) {
             CccOpenRangingParams cccOpenRangingParams = CccOpenRangingParams.fromBundle(params);
             sessionId = cccOpenRangingParams.getSessionId();
-            mSessionManager.initSession(sessionHandle, sessionId,
+            mSessionManager.initSession(attributionSource, sessionHandle, sessionId,
                     cccOpenRangingParams.getProtocolName(),
                     cccOpenRangingParams, rangingCallbacks);
         } else {

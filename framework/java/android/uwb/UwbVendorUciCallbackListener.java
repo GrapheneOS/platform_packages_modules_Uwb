@@ -30,11 +30,11 @@ import java.util.concurrent.Executor;
  */
 public final class UwbVendorUciCallbackListener extends IUwbVendorUciCallback.Stub{
     private static final String TAG = "Uwb.UwbVendorUciCallbacks";
-    private final IUwbAdapter2 mAdapter;
+    private final IUwbAdapter mAdapter;
     private boolean mIsRegistered = false;
     private final Map<UwbVendorUciCallback, Executor> mCallbackMap = new HashMap<>();
 
-    public UwbVendorUciCallbackListener(@NonNull IUwbAdapter2 adapter) {
+    public UwbVendorUciCallbackListener(@NonNull IUwbAdapter adapter) {
         mAdapter = adapter;
     }
 
