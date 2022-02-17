@@ -18,6 +18,7 @@ package com.android.server.uwb;
 
 import android.content.AttributionSource;
 import android.content.Context;
+import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -27,7 +28,6 @@ import android.os.PowerManager;
 import android.os.RemoteException;
 import android.util.Log;
 import android.util.Pair;
-import android.uwb.IUwbAdapter;
 import android.uwb.IUwbAdapterStateCallbacks;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.IUwbVendorUciCallback;
@@ -61,8 +61,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * Implementation of {@link android.uwb.IUwbAdapter2} binder service.
- * TODO(b/196225233): Merge with {@link com.android.uwb.server.UwbServiceImpl}.
+ * Core UWB stack.
  */
 public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         INativeUwbManager.VendorNotification, UwbCountryCode.CountryCodeChangedListener {
@@ -76,9 +75,8 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
 
     private final PowerManager.WakeLock mUwbWakeLock;
     private final Context mContext;
-    private final UwbAdapterService mUwbAdapterService;
-    private final ConcurrentHashMap<Integer, AdapterInfo> mAdapterMap =
-            new ConcurrentHashMap<Integer, AdapterInfo>();
+    // TODO: Use RemoteCallbackList instead.
+    private final ConcurrentHashMap<Integer, AdapterInfo> mAdapterMap = new ConcurrentHashMap<>();
     private final EnableDisableTask mEnableDisableTask;
 
     private final UwbSessionManager mSessionManager;
@@ -99,8 +97,6 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
 
         Log.d(TAG, "Starting Uwb");
 
-        mUwbAdapterService = new UwbAdapterService();
-
         mUwbWakeLock = mContext.getSystemService(PowerManager.class).newWakeLock(
                 PowerManager.PARTIAL_WAKE_LOCK, "UwbServiceCore:mUwbWakeLock");
 
@@ -117,11 +113,6 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         updateState(AdapterStateCallback.STATE_DISABLED, StateChangeReason.SYSTEM_BOOT);
 
         mEnableDisableTask = new EnableDisableTask(serviceLooper);
-    }
-
-    // TODO(b/196225233): Remove this when qorvo stack is integrated.
-    public IUwbAdapter.Stub getIUwbAdapter() {
-        return mUwbAdapterService;
     }
 
     private void updateState(int state, int reason) {
@@ -216,215 +207,191 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         mUwbSpecificationInfo.clear();
     }
 
-    public final class UwbAdapterService extends IUwbAdapter.Stub {
-        @Override
-        public void registerAdapterStateCallbacks(IUwbAdapterStateCallbacks adapterStateCallbacks)
-                throws RemoteException {
-            AdapterInfo adapter = new AdapterInfo(getCallingPid(), adapterStateCallbacks);
-            mAdapterMap.put(getCallingPid(), adapter);
-            adapter.getBinder().linkToDeath(adapter, 0);
-            adapterStateCallbacks.onAdapterStateChanged(mState, mLastStateChangedReason);
+    public void registerAdapterStateCallbacks(IUwbAdapterStateCallbacks adapterStateCallbacks)
+            throws RemoteException {
+        AdapterInfo adapter = new AdapterInfo(Binder.getCallingPid(), adapterStateCallbacks);
+        mAdapterMap.put(Binder.getCallingPid(), adapter);
+        adapter.getBinder().linkToDeath(adapter, 0);
+        adapterStateCallbacks.onAdapterStateChanged(mState, mLastStateChangedReason);
+    }
+
+    public void unregisterAdapterStateCallbacks(IUwbAdapterStateCallbacks callbacks) {
+        int pid = Binder.getCallingPid();
+        AdapterInfo adapter = mAdapterMap.get(pid);
+        adapter.getBinder().unlinkToDeath(adapter, 0);
+        mAdapterMap.remove(pid);
+    }
+
+    public void registerVendorExtensionCallback(IUwbVendorUciCallback callbacks) {
+        Log.e(TAG, "Register the callback");
+        mCallBack = callbacks;
+    }
+
+    public void unregisterVendorExtensionCallback(IUwbVendorUciCallback callbacks) {
+        Log.e(TAG, "Unregister the callback");
+        mCallBack = null;
+    }
+
+    private void updateSpecificationInfo() {
+        Pair<Integer, FiraSpecificationParams> firaSpecificationParams =
+                mConfigurationManager.getCapsInfo(
+                        FiraParams.PROTOCOL_NAME, FiraSpecificationParams.class);
+        if (firaSpecificationParams.first != UwbUciConstants.STATUS_CODE_OK)  {
+            Log.e(TAG, "Failed to retrieve FIRA specification params");
         }
-
-        @Override
-        public void unregisterAdapterStateCallbacks(IUwbAdapterStateCallbacks callbacks)
-                throws RemoteException {
-            int pid = getCallingPid();
-            AdapterInfo adapter = mAdapterMap.get(pid);
-            adapter.getBinder().unlinkToDeath(adapter, 0);
-            mAdapterMap.remove(pid);
+        Pair<Integer, CccSpecificationParams> cccSpecificationParams =
+                mConfigurationManager.getCapsInfo(
+                        CccParams.PROTOCOL_NAME, CccSpecificationParams.class);
+        if (cccSpecificationParams.first != UwbUciConstants.STATUS_CODE_OK)  {
+            Log.e(TAG, "Failed to retrieve CCC specification params");
         }
-
-        public void registerVendorExtensionCallback(IUwbVendorUciCallback callbacks) {
-            Log.e(TAG, "Register the callback");
-            mCallBack = callbacks;
+        // If neither of the capabilities are fetched correctly, don't cache anything.
+        if (firaSpecificationParams.first == UwbUciConstants.STATUS_CODE_OK
+                || cccSpecificationParams.first == UwbUciConstants.STATUS_CODE_OK) {
+            mUwbSpecificationInfo.clear();
+            mUwbSpecificationInfo.putPersistableBundle(
+                    FiraParams.PROTOCOL_NAME, firaSpecificationParams.second.toBundle());
+            mUwbSpecificationInfo.putPersistableBundle(
+                    CccParams.PROTOCOL_NAME, cccSpecificationParams.second.toBundle());
         }
+    }
 
-        public void unregisterVendorExtensionCallback(IUwbVendorUciCallback callbacks) {
-            Log.e(TAG, "Unregister the callback");
-            mCallBack = null;
+    public PersistableBundle getSpecificationInfo() {
+        if (mUwbSpecificationInfo.isEmpty()) {
+            updateSpecificationInfo();
         }
+        return mUwbSpecificationInfo;
+    }
 
-        private void updateSpecificationInfo() {
-            Pair<Integer, FiraSpecificationParams> firaSpecificationParams =
-                    mConfigurationManager.getCapsInfo(
-                            FiraParams.PROTOCOL_NAME, FiraSpecificationParams.class);
-            if (firaSpecificationParams.first != UwbUciConstants.STATUS_CODE_OK)  {
-                Log.e(TAG, "Failed to retrieve FIRA specification params");
-            }
-            Pair<Integer, CccSpecificationParams> cccSpecificationParams =
-                    mConfigurationManager.getCapsInfo(
-                            CccParams.PROTOCOL_NAME, CccSpecificationParams.class);
-            if (cccSpecificationParams.first != UwbUciConstants.STATUS_CODE_OK)  {
-                Log.e(TAG, "Failed to retrieve CCC specification params");
-            }
-            // If neither of the capabilities are fetched correctly, don't cache anything.
-            if (firaSpecificationParams.first == UwbUciConstants.STATUS_CODE_OK
-                    || cccSpecificationParams.first == UwbUciConstants.STATUS_CODE_OK) {
-                mUwbSpecificationInfo.clear();
-                if (firaSpecificationParams.first == UwbUciConstants.STATUS_CODE_OK) {
-                    mUwbSpecificationInfo.putPersistableBundle(
-                            FiraParams.PROTOCOL_NAME, firaSpecificationParams.second.toBundle());
-                }
-                if (cccSpecificationParams.first == UwbUciConstants.STATUS_CODE_OK) {
-                    mUwbSpecificationInfo.putPersistableBundle(
-                            CccParams.PROTOCOL_NAME, cccSpecificationParams.second.toBundle());
-                }
-            }
+    public long getTimestampResolutionNanos() {
+        return mNativeUwbManager.getTimestampResolutionNanos();
+    }
+
+    public void openRanging(
+            AttributionSource attributionSource,
+            SessionHandle sessionHandle,
+            IUwbRangingCallbacks rangingCallbacks,
+            PersistableBundle params) throws RemoteException {
+        if (!isUwbEnabled()) {
+            throw new IllegalStateException("Uwb is not enabled");
         }
-
-        @Override
-        public PersistableBundle getSpecificationInfo() throws RemoteException {
-            if (mUwbSpecificationInfo.isEmpty()) {
-                updateSpecificationInfo();
-            }
-            return mUwbSpecificationInfo;
-        }
-
-        @Override
-        public long getTimestampResolutionNanos() throws RemoteException {
-            return mNativeUwbManager.getTimestampResolutionNanos();
-        }
-
-        @Override
-        public void openRanging(
-                AttributionSource attributionSource,
-                SessionHandle sessionHandle,
-                IUwbRangingCallbacks rangingCallbacks,
-                PersistableBundle params) throws RemoteException {
-            if (!isUwbEnabled()) {
-                throw new RemoteException("Uwb is not enabled");
-            }
-            int sessionId = 0;
-            if (FiraParams.isCorrectProtocol(params)) {
-                FiraOpenSessionParams firaOpenSessionParams = FiraOpenSessionParams.fromBundle(
-                        params);
-                sessionId = firaOpenSessionParams.getSessionId();
-                mSessionManager.initSession(sessionHandle, sessionId,
-                        firaOpenSessionParams.getProtocolName(),
-                        firaOpenSessionParams, rangingCallbacks);
-            } else if (CccParams.isCorrectProtocol(params)) {
-                CccOpenRangingParams cccOpenRangingParams = CccOpenRangingParams.fromBundle(params);
-                sessionId = cccOpenRangingParams.getSessionId();
-                mSessionManager.initSession(sessionHandle, sessionId,
-                        cccOpenRangingParams.getProtocolName(),
-                        cccOpenRangingParams, rangingCallbacks);
-            } else {
-                Log.e(TAG, "openRanging - Wrong parameters");
-                try {
-                    rangingCallbacks.onRangingOpenFailed(sessionHandle,
-                            RangingChangeReason.BAD_PARAMETERS, new PersistableBundle());
-                } catch (RemoteException e) { }
-            }
-        }
-
-        @Override
-        public void startRanging(SessionHandle sessionHandle, PersistableBundle params)
-                throws RemoteException {
-            if (!isUwbEnabled()) {
-                throw new RemoteException("Uwb is not enabled");
-            }
-            Params  startRangingParams = null;
-            if (CccParams.isCorrectProtocol(params)) {
-                startRangingParams = CccStartRangingParams.fromBundle(params);
-            }
-            mSessionManager.startRanging(sessionHandle, startRangingParams);
-            return;
-        }
-
-        @Override
-        public void reconfigureRanging(SessionHandle sessionHandle, PersistableBundle params)
-                throws RemoteException {
-            if (!isUwbEnabled()) {
-                Log.i(TAG, "UWB is not enabled");
-                return;
-            }
-            mSessionManager.reconfigure(sessionHandle, params);
-            return;
-        }
-
-        @Override
-        public void stopRanging(SessionHandle sessionHandle) throws RemoteException {
-            if (!isUwbEnabled()) {
-                throw new RemoteException("Uwb is not enabled");
-            }
-            mSessionManager.stopRanging(sessionHandle);
-            return;
-        }
-
-        @Override
-        public void closeRanging(SessionHandle sessionHandle) throws RemoteException {
-            if (!isUwbEnabled()) {
-                throw new RemoteException("Uwb is not enabled");
-            }
-            mSessionManager.deInitSession(sessionHandle);
-            return;
-        }
-
-        @Override
-        public /* @UwbManager.AdapterStateCallback.State */ int getAdapterState()
-                throws RemoteException {
-            synchronized (UwbServiceCore.this) {
-                return mState;
-            }
-        }
-
-        @Override
-        public synchronized void setEnabled(boolean enabled) throws RemoteException {
-            int task = enabled ? TASK_ENABLE : TASK_DISABLE;
-
-            if (enabled && isUwbEnabled()) {
-                Log.w(TAG, "Uwb is already enabled");
-            } else if (!enabled && !isUwbEnabled()) {
-                Log.w(TAG, "Uwb is already disabled");
-            }
-
-            mEnableDisableTask.execute(task);
-        }
-
-        private void sendVendorUciResponse(int gid, int oid, byte[] payload) {
-            Log.i(TAG, "onVendorUciResponseReceived");
-            if (mCallBack != null) {
-                try {
-                    mCallBack.onVendorResponseReceived(gid, oid, payload);
-                } catch (RemoteException e) {
-                    Log.e(TAG, "Failed to send vendor response", e);
-                }
-            }
-        }
-
-        public synchronized int sendVendorUciMessage(int gid, int oid, byte[] payload) {
-            if ((!isUwbEnabled())) {
-                Log.e(TAG, "sendRawVendor : Uwb is not enabled");
-                return UwbUciConstants.STATUS_CODE_FAILED;
-            }
-            // TODO(b/211445008): Consolidate to a single uwb thread.
-            ExecutorService executor = Executors.newSingleThreadExecutor();
-            FutureTask<Byte> sendVendorCmdTask = new FutureTask<>(
-                    () -> {
-                        UwbVendorUciResponse response =
-                                mNativeUwbManager.sendRawVendorCmd(gid, oid, payload);
-                        if (response.status == UwbUciConstants.STATUS_CODE_OK) {
-                            sendVendorUciResponse(response.gid, response.oid, response.payload);
-                        }
-                        return response.status;
-                    });
-            executor.submit(sendVendorCmdTask);
-            int status = UwbUciConstants.STATUS_CODE_FAILED;
+        int sessionId = 0;
+        if (FiraParams.isCorrectProtocol(params)) {
+            FiraOpenSessionParams firaOpenSessionParams = FiraOpenSessionParams.fromBundle(
+                    params);
+            sessionId = firaOpenSessionParams.getSessionId();
+            mSessionManager.initSession(sessionHandle, sessionId,
+                    firaOpenSessionParams.getProtocolName(),
+                    firaOpenSessionParams, rangingCallbacks);
+        } else if (CccParams.isCorrectProtocol(params)) {
+            CccOpenRangingParams cccOpenRangingParams = CccOpenRangingParams.fromBundle(params);
+            sessionId = cccOpenRangingParams.getSessionId();
+            mSessionManager.initSession(sessionHandle, sessionId,
+                    cccOpenRangingParams.getProtocolName(),
+                    cccOpenRangingParams, rangingCallbacks);
+        } else {
+            Log.e(TAG, "openRanging - Wrong parameters");
             try {
-                status = sendVendorCmdTask.get(
-                        SEND_VENDOR_CMD_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-            } catch (TimeoutException e) {
-                executor.shutdownNow();
-                Log.i(TAG, "Failed to send vendor command - status : TIMEOUT");
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-            }
-            return status;
+                rangingCallbacks.onRangingOpenFailed(sessionHandle,
+                        RangingChangeReason.BAD_PARAMETERS, new PersistableBundle());
+            } catch (RemoteException e) { }
+        }
+    }
+
+    public void startRanging(SessionHandle sessionHandle, PersistableBundle params)
+            throws IllegalStateException {
+        if (!isUwbEnabled()) {
+            throw new IllegalStateException("Uwb is not enabled");
+        }
+        Params  startRangingParams = null;
+        if (CccParams.isCorrectProtocol(params)) {
+            startRangingParams = CccStartRangingParams.fromBundle(params);
+        }
+        mSessionManager.startRanging(sessionHandle, startRangingParams);
+        return;
+    }
+
+    public void reconfigureRanging(SessionHandle sessionHandle, PersistableBundle params) {
+        if (!isUwbEnabled()) {
+            throw new IllegalStateException("Uwb is not enabled");
+        }
+        mSessionManager.reconfigure(sessionHandle, params);
+    }
+
+    public void stopRanging(SessionHandle sessionHandle) {
+        if (!isUwbEnabled()) {
+            throw new IllegalStateException("Uwb is not enabled");
+        }
+        mSessionManager.stopRanging(sessionHandle);
+    }
+
+    public void closeRanging(SessionHandle sessionHandle) {
+        if (!isUwbEnabled()) {
+            throw new IllegalStateException("Uwb is not enabled");
+        }
+        mSessionManager.deInitSession(sessionHandle);
+        return;
+    }
+
+    public /* @UwbManager.AdapterStateCallback.State */ int getAdapterState() {
+        synchronized (UwbServiceCore.this) {
+            return mState;
+        }
+    }
+
+    public synchronized void setEnabled(boolean enabled) {
+        int task = enabled ? TASK_ENABLE : TASK_DISABLE;
+
+        if (enabled && isUwbEnabled()) {
+            Log.w(TAG, "Uwb is already enabled");
+        } else if (!enabled && !isUwbEnabled()) {
+            Log.w(TAG, "Uwb is already disabled");
         }
 
+        mEnableDisableTask.execute(task);
+    }
+
+    private void sendVendorUciResponse(int gid, int oid, byte[] payload) {
+        Log.i(TAG, "onVendorUciResponseReceived");
+        if (mCallBack != null) {
+            try {
+                mCallBack.onVendorResponseReceived(gid, oid, payload);
+            } catch (RemoteException e) {
+                Log.e(TAG, "Failed to send vendor response", e);
+            }
+        }
+    }
+
+    public synchronized int sendVendorUciMessage(int gid, int oid, byte[] payload) {
+        if ((!isUwbEnabled())) {
+            Log.e(TAG, "sendRawVendor : Uwb is not enabled");
+            return UwbUciConstants.STATUS_CODE_FAILED;
+        }
+        // TODO(b/211445008): Consolidate to a single uwb thread.
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        FutureTask<Byte> sendVendorCmdTask = new FutureTask<>(
+                () -> {
+                    UwbVendorUciResponse response =
+                            mNativeUwbManager.sendRawVendorCmd(gid, oid, payload);
+                    if (response.status == UwbUciConstants.STATUS_CODE_OK) {
+                        sendVendorUciResponse(response.gid, response.oid, response.payload);
+                    }
+                    return response.status;
+                });
+        executor.submit(sendVendorCmdTask);
+        int status = UwbUciConstants.STATUS_CODE_FAILED;
+        try {
+            status = sendVendorCmdTask.get(
+                    SEND_VENDOR_CMD_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            executor.shutdownNow();
+            Log.i(TAG, "Failed to send vendor command - status : TIMEOUT");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        return status;
     }
 
     private class EnableDisableTask extends Handler {

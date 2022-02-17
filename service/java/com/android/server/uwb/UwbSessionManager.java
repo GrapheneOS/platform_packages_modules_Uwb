@@ -26,7 +26,7 @@ import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.util.Log;
 import android.util.Pair;
-import android.uwb.IUwbAdapter;
+import android.uwb.IUwbAdapter2;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.RangingChangeReason;
 import android.uwb.SessionHandle;
@@ -511,7 +511,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             int status = UwbUciConstants.STATUS_CODE_FAILED;
             try {
                 status = initSessionTask.get(
-                        IUwbAdapter.RANGING_SESSION_OPEN_THRESHOLD_MS, TimeUnit.MILLISECONDS);
+                        IUwbAdapter2.RANGING_SESSION_OPEN_THRESHOLD_MS, TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
                 executor.shutdownNow();
                 Log.i(TAG, "Failed to initialize session - status : TIMEOUT");
@@ -591,7 +591,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             int status = UwbUciConstants.STATUS_CODE_FAILED;
             try {
                 status = startRangingTask.get(
-                        IUwbAdapter.RANGING_SESSION_START_THRESHOLD_MS, TimeUnit.MILLISECONDS);
+                        IUwbAdapter2.RANGING_SESSION_START_THRESHOLD_MS, TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
                 Log.i(TAG, "Failed to Start Ranging - status : TIMEOUT");
                 executor.shutdownNow();
@@ -635,7 +635,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             int status = UwbUciConstants.STATUS_CODE_FAILED;
             try {
                 status = stopRangingTask.get(
-                        IUwbAdapter.RANGING_SESSION_START_THRESHOLD_MS, TimeUnit.MILLISECONDS);
+                        IUwbAdapter2.RANGING_SESSION_START_THRESHOLD_MS, TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
                 Log.i(TAG, "Failed to Stop Ranging - status : TIMEOUT");
                 executor.shutdownNow();
@@ -728,7 +728,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             int status = UwbUciConstants.STATUS_CODE_FAILED;
             try {
                 status = cmdTask.get(
-                        IUwbAdapter.RANGING_SESSION_OPEN_THRESHOLD_MS, TimeUnit.MILLISECONDS);
+                        IUwbAdapter2.RANGING_SESSION_OPEN_THRESHOLD_MS, TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
                 Log.i(TAG, "Failed to Reconfigure - status : TIMEOUT");
                 executor.shutdownNow();
@@ -766,7 +766,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             int status = UwbUciConstants.STATUS_CODE_FAILED;
             try {
                 status = closeTask.get(
-                        IUwbAdapter.RANGING_SESSION_CLOSE_THRESHOLD_MS, TimeUnit.MILLISECONDS);
+                        IUwbAdapter2.RANGING_SESSION_CLOSE_THRESHOLD_MS, TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
                 Log.i(TAG, "Failed to Stop Ranging - status : TIMEOUT");
                 executor.shutdownNow();
