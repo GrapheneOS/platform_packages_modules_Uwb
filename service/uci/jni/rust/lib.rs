@@ -467,7 +467,7 @@ fn do_initialize(env: JNIEnv, obj: JObject) -> Result<(), UwbErr> {
 
 fn do_deinitialize(env: JNIEnv, obj: JObject) -> Result<(), UwbErr> {
     let dispatcher = get_dispatcher(env, obj)?;
-    dispatcher.send_jni_command(JNICommand::Disable(true))?;
+    dispatcher.block_on_jni_command(JNICommand::Disable(true))?;
     dispatcher.send_jni_command(JNICommand::Exit)?;
     Ok(())
 }
