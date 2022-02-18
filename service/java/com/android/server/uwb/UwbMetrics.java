@@ -16,6 +16,7 @@
 package com.android.server.uwb;
 
 import android.util.SparseArray;
+import android.uwb.RangingMeasurement;
 
 import com.android.server.uwb.UwbSessionManager.UwbSession;
 import com.android.server.uwb.data.UwbRangingData;
@@ -42,7 +43,6 @@ public class UwbMetrics {
 
     private static final int MAX_RANGING_SESSIONS = 128;
     private static final int MAX_RANGING_REPORTS = 1024;
-    public static final int DISTANCE_FOM_DEFAULT = 100;
     public static final int INVALID_DISTANCE = 0xFFFF;
     private static final int ONE_SECOND_IN_MS = 1000;
     private static final int TEN_SECOND_IN_MS = 10 * 1000;
@@ -69,6 +69,10 @@ public class UwbMetrics {
         private int mActiveDuration;
         private int mRangingcount;
         private int mValidRangingCount;
+        private boolean mHasValidRangingSinceStart;
+        private int mStartCount;
+        private int mStartFailureCount;
+        private int mStartNoValidReportCount;
         private int mStsType = UwbStatsLog.UWB_SESSION_INITIATED__STS__UNKNOWN_STS;
         private boolean mIsInitiator;
         private boolean mIsController;
@@ -142,6 +146,9 @@ public class UwbMetrics {
                 sb.append(", activeDurationMs=").append(mActiveDuration);
                 sb.append(", rangingCount=").append(mRangingcount);
                 sb.append(", validRangingCount=").append(mValidRangingCount);
+                sb.append(", startCount").append(mStartCount);
+                sb.append(", startFailureCount").append(mStartFailureCount);
+                sb.append(", startNoValidReportCount").append(mStartNoValidReportCount);
                 sb.append(", initStatus=").append(mInitStatus);
                 sb.append(", channel=").append(mChannel);
                 sb.append(", initiator=").append(mIsInitiator);
@@ -226,14 +233,16 @@ public class UwbMetrics {
      * Log the ranging session start event
      */
     public void longRangingStartEvent(UwbSession uwbSession, int status) {
-        // add status count b/218921154
         synchronized (mLock) {
             RangingSessionStats session = mOpenedSessionMap.get(uwbSession.getSessionId());
             if (session == null) {
                 return;
             }
+            session.mStartCount++;
             if (status != UwbUciConstants.STATUS_CODE_OK) {
+                session.mStartFailureCount++;
                 session.mStartTimeMs = 0;
+                session.mHasValidRangingSinceStart = false;
                 return;
             }
             session.mStartTimeMs = mUwbInjector.getElapsedSinceBootMillis();
@@ -244,7 +253,6 @@ public class UwbMetrics {
      * Log the ranging session stop event
      */
     public void longRangingStopEvent(UwbSession uwbSession) {
-        // add status count b/218921154
         synchronized (mLock) {
             RangingSessionStats session = mOpenedSessionMap.get(uwbSession.getSessionId());
             if (session == null) {
@@ -253,6 +261,10 @@ public class UwbMetrics {
             if (session.mStartTimeMs == 0) {
                 return;
             }
+            if (!session.mHasValidRangingSinceStart) {
+                session.mStartNoValidReportCount++;
+            }
+            session.mHasValidRangingSinceStart = false;
             session.mActiveDuration += (int) (mUwbInjector.getElapsedSinceBootMillis()
                     - session.mStartTimeMs);
             session.mStartTimeMs = 0;
@@ -275,15 +287,23 @@ public class UwbMetrics {
             if (session.mStartTimeMs != 0) {
                 session.mActiveDuration += (int) (mUwbInjector.getElapsedSinceBootMillis()
                         - session.mStartTimeMs);
+                if (!session.mHasValidRangingSinceStart) {
+                    session.mStartNoValidReportCount++;
+                }
                 session.mStartTimeMs = 0;
+                session.mHasValidRangingSinceStart = false;
             }
+
             UwbStatsLog.write(UwbStatsLog.UWB_SESSION_CLOSED, uwbSession.getProfileType(),
                     session.mStsType, session.mIsInitiator,
                     session.mIsController, session.mIsDiscoveredByFramework, session.mIsOutOfBand,
                     session.mActiveDuration, getDurationBucket(session.mActiveDuration),
                     session.mRangingcount, session.mValidRangingCount,
                     getCountBucket(session.mRangingcount),
-                    getCountBucket(session.mValidRangingCount));
+                    getCountBucket(session.mValidRangingCount),
+                    session.mStartCount,
+                    session.mStartFailureCount,
+                    session.mStartNoValidReportCount);
             mOpenedSessionMap.delete(uwbSession.getSessionId());
         }
     }
@@ -357,8 +377,9 @@ public class UwbMetrics {
 
             if (session != null) {
                 session.mValidRangingCount++;
-                if (session.mValidRangingCount == 1) {
-                    writeFirstRangingStats(profileType, session);
+                if (!session.mHasValidRangingSinceStart) {
+                    session.mHasValidRangingSinceStart = true;
+                    writeFirstValidRangingResultSinceStart(profileType, session);
                 }
             }
             int distanceCm = measurement.getDistance();
@@ -389,13 +410,14 @@ public class UwbMetrics {
             int azimuth10Degree = isAzimuthValid ? azimuthDegree / 10 : 0;
             int elevation10Degree = isElevationValid ? elevationDegree / 10 : 0;
             UwbStatsLog.write(UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED, profileType, nlos,
-                    isDistanceValid, distanceCm, distance50Cm, DISTANCE_FOM_DEFAULT,
+                    isDistanceValid, distanceCm, distance50Cm, RangingMeasurement.RSSI_UNKNOWN,
                     isAzimuthValid, azimuthDegree, azimuth10Degree, azimuthFom,
                     isElevationValid, elevationDegree, elevation10Degree, elevationFom);
         }
     }
 
-    private void writeFirstRangingStats(int profileType, RangingSessionStats session) {
+    private void writeFirstValidRangingResultSinceStart(int profileType,
+            RangingSessionStats session) {
         int latencyMs = (int) (mUwbInjector.getElapsedSinceBootMillis() - session.mStartTimeMs);
         UwbStatsLog.write(UwbStatsLog.UWB_FIRST_RANGING_RECEIVED,
                 profileType, latencyMs, latencyMs / 200);
