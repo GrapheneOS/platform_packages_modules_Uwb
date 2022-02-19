@@ -34,7 +34,6 @@ import com.android.server.uwb.util.UwbUtil;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccPulseShapeCombo;
-import com.google.uwb.support.ccc.CccStartRangingParams;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -69,14 +68,6 @@ public class CccEncoderTest {
             UwbUtil.getByteArray("0001000201010401090501010904800100000E010011010103010"
                     + "11B01062301012C0100A3020100A4020000A50100A602D0020802B004140101");
 
-    private static final CccStartRangingParams.Builder TEST_CCC_START_RANGING_PARAMS =
-            new CccStartRangingParams.Builder()
-                    .setSessionId(1)
-                    .setRanMultiplier(8);
-
-    private static final byte[] TEST_CCC_START_RANGING_TLV_DATA =
-            UwbUtil.getByteArray("090400030000");
-
     private final CccEncoder mCccEncoder = new CccEncoder();
 
     @Test
@@ -89,29 +80,11 @@ public class CccEncoderTest {
     }
 
     @Test
-    public void testCccStartRangingParams() throws Exception {
-        CccStartRangingParams params = TEST_CCC_START_RANGING_PARAMS.build();
-        TlvBuffer tlvs = mCccEncoder.getTlvBuffer(params);
-
-        assertThat(tlvs.getNoOfParams()).isEqualTo(1);
-        assertThat(tlvs.getByteArray()).isEqualTo(TEST_CCC_START_RANGING_TLV_DATA);
-    }
-
-    @Test
     public void testCccOpenRangingParamsViaTlvEncoder() throws Exception {
         CccOpenRangingParams params = TEST_CCC_OPEN_RANGING_PARAMS.build();
         TlvBuffer tlvs = TlvEncoder.getEncoder(CccParams.PROTOCOL_NAME).getTlvBuffer(params);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(17);
         assertThat(tlvs.getByteArray()).isEqualTo(TEST_CCC_OPEN_RANGING_TLV_DATA);
-    }
-
-    @Test
-    public void testCccStartRangingParamsViaTlvEncoder() throws Exception {
-        CccStartRangingParams params = TEST_CCC_START_RANGING_PARAMS.build();
-        TlvBuffer tlvs = TlvEncoder.getEncoder(CccParams.PROTOCOL_NAME).getTlvBuffer(params);
-
-        assertThat(tlvs.getNoOfParams()).isEqualTo(1);
-        assertThat(tlvs.getByteArray()).isEqualTo(TEST_CCC_START_RANGING_TLV_DATA);
     }
 }

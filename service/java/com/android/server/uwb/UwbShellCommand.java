@@ -109,6 +109,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
     // These don't require root access.
     // However, these do perform permission checks in the corresponding UwbService methods.
     private static final String[] NON_PRIVILEGED_COMMANDS = {
+            "help",
             "status",
             "get-country-code",
             "enable-uwb",
