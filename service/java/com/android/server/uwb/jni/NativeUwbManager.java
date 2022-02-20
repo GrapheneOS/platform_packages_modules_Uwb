@@ -48,12 +48,7 @@ public class NativeUwbManager {
     }
 
     protected void loadLibrary() {
-        // TODO(b/197341298): Remove this when rust native stack is ready.
-        if (mUwbInjector.isUciRustStackEnabled()) {
-            System.loadLibrary("uwb_uci_jni_rust");
-        } else {
-            System.loadLibrary("uwb_uci_jni");
-        }
+        System.loadLibrary("uwb_uci_jni_rust");
         nativeInit();
     }
 
@@ -102,7 +97,7 @@ public class NativeUwbManager {
      * @return : If this returns true, UWB is on
      */
     public synchronized boolean doInitialize() {
-        if (mUwbInjector.isUciRustStackEnabled() && this.mDispatcherPointer == 0L) {
+        if (this.mDispatcherPointer == 0L) {
             this.mDispatcherPointer = nativeDispatcherNew();
         }
         return nativeDoInitialize();
@@ -115,7 +110,7 @@ public class NativeUwbManager {
      */
     public synchronized boolean doDeinitialize() {
         boolean res = nativeDoDeinitialize();
-        if (res && mUwbInjector.isUciRustStackEnabled()) {
+        if (res) {
             nativeDispatcherDestroy();
             this.mDispatcherPointer = 0L;
         }

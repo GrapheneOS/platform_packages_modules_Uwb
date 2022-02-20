@@ -2,60 +2,6 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-cc_library_shared {
-    name: "libuwb_uci_jni",
-
-    min_sdk_version: "Tiramisu",
-
-    cflags:
-     ["-DNXP_EXTNS=TRUE"]  + [
-        "-Wall",
-        "-Wextra",
-        "-Wno-unused-parameter",
-        "-Werror",
-    ],
-    srcs: ["**/*.cpp"],
-
-    include_dirs: [
-        "external/libxml2/include",
-        "frameworks/native/include",
-        "external/uwb/src/uwa/include",
-        "external/uwb/src/uwb/include",
-        "external/uwb/src/include",
-        "external/uwb/src/uci/include",
-        "external/uwb/src/gki/ulinux",
-        "external/uwb/src/gki/common",
-    ],
-
-    local_include_dirs: [
-        "rfTest",
-        "utils",
-    ],
-    shared_libs: [
-        "libbinder_ndk",
-        "liblog",
-        "libnativehelper",
-    ],
-    static_libs: [
-        "android.system.suspend-V1-ndk",
-        "android.hardware.uwb-V1-ndk",
-        "libbase",
-        "libcutils",
-        "libpower",
-        "libutils",
-        "libuwb-uci",
-        "libxml2",
-    ],
-    product_variables: {
-        debuggable: {
-            cflags: ["-DDCHECK_ALWAYS_ON"],
-        },
-    },
-    apex_available: [
-        "com.android.uwb",
-    ],
-}
-
 rust_ffi_shared {
     name: "libuwb_uci_jni_rust",
     crate_name: "uwb_uci_jni_rust",
@@ -71,22 +17,7 @@ rust_ffi_shared {
         "libuwb_uci_packets",
         "libuwb_uci_rust",
     ],
-    shared_libs: [
-        "libbinder_ndk",
-        "liblog",
-        "libnativehelper",
-    ],
     prefer_rlib: true,
-    static_libs: [
-        "android.system.suspend-V1-ndk",
-        "android.hardware.uwb-V1-ndk",
-        "libbase",
-        "libcutils",
-        "libpower",
-        "libutils",
-        "libuwb-uci",
-        "libxml2",
-    ],
     apex_available: [
         "com.android.uwb",
     ]
