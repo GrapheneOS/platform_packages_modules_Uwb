@@ -25,7 +25,6 @@ apex_defaults {
     multilib: {
         both: {
             jni_libs: [
-               "libuwb_uci_jni",
                "libuwb_uci_jni_rust",
             ],
         },
