@@ -22,6 +22,7 @@ import static com.android.server.uwb.util.UwbUtil.degreeToRadian;
 
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.validateMockitoUsage;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -174,11 +175,9 @@ public class UwbSessionNotificationManagerTest {
 
     @Test
     public void testOnRangingReconfigured() throws Exception {
-        int reason = UwbUciConstants.REASON_ERROR_INSUFFICIENT_SLOTS_PER_RR;
-        mUwbSessionNotificationManager.onRangingReconfigured(mUwbSession, reason);
+        mUwbSessionNotificationManager.onRangingReconfigured(mUwbSession);
 
-        verify(mIUwbRangingCallbacks).onRangingReconfigured(eq(mSessionHandle),
-                argThat(p -> (p.getInt("reason_code")) == reason));
+        verify(mIUwbRangingCallbacks).onRangingReconfigured(eq(mSessionHandle), any());
     }
 
     @Test
