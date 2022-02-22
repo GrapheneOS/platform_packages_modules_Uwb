@@ -102,19 +102,15 @@ public class FiraEncoder extends TlvEncoder {
                 .putByte(ConfigParam.RESULT_REPORT_CONFIG, (byte) resultReportConfig)
                 .putByte(ConfigParam.IN_BAND_TERMINATION_ATTEMPT_COUNT,
                         (byte) params.getInBandTerminationAttemptCount())
-                // TODO - Remove comment after find the reason
-                //  Currently, SetAppConfig command fail if subsession id is add
-                // .putInt(ConfigParam.SUB_SESSION_ID, params.getSubSessionId())
+                .putInt(ConfigParam.SUB_SESSION_ID, params.getSubSessionId())
                 .putByte(ConfigParam.BPRF_PHR_DATA_RATE, (byte) params.getBprfPhrDataRate())
                 .putByte(ConfigParam.STS_LENGTH, (byte) params.getStsLength())
-                /** TODO (b/205730040): This seems to be breaking qorvo's HAL (re-enable later)
-                .putShort(ConfigParam.NUM_RANGE_MEASUREMENTS,
-                        (short) params.getNumOfMsrmtFocusOnRange())
-                .putShort(ConfigParam.NUM_AOA_AZIMUTH_MEASUREMENTS,
-                        (short) params.getNumOfMsrmtFocusOnAoaAzimuth())
-                .putShort(ConfigParam.NUM_AOA_ELEVATION_MEASUREMENTS,
-                        (short) params.getNumOfMsrmtFocusOnAoaElevation())
-                 */
+                .putByte(ConfigParam.NUM_RANGE_MEASUREMENTS,
+                        (byte) params.getNumOfMsrmtFocusOnRange())
+                .putByte(ConfigParam.NUM_AOA_AZIMUTH_MEASUREMENTS,
+                        (byte) params.getNumOfMsrmtFocusOnAoaAzimuth())
+                .putByte(ConfigParam.NUM_AOA_ELEVATION_MEASUREMENTS,
+                        (byte) params.getNumOfMsrmtFocusOnAoaElevation())
                 .build();
         return tlvBuffer;
     }
