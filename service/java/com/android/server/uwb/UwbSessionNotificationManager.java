@@ -15,6 +15,7 @@
  */
 package com.android.server.uwb;
 
+import android.os.PersistableBundle;
 import android.util.Log;
 import android.uwb.AngleMeasurement;
 import android.uwb.AngleOfArrivalMeasurement;
@@ -33,10 +34,13 @@ import com.android.server.uwb.params.TlvUtil;
 import com.android.server.uwb.util.UwbUtil;
 
 import com.google.uwb.support.base.Params;
+import com.google.uwb.support.ccc.CccParams;
+import com.google.uwb.support.ccc.CccRangingReconfiguredParams;
 import com.google.uwb.support.fira.FiraParams;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class UwbSessionNotificationManager {
     private static final String TAG = "UwbSessionNotiManager";
@@ -142,14 +146,20 @@ public class UwbSessionNotificationManager {
         }
     }
 
-    public void onRangingReconfigured(UwbSession uwbSession, int reasonCode) {
+    public void onRangingReconfigured(UwbSession uwbSession) {
         Log.d(TAG, "call onRangingReconfigured");
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        PersistableBundle params;
+        if (Objects.equals(uwbSession.getProtocolName(), CccParams.PROTOCOL_NAME)) {
+            // Why are there no params defined for this bundle?
+            params = new CccRangingReconfiguredParams.Builder().build().toBundle();
+        } else {
+            // No params defined for FiRa reconfigure.
+            params = new PersistableBundle();
+        }
         try {
-            uwbRangingCallbacks.onRangingReconfigured(sessionHandle,
-                    UwbSessionNotificationHelper.convertReasonToParam(uwbSession.getProtocolName(),
-                            reasonCode));
+            uwbRangingCallbacks.onRangingReconfigured(sessionHandle, params);
             Log.i(TAG, "IUwbRangingCallbacks - onRangingReconfigured");
         } catch (Exception e) {
             Log.e(TAG, "IUwbRangingCallbacks - onRangingReconfigured : Failed");

@@ -51,7 +51,10 @@ import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.jni.NativeUwbManager;
 
 import com.google.uwb.support.base.Params;
+import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
+import com.google.uwb.support.ccc.CccPulseShapeCombo;
+import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraProtocolVersion;
@@ -301,7 +304,7 @@ public class UwbSessionManagerTest {
         doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE)
                 .when(mUwbSessionManager).getCurrentSessionState(anyInt());
 
-        mUwbSessionManager.startRanging(mock(SessionHandle.class), mock(PersistableBundle.class));
+        mUwbSessionManager.startRanging(mock(SessionHandle.class), mock(Params.class));
 
         assertThat(mTestLooper.nextMessage()).isNull();
     }
@@ -310,11 +313,13 @@ public class UwbSessionManagerTest {
     public void startRanging_currentSessionStateIdle() {
         doReturn(true).when(mUwbSessionManager).isExistedSession(any());
         doReturn(TEST_SESSION_ID).when(mUwbSessionManager).getSessionId(any());
-        doReturn(mock(UwbSession.class)).when(mUwbSessionManager).getUwbSession(anyInt());
+        UwbSession uwbSession = mock(UwbSession.class);
+        when(uwbSession.getProtocolName()).thenReturn(FiraParams.PROTOCOL_NAME);
+        doReturn(uwbSession).when(mUwbSessionManager).getUwbSession(anyInt());
         doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE)
                 .when(mUwbSessionManager).getCurrentSessionState(anyInt());
 
-        mUwbSessionManager.startRanging(mock(SessionHandle.class), mock(PersistableBundle.class));
+        mUwbSessionManager.startRanging(mock(SessionHandle.class), mock(Params.class));
 
         assertThat(mTestLooper.nextMessage().what).isEqualTo(2); // SESSION_START_RANGING
     }
@@ -329,9 +334,10 @@ public class UwbSessionManagerTest {
         doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE)
                 .when(mUwbSessionManager).getCurrentSessionState(anyInt());
 
-        mUwbSessionManager.startRanging(mock(SessionHandle.class), mock(PersistableBundle.class));
+        mUwbSessionManager.startRanging(mock(SessionHandle.class), mock(Params.class));
 
-        verify(mUwbSessionNotificationManager).onRangingStarted(any(), any());
+        verify(mUwbSessionNotificationManager).onRangingStartFailed(
+                any(), eq(UwbUciConstants.STATUS_CODE_REJECTED));
     }
 
     @Test
@@ -342,7 +348,7 @@ public class UwbSessionManagerTest {
         doReturn(UwbUciConstants.UWB_SESSION_STATE_ERROR)
                 .when(mUwbSessionManager).getCurrentSessionState(anyInt());
 
-        mUwbSessionManager.startRanging(mock(SessionHandle.class), mock(PersistableBundle.class));
+        mUwbSessionManager.startRanging(mock(SessionHandle.class), mock(Params.class));
 
         verify(mUwbSessionNotificationManager)
                 .onRangingStartFailed(any(), eq(UwbUciConstants.STATUS_CODE_FAILED));
@@ -620,6 +626,41 @@ public class UwbSessionManagerTest {
         return uwbSession;
     }
 
+    private UwbSession setUpCccUwbSessionForExecution() throws RemoteException {
+        // setup message
+        doReturn(0).when(mUwbSessionManager).getSessionCount();
+        doReturn(false).when(mUwbSessionManager).isExistedSession(anyInt());
+        IUwbRangingCallbacks mockRangingCallbacks = mock(IUwbRangingCallbacks.class);
+        SessionHandle mockSessionHandle = mock(SessionHandle.class);
+        Params params = new CccOpenRangingParams.Builder()
+                .setProtocolVersion(CccParams.PROTOCOL_VERSION_1_0)
+                .setUwbConfig(CccParams.UWB_CONFIG_0)
+                .setPulseShapeCombo(
+                        new CccPulseShapeCombo(
+                                CccParams.PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE,
+                                CccParams.PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE))
+                .setSessionId(1)
+                .setRanMultiplier(4)
+                .setChannel(CccParams.UWB_CHANNEL_9)
+                .setNumChapsPerSlot(CccParams.CHAPS_PER_SLOT_3)
+                .setNumResponderNodes(1)
+                .setNumSlotsPerRound(CccParams.SLOTS_PER_ROUND_6)
+                .setSyncCodeIndex(1)
+                .setHoppingConfigMode(CccParams.HOPPING_CONFIG_MODE_NONE)
+                .setHoppingSequence(CccParams.HOPPING_SEQUENCE_DEFAULT)
+                .build();
+        IBinder mockBinder = mock(IBinder.class);
+        UwbSession uwbSession = spy(
+                mUwbSessionManager.new UwbSession(mockSessionHandle, TEST_SESSION_ID,
+                        CccParams.PROTOCOL_NAME, params, mockRangingCallbacks));
+        doReturn(mockBinder).when(uwbSession).getBinder();
+        doReturn(uwbSession).when(mUwbSessionManager).createUwbSession(any(), anyInt(),
+                anyString(), any(), any());
+        doReturn(mock(WaitObj.class)).when(uwbSession).getWaitObj();
+
+        return uwbSession;
+    }
+
     @Test
     public void openRanging_success() throws Exception {
         UwbSession uwbSession = setUpUwbSessionForExecution();
@@ -777,6 +818,18 @@ public class UwbSessionManagerTest {
         return uwbSession;
     }
 
+    private UwbSession prepareExistingCccUwbSession() throws Exception {
+        UwbSession uwbSession = setUpCccUwbSessionForExecution();
+        mUwbSessionManager.initSession(uwbSession.getSessionHandle(),
+                TEST_SESSION_ID, CccParams.PROTOCOL_NAME,
+                uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks());
+        mTestLooper.nextMessage(); // remove the OPEN_RANGING msg;
+
+        assertThat(mTestLooper.isIdle()).isFalse();
+
+        return uwbSession;
+    }
+
     @Test
     public void startRanging_sessionStateIdle() throws Exception {
         UwbSession uwbSession = prepareExistingUwbSession();
@@ -785,7 +838,7 @@ public class UwbSessionManagerTest {
                 .when(uwbSession).getSessionState();
 
         mUwbSessionManager.startRanging(
-                uwbSession.getSessionHandle(), uwbSession.getParams().toBundle());
+                uwbSession.getSessionHandle(), uwbSession.getParams());
 
         assertThat(mTestLooper.isIdle()).isTrue();
         assertThat(mTestLooper.nextMessage().what).isEqualTo(2); // SESSION_START_RANGING
@@ -799,10 +852,11 @@ public class UwbSessionManagerTest {
                 .when(uwbSession).getSessionState();
 
         mUwbSessionManager.startRanging(
-                uwbSession.getSessionHandle(), uwbSession.getParams().toBundle());
+                uwbSession.getSessionHandle(), uwbSession.getParams());
 
         assertThat(mTestLooper.isIdle()).isFalse();
-        verify(mUwbSessionNotificationManager).onRangingStarted(eq(uwbSession), any());
+        verify(mUwbSessionNotificationManager).onRangingStartFailed(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_REJECTED));
     }
 
     @Test
@@ -813,7 +867,7 @@ public class UwbSessionManagerTest {
                 .when(uwbSession).getSessionState();
 
         mUwbSessionManager.startRanging(
-                uwbSession.getSessionHandle(), uwbSession.getParams().toBundle());
+                uwbSession.getSessionHandle(), uwbSession.getParams());
 
         assertThat(mTestLooper.isIdle()).isFalse();
         verify(mUwbSessionNotificationManager).onRangingStartFailed(
@@ -832,12 +886,33 @@ public class UwbSessionManagerTest {
                 .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
 
         mUwbSessionManager.startRanging(
-                uwbSession.getSessionHandle(), uwbSession.getParams().toBundle());
+                uwbSession.getSessionHandle(), uwbSession.getParams());
         mTestLooper.dispatchAll();
 
         verify(mUwbSessionNotificationManager).onRangingStarted(eq(uwbSession), any());
         verify(mUwbMetrics).longRangingStartEvent(
                 eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
+    }
+
+    @Test
+    public void execStartCccRanging_success() throws Exception {
+        UwbSession uwbSession = prepareExistingCccUwbSession();
+        // set up for start ranging
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE, UwbUciConstants.UWB_SESSION_STATE_ACTIVE)
+                .when(uwbSession).getSessionState();
+        when(mNativeUwbManager.startRanging(eq(TEST_SESSION_ID)))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+        CccStartRangingParams cccStartRangingParams = new CccStartRangingParams.Builder()
+                .setSessionId(TEST_SESSION_ID)
+                .setRanMultiplier(8)
+                .build();
+        mUwbSessionManager.startRanging(
+                uwbSession.getSessionHandle(), cccStartRangingParams);
+        mTestLooper.dispatchAll();
+
+        // Verify the update logic.
+        CccOpenRangingParams cccOpenRangingParams = (CccOpenRangingParams) uwbSession.getParams();
+        assertThat(cccOpenRangingParams.getRanMultiplier()).isEqualTo(8);
     }
 
     @Test
@@ -850,7 +925,7 @@ public class UwbSessionManagerTest {
                 .thenThrow(new IllegalStateException());
 
         mUwbSessionManager.startRanging(
-                uwbSession.getSessionHandle(), uwbSession.getParams().toBundle());
+                uwbSession.getSessionHandle(), uwbSession.getParams());
         mTestLooper.dispatchAll();
 
         verify(mUwbMetrics).longRangingStartEvent(
@@ -867,7 +942,7 @@ public class UwbSessionManagerTest {
                 .thenReturn((byte) UwbUciConstants.STATUS_CODE_FAILED);
 
         mUwbSessionManager.startRanging(
-                uwbSession.getSessionHandle(), uwbSession.getParams().toBundle());
+                uwbSession.getSessionHandle(), uwbSession.getParams());
         mTestLooper.dispatchAll();
 
         verify(mUwbSessionNotificationManager).onRangingStartFailed(
@@ -886,7 +961,7 @@ public class UwbSessionManagerTest {
                 .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
 
         mUwbSessionManager.startRanging(
-                uwbSession.getSessionHandle(), uwbSession.getParams().toBundle());
+                uwbSession.getSessionHandle(), uwbSession.getParams());
         mTestLooper.dispatchAll();
 
         verify(mUwbSessionNotificationManager).onRangingStartFailed(
@@ -1029,9 +1104,7 @@ public class UwbSessionManagerTest {
         mUwbSessionManager.reconfigure(uwbSession.getSessionHandle(), reconfigureParams.toBundle());
         mTestLooper.dispatchNext();
 
-        verify(mUwbSessionNotificationManager).onRangingReconfigured(
-                eq(uwbSession),
-                eq(UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS));
+        verify(mUwbSessionNotificationManager).onRangingReconfigured(eq(uwbSession));
     }
 
     @Test

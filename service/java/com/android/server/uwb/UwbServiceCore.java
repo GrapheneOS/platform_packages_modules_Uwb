@@ -43,9 +43,11 @@ import com.android.server.uwb.data.UwbVendorUciResponse;
 import com.android.server.uwb.jni.INativeUwbManager;
 import com.android.server.uwb.jni.NativeUwbManager;
 
+import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccSpecificationParams;
+import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
@@ -261,10 +263,14 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             if (firaSpecificationParams.first == UwbUciConstants.STATUS_CODE_OK
                     || cccSpecificationParams.first == UwbUciConstants.STATUS_CODE_OK) {
                 mUwbSpecificationInfo.clear();
-                mUwbSpecificationInfo.putPersistableBundle(
-                        FiraParams.PROTOCOL_NAME, firaSpecificationParams.second.toBundle());
-                mUwbSpecificationInfo.putPersistableBundle(
-                        CccParams.PROTOCOL_NAME, cccSpecificationParams.second.toBundle());
+                if (firaSpecificationParams.first == UwbUciConstants.STATUS_CODE_OK) {
+                    mUwbSpecificationInfo.putPersistableBundle(
+                            FiraParams.PROTOCOL_NAME, firaSpecificationParams.second.toBundle());
+                }
+                if (cccSpecificationParams.first == UwbUciConstants.STATUS_CODE_OK) {
+                    mUwbSpecificationInfo.putPersistableBundle(
+                            CccParams.PROTOCOL_NAME, cccSpecificationParams.second.toBundle());
+                }
             } else {
                 Log.w(TAG, "Sending default FIRA specification params");
                 // TODO(b/216104681): Send a default set of params since the vendors have not yet
@@ -325,12 +331,16 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         }
 
         @Override
-        public void startRanging(SessionHandle sessionHandle, PersistableBundle parameters)
+        public void startRanging(SessionHandle sessionHandle, PersistableBundle params)
                 throws RemoteException {
             if (!isUwbEnabled()) {
                 throw new RemoteException("Uwb is not enabled");
             }
-            mSessionManager.startRanging(sessionHandle, parameters);
+            Params  startRangingParams = null;
+            if (CccParams.isCorrectProtocol(params)) {
+                startRangingParams = CccStartRangingParams.fromBundle(params);
+            }
+            mSessionManager.startRanging(sessionHandle, startRangingParams);
             return;
         }
 
