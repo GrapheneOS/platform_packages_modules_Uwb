@@ -52,7 +52,6 @@ import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
 
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -271,17 +270,6 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                     mUwbSpecificationInfo.putPersistableBundle(
                             CccParams.PROTOCOL_NAME, cccSpecificationParams.second.toBundle());
                 }
-            } else {
-                Log.w(TAG, "Sending default FIRA specification params");
-                // TODO(b/216104681): Send a default set of params since the vendors have not yet
-                //  added support for this query. The channel list here is specific to US, this
-                //  needs to be removed before T release.
-                mUwbSpecificationInfo.clear();
-                mUwbSpecificationInfo.putPersistableBundle(
-                        FiraParams.PROTOCOL_NAME, new FiraSpecificationParams.Builder()
-                                .setSupportedChannels(List.of(5))
-                                .build()
-                                .toBundle());
             }
         }
 
