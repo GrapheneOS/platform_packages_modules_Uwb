@@ -135,7 +135,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     .setDeviceAddress(UwbAddress.fromBytes(new byte[] { 0x4, 0x6}))
                     .setDestAddressList(Arrays.asList(UwbAddress.fromBytes(new byte[] { 0x4, 0x6})))
                     .setMultiNodeMode(MULTI_NODE_MODE_UNICAST)
-                    .setRangingRoundUsage(RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE)
+                    .setRangingRoundUsage(RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE)
                     .setVendorId(new byte[]{0x5, 0x78})
                     .setStaticStsIV(new byte[]{0x1a, 0x55, 0x77, 0x47, 0x7e, 0x7d});
 
