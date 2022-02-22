@@ -17,6 +17,7 @@ package com.android.server.uwb;
 
 import static com.android.server.uwb.data.UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS;
 
+import android.annotation.Nullable;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -33,7 +34,6 @@ import android.uwb.UwbAddress;
 
 import androidx.annotation.VisibleForTesting;
 
-import com.android.server.uwb.data.UwbCccConstants;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbRangingData;
 import com.android.server.uwb.data.UwbUciConstants;
@@ -44,8 +44,10 @@ import com.android.server.uwb.proto.UwbStatsLog;
 import com.android.server.uwb.util.ArrayUtils;
 
 import com.google.uwb.support.base.Params;
+import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccRangingStartedParams;
+import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 
@@ -241,8 +243,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         return;
     }
 
-    public synchronized void startRanging(SessionHandle sessionHandle,
-            PersistableBundle parameters) {
+    public synchronized void startRanging(SessionHandle sessionHandle, @Nullable Params params) {
         if (!isExistedSession(sessionHandle)) {
             Log.i(TAG, "Not initialized session ID");
             return;
@@ -255,23 +256,18 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
         int currentSessionState = getCurrentSessionState(sessionId);
         if (currentSessionState == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
+            if (uwbSession.getProtocolName().equals(CccParams.PROTOCOL_NAME)) {
+                CccStartRangingParams rangingStartParams = (CccStartRangingParams) params;
+                Log.i(TAG, "startRanging() - update RAN multiplier: "
+                        + rangingStartParams.getRanMultiplier());
+                // Need to update the RAN multiplier from the CccStartRangingParams for CCC session.
+                uwbSession.updateCccParamsOnStart(rangingStartParams);
+            }
             mEventTask.execute(SESSION_START_RANGING, uwbSession);
         } else if (currentSessionState == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
             Log.i(TAG, "session is already ranging");
-            // TODO: Ensure |rangingStartedParams| is valid for FIRA sessions as well.
-            Params rangingStartedParams = uwbSession.getParams();
-            if (uwbSession.getProtocolName().equals(CccParams.PROTOCOL_NAME)) {
-                rangingStartedParams = new CccRangingStartedParams.Builder()
-                        .setHopModeKey(parameters.getInt(UwbCccConstants.KEY_HOP_MODE_KEY))
-                        .setStartingStsIndex(
-                                parameters.getInt(UwbCccConstants.KEY_STARTING_STS_INDEX))
-                        .setSyncCodeIndex(parameters.getInt(UwbCccConstants.KEY_SYNC_CODE_INDEX))
-                        .setUwbTime0(parameters.getLong(UwbCccConstants.KEY_UWB_TIME_0))
-                        .setRanMultiplier(parameters.getInt(UwbCccConstants.KEY_RAN_MULTIPLIER))
-                        .build();
-            }
-            mSessionNotificationManager.onRangingStarted(
-                    uwbSession, rangingStartedParams);
+            mSessionNotificationManager.onRangingStartFailed(
+                    uwbSession, UwbUciConstants.STATUS_CODE_REJECTED);
         } else {
             Log.i(TAG, "session can't start ranging");
             mSessionNotificationManager.onRangingStartFailed(
@@ -723,8 +719,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                             if (status != UwbUciConstants.STATUS_CODE_OK) {
                                 return status;
                             }
-                            mSessionNotificationManager.onRangingReconfigured(uwbSession,
-                                    REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS);
+                            mSessionNotificationManager.onRangingReconfigured(uwbSession);
                             return status;
                         }
                     });
@@ -827,8 +822,25 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             return this.mParams;
         }
 
-        public void setParams(Params params) {
-            this.mParams = params;
+        public void updateCccParamsOnStart(CccStartRangingParams rangingStartParams) {
+            // Need to update the RAN multiplier from the CccStartRangingParams for CCC session.
+            CccOpenRangingParams rangingOpenedParams = (CccOpenRangingParams) mParams;
+            CccOpenRangingParams newParams =
+                    new CccOpenRangingParams.Builder()
+                            .setProtocolVersion(rangingOpenedParams.getProtocolVersion())
+                            .setUwbConfig(rangingOpenedParams.getUwbConfig())
+                            .setPulseShapeCombo(rangingOpenedParams.getPulseShapeCombo())
+                            .setSessionId(rangingOpenedParams.getSessionId())
+                            .setRanMultiplier(rangingStartParams.getRanMultiplier())
+                            .setChannel(rangingOpenedParams.getChannel())
+                            .setNumChapsPerSlot(rangingOpenedParams.getNumChapsPerSlot())
+                            .setNumResponderNodes(rangingOpenedParams.getNumResponderNodes())
+                            .setNumSlotsPerRound(rangingOpenedParams.getNumSlotsPerRound())
+                            .setSyncCodeIndex(rangingOpenedParams.getSyncCodeIndex())
+                            .setHoppingConfigMode(rangingOpenedParams.getHoppingConfigMode())
+                            .setHoppingSequence(rangingOpenedParams.getHoppingSequence())
+                            .build();
+            this.mParams = newParams;
         }
 
         public String getProtocolName() {

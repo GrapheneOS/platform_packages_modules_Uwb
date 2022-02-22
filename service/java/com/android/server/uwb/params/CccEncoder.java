@@ -23,7 +23,6 @@ import com.android.server.uwb.data.UwbUciConstants;
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
-import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.fira.FiraParams;
 
 public class CccEncoder extends TlvEncoder {
@@ -32,11 +31,6 @@ public class CccEncoder extends TlvEncoder {
         if (param instanceof CccOpenRangingParams) {
             return getTlvBufferFromCccOpenRangingParams(param);
         }
-
-        if (param instanceof CccStartRangingParams) {
-            return getTlvBufferFromCccStartRangingParams(param);
-        }
-
         return null;
     }
 
@@ -103,16 +97,4 @@ public class CccEncoder extends TlvEncoder {
 
         return tlvBuffer;
     }
-
-    private TlvBuffer getTlvBufferFromCccStartRangingParams(Params baseParam) {
-        CccStartRangingParams params = (CccStartRangingParams) baseParam;
-
-        TlvBuffer tlvBuffer = new TlvBuffer.Builder()
-                .putInt(ConfigParam.RANGING_INTERVAL,
-                        params.getRanMultiplier() * 96) //RANGING_INTERVAL = RAN_Multiplier * 96
-                .build();
-
-        return tlvBuffer;
-    }
-
 }
