@@ -165,13 +165,6 @@ public class UwbInjector {
     }
 
     /**
-     * @return Returns whether the UCI rust stack is enabled or not (Enabled by default).
-     */
-    public boolean isUciRustStackEnabled() {
-        return SystemProperties.getBoolean("persist.uwb.enable_uci_rust_stack", true);
-    }
-
-    /**
      * Throws security exception if the UWB_RANGING permission is not granted for the calling app.
      *
      * <p>Should be used in situations where the app op should not be noted.

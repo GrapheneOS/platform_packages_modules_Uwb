@@ -74,6 +74,7 @@ import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccPulseShapeCombo;
 import com.google.uwb.support.ccc.CccSpecificationParams;
+import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
@@ -376,10 +377,14 @@ public class UwbServiceCoreTest {
         enableUwb();
 
         SessionHandle sessionHandle = mock(SessionHandle.class);
-        PersistableBundle params = mock(PersistableBundle.class);
-        mUwbServiceCore.getIUwbAdapter().startRanging(sessionHandle, params);
+        CccStartRangingParams params = new CccStartRangingParams.Builder()
+                .setRanMultiplier(6)
+                .setSessionId(1)
+                .build();
+        mUwbServiceCore.getIUwbAdapter().startRanging(sessionHandle, params.toBundle());
 
-        verify(mUwbSessionManager).startRanging(sessionHandle, params);
+        verify(mUwbSessionManager).startRanging(eq(sessionHandle),
+                argThat(p -> ((CccStartRangingParams) p).getSessionId() == params.getSessionId()));
     }
 
     @Test
