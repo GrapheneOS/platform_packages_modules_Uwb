@@ -19,6 +19,7 @@ package android.uwb.cts;
 import static android.Manifest.permission.UWB_PRIVILEGED;
 import static android.Manifest.permission.UWB_RANGING;
 import static android.uwb.UwbManager.AdapterStateCallback.STATE_DISABLED;
+import static android.uwb.UwbManager.AdapterStateCallback.STATE_ENABLED_ACTIVE;
 import static android.uwb.UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -461,42 +462,52 @@ public class UwbManagerTest {
     }
 
     private class RangingSessionCallback implements RangingSession.Callback {
-        private CountDownLatch mCountDownLatch;
+        private CountDownLatch mCtrlCountDownLatch;
+        private CountDownLatch mResultCountDownLatch;
 
         public boolean onOpenedCalled;
         public boolean onOpenFailedCalled;
         public boolean onStartedCalled;
         public boolean onStartFailedCalled;
+        public boolean onClosedCalled;
         public RangingSession rangingSession;
         public RangingReport rangingReport;
 
-        RangingSessionCallback(@NonNull CountDownLatch countDownLatch) {
-            mCountDownLatch = countDownLatch;
+        RangingSessionCallback(
+                @NonNull CountDownLatch ctrlCountDownLatch) {
+            this(ctrlCountDownLatch, null /* resultCountDownLaynch */);
         }
 
-        public void replaceCountDownLatch(@NonNull CountDownLatch countDownLatch) {
-            mCountDownLatch = countDownLatch;
+        RangingSessionCallback(
+                @NonNull CountDownLatch ctrlCountDownLatch,
+                @Nullable CountDownLatch resultCountDownLatch) {
+            mCtrlCountDownLatch = ctrlCountDownLatch;
+            mResultCountDownLatch = resultCountDownLatch;
+        }
+
+        public void replaceCtrlCountDownLatch(@NonNull CountDownLatch countDownLatch) {
+            mCtrlCountDownLatch = countDownLatch;
         }
 
         public void onOpened(@NonNull RangingSession session) {
             onOpenedCalled = true;
             rangingSession = session;
-            mCountDownLatch.countDown();
+            mCtrlCountDownLatch.countDown();
         }
 
         public void onOpenFailed(@Reason int reason, @NonNull PersistableBundle params) {
             onOpenFailedCalled = true;
-            mCountDownLatch.countDown();
+            mCtrlCountDownLatch.countDown();
         }
 
         public void onStarted(@NonNull PersistableBundle sessionInfo) {
             onStartedCalled = true;
-            mCountDownLatch.countDown();
+            mCtrlCountDownLatch.countDown();
         }
 
         public void onStartFailed(@Reason int reason, @NonNull PersistableBundle params) {
             onStartFailedCalled = true;
-            mCountDownLatch.countDown();
+            mCtrlCountDownLatch.countDown();
         }
 
         public void onReconfigured(@NonNull PersistableBundle params) { }
@@ -507,11 +518,16 @@ public class UwbManagerTest {
 
         public void onStopFailed(@Reason int reason, @NonNull PersistableBundle params) { }
 
-        public void onClosed(@Reason int reason, @NonNull PersistableBundle parameters) { }
+        public void onClosed(@Reason int reason, @NonNull PersistableBundle parameters) {
+            onClosedCalled = true;
+            mCtrlCountDownLatch.countDown();
+        }
 
         public void onReportReceived(@NonNull RangingReport rangingReport) {
-            this.rangingReport = rangingReport;
-            mCountDownLatch.countDown();
+            if (mResultCountDownLatch != null) {
+                this.rangingReport = rangingReport;
+                mResultCountDownLatch.countDown();
+            }
         }
     }
 
@@ -757,7 +773,9 @@ public class UwbManagerTest {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         CancellationSignal cancellationSignal = null;
         CountDownLatch countDownLatch = new CountDownLatch(1);
-        RangingSessionCallback rangingSessionCallback = new RangingSessionCallback(countDownLatch);
+        CountDownLatch resultCountDownLatch = new CountDownLatch(1);
+        RangingSessionCallback rangingSessionCallback =
+                new RangingSessionCallback(countDownLatch, resultCountDownLatch);
         FiraOpenSessionParams firaOpenSessionParams = new FiraOpenSessionParams.Builder()
                 .setProtocolVersion(new FiraProtocolVersion(1, 1))
                 .setSessionId(1)
@@ -786,21 +804,33 @@ public class UwbManagerTest {
             assertThat(rangingSessionCallback.rangingSession).isNotNull();
 
             countDownLatch = new CountDownLatch(1);
-            rangingSessionCallback.replaceCountDownLatch(countDownLatch);
+            rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
             rangingSessionCallback.rangingSession.start(new PersistableBundle());
             // Wait for the on started callback.
             assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
             assertThat(rangingSessionCallback.onStartedCalled).isTrue();
             assertThat(rangingSessionCallback.onStartFailedCalled).isFalse();
 
-            countDownLatch = new CountDownLatch(1);
-            rangingSessionCallback.replaceCountDownLatch(countDownLatch);
             // Wait for the on ranging report callback.
-            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(resultCountDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
             assertThat(rangingSessionCallback.rangingReport).isNotNull();
+
+            // Check the UWB state.
+            assertThat(mUwbManager.getAdapterState()).isEqualTo(STATE_ENABLED_ACTIVE);
+
+            // Stop ongoing session.
+            rangingSessionCallback.rangingSession.stop();
         } finally {
             if (cancellationSignal != null) {
+                countDownLatch = new CountDownLatch(1);
+                rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+
+                // Close session.
                 cancellationSignal.cancel();
+
+                // Wait for the on closed callback.
+                assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+                assertThat(rangingSessionCallback.onClosedCalled).isTrue();
             }
             uiAutomation.dropShellPermissionIdentity();
         }
