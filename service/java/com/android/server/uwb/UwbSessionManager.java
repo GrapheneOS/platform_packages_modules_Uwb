@@ -39,7 +39,6 @@ import com.android.server.uwb.data.UwbRangingData;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.jni.INativeUwbManager;
 import com.android.server.uwb.jni.NativeUwbManager;
-import com.android.server.uwb.params.TlvUtil;
 import com.android.server.uwb.proto.UwbStatsLog;
 import com.android.server.uwb.util.ArrayUtils;
 
@@ -669,9 +668,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                 List<Short> dstAddressList = new ArrayList<>();
                                 for (UwbAddress address :
                                         rangingReconfigureParams.getAddressList()) {
-                                    dstAddressList.add(ByteBuffer.wrap(
-                                            TlvUtil.getReverseBytes(address.toBytes()))
-                                            .getShort(0));
+                                    dstAddressList.add(
+                                            ByteBuffer.wrap(address.toBytes()).getShort(0));
                                 }
                                 int[] subSessionIdList = null;
                                 if (!ArrayUtils.isEmpty(
