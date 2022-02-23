@@ -57,10 +57,11 @@ filegroup {
 java_defaults {
     name: "framework-uwb-defaults",
     defaults: ["uwb-module-sdk-version-defaults"],
-    static_libs : [],
+    static_libs : [
+        "modules-utils-preconditions",
+    ],
     libs: [
         "unsupportedappusage", // for android.compat.annotation.UnsupportedAppUsage
-        "modules-utils-preconditions",
     ],
     srcs: [
         ":framework-uwb-updatable-sources",
