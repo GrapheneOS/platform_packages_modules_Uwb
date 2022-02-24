@@ -123,7 +123,7 @@ public class UwbInjector {
             UwbConfigurationManager uwbConfigurationManager =
                     new UwbConfigurationManager(mNativeUwbManager);
             UwbSessionNotificationManager uwbSessionNotificationManager =
-                    new UwbSessionNotificationManager();
+                    new UwbSessionNotificationManager(this);
             UwbSessionManager uwbSessionManager =
                     new UwbSessionManager(uwbConfigurationManager, mNativeUwbManager, mUwbMetrics,
                             uwbSessionNotificationManager, mLooper);
@@ -243,6 +243,15 @@ public class UwbInjector {
      */
     public long getElapsedSinceBootMillis() {
         return SystemClock.elapsedRealtime();
+    }
+
+    /**
+     * Returns nanoseconds since boot, including time spent in sleep.
+     *
+     * @return Current time since boot in milliseconds.
+     */
+    public long getElapsedSinceBootNanos() {
+        return SystemClock.elapsedRealtimeNanos();
     }
 
     /**

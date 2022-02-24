@@ -81,7 +81,9 @@ public class UwbSessionNotificationManagerTest {
     private static final float TEST_AOA_DEST_ELEVATION = 37;
     private static final int TEST_AOA_DEST_ELEVATION_FOM = 90;
     private static final int TEST_SLOT_IDX = 10;
+    private static final long TEST_ELAPSED_NANOS = 100L;
 
+    @Mock private UwbInjector mUwbInjector;
     @Mock private UwbSessionManager.UwbSession mUwbSession;
     @Mock private SessionHandle mSessionHandle;
     @Mock private IUwbRangingCallbacks mIUwbRangingCallbacks;
@@ -97,7 +99,8 @@ public class UwbSessionNotificationManagerTest {
         when(mUwbSession.getIUwbRangingCallbacks()).thenReturn(mIUwbRangingCallbacks);
         when(mUwbSession.getProtocolName()).thenReturn(FiraParams.PROTOCOL_NAME);
         when(mUwbSession.getParams()).thenReturn(mFiraParams);
-        mUwbSessionNotificationManager = new UwbSessionNotificationManager();
+        when(mUwbInjector.getElapsedSinceBootNanos()).thenReturn(TEST_ELAPSED_NANOS);
+        mUwbSessionNotificationManager = new UwbSessionNotificationManager(mUwbInjector);
     }
 
     /**
@@ -235,7 +238,7 @@ public class UwbSessionNotificationManagerTest {
                 .setRemoteDeviceAddress(UwbAddress.fromBytes(
                         TlvUtil.getReverseBytes(TEST_MAC_ADDRESS)))
                 .setStatus(TEST_STATUS)
-                .setElapsedRealtimeNanos(0)
+                .setElapsedRealtimeNanos(TEST_ELAPSED_NANOS)
                 .setDistanceMeasurement(
                         new DistanceMeasurement.Builder()
                                 .setMeters(TEST_DISTANCE / (double) 100)
