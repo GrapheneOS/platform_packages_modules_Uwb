@@ -223,23 +223,15 @@ public class FiraDecoder extends TlvDecoder {
         byte bprfSets = tlvs.getByte(SUPPORTED_BPRF_PARAMETER_SETS);
         int bprfSetsValue = Integer.valueOf(bprfSets);
         EnumSet<BprfParameterSetCapabilityFlag> bprfFlag;
-        if (bprfSetsValue == 0) {
-            bprfFlag = EnumSet.noneOf(BprfParameterSetCapabilityFlag.class);
-        } else {
-            bprfFlag = FlagEnum.toEnumSet(bprfSetsValue, BprfParameterSetCapabilityFlag.values());
-        }
+        bprfFlag = FlagEnum.toEnumSet(bprfSetsValue, BprfParameterSetCapabilityFlag.values());
         builder.setBprfParameterSetCapabilities(bprfFlag);
 
         byte[] hprfSets = tlvs.getByteArray(SUPPORTED_HPRF_PARAMETER_SETS);
         // Extend the 5 bytes from HAL to 8 bytes for long.
         long hprfSetsValue = new BigInteger(hprfSets).longValue();
         EnumSet<HprfParameterSetCapabilityFlag> hprfFlag;
-        if (hprfSetsValue == 0) {
-            hprfFlag = EnumSet.noneOf(HprfParameterSetCapabilityFlag.class);
-        } else {
-            hprfFlag = FlagEnum.longToEnumSet(
-                    hprfSetsValue, HprfParameterSetCapabilityFlag.values());
-        }
+        hprfFlag = FlagEnum.longToEnumSet(
+                hprfSetsValue, HprfParameterSetCapabilityFlag.values());
         builder.setHprfParameterSetCapabilities(hprfFlag);
 
         EnumSet<FiraParams.PrfCapabilityFlag> prfFlag =
