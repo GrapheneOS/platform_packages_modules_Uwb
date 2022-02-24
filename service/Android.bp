@@ -69,6 +69,7 @@ java_library {
         "com.uwb.support.multichip",
         "modules-utils-shell-command-handler",
         "modules-utils-handlerexecutor",
+        "modules-utils-preconditions",
         "guava",
     ],
 
