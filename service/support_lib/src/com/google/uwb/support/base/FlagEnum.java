@@ -39,13 +39,21 @@ public interface FlagEnum {
     }
 
     static <E extends Enum<E> & FlagEnum> EnumSet<E> toEnumSet(int flags, E[] values) {
+        if (values.length == 0) {
+            throw new IllegalArgumentException("Empty FlagEnum");
+        }
         List<E> flagList = new ArrayList<>();
         for (E value : values) {
             if ((flags & Math.toIntExact(value.getValue())) != 0) {
                 flagList.add(value);
             }
         }
-        return EnumSet.copyOf(flagList);
+        if (flagList.isEmpty()) {
+            Class<E> c = values[0].getDeclaringClass();
+            return EnumSet.noneOf(c);
+        } else {
+            return EnumSet.copyOf(flagList);
+        }
     }
 
     static <E extends Enum<E> & FlagEnum> long toLong(Set<E> enumSet) {
@@ -57,12 +65,20 @@ public interface FlagEnum {
     }
 
     static <E extends Enum<E> & FlagEnum> EnumSet<E> longToEnumSet(long flags, E[] values) {
+        if (values.length == 0) {
+            throw new IllegalArgumentException("Empty FlagEnum");
+        }
         List<E> flagList = new ArrayList<>();
         for (E value : values) {
             if ((flags & value.getValue()) != 0) {
                 flagList.add(value);
             }
         }
-        return EnumSet.copyOf(flagList);
+        if (flagList.isEmpty()) {
+            Class<E> c = values[0].getDeclaringClass();
+            return EnumSet.noneOf(c);
+        } else {
+            return EnumSet.copyOf(flagList);
+        }
     }
 }
