@@ -65,6 +65,7 @@ public class UwbManagerTest {
     private static final Executor EXECUTOR = UwbTestUtils.getExecutor();
     private static final String CHIP_ID = "CHIP_ID";
     private static final PersistableBundle PARAMS = new PersistableBundle();
+    private static final PersistableBundle PARAMS2 = new PersistableBundle();
     private static final byte[] PAYLOAD = new byte[] {0x0, 0x1};
     private static final int GID = 9;
     private static final int OID = 1;
@@ -73,6 +74,7 @@ public class UwbManagerTest {
     private static final AttributionSource ATTRIBUTION_SOURCE =
             new AttributionSource.Builder(UID).setPackageName(PACKAGE_NAME).build();
     private static final long TIME_NANOS = 1001;
+    private static final long TIME_NANOS2 = 1002;
 
     private UwbManager mUwbManager;
 
@@ -112,12 +114,16 @@ public class UwbManagerTest {
         // Get SpecificationInfo
         when(mIUwbAdapter.getSpecificationInfo(/*chipId=*/ null)).thenReturn(PARAMS);
         assertThat(mUwbManager.getSpecificationInfo()).isEqualTo(PARAMS);
+        when(mIUwbAdapter.getSpecificationInfo(CHIP_ID)).thenReturn(PARAMS2);
+        assertThat(mUwbManager.getSpecificationInfo(CHIP_ID)).isEqualTo(PARAMS2);
         doThrow(new RemoteException()).when(mIUwbAdapter).getSpecificationInfo(/*chipId=*/ null);
         assertThrows(RuntimeException.class, () -> mUwbManager.getSpecificationInfo());
 
         // Get elapsedRealtimeResolutionNanos
         when(mIUwbAdapter.getTimestampResolutionNanos(/*chipId=*/ null)).thenReturn(TIME_NANOS);
         assertThat(mUwbManager.elapsedRealtimeResolutionNanos()).isEqualTo(TIME_NANOS);
+        when(mIUwbAdapter.getTimestampResolutionNanos(CHIP_ID)).thenReturn(TIME_NANOS2);
+        assertThat(mUwbManager.elapsedRealtimeResolutionNanos(CHIP_ID)).isEqualTo(TIME_NANOS2);
         doThrow(new RemoteException())
                 .when(mIUwbAdapter)
                 .getTimestampResolutionNanos(/*chipId=*/ null);
@@ -134,6 +140,8 @@ public class UwbManagerTest {
         assertThat(mUwbManager.isUwbEnabled()).isTrue();
         when(mIUwbAdapter.getAdapterState()).thenReturn(AdapterState.STATE_DISABLED);
         assertThat(mUwbManager.isUwbEnabled()).isFalse();
+        doThrow(new RemoteException()).when(mIUwbAdapter).getAdapterState();
+        assertThrows(RuntimeException.class, () -> mUwbManager.isUwbEnabled());
 
         // getChipInfos
         when(mIUwbAdapter.getChipInfos()).thenReturn(List.of(PARAMS));
@@ -169,8 +177,13 @@ public class UwbManagerTest {
 
     @Test
     public void testOpenRangingSession() throws Exception {
-        // Chip id not on valid list
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        // null chip id
+        mUwbManager.openRangingSession(PARAMS, EXECUTOR, callback);
+        verify(mIUwbAdapter, times(1))
+                .openRanging(eq(ATTRIBUTION_SOURCE), any(), any(), eq(PARAMS), eq(null));
+
+        // Chip id not on valid list
         assertThrows(
                 IllegalArgumentException.class,
                 () -> mUwbManager.openRangingSession(PARAMS, EXECUTOR, callback, CHIP_ID));
