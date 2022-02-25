@@ -15,6 +15,7 @@
  */
 package com.android.server.uwb;
 
+import android.annotation.NonNull;
 import android.os.PersistableBundle;
 import android.util.Log;
 import android.uwb.AngleMeasurement;
@@ -44,15 +45,19 @@ import java.util.Objects;
 
 public class UwbSessionNotificationManager {
     private static final String TAG = "UwbSessionNotiManager";
+    private final UwbInjector mUwbInjector;
 
-    public UwbSessionNotificationManager() {
+    public UwbSessionNotificationManager(@NonNull UwbInjector uwbInjector) {
+        mUwbInjector = uwbInjector;
     }
 
     public void onRangingResult(UwbSession uwbSession, UwbRangingData rangingData) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
         try {
-            uwbRangingCallbacks.onRangingResult(sessionHandle, getRangingReport(rangingData));
+            uwbRangingCallbacks.onRangingResult(
+                    sessionHandle,
+                    getRangingReport(rangingData, mUwbInjector.getElapsedSinceBootNanos()));
             Log.i(TAG, "IUwbRangingCallbacks - onRangingResult");
         } catch (Exception e) {
             Log.e(TAG, "IUwbRangingCallbacks - onRangingResult : Failed");
@@ -197,7 +202,8 @@ public class UwbSessionNotificationManager {
         }
     }
 
-    private static RangingReport getRangingReport(UwbRangingData rangingData) {
+    private static RangingReport getRangingReport(
+            @NonNull UwbRangingData rangingData, long elapsedRealtimeNanos) {
         if (rangingData.getRangingMeasuresType()
                 != UwbUciConstants.RANGING_MEASUREMENT_TYPE_TWO_WAY) {
             return null;
@@ -208,8 +214,6 @@ public class UwbSessionNotificationManager {
             UwbAddress macAddress = UwbAddress.fromBytes(TlvUtil.getReverseBytes(
                     uwbTwoWayMeasurement[i].getMacAddress()));
             int rangingStatus = uwbTwoWayMeasurement[i].getRangingStatus();
-            // TODO(b/186727830): Retrieve this.
-            long elapsedRealtimeNanos = 0;
             DistanceMeasurement distanceMeasurement = null;
             AngleOfArrivalMeasurement angleOfArrivalMeasurement = null;
             AngleOfArrivalMeasurement destinationAngleOfArrivalMeasurement = null;

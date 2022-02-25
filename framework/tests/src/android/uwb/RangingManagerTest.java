@@ -20,7 +20,9 @@ import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -41,7 +43,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 
 /**
- * Test of {@link AdapterStateListener}.
+ * Test of {@link RangingManager}.
  */
 @SmallTest
 @RunWith(AndroidJUnit4.class)
@@ -50,8 +52,8 @@ public class RangingManagerTest {
     private static final Executor EXECUTOR = UwbTestUtils.getExecutor();
     private static final PersistableBundle PARAMS = new PersistableBundle();
     private static final @RangingChangeReason int REASON = RangingChangeReason.UNKNOWN;
-    private static final UwbAddress ADDRESS = UwbAddress.fromBytes(new byte[]{0x0, 0x1});
-    private static final byte[] DATA = new byte[]{0x0, 0x1};
+    private static final UwbAddress ADDRESS = UwbAddress.fromBytes(new byte[] {0x0, 0x1});
+    private static final byte[] DATA = new byte[] {0x0, 0x1};
     private static final int UID = 343453;
     private static final String PACKAGE_NAME = "com.uwb.test";
     private static final AttributionSource ATTRIBUTION_SOURCE =
@@ -65,8 +67,8 @@ public class RangingManagerTest {
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         rangingManager.openSession(
                 ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback, /* chipIds= */ null);
-        verify(adapter, times(1)).openRanging(
-                eq(ATTRIBUTION_SOURCE), any(), any(), any(), eq(/* chipId= */ null));
+        verify(adapter, times(1))
+                .openRanging(eq(ATTRIBUTION_SOURCE), any(), any(), any(), eq(/* chipId= */ null));
     }
 
     @Test
@@ -75,10 +77,25 @@ public class RangingManagerTest {
         when(adapter.getChipIds()).thenReturn(List.of(VALID_CHIP_ID));
         RangingManager rangingManager = new RangingManager(adapter);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
-        rangingManager.openSession(
-                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback, VALID_CHIP_ID);
-        verify(adapter, times(1)).openRanging(
-                eq(ATTRIBUTION_SOURCE), any(), any(), any(), eq(VALID_CHIP_ID));
+        rangingManager.openSession(ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback, VALID_CHIP_ID);
+        verify(adapter, times(1))
+                .openRanging(eq(ATTRIBUTION_SOURCE), any(), any(), any(), eq(VALID_CHIP_ID));
+    }
+
+    @Test
+    public void testOpenSession_validChipId_RuntimeException() throws RemoteException {
+        IUwbAdapter2 adapter = mock(IUwbAdapter2.class);
+        doThrow(new RemoteException())
+                .when(adapter)
+                .openRanging(eq(ATTRIBUTION_SOURCE), any(), any(), any(), eq(VALID_CHIP_ID));
+        Mockito.when(adapter.getChipIds()).thenReturn(List.of(VALID_CHIP_ID));
+        RangingManager rangingManager = new RangingManager(adapter);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        assertThrows(
+                RuntimeException.class,
+                () ->
+                        rangingManager.openSession(
+                                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback, VALID_CHIP_ID));
     }
 
     @Test
@@ -88,8 +105,11 @@ public class RangingManagerTest {
         Mockito.when(adapter.getChipIds()).thenReturn(List.of(VALID_CHIP_ID));
         RangingManager rangingManager = new RangingManager(adapter);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
-        assertThrows(IllegalArgumentException.class, () -> rangingManager.openSession(
-                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback, invalidChipId));
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        rangingManager.openSession(
+                                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback, invalidChipId));
         verify(adapter, times(0))
                 .openRanging(eq(ATTRIBUTION_SOURCE), any(), any(), any(), eq(invalidChipId));
     }
@@ -115,16 +135,24 @@ public class RangingManagerTest {
         RangingManager rangingManager = new RangingManager(adapter);
         rangingManager.openSession(
                 ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback1, /* chipIds= */ null);
-        verify(adapter, times(1)).openRanging(
-                eq(ATTRIBUTION_SOURCE), sessionHandleCaptor.capture(), any(), any(),
-                eq(/* chipId= */ null));
+        verify(adapter, times(1))
+                .openRanging(
+                        eq(ATTRIBUTION_SOURCE),
+                        sessionHandleCaptor.capture(),
+                        any(),
+                        any(),
+                        eq(/* chipId= */ null));
         SessionHandle sessionHandle1 = sessionHandleCaptor.getValue();
 
         rangingManager.openSession(
                 ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback2, /* chipIds= */ null);
-        verify(adapter, times(2)).openRanging(
-                eq(ATTRIBUTION_SOURCE), sessionHandleCaptor.capture(), any(), any(),
-                eq(/* chipId= */ null));
+        verify(adapter, times(2))
+                .openRanging(
+                        eq(ATTRIBUTION_SOURCE),
+                        sessionHandleCaptor.capture(),
+                        any(),
+                        any(),
+                        eq(/* chipId= */ null));
         SessionHandle sessionHandle2 = sessionHandleCaptor.getValue();
 
         rangingManager.onRangingOpened(sessionHandle1);
@@ -147,9 +175,13 @@ public class RangingManagerTest {
 
         rangingManager.openSession(
                 ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback, /* chipIds= */ null);
-        verify(adapter, times(1)).openRanging(
-                eq(ATTRIBUTION_SOURCE), sessionHandleCaptor.capture(), any(), any(),
-                eq(/* chipId= */ null));
+        verify(adapter, times(1))
+                .openRanging(
+                        eq(ATTRIBUTION_SOURCE),
+                        sessionHandleCaptor.capture(),
+                        any(),
+                        any(),
+                        eq(/* chipId= */ null));
         SessionHandle handle = sessionHandleCaptor.getValue();
 
         rangingManager.onRangingOpened(handle);
@@ -181,37 +213,136 @@ public class RangingManagerTest {
         verify(callback, times(1)).onControleeAdded(eq(PARAMS));
 
         rangingManager.onControleeAddFailed(handle, REASON, PARAMS);
-        verify(callback, times(1)).onControleeAddFailed(
-                eq(REASON), eq(PARAMS));
+        verify(callback, times(1)).onControleeAddFailed(eq(REASON), eq(PARAMS));
 
         rangingManager.onControleeRemoved(handle, PARAMS);
         verify(callback, times(1)).onControleeRemoved(eq(PARAMS));
 
         rangingManager.onControleeRemoveFailed(handle, REASON, PARAMS);
-        verify(callback, times(1)).onControleeRemoveFailed(
-                eq(REASON), eq(PARAMS));
+        verify(callback, times(1)).onControleeRemoveFailed(eq(REASON), eq(PARAMS));
+
+        rangingManager.onRangingSuspended(handle, PARAMS);
+        verify(callback, times(1)).onSuspended(eq(PARAMS));
+
+        rangingManager.onRangingSuspendFailed(handle, REASON, PARAMS);
+        verify(callback, times(1)).onSuspendFailed(eq(REASON), eq(PARAMS));
+
+        rangingManager.onRangingResumed(handle, PARAMS);
+        verify(callback, times(1)).onResumed(eq(PARAMS));
+
+        rangingManager.onRangingResumeFailed(handle, REASON, PARAMS);
+        verify(callback, times(1)).onResumeFailed(eq(REASON), eq(PARAMS));
 
         rangingManager.onDataSent(handle, ADDRESS, PARAMS);
-        verify(callback, times(1)).onDataSent(
-                eq(ADDRESS), eq(PARAMS));
+        verify(callback, times(1)).onDataSent(eq(ADDRESS), eq(PARAMS));
 
         rangingManager.onDataSendFailed(handle, ADDRESS, REASON, PARAMS);
-        verify(callback, times(1)).onDataSendFailed(
-                eq(ADDRESS), eq(REASON), eq(PARAMS));
+        verify(callback, times(1)).onDataSendFailed(eq(ADDRESS), eq(REASON), eq(PARAMS));
 
         rangingManager.onDataReceived(handle, ADDRESS, PARAMS, DATA);
-        verify(callback, times(1)).onDataReceived(
-                eq(ADDRESS), eq(PARAMS), eq(DATA));
+        verify(callback, times(1)).onDataReceived(eq(ADDRESS), eq(PARAMS), eq(DATA));
 
         rangingManager.onDataReceiveFailed(handle, ADDRESS, REASON, PARAMS);
-        verify(callback, times(1)).onDataReceiveFailed(
-                eq(ADDRESS), eq(REASON), eq(PARAMS));
+        verify(callback, times(1)).onDataReceiveFailed(eq(ADDRESS), eq(REASON), eq(PARAMS));
 
         rangingManager.onServiceDiscovered(handle, PARAMS);
         verify(callback, times(1)).onServiceDiscovered(eq(PARAMS));
 
         rangingManager.onServiceConnected(handle, PARAMS);
         verify(callback, times(1)).onServiceConnected(eq(PARAMS));
+
+        rangingManager.onRangingClosed(handle, REASON, PARAMS);
+        verify(callback, times(1)).onClosed(eq(REASON), eq(PARAMS));
+    }
+
+    @Test
+    public void testNoCallbackInvoked_sessionClosed() throws RemoteException {
+        IUwbAdapter2 adapter = mock(IUwbAdapter2.class);
+        RangingManager rangingManager = new RangingManager(adapter);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+
+        ArgumentCaptor<SessionHandle> sessionHandleCaptor =
+                ArgumentCaptor.forClass(SessionHandle.class);
+
+        rangingManager.openSession(
+                ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback, /* chipIds= */ null);
+        verify(adapter, times(1))
+                .openRanging(
+                        eq(ATTRIBUTION_SOURCE),
+                        sessionHandleCaptor.capture(),
+                        any(),
+                        any(),
+                        eq(/* chipId= */ null));
+        SessionHandle handle = sessionHandleCaptor.getValue();
+        rangingManager.onRangingClosed(handle, REASON, PARAMS);
+        verify(callback, times(1)).onClosed(eq(REASON), eq(PARAMS));
+
+        rangingManager.onRangingOpened(handle);
+        verify(callback, never()).onOpened(any());
+
+        rangingManager.onRangingStarted(handle, PARAMS);
+        verify(callback, never()).onStarted(eq(PARAMS));
+
+        rangingManager.onRangingStartFailed(handle, REASON, PARAMS);
+        verify(callback, never()).onStartFailed(eq(REASON), eq(PARAMS));
+
+        RangingReport report = UwbTestUtils.getRangingReports(1);
+        rangingManager.onRangingResult(handle, report);
+        verify(callback, never()).onReportReceived(eq(report));
+
+        rangingManager.onRangingReconfigured(handle, PARAMS);
+        verify(callback, never()).onReconfigured(eq(PARAMS));
+
+        rangingManager.onRangingReconfigureFailed(handle, REASON, PARAMS);
+        verify(callback, never()).onReconfigureFailed(eq(REASON), eq(PARAMS));
+
+        rangingManager.onRangingStopped(handle, REASON, PARAMS);
+        verify(callback, never()).onStopped(eq(REASON), eq(PARAMS));
+
+        rangingManager.onRangingStopFailed(handle, REASON, PARAMS);
+        verify(callback, never()).onStopFailed(eq(REASON), eq(PARAMS));
+
+        rangingManager.onControleeAdded(handle, PARAMS);
+        verify(callback, never()).onControleeAdded(eq(PARAMS));
+
+        rangingManager.onControleeAddFailed(handle, REASON, PARAMS);
+        verify(callback, never()).onControleeAddFailed(eq(REASON), eq(PARAMS));
+
+        rangingManager.onControleeRemoved(handle, PARAMS);
+        verify(callback, never()).onControleeRemoved(eq(PARAMS));
+
+        rangingManager.onControleeRemoveFailed(handle, REASON, PARAMS);
+        verify(callback, never()).onControleeRemoveFailed(eq(REASON), eq(PARAMS));
+
+        rangingManager.onRangingSuspended(handle, PARAMS);
+        verify(callback, never()).onSuspended(eq(PARAMS));
+
+        rangingManager.onRangingSuspendFailed(handle, REASON, PARAMS);
+        verify(callback, never()).onSuspendFailed(eq(REASON), eq(PARAMS));
+
+        rangingManager.onRangingResumed(handle, PARAMS);
+        verify(callback, never()).onResumed(eq(PARAMS));
+
+        rangingManager.onRangingResumeFailed(handle, REASON, PARAMS);
+        verify(callback, never()).onResumeFailed(eq(REASON), eq(PARAMS));
+
+        rangingManager.onDataSent(handle, ADDRESS, PARAMS);
+        verify(callback, never()).onDataSent(eq(ADDRESS), eq(PARAMS));
+
+        rangingManager.onDataSendFailed(handle, ADDRESS, REASON, PARAMS);
+        verify(callback, never()).onDataSendFailed(eq(ADDRESS), eq(REASON), eq(PARAMS));
+
+        rangingManager.onDataReceived(handle, ADDRESS, PARAMS, DATA);
+        verify(callback, never()).onDataReceived(eq(ADDRESS), eq(PARAMS), eq(DATA));
+
+        rangingManager.onDataReceiveFailed(handle, ADDRESS, REASON, PARAMS);
+        verify(callback, never()).onDataReceiveFailed(eq(ADDRESS), eq(REASON), eq(PARAMS));
+
+        rangingManager.onServiceDiscovered(handle, PARAMS);
+        verify(callback, never()).onServiceDiscovered(eq(PARAMS));
+
+        rangingManager.onServiceConnected(handle, PARAMS);
+        verify(callback, never()).onServiceConnected(eq(PARAMS));
 
         rangingManager.onRangingClosed(handle, REASON, PARAMS);
         verify(callback, times(1)).onClosed(eq(REASON), eq(PARAMS));
@@ -231,16 +362,24 @@ public class RangingManagerTest {
 
         rangingManager.openSession(
                 ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback1, /* chipIds= */ null);
-        verify(adapter, times(1)).openRanging(
-                eq(ATTRIBUTION_SOURCE), sessionHandleCaptor.capture(), any(), any(),
-                eq(/* chipId= */ null));
+        verify(adapter, times(1))
+                .openRanging(
+                        eq(ATTRIBUTION_SOURCE),
+                        sessionHandleCaptor.capture(),
+                        any(),
+                        any(),
+                        eq(/* chipId= */ null));
         SessionHandle sessionHandle1 = sessionHandleCaptor.getValue();
 
         rangingManager.openSession(
                 ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback2, /* chipIds= */ null);
-        verify(adapter, times(2)).openRanging(
-                eq(ATTRIBUTION_SOURCE), sessionHandleCaptor.capture(), any(), any(),
-                eq(/* chipId= */ null));
+        verify(adapter, times(2))
+                .openRanging(
+                        eq(ATTRIBUTION_SOURCE),
+                        sessionHandleCaptor.capture(),
+                        any(),
+                        any(),
+                        eq(/* chipId= */ null));
         SessionHandle sessionHandle2 = sessionHandleCaptor.getValue();
 
         rangingManager.onRangingClosed(sessionHandle1, REASON, PARAMS);
@@ -264,17 +403,25 @@ public class RangingManagerTest {
         RangingManager rangingManager = new RangingManager(adapter);
         rangingManager.openSession(
                 ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback1, /* chipIds= */ null);
-        verify(adapter, times(1)).openRanging(
-                eq(ATTRIBUTION_SOURCE), sessionHandleCaptor.capture(), any(), any(),
-                eq(/* chipId= */ null));
+        verify(adapter, times(1))
+                .openRanging(
+                        eq(ATTRIBUTION_SOURCE),
+                        sessionHandleCaptor.capture(),
+                        any(),
+                        any(),
+                        eq(/* chipId= */ null));
         SessionHandle sessionHandle1 = sessionHandleCaptor.getValue();
 
         rangingManager.onRangingStarted(sessionHandle1, PARAMS);
         rangingManager.openSession(
                 ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback2, /* chipIds= */ null);
-        verify(adapter, times(2)).openRanging(
-                eq(ATTRIBUTION_SOURCE), sessionHandleCaptor.capture(), any(), any(),
-                eq(/* chipId= */ null));
+        verify(adapter, times(2))
+                .openRanging(
+                        eq(ATTRIBUTION_SOURCE),
+                        sessionHandleCaptor.capture(),
+                        any(),
+                        any(),
+                        eq(/* chipId= */ null));
         SessionHandle sessionHandle2 = sessionHandleCaptor.getValue();
         rangingManager.onRangingStarted(sessionHandle2, PARAMS);
 
@@ -289,30 +436,30 @@ public class RangingManagerTest {
 
     @Test
     public void testReasons() throws RemoteException {
-        runReason(RangingChangeReason.LOCAL_API,
-                RangingSession.Callback.REASON_LOCAL_REQUEST);
+        runReason(RangingChangeReason.LOCAL_API, RangingSession.Callback.REASON_LOCAL_REQUEST);
 
-        runReason(RangingChangeReason.MAX_SESSIONS_REACHED,
+        runReason(
+                RangingChangeReason.MAX_SESSIONS_REACHED,
                 RangingSession.Callback.REASON_MAX_SESSIONS_REACHED);
 
-        runReason(RangingChangeReason.PROTOCOL_SPECIFIC,
+        runReason(
+                RangingChangeReason.PROTOCOL_SPECIFIC,
                 RangingSession.Callback.REASON_PROTOCOL_SPECIFIC_ERROR);
 
-        runReason(RangingChangeReason.REMOTE_REQUEST,
-                RangingSession.Callback.REASON_REMOTE_REQUEST);
+        runReason(
+                RangingChangeReason.REMOTE_REQUEST, RangingSession.Callback.REASON_REMOTE_REQUEST);
 
-        runReason(RangingChangeReason.SYSTEM_POLICY,
-                RangingSession.Callback.REASON_SYSTEM_POLICY);
+        runReason(RangingChangeReason.SYSTEM_POLICY, RangingSession.Callback.REASON_SYSTEM_POLICY);
 
-        runReason(RangingChangeReason.BAD_PARAMETERS,
-                RangingSession.Callback.REASON_BAD_PARAMETERS);
+        runReason(
+                RangingChangeReason.BAD_PARAMETERS, RangingSession.Callback.REASON_BAD_PARAMETERS);
 
-        runReason(RangingChangeReason.UNKNOWN,
-                RangingSession.Callback.REASON_UNKNOWN);
+        runReason(RangingChangeReason.UNKNOWN, RangingSession.Callback.REASON_UNKNOWN);
     }
 
-    private void runReason(@RangingChangeReason int reasonIn,
-            @RangingSession.Callback.Reason int reasonOut) throws RemoteException {
+    private void runReason(
+            @RangingChangeReason int reasonIn, @RangingSession.Callback.Reason int reasonOut)
+            throws RemoteException {
         IUwbAdapter2 adapter = mock(IUwbAdapter2.class);
         RangingManager rangingManager = new RangingManager(adapter);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
@@ -322,9 +469,13 @@ public class RangingManagerTest {
 
         rangingManager.openSession(
                 ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback, /* chipIds= */ null);
-        verify(adapter, times(1)).openRanging(
-                eq(ATTRIBUTION_SOURCE), sessionHandleCaptor.capture(), any(), any(),
-                eq(/* chipId= */ null));
+        verify(adapter, times(1))
+                .openRanging(
+                        eq(ATTRIBUTION_SOURCE),
+                        sessionHandleCaptor.capture(),
+                        any(),
+                        any(),
+                        eq(/* chipId= */ null));
         SessionHandle handle = sessionHandleCaptor.getValue();
 
         rangingManager.onRangingOpenFailed(handle, reasonIn, PARAMS);
@@ -333,9 +484,13 @@ public class RangingManagerTest {
         // Open a new session
         rangingManager.openSession(
                 ATTRIBUTION_SOURCE, PARAMS, EXECUTOR, callback, /* chipIds= */ null);
-        verify(adapter, times(2)).openRanging(
-                eq(ATTRIBUTION_SOURCE), sessionHandleCaptor.capture(), any(), any(),
-                eq(/* chipId= */ null));
+        verify(adapter, times(2))
+                .openRanging(
+                        eq(ATTRIBUTION_SOURCE),
+                        sessionHandleCaptor.capture(),
+                        any(),
+                        any(),
+                        eq(/* chipId= */ null));
         handle = sessionHandleCaptor.getValue();
         rangingManager.onRangingOpened(handle);
 
