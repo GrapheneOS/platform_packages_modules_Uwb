@@ -50,7 +50,7 @@ import java.util.concurrent.Executor;
  * <p>To get a {@link UwbManager}, call the <code>Context.getSystemService(UwbManager.class)</code>.
  *
  * <p> Note: This API surface uses opaque {@link PersistableBundle} params. These params are to be
- * created using the Google provided support library. The support library is present in this
+ * created using the provided UWB support library. The support library is present in this
  * location on AOSP: <code>packages/modules/Uwb/service/support_lib/</code>
  *
  * @hide
@@ -182,17 +182,17 @@ public final class UwbManager {
         /**
          * Indicates that the OID provided was not valid.
          */
-        public static final int REASON_INVALID_OID = 0;
+        public static final int REASON_INVALID_OID = 1;
 
         /**
          * Indicates that there was some SE (secure element) failure while provisioning.
          */
-        public static final int REASON_SE_FAILURE = 1;
+        public static final int REASON_SE_FAILURE = 2;
 
         /**
          * No known reason for the failure.
          */
-        public static final int REASON_UNKNOWN = 2;
+        public static final int REASON_UNKNOWN = 3;
 
         /**
          * Invoked when {@link UwbManager#provisionProfileAdfByScript(PersistableBundle, Executor,
