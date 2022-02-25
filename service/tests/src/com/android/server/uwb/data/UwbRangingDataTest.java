@@ -30,6 +30,9 @@ import com.google.uwb.support.fira.FiraParams;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.Arrays;
+
 /**
  * Unit tests for {@link com.android.server.uwb.data.UwbRangingData}.
  */
@@ -81,5 +84,18 @@ public class UwbRangingDataTest {
         assertThat(mUwbRangingData.getRangingMeasuresType()).isEqualTo(TEST_RANGING_MEASURES_TYPE);
         assertThat(mUwbRangingData.getMacAddressMode()).isEqualTo(TEST_MAC_ADDRESS_MODE);
         assertThat(mUwbRangingData.getNoOfRangingMeasures()).isEqualTo(1);
+
+        final String testString = "UwbRangingData { "
+                + " SeqCounter = " + TEST_SEQ_COUNTER
+                + ", SessionId = " + TEST_SESSION_ID
+                + ", RcrIndication = " + TEST_RCR_INDICATION
+                + ", CurrRangingInterval = " + TEST_CURR_RANGING_INTERVAL
+                + ", RangingMeasuresType = " + TEST_RANGING_MEASURES_TYPE
+                + ", MacAddressMode = " + TEST_MAC_ADDRESS_MODE
+                + ", NoOfRangingMeasures = " + noOfRangingMeasures
+                + ", RangingTwoWayMeasures = " + Arrays.toString(uwbTwoWayMeasurements)
+                + '}';
+
+        assertThat(mUwbRangingData.toString()).isEqualTo(testString);
     }
 }
