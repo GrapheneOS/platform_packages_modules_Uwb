@@ -281,9 +281,9 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         public void onControleeRemoveFailed(SessionHandle sessionHandle, int reason,
                 PersistableBundle params) {}
 
-        public void onRangingSuspended(SessionHandle sessionHandle, PersistableBundle params) {}
+        public void onRangingPaused(SessionHandle sessionHandle, PersistableBundle params) {}
 
-        public void onRangingSuspendFailed(SessionHandle sessionHandle, int reason,
+        public void onRangingPauseFailed(SessionHandle sessionHandle, int reason,
                 PersistableBundle params) {}
 
         public void onRangingResumed(SessionHandle sessionHandle, PersistableBundle params) {}

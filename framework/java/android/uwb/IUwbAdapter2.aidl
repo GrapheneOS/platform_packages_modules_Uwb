@@ -31,19 +31,11 @@ import android.uwb.IUwbVendorUciCallback;
  * Temporary AIDL interface name for the interface between UwbManager & UwbService.
  * The existing IUwbAdapter interface is kept behind for providing backwards
  * compatibility with the old UWB architecture.
- * TODO(b/211025367): Remove all the duplicate javadocs here.
  */
 interface IUwbAdapter2 {
-  /*
-   * Register the callbacks used to notify the framework of events and data
-   *
-   * The provided callback's IUwbAdapterStateCallbacks#onAdapterStateChanged
-   * function must be called immediately following registration with the current
-   * state of the UWB adapter.
-   *
-   * @param callbacks callback to provide range and status updates to the framework
-   */
   void registerAdapterStateCallbacks(in IUwbAdapterStateCallbacks adapterStateCallbacks);
+
+  void unregisterAdapterStateCallbacks(in IUwbAdapterStateCallbacks callbacks);
 
    /*
     * Register the callbacks used to notify the framework of events and data
@@ -64,238 +56,40 @@ interface IUwbAdapter2 {
     */
    void unregisterVendorExtensionCallback(in IUwbVendorUciCallback callbacks);
 
-   /*
-   * Unregister the callbacks used to notify the framework of events and data
-   *
-   * Calling this function with an unregistered callback is a no-op
-   *
-   * @param callbacks callback to unregister
-   */
-  void unregisterAdapterStateCallbacks(in IUwbAdapterStateCallbacks callbacks);
 
-  /**
-   * Get the accuracy of the ranging timestamps
-   *
-   * @param chipId identifier of UWB chip for multi-HAL devices
-   *
-   * @return accuracy of the ranging timestamps in nanoseconds
-   */
   long getTimestampResolutionNanos(in String chipId);
 
-  /**
-   * Provides the capabilities and features of the device
-   *
-   * @param chipId identifier of UWB chip for multi-HAL devices
-   *
-   * @return specification specific capabilities and features of the device
-   */
   PersistableBundle getSpecificationInfo(in String chipId);
 
-  /**
-   * Request to open a new ranging session
-   *
-   * This function does not start the ranging session, but all necessary
-   * components must be initialized and ready to start a new ranging
-   * session prior to calling IUwbAdapterCallback#onRangingOpened.
-   *
-   * IUwbAdapterCallbacks#onRangingOpened must be called within
-   * RANGING_SESSION_OPEN_THRESHOLD_MS milliseconds of #openRanging being
-   * called if the ranging session is opened successfully.
-   *
-   * IUwbAdapterCallbacks#onRangingOpenFailed must be called within
-   * RANGING_SESSION_OPEN_THRESHOLD_MS milliseconds of #openRanging being called
-   * if the ranging session fails to be opened.
-   *
-   * If the provided sessionHandle is already open for the calling client, then
-   * #onRangingOpenFailed must be called and the new session must not be opened.
-   *
-   * @param attributionSource AttributionSource to use for permission enforcement.
-   * @param sessionHandle the session handle to open ranging for
-   * @param rangingCallbacks the callbacks used to deliver ranging information
-   * @param parameters the configuration to use for ranging
-   * @param chipId identifier of UWB chip for multi-HAL devices
-   */
   void openRanging(in AttributionSource attributionSource,
                    in SessionHandle sessionHandle,
                    in IUwbRangingCallbacks2 rangingCallbacks,
                    in PersistableBundle parameters,
                    in String chipId);
 
-  /**
-   * Request to start ranging
-   *
-   * IUwbAdapterCallbacks#onRangingStarted must be called within
-   * RANGING_SESSION_START_THRESHOLD_MS milliseconds of #startRanging being
-   * called if the ranging session starts successfully.
-   *
-   * IUwbAdapterCallbacks#onRangingStartFailed must be called within
-   * RANGING_SESSION_START_THRESHOLD_MS milliseconds of #startRanging being
-   * called if the ranging session fails to be started.
-   *
-   * @param sessionHandle the session handle to start ranging for
-   * @param parameters additional configuration required to start ranging
-   */
   void startRanging(in SessionHandle sessionHandle,
                     in PersistableBundle parameters);
 
-  /**
-   * Request to reconfigure ranging
-   *
-   * IUwbAdapterCallbacks#onRangingReconfigured must be called after
-   * successfully reconfiguring the session.
-   *
-   * IUwbAdapterCallbacks#onRangingReconfigureFailed must be called after
-   * failing to reconfigure the session.
-   *
-   * A session must not be modified by a failed call to #reconfigureRanging.
-   *
-   * @param sessionHandle the session handle to start ranging for
-   * @param parameters the parameters to reconfigure and their new values
-   */
   void reconfigureRanging(in SessionHandle sessionHandle,
                           in PersistableBundle parameters);
 
-  /**
-   * Request to stop ranging
-   *
-   * IUwbAdapterCallbacks#onRangingStopped must be called after
-   * successfully stopping the session.
-   *
-   * IUwbAdapterCallbacks#onRangingStopFailed must be called after failing
-   * to stop the session.
-   *
-   * @param sessionHandle the session handle to stop ranging for
-   */
   void stopRanging(in SessionHandle sessionHandle);
 
-  /**
-   * Close ranging for the session associated with the given handle
-   *
-   * Calling with an invalid handle or a handle that has already been closed
-   * is a no-op.
-   *
-   * IUwbAdapterCallbacks#onRangingClosed must be called within
-   * RANGING_SESSION_CLOSE_THRESHOLD_MS of #closeRanging being called.
-   *
-   * @param sessionHandle the session handle to close ranging for
-   */
   void closeRanging(in SessionHandle sessionHandle);
 
-  /**
-   * Add a new controlee to an ongoing session.
-   * <p>This call may be made when the session is open.
-   *
-   * <p>On successfully adding a new controlee to the session
-   * {@link RangingSession.Callback#onControleeAdded(PersistableBundle)} is invoked.
-   *
-   * <p>On failure to add a new controlee to the session,
-   * {@link RangingSession.Callback#onControleeAddFailed(int, PersistableBundle)}is invoked.
-   *
-   * @param sessionHandle the session handle to close ranging for
-   * @param params the parameters for the new controlee.
-   */
   void addControlee(in SessionHandle sessionHandle, in PersistableBundle params);
 
-  /**
-   * Remove an existing controlee from an ongoing session.
-   * <p>This call may be made when the session is open.
-   *
-   * <p>On successfully removing an existing controlee from the session
-   * {@link RangingSession.Callback#onControleeRemoved(PersistableBundle)} is invoked.
-   *
-   * <p>On failure to remove an existing controlee from the session,
-   * {@link RangingSession.Callback#onControleeRemoveFailed(int, PersistableBundle)}is invoked.
-   *
-   * @param sessionHandle the session handle to close ranging for
-   * @param params the parameters for the existing controlee.
-   */
   void removeControlee(in SessionHandle sessionHandle, in PersistableBundle params);
 
-  /**
-   * Suspends an ongoing ranging session.
-   *
-   * <p>A session that has been suspended may be resumed by calling
-   * {@link RangingSession#resume(PersistableBundle)} without the need to open a new session.
-   *
-   * <p>Suspending a {@link RangingSession} is useful when the lower layers should skip a few
-   * ranging rounds for a session without stopping it.
-   *
-   * <p>If the {@link RangingSession} is no longer needed, use {@link RangingSession#stop()} or
-   * {@link RangingSession#close()} to completely close the session.
-   *
-   * <p>On successfully suspending the session,
-   * {@link RangingSession.Callback#onSuspended(PersistableBundle)} is invoked.
-   *
-   * <p>On failure to suspend the session,
-   * {@link RangingSession.Callback#onSuspendFailed(int, PersistableBundle)} is invoked.
-   *
-   * @param sessionHandle the session handle to close ranging for
-   * @param params protocol specific parameters for suspending the session.
-   */
-  void suspend(in SessionHandle sessionHandle, in PersistableBundle params);
+  void pause(in SessionHandle sessionHandle, in PersistableBundle params);
 
-  /**
-   * Resumes a suspended ranging session.
-   *
-   * <p>A session that has been previously suspended using
-   * {@link RangingSession#suspend(PersistableBundle)} can be resumed by calling
-   * {@link RangingSession#resume(PersistableBundle)}.
-   *
-   * <p>On successfully resuming the session,
-   * {@link RangingSession.Callback#onResumed(PersistableBundle)} is invoked.
-   *
-   * <p>On failure to suspend the session,
-   * {@link RangingSession.Callback#onResumeFailed(int, PersistableBundle)} is invoked.
-   *
-   * @param sessionHandle the session handle to close ranging for
-   * @param params protocol specific parameters the resuming the session.
-   */
   void resume(in SessionHandle sessionHandle, in PersistableBundle params);
 
-  /**
-   * Send data to a remote device which is part of this ongoing session.
-   * The data is sent by piggybacking the provided data over RRM (initiator -> responder) or
-   * RIM (responder -> initiator).
-   * <p>This is only functional on a FIRA 2.0 compliant device.
-   *
-   * <p>On successfully sending the data,
-   * {@link RangingSession.Callback#onDataSent(UwbAddress, PersistableBundle)} is invoked.
-   *
-   * <p>On failure to send the data,
-   * {@link RangingSession.Callback#onDataSendFailed(UwbAddress, int, PersistableBundle)} is
-   * invoked.
-   *
-   * @param sessionHandle the session handle to close ranging for
-   * @param remoteDeviceAddress remote device's address.
-   * @param params protocol specific parameters the sending the data.
-   * @param data Raw data to be sent.
-   */
   void sendData(in SessionHandle sessionHandle, in UwbAddress remoteDeviceAddress,
           in PersistableBundle params, in byte[] data);
 
-  /**
-   * Disables or enables UWB for a user
-   *
-   * The provided callback's IUwbAdapterStateCallbacks#onAdapterStateChanged
-   * function must be called immediately following state change.
-   *
-   * @param enabled value representing intent to disable or enable UWB. If
-   * true, any subsequent calls to #openRanging will be allowed. If false,
-   * all active ranging sessions will be closed and subsequent calls to
-   * #openRanging will be disallowed.
-   */
   void setEnabled(boolean enabled);
 
-  /**
-   * Returns the current enabled/disabled UWB state.
-   *
-   * Possible values are:
-   * IUwbAdapterState#STATE_DISABLED
-   * IUwbAdapterState#STATE_ENABLED_ACTIVE
-   * IUwbAdapterState#STATE_ENABLED_INACTIVE
-   *
-   * @return value representing enabled/disabled UWB state.
-   */
   int getAdapterState();
 
   /**
@@ -317,16 +111,6 @@ interface IUwbAdapter2 {
 
   List<String> getChipIds();
 
-  /**
-   * Returns the default UWB chip identifier.
-   *
-   * If callers do not pass a specific {@code chipId} to UWB methods, then the method will be
-   * invoked on the default chip, which is determined at system initialization from a configuration
-   * file.
-   *
-   * @return default UWB chip identifier for a multi-HAL system, or the identifier of the only UWB
-   * chip in a single HAL system.
-   */
   String getDefaultChipId();
 
   PersistableBundle addServiceProfile(in PersistableBundle parameters);
