@@ -221,11 +221,11 @@ public class RangingManagerTest {
         rangingManager.onControleeRemoveFailed(handle, REASON, PARAMS);
         verify(callback, times(1)).onControleeRemoveFailed(eq(REASON), eq(PARAMS));
 
-        rangingManager.onRangingSuspended(handle, PARAMS);
-        verify(callback, times(1)).onSuspended(eq(PARAMS));
+        rangingManager.onRangingPaused(handle, PARAMS);
+        verify(callback, times(1)).onPaused(eq(PARAMS));
 
-        rangingManager.onRangingSuspendFailed(handle, REASON, PARAMS);
-        verify(callback, times(1)).onSuspendFailed(eq(REASON), eq(PARAMS));
+        rangingManager.onRangingPauseFailed(handle, REASON, PARAMS);
+        verify(callback, times(1)).onPauseFailed(eq(REASON), eq(PARAMS));
 
         rangingManager.onRangingResumed(handle, PARAMS);
         verify(callback, times(1)).onResumed(eq(PARAMS));
@@ -314,11 +314,11 @@ public class RangingManagerTest {
         rangingManager.onControleeRemoveFailed(handle, REASON, PARAMS);
         verify(callback, never()).onControleeRemoveFailed(eq(REASON), eq(PARAMS));
 
-        rangingManager.onRangingSuspended(handle, PARAMS);
-        verify(callback, never()).onSuspended(eq(PARAMS));
+        rangingManager.onRangingPaused(handle, PARAMS);
+        verify(callback, never()).onPaused(eq(PARAMS));
 
-        rangingManager.onRangingSuspendFailed(handle, REASON, PARAMS);
-        verify(callback, never()).onSuspendFailed(eq(REASON), eq(PARAMS));
+        rangingManager.onRangingPauseFailed(handle, REASON, PARAMS);
+        verify(callback, never()).onPauseFailed(eq(REASON), eq(PARAMS));
 
         rangingManager.onRangingResumed(handle, PARAMS);
         verify(callback, never()).onResumed(eq(PARAMS));

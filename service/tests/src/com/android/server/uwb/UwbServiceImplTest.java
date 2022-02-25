@@ -744,12 +744,12 @@ public class UwbServiceImplTest {
     }
 
     @Test
-    public void testSuspend() throws Exception {
+    public void testPause() throws Exception {
         final SessionHandle sessionHandle = new SessionHandle(5);
         final PersistableBundle parameters = new PersistableBundle();
 
         try {
-            mUwbServiceImpl.suspend(sessionHandle, parameters);
+            mUwbServiceImpl.pause(sessionHandle, parameters);
             fail();
         } catch (IllegalStateException e) { /* pass */ }
     }

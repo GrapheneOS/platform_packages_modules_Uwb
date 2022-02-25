@@ -179,16 +179,16 @@ public final class RangingSession implements AutoCloseable {
          */
         @Retention(RetentionPolicy.SOURCE)
         @IntDef(value = {
-                CONTROLLEE_FAILURE_REASON_MAX_CONTROLEE_REACHED,
+                CONTROLEE_FAILURE_REASON_MAX_CONTROLEE_REACHED,
         })
-        @interface ControlleeFailureReason {}
+        @interface ControleeFailureReason {}
 
         /**
-         * Indicates that the session has reached the max number of controllees supported by the
+         * Indicates that the session has reached the max number of controlees supported by the
          * device. This is applicable to only one to many sessions and sent in response to a
          * request to add a new controlee to an ongoing session.
          */
-        int CONTROLLEE_FAILURE_REASON_MAX_CONTROLEE_REACHED = 0;
+        int CONTROLEE_FAILURE_REASON_MAX_CONTROLEE_REACHED = 0;
 
         /**
          * @hide
@@ -304,7 +304,7 @@ public final class RangingSession implements AutoCloseable {
          * @param parameters protocol specific parameters related to the failure
          */
         default void onControleeAddFailed(
-                @ControlleeFailureReason int reason, @NonNull PersistableBundle parameters) {}
+                @ControleeFailureReason int reason, @NonNull PersistableBundle parameters) {}
 
         /**
          * Invoked when an existing controlee is removed from an ongoing one-to many session.
@@ -320,14 +320,14 @@ public final class RangingSession implements AutoCloseable {
          * @param parameters protocol specific parameters related to the failure
          */
         default void onControleeRemoveFailed(
-                @ControlleeFailureReason int reason, @NonNull PersistableBundle parameters) {}
+                @ControleeFailureReason int reason, @NonNull PersistableBundle parameters) {}
 
         /**
-         * Invoked when an ongoing session is successfully suspended.
+         * Invoked when an ongoing session is successfully pauseed.
          *
          * @param parameters protocol specific parameters sent for suspension
          */
-        default void onSuspended(@NonNull PersistableBundle parameters) {}
+        default void onPaused(@NonNull PersistableBundle parameters) {}
 
         /**
          * Invoked when an ongoing session suspension fails.
@@ -335,17 +335,17 @@ public final class RangingSession implements AutoCloseable {
          * @param reason reason for the suspension failure
          * @param parameters protocol specific parameters for suspension failure
          */
-        default void onSuspendFailed(@Reason int reason, @NonNull PersistableBundle parameters) {}
+        default void onPauseFailed(@Reason int reason, @NonNull PersistableBundle parameters) {}
 
         /**
-         * Invoked when a suspended session is successfully resumed.
+         * Invoked when a pauseed session is successfully resumed.
          *
          * @param parameters protocol specific parameters sent for suspension
          */
         default void onResumed(@NonNull PersistableBundle parameters) {}
 
         /**
-         * Invoked when a suspended session resumption fails.
+         * Invoked when a pauseed session resumption fails.
          *
          * @param reason reason for the resumption failure
          * @param parameters protocol specific parameters for resumption failure
@@ -627,49 +627,49 @@ public final class RangingSession implements AutoCloseable {
     }
 
     /**
-     * Suspends an ongoing ranging session.
+     * Pauses an ongoing ranging session.
      *
-     * <p>A session that has been suspended may be resumed by calling
+     * <p>A session that has been pauseed may be resumed by calling
      * {@link RangingSession#resume(PersistableBundle)} without the need to open a new session.
      *
-     * <p>Suspending a {@link RangingSession} is useful when the lower layers should skip a few
+     * <p>Pauseing a {@link RangingSession} is useful when the lower layers should skip a few
      * ranging rounds for a session without stopping it.
      *
      * <p>If the {@link RangingSession} is no longer needed, use {@link RangingSession#stop()} or
      * {@link RangingSession#close()} to completely close the session.
      *
-     * <p>On successfully suspending the session,
-     * {@link RangingSession.Callback#onRangingSuspended(PersistableBundle)} is invoked.
+     * <p>On successfully pausing the session,
+     * {@link RangingSession.Callback#onRangingPaused(PersistableBundle)} is invoked.
      *
-     * <p>On failure to suspend the session,
-     * {@link RangingSession.Callback#onRangingSuspendFailed(int, PersistableBundle)} is invoked.
+     * <p>On failure to pause the session,
+     * {@link RangingSession.Callback#onRangingPauseFailed(int, PersistableBundle)} is invoked.
      *
-     * @param params protocol specific parameters for suspending the session
+     * @param params protocol specific parameters for pausing the session
      */
     @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
-    public void suspend(@NonNull PersistableBundle params) {
+    public void pause(@NonNull PersistableBundle params) {
         if (mState != State.ACTIVE) {
             throw new IllegalStateException();
         }
 
         try {
-            mAdapter.suspend(mSessionHandle, params);
+            mAdapter.pause(mSessionHandle, params);
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();
         }
     }
 
     /**
-     * Resumes a suspended ranging session.
+     * Resumes a pauseed ranging session.
      *
-     * <p>A session that has been previously suspended using
-     * {@link RangingSession#suspend(PersistableBundle)} can be resumed by calling
+     * <p>A session that has been previously pauseed using
+     * {@link RangingSession#pause(PersistableBundle)} can be resumed by calling
      * {@link RangingSession#resume(PersistableBundle)}.
      *
      * <p>On successfully resuming the session,
      * {@link RangingSession.Callback#onRangingResumed(PersistableBundle)} is invoked.
      *
-     * <p>On failure to suspend the session,
+     * <p>On failure to resume the session,
      * {@link RangingSession.Callback#onRangingResumeFailed(int, PersistableBundle)} is invoked.
      *
      * @param params protocol specific parameters the resuming the session
@@ -859,7 +859,7 @@ public final class RangingSession implements AutoCloseable {
     /**
      * @hide
      */
-    public void onControleeAddFailed(@Callback.ControlleeFailureReason int reason,
+    public void onControleeAddFailed(@Callback.ControleeFailureReason int reason,
             @NonNull PersistableBundle params) {
         if (!isOpen()) {
             Log.w(TAG, "onControleeAddFailed invoked for non-open session");
@@ -884,7 +884,7 @@ public final class RangingSession implements AutoCloseable {
     /**
      * @hide
      */
-    public void onControleeRemoveFailed(@Callback.ControlleeFailureReason int reason,
+    public void onControleeRemoveFailed(@Callback.ControleeFailureReason int reason,
             @NonNull PersistableBundle params) {
         if (!isOpen()) {
             Log.w(TAG, "onControleeRemoveFailed invoked for non-open session");
@@ -897,26 +897,26 @@ public final class RangingSession implements AutoCloseable {
     /**
      * @hide
      */
-    public void onRangingSuspended(@NonNull PersistableBundle params) {
+    public void onRangingPaused(@NonNull PersistableBundle params) {
         if (!isOpen()) {
-            Log.w(TAG, "onRangingSuspended invoked for non-open session");
+            Log.w(TAG, "onRangingPaused invoked for non-open session");
             return;
         }
 
-        executeCallback(() -> mCallback.onSuspended(params));
+        executeCallback(() -> mCallback.onPaused(params));
     }
 
     /**
      * @hide
      */
-    public void onRangingSuspendFailed(@Callback.Reason int reason,
+    public void onRangingPauseFailed(@Callback.Reason int reason,
             @NonNull PersistableBundle params) {
         if (!isOpen()) {
-            Log.w(TAG, "onRangingSuspendFailed invoked for non-open session");
+            Log.w(TAG, "onRangingPauseFailed invoked for non-open session");
             return;
         }
 
-        executeCallback(() -> mCallback.onSuspendFailed(reason, params));
+        executeCallback(() -> mCallback.onPauseFailed(reason, params));
     }
 
     /**
