@@ -216,9 +216,9 @@ package android.uwb {
     ctor public UwbManager.AdfProvisionStateCallback();
     method public abstract void onProfileAdfsProvisionFailed(int, @NonNull android.os.PersistableBundle);
     method public abstract void onProfileAdfsProvisioned(@NonNull android.os.PersistableBundle);
-    field public static final int REASON_INVALID_OID = 0; // 0x0
-    field public static final int REASON_SE_FAILURE = 1; // 0x1
-    field public static final int REASON_UNKNOWN = 2; // 0x2
+    field public static final int REASON_INVALID_OID = 1; // 0x1
+    field public static final int REASON_SE_FAILURE = 2; // 0x2
+    field public static final int REASON_UNKNOWN = 3; // 0x3
   }
 
   public static interface UwbManager.UwbVendorUciCallback {
