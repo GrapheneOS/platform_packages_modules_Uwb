@@ -80,28 +80,6 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGe
     0
 }
 
-/// retrieve the UWB device specific information etc.
-#[no_mangle]
-pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetSpecificationInfo(
-    env: JNIEnv,
-    obj: JObject,
-) -> jobject {
-    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetSpecificationInfo: enter");
-    let uwb_specification_info_class =
-        env.find_class("com/android/server/uwb/info/UwbSpecificationInfo").unwrap();
-    match get_specification_info(env, obj) {
-        Ok(para) => {
-            let specification_info =
-                env.new_object(uwb_specification_info_class, "(IIIIIIIIIIIIIIII)V", &para).unwrap();
-            *specification_info
-        }
-        Err(e) => {
-            error!("Get specification info failed with: {:?}", e);
-            *JObject::null()
-        }
-    }
-}
-
 /// reset the device
 #[no_mangle]
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDeviceReset(
@@ -472,6 +450,8 @@ fn do_deinitialize(env: JNIEnv, obj: JObject) -> Result<(), UwbErr> {
     Ok(())
 }
 
+// unused, but leaving this behind if we want to use it later.
+#[allow(dead_code)]
 fn get_specification_info<'a>(env: JNIEnv, obj: JObject) -> Result<[JValue<'a>; 16], UwbErr> {
     let mut para = [JValue::Int(0); 16];
     let dispatcher = get_dispatcher(env, obj)?;
