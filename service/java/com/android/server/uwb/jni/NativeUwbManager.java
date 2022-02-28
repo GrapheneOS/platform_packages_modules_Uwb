@@ -26,7 +26,6 @@ import com.android.server.uwb.data.UwbTlvData;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.data.UwbVendorUciResponse;
 import com.android.server.uwb.info.UwbPowerStats;
-import com.android.server.uwb.info.UwbSpecificationInfo;
 
 public class NativeUwbManager {
     private static final String TAG = NativeUwbManager.class.getSimpleName();
@@ -121,10 +120,6 @@ public class NativeUwbManager {
         return 0L;
         /* TODO: Not Implemented in native stack
         return nativeGetTimestampResolutionNanos(); */
-    }
-
-    public UwbSpecificationInfo getSpecificationInfo() {
-        return nativeGetSpecificationInfo();
     }
 
     /**
@@ -322,8 +317,6 @@ public class NativeUwbManager {
     private native boolean nativeDoDeinitialize();
 
     private native long nativeGetTimestampResolutionNanos();
-
-    private native UwbSpecificationInfo nativeGetSpecificationInfo();
 
     private native UwbPowerStats nativeGetPowerStats();
 
