@@ -373,7 +373,7 @@ public class UwbServiceCoreTest {
     }
 
     @Test
-    public void testStartRanging() throws Exception {
+    public void testStartCccRanging() throws Exception {
         enableUwb();
 
         SessionHandle sessionHandle = mock(SessionHandle.class);
@@ -385,6 +385,16 @@ public class UwbServiceCoreTest {
 
         verify(mUwbSessionManager).startRanging(eq(sessionHandle),
                 argThat(p -> ((CccStartRangingParams) p).getSessionId() == params.getSessionId()));
+    }
+
+    @Test
+    public void testStartCccRangingWithNoStartParams() throws Exception {
+        enableUwb();
+
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+        mUwbServiceCore.getIUwbAdapter().startRanging(sessionHandle, new PersistableBundle());
+
+        verify(mUwbSessionManager).startRanging(eq(sessionHandle), argThat(p -> (p == null)));
     }
 
     @Test
