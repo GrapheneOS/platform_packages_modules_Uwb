@@ -87,8 +87,8 @@ public final class AngleOfArrivalMeasurement implements Parcelable {
 
         if (obj instanceof AngleOfArrivalMeasurement) {
             AngleOfArrivalMeasurement other = (AngleOfArrivalMeasurement) obj;
-            return mAzimuthAngleMeasurement.equals(other.getAzimuth())
-                    && mAltitudeAngleMeasurement.equals(other.getAltitude());
+            return Objects.equals(mAzimuthAngleMeasurement, other.getAzimuth())
+                    && Objects.equals(mAltitudeAngleMeasurement, other.getAltitude());
         }
         return false;
     }
