@@ -1,9 +1,5 @@
 {
   "name": "com.android.uwb",
-  "version": 320000000,
-  "requireNativeLibs": [
-    "libandroid.so",
-    "libbinder_ndk.so",
-    "liblog.so"
-  ]
+  "version": 320000000
 }
+
