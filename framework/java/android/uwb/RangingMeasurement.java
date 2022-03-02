@@ -257,12 +257,14 @@ public final class RangingMeasurement implements Parcelable {
 
         if (obj instanceof RangingMeasurement) {
             RangingMeasurement other = (RangingMeasurement) obj;
-            return mRemoteDeviceAddress.equals(other.getRemoteDeviceAddress())
+            return Objects.equals(mRemoteDeviceAddress, other.getRemoteDeviceAddress())
                     && mStatus == other.getStatus()
                     && mElapsedRealtimeNanos == other.getElapsedRealtimeNanos()
-                    && mDistanceMeasurement.equals(other.getDistanceMeasurement())
-                    && mAngleOfArrivalMeasurement.equals(other.getAngleOfArrivalMeasurement())
-                    && mDestinationAngleOfArrivalMeasurement.equals(
+                    && Objects.equals(mDistanceMeasurement, other.getDistanceMeasurement())
+                    && Objects.equals(
+                            mAngleOfArrivalMeasurement, other.getAngleOfArrivalMeasurement())
+                    && Objects.equals(
+                            mDestinationAngleOfArrivalMeasurement,
                             other.getDestinationAngleOfArrivalMeasurement())
                     && mLineOfSight == other.getLineOfSight()
                     && mMeasurementFocus == other.getMeasurementFocus()
