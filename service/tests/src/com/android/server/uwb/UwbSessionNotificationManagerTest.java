@@ -46,6 +46,7 @@ import com.android.server.uwb.data.UwbTwoWayMeasurement;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.params.TlvUtil;
 
+import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 
 import org.junit.After;
@@ -87,7 +88,7 @@ public class UwbSessionNotificationManagerTest {
     @Mock private UwbSessionManager.UwbSession mUwbSession;
     @Mock private SessionHandle mSessionHandle;
     @Mock private IUwbRangingCallbacks mIUwbRangingCallbacks;
-    @Mock private FiraParams mFiraParams;
+    @Mock private FiraOpenSessionParams mFiraParams;
 
     private UwbSessionNotificationManager mUwbSessionNotificationManager;
 
@@ -99,6 +100,9 @@ public class UwbSessionNotificationManagerTest {
         when(mUwbSession.getIUwbRangingCallbacks()).thenReturn(mIUwbRangingCallbacks);
         when(mUwbSession.getProtocolName()).thenReturn(FiraParams.PROTOCOL_NAME);
         when(mUwbSession.getParams()).thenReturn(mFiraParams);
+        when(mFiraParams.getAoaResultRequest()).thenReturn(
+                FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS);
+        when(mFiraParams.hasResultReportPhase()).thenReturn(false);
         when(mUwbInjector.getElapsedSinceBootNanos()).thenReturn(TEST_ELAPSED_NANOS);
         mUwbSessionNotificationManager = new UwbSessionNotificationManager(mUwbInjector);
     }
@@ -112,14 +116,66 @@ public class UwbSessionNotificationManagerTest {
     }
 
     @Test
-    public void testOnRangingResult() throws Exception {
+    public void testOnRangingResultWithAoa() throws Exception {
         Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
-                generateRangingDataAndRangingReport();
+                generateRangingDataAndRangingReport(true, true, false, false);
         mUwbSessionNotificationManager.onRangingResult(
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
     }
+
+    @Test
+    public void testOnRangingResultWithNoAoa() throws Exception {
+        when(mFiraParams.getAoaResultRequest()).thenReturn(
+                FiraParams.AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT);
+        Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
+                generateRangingDataAndRangingReport(false, false, false, false);
+        mUwbSessionNotificationManager.onRangingResult(
+                mUwbSession, testRangingDataAndRangingReport.first);
+        verify(mIUwbRangingCallbacks).onRangingResult(
+                mSessionHandle, testRangingDataAndRangingReport.second);
+    }
+
+    @Test
+    public void testOnRangingResultWithNoAoaElevation() throws Exception {
+        when(mFiraParams.getAoaResultRequest()).thenReturn(
+                FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_AZIMUTH_ONLY);
+        Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
+                generateRangingDataAndRangingReport(true, false, false, false);
+        mUwbSessionNotificationManager.onRangingResult(
+                mUwbSession, testRangingDataAndRangingReport.first);
+        verify(mIUwbRangingCallbacks).onRangingResult(
+                mSessionHandle, testRangingDataAndRangingReport.second);
+    }
+
+    @Test
+    public void testOnRangingResultWithNoAoaAzimuth() throws Exception {
+        when(mFiraParams.getAoaResultRequest()).thenReturn(
+                FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_ELEVATION_ONLY);
+        Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
+                generateRangingDataAndRangingReport(false, true, false, false);
+        mUwbSessionNotificationManager.onRangingResult(
+                mUwbSession, testRangingDataAndRangingReport.first);
+        verify(mIUwbRangingCallbacks).onRangingResult(
+                mSessionHandle, testRangingDataAndRangingReport.second);
+    }
+  
+    @Test
+    public void testOnRangingResultWithAoaAndDestAoa() throws Exception {
+        when(mFiraParams.getAoaResultRequest()).thenReturn(
+                FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS);
+        when(mFiraParams.hasResultReportPhase()).thenReturn(true);
+        when(mFiraParams.hasAngleOfArrivalAzimuthReport()).thenReturn(true);
+        when(mFiraParams.hasAngleOfArrivalElevationReport()).thenReturn(true);
+        Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
+                generateRangingDataAndRangingReport(true, true, true, true);
+        mUwbSessionNotificationManager.onRangingResult(
+                mUwbSession, testRangingDataAndRangingReport.first);
+        verify(mIUwbRangingCallbacks).onRangingResult(
+                mSessionHandle, testRangingDataAndRangingReport.second);
+    }
+
 
     @Test
     public void testOnRangingOpened() throws Exception {
@@ -204,7 +260,9 @@ public class UwbSessionNotificationManagerTest {
     }
 
     // Helper method to generate a UwbRangingData instance and corresponding RangingMeasurement
-    private Pair<UwbRangingData, RangingReport> generateRangingDataAndRangingReport() {
+    private Pair<UwbRangingData, RangingReport> generateRangingDataAndRangingReport(
+            boolean isAoaAzimuthEnabled, boolean isAoaElevationEnabled,
+            boolean isDestAoaAzimuthEnabled, boolean isDestAoaElevationEnabled) {
         final int noOfRangingMeasures = 1;
         final UwbTwoWayMeasurement[] uwbTwoWayMeasurements =
                 new UwbTwoWayMeasurement[noOfRangingMeasures];
@@ -218,22 +276,46 @@ public class UwbSessionNotificationManagerTest {
                 TEST_RCR_INDICATION, TEST_CURR_RANGING_INTERVAL, TEST_RANGING_MEASURES_TYPE,
                 TEST_MAC_ADDRESS_MODE, noOfRangingMeasures, uwbTwoWayMeasurements);
 
-        AngleMeasurement aoaAzimuth =
-                new AngleMeasurement(
-                        degreeToRadian(TEST_AOA_AZIMUTH), 0,
-                        TEST_AOA_AZIMUTH_FOM / (double) 100);
-        AngleMeasurement aoaElevation =
-                new AngleMeasurement(
-                        degreeToRadian(TEST_AOA_ELEVATION), 0,
-                        TEST_AOA_ELEVATION_FOM / (double) 100);
-        AngleMeasurement aoaDestAzimuth =
-                new AngleMeasurement(
-                        degreeToRadian(TEST_AOA_DEST_AZIMUTH), 0,
-                        TEST_AOA_DEST_AZIMUTH_FOM / (double) 100);
-        AngleMeasurement aoaDestElevation =
-                new AngleMeasurement(
-                        degreeToRadian(TEST_AOA_DEST_ELEVATION), 0,
-                        TEST_AOA_DEST_ELEVATION_FOM / (double) 100);
+        AngleOfArrivalMeasurement aoaMeasurement = null;
+        AngleOfArrivalMeasurement aoaDestMeasurement = null;
+        if (isAoaAzimuthEnabled || isAoaElevationEnabled) {
+            AngleMeasurement aoaAzimuth = null;
+            AngleMeasurement aoaElevation = null;
+            if (isAoaAzimuthEnabled) {
+                aoaAzimuth =
+                        new AngleMeasurement(
+                                degreeToRadian(TEST_AOA_AZIMUTH), 0,
+                                TEST_AOA_AZIMUTH_FOM / (double) 100);
+            }
+            if (isAoaElevationEnabled) {
+                aoaElevation =
+                        new AngleMeasurement(
+                                degreeToRadian(TEST_AOA_ELEVATION), 0,
+                                TEST_AOA_ELEVATION_FOM / (double) 100);
+            }
+            aoaMeasurement = new AngleOfArrivalMeasurement.Builder(aoaAzimuth)
+                    .setAltitude(aoaElevation)
+                    .build();
+        }
+        if (isDestAoaAzimuthEnabled || isDestAoaElevationEnabled) {
+            AngleMeasurement aoaDestAzimuth = null;
+            AngleMeasurement aoaDestElevation = null;
+            if (isDestAoaAzimuthEnabled) {
+                aoaDestAzimuth =
+                        new AngleMeasurement(
+                                degreeToRadian(TEST_AOA_DEST_AZIMUTH), 0,
+                                TEST_AOA_DEST_AZIMUTH_FOM / (double) 100);
+            }
+            if (isDestAoaElevationEnabled) {
+                aoaDestElevation =
+                        new AngleMeasurement(
+                                degreeToRadian(TEST_AOA_DEST_ELEVATION), 0,
+                                TEST_AOA_DEST_ELEVATION_FOM / (double) 100);
+            }
+            aoaDestMeasurement = new AngleOfArrivalMeasurement.Builder(aoaDestAzimuth)
+                    .setAltitude(aoaDestElevation)
+                    .build();
+        }
         RangingMeasurement rangingMeasurement = new RangingMeasurement.Builder()
                 .setRemoteDeviceAddress(UwbAddress.fromBytes(
                         TlvUtil.getReverseBytes(TEST_MAC_ADDRESS)))
@@ -245,13 +327,8 @@ public class UwbSessionNotificationManagerTest {
                                 .setErrorMeters(0)
                                 .setConfidenceLevel(0)
                                 .build())
-                .setAngleOfArrivalMeasurement(new AngleOfArrivalMeasurement.Builder(aoaAzimuth)
-                                .setAltitude(aoaElevation)
-                                .build())
-                .setDestinationAngleOfArrivalMeasurement(
-                        new AngleOfArrivalMeasurement.Builder(aoaDestAzimuth)
-                                .setAltitude(aoaDestElevation)
-                                .build())
+                .setAngleOfArrivalMeasurement(aoaMeasurement)
+                .setDestinationAngleOfArrivalMeasurement(aoaDestMeasurement)
                 .setLineOfSight(TEST_LOS)
                 .build();
         RangingReport rangingReport = new RangingReport.Builder()
