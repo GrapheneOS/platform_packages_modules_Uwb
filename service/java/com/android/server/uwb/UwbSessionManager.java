@@ -255,7 +255,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
         int currentSessionState = getCurrentSessionState(sessionId);
         if (currentSessionState == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
-            if (uwbSession.getProtocolName().equals(CccParams.PROTOCOL_NAME)) {
+            if (uwbSession.getProtocolName().equals(CccParams.PROTOCOL_NAME)
+                    && params instanceof CccStartRangingParams) {
                 CccStartRangingParams rangingStartParams = (CccStartRangingParams) params;
                 Log.i(TAG, "startRanging() - update RAN multiplier: "
                         + rangingStartParams.getRanMultiplier());
