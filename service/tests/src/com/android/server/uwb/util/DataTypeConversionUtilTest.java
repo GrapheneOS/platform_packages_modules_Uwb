@@ -63,6 +63,12 @@ public class DataTypeConversionUtilTest {
     }
 
     @Test
+    public void i32ToLeByteArray_success() {
+        assertThat(DataTypeConversionUtil.i32ToLeByteArray(0x01020304))
+                .isEqualTo(new byte[] { (byte) 0x04, (byte) 0x03, (byte) 0x02, (byte) 0x01 });
+    }
+
+    @Test
     public void byteArrayToHexString_byteString_success() {
         String hexString = "010203040A0B0C0D";
         assertThat(DataTypeConversionUtil.byteArrayToHexString(
