@@ -917,6 +917,22 @@ public class UwbSessionManagerTest {
     }
 
     @Test
+    public void execStartCccRangingWithNoStartParams_success() throws Exception {
+        UwbSession uwbSession = prepareExistingCccUwbSession();
+        // set up for start ranging
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE, UwbUciConstants.UWB_SESSION_STATE_ACTIVE)
+                .when(uwbSession).getSessionState();
+        when(mNativeUwbManager.startRanging(eq(TEST_SESSION_ID)))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+        mUwbSessionManager.startRanging(uwbSession.getSessionHandle(), null /* params */);
+        mTestLooper.dispatchAll();
+
+        // Verify that RAN multiplier from open is used.
+        CccOpenRangingParams cccOpenRangingParams = (CccOpenRangingParams) uwbSession.getParams();
+        assertThat(cccOpenRangingParams.getRanMultiplier()).isEqualTo(4);
+    }
+
+    @Test
     public void execStartRanging_executionException() throws Exception {
         UwbSession uwbSession = prepareExistingUwbSession();
         // set up for start ranging
