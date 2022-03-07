@@ -120,5 +120,12 @@ public class DataTypeConversionUtil {
         return ByteBuffer.allocate(Integer.BYTES).order(ByteOrder.BIG_ENDIAN).putInt(n).array();
     }
 
+    /**
+     * Convert the int to byte array using little endian.
+     */
+    public static byte[] i32ToLeByteArray(int n) {
+        return ByteBuffer.allocate(Integer.BYTES).order(ByteOrder.LITTLE_ENDIAN).putInt(n).array();
+    }
+
     private DataTypeConversionUtil() {}
 }
