@@ -46,6 +46,13 @@ public class ArrayUtils {
         return array == null || array.length == 0;
     }
 
+    /**
+     * True if the byte array is null or has length 0.
+     */
+    public static boolean isEmpty(@Nullable byte[] array) {
+        return array == null || array.length == 0;
+    }
+
     public static short[] toPrimitive(List<Short> list) {
         short[] array = new short[list.size()];
         for (int i = 0; i < list.size(); i++) {
