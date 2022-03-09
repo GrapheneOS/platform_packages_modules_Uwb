@@ -21,7 +21,7 @@ package {
 apex {
     name: "com.android.uwb",
     key: "com.android.uwb.key",
-    min_sdk_version: "current", // TODO: Move to 32 once SDK is finalized
+    defaults: ["t-launched-apex-module"],
 }
 
 apex_key {
