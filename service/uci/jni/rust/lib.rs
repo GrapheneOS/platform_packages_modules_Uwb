@@ -882,4 +882,16 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(device_info.unwrap().to_vec(), packet.to_vec());
     }
+
+    #[test]
+    fn test_do_deinitialize() {
+        let mut dispatcher = MockDispatcher::new();
+        dispatcher
+            .expect_block_on_jni_command(JNICommand::Disable(true), Ok(UciResponse::DisableRsp));
+        dispatcher.expect_send_jni_command(JNICommand::Exit, Ok(()));
+        let context = MockContext::new(dispatcher);
+
+        let result = do_deinitialize(&context);
+        assert!(result.is_ok());
+    }
 }
