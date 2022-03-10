@@ -34,9 +34,7 @@ apex_defaults {
     ],
     key: "com.android.uwb.key",
     certificate: ":com.android.uwb.certificate",
-    min_sdk_version: "Tiramisu",
-
-    updatable: true,
+    defaults: ["t-launched-apex-module"],
 
     // Indicates that pre-installed version of this apex can be compressed.
     // Whether it actually will be compressed is controlled on per-device basis.
