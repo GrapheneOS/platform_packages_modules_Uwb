@@ -926,4 +926,347 @@ mod tests {
             assert_eq!(TryInto::<jint>::try_into(*result).unwrap(), expected_array[idx]);
         }
     }
+
+    #[test]
+    fn test_session_init() {
+        let session_id = 1234;
+        let session_type = 5;
+        let packet =
+            uwb_uci_packets::SessionInitRspBuilder { status: StatusCode::UciStatusOk }.build();
+
+        let mut dispatcher = MockDispatcher::new();
+        dispatcher.expect_block_on_jni_command(
+            JNICommand::UciSessionInit(session_id, session_type),
+            Ok(UciResponse::SessionInitRsp(packet)),
+        );
+        let context = MockContext::new(dispatcher);
+
+        let result = session_init(&context, session_id, session_type);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_session_deinit() {
+        let session_id = 1234;
+        let packet =
+            uwb_uci_packets::SessionDeinitRspBuilder { status: StatusCode::UciStatusOk }.build();
+
+        let mut dispatcher = MockDispatcher::new();
+        dispatcher.expect_block_on_jni_command(
+            JNICommand::UciSessionDeinit(session_id),
+            Ok(UciResponse::SessionDeinitRsp(packet)),
+        );
+        let context = MockContext::new(dispatcher);
+
+        let result = session_deinit(&context, session_id);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_get_session_count() {
+        let session_count = 7;
+        let packet = uwb_uci_packets::SessionGetCountRspBuilder {
+            status: StatusCode::UciStatusOk,
+            session_count,
+        }
+        .build();
+
+        let mut dispatcher = MockDispatcher::new();
+        dispatcher.expect_block_on_jni_command(
+            JNICommand::UciSessionGetCount,
+            Ok(UciResponse::SessionGetCountRsp(packet)),
+        );
+        let context = MockContext::new(dispatcher);
+
+        let result = get_session_count(&context).unwrap();
+        assert_eq!(result, session_count as jbyte);
+    }
+
+    #[test]
+    fn test_ranging_start() {
+        let session_id = 1234;
+        let packet =
+            uwb_uci_packets::RangeStartRspBuilder { status: StatusCode::UciStatusOk }.build();
+
+        let mut dispatcher = MockDispatcher::new();
+        dispatcher.expect_block_on_jni_command(
+            JNICommand::UciStartRange(session_id),
+            Ok(UciResponse::RangeStartRsp(packet)),
+        );
+        let context = MockContext::new(dispatcher);
+
+        let result = ranging_start(&context, session_id);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_ranging_stop() {
+        let session_id = 1234;
+        let packet =
+            uwb_uci_packets::RangeStopRspBuilder { status: StatusCode::UciStatusOk }.build();
+
+        let mut dispatcher = MockDispatcher::new();
+        dispatcher.expect_block_on_jni_command(
+            JNICommand::UciStopRange(session_id),
+            Ok(UciResponse::RangeStopRsp(packet)),
+        );
+        let context = MockContext::new(dispatcher);
+
+        let result = ranging_stop(&context, session_id);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_get_session_state() {
+        let session_id = 1234;
+        let session_state = uwb_uci_packets::SessionState::SessionStateActive;
+        let packet = uwb_uci_packets::SessionGetStateRspBuilder {
+            status: StatusCode::UciStatusOk,
+            session_state,
+        }
+        .build();
+
+        let mut dispatcher = MockDispatcher::new();
+        dispatcher.expect_block_on_jni_command(
+            JNICommand::UciGetSessionState(session_id),
+            Ok(UciResponse::SessionGetStateRsp(packet)),
+        );
+        let context = MockContext::new(dispatcher);
+
+        let result = get_session_state(&context, session_id).unwrap();
+        assert_eq!(result, session_state as jbyte);
+    }
+
+    #[test]
+    fn test_set_app_configurations() {
+        let session_id = 1234;
+        let no_of_params = 3;
+        let app_config_param_len = 5;
+        let app_configs = vec![1, 2, 3, 4, 5];
+        let fake_app_config_params = std::ptr::null_mut();
+        let packet = uwb_uci_packets::SessionSetAppConfigRspBuilder {
+            status: StatusCode::UciStatusOk,
+            cfg_status: vec![],
+        }
+        .build();
+
+        let mut dispatcher = MockDispatcher::new();
+        dispatcher.expect_block_on_jni_command(
+            JNICommand::UciSetAppConfig {
+                session_id,
+                no_of_params,
+                app_config_param_len,
+                app_configs: app_configs.clone(),
+            },
+            Ok(UciResponse::SessionSetAppConfigRsp(packet.clone())),
+        );
+        let mut context = MockContext::new(dispatcher);
+        context.expect_convert_byte_array(fake_app_config_params, Ok(app_configs));
+
+        let result = set_app_configurations(
+            &context,
+            session_id,
+            no_of_params,
+            app_config_param_len,
+            fake_app_config_params,
+        )
+        .unwrap();
+        assert_eq!(result.to_vec(), packet.to_vec());
+    }
+
+    #[test]
+    fn test_get_app_configurations() {
+        let session_id = 1234;
+        let no_of_params = 3;
+        let app_config_param_len = 5;
+        let app_configs = vec![1, 2, 3, 4, 5];
+        let fake_app_config_params = std::ptr::null_mut();
+        let packet = uwb_uci_packets::SessionGetAppConfigRspBuilder {
+            status: StatusCode::UciStatusOk,
+            tlvs: vec![],
+        }
+        .build();
+
+        let mut dispatcher = MockDispatcher::new();
+        dispatcher.expect_block_on_jni_command(
+            JNICommand::UciGetAppConfig {
+                session_id,
+                no_of_params,
+                app_config_param_len,
+                app_configs: app_configs.clone(),
+            },
+            Ok(UciResponse::SessionGetAppConfigRsp(packet.clone())),
+        );
+        let mut context = MockContext::new(dispatcher);
+        context.expect_convert_byte_array(fake_app_config_params, Ok(app_configs));
+
+        let result = get_app_configurations(
+            &context,
+            session_id,
+            no_of_params,
+            app_config_param_len,
+            fake_app_config_params,
+        )
+        .unwrap();
+        assert_eq!(result.to_vec(), packet.to_vec());
+    }
+
+    #[test]
+    fn test_get_caps_info() {
+        let packet = uwb_uci_packets::GetCapsInfoRspBuilder {
+            status: StatusCode::UciStatusOk,
+            tlvs: vec![],
+        }
+        .build();
+
+        let mut dispatcher = MockDispatcher::new();
+        dispatcher.expect_block_on_jni_command(
+            JNICommand::UciGetCapsInfo,
+            Ok(UciResponse::GetCapsInfoRsp(packet.clone())),
+        );
+        let context = MockContext::new(dispatcher);
+
+        let result = get_caps_info(&context).unwrap();
+        assert_eq!(result.to_vec(), packet.to_vec());
+    }
+
+    #[test]
+    fn test_multicast_list_update() {
+        let session_id = 1234;
+        let action = 3;
+        let no_of_controlee = 5;
+        let fake_addresses = std::ptr::null_mut();
+        let address_list = Box::new([1, 3, 5, 7, 9]);
+        let fake_sub_session_ids = std::ptr::null_mut();
+        let sub_session_id_list = Box::new([2, 4, 6, 8, 10]);
+        let packet = uwb_uci_packets::SessionUpdateControllerMulticastListRspBuilder {
+            status: StatusCode::UciStatusOk,
+        }
+        .build();
+
+        let mut dispatcher = MockDispatcher::new();
+        dispatcher.expect_block_on_jni_command(
+            JNICommand::UciSessionUpdateMulticastList {
+                session_id,
+                action,
+                no_of_controlee,
+                address_list: address_list.to_vec(),
+                sub_session_id_list: sub_session_id_list.to_vec(),
+            },
+            Ok(UciResponse::SessionUpdateControllerMulticastListRsp(packet)),
+        );
+        let mut context = MockContext::new(dispatcher);
+        context.expect_get_array_length(fake_addresses, Ok(address_list.len() as jsize));
+        context.expect_get_short_array_region(fake_addresses, 0, Ok(address_list));
+        context
+            .expect_get_array_length(fake_sub_session_ids, Ok(sub_session_id_list.len() as jsize));
+        context.expect_get_int_array_region(fake_sub_session_ids, 0, Ok(sub_session_id_list));
+
+        let result = multicast_list_update(
+            &context,
+            session_id,
+            action,
+            no_of_controlee,
+            fake_addresses,
+            fake_sub_session_ids,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_set_country_code() {
+        let fake_country_code = std::ptr::null_mut();
+        let country_code = "US".as_bytes().to_vec();
+        let packet =
+            uwb_uci_packets::AndroidSetCountryCodeRspBuilder { status: StatusCode::UciStatusOk }
+                .build();
+
+        let mut dispatcher = MockDispatcher::new();
+        dispatcher.expect_block_on_jni_command(
+            JNICommand::UciSetCountryCode { code: country_code.clone() },
+            Ok(UciResponse::AndroidSetCountryCodeRsp(packet)),
+        );
+        let mut context = MockContext::new(dispatcher);
+        context.expect_convert_byte_array(fake_country_code, Ok(country_code));
+
+        let result = set_country_code(&context, fake_country_code);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_send_raw_vendor_cmd() {
+        let gid = 2;
+        let oid = 4;
+        let opcode = 6;
+        let fake_payload = std::ptr::null_mut();
+        let payload = vec![1, 2, 4, 8];
+        let response = vec![3, 6, 9];
+        let packet = uwb_uci_packets::UciVendor_9_ResponseBuilder {
+            opcode,
+            payload: Some(response.clone().into()),
+        }
+        .build()
+        .into();
+
+        let mut dispatcher = MockDispatcher::new();
+        dispatcher.expect_block_on_jni_command(
+            JNICommand::UciRawVendorCmd { gid, oid, payload: payload.clone() },
+            Ok(UciResponse::RawVendorRsp(packet)),
+        );
+        let mut context = MockContext::new(dispatcher);
+        context.expect_convert_byte_array(fake_payload, Ok(payload));
+
+        let result = send_raw_vendor_cmd(&context, gid, oid, fake_payload).unwrap();
+        assert_eq!(result.0, uwb_uci_packets::GroupId::VendorReserved9 as i32);
+        assert_eq!(result.1, opcode as i32);
+        assert_eq!(result.2, response);
+    }
+
+    #[test]
+    fn test_get_power_stats() {
+        let idle_time_ms = 5;
+        let tx_time_ms = 4;
+        let rx_time_ms = 3;
+        let total_wake_count = 2;
+        let packet = uwb_uci_packets::AndroidGetPowerStatsRspBuilder {
+            stats: uwb_uci_packets::PowerStats {
+                status: StatusCode::UciStatusOk,
+                idle_time_ms,
+                tx_time_ms,
+                rx_time_ms,
+                total_wake_count,
+            },
+        }
+        .build();
+
+        let mut dispatcher = MockDispatcher::new();
+        dispatcher.expect_block_on_jni_command(
+            JNICommand::UciGetPowerStats,
+            Ok(UciResponse::AndroidGetPowerStatsRsp(packet)),
+        );
+        let context = MockContext::new(dispatcher);
+
+        let result = get_power_stats(&context).unwrap();
+        assert_eq!(TryInto::<jint>::try_into(result[0]).unwrap(), idle_time_ms as jint);
+        assert_eq!(TryInto::<jint>::try_into(result[1]).unwrap(), tx_time_ms as jint);
+        assert_eq!(TryInto::<jint>::try_into(result[2]).unwrap(), rx_time_ms as jint);
+        assert_eq!(TryInto::<jint>::try_into(result[3]).unwrap(), total_wake_count as jint);
+    }
+
+    #[test]
+    fn test_reset_device() {
+        let reset_config = uwb_uci_packets::ResetConfig::UwbsReset as u8;
+        let packet =
+            uwb_uci_packets::DeviceResetRspBuilder { status: StatusCode::UciStatusOk }.build();
+
+        let mut dispatcher = MockDispatcher::new();
+        dispatcher.expect_block_on_jni_command(
+            JNICommand::UciDeviceReset { reset_config },
+            Ok(UciResponse::DeviceResetRsp(packet)),
+        );
+        let context = MockContext::new(dispatcher);
+
+        let result = reset_device(&context, reset_config);
+        assert!(result.is_ok());
+    }
 }
