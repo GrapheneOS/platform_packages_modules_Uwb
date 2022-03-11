@@ -834,4 +834,6 @@ fn reset_device<'a, T: Context<'a>>(context: &T, reset_config: u8) -> Result<(),
 }
 
 #[cfg(test)]
+mod mock_context;
+#[cfg(test)]
 mod mock_dispatcher;
