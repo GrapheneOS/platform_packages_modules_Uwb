@@ -16,6 +16,8 @@
 package com.android.server.uwb.data;
 
 import static android.hardware.uwb.fira_android.UwbVendorSessionInitSessionType.CCC;
+import static android.hardware.uwb.fira_android.UwbVendorStatusCodes.STATUS_ERROR_CCC_LIFECYCLE;
+import static android.hardware.uwb.fira_android.UwbVendorStatusCodes.STATUS_ERROR_CCC_SE_BUSY;
 
 import com.google.uwb.support.fira.FiraParams;
 
@@ -171,6 +173,9 @@ public class UwbUciConstants {
             FiraParams.STATUS_CODE_RANGING_RX_MAC_IE_DEC_FAILED;
     public static final int STATUS_CODE_RANGING_RX_MAC_IE_MISSING =
             FiraParams.STATUS_CODE_RANGING_RX_MAC_IE_MISSING;
+
+    public static final int STATUS_CODE_CCC_SE_BUSY = STATUS_ERROR_CCC_SE_BUSY;
+    public static final int STATUS_CODE_CCC_LIFECYCLE = STATUS_ERROR_CCC_LIFECYCLE;
 
     /* UWB Data Session Specific Status Codes */
     public static final int STATUS_CODE_DATA_MAX_TX_APDU_SIZE_EXCEEDED = 0x30;
