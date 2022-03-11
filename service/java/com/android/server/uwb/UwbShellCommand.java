@@ -131,7 +131,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     .setSessionId(1)
                     .setChannelNumber(9)
                     .setDeviceType(RANGING_DEVICE_TYPE_CONTROLLER)
-                    .setDeviceRole(RANGING_DEVICE_ROLE_RESPONDER)
+                    .setDeviceRole(RANGING_DEVICE_ROLE_INITIATOR)
                     .setDeviceAddress(UwbAddress.fromBytes(new byte[] { 0x4, 0x6}))
                     .setDestAddressList(Arrays.asList(UwbAddress.fromBytes(new byte[] { 0x4, 0x6})))
                     .setMultiNodeMode(MULTI_NODE_MODE_UNICAST)
