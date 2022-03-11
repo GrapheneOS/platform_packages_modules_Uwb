@@ -837,3 +837,49 @@ fn reset_device<'a, T: Context<'a>>(context: &T, reset_config: u8) -> Result<(),
 mod mock_context;
 #[cfg(test)]
 mod mock_dispatcher;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::mock_context::MockContext;
+    use crate::mock_dispatcher::MockDispatcher;
+
+    #[test]
+    fn test_boolean_result_helper() {
+        assert_eq!(true as jboolean, boolean_result_helper(Ok(()), "Foo"));
+        assert_eq!(false as jboolean, boolean_result_helper(Err(UwbErr::Undefined), "Foo"));
+    }
+
+    #[test]
+    fn test_byte_result_helper() {
+        assert_eq!(STATUS_OK, byte_result_helper(Ok(()), "Foo"));
+        assert_eq!(STATUS_FAILED, byte_result_helper(Err(UwbErr::Undefined), "Foo"));
+    }
+
+    #[test]
+    fn test_do_initialize() {
+        let packet = uwb_uci_packets::GetDeviceInfoRspBuilder {
+            status: StatusCode::UciStatusOk,
+            uci_version: 0,
+            mac_version: 0,
+            phy_version: 0,
+            uci_test_version: 0,
+            vendor_spec_info: vec![],
+        }
+        .build();
+
+        let mut dispatcher = MockDispatcher::new();
+        dispatcher.expect_send_jni_command(JNICommand::Enable, Ok(()));
+        dispatcher.expect_block_on_jni_command(
+            JNICommand::UciGetDeviceInfo,
+            Ok(UciResponse::GetDeviceInfoRsp(packet.clone())),
+        );
+        let mut context = MockContext::new(dispatcher);
+
+        let result = do_initialize(&context);
+        let device_info = context.get_mock_dispatcher().get_device_info().clone();
+        assert!(result.is_ok());
+        assert_eq!(device_info.unwrap().to_vec(), packet.to_vec());
+    }
+}
