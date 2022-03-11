@@ -832,3 +832,6 @@ fn reset_device<'a, T: Context<'a>>(context: &T, reset_config: u8) -> Result<(),
     };
     status_code_to_res(res.get_status())
 }
+
+#[cfg(test)]
+mod mock_dispatcher;
