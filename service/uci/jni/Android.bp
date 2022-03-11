@@ -2,8 +2,8 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-rust_ffi_shared {
-    name: "libuwb_uci_jni_rust",
+rust_defaults {
+    name: "libuwb_uci_jni_rust_defaults",
     crate_name: "uwb_uci_jni_rust",
     min_sdk_version: "Tiramisu",
     srcs: ["rust/lib.rs"],
@@ -21,4 +21,16 @@ rust_ffi_shared {
     apex_available: [
         "com.android.uwb",
     ]
+}
+
+rust_ffi_shared {
+    name: "libuwb_uci_jni_rust",
+    defaults: ["libuwb_uci_jni_rust_defaults"],
+}
+
+rust_test {
+    name: "libuwb_uci_jni_rust_tests",
+    defaults: ["libuwb_uci_jni_rust_defaults"],
+    auto_gen_config: true,
+    test_suites: [ "general-tests" ],
 }
