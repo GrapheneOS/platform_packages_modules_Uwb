@@ -23,17 +23,24 @@ import com.android.server.uwb.data.UwbUciConstants;
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccRangingError;
-import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraStateChangeReasonCode;
 import com.google.uwb.support.fira.FiraStatusCode;
 
 public class UwbSessionNotificationHelper {
-    private static int convertStatusToFiraReasonCode(int status) {
+
+    /**
+     * convert reason code
+     *
+     * @param reason : reason codes in {@link UwbUciConstants}
+     * @return : {@link RangingChangeReason} change reason.
+     */
+    public static int convertReasonCode(int reason) {
         /* set default */
         int rangingChangeReason = RangingChangeReason.UNKNOWN;
-        switch (status) {
-            case UwbUciConstants.STATUS_CODE_ERROR_MAX_SESSIONS_EXCEEDED:
-                rangingChangeReason = RangingChangeReason.MAX_SESSIONS_REACHED;
+
+        switch (reason) {
+            case UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS:
+                rangingChangeReason = RangingChangeReason.LOCAL_API;
                 break;
             case UwbUciConstants.REASON_ERROR_INSUFFICIENT_SLOTS_PER_RR:
             case UwbUciConstants.REASON_ERROR_SLOT_LENGTH_NOT_SUPPORTED:
@@ -41,6 +48,26 @@ public class UwbSessionNotificationHelper {
             case UwbUciConstants.REASON_ERROR_INVALID_RANGING_INTERVAL:
             case UwbUciConstants.REASON_ERROR_INVALID_STS_CONFIG:
             case UwbUciConstants.REASON_ERROR_INVALID_RFRAME_CONFIG:
+                rangingChangeReason = RangingChangeReason.BAD_PARAMETERS;
+                break;
+        }
+        return rangingChangeReason;
+    }
+
+    /**
+     * convert status code
+     *
+     * @param status : status codes in {@link UwbUciConstants}
+     * @return : {@link RangingChangeReason}  change reason.
+     */
+    public static int convertStatusCode(int status) {
+        /* set default */
+        int rangingChangeReason = RangingChangeReason.UNKNOWN;
+
+        switch (status) {
+            case UwbUciConstants.STATUS_CODE_ERROR_MAX_SESSIONS_EXCEEDED:
+                rangingChangeReason = RangingChangeReason.MAX_SESSIONS_REACHED;
+                break;
             case UwbUciConstants.STATUS_CODE_INVALID_PARAM:
             case UwbUciConstants.STATUS_CODE_INVALID_RANGE:
             case UwbUciConstants.STATUS_CODE_INVALID_MESSAGE_SIZE:
@@ -48,72 +75,14 @@ public class UwbSessionNotificationHelper {
                 break;
             // TODO : Convert more status to proper RangingChangeReason..
         }
+
         return rangingChangeReason;
-    }
-
-    private static @RangingChangeReason int convertStatusToCccReasonCode(int status) {
-        /* set default */
-        int rangingChangeReason = RangingChangeReason.UNKNOWN;
-        switch (status) {
-            case UwbUciConstants.STATUS_CODE_ERROR_MAX_SESSIONS_EXCEEDED:
-                rangingChangeReason = RangingChangeReason.MAX_SESSIONS_REACHED;
-                break;
-            case UwbUciConstants.REASON_ERROR_INSUFFICIENT_SLOTS_PER_RR:
-            case UwbUciConstants.REASON_ERROR_SLOT_LENGTH_NOT_SUPPORTED:
-            case UwbUciConstants.REASON_ERROR_MAC_ADDRESS_MODE_NOT_SUPPORTED:
-            case UwbUciConstants.REASON_ERROR_INVALID_RANGING_INTERVAL:
-            case UwbUciConstants.REASON_ERROR_INVALID_STS_CONFIG:
-            case UwbUciConstants.REASON_ERROR_INVALID_RFRAME_CONFIG:
-            case UwbUciConstants.STATUS_CODE_INVALID_PARAM:
-            case UwbUciConstants.STATUS_CODE_INVALID_RANGE:
-            case UwbUciConstants.STATUS_CODE_INVALID_MESSAGE_SIZE:
-                rangingChangeReason = RangingChangeReason.BAD_PARAMETERS;
-                break;
-            case UwbUciConstants.STATUS_CODE_ERROR_SESSION_NOT_EXIST:
-            case UwbUciConstants.STATUS_CODE_CCC_LIFECYCLE:
-            case UwbUciConstants.STATUS_CODE_CCC_SE_BUSY:
-                rangingChangeReason = RangingChangeReason.PROTOCOL_SPECIFIC;
-                break;
-        }
-        return rangingChangeReason;
-    }
-
-    /**
-     * convert to reason code
-     *
-     * @param protocolName Protocol name
-     * @param status reason codes in {@link UwbUciConstants}
-     * @return : {@link RangingChangeReason} change reason.
-     */
-    public static @RangingChangeReason int convertStatusToReasonCode(
-            String protocolName, int status) {
-        if (protocolName.equals(FiraParams.PROTOCOL_NAME)) {
-            return convertStatusToFiraReasonCode(status);
-        } else if (protocolName.equals(CccParams.PROTOCOL_NAME)) {
-            return convertStatusToCccReasonCode(status);
-        }
-        return RangingChangeReason.UNKNOWN;
-    }
-
-    private static @CccParams.ProtocolError int convertStatusToCccProtocolError(int status) {
-        switch (status) {
-            case UwbUciConstants.STATUS_CODE_ERROR_SESSION_NOT_EXIST:
-                return CccParams.PROTOCOL_ERROR_NOT_FOUND;
-            case UwbUciConstants.STATUS_CODE_CCC_LIFECYCLE:
-                return CccParams.PROTOCOL_ERROR_LIFECYCLE;
-            case UwbUciConstants.STATUS_CODE_CCC_SE_BUSY:
-                return CccParams.PROTOCOL_ERROR_SE_BUSY;
-            default:
-                return CccParams.PROTOCOL_ERROR_UNKNOWN;
-        }
     }
 
     public static PersistableBundle convertStatusToParam(String protocolName, int status) {
         Params c;
         if (protocolName.equals(CccParams.PROTOCOL_NAME)) {
-            c = new CccRangingError.Builder()
-                    .setError(convertStatusToCccProtocolError(status))
-                    .build();
+            c = new CccRangingError.Builder().setError(status).build();
         } else {
             c = new FiraStatusCode.Builder().setStatusCode(status).build();
         }
@@ -123,9 +92,7 @@ public class UwbSessionNotificationHelper {
     public static PersistableBundle convertReasonToParam(String protocolName, int reason) {
         Params c;
         if (protocolName.equals(CccParams.PROTOCOL_NAME)) {
-            c = new CccRangingError.Builder()
-                    .setError(convertStatusToCccProtocolError(reason))
-                    .build();
+            c = new CccRangingError.Builder().setError(reason).build();
         } else {
             c = new FiraStateChangeReasonCode.Builder().setReasonCode(reason).build();
         }
