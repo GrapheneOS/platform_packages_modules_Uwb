@@ -524,33 +524,33 @@ fn do_deinitialize<'a, T: Context<'a>>(context: &T) -> Result<(), UwbErr> {
 // unused, but leaving this behind if we want to use it later.
 #[allow(dead_code)]
 fn get_specification_info<'a, T: Context<'a>>(context: &T) -> Result<[JValue<'a>; 16], UwbErr> {
-    let mut para = [JValue::Int(0); 16];
     let dispatcher = context.get_dispatcher()?;
-    if dispatcher.get_device_info().is_none() {
-        error!("Fail to get specification info.");
-        return Err(UwbErr::failed());
+    match dispatcher.get_device_info() {
+        Some(data) => {
+            Ok([
+                JValue::Int((data.get_uci_version() & 0xFF).into()),
+                JValue::Int(((data.get_uci_version() >> 8) & 0xF).into()),
+                JValue::Int(((data.get_uci_version() >> 12) & 0xF).into()),
+                JValue::Int((data.get_mac_version() & 0xFF).into()),
+                JValue::Int(((data.get_mac_version() >> 8) & 0xF).into()),
+                JValue::Int(((data.get_mac_version() >> 12) & 0xF).into()),
+                JValue::Int((data.get_phy_version() & 0xFF).into()),
+                JValue::Int(((data.get_phy_version() >> 8) & 0xF).into()),
+                JValue::Int(((data.get_phy_version() >> 12) & 0xF).into()),
+                JValue::Int((data.get_uci_test_version() & 0xFF).into()),
+                JValue::Int(((data.get_uci_test_version() >> 8) & 0xF).into()),
+                JValue::Int(((data.get_uci_test_version() >> 12) & 0xF).into()),
+                JValue::Int(1), // fira_major_version
+                JValue::Int(0), // fira_minor_version
+                JValue::Int(1), // ccc_major_version
+                JValue::Int(0), // ccc_minor_version
+            ])
+        }
+        None => {
+            error!("Fail to get specification info.");
+            Err(UwbErr::failed())
+        }
     }
-    if let Some(data) = &dispatcher.get_device_info() {
-        para = [
-            JValue::Int((data.get_uci_version() & 0xFF).into()),
-            JValue::Int(((data.get_uci_version() >> 8) & 0xF).into()),
-            JValue::Int(((data.get_uci_version() >> 12) & 0xF).into()),
-            JValue::Int((data.get_mac_version() & 0xFF).into()),
-            JValue::Int(((data.get_mac_version() >> 8) & 0xF).into()),
-            JValue::Int(((data.get_mac_version() >> 12) & 0xF).into()),
-            JValue::Int((data.get_phy_version() & 0xFF).into()),
-            JValue::Int(((data.get_phy_version() >> 8) & 0xF).into()),
-            JValue::Int(((data.get_phy_version() >> 12) & 0xF).into()),
-            JValue::Int((data.get_uci_test_version() & 0xFF).into()),
-            JValue::Int(((data.get_uci_test_version() >> 8) & 0xF).into()),
-            JValue::Int(((data.get_uci_test_version() >> 12) & 0xF).into()),
-            JValue::Int(1), // fira_major_version
-            JValue::Int(0), // fira_minor_version
-            JValue::Int(1), // ccc_major_version
-            JValue::Int(0), // ccc_minor_version
-        ];
-    }
-    Ok(para)
 }
 
 fn session_init<'a, T: Context<'a>>(
@@ -893,5 +893,37 @@ mod tests {
 
         let result = do_deinitialize(&context);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_get_specification_info() {
+        let packet = uwb_uci_packets::GetDeviceInfoRspBuilder {
+            status: StatusCode::UciStatusOk,
+            uci_version: 0x1234,
+            mac_version: 0x5678,
+            phy_version: 0x9ABC,
+            uci_test_version: 0x1357,
+            vendor_spec_info: vec![],
+        }
+        .build();
+        let expected_array = [
+            0x34, 0x2, 0x1, // uci_version
+            0x78, 0x6, 0x5, // mac_version.
+            0xBC, 0xA, 0x9, // phy_version.
+            0x57, 0x3, 0x1, // uci_test_version.
+            1,   // fira_major_version
+            0,   // fira_minor_version
+            1,   // ccc_major_version
+            0,   // ccc_minor_version
+        ];
+
+        let mut dispatcher = MockDispatcher::new();
+        dispatcher.set_device_info(Some(packet));
+        let context = MockContext::new(dispatcher);
+
+        let results = get_specification_info(&context).unwrap();
+        for (idx, result) in results.iter().enumerate() {
+            assert_eq!(TryInto::<jint>::try_into(*result).unwrap(), expected_array[idx]);
+        }
     }
 }
