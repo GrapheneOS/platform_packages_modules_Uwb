@@ -21,12 +21,22 @@ import android.util.Log;
 
 import androidx.test.runner.AndroidJUnitRunner;
 
+import java.lang.reflect.Method;
+
 public class CustomTestRunner extends AndroidJUnitRunner {
     @Override
     public void onCreate(Bundle arguments) {
         // Override the default TerribleFailureHandler, as that handler might terminate
         // the process (if we're on an eng build).
-        Log.setWtfHandler((tag, what, system) -> Log.e(tag, "WTF", what));
+        // Use reflection since we are compiling the tests against SDK and |setWtfHandler| is @hide.
+        try {
+            Class<Log> clazz = Log.class;
+            Method method = clazz.getMethod("setWtfHandler", Log.TerribleFailureHandler.class);
+            Log.TerribleFailureHandler handler = (tag, what, system) -> Log.e(tag, "WTF", what);
+            method.invoke(null, handler);
+        } catch (Exception e) {
+            Log.e("CustomTestRunner", "Failed to set wtf handler", e);
+        }
         super.onCreate(arguments);
     }
 }

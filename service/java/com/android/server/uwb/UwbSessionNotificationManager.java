@@ -55,6 +55,13 @@ public class UwbSessionNotificationManager {
     public void onRangingResult(UwbSession uwbSession, UwbRangingData rangingData) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        boolean permissionGranted = mUwbInjector.checkUwbRangingPermissionForDataDelivery(
+                uwbSession.getAttributionSource(), "uwb ranging result");
+        if (!permissionGranted) {
+            Log.e(TAG, "Not delivering ranging result because of permission denial"
+                    + sessionHandle);
+            return;
+        }
         try {
             uwbRangingCallbacks.onRangingResult(
                     sessionHandle,
