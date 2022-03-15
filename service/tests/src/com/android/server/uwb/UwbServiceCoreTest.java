@@ -31,6 +31,7 @@ import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_
 
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -228,7 +229,7 @@ public class UwbServiceCoreTest {
 
     private void enableUwb() throws Exception {
         when(mNativeUwbManager.doInitialize()).thenReturn(true);
-        when(mUwbCountryCode.setCountryCode()).thenReturn(true);
+        when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(true);
 
         mUwbServiceCore.setEnabled(true);
         mTestLooper.dispatchAll();
@@ -250,7 +251,7 @@ public class UwbServiceCoreTest {
         enableUwb();
 
         verify(mNativeUwbManager).doInitialize();
-        verify(mUwbCountryCode).setCountryCode();
+        verify(mUwbCountryCode).setCountryCode(true);
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
                 StateChangeReason.SYSTEM_POLICY);
     }
@@ -264,7 +265,7 @@ public class UwbServiceCoreTest {
         enableUwb();
 
         verify(mNativeUwbManager).doInitialize();
-        verify(mUwbCountryCode).setCountryCode();
+        verify(mUwbCountryCode).setCountryCode(true);
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
                 StateChangeReason.SYSTEM_POLICY);
 
@@ -295,7 +296,7 @@ public class UwbServiceCoreTest {
     @Test
     public void testDisableWhenAlreadyDisabled() throws Exception {
         when(mNativeUwbManager.doInitialize()).thenReturn(true);
-        when(mUwbCountryCode.setCountryCode()).thenReturn(true);
+        when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(true);
         when(mNativeUwbManager.doDeinitialize()).thenReturn(true);
 
         IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
