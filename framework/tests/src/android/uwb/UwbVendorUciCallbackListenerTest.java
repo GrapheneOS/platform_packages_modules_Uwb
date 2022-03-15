@@ -50,7 +50,7 @@ import java.util.concurrent.Executor;
 @RunWith(AndroidJUnit4.class)
 public class UwbVendorUciCallbackListenerTest {
 
-    @Mock private IUwbAdapter2 mIUwbAdapter;
+    @Mock private IUwbAdapter mIUwbAdapter;
     @Mock private UwbVendorUciCallback mUwbVendorUciCallback;
     @Mock private UwbVendorUciCallback mUwbVendorUciCallback2;
 
