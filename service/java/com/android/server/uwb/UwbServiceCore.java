@@ -445,7 +445,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                         /* TODO : keep it until MW, FW fix b/196943897 */
                         handleDeviceStatusNotification(UwbUciConstants.DEVICE_STATE_READY);
                         // Set country code on every enable.
-                        mUwbCountryCode.setCountryCode();
+                        mUwbCountryCode.setCountryCode(true);
                     }
                 } finally {
                     mUwbWakeLock.release();
