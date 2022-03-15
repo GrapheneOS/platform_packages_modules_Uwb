@@ -106,9 +106,21 @@ public class UwbCountryCodeTest {
         mUwbCountryCode.initialize();
         clearInvocations(mNativeUwbManager);
 
-        mUwbCountryCode.setCountryCode();
+        mUwbCountryCode.setCountryCode(false);
         // already set.
         verify(mNativeUwbManager, never()).setCountryCode(
+                TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void testSetCountryCodeWithForceUpdateFromTelephony() {
+        when(mTelephonyManager.getNetworkCountryIso()).thenReturn(TEST_COUNTRY_CODE);
+        mUwbCountryCode.initialize();
+        clearInvocations(mNativeUwbManager);
+
+        mUwbCountryCode.setCountryCode(true);
+        // set again
+        verify(mNativeUwbManager).setCountryCode(
                 TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -118,7 +130,7 @@ public class UwbCountryCodeTest {
         mUwbCountryCode.initialize();
         clearInvocations(mNativeUwbManager);
 
-        mUwbCountryCode.setCountryCode();
+        mUwbCountryCode.setCountryCode(false);
         // already set.
         verify(mNativeUwbManager, never()).setCountryCode(
                 TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
