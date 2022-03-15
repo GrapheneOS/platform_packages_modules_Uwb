@@ -56,7 +56,7 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.util.ArrayMap;
 import android.util.Pair;
-import android.uwb.IUwbRangingCallbacks2;
+import android.uwb.IUwbRangingCallbacks;
 import android.uwb.RangingReport;
 import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
@@ -183,7 +183,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         }
     }
 
-    private static final class UwbRangingCallbacks extends IUwbRangingCallbacks2.Stub {
+    private static final class UwbRangingCallbacks extends IUwbRangingCallbacks.Stub {
         private final SessionInfo mSessionInfo;
         private final PrintWriter mPw;
         private final CompletableFuture mRangingOpenedFuture;

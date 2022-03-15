@@ -95,8 +95,11 @@ java_sdk_library {
     },
     hostdex: true, // for hiddenapi check
 
-    // TODO(b/186585880): Fix all @hide dependencies.
-    impl_library_visibility: ["//visibility:public"],
+    impl_library_visibility: [
+        "//cts/tests/uwb:__subpackages__",
+        "//external/sl4a/Common:__subpackages__",
+        "//packages/modules/Uwb:__subpackages__",
+    ],
 
     apex_available: [
         "com.android.uwb",
@@ -118,6 +121,10 @@ java_defaults {
     libs: [
         "framework-uwb.impl",
     ],
+    defaults_visibility: [
+        "//packages/modules/Uwb/framework/tests:__subpackages__",
+        "//packages/modules/Uwb/service/tests:__subpackages__",
+    ],
 }
 
 // TODO(b/186585880): Fix all @hide dependencies.
@@ -134,7 +141,9 @@ java_defaults {
         // if sdk_version="" this gets automatically included, but here we need to add manually.
         "framework-res",
     ],
-    defaults_visibility: ["//visibility:public"],
+    defaults_visibility: [
+        "//cts/tests/uwb:__subpackages__"
+    ],
 }
 
 filegroup {

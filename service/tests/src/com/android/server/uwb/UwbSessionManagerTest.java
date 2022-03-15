@@ -34,6 +34,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import android.content.AttributionSource;
 import android.os.IBinder;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
@@ -79,6 +80,10 @@ import java.util.concurrent.FutureTask;
 public class UwbSessionManagerTest {
     private static final int TEST_SESSION_ID = 100;
     private static final int MAX_SESSION_NUM = 8;
+    private static final int UID = 343453;
+    private static final String PACKAGE_NAME = "com.uwb.test";
+    private static final AttributionSource ATTRIBUTION_SOURCE =
+            new AttributionSource.Builder(UID).setPackageName(PACKAGE_NAME).build();
 
     @Mock
     private UwbConfigurationManager mUwbConfigurationManager;
@@ -205,8 +210,8 @@ public class UwbSessionManagerTest {
         IUwbRangingCallbacks mockRangingCallbacks = mock(IUwbRangingCallbacks.class);
         doReturn(true).when(mUwbSessionManager).isExistedSession(anyInt());
 
-        mUwbSessionManager.initSession(mock(SessionHandle.class), TEST_SESSION_ID, "any",
-                mock(Params.class), mockRangingCallbacks);
+        mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, mock(SessionHandle.class),
+                TEST_SESSION_ID, "any", mock(Params.class), mockRangingCallbacks);
 
         verify(mockRangingCallbacks).onRangingOpenFailed(any(), anyInt(), any());
         assertThat(mTestLooper.nextMessage()).isNull();
@@ -218,8 +223,8 @@ public class UwbSessionManagerTest {
         doReturn(false).when(mUwbSessionManager).isExistedSession(anyInt());
         IUwbRangingCallbacks mockRangingCallbacks = mock(IUwbRangingCallbacks.class);
 
-        mUwbSessionManager.initSession(mock(SessionHandle.class), TEST_SESSION_ID, "any",
-                mock(Params.class), mockRangingCallbacks);
+        mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, mock(SessionHandle.class),
+                TEST_SESSION_ID, "any", mock(Params.class), mockRangingCallbacks);
 
         verify(mockRangingCallbacks).onRangingOpenFailed(any(), anyInt(), any());
         assertThat(mTestLooper.nextMessage()).isNull();
@@ -234,15 +239,16 @@ public class UwbSessionManagerTest {
         Params mockParams = mock(FiraParams.class);
         IBinder mockBinder = mock(IBinder.class);
         UwbSession uwbSession = spy(
-                mUwbSessionManager.new UwbSession(mockSessionHandle, TEST_SESSION_ID,
-                        FiraParams.PROTOCOL_NAME, mockParams, mockRangingCallbacks));
+                mUwbSessionManager.new UwbSession(ATTRIBUTION_SOURCE, mockSessionHandle,
+                        TEST_SESSION_ID, FiraParams.PROTOCOL_NAME, mockParams,
+                        mockRangingCallbacks));
         doReturn(mockBinder).when(uwbSession).getBinder();
-        doReturn(uwbSession).when(mUwbSessionManager).createUwbSession(any(), anyInt(),
+        doReturn(uwbSession).when(mUwbSessionManager).createUwbSession(any(), any(), anyInt(),
                 anyString(), any(), any());
         doThrow(new RemoteException()).when(mockBinder).linkToDeath(any(), anyInt());
 
-        mUwbSessionManager.initSession(mockSessionHandle, TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
-                mockParams, mockRangingCallbacks);
+        mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, mockSessionHandle, TEST_SESSION_ID,
+                FiraParams.PROTOCOL_NAME, mockParams, mockRangingCallbacks);
 
         verify(uwbSession).binderDied();
         verify(mockRangingCallbacks).onRangingOpenFailed(any(), anyInt(), any());
@@ -260,14 +266,15 @@ public class UwbSessionManagerTest {
         Params mockParams = mock(FiraParams.class);
         IBinder mockBinder = mock(IBinder.class);
         UwbSession uwbSession = spy(
-                mUwbSessionManager.new UwbSession(mockSessionHandle, TEST_SESSION_ID,
-                        FiraParams.PROTOCOL_NAME, mockParams, mockRangingCallbacks));
+                mUwbSessionManager.new UwbSession(ATTRIBUTION_SOURCE, mockSessionHandle,
+                        TEST_SESSION_ID, FiraParams.PROTOCOL_NAME, mockParams,
+                        mockRangingCallbacks));
         doReturn(mockBinder).when(uwbSession).getBinder();
-        doReturn(uwbSession).when(mUwbSessionManager).createUwbSession(any(), anyInt(),
+        doReturn(uwbSession).when(mUwbSessionManager).createUwbSession(any(), any(), anyInt(),
                 anyString(), any(), any());
 
-        mUwbSessionManager.initSession(mockSessionHandle, TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
-                mockParams, mockRangingCallbacks);
+        mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, mockSessionHandle, TEST_SESSION_ID,
+                FiraParams.PROTOCOL_NAME, mockParams, mockRangingCallbacks);
 
         verify(uwbSession, never()).binderDied();
         verify(mockRangingCallbacks, never()).onRangingOpenFailed(any(), anyInt(), any());
@@ -617,10 +624,10 @@ public class UwbSessionManagerTest {
                 .build();
         IBinder mockBinder = mock(IBinder.class);
         UwbSession uwbSession = spy(
-                mUwbSessionManager.new UwbSession(mockSessionHandle, TEST_SESSION_ID,
-                        FiraParams.PROTOCOL_NAME, params, mockRangingCallbacks));
+                mUwbSessionManager.new UwbSession(ATTRIBUTION_SOURCE, mockSessionHandle,
+                        TEST_SESSION_ID, FiraParams.PROTOCOL_NAME, params, mockRangingCallbacks));
         doReturn(mockBinder).when(uwbSession).getBinder();
-        doReturn(uwbSession).when(mUwbSessionManager).createUwbSession(any(), anyInt(),
+        doReturn(uwbSession).when(mUwbSessionManager).createUwbSession(any(), any(), anyInt(),
                 anyString(), any(), any());
         doReturn(mock(WaitObj.class)).when(uwbSession).getWaitObj();
 
@@ -652,10 +659,10 @@ public class UwbSessionManagerTest {
                 .build();
         IBinder mockBinder = mock(IBinder.class);
         UwbSession uwbSession = spy(
-                mUwbSessionManager.new UwbSession(mockSessionHandle, TEST_SESSION_ID,
-                        CccParams.PROTOCOL_NAME, params, mockRangingCallbacks));
+                mUwbSessionManager.new UwbSession(ATTRIBUTION_SOURCE, mockSessionHandle,
+                        TEST_SESSION_ID, CccParams.PROTOCOL_NAME, params, mockRangingCallbacks));
         doReturn(mockBinder).when(uwbSession).getBinder();
-        doReturn(uwbSession).when(mUwbSessionManager).createUwbSession(any(), anyInt(),
+        doReturn(uwbSession).when(mUwbSessionManager).createUwbSession(any(), any(), anyInt(),
                 anyString(), any(), any());
         doReturn(mock(WaitObj.class)).when(uwbSession).getWaitObj();
 
@@ -674,7 +681,7 @@ public class UwbSessionManagerTest {
                 .thenReturn(UwbUciConstants.STATUS_CODE_OK);
 
 
-        mUwbSessionManager.initSession(uwbSession.getSessionHandle(),
+        mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
                 TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks());
         mTestLooper.dispatchAll();
@@ -698,7 +705,7 @@ public class UwbSessionManagerTest {
                 .thenReturn(UwbUciConstants.STATUS_CODE_OK);
 
 
-        mUwbSessionManager.initSession(uwbSession.getSessionHandle(),
+        mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
                 TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks());
         mTestLooper.dispatchAll();
@@ -722,7 +729,7 @@ public class UwbSessionManagerTest {
                 .thenReturn(UwbUciConstants.STATUS_CODE_OK);
 
 
-        mUwbSessionManager.initSession(uwbSession.getSessionHandle(),
+        mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
                 TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks());
         mTestLooper.dispatchAll();
@@ -746,7 +753,7 @@ public class UwbSessionManagerTest {
                 .thenReturn(UwbUciConstants.STATUS_CODE_FAILED);
 
 
-        mUwbSessionManager.initSession(uwbSession.getSessionHandle(),
+        mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
                 TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks());
         mTestLooper.dispatchAll();
@@ -770,7 +777,7 @@ public class UwbSessionManagerTest {
                 .thenReturn(UwbUciConstants.STATUS_CODE_FAILED);
 
 
-        mUwbSessionManager.initSession(uwbSession.getSessionHandle(),
+        mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
                 TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks());
         mTestLooper.dispatchAll();
@@ -794,7 +801,7 @@ public class UwbSessionManagerTest {
                 .thenReturn(UwbUciConstants.STATUS_CODE_FAILED);
 
 
-        mUwbSessionManager.initSession(uwbSession.getSessionHandle(),
+        mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
                 TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks());
         mTestLooper.dispatchAll();
@@ -809,7 +816,7 @@ public class UwbSessionManagerTest {
 
     private UwbSession prepareExistingUwbSession() throws Exception {
         UwbSession uwbSession = setUpUwbSessionForExecution();
-        mUwbSessionManager.initSession(uwbSession.getSessionHandle(),
+        mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
                 TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks());
         mTestLooper.nextMessage(); // remove the OPEN_RANGING msg;
@@ -821,7 +828,7 @@ public class UwbSessionManagerTest {
 
     private UwbSession prepareExistingCccUwbSession() throws Exception {
         UwbSession uwbSession = setUpCccUwbSessionForExecution();
-        mUwbSessionManager.initSession(uwbSession.getSessionHandle(),
+        mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
                 TEST_SESSION_ID, CccParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks());
         mTestLooper.nextMessage(); // remove the OPEN_RANGING msg;
@@ -1226,6 +1233,20 @@ public class UwbSessionManagerTest {
 
         verify(mUwbSessionNotificationManager).onRangingClosed(
                 eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
+        verify(mUwbMetrics).logRangingCloseEvent(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
+        assertThat(mUwbSessionManager.getSessionCount()).isEqualTo(0);
+    }
+
+
+    @Test
+    public void testHandleClientDeath() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        when(mNativeUwbManager.deInitSession(TEST_SESSION_ID))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_FAILED);
+
+        uwbSession.binderDied();
+
         verify(mUwbMetrics).logRangingCloseEvent(
                 eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
         assertThat(mUwbSessionManager.getSessionCount()).isEqualTo(0);

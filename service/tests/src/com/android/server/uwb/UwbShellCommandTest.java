@@ -39,7 +39,7 @@ import android.os.Binder;
 import android.os.PersistableBundle;
 import android.os.Process;
 import android.util.Pair;
-import android.uwb.IUwbRangingCallbacks2;
+import android.uwb.IUwbRangingCallbacks;
 import android.uwb.RangingMeasurement;
 import android.uwb.RangingReport;
 import android.uwb.SessionHandle;
@@ -171,15 +171,15 @@ public class UwbShellCommandTest {
     }
 
     private static class MutableCb {
-        @Nullable public IUwbRangingCallbacks2 cb;
+        @Nullable public IUwbRangingCallbacks cb;
     }
 
-    private Pair<IUwbRangingCallbacks2, SessionHandle> triggerAndVerifyRangingStart(
+    private Pair<IUwbRangingCallbacks, SessionHandle> triggerAndVerifyRangingStart(
             String[] rangingStartCmd, @NonNull Params openRangingParams) throws Exception {
         return triggerAndVerifyRangingStart(rangingStartCmd, openRangingParams, null);
     }
 
-    private Pair<IUwbRangingCallbacks2, SessionHandle> triggerAndVerifyRangingStart(
+    private Pair<IUwbRangingCallbacks, SessionHandle> triggerAndVerifyRangingStart(
             String[] rangingStartCmd, @NonNull Params openRangingParams, @Nullable Params
             startRangingParams) throws Exception {
         final MutableCb cbCaptor = new MutableCb();
@@ -222,7 +222,7 @@ public class UwbShellCommandTest {
     }
 
     private void triggerAndVerifyRangingStop(
-            String[] rangingStopCmd, IUwbRangingCallbacks2 cb, SessionHandle sessionHandle)
+            String[] rangingStopCmd, IUwbRangingCallbacks cb, SessionHandle sessionHandle)
             throws Exception {
         doAnswer(invocation -> {
             cb.onRangingStopped(sessionHandle, REASON_LOCAL_REQUEST, new PersistableBundle());
@@ -280,7 +280,7 @@ public class UwbShellCommandTest {
 
     @Test
     public void testRangingReportFiraRanging() throws Exception {
-        Pair<IUwbRangingCallbacks2, SessionHandle> cbAndSessionHandle =
+        Pair<IUwbRangingCallbacks, SessionHandle> cbAndSessionHandle =
                 triggerAndVerifyRangingStart(
                         new String[]{"start-fira-ranging-session"},
                         DEFAULT_FIRA_OPEN_SESSION_PARAMS.build());
@@ -295,7 +295,7 @@ public class UwbShellCommandTest {
 
     @Test
     public void testRangingReportAllFiraRanging() throws Exception {
-        Pair<IUwbRangingCallbacks2, SessionHandle> cbAndSessionHandle =
+        Pair<IUwbRangingCallbacks, SessionHandle> cbAndSessionHandle =
                 triggerAndVerifyRangingStart(
                         new String[]{"start-fira-ranging-session"},
                         DEFAULT_FIRA_OPEN_SESSION_PARAMS.build());
@@ -309,7 +309,7 @@ public class UwbShellCommandTest {
 
     @Test
     public void testStopFiraRanging() throws Exception {
-        Pair<IUwbRangingCallbacks2, SessionHandle> cbAndSessionHandle =
+        Pair<IUwbRangingCallbacks, SessionHandle> cbAndSessionHandle =
                 triggerAndVerifyRangingStart(
                         new String[]{"start-fira-ranging-session"},
                         DEFAULT_FIRA_OPEN_SESSION_PARAMS.build());
@@ -343,7 +343,7 @@ public class UwbShellCommandTest {
     @Test
     public void testStopCccRanging() throws Exception {
         CccOpenRangingParams openSessionParams = DEFAULT_CCC_OPEN_RANGING_PARAMS.build();
-        Pair<IUwbRangingCallbacks2, SessionHandle> cbAndSessionHandle =
+        Pair<IUwbRangingCallbacks, SessionHandle> cbAndSessionHandle =
                 triggerAndVerifyRangingStart(
                         new String[]{"start-ccc-ranging-session"},
                         openSessionParams,
@@ -357,7 +357,7 @@ public class UwbShellCommandTest {
     @Test
     public void testStopAllRanging() throws Exception {
         CccOpenRangingParams openSessionParams = DEFAULT_CCC_OPEN_RANGING_PARAMS.build();
-        Pair<IUwbRangingCallbacks2, SessionHandle> cbAndSessionHandle =
+        Pair<IUwbRangingCallbacks, SessionHandle> cbAndSessionHandle =
                 triggerAndVerifyRangingStart(
                         new String[]{"start-ccc-ranging-session"},
                         openSessionParams,
