@@ -22,7 +22,7 @@ import android.uwb.AdapterState;
 /**
  * @hide
  */
-interface IUwbAdapterStateCallbacks {
+oneway interface IUwbAdapterStateCallbacks {
   /**
      * Called whenever the adapter state changes
      *
