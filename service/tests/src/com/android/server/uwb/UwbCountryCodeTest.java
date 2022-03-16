@@ -21,6 +21,7 @@ import static org.mockito.Mockito.*;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiManager.ActiveCountryCodeChangedCallback;
 import android.os.Handler;
@@ -54,6 +55,7 @@ public class UwbCountryCodeTest {
     @Mock WifiManager mWifiManager;
     @Mock NativeUwbManager mNativeUwbManager;
     @Mock UwbInjector mUwbInjector;
+    @Mock PackageManager mPackageManager;
     private TestLooper mTestLooper;
     private UwbCountryCode mUwbCountryCode;
 
@@ -74,6 +76,8 @@ public class UwbCountryCodeTest {
                 .thenReturn(mTelephonyManager);
         when(mContext.getSystemService(WifiManager.class))
                 .thenReturn(mWifiManager);
+        when(mContext.getPackageManager()).thenReturn(mPackageManager);
+        when(mPackageManager.hasSystemFeature(PackageManager.FEATURE_WIFI)).thenReturn(true);
         when(mNativeUwbManager.setCountryCode(any())).thenReturn(
                 (byte) UwbUciConstants.STATUS_CODE_OK);
         mUwbCountryCode = new UwbCountryCode(
