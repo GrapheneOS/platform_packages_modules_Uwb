@@ -31,14 +31,14 @@ import java.util.concurrent.Executor;
 /**
  * @hide
  */
-public class RangingManager extends android.uwb.IUwbRangingCallbacks2.Stub {
+public class RangingManager extends android.uwb.IUwbRangingCallbacks.Stub {
     private static final String TAG = "Uwb.RangingManager";
 
-    private final IUwbAdapter2 mAdapter;
+    private final IUwbAdapter mAdapter;
     private final Hashtable<SessionHandle, RangingSession> mRangingSessionTable = new Hashtable<>();
     private int mNextSessionId = 1;
 
-    public RangingManager(IUwbAdapter2 adapter) {
+    public RangingManager(IUwbAdapter adapter) {
         mAdapter = adapter;
     }
 

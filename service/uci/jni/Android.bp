@@ -5,6 +5,8 @@ package {
 rust_defaults {
     name: "libuwb_uci_jni_rust_defaults",
     crate_name: "uwb_uci_jni_rust",
+    lints: "android",
+    clippy_lints: "android",
     min_sdk_version: "Tiramisu",
     srcs: ["rust/lib.rs"],
     rustlibs: [
@@ -31,6 +33,22 @@ rust_ffi_shared {
 rust_test {
     name: "libuwb_uci_jni_rust_tests",
     defaults: ["libuwb_uci_jni_rust_defaults"],
+    test_suites: [
+        "general-tests",
+        "mts-uwb"
+    ],
+    test_config_template: "uwb_rust_test_config_template.xml",
+    // Support multilib variants (using different suffix per sub-architecture), which is needed on
+    // build targets with secondary architectures, as the MTS test suite packaging logic flattens
+    // all test artifacts into a single `testcases` directory.
+    compile_multilib: "both",
+    multilib: {
+        lib32: {
+            suffix: "32",
+        },
+        lib64: {
+            suffix: "",
+        },
+    },
     auto_gen_config: true,
-    test_suites: [ "general-tests" ],
 }

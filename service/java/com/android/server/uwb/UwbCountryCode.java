@@ -138,7 +138,7 @@ public class UwbCountryCode {
         } else {
             mTelephonyCountryCode = countryCode.toUpperCase(Locale.US);
         }
-        return setCountryCode();
+        return setCountryCode(false);
     }
 
     private boolean setWifiCountryCode(String countryCode) {
@@ -151,7 +151,7 @@ public class UwbCountryCode {
         } else {
             mWifiCountryCode = countryCode.toUpperCase(Locale.US);
         }
-        return setCountryCode();
+        return setCountryCode(false);
     }
 
     private String pickCountryCode() {
@@ -170,15 +170,17 @@ public class UwbCountryCode {
     /**
      * Set country code
      *
+     * @param forceUpdate Force update the country code even if it was the same as previously cached
+     *                    value.
      * @return true if the country code is set successfully, false otherwise.
      */
-    public boolean setCountryCode() {
+    public boolean setCountryCode(boolean forceUpdate) {
         String country = pickCountryCode();
         if (country == null) {
             Log.i(TAG, "No valid country code");
             return false;
         }
-        if (Objects.equals(country, mCountryCode)) {
+        if (!forceUpdate && Objects.equals(country, mCountryCode)) {
             Log.i(TAG, "Ignoring already set country code: " + country);
             return false;
         }
@@ -229,7 +231,7 @@ public class UwbCountryCode {
             return;
         }
         mOverrideCountryCode = countryCode.toUpperCase(Locale.US);
-        setCountryCode();
+        setCountryCode(true);
     }
 
     /**
@@ -237,7 +239,7 @@ public class UwbCountryCode {
      */
     public synchronized void clearOverrideCountryCode() {
         mOverrideCountryCode = null;
-        setCountryCode();
+        setCountryCode(true);
     }
 
     /**

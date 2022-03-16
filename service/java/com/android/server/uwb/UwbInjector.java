@@ -26,23 +26,17 @@ import android.content.pm.ApplicationInfo;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.IBinder;
 import android.os.Looper;
-import android.os.ServiceManager;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.permission.PermissionManager;
 import android.provider.Settings;
 import android.util.AtomicFile;
-import android.util.Log;
-import android.uwb.IUwbAdapter;
 
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.multchip.UwbMultichipData;
 
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Locale;
 
 /**
@@ -67,8 +61,7 @@ public class UwbInjector {
     private final UwbSettingsStore mUwbSettingsStore;
     private final NativeUwbManager mNativeUwbManager;
     private final UwbCountryCode mUwbCountryCode;
-    // TODO(b/196225233): Make these final when qorvo stack is integrated.
-    private UwbServiceCore mUwbService;
+    private final UwbServiceCore mUwbService;
     private final UwbMetrics mUwbMetrics;
     private final DeviceConfigFacade mDeviceConfigFacade;
     private final UwbMultichipData mUwbMultichipData;
@@ -91,6 +84,15 @@ public class UwbInjector {
         mUwbMetrics = new UwbMetrics(this);
         mDeviceConfigFacade = new DeviceConfigFacade(new Handler(mLooper), this);
         mUwbMultichipData = new UwbMultichipData(mContext);
+        UwbConfigurationManager uwbConfigurationManager =
+                new UwbConfigurationManager(mNativeUwbManager);
+        UwbSessionNotificationManager uwbSessionNotificationManager =
+                new UwbSessionNotificationManager(this);
+        UwbSessionManager uwbSessionManager =
+                new UwbSessionManager(uwbConfigurationManager, mNativeUwbManager, mUwbMetrics,
+                        uwbSessionNotificationManager, mLooper);
+        mUwbService = new UwbServiceCore(mContext, mNativeUwbManager, mUwbMetrics,
+                mUwbCountryCode, uwbSessionManager, uwbConfigurationManager, mLooper);
     }
 
     public UwbSettingsStore getUwbSettingsStore() {
@@ -118,36 +120,7 @@ public class UwbInjector {
     }
 
     public UwbServiceCore getUwbServiceCore() {
-        // TODO(b/196225233): Remove this lazy initialization when qorvo stack is integrated.
-        if (mUwbService == null) {
-            UwbConfigurationManager uwbConfigurationManager =
-                    new UwbConfigurationManager(mNativeUwbManager);
-            UwbSessionNotificationManager uwbSessionNotificationManager =
-                    new UwbSessionNotificationManager(this);
-            UwbSessionManager uwbSessionManager =
-                    new UwbSessionManager(uwbConfigurationManager, mNativeUwbManager, mUwbMetrics,
-                            uwbSessionNotificationManager, mLooper);
-            mUwbService = new UwbServiceCore(mContext, mNativeUwbManager, mUwbMetrics,
-                    mUwbCountryCode, uwbSessionManager, uwbConfigurationManager, mLooper);
-        }
         return mUwbService;
-    }
-
-    /**
-     * @return Returns the vendor service handle.
-     */
-    public IUwbAdapter getVendorService() {
-        // TODO(b/196225233): Remove this when qorvo stack is integrated.
-        try {
-            Method getServiceMethod = ServiceManager.class.getMethod("getService", String.class);
-            IBinder b = (IBinder) getServiceMethod.invoke(null, VENDOR_SERVICE_NAME);
-            if (b == null) return null;
-            return IUwbAdapter.Stub.asInterface(b);
-        } catch (NoSuchMethodException | IllegalAccessException | IllegalArgumentException
-                | InvocationTargetException e) {
-            Log.e(TAG, "Reflection failure", e);
-            return null;
-        }
     }
 
     /**
@@ -155,13 +128,6 @@ public class UwbInjector {
      */
     public UwbShellCommand makeUwbShellCommand(UwbServiceImpl uwbService) {
         return new UwbShellCommand(this, uwbService, mContext);
-    }
-
-    /**
-     * @return Returns whether the UCI stack is enabled or not (Disabled by default).
-     */
-    public boolean isUciStackEnabled() {
-        return SystemProperties.getBoolean("persist.uwb.enable_uci_stack", false);
     }
 
     /**
