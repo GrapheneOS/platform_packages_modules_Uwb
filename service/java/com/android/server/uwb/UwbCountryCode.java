@@ -21,6 +21,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiManager.ActiveCountryCodeChangedCallback;
 import android.os.Handler;
@@ -109,8 +110,10 @@ public class UwbCountryCode {
                 },
                 new IntentFilter(TelephonyManager.ACTION_NETWORK_COUNTRY_CHANGED),
                 null, mHandler);
-        mContext.getSystemService(WifiManager.class).registerActiveCountryCodeChangedCallback(
-                new HandlerExecutor(mHandler), new WifiCountryCodeCallback());
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI)) {
+            mContext.getSystemService(WifiManager.class).registerActiveCountryCodeChangedCallback(
+                    new HandlerExecutor(mHandler), new WifiCountryCodeCallback());
+        }
 
         Log.d(TAG, "Default country code from system property is "
                 + mUwbInjector.getOemDefaultCountryCode());
