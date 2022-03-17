@@ -40,6 +40,7 @@ import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.os.test.TestLooper;
 import android.uwb.IUwbRangingCallbacks;
+import android.uwb.RangingChangeReason;
 import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
 
@@ -526,8 +527,7 @@ public class UwbSessionManagerTest {
         mUwbSessionManager.deinitAllSession();
 
         verify(mUwbSessionNotificationManager, times(2))
-                .onRangingClosed(any(),
-                        eq(UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS));
+                .onRangingClosedWithReasonCode(any(), eq(RangingChangeReason.SYSTEM_POLICY));
         verify(mUwbSessionManager, times(2)).removeSession(any());
         // TODO: enable it when the resetDevice is enabled.
         // verify(mNativeUwbManager).resetDevice(eq(UwbUciConstants.UWBS_RESET));

@@ -36,6 +36,7 @@ import android.uwb.AngleMeasurement;
 import android.uwb.AngleOfArrivalMeasurement;
 import android.uwb.DistanceMeasurement;
 import android.uwb.IUwbRangingCallbacks;
+import android.uwb.RangingChangeReason;
 import android.uwb.RangingMeasurement;
 import android.uwb.RangingReport;
 import android.uwb.SessionHandle;
@@ -235,13 +236,13 @@ public class UwbSessionNotificationManagerTest {
 
     @Test
     public void testOnRangingStopped() throws Exception {
-        int reason = UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS;
-        mUwbSessionNotificationManager.onRangingStopped(mUwbSession, reason);
+        int status = UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS;
+        mUwbSessionNotificationManager.onRangingStopped(mUwbSession, status);
 
         verify(mIUwbRangingCallbacks).onRangingStopped(eq(mSessionHandle),
                 eq(UwbSessionNotificationHelper.convertStatusToReasonCode(
-                    FiraParams.PROTOCOL_NAME, reason)),
-                argThat(p-> p.getInt("reason_code") == reason));
+                    FiraParams.PROTOCOL_NAME, status)),
+                argThat(p-> p.getInt("status_code") == status));
     }
 
     @Test
@@ -275,13 +276,23 @@ public class UwbSessionNotificationManagerTest {
 
     @Test
     public void testOnRangingClosed() throws Exception {
-        int reason = UwbUciConstants.REASON_ERROR_SLOT_LENGTH_NOT_SUPPORTED;
-        mUwbSessionNotificationManager.onRangingClosed(mUwbSession, reason);
+        int status = UwbUciConstants.REASON_ERROR_SLOT_LENGTH_NOT_SUPPORTED;
+        mUwbSessionNotificationManager.onRangingClosed(mUwbSession, status);
 
         verify(mIUwbRangingCallbacks).onRangingClosed(eq(mSessionHandle),
                 eq(UwbSessionNotificationHelper.convertStatusToReasonCode(
-                    FiraParams.PROTOCOL_NAME, reason)),
-                argThat(p-> p.getInt("reason_code") == reason));
+                    FiraParams.PROTOCOL_NAME, status)),
+                argThat(p-> p.getInt("status_code") == status));
+    }
+
+    @Test
+    public void testOnRangingClosedWithReasonCode() throws Exception {
+        int reasonCode = RangingChangeReason.SYSTEM_POLICY;
+        mUwbSessionNotificationManager.onRangingClosedWithReasonCode(mUwbSession, reasonCode);
+
+        verify(mIUwbRangingCallbacks).onRangingClosed(eq(mSessionHandle),
+                eq(reasonCode),
+                argThat(p-> p.getInt("reason_code") == reasonCode));
     }
 
     // Helper method to generate a UwbRangingData instance and corresponding RangingMeasurement
