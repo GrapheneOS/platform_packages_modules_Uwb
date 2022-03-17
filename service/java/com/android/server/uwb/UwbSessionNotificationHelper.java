@@ -32,6 +32,9 @@ public class UwbSessionNotificationHelper {
         /* set default */
         int rangingChangeReason = RangingChangeReason.UNKNOWN;
         switch (status) {
+            case UwbUciConstants.STATUS_CODE_OK:
+                rangingChangeReason = RangingChangeReason.LOCAL_API;
+                break;
             case UwbUciConstants.STATUS_CODE_ERROR_MAX_SESSIONS_EXCEEDED:
                 rangingChangeReason = RangingChangeReason.MAX_SESSIONS_REACHED;
                 break;
@@ -46,7 +49,6 @@ public class UwbSessionNotificationHelper {
             case UwbUciConstants.STATUS_CODE_INVALID_MESSAGE_SIZE:
                 rangingChangeReason = RangingChangeReason.BAD_PARAMETERS;
                 break;
-            // TODO : Convert more status to proper RangingChangeReason..
         }
         return rangingChangeReason;
     }
@@ -55,6 +57,9 @@ public class UwbSessionNotificationHelper {
         /* set default */
         int rangingChangeReason = RangingChangeReason.UNKNOWN;
         switch (status) {
+            case UwbUciConstants.STATUS_CODE_OK:
+                rangingChangeReason = RangingChangeReason.LOCAL_API;
+                break;
             case UwbUciConstants.STATUS_CODE_ERROR_MAX_SESSIONS_EXCEEDED:
                 rangingChangeReason = RangingChangeReason.MAX_SESSIONS_REACHED;
                 break;

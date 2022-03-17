@@ -132,15 +132,15 @@ public class UwbSessionNotificationManager {
         }
     }
 
-    public void onRangingStopped(UwbSession uwbSession, int reasonCode) {
+    public void onRangingStopped(UwbSession uwbSession, int status)  {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
         try {
             uwbRangingCallbacks.onRangingStopped(sessionHandle,
                     UwbSessionNotificationHelper.convertStatusToReasonCode(
-                            uwbSession.getProtocolName(), reasonCode),
+                            uwbSession.getProtocolName(), status),
                     UwbSessionNotificationHelper.convertStatusToParam(uwbSession.getProtocolName(),
-                            reasonCode));
+                            status));
             Log.i(TAG, "IUwbRangingCallbacks - onRangingStopped");
         } catch (Exception e) {
             Log.e(TAG, "IUwbRangingCallbacks - onRangingStopped : Failed");
@@ -201,13 +201,27 @@ public class UwbSessionNotificationManager {
         }
     }
 
-    public void onRangingClosed(UwbSession uwbSession, int reasonCode) {
+    public void onRangingClosed(UwbSession uwbSession, int status) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
         try {
             uwbRangingCallbacks.onRangingClosed(sessionHandle,
                     UwbSessionNotificationHelper.convertStatusToReasonCode(
-                            uwbSession.getProtocolName(), reasonCode),
+                            uwbSession.getProtocolName(), status),
+                    UwbSessionNotificationHelper.convertStatusToParam(uwbSession.getProtocolName(),
+                            status));
+            Log.i(TAG, "IUwbRangingCallbacks - onRangingClosed");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onRangingClosed : Failed");
+            e.printStackTrace();
+        }
+    }
+
+    public void onRangingClosedWithReasonCode(UwbSession uwbSession, int reasonCode) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            uwbRangingCallbacks.onRangingClosed(sessionHandle, reasonCode,
                     UwbSessionNotificationHelper.convertReasonToParam(uwbSession.getProtocolName(),
                             reasonCode));
             Log.i(TAG, "IUwbRangingCallbacks - onRangingClosed");
