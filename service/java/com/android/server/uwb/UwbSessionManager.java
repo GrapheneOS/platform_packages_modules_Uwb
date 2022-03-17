@@ -15,8 +15,6 @@
  */
 package com.android.server.uwb;
 
-import static com.android.server.uwb.data.UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS;
-
 import android.annotation.Nullable;
 import android.content.AttributionSource;
 import android.os.Handler;
@@ -145,11 +143,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         switch (state) {
             case UwbUciConstants.UWB_SESSION_STATE_IDLE:
                 if (prevState == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
-                    if (reasonCode
-                            == UwbUciConstants.REASON_MAX_RANGING_ROUND_RETRY_COUNT_REACHED) {
-                        mSessionNotificationManager.onRangingStopped(uwbSession, reasonCode);
-                        mUwbMetrics.longRangingStopEvent(uwbSession);
-                    }
+                    mSessionNotificationManager.onRangingStopped(uwbSession, reasonCode);
+                    mUwbMetrics.longRangingStopEvent(uwbSession);
                 } else if (prevState == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
                     //mSessionNotificationManager.onRangingReconfigureFailed(
                     //      uwbSession, reasonCode);
@@ -296,11 +291,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         } else if (currentSessionState == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
             Log.i(TAG, "session is already idle state");
             mSessionNotificationManager.onRangingStopped(uwbSession,
-                    REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS);
+                    UwbUciConstants.STATUS_CODE_OK);
             mUwbMetrics.longRangingStopEvent(uwbSession);
         } else {
-            int status = UwbUciConstants.STATUS_CODE_REJECTED;
-            mSessionNotificationManager.onRangingStopFailed(uwbSession, status);
+            mSessionNotificationManager.onRangingStopFailed(uwbSession,
+                    UwbUciConstants.STATUS_CODE_REJECTED);
             Log.i(TAG, "Not active session ID");
         }
     }
@@ -358,8 +353,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         Log.d(TAG, "deinitAllSession()");
         for (Map.Entry<Integer, UwbSession> sessionEntry : mSessionTable.entrySet()) {
             UwbSession uwbSession = sessionEntry.getValue();
-            mSessionNotificationManager.onRangingClosed(uwbSession,
-                    REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS);
+            mSessionNotificationManager.onRangingClosedWithReasonCode(uwbSession,
+                    RangingChangeReason.SYSTEM_POLICY);
             mUwbMetrics.logRangingCloseEvent(uwbSession, UwbUciConstants.STATUS_CODE_OK);
             removeSession(uwbSession);
         }
@@ -583,8 +578,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                         uwbSession, rangingStartedParams);
                             } else {
                                 status = UwbUciConstants.STATUS_CODE_FAILED;
-                                mSessionNotificationManager.onRangingStartFailed(
-                                        uwbSession, UwbUciConstants.STATUS_CODE_FAILED);
+                                mSessionNotificationManager.onRangingStartFailed(uwbSession,
+                                        status);
                             }
                         }
                         return status;
@@ -627,8 +622,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                 mSessionNotificationManager.onRangingStopped(uwbSession, status);
                             } else {
                                 status = UwbUciConstants.STATUS_CODE_FAILED;
-                                mSessionNotificationManager.onRangingStopFailed(
-                                        uwbSession, UwbUciConstants.STATUS_CODE_FAILED);
+                                mSessionNotificationManager.onRangingStopFailed(uwbSession,
+                                        status);
                             }
                         }
                         return status;
