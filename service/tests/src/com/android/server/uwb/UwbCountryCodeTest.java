@@ -85,6 +85,13 @@ public class UwbCountryCodeTest {
     }
 
     @Test
+    public void testSetDefaultCountryCodeWhenNoCountryCodeAvailable() {
+        mUwbCountryCode.initialize();
+        verify(mNativeUwbManager).setCountryCode(
+                UwbCountryCode.DEFAULT_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Test
     public void testInitializeCountryCodeFromTelephony() {
         when(mTelephonyManager.getNetworkCountryIso()).thenReturn(TEST_COUNTRY_CODE);
         mUwbCountryCode.initialize();
