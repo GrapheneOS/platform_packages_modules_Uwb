@@ -32,6 +32,7 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.android.internal.annotations.VisibleForTesting;
 import com.android.modules.utils.HandlerExecutor;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.jni.NativeUwbManager;
@@ -52,6 +53,9 @@ import java.util.Set;
  */
 public class UwbCountryCode {
     private static final String TAG = "UwbCountryCode";
+    // To be used when there is no country code available.
+    @VisibleForTesting
+    public static final String DEFAULT_COUNTRY_CODE = "00";
     private static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
@@ -180,8 +184,8 @@ public class UwbCountryCode {
     public boolean setCountryCode(boolean forceUpdate) {
         String country = pickCountryCode();
         if (country == null) {
-            Log.i(TAG, "No valid country code");
-            return false;
+            Log.i(TAG, "No valid country code, reset to " + DEFAULT_COUNTRY_CODE);
+            country = DEFAULT_COUNTRY_CODE;
         }
         if (!forceUpdate && Objects.equals(country, mCountryCode)) {
             Log.i(TAG, "Ignoring already set country code: " + country);
