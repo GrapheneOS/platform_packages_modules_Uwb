@@ -201,7 +201,7 @@ public class UwbSessionManagerTest {
 
         verify(mockUwbSession, times(2)).getWaitObj();
         verify(mockUwbSession).setSessionState(eq(UwbUciConstants.UWB_SESSION_STATE_IDLE));
-        verify(mUwbSessionNotificationManager).onRangingStopped(
+        verify(mUwbSessionNotificationManager).onRangingStoppedWithUciReasonCode(
                 eq(mockUwbSession),
                 eq(UwbUciConstants.REASON_MAX_RANGING_ROUND_RETRY_COUNT_REACHED));
     }
@@ -527,7 +527,7 @@ public class UwbSessionManagerTest {
         mUwbSessionManager.deinitAllSession();
 
         verify(mUwbSessionNotificationManager, times(2))
-                .onRangingClosedWithReasonCode(any(), eq(RangingChangeReason.SYSTEM_POLICY));
+                .onRangingClosedWithApiReasonCode(any(), eq(RangingChangeReason.SYSTEM_POLICY));
         verify(mUwbSessionManager, times(2)).removeSession(any());
         // TODO: enable it when the resetDevice is enabled.
         // verify(mNativeUwbManager).resetDevice(eq(UwbUciConstants.UWBS_RESET));

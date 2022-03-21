@@ -210,8 +210,7 @@ public class UwbSessionNotificationManagerTest {
         mUwbSessionNotificationManager.onRangingOpenFailed(mUwbSession, status);
 
         verify(mIUwbRangingCallbacks).onRangingOpenFailed(eq(mSessionHandle),
-                eq(UwbSessionNotificationHelper.convertStatusToReasonCode(
-                    FiraParams.PROTOCOL_NAME, status)),
+                eq(UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(status)),
                 argThat(p -> (p.getInt("status_code")) == status));
     }
 
@@ -229,8 +228,7 @@ public class UwbSessionNotificationManagerTest {
         mUwbSessionNotificationManager.onRangingStartFailed(mUwbSession, status);
 
         verify(mIUwbRangingCallbacks).onRangingStartFailed(eq(mSessionHandle),
-                eq(UwbSessionNotificationHelper.convertStatusToReasonCode(
-                    FiraParams.PROTOCOL_NAME, status)),
+                eq(UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(status)),
                 argThat(p -> (p.getInt("status_code")) == status));
     }
 
@@ -240,8 +238,7 @@ public class UwbSessionNotificationManagerTest {
         mUwbSessionNotificationManager.onRangingStopped(mUwbSession, status);
 
         verify(mIUwbRangingCallbacks).onRangingStopped(eq(mSessionHandle),
-                eq(UwbSessionNotificationHelper.convertStatusToReasonCode(
-                    FiraParams.PROTOCOL_NAME, status)),
+                eq(UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(status)),
                 argThat(p-> p.getInt("status_code") == status));
     }
 
@@ -251,8 +248,7 @@ public class UwbSessionNotificationManagerTest {
         mUwbSessionNotificationManager.onRangingStopFailed(mUwbSession, status);
 
         verify(mIUwbRangingCallbacks).onRangingStopFailed(eq(mSessionHandle),
-                eq(UwbSessionNotificationHelper.convertStatusToReasonCode(
-                    FiraParams.PROTOCOL_NAME, status)),
+                eq(UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(status)),
                 argThat(p -> (p.getInt("status_code")) == status));
     }
 
@@ -269,8 +265,7 @@ public class UwbSessionNotificationManagerTest {
         mUwbSessionNotificationManager.onRangingReconfigureFailed(mUwbSession, status);
 
         verify(mIUwbRangingCallbacks).onRangingReconfigureFailed(eq(mSessionHandle),
-                eq(UwbSessionNotificationHelper.convertStatusToReasonCode(
-                    FiraParams.PROTOCOL_NAME, status)),
+                eq(UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(status)),
                 argThat(p -> (p.getInt("status_code")) == status));
     }
 
@@ -280,19 +275,18 @@ public class UwbSessionNotificationManagerTest {
         mUwbSessionNotificationManager.onRangingClosed(mUwbSession, status);
 
         verify(mIUwbRangingCallbacks).onRangingClosed(eq(mSessionHandle),
-                eq(UwbSessionNotificationHelper.convertStatusToReasonCode(
-                    FiraParams.PROTOCOL_NAME, status)),
+                eq(UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(status)),
                 argThat(p-> p.getInt("status_code") == status));
     }
 
     @Test
     public void testOnRangingClosedWithReasonCode() throws Exception {
         int reasonCode = RangingChangeReason.SYSTEM_POLICY;
-        mUwbSessionNotificationManager.onRangingClosedWithReasonCode(mUwbSession, reasonCode);
+        mUwbSessionNotificationManager.onRangingClosedWithApiReasonCode(mUwbSession, reasonCode);
 
         verify(mIUwbRangingCallbacks).onRangingClosed(eq(mSessionHandle),
                 eq(reasonCode),
-                argThat(p-> p.getInt("reason_code") == reasonCode));
+                argThat(p-> p.isEmpty()));
     }
 
     // Helper method to generate a UwbRangingData instance and corresponding RangingMeasurement
