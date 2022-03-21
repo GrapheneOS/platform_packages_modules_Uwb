@@ -27,6 +27,9 @@ import com.google.common.primitives.Bytes;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Holds data of the UWB Regulatory Information according to FiRa BLE OOB v1.0
@@ -119,12 +122,15 @@ public class RegulatoryInfo {
 
         int info_size =
                 1 + (bytes.length - MIN_UWB_REGULATORY_INFO_SIZE) / CHANNEL_AND_POWER_FIELD_SIZE;
-        ChannelPowerInfo[] infos = new ChannelPowerInfo[info_size];
+        List<ChannelPowerInfo> infos = new ArrayList<>();
 
         for (int i = 0; i < info_size; i++) {
             byte[] channelPowerInfoBytes = new byte[CHANNEL_AND_POWER_FIELD_SIZE];
             byteBuffer.get(channelPowerInfoBytes);
-            infos[i] = ChannelPowerInfo.fromBytes(channelPowerInfoBytes);
+            ChannelPowerInfo info = ChannelPowerInfo.fromBytes(channelPowerInfoBytes);
+            if (info != null) {
+                infos.add(info);
+            }
         }
 
         return new RegulatoryInfo(
@@ -132,7 +138,7 @@ public class RegulatoryInfo {
                 outdoorsTransmittionPermitted,
                 countryCode,
                 timestampSecondsSinceEpoch,
-                infos);
+                infos.toArray(new ChannelPowerInfo[0]));
     }
 
     /**
@@ -241,10 +247,9 @@ public class RegulatoryInfo {
                 .append(" CountryCode=")
                 .append(countryCode)
                 .append(" TimestampSecondsSinceEpoch=")
-                .append(timestampSecondsSinceEpoch);
-        for (ChannelPowerInfo info : channelPowerInfos) {
-            sb.append(info);
-        }
+                .append(timestampSecondsSinceEpoch)
+                .append(" ")
+                .append(Arrays.toString(channelPowerInfos));
         return sb.toString();
     }
 

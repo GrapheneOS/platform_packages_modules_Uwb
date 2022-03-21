@@ -28,6 +28,9 @@ import com.android.server.uwb.util.DataTypeConversionUtil;
 public class ChannelPowerInfo {
     private static final String LOG_TAG = ChannelPowerInfo.class.getSimpleName();
 
+    // Minimum size of the full info
+    private static final int MIN_CHANNEL_POWER_INFO_SIZE = 2;
+
     private static final int ENCODE_1ST_CHANNEL_BITMASK = 0xF0;
     private static final byte ENCODE_NUM_OF_CHANNEL_BITMASK = 0x0E;
     private static final byte ENCODE_OUTDOOR_OR_INDOOR_BITMASK = 0x01;
@@ -49,6 +52,15 @@ public class ChannelPowerInfo {
             Log.w(LOG_TAG, "Failed to convert empty into UWB channel power info.");
             return null;
         }
+
+        if (bytes.length < MIN_CHANNEL_POWER_INFO_SIZE) {
+            Log.w(
+                    LOG_TAG,
+                    "Failed to convert bytes into UWB channel power info due to invalid data"
+                            + " size.");
+            return null;
+        }
+
         int firstChannel = (int) (((bytes[0] & ENCODE_1ST_CHANNEL_BITMASK) >> 4) & 0x000F);
         int numOfChannels = (int) (((bytes[0] & ENCODE_NUM_OF_CHANNEL_BITMASK) >> 1) & 0x0007);
         boolean isIndoor = (bytes[0] & ENCODE_OUTDOOR_OR_INDOOR_BITMASK) != 0;
@@ -73,11 +85,11 @@ public class ChannelPowerInfo {
     }
 
     private static byte convertFirstChannel(int firstChannel) {
-        return (byte) (((firstChannel & 0xF) << 4) & ENCODE_1ST_CHANNEL_BITMASK);
+        return (byte) ((firstChannel << 4) & ENCODE_1ST_CHANNEL_BITMASK);
     }
 
     private static byte convertNumOfChannels(int numOfChannels) {
-        return (byte) (((numOfChannels & 0x7) << 1) & ENCODE_NUM_OF_CHANNEL_BITMASK);
+        return (byte) ((numOfChannels << 1) & ENCODE_NUM_OF_CHANNEL_BITMASK);
     }
 
     private static byte convertIsIndoor(boolean isIndoor) {
