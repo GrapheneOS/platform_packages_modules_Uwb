@@ -113,7 +113,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         Log.d(TAG, "onMulticastListUpdateNotificationReceived");
         UwbSession uwbSession = getUwbSession((int) multicastListUpdateStatus.getSessionId());
         if (uwbSession == null) {
-            Log.d(TAG, "onSessionStatusNotificationReceived - invalid session");
+            Log.d(TAG, "onMulticastListUpdateNotificationReceived - invalid session");
             return;
         }
         uwbSession.setMulticastListUpdateStatus(multicastListUpdateStatus);
@@ -143,7 +143,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         switch (state) {
             case UwbUciConstants.UWB_SESSION_STATE_IDLE:
                 if (prevState == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
-                    mSessionNotificationManager.onRangingStopped(uwbSession, reasonCode);
+                    mSessionNotificationManager.onRangingStoppedWithUciReasonCode(
+                            uwbSession, reasonCode);
                     mUwbMetrics.longRangingStopEvent(uwbSession);
                 } else if (prevState == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
                     //mSessionNotificationManager.onRangingReconfigureFailed(
@@ -180,7 +181,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         if (isExistedSession(sessionId)) {
             Log.i(TAG, "Duplicated sessionId");
             rangingCallbacks.onRangingOpenFailed(sessionHandle, RangingChangeReason.UNKNOWN,
-                    UwbSessionNotificationHelper.convertStatusToParam(protocolName,
+                    UwbSessionNotificationHelper.convertUciStatusToParam(protocolName,
                             UwbUciConstants.STATUS_CODE_ERROR_SESSION_DUPLICATE));
             mUwbMetrics.logRangingInitEvent(uwbSession,
                     UwbUciConstants.STATUS_CODE_ERROR_SESSION_DUPLICATE);
@@ -191,7 +192,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             Log.i(TAG, "Max Sessions Exceeded");
             rangingCallbacks.onRangingOpenFailed(sessionHandle,
                     RangingChangeReason.MAX_SESSIONS_REACHED,
-                    UwbSessionNotificationHelper.convertStatusToParam(protocolName,
+                    UwbSessionNotificationHelper.convertUciStatusToParam(protocolName,
                             UwbUciConstants.STATUS_CODE_ERROR_MAX_SESSIONS_EXCEEDED));
             mUwbMetrics.logRangingInitEvent(uwbSession,
                     UwbUciConstants.STATUS_CODE_ERROR_MAX_SESSIONS_EXCEEDED);
@@ -206,7 +207,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             uwbSession.binderDied();
             Log.e(TAG, "linkToDeath fail - sessionID : " + uwbSession.getSessionId());
             rangingCallbacks.onRangingOpenFailed(sessionHandle, RangingChangeReason.UNKNOWN,
-                    UwbSessionNotificationHelper.convertStatusToParam(protocolName,
+                    UwbSessionNotificationHelper.convertUciStatusToParam(protocolName,
                             UwbUciConstants.STATUS_CODE_FAILED));
             mUwbMetrics.logRangingInitEvent(uwbSession,
                     UwbUciConstants.STATUS_CODE_FAILED);
@@ -353,7 +354,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         Log.d(TAG, "deinitAllSession()");
         for (Map.Entry<Integer, UwbSession> sessionEntry : mSessionTable.entrySet()) {
             UwbSession uwbSession = sessionEntry.getValue();
-            mSessionNotificationManager.onRangingClosedWithReasonCode(uwbSession,
+            mSessionNotificationManager.onRangingClosedWithApiReasonCode(uwbSession,
                     RangingChangeReason.SYSTEM_POLICY);
             mUwbMetrics.logRangingCloseEvent(uwbSession, UwbUciConstants.STATUS_CODE_OK);
             removeSession(uwbSession);
