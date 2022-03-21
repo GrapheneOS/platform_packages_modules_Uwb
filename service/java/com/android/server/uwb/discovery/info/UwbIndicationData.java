@@ -27,6 +27,7 @@ import com.google.common.primitives.Bytes;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -205,10 +206,9 @@ public class UwbIndicationData {
                 .append(" dualGapRoleSupport=")
                 .append(dualGapRoleSupport)
                 .append(" bluetoothRssiThresholdDbm=")
-                .append(bluetoothRssiThresholdDbm);
-        for (SecureComponentInfo info : secureComponentInfos) {
-            sb.append(info);
-        }
+                .append(bluetoothRssiThresholdDbm)
+                .append(" ")
+                .append(Arrays.toString(secureComponentInfos));
         return sb.toString();
     }
 

@@ -25,6 +25,7 @@ import com.android.server.uwb.util.ArrayUtils;
 import com.google.common.primitives.Bytes;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -101,6 +102,8 @@ public class FiraProfileSupportInfo {
                     FiraProfile profile = FiraProfile.idOf(current_id);
                     if (profile != null) {
                         supportedProfiles.add(profile);
+                    } else {
+                        logw("Invalid Profile ID in FiRa Profile Support Info. ID=" + current_id);
                     }
                 }
                 current_id++;
@@ -147,11 +150,8 @@ public class FiraProfileSupportInfo {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("FiraProfileSupportInfo: SupportedFiraProfiles=");
-        for (FiraProfile profile : supportedFiraProfiles) {
-            sb.append(profile);
-            sb.append(", ");
-        }
+        sb.append("FiraProfileSupportInfo: SupportedFiraProfiles=")
+                .append(Arrays.toString(supportedFiraProfiles));
         return sb.toString();
     }
 

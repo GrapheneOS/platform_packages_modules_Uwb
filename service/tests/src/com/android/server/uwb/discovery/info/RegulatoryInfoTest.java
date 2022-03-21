@@ -21,6 +21,8 @@ import static com.google.common.truth.Truth.assertThat;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.server.uwb.discovery.info.RegulatoryInfo.SourceOfInfo;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -35,8 +37,7 @@ public class RegulatoryInfoTest {
 
     private static final byte[] TEST_BYTES =
             new byte[] {0x41, 0x55, 0x53, 0x62, 0x1E, 0x3B, 0x7F, (byte) 0xD8, (byte) 0x9F};
-    private static final RegulatoryInfo.SourceOfInfo SOURCE_OF_INFO =
-            RegulatoryInfo.SourceOfInfo.SATELLITE_NAVIGATION_SYSTEM;
+    private static final SourceOfInfo SOURCE_OF_INFO = SourceOfInfo.SATELLITE_NAVIGATION_SYSTEM;
     private static final boolean TRANSMITTION_PERMITTED = true;
     private static final String COUNTRY_CODE =
             new String(new byte[] {0x55, 0x53}, StandardCharsets.UTF_8);
@@ -106,6 +107,52 @@ public class RegulatoryInfoTest {
 
         byte[] result = RegulatoryInfo.toBytes(info);
         assertThat(result.length).isEqualTo(TEST_BYTES.length);
-        assertThat(RegulatoryInfo.toBytes(info)).isEqualTo(TEST_BYTES);
+        assertThat(result).isEqualTo(TEST_BYTES);
+    }
+
+    @Test
+    public void fromBytesAndToBytes_eachSourceOfInfo() {
+        testSourceOfInfo(SourceOfInfo.USER_DEFINED, (byte) 0x80);
+        testSourceOfInfo(SourceOfInfo.SATELLITE_NAVIGATION_SYSTEM, (byte) 0x40);
+        testSourceOfInfo(SourceOfInfo.CELLULAR_SYSTEM, (byte) 0x20);
+        testSourceOfInfo(SourceOfInfo.ANOTHER_FIRA_DEVICE, (byte) 0x10);
+    }
+
+    private void testSourceOfInfo(SourceOfInfo sourceOfInfo, byte sourceOfInfoByte) {
+        RegulatoryInfo info =
+                new RegulatoryInfo(
+                        sourceOfInfo,
+                        TRANSMITTION_PERMITTED,
+                        COUNTRY_CODE,
+                        TIMESTAMP,
+                        new ChannelPowerInfo[] {
+                            new ChannelPowerInfo(
+                                    FIRST_CHANNELS,
+                                    NUMBER_OF_CHANNELS,
+                                    IS_INDOOR,
+                                    AVERAGE_POWER_DBM)
+                        });
+        byte[] bytes =
+                new byte[] {
+                    (byte) (sourceOfInfoByte | 0x01),
+                    0x55,
+                    0x53,
+                    0x62,
+                    0x1E,
+                    0x3B,
+                    0x7F,
+                    (byte) 0xD8,
+                    (byte) 0x9F
+                };
+        byte[] bytesResult = RegulatoryInfo.toBytes(info);
+        RegulatoryInfo regulatoryInfoResult = RegulatoryInfo.fromBytes(bytes);
+        assertThat(regulatoryInfoResult).isNotNull();
+
+        assertThat(bytesResult).isEqualTo(bytes);
+        assertThat(regulatoryInfoResult.sourceOfInfo).isEqualTo(sourceOfInfo);
+        assertThat(regulatoryInfoResult.outdoorsTransmittionPermitted)
+                .isEqualTo(TRANSMITTION_PERMITTED);
+        assertThat(regulatoryInfoResult.countryCode).isEqualTo(COUNTRY_CODE);
+        assertThat(regulatoryInfoResult.timestampSecondsSinceEpoch).isEqualTo(TIMESTAMP);
     }
 }
