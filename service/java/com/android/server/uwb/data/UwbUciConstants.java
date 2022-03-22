@@ -56,8 +56,7 @@ public class UwbUciConstants {
     public static final int REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS = 0x00;
     /* Below reason codes shall be reported with SESSION_STATE_IDLE state only. */
     public static final int REASON_MAX_RANGING_ROUND_RETRY_COUNT_REACHED = 0x01;
-
-
+    public static final int REASON_MAX_NUMBER_OF_MEASUREMENTS_REACHED = 0x02;
     public static final int REASON_ERROR_SLOT_LENGTH_NOT_SUPPORTED = 0x20;
     public static final int REASON_ERROR_INSUFFICIENT_SLOTS_PER_RR = 0x21;
     public static final int REASON_ERROR_MAC_ADDRESS_MODE_NOT_SUPPORTED = 0x22;
