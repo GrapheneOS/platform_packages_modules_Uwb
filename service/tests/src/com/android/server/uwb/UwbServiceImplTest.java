@@ -403,10 +403,8 @@ public class UwbServiceImplTest {
         final SessionHandle sessionHandle = new SessionHandle(5);
         final PersistableBundle parameters = new PersistableBundle();
 
-        try {
-            mUwbServiceImpl.addControlee(sessionHandle, parameters);
-            fail();
-        } catch (IllegalStateException e) { /* pass */ }
+        mUwbServiceImpl.addControlee(sessionHandle, parameters);
+        verify(mUwbServiceCore).addControlee(sessionHandle, parameters);
     }
 
     @Test
@@ -414,10 +412,8 @@ public class UwbServiceImplTest {
         final SessionHandle sessionHandle = new SessionHandle(5);
         final PersistableBundle parameters = new PersistableBundle();
 
-        try {
-            mUwbServiceImpl.removeControlee(sessionHandle, parameters);
-            fail();
-        } catch (IllegalStateException e) { /* pass */ }
+        mUwbServiceImpl.removeControlee(sessionHandle, parameters);
+        verify(mUwbServiceCore).removeControlee(sessionHandle, parameters);
     }
 
     @Test
