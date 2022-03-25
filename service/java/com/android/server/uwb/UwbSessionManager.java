@@ -15,6 +15,9 @@
  */
 package com.android.server.uwb;
 
+import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
+import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE;
+
 import android.annotation.Nullable;
 import android.content.AttributionSource;
 import android.os.Handler;
@@ -686,6 +689,15 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                         ArrayUtils.toPrimitive(dstAddressList),
                                         subSessionIdList);
                                 if (status != UwbUciConstants.STATUS_CODE_OK) {
+                                    if (rangingReconfigureParams.getAction()
+                                            == MULTICAST_LIST_UPDATE_ACTION_ADD) {
+                                        mSessionNotificationManager.onControleeAddFailed(
+                                                uwbSession, status);
+                                    } else if (rangingReconfigureParams.getAction()
+                                            == MULTICAST_LIST_UPDATE_ACTION_DELETE) {
+                                        mSessionNotificationManager.onControleeRemoveFailed(
+                                                uwbSession, status);
+                                    }
                                     return status;
                                 }
 
@@ -695,18 +707,36 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                         uwbSession.getMulticastListUpdateStatus();
                                 if (multicastList != null) {
                                     if (rangingReconfigureParams.getAction()
-                                            == FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD) {
+                                            == MULTICAST_LIST_UPDATE_ACTION_ADD) {
                                         for (int i = 0; i < multicastList.getNumOfControlee();
                                                 i++) {
                                             if (multicastList.getStatus()[i]
                                                     != UwbUciConstants.STATUS_CODE_OK) {
-                                                //TODO - Need implement for partial fail case.
-                                                return UwbUciConstants.STATUS_CODE_FAILED;
+                                                status = UwbUciConstants.STATUS_CODE_FAILED;
+                                                break;
                                             }
                                         }
                                     }
                                 }
-
+                            }
+                            if (status != UwbUciConstants.STATUS_CODE_OK) {
+                                if (rangingReconfigureParams.getAction()
+                                        == MULTICAST_LIST_UPDATE_ACTION_ADD) {
+                                    mSessionNotificationManager.onControleeAddFailed(
+                                            uwbSession, status);
+                                } else if (rangingReconfigureParams.getAction()
+                                        == MULTICAST_LIST_UPDATE_ACTION_DELETE) {
+                                    mSessionNotificationManager.onControleeRemoveFailed(
+                                            uwbSession, status);
+                                }
+                                return status;
+                            }
+                            if (rangingReconfigureParams.getAction()
+                                    == MULTICAST_LIST_UPDATE_ACTION_ADD) {
+                                mSessionNotificationManager.onControleeAdded(uwbSession);
+                            } else if (rangingReconfigureParams.getAction()
+                                    == MULTICAST_LIST_UPDATE_ACTION_DELETE) {
+                                mSessionNotificationManager.onControleeRemoved(uwbSession);
                             }
 
                             status = mConfigurationManager.setAppConfigurations(
