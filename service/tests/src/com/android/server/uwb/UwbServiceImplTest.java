@@ -23,6 +23,7 @@ import static android.uwb.UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE
 import static com.android.server.uwb.UwbSettingsStore.SETTINGS_TOGGLE_STATE;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
@@ -57,6 +58,7 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.multchip.UwbMultichipData;
 
+import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 import com.google.uwb.support.multichip.ChipInfoParams;
 
 import org.junit.Before;
@@ -212,15 +214,19 @@ public class UwbServiceImplTest {
         verify(mUwbServiceCore).startRanging(sessionHandle, parameters);
     }
 
-
     @Test
     public void testReconfigureRanging() throws Exception {
         final SessionHandle sessionHandle = new SessionHandle(5);
-        final PersistableBundle parameters = new PersistableBundle();
-
-        mUwbServiceImpl.reconfigureRanging(sessionHandle, parameters);
-
-        verify(mUwbServiceCore).reconfigureRanging(sessionHandle, parameters);
+        final FiraRangingReconfigureParams parameters =
+                new FiraRangingReconfigureParams.Builder()
+                        .setBlockStrideLength(6)
+                        .setRangeDataNtfConfig(RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY)
+                        .setRangeDataProximityFar(6)
+                        .setRangeDataProximityNear(4)
+                        .build();
+        mUwbServiceImpl.reconfigureRanging(sessionHandle, parameters.toBundle());
+        verify(mUwbServiceCore).reconfigureRanging(eq(sessionHandle),
+                argThat((x) -> x.getInt("update_block_stride_length") == 6));
     }
 
     @Test
@@ -541,10 +547,7 @@ public class UwbServiceImplTest {
     public void testSendVendorUciMessage() throws Exception {
         final int gid = 0;
         final int oid = 0;
-
-        try {
-            mUwbServiceImpl.sendVendorUciMessage(gid, oid, null);
-            fail();
-        } catch (IllegalStateException e) { /* pass */ }
+        mUwbServiceImpl.sendVendorUciMessage(gid, oid, null);
+        verify(mUwbServiceCore).sendVendorUciMessage(gid, oid, null);
     }
 }
