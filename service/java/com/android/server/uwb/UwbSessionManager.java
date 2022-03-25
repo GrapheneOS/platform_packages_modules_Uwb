@@ -21,7 +21,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
-import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.util.Log;
 import android.util.Pair;
@@ -387,7 +386,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         return mSessionTable.keySet();
     }
 
-    public int reconfigure(SessionHandle sessionHandle, PersistableBundle params) {
+    public int reconfigure(SessionHandle sessionHandle, Params params) {
         Log.i(TAG, "reconfigure() - Session Handle : " + sessionHandle);
         int status = UwbUciConstants.STATUS_CODE_ERROR_SESSION_NOT_EXIST;
         if (!isExistedSession(sessionHandle)) {
@@ -395,15 +394,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             return status;
         }
 
-        /*
-         FiraRangingReconfigureParams is only implemented
-         TODO - CccRangingReconfiguredParams should be implemented
-         */
-        FiraRangingReconfigureParams param = FiraRangingReconfigureParams.fromBundle(params);
-
-        Pair<SessionHandle, Params> info = new Pair<SessionHandle, Params>(sessionHandle, param);
+        Pair<SessionHandle, Params> info = new Pair<SessionHandle, Params>(sessionHandle, params);
         mEventTask.execute(SESSION_RECONFIG_RANGING, info);
-
         return 0;
     }
 
