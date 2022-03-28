@@ -186,11 +186,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     public synchronized int sendVendorUciMessage(int gid, int oid, byte[] payload)
             throws RemoteException {
         enforceUwbPrivilegedPermission();
-        // TODO(b/210933436): Implement this.
-        throw new IllegalStateException("Not implemented");
-        /**
-        return mUwbServiceCore.sendVendorUciMessage(rawUCi);
-         **/
+        return mUwbServiceCore.sendVendorUciMessage(gid, oid, payload);
     }
 
     @Override

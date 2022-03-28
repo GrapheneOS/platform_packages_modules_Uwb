@@ -46,10 +46,12 @@ import com.android.server.uwb.jni.NativeUwbManager;
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
+import com.google.uwb.support.ccc.CccRangingReconfiguredParams;
 import com.google.uwb.support.ccc.CccSpecificationParams;
 import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -315,7 +317,13 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         if (!isUwbEnabled()) {
             throw new IllegalStateException("Uwb is not enabled");
         }
-        mSessionManager.reconfigure(sessionHandle, params);
+        Params  reconfigureRangingParams = null;
+        if (FiraParams.isCorrectProtocol(params)) {
+            reconfigureRangingParams = FiraRangingReconfigureParams.fromBundle(params);
+        } else if (CccParams.isCorrectProtocol(params)) {
+            reconfigureRangingParams = CccRangingReconfiguredParams.fromBundle(params);
+        }
+        mSessionManager.reconfigure(sessionHandle, reconfigureRangingParams);
     }
 
     public void stopRanging(SessionHandle sessionHandle) {
