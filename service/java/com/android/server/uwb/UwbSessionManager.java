@@ -386,15 +386,14 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         return mSessionTable.keySet();
     }
 
-    public int reconfigure(SessionHandle sessionHandle, Params params) {
+    public int reconfigure(SessionHandle sessionHandle, @Nullable Params params) {
         Log.i(TAG, "reconfigure() - Session Handle : " + sessionHandle);
         int status = UwbUciConstants.STATUS_CODE_ERROR_SESSION_NOT_EXIST;
         if (!isExistedSession(sessionHandle)) {
             Log.i(TAG, "Not initialized session ID");
             return status;
         }
-
-        Pair<SessionHandle, Params> info = new Pair<SessionHandle, Params>(sessionHandle, params);
+        Pair<SessionHandle, Params> info = new Pair<>(sessionHandle, params);
         mEventTask.execute(SESSION_RECONFIG_RANGING, info);
         return 0;
     }
@@ -643,11 +642,17 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             }
         }
 
-        private void reconfigure(SessionHandle sessionHandle, Params param) {
+        private void reconfigure(SessionHandle sessionHandle, @Nullable Params param) {
+            UwbSession uwbSession = getUwbSession(getSessionId(sessionHandle));
+            if (!(param instanceof FiraRangingReconfigureParams)) {
+                Log.e(TAG, "Invalid reconfigure params: " + param);
+                mSessionNotificationManager.onRangingReconfigureFailed(
+                        uwbSession, UwbUciConstants.STATUS_CODE_INVALID_PARAM);
+                return;
+            }
             FiraRangingReconfigureParams rangingReconfigureParams =
                     (FiraRangingReconfigureParams) param;
             // TODO(b/211445008): Consolidate to a single uwb thread.
-            UwbSession uwbSession = getUwbSession(getSessionId(sessionHandle));
             ExecutorService executor = Executors.newSingleThreadExecutor();
             FutureTask<Integer> cmdTask = new FutureTask<>(
                     () -> {
