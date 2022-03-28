@@ -192,15 +192,13 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     @Override
     public void addControlee(SessionHandle sessionHandle, PersistableBundle params) {
         enforceUwbPrivilegedPermission();
-        // TODO(b/200678461): Implement this.
-        throw new IllegalStateException("Not implemented");
+        mUwbServiceCore.addControlee(sessionHandle, params);
     }
 
     @Override
     public void removeControlee(SessionHandle sessionHandle, PersistableBundle params) {
         enforceUwbPrivilegedPermission();
-        // TODO(b/200678461): Implement this.
-        throw new IllegalStateException("Not implemented");
+        mUwbServiceCore.removeControlee(sessionHandle, params);
     }
 
     @Override
