@@ -18,6 +18,7 @@ package com.google.uwb.support.ccc;
 
 import android.os.Build.VERSION_CODES;
 import android.os.PersistableBundle;
+import android.uwb.RangingSession;
 
 import androidx.annotation.RequiresApi;
 

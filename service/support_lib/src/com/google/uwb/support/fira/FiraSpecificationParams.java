@@ -19,6 +19,7 @@ package com.google.uwb.support.fira;
 import static java.util.Objects.requireNonNull;
 
 import android.os.PersistableBundle;
+import android.uwb.UwbManager;
 
 import com.google.uwb.support.base.FlagEnum;
 
@@ -27,6 +28,11 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 
+/**
+ * Defines parameters for FIRA capability.
+ *
+ * <p>This is returned as a bundle from the service API {@link UwbManager#getSpecificationInfo}.
+ */
 public class FiraSpecificationParams extends FiraParams {
     private static final int BUNDLE_VERSION_1 = 1;
     private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_1;
