@@ -21,11 +21,18 @@ import static com.android.internal.util.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
 import android.os.PersistableBundle;
+import android.uwb.RangingSession;
 import android.uwb.UwbAddress;
+import android.uwb.UwbManager;
 
 import androidx.annotation.Nullable;
 
-/** UWB parameters used to add/remove controlees for a FiRa session */
+/**
+ * UWB parameters used to add/remove controlees for a FiRa session
+ *
+ * <p>This is passed as a bundle to the service API {@link RangingSession#addControlee} and
+ * {@link RangingSession#removeControlee}.
+ */
 public class FiraControleeParams extends FiraParams {
     private static final int BUNDLE_VERSION_1 = 1;
     private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_1;

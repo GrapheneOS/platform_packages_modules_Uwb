@@ -21,11 +21,16 @@ import static com.android.internal.util.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
 import android.os.PersistableBundle;
+import android.uwb.RangingSession;
 import android.uwb.UwbAddress;
 
 import androidx.annotation.Nullable;
 
-/** UWB parameters used to reconfigure a FiRa session. Supports peer adding/removing. */
+/**
+ * UWB parameters used to reconfigure a FiRa session. Supports peer adding/removing.
+ *
+ * <p>This is passed as a bundle to the service API {@link RangingSession#reconfigure}.
+ */
 public class FiraRangingReconfigureParams extends FiraParams {
     private static final int BUNDLE_VERSION_1 = 1;
     private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_1;
