@@ -178,7 +178,6 @@ public class UwbSessionNotificationManager {
     }
 
     public void onRangingReconfigured(UwbSession uwbSession) {
-        Log.d(TAG, "call onRangingReconfigured");
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
         PersistableBundle params;
@@ -210,6 +209,62 @@ public class UwbSessionNotificationManager {
             Log.i(TAG, "IUwbRangingCallbacks - onRangingReconfigureFailed");
         } catch (Exception e) {
             Log.e(TAG, "IUwbRangingCallbacks - onRangingReconfigureFailed : Failed");
+            e.printStackTrace();
+        }
+    }
+
+    public void onControleeAdded(UwbSession uwbSession) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            uwbRangingCallbacks.onControleeAdded(sessionHandle, new PersistableBundle());
+            Log.i(TAG, "IUwbRangingCallbacks - onControleeAdded");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onControleeAdded: Failed");
+            e.printStackTrace();
+        }
+    }
+
+    public void onControleeAddFailed(UwbSession uwbSession, int status) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            uwbRangingCallbacks.onControleeAddFailed(sessionHandle,
+                    UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(
+                            status),
+                    UwbSessionNotificationHelper.convertUciStatusToParam(
+                            uwbSession.getProtocolName(), status));
+            Log.i(TAG, "IUwbRangingCallbacks - onControleeAddFailed");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onControleeAddFailed : Failed");
+            e.printStackTrace();
+        }
+    }
+
+    public void onControleeRemoved(UwbSession uwbSession) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            uwbRangingCallbacks.onControleeRemoved(sessionHandle, new PersistableBundle());
+            Log.i(TAG, "IUwbRangingCallbacks - onControleeRemoved");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onControleeRemoved: Failed");
+            e.printStackTrace();
+        }
+    }
+
+    public void onControleeRemoveFailed(UwbSession uwbSession, int status) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            uwbRangingCallbacks.onControleeRemoveFailed(sessionHandle,
+                    UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(
+                            status),
+                    UwbSessionNotificationHelper.convertUciStatusToParam(
+                            uwbSession.getProtocolName(), status));
+            Log.i(TAG, "IUwbRangingCallbacks - onControleeRemoveFailed");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onControleeRemoveFailed : Failed");
             e.printStackTrace();
         }
     }

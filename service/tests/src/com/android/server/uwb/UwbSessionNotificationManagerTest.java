@@ -270,6 +270,40 @@ public class UwbSessionNotificationManagerTest {
     }
 
     @Test
+    public void testOnControleeAdded() throws Exception {
+        mUwbSessionNotificationManager.onControleeAdded(mUwbSession);
+
+        verify(mIUwbRangingCallbacks).onControleeAdded(eq(mSessionHandle), any());
+    }
+
+    @Test
+    public void testOnControleeAddFailed() throws Exception {
+        int status =  UwbUciConstants.STATUS_CODE_INVALID_MESSAGE_SIZE;
+        mUwbSessionNotificationManager.onControleeAddFailed(mUwbSession, status);
+
+        verify(mIUwbRangingCallbacks).onControleeAddFailed(eq(mSessionHandle),
+                eq(UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(status)),
+                argThat(p -> (p.getInt("status_code")) == status));
+    }
+
+    @Test
+    public void testOnControleeRemoved() throws Exception {
+        mUwbSessionNotificationManager.onControleeRemoved(mUwbSession);
+
+        verify(mIUwbRangingCallbacks).onControleeRemoved(eq(mSessionHandle), any());
+    }
+
+    @Test
+    public void testOnControleeRemoveFailed() throws Exception {
+        int status =  UwbUciConstants.STATUS_CODE_INVALID_MESSAGE_SIZE;
+        mUwbSessionNotificationManager.onControleeRemoveFailed(mUwbSession, status);
+
+        verify(mIUwbRangingCallbacks).onControleeRemoveFailed(eq(mSessionHandle),
+                eq(UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(status)),
+                argThat(p -> (p.getInt("status_code")) == status));
+    }
+
+    @Test
     public void testOnRangingClosed() throws Exception {
         int status = UwbUciConstants.REASON_ERROR_SLOT_LENGTH_NOT_SUPPORTED;
         mUwbSessionNotificationManager.onRangingClosed(mUwbSession, status);
