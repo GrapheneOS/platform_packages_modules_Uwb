@@ -90,7 +90,7 @@ public class UwbInjector {
                 new UwbSessionNotificationManager(this);
         UwbSessionManager uwbSessionManager =
                 new UwbSessionManager(uwbConfigurationManager, mNativeUwbManager, mUwbMetrics,
-                        uwbSessionNotificationManager, mLooper);
+                        uwbSessionNotificationManager, this, mLooper);
         mUwbService = new UwbServiceCore(mContext, mNativeUwbManager, mUwbMetrics,
                 mUwbCountryCode, uwbSessionManager, uwbConfigurationManager, mLooper);
     }
