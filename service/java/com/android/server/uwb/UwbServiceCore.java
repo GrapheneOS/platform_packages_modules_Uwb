@@ -16,6 +16,9 @@
 
 package com.android.server.uwb;
 
+import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
+import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE;
+
 import android.content.AttributionSource;
 import android.content.Context;
 import android.os.Binder;
@@ -46,10 +49,13 @@ import com.android.server.uwb.jni.NativeUwbManager;
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
+import com.google.uwb.support.ccc.CccRangingReconfiguredParams;
 import com.google.uwb.support.ccc.CccSpecificationParams;
 import com.google.uwb.support.ccc.CccStartRangingParams;
+import com.google.uwb.support.fira.FiraControleeParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -315,7 +321,13 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         if (!isUwbEnabled()) {
             throw new IllegalStateException("Uwb is not enabled");
         }
-        mSessionManager.reconfigure(sessionHandle, params);
+        Params  reconfigureRangingParams = null;
+        if (FiraParams.isCorrectProtocol(params)) {
+            reconfigureRangingParams = FiraRangingReconfigureParams.fromBundle(params);
+        } else if (CccParams.isCorrectProtocol(params)) {
+            reconfigureRangingParams = CccRangingReconfiguredParams.fromBundle(params);
+        }
+        mSessionManager.reconfigure(sessionHandle, reconfigureRangingParams);
     }
 
     public void stopRanging(SessionHandle sessionHandle) {
@@ -330,7 +342,38 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             throw new IllegalStateException("Uwb is not enabled");
         }
         mSessionManager.deInitSession(sessionHandle);
-        return;
+    }
+
+    public void addControlee(SessionHandle sessionHandle, PersistableBundle params) {
+        if (!isUwbEnabled()) {
+            throw new IllegalStateException("Uwb is not enabled");
+        }
+        Params  reconfigureRangingParams = null;
+        if (FiraParams.isCorrectProtocol(params)) {
+            FiraControleeParams controleeParams = FiraControleeParams.fromBundle(params);
+            reconfigureRangingParams = new FiraRangingReconfigureParams.Builder()
+                    .setAction(MULTICAST_LIST_UPDATE_ACTION_ADD)
+                    .setAddressList(controleeParams.getAddressList())
+                    .setSubSessionIdList(controleeParams.getSubSessionIdList())
+                    .build();
+        }
+        mSessionManager.reconfigure(sessionHandle, reconfigureRangingParams);
+    }
+
+    public void removeControlee(SessionHandle sessionHandle, PersistableBundle params) {
+        if (!isUwbEnabled()) {
+            throw new IllegalStateException("Uwb is not enabled");
+        }
+        Params  reconfigureRangingParams = null;
+        if (FiraParams.isCorrectProtocol(params)) {
+            FiraControleeParams controleeParams = FiraControleeParams.fromBundle(params);
+            reconfigureRangingParams = new FiraRangingReconfigureParams.Builder()
+                    .setAction(MULTICAST_LIST_UPDATE_ACTION_DELETE)
+                    .setAddressList(controleeParams.getAddressList())
+                    .setSubSessionIdList(controleeParams.getSubSessionIdList())
+                    .build();
+        }
+        mSessionManager.reconfigure(sessionHandle, reconfigureRangingParams);
     }
 
     public /* @UwbManager.AdapterStateCallback.State */ int getAdapterState() {

@@ -24,7 +24,10 @@ import static com.google.uwb.support.ccc.CccParams.HOPPING_SEQUENCE_DEFAULT;
 import static com.google.uwb.support.ccc.CccParams.PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE;
 import static com.google.uwb.support.ccc.CccParams.SLOTS_PER_ROUND_6;
 import static com.google.uwb.support.ccc.CccParams.UWB_CHANNEL_9;
+import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
+import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_UNICAST;
+import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_RESPONDER;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLLER;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE;
@@ -75,8 +78,10 @@ import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccPulseShapeCombo;
 import com.google.uwb.support.ccc.CccSpecificationParams;
 import com.google.uwb.support.ccc.CccStartRangingParams;
+import com.google.uwb.support.fira.FiraControleeParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
 
 import org.junit.After;
@@ -404,10 +409,75 @@ public class UwbServiceCoreTest {
         enableUwb();
 
         SessionHandle sessionHandle = mock(SessionHandle.class);
-        PersistableBundle params = mock(PersistableBundle.class);
-        mUwbServiceCore.reconfigureRanging(sessionHandle, params);
+        final FiraRangingReconfigureParams parameters =
+                new FiraRangingReconfigureParams.Builder()
+                        .setBlockStrideLength(6)
+                        .setRangeDataNtfConfig(RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY)
+                        .setRangeDataProximityFar(6)
+                        .setRangeDataProximityNear(4)
+                        .build();
+        mUwbServiceCore.reconfigureRanging(sessionHandle, parameters.toBundle());
+        verify(mUwbSessionManager).reconfigure(eq(sessionHandle),
+                argThat((x) ->
+                        ((FiraRangingReconfigureParams) x).getBlockStrideLength().equals(6)));
+    }
 
-        verify(mUwbSessionManager).reconfigure(sessionHandle, params);
+    @Test
+    public void testAddControlee() throws Exception {
+        enableUwb();
+
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+        UwbAddress uwbAddress1 = UwbAddress.fromBytes(new byte[] {1, 2});
+        UwbAddress uwbAddress2 = UwbAddress.fromBytes(new byte[] {4, 5});
+        UwbAddress[] addressList = new UwbAddress[] {uwbAddress1, uwbAddress2};
+        int[] subSessionIdList = new int[] {3, 4};
+        FiraControleeParams params =
+                new FiraControleeParams.Builder()
+                        .setAddressList(addressList)
+                        .setSubSessionIdList(subSessionIdList)
+                        .build();
+
+        mUwbServiceCore.addControlee(sessionHandle, params.toBundle());
+        verify(mUwbSessionManager).reconfigure(eq(sessionHandle),
+                argThat((x) -> {
+                    FiraRangingReconfigureParams reconfigureParams =
+                            (FiraRangingReconfigureParams) x;
+                    return reconfigureParams.getAction().equals(MULTICAST_LIST_UPDATE_ACTION_ADD)
+                            && Arrays.equals(
+                                    reconfigureParams.getAddressList(), params.getAddressList())
+                            && Arrays.equals(
+                                    reconfigureParams.getSubSessionIdList(),
+                                    params.getSubSessionIdList());
+                }));
+    }
+
+    @Test
+    public void testRemoveControlee() throws Exception {
+        enableUwb();
+
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+        UwbAddress uwbAddress1 = UwbAddress.fromBytes(new byte[] {1, 2});
+        UwbAddress uwbAddress2 = UwbAddress.fromBytes(new byte[] {4, 5});
+        UwbAddress[] addressList = new UwbAddress[] {uwbAddress1, uwbAddress2};
+        int[] subSessionIdList = new int[] {3, 4};
+        FiraControleeParams params =
+                new FiraControleeParams.Builder()
+                        .setAddressList(addressList)
+                        .setSubSessionIdList(subSessionIdList)
+                        .build();
+
+        mUwbServiceCore.removeControlee(sessionHandle, params.toBundle());
+        verify(mUwbSessionManager).reconfigure(eq(sessionHandle),
+                argThat((x) -> {
+                    FiraRangingReconfigureParams reconfigureParams =
+                            (FiraRangingReconfigureParams) x;
+                    return reconfigureParams.getAction().equals(MULTICAST_LIST_UPDATE_ACTION_DELETE)
+                            && Arrays.equals(
+                                    reconfigureParams.getAddressList(), params.getAddressList())
+                            && Arrays.equals(
+                                    reconfigureParams.getSubSessionIdList(),
+                                    params.getSubSessionIdList());
+                }));
     }
 
     @Test

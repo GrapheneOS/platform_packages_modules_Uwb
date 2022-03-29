@@ -25,6 +25,7 @@ import static java.util.Objects.requireNonNull;
 
 import android.os.PersistableBundle;
 import android.uwb.UwbAddress;
+import android.uwb.UwbManager;
 
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
@@ -36,7 +37,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** UWB parameters used to open a FiRa session. */
+/**
+ * UWB parameters used to open a FiRa session.
+ *
+ * <p>This is passed as a bundle to the service API {@link UwbManager#openRangingSession}.
+ */
 public class FiraOpenSessionParams extends FiraParams {
     private final FiraProtocolVersion mProtocolVersion;
 

@@ -21,6 +21,7 @@ import static com.android.internal.util.Preconditions.checkNotNull;
 import android.annotation.NonNull;
 import android.os.Build.VERSION_CODES;
 import android.os.PersistableBundle;
+import android.uwb.UwbManager;
 
 import androidx.annotation.IntRange;
 import androidx.annotation.RequiresApi;

@@ -21,11 +21,16 @@ import static com.android.internal.util.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
 import android.os.PersistableBundle;
+import android.uwb.RangingSession;
 import android.uwb.UwbAddress;
 
 import androidx.annotation.Nullable;
 
-/** UWB parameters used to reconfigure a FiRa session. Supports peer adding/removing. */
+/**
+ * UWB parameters used to reconfigure a FiRa session. Supports peer adding/removing.
+ *
+ * <p>This is passed as a bundle to the service API {@link RangingSession#reconfigure}.
+ */
 public class FiraRangingReconfigureParams extends FiraParams {
     private static final int BUNDLE_VERSION_1 = 1;
     private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_1;
@@ -121,7 +126,11 @@ public class FiraRangingReconfigureParams extends FiraParams {
             for (UwbAddress address : mAddressList) {
                 addressList[i++] = uwbAddressToLong(address);
             }
-
+            int macAddressMode = MAC_ADDRESS_MODE_2_BYTES;
+            if (mAddressList[0].size() == UwbAddress.EXTENDED_ADDRESS_BYTE_LENGTH) {
+                macAddressMode = MAC_ADDRESS_MODE_8_BYTES;
+            }
+            bundle.putInt(KEY_MAC_ADDRESS_MODE, macAddressMode);
             bundle.putLongArray(KEY_ADDRESS_LIST, addressList);
             bundle.putIntArray(KEY_SUB_SESSION_ID_LIST, mSubSessionIdList);
         }
@@ -163,9 +172,9 @@ public class FiraRangingReconfigureParams extends FiraParams {
         FiraRangingReconfigureParams.Builder builder = new FiraRangingReconfigureParams.Builder();
         if (bundle.containsKey(KEY_ACTION)) {
             int macAddressMode = bundle.getInt(KEY_MAC_ADDRESS_MODE);
-            int addressByteLength = 2;
+            int addressByteLength = UwbAddress.SHORT_ADDRESS_BYTE_LENGTH;
             if (macAddressMode == MAC_ADDRESS_MODE_8_BYTES) {
-                addressByteLength = 8;
+                addressByteLength = UwbAddress.EXTENDED_ADDRESS_BYTE_LENGTH;
             }
 
             long[] addresses = bundle.getLongArray(KEY_ADDRESS_LIST);

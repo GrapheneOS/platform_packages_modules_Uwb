@@ -56,8 +56,8 @@ public class UwbConfigurationManager {
             UwbConfigStatusData appConfig = mNativeUwbManager.setAppConfigurations(sessionId,
                     tlvBuffer.getNoOfParams(),
                     tlvByteArray.length, tlvByteArray);
-            Log.i(TAG, "setAppConfigurations respData: " + appConfig.toString());
             if (appConfig != null) {
+                Log.i(TAG, "setAppConfigurations respData: " + appConfig.toString());
                 status = appConfig.getStatus();
             } else {
                 Log.e(TAG, "appConfigList is null or size of appConfigList is zero");
