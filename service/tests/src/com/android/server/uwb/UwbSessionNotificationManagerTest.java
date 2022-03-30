@@ -16,10 +16,6 @@
 
 package com.android.server.uwb;
 
-import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TYPE_TWO_WAY;
-import static com.android.server.uwb.util.UwbUtil.convertFloatToQFormat;
-import static com.android.server.uwb.util.UwbUtil.degreeToRadian;
-
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
@@ -32,22 +28,15 @@ import android.content.AttributionSource;
 import android.platform.test.annotations.Presubmit;
 import android.test.suitebuilder.annotation.SmallTest;
 import android.util.Pair;
-import android.uwb.AngleMeasurement;
-import android.uwb.AngleOfArrivalMeasurement;
-import android.uwb.DistanceMeasurement;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.RangingChangeReason;
-import android.uwb.RangingMeasurement;
 import android.uwb.RangingReport;
 import android.uwb.SessionHandle;
-import android.uwb.UwbAddress;
 
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.server.uwb.data.UwbRangingData;
-import com.android.server.uwb.data.UwbTwoWayMeasurement;
 import com.android.server.uwb.data.UwbUciConstants;
-import com.android.server.uwb.params.TlvUtil;
 
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
@@ -66,25 +55,6 @@ import org.mockito.MockitoAnnotations;
 @SmallTest
 @Presubmit
 public class UwbSessionNotificationManagerTest {
-    private static final long TEST_SEQ_COUNTER = 5;
-    private static final long TEST_SESSION_ID = 7;
-    private static final int TEST_RCR_INDICATION = 7;
-    private static final long TEST_CURR_RANGING_INTERVAL = 100;
-    private static final int TEST_RANGING_MEASURES_TYPE = RANGING_MEASUREMENT_TYPE_TWO_WAY;
-    private static final int TEST_MAC_ADDRESS_MODE = 1;
-    private static final byte[] TEST_MAC_ADDRESS = {0x1, 0x3};
-    private static final int TEST_STATUS = FiraParams.STATUS_CODE_OK;
-    private static final int TEST_LOS = 0;
-    private static final int TEST_DISTANCE = 101;
-    private static final float TEST_AOA_AZIMUTH = 67;
-    private static final int TEST_AOA_AZIMUTH_FOM = 50;
-    private static final float TEST_AOA_ELEVATION = 37;
-    private static final int TEST_AOA_ELEVATION_FOM = 90;
-    private static final float TEST_AOA_DEST_AZIMUTH = 67;
-    private static final int TEST_AOA_DEST_AZIMUTH_FOM = 50;
-    private static final float TEST_AOA_DEST_ELEVATION = 37;
-    private static final int TEST_AOA_DEST_ELEVATION_FOM = 90;
-    private static final int TEST_SLOT_IDX = 10;
     private static final long TEST_ELAPSED_NANOS = 100L;
     private static final int UID = 343453;
     private static final String PACKAGE_NAME = "com.uwb.test";
@@ -126,7 +96,8 @@ public class UwbSessionNotificationManagerTest {
     @Test
     public void testOnRangingResultWithoutUwbRangingPermission() throws Exception {
         Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
-                generateRangingDataAndRangingReport(true, true, false, false);
+                UwbTestUtils.generateRangingDataAndRangingReport(
+                        true, true, false, false, TEST_ELAPSED_NANOS);
         when(mUwbInjector.checkUwbRangingPermissionForDataDelivery(eq(ATTRIBUTION_SOURCE), any()))
                 .thenReturn(false);
         mUwbSessionNotificationManager.onRangingResult(
@@ -138,7 +109,8 @@ public class UwbSessionNotificationManagerTest {
     @Test
     public void testOnRangingResultWithAoa() throws Exception {
         Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
-                generateRangingDataAndRangingReport(true, true, false, false);
+                UwbTestUtils.generateRangingDataAndRangingReport(
+                        true, true, false, false, TEST_ELAPSED_NANOS);
         mUwbSessionNotificationManager.onRangingResult(
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
@@ -150,7 +122,8 @@ public class UwbSessionNotificationManagerTest {
         when(mFiraParams.getAoaResultRequest()).thenReturn(
                 FiraParams.AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT);
         Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
-                generateRangingDataAndRangingReport(false, false, false, false);
+                UwbTestUtils.generateRangingDataAndRangingReport(
+                        false, false, false, false, TEST_ELAPSED_NANOS);
         mUwbSessionNotificationManager.onRangingResult(
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
@@ -162,7 +135,8 @@ public class UwbSessionNotificationManagerTest {
         when(mFiraParams.getAoaResultRequest()).thenReturn(
                 FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_AZIMUTH_ONLY);
         Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
-                generateRangingDataAndRangingReport(true, false, false, false);
+                UwbTestUtils.generateRangingDataAndRangingReport(
+                        true, false, false, false, TEST_ELAPSED_NANOS);
         mUwbSessionNotificationManager.onRangingResult(
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
@@ -174,7 +148,8 @@ public class UwbSessionNotificationManagerTest {
         when(mFiraParams.getAoaResultRequest()).thenReturn(
                 FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_ELEVATION_ONLY);
         Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
-                generateRangingDataAndRangingReport(false, true, false, false);
+                UwbTestUtils.generateRangingDataAndRangingReport(
+                        false, true, false, false, TEST_ELAPSED_NANOS);
         mUwbSessionNotificationManager.onRangingResult(
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
@@ -189,7 +164,8 @@ public class UwbSessionNotificationManagerTest {
         when(mFiraParams.hasAngleOfArrivalAzimuthReport()).thenReturn(true);
         when(mFiraParams.hasAngleOfArrivalElevationReport()).thenReturn(true);
         Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
-                generateRangingDataAndRangingReport(true, true, true, true);
+                UwbTestUtils.generateRangingDataAndRangingReport(
+                        true, true, true, true, TEST_ELAPSED_NANOS);
         mUwbSessionNotificationManager.onRangingResult(
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
@@ -321,83 +297,5 @@ public class UwbSessionNotificationManagerTest {
         verify(mIUwbRangingCallbacks).onRangingClosed(eq(mSessionHandle),
                 eq(reasonCode),
                 argThat(p-> p.isEmpty()));
-    }
-
-    // Helper method to generate a UwbRangingData instance and corresponding RangingMeasurement
-    private Pair<UwbRangingData, RangingReport> generateRangingDataAndRangingReport(
-            boolean isAoaAzimuthEnabled, boolean isAoaElevationEnabled,
-            boolean isDestAoaAzimuthEnabled, boolean isDestAoaElevationEnabled) {
-        final int noOfRangingMeasures = 1;
-        final UwbTwoWayMeasurement[] uwbTwoWayMeasurements =
-                new UwbTwoWayMeasurement[noOfRangingMeasures];
-        uwbTwoWayMeasurements[0] = new UwbTwoWayMeasurement(TEST_MAC_ADDRESS, TEST_STATUS, TEST_LOS,
-                TEST_DISTANCE, convertFloatToQFormat(TEST_AOA_AZIMUTH, 9, 7),
-                TEST_AOA_AZIMUTH_FOM, convertFloatToQFormat(TEST_AOA_ELEVATION, 9, 7),
-                TEST_AOA_ELEVATION_FOM, convertFloatToQFormat(TEST_AOA_DEST_AZIMUTH, 9, 7),
-                TEST_AOA_DEST_AZIMUTH_FOM, convertFloatToQFormat(TEST_AOA_DEST_ELEVATION, 9, 7),
-                TEST_AOA_DEST_ELEVATION_FOM, TEST_SLOT_IDX);
-        UwbRangingData uwbRangingData = new UwbRangingData(TEST_SEQ_COUNTER, TEST_SESSION_ID,
-                TEST_RCR_INDICATION, TEST_CURR_RANGING_INTERVAL, TEST_RANGING_MEASURES_TYPE,
-                TEST_MAC_ADDRESS_MODE, noOfRangingMeasures, uwbTwoWayMeasurements);
-
-        AngleOfArrivalMeasurement aoaMeasurement = null;
-        AngleOfArrivalMeasurement aoaDestMeasurement = null;
-        if (isAoaAzimuthEnabled || isAoaElevationEnabled) {
-            AngleMeasurement aoaAzimuth = null;
-            AngleMeasurement aoaElevation = null;
-            if (isAoaAzimuthEnabled) {
-                aoaAzimuth =
-                        new AngleMeasurement(
-                                degreeToRadian(TEST_AOA_AZIMUTH), 0,
-                                TEST_AOA_AZIMUTH_FOM / (double) 100);
-            }
-            if (isAoaElevationEnabled) {
-                aoaElevation =
-                        new AngleMeasurement(
-                                degreeToRadian(TEST_AOA_ELEVATION), 0,
-                                TEST_AOA_ELEVATION_FOM / (double) 100);
-            }
-            aoaMeasurement = new AngleOfArrivalMeasurement.Builder(aoaAzimuth)
-                    .setAltitude(aoaElevation)
-                    .build();
-        }
-        if (isDestAoaAzimuthEnabled || isDestAoaElevationEnabled) {
-            AngleMeasurement aoaDestAzimuth = null;
-            AngleMeasurement aoaDestElevation = null;
-            if (isDestAoaAzimuthEnabled) {
-                aoaDestAzimuth =
-                        new AngleMeasurement(
-                                degreeToRadian(TEST_AOA_DEST_AZIMUTH), 0,
-                                TEST_AOA_DEST_AZIMUTH_FOM / (double) 100);
-            }
-            if (isDestAoaElevationEnabled) {
-                aoaDestElevation =
-                        new AngleMeasurement(
-                                degreeToRadian(TEST_AOA_DEST_ELEVATION), 0,
-                                TEST_AOA_DEST_ELEVATION_FOM / (double) 100);
-            }
-            aoaDestMeasurement = new AngleOfArrivalMeasurement.Builder(aoaDestAzimuth)
-                    .setAltitude(aoaDestElevation)
-                    .build();
-        }
-        RangingMeasurement rangingMeasurement = new RangingMeasurement.Builder()
-                .setRemoteDeviceAddress(UwbAddress.fromBytes(
-                        TlvUtil.getReverseBytes(TEST_MAC_ADDRESS)))
-                .setStatus(TEST_STATUS)
-                .setElapsedRealtimeNanos(TEST_ELAPSED_NANOS)
-                .setDistanceMeasurement(
-                        new DistanceMeasurement.Builder()
-                                .setMeters(TEST_DISTANCE / (double) 100)
-                                .setErrorMeters(0)
-                                .setConfidenceLevel(0)
-                                .build())
-                .setAngleOfArrivalMeasurement(aoaMeasurement)
-                .setDestinationAngleOfArrivalMeasurement(aoaDestMeasurement)
-                .setLineOfSight(TEST_LOS)
-                .build();
-        RangingReport rangingReport = new RangingReport.Builder()
-                .addMeasurement(rangingMeasurement)
-                .build();
-        return Pair.create(uwbRangingData, rangingReport);
     }
 }
