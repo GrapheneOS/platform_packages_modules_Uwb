@@ -33,7 +33,7 @@
 namespace android {
 
 const char *UWB_NATIVE_MANAGER_CLASS_NAME =
-    "com/android/uwb/jni/NativeUwbManager";
+    "com/android/server/uwb/jni/NativeUwbManager";
 
 bool uwb_debug_enabled = true;
 static conformanceTestData_t ConformanceDataConf;
@@ -69,22 +69,29 @@ static SyncEvent sUwaSendBlinkDataEvent;
 static SyncEvent sErrNotify;
 static SyncEvent sUwaSetCountryCodeEvent; // event for
                                           // UWA_ControllerSetCountryCode
+static SyncEvent sUwaSendRawUciEvt; // event for UWA_SendRawCommand
+static SyncEvent sUwaGetDeviceCapsEvent; // event for Get Device Capabilities
 
 static deviceInfo_t sUwbDeviceInfo;
 static uint8_t sSetAppConfig[UCI_MAX_PAYLOAD_SIZE];
 static uint8_t sGetAppConfig[UCI_MAX_PAYLOAD_SIZE];
 static uint8_t sGetCoreConfig[UCI_MAX_PAYLOAD_SIZE];
 static uint8_t sSetCoreConfig[UCI_MAX_PAYLOAD_SIZE];
+static uint8_t sUwbDeviceCapability[UCI_MAX_PKT_SIZE];
+static uint8_t sSendRawResData[UCI_MAX_PAYLOAD_SIZE];
 static uint32_t sRangingCount = 0;
 static uint8_t sNoOfAppConfigIds = 0x00;
 static uint8_t sNoOfCoreConfigIds = 0x00;
 static uint8_t sSessionCount = -1;
+static uint16_t sDevCapInfoLen = 0;
+static uint16_t sDevCapInfoIds = 0x00;
 static uint16_t sGetCoreConfigLen;
 static uint16_t sGetAppConfigLen;
 static uint16_t sSetAppConfigLen;
 static uint8_t sGetAppConfigStatus;
 static uint8_t sSetAppConfigStatus;
 static uint8_t sSendBlinkDataStatus;
+static uint16_t sSendRawResLen;
 
 /* command response status */
 static bool sSessionInitStatus = false;
@@ -97,6 +104,7 @@ static bool sSetAppConfigRespStatus = false;
 static bool sGetAppConfigRespStatus = false;
 static bool sMulticastListUpdateStatus = false;
 static bool sSetCountryCodeStatus = false;
+static bool sGetDeviceCapsRespStatus = false;
 
 static uint8_t sSessionState = UWB_UNKNOWN_SESSION;
 
@@ -256,6 +264,7 @@ static void uwaDeviceManagementCallback(uint8_t dmEvent,
         sUwbDeviceInfo.phyVersion = eventData->sGet_device_info.phy_version;
         sUwbDeviceInfo.uciTestVersion =
             eventData->sGet_device_info.uciTest_version;
+        uwbEventManager.onVendorDeviceInfo(eventData->sGet_device_info.vendor_info, eventData->sGet_device_info.vendor_info_len);
       } else {
         JNI_TRACE_E("%s: UWA_DM_CORE_GET_DEVICE_INFO_RSP_EVT failed", fn);
       }
@@ -491,6 +500,22 @@ static void uwaDeviceManagementCallback(uint8_t dmEvent,
     }
     break;
 
+  case UWA_DM_GET_CORE_DEVICE_CAP_RSP_EVT:
+    JNI_TRACE_D("%s: UWA_DM_API_CORE_GET_DEVICE_CAPABILITY_EVT", fn);
+    {
+     SyncEventGuard guard(sUwaGetDeviceCapsEvent);
+     sGetDeviceCapsRespStatus = true;
+     sDevCapInfoLen = 0;
+     if (eventData->sGet_device_capability.status == UWA_STATUS_OK) {
+        sDevCapInfoIds = eventData->sGet_device_capability.no_of_tlvs;
+        sDevCapInfoLen = eventData->sGet_device_capability.tlv_buffer_len;
+        if (eventData->sGet_device_capability.tlv_buffer_len > 0 && (eventData->sGet_device_capability.tlv_buffer_len <= UCI_MAX_PKT_SIZE)) {
+            memcpy(sUwbDeviceCapability, eventData->sGet_device_capability.tlv_buffer, eventData->sGet_device_capability.tlv_buffer_len);
+        }
+     }
+     sUwaGetDeviceCapsEvent.notifyOne();
+     }
+    break;
   case UWA_DM_SEND_BLINK_DATA_NTF_EVT:
     JNI_TRACE_I("%s: UWA_DM_SEND_BLINK_DATA_NTF_EVT", fn);
     {
@@ -498,14 +523,26 @@ static void uwaDeviceManagementCallback(uint8_t dmEvent,
           eventData->sBlink_data_ntf.repetition_count_status);
     }
     break;
-
-    //    case UWA_DM_CONFORMANCE_NTF_EVT:
-    //      JNI_TRACE_I("%s: UWA_DM_CONFORMANCE_NTF_EVT", fn);
-    //      {
-    //        uwbEventManager.onRawUciNotificationReceived(eventData->sConformance_ntf.data,
-    //        eventData->sConformance_ntf.length);
-    //      }
-    //      break;
+  case UWA_VENDOR_SPECIFIC_UCI_NTF_EVT:
+     JNI_TRACE_I("%s: UWA_VENDOR_SPECIfIC_UCI_NTF_EVT", fn);
+     {
+      uint8_t mt, pbf, gid, oid, *ntf_data, *p_ntf_hdr;
+      uint16_t len = eventData->sVendor_specific_ntf.len-UCI_MSG_HDR_SIZE;
+      p_ntf_hdr = eventData->sVendor_specific_ntf.data;
+      ntf_data = (uint8_t *) eventData->sVendor_specific_ntf.data + UCI_MSG_HDR_SIZE;
+      UCI_MSG_PRS_HDR0(p_ntf_hdr, mt, pbf, gid);
+      UCI_MSG_PRS_HDR1(p_ntf_hdr, oid);
+      uwbEventManager.onVendorUciNotificationReceived(gid, oid,
+       ntf_data, len);
+     }
+     break;
+  case UWA_DM_CONFORMANCE_NTF_EVT:
+    JNI_TRACE_I("%s: UWA_DM_CONFORMANCE_NTF_EVT", fn);
+    {
+      uwbEventManager.onRawUciNotificationReceived(eventData->sConformance_ntf.data,
+      eventData->sConformance_ntf.length);
+    }
+    break;
   case UWA_DM_CORE_GEN_ERR_STATUS_EVT:
     JNI_TRACE_I("%s: UWA_DM_CORE_GEN_ERR_STATUS_EVT", fn);
     {
@@ -546,26 +583,18 @@ static void CommandResponse_Cb(uint8_t event, uint16_t paramLength,
                                uint8_t *pResponseBuffer) {
   JNI_TRACE_I("%s: Entry", __func__);
 
-  (void)event;
   if ((paramLength > UCI_RESPONSE_STATUS_OFFSET) && (pResponseBuffer != NULL)) {
     JNI_TRACE_I("CommandResponse_Cb Received length data = 0x%x status = 0x%x",
                 paramLength, pResponseBuffer[UCI_RESPONSE_STATUS_OFFSET]);
-
-    ConformanceDataConf.rsp_len = (uint8_t)paramLength;
-    memcpy(ConformanceDataConf.rsp_data, pResponseBuffer, paramLength);
-    if (pResponseBuffer[UCI_RESPONSE_STATUS_OFFSET] == 0x00) {
-      ConformanceDataConf.wstatus = UWA_STATUS_OK;
-    } else {
-      ConformanceDataConf.wstatus = UWA_STATUS_FAILED;
-    }
+   sSendRawResLen = paramLength-UCI_MSG_HDR_SIZE;
+   memcpy(sSendRawResData, pResponseBuffer+UCI_MSG_HDR_SIZE, sSendRawResLen);
   } else {
     JNI_TRACE_E("%s:CommandResponse_Cb responseBuffer is NULL or Length < "
                 "UCI_RESPONSE_STATUS_OFFSET",
                 __func__);
-    ConformanceDataConf.wstatus = UWA_STATUS_FAILED;
   }
-  SyncEventGuard guard(ConformanceDataConf.ConfigEvt);
-  ConformanceDataConf.ConfigEvt.notifyOne();
+  SyncEventGuard guard(sUwaSendRawUciEvt);
+  sUwaSendRawUciEvt.notifyOne();
 
   JNI_TRACE_I("%s: Exit", __func__);
 }
@@ -617,24 +646,37 @@ static tUWA_STATUS setAppConfiguration(uint32_t session_id, uint8_t noOfParams,
 ** Returns:         If Success UWA_STATUS_OK  else UWA_STATUS_FAILED
 **
 *******************************************************************************/
-static tUWA_STATUS sendRawUci(uint8_t *rawCmd, uint8_t cmdLen, uint8_t *rspData,
-                              uint8_t *rspLen) {
-  tUWA_STATUS status;
-  SyncEventGuard guard(ConformanceDataConf.ConfigEvt);
-  ConformanceDataConf.wstatus = UWA_STATUS_FAILED;
+static tUWA_STATUS sendRawUci(uint8_t gid, uint8_t oid, uint8_t *rawCmd, uint16_t cmdLen) {
+  tUWA_STATUS status = UWA_STATUS_FAILED;
+  uint8_t* pp;
+  uint8_t* p;
+  uint16_t len = cmdLen+UCI_MSG_HDR_SIZE;
+  p = pp =  (uint8_t *) phUwb_GKI_getbuf(len);
 
-  status = UWA_SendRawCommand(cmdLen, rawCmd, CommandResponse_Cb);
+  if (pp != NULL) {
+     SyncEventGuard guard(sUwaSendRawUciEvt);
+     UCI_MSG_BLD_HDR0(pp, UCI_MT_CMD, gid);
+     UCI_MSG_BLD_HDR1(pp, oid);
+     UINT8_TO_STREAM(pp, 0x00);
+     if (cmdLen ==1 && rawCmd[0] == 0  ) {
+       UINT8_TO_STREAM(pp, 0);
+       ARRAY_TO_STREAM(pp, rawCmd, 1);
+     } else {
+       UINT8_TO_STREAM(pp,cmdLen);
+       ARRAY_TO_STREAM(pp, rawCmd, cmdLen);
+     }
 
-  if (status == UWA_STATUS_OK) {
-    JNI_TRACE_I("%s: Success UWA_SendRawCommand", __func__);
-    ConformanceDataConf.ConfigEvt.wait(UWB_CMD_TIMEOUT); /* wait for callback */
-  } else {
-    JNI_TRACE_E("%s: Failed UWA_SendRawCommand", __func__);
-    return status;
+     status = UWA_SendRawCommand(len, p, CommandResponse_Cb);
+     phUwb_GKI_freebuf(p);
+
+     if (status == UWA_STATUS_OK) {
+       JNI_TRACE_I("%s: Success UWA_SendRawCommand", __func__);
+        sUwaSendRawUciEvt.wait(UWB_CMD_TIMEOUT);
+     } else {
+       JNI_TRACE_E("%s: Failed UWA_SendRawCommand", __func__);
+       return status;
+     }
   }
-  uint8_t *rsp = ConformanceDataConf.rsp_data;
-  *rspLen = ConformanceDataConf.rsp_len;
-  memcpy(rspData, rsp, *rspLen);
 
   JNI_TRACE_I("%s: Exit", __func__);
   return status;
@@ -904,7 +946,7 @@ jobject uwbNativeManager_getDeviceInfo(JNIEnv *env, jobject obj) {
   }
 
   // TODO need to change this implemenatation based on service.
-  const char *DEVICE_DATA_CLASS_NAME = "com/android/uwb/UwbDeviceData";
+  const char *DEVICE_DATA_CLASS_NAME = "com/android/server/uwb/UwbDeviceData";
   jclass deviceDataClass = env->FindClass(DEVICE_DATA_CLASS_NAME);
   jmethodID constructor =
       env->GetMethodID(deviceDataClass, "<init>",
@@ -947,7 +989,7 @@ jobject uwbNativeManager_getSpecificationInfo(JNIEnv *env, jobject obj) {
   }
 
   const char *DEVICE_DATA_CLASS_NAME =
-      "com/android/uwb/info/UwbSpecificationInfo";
+      "com/android/server/uwb/info/UwbSpecificationInfo";
   jclass deviceDataClass = env->FindClass(DEVICE_DATA_CLASS_NAME);
   jmethodID constructor =
       env->GetMethodID(deviceDataClass, "<init>", "(IIIIIIIIIIIIIIII)V");
@@ -1146,45 +1188,53 @@ jbyte uwbNativeManager_sessionDeInit(JNIEnv *env, jobject o, jint sessionId) {
 ** Returns:         Returns byte array
 **
 *******************************************************************************/
-jbyteArray uwbNativeManager_setAppConfigurations(JNIEnv *env, jobject o,
+jobject uwbNativeManager_setAppConfigurations(JNIEnv *env, jobject o,
                                                  jint sessionId,
                                                  jint noOfParams,
                                                  jint appConfigLen,
                                                  jbyteArray AppConfig) {
   static const char fn[] = "uwbNativeManager_setAppConfigurations";
   UNUSED(fn);
-  jbyteArray appConfigArray = NULL;
   uint8_t *appConfigData = NULL;
   tUWA_STATUS status = UWA_STATUS_FAILED;
   JNI_TRACE_I("%s: Enter", fn);
   if (!gIsUwaEnabled) {
     JNI_TRACE_E("%s: UWB device is not initialized", fn);
-    return appConfigArray;
+    return NULL;
   }
 
   appConfigData = (uint8_t *)malloc(sizeof(uint8_t) * appConfigLen);
   if (appConfigData != NULL) {
-    memset(appConfigData, 0, (sizeof(uint8_t) * appConfigLen));
-    env->GetByteArrayRegion(AppConfig, 0, appConfigLen, (jbyte *)appConfigData);
-    JNI_TRACE_I("%d: appConfigLen", appConfigLen);
-    status =
-        setAppConfiguration(sessionId, noOfParams, appConfigLen, appConfigData);
-    free(appConfigData);
-    appConfigArray =
-        env->NewByteArray(sSetAppConfigLen + sizeof(sSetAppConfigStatus) +
-                          sizeof(sNoOfAppConfigIds));
-    env->SetByteArrayRegion(appConfigArray, 0, 1,
-                            (jbyte *)&sSetAppConfigStatus);
-    env->SetByteArrayRegion(appConfigArray, 1, 1, (jbyte *)&sNoOfAppConfigIds);
-    if (sSetAppConfigLen > 0) {
-      env->SetByteArrayRegion(appConfigArray, 2, sSetAppConfigLen,
-                              (jbyte *)&sSetAppConfig[0]);
-    }
+      memset(appConfigData, 0, (sizeof(uint8_t) * appConfigLen));
+      env->GetByteArrayRegion(AppConfig, 0, appConfigLen, (jbyte *)appConfigData);
+      JNI_TRACE_I("%d: appConfigLen", appConfigLen);
+      status =
+          setAppConfiguration(sessionId, noOfParams, appConfigLen, appConfigData);
+      free(appConfigData);
+      if (sSetAppConfigRespStatus) {
+          const char *UWB_CONFIG_STATUS_DATA =
+                  "com/android/server/uwb/data/UwbConfigStatusData";
+          jclass configStatusDataClass = env->FindClass(UWB_CONFIG_STATUS_DATA);
+          jmethodID constructor =
+              env->GetMethodID(configStatusDataClass, "<init>", "(II[B)V");
+          if (constructor == JNI_NULL) {
+            JNI_TRACE_E("%s: jni cannot find the method for UwbTlvDATA", fn);
+            return NULL;
+          }
+          jbyteArray appConfigArray =
+              env->NewByteArray(sSetAppConfigLen);
+          env->SetByteArrayRegion(appConfigArray, 0, sSetAppConfigLen,
+                                  (jbyte *)&sSetAppConfig[0]);
+          return env->NewObject(configStatusDataClass, constructor, sSetAppConfigStatus, sNoOfAppConfigIds, appConfigArray);
+      } else {
+          JNI_TRACE_E("%s: Failed setAppConfigurations, Status = %d", fn,
+                    sSetAppConfigRespStatus);
+      }
   } else {
     JNI_TRACE_E("%s: Unable to Allocate Memory", fn);
   }
   JNI_TRACE_I("%s: Exit", fn);
-  return appConfigArray;
+  return NULL;
 }
 
 /*******************************************************************************
@@ -1201,44 +1251,57 @@ jbyteArray uwbNativeManager_setAppConfigurations(JNIEnv *env, jobject o,
 ** Returns:         Returns byte array for raw uci rsp
 **
 *******************************************************************************/
-jbyteArray uwbNativeManager_sendRawUci(JNIEnv *env, jobject o,
-                                       jbyteArray rawUci, jint cmdLen) {
+jobject uwbNativeManager_sendRawUci(JNIEnv *env, jobject o,
+                                       jint gid, jint oid,
+                                       jbyteArray rawUci) {
   static const char fn[] = "uwbNativeManager_sendRawUci";
   UNUSED(fn);
   JNI_TRACE_I("%s: enter; ", fn);
-  jbyteArray rspArray = NULL;
   uint8_t *cmd = NULL;
-  tUWA_STATUS status;
-  uint8_t rspData[UCI_MAX_PAYLOAD_SIZE];
-  uint8_t rspLen = 0;
-
+  tUWA_STATUS status = UWA_STATUS_FAILED;
+  jint cmdLen = env->GetArrayLength(rawUci);
   if (cmdLen > UCI_MAX_PAYLOAD_SIZE) {
     JNI_TRACE_E("%s: CmdLen %d is beyond max allowed range %d", fn, cmdLen,
                 UCI_MAX_PAYLOAD_SIZE);
-    return rspArray;
+    return NULL;
   }
 
   if (!gIsUwaEnabled) {
     JNI_TRACE_E("%s: UWB device is not initialized", fn);
-    return rspArray;
+    return NULL;
   }
 
   cmd = (uint8_t *)malloc(sizeof(uint8_t) * cmdLen);
   if (cmd == NULL) {
     JNI_TRACE_E("%s: malloc failure for raw cmd", __func__);
-    return rspArray;
+    return NULL;
   }
   memset(cmd, 0, (sizeof(uint8_t) * cmdLen));
   env->GetByteArrayRegion(rawUci, 0, cmdLen, (jbyte *)cmd);
 
-  status = sendRawUci(cmd, cmdLen, &rspData[0], &rspLen);
-  if (status == UWA_STATUS_OK) {
-    rspArray = env->NewByteArray(rspLen);
-    env->SetByteArrayRegion(rspArray, 0, rspLen, (jbyte *)&rspData[0]);
-  }
+  status = sendRawUci(gid, oid, cmd, cmdLen);
   free(cmd);
+
+  const char *UWB_VENDOR_RES_DATA =
+          "com/android/server/uwb/data/UwbVendorUciResponse";
+  jclass resDataClass = env->FindClass(UWB_VENDOR_RES_DATA);
+  jmethodID constructor =
+      env->GetMethodID(resDataClass, "<init>", "(BII[B)V");
+  if (constructor == JNI_NULL) {
+    JNI_TRACE_E("%s: jni cannot find the method for UwbTlvDATA", fn);
+    return NULL;
+  }
   JNI_TRACE_I("%s: exit sendRawUCi= 0x%x", __func__, status);
-  return rspArray;
+  if (status == UWA_STATUS_OK) {
+     jbyteArray rawResArray =
+         env->NewByteArray(sSendRawResLen);
+     env->SetByteArrayRegion(rawResArray, 0, sSendRawResLen,
+                             (jbyte *)&sSendRawResData[0]);
+     return env->NewObject(resDataClass, constructor, status, gid, oid, rawResArray);
+  } else {
+     return env->NewObject(resDataClass, constructor, status, gid, oid, NULL);
+  }
+
 }
 
 /*******************************************************************************
@@ -1257,7 +1320,7 @@ jbyteArray uwbNativeManager_sendRawUci(JNIEnv *env, jobject o,
 ** Returns:         Returns byte array
 **
 *******************************************************************************/
-jbyteArray uwbNativeManager_getAppConfigurations(JNIEnv *env, jobject o,
+jobject uwbNativeManager_getAppConfigurations(JNIEnv *env, jobject o,
                                                  jint sessionId,
                                                  jint noOfParams,
                                                  jint appConfigLen,
@@ -1265,48 +1328,52 @@ jbyteArray uwbNativeManager_getAppConfigurations(JNIEnv *env, jobject o,
   static const char fn[] = "uwbNativeManager_getAppConfigurations";
   UNUSED(fn);
   tUWA_STATUS status;
-  jbyteArray appConfigArray = NULL;
   uint8_t *appConfigData = NULL;
   JNI_TRACE_I("%s: Enter", fn);
 
   if (!gIsUwaEnabled) {
     JNI_TRACE_E("%s: UWB device is not initialized", fn);
-    return appConfigArray;
+    return NULL;
   }
 
   sGetAppConfigRespStatus = false;
   appConfigData = (uint8_t *)malloc(sizeof(uint8_t) * appConfigLen);
   if (appConfigData != NULL) {
-    memset(appConfigData, 0, (sizeof(uint8_t) * appConfigLen));
-    env->GetByteArrayRegion(AppConfig, 0, appConfigLen, (jbyte *)appConfigData);
-    SyncEventGuard guard(sUwaGetAppConfigEvent);
-    status =
-        UWA_GetAppConfig(sessionId, noOfParams, appConfigLen, appConfigData);
-    if (status == UWA_STATUS_OK) {
-      sUwaGetAppConfigEvent.wait(UWB_CMD_TIMEOUT);
-      if (sGetAppConfigRespStatus) {
-        appConfigArray =
-            env->NewByteArray(sGetAppConfigLen + sizeof(sGetAppConfigStatus) +
-                              sizeof(sNoOfAppConfigIds));
-        env->SetByteArrayRegion(appConfigArray, 0, 1,
-                                (jbyte *)&sGetAppConfigStatus);
-        env->SetByteArrayRegion(appConfigArray, 1, 1,
-                                (jbyte *)&sNoOfAppConfigIds);
-        env->SetByteArrayRegion(appConfigArray, 2, sGetAppConfigLen,
-                                (jbyte *)&sGetAppConfig[0]);
+      memset(appConfigData, 0, (sizeof(uint8_t) * appConfigLen));
+      env->GetByteArrayRegion(AppConfig, 0, appConfigLen, (jbyte *)appConfigData);
+      SyncEventGuard guard(sUwaGetAppConfigEvent);
+      status =
+          UWA_GetAppConfig(sessionId, noOfParams, appConfigLen, appConfigData);
+      free(appConfigData);
+      if (status == UWA_STATUS_OK) {
+          sUwaGetAppConfigEvent.wait(UWB_CMD_TIMEOUT);
+          if (sGetAppConfigRespStatus) {
+              const char *UWB_TLV_DATA =
+                 "com/android/server/uwb/data/UwbTlvData";
+              jclass tlvDataClass = env->FindClass(UWB_TLV_DATA);
+              jmethodID constructor =
+                env->GetMethodID(tlvDataClass, "<init>", "(II[B)V");
+               if (constructor == JNI_NULL) {
+                   JNI_TRACE_E("%s: jni cannot find the method for UwbTlvDATA", fn);
+                   return NULL;
+               }
+               jbyteArray appConfigArray =
+                   env->NewByteArray(sGetAppConfigLen);
+               env->SetByteArrayRegion(appConfigArray, 0, sGetAppConfigLen,
+                                  (jbyte *)&sGetAppConfig[0]);
+               return env->NewObject(tlvDataClass, constructor, sGetAppConfigStatus, sNoOfAppConfigIds, appConfigArray);
+          } else {
+               JNI_TRACE_E("%s: Failed getAppConfigurations, Status = %d", fn,
+                      sGetAppConfigRespStatus);
+          }
       } else {
-        JNI_TRACE_E("%s: Failed getAppConfigurations, Status = %d", fn,
-                    sGetAppConfigRespStatus);
+        JNI_TRACE_E("%s: Failed UWA_GetAppConfig", fn);
       }
-    } else {
-      JNI_TRACE_E("%s: Failed UWA_GetAppConfig", fn);
-    }
-    free(appConfigData);
   } else {
-    JNI_TRACE_E("%s: Unable to Allocate Memory", fn);
+      JNI_TRACE_E("%s: Unable to Allocate Memory", fn);
   }
   JNI_TRACE_I("%s: Exit", fn);
-  return appConfigArray;
+  return NULL;
 }
 
 /*******************************************************************************
@@ -1466,161 +1533,6 @@ jbyte uwbNativeManager_getSessionState(JNIEnv *env, jobject obj,
 
 /*******************************************************************************
 **
-** Function:        uwbNativeManager_enableRangeDataNtf
-**
-** Description:     Enable or disable the range data ntf.
-**
-** Params:          env: JVM environment.
-**                  o: Java object.
-**                  sessionId: Session Id To which enable/Disable the Ranging
-**                  enable: Option to set enable/disable
-**
-** Returns:         if success UWb_STATUS_OK else returns
-**                  UWA_STATUS_FAILED.
-**
-********************************************************************************/
-jbyte uwbNativeManager_enableRangeDataNtf(JNIEnv *env, jobject o,
-                                          jint sessionId, jbyte enable) {
-  static const char fn[] = "uwbNativeManager_enableRangeDataNtf";
-  UNUSED(fn);
-  tUWA_STATUS status = UWA_STATUS_FAILED;
-  uint8_t appConfigData[] = {UCI_PARAM_ID_RNG_DATA_NTF,
-                             UCI_PARAM_LEN_RNG_DATA_NTF, (uint8_t)enable};
-  uint8_t numOfConfigIds = 1;
-  JNI_TRACE_I("%s: Enter: sessionId = %d, enable=%d", fn, sessionId, enable);
-
-  if (!gIsUwaEnabled) {
-    JNI_TRACE_E("%s: UWB device is not initialized", fn);
-    return status;
-  }
-
-  status = setAppConfiguration(sessionId, numOfConfigIds, sizeof(appConfigData),
-                               appConfigData);
-  JNI_TRACE_I("%s: Exit", fn);
-  return status;
-}
-
-/*******************************************************************************
-**
-** Function:        uwbNativeManager_setRangingDataSamplingRate
-**
-** Description:     set the sampling rate to get the Average ranging data.
-**
-** Params:          env: JVM environment.
-**                  o: Java object.
-**                  sessionId: Session Id to which set the sampling rate
-**                  samplingRate: Required ranging sampling rate
-**
-** Returns:         if success UWb_STATUS_OK else returns
-**                  UWA_STATUS_FAILED
-**
-*******************************************************************************/
-jbyte uwbNativeManager_setRangingDataSamplingRate(JNIEnv *env, jobject o,
-                                                  jint sessionId,
-                                                  jbyte samplingRate) {
-  static const char fn[] = "uwbNativeManager_setRangingDataSamplingRate";
-  UNUSED(fn);
-  JNI_TRACE_I("%s: Enter", fn);
-
-  if (!gIsUwaEnabled) {
-    JNI_TRACE_E("%s: UWB device is not initialized", fn);
-    return UWA_STATUS_FAILED;
-  }
-
-  JNI_TRACE_E("%s: sessionId: %x, samplingRate set is %d", fn, sessionId,
-              samplingRate);
-  {
-    std::unique_lock<std::mutex> lock(sSessionMutex);
-    if (samplingRate > 1) {
-      auto it = sAveragedRangingData.find(sessionId);
-      if (it == sAveragedRangingData.end()) {
-        SessionRangingData sessionData;
-        memset(&sessionData, 0, sizeof(sessionData));
-        sAveragedRangingData.insert({sessionId, sessionData});
-      }
-      sAveragedRangingData[sessionId].samplingRate = samplingRate;
-      JNI_TRACE_E("%s: Averaging Enabled for session Id %d", fn, sessionId);
-    } else {
-      sAveragedRangingData.erase(sessionId);
-      JNI_TRACE_E(
-          "%s: Averaging Disabled for session Id %d since sampling rate is %d",
-          fn, sessionId, samplingRate);
-    }
-  }
-  JNI_TRACE_I("%s: Exit", fn);
-  return UWA_STATUS_OK;
-}
-
-/*******************************************************************************
-**
-** Function:        uwbNativeManager_getRangingCount()
-**
-** Description:     application can use this API to get Ranging Count
-**
-** Params:          env: JVM environment.
-**                  o: Java object.
-**                  sessionId : Session Id for which get the Ranging Count
-**
-** Returns:         ranging count on success else 0 on Failure
-**
-*******************************************************************************/
-jint uwbNativeManager_getRangingCount(JNIEnv *env, jobject o, int sessionId) {
-  static const char fn[] = "uwbNativeManager_getRangingCount";
-  UNUSED(fn);
-  sRangingCount = 0;
-  tUWA_STATUS status;
-  JNI_TRACE_I("%s: Enter", fn);
-
-  if (!gIsUwaEnabled) {
-    JNI_TRACE_E("%s: UWB device is not initialized", fn);
-    return sRangingCount;
-  }
-
-  SyncEventGuard guard(sUwaGetRangingCountEvent);
-  status = UWA_GetRangingCount(sessionId);
-  if (UWA_STATUS_OK == status) {
-    sUwaGetRangingCountEvent.wait(UWB_CMD_TIMEOUT);
-  } else {
-    JNI_TRACE_E("%s: get ranging count command is  failed", fn);
-  }
-  JNI_TRACE_I("%s: Exit", fn);
-  return sRangingCount;
-}
-
-/*******************************************************************************
-**
-** Function:        uwbNativeManager_doRecovery()
-**
-** Description:     UWB service shall apply default configurations on UWBD soft
-*reset
-**
-** Returns:         UWb_STATUS_OK on success else UWA_STATUS_FAILED
-**
-*******************************************************************************/
-jbyte uwbNativeManager_doRecovery() {
-  static const char fn[] = "uwbNativeManager_doRecovery";
-  UNUSED(fn);
-  tUWA_STATUS status = UWA_STATUS_FAILED;
-  JNI_TRACE_I("%s: Enter; ", fn);
-
-  if (!gIsUwaEnabled) {
-    JNI_TRACE_E("%s: UWB device is not initialized", fn);
-    return status;
-  }
-
-  clearAllSessionContext();
-  status = SetCoreDeviceConfigurations();
-  if (status == UWA_STATUS_OK) {
-    JNI_TRACE_I("%s: CoreDeviceConfigs are Success", fn);
-  } else {
-    JNI_TRACE_I("%s: CoreDeviceConfigs are Failed ", fn);
-  }
-  JNI_TRACE_I("%s: Exit status=%d; ", fn, status);
-  return (status == UWA_STATUS_OK) ? UWA_STATUS_OK : UWA_STATUS_FAILED;
-}
-
-/*******************************************************************************
-**
 ** Function:        uwbNativeManager_ControllerMulticastListUpdate()
 **
 ** Description:     API to set Controller Multicast List Update
@@ -1638,12 +1550,11 @@ jbyte uwbNativeManager_doRecovery() {
 *******************************************************************************/
 jbyte uwbNativeManager_ControllerMulticastListUpdate(
     JNIEnv *env, jobject o, jint sessionId, jbyte action, jbyte noOfControlees,
-    jbyteArray shortAddressList, jintArray subSessionIdList) {
+    jshortArray shortAddressList, jintArray subSessionIdList) {
   static const char fn[] = "uwbNativeManager_ControllerMulticastListUpdate";
   UNUSED(fn);
   tUWA_STATUS status = UWA_STATUS_FAILED;
-  uint8_t *shortAddressArray = NULL;
-  uint16_t *shortAddress = NULL;
+  uint16_t *shortAddressArray = NULL;
   uint32_t *subSessionIdArray = NULL;
   JNI_TRACE_E("%s: enter; ", fn);
 
@@ -1665,29 +1576,18 @@ jbyte uwbNativeManager_ControllerMulticastListUpdate(
   }
 
   if ((shortAddressLen > 0) && (subSessionIdLen > 0)) {
-    shortAddressArray = (uint8_t *)malloc(shortAddressLen);
+    shortAddressArray = (uint16_t *)malloc(shortAddressLen);
     if (shortAddressArray == NULL) {
       JNI_TRACE_E("%s: malloc failure for shortAddressArray", fn);
       return status;
     }
     memset(shortAddressArray, 0, shortAddressLen);
-    env->GetByteArrayRegion(shortAddressList, 0, shortAddressLen,
-                            (jbyte *)shortAddressArray);
-    shortAddress = (uint16_t *)malloc(shortAddressLen);
-    if (shortAddress == NULL) {
-      JNI_TRACE_E("%s: malloc failure for shortAddressArray", fn);
-      return status;
-    }
-    memset(shortAddress, 0, shortAddressLen);
-    uint8_t *p = shortAddressArray;
-    for (uint8_t i = 0; i < shortAddressLen / SHORT_ADDRESS_LEN; i++) {
-      BE_STREAM_TO_UINT16(shortAddress[i], p);
-    }
+    env->GetShortArrayRegion(shortAddressList, 0, shortAddressLen,
+                            (jshort *)shortAddressArray);
 
     subSessionIdArray = (uint32_t *)malloc(SESSION_ID_LEN * subSessionIdLen);
     if (subSessionIdArray == NULL) {
       free(shortAddressArray);
-      free(shortAddress);
       JNI_TRACE_E("%s: malloc failure for subSessionIdArray", fn);
       return status;
     }
@@ -1698,12 +1598,11 @@ jbyte uwbNativeManager_ControllerMulticastListUpdate(
     sMulticastListUpdateStatus = false;
     SyncEventGuard guard(sUwaMulticastListUpdateEvent);
     status = UWA_ControllerMulticastListUpdate(
-        sessionId, action, noOfControlees, shortAddress, subSessionIdArray);
+        sessionId, action, noOfControlees, shortAddressArray, subSessionIdArray);
     if (status == UWA_STATUS_OK) {
       sUwaMulticastListUpdateEvent.wait(UWB_CMD_TIMEOUT);
     }
     free(shortAddressArray);
-    free(shortAddress);
     free(subSessionIdArray);
   } else {
     JNI_TRACE_E("%s: controleeListArray length is not valid", fn);
@@ -1768,67 +1667,6 @@ jbyte uwbNativeManager_SetCountryCode(JNIEnv *env, jobject o,
 
 /*******************************************************************************
 **
-** Function:        uwbManager_sendBlinkData()
-**
-** Description:     API to test uwb send blink data
-**
-** Params:          e: JVM environment.
-**                  o: Java object.
-**                  sessionId: Session Id
-**                  repetitionCount: Number of times Application Data is added
-**                  in Payload of Blink Message.
-**                  appData: Application specific data.
-**
-** Returns:         UWA_STATUS_OK on success or UWA_STATUS_FAILED on failure
-**
-*******************************************************************************/
-jbyte uwbManager_sendBlinkData(JNIEnv *env, jobject o, jint sessionId,
-                               jbyte repetitionCount, jbyteArray appData) {
-  static const char fn[] = "uwbManager_sendBlinkData";
-  UNUSED(fn);
-  tUWA_STATUS status = UWA_STATUS_FAILED;
-  JNI_TRACE_I("%s: enter; ", fn);
-
-  if (!gIsUwaEnabled) {
-    JNI_TRACE_E("%s: UWB device is not initialized", fn);
-    return status;
-  }
-
-  uint8_t len = env->GetArrayLength(appData);
-
-  if (len > UCI_MAX_PAYLOAD_SIZE) {
-    JNI_TRACE_E("%s: len %d is beyond max allowed range %d", fn, len,
-                UCI_MAX_PAYLOAD_SIZE);
-    status = UWA_STATUS_DATA_MAX_TX_PSDU_SIZE_EXCEEDED;
-    return status;
-  }
-
-  if (len > 0) {
-    uint8_t *appDataArray = (uint8_t *)malloc(sizeof(uint8_t) * len);
-    if (appDataArray == NULL) {
-      JNI_TRACE_E("%s: malloc failure for appDataArray", fn);
-      return status;
-    }
-    memset(appDataArray, 0, (sizeof(uint8_t) * len));
-    env->GetByteArrayRegion(appData, 0, len, (jbyte *)appDataArray);
-
-    sSendBlinkDataStatus = UWA_STATUS_FAILED;
-    SyncEventGuard guard(sUwaSendBlinkDataEvent);
-    status = UWA_SendBlinkData(sessionId, repetitionCount, len, appDataArray);
-    if (status == UWA_STATUS_OK) {
-      sUwaSendBlinkDataEvent.wait(UWB_CMD_TIMEOUT);
-    }
-    free(appDataArray);
-  } else {
-    JNI_TRACE_E("%s: appData length is not valid", fn);
-  }
-
-  JNI_TRACE_I("%s: exit status= 0x%x", fn, status);
-  return sSendBlinkDataStatus;
-}
-
-/*******************************************************************************
-**
 ** Function:        uwbNativeManager_init
 **
 ** Description:     Initialize variables.
@@ -1871,6 +1709,80 @@ jbyte uwbNativeManager_enableConformanceTest(JNIEnv *env, jobject o,
   return UWA_STATUS_OK;
 }
 
+/*******************************************************************************
+**
+** Function:        uwbNativeManager_GetDeviceCapebilityParams()
+**
+** Description:     Invoked this API to get the device capability information.
+**
+** Params:          env: JVM environment.
+**                  o: Java object.
+**
+** Returns:         Returns byte array
+**
+*******************************************************************************/
+jobject uwbNativeManager_GetDeviceCapebilityParams(JNIEnv* env, jobject o) {
+  JNI_TRACE_I("%s: Entry", __func__);
+  tUWA_STATUS status;
+
+  if (!gIsUwaEnabled) {
+    JNI_TRACE_E("%s: UWB device is not initialized", __func__);
+    return NULL;
+  }
+
+  sGetDeviceCapsRespStatus = false;
+  SyncEventGuard guard(sUwaGetDeviceCapsEvent);
+  status = UWA_GetCoreGetDeviceCapability();
+  if (status == UWA_STATUS_OK) {
+    JNI_TRACE_D("%s: Success UWA_GetCoreGetDeviceCapability", __func__);
+    sUwaGetDeviceCapsEvent.wait(UWB_CMD_TIMEOUT);
+  } else {
+    JNI_TRACE_E("%s: Failed UWA_GetCoreGetDeviceCapability", __func__);
+    return NULL;
+  }
+
+  if (!sGetDeviceCapsRespStatus) {
+    JNI_TRACE_E("%s: Failed getDeviceCapabilityInfo, Status = %d", __func__,
+                sGetDeviceCapsRespStatus);
+    return NULL;
+  }
+
+  const char *UWB_TLV_DATA =
+	"com/android/server/uwb/data/UwbTlvData";
+  jclass tlvDataClass = env->FindClass(UWB_TLV_DATA);
+  jmethodID constructor =
+      env->GetMethodID(tlvDataClass, "<init>", "(II[B)V");
+  if (constructor == JNI_NULL) {
+    JNI_TRACE_E("%s: jni cannot find the method for UwbTlvDATA", __func__);
+    return NULL;
+  }
+
+  //remove vendor ext parameters
+  uint8_t sUwbDeviceCapaInfos[UCI_MAX_PKT_SIZE];
+  uint16_t capLen = 0;
+  for( uint16_t index= 0;index< sDevCapInfoLen;) {
+      if (sUwbDeviceCapability[index] == 0xE0 ) { //Ext id
+         switch (sUwbDeviceCapability[index+1]) { //Ext sub id
+             case 0x00:
+             case 0x01:
+             case 0x02:
+	       int lenofParam =  sUwbDeviceCapability[index+2]; //Get the length of Ext paramaeter
+	       index = index + (lenofParam+3); // increament index by (Ext id+ Ext sub id + length of ext param + velue of param)
+               sDevCapInfoIds--;
+	      break;
+	 }
+      } else {
+	 sUwbDeviceCapaInfos[capLen++] = sUwbDeviceCapability[index];
+         index++;
+      }
+  }
+  jbyteArray deviceCapabilityInfo = env->NewByteArray(capLen);
+  env->SetByteArrayRegion(deviceCapabilityInfo, 0, capLen,
+                          (jbyte*)&sUwbDeviceCapaInfos[0]);
+  JNI_TRACE_I("%s: Exit", __func__);
+  return env->NewObject(tlvDataClass, constructor, status, sDevCapInfoIds, deviceCapabilityInfo);
+}
+
 /*****************************************************************************
 **
 ** JNI functions for android
@@ -1883,34 +1795,31 @@ static JNINativeMethod gMethods[] = {
     {"nativeDoDeinitialize", "()Z", (void *)uwbNativeManager_doDeinitialize},
     {"nativeSessionInit", "(IB)B", (void *)uwbNativeManager_sessionInit},
     {"nativeSessionDeInit", "(I)B", (void *)uwbNativeManager_sessionDeInit},
-    {"nativeSetAppConfigurations", "(III[B)[B",
+    {"nativeSetAppConfigurations",
+      "(III[B)Lcom/android/server/uwb/data/UwbConfigStatusData;",
      (void *)uwbNativeManager_setAppConfigurations},
-    {"nativeGetAppConfigurations", "(III[B)[B",
+    {"nativeGetAppConfigurations",
+      "(III[B)Lcom/android/server/uwb/data/UwbTlvData;",
      (void *)uwbNativeManager_getAppConfigurations},
     {"nativeRangingStart", "(I)B", (void *)uwbNativeManager_startRanging},
     {"nativeRangingStop", "(I)B", (void *)uwbNativeManager_stopRanging},
     {"nativeGetSessionCount", "()B", (void *)uwbNativeManager_getSessionCount},
-    //{"nativeEnableRangeDataNtf","(IB)B",
-    //(void*)uwbNativeManager_enableRangeDataNtf},
-    //{"nativeSetRangingDataSamplingRate","(IB)B",
-    //(void*)uwbNativeManager_setRangingDataSamplingRate},
-    //{"nativeDoRecovery","()B", (void*)uwbNativeManager_doRecovery},
-    //{"nativeGetRangingCount","(I)I", (void*)uwbNativeManager_getRangingCount},
     {"nativeGetSessionState", "(I)B", (void *)uwbNativeManager_getSessionState},
-    {"nativeControllerMulticastListUpdate", "(IBB[B[I)B",
+    {"nativeControllerMulticastListUpdate", "(IBB[S[I)B",
      (void *)uwbNativeManager_ControllerMulticastListUpdate},
     {"nativeSetCountryCode", "([B)B", (void *)uwbNativeManager_SetCountryCode},
-    // {"nativeSendBlinkData", "(IB[B)B", (void*)uwbManager_sendBlinkData},
-    // {"nativeSendRawUci", "([BI)[B", (void*)uwbNativeManager_sendRawUci},
-    // {"nativeEnableConformanceTest", "(Z)",
-    // (void*)uwbNativeManager_enableConformanceTest}
+    {"nativeSendRawVendorCmd", "(II[B)Lcom/android/server/uwb/data/UwbVendorUciResponse;",
+    (void*)uwbNativeManager_sendRawUci},
+    {"nativeEnableConformanceTest", "(Z)B",
+     (void*)uwbNativeManager_enableConformanceTest},
     {"nativeGetMaxSessionNumber", "()I",
      (void *)uwbNativeManager_getMaxSessionNumber},
     {"nativeResetDevice", "(B)B", (void *)uwbNativeManager_resetDevice},
     {"nativeGetSpecificationInfo",
-     "()Lcom/android/uwb/info/UwbSpecificationInfo;",
-     (void *)uwbNativeManager_getSpecificationInfo}
-
+     "()Lcom/android/server/uwb/info/UwbSpecificationInfo;",
+     (void *)uwbNativeManager_getSpecificationInfo},
+    {"nativeGetCapsInfo", "()Lcom/android/server/uwb/data/UwbTlvData;",
+     (void*)uwbNativeManager_GetDeviceCapebilityParams}
 };
 
 /*******************************************************************************
