@@ -27,14 +27,14 @@
 
 namespace android {
 
-const char *RANGING_DATA_CLASS_NAME = "com/android/uwb/data/UwbRangingData";
+const char *RANGING_DATA_CLASS_NAME = "com/android/server/uwb/data/UwbRangingData";
 const char *RANGING_MEASURES_CLASS_NAME =
-    "com/android/uwb/data/UwbTwoWayMeasurement";
+    "com/android/server/uwb/data/UwbTwoWayMeasurement";
 /* ranging tdoa measures and multicast list update ntf events are implemented as
    per Fira specification.
        TODO support for these class to be added in service.*/
 const char *MULTICAST_UPDATE_LIST_DATA_CLASS_NAME =
-    "com/android/uwb/data/UwbMulticastListUpdateStatus";
+    "com/android/server/uwb/data/UwbMulticastListUpdateStatus";
 
 UwbEventManager UwbEventManager::mObjUwbManager;
 
@@ -55,6 +55,8 @@ UwbEventManager::UwbEventManager() {
   mOnMulticastListUpdateNotificationReceived = NULL;
   mOnBlinkDataTxNotificationReceived = NULL;
   mOnRawUciNotificationReceived = NULL;
+  mOnVendorUciNotificationReceived = NULL;
+  mOnVendorDeviceInfo = NULL;
 }
 
 void UwbEventManager::onRangeDataNotificationReceived(
@@ -139,7 +141,7 @@ void UwbEventManager::onRangeDataNotificationReceived(
 
     rngDataCtorTwm = env->GetMethodID(
         mRangeDataClass, "<init>",
-        "(JJIJIII[Lcom/android/uwb/data/UwbTwoWayMeasurement;)V");
+        "(JJIJIII[Lcom/android/server/uwb/data/UwbTwoWayMeasurement;)V");
     rangeDataObject = env->NewObject(
         mRangeDataClass, rngDataCtorTwm, (long)ranging_ntf_data->seq_counter,
         (long)ranging_ntf_data->session_id,
@@ -363,6 +365,55 @@ void UwbEventManager::onBlinkDataTxNotificationReceived(uint8_t status) {
   JNI_TRACE_I("%s: exit", fn);
 }
 
+void UwbEventManager::onVendorUciNotificationReceived(uint8_t gid, uint8_t oid, uint8_t* data, uint16_t length) {
+  static const char fn[] = "onVendorUciNotificationReceived";
+  UNUSED(fn);
+
+  ScopedJniEnv env(mVm);
+  if (env == NULL) {
+    JNI_TRACE_E("%s: jni env is null", fn);
+    return;
+  }
+
+  jbyteArray dataArray = env->NewByteArray(length);
+  env->SetByteArrayRegion(dataArray, 0, length, (jbyte*)data);
+
+  if (mOnVendorUciNotificationReceived != NULL) {
+    env->CallVoidMethod(mObject, mOnVendorUciNotificationReceived, (int)gid, (int)oid, dataArray);
+    if (env->ExceptionCheck()) {
+      env->ExceptionClear();
+      JNI_TRACE_E("%s: fail to send notification", __func__);
+    }
+  } else {
+    JNI_TRACE_E("%s: onVendorUciNotificationReceived MID is NULL", __func__);
+  }
+  JNI_TRACE_I("%s: exit", __func__);
+}
+
+void UwbEventManager::onVendorDeviceInfo(uint8_t* data, uint8_t length) {
+  static const char fn[] = "onVendorDeviceInfo";
+  UNUSED(fn);
+  if((length <= 0) || (data == NULL)) {
+        JNI_TRACE_E("%s: data len is Zero or vendorDevice info  is NULL", fn);
+        return;
+  }
+
+  ScopedJniEnv env(mVm);
+
+  jbyteArray dataArray = env->NewByteArray(length);
+  env->SetByteArrayRegion(dataArray, 0, length, (jbyte*)data);
+  if (mOnVendorDeviceInfo != NULL) {
+    env->CallVoidMethod(mObject, mOnVendorDeviceInfo, dataArray);
+    if (env->ExceptionCheck()) {
+      env->ExceptionClear();
+      JNI_TRACE_E("%s: fail to vendor info", __func__);
+    }
+  } else {
+    JNI_TRACE_E("%s: onVendorDeviceInfo MID is NULL", __func__);
+  }
+  JNI_TRACE_I("%s: exit", __func__);
+}
+
 void UwbEventManager::doLoadSymbols(JNIEnv *env, jobject thiz) {
   static const char fn[] = "UwbEventManager::doLoadSymbols";
   UNUSED(fn);
@@ -379,7 +430,7 @@ void UwbEventManager::doLoadSymbols(JNIEnv *env, jobject thiz) {
         env->GetMethodID(clazz, "onDeviceStatusNotificationReceived", "(I)V");
     mOnRangeDataNotificationReceived =
         env->GetMethodID(clazz, "onRangeDataNotificationReceived",
-                         "(Lcom/android/uwb/data/UwbRangingData;)V");
+                         "(Lcom/android/server/uwb/data/UwbRangingData;)V");
     mOnSessionStatusNotificationReceived = env->GetMethodID(
         clazz, "onSessionStatusNotificationReceived", "(JII)V");
     mOnCoreGenericErrorNotificationReceived = env->GetMethodID(
@@ -388,9 +439,13 @@ void UwbEventManager::doLoadSymbols(JNIEnv *env, jobject thiz) {
     // TDB, this should be reworked
     mOnMulticastListUpdateNotificationReceived = env->GetMethodID(
         clazz, "onMulticastListUpdateNotificationReceived",
-        "(Lcom/android/uwb/data/UwbMulticastListUpdateStatus;)V");
-    //        mOnRawUciNotificationReceived = env->GetMethodID(clazz,
-    //        "onRawUciNotificationReceived", "([B)V");
+        "(Lcom/android/server/uwb/data/UwbMulticastListUpdateStatus;)V");
+    mOnRawUciNotificationReceived = env->GetMethodID(clazz,
+            "onRawUciNotificationReceived", "([B)V");
+    mOnVendorUciNotificationReceived = env->GetMethodID(clazz,
+            "onVendorUciNotificationReceived", "(II[B)V");
+    mOnVendorDeviceInfo = env->GetMethodID(clazz,
+            "onVendorDeviceInfo", "([B)V");
 
     uwb_jni_cache_jclass(env, RANGING_DATA_CLASS_NAME, &mRangeDataClass);
     uwb_jni_cache_jclass(env, RANGING_MEASURES_CLASS_NAME,
