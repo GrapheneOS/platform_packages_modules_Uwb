@@ -17,7 +17,7 @@ package android.uwb;
 /**
  * @hide
  */
-interface IUwbVendorUciCallback {
+oneway interface IUwbVendorUciCallback {
     void onVendorResponseReceived(int gid, int oid, in byte[] payload);
     void onVendorNotificationReceived(int gid, int oid, in byte[] payload);
 }
