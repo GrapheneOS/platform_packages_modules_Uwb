@@ -20,6 +20,7 @@ import static android.Manifest.permission.UWB_RANGING;
 import static android.permission.PermissionManager.PERMISSION_GRANTED;
 
 import android.annotation.NonNull;
+import android.app.AlarmManager;
 import android.content.ApexEnvironment;
 import android.content.AttributionSource;
 import android.content.pm.ApplicationInfo;
@@ -90,7 +91,8 @@ public class UwbInjector {
                 new UwbSessionNotificationManager(this);
         UwbSessionManager uwbSessionManager =
                 new UwbSessionManager(uwbConfigurationManager, mNativeUwbManager, mUwbMetrics,
-                        uwbSessionNotificationManager, this, mLooper);
+                        uwbSessionNotificationManager, this,
+                        mContext.getSystemService(AlarmManager.class), mLooper);
         mUwbService = new UwbServiceCore(mContext, mNativeUwbManager, mUwbMetrics,
                 mUwbCountryCode, uwbSessionManager, uwbConfigurationManager, mLooper);
     }
