@@ -16,13 +16,12 @@
 
 package com.android.server.uwb;
 
-import static com.android.server.uwb.UwbSessionManager.UwbSession.ALLOWED_RANGING_RESULT_ERROR_STREAK_MS;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyByte;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
@@ -36,6 +35,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import android.app.AlarmManager;
 import android.content.AttributionSource;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -66,6 +66,7 @@ import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -97,14 +98,13 @@ public class UwbSessionManagerTest {
     private UwbSessionNotificationManager mUwbSessionNotificationManager;
     @Mock
     private UwbInjector mUwbInjector;
-    private TestLooper mTestLooper = new TestLooper();
-
-    private UwbSessionManager mUwbSessionManager;
-
-    private MockitoSession mMockitoSession;
-
     @Mock
     private ExecutorService mExecutorService;
+    @Mock
+    private AlarmManager mAlarmManager;
+    private TestLooper mTestLooper = new TestLooper();
+    private UwbSessionManager mUwbSessionManager;
+    private MockitoSession mMockitoSession;
 
     @Before
     public void setup() {
@@ -118,6 +118,7 @@ public class UwbSessionManagerTest {
                 mUwbMetrics,
                 mUwbSessionNotificationManager,
                 mUwbInjector,
+                mAlarmManager,
                 mTestLooper.getLooper()));
 
         // static mocking for executor service.
@@ -947,11 +948,23 @@ public class UwbSessionManagerTest {
                 eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
 
         // Now send a range data notification with an error.
-        when(mUwbInjector.getElapsedSinceBootMillis()).thenReturn(1L);
         UwbRangingData uwbRangingData =
                 UwbTestUtils.generateRangingData(UwbUciConstants.STATUS_CODE_RANGING_RX_TIMEOUT);
         mUwbSessionManager.onRangeDataNotificationReceived(uwbRangingData);
         verify(mUwbSessionNotificationManager).onRangingResult(uwbSession, uwbRangingData);
+        ArgumentCaptor<AlarmManager.OnAlarmListener> alarmListenerCaptor =
+                ArgumentCaptor.forClass(AlarmManager.OnAlarmListener.class);
+        verify(mAlarmManager).set(
+                anyInt(), anyLong(), anyString(), alarmListenerCaptor.capture(), any());
+        assertThat(alarmListenerCaptor.getValue()).isNotNull();
+
+        // Send one more error and ensure that the timer is not cancelled.
+        uwbRangingData =
+                UwbTestUtils.generateRangingData(UwbUciConstants.STATUS_CODE_RANGING_RX_TIMEOUT);
+        mUwbSessionManager.onRangeDataNotificationReceived(uwbRangingData);
+        verify(mUwbSessionNotificationManager).onRangingResult(uwbSession, uwbRangingData);
+
+        verify(mAlarmManager, never()).cancel(any(AlarmManager.OnAlarmListener.class));
 
         // set up for stop ranging
         doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE, UwbUciConstants.UWB_SESSION_STATE_IDLE)
@@ -959,18 +972,51 @@ public class UwbSessionManagerTest {
         when(mNativeUwbManager.stopRanging(eq(TEST_SESSION_ID)))
                 .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
 
-        when(mUwbInjector.getElapsedSinceBootMillis())
-                .thenReturn(ALLOWED_RANGING_RESULT_ERROR_STREAK_MS + 5L);
-        uwbRangingData =
-                UwbTestUtils.generateRangingData(UwbUciConstants.STATUS_CODE_RANGING_RX_TIMEOUT);
-        mUwbSessionManager.onRangeDataNotificationReceived(uwbRangingData);
-        verify(mUwbSessionNotificationManager).onRangingResult(uwbSession, uwbRangingData);
+        // Now fire the timer callback.
+        alarmListenerCaptor.getValue().onAlarm();
 
         // Expect session stop.
         mTestLooper.dispatchNext();
         verify(mUwbSessionNotificationManager)
                 .onRangingStopped(eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
         verify(mUwbMetrics).longRangingStopEvent(eq(uwbSession));
+    }
+
+    @Test
+    public void execStartRanging_onRangeDataNotificationErrorFollowedBySuccess() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        // set up for start ranging
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE, UwbUciConstants.UWB_SESSION_STATE_ACTIVE)
+                .when(uwbSession).getSessionState();
+        when(mNativeUwbManager.startRanging(eq(TEST_SESSION_ID)))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.startRanging(
+                uwbSession.getSessionHandle(), uwbSession.getParams());
+        mTestLooper.dispatchAll();
+
+        verify(mUwbSessionNotificationManager).onRangingStarted(eq(uwbSession), any());
+        verify(mUwbMetrics).longRangingStartEvent(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
+
+        // Now send a range data notification with an error.
+        UwbRangingData uwbRangingData =
+                UwbTestUtils.generateRangingData(UwbUciConstants.STATUS_CODE_RANGING_RX_TIMEOUT);
+        mUwbSessionManager.onRangeDataNotificationReceived(uwbRangingData);
+        verify(mUwbSessionNotificationManager).onRangingResult(uwbSession, uwbRangingData);
+        ArgumentCaptor<AlarmManager.OnAlarmListener> alarmListenerCaptor =
+                ArgumentCaptor.forClass(AlarmManager.OnAlarmListener.class);
+        verify(mAlarmManager).set(
+                anyInt(), anyLong(), anyString(), alarmListenerCaptor.capture(), any());
+        assertThat(alarmListenerCaptor.getValue()).isNotNull();
+
+        // Send success and ensure that the timer is cancelled.
+        uwbRangingData =
+                UwbTestUtils.generateRangingData(UwbUciConstants.STATUS_CODE_OK);
+        mUwbSessionManager.onRangeDataNotificationReceived(uwbRangingData);
+        verify(mUwbSessionNotificationManager).onRangingResult(uwbSession, uwbRangingData);
+
+        verify(mAlarmManager).cancel(any(AlarmManager.OnAlarmListener.class));
     }
 
     @Test

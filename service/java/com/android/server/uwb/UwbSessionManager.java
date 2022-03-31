@@ -20,6 +20,7 @@ import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTIO
 
 import android.annotation.NonNull;
 import android.annotation.Nullable;
+import android.app.AlarmManager;
 import android.content.AttributionSource;
 import android.os.Handler;
 import android.os.IBinder;
@@ -84,31 +85,32 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     private final UwbConfigurationManager mConfigurationManager;
     private final UwbSessionNotificationManager mSessionNotificationManager;
     private final UwbInjector mUwbInjector;
+    private final AlarmManager mAlarmManager;
     private final int mMaxSessionNumber;
     private final EventTask mEventTask;
 
     public UwbSessionManager(UwbConfigurationManager uwbConfigurationManager,
             NativeUwbManager nativeUwbManager, UwbMetrics uwbMetrics,
             UwbSessionNotificationManager uwbSessionNotificationManager,
-            UwbInjector uwbInjector,
-            Looper serviceLooper) {
+            UwbInjector uwbInjector, AlarmManager alarmManager, Looper serviceLooper) {
         mNativeUwbManager = nativeUwbManager;
         mNativeUwbManager.setSessionListener(this);
         mUwbMetrics = uwbMetrics;
         mConfigurationManager = uwbConfigurationManager;
         mSessionNotificationManager = uwbSessionNotificationManager;
         mUwbInjector = uwbInjector;
+        mAlarmManager = alarmManager;
         mMaxSessionNumber = mNativeUwbManager.getMaxSessionNumber();
         mEventTask = new EventTask(serviceLooper);
     }
 
-    private static boolean hasAnyRangingResultError(@NonNull UwbRangingData rangingData) {
+    private static boolean hasAllRangingResultError(@NonNull UwbRangingData rangingData) {
         for (UwbTwoWayMeasurement measure : rangingData.getRangingTwoWayMeasures()) {
-            if (measure.getRangingStatus() != UwbUciConstants.STATUS_CODE_OK) {
-                return true;
+            if (measure.getRangingStatus() == UwbUciConstants.STATUS_CODE_OK) {
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
     @Override
@@ -118,14 +120,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         if (uwbSession != null) {
             mUwbMetrics.logRangingResult(uwbSession.getProfileType(), rangingData);
             mSessionNotificationManager.onRangingResult(uwbSession, rangingData);
-            if (hasAnyRangingResultError(rangingData)) {
-                boolean shouldStopSession =
-                        uwbSession.noteRangingResultError(mUwbInjector.getElapsedSinceBootMillis());
-                if (shouldStopSession) {
-                    stopRanging(uwbSession.getSessionHandle());
-                }
+            if (hasAllRangingResultError(rangingData)) {
+                uwbSession.startRangingResultErrorStreakTimerIfNotSet();
             } else {
-                uwbSession.resetRangingResultErrorStreakTimestamp();
+                uwbSession.stopRangingResultErrorStreakTimerIfSet();
             }
         } else {
             Log.i(TAG, "Session is not initialized or Ranging Data is Null");
@@ -667,7 +665,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 mUwbMetrics.longRangingStopEvent(uwbSession);
             }
             // Reset any stored error streak timestamp when session is stopped.
-            uwbSession.resetRangingResultErrorStreakTimestamp();
+            uwbSession.stopRangingResultErrorStreakTimerIfSet();
         }
 
         private void reconfigure(SessionHandle sessionHandle, @Nullable Params param) {
@@ -837,7 +835,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     public class UwbSession implements IBinder.DeathRecipient {
         // Amount of time we allow continuous failures before stopping the session.
         @VisibleForTesting
-        public static final long ALLOWED_RANGING_RESULT_ERROR_STREAK_MS = 30_000L;
+        public static final long RANGING_RESULT_ERROR_STREAK_TIMER_TIMEOUT_MS = 30_000L;
+        private static final String RANGING_RESULT_ERROR_STREAK_TIMER_TAG =
+                "UwbSessionRangingResultError";
 
         private final AttributionSource mAttributionSource;
         private final SessionHandle mSessionHandle;
@@ -851,7 +851,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         private int mSessionState;
         private UwbMulticastListUpdateStatus mMulticastListUpdateStatus;
         private final int mProfileType;
-        private long mRangingResultErrorStreakStartTimestampMs;
+        private AlarmManager.OnAlarmListener mRangingResultErrorStreakTimerListener;
 
         UwbSession(AttributionSource attributionSource, SessionHandle sessionHandle, int sessionId,
                 String protocolName, Params params, IUwbRangingCallbacks iUwbRangingCallbacks) {
@@ -952,29 +952,32 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             return mWaitObj;
         }
 
-        private boolean isLongerThanAllowedErrorStreak(long currentTimestampMs) {
-            return (mRangingResultErrorStreakStartTimestampMs
-                    + ALLOWED_RANGING_RESULT_ERROR_STREAK_MS)
-                    < currentTimestampMs;
-        }
-
         /**
-         * Note ranging result error.
-         * @param currentTimestampMs Current timestamp to use for detecting error streaks.
-         * @return Returns true if the error streak is longer than
-         * {@link #ALLOWED_RANGING_RESULT_ERROR_STREAK_MS}.
+         * Starts a timer to detect if the error streak is longer than
+         * {@link #RANGING_RESULT_ERROR_STREAK_TIMER_TIMEOUT_MS}.
          */
-        public boolean noteRangingResultError(long currentTimestampMs) {
-            // Note the timestamp for the first failure to detect continuous failures.
-            if (mRangingResultErrorStreakStartTimestampMs == 0L) {
-                mRangingResultErrorStreakStartTimestampMs = currentTimestampMs;
+        public void startRangingResultErrorStreakTimerIfNotSet() {
+            // Start a timer on first failure to detect continuous failures.
+            if (mRangingResultErrorStreakTimerListener == null) {
+                mRangingResultErrorStreakTimerListener = () -> {
+                    Log.w(TAG, "Continuous errors or no ranging results detected for 30 seconds."
+                            + " Stopping session");
+                    stopRanging(mSessionHandle);
+                };
+                mAlarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                        mUwbInjector.getElapsedSinceBootMillis()
+                                + RANGING_RESULT_ERROR_STREAK_TIMER_TIMEOUT_MS,
+                        RANGING_RESULT_ERROR_STREAK_TIMER_TAG,
+                        mRangingResultErrorStreakTimerListener, mEventTask);
             }
-            return isLongerThanAllowedErrorStreak(currentTimestampMs);
         }
 
-        public void resetRangingResultErrorStreakTimestamp() {
-            // Reset error streak on any success.
-            mRangingResultErrorStreakStartTimestampMs = 0L;
+        public void stopRangingResultErrorStreakTimerIfSet() {
+            // Cancel error streak timer on any success.
+            if (mRangingResultErrorStreakTimerListener != null) {
+                mAlarmManager.cancel(mRangingResultErrorStreakTimerListener);
+                mRangingResultErrorStreakTimerListener = null;
+            }
         }
 
         @Override
