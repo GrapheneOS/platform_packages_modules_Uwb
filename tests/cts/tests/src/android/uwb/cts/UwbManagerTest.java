@@ -59,11 +59,11 @@ import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.multichip.ChipInfoParams;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -402,15 +402,41 @@ public class UwbManagerTest {
     }
 
     private class UwbVendorUciCallback implements UwbManager.UwbVendorUciCallback {
+        private final CountDownLatch mRspCountDownLatch;
+        private final CountDownLatch mNtfCountDownLatch;
+
+        public int gid;
+        public int oid;
+        public byte[] payload;
+
+        UwbVendorUciCallback(
+                @NonNull CountDownLatch rspCountDownLatch,
+                @NonNull CountDownLatch ntfCountDownLatch) {
+            mRspCountDownLatch = rspCountDownLatch;
+            mNtfCountDownLatch = ntfCountDownLatch;
+        }
+
         @Override
-        public void onVendorUciResponse(int gid, int oid, byte[] payload) { }
+        public void onVendorUciResponse(int gid, int oid, byte[] payload) {
+            this.gid = gid;
+            this.oid = oid;
+            this.payload = payload;
+            mRspCountDownLatch.countDown();
+        }
+
         @Override
-        public void onVendorUciNotification(int gid, int oid, byte[] payload) { }
+        public void onVendorUciNotification(int gid, int oid, byte[] payload) {
+            this.gid = gid;
+            this.oid = oid;
+            this.payload = payload;
+            mNtfCountDownLatch.countDown();
+        }
     }
 
     @Test
     public void testRegisterVendorUciCallbackWithoutUwbPrivileged() {
-        UwbManager.UwbVendorUciCallback cb = new UwbVendorUciCallback();
+        UwbManager.UwbVendorUciCallback cb =
+                new UwbVendorUciCallback(new CountDownLatch(1), new CountDownLatch(1));
         try {
             mUwbManager.registerUwbVendorUciCallback(
                     Executors.newSingleThreadExecutor(), cb);
@@ -423,14 +449,19 @@ public class UwbManagerTest {
     }
 
     @Test
-    @Ignore("Not implemented yet")
     public void testUnregisterVendorUciCallbackWithoutUwbPrivileged() {
-        UwbManager.UwbVendorUciCallback cb = new UwbVendorUciCallback();
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        UwbManager.UwbVendorUciCallback cb =
+                new UwbVendorUciCallback(new CountDownLatch(1), new CountDownLatch(1));
         try {
+            // Needs UWB_PRIVILEGED & UWB_RANGING permission which is held by shell.
+            uiAutomation.adoptShellPermissionIdentity();
             mUwbManager.registerUwbVendorUciCallback(
                     Executors.newSingleThreadExecutor(), cb);
         } catch (SecurityException e) {
             /* pass */
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
         }
         try {
             mUwbManager.unregisterUwbVendorUciCallback(cb);
@@ -444,7 +475,8 @@ public class UwbManagerTest {
 
     @Test
     public void testInvalidCallbackUnregisterVendorUciCallback() {
-        UwbManager.UwbVendorUciCallback cb = new UwbVendorUciCallback();
+        UwbManager.UwbVendorUciCallback cb =
+                new UwbVendorUciCallback(new CountDownLatch(1), new CountDownLatch(1));
         try {
             mUwbManager.registerUwbVendorUciCallback(
                     Executors.newSingleThreadExecutor(), cb);
@@ -873,6 +905,39 @@ public class UwbManagerTest {
             setUwbEnabledAndWaitForCompletion(false);
             assertThat(mUwbManager.getAdapterState()).isEqualTo(STATE_DISABLED);
         } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    public void testSendVendorUciMessage() throws Exception {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        CountDownLatch rspCountDownLatch = new CountDownLatch(1);
+        CountDownLatch ntfCountDownLatch = new CountDownLatch(1);
+        UwbVendorUciCallback cb =
+                new UwbVendorUciCallback(rspCountDownLatch, ntfCountDownLatch);
+        try {
+            // Needs UWB_PRIVILEGED & UWB_RANGING permission which is held by shell.
+            uiAutomation.adoptShellPermissionIdentity();
+            mUwbManager.registerUwbVendorUciCallback(
+                    Executors.newSingleThreadExecutor(), cb);
+
+            // Send random payload with a vendor gid.
+            byte[] payload = new byte[100];
+            new Random().nextBytes(payload);
+            int gid = 9;
+            int oid = 1;
+            mUwbManager.sendVendorUciMessage(gid, oid, payload);
+
+            // Wait for response.
+            assertThat(rspCountDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(cb.gid).isEqualTo(gid);
+            assertThat(cb.oid).isEqualTo(oid);
+            assertThat(cb.payload).isNotEmpty();
+        } catch (SecurityException e) {
+            /* pass */
+        } finally {
+            mUwbManager.unregisterUwbVendorUciCallback(cb);
             uiAutomation.dropShellPermissionIdentity();
         }
     }
