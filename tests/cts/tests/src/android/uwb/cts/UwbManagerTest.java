@@ -941,4 +941,37 @@ public class UwbManagerTest {
             uiAutomation.dropShellPermissionIdentity();
         }
     }
+
+    @Test
+    public void testSendVendorUciMessageWithFragmentedPackets() throws Exception {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        CountDownLatch rspCountDownLatch = new CountDownLatch(1);
+        CountDownLatch ntfCountDownLatch = new CountDownLatch(1);
+        UwbVendorUciCallback cb =
+                new UwbVendorUciCallback(rspCountDownLatch, ntfCountDownLatch);
+        try {
+            // Needs UWB_PRIVILEGED & UWB_RANGING permission which is held by shell.
+            uiAutomation.adoptShellPermissionIdentity();
+            mUwbManager.registerUwbVendorUciCallback(
+                    Executors.newSingleThreadExecutor(), cb);
+
+            // Send random payload > 255 bytes with a vendor gid.
+            byte[] payload = new byte[400];
+            new Random().nextBytes(payload);
+            int gid = 9;
+            int oid = 1;
+            mUwbManager.sendVendorUciMessage(gid, oid, payload);
+
+            // Wait for response.
+            assertThat(rspCountDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(cb.gid).isEqualTo(gid);
+            assertThat(cb.oid).isEqualTo(oid);
+            assertThat(cb.payload).isNotEmpty();
+        } catch (SecurityException e) {
+            /* pass */
+        } finally {
+            mUwbManager.unregisterUwbVendorUciCallback(cb);
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
 }
