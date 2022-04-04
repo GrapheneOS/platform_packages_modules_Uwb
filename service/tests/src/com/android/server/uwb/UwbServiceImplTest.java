@@ -468,21 +468,15 @@ public class UwbServiceImplTest {
     @Test
     public void testRegisterVendorExtensionCallback() throws Exception {
         final IUwbVendorUciCallback cb = mock(IUwbVendorUciCallback.class);
-
-        try {
-            mUwbServiceImpl.registerVendorExtensionCallback(cb);
-            fail();
-        } catch (IllegalStateException e) { /* pass */ }
+        mUwbServiceImpl.registerVendorExtensionCallback(cb);
+        verify(mUwbServiceCore).registerVendorExtensionCallback(cb);
     }
 
     @Test
     public void testUnregisterVendorExtensionCallback() throws Exception {
         final IUwbVendorUciCallback cb = mock(IUwbVendorUciCallback.class);
-
-        try {
-            mUwbServiceImpl.unregisterVendorExtensionCallback(cb);
-            fail();
-        } catch (IllegalStateException e) { /* pass */ }
+        mUwbServiceImpl.unregisterVendorExtensionCallback(cb);
+        verify(mUwbServiceCore).unregisterVendorExtensionCallback(cb);
     }
 
     @Test
