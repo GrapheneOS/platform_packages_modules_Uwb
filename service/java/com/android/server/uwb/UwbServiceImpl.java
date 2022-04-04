@@ -107,9 +107,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
             throws RemoteException {
         Log.i(TAG, "Register the callback");
         enforceUwbPrivilegedPermission();
-        // TODO(b/210933436): Implement this.
-        throw new IllegalStateException("Not implemented");
-        /** mUwbServiceCore.registerVendorExtensionCallback(callbacks); */
+        mUwbServiceCore.registerVendorExtensionCallback(callbacks);
     }
 
     @Override
@@ -117,9 +115,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
             throws RemoteException {
         Log.i(TAG, "Unregister the callback");
         enforceUwbPrivilegedPermission();
-        // TODO(b/210933436): Implement this.
-        throw new IllegalStateException("Not implemented");
-        /** mUwbServiceCore.unregisterVendorExtensionCallback(callbacks); */
+        mUwbServiceCore.unregisterVendorExtensionCallback(callbacks);
     }
 
 
