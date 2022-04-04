@@ -428,7 +428,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
         Ok((gid, oid, payload)) => *env
             .new_object(
                 uwb_vendor_uci_response_class,
-                "(BIIB])V",
+                "(BII[B)V",
                 &[
                     JValue::Byte(STATUS_OK),
                     JValue::Int(gid.to_i32().unwrap()),
@@ -443,7 +443,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
             error!("send raw uci cmd failed with: {:?}", e);
             *env.new_object(
                 uwb_vendor_uci_response_class,
-                "(BIIB])V",
+                "(BII[B)V",
                 &[
                     JValue::Byte(STATUS_FAILED),
                     JValue::Int(-1),
