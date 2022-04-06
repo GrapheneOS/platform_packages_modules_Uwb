@@ -168,6 +168,13 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
 
     @Override
     public void onDeviceStatusNotificationReceived(int deviceState) {
+        // If error status is received, toggle UWB off to reset stack state.
+        // TODO(b/227488208): Should we try to restart (like wifi) instead?
+        if (deviceState == UwbUciConstants.DEVICE_STATE_ERROR) {
+            Log.e(TAG, "Error device status received. Disabling...");
+            setEnabled(false);
+            return;
+        }
         handleDeviceStatusNotification(deviceState);
     }
 
@@ -185,9 +192,6 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         } else if (deviceState == UwbUciConstants.DEVICE_STATE_ACTIVE) {
             state = AdapterStateCallback.STATE_ENABLED_ACTIVE;
             reason = StateChangeReason.SESSION_STARTED;
-        } else if (deviceState == UwbUciConstants.DEVICE_STATE_ERROR) {
-            state = AdapterStateCallback.STATE_DISABLED;
-            reason = StateChangeReason.UNKNOWN;
         }
 
         updateState(state, reason);

@@ -550,6 +550,26 @@ public class UwbServiceCoreTest {
     }
 
     @Test
+    public void testToggleOfOnDeviceStateErrorCallback() throws Exception {
+        IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
+        when(cb.asBinder()).thenReturn(mock(IBinder.class));
+        mUwbServiceCore.registerAdapterStateCallbacks(cb);
+
+        enableUwb();
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
+                StateChangeReason.SYSTEM_POLICY);
+
+        when(mNativeUwbManager.doDeinitialize()).thenReturn(true);
+
+        mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ERROR);
+        mTestLooper.dispatchAll();
+        // Verify UWB toggle off.
+        verify(mNativeUwbManager).doDeinitialize();
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.SYSTEM_POLICY);
+    }
+
+    @Test
     public void testVendorUciNotificationCallback() throws Exception {
         enableUwb();
 
