@@ -212,6 +212,24 @@ public class UwbSessionManagerTest {
     }
 
     @Test
+    public void onSessionStatusNotificationReceived_session_mgmt_cmds() {
+        UwbSession mockUwbSession = mock(UwbSession.class);
+        mUwbSessionManager.mSessionTable.put(TEST_SESSION_ID, mockUwbSession);
+        when(mockUwbSession.getWaitObj()).thenReturn(mock(WaitObj.class));
+        when(mockUwbSession.getSessionState()).thenReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE);
+
+        mUwbSessionManager.onSessionStatusNotificationReceived(
+                TEST_SESSION_ID,
+                UwbUciConstants.UWB_SESSION_STATE_IDLE,
+                UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS);
+
+        verify(mockUwbSession, times(2)).getWaitObj();
+        verify(mockUwbSession).setSessionState(eq(UwbUciConstants.UWB_SESSION_STATE_IDLE));
+        verify(mUwbSessionNotificationManager, never()).onRangingStoppedWithUciReasonCode(
+                any(), anyInt());
+    }
+
+    @Test
     public void initSession_ExistedSession() throws RemoteException {
         IUwbRangingCallbacks mockRangingCallbacks = mock(IUwbRangingCallbacks.class);
         doReturn(true).when(mUwbSessionManager).isExistedSession(anyInt());
