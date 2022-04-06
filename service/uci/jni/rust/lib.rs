@@ -18,9 +18,6 @@ use uwb_uci_rust::error::UwbErr;
 use uwb_uci_rust::event_manager::EventManagerImpl as EventManager;
 use uwb_uci_rust::uci::{uci_hrcv::UciResponse, Dispatcher, DispatcherImpl, JNICommand};
 
-const STATUS_OK: i8 = 0;
-const STATUS_FAILED: i8 = 2;
-
 trait Context<'a> {
     fn convert_byte_array(&self, array: jbyteArray) -> Result<Vec<u8>, jni::errors::Error>;
     fn get_array_length(&self, array: jarray) -> Result<jsize, jni::errors::Error>;
@@ -430,7 +427,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
                 uwb_vendor_uci_response_class,
                 "(BII[B)V",
                 &[
-                    JValue::Byte(STATUS_OK),
+                    JValue::Byte(StatusCode::UciStatusOk.to_i8().unwrap()),
                     JValue::Int(gid.to_i32().unwrap()),
                     JValue::Int(oid.to_i32().unwrap()),
                     JValue::Object(JObject::from(
@@ -445,7 +442,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
                 uwb_vendor_uci_response_class,
                 "(BII[B)V",
                 &[
-                    JValue::Byte(STATUS_FAILED),
+                    JValue::Byte(StatusCode::UciStatusFailed.to_i8().unwrap()),
                     JValue::Int(-1),
                     JValue::Int(-1),
                     JValue::Object(JObject::null()),
@@ -489,10 +486,15 @@ fn boolean_result_helper(result: Result<(), UwbErr>, function_name: &str) -> jbo
 
 fn byte_result_helper(result: Result<(), UwbErr>, function_name: &str) -> jbyte {
     match result {
-        Ok(()) => STATUS_OK,
+        Ok(()) => StatusCode::UciStatusOk.to_i8().unwrap(),
         Err(err) => {
             error!("{} failed with: {:?}", function_name, err);
-            STATUS_FAILED
+            match err {
+                UwbErr::StatusCode(status_code) => status_code
+                    .to_i8()
+                    .unwrap_or_else(|| StatusCode::UciStatusFailed.to_i8().unwrap()),
+                _ => StatusCode::UciStatusFailed.to_i8().unwrap(),
+            }
         }
     }
 }
@@ -580,7 +582,10 @@ fn session_deinit<'a, T: Context<'a>>(context: &T, session_id: u32) -> Result<()
 fn get_session_count<'a, T: Context<'a>>(context: &T) -> Result<jbyte, UwbErr> {
     let dispatcher = context.get_dispatcher()?;
     match dispatcher.block_on_jni_command(JNICommand::UciSessionGetCount)? {
-        UciResponse::SessionGetCountRsp(data) => Ok(data.get_session_count() as jbyte),
+        UciResponse::SessionGetCountRsp(rsp) => match status_code_to_res(rsp.get_status()) {
+            Ok(()) => Ok(rsp.get_session_count() as jbyte),
+            Err(err) => Err(err),
+        },
         _ => Err(UwbErr::failed()),
     }
 }
@@ -749,10 +754,10 @@ fn send_raw_vendor_cmd<'a, T: Context<'a>>(
     }
 }
 
-fn status_code_to_res(status: StatusCode) -> Result<(), UwbErr> {
-    match status {
+fn status_code_to_res(status_code: StatusCode) -> Result<(), UwbErr> {
+    match status_code {
         StatusCode::UciStatusOk => Ok(()),
-        _ => Err(UwbErr::failed()),
+        _ => Err(UwbErr::StatusCode(status_code)),
     }
 }
 
@@ -853,8 +858,15 @@ mod tests {
 
     #[test]
     fn test_byte_result_helper() {
-        assert_eq!(STATUS_OK, byte_result_helper(Ok(()), "Foo"));
-        assert_eq!(STATUS_FAILED, byte_result_helper(Err(UwbErr::Undefined), "Foo"));
+        assert_eq!(StatusCode::UciStatusOk.to_i8().unwrap(), byte_result_helper(Ok(()), "Foo"));
+        assert_eq!(
+            StatusCode::UciStatusFailed.to_i8().unwrap(),
+            byte_result_helper(Err(UwbErr::Undefined), "Foo")
+        );
+        assert_eq!(
+            StatusCode::UciStatusRejected.to_i8().unwrap(),
+            byte_result_helper(Err(UwbErr::StatusCode(StatusCode::UciStatusRejected)), "Foo")
+        );
     }
 
     #[test]
