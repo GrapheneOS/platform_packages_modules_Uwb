@@ -108,12 +108,10 @@ public class NativeUwbManager {
      * @return : If this returns true, UWB is off
      */
     public synchronized boolean doDeinitialize() {
-        boolean res = nativeDoDeinitialize();
-        if (res) {
-            nativeDispatcherDestroy();
-            this.mDispatcherPointer = 0L;
-        }
-        return res;
+        nativeDoDeinitialize();
+        nativeDispatcherDestroy();
+        this.mDispatcherPointer = 0L;
+        return true;
     }
 
     public synchronized long getTimestampResolutionNanos() {
