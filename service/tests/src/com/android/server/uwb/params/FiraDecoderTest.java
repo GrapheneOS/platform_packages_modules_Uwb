@@ -87,8 +87,9 @@ public class FiraDecoderTest {
                     + "0F050000000003"
                     + "10010F"
                     + "110101"
-                    + "E30101");
-    private static final int TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS = 19;
+                    + "E30101"
+                    + "C00101");
+    private static final int TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS = 20;
     private final FiraDecoder mFiraDecoder = new FiraDecoder();
 
     private void verifyFiraSpecification(FiraSpecificationParams firaSpecificationParams) {
@@ -140,6 +141,8 @@ public class FiraDecoderTest {
         assertThat(firaSpecificationParams.getHprfParameterSetCapabilities()).isEqualTo(
                 EnumSet.of(HprfParameterSetCapabilityFlag.HAS_SET_1_SUPPORT,
                         HprfParameterSetCapabilityFlag.HAS_SET_2_SUPPORT));
+
+        assertThat(firaSpecificationParams.hasPowerStatsSupport()).isEqualTo(true);
     }
 
     @Test

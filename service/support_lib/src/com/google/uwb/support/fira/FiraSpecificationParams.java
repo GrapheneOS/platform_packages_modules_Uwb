@@ -70,6 +70,8 @@ public class FiraSpecificationParams extends FiraParams {
 
     private final EnumSet<HprfParameterSetCapabilityFlag> mHprfParameterSetCapabilities;
 
+    private final boolean mHasPowerStatsSupport;
+
     private static final String KEY_MIN_PHY_VERSION = "min_phy_version";
     private static final String KEY_MAX_PHY_VERSION = "max_phy_version";
     private static final String KEY_MIN_MAC_VERSION = "min_mac_version";
@@ -91,6 +93,9 @@ public class FiraSpecificationParams extends FiraParams {
             "bprf_parameter_set_capabilities";
     private static final String KEY_HPRF_PARAMETER_SET_CAPABILITIES =
             "hprf_parameter_set_capabilities";
+    // TODO: Move it to a separate class (b/228506663)
+    private static final String KEY_POWER_STATS_QUERY_SUPPORT =
+            "power_stats_query";
 
     private FiraSpecificationParams(
             FiraProtocolVersion minPhyVersionSupported,
@@ -110,7 +115,8 @@ public class FiraSpecificationParams extends FiraParams {
             EnumSet<StsCapabilityFlag> stsCapabilities,
             EnumSet<PsduDataRateCapabilityFlag> psduDataRateCapabilities,
             EnumSet<BprfParameterSetCapabilityFlag> bprfParameterSetCapabilities,
-            EnumSet<HprfParameterSetCapabilityFlag> hprfParameterSetCapabilities) {
+            EnumSet<HprfParameterSetCapabilityFlag> hprfParameterSetCapabilities,
+            boolean hasPowerStatsSupport) {
         mMinPhyVersionSupported = minPhyVersionSupported;
         mMaxPhyVersionSupported = maxPhyVersionSupported;
         mMinMacVersionSupported = minMacVersionSupported;
@@ -129,6 +135,7 @@ public class FiraSpecificationParams extends FiraParams {
         mPsduDataRateCapabilities = psduDataRateCapabilities;
         mBprfParameterSetCapabilities = bprfParameterSetCapabilities;
         mHprfParameterSetCapabilities = hprfParameterSetCapabilities;
+        mHasPowerStatsSupport = hasPowerStatsSupport;
     }
 
     @Override
@@ -208,6 +215,13 @@ public class FiraSpecificationParams extends FiraParams {
         return mHprfParameterSetCapabilities;
     }
 
+    /**
+     * @return if the power stats is supported
+     */
+    public boolean hasPowerStatsSupport() {
+        return mHasPowerStatsSupport;
+    }
+
     private static int[] toIntArray(List<Integer> data) {
         int[] res = new int[data.size()];
         for (int i = 0; i < data.size(); i++) {
@@ -239,6 +253,7 @@ public class FiraSpecificationParams extends FiraParams {
                 FlagEnum.toInt(mBprfParameterSetCapabilities));
         bundle.putLong(KEY_HPRF_PARAMETER_SET_CAPABILITIES,
                 FlagEnum.toLong(mHprfParameterSetCapabilities));
+        bundle.putBoolean(KEY_POWER_STATS_QUERY_SUPPORT, mHasPowerStatsSupport);
 
         return bundle;
     }
@@ -318,6 +333,7 @@ public class FiraSpecificationParams extends FiraParams {
                         FlagEnum.longToEnumSet(
                                 bundle.getLong(KEY_HPRF_PARAMETER_SET_CAPABILITIES),
                                 HprfParameterSetCapabilityFlag.values()))
+                .hasPowerStatsSupport(bundle.getBoolean(KEY_POWER_STATS_QUERY_SUPPORT))
                 .build();
     }
 
@@ -375,6 +391,8 @@ public class FiraSpecificationParams extends FiraParams {
 
         private final EnumSet<HprfParameterSetCapabilityFlag> mHprfParameterSetCapabilities =
                 EnumSet.noneOf(HprfParameterSetCapabilityFlag.class);
+
+        private boolean mHasPowerStatsSupport = false;
 
         public FiraSpecificationParams.Builder setMinPhyVersionSupported(
                 FiraProtocolVersion version) {
@@ -481,6 +499,14 @@ public class FiraSpecificationParams extends FiraParams {
             return this;
         }
 
+        /**
+         * Sets if the power stats is supported
+         */
+        public FiraSpecificationParams.Builder hasPowerStatsSupport(boolean value) {
+            mHasPowerStatsSupport = value;
+            return this;
+        }
+
         public FiraSpecificationParams build() {
             if (mSupportedChannels == null || mSupportedChannels.size() == 0) {
                 throw new IllegalStateException("Supported channels are not set");
@@ -504,7 +530,8 @@ public class FiraSpecificationParams extends FiraParams {
                     mStsCapabilities,
                     mPsduDataRateCapabilities,
                     mBprfParameterSetCapabilities,
-                    mHprfParameterSetCapabilities);
+                    mHprfParameterSetCapabilities,
+                    mHasPowerStatsSupport);
         }
     }
 }

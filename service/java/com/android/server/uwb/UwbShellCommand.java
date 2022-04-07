@@ -77,6 +77,7 @@ import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
+import com.google.uwb.support.fira.FiraSpecificationParams;
 
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
@@ -808,7 +809,17 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     return 0;
                 }
                 case "get-power-stats": {
-                    pw.println(mNativeUwbManager.getPowerStats());
+                    PersistableBundle bundle = mUwbService.getSpecificationInfo(null);
+                    PersistableBundle fira_bundle = bundle.getPersistableBundle(
+                            FiraParams.PROTOCOL_NAME);
+                    if (fira_bundle == null) {
+                        pw.println("FIRA spec info is empty");
+                    }
+                    if (FiraSpecificationParams.fromBundle(fira_bundle).hasPowerStatsSupport()) {
+                        pw.println(mNativeUwbManager.getPowerStats());
+                    } else {
+                        pw.println("power stats query is not supported");
+                    }
                     return 0;
                 }
                 default:
