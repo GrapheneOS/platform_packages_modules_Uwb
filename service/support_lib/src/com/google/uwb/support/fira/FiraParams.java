@@ -47,6 +47,15 @@ public abstract class FiraParams extends Params {
 
     public static final FiraProtocolVersion PROTOCOL_VERSION_1_1 = new FiraProtocolVersion(1, 1);
 
+    /** Service ID for FiRa profile */
+    @IntDef(
+            value = {
+                    PACS_PROFILE_SERVICE_ID,
+            })
+    public @interface ServiceID {}
+
+    public static final int PACS_PROFILE_SERVICE_ID = 1;
+
     /** UWB Channel selections */
     @Retention(RetentionPolicy.SOURCE)
     @IntDef(
