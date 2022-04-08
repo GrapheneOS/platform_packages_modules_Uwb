@@ -67,6 +67,7 @@ java_library {
         "com.uwb.support.ccc",
         "com.uwb.support.fira",
         "com.uwb.support.multichip",
+        "com.uwb.support.profile",
         "modules-utils-shell-command-handler",
         "modules-utils-handlerexecutor",
         "modules-utils-preconditions",
