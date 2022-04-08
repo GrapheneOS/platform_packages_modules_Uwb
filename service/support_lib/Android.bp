@@ -35,7 +35,6 @@ java_defaults {
     ]
 }
 
-// TODO (b/196229900): Integrate the support library to the AOSP stack.
 java_library {
     name: "com.uwb.support.base",
     defaults: ["support-lib-uwb-common-defaults"],
@@ -72,7 +71,22 @@ java_library {
         "com.uwb.support.base",
         "modules-utils-preconditions",
     ],
- }
+}
+
+java_library {
+    name: "com.uwb.support.generic",
+    defaults: ["support-lib-uwb-common-defaults"],
+    srcs: [
+        "src/com/google/uwb/support/generic/**/*.java",
+    ],
+    static_libs: [
+        "androidx.annotation_annotation",
+        "com.uwb.support.base",
+        "com.uwb.support.ccc",
+        "com.uwb.support.fira",
+        "modules-utils-preconditions",
+    ],
+}
 
 java_library {
     name: "com.uwb.support.multichip",
@@ -85,16 +99,16 @@ java_library {
     visibility: ["//cts/tests/uwb"],
 }
 
- java_library {
-     name: "com.uwb.support.profile",
-     defaults: ["support-lib-uwb-common-defaults"],
-     srcs: [
-         "src/com/google/uwb/support/profile/**/*.java",
-     ],
-     static_libs: [
-         "androidx.annotation_annotation",
-         "com.uwb.support.base",
-         "com.uwb.support.fira",
-         "modules-utils-preconditions",
-     ],
- }
+java_library {
+    name: "com.uwb.support.profile",
+    defaults: ["support-lib-uwb-common-defaults"],
+    srcs: [
+        "src/com/google/uwb/support/profile/**/*.java",
+    ],
+    static_libs: [
+        "androidx.annotation_annotation",
+        "com.uwb.support.base",
+        "com.uwb.support.fira",
+        "modules-utils-preconditions",
+    ],
+}
