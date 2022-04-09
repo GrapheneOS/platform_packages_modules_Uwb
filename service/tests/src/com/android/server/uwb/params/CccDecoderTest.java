@@ -58,16 +58,19 @@ public class CccDecoderTest {
                             + "090402000100"
                             + "140101");
     private static final int TEST_CCC_RANGING_OPENED_TLV_NUM_PARAMS = 5;
-    private static final byte[] TEST_CCC_SPECIFICATION_TLV_DATA =
-            UwbUtil.getByteArray("a00111"
+    public static final String TEST_CCC_SPECIFICATION_TLV_DATA_STRING =
+            "a00111"
                     + "a10400000082"
                     + "a20168"
                     + "a30103"
                     + "a4020102"
                     + "a50100"
                     + "a60112"
-                    + "a7040a000000");
-    private static final int TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS = 8;
+                    + "a7040a000000";
+
+    private static final byte[] TEST_CCC_SPECIFICATION_TLV_DATA =
+            UwbUtil.getByteArray(TEST_CCC_SPECIFICATION_TLV_DATA_STRING);
+    public static final int TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS = 8;
     private final CccDecoder mCccDecoder = new CccDecoder();
 
     private void verifyCccRangingOpend(CccRangingStartedParams cccRangingStartedParams) {
@@ -79,7 +82,7 @@ public class CccDecoderTest {
         assertThat(cccRangingStartedParams.getRanMultiplier()).isEqualTo(0x00010002 / 96);
     }
 
-    private void verifyCccSpecification(CccSpecificationParams cccSpecificationParams) {
+    public static void verifyCccSpecification(CccSpecificationParams cccSpecificationParams) {
         assertThat(cccSpecificationParams).isNotNull();
 
         assertThat(cccSpecificationParams.getProtocolVersions()).isEqualTo(List.of(

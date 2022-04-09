@@ -77,13 +77,13 @@ import com.android.server.uwb.jni.NativeUwbManager;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccPulseShapeCombo;
-import com.google.uwb.support.ccc.CccSpecificationParams;
 import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.fira.FiraControleeParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
-import com.google.uwb.support.fira.FiraSpecificationParams;
+import com.google.uwb.support.generic.GenericParams;
+import com.google.uwb.support.generic.GenericSpecificationParams;
 
 import org.junit.After;
 import org.junit.Before;
@@ -202,26 +202,18 @@ public class UwbServiceCoreTest {
     }
 
     private void verifyGetSpecificationInfoSuccess() throws Exception {
-        FiraSpecificationParams firaSpecificationParams = mock(FiraSpecificationParams.class);
-        PersistableBundle firaSpecificationBundle = mock(PersistableBundle.class);
-        when(firaSpecificationParams.toBundle()).thenReturn(firaSpecificationBundle);
-        CccSpecificationParams cccSpecificationParams = mock(CccSpecificationParams.class);
-        PersistableBundle cccSpecificationBundle = mock(PersistableBundle.class);
-        when(cccSpecificationParams.toBundle()).thenReturn(cccSpecificationBundle);
+        GenericSpecificationParams genericSpecificationParams =
+                mock(GenericSpecificationParams.class);
+        PersistableBundle genericSpecificationBundle = mock(PersistableBundle.class);
+        when(genericSpecificationParams.toBundle()).thenReturn(genericSpecificationBundle);
 
-        when(mUwbConfigurationManager.getCapsInfo(eq(FiraParams.PROTOCOL_NAME), any()))
-                .thenReturn(Pair.create(UwbUciConstants.STATUS_CODE_OK, firaSpecificationParams));
-        when(mUwbConfigurationManager.getCapsInfo(eq(CccParams.PROTOCOL_NAME), any()))
-                .thenReturn(Pair.create(UwbUciConstants.STATUS_CODE_OK, cccSpecificationParams));
+        when(mUwbConfigurationManager.getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any()))
+                .thenReturn(Pair.create(
+                        UwbUciConstants.STATUS_CODE_OK, genericSpecificationParams));
 
         PersistableBundle specifications = mUwbServiceCore.getSpecificationInfo();
-        assertThat(specifications).isNotNull();
-        assertThat(specifications.getPersistableBundle(FiraParams.PROTOCOL_NAME))
-                .isEqualTo(firaSpecificationBundle);
-        assertThat(specifications.getPersistableBundle(CccParams.PROTOCOL_NAME))
-                .isEqualTo(cccSpecificationBundle);
-        verify(mUwbConfigurationManager).getCapsInfo(eq(FiraParams.PROTOCOL_NAME), any());
-        verify(mUwbConfigurationManager).getCapsInfo(eq(CccParams.PROTOCOL_NAME), any());
+        assertThat(specifications).isEqualTo(genericSpecificationBundle);
+        verify(mUwbConfigurationManager).getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any());
     }
 
     @Test
@@ -236,8 +228,6 @@ public class UwbServiceCoreTest {
 
         PersistableBundle specifications = mUwbServiceCore.getSpecificationInfo();
         assertThat(specifications).isNotNull();
-        assertThat(specifications.getPersistableBundle(FiraParams.PROTOCOL_NAME)).isNotNull();
-        assertThat(specifications.getPersistableBundle(CccParams.PROTOCOL_NAME)).isNotNull();
 
         verifyNoMoreInteractions(mUwbConfigurationManager);
     }
