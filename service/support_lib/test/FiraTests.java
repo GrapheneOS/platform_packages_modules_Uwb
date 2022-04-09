@@ -456,6 +456,7 @@ public class FiraTests {
                 EnumSet.allOf(FiraParams.BprfParameterSetCapabilityFlag.class);
         EnumSet<FiraParams.HprfParameterSetCapabilityFlag> hprfCapabilities =
                 EnumSet.allOf(FiraParams.HprfParameterSetCapabilityFlag.class);
+        boolean hasPowerStatsSupport = true;
 
         FiraSpecificationParams params =
                 new FiraSpecificationParams.Builder()
@@ -477,6 +478,7 @@ public class FiraTests {
                         .setPsduDataRateCapabilities(psduDataRateCapabilities)
                         .setBprfParameterSetCapabilities(bprfCapabilities)
                         .setHprfParameterSetCapabilities(hprfCapabilities)
+                        .hasPowerStatsSupport(hasPowerStatsSupport)
                         .build();
         assertEquals(minPhyVersionSupported, params.getMinPhyVersionSupported());
         assertEquals(maxPhyVersionSupported, params.getMaxPhyVersionSupported());
@@ -516,7 +518,7 @@ public class FiraTests {
         assertEquals(psduDataRateCapabilities, fromBundle.getPsduDataRateCapabilities());
         assertEquals(bprfCapabilities, fromBundle.getBprfParameterSetCapabilities());
         assertEquals(hprfCapabilities, fromBundle.getHprfParameterSetCapabilities());
-
+        assertEquals(hasPowerStatsSupport, params.hasPowerStatsSupport());
         verifyProtocolPresent(params);
         verifyBundlesEqual(params, fromBundle);
     }
