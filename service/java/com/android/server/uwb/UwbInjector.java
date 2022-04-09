@@ -20,19 +20,25 @@ import static android.Manifest.permission.UWB_RANGING;
 import static android.permission.PermissionManager.PERMISSION_GRANTED;
 
 import android.annotation.NonNull;
+import android.annotation.Nullable;
+import android.app.ActivityManager;
 import android.app.AlarmManager;
 import android.content.ApexEnvironment;
 import android.content.AttributionSource;
+import android.content.Context;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.os.SystemProperties;
+import android.os.UserHandle;
 import android.permission.PermissionManager;
 import android.provider.Settings;
 import android.util.AtomicFile;
+import android.util.Log;
 
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.multchip.UwbMultichipData;
@@ -55,6 +61,8 @@ public class UwbInjector {
      */
     private static final String UWB_APEX_PATH =
             new File("/apex", APEX_NAME).getAbsolutePath();
+    private static final int APP_INFO_FLAGS_SYSTEM_APP =
+            ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP;
 
     private final UwbContext mContext;
     private final Looper mLooper;
@@ -94,7 +102,7 @@ public class UwbInjector {
                         uwbSessionNotificationManager, this,
                         mContext.getSystemService(AlarmManager.class), mLooper);
         mUwbService = new UwbServiceCore(mContext, mNativeUwbManager, mUwbMetrics,
-                mUwbCountryCode, uwbSessionManager, uwbConfigurationManager, mLooper);
+                mUwbCountryCode, uwbSessionManager, uwbConfigurationManager, this, mLooper);
     }
 
     public UwbSettingsStore getUwbSettingsStore() {
@@ -240,5 +248,64 @@ public class UwbInjector {
     public String getOemDefaultCountryCode() {
         String country = SystemProperties.get(BOOT_DEFAULT_UWB_COUNTRY_CODE);
         return isValidCountryCode(country) ? country.toUpperCase(Locale.US) : null;
+    }
+
+    /**
+     * Helper method creating a context based on the app's uid (to deal with multi user scenarios)
+     */
+    @Nullable
+    private Context createPackageContextAsUser(int uid) {
+        Context userContext;
+        try {
+            userContext = mContext.createPackageContextAsUser(mContext.getPackageName(), 0,
+                    UserHandle.getUserHandleForUid(uid));
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.e(TAG, "Unknown package name");
+            return null;
+        }
+        if (userContext == null) {
+            Log.e(TAG, "Unable to retrieve user context for " + uid);
+            return null;
+        }
+        return userContext;
+    }
+
+    /** Helper method to check if the app is a system app. */
+    public boolean isSystemApp(int uid, @NonNull String packageName) {
+        try {
+            ApplicationInfo info = createPackageContextAsUser(uid)
+                    .getPackageManager()
+                    .getApplicationInfo(packageName, 0);
+            return (info.flags & APP_INFO_FLAGS_SYSTEM_APP) != 0;
+        } catch (PackageManager.NameNotFoundException e) {
+            // In case of exception, assume unknown app (more strict checking)
+            // Note: This case will never happen since checkPackage is
+            // called to verify validity before checking App's version.
+            Log.e(TAG, "Failed to get the app info", e);
+        }
+        return false;
+    }
+
+    /** Helper method to retrieve app importance. */
+    private int getPackageImportance(int uid, @NonNull String packageName) {
+        try {
+            return createPackageContextAsUser(uid)
+                    .getSystemService(ActivityManager.class)
+                    .getPackageImportance(packageName);
+        } catch (SecurityException e) {
+            Log.e(TAG, "Failed to retrieve the app importance", e);
+            return ActivityManager.RunningAppProcessInfo.IMPORTANCE_GONE;
+        }
+    }
+
+    /** Helper method to check if the app is from foreground app/service. */
+    public boolean isForegroundAppOrService(int uid, @NonNull String packageName) {
+        try {
+            return getPackageImportance(uid, packageName)
+                    <= ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE;
+        } catch (SecurityException e) {
+            Log.e(TAG, "Failed to retrieve the app importance", e);
+            return false;
+        }
     }
 }

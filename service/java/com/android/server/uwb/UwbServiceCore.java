@@ -39,6 +39,7 @@ import android.uwb.SessionHandle;
 import android.uwb.StateChangeReason;
 import android.uwb.UwbManager.AdapterStateCallback;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.android.server.uwb.data.UwbUciConstants;
@@ -75,6 +76,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
 
     private static final int TASK_ENABLE = 1;
     private static final int TASK_DISABLE = 2;
+    private static final int TASK_DEINIT_ALL_SESSIONS = 3;
 
     private static final int WATCHDOG_MS = 10000;
     private static final int SEND_VENDOR_CMD_TIMEOUT_MS = 10000;
@@ -90,6 +92,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     private final NativeUwbManager mNativeUwbManager;
     private final UwbMetrics mUwbMetrics;
     private final UwbCountryCode mUwbCountryCode;
+    private final UwbInjector mUwbInjector;
     private final PersistableBundle mUwbSpecificationInfo = new PersistableBundle();
     private /* @UwbManager.AdapterStateCallback.State */ int mState;
     private @StateChangeReason int mLastStateChangedReason;
@@ -98,7 +101,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     public UwbServiceCore(Context uwbApplicationContext, NativeUwbManager nativeUwbManager,
             UwbMetrics uwbMetrics, UwbCountryCode uwbCountryCode,
             UwbSessionManager uwbSessionManager, UwbConfigurationManager uwbConfigurationManager,
-            Looper serviceLooper) {
+            UwbInjector uwbInjector, Looper serviceLooper) {
         mContext = uwbApplicationContext;
 
         Log.d(TAG, "Starting Uwb");
@@ -115,6 +118,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         mUwbCountryCode.addListener(this);
         mSessionManager = uwbSessionManager;
         mConfigurationManager = uwbConfigurationManager;
+        mUwbInjector = uwbInjector;
 
         updateState(AdapterStateCallback.STATE_DISABLED, StateChangeReason.SYSTEM_BOOT);
 
@@ -168,9 +172,9 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
 
     @Override
     public void onDeviceStatusNotificationReceived(int deviceState) {
-        // If error status is received, toggle UWB off to reset stack state.
+        // If error state is received, toggle UWB off to reset stack state.
         // TODO(b/227488208): Should we try to restart (like wifi) instead?
-        if (deviceState == UwbUciConstants.DEVICE_STATE_ERROR) {
+        if ((byte) deviceState == UwbUciConstants.DEVICE_STATE_ERROR) {
             Log.e(TAG, "Error device status received. Disabling...");
             setEnabled(false);
             return;
@@ -212,6 +216,10 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
 
     @Override
     public void onCountryCodeChanged(@Nullable String countryCode) {
+        // If there are ongoing sessions, then we should use this trigger to close all of them
+        // and send notifications to apps.
+        Log.v(TAG, "Closing ongoing sessions on country code change");
+        mEnableDisableTask.execute(TASK_DEINIT_ALL_SESSIONS);
         // Clear the cached capabilities on country code changes.
         Log.v(TAG, "Clearing cached specification params on country code change");
         mUwbSpecificationInfo.clear();
@@ -277,6 +285,30 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         return mNativeUwbManager.getTimestampResolutionNanos();
     }
 
+    /**
+     * Check the attribution source chain to ensure that there are no 3p apps which are not in fg
+     * which can receive the ranging results.
+     * @return true if there is some non-system app which is in not in fg, false otherwise.
+     */
+    private boolean hasAnyNonSystemAppNotInFgInAttributionSource(
+            @NonNull AttributionSource attributionSource) {
+        // Iterate attribution source chain to ensure that there is no non-fg 3p app in the
+        // request.
+        while (attributionSource != null) {
+            int uid = attributionSource.getUid();
+            String packageName = attributionSource.getPackageName();
+            if (!mUwbInjector.isSystemApp(uid, packageName)) {
+                if (!mUwbInjector.isForegroundAppOrService(uid, packageName)) {
+                    Log.e(TAG, "Found a non fg app/service in the attribution source of request: "
+                            + attributionSource);
+                    return true;
+                }
+            }
+            attributionSource = attributionSource.getNext();
+        }
+        return false;
+    }
+
     public void openRanging(
             AttributionSource attributionSource,
             SessionHandle sessionHandle,
@@ -284,6 +316,12 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             PersistableBundle params) throws RemoteException {
         if (!isUwbEnabled()) {
             throw new IllegalStateException("Uwb is not enabled");
+        }
+        if (hasAnyNonSystemAppNotInFgInAttributionSource(attributionSource)) {
+            Log.e(TAG, "openRanging - System policy disallows");
+            rangingCallbacks.onRangingOpenFailed(sessionHandle,
+                    RangingChangeReason.SYSTEM_POLICY, new PersistableBundle());
+            return;
         }
         int sessionId = 0;
         if (FiraParams.isCorrectProtocol(params)) {
@@ -459,6 +497,11 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                     mSessionManager.deinitAllSession();
                     disableInternal();
                     break;
+
+                case TASK_DEINIT_ALL_SESSIONS:
+                    mSessionManager.deinitAllSession();
+                    break;
+
                 default:
                     Log.d(TAG, "EnableDisableTask : Undefined Task");
                     break;
