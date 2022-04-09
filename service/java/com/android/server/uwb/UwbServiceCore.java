@@ -51,13 +51,13 @@ import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccRangingReconfiguredParams;
-import com.google.uwb.support.ccc.CccSpecificationParams;
 import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.fira.FiraControleeParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
-import com.google.uwb.support.fira.FiraSpecificationParams;
+import com.google.uwb.support.generic.GenericParams;
+import com.google.uwb.support.generic.GenericSpecificationParams;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -93,7 +93,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     private final UwbMetrics mUwbMetrics;
     private final UwbCountryCode mUwbCountryCode;
     private final UwbInjector mUwbInjector;
-    private final PersistableBundle mUwbSpecificationInfo = new PersistableBundle();
+    private GenericSpecificationParams mSpecificationParams;
     private /* @UwbManager.AdapterStateCallback.State */ int mState;
     private @StateChangeReason int mLastStateChangedReason;
     private  IUwbVendorUciCallback mCallBack = null;
@@ -222,7 +222,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         mEnableDisableTask.execute(TASK_DEINIT_ALL_SESSIONS);
         // Clear the cached capabilities on country code changes.
         Log.v(TAG, "Clearing cached specification params on country code change");
-        mUwbSpecificationInfo.clear();
+        mSpecificationParams = null;
     }
 
     public void registerAdapterStateCallbacks(IUwbAdapterStateCallbacks adapterStateCallbacks)
@@ -251,34 +251,22 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     }
 
     private void updateSpecificationInfo() {
-        Pair<Integer, FiraSpecificationParams> firaSpecificationParams =
+        Pair<Integer, GenericSpecificationParams> specificationParams =
                 mConfigurationManager.getCapsInfo(
-                        FiraParams.PROTOCOL_NAME, FiraSpecificationParams.class);
-        if (firaSpecificationParams.first != UwbUciConstants.STATUS_CODE_OK)  {
-            Log.e(TAG, "Failed to retrieve FIRA specification params");
+                        GenericParams.PROTOCOL_NAME, GenericSpecificationParams.class);
+        if (specificationParams.first != UwbUciConstants.STATUS_CODE_OK)  {
+            Log.e(TAG, "Failed to retrieve specification params");
+            return;
         }
-        Pair<Integer, CccSpecificationParams> cccSpecificationParams =
-                mConfigurationManager.getCapsInfo(
-                        CccParams.PROTOCOL_NAME, CccSpecificationParams.class);
-        if (cccSpecificationParams.first != UwbUciConstants.STATUS_CODE_OK)  {
-            Log.e(TAG, "Failed to retrieve CCC specification params");
-        }
-        // If neither of the capabilities are fetched correctly, don't cache anything.
-        if (firaSpecificationParams.first == UwbUciConstants.STATUS_CODE_OK
-                || cccSpecificationParams.first == UwbUciConstants.STATUS_CODE_OK) {
-            mUwbSpecificationInfo.clear();
-            mUwbSpecificationInfo.putPersistableBundle(
-                    FiraParams.PROTOCOL_NAME, firaSpecificationParams.second.toBundle());
-            mUwbSpecificationInfo.putPersistableBundle(
-                    CccParams.PROTOCOL_NAME, cccSpecificationParams.second.toBundle());
-        }
+        mSpecificationParams = specificationParams.second;
     }
 
     public PersistableBundle getSpecificationInfo() {
-        if (mUwbSpecificationInfo.isEmpty()) {
+        if (mSpecificationParams == null) {
             updateSpecificationInfo();
         }
-        return mUwbSpecificationInfo;
+        if (mSpecificationParams == null) return new PersistableBundle();
+        return mSpecificationParams.toBundle();
     }
 
     public long getTimestampResolutionNanos() {
