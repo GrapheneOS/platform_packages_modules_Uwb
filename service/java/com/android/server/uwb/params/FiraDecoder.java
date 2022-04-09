@@ -58,7 +58,6 @@ import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_FIRA_MAC_V
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_FIRA_PHY_VERSION_RANGE;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_HPRF_PARAMETER_SETS;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MULTI_NODE_MODES;
-import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_POWER_STATS_QUERY;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_RANGING_METHOD;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_RFRAME_CONFIG;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_STS_CONFIG;
@@ -99,8 +98,7 @@ public class FiraDecoder extends TlvDecoder {
         return (flags & mask) != 0;
     }
 
-    // TODO(b/208678993): Plumb the output of GetCapsInfo to getSpecificationInfo API using this.
-    public FiraSpecificationParams getFiraSpecificationParamsFromTlvBuffer(TlvDecoderBuffer tlvs) {
+    private FiraSpecificationParams getFiraSpecificationParamsFromTlvBuffer(TlvDecoderBuffer tlvs) {
         FiraSpecificationParams.Builder builder = new FiraSpecificationParams.Builder();
         byte[] phyVersions = tlvs.getByteArray(SUPPORTED_FIRA_PHY_VERSION_RANGE);
         builder.setMinPhyVersionSupported(FiraProtocolVersion.fromBytes(phyVersions, 0));
@@ -285,15 +283,6 @@ public class FiraDecoder extends TlvDecoder {
             aoaFlag.add(FiraParams.AoaCapabilityFlag.HAS_INTERLEAVING_SUPPORT);
         }
         builder.setAoaCapabilities(aoaFlag);
-
-        try {
-            byte supported_power_stats_query = tlvs.getByte(SUPPORTED_POWER_STATS_QUERY);
-            if (supported_power_stats_query != 0) {
-                builder.hasPowerStatsSupport(true);
-            }
-        } catch (IllegalArgumentException e) {
-            // Do nothing. By default, hasPowerStatsSupport() returns false.
-        }
 
         // TODO(b/209053358): This is not present in the FiraSpecificationParams.
         byte extendedMacUci = tlvs.getByte(SUPPORTED_EXTENDED_MAC_ADDRESS);

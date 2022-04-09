@@ -19,6 +19,7 @@ package com.android.server.uwb.params;
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.generic.GenericParams;
 
 public abstract class TlvDecoder {
     public static TlvDecoder getDecoder(String protocolName) {
@@ -27,6 +28,9 @@ public abstract class TlvDecoder {
         }
         if (protocolName.equals(CccParams.PROTOCOL_NAME)) {
             return new CccDecoder();
+        }
+        if (protocolName.equals(GenericParams.PROTOCOL_NAME)) {
+            return new GenericDecoder();
         }
         return null;
     }
