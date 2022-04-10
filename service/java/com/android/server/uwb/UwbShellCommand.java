@@ -77,6 +77,7 @@ import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
+import com.google.uwb.support.generic.GenericSpecificationParams;
 
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
@@ -799,16 +800,22 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 }
                 case "get-specification-info": {
                     PersistableBundle bundle = mUwbService.getSpecificationInfo(null);
-                    PersistableBundle fira_bundle = bundle.getPersistableBundle(
-                            FiraParams.PROTOCOL_NAME);
-                    PersistableBundle ccc_bundle = bundle.getPersistableBundle(
-                            CccParams.PROTOCOL_NAME);
-                    pw.println("FIRA Specification info: " + bundleToString(fira_bundle));
-                    pw.println("CCC Specification info: " + bundleToString(ccc_bundle));
+                    pw.println("Specification info: " + bundleToString(bundle));
                     return 0;
                 }
                 case "get-power-stats": {
-                    pw.println(mNativeUwbManager.getPowerStats());
+                    PersistableBundle bundle = mUwbService.getSpecificationInfo(null);
+                    GenericSpecificationParams params =
+                            GenericSpecificationParams.fromBundle(bundle);
+                    if (params == null) {
+                        pw.println("Spec info is empty");
+                        return -1;
+                    }
+                    if (params.hasPowerStatsSupport()) {
+                        pw.println(mNativeUwbManager.getPowerStats());
+                    } else {
+                        pw.println("power stats query is not supported");
+                    }
                     return 0;
                 }
                 default:

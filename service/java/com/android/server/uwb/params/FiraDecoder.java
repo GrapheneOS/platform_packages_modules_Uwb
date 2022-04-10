@@ -98,8 +98,7 @@ public class FiraDecoder extends TlvDecoder {
         return (flags & mask) != 0;
     }
 
-    // TODO(b/208678993): Plumb the output of GetCapsInfo to getSpecificationInfo API using this.
-    public FiraSpecificationParams getFiraSpecificationParamsFromTlvBuffer(TlvDecoderBuffer tlvs) {
+    private FiraSpecificationParams getFiraSpecificationParamsFromTlvBuffer(TlvDecoderBuffer tlvs) {
         FiraSpecificationParams.Builder builder = new FiraSpecificationParams.Builder();
         byte[] phyVersions = tlvs.getByteArray(SUPPORTED_FIRA_PHY_VERSION_RANGE);
         builder.setMinPhyVersionSupported(FiraProtocolVersion.fromBytes(phyVersions, 0));

@@ -142,4 +142,7 @@ public class CapabilityParam {
             (int) UwbVendorCapabilityTlvValues.HOPPING_SEQUENCE_AES;
     public static final int CCC_HOPPING_SEQUENCE_DEFAULT =
             (int) UwbVendorCapabilityTlvValues.HOPPING_SEQUENCE_DEFAULT;
+
+    public static final int SUPPORTED_POWER_STATS_QUERY =
+            UwbVendorCapabilityTlvTypes.SUPPORTED_POWER_STATS_QUERY;
 }

@@ -516,7 +516,6 @@ public class FiraTests {
         assertEquals(psduDataRateCapabilities, fromBundle.getPsduDataRateCapabilities());
         assertEquals(bprfCapabilities, fromBundle.getBprfParameterSetCapabilities());
         assertEquals(hprfCapabilities, fromBundle.getHprfParameterSetCapabilities());
-
         verifyProtocolPresent(params);
         verifyBundlesEqual(params, fromBundle);
     }

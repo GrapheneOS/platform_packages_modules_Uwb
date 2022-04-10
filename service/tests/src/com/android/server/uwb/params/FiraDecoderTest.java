@@ -68,8 +68,8 @@ import java.util.List;
 @SmallTest
 @Presubmit
 public class FiraDecoderTest {
-    private static final byte[] TEST_FIRA_SPECIFICATION_TLV_DATA =
-            UwbUtil.getByteArray("000401010102"
+    public static final String TEST_FIRA_SPECIFICATION_TLV_STRING =
+            "000401010102"
                     + "010401050103"
                     + "020103"
                     + "03011F"
@@ -87,11 +87,13 @@ public class FiraDecoderTest {
                     + "0F050000000003"
                     + "10010F"
                     + "110101"
-                    + "E30101");
-    private static final int TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS = 19;
+                    + "E30101";
+    private static final byte[] TEST_FIRA_SPECIFICATION_TLV_DATA =
+            UwbUtil.getByteArray(TEST_FIRA_SPECIFICATION_TLV_STRING);
+    public static final int TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS = 19;
     private final FiraDecoder mFiraDecoder = new FiraDecoder();
 
-    private void verifyFiraSpecification(FiraSpecificationParams firaSpecificationParams) {
+    public static void verifyFiraSpecification(FiraSpecificationParams firaSpecificationParams) {
         assertThat(firaSpecificationParams).isNotNull();
 
         assertThat(firaSpecificationParams.getMinPhyVersionSupported()).isEqualTo(

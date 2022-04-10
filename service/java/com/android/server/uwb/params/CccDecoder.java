@@ -66,7 +66,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
- * TODO (b/208678993): Verify if this param parsing is correct.
+ * CCC decoder
  */
 public class CccDecoder extends TlvDecoder {
     @Override
@@ -85,7 +85,7 @@ public class CccDecoder extends TlvDecoder {
         return (flags & mask) != 0;
     }
 
-    public CccRangingStartedParams getCccRangingStartedParamsFromTlvBuffer(TlvDecoderBuffer tlvs) {
+    private CccRangingStartedParams getCccRangingStartedParamsFromTlvBuffer(TlvDecoderBuffer tlvs) {
         byte[] hopModeKey = tlvs.getByteArray(ConfigParam.HOP_MODE_KEY);
         int hopModeKeyInt = ByteBuffer.wrap(hopModeKey).order(ByteOrder.LITTLE_ENDIAN).getInt();
         return new CccRangingStartedParams.Builder()
@@ -100,8 +100,7 @@ public class CccDecoder extends TlvDecoder {
                 .build();
     }
 
-     // TODO(b/208678993): Plumb the output of GetCapsInfo to getSpecificationInfo API using this.
-    public CccSpecificationParams getCccSpecificationParamsFromTlvBuffer(TlvDecoderBuffer tlvs) {
+    private CccSpecificationParams getCccSpecificationParamsFromTlvBuffer(TlvDecoderBuffer tlvs) {
         CccSpecificationParams.Builder builder = new CccSpecificationParams.Builder();
         byte[] versions = tlvs.getByteArray(CCC_SUPPORTED_VERSIONS);
         if (versions.length % 2 != 0) {

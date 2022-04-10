@@ -239,7 +239,6 @@ public class FiraSpecificationParams extends FiraParams {
                 FlagEnum.toInt(mBprfParameterSetCapabilities));
         bundle.putLong(KEY_HPRF_PARAMETER_SET_CAPABILITIES,
                 FlagEnum.toLong(mHprfParameterSetCapabilities));
-
         return bundle;
     }
 
