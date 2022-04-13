@@ -1,12 +1,11 @@
 //! jni for uwb native stack
-use android_logger::FilterBuilder;
 use jni::objects::{JObject, JValue};
 use jni::sys::{
     jarray, jboolean, jbyte, jbyteArray, jint, jintArray, jlong, jobject, jshort, jshortArray,
     jsize,
 };
 use jni::JNIEnv;
-use log::{error, info, LevelFilter};
+use log::{error, info};
 use num_traits::ToPrimitive;
 use uwb_uci_packets::{
     GetCapsInfoRspPacket, Packet, SessionGetAppConfigRspPacket, SessionSetAppConfigRspPacket,
@@ -90,15 +89,11 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeIn
     _env: JNIEnv,
     _obj: JObject,
 ) -> jboolean {
-    let crates_log_lvl_filter = FilterBuilder::new()
-        .filter(None, LevelFilter::Trace) // default log level
-        .filter(Some("jni"), LevelFilter::Info) // reduced log level for jni crate
-        .build();
-    android_logger::init_once(
-        android_logger::Config::default()
-            .with_tag("uwb")
+    logger::init(
+        logger::Config::default()
+            .with_tag_on_device("uwb")
             .with_min_level(log::Level::Trace)
-            .with_filter(crates_log_lvl_filter),
+            .with_filter("trace,jni=info"),
     );
     info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeInit: enter");
     true as jboolean

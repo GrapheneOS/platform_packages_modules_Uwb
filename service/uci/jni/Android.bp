@@ -10,10 +10,9 @@ rust_defaults {
     min_sdk_version: "Tiramisu",
     srcs: ["rust/lib.rs"],
     rustlibs: [
-        "libandroid_logger",
         "libjni",
-        "liblog_rust",
         "libbinder_rs",
+        "liblog_rust",
         "liblogger",
         "libnum_traits",
         "libuwb_uci_packets",
