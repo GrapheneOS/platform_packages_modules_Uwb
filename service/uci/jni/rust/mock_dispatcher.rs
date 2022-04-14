@@ -33,8 +33,8 @@ impl MockDispatcher {
             .push_back(ExpectedCall::BlockOnJniCommand { expected_cmd, out })
     }
 
-    pub fn expect_exit(&mut self, out: Result<()>) {
-        self.expected_calls.borrow_mut().push_back(ExpectedCall::Exit { out })
+    pub fn expect_wait_for_exit(&mut self, out: Result<()>) {
+        self.expected_calls.borrow_mut().push_back(ExpectedCall::WaitForExit { out })
     }
 }
 
@@ -69,10 +69,10 @@ impl Dispatcher for MockDispatcher {
             None => Err(UwbErr::Undefined),
         }
     }
-    fn exit(&mut self) -> Result<()> {
+    fn wait_for_exit(&mut self) -> Result<()> {
         let mut expected_calls = self.expected_calls.borrow_mut();
         match expected_calls.pop_front() {
-            Some(ExpectedCall::Exit { out }) => out,
+            Some(ExpectedCall::WaitForExit { out }) => out,
             Some(call) => {
                 expected_calls.push_front(call);
                 Err(UwbErr::Undefined)
@@ -93,5 +93,5 @@ impl Dispatcher for MockDispatcher {
 enum ExpectedCall {
     SendJniCommand { expected_cmd: JNICommand, out: Result<()> },
     BlockOnJniCommand { expected_cmd: JNICommand, out: Result<UciResponse> },
-    Exit { out: Result<()> },
+    WaitForExit { out: Result<()> },
 }
