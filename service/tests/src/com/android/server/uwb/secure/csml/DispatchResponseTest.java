@@ -41,7 +41,7 @@ public class DispatchResponseTest {
 
         assertThat(dispatchResponse.notifications).hasSize(1);
         assertThat(dispatchResponse.notifications.get(0).notificationEventId)
-                .isEqualTo(DispatchResponse.NOTIFICATION_EVENT_ID_SEURE_SESSION_AUTO_TERMINATED);
+                .isEqualTo(DispatchResponse.NOTIFICATION_EVENT_ID_SECURE_SESSION_AUTO_TERMINATED);
         assertThat(dispatchResponse.getOutboundData().isPresent()).isFalse();
     }
 
@@ -96,7 +96,7 @@ public class DispatchResponseTest {
         assertThat(dispatchResponse.notifications).hasSize(0);
         assertThat(dispatchResponse.getOutboundData().isPresent()).isTrue();
         assertThat(dispatchResponse.getOutboundData().get().target)
-                .isEqualTo(DispatchResponse.OUTBOUND_TARGET_HOST_APP);
+                .isEqualTo(DispatchResponse.OUTBOUND_TARGET_HOST);
         assertThat(dispatchResponse.getOutboundData().get().data)
                 .isEqualTo(DataTypeConversionUtil.hexStringToByteArray("0A0B"));
     }
