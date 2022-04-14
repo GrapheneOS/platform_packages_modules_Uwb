@@ -513,8 +513,8 @@ fn do_initialize<'a, T: Context<'a>>(context: &T) -> Result<(), UwbErr> {
 
 fn do_deinitialize<'a, T: Context<'a>>(context: &T) -> Result<(), UwbErr> {
     let dispatcher = context.get_dispatcher()?;
-    dispatcher.block_on_jni_command(JNICommand::Disable(true))?;
-    dispatcher.send_jni_command(JNICommand::Exit)?;
+    dispatcher.send_jni_command(JNICommand::Disable(true))?;
+    dispatcher.wait_for_exit()?;
     Ok(())
 }
 
@@ -893,9 +893,8 @@ mod tests {
     #[test]
     fn test_do_deinitialize() {
         let mut dispatcher = MockDispatcher::new();
-        dispatcher
-            .expect_block_on_jni_command(JNICommand::Disable(true), Ok(UciResponse::DisableRsp));
-        dispatcher.expect_send_jni_command(JNICommand::Exit, Ok(()));
+        dispatcher.expect_send_jni_command(JNICommand::Disable(true), Ok(()));
+        dispatcher.expect_wait_for_exit(Ok(()));
         let context = MockContext::new(dispatcher);
 
         let result = do_deinitialize(&context);
