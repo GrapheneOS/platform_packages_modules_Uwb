@@ -5,13 +5,14 @@ use uwb_uci_packets::GetDeviceInfoRspPacket;
 use uwb_uci_rust::error::UwbErr;
 use uwb_uci_rust::uci::{uci_hrcv::UciResponse, Dispatcher, JNICommand, Result};
 
+#[cfg(test)]
 #[derive(Default)]
 pub struct MockDispatcher {
     expected_calls: RefCell<VecDeque<ExpectedCall>>,
     device_info: Option<GetDeviceInfoRspPacket>,
 }
 
-#[allow(dead_code)]
+#[cfg(test)]
 impl MockDispatcher {
     pub fn new() -> Self {
         Default::default()
@@ -38,12 +39,14 @@ impl MockDispatcher {
     }
 }
 
+#[cfg(test)]
 impl Drop for MockDispatcher {
     fn drop(&mut self) {
         assert!(self.expected_calls.borrow().is_empty());
     }
 }
 
+#[cfg(test)]
 impl Dispatcher for MockDispatcher {
     fn send_jni_command(&self, cmd: JNICommand) -> Result<()> {
         let mut expected_calls = self.expected_calls.borrow_mut();
@@ -90,6 +93,7 @@ impl Dispatcher for MockDispatcher {
     }
 }
 
+#[cfg(test)]
 enum ExpectedCall {
     SendJniCommand { expected_cmd: JNICommand, out: Result<()> },
     BlockOnJniCommand { expected_cmd: JNICommand, out: Result<UciResponse> },
