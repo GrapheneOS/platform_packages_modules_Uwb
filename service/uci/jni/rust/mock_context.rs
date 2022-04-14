@@ -8,12 +8,13 @@ use uwb_uci_rust::uci::Dispatcher;
 use crate::mock_dispatcher::MockDispatcher;
 use crate::Context;
 
+#[cfg(test)]
 pub struct MockContext {
     dispatcher: Cell<MockDispatcher>,
     expected_calls: RefCell<VecDeque<ExpectedCall>>,
 }
 
-#[allow(dead_code)]
+#[cfg(test)]
 impl MockContext {
     pub fn new(dispatcher: MockDispatcher) -> Self {
         Self { dispatcher: Cell::new(dispatcher), expected_calls: Default::default() }
@@ -70,6 +71,7 @@ impl MockContext {
     }
 }
 
+#[cfg(test)]
 impl<'a> Context<'a> for MockContext {
     fn convert_byte_array(&self, array: jbyteArray) -> Result<Vec<u8>, jni::errors::Error> {
         let mut expected_calls = self.expected_calls.borrow_mut();
@@ -162,6 +164,7 @@ impl<'a> Context<'a> for MockContext {
     }
 }
 
+#[cfg(test)]
 enum ExpectedCall {
     ConvertByteArray {
         expected_array: jbyteArray,
