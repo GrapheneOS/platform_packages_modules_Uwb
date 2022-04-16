@@ -264,6 +264,20 @@ public class UwbMetricsTest {
     }
 
     @Test
+    public void testReportDeviceSuccessErrorCount() throws Exception {
+        mUwbMetrics.incrementDeviceInitFailureCount();
+        ExtendedMockito.verify(() -> UwbStatsLog.write(UwbStatsLog.UWB_DEVICE_ERROR_REPORTED,
+                UwbStatsLog.UWB_DEVICE_ERROR_REPORTED__TYPE__INIT_ERROR));
+        mUwbMetrics.incrementDeviceInitSuccessCount();
+        mUwbMetrics.incrementDeviceStatusErrorCount();
+        ExtendedMockito.verify(() -> UwbStatsLog.write(UwbStatsLog.UWB_DEVICE_ERROR_REPORTED,
+                UwbStatsLog.UWB_DEVICE_ERROR_REPORTED__TYPE__DEVICE_STATUS_ERROR));
+        mUwbMetrics.incrementUciGenericErrorCount();
+        ExtendedMockito.verify(() -> UwbStatsLog.write(UwbStatsLog.UWB_DEVICE_ERROR_REPORTED,
+                UwbStatsLog.UWB_DEVICE_ERROR_REPORTED__TYPE__UCI_GENERIC_ERROR));
+    }
+
+    @Test
     public void testDumpStatsNoCrash() throws Exception {
         mUwbMetrics.logRangingInitEvent(mUwbSession, UwbUciConstants.STATUS_CODE_OK);
         mUwbMetrics.logRangingInitEvent(mUwbSession,
