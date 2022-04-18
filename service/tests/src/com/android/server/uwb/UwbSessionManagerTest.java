@@ -237,7 +237,8 @@ public class UwbSessionManagerTest {
         mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, mock(SessionHandle.class),
                 TEST_SESSION_ID, "any", mock(Params.class), mockRangingCallbacks);
 
-        verify(mockRangingCallbacks).onRangingOpenFailed(any(), anyInt(), any());
+        verify(mockRangingCallbacks).onRangingOpenFailed(
+                any(), eq(RangingChangeReason.BAD_PARAMETERS), any());
         assertThat(mTestLooper.nextMessage()).isNull();
     }
 
