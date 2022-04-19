@@ -87,6 +87,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
         }
         mUwbSettingsStore.dump(fd, pw, args);
         mUwbInjector.getUwbMetrics().dump(fd, pw, args);
+        mUwbServiceCore.dump(fd, pw, args);
         mUwbInjector.getUwbCountryCode().dump(fd, pw, args);
     }
 
