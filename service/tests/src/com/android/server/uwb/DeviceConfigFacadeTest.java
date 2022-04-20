@@ -45,8 +45,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.MockitoSession;
 
 public class DeviceConfigFacadeTest {
-    @Mock
-    UwbInjector mUwbInjector;
+    @Mock UwbInjector mUwbInjector;
 
     final ArgumentCaptor<DeviceConfig.OnPropertiesChangedListener>
             mOnPropertiesChangedListenerCaptor =
@@ -114,6 +113,9 @@ public class DeviceConfigFacadeTest {
     public void testDefaultValue() throws Exception {
         assertEquals(DeviceConfigFacade.DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS,
                 mDeviceConfigFacade.getRangingResultLogIntervalMs());
+        assertEquals(false, mDeviceConfigFacade.isDeviceErrorBugreportEnabled());
+        assertEquals(DeviceConfigFacade.DEFAULT_BUG_REPORT_MIN_INTERVAL_MS,
+                mDeviceConfigFacade.getBugReportMinIntervalMs());
     }
 
     /**
@@ -124,10 +126,16 @@ public class DeviceConfigFacadeTest {
         // Simulate updating the fields
         when(DeviceConfig.getInt(anyString(), eq("ranging_result_log_interval_ms"),
                 anyInt())).thenReturn(4000);
+        when(DeviceConfig.getBoolean(anyString(), eq("device_error_bugreport_enabled"),
+                anyBoolean())).thenReturn(true);
+        when(DeviceConfig.getInt(anyString(), eq("bug_report_min_interval_ms"),
+                anyInt())).thenReturn(10 * 3600_000);
 
         mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
 
         // Verifying fields are updated to the new values
         assertEquals(4000, mDeviceConfigFacade.getRangingResultLogIntervalMs());
+        assertEquals(true, mDeviceConfigFacade.isDeviceErrorBugreportEnabled());
+        assertEquals(10 * 3600_000, mDeviceConfigFacade.getBugReportMinIntervalMs());
     }
 }
