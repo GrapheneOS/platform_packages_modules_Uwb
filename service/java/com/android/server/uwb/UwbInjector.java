@@ -74,6 +74,8 @@ public class UwbInjector {
     private final UwbMetrics mUwbMetrics;
     private final DeviceConfigFacade mDeviceConfigFacade;
     private final UwbMultichipData mUwbMultichipData;
+    private final SystemBuildProperties mSystemBuildProperties;
+    private final UwbDiagnostics mUwbDiagnostics;
 
     public UwbInjector(@NonNull UwbContext context) {
         // Create UWB service thread.
@@ -103,6 +105,8 @@ public class UwbInjector {
                         mContext.getSystemService(AlarmManager.class), mLooper);
         mUwbService = new UwbServiceCore(mContext, mNativeUwbManager, mUwbMetrics,
                 mUwbCountryCode, uwbSessionManager, uwbConfigurationManager, this, mLooper);
+        mSystemBuildProperties = new SystemBuildProperties();
+        mUwbDiagnostics = new UwbDiagnostics(mContext, this, mSystemBuildProperties);
     }
 
     public UwbSettingsStore getUwbSettingsStore() {
@@ -131,6 +135,10 @@ public class UwbInjector {
 
     public UwbServiceCore getUwbServiceCore() {
         return mUwbService;
+    }
+
+    public UwbDiagnostics getUwbDiagnostics() {
+        return mUwbDiagnostics;
     }
 
     /**
