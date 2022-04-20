@@ -152,6 +152,7 @@ public class UwbServiceCoreTest {
     @Mock private UwbSessionManager mUwbSessionManager;
     @Mock private UwbConfigurationManager mUwbConfigurationManager;
     @Mock private UwbInjector mUwbInjector;
+    @Mock DeviceConfigFacade mDeviceConfigFacade;
     private TestLooper mTestLooper;
     private MockitoSession mMockitoSession;
 
@@ -167,6 +168,9 @@ public class UwbServiceCoreTest {
         when(mContext.getSystemService(PowerManager.class)).thenReturn(powerManager);
         when(mUwbInjector.isSystemApp(TEST_UID, TEST_PACKAGE_NAME)).thenReturn(true);
         when(mUwbInjector.isForegroundAppOrService(TEST_UID, TEST_PACKAGE_NAME)).thenReturn(true);
+        when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
+        when(mDeviceConfigFacade.getBugReportMinIntervalMs())
+                .thenReturn(DeviceConfigFacade.DEFAULT_BUG_REPORT_MIN_INTERVAL_MS);
         mUwbServiceCore = new UwbServiceCore(mContext, mNativeUwbManager, mUwbMetrics,
                 mUwbCountryCode, mUwbSessionManager, mUwbConfigurationManager,
                 mUwbInjector, mTestLooper.getLooper());
