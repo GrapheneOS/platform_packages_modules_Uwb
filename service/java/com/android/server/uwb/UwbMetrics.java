@@ -437,25 +437,69 @@ public class UwbMetrics {
         }
     }
 
+    private int mNumDeviceInitSuccess = 0;
+    private int mNumDeviceInitFailure = 0;
+    private int mNumDeviceStatusError = 0;
+    private int mNumUciGenericError = 0;
+
+    /**
+     * Increment the count of device initialization success
+     */
+    public synchronized void incrementDeviceInitSuccessCount() {
+        mNumDeviceInitSuccess++;
+    }
+
+    /**
+     * Increment the count of device initialization failure
+     */
+    public synchronized void incrementDeviceInitFailureCount() {
+        mNumDeviceInitFailure++;
+        UwbStatsLog.write(UwbStatsLog.UWB_DEVICE_ERROR_REPORTED,
+                UwbStatsLog.UWB_DEVICE_ERROR_REPORTED__TYPE__INIT_ERROR);
+    }
+
+    /**
+     * Increment the count of device status error
+     */
+    public synchronized void incrementDeviceStatusErrorCount() {
+        mNumDeviceStatusError++;
+        UwbStatsLog.write(UwbStatsLog.UWB_DEVICE_ERROR_REPORTED,
+                UwbStatsLog.UWB_DEVICE_ERROR_REPORTED__TYPE__DEVICE_STATUS_ERROR);
+    }
+
+    /**
+     * Increment the count of UCI generic error which will trigger UCI command retry
+     */
+    public synchronized void incrementUciGenericErrorCount() {
+        mNumUciGenericError++;
+        UwbStatsLog.write(UwbStatsLog.UWB_DEVICE_ERROR_REPORTED,
+                UwbStatsLog.UWB_DEVICE_ERROR_REPORTED__TYPE__UCI_GENERIC_ERROR);
+    }
+
     /**
      * Dump the UWB logs
      */
     public void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
         synchronized (mLock) {
-            pw.println("Dump of UwbMetrics");
-            pw.println("mRangingSessionList");
+            pw.println("---- Dump of UwbMetrics ----");
+            pw.println("---- mRangingSessionList ----");
             for (RangingSessionStats stats: mRangingSessionList) {
                 pw.println(stats.toString());
             }
-            pw.println("mOpenedSessionMap");
+            pw.println("---- mOpenedSessionMap ----");
             for (int i = 0; i < mOpenedSessionMap.size(); i++) {
                 pw.println(mOpenedSessionMap.valueAt(i).toString());
             }
-            pw.println("mRangingReportList");
+            pw.println("---- mRangingReportList ----");
             for (RangingReportEvent event: mRangingReportList) {
                 pw.println(event.toString());
             }
             pw.println("mNumApps=" + mNumApps);
+            pw.println("---- Device operation success/error count ----");
+            pw.println("mNumDeviceInitSuccess = " + mNumDeviceInitSuccess);
+            pw.println("mNumDeviceInitFailure = " + mNumDeviceInitFailure);
+            pw.println("mNumDeviceStatusError = " + mNumDeviceStatusError);
+            pw.println("mNumUciGenericError = " + mNumUciGenericError);
         }
     }
 }
