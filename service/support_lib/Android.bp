@@ -30,6 +30,7 @@ java_defaults {
     ],
     visibility : [
         "//cts/tests/uwb",
+        "//cts/hostsidetests/multidevices/uwb/snippet",
         "//external/sl4a/Common",
         "//packages/modules/Uwb/service:__subpackages__",
     ]
