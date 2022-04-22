@@ -41,8 +41,10 @@ import android.provider.Settings;
 import android.util.AtomicFile;
 import android.util.Log;
 
+import com.android.server.uwb.data.ServiceProfileData;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.multchip.UwbMultichipData;
+import com.android.server.uwb.pm.ProfileManager;
 
 import java.io.File;
 import java.util.Locale;
@@ -70,6 +72,7 @@ public class UwbInjector {
     private final PermissionManager mPermissionManager;
     private final UserManager mUserManager;
     private final UwbConfigStore mUwbConfigStore;
+    private final ProfileManager mProfileManager;
     private final UwbSettingsStore mUwbSettingsStore;
     private final NativeUwbManager mNativeUwbManager;
     private final UwbCountryCode mUwbCountryCode;
@@ -91,6 +94,8 @@ public class UwbInjector {
         mUserManager = mContext.getSystemService(UserManager.class);
         mUwbConfigStore = new UwbConfigStore(context, new Handler(mLooper), this,
                 UwbConfigStore.createSharedFiles());
+        mProfileManager = new ProfileManager(context, new Handler(mLooper),
+                mUwbConfigStore, this);
         mUwbSettingsStore = new UwbSettingsStore(
                 context, new Handler(mLooper),
                 new AtomicFile(new File(getDeviceProtectedDataDir(),
@@ -117,6 +122,16 @@ public class UwbInjector {
 
     public UserManager getUserManager() {
         return mUserManager;
+    }
+    /**
+    * Construct an instance of {@link ServiceProfileData}.
+    */
+    public ServiceProfileData makeServiceProfileData(ServiceProfileData.DataSource dataSource) {
+        return new ServiceProfileData(dataSource);
+    }
+
+    public ProfileManager getServiceProfileStore() {
+        return mProfileManager;
     }
 
     public UwbConfigStore getUwbConfigStore() {

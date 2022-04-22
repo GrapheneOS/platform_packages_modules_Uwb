@@ -17,6 +17,7 @@
 package com.android.server.uwb.data;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.platform.test.annotations.Presubmit;
@@ -60,7 +61,7 @@ public class ServiceProfileDataTest {
         UUID serviceInstanceID = new UUID(100, 500);
 
         assertEquals(serviceConfig.getServiceId(), 1);
-        assertEquals(serviceConfig.getServiceInstanceId(), serviceInstanceID);
+        assertEquals(serviceConfig.getServiceInstanceId(), serviceInstanceID.toString());
         assertEquals(serviceConfig.getUid(), 1);
         assertEquals(serviceConfig.getPackageName(), "test");
 
@@ -75,10 +76,10 @@ public class ServiceProfileDataTest {
         UwbConfigProto.UwbConfig uwbConfig = UwbConfigProto.UwbConfig.parseFrom(dataBytes);
 
         mServiceProfileData.deserializeData(uwbConfig);
-        assertTrue(mDataSource.mData.size() == 1);
+        assertEquals(1, mDataSource.mData.size());
 
         mServiceProfileData.resetData();
-        assertTrue(mDataSource.mData == null);
+        assertNull(mDataSource.mData);
 
         assertTrue(mServiceProfileData.hasNewDataToSerialize());
 
