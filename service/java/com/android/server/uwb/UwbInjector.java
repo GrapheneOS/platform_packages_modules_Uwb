@@ -130,7 +130,7 @@ public class UwbInjector {
         return new ServiceProfileData(dataSource);
     }
 
-    public ProfileManager getServiceProfileStore() {
+    public ProfileManager getProfileManager() {
         return mProfileManager;
     }
 

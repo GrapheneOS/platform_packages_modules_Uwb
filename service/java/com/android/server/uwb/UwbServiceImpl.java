@@ -39,11 +39,15 @@ import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
 
 import com.google.uwb.support.multichip.ChipInfoParams;
+import com.google.uwb.support.profile.ServiceProfile;
+import com.google.uwb.support.profile.UuidBundleWrapper;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Implementation of {@link android.uwb.IUwbAdapter} binder service.
@@ -264,8 +268,15 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     @Override
     public PersistableBundle addServiceProfile(@NonNull PersistableBundle parameters) {
         enforceUwbPrivilegedPermission();
-        // TODO(b/200678461): Implement this.
-        throw new IllegalStateException("Not implemented");
+        ServiceProfile serviceProfile = ServiceProfile.fromBundle(parameters);
+        //TODO Use handler to post the events
+        Optional<UUID> serviceInstanceID = mUwbInjector
+                .getProfileManager()
+                .addServiceProfile(serviceProfile.getServiceID());
+        return new UuidBundleWrapper.Builder()
+                .setServiceInstanceID(serviceInstanceID)
+                .build()
+                .toBundle();
     }
 
     @Override
