@@ -78,7 +78,6 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
 
     private static final int TASK_ENABLE = 1;
     private static final int TASK_DISABLE = 2;
-    private static final int TASK_DEINIT_ALL_SESSIONS = 3;
 
     private static final int WATCHDOG_MS = 10000;
     private static final int SEND_VENDOR_CMD_TIMEOUT_MS = 10000;
@@ -174,7 +173,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
 
     @Override
     public void onDeviceStatusNotificationReceived(int deviceState) {
-        // If error state is received, toggle UWB off to reset stack state.
+        // If error status is received, toggle UWB off to reset stack state.
         // TODO(b/227488208): Should we try to restart (like wifi) instead?
         if ((byte) deviceState == UwbUciConstants.DEVICE_STATE_ERROR) {
             Log.e(TAG, "Error device status received. Disabling...");
@@ -221,10 +220,6 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
 
     @Override
     public void onCountryCodeChanged(@Nullable String countryCode) {
-        // If there are ongoing sessions, then we should use this trigger to close all of them
-        // and send notifications to apps.
-        Log.v(TAG, "Closing ongoing sessions on country code change");
-        mEnableDisableTask.execute(TASK_DEINIT_ALL_SESSIONS);
         // Clear the cached capabilities on country code changes.
         Log.v(TAG, "Clearing cached specification params on country code change");
         mSpecificationParams = null;
@@ -490,11 +485,6 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                     mSessionManager.deinitAllSession();
                     disableInternal();
                     break;
-
-                case TASK_DEINIT_ALL_SESSIONS:
-                    mSessionManager.deinitAllSession();
-                    break;
-
                 default:
                     Log.d(TAG, "EnableDisableTask : Undefined Task");
                     break;

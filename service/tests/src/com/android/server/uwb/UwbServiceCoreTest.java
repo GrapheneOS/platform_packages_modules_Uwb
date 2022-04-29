@@ -296,7 +296,6 @@ public class UwbServiceCoreTest {
 
         disableUwb();
 
-        verify(mUwbSessionManager).deinitAllSession();
         verify(mNativeUwbManager).doDeinitialize();
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
                 StateChangeReason.SYSTEM_POLICY);
@@ -318,7 +317,6 @@ public class UwbServiceCoreTest {
 
         disableUwb();
 
-        verify(mUwbSessionManager).deinitAllSession();
         verify(mNativeUwbManager).doDeinitialize();
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
                 StateChangeReason.SYSTEM_POLICY);
@@ -655,7 +653,7 @@ public class UwbServiceCoreTest {
     }
 
     @Test
-    public void testToggleOffOnDeviceStateErrorCallback() throws Exception {
+    public void testToggleOfOnDeviceStateErrorCallback() throws Exception {
         IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
         when(cb.asBinder()).thenReturn(mock(IBinder.class));
         mUwbServiceCore.registerAdapterStateCallbacks(cb);
@@ -669,26 +667,9 @@ public class UwbServiceCoreTest {
         mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ERROR);
         mTestLooper.dispatchAll();
         // Verify UWB toggle off.
-        verify(mUwbSessionManager).deinitAllSession();
         verify(mNativeUwbManager).doDeinitialize();
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
                 StateChangeReason.SYSTEM_POLICY);
-    }
-
-    @Test
-    public void testDeinitAllSessionsOnCountryCodeChange() throws Exception {
-        IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
-        when(cb.asBinder()).thenReturn(mock(IBinder.class));
-        mUwbServiceCore.registerAdapterStateCallbacks(cb);
-
-        enableUwb();
-        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
-                StateChangeReason.SYSTEM_POLICY);
-
-        mUwbServiceCore.onCountryCodeChanged("US");
-        mTestLooper.dispatchAll();
-        // Verify on session cleanup
-        verify(mUwbSessionManager).deinitAllSession();
     }
 
     @Test
