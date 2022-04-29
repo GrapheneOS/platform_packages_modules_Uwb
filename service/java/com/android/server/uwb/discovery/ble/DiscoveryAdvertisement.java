@@ -27,7 +27,6 @@ import com.android.server.uwb.discovery.info.UwbIndicationData;
 import com.android.server.uwb.discovery.info.VendorSpecificData;
 import com.android.server.uwb.util.ArrayUtils;
 import com.android.server.uwb.util.DataTypeConversionUtil;
-import com.android.server.uwb.util.Hex;
 
 import com.google.common.primitives.Bytes;
 
@@ -66,17 +65,6 @@ public class DiscoveryAdvertisement {
         return ParcelUuid.fromString("0000" + uuid + "-0000-1000-8000-00805F9B34FB");
     }
 
-    // Size of the fields inside the advertisement.
-    private static final int LENGTH_SIZE = 1;
-    private static final int DATA_TYPE_SIZE = 1;
-    private static final int SERVICE_UUID_SIZE = 2;
-
-    private static final int MIN_ADVETISEMENT_SIZE =
-            LENGTH_SIZE + DATA_TYPE_SIZE + SERVICE_UUID_SIZE;
-
-    // Data type field value assigned by the Bluetooth GAP.
-    private static final byte DATA_TYPE = 0x16;
-
     // Mask and value of the FiRa specific field type field within each AD field.
     private static final byte FIRA_SPECIFIC_FIELD_TYPE_MASK = (byte) 0xF0;
     private static final byte FIRA_SPECIFIC_FIELD_TYPE_UWB_INDICATION_DATA = 0x1;
@@ -87,7 +75,6 @@ public class DiscoveryAdvertisement {
     // FiRa specific field length field within each AD field.
     private static final byte FIRA_SPECIFIC_FIELD_LENGTH_MASK = 0x0F;
 
-    public final String serviceUuid;
     public final UwbIndicationData uwbIndicationData;
     public final RegulatoryInfo regulatoryInfo;
     public final FiraProfileSupportInfo firaProfileSupportInfo;
@@ -109,41 +96,7 @@ public class DiscoveryAdvertisement {
             return null;
         }
 
-        if (serviceData.length < MIN_ADVETISEMENT_SIZE) {
-            logw(
-                    "Failed to convert bytes into BLE Discovery advertisement due to invalid"
-                            + " advertisement size.");
-            return null;
-        }
-
         ByteBuffer byteBuffer = ByteBuffer.wrap(serviceData);
-        int length = Byte.toUnsignedInt(byteBuffer.get());
-        if (length != serviceData.length - LENGTH_SIZE) {
-            logw(
-                    "Failed to convert bytes into BLE Discovery advertisement due to unmatched"
-                            + " advertisement size.");
-            return null;
-        }
-
-        byte dataType = byteBuffer.get();
-        if (dataType != DATA_TYPE) {
-            logw(
-                    "Failed to convert bytes into BLE Discovery advertisement due to unmatched"
-                            + " advertisement data type.");
-            return null;
-        }
-        // In little endian encoding
-        byte[] serviceUuidBytes = new byte[SERVICE_UUID_SIZE];
-        byteBuffer.get(serviceUuidBytes);
-        String serviceUuid = Hex.encodeUpper(new byte[] {serviceUuidBytes[1], serviceUuidBytes[0]});
-        if (!serviceUuid.equals(FIRA_CP_SERVICE_UUID)
-                && !serviceUuid.equals(FIRA_CS_SERVICE_UUID)) {
-            logw(
-                    "Failed to convert bytes into BLE Discovery advertisement due to invalid FiRa"
-                            + " advertisement service uuid="
-                            + serviceUuid);
-            return null;
-        }
 
         UwbIndicationData uwbIndicationData = null;
         RegulatoryInfo regulatoryInfo = null;
@@ -224,7 +177,6 @@ public class DiscoveryAdvertisement {
         }
 
         return new DiscoveryAdvertisement(
-                serviceUuid,
                 uwbIndicationData,
                 regulatoryInfo,
                 firaProfileSupportInfo,
@@ -241,7 +193,7 @@ public class DiscoveryAdvertisement {
      */
     public static byte[] toBytes(
             @NonNull DiscoveryAdvertisement adv, boolean includeVendorSpecificData) {
-        byte[] data = convertMetadata(adv.serviceUuid);
+        byte[] data = new byte[] {};
 
         if (adv.uwbIndicationData != null) {
             data = Bytes.concat(data, convertUwbIndicationData(adv.uwbIndicationData));
@@ -258,7 +210,7 @@ public class DiscoveryAdvertisement {
             }
         }
 
-        return Bytes.concat(new byte[] {convertByteLength(data.length)}, data);
+        return data;
     }
 
     /**
@@ -272,11 +224,6 @@ public class DiscoveryAdvertisement {
             return convertVendorSpecificData(adv.vendorSpecificData[0]);
         }
         return null;
-    }
-
-    private static byte[] convertMetadata(String serviceUuid) {
-        byte[] uuidBytes = Hex.decode(serviceUuid);
-        return new byte[] {DATA_TYPE, uuidBytes[1], uuidBytes[0]};
     }
 
     private static byte convertByteLength(int size) {
@@ -337,12 +284,10 @@ public class DiscoveryAdvertisement {
     }
 
     public DiscoveryAdvertisement(
-            String serviceUuid,
             @Nullable UwbIndicationData uwbIndicationData,
             @Nullable RegulatoryInfo regulatoryInfo,
             @Nullable FiraProfileSupportInfo firaProfileSupportInfo,
             @Nullable VendorSpecificData[] vendorSpecificData) {
-        this.serviceUuid = serviceUuid;
         this.uwbIndicationData = uwbIndicationData;
         this.regulatoryInfo = regulatoryInfo;
         this.firaProfileSupportInfo = firaProfileSupportInfo;
@@ -352,9 +297,7 @@ public class DiscoveryAdvertisement {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("DiscoveryAdvertisement: serviceUuid=")
-                .append(serviceUuid)
-                .append(" uwbIndicationData={")
+        sb.append("DiscoveryAdvertisement: uwbIndicationData={")
                 .append(uwbIndicationData)
                 .append("} regulatoryInfo={")
                 .append(regulatoryInfo)
