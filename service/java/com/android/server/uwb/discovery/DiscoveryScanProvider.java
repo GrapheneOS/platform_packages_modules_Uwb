@@ -15,6 +15,8 @@
  */
 package com.android.server.uwb.discovery;
 
+import android.bluetooth.le.ScanResult;
+
 import androidx.annotation.WorkerThread;
 
 import com.android.server.uwb.discovery.ble.DiscoveryAdvertisement;
@@ -29,9 +31,12 @@ public abstract class DiscoveryScanProvider {
     public static class DiscoveryResult {
 
         // BLE discovery result
+        public ScanResult scanResult;
         public DiscoveryAdvertisement discoveryAdvertisement;
 
-        public DiscoveryResult(DiscoveryAdvertisement discoveryAdvertisement) {
+        public DiscoveryResult(
+                ScanResult scanResult, DiscoveryAdvertisement discoveryAdvertisement) {
+            this.scanResult = scanResult;
             this.discoveryAdvertisement = discoveryAdvertisement;
         }
     }

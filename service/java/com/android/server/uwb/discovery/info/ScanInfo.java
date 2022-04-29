@@ -15,22 +15,23 @@
  */
 package com.android.server.uwb.discovery.info;
 
+import android.bluetooth.le.ScanFilter;
+import android.bluetooth.le.ScanSettings;
+
+import java.util.List;
+
 /**
- * Holds information about the discovery request.
+ * Holds information about the discovery scan request.
  */
-public class DiscoveryInfo {
+public class ScanInfo {
 
-    public DiscoveryInfo(TransportType transportType, ScanInfo scanInfo) {
-        this.transportType = transportType;
-        this.scanInfo = scanInfo;
+    public ScanInfo(List<ScanFilter> scanFilters, ScanSettings scanSettings) {
+        this.scanFilters = scanFilters;
+        this.scanSettings = scanSettings;
     }
 
-    /** A definition of discovery transport type. */
-    public enum TransportType {
-        BLE,
-    }
+    /** BLE scan parameters */
+    public final List<ScanFilter> scanFilters;
 
-    public final TransportType transportType;
-
-    public final ScanInfo scanInfo;
+    public final ScanSettings scanSettings;
 }

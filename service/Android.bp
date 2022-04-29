@@ -59,6 +59,7 @@ java_library {
         "ServiceUwbResources",
         "framework-statsd.stubs.module_lib",
         "framework-wifi.stubs.module_lib",
+        "framework-bluetooth.stubs.module_lib",
     ],
 
     static_libs: [

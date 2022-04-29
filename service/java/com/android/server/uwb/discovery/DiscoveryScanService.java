@@ -22,6 +22,7 @@ import android.util.Log;
 import androidx.annotation.WorkerThread;
 
 import com.android.server.uwb.discovery.DiscoveryScanProvider.DiscoveryScanCallback;
+import com.android.server.uwb.discovery.ble.BleDiscoveryScanProvider;
 import com.android.server.uwb.discovery.info.DiscoveryInfo;
 
 import java.util.concurrent.Executor;
@@ -31,11 +32,6 @@ import java.util.concurrent.Executor;
 public class DiscoveryScanService {
     private static final String TAG = "DiscoveryScanService";
 
-    private final AttributionSource mAttributionSource;
-    private final Context mContext;
-    private final Executor mExecutor;
-    private final DiscoveryInfo mDiscoveryInfo;
-    private final DiscoveryScanCallback mDiscoveryScanCallback;
     private final DiscoveryScanProvider mDiscoveryScanProvider;
 
     public DiscoveryScanService(
@@ -45,20 +41,21 @@ public class DiscoveryScanService {
             DiscoveryInfo discoveryInfo,
             DiscoveryScanCallback discoveryScanCallback)
             throws AssertionError {
-        mAttributionSource = attributionSource;
-        mContext = context;
-        mExecutor = executor;
-        mDiscoveryInfo = discoveryInfo;
-        mDiscoveryScanCallback = discoveryScanCallback;
 
         switch (discoveryInfo.transportType) {
             case BLE:
-                mDiscoveryScanProvider = null;
+                mDiscoveryScanProvider =
+                        new BleDiscoveryScanProvider(
+                                attributionSource,
+                                context,
+                                executor,
+                                discoveryInfo.scanInfo,
+                                discoveryScanCallback);
                 break;
             default:
                 throw new AssertionError(
                         "Failed to create DiscoveryScanProvider due to invalid transport type: "
-                                + mDiscoveryInfo.transportType);
+                                + discoveryInfo.transportType);
         }
     }
 
