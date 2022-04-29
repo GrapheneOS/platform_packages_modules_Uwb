@@ -18,6 +18,8 @@ package com.android.server.uwb.discovery.ble;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.util.SparseArray;
+
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
@@ -113,9 +115,9 @@ public class DiscoveryAdvertisementTest {
                     new FiraProfileSupportInfo(new FiraProfile[] {FiraProfile.PACS}),
                     new VendorSpecificData[] {
                         new VendorSpecificData(
-                                /*firstChannel=*/ 117, new byte[] {0x10, (byte) 0xFF, 0x00}),
+                                /*vendorId=*/ 117, new byte[] {0x10, (byte) 0xFF, 0x00}),
                         new VendorSpecificData(
-                                /*firstChannel=*/ 117, new byte[] {0x10, (byte) 0xFF, 0x00}),
+                                /*vendorId=*/ 117, new byte[] {0x10, (byte) 0xFF, 0x00}),
                     });
 
     @Test
@@ -173,15 +175,9 @@ public class DiscoveryAdvertisementTest {
         // Specified service uuid is 0xFFFF, expect 0xFFF3 or 0xFFF4.
         byte[] bytes =
                 new byte[] {0x08, 0x16, (byte) 0xF3, (byte) 0xFF, 0x24, 0x75, 0x00, 0x10, 0x20};
-        byte[] vendor_bytes = new byte[] {0x23, 0x75, 0x00, 0x10};
-        assertThat(DiscoveryAdvertisement.fromBytes(bytes, vendor_bytes)).isNull();
-    }
-
-    @Test
-    public void fromBytes_vendorSpecificDataEndedUnexpectedly() {
-        // Specified vendor data size is 0x4, actual size is 3.
-        byte[] vendor_bytes = new byte[] {0x24, 0x75, 0x00, 0x10};
-        assertThat(DiscoveryAdvertisement.fromBytes(MIN_BYTES, vendor_bytes)).isNull();
+        SparseArray<byte[]> vendorBytes = new SparseArray<byte[]>();
+        vendorBytes.put(1, new byte[] {0x23, 0x75, 0x00, 0x10});
+        assertThat(DiscoveryAdvertisement.fromBytes(bytes, vendorBytes)).isNull();
     }
 
     @Test

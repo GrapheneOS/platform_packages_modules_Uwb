@@ -19,6 +19,7 @@ import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.os.ParcelUuid;
 import android.util.Log;
+import android.util.SparseArray;
 
 import com.android.server.uwb.discovery.info.FiraProfileSupportInfo;
 import com.android.server.uwb.discovery.info.RegulatoryInfo;
@@ -34,6 +35,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Holds data of the BLE discovery advertisement according to FiRa BLE OOB v1.0 specification.
@@ -96,13 +98,12 @@ public class DiscoveryAdvertisement {
      *
      * @param serviceData byte array containing the UWB BLE Advertiser Service Data encoding based
      *     on the FiRa specification.
-     * @param manufacturerSpecificData byte array containing the UWB BLE Advertiser Manufacturer
-     *     Specific Data encoding based on the FiRa specification.
+     * @param vendorSpecificDataArray maps UWB vendor ID to vendor specific encoded data.
      * @return decode bytes into {@link DiscoveryAdvertisement}, else null if invalid.
      */
     @Nullable
     public static DiscoveryAdvertisement fromBytes(
-            @Nullable byte[] serviceData, @Nullable byte[] manufacturerSpecificData) {
+            @Nullable byte[] serviceData, @Nullable SparseArray<byte[]> vendorSpecificDataArray) {
         if (ArrayUtils.isEmpty(serviceData)) {
             logw("Failed to convert empty into BLE Discovery advertisement.");
             return null;
@@ -189,7 +190,8 @@ public class DiscoveryAdvertisement {
                 firaProfileSupportInfo = FiraProfileSupportInfo.fromBytes(fieldBytes);
             } else if (fieldType == FIRA_SPECIFIC_FIELD_TYPE_VENDOR_SPECIFIC_DATA) {
                 // There can be multiple Vendor specific data fields.
-                VendorSpecificData data = VendorSpecificData.fromBytes(fieldBytes);
+                VendorSpecificData data =
+                        VendorSpecificData.fromBytes(fieldBytes, Optional.empty());
                 if (data != null) {
                     vendorSpecificData.add(data);
                 }
@@ -205,29 +207,19 @@ public class DiscoveryAdvertisement {
         // product/implementation specific data inside “Service Data” AD type object with CS UUID.
         // It should be used only if the GAP Advertiser role doesn’t support exposing “Manufacturer
         // Specific Data” AD type object.
-        if (!ArrayUtils.isEmpty(manufacturerSpecificData)) {
-            ByteBuffer vendorByteBuffer = ByteBuffer.wrap(manufacturerSpecificData);
-            byte firstByte = vendorByteBuffer.get();
-            byte fieldType = (byte) ((firstByte & FIRA_SPECIFIC_FIELD_TYPE_MASK) >> 4);
-            byte fieldLength = (byte) (firstByte & FIRA_SPECIFIC_FIELD_LENGTH_MASK);
-            if (fieldType == FIRA_SPECIFIC_FIELD_TYPE_VENDOR_SPECIFIC_DATA) {
-                if (vendorByteBuffer.remaining() < fieldLength) {
-                    logw(
-                            "Failed to convert bytes into BLE Discovery advertisement due to"
-                                    + " manufacturer specific data ended unexpectedly.");
-                    return null;
-                }
-                byte[] fieldBytes = new byte[fieldLength];
-                vendorByteBuffer.get(fieldBytes);
-                VendorSpecificData data = VendorSpecificData.fromBytes(fieldBytes);
-                if (!vendorSpecificData.isEmpty()) {
-                    logw(
-                            "Failed to convert bytes into BLE Discovery advertisement due to Vendor"
+        if (vendorSpecificDataArray != null && vendorSpecificDataArray.size() != 0) {
+            if (!vendorSpecificData.isEmpty()) {
+                logw(
+                        "Failed to convert bytes into BLE Discovery advertisement due to Vendor"
                                 + " Specific Data exist in both Service Data AD and Manufacturer"
                                 + " Specific Data AD.");
-                    return null;
-                }
-                vendorSpecificData.add(data);
+                return null;
+            }
+            for (int i = 0; i < vendorSpecificDataArray.size(); i++) {
+                vendorSpecificData.add(
+                        VendorSpecificData.fromBytes(
+                                vendorSpecificDataArray.valueAt(i),
+                                Optional.of(vendorSpecificDataArray.keyAt(i))));
             }
         }
 
