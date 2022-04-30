@@ -35,6 +35,7 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.UserHandle;
+import android.os.UserManager;
 import android.permission.PermissionManager;
 import android.provider.Settings;
 import android.util.AtomicFile;
@@ -67,6 +68,8 @@ public class UwbInjector {
     private final UwbContext mContext;
     private final Looper mLooper;
     private final PermissionManager mPermissionManager;
+    private final UserManager mUserManager;
+    private final UwbConfigStore mUwbConfigStore;
     private final UwbSettingsStore mUwbSettingsStore;
     private final NativeUwbManager mNativeUwbManager;
     private final UwbCountryCode mUwbCountryCode;
@@ -85,6 +88,9 @@ public class UwbInjector {
 
         mContext = context;
         mPermissionManager = context.getSystemService(PermissionManager.class);
+        mUserManager = mContext.getSystemService(UserManager.class);
+        mUwbConfigStore = new UwbConfigStore(context, new Handler(mLooper), this,
+                UwbConfigStore.createSharedFiles());
         mUwbSettingsStore = new UwbSettingsStore(
                 context, new Handler(mLooper),
                 new AtomicFile(new File(getDeviceProtectedDataDir(),
@@ -107,6 +113,14 @@ public class UwbInjector {
                 mUwbCountryCode, uwbSessionManager, uwbConfigurationManager, this, mLooper);
         mSystemBuildProperties = new SystemBuildProperties();
         mUwbDiagnostics = new UwbDiagnostics(mContext, this, mSystemBuildProperties);
+    }
+
+    public UserManager getUserManager() {
+        return mUserManager;
+    }
+
+    public UwbConfigStore getUwbConfigStore() {
+        return mUwbConfigStore;
     }
 
     public UwbSettingsStore getUwbSettingsStore() {
@@ -183,7 +197,7 @@ public class UwbInjector {
      * Get device protected storage dir for the UWB apex.
      */
     @NonNull
-    public File getDeviceProtectedDataDir() {
+    public static File getDeviceProtectedDataDir() {
         return ApexEnvironment.getApexEnvironment(APEX_NAME).getDeviceProtectedDataDir();
     }
 
@@ -203,6 +217,13 @@ public class UwbInjector {
         return Settings.Global.getInt(mContext.getContentResolver(), key, defValue);
     }
 
+    /**
+     * Uwb user specific folder.
+     */
+    public static File getCredentialProtectedDataDirForUser(int userId) {
+        return ApexEnvironment.getApexEnvironment(APEX_NAME)
+                .getCredentialProtectedDataDirForUser(UserHandle.of(userId));
+    }
     /**
      * Returns true if the app is in the Uwb apex, false otherwise.
      * Checks if the app's path starts with "/apex/com.android.uwb".

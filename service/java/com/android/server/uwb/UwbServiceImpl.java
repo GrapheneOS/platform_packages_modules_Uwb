@@ -89,6 +89,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
         mUwbInjector.getUwbMetrics().dump(fd, pw, args);
         mUwbServiceCore.dump(fd, pw, args);
         mUwbInjector.getUwbCountryCode().dump(fd, pw, args);
+        mUwbInjector.getUwbConfigStore().dump(fd, pw, args);
     }
 
     private void enforceUwbPrivilegedPermission() {
@@ -362,5 +363,17 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
         if (chipId != null && !getChipIds().contains(chipId)) {
             throw new IllegalArgumentException("invalid chipId: " + chipId);
         }
+    }
+
+    public void handleUserSwitch(int userId) {
+        //TODO : Fix threading model here, handle race condition
+        Log.d(TAG, "Handle user switch " + userId);
+        mUwbInjector.getUwbConfigStore().handleUserSwitch(userId);
+    }
+
+    public void handleUserUnlock(int userId) {
+        //TODO : Fix threading model here, handle race condition
+        Log.d(TAG, "Handle user unlock " + userId);
+        mUwbInjector.getUwbConfigStore().handleUserUnlock(userId);
     }
 }
