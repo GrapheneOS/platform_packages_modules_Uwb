@@ -28,7 +28,6 @@ import android.bluetooth.le.ScanSettings;
 import android.content.AttributionSource;
 import android.content.Context;
 import android.content.ContextParams;
-import android.os.ParcelUuid;
 import android.util.Log;
 
 import androidx.annotation.WorkerThread;
@@ -48,9 +47,6 @@ import java.util.concurrent.Executor;
 @WorkerThread
 public class BleDiscoveryScanProvider extends DiscoveryScanProvider {
     private static final String TAG = "BleDiscoveryScanProvider";
-
-    private static final ParcelUuid CP_UUID =
-            DiscoveryAdvertisement.getParcelUuid(DiscoveryAdvertisement.FIRA_CP_SERVICE_UUID);
 
     private final Context mContext;
     private final Executor mExecutor;
@@ -147,7 +143,7 @@ public class BleDiscoveryScanProvider extends DiscoveryScanProvider {
             return;
         }
 
-        byte[] serviceData = record.getServiceData(CP_UUID);
+        byte[] serviceData = record.getServiceData(DiscoveryAdvertisement.FIRA_CP_PARCEL_UUID);
         if (serviceData == null) {
             Log.w(TAG, "Ignoring scan result. Empty ServiceData");
             return;
@@ -189,7 +185,10 @@ public class BleDiscoveryScanProvider extends DiscoveryScanProvider {
             scanFilterList = mScanInfo.scanFilters;
         }
         // Add scan filter for FiRa Connector Primary Service UUID.
-        scanFilterList.add(new ScanFilter.Builder().setServiceUuid(CP_UUID).build());
+        scanFilterList.add(
+                new ScanFilter.Builder()
+                        .setServiceUuid(DiscoveryAdvertisement.FIRA_CP_PARCEL_UUID)
+                        .build());
 
         return scanFilterList;
     }

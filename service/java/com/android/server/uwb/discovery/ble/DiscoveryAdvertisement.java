@@ -17,6 +17,7 @@ package com.android.server.uwb.discovery.ble;
 
 import android.annotation.NonNull;
 import android.annotation.Nullable;
+import android.bluetooth.BluetoothUuid;
 import android.os.ParcelUuid;
 import android.util.Log;
 import android.util.SparseArray;
@@ -43,27 +44,12 @@ public class DiscoveryAdvertisement {
     private static final String LOG_TAG = DiscoveryAdvertisement.class.getSimpleName();
 
     // The FiRa service UUID for connector primary and connector secondary as defined in Bluetooth
-    // Specification Supplement v10.
-    public static final String FIRA_CP_SERVICE_UUID = "FFF3";
-    public static final String FIRA_CS_SERVICE_UUID = "FFF4";
+    // Specification Supplement v10. Little endian encoding.
+    public static final byte[] FIRA_CP_UUID = new byte[] {(byte) 0xF3, (byte) 0xFF};
+    public static final byte[] FIRA_CS_UUID = new byte[] {(byte) 0xF4, (byte) 0xFF};
 
-    /**
-     * Generate a Parcelable wrapper around UUID.
-     *
-     * @param uuid 16-bit ID (4 characters hex) assigned by Bluetooth specification for a particular
-     *     service.
-     * @return full 128-bit {@link ParcelUuid}, else null if invalid.
-     */
-    public static ParcelUuid getParcelUuid(String uuid) {
-        if (uuid.length() != 4) {
-            throw new IllegalStateException(
-                    String.format(
-                            "Failed to getParcelUuid from UUID string %s. UUID is expected to be 4"
-                                    + " characters",
-                            uuid));
-        }
-        return ParcelUuid.fromString("0000" + uuid + "-0000-1000-8000-00805F9B34FB");
-    }
+    public static final ParcelUuid FIRA_CP_PARCEL_UUID = BluetoothUuid.parseUuidFrom(FIRA_CP_UUID);
+    public static final ParcelUuid FIRA_CS_PARCEL_UUID = BluetoothUuid.parseUuidFrom(FIRA_CS_UUID);
 
     // Mask and value of the FiRa specific field type field within each AD field.
     private static final byte FIRA_SPECIFIC_FIELD_TYPE_MASK = (byte) 0xF0;
