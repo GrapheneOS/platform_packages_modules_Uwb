@@ -46,4 +46,14 @@ public class UwbService extends SystemService {
             mImpl.initialize();
         }
     }
+
+    @Override
+    public void onUserSwitching(TargetUser from, TargetUser to) {
+        mImpl.handleUserSwitch(to.getUserHandle().getIdentifier());
+    }
+
+    @Override
+    public void onUserUnlocking(TargetUser user) {
+        mImpl.handleUserUnlock(user.getUserHandle().getIdentifier());
+    }
 }

@@ -73,6 +73,8 @@ java_library {
         "modules-utils-handlerexecutor",
         "modules-utils-preconditions",
         "guava",
+        "libprotobuf-java-lite",
+        "uwb-config-proto",
     ],
 
     apex_available: [
