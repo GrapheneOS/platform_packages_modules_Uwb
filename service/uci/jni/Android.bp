@@ -21,7 +21,8 @@ rust_defaults {
     prefer_rlib: true,
     apex_available: [
         "com.android.uwb",
-    ]
+    ],
+    host_supported: true,
 }
 
 rust_ffi_shared {
@@ -32,11 +33,29 @@ rust_ffi_shared {
 rust_test {
     name: "libuwb_uci_jni_rust_tests",
     defaults: ["libuwb_uci_jni_rust_defaults"],
-    test_suites: [
-        "general-tests",
-        "mts-uwb"
-    ],
-    test_config_template: "uwb_rust_test_config_template.xml",
+    target: {
+        android: {
+            test_suites: [
+                "general-tests",
+                "mts-uwb"
+            ],
+            test_config_template: "uwb_rust_test_config_template.xml",
+        },
+        host: {
+            test_suites: [
+                "general-tests",
+            ],
+            data_libs: [
+                "libandroid_runtime_lazy",
+                "libbase",
+                "libbinder",
+                "libbinder_ndk",
+                "libcutils",
+                "liblog",
+                "libutils",
+            ],
+        },
+    },
     // Support multilib variants (using different suffix per sub-architecture), which is needed on
     // build targets with secondary architectures, as the MTS test suite packaging logic flattens
     // all test artifacts into a single `testcases` directory.
