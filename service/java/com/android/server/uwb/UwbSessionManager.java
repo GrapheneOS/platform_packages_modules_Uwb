@@ -78,6 +78,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     private static final int SESSION_STOP_RANGING = 3;
     private static final int SESSION_RECONFIG_RANGING = 4;
     private static final int SESSION_CLOSE = 5;
+    private static final int SESSION_ON_DEINIT = 6;
 
     // TODO: don't expose the internal field for testing.
     @VisibleForTesting
@@ -179,6 +180,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                     //mSessionNotificationManager.onRangingReconfigureFailed(
                     //      uwbSession, reasonCode);
                 }
+                break;
+            case UwbUciConstants.UWB_SESSION_STATE_DEINIT:
+                mEventTask.execute(SESSION_ON_DEINIT, uwbSession);
                 break;
             default:
                 break;
@@ -383,14 +387,23 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         Log.d(TAG, "deinitAllSession()");
         for (Map.Entry<Integer, UwbSession> sessionEntry : mSessionTable.entrySet()) {
             UwbSession uwbSession = sessionEntry.getValue();
-            mSessionNotificationManager.onRangingClosedWithApiReasonCode(uwbSession,
-                    RangingChangeReason.SYSTEM_POLICY);
-            mUwbMetrics.logRangingCloseEvent(uwbSession, UwbUciConstants.STATUS_CODE_OK);
-            removeSession(uwbSession);
+            onDeInit(uwbSession);
         }
 
         // Not resetting chip on UWB toggle off.
         // mNativeUwbManager.resetDevice(UwbUciConstants.UWBS_RESET);
+    }
+
+    public synchronized void onDeInit(UwbSession uwbSession) {
+        if (!isExistedSession(uwbSession.getSessionId())) {
+            Log.i(TAG, "onDeinit - Ignoring already deleted session " + uwbSession.getSessionId());
+            return;
+        }
+        Log.d(TAG, "onDeinit: " + uwbSession.getSessionId());
+        mSessionNotificationManager.onRangingClosedWithApiReasonCode(uwbSession,
+                RangingChangeReason.SYSTEM_POLICY);
+        mUwbMetrics.logRangingCloseEvent(uwbSession, UwbUciConstants.STATUS_CODE_OK);
+        removeSession(uwbSession);
     }
 
     public void setCurrentSessionState(int sessionId, int state) {
@@ -473,6 +486,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 case SESSION_CLOSE: {
                     UwbSession uwbSession = (UwbSession) msg.obj;
                     close(uwbSession);
+                    break;
+                }
+
+                case SESSION_ON_DEINIT : {
+                    UwbSession uwbSession = (UwbSession) msg.obj;
+                    onDeInit(uwbSession);
                     break;
                 }
 
