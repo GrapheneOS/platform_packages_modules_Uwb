@@ -1411,6 +1411,23 @@ public class UwbSessionManagerTest {
         assertThat(mUwbSessionManager.getSessionCount()).isEqualTo(0);
     }
 
+    @Test
+    public void onSessionStatusNotification_session_deinit() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        when(mNativeUwbManager.deInitSession(TEST_SESSION_ID))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.onSessionStatusNotificationReceived(
+                uwbSession.getSessionId(), UwbUciConstants.UWB_SESSION_STATE_DEINIT,
+                UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS);
+        mTestLooper.dispatchNext();
+
+        verify(mUwbSessionNotificationManager).onRangingClosedWithApiReasonCode(
+                eq(uwbSession), eq(RangingChangeReason.SYSTEM_POLICY));
+        verify(mUwbMetrics).logRangingCloseEvent(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
+        assertThat(mUwbSessionManager.getSessionCount()).isEqualTo(0);
+    }
 
     @Test
     public void testHandleClientDeath() throws Exception {
