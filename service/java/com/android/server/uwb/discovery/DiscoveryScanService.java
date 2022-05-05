@@ -49,7 +49,7 @@ public class DiscoveryScanService {
                                 attributionSource,
                                 context,
                                 executor,
-                                discoveryInfo.scanInfo,
+                                discoveryInfo.scanInfo.get(),
                                 discoveryScanCallback);
                 break;
             default:

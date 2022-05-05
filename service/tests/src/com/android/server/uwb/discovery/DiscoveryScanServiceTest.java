@@ -48,6 +48,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.concurrent.Executor;
 
 /**
@@ -61,7 +62,11 @@ public class DiscoveryScanServiceTest {
     private static final DiscoveryInfo DISCOVERY_INFO =
             new DiscoveryInfo(
                     TransportType.BLE,
-                    new ScanInfo(new ArrayList<ScanFilter>(), new ScanSettings.Builder().build()));
+                    Optional.of(
+                            new ScanInfo(
+                                    new ArrayList<ScanFilter>(),
+                                    new ScanSettings.Builder().build())),
+                    Optional.empty());
 
     @Mock AttributionSource mMockAttributionSource;
     @Mock Context mMockContext;

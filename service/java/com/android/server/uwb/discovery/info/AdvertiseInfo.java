@@ -15,30 +15,24 @@
  */
 package com.android.server.uwb.discovery.info;
 
-import java.util.Optional;
+import android.bluetooth.le.AdvertisingSetParameters;
+
+import com.android.server.uwb.discovery.ble.DiscoveryAdvertisement;
 
 /**
- * Holds information about the discovery request.
+ * Holds information about the discovery advertise request.
  */
-public class DiscoveryInfo {
+public class AdvertiseInfo {
 
-    public DiscoveryInfo(
-            TransportType transportType,
-            Optional<ScanInfo> scanInfo,
-            Optional<AdvertiseInfo> advertiseInfo) {
-        this.transportType = transportType;
-        this.scanInfo = scanInfo;
-        this.advertiseInfo = advertiseInfo;
+    public AdvertiseInfo(
+            AdvertisingSetParameters advertisingSetParameters,
+            DiscoveryAdvertisement discoveryAdvertisement) {
+        this.advertisingSetParameters = advertisingSetParameters;
+        this.discoveryAdvertisement = discoveryAdvertisement;
     }
 
-    /** A definition of discovery transport type. */
-    public enum TransportType {
-        BLE,
-    }
+    /** BLE advertise parameters */
+    public final AdvertisingSetParameters advertisingSetParameters;
 
-    public final TransportType transportType;
-
-    public final Optional<ScanInfo> scanInfo;
-
-    public final Optional<AdvertiseInfo> advertiseInfo;
+    public final DiscoveryAdvertisement discoveryAdvertisement;
 }

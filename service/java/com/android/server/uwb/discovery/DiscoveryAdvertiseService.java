@@ -22,6 +22,7 @@ import android.util.Log;
 import androidx.annotation.WorkerThread;
 
 import com.android.server.uwb.discovery.DiscoveryAdvertiseProvider.DiscoveryAdvertiseCallback;
+import com.android.server.uwb.discovery.ble.BleDiscoveryAdvertiseProvider;
 import com.android.server.uwb.discovery.info.DiscoveryInfo;
 
 import java.util.concurrent.Executor;
@@ -43,7 +44,13 @@ public class DiscoveryAdvertiseService {
 
         switch (discoveryInfo.transportType) {
             case BLE:
-                mDiscoveryAdvertiseProvider = null;
+                mDiscoveryAdvertiseProvider =
+                        new BleDiscoveryAdvertiseProvider(
+                                attributionSource,
+                                context,
+                                executor,
+                                discoveryInfo.advertiseInfo.get(),
+                                discoveryAdvertiseCallback);
                 break;
             default:
                 throw new AssertionError(

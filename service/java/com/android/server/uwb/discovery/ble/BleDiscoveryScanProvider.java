@@ -16,7 +16,6 @@
 package com.android.server.uwb.discovery.ble;
 
 import android.annotation.Nullable;
-import android.annotation.RequiresPermission;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
@@ -88,7 +87,6 @@ public class BleDiscoveryScanProvider extends DiscoveryScanProvider {
         mBluetoothManager = mContext.getSystemService(BluetoothManager.class);
     }
 
-    @RequiresPermission(allOf = {android.Manifest.permission.BLUETOOTH_SCAN})
     @Override
     public boolean startScan() {
         BluetoothLeScanner scanner = getBleScanner();
@@ -108,7 +106,6 @@ public class BleDiscoveryScanProvider extends DiscoveryScanProvider {
         return true;
     }
 
-    @RequiresPermission(allOf = {android.Manifest.permission.BLUETOOTH_SCAN})
     @Override
     public boolean stopScan() {
         BluetoothLeScanner scanner = getBleScanner();
