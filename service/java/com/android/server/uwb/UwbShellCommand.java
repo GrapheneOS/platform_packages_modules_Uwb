@@ -349,6 +349,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         FiraOpenSessionParams.Builder builder =
                 new FiraOpenSessionParams.Builder(DEFAULT_FIRA_OPEN_SESSION_PARAMS);
         boolean shouldBlockCall = false;
+        boolean interleavingEnabled = false;
+        boolean aoaResultReqEnabled = false;
         String option = getNextOption();
         while (option != null) {
             if (option.equals("-b")) {
@@ -431,6 +433,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                         numOfRangeMsrmts,
                         numOfAoaAzimuthMrmts,
                         numOfAoaElevationMrmts);
+                interleavingEnabled = true;
             }
             if (option.equals("-e")) {
                 String aoaType = getNextArgRequired();
@@ -447,8 +450,13 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 } else {
                     throw new IllegalArgumentException("Unknown aoa type: " + aoaType);
                 }
+                aoaResultReqEnabled = true;
             }
             option = getNextOption();
+        }
+        if (aoaResultReqEnabled && interleavingEnabled) {
+            throw new IllegalArgumentException(
+                    "Both interleaving (-z) and aoa result req (-e) cannot be specified");
         }
         // TODO: Add remaining params if needed.
         return Pair.create(builder.build(), shouldBlockCall);
