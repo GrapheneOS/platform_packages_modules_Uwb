@@ -268,6 +268,15 @@ public class UwbShellCommandTest {
                 openSessionParamsBuilder.build());
     }
 
+    @Test
+    public void testStartFiraRangingWithBothInterleavingAndAoaResultReq() throws Exception {
+        // Both AOA result req and interleaving are not allowed in the same command.
+        assertThat(mUwbShellCommand.exec(
+                new Binder(), new FileDescriptor(), new FileDescriptor(), new FileDescriptor(),
+                new String[]{"start-fira-ranging-session", "-i", "5", "-z", "4,5,6", "-e",
+                        "enabled"})).isEqualTo(-1);
+    }
+
     private RangingMeasurement getRangingMeasurement() {
         return new RangingMeasurement.Builder()
                 .setStatus(RangingMeasurement.RANGING_STATUS_SUCCESS)
