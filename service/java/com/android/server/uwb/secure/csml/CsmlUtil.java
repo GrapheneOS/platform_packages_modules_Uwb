@@ -23,12 +23,15 @@ import androidx.annotation.NonNull;
 
 import com.android.server.uwb.secure.iso7816.TlvDatum;
 import com.android.server.uwb.secure.iso7816.TlvDatum.Tag;
+import com.android.server.uwb.secure.iso7816.TlvParser;
 import com.android.server.uwb.util.ObjectIdentifier;
 
 import com.google.common.primitives.Bytes;
 
+import java.util.Objects;
+
 /**
- * Utils created for working with {@link AtomicFile}.
+ * Utils used by the FiRa CSML related modules.
  */
 public final class CsmlUtil {
     private CsmlUtil() {}
@@ -39,6 +42,24 @@ public final class CsmlUtil {
     // FiRa CSML 8.2.2.7.1.4
     private static final Tag TERMINATE_SESSION_DO_TAG = new Tag((byte) 0x80);
     private static final Tag TERMINATE_SESSION_TOP_DO_TAG = new Tag((byte) 0xBF, (byte) 0x79);
+
+    public static final Tag UWB_CONFIG_AVAILABLE_TAG = new Tag((byte) 0x87);
+
+    /**
+     * Check if the data represents the session data is not available,
+     * which defined as 'UWB config is unavailable in the CSML.
+     * @param data the single TLV data.
+     * @return true the session data is not available, false otherwise.
+     */
+    public static boolean isSessionDataNotAvailable(@NonNull byte[] data) {
+        TlvDatum tlvDatum = TlvParser.parseOneTlv(data);
+        if (tlvDatum != null
+                && Objects.equals(tlvDatum.tag, CsmlUtil.UWB_CONFIG_AVAILABLE_TAG)
+                && Objects.deepEquals(tlvDatum.value, new byte[]{(byte) 0x00})) {
+            return true;
+        }
+        return false;
+    }
 
     /**
      * Encode the {@link ObjectIdentifier} as TLV format, which is used as the payload of TlvDatum

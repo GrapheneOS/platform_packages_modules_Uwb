@@ -25,6 +25,8 @@ import java.util.Arrays;
  * ObjectIdentifier for ADF OID.
  */
 public class ObjectIdentifier {
+    public static final ObjectIdentifier INVALID_OID =
+            ObjectIdentifier.fromBytes(new byte[] {(byte) 0});
     public final byte[] value;
 
     private ObjectIdentifier(@NonNull byte[] value) {
