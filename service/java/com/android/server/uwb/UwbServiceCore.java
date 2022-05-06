@@ -98,6 +98,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     private /* @UwbManager.AdapterStateCallback.State */ int mState;
     private @StateChangeReason int mLastStateChangedReason;
     private  IUwbVendorUciCallback mCallBack = null;
+    private final Handler mHandler;
 
     public UwbServiceCore(Context uwbApplicationContext, NativeUwbManager nativeUwbManager,
             UwbMetrics uwbMetrics, UwbCountryCode uwbCountryCode,
@@ -124,6 +125,11 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         updateState(AdapterStateCallback.STATE_DISABLED, StateChangeReason.SYSTEM_BOOT);
 
         mEnableDisableTask = new EnableDisableTask(serviceLooper);
+        mHandler = new Handler(serviceLooper);
+    }
+
+    public Handler getHandler() {
+        return mHandler;
     }
 
     private void updateState(int state, int reason) {
