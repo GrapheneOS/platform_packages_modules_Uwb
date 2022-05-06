@@ -269,7 +269,6 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     public PersistableBundle addServiceProfile(@NonNull PersistableBundle parameters) {
         enforceUwbPrivilegedPermission();
         ServiceProfile serviceProfile = ServiceProfile.fromBundle(parameters);
-        //TODO Use handler to post the events
         Optional<UUID> serviceInstanceID = mUwbInjector
                 .getProfileManager()
                 .addServiceProfile(serviceProfile.getServiceID());
@@ -377,14 +376,16 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     }
 
     public void handleUserSwitch(int userId) {
-        //TODO : Fix threading model here, handle race condition
-        Log.d(TAG, "Handle user switch " + userId);
-        mUwbInjector.getUwbConfigStore().handleUserSwitch(userId);
+        mUwbServiceCore.getHandler().post(() -> {
+            Log.d(TAG, "Handle user switch " + userId);
+            mUwbInjector.getUwbConfigStore().handleUserSwitch(userId);
+        });
     }
 
     public void handleUserUnlock(int userId) {
-        //TODO : Fix threading model here, handle race condition
-        Log.d(TAG, "Handle user unlock " + userId);
-        mUwbInjector.getUwbConfigStore().handleUserUnlock(userId);
+        mUwbServiceCore.getHandler().post(() -> {
+            Log.d(TAG, "Handle user unlock " + userId);
+            mUwbInjector.getUwbConfigStore().handleUserUnlock(userId);
+        });
     }
 }
