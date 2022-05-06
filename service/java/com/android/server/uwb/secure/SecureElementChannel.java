@@ -150,7 +150,7 @@ public class SecureElementChannel {
      * Transmits a Command APDU defined by the FiRa to the FiRa applet.
      */
     @NonNull
-    public ResponseApdu transmit(FiRaCommand fiRaCommand) throws IOException {
+    public ResponseApdu transmit(@NonNull FiRaCommand fiRaCommand) throws IOException {
         return transmit(fiRaCommand.getCommandApdu());
     }
 
@@ -158,7 +158,7 @@ public class SecureElementChannel {
      * Transmits a Command APDU to FiRa applet.
      */
     @NonNull
-    public ResponseApdu transmit(CommandApdu command)
+    public ResponseApdu transmit(@NonNull CommandApdu command)
             throws IOException {
         ResponseApdu responseApdu = ResponseApdu.fromStatusWord(SW_TEMPORARILY_UNAVAILABLE);
 
@@ -189,11 +189,11 @@ public class SecureElementChannel {
         }
     }
 
-    private void logw(String log) {
-        Log.w(LOG_TAG, log);
+    private void logw(String dbgMsg) {
+        Log.w(LOG_TAG, dbgMsg);
     }
 
-    private void loge(String log) {
-        Log.e(LOG_TAG, log);
+    private void loge(String dbgMsg) {
+        Log.e(LOG_TAG, dbgMsg);
     }
 }
