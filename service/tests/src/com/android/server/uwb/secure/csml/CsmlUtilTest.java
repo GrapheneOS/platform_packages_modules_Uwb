@@ -62,4 +62,24 @@ public class CsmlUtilTest {
         assertThat(actual).isEqualTo(expected);
     }
 
+    @Test
+    public void isSessionDataNotAvailableTrue() {
+        TlvDatum tlvDatum = new TlvDatum(
+                CsmlUtil.UWB_CONFIG_AVAILABLE_TAG, new byte[] { (byte) 0x00 });
+
+        boolean result = CsmlUtil.isSessionDataNotAvailable(tlvDatum.toBytes());
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    public void isSessionDataNotAvailableFalse() {
+        TlvDatum tlvDatum = new TlvDatum(
+                CsmlUtil.UWB_CONFIG_AVAILABLE_TAG, new byte[] { (byte) 0x01 });
+
+        boolean result = CsmlUtil.isSessionDataNotAvailable(tlvDatum.toBytes());
+
+        assertThat(result).isFalse();
+    }
+
 }
