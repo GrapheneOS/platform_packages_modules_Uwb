@@ -131,7 +131,7 @@ java_defaults {
 // defaults for CTS tests that need to build against framework-uwb's @hide APIs
 java_defaults {
     name: "framework-uwb-cts-defaults",
-    sdk_version: "core_Tiramisu",
+    sdk_version: "core_current",
     libs: [
         // order matters: classes in framework-uwb are resolved before framework, meaning
         // @hide APIs in framework-uwb are resolved before @SystemApi stubs in framework
