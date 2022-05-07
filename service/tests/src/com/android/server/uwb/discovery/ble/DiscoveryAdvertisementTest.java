@@ -18,6 +18,8 @@ package com.android.server.uwb.discovery.ble;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.util.SparseArray;
+
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
@@ -46,7 +48,6 @@ public class DiscoveryAdvertisementTest {
 
     private static final byte[] BYTES =
             new byte[] {
-                0x20, 0x16, (byte) 0xF4, (byte) 0xFF,
                 // UwbIndicationData
                 0x14, (byte) 0b11101001, (byte) 0x9C, (byte) 0xF1, 0x11,
                 // RegulatoryInfo
@@ -58,7 +59,6 @@ public class DiscoveryAdvertisementTest {
                 // VendorSpecificData
                 0x25, 0x75, 0x00, 0x10, (byte) 0xFF, 0x00,
             };
-    private static final String SERVICE_UUID = "FFF4";
     private static final byte[] UWB_INDICATION_DATA_BYTES =
             new byte[] {(byte) 0b11101001, (byte) 0x9C, (byte) 0xF1, 0x11};
     private static final byte[] VENDOR_SPECIFIC_DATA_BYTES =
@@ -66,10 +66,8 @@ public class DiscoveryAdvertisementTest {
     private static final byte[] REGULATORY_INFO_BYTES =
             new byte[] {0x41, 0x55, 0x53, 0x62, 0x1E, 0x3B, 0x7F, (byte) 0xD8, (byte) 0x9F};
     private static final byte[] FIRA_PROFILE_SUPPORT_INFO_BYTES = new byte[] {0x1};
-    private static final byte[] MIN_BYTES = new byte[] {0x03, 0x16, (byte) 0xF3, (byte) 0xFF};
     private static final byte[] BYTES_NO_VENDOR =
             new byte[] {
-                0x14, 0x16, (byte) 0xF4, (byte) 0xFF,
                 // UwbIndicationData
                 0x14, (byte) 0b11101001, (byte) 0x9C, (byte) 0xF1, 0x11,
                 // RegulatoryInfo
@@ -80,7 +78,6 @@ public class DiscoveryAdvertisementTest {
 
     private static final DiscoveryAdvertisement ADVERTISEMENT =
             new DiscoveryAdvertisement(
-                    DiscoveryAdvertisement.FIRA_CS_SERVICE_UUID,
                     new UwbIndicationData(
                             /*firaUwbSupport=*/ true,
                             /*iso14443Support=*/ true,
@@ -113,48 +110,23 @@ public class DiscoveryAdvertisementTest {
                     new FiraProfileSupportInfo(new FiraProfile[] {FiraProfile.PACS}),
                     new VendorSpecificData[] {
                         new VendorSpecificData(
-                                /*firstChannel=*/ 117, new byte[] {0x10, (byte) 0xFF, 0x00}),
+                                /*vendorId=*/ 117, new byte[] {0x10, (byte) 0xFF, 0x00}),
                         new VendorSpecificData(
-                                /*firstChannel=*/ 117, new byte[] {0x10, (byte) 0xFF, 0x00}),
+                                /*vendorId=*/ 117, new byte[] {0x10, (byte) 0xFF, 0x00}),
                     });
 
     @Test
     public void fromBytes_emptyData() {
         assertThat(DiscoveryAdvertisement.fromBytes(new byte[] {}, null)).isNull();
-    }
-
-    @Test
-    public void fromBytes_dataTooShort() {
-        assertThat(DiscoveryAdvertisement.fromBytes(new byte[] {0x0, 0x1, 0x2}, null)).isNull();
-    }
-
-    @Test
-    public void fromBytes_unmatedDataSize() {
-        // Specified data size is 0xF1, actual size is 8.
-        byte[] bytes = new byte[] {(byte) 0xF1, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
-        assertThat(DiscoveryAdvertisement.fromBytes(bytes, null)).isNull();
-    }
-
-    @Test
-    public void fromBytes_invalidDataType() {
-        // Specified data type is 0x55, expect 0x16.
-        byte[] bytes = new byte[] {0x08, 0x55, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
-        assertThat(DiscoveryAdvertisement.fromBytes(bytes, null)).isNull();
-    }
-
-    @Test
-    public void fromBytes_invalidServiceUuid() {
-        // Specified service uuid is 0xFFFF, expect 0xFFF3 or 0xFFF4.
-        byte[] bytes =
-                new byte[] {0x08, 0x16, (byte) 0xFF, (byte) 0xFF, 0x01, 0x01, 0x01, 0x01, 0x01};
-        assertThat(DiscoveryAdvertisement.fromBytes(bytes, null)).isNull();
+        assertThat(DiscoveryAdvertisement.fromBytes(null, new SparseArray<byte[]>())).isNull();
+        assertThat(DiscoveryAdvertisement.fromBytes(null, null)).isNull();
     }
 
     @Test
     public void fromBytes_dataEndedUnexpectedly() {
         // Specified field size is 0xF, actual size is 4.
         byte[] bytes =
-                new byte[] {0x08, 0x16, (byte) 0xF3, (byte) 0xFF, 0x1F, 0x01, 0x01, 0x01, 0x01};
+                new byte[] {0x1F, 0x01, 0x01, 0x01, 0x01};
         assertThat(DiscoveryAdvertisement.fromBytes(bytes, null)).isNull();
     }
 
@@ -162,26 +134,19 @@ public class DiscoveryAdvertisementTest {
     public void fromBytes_invalidFieldType() {
         // Specified field type is 0x9, expect 1-4
         byte[] bytes =
-                new byte[] {
-                    0x08, 0x16, (byte) 0xF3, (byte) 0xFF, (byte) 0x94, 0x01, 0x01, 0x01, 0x01
-                };
+                new byte[] {(byte) 0x94, 0x01, 0x01, 0x01, 0x01};
         assertThat(DiscoveryAdvertisement.fromBytes(bytes, null)).isNull();
     }
 
     @Test
     public void fromBytes_vendorSpecificDataExistedInBothAd() {
-        // Specified service uuid is 0xFFFF, expect 0xFFF3 or 0xFFF4.
+        // Vendor specific data should only be added to advertisement if not provided in the
+        // manufacture data.
         byte[] bytes =
-                new byte[] {0x08, 0x16, (byte) 0xF3, (byte) 0xFF, 0x24, 0x75, 0x00, 0x10, 0x20};
-        byte[] vendor_bytes = new byte[] {0x23, 0x75, 0x00, 0x10};
-        assertThat(DiscoveryAdvertisement.fromBytes(bytes, vendor_bytes)).isNull();
-    }
-
-    @Test
-    public void fromBytes_vendorSpecificDataEndedUnexpectedly() {
-        // Specified vendor data size is 0x4, actual size is 3.
-        byte[] vendor_bytes = new byte[] {0x24, 0x75, 0x00, 0x10};
-        assertThat(DiscoveryAdvertisement.fromBytes(MIN_BYTES, vendor_bytes)).isNull();
+                new byte[] {0x24, 0x75, 0x00, 0x10, 0x20};
+        SparseArray<byte[]> vendorBytes = new SparseArray<byte[]>();
+        vendorBytes.put(1, new byte[] {0x23, 0x75, 0x00, 0x10});
+        assertThat(DiscoveryAdvertisement.fromBytes(bytes, vendorBytes)).isNull();
     }
 
     @Test
@@ -189,7 +154,6 @@ public class DiscoveryAdvertisementTest {
         DiscoveryAdvertisement adv = DiscoveryAdvertisement.fromBytes(BYTES, null);
         assertThat(adv).isNotNull();
 
-        assertThat(adv.serviceUuid).isEqualTo(SERVICE_UUID);
         assertThat(UwbIndicationData.toBytes(adv.uwbIndicationData))
                 .isEqualTo(UWB_INDICATION_DATA_BYTES);
         assertThat(RegulatoryInfo.toBytes(adv.regulatoryInfo)).isEqualTo(REGULATORY_INFO_BYTES);
@@ -200,9 +164,7 @@ public class DiscoveryAdvertisementTest {
                 .isEqualTo(VENDOR_SPECIFIC_DATA_BYTES);
 
         final String expectedString =
-                "DiscoveryAdvertisement: serviceUuid="
-                        + adv.serviceUuid
-                        + " uwbIndicationData={"
+                "DiscoveryAdvertisement: uwbIndicationData={"
                         + adv.uwbIndicationData
                         + "} regulatoryInfo={"
                         + adv.regulatoryInfo
@@ -239,13 +201,5 @@ public class DiscoveryAdvertisementTest {
         byte[] result = DiscoveryAdvertisement.getManufacturerSpecificDataInBytes(ADVERTISEMENT);
         byte[] expected = new byte[] {0x25, 0x75, 0x00, 0x10, (byte) 0xFF, 0x00};
         assertThat(result).isEqualTo(expected);
-    }
-
-    @Test
-    public void getManufacturerSpecificDataInBytes_noData() {
-        DiscoveryAdvertisement adv = DiscoveryAdvertisement.fromBytes(MIN_BYTES, null);
-        assertThat(adv).isNotNull();
-
-        assertThat(DiscoveryAdvertisement.getManufacturerSpecificDataInBytes(adv)).isNull();
     }
 }

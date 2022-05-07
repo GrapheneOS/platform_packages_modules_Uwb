@@ -479,6 +479,9 @@ public final class UwbManager {
      *     negotiation.
      *   - Secure element interactions needed for dynamic STS based session establishment.
      *   - Setup the UWB session based on the parameters negotiated via OOB.
+     *   - Note: The OOB flow requires additional BLE Permissions
+     *     {permission.BLUETOOTH_ADVERTISE/permission.BLUETOOTH_SCAN
+     *      and permission.BLUETOOTH_CONNECT}.
      *
      * <p>If a session cannot be opened, then
      * {@link RangingSession.Callback#onClosed(int, PersistableBundle)} will be invoked with the

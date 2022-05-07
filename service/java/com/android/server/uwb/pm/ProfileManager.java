@@ -117,7 +117,7 @@ public class ProfileManager {
             mAppServiceProfileMap.put(app_uid, appServiceProfileList);
         }
         mHasNewDataToSerialize = true;
-        mUwbConfigStore.saveToStore(true);
+        mHandler.post(() -> mUwbConfigStore.saveToStore(true));
         return Optional.of(serviceInstanceID);
     }
 
@@ -138,7 +138,7 @@ public class ProfileManager {
                 }
             }
         }
-        mUwbConfigStore.saveToStore(true);
+        mHandler.post(() -> mUwbConfigStore.saveToStore(true));
     }
 
     public void loadServiceProfile(Map<UUID, ServiceProfileInfo> serviceProfileDataMap) {
