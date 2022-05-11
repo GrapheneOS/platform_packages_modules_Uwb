@@ -80,6 +80,16 @@ public abstract class InitiatorSession extends SecureSession {
 
     @Override
     protected void handleDispatchResponse(@NonNull DispatchResponse dispatchResponse) {
+        for (DispatchResponse.Notification notification : dispatchResponse.notifications) {
+            switch (notification.notificationEventId) {
+                case NOTIFICATION_EVENT_ID_SECURE_SESSION_ABORTED:
+                    mFiRaSecureChannel.cleanUpTerminatedOrAbortedSession();
+                    mSessionCallback.onSessionAborted();
+                    return;
+                default:
+                    // do nothing, continue.
+            }
+        }
         if (!mPendingTunnelRequests.isEmpty()) {
             TunnelMessageRequest request = mPendingTunnelRequests.peekFirst();
             if (handleTunnelDataResponseReceived(request.mMsgId, dispatchResponse)) {
@@ -100,17 +110,7 @@ public abstract class InitiatorSession extends SecureSession {
                 onUnsolicitedDataToHostReceived(outboundData.get().data);
             }
         }
-        for (DispatchResponse.Notification notification : dispatchResponse.notifications) {
-            switch (notification.notificationEventId) {
-                case NOTIFICATION_EVENT_ID_SECURE_SESSION_ABORTED:
-                    mFiRaSecureChannel.cleanUpTerminatedOrAbortedSession();
-                    break;
-                default:
-                    logw("Unexpected notification from dispatch response: "
-                            + notification.notificationEventId);
-                    break;
-            }
-        }
+
     }
 
     protected void onUnsolicitedDataToHostReceived(@NonNull byte[] data) {
@@ -121,6 +121,7 @@ public abstract class InitiatorSession extends SecureSession {
      * tunnel terminate cmd to the remote device if the session is terminated manually.
      */
     private void terminateRemoteSession() {
+        logd("send terminate session to remote device.");
         TlvDatum terminateSessionDo = CsmlUtil.constructTerminateSessionGetDoTlv();
         GetDoCommand getDoCommand =
                 GetDoCommand.build(terminateSessionDo);
@@ -146,7 +147,7 @@ public abstract class InitiatorSession extends SecureSession {
                     @Override
                     public void onSuccess() {
                         TunnelMessageRequest tunnelMessageRequest =
-                                new TunnelMessageRequest(msgId, data);
+                                new TunnelMessageRequest(msgId);
                         mPendingTunnelRequests.addLast(tunnelMessageRequest);
                         logd("message: " + msgId + " is send out, waiting for response.");
                         mWorkHandler.postDelayed(
@@ -173,12 +174,10 @@ public abstract class InitiatorSession extends SecureSession {
 
     private class TunnelMessageRequest {
         private final int mMsgId;
-        private final byte[] mData;
         private final Runnable mTimeoutRunnable;
 
-        TunnelMessageRequest(int msgId, @NonNull byte[] data) {
+        TunnelMessageRequest(int msgId) {
             this.mMsgId = msgId;
-            this.mData = data;
             mTimeoutRunnable = () -> {
                 logd("tunnel data timeout for msg: " + msgId);
                 if (mPendingTunnelRequests.isEmpty()) {
