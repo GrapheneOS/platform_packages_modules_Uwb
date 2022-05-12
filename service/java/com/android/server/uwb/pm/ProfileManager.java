@@ -25,6 +25,7 @@ import com.android.server.uwb.UwbConfigStore;
 import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.data.ServiceProfileData;
 import com.android.server.uwb.data.ServiceProfileData.ServiceProfileInfo;
+import com.android.server.uwb.data.UwbUciConstants;
 
 import com.google.uwb.support.fira.FiraParams.ServiceID;
 
@@ -121,7 +122,8 @@ public class ProfileManager {
         return Optional.of(serviceInstanceID);
     }
 
-    public void removeServiceProfile(UUID serviceInstanceID) {
+    /** Remove existing service profile from profile manager */
+    public int removeServiceProfile(UUID serviceInstanceID) {
         int app_uid = Binder.getCallingUid();
         if (mServiceProfileMap.containsKey(serviceInstanceID)) {
             ServiceProfileInfo serviceProfileInfo = mServiceProfileMap.get(serviceInstanceID);
@@ -138,7 +140,11 @@ public class ProfileManager {
                 }
             }
         }
+        else {
+            return UwbUciConstants.STATUS_CODE_FAILED;
+        }
         mHandler.post(() -> mUwbConfigStore.saveToStore(true));
+        return UwbUciConstants.STATUS_CODE_OK;
     }
 
     public void loadServiceProfile(Map<UUID, ServiceProfileInfo> serviceProfileDataMap) {
