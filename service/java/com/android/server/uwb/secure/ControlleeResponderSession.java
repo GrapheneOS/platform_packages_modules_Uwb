@@ -56,7 +56,7 @@ public class ControlleeResponderSession extends ResponderSession {
                             (DispatchResponse.RdsAvailableNotification) notification;
                     break;
                 default:
-                    logw("Unexpected nofitication from dispatch response: "
+                    logw("Unexpected notification from dispatch response: "
                             + notification.notificationEventId);
             }
         }
