@@ -201,6 +201,7 @@ public class DispatchResponse extends FiRaResponse {
         Map<Tag, List<TlvDatum>> proprietaryTlvsMap = TlvParser.parseTlvs(responseApdu);
         List<TlvDatum> proprietaryTlv = proprietaryTlvsMap.get(PROPRIETARY_RESPONSE_TAG);
         if (proprietaryTlv == null || proprietaryTlv.size() == 0) {
+            logw("no valid dispatch response, root tag is empty.");
             return;
         }
 
@@ -210,8 +211,7 @@ public class DispatchResponse extends FiRaResponse {
 
         List<TlvDatum> statusTlvs = tlvsMap.get(STATUS_TAG);
         if (statusTlvs == null || statusTlvs.size() == 0) {
-            // no status attached.
-            // TODO: must have status according to the FiRa spec.
+            logw("no status tag is attached, required by FiRa");
             return;
         }
         mTransactionStatus = parseTransctionStatus(statusTlvs.get(0).value);
@@ -389,5 +389,9 @@ public class DispatchResponse extends FiRaResponse {
             this.target = target;
             this.data = data;
         }
+    }
+
+    private void logw(@NonNull String dbgMsg) {
+        android.util.Log.d("DispatchResponse", dbgMsg);
     }
 }
