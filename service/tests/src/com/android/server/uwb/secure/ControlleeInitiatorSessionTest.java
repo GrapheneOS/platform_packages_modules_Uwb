@@ -24,7 +24,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import android.content.Context;
 import android.os.test.TestLooper;
 
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
@@ -55,11 +54,8 @@ public class ControlleeInitiatorSessionTest {
 
     private ControlleeInitiatorSession mControlleeInitiatorSession;
 
-    @Mock
-    private Context mContext;
-
-
     private final TestLooper mTestLooper = new TestLooper();
+
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);

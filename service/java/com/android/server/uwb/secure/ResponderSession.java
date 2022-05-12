@@ -58,9 +58,24 @@ public abstract class ResponderSession extends SecureSession {
 
     @Override
     protected final void handleDispatchResponse(@NonNull DispatchResponse dispatchResponse) {
+        // once session is aborted, nothing else in the response.
+        for (DispatchResponse.Notification notification : dispatchResponse.notifications) {
+            switch (notification.notificationEventId) {
+                case NOTIFICATION_EVENT_ID_SECURE_SESSION_ABORTED:
+                    mFiRaSecureChannel.cleanUpTerminatedOrAbortedSession();
+                    mSessionCallback.onSessionAborted();
+                    return;
+                default:
+                    logw("Unexpected notification from dispatch response: "
+                            + notification.notificationEventId);
+                    break;
+            }
+        }
+
         Optional<DispatchResponse.OutboundData> outboundData = dispatchResponse.getOutboundData();
         if (outboundData.isPresent()
                 && outboundData.get().target == DispatchResponse.OUTBOUND_TARGET_REMOTE) {
+            logd("send response back to remote.");
             mFiRaSecureChannel.sendRawDataToRemote(outboundData.get().data);
         }
         if (onDispatchResponseReceived(dispatchResponse)) {
@@ -70,17 +85,6 @@ public abstract class ResponderSession extends SecureSession {
         if (outboundData.isPresent()
                 && outboundData.get().target == DispatchResponse.OUTBOUND_TARGET_HOST) {
             onUnsolicitedDataToHostReceived(outboundData.get().data);
-        }
-        for (DispatchResponse.Notification notification : dispatchResponse.notifications) {
-            switch (notification.notificationEventId) {
-                case NOTIFICATION_EVENT_ID_SECURE_SESSION_ABORTED:
-                    mFiRaSecureChannel.cleanUpTerminatedOrAbortedSession();
-                    break;
-                default:
-                    logw("Unexpected notification from dispatch response: "
-                            + notification.notificationEventId);
-                    break;
-            }
         }
     }
 
@@ -93,6 +97,10 @@ public abstract class ResponderSession extends SecureSession {
     @Override
     public final void terminateSession() {
         mWorkHandler.post(() -> mFiRaSecureChannel.terminateLocally());
+    }
+
+    private void logd(@NonNull String dbgMsg) {
+        Log.d(LOG_TAG, dbgMsg);
     }
 
     private void logw(@NonNull String dbgMsg) {
