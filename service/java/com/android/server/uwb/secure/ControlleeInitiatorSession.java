@@ -53,6 +53,7 @@ public class ControlleeInitiatorSession extends InitiatorSession {
     }
 
     private void sendGetControlleeSessionData() {
+        logd("send get controllee session data msg.");
         // TODO: construct data
         byte[] data = new byte[]{(byte) 0x0C, (byte) 0x0D};
         tunnelData(MSG_ID_GET_SESSION_DATA, data);
@@ -81,15 +82,21 @@ public class ControlleeInitiatorSession extends InitiatorSession {
     private boolean handlePutControlleeInfoResponse(@NonNull DispatchResponse dispatchResponse) {
         if (dispatchResponse.getOutboundData().isPresent()) {
             DispatchResponse.OutboundData outboundData = dispatchResponse.getOutboundData().get();
-            if (outboundData.target == OUTBOUND_TARGET_HOST) {
+            if (outboundData.target == OUTBOUND_TARGET_HOST && outboundData.data != null
+                    && outboundData.data.length < 5) {
                 StatusWord statusWord = StatusWord.fromInt(
                         DataTypeConversionUtil.arbitraryByteArrayToI32(outboundData.data));
+                logd("dispatch response sw: " + statusWord);
                 if (statusWord.equals(StatusWord.SW_NO_ERROR)) {
                     mWorkHandler.post(() -> sendGetControlleeSessionData());
-                    return true;
+                } else {
+                    // abort the current session
+                    terminateSession();
+                    mSessionCallback.onSessionAborted();
                 }
+                return true;
             }
-            logw("unexpected outbound data for controllee info.");
+            logw("unexpected outbound data for controllee info." + outboundData);
         }
         logw("Unexpected response for controllee info.");
         return false;
@@ -117,14 +124,15 @@ public class ControlleeInitiatorSession extends InitiatorSession {
                             + notification.notificationEventId);
             }
         }
-        DispatchResponse.OutboundData outboundData = dispatchResponse.getOutboundData().get();
+
         if (rdsAvailable != null) {
             // TODO: is the session ID for the sub session if it is 1 to m case?
             mSessionCallback.onSessionDataReady(rdsAvailable.sessionId,
                     rdsAvailable.arbitraryData.get(),
                     isSessionTerminated);
             return true;
-        } else if (CsmlUtil.isSessionDataNotAvailable(outboundData.data)) {
+        } else if (CsmlUtil.isSessionDataNotAvailable(
+                dispatchResponse.getOutboundData().get().data)) {
             mWorkHandler.postDelayed(() -> sendGetControlleeSessionData(),
                     GET_SESSION_DATA_RETRY_DELAY_MILLS);
             return true;
@@ -141,7 +149,7 @@ public class ControlleeInitiatorSession extends InitiatorSession {
             case MSG_ID_GET_SESSION_DATA:
                 // simply abort the session.
                 logw("terminate session as tunnel data was failed: " + failReason);
-                terminateSession();
+                mFiRaSecureChannel.terminateLocally();
                 mSessionCallback.onSessionAborted();
                 break;
             default:
@@ -150,7 +158,10 @@ public class ControlleeInitiatorSession extends InitiatorSession {
         }
     }
 
-    private void logw(@NonNull String debugMsg) {
+    private void logd(@NonNull String debugMsg) {
         Log.d(LOG_TAG, debugMsg);
+    }
+    private void logw(@NonNull String debugMsg) {
+        Log.w(LOG_TAG, debugMsg);
     }
 }
