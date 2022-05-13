@@ -60,6 +60,10 @@ public class FiraEncoderTest {
                     .setMultiNodeMode(MULTI_NODE_MODE_UNICAST)
                     .setRangingRoundUsage(RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE)
                     .setVendorId(new byte[]{0x5, 0x78})
+                    .setSessionKey(new byte[] {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                        0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F})
+                    .setSubsessionKey(new byte[] {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+                        0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F})
                     .setStaticStsIV(new byte[]{0x1a, 0x55, 0x77, 0x47, 0x7e, 0x7d});
 
     private static final byte[] TEST_FIRA_OPEN_SESSION_TLV_DATA =
@@ -67,7 +71,8 @@ public class FiraEncoderTest {
                     + "0260090904C80000000B01000C01030D01010E01010F0200001002204E11010012010314010"
                     + "A1501021601001701011B011E1C01001F01002301002401002501322601002702780528061A"
                     + "5577477E7D2901012A0200002B04000000002C01002D01002E01012F01013004000000003101"
-                    + "00350101E30100E40100E50100");
+                    + "003501013610000102030405060708090A0B0C0D0E0F3710000102030405060708090A0B0C0D"
+                    + "0E0FE30100E40100E50100");
 
     private static final FiraRangingReconfigureParams.Builder TEST_FIRA_RECONFIGURE_PARAMS =
             new FiraRangingReconfigureParams.Builder()
@@ -86,7 +91,7 @@ public class FiraEncoderTest {
         FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS.build();
         TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(44);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(46);
         assertThat(tlvs.getByteArray()).isEqualTo(TEST_FIRA_OPEN_SESSION_TLV_DATA);
     }
 
@@ -104,7 +109,7 @@ public class FiraEncoderTest {
         FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS.build();
         TlvBuffer tlvs = TlvEncoder.getEncoder(FiraParams.PROTOCOL_NAME).getTlvBuffer(params);
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(44);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(46);
         assertThat(tlvs.getByteArray()).isEqualTo(TEST_FIRA_OPEN_SESSION_TLV_DATA);
     }
 
