@@ -45,6 +45,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.IBinder;
 import android.os.PersistableBundle;
+import android.os.Process;
 import android.platform.test.annotations.Presubmit;
 import android.provider.Settings;
 import android.test.suitebuilder.annotation.SmallTest;
@@ -316,6 +317,7 @@ public class UwbServiceImplTest {
         verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, true);
         verify(mUwbServiceCore).setEnabled(false);
 
+        when(mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).thenReturn(false);
         mUwbServiceImpl.setEnabled(false);
         verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, false);
         verify(mUwbServiceCore, times(2)).setEnabled(false);
@@ -349,6 +351,21 @@ public class UwbServiceImplTest {
         mApmModeBroadcastReceiver.getValue().onReceive(
                 mContext, new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED));
         verify(mUwbServiceCore, times(2)).setEnabled(true);
+    }
+
+    @Test
+    public void testToggleFromRootedShellWhenApmModeOn() throws Exception {
+        BinderUtil.setUid(Process.ROOT_UID);
+        when(mUwbInjector.getSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0)).thenReturn(1);
+
+        mUwbServiceImpl.setEnabled(true);
+        verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, true);
+        verify(mUwbServiceCore).setEnabled(true);
+
+        when(mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).thenReturn(false);
+        mUwbServiceImpl.setEnabled(false);
+        verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, false);
+        verify(mUwbServiceCore).setEnabled(false);
     }
 
     @Test
