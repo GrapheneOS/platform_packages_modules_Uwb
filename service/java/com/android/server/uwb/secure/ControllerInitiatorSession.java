@@ -19,6 +19,7 @@ package com.android.server.uwb.secure;
 import static com.android.server.uwb.secure.csml.DispatchResponse.NOTIFICATION_EVENT_ID_CONTROLLEE_INFO_AVAILABLE;
 import static com.android.server.uwb.secure.csml.DispatchResponse.NOTIFICATION_EVENT_ID_RDS_AVAILABLE;
 import static com.android.server.uwb.secure.csml.DispatchResponse.NOTIFICATION_EVENT_ID_SECURE_SESSION_AUTO_TERMINATED;
+import static com.android.server.uwb.secure.csml.DispatchResponse.OUTBOUND_TARGET_HOST;
 
 import android.os.Looper;
 import android.util.Log;
@@ -66,7 +67,7 @@ public class ControllerInitiatorSession extends InitiatorSession {
                 // simply abort the session.
                 logw("terminate session as tunnel data was failed: "
                         + failReason + " for msg: " + msgId);
-                terminateSession();
+                mFiRaSecureChannel.terminateLocally();
                 mSessionCallback.onSessionAborted();
                 break;
             default:
@@ -98,17 +99,28 @@ public class ControllerInitiatorSession extends InitiatorSession {
                         ((DispatchResponse.ControlleeInfoAvailableNotification) notification)
                                 .sessionData;
                 ControlleeInfo controlleeInfo = ControlleeInfo.fromBytes(controlleeInfoData);
+                if (controlleeInfo == null) {
+                    logw("received controllee info is not expected.");
+                    break;
+                }
                 Optional<SessionData> sessionData =
                         mRunningProfileSessionInfo.getSessionDataForControllee(controlleeInfo);
                 if (sessionData.isEmpty()) {
-                    throw new IllegalStateException("session data must be provided for controller");
+                    logw("session data must be provided for controller");
+                    break;
                 }
                 // TODO: construct a PUT_DATA command for put controllee info
                 tunnelData(MSG_ID_PUT_SESSION_DATA, sessionData.get().toBytes());
                 return true;
             }
         }
-
+        if (response.getOutboundData().isPresent()
+                && response.getOutboundData().get().target == OUTBOUND_TARGET_HOST) {
+            logw("unexpected response for getControlleeInfo");
+            terminateSession();
+            mSessionCallback.onSessionAborted();
+            return true;
+        }
         return false;
     }
 
@@ -137,6 +149,13 @@ public class ControllerInitiatorSession extends InitiatorSession {
             // Or the applet shouldn't update the sessionId, sub session ID assigned by FW.
             mSessionCallback.onSessionDataReady(rdsAvailable.sessionId, null,
                     isSessionTerminated);
+            return true;
+        }
+        if (response.getOutboundData().isPresent()
+                && response.getOutboundData().get().target == OUTBOUND_TARGET_HOST) {
+            logw("unexpected response for getControlleeInfo");
+            terminateSession();
+            mSessionCallback.onSessionAborted();
             return true;
         }
         return false;

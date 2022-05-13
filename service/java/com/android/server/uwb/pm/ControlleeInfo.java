@@ -17,25 +17,30 @@
 package com.android.server.uwb.pm;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 /**
  * Provide the controllee info, see CSML 8.5.3.2
  */
-public interface ControlleeInfo {
+public class ControlleeInfo {
     // TODO: add controllee info
-
+    ControlleeInfo() {
+    }
     /**
      * Converts the controllee info to the bytes which are combined per the TLV of CSML 8.5.3.2.
      */
     @NonNull
-    byte[] toBytes();
+    public byte[] toBytes() {
+        return new byte[0];
+    }
 
     /**
      * Converts the controlleeInfo from the data stream, which is encoded per the CSML 8.5.3.2.
+     * @return null if the data cannot be decoded per spec.
      */
-    @NonNull
-    static ControlleeInfo fromBytes(@NonNull byte[] data) {
+    @Nullable
+    public static ControlleeInfo fromBytes(@NonNull byte[] data) {
         // TODO: decode the controllee info
-        return null;
+        return new ControlleeInfo();
     }
 }
