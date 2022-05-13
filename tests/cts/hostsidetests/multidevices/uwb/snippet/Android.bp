@@ -18,7 +18,7 @@ package {
 
 android_test {
     name: "uwb_snippet",
-    sdk_version: "system_33",
+    sdk_version: "system_current",
     srcs: [
         "UwbManagerSnippet.java",
     ],
@@ -32,5 +32,4 @@ android_test {
         "com.uwb.support.generic",
         "com.uwb.support.multichip",
     ],
-    min_sdk_version: "31",
 }
