@@ -16,6 +16,7 @@
 package com.android.server.uwb.secure.csml;
 
 import android.annotation.IntDef;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -39,6 +40,7 @@ import java.util.Optional;
  * Response of Dispatch APDU, See CSML 1.0 - 8.2.2.14.2.9
  */
 public class DispatchResponse extends FiRaResponse {
+    private static final String LOG_TAG = "DispatchResponse";
     @VisibleForTesting
     static final Tag STATUS_TAG = new Tag((byte) 0x80);
     @VisibleForTesting
@@ -392,6 +394,6 @@ public class DispatchResponse extends FiRaResponse {
     }
 
     private void logw(@NonNull String dbgMsg) {
-        android.util.Log.d("DispatchResponse", dbgMsg);
+        Log.w(LOG_TAG, dbgMsg);
     }
 }
