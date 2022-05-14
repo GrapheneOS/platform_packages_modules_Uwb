@@ -123,7 +123,7 @@ public abstract class SecureSession {
         void onSessionAborted();
 
         /**
-         * Session is terminated as responding to the calling of {@code #termiaateSession}.
+         * Session is terminated as responding to the calling of {@code #terminateSession}.
          */
         void onSessionTerminated();
     }

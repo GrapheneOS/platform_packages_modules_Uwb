@@ -27,6 +27,7 @@ import android.content.IntentFilter;
 import android.os.Binder;
 import android.os.ParcelFileDescriptor;
 import android.os.PersistableBundle;
+import android.os.Process;
 import android.os.RemoteException;
 import android.provider.Settings;
 import android.util.Log;
@@ -234,6 +235,11 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     public synchronized void setEnabled(boolean enabled) throws RemoteException {
         enforceUwbPrivilegedPermission();
         persistUwbToggleState(enabled);
+        // Shell command from rooted shell, we allow UWB toggle on even if APM mode is on.
+        if (Binder.getCallingUid() == Process.ROOT_UID) {
+            mUwbServiceCore.setEnabled(isUwbToggleEnabled());
+            return;
+        }
         mUwbServiceCore.setEnabled(isUwbEnabled());
     }
 
