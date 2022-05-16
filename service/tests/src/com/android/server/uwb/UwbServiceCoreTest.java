@@ -225,17 +225,6 @@ public class UwbServiceCoreTest {
         verifyGetSpecificationInfoSuccess();
     }
 
-    @Test
-    public void testGetSpecificationInfoUsesCache() throws Exception {
-        verifyGetSpecificationInfoSuccess();
-        clearInvocations(mUwbConfigurationManager);
-
-        PersistableBundle specifications = mUwbServiceCore.getSpecificationInfo();
-        assertThat(specifications).isNotNull();
-
-        verifyNoMoreInteractions(mUwbConfigurationManager);
-    }
-
     private void enableUwb() throws Exception {
         when(mNativeUwbManager.doInitialize()).thenReturn(true);
         when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(true);
