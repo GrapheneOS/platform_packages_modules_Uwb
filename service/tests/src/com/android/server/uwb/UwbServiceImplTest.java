@@ -58,6 +58,7 @@ import android.uwb.UwbAddress;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.multchip.UwbMultichipData;
 import com.android.server.uwb.pm.ProfileManager;
@@ -530,12 +531,19 @@ public class UwbServiceImplTest {
 
     @Test
     public void testRemoveServiceProfile() throws Exception {
-        final PersistableBundle parameters = new PersistableBundle();
+        UUID serviceInstanceID = new UUID(100, 50);
 
-        try {
-            mUwbServiceImpl.removeServiceProfile(parameters);
-            fail();
-        } catch (IllegalStateException e) { /* pass */ }
+        when(mUwbInjector.getProfileManager()).thenReturn(mProfileManager);
+        when(mProfileManager.removeServiceProfile(any()))
+                .thenReturn(UwbUciConstants.STATUS_CODE_OK);
+
+        UuidBundleWrapper uuidBundleWrapper = new UuidBundleWrapper.Builder()
+                .setServiceInstanceID(Optional.of(serviceInstanceID))
+                .build();
+        int status = mUwbServiceImpl.removeServiceProfile(uuidBundleWrapper.toBundle());
+
+        verify(mProfileManager).removeServiceProfile(any());
+        assertEquals(status, UwbUciConstants.STATUS_CODE_OK);
     }
 
     @Test

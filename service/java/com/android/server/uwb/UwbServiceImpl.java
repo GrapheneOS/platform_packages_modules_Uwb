@@ -39,6 +39,8 @@ import android.uwb.IUwbVendorUciCallback;
 import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
 
+import com.android.server.uwb.data.UwbUciConstants;
+
 import com.google.uwb.support.multichip.ChipInfoParams;
 import com.google.uwb.support.profile.ServiceProfile;
 import com.google.uwb.support.profile.UuidBundleWrapper;
@@ -287,8 +289,13 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     @Override
     public int removeServiceProfile(@NonNull PersistableBundle parameters) {
         enforceUwbPrivilegedPermission();
-        // TODO(b/200678461): Implement this.
-        throw new IllegalStateException("Not implemented");
+        UuidBundleWrapper uuidBundleWrapper = UuidBundleWrapper.fromBundle(parameters);
+        if (uuidBundleWrapper.getServiceInstanceID().isPresent()) {
+            return mUwbInjector
+                    .getProfileManager()
+                    .removeServiceProfile(uuidBundleWrapper.getServiceInstanceID().get());
+        }
+        return UwbUciConstants.STATUS_CODE_FAILED;
     }
 
     @Override
