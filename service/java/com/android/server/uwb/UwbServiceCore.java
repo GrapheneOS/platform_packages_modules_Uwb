@@ -94,7 +94,6 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     private final UwbMetrics mUwbMetrics;
     private final UwbCountryCode mUwbCountryCode;
     private final UwbInjector mUwbInjector;
-    private GenericSpecificationParams mSpecificationParams;
     private /* @UwbManager.AdapterStateCallback.State */ int mState;
     private @StateChangeReason int mLastStateChangedReason;
     private  IUwbVendorUciCallback mCallBack = null;
@@ -219,11 +218,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     }
 
     @Override
-    public void onCountryCodeChanged(@Nullable String countryCode) {
-        // Clear the cached capabilities on country code changes.
-        Log.v(TAG, "Clearing cached specification params on country code change");
-        mSpecificationParams = null;
-    }
+    public void onCountryCodeChanged(@Nullable String countryCode) { }
 
     public void registerAdapterStateCallbacks(IUwbAdapterStateCallbacks adapterStateCallbacks)
             throws RemoteException {
@@ -250,23 +245,16 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         mCallBack = null;
     }
 
-    private void updateSpecificationInfo() {
+    public PersistableBundle getSpecificationInfo() {
+        // TODO(b/211445008): Consolidate to a single uwb thread.
         Pair<Integer, GenericSpecificationParams> specificationParams =
                 mConfigurationManager.getCapsInfo(
                         GenericParams.PROTOCOL_NAME, GenericSpecificationParams.class);
         if (specificationParams.first != UwbUciConstants.STATUS_CODE_OK)  {
             Log.e(TAG, "Failed to retrieve specification params");
-            return;
+            return new PersistableBundle();
         }
-        mSpecificationParams = specificationParams.second;
-    }
-
-    public PersistableBundle getSpecificationInfo() {
-        if (mSpecificationParams == null) {
-            updateSpecificationInfo();
-        }
-        if (mSpecificationParams == null) return new PersistableBundle();
-        return mSpecificationParams.toBundle();
+        return specificationParams.second.toBundle();
     }
 
     public long getTimestampResolutionNanos() {
