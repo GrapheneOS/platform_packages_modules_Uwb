@@ -105,6 +105,8 @@ public class FiraEncoder extends TlvEncoder {
                 .putInt(ConfigParam.SUB_SESSION_ID, params.getSubSessionId())
                 .putByte(ConfigParam.BPRF_PHR_DATA_RATE, (byte) params.getBprfPhrDataRate())
                 .putByte(ConfigParam.STS_LENGTH, (byte) params.getStsLength())
+                .putByteArray(ConfigParam.SESSION_KEY, params.getSessionKey())
+                .putByteArray(ConfigParam.SUBSESSION_KEY, params.getSubsessionKey())
                 .putByte(ConfigParam.NUM_RANGE_MEASUREMENTS,
                         (byte) params.getNumOfMsrmtFocusOnRange())
                 .putByte(ConfigParam.NUM_AOA_AZIMUTH_MEASUREMENTS,

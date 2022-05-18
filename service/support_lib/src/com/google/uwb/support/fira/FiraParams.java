@@ -284,6 +284,8 @@ public abstract class FiraParams extends Params {
                 STS_CONFIG_STATIC,
                 STS_CONFIG_DYNAMIC,
                 STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY,
+                STS_CONFIG_PROVISIONED,
+                STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY,
             })
     public @interface StsConfig {}
 
@@ -292,6 +294,10 @@ public abstract class FiraParams extends Params {
     public static final int STS_CONFIG_DYNAMIC = 1;
 
     public static final int STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY = 2;
+
+    public static final int STS_CONFIG_PROVISIONED = 3;
+
+    public static final int STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY = 4;
 
     /** AoA request */
     @IntDef(
@@ -647,7 +653,9 @@ public abstract class FiraParams extends Params {
     public enum StsCapabilityFlag implements FlagEnum {
         HAS_STATIC_STS_SUPPORT(1),
         HAS_DYNAMIC_STS_SUPPORT(1 << 1),
-        HAS_DYNAMIC_STS_INDIVIDUAL_CONTROLEE_KEY_SUPPORT(1 << 2);
+        HAS_DYNAMIC_STS_INDIVIDUAL_CONTROLEE_KEY_SUPPORT(1 << 2),
+        HAS_PROVISIONED_STS_SUPPORT(1 << 3),
+        HAS_PROVISIONED_STS_INDIVIDUAL_CONTROLEE_KEY_SUPPORT(1 << 4);
 
         private final long mValue;
 

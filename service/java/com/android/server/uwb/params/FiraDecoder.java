@@ -39,6 +39,8 @@ import static com.android.server.uwb.config.CapabilityParam.DYNAMIC_STS_RESPONDE
 import static com.android.server.uwb.config.CapabilityParam.INITIATOR;
 import static com.android.server.uwb.config.CapabilityParam.MANY_TO_MANY;
 import static com.android.server.uwb.config.CapabilityParam.ONE_TO_MANY;
+import static com.android.server.uwb.config.CapabilityParam.PROVISIONED_STS;
+import static com.android.server.uwb.config.CapabilityParam.PROVISIONED_STS_RESPONDER_SPECIFIC_SUBSESSION_KEY;
 import static com.android.server.uwb.config.CapabilityParam.RESPONDER;
 import static com.android.server.uwb.config.CapabilityParam.SP0;
 import static com.android.server.uwb.config.CapabilityParam.SP1;
@@ -150,6 +152,13 @@ public class FiraDecoder extends TlvDecoder {
         if (isBitSet(stsConfigUci, DYNAMIC_STS_RESPONDER_SPECIFIC_SUBSESSION_KEY)) {
             stsCapabilityFlag.add(
                     StsCapabilityFlag.HAS_DYNAMIC_STS_INDIVIDUAL_CONTROLEE_KEY_SUPPORT);
+        }
+        if (isBitSet(stsConfigUci, PROVISIONED_STS)) {
+            stsCapabilityFlag.add(StsCapabilityFlag.HAS_PROVISIONED_STS_SUPPORT);
+        }
+        if (isBitSet(stsConfigUci, PROVISIONED_STS_RESPONDER_SPECIFIC_SUBSESSION_KEY)) {
+            stsCapabilityFlag.add(
+                    StsCapabilityFlag.HAS_PROVISIONED_STS_INDIVIDUAL_CONTROLEE_KEY_SUPPORT);
         }
         builder.setStsCapabilities(stsCapabilityFlag);
 
