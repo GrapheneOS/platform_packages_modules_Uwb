@@ -82,6 +82,8 @@ public class ConfigParam {
     public static final int BPRF_PHR_DATA_RATE = 0x31;
     public static final int MAX_NUMBER_OF_MEASUREMENTS = 0x32;
     public static final int STS_LENGTH = 0x35;
+    public static final int SESSION_KEY = 0x36;
+    public static final int SUBSESSION_KEY = 0x37;
     public static final int NUM_RANGE_MEASUREMENTS = NB_OF_RANGE_MEASUREMENTS;
     public static final int NUM_AOA_AZIMUTH_MEASUREMENTS = NB_OF_AZIMUTH_MEASUREMENTS;
     public static final int NUM_AOA_ELEVATION_MEASUREMENTS = NB_OF_ELEVATION_MEASUREMENTS;

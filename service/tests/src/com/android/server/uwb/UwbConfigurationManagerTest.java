@@ -169,6 +169,10 @@ public class UwbConfigurationManagerTest {
         int sfdId = SFD_ID_VALUE_3;
         int stsSegmentCount = STS_SEGMENT_COUNT_VALUE_2;
         int stsLength = STS_LENGTH_128_SYMBOLS;
+        byte[] sessionKey = new byte[] {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
+        byte[] subsessionKey = new byte[] {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
         int psduDataRate = PSDU_DATA_RATE_7M80;
         int bprfPhrDataRate = BPRF_PHR_DATA_RATE_6M81;
         int fcsType = MAC_FCS_TYPE_CRC_32;
@@ -221,6 +225,8 @@ public class UwbConfigurationManagerTest {
                         .setSfdId(sfdId)
                         .setStsSegmentCount(stsSegmentCount)
                         .setStsLength(stsLength)
+                        .setSessionKey(sessionKey)
+                        .setSubsessionKey(subsessionKey)
                         .setPsduDataRate(psduDataRate)
                         .setBprfPhrDataRate(bprfPhrDataRate)
                         .setFcsType(fcsType)
