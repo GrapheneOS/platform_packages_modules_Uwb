@@ -82,6 +82,13 @@ public class FiraOpenSessionParams extends FiraParams {
     @SfdIdValue private final int mSfdId;
     @StsSegmentCountValue private final int mStsSegmentCount;
     @StsLength private final int mStsLength;
+
+    // 16-byte or 32-byte long array
+    @Nullable private final byte[] mSessionKey;
+
+    // 16-byte or 32-byte long array
+    @Nullable private final byte[] mSubSessionKey;
+
     @PsduDataRate private final int mPsduDataRate;
     @BprfPhrDataRate private final int mBprfPhrDataRate;
     @MacFcsType private final int mFcsType;
@@ -140,6 +147,8 @@ public class FiraOpenSessionParams extends FiraParams {
     private static final String KEY_SFD_ID = "sfd_id";
     private static final String KEY_STS_SEGMENT_COUNT = "sts_segment_count";
     private static final String KEY_STS_LENGTH = "sts_length";
+    private static final String KEY_SESSION_KEY = "session_key";
+    private static final String KEY_SUBSESSION_KEY = "subsession_key";
     private static final String KEY_PSDU_DATA_RATE = "psdu_data_rate";
     private static final String KEY_BPRF_PHR_DATA_RATE = "bprf_phr_data_rate";
     private static final String KEY_FCS_TYPE = "fcs_type";
@@ -201,6 +210,8 @@ public class FiraOpenSessionParams extends FiraParams {
             @SfdIdValue int sfdId,
             @StsSegmentCountValue int stsSegmentCount,
             @StsLength int stsLength,
+            @Nullable byte[] sessionKey,
+            @Nullable byte[] subsessionKey,
             @PsduDataRate int psduDataRate,
             @BprfPhrDataRate int bprfPhrDataRate,
             @MacFcsType int fcsType,
@@ -251,6 +262,8 @@ public class FiraOpenSessionParams extends FiraParams {
         mSfdId = sfdId;
         mStsSegmentCount = stsSegmentCount;
         mStsLength = stsLength;
+        mSessionKey = sessionKey;
+        mSubSessionKey = subsessionKey;
         mPsduDataRate = psduDataRate;
         mBprfPhrDataRate = bprfPhrDataRate;
         mFcsType = fcsType;
@@ -401,6 +414,16 @@ public class FiraOpenSessionParams extends FiraParams {
     @StsLength
     public int getStsLength() {
         return mStsLength;
+    }
+
+    @Nullable
+    public byte[] getSessionKey() {
+        return mSessionKey;
+    }
+
+    @Nullable
+    public byte[] getSubsessionKey() {
+        return mSubSessionKey;
     }
 
     @PsduDataRate
@@ -565,6 +588,8 @@ public class FiraOpenSessionParams extends FiraParams {
         bundle.putInt(KEY_SFD_ID, mSfdId);
         bundle.putInt(KEY_STS_SEGMENT_COUNT, mStsSegmentCount);
         bundle.putInt(KEY_STS_LENGTH, mStsLength);
+        bundle.putIntArray(KEY_SESSION_KEY, byteArrayToIntArray(mSessionKey));
+        bundle.putIntArray(KEY_SUBSESSION_KEY, byteArrayToIntArray(mSubSessionKey));
         bundle.putInt(KEY_PSDU_DATA_RATE, mPsduDataRate);
         bundle.putInt(KEY_BPRF_PHR_DATA_RATE, mBprfPhrDataRate);
         bundle.putInt(KEY_FCS_TYPE, mFcsType);
@@ -572,6 +597,9 @@ public class FiraOpenSessionParams extends FiraParams {
                 KEY_IS_TX_ADAPTIVE_PAYLOAD_POWER_ENABLED, mIsTxAdaptivePayloadPowerEnabled);
         bundle.putInt(KEY_STS_CONFIG, mStsConfig);
         if (mStsConfig == STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY) {
+            bundle.putInt(KEY_SUB_SESSION_ID, mSubSessionId);
+        }
+        if (mStsConfig == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
             bundle.putInt(KEY_SUB_SESSION_ID, mSubSessionId);
         }
         bundle.putIntArray(KEY_VENDOR_ID, byteArrayToIntArray(mVendorId));
@@ -657,6 +685,8 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setSfdId(bundle.getInt(KEY_SFD_ID))
                 .setStsSegmentCount(bundle.getInt(KEY_STS_SEGMENT_COUNT))
                 .setStsLength(bundle.getInt(KEY_STS_LENGTH))
+                .setSessionKey(intArrayToByteArray(bundle.getIntArray(KEY_SESSION_KEY)))
+                .setSubsessionKey(intArrayToByteArray(bundle.getIntArray(KEY_SUBSESSION_KEY)))
                 .setPsduDataRate(bundle.getInt(KEY_PSDU_DATA_RATE))
                 .setBprfPhrDataRate(bundle.getInt(KEY_BPRF_PHR_DATA_RATE))
                 .setFcsType(bundle.getInt(KEY_FCS_TYPE))
@@ -770,6 +800,12 @@ public class FiraOpenSessionParams extends FiraParams {
         /** UCI spec default: 64 symbols */
         @StsLength private int mStsLength = STS_LENGTH_64_SYMBOLS;
 
+        /** PROVISIONED STS only. 128-bit or 256-bit long */
+        @Nullable private byte[] mSessionKey = null;
+
+        /** PROVISIONED STS only. 128-bit or 256-bit long */
+        @Nullable private byte[] mSubsessionKey = null;
+
         /** UCI spec default: 6.81Mb/s */
         @PsduDataRate private int mPsduDataRate = PSDU_DATA_RATE_6M81;
 
@@ -867,6 +903,8 @@ public class FiraOpenSessionParams extends FiraParams {
             mSfdId = builder.mSfdId;
             mStsSegmentCount = builder.mStsSegmentCount;
             mStsLength = builder.mStsLength;
+            mSessionKey = builder.mSessionKey;
+            mSubsessionKey = builder.mSubsessionKey;
             mPsduDataRate = builder.mPsduDataRate;
             mBprfPhrDataRate = builder.mBprfPhrDataRate;
             mFcsType = builder.mFcsType;
@@ -1035,6 +1073,18 @@ public class FiraOpenSessionParams extends FiraParams {
             return this;
         }
 
+        /** set session key */
+        public FiraOpenSessionParams.Builder setSessionKey(@Nullable byte[] sessionKey) {
+            mSessionKey = sessionKey;
+            return this;
+        }
+
+        /** set subsession key */
+        public FiraOpenSessionParams.Builder setSubsessionKey(@Nullable byte[] subsessionKey) {
+            mSubsessionKey = subsessionKey;
+            return this;
+        }
+
         public FiraOpenSessionParams.Builder setPsduDataRate(@PsduDataRate int psduDataRate) {
             mPsduDataRate = psduDataRate;
             return this;
@@ -1192,6 +1242,21 @@ public class FiraOpenSessionParams extends FiraParams {
                     mSubSessionId.set(0);
                 }
             }
+
+            if (mStsConfig == STS_CONFIG_PROVISIONED) {
+                checkArgument(mSessionKey != null
+                        && (mSessionKey.length == 16 || mSessionKey.length == 32));
+            }
+
+            if (mStsConfig == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
+                if (!mSubSessionId.isSet()) {
+                    mSubSessionId.set(0);
+                }
+                checkArgument(mSessionKey != null
+                        && (mSessionKey.length == 16 || mSessionKey.length == 32));
+                checkArgument(mSubsessionKey != null
+                        && (mSubsessionKey.length == 16 || mSubsessionKey.length == 32));
+            }
         }
 
         private void checkInterleavingRatio() {
@@ -1240,6 +1305,8 @@ public class FiraOpenSessionParams extends FiraParams {
                     mSfdId,
                     mStsSegmentCount,
                     mStsLength,
+                    mSessionKey,
+                    mSubsessionKey,
                     mPsduDataRate,
                     mBprfPhrDataRate,
                     mFcsType,
