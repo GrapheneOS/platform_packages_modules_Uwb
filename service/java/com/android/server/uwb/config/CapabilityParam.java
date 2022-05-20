@@ -74,6 +74,8 @@ public class CapabilityParam {
     public static final int STATIC_STS = 0x1;
     public static final int DYNAMIC_STS = 0x2;
     public static final int DYNAMIC_STS_RESPONDER_SPECIFIC_SUBSESSION_KEY = 0x4;
+    public static final int PROVISIONED_STS = 0x8;
+    public static final int PROVISIONED_STS_RESPONDER_SPECIFIC_SUBSESSION_KEY = 0x10;
 
     public static final int UNICAST = 0x1;
     public static final int ONE_TO_MANY = 0x2;

@@ -63,6 +63,7 @@ public class TlvBuffer {
         }
 
         public TlvBuffer.Builder putByteArray(int tagType, byte[] bArray) {
+            if (bArray == null) return this;
             return putByteArray(tagType, bArray.length, bArray);
         }
 
