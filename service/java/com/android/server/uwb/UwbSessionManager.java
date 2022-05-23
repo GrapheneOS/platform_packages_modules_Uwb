@@ -766,27 +766,26 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                         }
                                     }
                                 }
-                            }
-                            if (status != UwbUciConstants.STATUS_CODE_OK) {
+                                if (status != UwbUciConstants.STATUS_CODE_OK) {
+                                    if (rangingReconfigureParams.getAction()
+                                            == MULTICAST_LIST_UPDATE_ACTION_ADD) {
+                                        mSessionNotificationManager.onControleeAddFailed(
+                                                uwbSession, status);
+                                    } else if (rangingReconfigureParams.getAction()
+                                            == MULTICAST_LIST_UPDATE_ACTION_DELETE) {
+                                        mSessionNotificationManager.onControleeRemoveFailed(
+                                                uwbSession, status);
+                                    }
+                                    return status;
+                                }
                                 if (rangingReconfigureParams.getAction()
                                         == MULTICAST_LIST_UPDATE_ACTION_ADD) {
-                                    mSessionNotificationManager.onControleeAddFailed(
-                                            uwbSession, status);
+                                    mSessionNotificationManager.onControleeAdded(uwbSession);
                                 } else if (rangingReconfigureParams.getAction()
                                         == MULTICAST_LIST_UPDATE_ACTION_DELETE) {
-                                    mSessionNotificationManager.onControleeRemoveFailed(
-                                            uwbSession, status);
+                                    mSessionNotificationManager.onControleeRemoved(uwbSession);
                                 }
-                                return status;
                             }
-                            if (rangingReconfigureParams.getAction()
-                                    == MULTICAST_LIST_UPDATE_ACTION_ADD) {
-                                mSessionNotificationManager.onControleeAdded(uwbSession);
-                            } else if (rangingReconfigureParams.getAction()
-                                    == MULTICAST_LIST_UPDATE_ACTION_DELETE) {
-                                mSessionNotificationManager.onControleeRemoved(uwbSession);
-                            }
-
                             status = mConfigurationManager.setAppConfigurations(
                                     uwbSession.getSessionId(), param);
                             Log.d(TAG, "status: " + status);
