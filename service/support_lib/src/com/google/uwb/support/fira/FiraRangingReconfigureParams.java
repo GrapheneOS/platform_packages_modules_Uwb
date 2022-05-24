@@ -39,6 +39,8 @@ public class FiraRangingReconfigureParams extends FiraParams {
     @Nullable @MulticastListUpdateAction private final Integer mAction;
     @Nullable private final UwbAddress[] mAddressList;
     @Nullable private final int[] mSubSessionIdList;
+    @Nullable private final Integer mMessageControl;
+    @Nullable private final int[] mSubSessionKeyList;
 
     @Nullable private final Integer mBlockStrideLength;
 
@@ -54,6 +56,9 @@ public class FiraRangingReconfigureParams extends FiraParams {
     private static final String KEY_MAC_ADDRESS_MODE = "mac_address_mode";
     private static final String KEY_ADDRESS_LIST = "address_list";
     private static final String KEY_SUB_SESSION_ID_LIST = "sub_session_id_list";
+    private static final String KEY_MESSAGE_CONTROL = "message_control";
+    private static final String KEY_SUB_SESSION_KEY_LIST = "sub_session_key_list";
+    private static final String KEY_SUB_SESSION_KEY_LENGTH = "sub_session_key_length";
     private static final String KEY_UPDATE_BLOCK_STRIDE_LENGTH = "update_block_stride_length";
     private static final String KEY_UPDATE_RANGE_DATA_NTF_CONFIG = "update_range_data_ntf_config";
     private static final String KEY_UPDATE_RANGE_DATA_NTF_PROXIMITY_NEAR =
@@ -73,6 +78,8 @@ public class FiraRangingReconfigureParams extends FiraParams {
             @Nullable @MulticastListUpdateAction Integer action,
             @Nullable UwbAddress[] addressList,
             @Nullable int[] subSessionIdList,
+            @Nullable Integer messageControl,
+            @Nullable int[] subSessionKeyList,
             @Nullable Integer blockStrideLength,
             @Nullable Integer rangeDataNtfConfig,
             @Nullable Integer rangeDataProximityNear,
@@ -84,6 +91,8 @@ public class FiraRangingReconfigureParams extends FiraParams {
         mAction = action;
         mAddressList = addressList;
         mSubSessionIdList = subSessionIdList;
+        mMessageControl = messageControl;
+        mSubSessionKeyList = subSessionKeyList;
         mBlockStrideLength = blockStrideLength;
         mRangeDataNtfConfig = rangeDataNtfConfig;
         mRangeDataProximityNear = rangeDataProximityNear;
@@ -113,6 +122,16 @@ public class FiraRangingReconfigureParams extends FiraParams {
     @Nullable
     public int[] getSubSessionIdList() {
         return mSubSessionIdList;
+    }
+
+    @Nullable
+    public Integer getMessageControl() {
+        return mMessageControl;
+    }
+
+    @Nullable
+    public int[] getSubSessionKeyList() {
+        return mSubSessionKeyList;
     }
 
     @Nullable
@@ -173,6 +192,10 @@ public class FiraRangingReconfigureParams extends FiraParams {
             }
             bundle.putInt(KEY_MAC_ADDRESS_MODE, macAddressMode);
             bundle.putLongArray(KEY_ADDRESS_LIST, addressList);
+            if (mMessageControl != null) {
+                bundle.putInt(KEY_MESSAGE_CONTROL, mMessageControl);
+            }
+            bundle.putIntArray(KEY_SUB_SESSION_KEY_LIST, mSubSessionKeyList);
             bundle.putIntArray(KEY_SUB_SESSION_ID_LIST, mSubSessionIdList);
         }
 
@@ -245,7 +268,11 @@ public class FiraRangingReconfigureParams extends FiraParams {
             }
             builder.setAction(bundle.getInt(KEY_ACTION))
                     .setAddressList(addressList)
-                    .setSubSessionIdList(bundle.getIntArray(KEY_SUB_SESSION_ID_LIST));
+                    .setSubSessionIdList(bundle.getIntArray(KEY_SUB_SESSION_ID_LIST))
+                    .setSubSessionKeyList(bundle.getIntArray(KEY_SUB_SESSION_KEY_LIST));
+            if (bundle.containsKey(KEY_MESSAGE_CONTROL)) {
+                builder.setMessageControl(bundle.getInt(KEY_MESSAGE_CONTROL));
+            }
         }
 
         if (bundle.containsKey(KEY_UPDATE_BLOCK_STRIDE_LENGTH)) {
@@ -293,6 +320,8 @@ public class FiraRangingReconfigureParams extends FiraParams {
         @Nullable private Integer mAction = null;
         @Nullable private UwbAddress[] mAddressList = null;
         @Nullable private int[] mSubSessionIdList = null;
+        @Nullable private Integer mMessageControl = null;
+        @Nullable private int[] mSubSessionKeyList = null;
 
         @Nullable private Integer mBlockStrideLength = null;
 
@@ -317,6 +346,18 @@ public class FiraRangingReconfigureParams extends FiraParams {
 
         public FiraRangingReconfigureParams.Builder setSubSessionIdList(int[] subSessionIdList) {
             mSubSessionIdList = subSessionIdList;
+            return this;
+        }
+
+        /** Message Control List setter */
+        public FiraRangingReconfigureParams.Builder setMessageControl(int messageControl) {
+            mMessageControl = messageControl;
+            return this;
+        }
+
+        /** Sub Session Key List setter */
+        public FiraRangingReconfigureParams.Builder setSubSessionKeyList(int[] subSessionKeyList) {
+            mSubSessionKeyList = subSessionKeyList;
             return this;
         }
 
@@ -383,6 +424,15 @@ public class FiraRangingReconfigureParams extends FiraParams {
 
             checkArgument(
                     mSubSessionIdList == null || mSubSessionIdList.length == mAddressList.length);
+            if (mMessageControl != null) {
+                if (((mMessageControl >> 3) & 1) == 1) {
+                    checkArgument(mSubSessionKeyList == null || mSubSessionKeyList.length == 0);
+                } else if ((mMessageControl & 1) == 1) {
+                    checkArgument(mSubSessionKeyList.length == 32 * mSubSessionIdList.length);
+                } else {
+                    checkArgument(mSubSessionKeyList.length == 16 * mSubSessionIdList.length);
+                }
+            }
         }
 
         private void checkRangeDataNtfConfig() {
@@ -454,6 +504,8 @@ public class FiraRangingReconfigureParams extends FiraParams {
                     mAction,
                     mAddressList,
                     mSubSessionIdList,
+                    mMessageControl,
+                    mSubSessionKeyList,
                     mBlockStrideLength,
                     mRangeDataNtfConfig,
                     mRangeDataProximityNear,

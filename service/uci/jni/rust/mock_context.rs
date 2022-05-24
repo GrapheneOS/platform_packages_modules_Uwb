@@ -1,6 +1,7 @@
 use std::cell::{Cell, RefCell};
 use std::collections::VecDeque;
 
+use jni::objects::JObject;
 use jni::sys::{jarray, jbyteArray, jint, jintArray, jshort, jshortArray, jsize};
 use uwb_uci_rust::error::UwbErr;
 use uwb_uci_rust::uci::Dispatcher;
@@ -157,6 +158,10 @@ impl<'a> Context<'a> for MockContext {
             }
             None => Err(jni::errors::Error::JniCall(jni::errors::JniError::Unknown)),
         }
+    }
+
+    fn is_same_object(&self, _obj1: JObject, _obj2: JObject) -> Result<bool, jni::errors::Error> {
+        Ok(false)
     }
 
     fn get_dispatcher(&self) -> Result<&'a mut dyn Dispatcher, UwbErr> {
