@@ -31,7 +31,7 @@ import android.test.suitebuilder.annotation.SmallTest;
 
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.server.uwb.proto.UwbConfigProto;
+import com.android.proto.uwb.UwbConfigProto;
 
 import org.junit.Before;
 import org.junit.Test;
