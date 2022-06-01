@@ -29,7 +29,7 @@ import android.util.SparseArray;
 
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.internal.util.Preconditions;
-import com.android.server.uwb.proto.UwbConfigProto;
+import com.android.proto.uwb.UwbConfigProto;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 

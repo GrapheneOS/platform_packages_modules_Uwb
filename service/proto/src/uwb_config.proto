@@ -16,9 +16,9 @@
 
 syntax = "proto2";
 
-package com_android_server_uwb;
+package com_android_proto_uwb;
 
-option java_package = "com.android.server.uwb.proto";
+option java_package = "com.android.proto.uwb";
 option java_outer_classname = "UwbConfigProto";
 
 message ServiceConfig {

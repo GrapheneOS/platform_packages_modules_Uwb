@@ -70,11 +70,10 @@ java_library {
         "com.uwb.support.generic",
         "com.uwb.support.multichip",
         "com.uwb.support.profile",
+        "guava",
         "modules-utils-shell-command-handler",
         "modules-utils-handlerexecutor",
         "modules-utils-preconditions",
-        "guava",
-        "libprotobuf-java-lite",
         "uwb-config-proto",
     ],
 
