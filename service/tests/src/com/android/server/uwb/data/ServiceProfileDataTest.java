@@ -25,8 +25,8 @@ import android.test.suitebuilder.annotation.SmallTest;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.proto.uwb.UwbConfigProto;
 import com.android.server.uwb.data.ServiceProfileData.ServiceProfileInfo;
-import com.android.server.uwb.proto.UwbConfigProto;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 

@@ -23,8 +23,8 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.android.proto.uwb.UwbConfigProto;
 import com.android.server.uwb.UwbConfigStore;
-import com.android.server.uwb.proto.UwbConfigProto;
 
 import java.util.HashMap;
 import java.util.List;
