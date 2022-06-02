@@ -302,6 +302,9 @@ public class UwbManagerSnippet implements Snippet {
             }
             builder.setAddressList(addressList);
         }
+        if (j.has("blockStrideLength")) {
+            builder.setBlockStrideLength(j.getInt("blockStrideLength"));
+        }
         return builder.build();
     }
 
