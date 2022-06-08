@@ -24,7 +24,7 @@ import static com.android.server.uwb.UwbSettingsStore.SETTINGS_TOGGLE_STATE;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.uwb.support.fira.FiraParams.PACS_PROFILE_SERVICE_ID;
-import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY;
+import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
@@ -231,7 +231,7 @@ public class UwbServiceImplTest {
         final FiraRangingReconfigureParams parameters =
                 new FiraRangingReconfigureParams.Builder()
                         .setBlockStrideLength(6)
-                        .setRangeDataNtfConfig(RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY)
+                        .setRangeDataNtfConfig(RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG)
                         .setRangeDataProximityFar(6)
                         .setRangeDataProximityNear(4)
                         .build();

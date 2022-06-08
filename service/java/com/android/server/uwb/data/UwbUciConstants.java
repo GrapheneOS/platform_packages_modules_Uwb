@@ -111,7 +111,7 @@ public class UwbUciConstants {
             FiraParams.RANGE_DATA_NTF_CONFIG_DISABLE;
     public static final int RANGE_DATA_NTF_CONFIG_ENABLE = FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE;
     public static final int RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY =
-            FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY;
+            FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG;
 
     public static final int RANGING_DEVICE_ROLE_RESPONDER =
             FiraParams.RANGING_DEVICE_ROLE_RESPONDER;

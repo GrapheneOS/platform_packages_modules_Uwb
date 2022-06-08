@@ -160,4 +160,9 @@ public class CapabilityParam {
     public static final int RANGE_DATA_NTF_CONFIG_ENABLE = 1 << 0;
     public static final int RANGE_DATA_NTF_CONFIG_DISABLE = 1 << 1;
     public static final int RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG = 1 << 2;
+    public static final int RANGE_DATA_NTF_CONFIG_ENABLE_AOA_LEVEL_TRIG = 1 << 3;
+    public static final int RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_LEVEL_TRIG = 1 << 4;
+    public static final int RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_EDGE_TRIG = 1 << 5;
+    public static final int RANGE_DATA_NTF_CONFIG_ENABLE_AOA_EDGE_TRIG = 1 << 6;
+    public static final int RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_EDGE_TRIG = 1 << 7;
 }
