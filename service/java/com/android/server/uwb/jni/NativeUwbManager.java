@@ -90,6 +90,11 @@ public class NativeUwbManager {
         mSessionListener.onMulticastListUpdateNotificationReceived(multicastListUpdateData);
     }
 
+    public void onVendorUciNotificationReceived(int gid, int oid, byte[] payload) {
+        Log.d(TAG, "onVendorUciNotificationReceived: " + gid + ", " + oid + ", " + payload);
+        mVendorListener.onVendorUciNotificationReceived(gid, oid, payload);
+    }
+
     /**
      * Enable UWB hardware.
      *
