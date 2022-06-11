@@ -15,8 +15,6 @@
  */
 package com.android.server.uwb.jni;
 
-import android.os.RemoteException;
-
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbRangingData;
 /*import com.android.server.uwb.test.UwbTestLoopBackTestResult;
@@ -77,8 +75,7 @@ public interface INativeUwbManager {
         /**
          * Interface for receiving Vendor UCI notifications.
          */
-        void onVendorUciNotificationReceived(int gid, int oid, byte[] payload)
-                throws RemoteException;
+        void onVendorUciNotificationReceived(int gid, int oid, byte[] payload);
     }
     /* Unused now */
     /*interface RfTestNotification {
