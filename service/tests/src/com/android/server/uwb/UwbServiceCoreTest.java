@@ -42,7 +42,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.validateMockitoUsage;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -166,8 +165,6 @@ public class UwbServiceCoreTest {
         when(powerManager.newWakeLock(anyInt(), anyString()))
                 .thenReturn(mock(PowerManager.WakeLock.class));
         when(mContext.getSystemService(PowerManager.class)).thenReturn(powerManager);
-        when(mUwbInjector.isSystemApp(TEST_UID, TEST_PACKAGE_NAME)).thenReturn(true);
-        when(mUwbInjector.isForegroundAppOrService(TEST_UID, TEST_PACKAGE_NAME)).thenReturn(true);
         when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
         when(mDeviceConfigFacade.getBugReportMinIntervalMs())
                 .thenReturn(DeviceConfigFacade.DEFAULT_BUG_REPORT_MIN_INTERVAL_MS);
@@ -369,106 +366,6 @@ public class UwbServiceCoreTest {
 
         // Should be ignored.
         verifyNoMoreInteractions(mUwbSessionManager);
-    }
-
-    @Test
-    public void testOpenRangingWithNonSystemAppInFg() throws Exception {
-        enableUwb();
-
-        when(mUwbInjector.isSystemApp(TEST_UID, TEST_PACKAGE_NAME)).thenReturn(false);
-        when(mUwbInjector.isForegroundAppOrService(TEST_UID, TEST_PACKAGE_NAME)).thenReturn(true);
-
-        SessionHandle sessionHandle = mock(SessionHandle.class);
-        IUwbRangingCallbacks cb = mock(IUwbRangingCallbacks.class);
-        AttributionSource attributionSource = TEST_ATTRIBUTION_SOURCE;
-        FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS.build();
-        mUwbServiceCore.openRanging(
-                attributionSource, sessionHandle, cb, params.toBundle());
-
-        verify(mUwbSessionManager).initSession(
-                eq(attributionSource),
-                eq(sessionHandle), eq(params.getSessionId()), eq(FiraParams.PROTOCOL_NAME),
-                argThat(p -> ((FiraOpenSessionParams) p).getSessionId() == params.getSessionId()),
-                eq(cb));
-    }
-
-    @Test
-    public void testOpenRangingWithNonSystemAppNotInFg() throws Exception {
-        enableUwb();
-
-        when(mUwbInjector.isSystemApp(TEST_UID, TEST_PACKAGE_NAME)).thenReturn(false);
-        when(mUwbInjector.isForegroundAppOrService(TEST_UID, TEST_PACKAGE_NAME)).thenReturn(false);
-
-        SessionHandle sessionHandle = mock(SessionHandle.class);
-        IUwbRangingCallbacks cb = mock(IUwbRangingCallbacks.class);
-        AttributionSource attributionSource = TEST_ATTRIBUTION_SOURCE;
-        FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS.build();
-        mUwbServiceCore.openRanging(
-                attributionSource, sessionHandle, cb, params.toBundle());
-
-        verify(mUwbSessionManager, never()).initSession(
-                any(), any(), anyInt(), any(), any(), any());
-        verify(cb).onRangingOpenFailed(
-                eq(sessionHandle), eq(StateChangeReason.SYSTEM_POLICY), any());
-    }
-
-    @Test
-    public void testOpenRangingWithNonSystemAppInFgInChain() throws Exception {
-        enableUwb();
-
-        int test_uid_2 = 67;
-        String test_package_name_2 = "com.android.uwb.2";
-        when(mUwbInjector.isSystemApp(test_uid_2, test_package_name_2)).thenReturn(false);
-        when(mUwbInjector.isForegroundAppOrService(test_uid_2, test_package_name_2))
-                .thenReturn(true);
-
-        SessionHandle sessionHandle = mock(SessionHandle.class);
-        IUwbRangingCallbacks cb = mock(IUwbRangingCallbacks.class);
-        // simulate system app triggered the request on behalf of a fg app in fg.
-        AttributionSource attributionSource = new AttributionSource.Builder(TEST_UID)
-                .setPackageName(TEST_PACKAGE_NAME)
-                .setNext(new AttributionSource.Builder(test_uid_2)
-                        .setPackageName(test_package_name_2)
-                        .build())
-                .build();
-        FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS.build();
-        mUwbServiceCore.openRanging(
-                attributionSource, sessionHandle, cb, params.toBundle());
-
-        verify(mUwbSessionManager).initSession(
-                eq(attributionSource),
-                eq(sessionHandle), eq(params.getSessionId()), eq(FiraParams.PROTOCOL_NAME),
-                argThat(p -> ((FiraOpenSessionParams) p).getSessionId() == params.getSessionId()),
-                eq(cb));
-    }
-
-    @Test
-    public void testOpenRangingWithNonSystemAppNotInFgInChain() throws Exception {
-        enableUwb();
-
-        int test_uid_2 = 67;
-        String test_package_name_2 = "com.android.uwb.2";
-        when(mUwbInjector.isSystemApp(test_uid_2, test_package_name_2)).thenReturn(false);
-        when(mUwbInjector.isForegroundAppOrService(test_uid_2, test_package_name_2))
-                .thenReturn(false);
-
-        SessionHandle sessionHandle = mock(SessionHandle.class);
-        IUwbRangingCallbacks cb = mock(IUwbRangingCallbacks.class);
-        // simulate system app triggered the request on behalf of a fg app not in fg.
-        AttributionSource attributionSource = new AttributionSource.Builder(TEST_UID)
-                .setPackageName(TEST_PACKAGE_NAME)
-                .setNext(new AttributionSource.Builder(test_uid_2)
-                        .setPackageName(test_package_name_2)
-                        .build())
-                .build();
-        FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS.build();
-        mUwbServiceCore.openRanging(
-                attributionSource, sessionHandle, cb, params.toBundle());
-
-        verify(mUwbSessionManager, never()).initSession(
-                any(), any(), anyInt(), any(), any(), any());
-        verify(cb).onRangingOpenFailed(
-                eq(sessionHandle), eq(StateChangeReason.SYSTEM_POLICY), any());
     }
 
     @Test
