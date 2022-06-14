@@ -28,6 +28,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.util.Log;
 import android.util.Pair;
@@ -73,12 +74,18 @@ import java.util.concurrent.TimeoutException;
 public class UwbSessionManager implements INativeUwbManager.SessionNotification {
 
     private static final String TAG = "UwbSessionManager";
-    private static final int SESSION_OPEN_RANGING = 1;
-    private static final int SESSION_START_RANGING = 2;
-    private static final int SESSION_STOP_RANGING = 3;
-    private static final int SESSION_RECONFIG_RANGING = 4;
-    private static final int SESSION_CLOSE = 5;
-    private static final int SESSION_ON_DEINIT = 6;
+    @VisibleForTesting
+    public static final int SESSION_OPEN_RANGING = 1;
+    @VisibleForTesting
+    public static final int SESSION_START_RANGING = 2;
+    @VisibleForTesting
+    public static final int SESSION_STOP_RANGING = 3;
+    @VisibleForTesting
+    public static final int SESSION_RECONFIG_RANGING = 4;
+    @VisibleForTesting
+    public static final int SESSION_CLOSE = 5;
+    @VisibleForTesting
+    public static final int SESSION_ON_DEINIT = 6;
 
     // TODO: don't expose the internal field for testing.
     @VisibleForTesting
@@ -211,6 +218,19 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         Log.i(TAG, "initSession() : Enter - sessionId : " + sessionId);
         UwbSession uwbSession =  createUwbSession(attributionSource, sessionHandle, sessionId,
                 protocolName, params, rangingCallbacks);
+        // Check the attribution source chain to ensure that there are no 3p apps which are not in
+        // fg which can receive the ranging results.
+        AttributionSource nonPrivilegedAppAttrSource =
+                uwbSession.hasAnyNonPrivilegedAppInAttributionSource();
+        if (nonPrivilegedAppAttrSource != null && !mUwbInjector.isForegroundAppOrService(
+                nonPrivilegedAppAttrSource.getUid(), nonPrivilegedAppAttrSource.getPackageName())) {
+            Log.e(TAG, "Found a non fg 3p app/service in the attribution source of request: "
+                    + nonPrivilegedAppAttrSource);
+            Log.e(TAG, "openRanging - System policy disallows for non fg 3p apps");
+            rangingCallbacks.onRangingOpenFailed(sessionHandle,
+                    RangingChangeReason.SYSTEM_POLICY, new PersistableBundle());
+            return;
+        }
         if (isExistedSession(sessionId)) {
             Log.i(TAG, "Duplicated sessionId");
             rangingCallbacks.onRangingOpenFailed(sessionHandle, RangingChangeReason.BAD_PARAMETERS,
@@ -890,6 +910,31 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             this.mWaitObj = new WaitObj();
             this.isWait = false;
             this.mProfileType = convertProtolNameToProfileType(protocolName);
+        }
+
+        private boolean isPrivilegedApp(int uid, String packageName) {
+            return mUwbInjector.isSystemApp(uid, packageName)
+                    || mUwbInjector.isAppSignedWithPlatformKey(uid);
+        }
+
+        /**
+         * Check the attribution source chain to check if there are any 3p apps.
+         * @return true if there is some non-system app, false otherwise.
+         */
+        @Nullable
+        public AttributionSource hasAnyNonPrivilegedAppInAttributionSource() {
+            // Iterate attribution source chain to ensure that there is no non-fg 3p app in the
+            // request.
+            AttributionSource attributionSource = mAttributionSource;
+            while (attributionSource != null) {
+                int uid = attributionSource.getUid();
+                String packageName = attributionSource.getPackageName();
+                if (!isPrivilegedApp(uid, packageName)) {
+                    return attributionSource;
+                }
+                attributionSource = attributionSource.getNext();
+            }
+            return null;
         }
 
         public AttributionSource getAttributionSource() {

@@ -32,6 +32,7 @@ import android.os.Binder;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.os.Process;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.UserHandle;
@@ -328,6 +329,12 @@ public class UwbInjector {
             Log.e(TAG, "Failed to get the app info", e);
         }
         return false;
+    }
+
+    /** Whether the uid is signed with the same key as the platform. */
+    public boolean isAppSignedWithPlatformKey(int uid) {
+        return mContext.getPackageManager().checkSignatures(uid, Process.SYSTEM_UID)
+                == PackageManager.SIGNATURE_MATCH;
     }
 
     /** Helper method to retrieve app importance. */
