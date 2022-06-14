@@ -87,10 +87,11 @@ public class FiraDecoderTest {
                     + "0F050000000003"
                     + "10010F"
                     + "110101"
-                    + "E30101";
+                    + "E30101"
+                    + "E40401010101";
     private static final byte[] TEST_FIRA_SPECIFICATION_TLV_DATA =
             UwbUtil.getByteArray(TEST_FIRA_SPECIFICATION_TLV_STRING);
-    public static final int TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS = 19;
+    public static final int TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS = 20;
     private final FiraDecoder mFiraDecoder = new FiraDecoder();
 
     public static void verifyFiraSpecification(FiraSpecificationParams firaSpecificationParams) {
