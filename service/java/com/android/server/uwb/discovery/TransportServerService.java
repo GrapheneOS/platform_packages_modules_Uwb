@@ -22,6 +22,7 @@ import android.util.Log;
 import androidx.annotation.WorkerThread;
 
 import com.android.server.uwb.discovery.TransportServerProvider.TransportServerCallback;
+import com.android.server.uwb.discovery.ble.GattTransportServerProvider;
 import com.android.server.uwb.discovery.info.DiscoveryInfo;
 
 /** This service manages the TransportServerProvider. */
@@ -40,7 +41,9 @@ public class TransportServerService {
 
         switch (discoveryInfo.transportType) {
             case BLE:
-                mTransportServerProvider = null;
+                mTransportServerProvider =
+                        new GattTransportServerProvider(
+                                attributionSource, context, transportServerCallback);
                 break;
             default:
                 throw new AssertionError(

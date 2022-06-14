@@ -41,6 +41,8 @@ public class FiraConnectorDataPacket {
 
     private static final int SECID_BITMASK = 0x7F;
 
+    public static final int HEADER_SIZE = 1;
+
     /** True if this the last packet in a fragmented session, otherwise it is false. */
     public final boolean lastChainingPacket;
 
