@@ -613,24 +613,6 @@ public class UwbSessionManagerTest {
         assertThat(actualStatus).isEqualTo(UwbUciConstants.STATUS_CODE_ERROR_SESSION_NOT_EXIST);
     }
 
-    @Test
-    public void reconfigure_calledSuccess() {
-        doReturn(true).when(mUwbSessionManager).isExistedSession(any());
-        FiraRangingReconfigureParams params =
-                new FiraRangingReconfigureParams.Builder()
-                        .setBlockStrideLength(10)
-                        .setRangeDataNtfConfig(1)
-                        .setRangeDataProximityFar(10)
-                        .setRangeDataProximityNear(2)
-                        .build();
-
-        int actualStatus = mUwbSessionManager.reconfigure(mock(SessionHandle.class), params);
-
-        assertThat(actualStatus).isEqualTo(0);
-        assertThat(mTestLooper.nextMessage().what)
-                .isEqualTo(4); // SESSION_RECONFIG_RANGING
-    }
-
     private UwbSession setUpUwbSessionForExecution(AttributionSource attributionSource) {
         // setup message
         doReturn(0).when(mUwbSessionManager).getSessionCount();
@@ -948,6 +930,31 @@ public class UwbSessionManagerTest {
         assertThat(mTestLooper.isIdle()).isFalse();
 
         return uwbSession;
+    }
+
+    @Test
+    public void reconfigure_calledSuccess() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        FiraRangingReconfigureParams params =
+                new FiraRangingReconfigureParams.Builder()
+                        .setBlockStrideLength(10)
+                        .setRangeDataNtfConfig(1)
+                        .setRangeDataProximityFar(10)
+                        .setRangeDataProximityNear(2)
+                        .build();
+
+        int actualStatus = mUwbSessionManager.reconfigure(uwbSession.getSessionHandle(), params);
+
+        assertThat(actualStatus).isEqualTo(0);
+        assertThat(mTestLooper.nextMessage().what)
+                .isEqualTo(UwbSessionManager.SESSION_RECONFIG_RANGING);
+
+        // Verify the cache has been updated.
+        FiraOpenSessionParams firaParams = (FiraOpenSessionParams) uwbSession.getParams();
+        assertThat(firaParams.getBlockStrideLength()).isEqualTo(10);
+        assertThat(firaParams.getRangeDataNtfConfig()).isEqualTo(1);
+        assertThat(firaParams.getRangeDataNtfProximityFar()).isEqualTo(10);
+        assertThat(firaParams.getRangeDataNtfProximityNear()).isEqualTo(2);
     }
 
     @Test
