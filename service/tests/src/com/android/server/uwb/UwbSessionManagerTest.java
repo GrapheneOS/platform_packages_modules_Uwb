@@ -16,6 +16,9 @@
 
 package com.android.server.uwb;
 
+import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_BACKGROUND;
+import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND;
+
 import static com.android.server.uwb.UwbSessionManager.SESSION_OPEN_RANGING;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -37,6 +40,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import android.app.ActivityManager;
+import android.app.ActivityManager.OnUidImportanceListener;
 import android.app.AlarmManager;
 import android.content.AttributionSource;
 import android.os.IBinder;
@@ -70,6 +75,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -89,6 +95,8 @@ public class UwbSessionManagerTest {
     private static final int MAX_SESSION_NUM = 8;
     private static final int UID = 343453;
     private static final String PACKAGE_NAME = "com.uwb.test";
+    private static final int UID_2 = 67;
+    private static final String PACKAGE_NAME_2 = "com.android.uwb.2";
     private static final AttributionSource ATTRIBUTION_SOURCE =
             new AttributionSource.Builder(UID).setPackageName(PACKAGE_NAME).build();
 
@@ -106,9 +114,13 @@ public class UwbSessionManagerTest {
     private ExecutorService mExecutorService;
     @Mock
     private AlarmManager mAlarmManager;
+    @Mock
+    private ActivityManager mActivityManager;
     private TestLooper mTestLooper = new TestLooper();
     private UwbSessionManager mUwbSessionManager;
     private MockitoSession mMockitoSession;
+    @Captor
+    private ArgumentCaptor<OnUidImportanceListener> mOnUidImportanceListenerArgumentCaptor;
 
     @Before
     public void setup() {
@@ -125,7 +137,11 @@ public class UwbSessionManagerTest {
                 mUwbSessionNotificationManager,
                 mUwbInjector,
                 mAlarmManager,
+                mActivityManager,
                 mTestLooper.getLooper()));
+
+        verify(mActivityManager).addOnUidImportanceListener(
+                mOnUidImportanceListenerArgumentCaptor.capture(), anyInt());
 
         // static mocking for executor service.
         mMockitoSession = ExtendedMockito.mockitoSession()
@@ -554,10 +570,12 @@ public class UwbSessionManagerTest {
         mUwbSessionManager.mSessionTable.put(TEST_SESSION_ID, mockUwbSession1);
         when(mockUwbSession1.getBinder()).thenReturn(mock(IBinder.class));
         when(mockUwbSession1.getSessionId()).thenReturn(TEST_SESSION_ID);
+        when(mockUwbSession1.getProtocolName()).thenReturn(FiraParams.PROTOCOL_NAME);
         UwbSession mockUwbSession2 = mock(UwbSession.class);
         mUwbSessionManager.mSessionTable.put(TEST_SESSION_ID + 100, mockUwbSession2);
         when(mockUwbSession2.getBinder()).thenReturn(mock(IBinder.class));
         when(mockUwbSession2.getSessionId()).thenReturn(TEST_SESSION_ID + 100);
+        when(mockUwbSession2.getProtocolName()).thenReturn(FiraParams.PROTOCOL_NAME);
 
         mUwbSessionManager.deinitAllSession();
 
@@ -864,27 +882,29 @@ public class UwbSessionManagerTest {
         assertThat(mTestLooper.isIdle()).isFalse();
     }
 
-    @Test
-    public void testOpenRangingWithNonSystemAppInFgInChain() throws Exception {
-        int test_uid_2 = 67;
-        String test_package_name_2 = "com.android.uwb.2";
-        when(mUwbInjector.isSystemApp(test_uid_2, test_package_name_2)).thenReturn(false);
-        when(mUwbInjector.isForegroundAppOrService(test_uid_2, test_package_name_2))
+    private UwbSession initUwbSessionForNonSystemAppInFgInChain() throws Exception {
+        when(mUwbInjector.isSystemApp(UID_2, PACKAGE_NAME_2)).thenReturn(false);
+        when(mUwbInjector.isForegroundAppOrService(UID_2, PACKAGE_NAME_2))
                 .thenReturn(true);
 
         // simulate system app triggered the request on behalf of a fg app in fg.
         AttributionSource attributionSource = new AttributionSource.Builder(UID)
                 .setPackageName(PACKAGE_NAME)
-                .setNext(new AttributionSource.Builder(test_uid_2)
-                        .setPackageName(test_package_name_2)
+                .setNext(new AttributionSource.Builder(UID_2)
+                        .setPackageName(PACKAGE_NAME_2)
                         .build())
                 .build();
 
         UwbSession uwbSession = setUpUwbSessionForExecution(attributionSource);
-
         mUwbSessionManager.initSession(attributionSource, uwbSession.getSessionHandle(),
                 TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks(), TEST_CHIP_ID);
+        return uwbSession;
+    }
+
+    @Test
+    public void testOpenRangingWithNonSystemAppInFgInChain() throws Exception {
+        initUwbSessionForNonSystemAppInFgInChain();
 
         // OPEN_RANGING message scheduled.
         assertThat(mTestLooper.nextMessage().what).isEqualTo(SESSION_OPEN_RANGING);
@@ -892,18 +912,46 @@ public class UwbSessionManagerTest {
     }
 
     @Test
+    public void testOpenRangingWithNonSystemAppInFgInChain_MoveToBgAndFg() throws Exception {
+        UwbSession uwbSession = initUwbSessionForNonSystemAppInFgInChain();
+        // OPEN_RANGING message scheduled.
+        assertThat(mTestLooper.nextMessage().what).isEqualTo(SESSION_OPEN_RANGING);
+        mTestLooper.dispatchAll();
+
+        // Move to background.
+        mOnUidImportanceListenerArgumentCaptor.getValue().onUidImportance(
+                UID_2, IMPORTANCE_BACKGROUND);
+        mTestLooper.dispatchNext();
+        assertThat(mTestLooper.nextMessage().what)
+                .isEqualTo(UwbSessionManager.SESSION_RECONFIG_RANGING);
+        FiraOpenSessionParams firaParams = (FiraOpenSessionParams) uwbSession.getParams();
+        assertThat(firaParams.getRangeDataNtfConfig()).isEqualTo(
+                FiraParams.RANGE_DATA_NTF_CONFIG_DISABLE);
+        mTestLooper.dispatchAll();
+
+        // Move to foreground.
+        mOnUidImportanceListenerArgumentCaptor.getValue().onUidImportance(
+                UID_2, IMPORTANCE_FOREGROUND);
+        mTestLooper.dispatchNext();
+        assertThat(mTestLooper.nextMessage().what)
+                .isEqualTo(UwbSessionManager.SESSION_RECONFIG_RANGING);
+        firaParams = (FiraOpenSessionParams) uwbSession.getParams();
+        assertThat(firaParams.getRangeDataNtfConfig()).isEqualTo(
+                FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE);
+        mTestLooper.dispatchAll();
+    }
+
+    @Test
     public void testOpenRangingWithNonSystemAppNotInFgInChain() throws Exception {
-        int test_uid_2 = 67;
-        String test_package_name_2 = "com.android.uwb.2";
-        when(mUwbInjector.isSystemApp(test_uid_2, test_package_name_2)).thenReturn(false);
-        when(mUwbInjector.isForegroundAppOrService(test_uid_2, test_package_name_2))
+        when(mUwbInjector.isSystemApp(UID_2, PACKAGE_NAME_2)).thenReturn(false);
+        when(mUwbInjector.isForegroundAppOrService(UID_2, PACKAGE_NAME_2))
                 .thenReturn(false);
 
         // simulate system app triggered the request on behalf of a fg app not in fg.
         AttributionSource attributionSource = new AttributionSource.Builder(UID)
                 .setPackageName(PACKAGE_NAME)
-                .setNext(new AttributionSource.Builder(test_uid_2)
-                        .setPackageName(test_package_name_2)
+                .setNext(new AttributionSource.Builder(UID_2)
+                        .setPackageName(PACKAGE_NAME_2)
                         .build())
                 .build();
         UwbSession uwbSession = setUpUwbSessionForExecution(attributionSource);
