@@ -926,6 +926,58 @@ public class FiraOpenSessionParams extends FiraParams {
             mAoaType = builder.mAoaType;
         }
 
+        public Builder(@NonNull FiraOpenSessionParams params) {
+            mProtocolVersion.set(params.mProtocolVersion);
+            mSessionId.set(params.mSessionId);
+            mDeviceType.set(params.mDeviceType);
+            mDeviceRole.set(params.mDeviceRole);
+            mRangingRoundUsage = params.mRangingRoundUsage;
+            mMultiNodeMode.set(params.mMultiNodeMode);
+            mDeviceAddress = params.mDeviceAddress;
+            mDestAddressList = params.mDestAddressList;
+            mInitiationTimeMs = params.mInitiationTimeMs;
+            mSlotDurationRstu = params.mSlotDurationRstu;
+            mSlotsPerRangingRound = params.mSlotsPerRangingRound;
+            mRangingIntervalMs = params.mRangingIntervalMs;
+            mBlockStrideLength = params.mBlockStrideLength;
+            mHoppingMode = params.mHoppingMode;
+            mMaxRangingRoundRetries = params.mMaxRangingRoundRetries;
+            mSessionPriority = params.mSessionPriority;
+            mMacAddressMode = params.mMacAddressMode;
+            mHasResultReportPhase = params.mHasResultReportPhase;
+            mMeasurementReportType = params.mMeasurementReportType;
+            mInBandTerminationAttemptCount = params.mInBandTerminationAttemptCount;
+            mChannelNumber = params.mChannelNumber;
+            mPreambleCodeIndex = params.mPreambleCodeIndex;
+            mRframeConfig = params.mRframeConfig;
+            mPrfMode = params.mPrfMode;
+            mPreambleDuration = params.mPreambleDuration;
+            mSfdId = params.mSfdId;
+            mStsSegmentCount = params.mStsSegmentCount;
+            mStsLength = params.mStsLength;
+            mSessionKey = params.mSessionKey;
+            mSubsessionKey = params.mSubSessionKey;
+            mPsduDataRate = params.mPsduDataRate;
+            mBprfPhrDataRate = params.mBprfPhrDataRate;
+            mFcsType = params.mFcsType;
+            mIsTxAdaptivePayloadPowerEnabled = params.mIsTxAdaptivePayloadPowerEnabled;
+            mStsConfig = params.mStsConfig;
+            mSubSessionId.set(params.mSubSessionId);
+            mVendorId = params.mVendorId;
+            mStaticStsIV = params.mStaticStsIV;
+            mIsKeyRotationEnabled = params.mIsKeyRotationEnabled;
+            mKeyRotationRate = params.mKeyRotationRate;
+            mAoaResultRequest = params.mAoaResultRequest;
+            mRangeDataNtfConfig = params.mRangeDataNtfConfig;
+            mRangeDataNtfProximityNear = params.mRangeDataNtfProximityNear;
+            mRangeDataNtfProximityFar = params.mRangeDataNtfProximityFar;
+            mHasTimeOfFlightReport = params.mHasTimeOfFlightReport;
+            mHasAngleOfArrivalAzimuthReport = params.mHasAngleOfArrivalAzimuthReport;
+            mHasAngleOfArrivalElevationReport = params.mHasAngleOfArrivalElevationReport;
+            mHasAngleOfArrivalFigureOfMeritReport = params.mHasAngleOfArrivalFigureOfMeritReport;
+            mAoaType = params.mAoaType;
+        }
+
         public FiraOpenSessionParams.Builder setProtocolVersion(FiraProtocolVersion version) {
             mProtocolVersion.set(version);
             return this;
