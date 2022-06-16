@@ -43,6 +43,8 @@ public class CapabilityParam {
     public static final int SUPPORTED_EXTENDED_MAC_ADDRESS = 0x11;
     public static final int SUPPORTED_AOA_RESULT_REQ_INTERLEAVING =
             UwbVendorCapabilityTlvTypes.SUPPORTED_AOA_RESULT_REQ_ANTENNA_INTERLEAVING;
+    public static final int SUPPORTED_MIN_RANGING_INTERVAL_MS =
+            UwbVendorCapabilityTlvTypes.SUPPORTED_MIN_RANGING_INTERVAL_MS;
 
     // CCC specific
     public static final int CCC_SUPPORTED_VERSIONS =
