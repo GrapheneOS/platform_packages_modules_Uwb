@@ -41,6 +41,7 @@ import android.uwb.UwbManager.AdapterStateCallback;
 
 import androidx.annotation.Nullable;
 
+import com.android.internal.annotations.VisibleForTesting;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.data.UwbVendorUciResponse;
 import com.android.server.uwb.jni.INativeUwbManager;
@@ -75,8 +76,12 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         INativeUwbManager.VendorNotification, UwbCountryCode.CountryCodeChangedListener {
     private static final String TAG = "UwbServiceCore";
 
-    private static final int TASK_ENABLE = 1;
-    private static final int TASK_DISABLE = 2;
+    @VisibleForTesting
+    public static final int TASK_ENABLE = 1;
+    @VisibleForTesting
+    public static final int TASK_DISABLE = 2;
+    @VisibleForTesting
+    public static final int TASK_RESTART = 3;
 
     private static final int WATCHDOG_MS = 10000;
     private static final int SEND_VENDOR_CMD_TIMEOUT_MS = 10000;
@@ -180,10 +185,10 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         // If error status is received, toggle UWB off to reset stack state.
         // TODO(b/227488208): Should we try to restart (like wifi) instead?
         if ((byte) deviceState == UwbUciConstants.DEVICE_STATE_ERROR) {
-            Log.e(TAG, "Error device status received. Disabling...");
+            Log.e(TAG, "Error device status received. Restarting...");
             mUwbMetrics.incrementDeviceStatusErrorCount();
-            takBugReportAfterDeviceError("UWB is disabled due to device status error");
-            setEnabled(false);
+            takBugReportAfterDeviceError("Restarting UWB due to vendor error");
+            mEnableDisableTask.execute(TASK_RESTART);
             return;
         }
         handleDeviceStatusNotification(deviceState);
@@ -448,6 +453,13 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                     mSessionManager.deinitAllSession();
                     disableInternal();
                     break;
+
+                case TASK_RESTART:
+                    mSessionManager.deinitAllSession();
+                    disableInternal();
+                    enableInternal();
+                    break;
+
                 default:
                     Log.d(TAG, "EnableDisableTask : Undefined Task");
                     break;
