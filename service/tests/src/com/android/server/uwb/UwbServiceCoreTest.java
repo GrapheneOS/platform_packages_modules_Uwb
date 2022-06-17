@@ -42,6 +42,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.validateMockitoUsage;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -549,12 +550,19 @@ public class UwbServiceCoreTest {
                 StateChangeReason.SYSTEM_POLICY);
 
         when(mNativeUwbManager.doDeinitialize()).thenReturn(true);
+        when(mNativeUwbManager.doInitialize()).thenReturn(true);
 
         mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ERROR);
         mTestLooper.dispatchAll();
         // Verify UWB toggle off.
         verify(mNativeUwbManager).doDeinitialize();
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.SYSTEM_POLICY);
+
+        // Verify UWB toggle on.
+        verify(mNativeUwbManager, times(2)).doInitialize();
+        verify(cb, times(2)).onAdapterStateChanged(
+                UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
                 StateChangeReason.SYSTEM_POLICY);
     }
 
