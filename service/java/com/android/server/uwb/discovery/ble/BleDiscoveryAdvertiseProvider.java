@@ -170,7 +170,7 @@ public class BleDiscoveryAdvertiseProvider extends DiscoveryAdvertiseProvider {
         return new AdvertiseData.Builder()
                 .setIncludeDeviceName(false)
                 .setIncludeTxPowerLevel(false)
-                .addServiceUuid(DiscoveryAdvertisement.FIRA_CP_PARCEL_UUID)
+                .addServiceUuid(UuidConstants.FIRA_CP_PARCEL_UUID)
                 .build();
     }
 
@@ -179,9 +179,9 @@ public class BleDiscoveryAdvertiseProvider extends DiscoveryAdvertiseProvider {
                 new AdvertiseData.Builder()
                         .setIncludeDeviceName(false)
                         .setIncludeTxPowerLevel(false)
-                        .addServiceUuid(DiscoveryAdvertisement.FIRA_CP_PARCEL_UUID)
+                        .addServiceUuid(UuidConstants.FIRA_CP_PARCEL_UUID)
                         .addServiceData(
-                                DiscoveryAdvertisement.FIRA_CP_PARCEL_UUID,
+                                UuidConstants.FIRA_CP_PARCEL_UUID,
                                 DiscoveryAdvertisement.toBytes(
                                         mAdvertiseInfo.discoveryAdvertisement,
                                         /*includeVendorSpecificData=*/ false));
