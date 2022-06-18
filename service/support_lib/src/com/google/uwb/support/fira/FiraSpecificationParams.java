@@ -54,6 +54,8 @@ public class FiraSpecificationParams extends FiraParams {
 
     private final boolean mHasInitiationTimeSupport;
 
+    private final int mMinRangingInterval;
+
     private final EnumSet<MultiNodeCapabilityFlag> mMultiNodeCapabilities;
 
     private final EnumSet<PrfCapabilityFlag> mPrfCapabilities;
@@ -81,6 +83,7 @@ public class FiraSpecificationParams extends FiraParams {
     private static final String KEY_BLOCK_STRIDING_SUPPORT = "block_striding";
     private static final String KEY_NON_DEFERRED_MODE_SUPPORT = "non_deferred_mode";
     private static final String KEY_INITIATION_TIME_SUPPORT = "initiation_time";
+    private static final String KEY_MIN_RANGING_INTERVAL = "min_ranging_interval";
     private static final String KEY_MULTI_NODE_CAPABILITIES = "multi_node_capabilities";
     private static final String KEY_PRF_CAPABILITIES = "prf_capabilities";
     private static final String KEY_RANGING_ROUND_CAPABILITIES = "ranging_round_capabilities";
@@ -103,6 +106,7 @@ public class FiraSpecificationParams extends FiraParams {
             boolean hasBlockStridingSupport,
             boolean hasNonDeferredModeSupport,
             boolean hasInitiationTimeSupport,
+            int minRangingInterval,
             EnumSet<MultiNodeCapabilityFlag> multiNodeCapabilities,
             EnumSet<PrfCapabilityFlag> prfCapabilities,
             EnumSet<RangingRoundCapabilityFlag> rangingRoundCapabilities,
@@ -121,6 +125,7 @@ public class FiraSpecificationParams extends FiraParams {
         mHasBlockStridingSupport = hasBlockStridingSupport;
         mHasNonDeferredModeSupport = hasNonDeferredModeSupport;
         mHasInitiationTimeSupport = hasInitiationTimeSupport;
+        mMinRangingInterval = minRangingInterval;
         mMultiNodeCapabilities = multiNodeCapabilities;
         mPrfCapabilities = prfCapabilities;
         mRangingRoundCapabilities = rangingRoundCapabilities;
@@ -176,6 +181,10 @@ public class FiraSpecificationParams extends FiraParams {
         return mHasInitiationTimeSupport;
     }
 
+    public int getMinRangingInterval() {
+        return mMinRangingInterval;
+    }
+
     public EnumSet<MultiNodeCapabilityFlag> getMultiNodeCapabilities() {
         return mMultiNodeCapabilities;
     }
@@ -229,6 +238,7 @@ public class FiraSpecificationParams extends FiraParams {
         bundle.putBoolean(KEY_BLOCK_STRIDING_SUPPORT, mHasBlockStridingSupport);
         bundle.putBoolean(KEY_NON_DEFERRED_MODE_SUPPORT, mHasNonDeferredModeSupport);
         bundle.putBoolean(KEY_INITIATION_TIME_SUPPORT, mHasInitiationTimeSupport);
+        bundle.putInt(KEY_MIN_RANGING_INTERVAL, mMinRangingInterval);
         bundle.putInt(KEY_MULTI_NODE_CAPABILITIES, FlagEnum.toInt(mMultiNodeCapabilities));
         bundle.putInt(KEY_PRF_CAPABILITIES, FlagEnum.toInt(mPrfCapabilities));
         bundle.putInt(KEY_RANGING_ROUND_CAPABILITIES, FlagEnum.toInt(mRangingRoundCapabilities));
@@ -287,6 +297,7 @@ public class FiraSpecificationParams extends FiraParams {
                 .hasBlockStridingSupport(bundle.getBoolean(KEY_BLOCK_STRIDING_SUPPORT))
                 .hasNonDeferredModeSupport(bundle.getBoolean(KEY_NON_DEFERRED_MODE_SUPPORT))
                 .hasInitiationTimeSupport(bundle.getBoolean(KEY_INITIATION_TIME_SUPPORT))
+                .setMinRangingIntervalSupported(bundle.getInt(KEY_MIN_RANGING_INTERVAL, -1))
                 .setMultiNodeCapabilities(
                         FlagEnum.toEnumSet(
                                 bundle.getInt(KEY_MULTI_NODE_CAPABILITIES),
@@ -344,6 +355,8 @@ public class FiraSpecificationParams extends FiraParams {
         private boolean mHasNonDeferredModeSupport = false;
 
         private boolean mHasInitiationTimeSupport = false;
+
+        private int mMinRangingInterval = -1;
 
         // Unicast support is mandatory
         private final EnumSet<MultiNodeCapabilityFlag> mMultiNodeCapabilities =
@@ -432,6 +445,16 @@ public class FiraSpecificationParams extends FiraParams {
             return this;
         }
 
+        /**
+         * Set minimum supported ranging interval
+         * @param value : minimum ranging interval supported
+         * @return FiraSpecificationParams builder
+         */
+        public FiraSpecificationParams.Builder setMinRangingIntervalSupported(int value) {
+            mMinRangingInterval = value;
+            return this;
+        }
+
         public FiraSpecificationParams.Builder setMultiNodeCapabilities(
                 Collection<MultiNodeCapabilityFlag> multiNodeCapabilities) {
             mMultiNodeCapabilities.addAll(multiNodeCapabilities);
@@ -496,6 +519,7 @@ public class FiraSpecificationParams extends FiraParams {
                     mHasBlockStridingSupport,
                     mHasNonDeferredModeSupport,
                     mHasInitiationTimeSupport,
+                    mMinRangingInterval,
                     mMultiNodeCapabilities,
                     mPrfCapabilities,
                     mRangingRoundCapabilities,
