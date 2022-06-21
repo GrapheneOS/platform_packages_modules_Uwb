@@ -76,6 +76,7 @@ java_library {
         "guava",
         "libprotobuf-java-lite",
         "uwb-config-proto",
+        "modules-utils-statemachine",
     ],
 
     apex_available: [
