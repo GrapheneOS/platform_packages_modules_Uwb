@@ -66,6 +66,7 @@ public class UwbMetrics {
         private long mStartTimeSinceBootMs;
         private int mInitLatencyMs;
         private int mInitStatus;
+        private int mRangingStatus;
         private int mActiveDuration;
         private int mRangingCount;
         private int mValidRangingCount;
@@ -129,6 +130,41 @@ public class UwbMetrics {
                 case UwbUciConstants.STATUS_CODE_INVALID_RANGE:
                 case UwbUciConstants.STATUS_CODE_INVALID_MESSAGE_SIZE:
                     mInitStatus = UwbStatsLog.UWB_SESSION_INITIATED__STATUS__BAD_PARAMS;
+                    break;
+            }
+        }
+
+        private void convertRangingStatus(int status) {
+            mRangingStatus = UwbStatsLog.UWB_START_RANGING__STATUS__RANGING_GENERAL_FAILURE;
+            switch (status) {
+                case UwbUciConstants.STATUS_CODE_OK:
+                    mRangingStatus = UwbStatsLog.UWB_START_RANGING__STATUS__RANGING_SUCCESS;
+                    break;
+                case UwbUciConstants.STATUS_CODE_RANGING_TX_FAILED:
+                    mRangingStatus = UwbStatsLog.UWB_START_RANGING__STATUS__TX_FAILED;
+                    break;
+                case UwbUciConstants.STATUS_CODE_RANGING_RX_PHY_DEC_FAILED:
+                    mRangingStatus = UwbStatsLog.UWB_START_RANGING__STATUS__RX_PHY_DEC_FAILED;
+                    break;
+                case UwbUciConstants.STATUS_CODE_RANGING_RX_PHY_TOA_FAILED:
+                    mRangingStatus = UwbStatsLog.UWB_START_RANGING__STATUS__RX_PHY_TOA_FAILED;
+                    break;
+                case UwbUciConstants.STATUS_CODE_RANGING_RX_PHY_STS_FAILED:
+                    mRangingStatus = UwbStatsLog.UWB_START_RANGING__STATUS__RX_PHY_STS_FAILED;
+                    break;
+                case UwbUciConstants.STATUS_CODE_RANGING_RX_MAC_DEC_FAILED:
+                    mRangingStatus = UwbStatsLog.UWB_START_RANGING__STATUS__RX_MAC_DEC_FAILED;
+                    break;
+                case UwbUciConstants.STATUS_CODE_RANGING_RX_MAC_IE_DEC_FAILED:
+                    mRangingStatus = UwbStatsLog.UWB_START_RANGING__STATUS__RX_MAC_IE_DEC_FAILED;
+                    break;
+                case UwbUciConstants.STATUS_CODE_RANGING_RX_MAC_IE_MISSING:
+                    mRangingStatus = UwbStatsLog.UWB_START_RANGING__STATUS__RX_MAC_IE_MISSING;
+                    break;
+                case UwbUciConstants.STATUS_CODE_INVALID_PARAM:
+                case UwbUciConstants.STATUS_CODE_INVALID_RANGE:
+                case UwbUciConstants.STATUS_CODE_INVALID_MESSAGE_SIZE:
+                    mRangingStatus = UwbStatsLog.UWB_START_RANGING__STATUS__RANGING_BAD_PARAMS;
                     break;
             }
         }
@@ -249,7 +285,12 @@ public class UwbMetrics {
                 session.mHasValidRangingSinceStart = false;
                 return;
             }
+            session.convertRangingStatus(status);
             session.mStartTimeSinceBootMs = mUwbInjector.getElapsedSinceBootMillis();
+            UwbStatsLog.write(UwbStatsLog.UWB_RANGING_START, uwbSession.getProfileType(),
+                    session.mStsType, session.mIsInitiator,
+                    session.mIsController, session.mIsDiscoveredByFramework, session.mIsOutOfBand,
+                    session.mRangingStatus);
         }
     }
 
