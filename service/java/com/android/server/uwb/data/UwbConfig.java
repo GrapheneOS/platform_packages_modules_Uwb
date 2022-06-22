@@ -27,7 +27,11 @@ import static com.google.uwb.support.fira.FiraParams.UWB_PREAMBLE_CODE_INDEX_10;
 import android.annotation.IntDef;
 import android.annotation.Nullable;
 
+import com.android.server.uwb.pm.RangingSessionController;
+
 import com.google.uwb.support.base.RequiredParam;
+import com.google.uwb.support.fira.FiraOpenSessionParams;
+import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraParams.MacFcsType;
 import com.google.uwb.support.fira.FiraParams.MultiNodeMode;
 import com.google.uwb.support.fira.FiraParams.PrfMode;
@@ -36,6 +40,7 @@ import com.google.uwb.support.fira.FiraParams.RframeConfig;
 import com.google.uwb.support.fira.FiraParams.StsConfig;
 import com.google.uwb.support.fira.FiraParams.UwbChannel;
 import com.google.uwb.support.fira.FiraParams.UwbPreambleCodeIndex;
+import com.google.uwb.support.fira.FiraProtocolVersion;
 
 public class UwbConfig {
 
@@ -45,7 +50,8 @@ public class UwbConfig {
                     OOB_TYPE_NONE,
                     OOB_TYPE_BLE,
             })
-    public @interface OobType{}
+    public @interface OobType {
+    }
 
     public static final int OOB_TYPE_NONE = 0;
     public static final int OOB_TYPE_BLE = 1;
@@ -58,7 +64,8 @@ public class UwbConfig {
                     PERIPHERAL,
                     CENTRAL,
             })
-    public @interface OobBleRole {}
+    public @interface OobBleRole {
+    }
 
     public static final int CENTRAL_GATT_CLIENT = 0;
     public static final int PERIPHERAL_GATT_SERVER = 1;
@@ -73,7 +80,8 @@ public class UwbConfig {
                     CONTROLLER_AND_RESPONDER,
                     CONTROLLER_AND_INITIATOR,
             })
-    public @interface UwbRole {}
+    public @interface UwbRole {
+    }
 
     public static final int CONTROLEE_AND_RESPONDER = 0;
     public static final int CONTROLEE_AND_INITIATOR = 1;
@@ -87,18 +95,28 @@ public class UwbConfig {
                     TIME_BASED,
 
             })
-    public @interface ScheduledMode {}
+    public @interface ScheduledMode {
+    }
 
     public static final int CONTENTION_BASED = 0;
     public static final int TIME_BASED = 1;
 
-    @UwbRole public final int mUwbRole;
-    @RangingRoundUsage public final int mRangingRoundUsage;
-    @MultiNodeMode public final int mMultiNodeMode;
-    @RframeConfig public final int mRframeConfig;
-    @StsConfig public final int mStsConfig;
+    public static final int DEVICE_TYPE_BITMASK = 0b00000001; // 1
+    public static final int DEVICE_ROLE_BITMASK = 0b00000010; // 2
+
+    @UwbRole
+    public final int mUwbRole;
+    @RangingRoundUsage
+    public final int mRangingRoundUsage;
+    @MultiNodeMode
+    public final int mMultiNodeMode;
+    @RframeConfig
+    public final int mRframeConfig;
+    @StsConfig
+    public final int mStsConfig;
     public final int mRoundHopping;
-    @ScheduledMode public final int mScheduledMode;
+    @ScheduledMode
+    public final int mScheduledMode;
     public final int mMaxContentionPhaseLength;
     public final boolean mTofReport;
     public final boolean mAoaAzimuthReport;
@@ -108,21 +126,29 @@ public class UwbConfig {
     public final int mSlotDurationRstu;
     public final int mSlotsPerRangingRound;
     public final int mRangingIntervalMs;
-    @UwbChannel public final int mUwbChannel;
-    @UwbPreambleCodeIndex public final int mUwbPreambleCodeIndex;
+    @UwbChannel
+    public final int mUwbChannel;
+    @UwbPreambleCodeIndex
+    public final int mUwbPreambleCodeIndex;
     public final int mSp0PhyParameterSet;
     public final int mSp1PhyParameterSet;
     public final int mSp3PhyParameterSet;
     public final int mMaxRetry;
-    @PrfMode public final int mConstraintLengthConvolutionalCode;
+    @PrfMode
+    public final int mConstraintLengthConvolutionalCode;
     public final int mUwbInitiationTimeMs;
     public final int mKeyRotationRate;
-    @MacFcsType public final int mMacFcsType;
+    @MacFcsType
+    public final int mMacFcsType;
     public final int mRangingRoundControl;
-    @Nullable public final byte[] mVendorID;
-    @Nullable public final byte[] mStaticStsIV;
-    @OobType public final int mOobType;
-    @OobBleRole public final int mOobBleRole;
+    @Nullable
+    public final byte[] mVendorID;
+    @Nullable
+    public final byte[] mStaticStsIV;
+    @OobType
+    public final int mOobType;
+    @OobBleRole
+    public final int mOobBleRole;
 
     private UwbConfig(
             @UwbRole int uwbRole,
@@ -201,7 +227,8 @@ public class UwbConfig {
         private int mRangingRoundUsage = RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
 
         /** UCI spec default: SP3 */
-        @RframeConfig  private int mRframeConfig = RFRAME_CONFIG_SP3;
+        @RframeConfig
+        private int mRframeConfig = RFRAME_CONFIG_SP3;
 
         /** Round hopping disabled */
         private int mRoundHopping = HOPPING_MODE_DISABLE;
@@ -238,7 +265,8 @@ public class UwbConfig {
         private int mRangingIntervalMs = 200;
 
         /** UCI spec default: Channel 9, which is the only mandatory channel. */
-        @UwbChannel private int mUwbChannel = UWB_CHANNEL_9;
+        @UwbChannel
+        private int mUwbChannel = UWB_CHANNEL_9;
 
         /** UCI spec default: index 10 */
         @UwbPreambleCodeIndex
@@ -257,21 +285,25 @@ public class UwbConfig {
         private int mMaxRetry = 0;
 
         /** UCI spec default: BPRF */
-        @PrfMode private int mConstraintLengthConvolutionalCode = PRF_MODE_BPRF;
+        @PrfMode
+        private int mConstraintLengthConvolutionalCode = PRF_MODE_BPRF;
 
         /** UCI spec default: 0ms */
         private int mUwbInitiationTimeMs = 0;
 
-        /** UCI spec default: No key rotation*/
+        /** UCI spec default: No key rotation */
         private int mKeyRotationRate = 0;
 
         /** UCI spec default: CRC-16 */
-        @MacFcsType private int mMacFcsType = MAC_FCS_TYPE_CRC_16;
+        @MacFcsType
+        private int mMacFcsType = MAC_FCS_TYPE_CRC_16;
 
         private int mRangingRoundControl = 0;
 
-        @Nullable private byte[] mVendorID = null;
-        @Nullable private byte[] mStaticStsIV = null;
+        @Nullable
+        private byte[] mVendorID = null;
+        @Nullable
+        private byte[] mStaticStsIV = null;
 
         public UwbConfig.Builder setUwbRole(@UwbRole int uwbRole) {
             mUwbRole.set(uwbRole);
@@ -378,6 +410,7 @@ public class UwbConfig {
             mSp3PhyParameterSet = sp3PhyParameterSet;
             return this;
         }
+
         public UwbConfig.Builder setMaxRetry(int maxRetry) {
             mMaxRetry = maxRetry;
             return this;
@@ -431,37 +464,66 @@ public class UwbConfig {
 
         public UwbConfig build() {
             return new UwbConfig(
-            mUwbRole.get(),
-            mRangingRoundUsage,
-            mMultiNodeMode.get(),
-            mRframeConfig,
-            mStsConfig.get(),
-            mRoundHopping,
-            mScheduledMode,
-            mMaxContentionPhaseLength,
-            mTofReport,
-            mAoaAzimuthReport,
-            mAoaElevationReport,
-            mAoaFomReport,
-            mBlockStriding,
-            mSlotDurationRstu,
-            mSlotsPerRangingRound,
-            mRangingIntervalMs,
-            mUwbChannel,
-            mUwbPreambleCodeIndex,
-            mSp0PhyParameterSet,
-            mSp1PhyParameterSet,
-            mSp3PhyParameterSet,
-            mMaxRetry,
-            mConstraintLengthConvolutionalCode,
-            mUwbInitiationTimeMs,
-            mKeyRotationRate,
-            mMacFcsType,
-            mRangingRoundControl,
-            mVendorID,
-            mStaticStsIV,
-            mOobType.get(),
-            mOobBleRole.get());
+                    mUwbRole.get(),
+                    mRangingRoundUsage,
+                    mMultiNodeMode.get(),
+                    mRframeConfig,
+                    mStsConfig.get(),
+                    mRoundHopping,
+                    mScheduledMode,
+                    mMaxContentionPhaseLength,
+                    mTofReport,
+                    mAoaAzimuthReport,
+                    mAoaElevationReport,
+                    mAoaFomReport,
+                    mBlockStriding,
+                    mSlotDurationRstu,
+                    mSlotsPerRangingRound,
+                    mRangingIntervalMs,
+                    mUwbChannel,
+                    mUwbPreambleCodeIndex,
+                    mSp0PhyParameterSet,
+                    mSp1PhyParameterSet,
+                    mSp3PhyParameterSet,
+                    mMaxRetry,
+                    mConstraintLengthConvolutionalCode,
+                    mUwbInitiationTimeMs,
+                    mKeyRotationRate,
+                    mMacFcsType,
+                    mRangingRoundControl,
+                    mVendorID,
+                    mStaticStsIV,
+                    mOobType.get(),
+                    mOobBleRole.get());
         }
+    }
+
+    /**
+     * Convert UwbConfig to FiraOpenSessionParams
+     */
+    public static FiraOpenSessionParams getOpenSessionParams(
+            RangingSessionController.SessionInfo sessionInfo, UwbConfig uwbConfig) {
+
+        FiraProtocolVersion protocolVersion = FiraParams.PROTOCOL_VERSION_1_1;
+        FiraOpenSessionParams.Builder firaOpenSessionBuilder = new FiraOpenSessionParams.Builder()
+                .setSessionId(sessionInfo.getSessionId())
+                .setDeviceAddress(sessionInfo.getDeviceAddress())
+                .setDestAddressList(sessionInfo.mDestAddressList)
+                .setProtocolVersion(protocolVersion)
+                .setDeviceType(uwbConfig.mUwbRole & DEVICE_TYPE_BITMASK)
+                .setDeviceRole(uwbConfig.mUwbRole & DEVICE_ROLE_BITMASK)
+                .setRangingRoundUsage(uwbConfig.mRangingRoundUsage)
+                .setMultiNodeMode(uwbConfig.mMultiNodeMode)
+                .setRframeConfig(uwbConfig.mRframeConfig)
+                .setStsConfig(uwbConfig.mStsConfig)
+                .setHoppingMode(uwbConfig.mRoundHopping)
+                .setHasTimeOfFlightReport(uwbConfig.mTofReport)
+                .setHasAngleOfArrivalAzimuthReport(uwbConfig.mAoaAzimuthReport)
+                .setHasAngleOfArrivalElevationReport(uwbConfig.mAoaElevationReport);
+
+        sessionInfo.subSessionId.ifPresent(firaOpenSessionBuilder::setSubSessionId);
+
+        return firaOpenSessionBuilder.build();
+
     }
 }
