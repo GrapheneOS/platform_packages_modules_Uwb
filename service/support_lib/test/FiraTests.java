@@ -466,6 +466,8 @@ public class FiraTests {
                 EnumSet.allOf(FiraParams.BprfParameterSetCapabilityFlag.class);
         EnumSet<FiraParams.HprfParameterSetCapabilityFlag> hprfCapabilities =
                 EnumSet.allOf(FiraParams.HprfParameterSetCapabilityFlag.class);
+        EnumSet<FiraParams.RangeDataNtfConfigCapabilityFlag> rangeDataNtfConfigCapabilities =
+                EnumSet.allOf(FiraParams.RangeDataNtfConfigCapabilityFlag.class);
 
         FiraSpecificationParams params =
                 new FiraSpecificationParams.Builder()
@@ -487,6 +489,7 @@ public class FiraTests {
                         .setPsduDataRateCapabilities(psduDataRateCapabilities)
                         .setBprfParameterSetCapabilities(bprfCapabilities)
                         .setHprfParameterSetCapabilities(hprfCapabilities)
+                        .setRangeDataNtfConfigCapabilities(rangeDataNtfConfigCapabilities)
                         .build();
         assertEquals(minPhyVersionSupported, params.getMinPhyVersionSupported());
         assertEquals(maxPhyVersionSupported, params.getMaxPhyVersionSupported());
@@ -506,6 +509,7 @@ public class FiraTests {
         assertEquals(psduDataRateCapabilities, params.getPsduDataRateCapabilities());
         assertEquals(bprfCapabilities, params.getBprfParameterSetCapabilities());
         assertEquals(hprfCapabilities, params.getHprfParameterSetCapabilities());
+        assertEquals(rangeDataNtfConfigCapabilities, params.getRangeDataNtfConfigCapabilities());
 
         FiraSpecificationParams fromBundle = FiraSpecificationParams.fromBundle(params.toBundle());
         assertEquals(minPhyVersionSupported, fromBundle.getMinPhyVersionSupported());
@@ -526,6 +530,8 @@ public class FiraTests {
         assertEquals(psduDataRateCapabilities, fromBundle.getPsduDataRateCapabilities());
         assertEquals(bprfCapabilities, fromBundle.getBprfParameterSetCapabilities());
         assertEquals(hprfCapabilities, fromBundle.getHprfParameterSetCapabilities());
+        assertEquals(rangeDataNtfConfigCapabilities,
+                fromBundle.getRangeDataNtfConfigCapabilities());
         verifyProtocolPresent(params);
         verifyBundlesEqual(params, fromBundle);
     }
