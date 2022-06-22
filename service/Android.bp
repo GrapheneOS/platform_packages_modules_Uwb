@@ -75,6 +75,7 @@ java_library {
         "modules-utils-handlerexecutor",
         "modules-utils-preconditions",
         "uwb-config-proto",
+        "modules-utils-statemachine",
     ],
 
     apex_available: [

@@ -27,6 +27,8 @@ import static com.google.uwb.support.fira.FiraParams.HOPPING_MODE_DISABLE;
 import static com.google.uwb.support.fira.FiraParams.MAC_FCS_TYPE_CRC_16;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
 import static com.google.uwb.support.fira.FiraParams.PRF_MODE_BPRF;
+import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_RESPONDER;
+import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLEE;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
 import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP3;
 import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_DYNAMIC;
@@ -35,21 +37,57 @@ import static com.google.uwb.support.fira.FiraParams.UWB_PREAMBLE_CODE_INDEX_10;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.when;
 
+import android.content.AttributionSource;
+import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.platform.test.annotations.Presubmit;
 import android.test.suitebuilder.annotation.SmallTest;
+import android.uwb.IUwbRangingCallbacks;
+import android.uwb.SessionHandle;
+import android.uwb.UwbAddress;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.server.uwb.UwbInjector;
+import com.android.server.uwb.pm.PacsControleeSession;
+import com.android.server.uwb.pm.PacsControllerSession;
 import com.android.server.uwb.pm.PacsProfile;
 
+import com.google.uwb.support.fira.FiraOpenSessionParams;
+
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 @Presubmit
 public class UwbConfigTest {
+    @Mock
+    private AttributionSource mAttributionSource;
+    @Mock
+    private Context mContext;
+    @Mock
+    private UwbInjector mUwbInjector;
+    @Mock
+    private ServiceProfileData.ServiceProfileInfo mServiceProfileInfo;
+    @Mock
+    private IUwbRangingCallbacks mIUwbRangingCallbacks;
+    @Mock
+    private Handler mHandler;
+    @Mock
+    private Looper mLooper;
+
+    @Before
+    public void setUp() {
+        MockitoAnnotations.initMocks(this);
+        when(mHandler.getLooper()).thenReturn(mLooper);
+    }
 
     @Test
     public void testUwbconfig() {
@@ -181,4 +219,53 @@ public class UwbConfigTest {
         assertEquals(uwbConfig.mOobBleRole, CENTRAL);
     }
 
+    @Test
+    public void testGetOpenSessionParams() {
+        UwbConfig controleeConfig = PacsProfile.getPacsControleeProfile();
+        SessionHandle sessionHandleControlee = new SessionHandle(10);
+
+        PacsControleeSession pacsControleeSession = new PacsControleeSession(
+                sessionHandleControlee, mAttributionSource, mContext, mUwbInjector,
+                mServiceProfileInfo,
+                mIUwbRangingCallbacks, mHandler);
+
+        pacsControleeSession.mSessionInfo.setSessionId(10);
+        pacsControleeSession.mSessionInfo.setSubSessionId(24);
+        pacsControleeSession.mSessionInfo
+                .setUwbAddress(UwbAddress.fromBytes(new byte[]{0x0A, 0x01}));
+        pacsControleeSession.mSessionInfo.mDestAddressList
+                .add(UwbAddress.fromBytes(new byte[]{0x0B, 0x01}));
+
+        FiraOpenSessionParams controleeParams =
+                UwbConfig.getOpenSessionParams(pacsControleeSession.mSessionInfo, controleeConfig);
+
+        assertEquals(controleeParams.getSessionId(), 10);
+        assertEquals(controleeParams.getSubSessionId(), 24);
+        assertEquals(controleeParams.getDeviceRole(), RANGING_DEVICE_ROLE_RESPONDER);
+        assertEquals(controleeParams.getDeviceType(), RANGING_DEVICE_TYPE_CONTROLEE);
+
+        UwbConfig controllerConfig = PacsProfile.getPacsControleeProfile();
+        SessionHandle sessionHandleController = new SessionHandle(10);
+
+        PacsControllerSession pacsControllerSession = new PacsControllerSession(
+                sessionHandleController, mAttributionSource, mContext, mUwbInjector,
+                mServiceProfileInfo,
+                mIUwbRangingCallbacks, mHandler);
+
+        pacsControllerSession.mSessionInfo.setSessionId(15);
+        pacsControllerSession.mSessionInfo
+                .setUwbAddress(UwbAddress.fromBytes(new byte[]{0x0A, 0x01}));
+        pacsControllerSession.mSessionInfo.mDestAddressList
+                .add(UwbAddress.fromBytes(new byte[]{0x0B, 0x01}));
+
+        FiraOpenSessionParams controllerParams =
+                UwbConfig.getOpenSessionParams(pacsControllerSession.mSessionInfo,
+                        controllerConfig);
+
+        assertEquals(controllerParams.getSessionId(), 15);
+        assertEquals(controllerParams.getSubSessionId(), 0);
+        assertEquals(controllerParams.getDeviceRole(), RANGING_DEVICE_ROLE_RESPONDER);
+        assertEquals(controllerParams.getDeviceType(), RANGING_DEVICE_TYPE_CONTROLEE);
+
+    }
 }
