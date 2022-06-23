@@ -72,6 +72,8 @@ public class FiraSpecificationParams extends FiraParams {
 
     private final EnumSet<HprfParameterSetCapabilityFlag> mHprfParameterSetCapabilities;
 
+    private final EnumSet<RangeDataNtfConfigCapabilityFlag> mRangeDataNtfConfigCapabilities;
+
     private static final String KEY_MIN_PHY_VERSION = "min_phy_version";
     private static final String KEY_MAX_PHY_VERSION = "max_phy_version";
     private static final String KEY_MIN_MAC_VERSION = "min_mac_version";
@@ -94,6 +96,8 @@ public class FiraSpecificationParams extends FiraParams {
             "bprf_parameter_set_capabilities";
     private static final String KEY_HPRF_PARAMETER_SET_CAPABILITIES =
             "hprf_parameter_set_capabilities";
+    private static final String KEY_RANGE_DATA_NTF_CONFIG_CAPABILITIES =
+            "range_data_ntf_config_capabilities";
 
     private FiraSpecificationParams(
             FiraProtocolVersion minPhyVersionSupported,
@@ -114,7 +118,8 @@ public class FiraSpecificationParams extends FiraParams {
             EnumSet<StsCapabilityFlag> stsCapabilities,
             EnumSet<PsduDataRateCapabilityFlag> psduDataRateCapabilities,
             EnumSet<BprfParameterSetCapabilityFlag> bprfParameterSetCapabilities,
-            EnumSet<HprfParameterSetCapabilityFlag> hprfParameterSetCapabilities) {
+            EnumSet<HprfParameterSetCapabilityFlag> hprfParameterSetCapabilities,
+            EnumSet<RangeDataNtfConfigCapabilityFlag> rangeDataNtfConfigCapabilities) {
         mMinPhyVersionSupported = minPhyVersionSupported;
         mMaxPhyVersionSupported = maxPhyVersionSupported;
         mMinMacVersionSupported = minMacVersionSupported;
@@ -134,6 +139,7 @@ public class FiraSpecificationParams extends FiraParams {
         mPsduDataRateCapabilities = psduDataRateCapabilities;
         mBprfParameterSetCapabilities = bprfParameterSetCapabilities;
         mHprfParameterSetCapabilities = hprfParameterSetCapabilities;
+        mRangeDataNtfConfigCapabilities = rangeDataNtfConfigCapabilities;
     }
 
     @Override
@@ -217,6 +223,10 @@ public class FiraSpecificationParams extends FiraParams {
         return mHprfParameterSetCapabilities;
     }
 
+    public EnumSet<RangeDataNtfConfigCapabilityFlag> getRangeDataNtfConfigCapabilities() {
+        return mRangeDataNtfConfigCapabilities;
+    }
+
     private static int[] toIntArray(List<Integer> data) {
         int[] res = new int[data.size()];
         for (int i = 0; i < data.size(); i++) {
@@ -249,6 +259,8 @@ public class FiraSpecificationParams extends FiraParams {
                 FlagEnum.toInt(mBprfParameterSetCapabilities));
         bundle.putLong(KEY_HPRF_PARAMETER_SET_CAPABILITIES,
                 FlagEnum.toLong(mHprfParameterSetCapabilities));
+        bundle.putInt(KEY_RANGE_DATA_NTF_CONFIG_CAPABILITIES,
+                FlagEnum.toInt(mRangeDataNtfConfigCapabilities));
         return bundle;
     }
 
@@ -278,7 +290,7 @@ public class FiraSpecificationParams extends FiraParams {
         FiraSpecificationParams.Builder builder = new FiraSpecificationParams.Builder();
         List<Integer> supportedChannels =
                 toIntList(requireNonNull(bundle.getIntArray(KEY_SUPPORTED_CHANNELS)));
-        return builder.setMinPhyVersionSupported(
+        builder.setMinPhyVersionSupported(
                         FiraProtocolVersion.fromString(bundle.getString(KEY_MIN_PHY_VERSION)))
                 .setMaxPhyVersionSupported(
                         FiraProtocolVersion.fromString(bundle.getString(KEY_MAX_PHY_VERSION)))
@@ -327,8 +339,15 @@ public class FiraSpecificationParams extends FiraParams {
                 .setHprfParameterSetCapabilities(
                         FlagEnum.longToEnumSet(
                                 bundle.getLong(KEY_HPRF_PARAMETER_SET_CAPABILITIES),
-                                HprfParameterSetCapabilityFlag.values()))
-                .build();
+                                HprfParameterSetCapabilityFlag.values()));
+        // Newer params need to be backward compatible with existing devices.
+        if (bundle.containsKey(KEY_RANGE_DATA_NTF_CONFIG_CAPABILITIES)) {
+            builder.setRangeDataNtfConfigCapabilities(
+                    FlagEnum.toEnumSet(
+                            bundle.getInt(KEY_RANGE_DATA_NTF_CONFIG_CAPABILITIES),
+                            RangeDataNtfConfigCapabilityFlag.values()));
+        }
+        return builder.build();
     }
 
     /** Builder */
@@ -349,6 +368,12 @@ public class FiraSpecificationParams extends FiraParams {
                 EnumSet.of(
                         DeviceRoleCapabilityFlag.HAS_CONTROLLER_INITIATOR_SUPPORT,
                         DeviceRoleCapabilityFlag.HAS_CONTROLEE_RESPONDER_SUPPORT);
+
+        // Enable/Disable ntf config is mandatory.
+        private final EnumSet<RangeDataNtfConfigCapabilityFlag> mRangeDataNtfConfigCapabilities =
+                EnumSet.of(
+                        RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_DISABLE,
+                        RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_ENABLE);
 
         private boolean mHasBlockStridingSupport = false;
 
@@ -503,6 +528,12 @@ public class FiraSpecificationParams extends FiraParams {
             return this;
         }
 
+        public FiraSpecificationParams.Builder setRangeDataNtfConfigCapabilities(
+                Collection<RangeDataNtfConfigCapabilityFlag> rangeDataNtfConfigCapabilities) {
+            mRangeDataNtfConfigCapabilities.addAll(rangeDataNtfConfigCapabilities);
+            return this;
+        }
+
         public FiraSpecificationParams build() {
             if (mSupportedChannels == null || mSupportedChannels.size() == 0) {
                 throw new IllegalStateException("Supported channels are not set");
@@ -527,7 +558,8 @@ public class FiraSpecificationParams extends FiraParams {
                     mStsCapabilities,
                     mPsduDataRateCapabilities,
                     mBprfParameterSetCapabilities,
-                    mHprfParameterSetCapabilities);
+                    mHprfParameterSetCapabilities,
+                    mRangeDataNtfConfigCapabilities);
         }
     }
 }
