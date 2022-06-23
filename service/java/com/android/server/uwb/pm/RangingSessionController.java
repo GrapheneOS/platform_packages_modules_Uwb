@@ -57,6 +57,8 @@ public abstract class RangingSessionController extends StateMachine {
     protected State mEndSessionState = null;
 
     public static final int SESSION_INITIALIZED = 1;
+    public static final int SESSION_START = 2;
+    public static final int SESSION_STOP = 3;
 
     public static final int DISCOVERY_INIT = 101;
     public static final int DISCOVERY_STARTED = 102;
@@ -74,9 +76,10 @@ public abstract class RangingSessionController extends StateMachine {
     public static final int SECURE_SESSION_FAILURE = 303;
 
     public static final int RANGING_INIT = 401;
-    public static final int RANGING_STARTED = 402;
-    public static final int RANGING_FAILURE = 403;
-    public static final int RANGING_ENDED = 404;
+    public static final int RANGING_OPENED = 402;
+    public static final int RANGING_STARTED = 403;
+    public static final int RANGING_FAILURE = 404;
+    public static final int RANGING_ENDED = 405;
 
     public RangingSessionController(SessionHandle sessionHandle,
             AttributionSource attributionSource,
@@ -138,13 +141,20 @@ public abstract class RangingSessionController extends StateMachine {
     }
 
     public void startSession() {
-        // Start OOB discovery
-        sendMessage(DISCOVERY_INIT);
+        sendMessage(SESSION_START);
+    }
+
+    public void stopSession() {
+        sendMessage(SESSION_STOP);
+    }
+
+    public void closeSession() {
+        sendMessage(RANGING_ENDED);
     }
 
     public abstract UwbConfig getUwbConfig();
 
-    public void startRangingSession() throws RemoteException {
+    public void openRangingSession() throws RemoteException {
 
         FiraOpenSessionParams firaOpenSessionParams =
                 UwbConfig.getOpenSessionParams(mSessionInfo, getUwbConfig());
@@ -157,7 +167,23 @@ public abstract class RangingSessionController extends StateMachine {
                 mSessionInfo.mRangingCallbacks,
                 firaOpenSessionParams.toBundle()
         );
+        sendMessage(RANGING_OPENED);
+    }
+
+    protected void startRanging() {
+        FiraOpenSessionParams firaOpenSessionParams =
+                UwbConfig.getOpenSessionParams(mSessionInfo, getUwbConfig());
+        mUwbInjector.getUwbServiceCore().startRanging(mSessionInfo.mSessionHandle,
+                firaOpenSessionParams.toBundle());
         sendMessage(RANGING_STARTED);
+    }
+
+    protected void stopRanging() {
+        mUwbInjector.getUwbServiceCore().stopRanging(mSessionInfo.mSessionHandle);
+    }
+
+    protected void closeRanging() {
+        mUwbInjector.getUwbServiceCore().closeRanging(mSessionInfo.mSessionHandle);
     }
 
     /**

@@ -91,7 +91,7 @@ public class PacsControleeSessionTest {
     }
 
     @Test
-    public void testStartRangingSession() throws RemoteException {
+    public void testOpenRangingSession() throws RemoteException {
 
         UwbConfig uwbConfig = mRangingSessionController.getUwbConfig();
         mRangingSessionController.mSessionInfo.setSessionId(1);
@@ -101,7 +101,7 @@ public class PacsControleeSessionTest {
         mRangingSessionController.mSessionInfo.mDestAddressList
                 .add(UwbAddress.fromBytes(new byte[]{0x0B, 0x01}));
 
-        mRangingSessionController.startRangingSession();
+        mRangingSessionController.openRangingSession();
 
         assertEquals(uwbConfig.mUwbRole, CONTROLEE_AND_RESPONDER);
 
