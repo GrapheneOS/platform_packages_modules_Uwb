@@ -167,11 +167,11 @@ public class DispatchResponse extends FiRaResponse {
      * The notification of the controllee info available.
      */
     public static class ControlleeInfoAvailableNotification extends Notification {
-        public final byte[] sessionData;
+        public final byte[] controlleeInfo;
 
-        private ControlleeInfoAvailableNotification(@NonNull byte[] sessionData) {
+        private ControlleeInfoAvailableNotification(@NonNull byte[] controlleeInfo) {
             super(NOTIFICATION_EVENT_ID_CONTROLLEE_INFO_AVAILABLE);
-            this.sessionData = sessionData;
+            this.controlleeInfo = controlleeInfo;
         }
     }
 
@@ -339,11 +339,11 @@ public class DispatchResponse extends FiRaResponse {
                                     arbitratryData));
                     break;
                 case (byte) 0x03:
-                    // TODO: change it according to the final CSML spec, this is no defined yet.
-                    // use 0x03 and session data as notification data.
+                    // TODO: change it according to the final CSML spec, this is not defined yet.
+                    // use 0x03 and controllee info data as notification data.
                     notificationDataTlvs = curTlvs.get(NOTIFICATION_DATA_TAG);
                     if (notificationDataTlvs == null || notificationDataTlvs.size() == 0) {
-                        throw new IllegalStateException("session data is required.");
+                        throw new IllegalStateException("controllee info data is required.");
                     }
                     payload = notificationDataTlvs.get(0).value;
                     if (payload == null || payload.length == 0) {

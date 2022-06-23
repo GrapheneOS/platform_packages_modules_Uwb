@@ -97,7 +97,7 @@ public class ControllerInitiatorSession extends InitiatorSession {
                     == NOTIFICATION_EVENT_ID_CONTROLLEE_INFO_AVAILABLE) {
                 byte[] controlleeInfoData =
                         ((DispatchResponse.ControlleeInfoAvailableNotification) notification)
-                                .sessionData;
+                                .controlleeInfo;
                 ControlleeInfo controlleeInfo = ControlleeInfo.fromBytes(controlleeInfoData);
                 if (controlleeInfo == null) {
                     logw("received controllee info is not expected.");
@@ -109,7 +109,7 @@ public class ControllerInitiatorSession extends InitiatorSession {
                     logw("session data must be provided for controller");
                     break;
                 }
-                // TODO: construct a PUT_DATA command for put controllee info
+                // TODO: construct a PUT_DATA command for put session data
                 tunnelData(MSG_ID_PUT_SESSION_DATA, sessionData.get().toBytes());
                 return true;
             }
