@@ -54,6 +54,7 @@ public class UwbTestUtils {
     private static final float TEST_AOA_DEST_ELEVATION = 37;
     private static final int TEST_AOA_DEST_ELEVATION_FOM = 90;
     private static final int TEST_SLOT_IDX = 10;
+    private static final int TEST_RSSI = -1;
 
     private UwbTestUtils() {}
 
@@ -66,7 +67,7 @@ public class UwbTestUtils {
                 TEST_AOA_AZIMUTH_FOM, convertFloatToQFormat(TEST_AOA_ELEVATION, 9, 7),
                 TEST_AOA_ELEVATION_FOM, convertFloatToQFormat(TEST_AOA_DEST_AZIMUTH, 9, 7),
                 TEST_AOA_DEST_AZIMUTH_FOM, convertFloatToQFormat(TEST_AOA_DEST_ELEVATION, 9, 7),
-                TEST_AOA_DEST_ELEVATION_FOM, TEST_SLOT_IDX);
+                TEST_AOA_DEST_ELEVATION_FOM, TEST_SLOT_IDX, TEST_RSSI);
         return new UwbRangingData(TEST_SEQ_COUNTER, TEST_SESSION_ID,
                 TEST_RCR_INDICATION, TEST_CURR_RANGING_INTERVAL, TEST_RANGING_MEASURES_TYPE,
                 TEST_MAC_ADDRESS_MODE, noOfRangingMeasures, uwbTwoWayMeasurements);
@@ -133,6 +134,7 @@ public class UwbTestUtils {
                 .setAngleOfArrivalMeasurement(aoaMeasurement)
                 .setDestinationAngleOfArrivalMeasurement(aoaDestMeasurement)
                 .setLineOfSight(TEST_LOS)
+                .setRssiDbm(TEST_RSSI)
                 .build();
         RangingReport rangingReport = new RangingReport.Builder()
                 .addMeasurement(rangingMeasurement)
