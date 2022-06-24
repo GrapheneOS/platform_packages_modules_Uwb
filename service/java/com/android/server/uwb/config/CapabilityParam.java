@@ -45,6 +45,8 @@ public class CapabilityParam {
             UwbVendorCapabilityTlvTypes.SUPPORTED_AOA_RESULT_REQ_ANTENNA_INTERLEAVING;
     public static final int SUPPORTED_MIN_RANGING_INTERVAL_MS =
             UwbVendorCapabilityTlvTypes.SUPPORTED_MIN_RANGING_INTERVAL_MS;
+    public static final int SUPPORTED_RANGE_DATA_NTF_CONFIG =
+            UwbVendorCapabilityTlvTypes.SUPPORTED_RANGE_DATA_NTF_CONFIG;
 
     // CCC specific
     public static final int CCC_SUPPORTED_VERSIONS =
@@ -149,4 +151,8 @@ public class CapabilityParam {
 
     public static final int SUPPORTED_POWER_STATS_QUERY =
             UwbVendorCapabilityTlvTypes.SUPPORTED_POWER_STATS_QUERY;
+
+    public static final int RANGE_DATA_NTF_CONFIG_ENABLE = 1 << 0;
+    public static final int RANGE_DATA_NTF_CONFIG_DISABLE = 1 << 1;
+    public static final int RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG = 1 << 2;
 }
