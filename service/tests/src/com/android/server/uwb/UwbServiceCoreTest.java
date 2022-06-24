@@ -216,6 +216,9 @@ public class UwbServiceCoreTest {
         PersistableBundle specifications = mUwbServiceCore.getSpecificationInfo();
         assertThat(specifications).isEqualTo(genericSpecificationBundle);
         verify(mUwbConfigurationManager).getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any());
+
+        assertThat(mUwbServiceCore.getCachedSpecificationParams()).isEqualTo(
+                genericSpecificationParams);
     }
 
     @Test
