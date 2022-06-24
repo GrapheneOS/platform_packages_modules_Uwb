@@ -25,10 +25,14 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.android.server.uwb.pm.ControlleeInfo;
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
+import com.android.server.uwb.pm.SessionData;
 import com.android.server.uwb.secure.csml.DispatchResponse;
 import com.android.server.uwb.secure.iso7816.CommandApdu;
 import com.android.server.uwb.util.DataTypeConversionUtil;
+
+import java.util.Optional;
 
 /**
  * The responder of dynamic STS session managed by the UWB controller.
@@ -68,7 +72,8 @@ public class ControllerResponderSession extends ResponderSession {
             }
         }
         if (controlleeInfoAvailable != null) {
-            handleControlleeInfoAvailable(controlleeInfoAvailable.sessionData);
+            handleControlleeInfoAvailable(ControlleeInfo.fromBytes(
+                    controlleeInfoAvailable.controlleeInfo));
             return true;
         }
         if (rdsAvailable != null) {
@@ -79,9 +84,15 @@ public class ControllerResponderSession extends ResponderSession {
         return false;
     }
 
-    private void handleControlleeInfoAvailable(@NonNull byte[] sessionData) {
+    private void handleControlleeInfoAvailable(@NonNull ControlleeInfo controlleeInfo) {
+        Optional<SessionData> sessionData =
+                mRunningProfileSessionInfo.getSessionDataForControllee(controlleeInfo);
+        if (sessionData.isEmpty()) {
+            logw("session data is not available.");
+            terminateSession();
+        }
         // send session data to the applet.
-        // TODO: use the controllee info to get the session data from profile manager.
+        // TODO: construct put session data.
         CommandApdu commandApdu = null;
         mFiRaSecureChannel.sendLocalCommandApdu(commandApdu,
                 new FiRaSecureChannel.ExternalRequestCallback() {
