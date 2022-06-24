@@ -756,6 +756,24 @@ public abstract class FiraParams extends Params {
         }
     }
 
+    public enum RangeDataNtfConfigCapabilityFlag implements FlagEnum {
+        HAS_RANGE_DATA_NTF_CONFIG_DISABLE(1 << RANGE_DATA_NTF_CONFIG_DISABLE),
+        HAS_RANGE_DATA_NTF_CONFIG_ENABLE(1 << RANGE_DATA_NTF_CONFIG_ENABLE),
+        HAS_RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY(
+                1 << RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY);
+
+        private final long mValue;
+
+        private RangeDataNtfConfigCapabilityFlag(long value) {
+            mValue = value;
+        }
+
+        @Override
+        public long getValue() {
+            return mValue;
+        }
+    }
+
     // Helper functions
     protected static UwbAddress longToUwbAddress(long value, int length) {
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
