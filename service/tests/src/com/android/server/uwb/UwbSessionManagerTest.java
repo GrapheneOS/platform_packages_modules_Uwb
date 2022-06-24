@@ -22,6 +22,8 @@ import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREG
 import static com.android.server.uwb.UwbSessionManager.SESSION_OPEN_RANGING;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_DISABLE;
+import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_ENABLE;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyByte;
@@ -65,11 +67,14 @@ import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccPulseShapeCombo;
+import com.google.uwb.support.ccc.CccSpecificationParams;
 import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
+import com.google.uwb.support.fira.FiraSpecificationParams;
+import com.google.uwb.support.generic.GenericSpecificationParams;
 
 import org.junit.After;
 import org.junit.Before;
@@ -84,6 +89,8 @@ import org.mockito.quality.Strictness;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -116,11 +123,14 @@ public class UwbSessionManagerTest {
     private AlarmManager mAlarmManager;
     @Mock
     private ActivityManager mActivityManager;
+    @Mock
+    private UwbServiceCore mUwbServiceCore;
     private TestLooper mTestLooper = new TestLooper();
     private UwbSessionManager mUwbSessionManager;
     private MockitoSession mMockitoSession;
     @Captor
     private ArgumentCaptor<OnUidImportanceListener> mOnUidImportanceListenerArgumentCaptor;
+    private GenericSpecificationParams.Builder mSpecificationParamsBuilder;
 
     @Before
     public void setup() {
@@ -128,6 +138,19 @@ public class UwbSessionManagerTest {
         when(mNativeUwbManager.getMaxSessionNumber()).thenReturn(MAX_SESSION_NUM);
         when(mUwbInjector.isSystemApp(UID, PACKAGE_NAME)).thenReturn(true);
         when(mUwbInjector.isForegroundAppOrService(UID, PACKAGE_NAME)).thenReturn(true);
+        when(mUwbInjector.getUwbServiceCore()).thenReturn(mUwbServiceCore);
+        mSpecificationParamsBuilder = new GenericSpecificationParams.Builder()
+                .setCccSpecificationParams(mock(CccSpecificationParams.class))
+                .setFiraSpecificationParams(
+                        new FiraSpecificationParams.Builder()
+                                .setSupportedChannels(List.of(9))
+                                .setRangeDataNtfConfigCapabilities(
+                                        EnumSet.of(
+                                                HAS_RANGE_DATA_NTF_CONFIG_DISABLE,
+                                                HAS_RANGE_DATA_NTF_CONFIG_ENABLE))
+                                .build());
+        when(mUwbServiceCore.getCachedSpecificationParams(any())).thenReturn(
+                mSpecificationParamsBuilder.build());
 
         // TODO: Don't use spy.
         mUwbSessionManager = spy(new UwbSessionManager(
