@@ -188,7 +188,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         if ((byte) deviceState == UwbUciConstants.DEVICE_STATE_ERROR) {
             Log.e(TAG, "Error device status received. Restarting...");
             mUwbMetrics.incrementDeviceStatusErrorCount();
-            takBugReportAfterDeviceError("Restarting UWB due to vendor error");
+            takBugReportAfterDeviceError("UWB Bugreport: restarting UWB due to device error");
             mEnableDisableTask.execute(TASK_RESTART);
             return;
         }
@@ -497,7 +497,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                     if (!mNativeUwbManager.doInitialize()) {
                         Log.e(TAG, "Error enabling UWB");
                         mUwbMetrics.incrementDeviceInitFailureCount();
-                        takBugReportAfterDeviceError("Error enabling UWB");
+                        takBugReportAfterDeviceError("UWB Bugreport: error enabling UWB");
                         updateState(AdapterStateCallback.STATE_DISABLED,
                                 StateChangeReason.SYSTEM_POLICY);
                     } else {
