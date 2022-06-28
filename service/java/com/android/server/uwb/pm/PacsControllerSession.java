@@ -62,18 +62,26 @@ public class PacsControllerSession extends RangingSessionController {
     }
 
     /** Scan for devices */
-    public void scanBle() {
+    public void startScan() {
         DiscoveryInfo discoveryInfo = new DiscoveryInfo(
                 DiscoveryInfo.TransportType.BLE,
                 Optional.empty(), Optional.empty());
 
-        DiscoveryScanService discoveryScanService = new DiscoveryScanService(
+        mDiscoveryScanService = new DiscoveryScanService(
                 mSessionInfo.mAttributionSource,
                 mSessionInfo.mContext,
                 new HandlerExecutor(mHandler),
                 discoveryInfo,
                 mScanCallback
         );
+        mDiscoveryScanService.startDiscovery();
+    }
+
+    /** Stop scanning on ranging stopped or closed */
+    public void stopScan() {
+        if (mDiscoveryScanService != null) {
+            mDiscoveryScanService.stopDiscovery();
+        }
     }
 
     @Override
@@ -106,7 +114,7 @@ public class PacsControllerSession extends RangingSessionController {
         return new EndSessionState();
     }
 
-
+    private DiscoveryScanService mDiscoveryScanService;
     @Override
     public UwbConfig getUwbConfig() {
         return PacsProfile.getPacsControllerProfile();
@@ -127,7 +135,8 @@ public class PacsControllerSession extends RangingSessionController {
 
         @Override
         public void onDiscoveryFailed(int errorCode) {
-            Log.w(TAG, "Discovery failed");
+            Log.e(TAG, "Discovery failed with error code: " + errorCode);
+            mPacsControllerSession.sendMessage(DISCOVERY_FAILED);
         }
     }
 
@@ -155,7 +164,7 @@ public class PacsControllerSession extends RangingSessionController {
                         log("Pacs controller session initialized");
                     }
                     break;
-                case DISCOVERY_INIT:
+                case SESSION_START:
                     if (mVerboseLoggingEnabled) {
                         log("Starting OOB Discovery");
                     }
@@ -176,7 +185,8 @@ public class PacsControllerSession extends RangingSessionController {
             if (mVerboseLoggingEnabled) {
                 log("Enter DiscoveryState");
             }
-            //scanBle();
+            startScan();
+            sendMessage(DISCOVERY_STARTED);
         }
 
         @Override
@@ -190,7 +200,22 @@ public class PacsControllerSession extends RangingSessionController {
         public boolean processMessage(Message message) {
             switch (message.what) {
                 case DISCOVERY_FAILED:
-                    log("Failed to advertise");
+                    if (mVerboseLoggingEnabled) {
+                        log("Scanning failed ");
+                    }
+                    break;
+                case SESSION_START:
+                    startScan();
+                    if (mVerboseLoggingEnabled) {
+                        log("Started scanning");
+                    }
+                    break;
+                case SESSION_STOP:
+                    stopScan();
+                    if (mVerboseLoggingEnabled) {
+                        log("Stopped scanning");
+                    }
+                    break;
             }
             return true;
         }
@@ -262,11 +287,32 @@ public class PacsControllerSession extends RangingSessionController {
                 case RANGING_INIT:
                     try {
                         Log.i(TAG, "Starting ranging session");
-                        startRangingSession();
+                        openRangingSession();
                     } catch (RemoteException e) {
                         Log.e(TAG, "Ranging session start failed");
                         e.printStackTrace();
                     }
+                    break;
+
+                case SESSION_START:
+                case RANGING_OPENED:
+                    startScan();
+                    startRanging();
+                    break;
+
+                case SESSION_STOP:
+                    stopRanging();
+                    stopScan();
+                    if (mVerboseLoggingEnabled) {
+                        log("Stopped ranging session");
+                    }
+                    break;
+
+                case RANGING_ENDED:
+                    closeRanging();
+                    transitionTo(mEndSessionState);
+                    break;
+
             }
             return true;
         }
@@ -279,6 +325,7 @@ public class PacsControllerSession extends RangingSessionController {
             if (mVerboseLoggingEnabled) {
                 log("Enter EndSessionState");
             }
+            stopScan();
         }
 
         @Override
