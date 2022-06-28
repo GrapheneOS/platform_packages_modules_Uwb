@@ -102,6 +102,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     private @StateChangeReason int mLastStateChangedReason;
     private  IUwbVendorUciCallback mCallBack = null;
     private final Handler mHandler;
+    private GenericSpecificationParams mCachedSpecificationParams;
 
     public UwbServiceCore(Context uwbApplicationContext, NativeUwbManager nativeUwbManager,
             UwbMetrics uwbMetrics, UwbCountryCode uwbCountryCode,
@@ -255,15 +256,24 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         mCallBack = null;
     }
 
+    public GenericSpecificationParams getCachedSpecificationParams() {
+        if (mCachedSpecificationParams != null) return mCachedSpecificationParams;
+        // If nothing in cache, populate it.
+        getSpecificationInfo();
+        return mCachedSpecificationParams;
+    }
+
     public PersistableBundle getSpecificationInfo() {
         // TODO(b/211445008): Consolidate to a single uwb thread.
         Pair<Integer, GenericSpecificationParams> specificationParams =
                 mConfigurationManager.getCapsInfo(
                         GenericParams.PROTOCOL_NAME, GenericSpecificationParams.class);
-        if (specificationParams.first != UwbUciConstants.STATUS_CODE_OK)  {
+        if (specificationParams.first != UwbUciConstants.STATUS_CODE_OK
+                || specificationParams.second == null)  {
             Log.e(TAG, "Failed to retrieve specification params");
             return new PersistableBundle();
         }
+        mCachedSpecificationParams = specificationParams.second;
         return specificationParams.second.toBundle();
     }
 
