@@ -149,9 +149,10 @@ public class NativeUwbManager {
      * @param sessionType : Type of session 0x00: Ranging session 0x01: Data transfer 0x02-0x9F: RFU
      *                    0xA0-0xCF: Reserved for Vendor Specific use case 0xD0: Device Test Mode
      *                    0xD1-0xDF: RFU 0xE0-0xFF: Vendor Specific use
+     * @param chipId      : Identifier of UWB chip for multi-HAL devices
      * @return : {@link UwbUciConstants}  Status code
      */
-    public byte initSession(int sessionId, byte sessionType) {
+    public byte initSession(int sessionId, byte sessionType, String chipId) {
         synchronized (mSessionFnLock) {
             return nativeSessionInit(sessionId, sessionType);
         }
@@ -161,9 +162,10 @@ public class NativeUwbManager {
      * De-initializes the session.
      *
      * @param sessionId : Session ID for which session to be de-initialized
+     * @param chipId    : Identifier of UWB chip for multi-HAL devices
      * @return : {@link UwbUciConstants}  Status code
      */
-    public byte deInitSession(int sessionId) {
+    public byte deInitSession(int sessionId, String chipId) {
         synchronized (mSessionFnLock) {
             return nativeSessionDeInit(sessionId);
         }
@@ -173,18 +175,20 @@ public class NativeUwbManager {
      * reset the UWBs
      *
      * @param resetConfig : Reset config
+     * @param chipId      : Identifier of UWB chip for multi-HAL devices
      * @return : {@link UwbUciConstants}  Status code
      */
-    public byte resetDevice(byte resetConfig) {
+    public byte resetDevice(byte resetConfig, String chipId) {
         return nativeResetDevice(resetConfig);
     }
 
     /**
      * Retrieves number of UWB sessions in the UWBS.
      *
+     * @param chipId  : Identifier of UWB chip for multi-HAL devices
      * @return : Number of UWB sessions present in the UWBS.
      */
-    public byte getSessionCount() {
+    public byte getSessionCount(String chipId) {
         synchronized (mSessionCountFnLock) {
             return nativeGetSessionCount();
         }
@@ -194,9 +198,10 @@ public class NativeUwbManager {
      * Queries the current state of the UWB session.
      *
      * @param sessionId : Session of the UWB session for which current session state to be queried
+     * @param chipId    : Identifier of UWB chip for multi-HAL devices
      * @return : {@link UwbUciConstants}  Session State
      */
-    public byte getSessionState(int sessionId) {
+    public byte getSessionState(int sessionId, String chipId) {
         synchronized (mGetSessionStatusFnLock) {
             return nativeGetSessionState(sessionId);
         }
@@ -206,9 +211,10 @@ public class NativeUwbManager {
      * Starts a UWB session.
      *
      * @param sessionId : Session ID for which ranging shall start
+     * @param chipId    : Identifier of UWB chip for multi-HAL devices
      * @return : {@link UwbUciConstants}  Status code
      */
-    public byte startRanging(int sessionId) {
+    public byte startRanging(int sessionId, String chipId) {
         synchronized (mSessionFnLock) {
             return nativeRangingStart(sessionId);
         }
@@ -218,9 +224,10 @@ public class NativeUwbManager {
      * Stops the ongoing UWB session.
      *
      * @param sessionId : Stop the requested ranging session.
+     * @param chipId    : Identifier of UWB chip for multi-HAL devices
      * @return : {@link UwbUciConstants}  Status code
      */
-    public byte stopRanging(int sessionId) {
+    public byte stopRanging(int sessionId, String chipId) {
         synchronized (mSessionFnLock) {
             return nativeRangingStop(sessionId);
         }
@@ -232,10 +239,11 @@ public class NativeUwbManager {
      * @param noOfParams        : The number (n) of APP Configuration Parameters
      * @param appConfigParamLen : The length of APP Configuration Parameters
      * @param appConfigParams   : APP Configuration Parameter
+     * @param chipId            : Identifier of UWB chip for multi-HAL devices
      * @return : {@link UwbConfigStatusData} : Contains statuses for all cfg_id
      */
     public UwbConfigStatusData setAppConfigurations(int sessionId, int noOfParams,
-            int appConfigParamLen, byte[] appConfigParams) {
+            int appConfigParamLen, byte[] appConfigParams, String chipId) {
         synchronized (mSetAppConfigFnLock) {
             return nativeSetAppConfigurations(sessionId, noOfParams, appConfigParamLen,
                     appConfigParams);
@@ -248,10 +256,11 @@ public class NativeUwbManager {
      * @param noOfParams        : The number (n) of APP Configuration Parameters
      * @param appConfigParamLen : The length of APP Configuration Parameters
      * @param appConfigIds      : APP Configuration Parameter
+     * @param chipId            : Identifier of UWB chip for multi-HAL devices
      * @return :  {@link UwbTlvData} : All tlvs that are to be decoded
      */
     public UwbTlvData getAppConfigurations(int sessionId, int noOfParams, int appConfigParamLen,
-            byte[] appConfigIds) {
+            byte[] appConfigIds, String chipId) {
         synchronized (mSetAppConfigFnLock) {
             return nativeGetAppConfigurations(sessionId, noOfParams, appConfigParamLen,
                     appConfigIds);
@@ -261,9 +270,10 @@ public class NativeUwbManager {
     /**
      * Get Core Capabilities information
      *
+     * @param chipId    : Identifier of UWB chip for multi-HAL devices
      * @return :  {@link UwbTlvData} : All tlvs that are to be decoded
      */
-    public UwbTlvData getCapsInfo() {
+    public UwbTlvData getCapsInfo(String chipId) {
         synchronized (mGlobalStateFnLock) {
             return nativeGetCapsInfo();
         }
@@ -283,7 +293,7 @@ public class NativeUwbManager {
      * in the Table 16: Control messages to set Application configurations
      */
     public byte controllerMulticastListUpdate(int sessionId, int action, int noOfControlee,
-            short[] addresses, int[]subSessionIds) {
+            short[] addresses, int[]subSessionIds, String chipId) {
         synchronized (mSessionFnLock) {
             return nativeControllerMulticastListUpdate(sessionId, (byte) action,
                     (byte) noOfControlee, addresses, subSessionIds);
@@ -303,7 +313,7 @@ public class NativeUwbManager {
     }
 
     @NonNull
-    public UwbVendorUciResponse sendRawVendorCmd(int gid, int oid, byte[] payload) {
+    public UwbVendorUciResponse sendRawVendorCmd(int gid, int oid, byte[] payload, String chipId) {
         synchronized (mGlobalStateFnLock) {
             return nativeSendRawVendorCmd(gid, oid, payload);
         }
