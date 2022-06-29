@@ -165,7 +165,8 @@ public abstract class RangingSessionController extends StateMachine {
                 mSessionInfo.mAttributionSource,
                 mSessionInfo.mSessionHandle,
                 mSessionInfo.mRangingCallbacks,
-                firaOpenSessionParams.toBundle()
+                firaOpenSessionParams.toBundle(),
+                mUwbInjector.getMultichipData().getDefaultChipId()
         );
         sendMessage(RANGING_OPENED);
     }

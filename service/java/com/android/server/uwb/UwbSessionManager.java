@@ -209,16 +209,16 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
     private int setAppConfigurations(UwbSession uwbSession) {
         return mConfigurationManager.setAppConfigurations(uwbSession.getSessionId(),
-                uwbSession.getParams());
+                uwbSession.getParams(), uwbSession.getChipId());
     }
 
     public synchronized void initSession(AttributionSource attributionSource,
-            SessionHandle sessionHandle, int sessionId,
-            String protocolName, Params params, IUwbRangingCallbacks rangingCallbacks)
+            SessionHandle sessionHandle, int sessionId, String protocolName, Params params,
+            IUwbRangingCallbacks rangingCallbacks, String chipId)
             throws RemoteException {
         Log.i(TAG, "initSession() : Enter - sessionId : " + sessionId);
         UwbSession uwbSession =  createUwbSession(attributionSource, sessionHandle, sessionId,
-                protocolName, params, rangingCallbacks);
+                protocolName, params, rangingCallbacks, chipId);
         // Check the attribution source chain to ensure that there are no 3p apps which are not in
         // fg which can receive the ranging results.
         AttributionSource nonPrivilegedAppAttrSource =
@@ -278,9 +278,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     @VisibleForTesting
     UwbSession createUwbSession(AttributionSource attributionSource, SessionHandle sessionHandle,
             int sessionId, String protocolName, Params params,
-            IUwbRangingCallbacks iUwbRangingCallbacks) {
+            IUwbRangingCallbacks iUwbRangingCallbacks, String chipId) {
         return new UwbSession(attributionSource, sessionHandle, sessionId, protocolName, params,
-                iUwbRangingCallbacks);
+                iUwbRangingCallbacks, chipId);
     }
 
     public synchronized void deInitSession(SessionHandle sessionHandle) {
@@ -391,7 +391,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     public void stopAllRanging() {
         Log.d(TAG, "stopAllRanging()");
         for (Map.Entry<Integer, UwbSession> sessionEntry : mSessionTable.entrySet()) {
-            int status = mNativeUwbManager.stopRanging(sessionEntry.getKey());
+            int status = mNativeUwbManager.stopRanging(sessionEntry.getKey(),
+                    sessionEntry.getValue().getChipId());
 
             if (status != UwbUciConstants.STATUS_CODE_OK) {
                 Log.i(TAG, "stopAllRanging() - Session " + sessionEntry.getKey()
@@ -417,7 +418,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
     public synchronized void onDeInit(UwbSession uwbSession) {
         if (!isExistedSession(uwbSession.getSessionId())) {
-            Log.i(TAG, "onDeinit - Ignoring already deleted session " + uwbSession.getSessionId());
+            Log.i(TAG, "onDeinit - Ignoring already deleted session "
+                    + uwbSession.getSessionId());
             return;
         }
         Log.d(TAG, "onDeinit: " + uwbSession.getSessionId());
@@ -549,7 +551,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                         synchronized (uwbSession.getWaitObj()) {
                             status = mNativeUwbManager.initSession(
                                     uwbSession.getSessionId(),
-                                    getSessionType(uwbSession.getParams().getProtocolName()));
+                                    getSessionType(uwbSession.getParams().getProtocolName()),
+                                    uwbSession.getChipId());
                             if (status != UwbUciConstants.STATUS_CODE_OK) {
                                 return status;
                             }
@@ -596,7 +599,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             if (status != UwbUciConstants.STATUS_CODE_OK) {
                 Log.i(TAG, "Failed to initialize session - status : " + status);
                 mSessionNotificationManager.onRangingOpenFailed(uwbSession, status);
-                mNativeUwbManager.deInitSession(uwbSession.getSessionId());
+                mNativeUwbManager.deInitSession(uwbSession.getSessionId(), uwbSession.getChipId());
                 removeSession(uwbSession);
             }
             Log.i(TAG, "sessionInit() : finish - sessionId : " + uwbSession.getSessionId());
@@ -613,7 +616,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                     .equals(CccParams.PROTOCOL_NAME)) {
                                 status = mConfigurationManager.setAppConfigurations(
                                         uwbSession.getSessionId(),
-                                        uwbSession.getParams());
+                                        uwbSession.getParams(), uwbSession.getChipId());
                                 if (status != UwbUciConstants.STATUS_CODE_OK) {
                                     mSessionNotificationManager.onRangingStartFailed(
                                             uwbSession, status);
@@ -621,7 +624,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                 }
                             }
 
-                            status = mNativeUwbManager.startRanging(uwbSession.getSessionId());
+                            status = mNativeUwbManager.startRanging(uwbSession.getSessionId(),
+                                    uwbSession.getChipId());
                             if (status != UwbUciConstants.STATUS_CODE_OK) {
                                 mSessionNotificationManager.onRangingStartFailed(
                                         uwbSession, status);
@@ -640,7 +644,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                                     uwbSession.getSessionId(),
                                                     CccParams.PROTOCOL_NAME,
                                                     new byte[0],
-                                                    CccRangingStartedParams.class);
+                                                    CccRangingStartedParams.class,
+                                                    uwbSession.getChipId());
                                     if (statusAndParams.first != UwbUciConstants.STATUS_CODE_OK) {
                                         Log.e(TAG, "Failed to get CCC ranging started params");
                                     }
@@ -683,7 +688,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                     () -> {
                         int status = UwbUciConstants.STATUS_CODE_FAILED;
                         synchronized (uwbSession.getWaitObj()) {
-                            status = mNativeUwbManager.stopRanging(uwbSession.getSessionId());
+                            status = mNativeUwbManager.stopRanging(uwbSession.getSessionId(),
+                                    uwbSession.getChipId());
                             if (status != UwbUciConstants.STATUS_CODE_OK) {
                                 mSessionNotificationManager.onRangingStopFailed(uwbSession, status);
                                 return status;
@@ -766,7 +772,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                         rangingReconfigureParams.getAction(),
                                         subSessionIdList.length,
                                         ArrayUtils.toPrimitive(dstAddressList),
-                                        subSessionIdList);
+                                        subSessionIdList,
+                                        uwbSession.getChipId());
                                 if (status != UwbUciConstants.STATUS_CODE_OK) {
                                     if (rangingReconfigureParams.getAction()
                                             == MULTICAST_LIST_UPDATE_ACTION_ADD) {
@@ -818,7 +825,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                 }
                             }
                             status = mConfigurationManager.setAppConfigurations(
-                                    uwbSession.getSessionId(), param);
+                                    uwbSession.getSessionId(), param, uwbSession.getChipId());
                             Log.d(TAG, "status: " + status);
                             if (status != UwbUciConstants.STATUS_CODE_OK) {
                                 return status;
@@ -855,7 +862,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                     (Callable<Integer>) () -> {
                         int status = UwbUciConstants.STATUS_CODE_FAILED;
                         synchronized (uwbSession.getWaitObj()) {
-                            status = mNativeUwbManager.deInitSession(uwbSession.getSessionId());
+                            status = mNativeUwbManager.deInitSession(uwbSession.getSessionId(),
+                                    uwbSession.getChipId());
                             if (status != UwbUciConstants.STATUS_CODE_OK) {
                                 mSessionNotificationManager.onRangingClosed(uwbSession, status);
                                 return status;
@@ -907,9 +915,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         private UwbMulticastListUpdateStatus mMulticastListUpdateStatus;
         private final int mProfileType;
         private AlarmManager.OnAlarmListener mRangingResultErrorStreakTimerListener;
+        private final String mChipId;
 
         UwbSession(AttributionSource attributionSource, SessionHandle sessionHandle, int sessionId,
-                String protocolName, Params params, IUwbRangingCallbacks iUwbRangingCallbacks) {
+                String protocolName, Params params, IUwbRangingCallbacks iUwbRangingCallbacks,
+                String chipId) {
             this.mAttributionSource = attributionSource;
             this.mSessionHandle = sessionHandle;
             this.mSessionId = sessionId;
@@ -921,6 +931,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             this.mWaitObj = new WaitObj();
             this.isWait = false;
             this.mProfileType = convertProtolNameToProfileType(protocolName);
+            this.mChipId = chipId;
         }
 
         private boolean isPrivilegedApp(int uid, String packageName) {
@@ -954,6 +965,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
         public int getSessionId() {
             return this.mSessionId;
+        }
+
+        public String getChipId() {
+            return this.mChipId;
         }
 
         public SessionHandle getSessionHandle() {
@@ -1075,7 +1090,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             Log.i(TAG, "binderDied : getSessionId is getSessionId() " + getSessionId());
 
             synchronized (UwbSessionManager.this) {
-                int status = mNativeUwbManager.deInitSession(getSessionId());
+                int status = mNativeUwbManager.deInitSession(getSessionId(), getChipId());
                 mUwbMetrics.logRangingCloseEvent(this, status);
                 if (status == UwbUciConstants.STATUS_CODE_OK) {
                     removeSession(this);

@@ -41,6 +41,7 @@ import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.UwbServiceCore;
 import com.android.server.uwb.data.ServiceProfileData;
 import com.android.server.uwb.data.UwbConfig;
+import com.android.server.uwb.multchip.UwbMultichipData;
 import com.android.server.uwb.pm.PacsControllerSession;
 import com.android.server.uwb.pm.RangingSessionController;
 
@@ -55,6 +56,8 @@ import org.mockito.MockitoAnnotations;
 @Presubmit
 // TODO : Add unit tests for states during implementation
 public class PacsControllerSessionTest {
+    private static final String DEFAULT_CHIP_ID = "defaultChipId";
+
     @Mock
     private AttributionSource mAttributionSource;
     @Mock
@@ -71,6 +74,8 @@ public class PacsControllerSessionTest {
     private UwbServiceCore mUwbServiceCore;
     @Mock
     private Looper mLooper;
+    @Mock
+    private UwbMultichipData mUwbMultichipData;
 
     private RangingSessionController mRangingSessionController;
 
@@ -80,6 +85,8 @@ public class PacsControllerSessionTest {
 
         when(mHandler.getLooper()).thenReturn(mLooper);
         when(mUwbInjector.getUwbServiceCore()).thenReturn(mUwbServiceCore);
+        when(mUwbMultichipData.getDefaultChipId()).thenReturn(DEFAULT_CHIP_ID);
+        when(mUwbInjector.getMultichipData()).thenReturn(mUwbMultichipData);
         SessionHandle sessionHandle = new SessionHandle(10);
         mRangingSessionController = new PacsControllerSession(sessionHandle,
                 mAttributionSource,
@@ -107,7 +114,6 @@ public class PacsControllerSessionTest {
 
         verify(mUwbServiceCore).openRanging(eq(mAttributionSource),
                 eq(mRangingSessionController.mSessionInfo.mSessionHandle),
-                eq(mIUwbRangingCallbacks),
-                any());
+                eq(mIUwbRangingCallbacks), any(), eq(DEFAULT_CHIP_ID));
     }
 }
