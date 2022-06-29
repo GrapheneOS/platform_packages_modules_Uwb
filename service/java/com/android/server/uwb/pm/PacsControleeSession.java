@@ -85,20 +85,29 @@ public class PacsControleeSession extends RangingSessionController {
         return new EndSessionState();
     }
 
+    private DiscoveryAdvertiseService mDiscoveryAdvertiseService;
+
     /** Advertise capabilities */
-    public void advertiseBle() {
+    public void startAdvertising() {
         DiscoveryInfo discoveryInfo = new DiscoveryInfo(
                 DiscoveryInfo.TransportType.BLE,
                 Optional.empty(), Optional.empty());
 
-        DiscoveryAdvertiseService discoveryAdvertiseService = new DiscoveryAdvertiseService(
+        mDiscoveryAdvertiseService = new DiscoveryAdvertiseService(
                 mSessionInfo.mAttributionSource,
                 mSessionInfo.mContext,
                 new HandlerExecutor(mHandler),
                 discoveryInfo,
                 mAdvertiseCallback
         );
-        discoveryAdvertiseService.startDiscovery();
+        mDiscoveryAdvertiseService.startDiscovery();
+    }
+
+    /** Stop advertising on ranging stopped or closed */
+    public void stopAdvertising() {
+        if (mDiscoveryAdvertiseService != null) {
+            mDiscoveryAdvertiseService.stopDiscovery();
+        }
     }
 
     @Override
@@ -149,7 +158,7 @@ public class PacsControleeSession extends RangingSessionController {
                         log("Pacs controlee session initialized");
                     }
                     break;
-                case DISCOVERY_INIT:
+                case SESSION_START:
                     if (mVerboseLoggingEnabled) {
                         log("Starting OOB Discovery");
                     }
@@ -171,7 +180,8 @@ public class PacsControleeSession extends RangingSessionController {
             if (mVerboseLoggingEnabled) {
                 log("Enter DiscoveryState");
             }
-            //advertiseBle();
+            startAdvertising();
+            sendMessage(DISCOVERY_STARTED);
         }
 
         @Override
@@ -186,6 +196,19 @@ public class PacsControleeSession extends RangingSessionController {
             switch (message.what) {
                 case DISCOVERY_FAILED:
                     log("Failed to advertise");
+                    break;
+                case SESSION_START:
+                    startAdvertising();
+                    if (mVerboseLoggingEnabled) {
+                        log("Started advertising");
+                    }
+                    break;
+                case SESSION_STOP:
+                    stopAdvertising();
+                    if (mVerboseLoggingEnabled) {
+                        log("Stopped advertising");
+                    }
+                    break;
             }
             return true;
         }
@@ -259,11 +282,33 @@ public class PacsControleeSession extends RangingSessionController {
                 case RANGING_INIT:
                     try {
                         Log.i(TAG, "Starting ranging session");
-                        startRangingSession();
+                        openRangingSession();
                     } catch (RemoteException e) {
                         Log.e(TAG, "Ranging session start failed");
                         e.printStackTrace();
                     }
+                    stopAdvertising();
+                    break;
+                case SESSION_START:
+                case RANGING_OPENED:
+                    startRanging();
+                    if (mVerboseLoggingEnabled) {
+                        log("Started ranging");
+                    }
+                    break;
+
+                case SESSION_STOP:
+                    stopRanging();
+                    if (mVerboseLoggingEnabled) {
+                        log("Stopped ranging session");
+                    }
+                    break;
+
+                case RANGING_ENDED:
+                    closeRanging();
+                    transitionTo(mEndSessionState);
+                    break;
+
             }
             return true;
         }
@@ -276,6 +321,7 @@ public class PacsControleeSession extends RangingSessionController {
             if (mVerboseLoggingEnabled) {
                 log("Enter EndSessionState");
             }
+            stopAdvertising();
         }
 
         @Override

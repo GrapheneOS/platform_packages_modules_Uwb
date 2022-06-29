@@ -225,4 +225,27 @@ public class ProfileManager {
             Log.e(TAG, "Session Handle not found");
         }
     }
+
+    /** Stop Ranging, can be started again, session will not be reset */
+    public void stopRanging(SessionHandle sessionHandle) {
+        if (mRangingSessionTable.containsKey(sessionHandle)) {
+            RangingSessionController rangingSessionController = mRangingSessionTable.get(
+                    sessionHandle);
+            rangingSessionController.stopSession();
+        } else {
+            Log.e(TAG, "Session Handle not found");
+        }
+    }
+
+    /** End Ranging session, session info will be reset */
+    public void closeRanging(SessionHandle sessionHandle) {
+        if (mRangingSessionTable.containsKey(sessionHandle)) {
+            RangingSessionController rangingSessionController = mRangingSessionTable.get(
+                    sessionHandle);
+            rangingSessionController.closeSession();
+            mRangingSessionTable.remove(sessionHandle);
+        } else {
+            Log.e(TAG, "Session Handle not found");
+        }
+    }
 }

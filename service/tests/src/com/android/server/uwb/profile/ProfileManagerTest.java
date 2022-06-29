@@ -36,6 +36,7 @@ import com.android.server.uwb.UwbConfigStore;
 import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.data.ServiceProfileData.ServiceProfileInfo;
 import com.android.server.uwb.pm.ProfileManager;
+import com.android.server.uwb.pm.RangingSessionController;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -146,4 +147,40 @@ public class ProfileManagerTest {
 
     }
 
+    @Test
+    public void testStopRanging() {
+        Optional<UUID> uuid1 = mProfileManager.addServiceProfile(1);
+        assertEquals(1, mProfileManager.mAppServiceProfileMap.size());
+
+        assertEquals(mProfileManager.mRangingSessionTable.size(), 0);
+
+        mProfileManager.activateProfile(mAttributionSource, mSessionHandle, uuid1.get(),
+                mIUwbRangingCallbacks);
+
+        mProfileManager.startRanging(mSessionHandle);
+        mProfileManager.stopRanging(mSessionHandle);
+
+        RangingSessionController rangingSessionController =
+                mProfileManager.mRangingSessionTable.get(mSessionHandle);
+
+        assertEquals(rangingSessionController.mSessionInfo.mSessionHandle, mSessionHandle);
+        assertEquals(mProfileManager.mRangingSessionTable.size(), 1);
+    }
+
+    @Test
+    public void testCloseRanging() {
+        Optional<UUID> uuid1 = mProfileManager.addServiceProfile(1);
+        assertEquals(1, mProfileManager.mAppServiceProfileMap.size());
+
+        assertEquals(mProfileManager.mRangingSessionTable.size(), 0);
+
+        mProfileManager.activateProfile(mAttributionSource, mSessionHandle, uuid1.get(),
+                mIUwbRangingCallbacks);
+
+        assertEquals(mProfileManager.mRangingSessionTable.size(), 1);
+
+        mProfileManager.closeRanging(mSessionHandle);
+
+        assertEquals(mProfileManager.mRangingSessionTable.size(), 0);
+    }
 }
