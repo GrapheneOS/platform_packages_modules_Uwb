@@ -1,8 +1,8 @@
 //! jni for uwb native stack
-use jni::objects::{JObject, JValue};
+use jni::objects::{JObject, JString, JValue};
 use jni::sys::{
-    jarray, jboolean, jbyte, jbyteArray, jint, jintArray, jlong, jobject, jshort, jshortArray,
-    jsize,
+    jarray, jboolean, jbyte, jbyteArray, jint, jintArray, jlong, jobject, jobjectArray, jshort,
+    jshortArray, jsize,
 };
 use jni::JNIEnv;
 use log::{error, info};
@@ -76,9 +76,9 @@ impl<'a> Context<'a> for JniContext<'a> {
             error!("The dispatcher is not initialized.");
             return Err(UwbErr::NoneDispatcher);
         }
-        // Safety: dispatcher pointer must not be a null pointer and it must point to a valid dispatcher object.
-        // This can be ensured because the dispatcher is created in an earlier stage and
-        // won't be deleted before calling doDeinitialize.
+        // Safety: dispatcher pointer must not be a null pointer and it must point to a valid
+        // dispatcher object. This can be ensured because the dispatcher is created in an earlier
+        // stage and won't be deleted before calling doDeinitialize.
         unsafe { Ok(&mut *(dispatcher_ptr as *mut DispatcherImpl)) }
     }
 }
@@ -114,9 +114,13 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGe
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDoInitialize(
     env: JNIEnv,
     obj: JObject,
+    chip_id: JString,
 ) -> jboolean {
     info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeDoInitialize: enter");
-    boolean_result_helper(do_initialize(&JniContext::new(env, obj)), "DoInitialize")
+    boolean_result_helper(
+        do_initialize(&JniContext::new(env, obj), env.get_string(chip_id).unwrap().into()),
+        "DoInitialize",
+    )
 }
 
 /// Turn off UWB. Deinitilize the GKI and HAL module, power of the UWB device.
@@ -124,9 +128,13 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDo
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDoDeinitialize(
     env: JNIEnv,
     obj: JObject,
+    chip_id: JString,
 ) -> jboolean {
     info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeDoDeinitialize: enter");
-    boolean_result_helper(do_deinitialize(&JniContext::new(env, obj)), "DoDeinitialize")
+    boolean_result_helper(
+        do_deinitialize(&JniContext::new(env, obj), env.get_string(chip_id).unwrap().into()),
+        "DoDeinitialize",
+    )
 }
 
 /// get nanos
@@ -147,9 +155,17 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDe
     env: JNIEnv,
     obj: JObject,
     reset_config: jbyte,
+    chip_id: JString,
 ) -> jbyte {
     info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeDeviceReset: enter");
-    byte_result_helper(reset_device(&JniContext::new(env, obj), reset_config as u8), "ResetDevice")
+    byte_result_helper(
+        reset_device(
+            &JniContext::new(env, obj),
+            reset_config as u8,
+            env.get_string(chip_id).unwrap().into(),
+        ),
+        "ResetDevice",
+    )
 }
 
 /// init the session
@@ -159,10 +175,16 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
     obj: JObject,
     session_id: jint,
     session_type: jbyte,
+    chip_id: JString,
 ) -> jbyte {
     info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeSessionInit: enter");
     byte_result_helper(
-        session_init(&JniContext::new(env, obj), session_id as u32, session_type as u8),
+        session_init(
+            &JniContext::new(env, obj),
+            session_id as u32,
+            session_type as u8,
+            env.get_string(chip_id).unwrap().into(),
+        ),
         "SessionInit",
     )
 }
@@ -173,10 +195,15 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
     env: JNIEnv,
     obj: JObject,
     session_id: jint,
+    chip_id: JString,
 ) -> jbyte {
     info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeSessionDeInit: enter");
     byte_result_helper(
-        session_deinit(&JniContext::new(env, obj), session_id as u32),
+        session_deinit(
+            &JniContext::new(env, obj),
+            session_id as u32,
+            env.get_string(chip_id).unwrap().into(),
+        ),
         "SessionDeInit",
     )
 }
@@ -186,9 +213,10 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetSessionCount(
     env: JNIEnv,
     obj: JObject,
+    chip_id: JString,
 ) -> jbyte {
     info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetSessionCount: enter");
-    match get_session_count(&JniContext::new(env, obj)) {
+    match get_session_count(&JniContext::new(env, obj), env.get_string(chip_id).unwrap().into()) {
         Ok(count) => count,
         Err(e) => {
             error!("GetSessionCount failed with {:?}", e);
@@ -203,9 +231,17 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeRa
     env: JNIEnv,
     obj: JObject,
     session_id: jint,
+    chip_id: JString,
 ) -> jbyte {
     info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeRangingStart: enter");
-    byte_result_helper(ranging_start(&JniContext::new(env, obj), session_id as u32), "RangingStart")
+    byte_result_helper(
+        ranging_start(
+            &JniContext::new(env, obj),
+            session_id as u32,
+            env.get_string(chip_id).unwrap().into(),
+        ),
+        "RangingStart",
+    )
 }
 
 /// stop the ranging
@@ -214,9 +250,17 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeRa
     env: JNIEnv,
     obj: JObject,
     session_id: jint,
+    chip_id: JString,
 ) -> jbyte {
     info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeRangingStop: enter");
-    byte_result_helper(ranging_stop(&JniContext::new(env, obj), session_id as u32), "RangingStop")
+    byte_result_helper(
+        ranging_stop(
+            &JniContext::new(env, obj),
+            session_id as u32,
+            env.get_string(chip_id).unwrap().into(),
+        ),
+        "RangingStop",
+    )
 }
 
 /// get the session state
@@ -225,9 +269,14 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGe
     env: JNIEnv,
     obj: JObject,
     session_id: jint,
+    chip_id: JString,
 ) -> jbyte {
     info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetSessionState: enter");
-    match get_session_state(&JniContext::new(env, obj), session_id as u32) {
+    match get_session_state(
+        &JniContext::new(env, obj),
+        session_id as u32,
+        env.get_string(chip_id).unwrap().into(),
+    ) {
         Ok(state) => state,
         Err(e) => {
             error!("GetSessionState failed with {:?}", e);
@@ -245,6 +294,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
     no_of_params: jint,
     app_config_param_len: jint,
     app_config_params: jbyteArray,
+    chip_id: JString,
 ) -> jbyteArray {
     info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeSetAppConfigurations: enter");
     match set_app_configurations(
@@ -253,6 +303,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
         no_of_params as u32,
         app_config_param_len as u32,
         app_config_params,
+        env.get_string(chip_id).unwrap().into(),
     ) {
         Ok(data) => {
             let uwb_config_status_class =
@@ -290,6 +341,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGe
     no_of_params: jint,
     app_config_param_len: jint,
     app_config_params: jbyteArray,
+    chip_id: JString,
 ) -> jbyteArray {
     info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetAppConfigurations: enter");
     match get_app_configurations(
@@ -298,6 +350,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGe
         no_of_params as u32,
         app_config_param_len as u32,
         app_config_params,
+        env.get_string(chip_id).unwrap().into(),
     ) {
         Ok(data) => {
             let uwb_tlv_info_class =
@@ -332,9 +385,10 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGe
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetCapsInfo(
     env: JNIEnv,
     obj: JObject,
+    chip_id: JString,
 ) -> jbyteArray {
     info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetCapsInfo: enter");
-    match get_caps_info(&JniContext::new(env, obj)) {
+    match get_caps_info(&JniContext::new(env, obj), env.get_string(chip_id).unwrap().into()) {
         Ok(data) => {
             let uwb_tlv_info_class =
                 env.find_class("com/android/server/uwb/data/UwbTlvData").unwrap();
@@ -373,6 +427,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeCo
     no_of_controlee: jbyte,
     addresses: jshortArray,
     sub_session_ids: jintArray,
+    chip_id: JString,
 ) -> jbyte {
     info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeControllerMulticastListUpdate: enter");
     byte_result_helper(
@@ -383,6 +438,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeCo
             no_of_controlee as u8,
             addresses,
             sub_session_ids,
+            env.get_string(chip_id).unwrap().into(),
         ),
         "ControllerMulticastListUpdate",
     )
@@ -394,9 +450,17 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
     env: JNIEnv,
     obj: JObject,
     country_code: jbyteArray,
+    chip_id: JString,
 ) -> jbyte {
     info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeSetCountryCode: enter");
-    byte_result_helper(set_country_code(&JniContext::new(env, obj), country_code), "SetCountryCode")
+    byte_result_helper(
+        set_country_code(
+            &JniContext::new(env, obj),
+            country_code,
+            env.get_string(chip_id).unwrap().into(),
+        ),
+        "SetCountryCode",
+    )
 }
 
 /// set country code
@@ -407,6 +471,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
     gid: jint,
     oid: jint,
     payload: jbyteArray,
+    chip_id: JString,
 ) -> jobject {
     info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeRawVendor: enter");
     let uwb_vendor_uci_response_class =
@@ -416,6 +481,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
         gid.try_into().expect("invalid gid"),
         oid.try_into().expect("invalid oid"),
         payload,
+        env.get_string(chip_id).unwrap().into(),
     ) {
         Ok((gid, oid, payload)) => *env
             .new_object(
@@ -453,11 +519,12 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetPowerStats(
     env: JNIEnv,
     obj: JObject,
+    chip_id: JString,
 ) -> jobject {
     info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetPowerStats: enter");
     let uwb_power_stats_class =
         env.find_class("com/android/server/uwb/info/UwbPowerStats").unwrap();
-    match get_power_stats(&JniContext::new(env, obj)) {
+    match get_power_stats(&JniContext::new(env, obj), env.get_string(chip_id).unwrap().into()) {
         Ok(para) => {
             let power_stats = env.new_object(uwb_power_stats_class, "(IIII)V", &para).unwrap();
             *power_stats
@@ -494,10 +561,10 @@ fn byte_result_helper(result: Result<(), UwbErr>, function_name: &str) -> jbyte 
     }
 }
 
-fn do_initialize<'a, T: Context<'a>>(context: &T) -> Result<(), UwbErr> {
+fn do_initialize<'a, T: Context<'a>>(context: &T, chip_id: String) -> Result<(), UwbErr> {
     let dispatcher = context.get_dispatcher()?;
-    dispatcher.send_jni_command(JNICommand::Enable)?;
-    match uwa_get_device_info(dispatcher) {
+    dispatcher.send_jni_command(JNICommand::Enable, chip_id.clone())?;
+    match uwa_get_device_info(dispatcher, chip_id) {
         Ok(res) => {
             if let UciResponse::GetDeviceInfoRsp(device_info) = res {
                 dispatcher.set_device_info(Some(device_info));
@@ -511,16 +578,19 @@ fn do_initialize<'a, T: Context<'a>>(context: &T) -> Result<(), UwbErr> {
     Ok(())
 }
 
-fn do_deinitialize<'a, T: Context<'a>>(context: &T) -> Result<(), UwbErr> {
+fn do_deinitialize<'a, T: Context<'a>>(context: &T, chip_id: String) -> Result<(), UwbErr> {
     let dispatcher = context.get_dispatcher()?;
-    dispatcher.send_jni_command(JNICommand::Disable(true))?;
+    dispatcher.send_jni_command(JNICommand::Disable(true), chip_id)?;
     dispatcher.wait_for_exit()?;
     Ok(())
 }
 
 // unused, but leaving this behind if we want to use it later.
 #[allow(dead_code)]
-fn get_specification_info<'a, T: Context<'a>>(context: &T) -> Result<[JValue<'a>; 16], UwbErr> {
+fn get_specification_info<'a, T: Context<'a>>(
+    context: &T,
+    _chip_id: String,
+) -> Result<[JValue<'a>; 16], UwbErr> {
     let dispatcher = context.get_dispatcher()?;
     match dispatcher.get_device_info() {
         Some(data) => {
@@ -554,10 +624,11 @@ fn session_init<'a, T: Context<'a>>(
     context: &T,
     session_id: u32,
     session_type: u8,
+    chip_id: String,
 ) -> Result<(), UwbErr> {
     let dispatcher = context.get_dispatcher()?;
     let res = match dispatcher
-        .block_on_jni_command(JNICommand::UciSessionInit(session_id, session_type))?
+        .block_on_jni_command(JNICommand::UciSessionInit(session_id, session_type), chip_id)?
     {
         UciResponse::SessionInitRsp(data) => data,
         _ => return Err(UwbErr::failed()),
@@ -565,18 +636,23 @@ fn session_init<'a, T: Context<'a>>(
     status_code_to_res(res.get_status())
 }
 
-fn session_deinit<'a, T: Context<'a>>(context: &T, session_id: u32) -> Result<(), UwbErr> {
+fn session_deinit<'a, T: Context<'a>>(
+    context: &T,
+    session_id: u32,
+    chip_id: String,
+) -> Result<(), UwbErr> {
     let dispatcher = context.get_dispatcher()?;
-    let res = match dispatcher.block_on_jni_command(JNICommand::UciSessionDeinit(session_id))? {
-        UciResponse::SessionDeinitRsp(data) => data,
-        _ => return Err(UwbErr::failed()),
-    };
+    let res =
+        match dispatcher.block_on_jni_command(JNICommand::UciSessionDeinit(session_id), chip_id)? {
+            UciResponse::SessionDeinitRsp(data) => data,
+            _ => return Err(UwbErr::failed()),
+        };
     status_code_to_res(res.get_status())
 }
 
-fn get_session_count<'a, T: Context<'a>>(context: &T) -> Result<jbyte, UwbErr> {
+fn get_session_count<'a, T: Context<'a>>(context: &T, chip_id: String) -> Result<jbyte, UwbErr> {
     let dispatcher = context.get_dispatcher()?;
-    match dispatcher.block_on_jni_command(JNICommand::UciSessionGetCount)? {
+    match dispatcher.block_on_jni_command(JNICommand::UciSessionGetCount, chip_id)? {
         UciResponse::SessionGetCountRsp(rsp) => match status_code_to_res(rsp.get_status()) {
             Ok(()) => Ok(rsp.get_session_count() as jbyte),
             Err(err) => Err(err),
@@ -585,27 +661,41 @@ fn get_session_count<'a, T: Context<'a>>(context: &T) -> Result<jbyte, UwbErr> {
     }
 }
 
-fn ranging_start<'a, T: Context<'a>>(context: &T, session_id: u32) -> Result<(), UwbErr> {
+fn ranging_start<'a, T: Context<'a>>(
+    context: &T,
+    session_id: u32,
+    chip_id: String,
+) -> Result<(), UwbErr> {
     let dispatcher = context.get_dispatcher()?;
-    let res = match dispatcher.block_on_jni_command(JNICommand::UciStartRange(session_id))? {
-        UciResponse::RangeStartRsp(data) => data,
-        _ => return Err(UwbErr::failed()),
-    };
+    let res =
+        match dispatcher.block_on_jni_command(JNICommand::UciStartRange(session_id), chip_id)? {
+            UciResponse::RangeStartRsp(data) => data,
+            _ => return Err(UwbErr::failed()),
+        };
     status_code_to_res(res.get_status())
 }
 
-fn ranging_stop<'a, T: Context<'a>>(context: &T, session_id: u32) -> Result<(), UwbErr> {
+fn ranging_stop<'a, T: Context<'a>>(
+    context: &T,
+    session_id: u32,
+    chip_id: String,
+) -> Result<(), UwbErr> {
     let dispatcher = context.get_dispatcher()?;
-    let res = match dispatcher.block_on_jni_command(JNICommand::UciStopRange(session_id))? {
-        UciResponse::RangeStopRsp(data) => data,
-        _ => return Err(UwbErr::failed()),
-    };
+    let res =
+        match dispatcher.block_on_jni_command(JNICommand::UciStopRange(session_id), chip_id)? {
+            UciResponse::RangeStopRsp(data) => data,
+            _ => return Err(UwbErr::failed()),
+        };
     status_code_to_res(res.get_status())
 }
 
-fn get_session_state<'a, T: Context<'a>>(context: &T, session_id: u32) -> Result<jbyte, UwbErr> {
+fn get_session_state<'a, T: Context<'a>>(
+    context: &T,
+    session_id: u32,
+    chip_id: String,
+) -> Result<jbyte, UwbErr> {
     let dispatcher = context.get_dispatcher()?;
-    match dispatcher.block_on_jni_command(JNICommand::UciGetSessionState(session_id))? {
+    match dispatcher.block_on_jni_command(JNICommand::UciGetSessionState(session_id), chip_id)? {
         UciResponse::SessionGetStateRsp(data) => Ok(data.get_session_state() as jbyte),
         _ => Err(UwbErr::failed()),
     }
@@ -617,15 +707,14 @@ fn set_app_configurations<'a, T: Context<'a>>(
     no_of_params: u32,
     app_config_param_len: u32,
     app_config_params: jintArray,
+    chip_id: String,
 ) -> Result<SessionSetAppConfigRspPacket, UwbErr> {
     let app_configs = context.convert_byte_array(app_config_params)?;
     let dispatcher = context.get_dispatcher()?;
-    match dispatcher.block_on_jni_command(JNICommand::UciSetAppConfig {
-        session_id,
-        no_of_params,
-        app_config_param_len,
-        app_configs,
-    })? {
+    match dispatcher.block_on_jni_command(
+        JNICommand::UciSetAppConfig { session_id, no_of_params, app_config_param_len, app_configs },
+        chip_id,
+    )? {
         UciResponse::SessionSetAppConfigRsp(data) => Ok(data),
         _ => Err(UwbErr::failed()),
     }
@@ -637,23 +726,25 @@ fn get_app_configurations<'a, T: Context<'a>>(
     no_of_params: u32,
     app_config_param_len: u32,
     app_config_params: jintArray,
+    chip_id: String,
 ) -> Result<SessionGetAppConfigRspPacket, UwbErr> {
     let app_configs = context.convert_byte_array(app_config_params)?;
     let dispatcher = context.get_dispatcher()?;
-    match dispatcher.block_on_jni_command(JNICommand::UciGetAppConfig {
-        session_id,
-        no_of_params,
-        app_config_param_len,
-        app_configs,
-    })? {
+    match dispatcher.block_on_jni_command(
+        JNICommand::UciGetAppConfig { session_id, no_of_params, app_config_param_len, app_configs },
+        chip_id,
+    )? {
         UciResponse::SessionGetAppConfigRsp(data) => Ok(data),
         _ => Err(UwbErr::failed()),
     }
 }
 
-fn get_caps_info<'a, T: Context<'a>>(context: &T) -> Result<GetCapsInfoRspPacket, UwbErr> {
+fn get_caps_info<'a, T: Context<'a>>(
+    context: &T,
+    chip_id: String,
+) -> Result<GetCapsInfoRspPacket, UwbErr> {
     let dispatcher = context.get_dispatcher()?;
-    match dispatcher.block_on_jni_command(JNICommand::UciGetCapsInfo)? {
+    match dispatcher.block_on_jni_command(JNICommand::UciGetCapsInfo, chip_id)? {
         UciResponse::GetCapsInfoRsp(data) => Ok(data),
         _ => Err(UwbErr::failed()),
     }
@@ -666,6 +757,7 @@ fn multicast_list_update<'a, T: Context<'a>>(
     no_of_controlee: u8,
     addresses: jshortArray,
     sub_session_ids: jintArray,
+    chip_id: String,
 ) -> Result<(), UwbErr> {
     let mut address_list = vec![0i16; context.get_array_length(addresses)?.try_into().unwrap()];
     context.get_short_array_region(addresses, 0, &mut address_list)?;
@@ -673,13 +765,16 @@ fn multicast_list_update<'a, T: Context<'a>>(
         vec![0i32; context.get_array_length(sub_session_ids)?.try_into().unwrap()];
     context.get_int_array_region(sub_session_ids, 0, &mut sub_session_id_list)?;
     let dispatcher = context.get_dispatcher()?;
-    let res = match dispatcher.block_on_jni_command(JNICommand::UciSessionUpdateMulticastList {
-        session_id,
-        action,
-        no_of_controlee,
-        address_list: address_list.to_vec(),
-        sub_session_id_list: sub_session_id_list.to_vec(),
-    })? {
+    let res = match dispatcher.block_on_jni_command(
+        JNICommand::UciSessionUpdateMulticastList {
+            session_id,
+            action,
+            no_of_controlee,
+            address_list: address_list.to_vec(),
+            sub_session_id_list: sub_session_id_list.to_vec(),
+        },
+        chip_id,
+    )? {
         UciResponse::SessionUpdateControllerMulticastListRsp(data) => data,
         _ => return Err(UwbErr::failed()),
     };
@@ -689,16 +784,18 @@ fn multicast_list_update<'a, T: Context<'a>>(
 fn set_country_code<'a, T: Context<'a>>(
     context: &T,
     country_code: jbyteArray,
+    chip_id: String,
 ) -> Result<(), UwbErr> {
     let code = context.convert_byte_array(country_code)?;
     if code.len() != 2 {
         return Err(UwbErr::failed());
     }
     let dispatcher = context.get_dispatcher()?;
-    let res = match dispatcher.block_on_jni_command(JNICommand::UciSetCountryCode { code })? {
-        UciResponse::AndroidSetCountryCodeRsp(data) => data,
-        _ => return Err(UwbErr::failed()),
-    };
+    let res =
+        match dispatcher.block_on_jni_command(JNICommand::UciSetCountryCode { code }, chip_id)? {
+            UciResponse::AndroidSetCountryCodeRsp(data) => data,
+            _ => return Err(UwbErr::failed()),
+        };
     status_code_to_res(res.get_status())
 }
 
@@ -736,10 +833,13 @@ fn send_raw_vendor_cmd<'a, T: Context<'a>>(
     gid: u32,
     oid: u32,
     payload: jbyteArray,
+    chip_id: String,
 ) -> Result<(i32, i32, Vec<u8>), UwbErr> {
     let payload = context.convert_byte_array(payload)?;
     let dispatcher = context.get_dispatcher()?;
-    match dispatcher.block_on_jni_command(JNICommand::UciRawVendorCmd { gid, oid, payload })? {
+    match dispatcher
+        .block_on_jni_command(JNICommand::UciRawVendorCmd { gid, oid, payload }, chip_id)?
+    {
         UciResponse::RawVendorRsp(response) => Ok((
             response.get_group_id().to_i32().unwrap(),
             response.get_opcode().to_i32().unwrap(),
@@ -761,6 +861,7 @@ fn status_code_to_res(status_code: StatusCode) -> Result<(), UwbErr> {
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDispatcherNew(
     env: JNIEnv,
     obj: JObject,
+    chip_ids: jobjectArray,
 ) -> jlong {
     let eventmanager = match EventManager::new(env, obj) {
         Ok(evtmgr) => evtmgr,
@@ -769,7 +870,16 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDi
             return *JObject::null() as jlong;
         }
     };
-    match DispatcherImpl::new(eventmanager) {
+
+    let mut chip_ids_vec = Vec::new();
+    for n in 0..env.get_array_length(chip_ids).unwrap() {
+        let chip_id = env
+            .get_string(env.get_object_array_element(chip_ids, n).unwrap().into())
+            .unwrap()
+            .into();
+        chip_ids_vec.push(chip_id);
+    }
+    match DispatcherImpl::new(eventmanager, chip_ids_vec) {
         Ok(dispatcher) => Box::into_raw(Box::new(dispatcher)) as jlong,
         Err(err) => {
             error!("Fail to create dispatcher {:?}", err);
@@ -806,9 +916,12 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDi
     info!("The dispatcher successfully destroyed.");
 }
 
-fn get_power_stats<'a, T: Context<'a>>(context: &T) -> Result<[JValue<'a>; 4], UwbErr> {
+fn get_power_stats<'a, T: Context<'a>>(
+    context: &T,
+    chip_id: String,
+) -> Result<[JValue<'a>; 4], UwbErr> {
     let dispatcher = context.get_dispatcher()?;
-    match dispatcher.block_on_jni_command(JNICommand::UciGetPowerStats)? {
+    match dispatcher.block_on_jni_command(JNICommand::UciGetPowerStats, chip_id)? {
         UciResponse::AndroidGetPowerStatsRsp(data) => Ok([
             JValue::Int(data.get_stats().idle_time_ms as i32),
             JValue::Int(data.get_stats().tx_time_ms as i32),
@@ -819,14 +932,23 @@ fn get_power_stats<'a, T: Context<'a>>(context: &T) -> Result<[JValue<'a>; 4], U
     }
 }
 
-fn uwa_get_device_info(dispatcher: &dyn Dispatcher) -> Result<UciResponse, UwbErr> {
-    let res = dispatcher.block_on_jni_command(JNICommand::UciGetDeviceInfo)?;
+fn uwa_get_device_info(
+    dispatcher: &dyn Dispatcher,
+    chip_id: String,
+) -> Result<UciResponse, UwbErr> {
+    let res = dispatcher.block_on_jni_command(JNICommand::UciGetDeviceInfo, chip_id)?;
     Ok(res)
 }
 
-fn reset_device<'a, T: Context<'a>>(context: &T, reset_config: u8) -> Result<(), UwbErr> {
+fn reset_device<'a, T: Context<'a>>(
+    context: &T,
+    reset_config: u8,
+    chip_id: String,
+) -> Result<(), UwbErr> {
     let dispatcher = context.get_dispatcher()?;
-    let res = match dispatcher.block_on_jni_command(JNICommand::UciDeviceReset { reset_config })? {
+    let res = match dispatcher
+        .block_on_jni_command(JNICommand::UciDeviceReset { reset_config }, chip_id)?
+    {
         UciResponse::DeviceResetRsp(data) => data,
         _ => return Err(UwbErr::failed()),
     };
@@ -866,6 +988,7 @@ mod tests {
 
     #[test]
     fn test_do_initialize() {
+        let chip_id = String::from("chip_id");
         let packet = uwb_uci_packets::GetDeviceInfoRspBuilder {
             status: StatusCode::UciStatusOk,
             uci_version: 0,
@@ -884,7 +1007,7 @@ mod tests {
         );
         let mut context = MockContext::new(dispatcher);
 
-        let result = do_initialize(&context);
+        let result = do_initialize(&context, chip_id);
         let device_info = context.get_mock_dispatcher().get_device_info().clone();
         assert!(result.is_ok());
         assert_eq!(device_info.unwrap().to_vec(), packet.to_vec());
@@ -896,8 +1019,9 @@ mod tests {
         dispatcher.expect_send_jni_command(JNICommand::Disable(true), Ok(()));
         dispatcher.expect_wait_for_exit(Ok(()));
         let context = MockContext::new(dispatcher);
+        let chip_id = String::from("chip_id");
 
-        let result = do_deinitialize(&context);
+        let result = do_deinitialize(&context, chip_id);
         assert!(result.is_ok());
     }
 
@@ -926,8 +1050,9 @@ mod tests {
         let mut dispatcher = MockDispatcher::new();
         dispatcher.set_device_info(Some(packet));
         let context = MockContext::new(dispatcher);
+        let chip_id = String::from("chip_id");
 
-        let results = get_specification_info(&context).unwrap();
+        let results = get_specification_info(&context, chip_id).unwrap();
         for (idx, result) in results.iter().enumerate() {
             assert_eq!(TryInto::<jint>::try_into(*result).unwrap(), expected_array[idx]);
         }
@@ -946,8 +1071,9 @@ mod tests {
             Ok(UciResponse::SessionInitRsp(packet)),
         );
         let context = MockContext::new(dispatcher);
+        let chip_id = String::from("chip_id");
 
-        let result = session_init(&context, session_id, session_type);
+        let result = session_init(&context, session_id, session_type, chip_id);
         assert!(result.is_ok());
     }
 
@@ -963,8 +1089,9 @@ mod tests {
             Ok(UciResponse::SessionDeinitRsp(packet)),
         );
         let context = MockContext::new(dispatcher);
+        let chip_id = String::from("chip_id");
 
-        let result = session_deinit(&context, session_id);
+        let result = session_deinit(&context, session_id, chip_id);
         assert!(result.is_ok());
     }
 
@@ -983,8 +1110,9 @@ mod tests {
             Ok(UciResponse::SessionGetCountRsp(packet)),
         );
         let context = MockContext::new(dispatcher);
+        let chip_id = String::from("chip_id");
 
-        let result = get_session_count(&context).unwrap();
+        let result = get_session_count(&context, chip_id).unwrap();
         assert_eq!(result, session_count as jbyte);
     }
 
@@ -1000,8 +1128,9 @@ mod tests {
             Ok(UciResponse::RangeStartRsp(packet)),
         );
         let context = MockContext::new(dispatcher);
+        let chip_id = String::from("chip_id");
 
-        let result = ranging_start(&context, session_id);
+        let result = ranging_start(&context, session_id, chip_id);
         assert!(result.is_ok());
     }
 
@@ -1017,8 +1146,9 @@ mod tests {
             Ok(UciResponse::RangeStopRsp(packet)),
         );
         let context = MockContext::new(dispatcher);
+        let chip_id = String::from("chip_id");
 
-        let result = ranging_stop(&context, session_id);
+        let result = ranging_stop(&context, session_id, chip_id);
         assert!(result.is_ok());
     }
 
@@ -1038,8 +1168,9 @@ mod tests {
             Ok(UciResponse::SessionGetStateRsp(packet)),
         );
         let context = MockContext::new(dispatcher);
+        let chip_id = String::from("chip_id");
 
-        let result = get_session_state(&context, session_id).unwrap();
+        let result = get_session_state(&context, session_id, chip_id).unwrap();
         assert_eq!(result, session_state as jbyte);
     }
 
@@ -1068,6 +1199,7 @@ mod tests {
         );
         let mut context = MockContext::new(dispatcher);
         context.expect_convert_byte_array(fake_app_config_params, Ok(app_configs));
+        let chip_id = String::from("chip_id");
 
         let result = set_app_configurations(
             &context,
@@ -1075,6 +1207,7 @@ mod tests {
             no_of_params,
             app_config_param_len,
             fake_app_config_params,
+            chip_id,
         )
         .unwrap();
         assert_eq!(result.to_vec(), packet.to_vec());
@@ -1105,6 +1238,7 @@ mod tests {
         );
         let mut context = MockContext::new(dispatcher);
         context.expect_convert_byte_array(fake_app_config_params, Ok(app_configs));
+        let chip_id = String::from("chip_id");
 
         let result = get_app_configurations(
             &context,
@@ -1112,6 +1246,7 @@ mod tests {
             no_of_params,
             app_config_param_len,
             fake_app_config_params,
+            chip_id,
         )
         .unwrap();
         assert_eq!(result.to_vec(), packet.to_vec());
@@ -1131,8 +1266,9 @@ mod tests {
             Ok(UciResponse::GetCapsInfoRsp(packet.clone())),
         );
         let context = MockContext::new(dispatcher);
+        let chip_id = String::from("chip_id");
 
-        let result = get_caps_info(&context).unwrap();
+        let result = get_caps_info(&context, chip_id).unwrap();
         assert_eq!(result.to_vec(), packet.to_vec());
     }
 
@@ -1167,6 +1303,7 @@ mod tests {
         context
             .expect_get_array_length(fake_sub_session_ids, Ok(sub_session_id_list.len() as jsize));
         context.expect_get_int_array_region(fake_sub_session_ids, 0, Ok(sub_session_id_list));
+        let chip_id = String::from("chip_id");
 
         let result = multicast_list_update(
             &context,
@@ -1175,6 +1312,7 @@ mod tests {
             no_of_controlee,
             fake_addresses,
             fake_sub_session_ids,
+            chip_id,
         );
         assert!(result.is_ok());
     }
@@ -1194,8 +1332,9 @@ mod tests {
         );
         let mut context = MockContext::new(dispatcher);
         context.expect_convert_byte_array(fake_country_code, Ok(country_code));
+        let chip_id = String::from("chip_id");
 
-        let result = set_country_code(&context, fake_country_code);
+        let result = set_country_code(&context, fake_country_code, chip_id);
         assert!(result.is_ok());
     }
 
@@ -1221,8 +1360,9 @@ mod tests {
         );
         let mut context = MockContext::new(dispatcher);
         context.expect_convert_byte_array(fake_payload, Ok(payload));
+        let chip_id = String::from("chip_id");
 
-        let result = send_raw_vendor_cmd(&context, gid, oid, fake_payload).unwrap();
+        let result = send_raw_vendor_cmd(&context, gid, oid, fake_payload, chip_id).unwrap();
         assert_eq!(result.0, uwb_uci_packets::GroupId::VendorReserved9 as i32);
         assert_eq!(result.1, opcode as i32);
         assert_eq!(result.2, response);
@@ -1251,8 +1391,9 @@ mod tests {
             Ok(UciResponse::AndroidGetPowerStatsRsp(packet)),
         );
         let context = MockContext::new(dispatcher);
+        let chip_id = String::from("chip_id");
 
-        let result = get_power_stats(&context).unwrap();
+        let result = get_power_stats(&context, chip_id).unwrap();
         assert_eq!(TryInto::<jint>::try_into(result[0]).unwrap(), idle_time_ms as jint);
         assert_eq!(TryInto::<jint>::try_into(result[1]).unwrap(), tx_time_ms as jint);
         assert_eq!(TryInto::<jint>::try_into(result[2]).unwrap(), rx_time_ms as jint);
@@ -1271,8 +1412,9 @@ mod tests {
             Ok(UciResponse::DeviceResetRsp(packet)),
         );
         let context = MockContext::new(dispatcher);
+        let chip_id = String::from("chip_id");
 
-        let result = reset_device(&context, reset_config);
+        let result = reset_device(&context, reset_config, chip_id);
         assert!(result.is_ok());
     }
 }

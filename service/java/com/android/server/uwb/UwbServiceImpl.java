@@ -111,7 +111,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
                 return;
             }
             if (params.hasPowerStatsSupport()) {
-                pw.println(mUwbInjector.getNativeUwbManager().getPowerStats());
+                pw.println(mUwbInjector.getNativeUwbManager().getPowerStats(getDefaultChipId()));
             } else {
                 pw.println("power stats query is not supported");
             }
