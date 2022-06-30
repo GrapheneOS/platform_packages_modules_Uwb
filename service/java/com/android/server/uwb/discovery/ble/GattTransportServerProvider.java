@@ -450,9 +450,7 @@ public class GattTransportServerProvider extends TransportServerProvider {
     }
 
     /**
-     * Start processing of the FiRa Connector Data Packets and the FiRa Connector Messages through
-     * the In/Out control point characterstic when all conditions are meet to start the FiRa GATT
-     * server.
+     * Check if processing has started.
      *
      * @return indicate if server has started processing.
      */
