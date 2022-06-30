@@ -36,22 +36,27 @@ import com.android.server.uwb.discovery.info.DiscoveryInfo;
 
 import java.util.Optional;
 
-/**
- * Session for PACS profile controller
- */
+/** Session for PACS profile controller */
 public class PacsControllerSession extends RangingSessionController {
     private static final String TAG = "PACSControllerSession";
     private final ScanCallback mScanCallback;
 
-    public PacsControllerSession(SessionHandle sessionHandle,
+    public PacsControllerSession(
+            SessionHandle sessionHandle,
             AttributionSource attributionSource,
             Context context,
             UwbInjector uwbInjector,
             ServiceProfileInfo serviceProfileInfo,
             IUwbRangingCallbacks rangingCallbacks,
             Handler handler) {
-        super(sessionHandle, attributionSource, context, uwbInjector, serviceProfileInfo,
-                rangingCallbacks, handler);
+        super(
+                sessionHandle,
+                attributionSource,
+                context,
+                uwbInjector,
+                serviceProfileInfo,
+                rangingCallbacks,
+                handler);
         mIdleState = new IdleState();
         mDiscoveryState = new DiscoveryState();
         mTransportState = new TransportState();
@@ -63,17 +68,20 @@ public class PacsControllerSession extends RangingSessionController {
 
     /** Scan for devices */
     public void startScan() {
-        DiscoveryInfo discoveryInfo = new DiscoveryInfo(
-                DiscoveryInfo.TransportType.BLE,
-                Optional.empty(), Optional.empty());
+        DiscoveryInfo discoveryInfo =
+                new DiscoveryInfo(
+                        DiscoveryInfo.TransportType.BLE,
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty());
 
-        mDiscoveryScanService = new DiscoveryScanService(
-                mSessionInfo.mAttributionSource,
-                mSessionInfo.mContext,
-                new HandlerExecutor(mHandler),
-                discoveryInfo,
-                mScanCallback
-        );
+        mDiscoveryScanService =
+                new DiscoveryScanService(
+                        mSessionInfo.mAttributionSource,
+                        mSessionInfo.mContext,
+                        new HandlerExecutor(mHandler),
+                        discoveryInfo,
+                        mScanCallback);
         mDiscoveryScanService.startDiscovery();
     }
 
@@ -115,23 +123,23 @@ public class PacsControllerSession extends RangingSessionController {
     }
 
     private DiscoveryScanService mDiscoveryScanService;
+
     @Override
     public UwbConfig getUwbConfig() {
         return PacsProfile.getPacsControllerProfile();
     }
 
+    /** Implements callback of DiscoveryScanProvider */
     public static class ScanCallback implements DiscoveryScanProvider.DiscoveryScanCallback {
 
         public final PacsControllerSession mPacsControllerSession;
 
-        public ScanCallback(
-                PacsControllerSession pacsControllerSession) {
+        public ScanCallback(PacsControllerSession pacsControllerSession) {
             mPacsControllerSession = pacsControllerSession;
         }
 
         @Override
-        public void onDiscovered(DiscoveryScanProvider.DiscoveryResult result) {
-        }
+        public void onDiscovered(DiscoveryScanProvider.DiscoveryResult result) {}
 
         @Override
         public void onDiscoveryFailed(int errorCode) {
@@ -219,7 +227,6 @@ public class PacsControllerSession extends RangingSessionController {
             }
             return true;
         }
-
     }
 
     public class TransportState extends State {
@@ -312,7 +319,6 @@ public class PacsControllerSession extends RangingSessionController {
                     closeRanging();
                     transitionTo(mEndSessionState);
                     break;
-
             }
             return true;
         }
@@ -339,6 +345,5 @@ public class PacsControllerSession extends RangingSessionController {
         public boolean processMessage(Message message) {
             return true;
         }
-
     }
 }

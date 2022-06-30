@@ -36,22 +36,27 @@ import com.android.server.uwb.discovery.info.DiscoveryInfo;
 
 import java.util.Optional;
 
-/**
- * Session for PACS profile controlee
- */
+/** Session for PACS profile controlee */
 public class PacsControleeSession extends RangingSessionController {
     private static final String TAG = "PacsControleeSession";
     private final PacsAdvertiseCallback mAdvertiseCallback;
 
-    public PacsControleeSession(SessionHandle sessionHandle,
+    public PacsControleeSession(
+            SessionHandle sessionHandle,
             AttributionSource attributionSource,
             Context context,
             UwbInjector uwbInjector,
             ServiceProfileInfo serviceProfileInfo,
             IUwbRangingCallbacks rangingCallbacks,
             Handler handler) {
-        super(sessionHandle, attributionSource, context, uwbInjector,
-                serviceProfileInfo, rangingCallbacks, handler);
+        super(
+                sessionHandle,
+                attributionSource,
+                context,
+                uwbInjector,
+                serviceProfileInfo,
+                rangingCallbacks,
+                handler);
         mAdvertiseCallback = new PacsAdvertiseCallback(this);
     }
 
@@ -89,17 +94,20 @@ public class PacsControleeSession extends RangingSessionController {
 
     /** Advertise capabilities */
     public void startAdvertising() {
-        DiscoveryInfo discoveryInfo = new DiscoveryInfo(
-                DiscoveryInfo.TransportType.BLE,
-                Optional.empty(), Optional.empty());
+        DiscoveryInfo discoveryInfo =
+                new DiscoveryInfo(
+                        DiscoveryInfo.TransportType.BLE,
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty());
 
-        mDiscoveryAdvertiseService = new DiscoveryAdvertiseService(
-                mSessionInfo.mAttributionSource,
-                mSessionInfo.mContext,
-                new HandlerExecutor(mHandler),
-                discoveryInfo,
-                mAdvertiseCallback
-        );
+        mDiscoveryAdvertiseService =
+                new DiscoveryAdvertiseService(
+                        mSessionInfo.mAttributionSource,
+                        mSessionInfo.mContext,
+                        new HandlerExecutor(mHandler),
+                        discoveryInfo,
+                        mAdvertiseCallback);
         mDiscoveryAdvertiseService.startDiscovery();
     }
 
@@ -115,13 +123,13 @@ public class PacsControleeSession extends RangingSessionController {
         return PacsProfile.getPacsControleeProfile();
     }
 
-    public static class PacsAdvertiseCallback implements
-            DiscoveryAdvertiseProvider.DiscoveryAdvertiseCallback {
+    /** Implements callback of DiscoveryAdvertiseProvider */
+    public static class PacsAdvertiseCallback
+            implements DiscoveryAdvertiseProvider.DiscoveryAdvertiseCallback {
 
         public final PacsControleeSession mPacsControleeSession;
 
-        public PacsAdvertiseCallback(
-                PacsControleeSession pacsControleeSession) {
+        public PacsAdvertiseCallback(PacsControleeSession pacsControleeSession) {
             mPacsControleeSession = pacsControleeSession;
         }
 
@@ -212,7 +220,6 @@ public class PacsControleeSession extends RangingSessionController {
             }
             return true;
         }
-
     }
 
     public class TransportState extends State {
@@ -258,7 +265,6 @@ public class PacsControleeSession extends RangingSessionController {
             transitionTo(mRangingState);
             return true;
         }
-
     }
 
     public class RangingState extends State {
@@ -308,7 +314,6 @@ public class PacsControleeSession extends RangingSessionController {
                     closeRanging();
                     transitionTo(mEndSessionState);
                     break;
-
             }
             return true;
         }
