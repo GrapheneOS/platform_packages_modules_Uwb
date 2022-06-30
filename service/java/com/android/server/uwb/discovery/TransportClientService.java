@@ -22,6 +22,7 @@ import android.util.Log;
 import androidx.annotation.WorkerThread;
 
 import com.android.server.uwb.discovery.TransportClientProvider.TransportClientCallback;
+import com.android.server.uwb.discovery.ble.GattTransportClientProvider;
 import com.android.server.uwb.discovery.info.DiscoveryInfo;
 import com.android.server.uwb.discovery.info.FiraConnectorCapabilities;
 import com.android.server.uwb.discovery.info.FiraConnectorMessage;
@@ -51,7 +52,13 @@ public class TransportClientService {
                                     + " transportClientInfo in discoveryInfo:"
                                     + discoveryInfo);
                 }
-                mTransportClientProvider = null;
+                mTransportClientProvider =
+                        new GattTransportClientProvider(
+                                attributionSource,
+                                context,
+                                executor,
+                                discoveryInfo.transportClientInfo.get(),
+                                transportClientCallback);
                 break;
             default:
                 throw new AssertionError(
