@@ -145,6 +145,9 @@ public class FiraEncoder extends TlvEncoder {
                                     params.getRangeDataNtfAoaElevationLower()), 9, 7), 8),
             });
         }
+        if (params.isRssiReportingEnabled()) {
+            tlvBufferBuilder.putByte(ConfigParam.RSSI_REPORTING, (byte) 1);
+        }
         return tlvBufferBuilder.build();
     }
 

@@ -104,6 +104,7 @@ public class FiraOpenSessionParams extends FiraParams {
     // 6-byte long array
     @Nullable private final byte[] mStaticStsIV;
 
+    private final boolean mIsRssiReportingEnabled;
     private final boolean mIsKeyRotationEnabled;
     private final int mKeyRotationRate;
     @AoaResultRequestMode private final int mAoaResultRequest;
@@ -163,6 +164,7 @@ public class FiraOpenSessionParams extends FiraParams {
     private static final String KEY_SUB_SESSION_ID = "sub_session_id";
     private static final String KEY_VENDOR_ID = "vendor_id";
     private static final String KEY_STATIC_STS_IV = "static_sts_iv";
+    private static final String KEY_IS_RSSI_REPORTING_ENABLED = "is_rssi_reporting_enabled";
     private static final String KEY_IS_KEY_ROTATION_ENABLED = "is_key_rotation_enabled";
     private static final String KEY_KEY_ROTATION_RATE = "key_rotation_rate";
     private static final String KEY_AOA_RESULT_REQUEST = "aoa_result_request";
@@ -233,6 +235,7 @@ public class FiraOpenSessionParams extends FiraParams {
             int subSessionId,
             @Nullable byte[] vendorId,
             @Nullable byte[] staticStsIV,
+            boolean isRssiReportingEnabled,
             boolean isKeyRotationEnabled,
             int keyRotationRate,
             @AoaResultRequestMode int aoaResultRequest,
@@ -289,6 +292,7 @@ public class FiraOpenSessionParams extends FiraParams {
         mSubSessionId = subSessionId;
         mVendorId = vendorId;
         mStaticStsIV = staticStsIV;
+        mIsRssiReportingEnabled = isRssiReportingEnabled;
         mIsKeyRotationEnabled = isKeyRotationEnabled;
         mKeyRotationRate = keyRotationRate;
         mAoaResultRequest = aoaResultRequest;
@@ -485,6 +489,10 @@ public class FiraOpenSessionParams extends FiraParams {
         return mStaticStsIV;
     }
 
+    public boolean isRssiReportingEnabled() {
+        return mIsRssiReportingEnabled;
+    }
+
     public boolean isKeyRotationEnabled() {
         return mIsKeyRotationEnabled;
     }
@@ -641,6 +649,7 @@ public class FiraOpenSessionParams extends FiraParams {
         }
         bundle.putIntArray(KEY_VENDOR_ID, byteArrayToIntArray(mVendorId));
         bundle.putIntArray(KEY_STATIC_STS_IV, byteArrayToIntArray(mStaticStsIV));
+        bundle.putBoolean(KEY_IS_RSSI_REPORTING_ENABLED, mIsRssiReportingEnabled);
         bundle.putBoolean(KEY_IS_KEY_ROTATION_ENABLED, mIsKeyRotationEnabled);
         bundle.putInt(KEY_KEY_ROTATION_RATE, mKeyRotationRate);
         bundle.putInt(KEY_AOA_RESULT_REQUEST, mAoaResultRequest);
@@ -737,6 +746,7 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setSubSessionId(bundle.getInt(KEY_SUB_SESSION_ID))
                 .setVendorId(intArrayToByteArray(bundle.getIntArray(KEY_VENDOR_ID)))
                 .setStaticStsIV(intArrayToByteArray(bundle.getIntArray(KEY_STATIC_STS_IV)))
+                .setIsRssiReportingEnabled(bundle.getBoolean(KEY_IS_RSSI_REPORTING_ENABLED))
                 .setIsKeyRotationEnabled(bundle.getBoolean(KEY_IS_KEY_ROTATION_ENABLED))
                 .setKeyRotationRate(bundle.getInt(KEY_KEY_ROTATION_RATE))
                 .setAoaResultRequest(bundle.getInt(KEY_AOA_RESULT_REQUEST))
@@ -882,6 +892,9 @@ public class FiraOpenSessionParams extends FiraParams {
         /** STATIC STS only. For Key generation. 48-bit long */
         @Nullable private byte[] mStaticStsIV = null;
 
+        /** UCI spec default: RSSI reporting disabled */
+        private boolean mIsRssiReportingEnabled = false;
+
         /** UCI spec default: no key rotation */
         private boolean mIsKeyRotationEnabled = false;
 
@@ -974,6 +987,7 @@ public class FiraOpenSessionParams extends FiraParams {
             if (builder.mSubSessionId.isSet()) mSubSessionId.set(builder.mSubSessionId.get());
             mVendorId = builder.mVendorId;
             mStaticStsIV = builder.mStaticStsIV;
+            mIsRssiReportingEnabled = builder.mIsRssiReportingEnabled;
             mIsKeyRotationEnabled = builder.mIsKeyRotationEnabled;
             mKeyRotationRate = builder.mKeyRotationRate;
             mAoaResultRequest = builder.mAoaResultRequest;
@@ -1030,6 +1044,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mSubSessionId.set(params.mSubSessionId);
             mVendorId = params.mVendorId;
             mStaticStsIV = params.mStaticStsIV;
+            mIsRssiReportingEnabled = params.mIsRssiReportingEnabled;
             mIsKeyRotationEnabled = params.mIsKeyRotationEnabled;
             mKeyRotationRate = params.mKeyRotationRate;
             mAoaResultRequest = params.mAoaResultRequest;
@@ -1245,6 +1260,13 @@ public class FiraOpenSessionParams extends FiraParams {
 
         public FiraOpenSessionParams.Builder setStaticStsIV(@Nullable byte[] staticStsIV) {
             mStaticStsIV = staticStsIV;
+            return this;
+        }
+
+        /** Set whether rssi reporting is enabled */
+        public FiraOpenSessionParams.Builder
+                setIsRssiReportingEnabled(boolean isRssiReportingEnabled) {
+            mIsRssiReportingEnabled = isRssiReportingEnabled;
             return this;
         }
 
@@ -1531,6 +1553,7 @@ public class FiraOpenSessionParams extends FiraParams {
                     mSubSessionId.get(),
                     mVendorId,
                     mStaticStsIV,
+                    mIsRssiReportingEnabled,
                     mIsKeyRotationEnabled,
                     mKeyRotationRate,
                     mAoaResultRequest,
