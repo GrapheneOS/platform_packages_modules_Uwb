@@ -25,6 +25,7 @@ import android.provider.DeviceConfig;
 public class DeviceConfigFacade {
     public static final int DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS = 5_000;
     public static final int DEFAULT_BUG_REPORT_MIN_INTERVAL_MS = 24 * 3_600_000;
+    private static final String TAG = "DeviceConfigFacadeUwb";
 
     private final UwbInjector mUwbInjector;
 
@@ -49,7 +50,7 @@ public class DeviceConfigFacade {
         mRangingResultLogIntervalMs = DeviceConfig.getInt(DeviceConfig.NAMESPACE_UWB,
                 "ranging_result_log_interval_ms", DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
         mDeviceErrorBugreportEnabled = DeviceConfig.getBoolean(DeviceConfig.NAMESPACE_UWB,
-                "device_error_bugreport_enabled", false);
+                "device_error_bugreport_enabled", true);
         mBugReportMinIntervalMs = DeviceConfig.getInt(DeviceConfig.NAMESPACE_UWB,
                 "bug_report_min_interval_ms", DEFAULT_BUG_REPORT_MIN_INTERVAL_MS);
     }

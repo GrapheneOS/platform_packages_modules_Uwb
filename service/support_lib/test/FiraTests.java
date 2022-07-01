@@ -450,6 +450,7 @@ public class FiraTests {
         boolean hasBlockStridingSupport = true;
         boolean hasNonDeferredModeSupport = true;
         boolean hasInitiationTimeSupport = true;
+        boolean hasRssiReportingSupport = true;
         EnumSet<FiraParams.MultiNodeCapabilityFlag> multiNodeCapabilities =
                 EnumSet.allOf(FiraParams.MultiNodeCapabilityFlag.class);
         EnumSet<FiraParams.PrfCapabilityFlag> prfCapabilities =
@@ -481,6 +482,7 @@ public class FiraTests {
                         .hasBlockStridingSupport(hasBlockStridingSupport)
                         .hasNonDeferredModeSupport(hasNonDeferredModeSupport)
                         .hasInitiationTimeSupport(hasInitiationTimeSupport)
+                        .hasRssiReportingSupport(hasRssiReportingSupport)
                         .setMultiNodeCapabilities(multiNodeCapabilities)
                         .setPrfCapabilities(prfCapabilities)
                         .setRangingRoundCapabilities(rangingRoundCapabilities)
@@ -501,6 +503,7 @@ public class FiraTests {
         assertEquals(hasBlockStridingSupport, params.hasBlockStridingSupport());
         assertEquals(hasNonDeferredModeSupport, params.hasNonDeferredModeSupport());
         assertEquals(hasInitiationTimeSupport, params.hasInitiationTimeSupport());
+        assertEquals(hasRssiReportingSupport, params.hasRssiReportingSupport());
         assertEquals(multiNodeCapabilities, params.getMultiNodeCapabilities());
         assertEquals(prfCapabilities, params.getPrfCapabilities());
         assertEquals(rangingRoundCapabilities, params.getRangingRoundCapabilities());
