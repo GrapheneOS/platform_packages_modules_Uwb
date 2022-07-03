@@ -110,6 +110,7 @@ import java.util.concurrent.FutureTask;
 public class UwbServiceCoreTest {
     private static final int TEST_UID = 44;
     private static final String TEST_PACKAGE_NAME = "com.android.uwb";
+    private static final String TEST_CHIP_ID = "testChipId";
     private static final AttributionSource TEST_ATTRIBUTION_SOURCE =
             new AttributionSource.Builder(TEST_UID)
                     .setPackageName(TEST_PACKAGE_NAME)
@@ -209,15 +210,17 @@ public class UwbServiceCoreTest {
         PersistableBundle genericSpecificationBundle = mock(PersistableBundle.class);
         when(genericSpecificationParams.toBundle()).thenReturn(genericSpecificationBundle);
 
-        when(mUwbConfigurationManager.getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any()))
+        when(mUwbConfigurationManager
+                .getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any(), anyString()))
                 .thenReturn(Pair.create(
                         UwbUciConstants.STATUS_CODE_OK, genericSpecificationParams));
 
-        PersistableBundle specifications = mUwbServiceCore.getSpecificationInfo();
+        PersistableBundle specifications = mUwbServiceCore.getSpecificationInfo(TEST_CHIP_ID);
         assertThat(specifications).isEqualTo(genericSpecificationBundle);
-        verify(mUwbConfigurationManager).getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any());
+        verify(mUwbConfigurationManager)
+                .getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any(), eq(TEST_CHIP_ID));
 
-        assertThat(mUwbServiceCore.getCachedSpecificationParams()).isEqualTo(
+        assertThat(mUwbServiceCore.getCachedSpecificationParams(TEST_CHIP_ID)).isEqualTo(
                 genericSpecificationParams);
     }
 
@@ -326,13 +329,13 @@ public class UwbServiceCoreTest {
         AttributionSource attributionSource = TEST_ATTRIBUTION_SOURCE;
         FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS.build();
         mUwbServiceCore.openRanging(
-                attributionSource, sessionHandle, cb, params.toBundle());
+                attributionSource, sessionHandle, cb, params.toBundle(), TEST_CHIP_ID);
 
         verify(mUwbSessionManager).initSession(
                 eq(attributionSource),
                 eq(sessionHandle), eq(params.getSessionId()), eq(FiraParams.PROTOCOL_NAME),
                 argThat(p -> ((FiraOpenSessionParams) p).getSessionId() == params.getSessionId()),
-                eq(cb));
+                eq(cb), eq(TEST_CHIP_ID));
 
     }
 
@@ -345,13 +348,13 @@ public class UwbServiceCoreTest {
         CccOpenRangingParams params = TEST_CCC_OPEN_RANGING_PARAMS.build();
         AttributionSource attributionSource = TEST_ATTRIBUTION_SOURCE;
         mUwbServiceCore.openRanging(
-                attributionSource, sessionHandle, cb, params.toBundle());
+                attributionSource, sessionHandle, cb, params.toBundle(), TEST_CHIP_ID);
 
         verify(mUwbSessionManager).initSession(
                 eq(attributionSource),
                 eq(sessionHandle), eq(params.getSessionId()), eq(CccParams.PROTOCOL_NAME),
                 argThat(p -> ((CccOpenRangingParams) p).getSessionId() == params.getSessionId()),
-                eq(cb));
+                eq(cb), eq(TEST_CHIP_ID));
     }
 
     @Test
@@ -362,7 +365,11 @@ public class UwbServiceCoreTest {
         AttributionSource attributionSource = TEST_ATTRIBUTION_SOURCE;
 
         try {
-            mUwbServiceCore.openRanging(attributionSource, sessionHandle, cb, params.toBundle());
+            mUwbServiceCore.openRanging(attributionSource,
+                    sessionHandle,
+                    cb,
+                    params.toBundle(),
+                    TEST_CHIP_ID);
             fail();
         } catch (IllegalStateException e) {
             // pass
@@ -515,13 +522,13 @@ public class UwbServiceCoreTest {
         byte[] payload = new byte[0];
         UwbVendorUciResponse rsp = new UwbVendorUciResponse(
                 (byte) UwbUciConstants.STATUS_CODE_OK, gid, oid, payload);
-        when(mNativeUwbManager.sendRawVendorCmd(anyInt(), anyInt(), any()))
+        when(mNativeUwbManager.sendRawVendorCmd(anyInt(), anyInt(), any(), anyString()))
                 .thenReturn(rsp);
 
         IUwbVendorUciCallback vendorCb = mock(IUwbVendorUciCallback.class);
         mUwbServiceCore.registerVendorExtensionCallback(vendorCb);
 
-        assertThat(mUwbServiceCore.sendVendorUciMessage(0, 0, new byte[0]))
+        assertThat(mUwbServiceCore.sendVendorUciMessage(0, 0, new byte[0], TEST_CHIP_ID))
                 .isEqualTo(UwbUciConstants.STATUS_CODE_OK);
 
         verify(vendorCb).onVendorResponseReceived(gid, oid, payload);
