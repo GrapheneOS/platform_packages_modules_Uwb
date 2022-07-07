@@ -43,4 +43,6 @@ public class UuidConstants {
     /* Client Characteristic Configuration Descriptor UUID defined by Bluetooth specification.
      */
     public static final ParcelUuid CCCD_UUID = BluetoothUuid.parseUuidFrom(new byte[] {0x29, 0x02});
+
+    private UuidConstants() {}
 }
