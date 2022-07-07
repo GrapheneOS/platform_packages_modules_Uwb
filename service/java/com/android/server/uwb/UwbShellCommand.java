@@ -375,9 +375,9 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             if (option.equals("-r")) {
                 String role = getNextArgRequired();
                 if (role.equals("initiator")) {
-                    builder.setDeviceType(RANGING_DEVICE_ROLE_INITIATOR);
+                    builder.setDeviceRole(RANGING_DEVICE_ROLE_INITIATOR);
                 } else if (role.equals("responder")) {
-                    builder.setDeviceType(RANGING_DEVICE_ROLE_RESPONDER);
+                    builder.setDeviceRole(RANGING_DEVICE_ROLE_RESPONDER);
                 } else {
                     throw new IllegalArgumentException("Unknown device role: " + role);
                 }
