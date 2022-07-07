@@ -21,6 +21,8 @@ import static com.android.server.uwb.data.UwbUciConstants.REASON_STATE_CHANGE_WI
 
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE;
+import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_DISABLE;
+import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_ENABLE;
 
 import android.annotation.NonNull;
 import android.annotation.Nullable;
@@ -61,9 +63,11 @@ import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
+import com.google.uwb.support.generic.GenericSpecificationParams;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -108,6 +112,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     private final Looper mLooper;
     private final EventTask mEventTask;
 
+    private Boolean mIsRangeDataNtfConfigEnableDisableSupported;
+
     public UwbSessionManager(
             UwbConfigurationManager uwbConfigurationManager,
             NativeUwbManager nativeUwbManager, UwbMetrics uwbMetrics,
@@ -128,6 +134,21 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         registerUidImportanceTransitions();
     }
 
+    private boolean isRangeDataNtfConfigEnableDisableSupported() {
+        if (mIsRangeDataNtfConfigEnableDisableSupported == null) {
+            GenericSpecificationParams specificationParams =
+                    mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(null);
+            if (specificationParams == null) return false;
+            EnumSet<FiraParams.RangeDataNtfConfigCapabilityFlag> supportedRangeDataNtfConfigs =
+                    specificationParams.getFiraSpecificationParams()
+                            .getRangeDataNtfConfigCapabilities();
+            mIsRangeDataNtfConfigEnableDisableSupported =
+                    supportedRangeDataNtfConfigs.containsAll(EnumSet.of(
+                            HAS_RANGE_DATA_NTF_CONFIG_DISABLE,
+                            HAS_RANGE_DATA_NTF_CONFIG_ENABLE));
+        }
+        return mIsRangeDataNtfConfigEnableDisableSupported;
+    }
 
     // Detect UIDs going foreground/background
     private void registerUidImportanceTransitions() {
@@ -137,10 +158,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             public void onUidImportance(final int uid, final int importance) {
                 handler.post(() -> {
                     List<UwbSession> uwbSessions = mNonPrivilegedUidToFiraSessionsTable.get(uid);
-                    if (uwbSessions == null) {
-                        // Not a uid in the watch list
-                        return;
-                    }
+                    // Not a uid in the watch list
+                    if (uwbSessions == null) return;
+                    // Feature not supported on device.
+                    if (!isRangeDataNtfConfigEnableDisableSupported()) return;
                     boolean newModeHasNonPrivilegedFgApp =
                             UwbInjector.isForegroundAppOrServiceImportance(importance);
                     for (UwbSession uwbSession : uwbSessions) {

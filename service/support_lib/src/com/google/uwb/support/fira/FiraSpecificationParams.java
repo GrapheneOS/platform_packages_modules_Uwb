@@ -385,9 +385,7 @@ public class FiraSpecificationParams extends FiraParams {
 
         // Enable/Disable ntf config is mandatory.
         private final EnumSet<RangeDataNtfConfigCapabilityFlag> mRangeDataNtfConfigCapabilities =
-                EnumSet.of(
-                        RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_DISABLE,
-                        RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_ENABLE);
+                EnumSet.noneOf(RangeDataNtfConfigCapabilityFlag.class);
 
         private boolean mHasBlockStridingSupport = false;
 

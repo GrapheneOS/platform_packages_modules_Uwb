@@ -320,7 +320,8 @@ public class FiraDecoder extends TlvDecoder {
         builder.setAoaCapabilities(aoaFlag);
 
         try {
-            int rangeDataNtfConfigUci = tlvs.getByte(SUPPORTED_RANGE_DATA_NTF_CONFIG);
+            byte[] rangeDataNtfConfigUciBytes = tlvs.getByteArray(SUPPORTED_RANGE_DATA_NTF_CONFIG);
+            int rangeDataNtfConfigUci = new BigInteger(rangeDataNtfConfigUciBytes).intValue();
             EnumSet<FiraParams.RangeDataNtfConfigCapabilityFlag> rangeDataNtfConfigCapabilityFlag =
                     EnumSet.noneOf(FiraParams.RangeDataNtfConfigCapabilityFlag.class);
             if (isBitSet(rangeDataNtfConfigUci, RANGE_DATA_NTF_CONFIG_ENABLE)) {
@@ -339,8 +340,9 @@ public class FiraDecoder extends TlvDecoder {
                         FiraParams.RangeDataNtfConfigCapabilityFlag
                                 .HAS_RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY);
             }
+            builder.setRangeDataNtfConfigCapabilities(rangeDataNtfConfigCapabilityFlag);
         } catch (IllegalArgumentException e) {
-            Log.w(TAG, "SUPPORTED_RANGE_DATA_NTF_CONFIG not found.");
+            Log.w(TAG, "SUPPORTED_RANGE_DATA_NTF_CONFIG not found.", e);
         }
 
         // TODO(b/209053358): This is not present in the FiraSpecificationParams.
