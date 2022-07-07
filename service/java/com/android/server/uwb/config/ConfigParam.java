@@ -54,6 +54,7 @@ public class ConfigParam {
     public static final int RANGE_DATA_NTF_PROXIMITY_FAR = 0x10;
     public static final int DEVICE_ROLE = 0x11;
     public static final int RFRAME_CONFIG = 0x12;
+    public static final int RSSI_REPORTING = 0x13;
     public static final int PREAMBLE_CODE_INDEX = 0x14;
     public static final int SFD_ID = 0x15;
     public static final int PSDU_DATA_RATE = 0x16;
