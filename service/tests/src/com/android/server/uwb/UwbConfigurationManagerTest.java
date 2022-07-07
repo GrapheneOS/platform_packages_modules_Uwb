@@ -26,7 +26,7 @@ import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_MANY_TO_MAN
 import static com.google.uwb.support.fira.FiraParams.PREAMBLE_DURATION_T32_SYMBOLS;
 import static com.google.uwb.support.fira.FiraParams.PRF_MODE_HPRF;
 import static com.google.uwb.support.fira.FiraParams.PSDU_DATA_RATE_7M80;
-import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY;
+import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_INITIATOR;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLEE;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE;
@@ -188,7 +188,7 @@ public class UwbConfigurationManagerTest {
         boolean isKeyRotationEnabled = true;
         int keyRotationRate = 15;
         int aoaResultRequest = AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_INTERLEAVED;
-        int rangeDataNtfConfig = RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY;
+        int rangeDataNtfConfig = RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG;
         int rangeDataNtfProximityNear = 50;
         int rangeDataNtfProximityFar = 200;
         boolean hasTimeOfFlightReport = true;

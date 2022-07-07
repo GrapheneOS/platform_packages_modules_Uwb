@@ -61,7 +61,8 @@ public class ConfigParam {
     public static final int RANGING_TIME_STRUCT = 0x1A;
     public static final int SLOTS_PER_RR = 0x1B;
     public static final int TX_ADAPTIVE_PAYLOAD_POWER = 0x1C;
-    //public static final int TX_ANTENNA_SELECTION = 0x1D;
+    // TODO: Ensure this value is correct in the final 2.0 specification.
+    public static final int RANGE_DATA_NTF_AOA_BOUND = 0x1D;
     public static final int RESPONDER_SLOT_INDEX = 0x1E;
     public static final int PRF_MODE = 0x1F;
     public static final int SCHEDULED_MODE = 0x22;
@@ -84,6 +85,8 @@ public class ConfigParam {
     public static final int STS_LENGTH = 0x35;
     public static final int SESSION_KEY = 0x36;
     public static final int SUBSESSION_KEY = 0x37;
+
+    // Android specific params.
     public static final int NUM_RANGE_MEASUREMENTS = NB_OF_RANGE_MEASUREMENTS;
     public static final int NUM_AOA_AZIMUTH_MEASUREMENTS = NB_OF_AZIMUTH_MEASUREMENTS;
     public static final int NUM_AOA_ELEVATION_MEASUREMENTS = NB_OF_ELEVATION_MEASUREMENTS;
