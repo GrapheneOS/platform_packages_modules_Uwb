@@ -53,9 +53,7 @@ import org.mockito.MockitoAnnotations;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 
-/**
- * Unit test for {@link DiscoveryAdvertiseService}
- */
+/** Unit test for {@link DiscoveryAdvertiseService} */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 public class DiscoveryAdvertiseServiceTest {
@@ -85,8 +83,8 @@ public class DiscoveryAdvertiseServiceTest {
                     Optional.empty(),
                     Optional.of(
                             new AdvertiseInfo(
-                                    new AdvertisingSetParameters.Builder().build(),
-                                    ADVERTISEMENT)));
+                                    new AdvertisingSetParameters.Builder().build(), ADVERTISEMENT)),
+                    Optional.empty());
 
     @Mock AttributionSource mMockAttributionSource;
     @Mock Context mMockContext;
