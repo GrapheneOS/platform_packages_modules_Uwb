@@ -114,7 +114,9 @@ public class UwbInjector {
         UwbSessionManager uwbSessionManager =
                 new UwbSessionManager(uwbConfigurationManager, mNativeUwbManager, mUwbMetrics,
                         uwbSessionNotificationManager, this,
-                        mContext.getSystemService(AlarmManager.class), mLooper);
+                        mContext.getSystemService(AlarmManager.class),
+                        mContext.getSystemService(ActivityManager.class),
+                        mLooper);
         mUwbService = new UwbServiceCore(mContext, mNativeUwbManager, mUwbMetrics,
                 mUwbCountryCode, uwbSessionManager, uwbConfigurationManager, this, mLooper);
         mSystemBuildProperties = new SystemBuildProperties();
@@ -350,10 +352,14 @@ public class UwbInjector {
     }
 
     /** Helper method to check if the app is from foreground app/service. */
+    public static boolean isForegroundAppOrServiceImportance(int importance) {
+        return importance <= ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE;
+    }
+
+    /** Helper method to check if the app is from foreground app/service. */
     public boolean isForegroundAppOrService(int uid, @NonNull String packageName) {
         try {
-            return getPackageImportance(uid, packageName)
-                    <= ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE;
+            return isForegroundAppOrServiceImportance(getPackageImportance(uid, packageName));
         } catch (SecurityException e) {
             Log.e(TAG, "Failed to retrieve the app importance", e);
             return false;

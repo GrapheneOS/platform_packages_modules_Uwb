@@ -45,6 +45,11 @@ import static com.android.server.uwb.config.CapabilityParam.PROVISIONED_STS;
 import static com.android.server.uwb.config.CapabilityParam.PROVISIONED_STS_RESPONDER_SPECIFIC_SUBSESSION_KEY;
 import static com.android.server.uwb.config.CapabilityParam.RANGE_DATA_NTF_CONFIG_DISABLE;
 import static com.android.server.uwb.config.CapabilityParam.RANGE_DATA_NTF_CONFIG_ENABLE;
+import static com.android.server.uwb.config.CapabilityParam.RANGE_DATA_NTF_CONFIG_ENABLE_AOA_EDGE_TRIG;
+import static com.android.server.uwb.config.CapabilityParam.RANGE_DATA_NTF_CONFIG_ENABLE_AOA_LEVEL_TRIG;
+import static com.android.server.uwb.config.CapabilityParam.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_EDGE_TRIG;
+import static com.android.server.uwb.config.CapabilityParam.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_LEVEL_TRIG;
+import static com.android.server.uwb.config.CapabilityParam.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_EDGE_TRIG;
 import static com.android.server.uwb.config.CapabilityParam.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG;
 import static com.android.server.uwb.config.CapabilityParam.RESPONDER;
 import static com.android.server.uwb.config.CapabilityParam.RSSI_REPORTING;
@@ -320,7 +325,8 @@ public class FiraDecoder extends TlvDecoder {
         builder.setAoaCapabilities(aoaFlag);
 
         try {
-            int rangeDataNtfConfigUci = tlvs.getByte(SUPPORTED_RANGE_DATA_NTF_CONFIG);
+            byte[] rangeDataNtfConfigUciBytes = tlvs.getByteArray(SUPPORTED_RANGE_DATA_NTF_CONFIG);
+            int rangeDataNtfConfigUci = new BigInteger(rangeDataNtfConfigUciBytes).intValue();
             EnumSet<FiraParams.RangeDataNtfConfigCapabilityFlag> rangeDataNtfConfigCapabilityFlag =
                     EnumSet.noneOf(FiraParams.RangeDataNtfConfigCapabilityFlag.class);
             if (isBitSet(rangeDataNtfConfigUci, RANGE_DATA_NTF_CONFIG_ENABLE)) {
@@ -337,10 +343,41 @@ public class FiraDecoder extends TlvDecoder {
                     RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG)) {
                 rangeDataNtfConfigCapabilityFlag.add(
                         FiraParams.RangeDataNtfConfigCapabilityFlag
-                                .HAS_RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY);
+                                .HAS_RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG);
             }
+            if (isBitSet(rangeDataNtfConfigUci,
+                    RANGE_DATA_NTF_CONFIG_ENABLE_AOA_LEVEL_TRIG)) {
+                rangeDataNtfConfigCapabilityFlag.add(
+                        FiraParams.RangeDataNtfConfigCapabilityFlag
+                                .HAS_RANGE_DATA_NTF_CONFIG_ENABLE_AOA_LEVEL_TRIG);
+            }
+            if (isBitSet(rangeDataNtfConfigUci,
+                    RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_LEVEL_TRIG)) {
+                rangeDataNtfConfigCapabilityFlag.add(
+                        FiraParams.RangeDataNtfConfigCapabilityFlag
+                                .HAS_RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_LEVEL_TRIG);
+            }
+            if (isBitSet(rangeDataNtfConfigUci,
+                    RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_EDGE_TRIG)) {
+                rangeDataNtfConfigCapabilityFlag.add(
+                        FiraParams.RangeDataNtfConfigCapabilityFlag
+                                .HAS_RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_EDGE_TRIG);
+            }
+            if (isBitSet(rangeDataNtfConfigUci,
+                    RANGE_DATA_NTF_CONFIG_ENABLE_AOA_EDGE_TRIG)) {
+                rangeDataNtfConfigCapabilityFlag.add(
+                        FiraParams.RangeDataNtfConfigCapabilityFlag
+                                .HAS_RANGE_DATA_NTF_CONFIG_ENABLE_AOA_EDGE_TRIG);
+            }
+            if (isBitSet(rangeDataNtfConfigUci,
+                    RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_EDGE_TRIG)) {
+                rangeDataNtfConfigCapabilityFlag.add(
+                        FiraParams.RangeDataNtfConfigCapabilityFlag
+                                .HAS_RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_EDGE_TRIG);
+            }
+            builder.setRangeDataNtfConfigCapabilities(rangeDataNtfConfigCapabilityFlag);
         } catch (IllegalArgumentException e) {
-            Log.w(TAG, "SUPPORTED_RANGE_DATA_NTF_CONFIG not found.");
+            Log.w(TAG, "SUPPORTED_RANGE_DATA_NTF_CONFIG not found.", e);
         }
 
         // TODO(b/209053358): This is not present in the FiraSpecificationParams.
