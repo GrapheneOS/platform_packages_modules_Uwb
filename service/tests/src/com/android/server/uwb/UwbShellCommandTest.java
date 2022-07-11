@@ -22,10 +22,13 @@ import static com.android.server.uwb.UwbShellCommand.DEFAULT_CCC_OPEN_RANGING_PA
 import static com.android.server.uwb.UwbShellCommand.DEFAULT_FIRA_OPEN_SESSION_PARAMS;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_DISABLE;
+import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_ENABLE;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.validateMockitoUsage;
 import static org.mockito.Mockito.verify;
@@ -51,8 +54,11 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
+import com.google.uwb.support.ccc.CccSpecificationParams;
 import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
+import com.google.uwb.support.fira.FiraSpecificationParams;
+import com.google.uwb.support.generic.GenericSpecificationParams;
 
 import org.junit.After;
 import org.junit.Before;
@@ -63,6 +69,8 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.io.FileDescriptor;
+import java.util.EnumSet;
+import java.util.List;
 
 /**
  * Unit tests for {@link com.android.server.uwb.UwbShellCommand}.
@@ -76,6 +84,7 @@ public class UwbShellCommandTest {
     @Mock UwbServiceImpl mUwbService;
     @Mock UwbCountryCode mUwbCountryCode;
     @Mock Context mContext;
+    @Mock UwbServiceCore mUwbServiceCore;
 
     UwbShellCommand mUwbShellCommand;
 
@@ -84,6 +93,19 @@ public class UwbShellCommandTest {
         MockitoAnnotations.initMocks(this);
 
         when(mUwbInjector.getUwbCountryCode()).thenReturn(mUwbCountryCode);
+        when(mUwbInjector.getUwbServiceCore()).thenReturn(mUwbServiceCore);
+        GenericSpecificationParams params = new GenericSpecificationParams.Builder()
+                .setCccSpecificationParams(mock(CccSpecificationParams.class))
+                .setFiraSpecificationParams(
+                        new FiraSpecificationParams.Builder()
+                                .setSupportedChannels(List.of(9))
+                                .setRangeDataNtfConfigCapabilities(
+                                        EnumSet.of(
+                                                HAS_RANGE_DATA_NTF_CONFIG_DISABLE,
+                                                HAS_RANGE_DATA_NTF_CONFIG_ENABLE))
+                                .build())
+                .build();
+        when(mUwbServiceCore.getCachedSpecificationParams(any())).thenReturn(params);
 
         mUwbShellCommand = new UwbShellCommand(mUwbInjector, mUwbService, mContext);
 
