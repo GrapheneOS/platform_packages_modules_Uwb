@@ -163,6 +163,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
     private static int sSessionHandleIdNext = 0;
 
     private final UwbServiceImpl mUwbService;
+    private final UwbServiceCore mUwbServiceCore;
     private final UwbCountryCode mUwbCountryCode;
     private final NativeUwbManager mNativeUwbManager;
     private final Context mContext;
@@ -172,6 +173,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         mContext = context;
         mUwbCountryCode = uwbInjector.getUwbCountryCode();
         mNativeUwbManager = uwbInjector.getNativeUwbManager();
+        mUwbServiceCore = uwbInjector.getUwbServiceCore();
     }
 
     private static String bundleToString(@Nullable PersistableBundle bundle) {
@@ -345,7 +347,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         }
     }
 
-    private Pair<FiraOpenSessionParams, Boolean> buildFiraOpenSessionParams() {
+    private Pair<FiraOpenSessionParams, Boolean> buildFiraOpenSessionParams(
+            GenericSpecificationParams specificationParams) {
         FiraOpenSessionParams.Builder builder =
                 new FiraOpenSessionParams.Builder(DEFAULT_FIRA_OPEN_SESSION_PARAMS);
         boolean shouldBlockCall = false;
@@ -475,12 +478,19 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             throw new IllegalArgumentException(
                     "Both interleaving (-z) and aoa result req (-e) cannot be specified");
         }
+        // Enable rssi reporting if device supports it.
+        if (specificationParams.getFiraSpecificationParams().hasRssiReportingSupport()) {
+            builder.setIsRssiReportingEnabled(true);
+        }
         // TODO: Add remaining params if needed.
         return Pair.create(builder.build(), shouldBlockCall);
     }
 
     private void startFiraRangingSession(PrintWriter pw) throws Exception {
-        Pair<FiraOpenSessionParams, Boolean> firaOpenSessionParams = buildFiraOpenSessionParams();
+        GenericSpecificationParams specificationParams =
+                mUwbServiceCore.getCachedSpecificationParams(null);
+        Pair<FiraOpenSessionParams, Boolean> firaOpenSessionParams =
+                buildFiraOpenSessionParams(specificationParams);
         startRangingSession(
                 firaOpenSessionParams.first, null, firaOpenSessionParams.first.getSessionId(),
                 firaOpenSessionParams.second, pw);
