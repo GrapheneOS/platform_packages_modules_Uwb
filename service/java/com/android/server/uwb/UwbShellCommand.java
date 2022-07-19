@@ -69,6 +69,7 @@ import com.android.modules.utils.BasicShellCommandHandler;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.util.ArrayUtils;
 
+import com.google.common.io.BaseEncoding;
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
@@ -470,6 +471,22 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                         throw new IllegalArgumentException("Unknown result report config: "
                                 + resultReportConfig);
                     }
+                }
+            }
+            if (option.equals("-g")) {
+                String staticSTSIV = getNextArgRequired();
+                if (staticSTSIV.length() == 12) {
+                    builder.setStaticStsIV(BaseEncoding.base16().decode(staticSTSIV.toUpperCase()));
+                } else {
+                    throw new IllegalArgumentException("staticSTSIV expecting 6 bytes");
+                }
+            }
+            if (option.equals("-v")) {
+                String vendor_id = getNextArgRequired();
+                if (vendor_id.length() == 4) {
+                    builder.setVendorId(BaseEncoding.base16().decode(vendor_id.toUpperCase()));
+                } else {
+                    throw new IllegalArgumentException("vendorId expecting 2 bytes");
                 }
             }
             option = getNextOption();
@@ -907,7 +924,9 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " [-z <numRangeMrmts, numAoaAzimuthMrmts, numAoaElevationMrmts>"
                 + "(interleaving-ratio)"
                 + " [-e none|enabled|azimuth-only|elevation-only](aoa type)"
-                + " [-f <tof,azimuth,elevation,aoa-fom>(result-report-config)");
+                + " [-f <tof,azimuth,elevation,aoa-fom>(result-report-config)"
+                + " [-g <staticStsIV>(staticStsIV 6-bytes)"
+                + " [-v <staticStsVendorId>(staticStsVendorId 2-bytes)");
         pw.println("    Starts a FIRA ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
                 + " retrieved using |get-ranging-session-reports|");
