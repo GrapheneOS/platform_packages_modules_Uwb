@@ -22,6 +22,8 @@ import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvType
 import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.CCC_URSK_TTL;
 import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.CCC_UWB_CONFIG_ID;
 import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.CCC_UWB_TIME0;
+import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.DIAGRAMS_FRAME_REPORTS_FIELDS;
+import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.ENABLE_DIAGNOSTICS;
 import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.NB_OF_AZIMUTH_MEASUREMENTS;
 import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.NB_OF_ELEVATION_MEASUREMENTS;
 import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.NB_OF_RANGE_MEASUREMENTS;
@@ -91,6 +93,9 @@ public class ConfigParam {
     public static final int NUM_RANGE_MEASUREMENTS = NB_OF_RANGE_MEASUREMENTS;
     public static final int NUM_AOA_AZIMUTH_MEASUREMENTS = NB_OF_AZIMUTH_MEASUREMENTS;
     public static final int NUM_AOA_ELEVATION_MEASUREMENTS = NB_OF_ELEVATION_MEASUREMENTS;
+
+    public static final int ENABLE_DIAGNOSTICS_RSSI = ENABLE_DIAGNOSTICS;
+    public static final int ENABLE_DIAGRAMS_FRAME_REPORTS_FIELDS = DIAGRAMS_FRAME_REPORTS_FIELDS;
 
     public static final int VENDOR_ID_BYTE_COUNT = 2;
     public static final int STATIC_STS_IV_BYTE_COUNT = 6;
