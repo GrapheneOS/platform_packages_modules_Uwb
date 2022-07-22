@@ -298,8 +298,13 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         }
         int sessionId = 0;
         if (FiraParams.isCorrectProtocol(params)) {
-            FiraOpenSessionParams firaOpenSessionParams = FiraOpenSessionParams.fromBundle(
-                    params);
+            FiraOpenSessionParams.Builder builder =
+                    new FiraOpenSessionParams.Builder(FiraOpenSessionParams.fromBundle(params));
+            if (getCachedSpecificationParams(chipId)
+                    .getFiraSpecificationParams().hasRssiReportingSupport()) {
+                builder.setIsRssiReportingEnabled(true);
+            }
+            FiraOpenSessionParams firaOpenSessionParams = builder.build();
             sessionId = firaOpenSessionParams.getSessionId();
             mSessionManager.initSession(attributionSource, sessionHandle, sessionId,
                     firaOpenSessionParams.getProtocolName(),

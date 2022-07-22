@@ -82,6 +82,7 @@ import com.google.uwb.support.fira.FiraControleeParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
+import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.generic.GenericParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
 
@@ -323,11 +324,22 @@ public class UwbServiceCoreTest {
     @Test
     public void testOpenFiraRanging() throws Exception {
         enableUwb();
-
+        GenericSpecificationParams genericSpecificationParams =
+                mock(GenericSpecificationParams.class);
+        FiraSpecificationParams firaSpecificationParams =
+                mock(FiraSpecificationParams.class);
         SessionHandle sessionHandle = mock(SessionHandle.class);
         IUwbRangingCallbacks cb = mock(IUwbRangingCallbacks.class);
         AttributionSource attributionSource = TEST_ATTRIBUTION_SOURCE;
         FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS.build();
+        when(mUwbConfigurationManager
+                .getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any(), anyString()))
+                .thenReturn(Pair.create(
+                        UwbUciConstants.STATUS_CODE_OK, genericSpecificationParams));
+        when(genericSpecificationParams.getFiraSpecificationParams())
+                .thenReturn(firaSpecificationParams);
+        when(firaSpecificationParams.hasRssiReportingSupport())
+                .thenReturn(true);
         mUwbServiceCore.openRanging(
                 attributionSource, sessionHandle, cb, params.toBundle(), TEST_CHIP_ID);
 
