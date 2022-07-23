@@ -41,6 +41,7 @@ import android.uwb.UwbAddress;
 
 import com.android.server.uwb.data.UwbUciConstants;
 
+import com.google.uwb.support.generic.GenericSpecificationParams;
 import com.google.uwb.support.multichip.ChipInfoParams;
 import com.google.uwb.support.profile.ServiceProfile;
 import com.google.uwb.support.profile.UuidBundleWrapper;
@@ -97,6 +98,27 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
         mUwbServiceCore.dump(fd, pw, args);
         mUwbInjector.getUwbCountryCode().dump(fd, pw, args);
         mUwbInjector.getUwbConfigStore().dump(fd, pw, args);
+        dumpPowerStats(fd, pw, args);
+    }
+
+    private void dumpPowerStats(FileDescriptor fd, PrintWriter pw, String[] args) {
+        pw.println("---- powerStats ----");
+        try {
+            PersistableBundle bundle = getSpecificationInfo(null);
+            GenericSpecificationParams params = GenericSpecificationParams.fromBundle(bundle);
+            if (params == null) {
+                pw.println("Spec info is empty. Fail to get power stats.");
+                return;
+            }
+            if (params.hasPowerStatsSupport()) {
+                pw.println(mUwbInjector.getNativeUwbManager().getPowerStats());
+            } else {
+                pw.println("power stats query is not supported");
+            }
+        } catch (Exception e) {
+            pw.println("Exception while getting power stats.");
+            e.printStackTrace(pw);
+        }
     }
 
     private void enforceUwbPrivilegedPermission() {
