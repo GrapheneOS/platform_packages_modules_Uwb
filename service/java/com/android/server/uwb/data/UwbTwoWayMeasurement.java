@@ -36,7 +36,7 @@ public class UwbTwoWayMeasurement {
     public UwbTwoWayMeasurement(byte[] macAddress, int status, int nLoS, int distance,
             int aoaAzimuth, int aoaAzimuthFom, int aoaElevation,
             int aoaElevationFom, int aoaDestAzimuth, int aoaDestAzimuthFom,
-            int aoaDestElevation, int aoaDestElevationFom, int slotIndex, int rssi) {
+            int aoaDestElevation, int aoaDestElevationFom, int slotIndex, int rssiHalfDbmAbs) {
 
         this.mMacAddress = macAddress;
         this.mStatus = status;
@@ -51,7 +51,12 @@ public class UwbTwoWayMeasurement {
         this.mAoaDestElevation = toFloatFromQFormat(aoaDestElevation);
         this.mAoaDestElevationFom = aoaDestElevationFom;
         this.mSlotIndex = slotIndex;
-        this.mRssi = rssi;
+        /*
+         * According to FiRa UCI Generic Technical Specification v2.0.0,
+         * decode the rssi value in dBm format where the abs value was encoded in FP Q7.1 format.
+         * Just need to divide this number by two and take the negative value.
+         */
+        this.mRssi = -rssiHalfDbmAbs / 2;
     }
 
     public byte[] getMacAddress() {

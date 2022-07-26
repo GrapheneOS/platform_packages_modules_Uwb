@@ -16,7 +16,6 @@
 package com.android.server.uwb;
 
 import android.util.SparseArray;
-import android.uwb.RangingMeasurement;
 
 import com.android.server.uwb.UwbSessionManager.UwbSession;
 import com.android.server.uwb.data.UwbRangingData;
@@ -169,11 +168,12 @@ public class UwbMetrics {
         private int mAzimuthFom;
         private int mElevationDegree;
         private int mElevationFom;
+        private int mRssiDbm;
         private long mWallClockMillis;
 
         RangingReportEvent(int sessionId, int nlos, int distanceCm,
                 int azimuthDegree, int azimuthFom,
-                int elevationDegree, int elevationFom) {
+                int elevationDegree, int elevationFom, int rssiDbm) {
             mSessionId = sessionId;
             mWallClockMillis = mUwbInjector.getWallClockMillis();
             mNlos = nlos;
@@ -182,6 +182,7 @@ public class UwbMetrics {
             mAzimuthFom = azimuthFom;
             mElevationDegree = elevationDegree;
             mElevationFom = elevationFom;
+            mRssiDbm = rssiDbm;
         }
 
         @Override
@@ -200,6 +201,7 @@ public class UwbMetrics {
                 sb.append(", AzimuthFom=").append(mAzimuthFom);
                 sb.append(", ElevationDegree=").append(mElevationDegree);
                 sb.append(", ElevationFom=").append(mElevationFom);
+                sb.append(", RssiDbm=").append(mRssiDbm);
                 return sb.toString();
             }
         }
@@ -390,12 +392,13 @@ public class UwbMetrics {
             int elevationDegree = (int) measurement.getAoaElevation();
             int elevationFom = measurement.getAoaElevationFom();
             int nlos = getNlos(measurement);
+            int rssiDbm = measurement.getRssi();
 
             while (mRangingReportList.size() >= MAX_RANGING_REPORTS) {
                 mRangingReportList.removeFirst();
             }
             RangingReportEvent report = new RangingReportEvent(sessionId, nlos, distanceCm,
-                    azimuthDegree, azimuthFom, elevationDegree, elevationFom);
+                    azimuthDegree, azimuthFom, elevationDegree, elevationFom, rssiDbm);
             mRangingReportList.add(report);
 
             long currTimeMs = mUwbInjector.getElapsedSinceBootMillis();
@@ -412,7 +415,7 @@ public class UwbMetrics {
             int azimuth10Degree = isAzimuthValid ? azimuthDegree / 10 : 0;
             int elevation10Degree = isElevationValid ? elevationDegree / 10 : 0;
             UwbStatsLog.write(UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED, profileType, nlos,
-                    isDistanceValid, distanceCm, distance50Cm, RangingMeasurement.RSSI_UNKNOWN,
+                    isDistanceValid, distanceCm, distance50Cm, rssiDbm,
                     isAzimuthValid, azimuthDegree, azimuth10Degree, azimuthFom,
                     isElevationValid, elevationDegree, elevation10Degree, elevationFom);
         }
