@@ -101,12 +101,12 @@ public class UwbInjector {
                 context, new Handler(mLooper),
                 new AtomicFile(new File(getDeviceProtectedDataDir(),
                         UwbSettingsStore.FILE_NAME)), this);
-        mNativeUwbManager = new NativeUwbManager(this);
+        mUwbMultichipData = new UwbMultichipData(mContext);
+        mNativeUwbManager = new NativeUwbManager(this, mUwbMultichipData);
         mUwbCountryCode =
                 new UwbCountryCode(mContext, mNativeUwbManager, new Handler(mLooper), this);
         mUwbMetrics = new UwbMetrics(this);
         mDeviceConfigFacade = new DeviceConfigFacade(new Handler(mLooper), this);
-        mUwbMultichipData = new UwbMultichipData(mContext);
         UwbConfigurationManager uwbConfigurationManager =
                 new UwbConfigurationManager(mNativeUwbManager);
         UwbSessionNotificationManager uwbSessionNotificationManager =

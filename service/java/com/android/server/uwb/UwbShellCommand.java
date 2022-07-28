@@ -864,7 +864,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                         return -1;
                     }
                     if (params.hasPowerStatsSupport()) {
-                        pw.println(mNativeUwbManager.getPowerStats());
+                        pw.println(mNativeUwbManager.getPowerStats(mUwbService.getDefaultChipId()));
                     } else {
                         pw.println("power stats query is not supported");
                     }
