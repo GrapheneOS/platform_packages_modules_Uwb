@@ -48,7 +48,7 @@ impl Drop for MockDispatcher {
 
 #[cfg(test)]
 impl Dispatcher for MockDispatcher {
-    fn send_jni_command(&self, cmd: JNICommand) -> Result<()> {
+    fn send_jni_command(&self, cmd: JNICommand, _chip_id: String) -> Result<()> {
         let mut expected_calls = self.expected_calls.borrow_mut();
         match expected_calls.pop_front() {
             Some(ExpectedCall::SendJniCommand { expected_cmd, out }) if cmd == expected_cmd => out,
@@ -59,7 +59,7 @@ impl Dispatcher for MockDispatcher {
             None => Err(UwbErr::Undefined),
         }
     }
-    fn block_on_jni_command(&self, cmd: JNICommand) -> Result<UciResponse> {
+    fn block_on_jni_command(&self, cmd: JNICommand, _chip_id: String) -> Result<UciResponse> {
         let mut expected_calls = self.expected_calls.borrow_mut();
         match expected_calls.pop_front() {
             Some(ExpectedCall::BlockOnJniCommand { expected_cmd, out }) if cmd == expected_cmd => {

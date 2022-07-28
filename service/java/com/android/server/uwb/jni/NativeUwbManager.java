@@ -26,6 +26,12 @@ import com.android.server.uwb.data.UwbTlvData;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.data.UwbVendorUciResponse;
 import com.android.server.uwb.info.UwbPowerStats;
+import com.android.server.uwb.multchip.UwbMultichipData;
+
+import com.google.uwb.support.multichip.ChipInfoParams;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class NativeUwbManager {
     private static final String TAG = NativeUwbManager.class.getSimpleName();
@@ -36,13 +42,17 @@ public class NativeUwbManager {
     public final Object mGetSessionStatusFnLock = new Object();
     public final Object mSetAppConfigFnLock = new Object();
     private final UwbInjector mUwbInjector;
+    private final List<String> mChipIds;
     protected INativeUwbManager.DeviceNotification mDeviceListener;
     protected INativeUwbManager.SessionNotification mSessionListener;
     private long mDispatcherPointer;
     protected INativeUwbManager.VendorNotification mVendorListener;
 
-    public NativeUwbManager(@NonNull UwbInjector uwbInjector) {
+    public NativeUwbManager(@NonNull UwbInjector uwbInjector, UwbMultichipData uwbMultichipData) {
         mUwbInjector = uwbInjector;
+        mChipIds = uwbMultichipData.getChipInfos()
+                .stream().map(ChipInfoParams::getChipId).collect(
+                        Collectors.toUnmodifiableList());
         loadLibrary();
     }
 
@@ -101,10 +111,14 @@ public class NativeUwbManager {
      * @return : If this returns true, UWB is on
      */
     public synchronized boolean doInitialize() {
-        if (this.mDispatcherPointer == 0L) {
-            this.mDispatcherPointer = nativeDispatcherNew();
+        mDispatcherPointer = nativeDispatcherNew(mChipIds.toArray());
+
+        for (String chipId : mChipIds) {
+            if (!nativeDoInitialize(chipId)) {
+                return false;
+            }
         }
-        return nativeDoInitialize();
+        return true;
     }
 
     /**
@@ -113,9 +127,12 @@ public class NativeUwbManager {
      * @return : If this returns true, UWB is off
      */
     public synchronized boolean doDeinitialize() {
-        nativeDoDeinitialize();
+        for (String chipId: mChipIds) {
+            nativeDoDeinitialize(chipId);
+        }
+
         nativeDispatcherDestroy();
-        this.mDispatcherPointer = 0L;
+        mDispatcherPointer = 0L;
         return true;
     }
 
@@ -138,8 +155,8 @@ public class NativeUwbManager {
      * Retrieves power related stats
      *
      */
-    public UwbPowerStats getPowerStats() {
-        return nativeGetPowerStats();
+    public UwbPowerStats getPowerStats(String chipId) {
+        return nativeGetPowerStats(chipId);
     }
 
     /**
@@ -154,7 +171,7 @@ public class NativeUwbManager {
      */
     public byte initSession(int sessionId, byte sessionType, String chipId) {
         synchronized (mSessionFnLock) {
-            return nativeSessionInit(sessionId, sessionType);
+            return nativeSessionInit(sessionId, sessionType, chipId);
         }
     }
 
@@ -167,7 +184,7 @@ public class NativeUwbManager {
      */
     public byte deInitSession(int sessionId, String chipId) {
         synchronized (mSessionFnLock) {
-            return nativeSessionDeInit(sessionId);
+            return nativeSessionDeInit(sessionId, chipId);
         }
     }
 
@@ -179,7 +196,7 @@ public class NativeUwbManager {
      * @return : {@link UwbUciConstants}  Status code
      */
     public byte resetDevice(byte resetConfig, String chipId) {
-        return nativeResetDevice(resetConfig);
+        return nativeResetDevice(resetConfig, chipId);
     }
 
     /**
@@ -190,7 +207,7 @@ public class NativeUwbManager {
      */
     public byte getSessionCount(String chipId) {
         synchronized (mSessionCountFnLock) {
-            return nativeGetSessionCount();
+            return nativeGetSessionCount(chipId);
         }
     }
 
@@ -203,7 +220,7 @@ public class NativeUwbManager {
      */
     public byte getSessionState(int sessionId, String chipId) {
         synchronized (mGetSessionStatusFnLock) {
-            return nativeGetSessionState(sessionId);
+            return nativeGetSessionState(sessionId, chipId);
         }
     }
 
@@ -216,7 +233,7 @@ public class NativeUwbManager {
      */
     public byte startRanging(int sessionId, String chipId) {
         synchronized (mSessionFnLock) {
-            return nativeRangingStart(sessionId);
+            return nativeRangingStart(sessionId, chipId);
         }
     }
 
@@ -229,7 +246,7 @@ public class NativeUwbManager {
      */
     public byte stopRanging(int sessionId, String chipId) {
         synchronized (mSessionFnLock) {
-            return nativeRangingStop(sessionId);
+            return nativeRangingStop(sessionId, chipId);
         }
     }
 
@@ -246,7 +263,7 @@ public class NativeUwbManager {
             int appConfigParamLen, byte[] appConfigParams, String chipId) {
         synchronized (mSetAppConfigFnLock) {
             return nativeSetAppConfigurations(sessionId, noOfParams, appConfigParamLen,
-                    appConfigParams);
+                    appConfigParams, chipId);
         }
     }
 
@@ -263,7 +280,7 @@ public class NativeUwbManager {
             byte[] appConfigIds, String chipId) {
         synchronized (mSetAppConfigFnLock) {
             return nativeGetAppConfigurations(sessionId, noOfParams, appConfigParamLen,
-                    appConfigIds);
+                    appConfigIds, chipId);
         }
     }
 
@@ -275,7 +292,7 @@ public class NativeUwbManager {
      */
     public UwbTlvData getCapsInfo(String chipId) {
         synchronized (mGlobalStateFnLock) {
-            return nativeGetCapsInfo();
+            return nativeGetCapsInfo(chipId);
         }
     }
 
@@ -296,7 +313,7 @@ public class NativeUwbManager {
             short[] addresses, int[]subSessionIds, String chipId) {
         synchronized (mSessionFnLock) {
             return nativeControllerMulticastListUpdate(sessionId, (byte) action,
-                    (byte) noOfControlee, addresses, subSessionIds);
+                    (byte) noOfControlee, addresses, subSessionIds, chipId);
         }
     }
 
@@ -307,60 +324,68 @@ public class NativeUwbManager {
      */
     public byte setCountryCode(byte[] countryCode) {
         Log.i(TAG, "setCountryCode: " + new String(countryCode));
+
         synchronized (mGlobalStateFnLock) {
-            return nativeSetCountryCode(countryCode);
+            for (String chipId : mChipIds) {
+                byte status = nativeSetCountryCode(countryCode, chipId);
+                if (status != UwbUciConstants.STATUS_CODE_OK) {
+                    return status;
+                }
+            }
+            return UwbUciConstants.STATUS_CODE_OK;
         }
     }
 
     @NonNull
     public UwbVendorUciResponse sendRawVendorCmd(int gid, int oid, byte[] payload, String chipId) {
         synchronized (mGlobalStateFnLock) {
-            return nativeSendRawVendorCmd(gid, oid, payload);
+            return nativeSendRawVendorCmd(gid, oid, payload, chipId);
         }
     }
 
-    private native long nativeDispatcherNew();
+    private native long nativeDispatcherNew(Object[] chipIds);
 
     private native void nativeDispatcherDestroy();
 
     private native boolean nativeInit();
 
-    private native boolean nativeDoInitialize();
+    private native boolean nativeDoInitialize(String chipIds);
 
-    private native boolean nativeDoDeinitialize();
+    private native boolean nativeDoDeinitialize(String chipId);
 
     private native long nativeGetTimestampResolutionNanos();
 
-    private native UwbPowerStats nativeGetPowerStats();
+    private native UwbPowerStats nativeGetPowerStats(String chipId);
 
     private native int nativeGetMaxSessionNumber();
 
-    private native byte nativeResetDevice(byte resetConfig);
+    private native byte nativeResetDevice(byte resetConfig, String chipId);
 
-    private native byte nativeSessionInit(int sessionId, byte sessionType);
+    private native byte nativeSessionInit(int sessionId, byte sessionType, String chipId);
 
-    private native byte nativeSessionDeInit(int sessionId);
+    private native byte nativeSessionDeInit(int sessionId, String chipId);
 
-    private native byte nativeGetSessionCount();
+    private native byte nativeGetSessionCount(String chipId);
 
-    private native byte nativeRangingStart(int sessionId);
+    private native byte nativeRangingStart(int sessionId, String chipId);
 
-    private native byte nativeRangingStop(int sessionId);
+    private native byte nativeRangingStop(int sessionId, String chipId);
 
-    private native byte nativeGetSessionState(int sessionId);
+    private native byte nativeGetSessionState(int sessionId, String chipId);
 
     private native UwbConfigStatusData nativeSetAppConfigurations(int sessionId, int noOfParams,
-            int appConfigParamLen, byte[] appConfigParams);
+            int appConfigParamLen, byte[] appConfigParams, String chipId);
 
     private native UwbTlvData nativeGetAppConfigurations(int sessionId, int noOfParams,
-            int appConfigParamLen, byte[] appConfigParams);
+            int appConfigParamLen, byte[] appConfigParams, String chipId);
 
-    private native UwbTlvData nativeGetCapsInfo();
+    private native UwbTlvData nativeGetCapsInfo(String chipId);
 
     private native byte nativeControllerMulticastListUpdate(int sessionId, byte action,
-            byte noOfControlee, short[] address, int[]subSessionId);
+            byte noOfControlee, short[] address, int[]subSessionId, String chipId);
 
-    private native byte nativeSetCountryCode(byte[] countryCode);
+    private native byte nativeSetCountryCode(byte[] countryCode, String chipId);
 
-    private native UwbVendorUciResponse nativeSendRawVendorCmd(int gid, int oid, byte[] payload);
+    private native UwbVendorUciResponse nativeSendRawVendorCmd(int gid, int oid, byte[] payload,
+            String chipId);
 }
