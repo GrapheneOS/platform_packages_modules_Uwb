@@ -49,6 +49,8 @@ public class CapabilityParam {
             UwbVendorCapabilityTlvTypes.SUPPORTED_RANGE_DATA_NTF_CONFIG;
     public static final int SUPPORTED_RSSI_REPORTING =
             UwbVendorCapabilityTlvTypes.SUPPORTED_RSSI_REPORTING;
+    public static final int SUPPORTED_DIAGNOSTICS =
+            UwbVendorCapabilityTlvTypes.SUPPORTED_DIAGNOSTICS;
 
     // CCC specific
     public static final int CCC_SUPPORTED_VERSIONS =
@@ -123,6 +125,9 @@ public class CapabilityParam {
 
     public static final int NO_RSSI_REPORTING = 0x0;
     public static final int RSSI_REPORTING = 0x1;
+
+    public static final int NO_DIAGNOSTICS = 0x0;
+    public static final int DIAGNOSTICS = 0x1;
 
     public static final int CCC_CHANNEL_5 = (int) UwbVendorCapabilityTlvValues.CCC_CHANNEL_5;
     public static final int CCC_CHANNEL_9 = (int) UwbVendorCapabilityTlvValues.CCC_CHANNEL_9;

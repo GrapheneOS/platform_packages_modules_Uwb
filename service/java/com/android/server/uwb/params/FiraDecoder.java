@@ -34,6 +34,7 @@ import static com.android.server.uwb.config.CapabilityParam.CHANNEL_5;
 import static com.android.server.uwb.config.CapabilityParam.CHANNEL_6;
 import static com.android.server.uwb.config.CapabilityParam.CHANNEL_8;
 import static com.android.server.uwb.config.CapabilityParam.CHANNEL_9;
+import static com.android.server.uwb.config.CapabilityParam.DIAGNOSTICS;
 import static com.android.server.uwb.config.CapabilityParam.DS_TWR_DEFERRED;
 import static com.android.server.uwb.config.CapabilityParam.DS_TWR_NON_DEFERRED;
 import static com.android.server.uwb.config.CapabilityParam.DYNAMIC_STS;
@@ -66,6 +67,7 @@ import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_BPRF_PARAM
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_CC_CONSTRAINT_LENGTH;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_CHANNELS;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_DEVICE_ROLES;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_DIAGNOSTICS;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_EXTENDED_MAC_ADDRESS;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_FIRA_MAC_VERSION_RANGE;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_FIRA_PHY_VERSION_RANGE;
@@ -138,6 +140,15 @@ public class FiraDecoder extends TlvDecoder {
             }
         } catch (IllegalArgumentException e) {
             Log.w(TAG, "SUPPORTED_RSSI_REPORTING not found.");
+        }
+
+        try {
+            byte diagnostics = tlvs.getByte(SUPPORTED_DIAGNOSTICS);
+            if (isBitSet(diagnostics, DIAGNOSTICS)) {
+                builder.hasDiagnosticsSupport(true);
+            }
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "SUPPORTED_DIAGNOSTICS not found.");
         }
 
         byte deviceRolesUci = tlvs.getByte(SUPPORTED_DEVICE_ROLES);
