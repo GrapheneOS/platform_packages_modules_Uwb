@@ -24,7 +24,6 @@ import static org.mockito.Mockito.when;
 
 import android.platform.test.annotations.Presubmit;
 import android.test.suitebuilder.annotation.SmallTest;
-import android.uwb.RangingMeasurement;
 
 import androidx.test.runner.AndroidJUnit4;
 
@@ -65,6 +64,7 @@ public class UwbMetricsTest {
     private static final int AZIMUTH_FOM_DEFAULT = 60;
     private static final int NLOS_DEFAULT = 1;
     private static final int VALID_RANGING_COUNT = 5;
+    private static final int RSSI_DEFAULT_DBM = -75;
     @Mock
     private UwbInjector mUwbInjector;
     @Mock
@@ -111,6 +111,7 @@ public class UwbMetricsTest {
         when(mTwoWayMeasurement.getAoaElevation()).thenReturn((float) ELEVATION_DEFAULT_DEGREE);
         when(mTwoWayMeasurement.getAoaElevationFom()).thenReturn(ELEVATION_FOM_DEFAULT);
         when(mTwoWayMeasurement.getNLoS()).thenReturn(NLOS_DEFAULT);
+        when(mTwoWayMeasurement.getRssi()).thenReturn(RSSI_DEFAULT_DBM);
         when(mDeviceConfigFacade.getRangingResultLogIntervalMs())
                 .thenReturn(DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
         when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
@@ -217,7 +218,7 @@ public class UwbMetricsTest {
                 UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
                 UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__NLOS__NLOS,
                 true, DISTANCE_DEFAULT_CM, DISTANCE_DEFAULT_CM / 50,
-                RangingMeasurement.RSSI_UNKNOWN,
+                RSSI_DEFAULT_DBM,
                 true, AZIMUTH_DEFAULT_DEGREE, AZIMUTH_DEFAULT_DEGREE / 10, AZIMUTH_FOM_DEFAULT,
                 true, ELEVATION_DEFAULT_DEGREE, ELEVATION_DEFAULT_DEGREE / 10, ELEVATION_FOM_DEFAULT
         ));
@@ -233,7 +234,7 @@ public class UwbMetricsTest {
                 UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
                 UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__NLOS__NLOS,
                 true, DISTANCE_DEFAULT_CM, DISTANCE_DEFAULT_CM / 50,
-                RangingMeasurement.RSSI_UNKNOWN,
+                RSSI_DEFAULT_DBM,
                 true, AZIMUTH_DEFAULT_DEGREE, AZIMUTH_DEFAULT_DEGREE / 10, AZIMUTH_FOM_DEFAULT,
                 true, ELEVATION_DEFAULT_DEGREE, ELEVATION_DEFAULT_DEGREE / 10, ELEVATION_FOM_DEFAULT
         ), times(0));
@@ -257,7 +258,7 @@ public class UwbMetricsTest {
                 UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__CCC,
                 UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__NLOS__LOS,
                 false, UwbMetrics.INVALID_DISTANCE, 0,
-                RangingMeasurement.RSSI_UNKNOWN,
+                RSSI_DEFAULT_DBM,
                 false, -10, 0, 0,
                 false, -20, 0, 0
         ));

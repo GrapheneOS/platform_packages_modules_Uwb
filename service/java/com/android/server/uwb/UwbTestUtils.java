@@ -54,7 +54,7 @@ public class UwbTestUtils {
     private static final float TEST_AOA_DEST_ELEVATION = 37;
     private static final int TEST_AOA_DEST_ELEVATION_FOM = 90;
     private static final int TEST_SLOT_IDX = 10;
-    private static final int TEST_RSSI = -1;
+    private static final int TEST_RSSI = 150;
 
     private UwbTestUtils() {}
 
@@ -134,7 +134,7 @@ public class UwbTestUtils {
                 .setAngleOfArrivalMeasurement(aoaMeasurement)
                 .setDestinationAngleOfArrivalMeasurement(aoaDestMeasurement)
                 .setLineOfSight(TEST_LOS)
-                .setRssiDbm(TEST_RSSI)
+                .setRssiDbm(-TEST_RSSI / 2)
                 .build();
         RangingReport rangingReport = new RangingReport.Builder()
                 .addMeasurement(rangingMeasurement)
