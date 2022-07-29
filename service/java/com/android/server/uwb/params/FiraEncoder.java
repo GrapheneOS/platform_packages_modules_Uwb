@@ -148,6 +148,11 @@ public class FiraEncoder extends TlvEncoder {
         if (params.isRssiReportingEnabled()) {
             tlvBufferBuilder.putByte(ConfigParam.RSSI_REPORTING, (byte) 1);
         }
+        if (params.isDiagnosticsEnabled()) {
+            tlvBufferBuilder.putByte(ConfigParam.ENABLE_DIAGNOSTICS_RSSI, (byte) 1);
+            tlvBufferBuilder.putInt(ConfigParam.ENABLE_DIAGRAMS_FRAME_REPORTS_FIELDS,
+                    params.getDiagramsFrameReportsFieldsFlags());
+        }
         return tlvBufferBuilder.build();
     }
 

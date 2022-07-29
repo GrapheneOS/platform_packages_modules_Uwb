@@ -105,6 +105,8 @@ public class FiraOpenSessionParams extends FiraParams {
     @Nullable private final byte[] mStaticStsIV;
 
     private final boolean mIsRssiReportingEnabled;
+    private final boolean mIsDiagnosticsEnabled;
+    private final int mDiagramsFrameReportsFieldsFlags;
     private final boolean mIsKeyRotationEnabled;
     private final int mKeyRotationRate;
     @AoaResultRequestMode private final int mAoaResultRequest;
@@ -165,6 +167,9 @@ public class FiraOpenSessionParams extends FiraParams {
     private static final String KEY_VENDOR_ID = "vendor_id";
     private static final String KEY_STATIC_STS_IV = "static_sts_iv";
     private static final String KEY_IS_RSSI_REPORTING_ENABLED = "is_rssi_reporting_enabled";
+    private static final String KEY_IS_DIAGNOSTICS_ENABLED = "is_diagnostics_enabled";
+    private static final String KEY_DIAGRAMS_FRAME_REPORTS_FIELDS_FLAGS =
+            "diagrams_frame_reports_fields_flags";
     private static final String KEY_IS_KEY_ROTATION_ENABLED = "is_key_rotation_enabled";
     private static final String KEY_KEY_ROTATION_RATE = "key_rotation_rate";
     private static final String KEY_AOA_RESULT_REQUEST = "aoa_result_request";
@@ -236,6 +241,8 @@ public class FiraOpenSessionParams extends FiraParams {
             @Nullable byte[] vendorId,
             @Nullable byte[] staticStsIV,
             boolean isRssiReportingEnabled,
+            boolean isDiagnosticsEnabled,
+            int diagramsFrameReportsFieldsFlags,
             boolean isKeyRotationEnabled,
             int keyRotationRate,
             @AoaResultRequestMode int aoaResultRequest,
@@ -293,6 +300,8 @@ public class FiraOpenSessionParams extends FiraParams {
         mVendorId = vendorId;
         mStaticStsIV = staticStsIV;
         mIsRssiReportingEnabled = isRssiReportingEnabled;
+        mIsDiagnosticsEnabled = isDiagnosticsEnabled;
+        mDiagramsFrameReportsFieldsFlags = diagramsFrameReportsFieldsFlags;
         mIsKeyRotationEnabled = isKeyRotationEnabled;
         mKeyRotationRate = keyRotationRate;
         mAoaResultRequest = aoaResultRequest;
@@ -493,6 +502,14 @@ public class FiraOpenSessionParams extends FiraParams {
         return mIsRssiReportingEnabled;
     }
 
+    public boolean isDiagnosticsEnabled() {
+        return mIsDiagnosticsEnabled;
+    }
+
+    public int getDiagramsFrameReportsFieldsFlags() {
+        return mDiagramsFrameReportsFieldsFlags;
+    }
+
     public boolean isKeyRotationEnabled() {
         return mIsKeyRotationEnabled;
     }
@@ -650,6 +667,8 @@ public class FiraOpenSessionParams extends FiraParams {
         bundle.putIntArray(KEY_VENDOR_ID, byteArrayToIntArray(mVendorId));
         bundle.putIntArray(KEY_STATIC_STS_IV, byteArrayToIntArray(mStaticStsIV));
         bundle.putBoolean(KEY_IS_RSSI_REPORTING_ENABLED, mIsRssiReportingEnabled);
+        bundle.putBoolean(KEY_IS_DIAGNOSTICS_ENABLED, mIsDiagnosticsEnabled);
+        bundle.putInt(KEY_DIAGRAMS_FRAME_REPORTS_FIELDS_FLAGS, mDiagramsFrameReportsFieldsFlags);
         bundle.putBoolean(KEY_IS_KEY_ROTATION_ENABLED, mIsKeyRotationEnabled);
         bundle.putInt(KEY_KEY_ROTATION_RATE, mKeyRotationRate);
         bundle.putInt(KEY_AOA_RESULT_REQUEST, mAoaResultRequest);
@@ -747,6 +766,9 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setVendorId(intArrayToByteArray(bundle.getIntArray(KEY_VENDOR_ID)))
                 .setStaticStsIV(intArrayToByteArray(bundle.getIntArray(KEY_STATIC_STS_IV)))
                 .setIsRssiReportingEnabled(bundle.getBoolean(KEY_IS_RSSI_REPORTING_ENABLED))
+                .setIsDiagnosticsEnabled(bundle.getBoolean(KEY_IS_DIAGNOSTICS_ENABLED, false))
+                .setDiagramsFrameReportsFieldsFlags(
+                        bundle.getInt(KEY_DIAGRAMS_FRAME_REPORTS_FIELDS_FLAGS, 0))
                 .setIsKeyRotationEnabled(bundle.getBoolean(KEY_IS_KEY_ROTATION_ENABLED))
                 .setKeyRotationRate(bundle.getInt(KEY_KEY_ROTATION_RATE))
                 .setAoaResultRequest(bundle.getInt(KEY_AOA_RESULT_REQUEST))
@@ -895,6 +917,12 @@ public class FiraOpenSessionParams extends FiraParams {
         /** UCI spec default: RSSI reporting disabled */
         private boolean mIsRssiReportingEnabled = false;
 
+        /** Diagnostics is Disabled by default */
+        private boolean mIsDiagnosticsEnabled = false;
+
+        /** All fields are set to 0 by default */
+        private int mDiagramsFrameReportsFieldsFlags = 0;
+
         /** UCI spec default: no key rotation */
         private boolean mIsKeyRotationEnabled = false;
 
@@ -988,6 +1016,8 @@ public class FiraOpenSessionParams extends FiraParams {
             mVendorId = builder.mVendorId;
             mStaticStsIV = builder.mStaticStsIV;
             mIsRssiReportingEnabled = builder.mIsRssiReportingEnabled;
+            mIsDiagnosticsEnabled = builder.mIsDiagnosticsEnabled;
+            mDiagramsFrameReportsFieldsFlags = builder.mDiagramsFrameReportsFieldsFlags;
             mIsKeyRotationEnabled = builder.mIsKeyRotationEnabled;
             mKeyRotationRate = builder.mKeyRotationRate;
             mAoaResultRequest = builder.mAoaResultRequest;
@@ -1045,6 +1075,8 @@ public class FiraOpenSessionParams extends FiraParams {
             mVendorId = params.mVendorId;
             mStaticStsIV = params.mStaticStsIV;
             mIsRssiReportingEnabled = params.mIsRssiReportingEnabled;
+            mIsDiagnosticsEnabled = params.mIsDiagnosticsEnabled;
+            mDiagramsFrameReportsFieldsFlags = params.mDiagramsFrameReportsFieldsFlags;
             mIsKeyRotationEnabled = params.mIsKeyRotationEnabled;
             mKeyRotationRate = params.mKeyRotationRate;
             mAoaResultRequest = params.mAoaResultRequest;
@@ -1267,6 +1299,24 @@ public class FiraOpenSessionParams extends FiraParams {
         public FiraOpenSessionParams.Builder
                 setIsRssiReportingEnabled(boolean isRssiReportingEnabled) {
             mIsRssiReportingEnabled = isRssiReportingEnabled;
+            return this;
+        }
+
+        /** Set whether diagnostics is enabled */
+        public FiraOpenSessionParams.Builder setIsDiagnosticsEnabled(boolean isDiagnosticsEnabled) {
+            mIsDiagnosticsEnabled = isDiagnosticsEnabled;
+            return this;
+        }
+
+        /** Set the activated field
+         *  b0: Activate RSSIs field
+         *  b1: Activate AoAs field
+         *  b2: Activate CIRs field
+         *  b3 - b7: RFU
+         */
+        public FiraOpenSessionParams.Builder
+                setDiagramsFrameReportsFieldsFlags(int diagramsFrameReportsFieldsFlags) {
+            mDiagramsFrameReportsFieldsFlags = diagramsFrameReportsFieldsFlags;
             return this;
         }
 
@@ -1554,6 +1604,8 @@ public class FiraOpenSessionParams extends FiraParams {
                     mVendorId,
                     mStaticStsIV,
                     mIsRssiReportingEnabled,
+                    mIsDiagnosticsEnabled,
+                    mDiagramsFrameReportsFieldsFlags,
                     mIsKeyRotationEnabled,
                     mKeyRotationRate,
                     mAoaResultRequest,

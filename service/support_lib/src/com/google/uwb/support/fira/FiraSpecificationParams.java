@@ -56,6 +56,8 @@ public class FiraSpecificationParams extends FiraParams {
 
     private final boolean mHasRssiReportingSupport;
 
+    private final boolean mHasDiagnosticsSupport;
+
     private final int mMinRangingInterval;
 
     private final EnumSet<MultiNodeCapabilityFlag> mMultiNodeCapabilities;
@@ -88,6 +90,7 @@ public class FiraSpecificationParams extends FiraParams {
     private static final String KEY_NON_DEFERRED_MODE_SUPPORT = "non_deferred_mode";
     private static final String KEY_INITIATION_TIME_SUPPORT = "initiation_time";
     private static final String KEY_RSSI_REPORTING_SUPPORT = "rssi_reporting";
+    private static final String KEY_DIAGNOSTICS_SUPPORT = "diagnostics";
     private static final String KEY_MIN_RANGING_INTERVAL = "min_ranging_interval";
     private static final String KEY_MULTI_NODE_CAPABILITIES = "multi_node_capabilities";
     private static final String KEY_PRF_CAPABILITIES = "prf_capabilities";
@@ -114,6 +117,7 @@ public class FiraSpecificationParams extends FiraParams {
             boolean hasNonDeferredModeSupport,
             boolean hasInitiationTimeSupport,
             boolean hasRssiReportingSupport,
+            boolean hasDiagnosticsSupport,
             int minRangingInterval,
             EnumSet<MultiNodeCapabilityFlag> multiNodeCapabilities,
             EnumSet<PrfCapabilityFlag> prfCapabilities,
@@ -135,6 +139,7 @@ public class FiraSpecificationParams extends FiraParams {
         mHasNonDeferredModeSupport = hasNonDeferredModeSupport;
         mHasInitiationTimeSupport = hasInitiationTimeSupport;
         mHasRssiReportingSupport = hasRssiReportingSupport;
+        mHasDiagnosticsSupport = hasDiagnosticsSupport;
         mMinRangingInterval = minRangingInterval;
         mMultiNodeCapabilities = multiNodeCapabilities;
         mPrfCapabilities = prfCapabilities;
@@ -195,6 +200,11 @@ public class FiraSpecificationParams extends FiraParams {
     /** get a boolean whether rssi reporting is supported. */
     public boolean hasRssiReportingSupport() {
         return mHasRssiReportingSupport;
+    }
+
+    /** get a boolean whether diagnostics is supported. */
+    public boolean hasDiagnosticsSupport() {
+        return mHasDiagnosticsSupport;
     }
 
     public int getMinRangingInterval() {
@@ -259,6 +269,7 @@ public class FiraSpecificationParams extends FiraParams {
         bundle.putBoolean(KEY_NON_DEFERRED_MODE_SUPPORT, mHasNonDeferredModeSupport);
         bundle.putBoolean(KEY_INITIATION_TIME_SUPPORT, mHasInitiationTimeSupport);
         bundle.putBoolean(KEY_RSSI_REPORTING_SUPPORT, mHasRssiReportingSupport);
+        bundle.putBoolean(KEY_DIAGNOSTICS_SUPPORT, mHasDiagnosticsSupport);
         bundle.putInt(KEY_MIN_RANGING_INTERVAL, mMinRangingInterval);
         bundle.putInt(KEY_MULTI_NODE_CAPABILITIES, FlagEnum.toInt(mMultiNodeCapabilities));
         bundle.putInt(KEY_PRF_CAPABILITIES, FlagEnum.toInt(mPrfCapabilities));
@@ -361,6 +372,9 @@ public class FiraSpecificationParams extends FiraParams {
         if (bundle.containsKey(KEY_RSSI_REPORTING_SUPPORT)) {
             builder.hasRssiReportingSupport(bundle.getBoolean(KEY_RSSI_REPORTING_SUPPORT));
         }
+        if (bundle.containsKey(KEY_DIAGNOSTICS_SUPPORT)) {
+            builder.hasBlockStridingSupport(bundle.getBoolean(KEY_DIAGNOSTICS_SUPPORT));
+        }
         return builder.build();
     }
 
@@ -394,6 +408,8 @@ public class FiraSpecificationParams extends FiraParams {
         private boolean mHasInitiationTimeSupport = false;
 
         private boolean mHasRssiReportingSupport = false;
+
+        private boolean mHasDiagnosticsSupport = false;
 
         private int mMinRangingInterval = -1;
 
@@ -490,6 +506,12 @@ public class FiraSpecificationParams extends FiraParams {
             return this;
         }
 
+        /** Set whether diagnostics is supported. */
+        public FiraSpecificationParams.Builder hasDiagnosticsSupport(boolean value) {
+            mHasDiagnosticsSupport = value;
+            return this;
+        }
+
         /**
          * Set minimum supported ranging interval
          * @param value : minimum ranging interval supported
@@ -571,6 +593,7 @@ public class FiraSpecificationParams extends FiraParams {
                     mHasNonDeferredModeSupport,
                     mHasInitiationTimeSupport,
                     mHasRssiReportingSupport,
+                    mHasDiagnosticsSupport,
                     mMinRangingInterval,
                     mMultiNodeCapabilities,
                     mPrfCapabilities,
