@@ -61,6 +61,7 @@ public class ProfileManagerTest {
     @Mock private AttributionSource mAttributionSource;
     @Mock private IUwbRangingCallbacks mIUwbRangingCallbacks;
     @Mock private Looper mLooper;
+    private static final String TEST_CHIP_ID = "testChipId";
 
     private com.android.server.uwb.pm.ProfileManager mProfileManager;
 
@@ -125,7 +126,7 @@ public class ProfileManagerTest {
         assertEquals(mProfileManager.mRangingSessionTable.size(), 0);
 
         mProfileManager.activateProfile(mAttributionSource, mSessionHandle, uuid1.get(),
-                mIUwbRangingCallbacks);
+                mIUwbRangingCallbacks, TEST_CHIP_ID);
 
         assertEquals(mProfileManager.mRangingSessionTable.size(), 1);
     }
@@ -138,7 +139,7 @@ public class ProfileManagerTest {
         assertEquals(mProfileManager.mRangingSessionTable.size(), 0);
 
         mProfileManager.activateProfile(mAttributionSource, mSessionHandle, uuid1.get(),
-                mIUwbRangingCallbacks);
+                mIUwbRangingCallbacks, TEST_CHIP_ID);
 
         mProfileManager.startRanging(mSessionHandle);
 
@@ -155,7 +156,7 @@ public class ProfileManagerTest {
         assertEquals(mProfileManager.mRangingSessionTable.size(), 0);
 
         mProfileManager.activateProfile(mAttributionSource, mSessionHandle, uuid1.get(),
-                mIUwbRangingCallbacks);
+                mIUwbRangingCallbacks, TEST_CHIP_ID);
 
         mProfileManager.startRanging(mSessionHandle);
         mProfileManager.stopRanging(mSessionHandle);
@@ -175,7 +176,7 @@ public class ProfileManagerTest {
         assertEquals(mProfileManager.mRangingSessionTable.size(), 0);
 
         mProfileManager.activateProfile(mAttributionSource, mSessionHandle, uuid1.get(),
-                mIUwbRangingCallbacks);
+                mIUwbRangingCallbacks, TEST_CHIP_ID);
 
         assertEquals(mProfileManager.mRangingSessionTable.size(), 1);
 
