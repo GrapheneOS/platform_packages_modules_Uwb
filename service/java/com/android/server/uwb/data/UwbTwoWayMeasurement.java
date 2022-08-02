@@ -15,6 +15,8 @@
  */
 package com.android.server.uwb.data;
 
+import static android.uwb.RangingMeasurement.RSSI_MIN;
+
 import com.android.server.uwb.util.UwbUtil;
 
 public class UwbTwoWayMeasurement {
@@ -55,8 +57,9 @@ public class UwbTwoWayMeasurement {
          * According to FiRa UCI Generic Technical Specification v2.0.0,
          * decode the rssi value in dBm format where the abs value was encoded in FP Q7.1 format.
          * Just need to divide this number by two and take the negative value.
+         * If the reported RSSI is lower than RSSI_MIN, set it to RSSI_MIN to avoid exceptions.
          */
-        this.mRssi = -rssiHalfDbmAbs / 2;
+        this.mRssi = Math.max(-rssiHalfDbmAbs / 2, RSSI_MIN);
     }
 
     public byte[] getMacAddress() {
