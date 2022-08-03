@@ -278,7 +278,7 @@ public class FiraDecoder extends TlvDecoder {
 
         byte[] hprfSets = tlvs.getByteArray(SUPPORTED_HPRF_PARAMETER_SETS);
         // Extend the 5 bytes from HAL to 8 bytes for long.
-        long hprfSetsValue = new BigInteger(hprfSets).longValue();
+        long hprfSetsValue = new BigInteger(TlvUtil.getReverseBytes(hprfSets)).longValue();
         EnumSet<HprfParameterSetCapabilityFlag> hprfFlag;
         hprfFlag = FlagEnum.longToEnumSet(
                 hprfSetsValue, HprfParameterSetCapabilityFlag.values());
@@ -337,7 +337,8 @@ public class FiraDecoder extends TlvDecoder {
 
         try {
             byte[] rangeDataNtfConfigUciBytes = tlvs.getByteArray(SUPPORTED_RANGE_DATA_NTF_CONFIG);
-            int rangeDataNtfConfigUci = new BigInteger(rangeDataNtfConfigUciBytes).intValue();
+            int rangeDataNtfConfigUci =
+                    new BigInteger(TlvUtil.getReverseBytes(rangeDataNtfConfigUciBytes)).intValue();
             EnumSet<FiraParams.RangeDataNtfConfigCapabilityFlag> rangeDataNtfConfigCapabilityFlag =
                     EnumSet.noneOf(FiraParams.RangeDataNtfConfigCapabilityFlag.class);
             if (isBitSet(rangeDataNtfConfigUci, RANGE_DATA_NTF_CONFIG_ENABLE)) {
