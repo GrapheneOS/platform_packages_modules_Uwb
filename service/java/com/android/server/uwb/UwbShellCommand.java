@@ -124,6 +124,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             "stop-ranging-session",
             "stop-all-ranging-sessions",
             "get-specification-info",
+            "enable-diagnostics-notification",
+            "disable-diagnostics-notification",
     };
 
     @VisibleForTesting
@@ -870,6 +872,14 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     }
                     return 0;
                 }
+                case "enable-diagnostics-notification": {
+                    mUwbServiceCore.enableDiagnostics(true);
+                    return 0;
+                }
+                case "disable-diagnostics-notification": {
+                    mUwbServiceCore.enableDiagnostics(false);
+                    return 0;
+                }
                 default:
                     return handleDefaultCommands(cmd);
             }
@@ -962,6 +972,10 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         pw.println("    Stops all ongoing ranging sessions");
         pw.println("  get-specification-info");
         pw.println("    Gets specification info from uwb chip");
+        pw.println("  enable-diagnostics-notification");
+        pw.println("    Enable vendor diagnostics notification");
+        pw.println("  disable-diagnostics-notification");
+        pw.println("    Disable vendor diagnostics notification");
     }
 
     private void onHelpPrivileged(PrintWriter pw) {
