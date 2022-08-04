@@ -21,6 +21,7 @@ import android.annotation.Nullable;
 import android.content.AttributionSource;
 import android.os.CancellationSignal;
 import android.os.PersistableBundle;
+import android.os.Process;
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -36,7 +37,7 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks.Stub {
 
     private final IUwbAdapter mAdapter;
     private final Hashtable<SessionHandle, RangingSession> mRangingSessionTable = new Hashtable<>();
-    private int mNextSessionId = 1;
+    private static int sNextSessionId = 1;
 
     public RangingManager(IUwbAdapter adapter) {
         mAdapter = adapter;
@@ -75,7 +76,8 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks.Stub {
         }
 
         synchronized (this) {
-            SessionHandle sessionHandle = new SessionHandle(mNextSessionId++);
+            SessionHandle sessionHandle =
+                    new SessionHandle(sNextSessionId++, attributionSource, Process.myPid());
             RangingSession session =
                     new RangingSession(executor, callbacks, mAdapter, sessionHandle, chipId);
             Log.v(mTag, "openSession - sessionHandle: " + sessionHandle);
