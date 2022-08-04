@@ -85,12 +85,12 @@ public class FiraDecoderTest {
                     + "0C010B"
                     + "0D0103"
                     + "0E0101"
-                    + "0F050000000003"
+                    + "0F050300000000"
                     + "10010F"
                     + "110101"
                     + "E30101"
                     + "E40401010101"
-                    + "E50400000003"
+                    + "E50403000000"
                     + "E601FF"
                     + "E70101";
     private static final byte[] TEST_FIRA_SPECIFICATION_TLV_DATA =
