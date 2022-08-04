@@ -281,7 +281,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             SessionHandle sessionHandle, int sessionId, String protocolName, Params params,
             IUwbRangingCallbacks rangingCallbacks, String chipId)
             throws RemoteException {
-        Log.i(TAG, "initSession() : Enter - sessionId : " + sessionId);
+        Log.i(TAG, "initSession() - sessionId: " + sessionId
+                + ", sessionHandle: " + sessionHandle);
         UwbSession uwbSession =  createUwbSession(attributionSource, sessionHandle, sessionId,
                 protocolName, params, rangingCallbacks, chipId);
         // Check the attribution source chain to ensure that there are no 3p apps which are not in
@@ -364,7 +365,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
 
         int sessionId = getSessionId(sessionHandle);
-        Log.i(TAG, "sessionDeInit() - Session ID : " + sessionId);
+        Log.i(TAG, "deinitSession() - sessionId: " + sessionId
+                + ", sessionHandle: " + sessionHandle);
         UwbSession uwbSession = getUwbSession(sessionId);
         mEventTask.execute(SESSION_CLOSE, uwbSession);
         return;
@@ -377,7 +379,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
 
         int sessionId = getSessionId(sessionHandle);
-        Log.i(TAG, "startRanging() - Session ID : " + sessionId);
+        Log.i(TAG, "startRanging() - sessionId: " + sessionId
+                + ", sessionHandle: " + sessionHandle);
 
         UwbSession uwbSession = getUwbSession(sessionId);
 
@@ -411,7 +414,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
 
         int sessionId = getSessionId(sessionHandle);
-        Log.i(TAG, "stopRanging() - Session ID : " + sessionId);
+        Log.i(TAG, "stopRanging() - sessionId: " + sessionId
+                + ", sessionHandle: " + sessionHandle);
 
         UwbSession uwbSession = getUwbSession(sessionId);
         int currentSessionState = getCurrentSessionState(sessionId);
