@@ -82,7 +82,6 @@ public class UwbConfigTest {
     private Handler mHandler;
     @Mock
     private Looper mLooper;
-    private static final String TEST_CHIP_ID = "testChipId";
 
     @Before
     public void setUp() {
@@ -228,7 +227,7 @@ public class UwbConfigTest {
         PacsControleeSession pacsControleeSession = new PacsControleeSession(
                 sessionHandleControlee, mAttributionSource, mContext, mUwbInjector,
                 mServiceProfileInfo,
-                mIUwbRangingCallbacks, mHandler, TEST_CHIP_ID);
+                mIUwbRangingCallbacks, mHandler);
 
         pacsControleeSession.mSessionInfo.setSessionId(10);
         pacsControleeSession.mSessionInfo.setSubSessionId(24);
@@ -251,7 +250,7 @@ public class UwbConfigTest {
         PacsControllerSession pacsControllerSession = new PacsControllerSession(
                 sessionHandleController, mAttributionSource, mContext, mUwbInjector,
                 mServiceProfileInfo,
-                mIUwbRangingCallbacks, mHandler, TEST_CHIP_ID);
+                mIUwbRangingCallbacks, mHandler);
 
         pacsControllerSession.mSessionInfo.setSessionId(15);
         pacsControllerSession.mSessionInfo
