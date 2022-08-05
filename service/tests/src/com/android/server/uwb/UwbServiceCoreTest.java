@@ -73,6 +73,7 @@ import com.android.internal.annotations.VisibleForTesting;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.data.UwbVendorUciResponse;
 import com.android.server.uwb.jni.NativeUwbManager;
+import com.android.server.uwb.pm.ProfileManager;
 
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
@@ -155,6 +156,8 @@ public class UwbServiceCoreTest {
     @Mock private UwbConfigurationManager mUwbConfigurationManager;
     @Mock private UwbInjector mUwbInjector;
     @Mock DeviceConfigFacade mDeviceConfigFacade;
+    @Mock private ProfileManager mProfileManager;
+
     private TestLooper mTestLooper;
     private MockitoSession mMockitoSession;
 
@@ -171,6 +174,7 @@ public class UwbServiceCoreTest {
         when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
         when(mDeviceConfigFacade.getBugReportMinIntervalMs())
                 .thenReturn(DeviceConfigFacade.DEFAULT_BUG_REPORT_MIN_INTERVAL_MS);
+        when(mUwbInjector.getProfileManager()).thenReturn(mProfileManager);
         mUwbServiceCore = new UwbServiceCore(mContext, mNativeUwbManager, mUwbMetrics,
                 mUwbCountryCode, mUwbSessionManager, mUwbConfigurationManager,
                 mUwbInjector, mTestLooper.getLooper());

@@ -17,18 +17,26 @@
 package com.android.server.uwb.profile;
 
 import static com.android.server.uwb.data.UwbConfig.CONTROLEE_AND_RESPONDER;
+import static com.android.server.uwb.pm.RangingSessionController.RANGING_ENDED;
+import static com.android.server.uwb.pm.RangingSessionController.SECURE_SESSION_ESTABLISHED;
+import static com.android.server.uwb.pm.RangingSessionController.SESSION_START;
+import static com.android.server.uwb.pm.RangingSessionController.TRANSPORT_COMPLETED;
+import static com.android.server.uwb.pm.RangingSessionController.TRANSPORT_INIT;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import android.bluetooth.BluetoothManager;
+import android.bluetooth.le.AdvertisingSetParameters;
 import android.content.AttributionSource;
 import android.content.Context;
 import android.os.Handler;
-import android.os.Looper;
 import android.os.RemoteException;
+import android.os.test.TestLooper;
 import android.platform.test.annotations.Presubmit;
 import android.test.suitebuilder.annotation.SmallTest;
 import android.uwb.IUwbRangingCallbacks;
@@ -41,9 +49,12 @@ import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.UwbServiceCore;
 import com.android.server.uwb.data.ServiceProfileData.ServiceProfileInfo;
 import com.android.server.uwb.data.UwbConfig;
+import com.android.server.uwb.discovery.ble.DiscoveryAdvertisement;
+import com.android.server.uwb.discovery.info.SecureComponentInfo;
+import com.android.server.uwb.discovery.info.UwbIndicationData;
+import com.android.server.uwb.discovery.info.VendorSpecificData;
 import com.android.server.uwb.multchip.UwbMultichipData;
 import com.android.server.uwb.pm.PacsControleeSession;
-import com.android.server.uwb.pm.RangingSessionController;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -63,6 +74,8 @@ public class PacsControleeSessionTest {
     @Mock
     private Context mContext;
     @Mock
+    BluetoothManager mMockBluetoothManager;
+    @Mock
     private UwbInjector mUwbInjector;
     @Mock
     private ServiceProfileInfo mServiceProfileInfo;
@@ -73,20 +86,29 @@ public class PacsControleeSessionTest {
     @Mock
     private UwbServiceCore mUwbServiceCore;
     @Mock
-    private Looper mLooper;
-    @Mock
     private UwbMultichipData mUwbMultichipData;
 
-    private RangingSessionController mRangingSessionController;
+    private TestLooper mLooper;
+    @Mock
+    private UwbMultichipData mUwbMultiChipData;
+
+    private PacsControleeSession mRangingSessionController;
+    private static final String TEST_CHIP_ID = "testChipId";
 
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
 
-        when(mHandler.getLooper()).thenReturn(mLooper);
+        mLooper = new TestLooper();
+
+        when(mHandler.getLooper()).thenReturn(mLooper.getLooper());
         when(mUwbInjector.getUwbServiceCore()).thenReturn(mUwbServiceCore);
-        when(mUwbMultichipData.getDefaultChipId()).thenReturn(DEFAULT_CHIP_ID);
-        when(mUwbInjector.getMultichipData()).thenReturn(mUwbMultichipData);
+        when(mUwbServiceCore.getCachedSpecificationParams(TEST_CHIP_ID)).thenReturn(null);
+        when(mUwbMultiChipData.getDefaultChipId()).thenReturn(DEFAULT_CHIP_ID);
+        when(mUwbInjector.getMultichipData()).thenReturn(mUwbMultiChipData);
+        when(mContext.createContext(any())).thenReturn(mContext);
+        when(mContext.getSystemService(BluetoothManager.class))
+                .thenReturn(mMockBluetoothManager);
         SessionHandle sessionHandle = new SessionHandle(10);
         mRangingSessionController = new PacsControleeSession(sessionHandle,
                 mAttributionSource,
@@ -94,7 +116,33 @@ public class PacsControleeSessionTest {
                 mUwbInjector,
                 mServiceProfileInfo,
                 mIUwbRangingCallbacks,
-                mHandler);
+                mHandler,
+                TEST_CHIP_ID);
+        AdvertisingSetParameters parameters =
+                new AdvertisingSetParameters.Builder()
+                        .setInterval(AdvertisingSetParameters.INTERVAL_HIGH)
+                        .setIncludeTxPower(true)
+                        .setTxPowerLevel(AdvertisingSetParameters.TX_POWER_HIGH)
+                        .build();
+        DiscoveryAdvertisement advertisement =
+                new DiscoveryAdvertisement(
+                        new UwbIndicationData(
+                                /*firaUwbSupport=*/ true,
+                                /*iso14443Support=*/ true,
+                                /*uwbRegulartoryInfoAvailableInAd=*/ true,
+                                /*uwbRegulartoryInfoAvailableInOob=*/ false,
+                                /*firaProfileInfoAvailableInAd=*/ true,
+                                /*firaProfileInfoAvailableInOob=*/ false,
+                                /*dualGapRoleSupport=*/ true,
+                                /*bluetoothRssiThresholdDbm=*/ -100,
+                                new SecureComponentInfo[]{}),
+                        /*regulatoryInfo=*/ null,
+                        /*firaProfileSupportInfo=*/ null,
+                        new VendorSpecificData[]{
+                                new VendorSpecificData(/*vendorId=*/ 117, new byte[]{0x02, 0x15}),
+                        });
+        mRangingSessionController.setDiscoveryAdvertisement(advertisement);
+        mRangingSessionController.setAdvertisingSetParameters(parameters);
     }
 
     @Test
@@ -117,4 +165,46 @@ public class PacsControleeSessionTest {
                 eq(mIUwbRangingCallbacks), any(), eq(DEFAULT_CHIP_ID));
     }
 
+    @Test
+    public void testAllStateTransitions() {
+        assertEquals(mRangingSessionController.getCurrentState().getName(),
+                mRangingSessionController.getIdleState().getName());
+        mRangingSessionController.sendMessage(SESSION_START);
+
+        mLooper.dispatchAll();
+
+        verify(mContext, times(1)).getSystemService(BluetoothManager.class);
+
+        assertEquals(mRangingSessionController.getCurrentState().getName(),
+                mRangingSessionController.getDiscoveryState().getName());
+
+        mRangingSessionController.sendMessage(TRANSPORT_INIT);
+
+        mLooper.dispatchAll();
+
+        assertEquals(mRangingSessionController.getCurrentState().getName(),
+                mRangingSessionController.getTransportState().getName());
+
+        mRangingSessionController.sendMessage(TRANSPORT_COMPLETED);
+
+        mLooper.dispatchAll();
+
+        assertEquals(mRangingSessionController.getCurrentState().getName(),
+                mRangingSessionController.getSecureState().getName());
+
+        mRangingSessionController.sendMessage(SECURE_SESSION_ESTABLISHED);
+
+        mLooper.dispatchAll();
+
+        assertEquals(mRangingSessionController.getCurrentState().getName(),
+                mRangingSessionController.getRangingState().getName());
+
+        mRangingSessionController.sendMessage(RANGING_ENDED);
+
+        mLooper.dispatchAll();
+
+        assertEquals(mRangingSessionController.getCurrentState().getName(),
+                mRangingSessionController.getEndingState().getName());
+
+    }
 }

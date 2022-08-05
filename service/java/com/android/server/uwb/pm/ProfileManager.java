@@ -101,6 +101,11 @@ public class ProfileManager {
         }
     }
 
+    /** Check whether profile manager has an instance of SessionHandle */
+    public boolean hasSession(SessionHandle sessionHandle) {
+        return mRangingSessionTable.containsKey(sessionHandle);
+    }
+
     public Optional<UUID> addServiceProfile(@ServiceID int serviceID) {
         UUID serviceInstanceID;
         int app_uid = Binder.getCallingUid();
@@ -184,7 +189,7 @@ public class ProfileManager {
 
     /** Initializes state machine and session related info */
     public void activateProfile(AttributionSource attributionSource, SessionHandle sessionHandle,
-            UUID serviceInstanceId, IUwbRangingCallbacks rangingCallbacks) {
+            UUID serviceInstanceId, IUwbRangingCallbacks rangingCallbacks, String chipId) {
 
         if (!mServiceProfileMap.containsKey(serviceInstanceId)) {
             Log.e(TAG, "UUID not found");
@@ -197,7 +202,7 @@ public class ProfileManager {
             case PACS_PROFILE_SERVICE_ID :
                 RangingSessionController rangingSessionController = new PacsControleeSession(
                         sessionHandle,  attributionSource, mContext, mUwbInjector, profileInfo,
-                        rangingCallbacks, mHandler);
+                        rangingCallbacks, mHandler, chipId);
                 mRangingSessionTable.put(sessionHandle, rangingSessionController);
                 break;
             default:
