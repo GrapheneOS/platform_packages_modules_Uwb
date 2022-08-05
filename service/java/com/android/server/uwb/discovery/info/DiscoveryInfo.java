@@ -42,5 +42,5 @@ public class DiscoveryInfo {
 
     public final Optional<AdvertiseInfo> advertiseInfo;
 
-    public Optional<TransportClientInfo> transportClientInfo;
+    public final Optional<TransportClientInfo> transportClientInfo;
 }
