@@ -103,6 +103,10 @@ public class UwbMultichipDataTest {
         assertThat(chipInfo.getPositionX()).isEqualTo(0.0);
         assertThat(chipInfo.getPositionY()).isEqualTo(0.0);
         assertThat(chipInfo.getPositionZ()).isEqualTo(0.0);
+
+        List<String> chipIds = mUwbMultichipData.getChipIds();
+        assertThat(chipIds).hasSize(1);
+        assertThat(chipIds.get(0)).isEqualTo(mUwbMultichipData.getDefaultChipId());
     }
 
     @Test
@@ -119,6 +123,10 @@ public class UwbMultichipDataTest {
         assertThat(chipInfo.getPositionX()).isEqualTo(0.0);
         assertThat(chipInfo.getPositionY()).isEqualTo(0.0);
         assertThat(chipInfo.getPositionZ()).isEqualTo(0.0);
+
+        List<String> chipIds = mUwbMultichipData.getChipIds();
+        assertThat(chipIds).hasSize(1);
+        assertThat(chipIds.get(0)).isEqualTo(mUwbMultichipData.getDefaultChipId());
     }
 
     @Test
@@ -137,6 +145,10 @@ public class UwbMultichipDataTest {
         assertThat(chipInfo.getPositionX()).isEqualTo(1.0);
         assertThat(chipInfo.getPositionY()).isEqualTo(2.0);
         assertThat(chipInfo.getPositionZ()).isEqualTo(3.0);
+
+        List<String> chipIds = mUwbMultichipData.getChipIds();
+        assertThat(chipIds).hasSize(1);
+        assertThat(chipIds.get(0)).isEqualTo("chipIdString");
     }
 
     @Test
@@ -155,6 +167,10 @@ public class UwbMultichipDataTest {
         assertThat(chipInfo.getPositionX()).isEqualTo(0.0);
         assertThat(chipInfo.getPositionY()).isEqualTo(0.0);
         assertThat(chipInfo.getPositionZ()).isEqualTo(0.0);
+
+        List<String> chipIds = mUwbMultichipData.getChipIds();
+        assertThat(chipIds).hasSize(1);
+        assertThat(chipIds.get(0)).isEqualTo("chipIdString");
     }
 
     @Test
@@ -180,6 +196,12 @@ public class UwbMultichipDataTest {
         assertThat(chipInfo.getPositionX()).isEqualTo(4.0);
         assertThat(chipInfo.getPositionY()).isEqualTo(5.0);
         assertThat(chipInfo.getPositionZ()).isEqualTo(6.0);
+
+
+        List<String> chipIds = mUwbMultichipData.getChipIds();
+        assertThat(chipIds).hasSize(2);
+        assertThat(chipIds.get(0)).isEqualTo("chipIdString1");
+        assertThat(chipIds.get(1)).isEqualTo("chipIdString2");
     }
 
     private File createFileFromResource(String configFile) throws Exception {

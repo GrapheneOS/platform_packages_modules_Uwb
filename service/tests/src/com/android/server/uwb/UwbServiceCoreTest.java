@@ -42,6 +42,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.validateMockitoUsage;
 import static org.mockito.Mockito.verify;
@@ -73,6 +74,7 @@ import com.android.internal.annotations.VisibleForTesting;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.data.UwbVendorUciResponse;
 import com.android.server.uwb.jni.NativeUwbManager;
+import com.android.server.uwb.multchip.UwbMultichipData;
 
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
@@ -97,6 +99,7 @@ import org.mockito.MockitoSession;
 import org.mockito.quality.Strictness;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -111,7 +114,7 @@ import java.util.concurrent.FutureTask;
 public class UwbServiceCoreTest {
     private static final int TEST_UID = 44;
     private static final String TEST_PACKAGE_NAME = "com.android.uwb";
-    private static final String TEST_CHIP_ID = "testChipId";
+    private static final String TEST_CHIP_ID = "default";
     private static final AttributionSource TEST_ATTRIBUTION_SOURCE =
             new AttributionSource.Builder(TEST_UID)
                     .setPackageName(TEST_PACKAGE_NAME)
@@ -169,6 +172,7 @@ public class UwbServiceCoreTest {
                 .thenReturn(mock(PowerManager.WakeLock.class));
         when(mContext.getSystemService(PowerManager.class)).thenReturn(powerManager);
         when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
+        when(mUwbInjector.getMultichipData()).thenReturn(new UwbMultichipData(mContext));
         when(mDeviceConfigFacade.getBugReportMinIntervalMs())
                 .thenReturn(DeviceConfigFacade.DEFAULT_BUG_REPORT_MIN_INTERVAL_MS);
         mUwbServiceCore = new UwbServiceCore(mContext, mNativeUwbManager, mUwbMetrics,
@@ -524,6 +528,39 @@ public class UwbServiceCoreTest {
                 .isEqualTo(AdapterState.STATE_DISABLED);
     }
 
+    @Test
+    public void testGetAdapterState_multichip() throws Exception {
+        UwbMultichipData mockUwbMultichipData = mock(UwbMultichipData.class);
+        when(mockUwbMultichipData.getChipIds()).thenReturn(List.of(TEST_CHIP_ID, "chip2"));
+
+        when(mUwbInjector.getMultichipData()).thenReturn(mockUwbMultichipData);
+
+        mUwbServiceCore = new UwbServiceCore(mContext, mNativeUwbManager, mUwbMetrics,
+                mUwbCountryCode, mUwbSessionManager, mUwbConfigurationManager,
+                mUwbInjector, mTestLooper.getLooper());
+
+        enableUwb();
+        assertThat(mUwbServiceCore.getAdapterState())
+                .isEqualTo(AdapterState.STATE_ENABLED_INACTIVE);
+
+        // If one chip is active, then getAdapterState should return STATE_ENABLED_ACTIVE.
+        mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ACTIVE,
+                TEST_CHIP_ID);
+        mTestLooper.dispatchAll();
+        assertThat(mUwbServiceCore.getAdapterState()).isEqualTo(AdapterState.STATE_ENABLED_ACTIVE);
+
+        disableUwb();
+        assertThat(mUwbServiceCore.getAdapterState())
+                .isEqualTo(AdapterState.STATE_DISABLED);
+
+        // If one chip is disabled, then getAdapter state should always return STATE_DISABLED.
+        // (Although in practice, there should never be on ACTIVE chip and one DISABLED chip.)
+        mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ACTIVE,
+                TEST_CHIP_ID);
+        mTestLooper.dispatchAll();
+        assertThat(mUwbServiceCore.getAdapterState()).isEqualTo(AdapterState.STATE_DISABLED);
+    }
+
 
     @Test
     public void testSendVendorUciCommand() throws Exception {
@@ -556,8 +593,26 @@ public class UwbServiceCoreTest {
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
                 StateChangeReason.SYSTEM_POLICY);
 
-        mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ACTIVE);
+        mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ACTIVE,
+                TEST_CHIP_ID);
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_ACTIVE,
+                StateChangeReason.SESSION_STARTED);
+    }
+
+    @Test
+    public void testDeviceStateCallback_invalidChipId() throws Exception {
+        IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
+        when(cb.asBinder()).thenReturn(mock(IBinder.class));
+        mUwbServiceCore.registerAdapterStateCallbacks(cb);
+
+        enableUwb();
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
+                StateChangeReason.SYSTEM_POLICY);
+
+        mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ACTIVE,
+                "invalidChipId");
+        verify(cb, never())
+                .onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_ACTIVE,
                 StateChangeReason.SESSION_STARTED);
     }
 
@@ -574,7 +629,8 @@ public class UwbServiceCoreTest {
         when(mNativeUwbManager.doDeinitialize()).thenReturn(true);
         when(mNativeUwbManager.doInitialize()).thenReturn(true);
 
-        mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ERROR);
+        mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ERROR,
+                TEST_CHIP_ID);
         mTestLooper.dispatchAll();
         // Verify UWB toggle off.
         verify(mNativeUwbManager).doDeinitialize();
@@ -584,6 +640,34 @@ public class UwbServiceCoreTest {
         // Verify UWB toggle on.
         verify(mNativeUwbManager, times(2)).doInitialize();
         verify(cb, times(2)).onAdapterStateChanged(
+                UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
+                StateChangeReason.SYSTEM_POLICY);
+    }
+
+    @Test
+    public void testToggleOfOnDeviceStateErrorCallback_invalidChipId() throws Exception {
+        IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
+        when(cb.asBinder()).thenReturn(mock(IBinder.class));
+        mUwbServiceCore.registerAdapterStateCallbacks(cb);
+
+        enableUwb();
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
+                StateChangeReason.SYSTEM_POLICY);
+
+        when(mNativeUwbManager.doDeinitialize()).thenReturn(true);
+        when(mNativeUwbManager.doInitialize()).thenReturn(true);
+
+        mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ERROR,
+                "invalidChipId");
+        mTestLooper.dispatchAll();
+        // Verify UWB doesn't toggle off.
+        verify(mNativeUwbManager, never()).doDeinitialize();
+        verify(cb, never()).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.SYSTEM_POLICY);
+
+        // Verify UWB is initialized once but doesn't toggle on.
+        verify(mNativeUwbManager, times(1)).doInitialize();
+        verify(cb, times(1)).onAdapterStateChanged(
                 UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
                 StateChangeReason.SYSTEM_POLICY);
     }
