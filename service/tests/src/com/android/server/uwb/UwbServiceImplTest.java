@@ -200,7 +200,7 @@ public class UwbServiceImplTest {
 
     @Test
     public void testOpenRanging_nullChipId() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
         final IUwbRangingCallbacks cb = mock(IUwbRangingCallbacks.class);
         final PersistableBundle parameters = new PersistableBundle();
         final IBinder cbBinder = mock(IBinder.class);
@@ -217,7 +217,7 @@ public class UwbServiceImplTest {
 
     @Test
     public void testStartRanging() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
         final PersistableBundle parameters = new PersistableBundle();
 
         mUwbServiceImpl.startRanging(sessionHandle, parameters);
@@ -227,7 +227,7 @@ public class UwbServiceImplTest {
 
     @Test
     public void testReconfigureRanging() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
         final FiraRangingReconfigureParams parameters =
                 new FiraRangingReconfigureParams.Builder()
                         .setBlockStrideLength(6)
@@ -242,7 +242,7 @@ public class UwbServiceImplTest {
 
     @Test
     public void testStopRanging() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
 
         mUwbServiceImpl.stopRanging(sessionHandle);
 
@@ -251,7 +251,7 @@ public class UwbServiceImplTest {
 
     @Test
     public void testCloseRanging() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
 
         mUwbServiceImpl.closeRanging(sessionHandle);
 
@@ -287,7 +287,7 @@ public class UwbServiceImplTest {
         doThrow(new SecurityException()).when(mUwbInjector).enforceUwbRangingPermissionForPreflight(
                 any());
 
-        final SessionHandle sessionHandle = new SessionHandle(5);
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
         final IUwbRangingCallbacks cb = mock(IUwbRangingCallbacks.class);
         final PersistableBundle parameters = new PersistableBundle();
         final IBinder cbBinder = mock(IBinder.class);
@@ -427,7 +427,7 @@ public class UwbServiceImplTest {
 
     @Test
     public void testAddControlee() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
         final PersistableBundle parameters = new PersistableBundle();
 
         mUwbServiceImpl.addControlee(sessionHandle, parameters);
@@ -436,7 +436,7 @@ public class UwbServiceImplTest {
 
     @Test
     public void testRemoveControlee() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
         final PersistableBundle parameters = new PersistableBundle();
 
         mUwbServiceImpl.removeControlee(sessionHandle, parameters);
@@ -549,7 +549,7 @@ public class UwbServiceImplTest {
 
     @Test
     public void testResume() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
         final PersistableBundle parameters = new PersistableBundle();
 
         try {
@@ -560,7 +560,7 @@ public class UwbServiceImplTest {
 
     @Test
     public void testPause() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
         final PersistableBundle parameters = new PersistableBundle();
 
         try {
@@ -571,7 +571,7 @@ public class UwbServiceImplTest {
 
     @Test
     public void testSendData() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
         final UwbAddress mUwbAddress = mock(UwbAddress.class);
         final PersistableBundle parameters = new PersistableBundle();
 
