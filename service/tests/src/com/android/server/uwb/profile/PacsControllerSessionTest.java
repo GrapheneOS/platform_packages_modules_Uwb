@@ -21,6 +21,7 @@ import static com.android.server.uwb.data.UwbConfig.CONTROLLER_AND_INITIATOR;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -87,7 +88,7 @@ public class PacsControllerSessionTest {
         when(mUwbInjector.getUwbServiceCore()).thenReturn(mUwbServiceCore);
         when(mUwbMultichipData.getDefaultChipId()).thenReturn(DEFAULT_CHIP_ID);
         when(mUwbInjector.getMultichipData()).thenReturn(mUwbMultichipData);
-        SessionHandle sessionHandle = new SessionHandle(10);
+        SessionHandle sessionHandle = mock(SessionHandle.class);
         mRangingSessionController = new PacsControllerSession(sessionHandle,
                 mAttributionSource,
                 mContext,

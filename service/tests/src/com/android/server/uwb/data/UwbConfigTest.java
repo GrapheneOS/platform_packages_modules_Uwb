@@ -37,6 +37,7 @@ import static com.google.uwb.support.fira.FiraParams.UWB_PREAMBLE_CODE_INDEX_10;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import android.content.AttributionSource;
@@ -222,7 +223,7 @@ public class UwbConfigTest {
     @Test
     public void testGetOpenSessionParams() {
         UwbConfig controleeConfig = PacsProfile.getPacsControleeProfile();
-        SessionHandle sessionHandleControlee = new SessionHandle(10);
+        SessionHandle sessionHandleControlee = mock(SessionHandle.class);
 
         PacsControleeSession pacsControleeSession = new PacsControleeSession(
                 sessionHandleControlee, mAttributionSource, mContext, mUwbInjector,
@@ -245,7 +246,7 @@ public class UwbConfigTest {
         assertEquals(controleeParams.getDeviceType(), RANGING_DEVICE_TYPE_CONTROLEE);
 
         UwbConfig controllerConfig = PacsProfile.getPacsControleeProfile();
-        SessionHandle sessionHandleController = new SessionHandle(10);
+        SessionHandle sessionHandleController = mock(SessionHandle.class);
 
         PacsControllerSession pacsControllerSession = new PacsControllerSession(
                 sessionHandleController, mAttributionSource, mContext, mUwbInjector,
