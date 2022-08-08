@@ -30,7 +30,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import android.content.AttributionSource;
 import android.os.PersistableBundle;
+import android.os.Process;
 import android.os.RemoteException;
 import android.uwb.IUwbAdapter;
 import android.uwb.RangingReport;
@@ -59,10 +61,16 @@ public class RangingSessionTest {
     private static final UwbAddress UWB_ADDRESS = UwbAddress.fromBytes(new byte[] {0x00, 0x56});
     private static final @RangingSession.Callback.Reason int REASON =
             RangingSession.Callback.REASON_GENERIC_ERROR;
+    private static final int UID = Process.myUid();
+    private static final String PACKAGE_NAME = "com.uwb.test";
+    private static final AttributionSource ATTRIBUTION_SOURCE =
+            new AttributionSource.Builder(UID).setPackageName(PACKAGE_NAME).build();
+    private static final int HANDLE_ID = 12;
+    private static final int PID = Process.myPid();
 
     @Test
     public void testOnRangingOpened_OnOpenSuccessCalled() {
-        SessionHandle handle = new SessionHandle(123);
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         IUwbAdapter adapter = mock(IUwbAdapter.class);
         RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
@@ -78,7 +86,7 @@ public class RangingSessionTest {
 
     @Test
     public void testOnRangingOpened_OnServiceDiscoveredConnectedCalled() {
-        SessionHandle handle = new SessionHandle(123);
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         IUwbAdapter adapter = mock(IUwbAdapter.class);
         RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
@@ -101,7 +109,7 @@ public class RangingSessionTest {
 
     @Test
     public void testOnRangingOpened_CannotOpenClosedSession() {
-        SessionHandle handle = new SessionHandle(123);
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         IUwbAdapter adapter = mock(IUwbAdapter.class);
         RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
@@ -125,7 +133,7 @@ public class RangingSessionTest {
 
     @Test
     public void testOnRangingClosed_OnClosedCalledWhenSessionNotOpen() {
-        SessionHandle handle = new SessionHandle(123);
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         IUwbAdapter adapter = mock(IUwbAdapter.class);
         RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
@@ -141,7 +149,7 @@ public class RangingSessionTest {
 
     @Test
     public void testOnRangingClosed_OnClosedCalled() {
-        SessionHandle handle = new SessionHandle(123);
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         IUwbAdapter adapter = mock(IUwbAdapter.class);
         RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
@@ -156,7 +164,7 @@ public class RangingSessionTest {
 
     @Test
     public void testOnRangingResult_OnReportReceivedCalled() {
-        SessionHandle handle = new SessionHandle(123);
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         IUwbAdapter adapter = mock(IUwbAdapter.class);
         RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
@@ -172,7 +180,7 @@ public class RangingSessionTest {
 
     @Test
     public void testStart_CannotStartIfAlreadyStarted() throws RemoteException {
-        SessionHandle handle = new SessionHandle(123);
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         IUwbAdapter adapter = mock(IUwbAdapter.class);
         RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
@@ -189,7 +197,7 @@ public class RangingSessionTest {
 
     @Test
     public void testStop_CannotStopIfAlreadyStopped() throws RemoteException {
-        SessionHandle handle = new SessionHandle(123);
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         IUwbAdapter adapter = mock(IUwbAdapter.class);
         RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
@@ -208,7 +216,7 @@ public class RangingSessionTest {
 
     @Test
     public void testStop_CannotStopIfOpenFailed() throws RemoteException {
-        SessionHandle handle = new SessionHandle(123);
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         IUwbAdapter adapter = mock(IUwbAdapter.class);
         RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
@@ -228,7 +236,7 @@ public class RangingSessionTest {
 
     @Test
     public void testCallbacks_OnlyWhenOpened() throws RemoteException {
-        SessionHandle handle = new SessionHandle(123);
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         IUwbAdapter adapter = mock(IUwbAdapter.class);
         RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
@@ -351,7 +359,7 @@ public class RangingSessionTest {
 
     @Test
     public void testClose_NoCallbackUntilInvoked() throws RemoteException {
-        SessionHandle handle = new SessionHandle(123);
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         IUwbAdapter adapter = mock(IUwbAdapter.class);
         RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
@@ -380,7 +388,7 @@ public class RangingSessionTest {
 
     @Test
     public void testClose_OnClosedCalled() throws RemoteException {
-        SessionHandle handle = new SessionHandle(123);
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         IUwbAdapter adapter = mock(IUwbAdapter.class);
         RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
@@ -393,7 +401,7 @@ public class RangingSessionTest {
 
     @Test
     public void testClose_CannotInteractFurther() throws RemoteException {
-        SessionHandle handle = new SessionHandle(123);
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         IUwbAdapter adapter = mock(IUwbAdapter.class);
         RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
@@ -408,7 +416,7 @@ public class RangingSessionTest {
 
     @Test
     public void testOnRangingResult_OnReportReceivedCalledWhenOpen() {
-        SessionHandle handle = new SessionHandle(123);
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         IUwbAdapter adapter = mock(IUwbAdapter.class);
         RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
@@ -425,7 +433,7 @@ public class RangingSessionTest {
 
     @Test
     public void testOnRangingResult_OnReportReceivedNotCalledWhenNotOpen() {
-        SessionHandle handle = new SessionHandle(123);
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         IUwbAdapter adapter = mock(IUwbAdapter.class);
         RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
