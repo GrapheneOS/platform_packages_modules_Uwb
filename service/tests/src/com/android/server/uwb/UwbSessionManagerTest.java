@@ -1173,7 +1173,8 @@ public class UwbSessionManagerTest {
         // Expect session stop.
         mTestLooper.dispatchNext();
         verify(mUwbSessionNotificationManager)
-                .onRangingStopped(eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
+                .onRangingStoppedWithApiReasonCode(eq(uwbSession),
+                        eq(RangingChangeReason.SYSTEM_POLICY));
         verify(mUwbMetrics).longRangingStopEvent(eq(uwbSession));
     }
 
@@ -1355,7 +1356,8 @@ public class UwbSessionManagerTest {
         mTestLooper.dispatchNext();
 
         verify(mUwbSessionNotificationManager)
-                .onRangingStopped(eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
+                .onRangingStoppedWithApiReasonCode(eq(uwbSession),
+                        eq(RangingChangeReason.LOCAL_API));
         verify(mUwbMetrics).longRangingStopEvent(eq(uwbSession));
     }
 
