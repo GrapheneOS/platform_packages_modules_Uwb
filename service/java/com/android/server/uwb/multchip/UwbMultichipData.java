@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.xml.datatype.DatatypeConfigurationException;
 
@@ -49,6 +50,7 @@ public class UwbMultichipData {
     private String mDefaultChipId = "default";
     private List<ChipInfoParams> mChipInfoParamsList =
             List.of(ChipInfoParams.createBuilder().setChipId(mDefaultChipId).build());
+    private List<String> mChipIds = List.of(mDefaultChipId);
 
     public UwbMultichipData(Context context) {
         mContext = context;
@@ -95,6 +97,15 @@ public class UwbMultichipData {
     }
 
     /**
+     * Convenience method that returns a list of UWB chip ids.
+     *
+     * @return List of UWB chip ids
+     */
+    public List<String> getChipIds() {
+        return mChipIds;
+    }
+
+    /**
      * Returns the default UWB chip identifier.
      *
      * If callers do not pass a specific {@code chipId} to UWB methods, then the method will be
@@ -113,6 +124,7 @@ public class UwbMultichipData {
             InputStream stream = new BufferedInputStream(new FileInputStream(filePath));
             UwbChipConfig uwbChipConfig = XmlParser.read(stream);
             mDefaultChipId = uwbChipConfig.getDefaultChipId();
+            Log.d(TAG, "Default chip id is " + mDefaultChipId);
             // Reset mChipInfoParamsList so that it can be populated with values from configuration
             // file.
             mChipInfoParamsList = new ArrayList<>();
@@ -142,6 +154,8 @@ public class UwbMultichipData {
                                     .setPositionZ(z).build());
                 }
             }
+            mChipIds = mChipInfoParamsList.stream().map(ChipInfoParams::getChipId).collect(
+                    Collectors.toUnmodifiableList());
         } catch (XmlPullParserException | IOException | DatatypeConfigurationException e) {
             Log.e(TAG, "Cannot read file " + filePath, e);
         }

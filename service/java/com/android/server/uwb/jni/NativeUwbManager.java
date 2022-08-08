@@ -28,11 +28,6 @@ import com.android.server.uwb.data.UwbVendorUciResponse;
 import com.android.server.uwb.info.UwbPowerStats;
 import com.android.server.uwb.multchip.UwbMultichipData;
 
-import com.google.uwb.support.multichip.ChipInfoParams;
-
-import java.util.List;
-import java.util.stream.Collectors;
-
 public class NativeUwbManager {
     private static final String TAG = NativeUwbManager.class.getSimpleName();
 
@@ -42,7 +37,7 @@ public class NativeUwbManager {
     public final Object mGetSessionStatusFnLock = new Object();
     public final Object mSetAppConfigFnLock = new Object();
     private final UwbInjector mUwbInjector;
-    private final List<String> mChipIds;
+    private final UwbMultichipData mUwbMultichipData;
     protected INativeUwbManager.DeviceNotification mDeviceListener;
     protected INativeUwbManager.SessionNotification mSessionListener;
     private long mDispatcherPointer;
@@ -50,9 +45,7 @@ public class NativeUwbManager {
 
     public NativeUwbManager(@NonNull UwbInjector uwbInjector, UwbMultichipData uwbMultichipData) {
         mUwbInjector = uwbInjector;
-        mChipIds = uwbMultichipData.getChipInfos()
-                .stream().map(ChipInfoParams::getChipId).collect(
-                        Collectors.toUnmodifiableList());
+        mUwbMultichipData = uwbMultichipData;
         loadLibrary();
     }
 
@@ -73,14 +66,20 @@ public class NativeUwbManager {
         mVendorListener = vendorListener;
     }
 
-    public void onDeviceStatusNotificationReceived(int deviceState) {
-        Log.d(TAG, "onDeviceStatusNotificationReceived(" + deviceState + ")");
-        mDeviceListener.onDeviceStatusNotificationReceived(deviceState);
+    /**
+     * Device status callback invoked via the JNI
+     */
+    public void onDeviceStatusNotificationReceived(int deviceState, String chipId) {
+        Log.d(TAG, "onDeviceStatusNotificationReceived(" + deviceState + ", " + chipId + ")");
+        mDeviceListener.onDeviceStatusNotificationReceived(deviceState, chipId);
     }
 
-    public void onCoreGenericErrorNotificationReceived(int status) {
-        Log.d(TAG, "onCoreGenericErrorNotificationReceived(" + status + ")");
-        mDeviceListener.onCoreGenericErrorNotificationReceived(status);
+    /**
+     * Error callback invoked via the JNI
+     */
+    public void onCoreGenericErrorNotificationReceived(int status, String chipId) {
+        Log.d(TAG, "onCoreGenericErrorNotificationReceived(" + status + ", " + chipId + ")");
+        mDeviceListener.onCoreGenericErrorNotificationReceived(status, chipId);
     }
 
     public void onSessionStatusNotificationReceived(long id, int state, int reasonCode) {
@@ -100,6 +99,9 @@ public class NativeUwbManager {
         mSessionListener.onMulticastListUpdateNotificationReceived(multicastListUpdateData);
     }
 
+    /**
+     * Vendor callback invoked via the JNI
+     */
     public void onVendorUciNotificationReceived(int gid, int oid, byte[] payload) {
         Log.d(TAG, "onVendorUciNotificationReceived: " + gid + ", " + oid + ", " + payload);
         mVendorListener.onVendorUciNotificationReceived(gid, oid, payload);
@@ -111,9 +113,9 @@ public class NativeUwbManager {
      * @return : If this returns true, UWB is on
      */
     public synchronized boolean doInitialize() {
-        mDispatcherPointer = nativeDispatcherNew(mChipIds.toArray());
+        mDispatcherPointer = nativeDispatcherNew(mUwbMultichipData.getChipIds().toArray());
 
-        for (String chipId : mChipIds) {
+        for (String chipId : mUwbMultichipData.getChipIds()) {
             if (!nativeDoInitialize(chipId)) {
                 return false;
             }
@@ -127,7 +129,7 @@ public class NativeUwbManager {
      * @return : If this returns true, UWB is off
      */
     public synchronized boolean doDeinitialize() {
-        for (String chipId: mChipIds) {
+        for (String chipId: mUwbMultichipData.getChipIds()) {
             nativeDoDeinitialize(chipId);
         }
 
@@ -326,7 +328,7 @@ public class NativeUwbManager {
         Log.i(TAG, "setCountryCode: " + new String(countryCode));
 
         synchronized (mGlobalStateFnLock) {
-            for (String chipId : mChipIds) {
+            for (String chipId : mUwbMultichipData.getChipIds()) {
                 byte status = nativeSetCountryCode(countryCode, chipId);
                 if (status != UwbUciConstants.STATUS_CODE_OK) {
                     return status;
