@@ -1,0 +1,62 @@
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+rust_defaults {
+    name: "libuwb_uci_jni_rust_new_defaults",
+    crate_name: "uwb_uci_jni_rust_new",
+    lints: "android",
+    clippy_lints: "android",
+    min_sdk_version: "Tiramisu",
+    srcs: ["src/lib.rs"],
+    rustlibs: [
+        "libbinder_rs",
+        "libjni",
+        "liblog_rust",
+        "liblogger",
+        "libnum_traits",
+        "libuwb_core",
+        "libuwb_uci_packets",
+        "libuwb_uci_rust",
+    ],
+    prefer_rlib: true,
+    apex_available: [
+        "com.android.uwb",
+    ],
+    host_supported: true,
+}
+
+rust_ffi_shared {
+    name: "libuwb_uci_jni_rust_new",
+    defaults: ["libuwb_uci_jni_rust_new_defaults"],
+}
+
+rust_test {
+    name: "libuwb_uci_jni_rust_new_tests",
+    defaults: ["libuwb_uci_jni_rust_new_defaults"],
+    target: {
+        android: {
+            test_suites: [
+                "general-tests",
+            ],
+        },
+        host: {
+            test_suites: [
+                "general-tests",
+            ],
+        },
+    },
+    // Support multilib variants (using different suffix per sub-architecture), which is needed on
+    // build targets with secondary architectures, as the MTS test suite packaging logic flattens
+    // all test artifacts into a single `testcases` directory.
+    compile_multilib: "both",
+    multilib: {
+        lib32: {
+            suffix: "32",
+        },
+        lib64: {
+            suffix: "",
+        },
+    },
+    auto_gen_config: true,
+}

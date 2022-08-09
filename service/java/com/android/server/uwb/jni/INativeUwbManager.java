@@ -58,17 +58,19 @@ public interface INativeUwbManager {
         /**
          * Interface for receiving Device Status Notification
          *
-         * @param state : refer to UCI GENERIC SPECIFICATION Table 9: Device Status Notification
+         * @param state     : refer to UCI GENERIC SPECIFICATION Table 9: Device Status Notification
+         * @param chipId    : identifier of UWB chip for multi-HAL devices
          */
-        void onDeviceStatusNotificationReceived(int state);
+        void onDeviceStatusNotificationReceived(int state, String chipId);
 
         /**
          * Interface for receiving Control Message for Generic Error
          *
          * @param status : refer to UCI GENERIC SPECIFICATION Table 12: Control Message for Generic
          *               Error
+         * @param chipId : identifier of UWB chip for multi-HAL devices
          */
-        void onCoreGenericErrorNotificationReceived(int status);
+        void onCoreGenericErrorNotificationReceived(int status, String chipId);
     }
 
     interface VendorNotification {
