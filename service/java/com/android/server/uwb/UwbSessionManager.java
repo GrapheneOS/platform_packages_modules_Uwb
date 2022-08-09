@@ -407,7 +407,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
     }
 
-    public synchronized void stopRanging(SessionHandle sessionHandle) {
+    private synchronized void stopRangingInternal(SessionHandle sessionHandle,
+            boolean triggeredBySystemPolicy) {
         if (!isExistedSession(sessionHandle)) {
             Log.i(TAG, "Not initialized session ID");
             return;
@@ -420,7 +421,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         UwbSession uwbSession = getUwbSession(sessionId);
         int currentSessionState = getCurrentSessionState(sessionId);
         if (currentSessionState == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
-            mEventTask.execute(SESSION_STOP_RANGING, uwbSession);
+            mEventTask.execute(SESSION_STOP_RANGING, uwbSession, triggeredBySystemPolicy ? 1 : 0);
         } else if (currentSessionState == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
             Log.i(TAG, "session is already idle state");
             mSessionNotificationManager.onRangingStopped(uwbSession,
@@ -431,6 +432,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                     UwbUciConstants.STATUS_CODE_REJECTED);
             Log.i(TAG, "Not active session ID");
         }
+    }
+
+    public synchronized void stopRanging(SessionHandle sessionHandle) {
+        stopRangingInternal(sessionHandle, false /* triggeredBySystemPolicy */);
     }
 
     public UwbSession getUwbSession(int sessionId) {
@@ -620,7 +625,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
                 case SESSION_STOP_RANGING: {
                     UwbSession uwbSession = (UwbSession) msg.obj;
-                    stopRanging(uwbSession);
+                    boolean triggeredBySystemPolicy = msg.arg1 == 1;
+                    stopRanging(uwbSession, triggeredBySystemPolicy);
                     break;
                 }
 
@@ -654,6 +660,14 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             Message msg = mEventTask.obtainMessage();
             msg.what = task;
             msg.obj = obj;
+            this.sendMessage(msg);
+        }
+
+        public void execute(int task, Object obj, int arg1) {
+            Message msg = mEventTask.obtainMessage();
+            msg.what = task;
+            msg.obj = obj;
+            msg.arg1 = arg1;
             this.sendMessage(msg);
         }
 
@@ -796,7 +810,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             mUwbMetrics.longRangingStartEvent(uwbSession, status);
         }
 
-        private void stopRanging(UwbSession uwbSession) {
+        private void stopRanging(UwbSession uwbSession, boolean triggeredBySystemPolicy) {
             // TODO(b/211445008): Consolidate to a single uwb thread.
             ExecutorService executor = Executors.newSingleThreadExecutor();
             FutureTask<Integer> stopRangingTask = new FutureTask<>(
@@ -812,7 +826,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                             uwbSession.getWaitObj().blockingWait();
                             if (uwbSession.getSessionState()
                                     == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
-                                mSessionNotificationManager.onRangingStopped(uwbSession, status);
+                                int apiReasonCode = triggeredBySystemPolicy
+                                        ? RangingChangeReason.SYSTEM_POLICY
+                                        : RangingChangeReason.LOCAL_API;
+                                mSessionNotificationManager.onRangingStoppedWithApiReasonCode(
+                                        uwbSession, apiReasonCode);
                             } else {
                                 status = UwbUciConstants.STATUS_CODE_FAILED;
                                 mSessionNotificationManager.onRangingStopFailed(uwbSession,
@@ -1190,7 +1208,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 mRangingResultErrorStreakTimerListener = () -> {
                     Log.w(TAG, "Continuous errors or no ranging results detected for 30 seconds."
                             + " Stopping session");
-                    stopRanging(mSessionHandle);
+                    stopRangingInternal(mSessionHandle, true /* triggeredBySystemPolicy */);
                 };
                 mAlarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP,
                         mUwbInjector.getElapsedSinceBootMillis()
