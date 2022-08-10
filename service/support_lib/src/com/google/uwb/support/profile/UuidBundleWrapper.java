@@ -53,6 +53,10 @@ public class UuidBundleWrapper {
         return bundle;
     }
 
+    public static boolean isUuidBundle(PersistableBundle bundle) {
+        return bundle.containsKey(SERVICE_INSTANCE_ID);
+    }
+
     public static UuidBundleWrapper fromBundle(PersistableBundle bundle) {
         switch (bundle.getInt(KEY_BUNDLE_VERSION)) {
             case BUNDLE_VERSION_1:

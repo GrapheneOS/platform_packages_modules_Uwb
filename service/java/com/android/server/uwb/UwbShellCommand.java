@@ -332,10 +332,10 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         public final CompletableFuture<Boolean> rangingReconfiguredFuture =
                 new CompletableFuture<>();
 
-        SessionInfo(int sessionId, int sSessionHandleIdNext, @NonNull Params openRangingParams,
+        SessionInfo(int sessionId, SessionHandle sessionHandle, @NonNull Params openRangingParams,
                 @NonNull PrintWriter pw) {
             this.sessionId = sessionId;
-            sessionHandle = new SessionHandle(sSessionHandleIdNext);
+            this.sessionHandle = sessionHandle;
             this.openRangingParams = openRangingParams;
             uwbRangingCbs = new UwbRangingCallbacks(this, pw, rangingOpenedFuture,
                     rangingStartedFuture, rangingStoppedFuture, rangingClosedFuture,
@@ -609,12 +609,15 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     + " already ongoing. Stop that session before you start a new session");
             return;
         }
+        AttributionSource attributionSource = new AttributionSource.Builder(Process.SHELL_UID)
+                .setPackageName(SHELL_PACKAGE_NAME)
+                .build();
+        SessionHandle sessionHandle =
+                new SessionHandle(sSessionHandleIdNext, attributionSource, Process.myPid());
         SessionInfo sessionInfo =
-                new SessionInfo(sessionId, sSessionHandleIdNext++, openRangingSessionParams, pw);
+                new SessionInfo(sessionId, sessionHandle, openRangingSessionParams, pw);
         mUwbService.openRanging(
-                new AttributionSource.Builder(Process.SHELL_UID)
-                        .setPackageName(SHELL_PACKAGE_NAME)
-                        .build(),
+                attributionSource,
                 sessionInfo.sessionHandle,
                 sessionInfo.uwbRangingCbs,
                 openRangingSessionParams.toBundle(),

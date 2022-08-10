@@ -58,6 +58,7 @@ import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 import com.google.uwb.support.generic.GenericParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
+import com.google.uwb.support.profile.UuidBundleWrapper;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
@@ -321,7 +322,17 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             throw new IllegalStateException("Uwb is not enabled");
         }
         int sessionId = 0;
-        if (FiraParams.isCorrectProtocol(params)) {
+
+        if (UuidBundleWrapper.isUuidBundle(params)) {
+            UuidBundleWrapper uuidBundleWrapper = UuidBundleWrapper.fromBundle(params);
+            mUwbInjector.getProfileManager().activateProfile(
+                    attributionSource,
+                    sessionHandle,
+                    uuidBundleWrapper.getServiceInstanceID().get(),
+                    rangingCallbacks,
+                    chipId
+            );
+        } else if (FiraParams.isCorrectProtocol(params)) {
             FiraOpenSessionParams.Builder builder =
                     new FiraOpenSessionParams.Builder(FiraOpenSessionParams.fromBundle(params));
             if (getCachedSpecificationParams(chipId)
@@ -361,8 +372,12 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         if (CccParams.isCorrectProtocol(params)) {
             startRangingParams = CccStartRangingParams.fromBundle(params);
         }
-        mSessionManager.startRanging(sessionHandle, startRangingParams);
-        return;
+
+        if (mUwbInjector.getProfileManager().hasSession(sessionHandle)) {
+            mUwbInjector.getProfileManager().startRanging(sessionHandle);
+        } else {
+            mSessionManager.startRanging(sessionHandle, startRangingParams);
+        }
     }
 
     public void reconfigureRanging(SessionHandle sessionHandle, PersistableBundle params) {
@@ -382,14 +397,22 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         if (!isUwbEnabled()) {
             throw new IllegalStateException("Uwb is not enabled");
         }
-        mSessionManager.stopRanging(sessionHandle);
+        if (mUwbInjector.getProfileManager().hasSession(sessionHandle)) {
+            mUwbInjector.getProfileManager().stopRanging(sessionHandle);
+        } else {
+            mSessionManager.stopRanging(sessionHandle);
+        }
     }
 
     public void closeRanging(SessionHandle sessionHandle) {
         if (!isUwbEnabled()) {
             throw new IllegalStateException("Uwb is not enabled");
         }
-        mSessionManager.deInitSession(sessionHandle);
+        if (mUwbInjector.getProfileManager().hasSession(sessionHandle)) {
+            mUwbInjector.getProfileManager().closeRanging(sessionHandle);
+        } else {
+            mSessionManager.deInitSession(sessionHandle);
+        }
     }
 
     public void addControlee(SessionHandle sessionHandle, PersistableBundle params) {
