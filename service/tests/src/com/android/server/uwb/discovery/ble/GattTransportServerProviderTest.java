@@ -145,13 +145,37 @@ public class GattTransportServerProviderTest {
     }
 
     @Test
-    public void testStartAndStop() {
+    public void testStart_failed() {
+        when(mMockBluetoothGattServer.addService(any())).thenReturn(false);
+        assertThat(mGattTransportServerProvider.start()).isFalse();
+        verify(mMockBluetoothGattServer, times(1)).addService(any());
+    }
+
+    @Test
+    public void testStart_successAndRejectRestart() {
         assertThat(mGattTransportServerProvider.start()).isTrue();
         verify(mMockBluetoothGattServer, times(1)).addService(any());
-        assertThat(mGattTransportServerProvider.isStarted()).isTrue();
+        assertThat(mGattTransportServerProvider.start()).isFalse();
+        verify(mMockBluetoothGattServer, times(1)).addService(any());
+    }
+
+    @Test
+    public void testStop_failed() {
+        when(mMockBluetoothGattServer.removeService(any())).thenReturn(false);
+        assertThat(mGattTransportServerProvider.start()).isTrue();
+        verify(mMockBluetoothGattServer, times(1)).addService(any());
+        assertThat(mGattTransportServerProvider.stop()).isFalse();
+        verify(mMockBluetoothGattServer, times(1)).removeService(any());
+    }
+
+    @Test
+    public void testStop_successAndRejectRestop() {
+        assertThat(mGattTransportServerProvider.start()).isTrue();
+        verify(mMockBluetoothGattServer, times(1)).addService(any());
         assertThat(mGattTransportServerProvider.stop()).isTrue();
         verify(mMockBluetoothGattServer, times(1)).removeService(any());
-        assertThat(mGattTransportServerProvider.isStarted()).isFalse();
+        assertThat(mGattTransportServerProvider.stop()).isFalse();
+        verify(mMockBluetoothGattServer, times(1)).removeService(any());
     }
 
     @Test
@@ -399,7 +423,7 @@ public class GattTransportServerProviderTest {
                         BluetoothGatt.GATT_FAILURE,
                         /*offset=*/ 0,
                         /*value=*/ null);
-        verify(mMockTransportServerCallback, never()).onMessage(anyInt(), any());
+        verify(mMockTransportServerCallback, never()).onMessageReceived(anyInt(), any());
     }
 
     @Test
@@ -416,7 +440,7 @@ public class GattTransportServerProviderTest {
 
         verify(mMockBluetoothGattServer, never())
                 .sendResponse(any(BluetoothDevice.class), anyInt(), anyInt(), anyInt(), any());
-        verify(mMockTransportServerCallback, never()).onMessage(anyInt(), any());
+        verify(mMockTransportServerCallback, never()).onMessageReceived(anyInt(), any());
 
         mBluetoothGattServerCallback.onCharacteristicWriteRequest(
                 mMockBluetoothDevice,
@@ -431,7 +455,8 @@ public class GattTransportServerProviderTest {
                 .sendResponse(any(BluetoothDevice.class), anyInt(), anyInt(), anyInt(), any());
         ArgumentCaptor<FiraConnectorMessage> captor =
                 ArgumentCaptor.forClass(FiraConnectorMessage.class);
-        verify(mMockTransportServerCallback, times(1)).onMessage(eq(SECID), captor.capture());
+        verify(mMockTransportServerCallback, times(1))
+                .onMessageReceived(eq(SECID), captor.capture());
         assertThat(captor.getValue().toString()).isEqualTo(MESSAGE.toString());
     }
 
@@ -516,7 +541,8 @@ public class GattTransportServerProviderTest {
                         dataPacket3.toBytes());
         ArgumentCaptor<FiraConnectorMessage> captor =
                 ArgumentCaptor.forClass(FiraConnectorMessage.class);
-        verify(mMockTransportServerCallback, times(1)).onMessage(eq(SECID), captor.capture());
+        verify(mMockTransportServerCallback, times(1))
+                .onMessageReceived(eq(SECID), captor.capture());
         assertThat(captor.getValue().toString()).isEqualTo(message.toString());
     }
 }

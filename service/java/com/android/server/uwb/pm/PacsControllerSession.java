@@ -37,7 +37,7 @@ import com.android.server.uwb.data.UwbConfig;
 import com.android.server.uwb.discovery.DiscoveryScanProvider;
 import com.android.server.uwb.discovery.DiscoveryScanService;
 import com.android.server.uwb.discovery.TransportClientProvider;
-import com.android.server.uwb.discovery.TransportClientService;
+import com.android.server.uwb.discovery.TransportProviderFactory;
 import com.android.server.uwb.discovery.info.DiscoveryInfo;
 import com.android.server.uwb.discovery.info.FiraConnectorCapabilities;
 import com.android.server.uwb.discovery.info.ScanInfo;
@@ -118,7 +118,7 @@ public class PacsControllerSession extends RangingSessionController {
 
     private DiscoveryScanService mDiscoveryScanService;
     private DiscoveryInfo mDiscoveryInfo;
-    private TransportClientService mTransportClientService;
+    private TransportClientProvider mTransportClientProvider;
     private SecureSession mSecureSession;
 
     private List<ScanFilter> mScanFilterList;
@@ -165,7 +165,7 @@ public class PacsControllerSession extends RangingSessionController {
 
     /** Initialize transport client with updated TransportClientInfo */
     public void transportClientInit() {
-        mTransportClientService = new TransportClientService(
+        mTransportClientProvider = TransportProviderFactory.createClient(
                 mSessionInfo.mAttributionSource,
                 mSessionInfo.mContext,
                 new HandlerExecutor(mHandler),
@@ -175,18 +175,18 @@ public class PacsControllerSession extends RangingSessionController {
 
         FiraConnectorCapabilities firaConnectorCapabilities =
                 new FiraConnectorCapabilities.Builder().build();
-        mTransportClientService.setCapabilites(firaConnectorCapabilities);
+        mTransportClientProvider.setCapabilites(firaConnectorCapabilities);
         sendMessage(TRANSPORT_STARTED);
     }
 
     /** Start Transport client */
     public void transportClientStart() {
-        mTransportClientService.start();
+        mTransportClientProvider.start();
     }
 
     /** Stop Transport client */
     public void transportClientStop() {
-        mTransportClientService.stop();
+        mTransportClientProvider.stop();
     }
 
     /** Initialize controller initiator session */

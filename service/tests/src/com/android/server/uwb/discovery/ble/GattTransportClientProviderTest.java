@@ -160,8 +160,6 @@ public class GattTransportClientProviderTest {
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
         when(mMockContext.createContext(any())).thenReturn(mMockContext);
-        // when(mMockBluetoothDevice.connectGatt(eq(mMockContext), anyBoolean(), any(), anyInt()))
-        //       .thenReturn(mMockBluetoothGatt);
         when(mMockBluetoothGatt.connect()).thenReturn(true);
         when(mMockScanResult.getDevice()).thenReturn(mMockBluetoothDevice);
         mTransportClientInfo = new TransportClientInfo(mMockScanResult);
@@ -190,6 +188,29 @@ public class GattTransportClientProviderTest {
         assertThat(mGattTransportClientProvider.isStarted()).isFalse();
         assertThat(mGattTransportClientProvider.start()).isTrue();
         verify(mMockBluetoothGatt, times(1)).connect();
+    }
+
+    @Test
+    public void testStart_successAndRejectRestart() {
+        when(mMockBluetoothDevice.connectGatt(eq(mMockContext), anyBoolean(), any(), anyInt()))
+                .thenReturn(mMockBluetoothGatt);
+        assertThat(mGattTransportClientProvider.start()).isTrue();
+        verify(mMockBluetoothDevice, times(1)).connectGatt(any(), anyBoolean(), any(), anyInt());
+        assertThat(mGattTransportClientProvider.start()).isFalse();
+        verify(mMockBluetoothDevice, times(1)).connectGatt(any(), anyBoolean(), any(), anyInt());
+        verify(mMockBluetoothGatt, never()).connect();
+    }
+
+    @Test
+    public void testStop_successAndRejectRestop() {
+        when(mMockBluetoothDevice.connectGatt(eq(mMockContext), anyBoolean(), any(), anyInt()))
+                .thenReturn(mMockBluetoothGatt);
+        assertThat(mGattTransportClientProvider.start()).isTrue();
+        verify(mMockBluetoothDevice, times(1)).connectGatt(any(), anyBoolean(), any(), anyInt());
+        assertThat(mGattTransportClientProvider.stop()).isTrue();
+        verify(mMockBluetoothGatt, times(1)).disconnect();
+        assertThat(mGattTransportClientProvider.stop()).isFalse();
+        verify(mMockBluetoothGatt, times(1)).disconnect();
     }
 
     private void setupGattConnect() {
