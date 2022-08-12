@@ -115,7 +115,7 @@ public class CapabilityParam {
     public static final int AOA_AZIMUTH_90 = 0x1;
     public static final int AOA_AZIMUTH_180 = 0x2;
     public static final int AOA_ELEVATION = 0x4;
-    public static final int AOA_FOM = 0x4;
+    public static final int AOA_FOM = 0x8;
 
     public static final int NO_EXTENDED_MAC = 0x0;
     public static final int EXTENDED_MAC = 0x1;
