@@ -65,8 +65,11 @@ public class ControllerInitiatorSession extends InitiatorSession {
                 // fall through
             case MSG_ID_PUT_SESSION_DATA:
                 // simply abort the session.
-                logw("terminate session as tunnel data was failed: "
-                        + failReason + " for msg: " + msgId);
+                logw(
+                        "terminate session as tunnel data was failed: "
+                                + failReason
+                                + " for msg: "
+                                + msgId);
                 mFiRaSecureChannel.terminateLocally();
                 mSessionCallback.onSessionAborted();
                 break;
@@ -136,19 +139,18 @@ public class ControllerInitiatorSession extends InitiatorSession {
                     break;
                 case NOTIFICATION_EVENT_ID_RDS_AVAILABLE:
                     // Responder notification
-                    rdsAvailable =
-                            (DispatchResponse.RdsAvailableNotification) notification;
+                    rdsAvailable = (DispatchResponse.RdsAvailableNotification) notification;
                     break;
                 default:
-                    logw("Unexpected nofitication from dispatch response: "
-                            + notification.notificationEventId);
+                    logw(
+                            "Unexpected nofitication from dispatch response: "
+                                    + notification.notificationEventId);
             }
         }
         if (rdsAvailable != null) {
             // TODO: is the session ID for the sub session if it is 1 to m case?
             // Or the applet shouldn't update the sessionId, sub session ID assigned by FW.
-            mSessionCallback.onSessionDataReady(rdsAvailable.sessionId, null,
-                    isSessionTerminated);
+            mSessionCallback.onSessionDataReady(rdsAvailable.sessionId, null, isSessionTerminated);
             return true;
         }
         if (response.getOutboundData().isPresent()

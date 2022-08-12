@@ -253,7 +253,9 @@ public class GattTransportServerProvider extends TransportServerProvider {
     public GattTransportServerProvider(
             AttributionSource attributionSource,
             Context context,
+            int secid,
             TransportServerCallback transportServerCallback) {
+        super(secid);
         Context attributedContext =
                 context.createContext(
                         new ContextParams.Builder()
@@ -422,7 +424,7 @@ public class GattTransportServerProvider extends TransportServerProvider {
             return false;
         }
 
-        mTransportServerCallback.onMessageReceived(latestDataPacket.secid, message);
+        super.onMessageReceived(latestDataPacket.secid, message);
         return true;
     }
 

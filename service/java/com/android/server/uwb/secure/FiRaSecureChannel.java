@@ -29,6 +29,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.WorkerThread;
 
 import com.android.internal.annotations.VisibleForTesting;
+import com.android.server.uwb.discovery.Transport;
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
 import com.android.server.uwb.secure.csml.CsmlUtil;
 import com.android.server.uwb.secure.csml.DispatchCommand;
@@ -42,7 +43,6 @@ import com.android.server.uwb.secure.csml.SwapOutAdfResponse;
 import com.android.server.uwb.secure.iso7816.CommandApdu;
 import com.android.server.uwb.secure.iso7816.ResponseApdu;
 import com.android.server.uwb.secure.iso7816.TlvDatum;
-import com.android.server.uwb.transport.Transport;
 import com.android.server.uwb.util.DataTypeConversionUtil;
 import com.android.server.uwb.util.ObjectIdentifier;
 
@@ -61,8 +61,7 @@ public abstract class FiRaSecureChannel {
     protected final SecureElementChannel mSecureElementChannel;
     protected final RunningProfileSessionInfo mRunningProfileSessionInfo;
     protected SecureChannelCallback mSecureChannelCallback;
-    @VisibleForTesting
-    final Handler mWorkHandler;
+    @VisibleForTesting final Handler mWorkHandler;
 
     enum SetupError {
         INIT,
@@ -94,68 +93,74 @@ public abstract class FiRaSecureChannel {
     protected Status mStatus = Status.UNINITIALIZED;
     private Optional<byte[]> mDynamicSlotIdentifier = Optional.empty();
 
-    FiRaSecureChannel(@NonNull SecureElementChannel secureElementChannel,
+    FiRaSecureChannel(
+            @NonNull SecureElementChannel secureElementChannel,
             @NonNull Transport transport,
             @NonNull Looper workLooper,
             @NonNull RunningProfileSessionInfo runningProfileSessionInfo) {
         this.mSecureElementChannel = secureElementChannel;
         this.mTransport = transport;
-        this.mWorkHandler = new Handler(workLooper) {
-            @Override
-            public void handleMessage(Message msg) {
-                handleScMessage(msg);
-            }
-        };
+        this.mWorkHandler =
+                new Handler(workLooper) {
+                    @Override
+                    public void handleMessage(Message msg) {
+                        handleScMessage(msg);
+                    }
+                };
         this.mRunningProfileSessionInfo = runningProfileSessionInfo;
     }
 
-    private final Transport.DataReceiver mDataReceiver = new Transport.DataReceiver() {
-        @Override
-        public void onDataReceived(@NonNull byte[] data) {
-            mWorkHandler.sendMessage(
-                    mWorkHandler.obtainMessage(CMD_PROCESS_RECEIVED_OOB_DATA, data));
-        }
-    };
+    private final Transport.DataReceiver mDataReceiver =
+            new Transport.DataReceiver() {
+                @Override
+                public void onDataReceived(@NonNull byte[] data) {
+                    mWorkHandler.sendMessage(
+                            mWorkHandler.obtainMessage(CMD_PROCESS_RECEIVED_OOB_DATA, data));
+                }
+            };
 
     protected void handleScMessage(@NonNull Message msg) {
         switch (msg.what) {
             case CMD_INIT:
-                mSecureElementChannel.init(() -> {
-                    // do nothing for ROLE_RESPONDER, wait cmd from remote device
-                    if (doOpenSeChannelAfterInit()) {
-                        mWorkHandler.sendMessage(mWorkHandler.obtainMessage(CMD_OPEN_CHANNEL));
-                    }
+                mSecureElementChannel.init(
+                        () -> {
+                            // do nothing for ROLE_RESPONDER, wait cmd from remote device
+                            if (doOpenSeChannelAfterInit()) {
+                                mWorkHandler.sendMessage(
+                                        mWorkHandler.obtainMessage(CMD_OPEN_CHANNEL));
+                            }
 
-                    mTransport.registerDataReceiver(mDataReceiver);
-                    mStatus = Status.INITIALIZED;
-                });
+                            mTransport.registerDataReceiver(mDataReceiver);
+                            mStatus = Status.INITIALIZED;
+                        });
                 break;
             case CMD_SEND_OOB_DATA:
                 byte[] payload = (byte[]) msg.obj;
-                mTransport.sendData(payload, new Transport.SendingDataCallback() {
-                    @Override
-                    public void onSuccess() {
-                        // do nothing
-                    }
+                mTransport.sendData(
+                        payload,
+                        new Transport.SendingDataCallback() {
+                            @Override
+                            public void onSuccess() {
+                                // do nothing
+                            }
 
-                    @Override
-                    public void onFailure() {
-                        // TODO: retry to send it, end the session if it is failed many times.
-                    }
-                });
+                            @Override
+                            public void onFailure() {
+                                // TODO: retry to send it, end the session if it is failed many
+                                // times.
+                            }
+                        });
                 break;
             case CMD_PROCESS_RECEIVED_OOB_DATA:
                 byte[] receivedData = (byte[]) msg.obj;
                 processRemoteCommandOrResponse(receivedData);
                 break;
             case CMD_CLEAN_UP_TERMINATED_OR_ABORTED_CHANNEL:
-                mDynamicSlotIdentifier.ifPresent(
-                        (slotId) -> swapOutAdf(slotId));
+                mDynamicSlotIdentifier.ifPresent((slotId) -> swapOutAdf(slotId));
 
                 if (mSecureElementChannel.closeChannel()) {
                     mStatus = Status.INITIALIZED;
-                    mSecureChannelCallback.onSeChannelClosed(
-                            /*withError=*/ false);
+                    mSecureChannelCallback.onSeChannelClosed(/*withError=*/ false);
                 } else {
                     logw("error happened on closing SE channel");
                     mStatus = Status.ABNORMAL;
@@ -184,8 +189,10 @@ public abstract class FiRaSecureChannel {
      * dynamic slot.
      * @param secureBlob The secure BLOB contains the ADF OID and its encrypted content.
      */
-    protected final boolean swapInAdf(@NonNull byte[] secureBlob,
-            @NonNull ObjectIdentifier adfOid, @NonNull byte[] uwbControlleeInfo) {
+    protected final boolean swapInAdf(
+            @NonNull byte[] secureBlob,
+            @NonNull ObjectIdentifier adfOid,
+            @NonNull byte[] uwbControlleeInfo) {
         SwapInAdfCommand swapInAdfCmd =
                 SwapInAdfCommand.build(secureBlob, adfOid, uwbControlleeInfo);
         try {
@@ -205,8 +212,7 @@ public abstract class FiRaSecureChannel {
     }
 
     private boolean swapOutAdf(@NonNull byte[] slotIdentifier) {
-        SwapOutAdfCommand swapOutAdfCmd =
-                SwapOutAdfCommand.build(slotIdentifier);
+        SwapOutAdfCommand swapOutAdfCmd = SwapOutAdfCommand.build(slotIdentifier);
         try {
             SwapOutAdfResponse response =
                     SwapOutAdfResponse.fromResponseApdu(
@@ -216,7 +222,7 @@ public abstract class FiRaSecureChannel {
             }
             mDynamicSlotIdentifier = Optional.empty();
         } catch (IOException | IllegalStateException e) {
-            logw("Failed to swap out ADF with exception: "  + e);
+            logw("Failed to swap out ADF with exception: " + e);
             return false;
         }
         return true;
@@ -273,8 +279,10 @@ public abstract class FiRaSecureChannel {
                         mWorkHandler.obtainMessage(CMD_SEND_OOB_DATA, outboundData.get().data));
             } else {
                 if (mStatus != Status.ESTABLISHED) {
-                    logw("Session set up, ignore data to host, dup as SW "
-                            + DataTypeConversionUtil.byteArrayToHexString(outboundData.get().data));
+                    logw(
+                            "Session set up, ignore data to host, dup as SW "
+                                    + DataTypeConversionUtil.byteArrayToHexString(
+                                            outboundData.get().data));
                 }
             }
         }
@@ -293,8 +301,9 @@ public abstract class FiRaSecureChannel {
                     cleanUpTerminatedOrAbortedSession();
                     break;
                 default:
-                    logw("Unexpected notification from dispatch response: "
-                            + notification.notificationEventId);
+                    logw(
+                            "Unexpected notification from dispatch response: "
+                                    + notification.notificationEventId);
             }
         }
     }
@@ -304,8 +313,7 @@ public abstract class FiRaSecureChannel {
     }
 
     void sendRawDataToRemote(@NonNull byte[] data) {
-        mWorkHandler.sendMessage(
-                mWorkHandler.obtainMessage(CMD_SEND_OOB_DATA, data));
+        mWorkHandler.sendMessage(mWorkHandler.obtainMessage(CMD_SEND_OOB_DATA, data));
     }
 
     void cleanUpTerminatedOrAbortedSession() {
@@ -316,58 +324,61 @@ public abstract class FiRaSecureChannel {
     /**
      * Send the APDU to the FiRa applet through the channel.
      */
-    void sendLocalCommandApdu(@NonNull CommandApdu commandApdu,
+    void sendLocalCommandApdu(
+            @NonNull CommandApdu commandApdu,
             @NonNull ExternalRequestCallback externalRequestCallback) {
-        mWorkHandler.post(() -> {
-            try {
-                if (!mSecureElementChannel.isOpened()) {
-                    throw new IllegalStateException("the OMAPI channel is not opened.");
-                }
+        mWorkHandler.post(
+                () -> {
+                    try {
+                        if (!mSecureElementChannel.isOpened()) {
+                            throw new IllegalStateException("the OMAPI channel is not opened.");
+                        }
 
-                ResponseApdu responseApdu = mSecureElementChannel.transmit(commandApdu);
-                if (responseApdu.getStatusWord() == SW_NO_ERROR.toInt()) {
-                    externalRequestCallback.onSuccess();
-                } else {
-                    logw("Applet failed to handle the APDU: " + commandApdu);
-                    externalRequestCallback.onFailure();
-                }
-            } catch (IOException | IllegalStateException e) {
-                logw("sendLocalCommandApdu failed as: " + e);
-                externalRequestCallback.onFailure();
-            }
-        });
+                        ResponseApdu responseApdu = mSecureElementChannel.transmit(commandApdu);
+                        if (responseApdu.getStatusWord() == SW_NO_ERROR.toInt()) {
+                            externalRequestCallback.onSuccess();
+                        } else {
+                            logw("Applet failed to handle the APDU: " + commandApdu);
+                            externalRequestCallback.onFailure();
+                        }
+                    } catch (IOException | IllegalStateException e) {
+                        logw("sendLocalCommandApdu failed as: " + e);
+                        externalRequestCallback.onFailure();
+                    }
+                });
     }
 
-    abstract void tunnelToRemoteDevice(@NonNull byte[] data,
-            @NonNull ExternalRequestCallback externalRequestCallback);
+    abstract void tunnelToRemoteDevice(
+            @NonNull byte[] data, @NonNull ExternalRequestCallback externalRequestCallback);
 
     void terminateLocally() {
-        mWorkHandler.post(() -> {
-            if (mStatus != Status.ESTABLISHED) {
-                mSecureChannelCallback.onTerminated(/*withError=*/ false);
-                return;
-            }
-            // send terminate command to SE
-            // send GetDataDO - terminate session to local.
-            TlvDatum terminateSessionDo = CsmlUtil.constructTerminateSessionGetDoTlv();
-            GetDoCommand getDoCommand =
-                    GetDoCommand.build(terminateSessionDo);
-            try {
-                GetDoResponse response = GetDoResponse.fromResponseApdu(
-                        mSecureElementChannel.transmit(getDoCommand));
-                if (response.isSuccess()) {
-                    mSecureChannelCallback.onTerminated(/*withError=*/ false);
-                    mStatus = Status.TERMINATED;
-                } else {
-                    throw new IllegalStateException(
-                            "Terminate response error: " + response.statusWord);
-                }
-            } catch (IOException | IllegalStateException e) {
-                logw("Error happened on termination locally: " + e);
-                mStatus = Status.ABNORMAL;
-                mSecureChannelCallback.onTerminated(/*withError=*/ true);
-            }
-        });
+        mWorkHandler.post(
+                () -> {
+                    if (mStatus != Status.ESTABLISHED) {
+                        mSecureChannelCallback.onTerminated(/*withError=*/ false);
+                        return;
+                    }
+                    // send terminate command to SE
+                    // send GetDataDO - terminate session to local.
+                    TlvDatum terminateSessionDo = CsmlUtil.constructTerminateSessionGetDoTlv();
+                    GetDoCommand getDoCommand = GetDoCommand.build(terminateSessionDo);
+                    try {
+                        GetDoResponse response =
+                                GetDoResponse.fromResponseApdu(
+                                        mSecureElementChannel.transmit(getDoCommand));
+                        if (response.isSuccess()) {
+                            mSecureChannelCallback.onTerminated(/*withError=*/ false);
+                            mStatus = Status.TERMINATED;
+                        } else {
+                            throw new IllegalStateException(
+                                    "Terminate response error: " + response.statusWord);
+                        }
+                    } catch (IOException | IllegalStateException e) {
+                        logw("Error happened on termination locally: " + e);
+                        mStatus = Status.ABNORMAL;
+                        mSecureChannelCallback.onTerminated(/*withError=*/ true);
+                    }
+                });
     }
 
     Status getStatus() {

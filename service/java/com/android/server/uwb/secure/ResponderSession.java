@@ -34,7 +34,8 @@ import java.util.Optional;
 public abstract class ResponderSession extends SecureSession {
     private static final String LOG_TAG = "ResponderSession";
 
-    ResponderSession(@NonNull Looper workLooper,
+    ResponderSession(
+            @NonNull Looper workLooper,
             @NonNull FiRaSecureChannel fiRaSecureChannel,
             @NonNull Callback sessionCallback,
             @NonNull RunningProfileSessionInfo runningProfileSessionInfo) {
@@ -66,8 +67,9 @@ public abstract class ResponderSession extends SecureSession {
                     mSessionCallback.onSessionAborted();
                     return;
                 default:
-                    logw("Unexpected notification from dispatch response: "
-                            + notification.notificationEventId);
+                    logw(
+                            "Unexpected notification from dispatch response: "
+                                    + notification.notificationEventId);
                     break;
             }
         }

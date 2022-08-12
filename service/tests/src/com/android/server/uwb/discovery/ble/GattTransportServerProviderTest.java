@@ -44,6 +44,7 @@ import android.uwb.UwbTestUtils;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.server.uwb.discovery.Transport.DataReceiver;
 import com.android.server.uwb.discovery.TransportServerProvider.TransportServerCallback;
 import com.android.server.uwb.discovery.info.FiraConnectorCapabilities;
 import com.android.server.uwb.discovery.info.FiraConnectorDataPacket;
@@ -70,7 +71,7 @@ import java.util.concurrent.Executor;
 public class GattTransportServerProviderTest {
 
     private static final Executor EXECUTOR = UwbTestUtils.getExecutor();
-    private static final int SECID = 10;
+    private static final int SECID = 2;
     private static final byte[] MESSAGE_PAYLOAD1 = new byte[] {(byte) 0xF4, 0x00, 0x40};
     private static final FiraConnectorMessage MESSAGE =
             new FiraConnectorMessage(
@@ -117,6 +118,7 @@ public class GattTransportServerProviderTest {
     @Mock BluetoothGattServer mMockBluetoothGattServer;
     @Mock TransportServerCallback mMockTransportServerCallback;
     @Mock BluetoothDevice mMockBluetoothDevice;
+    @Mock DataReceiver mMockDataReceiver;
 
     private GattTransportServerProvider mGattTransportServerProvider;
     private BluetoothGattServerCallback mBluetoothGattServerCallback;
@@ -135,7 +137,9 @@ public class GattTransportServerProviderTest {
 
         mGattTransportServerProvider =
                 new GattTransportServerProvider(
-                        mMockAttributionSource, mMockContext, mMockTransportServerCallback);
+                        mMockAttributionSource, mMockContext, SECID, mMockTransportServerCallback);
+
+        mGattTransportServerProvider.registerDataReceiver(mMockDataReceiver);
 
         ArgumentCaptor<BluetoothGattServerCallback> captor =
                 ArgumentCaptor.forClass(BluetoothGattServerCallback.class);
@@ -423,7 +427,7 @@ public class GattTransportServerProviderTest {
                         BluetoothGatt.GATT_FAILURE,
                         /*offset=*/ 0,
                         /*value=*/ null);
-        verify(mMockTransportServerCallback, never()).onMessageReceived(anyInt(), any());
+        verify(mMockDataReceiver, never()).onDataReceived(any());
     }
 
     @Test
@@ -440,7 +444,7 @@ public class GattTransportServerProviderTest {
 
         verify(mMockBluetoothGattServer, never())
                 .sendResponse(any(BluetoothDevice.class), anyInt(), anyInt(), anyInt(), any());
-        verify(mMockTransportServerCallback, never()).onMessageReceived(anyInt(), any());
+        verify(mMockDataReceiver, never()).onDataReceived(any());
 
         mBluetoothGattServerCallback.onCharacteristicWriteRequest(
                 mMockBluetoothDevice,
@@ -453,11 +457,9 @@ public class GattTransportServerProviderTest {
 
         verify(mMockBluetoothGattServer, never())
                 .sendResponse(any(BluetoothDevice.class), anyInt(), anyInt(), anyInt(), any());
-        ArgumentCaptor<FiraConnectorMessage> captor =
-                ArgumentCaptor.forClass(FiraConnectorMessage.class);
-        verify(mMockTransportServerCallback, times(1))
-                .onMessageReceived(eq(SECID), captor.capture());
-        assertThat(captor.getValue().toString()).isEqualTo(MESSAGE.toString());
+        ArgumentCaptor<byte[]> captor = ArgumentCaptor.forClass(byte[].class);
+        verify(mMockDataReceiver, times(1)).onDataReceived(captor.capture());
+        assertThat(captor.getValue()).isEqualTo(MESSAGE.payload);
     }
 
     @Test
@@ -539,10 +541,8 @@ public class GattTransportServerProviderTest {
                         BluetoothGatt.GATT_SUCCESS,
                         /*offset=*/ 0,
                         dataPacket3.toBytes());
-        ArgumentCaptor<FiraConnectorMessage> captor =
-                ArgumentCaptor.forClass(FiraConnectorMessage.class);
-        verify(mMockTransportServerCallback, times(1))
-                .onMessageReceived(eq(SECID), captor.capture());
-        assertThat(captor.getValue().toString()).isEqualTo(message.toString());
+        ArgumentCaptor<byte[]> captor = ArgumentCaptor.forClass(byte[].class);
+        verify(mMockDataReceiver, times(1)).onDataReceived(captor.capture());
+        assertThat(captor.getValue()).isEqualTo(message.payload);
     }
 }

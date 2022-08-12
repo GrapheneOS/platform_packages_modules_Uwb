@@ -274,8 +274,10 @@ public class GattTransportClientProvider extends TransportClientProvider {
             AttributionSource attributionSource,
             Context context,
             Executor executor,
+            int secid,
             TransportClientInfo transportClientInfo,
             TransportClientCallback transportServerCallback) {
+        super(secid);
         mCallbackExecutor = executor;
         mContext =
                 context.createContext(
@@ -469,7 +471,7 @@ public class GattTransportClientProvider extends TransportClientProvider {
             return false;
         }
 
-        mTransportClientCallback.onMessageReceived(latestDataPacket.secid, message);
+        super.onMessageReceived(latestDataPacket.secid, message);
         return true;
     }
 

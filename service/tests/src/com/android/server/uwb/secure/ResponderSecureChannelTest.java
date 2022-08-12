@@ -29,13 +29,13 @@ import static org.mockito.Mockito.when;
 
 import android.os.test.TestLooper;
 
+import com.android.server.uwb.discovery.Transport;
 import com.android.server.uwb.pm.ControlleeInfo;
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
 import com.android.server.uwb.secure.csml.SwapInAdfCommand;
 import com.android.server.uwb.secure.iso7816.CommandApdu;
 import com.android.server.uwb.secure.iso7816.ResponseApdu;
 import com.android.server.uwb.secure.omapi.OmapiConnection;
-import com.android.server.uwb.transport.Transport;
 import com.android.server.uwb.util.ObjectIdentifier;
 
 import org.junit.Before;

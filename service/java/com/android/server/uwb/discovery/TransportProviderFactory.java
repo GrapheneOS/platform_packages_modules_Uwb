@@ -35,12 +35,14 @@ public class TransportProviderFactory {
      *
      * @param attributionSource Attribution Source.
      * @param context Context.
+     * @param secid Assigned local secid for this transport connection.
      * @param discoveryInfo Info of the discovery request.
      * @param transportServerCallback callback for transport server events.
      */
     public static TransportServerProvider createServer(
             AttributionSource attributionSource,
             Context context,
+            int secid,
             DiscoveryInfo discoveryInfo,
             TransportServerCallback transportServerCallback)
             throws AssertionError {
@@ -48,7 +50,7 @@ public class TransportProviderFactory {
         switch (discoveryInfo.transportType) {
             case BLE:
                 return new GattTransportServerProvider(
-                        attributionSource, context, transportServerCallback);
+                        attributionSource, context, secid, transportServerCallback);
             default:
                 throw new AssertionError(
                         "Failed to create TransportServerProvider due to invalid transport type:"
@@ -63,6 +65,7 @@ public class TransportProviderFactory {
      * @param attributionSource Attribution Source.
      * @param context Context.
      * @param executor Executor.
+     * @param secid Assigned local secid for this transport connection.
      * @param discoveryInfo Info of the discovery request.
      * @param transportClientCallback callback for transport client events.
      */
@@ -70,6 +73,7 @@ public class TransportProviderFactory {
             AttributionSource attributionSource,
             Context context,
             Executor executor,
+            int secid,
             DiscoveryInfo discoveryInfo,
             TransportClientCallback transportClientCallback)
             throws IllegalArgumentException, AssertionError {
@@ -86,6 +90,7 @@ public class TransportProviderFactory {
                         attributionSource,
                         context,
                         executor,
+                        secid,
                         discoveryInfo.transportClientInfo.get(),
                         transportClientCallback);
             default:
