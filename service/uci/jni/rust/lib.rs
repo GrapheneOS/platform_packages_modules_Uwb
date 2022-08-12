@@ -563,7 +563,18 @@ fn byte_result_helper(result: Result<(), UwbErr>, function_name: &str) -> jbyte 
 
 fn do_initialize<'a, T: Context<'a>>(context: &T, chip_id: String) -> Result<(), UwbErr> {
     let dispatcher = context.get_dispatcher()?;
-    dispatcher.send_jni_command(JNICommand::Enable, chip_id.clone())?;
+    match dispatcher.block_on_jni_command(JNICommand::Enable, chip_id.clone())? {
+        UciResponse::EnableRsp(enable) => {
+            if !enable {
+                error!("Enable UWB failed.");
+                return Err(UwbErr::failed());
+            }
+        }
+        _ => {
+            error!("Received wrong response!");
+            return Err(UwbErr::failed());
+        }
+    }
     match uwa_get_device_info(dispatcher, chip_id) {
         Ok(res) => {
             if let UciResponse::GetDeviceInfoRsp(device_info) = res {
@@ -1000,7 +1011,8 @@ mod tests {
         .build();
 
         let mut dispatcher = MockDispatcher::new();
-        dispatcher.expect_send_jni_command(JNICommand::Enable, Ok(()));
+        dispatcher
+            .expect_block_on_jni_command(JNICommand::Enable, Ok(UciResponse::EnableRsp(true)));
         dispatcher.expect_block_on_jni_command(
             JNICommand::UciGetDeviceInfo,
             Ok(UciResponse::GetDeviceInfoRsp(packet.clone())),
