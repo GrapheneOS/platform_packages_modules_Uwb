@@ -19,24 +19,30 @@ package com.android.server.uwb.discovery;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattServer;
 import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.le.ScanResult;
 import android.content.AttributionSource;
 import android.content.Context;
+import android.uwb.UwbTestUtils;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.server.uwb.discovery.TransportClientProvider.TransportClientCallback;
 import com.android.server.uwb.discovery.TransportServerProvider.TransportServerCallback;
 import com.android.server.uwb.discovery.info.DiscoveryInfo;
 import com.android.server.uwb.discovery.info.DiscoveryInfo.TransportType;
+import com.android.server.uwb.discovery.info.TransportClientInfo;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -45,15 +51,14 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Optional;
+import java.util.concurrent.Executor;
 
-/** Unit test for {@link TransportServerService} */
+/** Unit test for {@link TransportProviderFactory} */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class TransportServerServiceTest {
+public class TransportProviderFactoryTest {
 
-    private static final DiscoveryInfo DISCOVERY_INFO =
-            new DiscoveryInfo(
-                    TransportType.BLE, Optional.empty(), Optional.empty(), Optional.empty());
+    private static final Executor EXECUTOR = UwbTestUtils.getExecutor();
 
     @Mock AttributionSource mMockAttributionSource;
     @Mock Context mMockContext;
@@ -61,8 +66,12 @@ public class TransportServerServiceTest {
     @Mock BluetoothAdapter mMockBluetoothAdapter;
     @Mock BluetoothGattServer mMockBluetoothGattServer;
     @Mock TransportServerCallback mMockTransportServerCallback;
+    @Mock TransportClientCallback mMockTransportClientCallback;
+    @Mock ScanResult mMockScanResult;
+    @Mock BluetoothDevice mMockBluetoothDevice;
+    @Mock BluetoothGatt mMockBluetoothGatt;
 
-    private TransportServerService mTransportServerService;
+    private DiscoveryInfo mDiscoveryInfo;
 
     @Before
     public void setUp() throws Exception {
@@ -74,50 +83,43 @@ public class TransportServerServiceTest {
         when(mMockBluetoothManager.openGattServer(
                         eq(mMockContext), any(BluetoothGattServerCallback.class)))
                 .thenReturn(mMockBluetoothGattServer);
+        when(mMockBluetoothGattServer.addService(any())).thenReturn(true);
+        when(mMockScanResult.getDevice()).thenReturn(mMockBluetoothDevice);
+        when(mMockBluetoothDevice.connectGatt(eq(mMockContext), anyBoolean(), any(), anyInt()))
+                .thenReturn(mMockBluetoothGatt);
 
-        mTransportServerService =
-                new TransportServerService(
+        mDiscoveryInfo =
+                new DiscoveryInfo(
+                        TransportType.BLE,
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.of(new TransportClientInfo(mMockScanResult)));
+    }
+
+    @Test
+    public void testServerStart() {
+        TransportServerProvider privder =
+                TransportProviderFactory.createServer(
                         mMockAttributionSource,
                         mMockContext,
-                        DISCOVERY_INFO,
+                        mDiscoveryInfo,
                         mMockTransportServerCallback);
+
+        assertThat(privder).isNotNull();
+        assertThat(privder.start()).isTrue();
     }
 
     @Test
-    public void testStart_failed() {
-        when(mMockBluetoothGattServer.addService(any())).thenReturn(false);
-        assertThat(mTransportServerService.start()).isFalse();
-        verify(mMockBluetoothGattServer, times(1)).addService(any());
-    }
+    public void testClientStart() {
+        TransportClientProvider privder =
+                TransportProviderFactory.createClient(
+                        mMockAttributionSource,
+                        mMockContext,
+                        EXECUTOR,
+                        mDiscoveryInfo,
+                        mMockTransportClientCallback);
 
-    @Test
-    public void testStart_successAndRejectRestart() {
-        when(mMockBluetoothGattServer.addService(any())).thenReturn(true);
-        assertThat(mTransportServerService.start()).isTrue();
-        verify(mMockBluetoothGattServer, times(1)).addService(any());
-        assertThat(mTransportServerService.start()).isFalse();
-        verify(mMockBluetoothGattServer, times(1)).addService(any());
-    }
-
-    @Test
-    public void testStop_failed() {
-        when(mMockBluetoothGattServer.addService(any())).thenReturn(true);
-        when(mMockBluetoothGattServer.removeService(any())).thenReturn(false);
-        assertThat(mTransportServerService.start()).isTrue();
-        verify(mMockBluetoothGattServer, times(1)).addService(any());
-        assertThat(mTransportServerService.stop()).isFalse();
-        verify(mMockBluetoothGattServer, times(1)).removeService(any());
-    }
-
-    @Test
-    public void testStop_successAndRejectRestop() {
-        when(mMockBluetoothGattServer.addService(any())).thenReturn(true);
-        when(mMockBluetoothGattServer.removeService(any())).thenReturn(true);
-        assertThat(mTransportServerService.start()).isTrue();
-        verify(mMockBluetoothGattServer, times(1)).addService(any());
-        assertThat(mTransportServerService.stop()).isTrue();
-        verify(mMockBluetoothGattServer, times(1)).removeService(any());
-        assertThat(mTransportServerService.stop()).isFalse();
-        verify(mMockBluetoothGattServer, times(1)).removeService(any());
+        assertThat(privder).isNotNull();
+        assertThat(privder.start()).isTrue();
     }
 }

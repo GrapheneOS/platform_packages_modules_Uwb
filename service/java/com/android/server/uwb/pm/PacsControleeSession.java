@@ -35,8 +35,8 @@ import com.android.server.uwb.data.ServiceProfileData.ServiceProfileInfo;
 import com.android.server.uwb.data.UwbConfig;
 import com.android.server.uwb.discovery.DiscoveryAdvertiseProvider;
 import com.android.server.uwb.discovery.DiscoveryAdvertiseService;
+import com.android.server.uwb.discovery.TransportProviderFactory;
 import com.android.server.uwb.discovery.TransportServerProvider;
-import com.android.server.uwb.discovery.TransportServerService;
 import com.android.server.uwb.discovery.ble.DiscoveryAdvertisement;
 import com.android.server.uwb.discovery.info.AdvertiseInfo;
 import com.android.server.uwb.discovery.info.DiscoveryInfo;
@@ -117,7 +117,7 @@ public class PacsControleeSession extends RangingSessionController {
 
     private DiscoveryAdvertiseService mDiscoveryAdvertiseService;
     private DiscoveryInfo mDiscoveryInfo;
-    private TransportServerService mTransportServerService;
+    private TransportServerProvider mTransportServerProvider;
     private SecureSession mSecureSession;
     private DiscoveryAdvertisement mDiscoveryAdvertisement;
     private AdvertisingSetParameters mAdvertisingSetParameters;
@@ -163,7 +163,7 @@ public class PacsControleeSession extends RangingSessionController {
 
     /** Initialize Transport server */
     public void transportServerInit() {
-        mTransportServerService = new TransportServerService(
+        mTransportServerProvider = TransportProviderFactory.createServer(
                 mSessionInfo.mAttributionSource,
                 mSessionInfo.mContext,
                 mDiscoveryInfo,
@@ -174,12 +174,12 @@ public class PacsControleeSession extends RangingSessionController {
 
     /** Start Transport server */
     public void transportServerStart() {
-        mTransportServerService.start();
+        mTransportServerProvider.start();
     }
 
     /** Stop Transport server */
     public void transportServerStop() {
-        mTransportServerService.stop();
+        mTransportServerProvider.stop();
     }
 
     /** Initialize controlee responder session */
