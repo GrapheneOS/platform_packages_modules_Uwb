@@ -36,6 +36,7 @@ import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTIO
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_UNICAST;
+import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_INITIATOR;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_RESPONDER;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLEE;
@@ -422,6 +423,20 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 } else {
                     throw new IllegalArgumentException("Unknown round usage: " + usage);
                 }
+            }
+            if (option.equals("-x")) {
+                String[] rangeDataNtfProximityString = getNextArgRequired().split(",");
+                if (rangeDataNtfProximityString.length != 2) {
+                    throw new IllegalArgumentException("Unexpected range data ntf proximity range:"
+                            + Arrays.toString(rangeDataNtfProximityString)
+                            + " expected to be <proximity-near-cm, proximity-far-cm>");
+                }
+                int rangeDataNtfProximityNearCm = Integer.parseInt(rangeDataNtfProximityString[0]);
+                int rangeDataNtfProximityFarCm = Integer.parseInt(rangeDataNtfProximityString[1]);
+                // Enable range data ntf while inside proximity range
+                builder.setRangeDataNtfConfig(RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG);
+                builder.setRangeDataNtfProximityNear(rangeDataNtfProximityNearCm);
+                builder.setRangeDataNtfProximityFar(rangeDataNtfProximityFarCm);
             }
             if (option.equals("-z")) {
                 String[] interleaveRatioString = getNextArgRequired().split(",");
@@ -934,6 +949,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " [-a <deviceAddress>](device-address)"
                 + " [-d <destAddress-1, destAddress-2,...>](dest-addresses)"
                 + " [-u ds-twr|ss-twr|ds-twr-non-deferred|ss-twr-non-deferred](round-usage)"
+                + " [-x <proximity-near-cm, proximity-far-cm>](range-data-ntf-proximity)"
                 + " [-z <numRangeMrmts, numAoaAzimuthMrmts, numAoaElevationMrmts>"
                 + "(interleaving-ratio)"
                 + " [-e none|enabled|azimuth-only|elevation-only](aoa type)"
