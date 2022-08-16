@@ -1,4 +1,4 @@
-// Copyright (C) 2021 The Android Open Source Project
+// Copyright (C) 2022 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,27 +16,19 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
-    name: "CtsUwbTestCases",
-    defaults: [
-        "cts_defaults",
-        "framework-uwb-cts-defaults",
-    ],
-    // Tag this module as a cts test artifact
+python_test_host {
+    name: "CtsUwbMultiDeviceTestCases",
+    main: "uwb_manager_test.py",
+    srcs: ["uwb_manager_test.py"],
     test_suites: [
         "cts",
         "general-tests",
-        "mts-uwb",
     ],
-    libs: ["android.test.runner"],
-    static_libs: [
-        "androidx.test.ext.junit",
-        "ctstestrunner-axt",
-        "compatibility-device-util-axt",
-        "mockito-target-minus-junit4",
-        "com.uwb.support.fira",
-        "com.uwb.support.multichip",
+    test_options: {
+        unit_test: false,
+    },
+    data: [
+        // Package the snippet with the mobly test
+        ":uwb_snippet",
     ],
-    srcs: ["src/**/*.java"],
-    platform_apis: true,
 }
