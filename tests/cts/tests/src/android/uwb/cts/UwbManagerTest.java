@@ -51,6 +51,7 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
 import com.google.uwb.support.fira.FiraOpenSessionParams;
@@ -120,6 +121,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testGetSpecificationInfo() {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         try {
@@ -134,6 +136,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testGetSpecificationInfoWithChipId() {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         try {
@@ -149,6 +152,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testGetChipInfos() {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         try {
@@ -164,6 +168,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testGetSpecificationInfoWithInvalidChipId() {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         try {
@@ -177,6 +182,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testGetSpecificationInfoWithoutUwbPrivileged() {
         try {
             mUwbManager.getSpecificationInfo();
@@ -189,6 +195,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testGetSpecificationInfoWithChipIdWithoutUwbPrivileged() {
         try {
             mUwbManager.getSpecificationInfo(mDefaultChipId);
@@ -202,6 +209,7 @@ public class UwbManagerTest {
 
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testElapsedRealtimeResolutionNanos() {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         try {
@@ -214,6 +222,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testElapsedRealtimeResolutionNanosWithChipId() {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         try {
@@ -227,6 +236,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testElapsedRealtimeResolutionNanosWithInvalidChipId() {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         try {
@@ -240,6 +250,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testElapsedRealtimeResolutionNanosWithoutUwbPrivileged() {
         try {
             mUwbManager.elapsedRealtimeResolutionNanos();
@@ -252,6 +263,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testElapsedRealtimeResolutionNanosWithChipIdWithoutUwbPrivileged() {
         try {
             mUwbManager.elapsedRealtimeResolutionNanos(mDefaultChipId);
@@ -264,6 +276,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testAddServiceProfileWithoutUwbPrivileged() {
         try {
             mUwbManager.addServiceProfile(new PersistableBundle());
@@ -276,6 +289,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testRemoveServiceProfileWithoutUwbPrivileged() {
         try {
             mUwbManager.removeServiceProfile(new PersistableBundle());
@@ -289,6 +303,7 @@ public class UwbManagerTest {
 
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testGetAllServiceProfilesWithoutUwbPrivileged() {
         try {
             mUwbManager.getAllServiceProfiles();
@@ -301,6 +316,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testGetAdfProvisioningAuthoritiesWithoutUwbPrivileged() {
         try {
             mUwbManager.getAdfProvisioningAuthorities(new PersistableBundle());
@@ -313,6 +329,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testGetAdfCertificateInfoWithoutUwbPrivileged() {
         try {
             mUwbManager.getAdfCertificateInfo(new PersistableBundle());
@@ -325,6 +342,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testGetChipInfosWithoutUwbPrivileged() {
         try {
             mUwbManager.getChipInfos();
@@ -337,6 +355,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testSendVendorUciWithoutUwbPrivileged() {
         try {
             mUwbManager.sendVendorUciMessage(10, 0, new byte[0]);
@@ -372,6 +391,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testProvisionProfileAdfByScriptWithoutUwbPrivileged() {
         CountDownLatch countDownLatch = new CountDownLatch(1);
         AdfProvisionStateCallback adfProvisionStateCallback =
@@ -390,6 +410,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testRemoveProfileAdfWithoutUwbPrivileged() {
         try {
             mUwbManager.removeProfileAdf(new PersistableBundle());
@@ -434,6 +455,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testRegisterVendorUciCallbackWithoutUwbPrivileged() {
         UwbManager.UwbVendorUciCallback cb =
                 new UwbVendorUciCallback(new CountDownLatch(1), new CountDownLatch(1));
@@ -449,6 +471,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testUnregisterVendorUciCallbackWithoutUwbPrivileged() {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         UwbManager.UwbVendorUciCallback cb =
@@ -474,6 +497,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testInvalidCallbackUnregisterVendorUciCallback() {
         UwbManager.UwbVendorUciCallback cb =
                 new UwbVendorUciCallback(new CountDownLatch(1), new CountDownLatch(1));
@@ -564,6 +588,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testOpenRangingSessionWithInvalidChipId() {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         CountDownLatch countDownLatch = new CountDownLatch(1);
@@ -583,6 +608,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testOpenRangingSessionWithChipIdWithBadParams() throws Exception {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         CancellationSignal cancellationSignal = null;
@@ -610,6 +636,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testOpenRangingSessionWithInvalidChipIdWithBadParams() throws Exception {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         CancellationSignal cancellationSignal = null;
@@ -640,6 +667,7 @@ public class UwbManagerTest {
      * Simulates the app holding UWB_RANGING permission, but not UWB_PRIVILEGED.
      */
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testOpenRangingSessionWithoutUwbPrivileged() {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         try {
@@ -659,6 +687,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testOpenRangingSessionWithChipIdWithoutUwbPrivileged() {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         try {
@@ -682,6 +711,7 @@ public class UwbManagerTest {
      * Simulates the app holding UWB_PRIVILEGED permission, but not UWB_RANGING.
      */
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testOpenRangingSessionWithoutUwbRanging() {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         try {
@@ -701,6 +731,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testOpenRangingSessionWithChipIdWithoutUwbRanging() {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         try {
@@ -752,6 +783,7 @@ public class UwbManagerTest {
      * the proxied app not holding UWB_RANGING permission.
      */
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
     public void testOpenRangingSessionWithoutUwbRangingInNextAttributeSource() {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         try {
@@ -776,6 +808,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
     public void testOpenRangingSessionWithChipIdWithoutUwbRangingInNextAttributeSource() {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         try {
@@ -801,6 +834,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
     public void testFiraRangingSession() throws Exception {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         CancellationSignal cancellationSignal = null;
@@ -894,6 +928,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-4"})
     public void testUwbStateToggle() throws Exception {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         try {
@@ -910,6 +945,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testSendVendorUciMessage() throws Exception {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         CountDownLatch rspCountDownLatch = new CountDownLatch(1);
@@ -943,6 +979,7 @@ public class UwbManagerTest {
     }
 
     @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testSendVendorUciMessageWithFragmentedPackets() throws Exception {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         CountDownLatch rspCountDownLatch = new CountDownLatch(1);
