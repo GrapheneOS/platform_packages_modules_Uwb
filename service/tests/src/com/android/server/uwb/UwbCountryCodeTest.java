@@ -26,6 +26,8 @@ import android.net.wifi.WifiManager;
 import android.net.wifi.WifiManager.ActiveCountryCodeChangedCallback;
 import android.os.Handler;
 import android.os.test.TestLooper;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 
 import androidx.test.filters.SmallTest;
@@ -41,6 +43,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 /**
  * Unit tests for {@link com.android.server.uwb.UwbCountryCode}.
@@ -49,9 +52,14 @@ import java.nio.charset.StandardCharsets;
 public class UwbCountryCodeTest {
     private static final String TEST_COUNTRY_CODE = "US";
     private static final String TEST_COUNTRY_CODE_OTHER = "JP";
+    private static final int TEST_SUBSCRIPTION_ID = 0;
+    private static final int TEST_SLOT_IDX = 0;
+    private static final int TEST_SUBSCRIPTION_ID_OTHER = 1;
+    private static final int TEST_SLOT_IDX_OTHER = 1;
 
     @Mock Context mContext;
     @Mock TelephonyManager mTelephonyManager;
+    @Mock SubscriptionManager mSubscriptionManager;
     @Mock WifiManager mWifiManager;
     @Mock NativeUwbManager mNativeUwbManager;
     @Mock UwbInjector mUwbInjector;
@@ -74,8 +82,20 @@ public class UwbCountryCodeTest {
 
         when(mContext.getSystemService(TelephonyManager.class))
                 .thenReturn(mTelephonyManager);
+        when(mContext.getSystemService(SubscriptionManager.class))
+                .thenReturn(mSubscriptionManager);
         when(mContext.getSystemService(WifiManager.class))
                 .thenReturn(mWifiManager);
+        when(mSubscriptionManager.getActiveSubscriptionInfoList()).thenReturn(List.of(
+                new SubscriptionInfo(
+                TEST_SUBSCRIPTION_ID, "", TEST_SLOT_IDX, "", "", 0, 0, "", 0, null, "", "", "",
+                        true /* isEmbedded */, null, "", 25, false, null, false, 0, 0, 0, null,
+                        null, true, 0),
+                new SubscriptionInfo(
+                        TEST_SUBSCRIPTION_ID_OTHER, "", TEST_SLOT_IDX_OTHER, "", "", 0, 0, "", 0,
+                        null, "", "", "", true /* isEmbedded */, null, "", 25, false, null, false,
+                        0, 0, 0, null, null, true, 0)
+        ));
         when(mContext.getPackageManager()).thenReturn(mPackageManager);
         when(mPackageManager.hasSystemFeature(PackageManager.FEATURE_WIFI)).thenReturn(true);
         when(mNativeUwbManager.setCountryCode(any())).thenReturn(
@@ -93,7 +113,7 @@ public class UwbCountryCodeTest {
 
     @Test
     public void testInitializeCountryCodeFromTelephony() {
-        when(mTelephonyManager.getNetworkCountryIso()).thenReturn(TEST_COUNTRY_CODE);
+        when(mTelephonyManager.getNetworkCountryIso(anyInt())).thenReturn(TEST_COUNTRY_CODE);
         mUwbCountryCode.initialize();
         verify(mNativeUwbManager).setCountryCode(
                 TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
@@ -104,7 +124,7 @@ public class UwbCountryCodeTest {
         UwbCountryCode.CountryCodeChangedListener listener = mock(
                 UwbCountryCode.CountryCodeChangedListener.class);
         mUwbCountryCode.addListener(listener);
-        when(mTelephonyManager.getNetworkCountryIso()).thenReturn(TEST_COUNTRY_CODE);
+        when(mTelephonyManager.getNetworkCountryIso(anyInt())).thenReturn(TEST_COUNTRY_CODE);
         mUwbCountryCode.initialize();
         verify(mNativeUwbManager).setCountryCode(
                 TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
@@ -113,7 +133,7 @@ public class UwbCountryCodeTest {
 
     @Test
     public void testSetCountryCodeFromTelephony() {
-        when(mTelephonyManager.getNetworkCountryIso()).thenReturn(TEST_COUNTRY_CODE);
+        when(mTelephonyManager.getNetworkCountryIso(anyInt())).thenReturn(TEST_COUNTRY_CODE);
         mUwbCountryCode.initialize();
         clearInvocations(mNativeUwbManager);
 
@@ -125,7 +145,7 @@ public class UwbCountryCodeTest {
 
     @Test
     public void testSetCountryCodeWithForceUpdateFromTelephony() {
-        when(mTelephonyManager.getNetworkCountryIso()).thenReturn(TEST_COUNTRY_CODE);
+        when(mTelephonyManager.getNetworkCountryIso(anyInt())).thenReturn(TEST_COUNTRY_CODE);
         mUwbCountryCode.initialize();
         clearInvocations(mNativeUwbManager);
 
@@ -137,7 +157,7 @@ public class UwbCountryCodeTest {
 
     @Test
     public void testSetCountryCodeFromOemWhenTelephonyAndWifiNotAvailable() {
-        when(mUwbInjector.getOemDefaultCountryCode()).thenReturn(TEST_COUNTRY_CODE);
+        when(mTelephonyManager.getNetworkCountryIso(anyInt())).thenReturn(TEST_COUNTRY_CODE);
         mUwbCountryCode.initialize();
         clearInvocations(mNativeUwbManager);
 
@@ -153,7 +173,8 @@ public class UwbCountryCodeTest {
         verify(mContext).registerReceiver(
                 mTelephonyCountryCodeReceiverCaptor.capture(), any(), any(), any());
         Intent intent = new Intent(TelephonyManager.ACTION_NETWORK_COUNTRY_CHANGED)
-                .putExtra(TelephonyManager.EXTRA_NETWORK_COUNTRY, TEST_COUNTRY_CODE);
+                .putExtra(TelephonyManager.EXTRA_NETWORK_COUNTRY, TEST_COUNTRY_CODE)
+                        .putExtra(SubscriptionManager.EXTRA_SLOT_INDEX, TEST_SLOT_IDX);
         mTelephonyCountryCodeReceiverCaptor.getValue().onReceive(mock(Context.class), intent);
         verify(mNativeUwbManager).setCountryCode(
                 TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
@@ -181,7 +202,54 @@ public class UwbCountryCodeTest {
                 TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
 
         Intent intent = new Intent(TelephonyManager.ACTION_NETWORK_COUNTRY_CHANGED)
-                .putExtra(TelephonyManager.EXTRA_NETWORK_COUNTRY, TEST_COUNTRY_CODE_OTHER);
+                .putExtra(TelephonyManager.EXTRA_NETWORK_COUNTRY, TEST_COUNTRY_CODE_OTHER)
+                .putExtra(SubscriptionManager.EXTRA_SLOT_INDEX, TEST_SLOT_IDX);
+        mTelephonyCountryCodeReceiverCaptor.getValue().onReceive(mock(Context.class), intent);
+        verify(mNativeUwbManager).setCountryCode(
+                TEST_COUNTRY_CODE_OTHER.getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void testUseLastKnownTelephonyCountryCodeWhenWifiAndTelephonyCountryCodeNotAvailable() {
+        mUwbCountryCode.initialize();
+        verify(mWifiManager).registerActiveCountryCodeChangedCallback(
+                any(), mWifiCountryCodeReceiverCaptor.capture());
+        mWifiCountryCodeReceiverCaptor.getValue().onActiveCountryCodeChanged("");
+        verify(mContext).registerReceiver(
+                mTelephonyCountryCodeReceiverCaptor.capture(), any(), any(), any());
+        verify(mNativeUwbManager).setCountryCode(
+                UwbCountryCode.DEFAULT_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
+
+        Intent intent = new Intent(TelephonyManager.ACTION_NETWORK_COUNTRY_CHANGED)
+                .putExtra(TelephonyManager.EXTRA_NETWORK_COUNTRY, "")
+                .putExtra(UwbCountryCode.EXTRA_LAST_KNOWN_NETWORK_COUNTRY, TEST_COUNTRY_CODE)
+                .putExtra(SubscriptionManager.EXTRA_SLOT_INDEX, TEST_SLOT_IDX);
+        mTelephonyCountryCodeReceiverCaptor.getValue().onReceive(mock(Context.class), intent);
+        verify(mNativeUwbManager).setCountryCode(
+                TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void testChangeInTelephonyCountryCodeWhenMoreThanOneSimWifiCountryCodeAvailable() {
+        mUwbCountryCode.initialize();
+        verify(mWifiManager).registerActiveCountryCodeChangedCallback(
+                any(), mWifiCountryCodeReceiverCaptor.capture());
+        mWifiCountryCodeReceiverCaptor.getValue().onActiveCountryCodeChanged(TEST_COUNTRY_CODE);
+        verify(mContext).registerReceiver(
+                mTelephonyCountryCodeReceiverCaptor.capture(), any(), any(), any());
+        verify(mNativeUwbManager).setCountryCode(
+                TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
+
+        Intent intent = new Intent(TelephonyManager.ACTION_NETWORK_COUNTRY_CHANGED)
+                .putExtra(TelephonyManager.EXTRA_NETWORK_COUNTRY, TEST_COUNTRY_CODE_OTHER)
+                .putExtra(SubscriptionManager.EXTRA_SLOT_INDEX, TEST_SLOT_IDX);
+        mTelephonyCountryCodeReceiverCaptor.getValue().onReceive(mock(Context.class), intent);
+        verify(mNativeUwbManager).setCountryCode(
+                TEST_COUNTRY_CODE_OTHER.getBytes(StandardCharsets.UTF_8));
+
+        intent = new Intent(TelephonyManager.ACTION_NETWORK_COUNTRY_CHANGED)
+                .putExtra(TelephonyManager.EXTRA_NETWORK_COUNTRY, TEST_COUNTRY_CODE_OTHER)
+                .putExtra(SubscriptionManager.EXTRA_SLOT_INDEX, TEST_SLOT_IDX_OTHER);
         mTelephonyCountryCodeReceiverCaptor.getValue().onReceive(mock(Context.class), intent);
         verify(mNativeUwbManager).setCountryCode(
                 TEST_COUNTRY_CODE_OTHER.getBytes(StandardCharsets.UTF_8));
@@ -189,7 +257,7 @@ public class UwbCountryCodeTest {
 
     @Test
     public void testForceOverrideCodeWhenTelephonyAndWifiAvailable() {
-        when(mTelephonyManager.getNetworkCountryIso()).thenReturn(TEST_COUNTRY_CODE);
+        when(mTelephonyManager.getNetworkCountryIso(anyInt())).thenReturn(TEST_COUNTRY_CODE);
         mUwbCountryCode.initialize();
 
         verify(mWifiManager).registerActiveCountryCodeChangedCallback(
