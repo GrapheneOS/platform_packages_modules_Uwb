@@ -34,7 +34,8 @@ import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.data.ServiceProfileData.ServiceProfileInfo;
 import com.android.server.uwb.data.UwbConfig;
 import com.android.server.uwb.discovery.DiscoveryAdvertiseProvider;
-import com.android.server.uwb.discovery.DiscoveryAdvertiseService;
+import com.android.server.uwb.discovery.DiscoveryProvider;
+import com.android.server.uwb.discovery.DiscoveryProviderFactory;
 import com.android.server.uwb.discovery.TransportProviderFactory;
 import com.android.server.uwb.discovery.TransportServerProvider;
 import com.android.server.uwb.discovery.ble.DiscoveryAdvertisement;
@@ -111,7 +112,7 @@ public class PacsControleeSession extends RangingSessionController {
         return new EndSessionState();
     }
 
-    private DiscoveryAdvertiseService mDiscoveryAdvertiseService;
+    private DiscoveryProvider mDiscoveryProvider;
     private DiscoveryInfo mDiscoveryInfo;
     private TransportServerProvider mTransportServerProvider;
     private SecureSession mSecureSession;
@@ -138,21 +139,21 @@ public class PacsControleeSession extends RangingSessionController {
                         Optional.of(advertiseInfo),
                         Optional.empty());
 
-        mDiscoveryAdvertiseService =
-                new DiscoveryAdvertiseService(
+        mDiscoveryProvider =
+                DiscoveryProviderFactory.createAdvertiser(
                         mSessionInfo.mAttributionSource,
                         mSessionInfo.mContext,
                         new HandlerExecutor(mHandler),
                         mDiscoveryInfo,
                         mAdvertiseCallback);
-        mDiscoveryAdvertiseService.startDiscovery();
+        mDiscoveryProvider.start();
         // sendMessage(TRANSPORT_INIT);
     }
 
     /** Stop advertising on ranging stopped or closed */
     public void stopAdvertising() {
-        if (mDiscoveryAdvertiseService != null) {
-            mDiscoveryAdvertiseService.stopDiscovery();
+        if (mDiscoveryProvider != null) {
+            mDiscoveryProvider.stop();
         }
     }
 

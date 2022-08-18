@@ -18,83 +18,80 @@ package com.android.server.uwb.discovery;
 import android.content.AttributionSource;
 import android.content.Context;
 
-import com.android.server.uwb.discovery.TransportClientProvider.TransportClientCallback;
-import com.android.server.uwb.discovery.TransportServerProvider.TransportServerCallback;
-import com.android.server.uwb.discovery.ble.GattTransportClientProvider;
-import com.android.server.uwb.discovery.ble.GattTransportServerProvider;
+import androidx.annotation.WorkerThread;
+
+import com.android.server.uwb.discovery.DiscoveryAdvertiseProvider.DiscoveryAdvertiseCallback;
+import com.android.server.uwb.discovery.DiscoveryScanProvider.DiscoveryScanCallback;
+import com.android.server.uwb.discovery.ble.BleDiscoveryAdvertiseProvider;
+import com.android.server.uwb.discovery.ble.BleDiscoveryScanProvider;
 import com.android.server.uwb.discovery.info.DiscoveryInfo;
 
 import java.util.concurrent.Executor;
 
-/** Factory for creating TransportProvider. */
-public class TransportProviderFactory {
+/** Factory for creating DiscoveryProvider. */
+@WorkerThread
+public class DiscoveryProviderFactory {
 
     /**
-     * Create a TransportServerProvider.
+     * Create a DiscoveryScanProvider.
      *
      * @param attributionSource Attribution Source.
      * @param context Context.
-     * @param secid Assigned local secid for this transport connection.
+     * @param executor Executor.
      * @param discoveryInfo Info of the discovery request.
-     * @param transportServerCallback callback for transport server events.
+     * @param discoveryScanCallback callback for discovery scan events.
      */
-    public static TransportServerProvider createServer(
+    public static DiscoveryScanProvider createScanner(
             AttributionSource attributionSource,
             Context context,
-            int secid,
+            Executor executor,
             DiscoveryInfo discoveryInfo,
-            TransportServerCallback transportServerCallback)
+            DiscoveryScanCallback discoveryScanCallback)
             throws AssertionError {
 
         switch (discoveryInfo.transportType) {
             case BLE:
-                return new GattTransportServerProvider(
-                        attributionSource, context, secid, transportServerCallback);
+                return new BleDiscoveryScanProvider(
+                        attributionSource,
+                        context,
+                        executor,
+                        discoveryInfo.scanInfo.get(),
+                        discoveryScanCallback);
             default:
                 throw new AssertionError(
-                        "Failed to create TransportServerProvider due to invalid transport type:"
-                                + " "
+                        "Failed to create DiscoveryScanProvider due to invalid transport type: "
                                 + discoveryInfo.transportType);
         }
     }
 
     /**
-     * Create a TransportClientProvider.
+     * Create a DiscoveryAdvertiseProvider.
      *
      * @param attributionSource Attribution Source.
      * @param context Context.
      * @param executor Executor.
-     * @param secid Assigned local secid for this transport connection.
      * @param discoveryInfo Info of the discovery request.
-     * @param transportClientCallback callback for transport client events.
+     * @param discoveryAdvertiseCallback callback for discovery advertise events.
      */
-    public static TransportClientProvider createClient(
+    public static DiscoveryAdvertiseProvider createAdvertiser(
             AttributionSource attributionSource,
             Context context,
             Executor executor,
-            int secid,
             DiscoveryInfo discoveryInfo,
-            TransportClientCallback transportClientCallback)
-            throws IllegalArgumentException, AssertionError {
+            DiscoveryAdvertiseCallback discoveryAdvertiseCallback)
+            throws AssertionError {
 
         switch (discoveryInfo.transportType) {
             case BLE:
-                if (!discoveryInfo.transportClientInfo.isPresent()) {
-                    throw new IllegalArgumentException(
-                            "Failed to create GattTransportClientProvider due to empty"
-                                    + " transportClientInfo in discoveryInfo:"
-                                    + discoveryInfo);
-                }
-                return new GattTransportClientProvider(
+                return new BleDiscoveryAdvertiseProvider(
                         attributionSource,
                         context,
                         executor,
-                        secid,
-                        discoveryInfo.transportClientInfo.get(),
-                        transportClientCallback);
+                        discoveryInfo.advertiseInfo.get(),
+                        discoveryAdvertiseCallback);
             default:
                 throw new AssertionError(
-                        "Failed to create TransportClientProvider due to invalid transport type:"
+                        "Failed to create DiscoveryAdvertiseProvider due to invalid transport type:"
                                 + " "
                                 + discoveryInfo.transportType);
         }

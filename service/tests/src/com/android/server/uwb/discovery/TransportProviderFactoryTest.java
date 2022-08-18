@@ -99,7 +99,7 @@ public class TransportProviderFactoryTest {
 
     @Test
     public void testServerStart() {
-        TransportServerProvider privder =
+        TransportServerProvider provider =
                 TransportProviderFactory.createServer(
                         mMockAttributionSource,
                         mMockContext,
@@ -107,13 +107,13 @@ public class TransportProviderFactoryTest {
                         mDiscoveryInfo,
                         mMockTransportServerCallback);
 
-        assertThat(privder).isNotNull();
-        assertThat(privder.start()).isTrue();
+        assertThat(provider).isNotNull();
+        assertThat(provider.start()).isTrue();
     }
 
     @Test
     public void testClientStart() {
-        TransportClientProvider privder =
+        TransportClientProvider provider =
                 TransportProviderFactory.createClient(
                         mMockAttributionSource,
                         mMockContext,
@@ -122,7 +122,7 @@ public class TransportProviderFactoryTest {
                         mDiscoveryInfo,
                         mMockTransportClientCallback);
 
-        assertThat(privder).isNotNull();
-        assertThat(privder.start()).isTrue();
+        assertThat(provider).isNotNull();
+        assertThat(provider.start()).isTrue();
     }
 }

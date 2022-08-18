@@ -40,9 +40,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 
-/**
- * Class for UWB discovery scan provider using BLE.
- */
+/** Class for UWB discovery scan provider using BLE. */
 @WorkerThread
 public class BleDiscoveryScanProvider extends DiscoveryScanProvider {
     private static final String TAG = "BleDiscoveryScanProvider";
@@ -88,7 +86,10 @@ public class BleDiscoveryScanProvider extends DiscoveryScanProvider {
     }
 
     @Override
-    public boolean startScan() {
+    public boolean start() {
+        if (!super.start()) {
+            return false;
+        }
         BluetoothLeScanner scanner = getBleScanner();
         if (scanner == null) {
             Log.w(TAG, "startScan failed due to BluetoothLeScanner is null.");
@@ -107,7 +108,10 @@ public class BleDiscoveryScanProvider extends DiscoveryScanProvider {
     }
 
     @Override
-    public boolean stopScan() {
+    public boolean stop() {
+        if (!super.stop()) {
+            return false;
+        }
         BluetoothLeScanner scanner = getBleScanner();
         if (scanner == null) {
             Log.w(TAG, "stopScan failed due to BluetoothLeScanner is null.");

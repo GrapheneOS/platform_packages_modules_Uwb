@@ -23,11 +23,9 @@ import com.android.server.uwb.discovery.ble.DiscoveryAdvertisement;
 
 /** Abstract class for Discovery Scan Provider */
 @WorkerThread
-public abstract class DiscoveryScanProvider {
+public abstract class DiscoveryScanProvider extends DiscoveryProvider {
 
-    /**
-     * Holds information about the discovery request.
-     */
+    /** Holds information about the discovery request. */
     public static class DiscoveryResult {
 
         // BLE discovery result
@@ -46,36 +44,15 @@ public abstract class DiscoveryScanProvider {
     public interface DiscoveryScanCallback {
         /**
          * Called when device is discovered.
+         *
          * @param result provide the info on discovered device.
          */
         void onDiscovered(DiscoveryResult result);
         /**
          * Called when discovery failed.
+         *
          * @param errorCode discovery failure error code.
          */
         void onDiscoveryFailed(int errorCode);
     }
-
-    // Indicates weather discovery scanning has started.
-    protected boolean mStarted = false;
-
-    /**
-     * Check if scanning has started.
-     * @return indicates if scanning has started.
-     */
-    public boolean isStarted() {
-        return mStarted;
-    }
-
-    /**
-     * Start scanning
-     * @return indicates if succeefully started.
-     */
-    public abstract boolean startScan();
-
-    /**
-     * Stop scanning
-     * @return indicates if succeefully stopped.
-     */
-    public abstract boolean stopScan();
 }

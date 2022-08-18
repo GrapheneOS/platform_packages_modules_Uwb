@@ -34,8 +34,9 @@ import com.android.modules.utils.HandlerExecutor;
 import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.data.ServiceProfileData.ServiceProfileInfo;
 import com.android.server.uwb.data.UwbConfig;
+import com.android.server.uwb.discovery.DiscoveryProvider;
+import com.android.server.uwb.discovery.DiscoveryProviderFactory;
 import com.android.server.uwb.discovery.DiscoveryScanProvider;
-import com.android.server.uwb.discovery.DiscoveryScanService;
 import com.android.server.uwb.discovery.TransportClientProvider;
 import com.android.server.uwb.discovery.TransportProviderFactory;
 import com.android.server.uwb.discovery.info.DiscoveryInfo;
@@ -112,7 +113,7 @@ public class PacsControllerSession extends RangingSessionController {
         return new EndSessionState();
     }
 
-    private DiscoveryScanService mDiscoveryScanService;
+    private DiscoveryProvider mDiscoveryProvider;
     private DiscoveryInfo mDiscoveryInfo;
     private TransportClientProvider mTransportClientProvider;
     private SecureSession mSecureSession;
@@ -142,20 +143,20 @@ public class PacsControllerSession extends RangingSessionController {
                         Optional.empty(),
                         Optional.empty());
 
-        mDiscoveryScanService =
-                new DiscoveryScanService(
+        mDiscoveryProvider =
+                DiscoveryProviderFactory.createScanner(
                         mSessionInfo.mAttributionSource,
                         mSessionInfo.mContext,
                         new HandlerExecutor(mHandler),
                         mDiscoveryInfo,
                         mScanCallback);
-        mDiscoveryScanService.startDiscovery();
+        mDiscoveryProvider.start();
     }
 
     /** Stop scanning on ranging stopped or closed */
     public void stopScan() {
-        if (mDiscoveryScanService != null) {
-            mDiscoveryScanService.stopDiscovery();
+        if (mDiscoveryProvider != null) {
+            mDiscoveryProvider.stop();
         }
     }
 
