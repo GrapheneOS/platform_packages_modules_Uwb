@@ -22,6 +22,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.android.server.uwb.discovery.Transport;
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
 import com.android.server.uwb.secure.csml.InitiateTransactionCommand;
 import com.android.server.uwb.secure.csml.InitiateTransactionResponse;
@@ -29,7 +30,6 @@ import com.android.server.uwb.secure.csml.SelectAdfCommand;
 import com.android.server.uwb.secure.csml.SelectAdfResponse;
 import com.android.server.uwb.secure.csml.TunnelCommand;
 import com.android.server.uwb.secure.csml.TunnelResponse;
-import com.android.server.uwb.transport.Transport;
 import com.android.server.uwb.util.ObjectIdentifier;
 
 import java.io.IOException;
@@ -39,7 +39,8 @@ import java.util.Optional;
 class InitiatorSecureChannel extends FiRaSecureChannel {
     private static final String LOG_TAG = "InitiatorSecureChannel";
 
-    InitiatorSecureChannel(@NonNull SecureElementChannel secureElementChannel,
+    InitiatorSecureChannel(
+            @NonNull SecureElementChannel secureElementChannel,
             @NonNull Transport transport,
             @NonNull Looper workLooper,
             @NonNull RunningProfileSessionInfo runningProfileSessionInfo) {
@@ -57,7 +58,8 @@ class InitiatorSecureChannel extends FiRaSecureChannel {
             case CMD_OPEN_CHANNEL:
                 if (mSecureElementChannel.openChannel()) {
                     if (mRunningProfileSessionInfo.getSecureBlob().isPresent()) {
-                        if (!swapInAdf(mRunningProfileSessionInfo.getSecureBlob().get(),
+                        if (!swapInAdf(
+                                mRunningProfileSessionInfo.getSecureBlob().get(),
                                 mRunningProfileSessionInfo.getOidOfProvisionedAdf(),
                                 mRunningProfileSessionInfo.getControlleeInfo().toBytes())) {
                             mSecureChannelCallback.onSetUpError(SetupError.OPEN_SE_CHANNEL);
@@ -69,13 +71,11 @@ class InitiatorSecureChannel extends FiRaSecureChannel {
                     mSecureChannelCallback.onSetUpError(SetupError.OPEN_SE_CHANNEL);
                     return;
                 }
-                mWorkHandler.sendMessage(
-                        mWorkHandler.obtainMessage(CMD_SELECT_ADF));
+                mWorkHandler.sendMessage(mWorkHandler.obtainMessage(CMD_SELECT_ADF));
                 break;
             case CMD_SELECT_ADF:
                 if (selectAdf(mRunningProfileSessionInfo.getOidOfProvisionedAdf())) {
-                    mWorkHandler.sendMessage(
-                            mWorkHandler.obtainMessage(CMD_INITIATE_TRANSACTION));
+                    mWorkHandler.sendMessage(mWorkHandler.obtainMessage(CMD_INITIATE_TRANSACTION));
                     mStatus = Status.ADF_SELECTED;
                 } else {
                     mSecureChannelCallback.onSetUpError(SetupError.SELECT_ADF);
@@ -88,8 +88,7 @@ class InitiatorSecureChannel extends FiRaSecureChannel {
                 }
 
                 execInitiateTransactionCmd(
-                        mRunningProfileSessionInfo.getSelectableOidsOfPeerDevice(),
-                        uwbSessionId);
+                        mRunningProfileSessionInfo.getSelectableOidsOfPeerDevice(), uwbSessionId);
                 break;
             default:
                 super.handleScMessage(msg);
@@ -111,17 +110,15 @@ class InitiatorSecureChannel extends FiRaSecureChannel {
         return true;
     }
 
-    private void execInitiateTransactionCmd(@NonNull List<ObjectIdentifier> adfOids,
-            @NonNull Optional<Integer> uwbSessionId) {
+    private void execInitiateTransactionCmd(
+            @NonNull List<ObjectIdentifier> adfOids, @NonNull Optional<Integer> uwbSessionId) {
 
         InitiateTransactionCommand initiateTransactionCmd;
         if (uwbSessionId.isPresent()) {
             initiateTransactionCmd =
-                    InitiateTransactionCommand
-                            .buildForMulticast(adfOids, uwbSessionId.get());
+                    InitiateTransactionCommand.buildForMulticast(adfOids, uwbSessionId.get());
         } else {
-            initiateTransactionCmd =
-                    InitiateTransactionCommand.buildForUnicast(adfOids);
+            initiateTransactionCmd = InitiateTransactionCommand.buildForUnicast(adfOids);
         }
         try {
             InitiateTransactionResponse response =
@@ -134,8 +131,9 @@ class InitiatorSecureChannel extends FiRaSecureChannel {
             // must have outbound data, otherwise the flow is stopped.
             if (response.outboundDataToRemoteApplet.isPresent()
                     && !response.outboundDataToRemoteApplet.isEmpty()) {
-                mWorkHandler.sendMessage(mWorkHandler.obtainMessage(CMD_SEND_OOB_DATA,
-                        response.outboundDataToRemoteApplet.get()));
+                mWorkHandler.sendMessage(
+                        mWorkHandler.obtainMessage(
+                                CMD_SEND_OOB_DATA, response.outboundDataToRemoteApplet.get()));
             } else {
                 throw new IllegalStateException("No outbound data for InitiateTransaction CMD");
             }
@@ -145,31 +143,34 @@ class InitiatorSecureChannel extends FiRaSecureChannel {
     }
 
     @Override
-    void tunnelToRemoteDevice(@NonNull byte[] data,
-            @NonNull ExternalRequestCallback externalRequestCallback) {
-        mWorkHandler.post(() -> {
-            if (mStatus != Status.ESTABLISHED) {
-                externalRequestCallback.onFailure();
-                return;
-            }
+    void tunnelToRemoteDevice(
+            @NonNull byte[] data, @NonNull ExternalRequestCallback externalRequestCallback) {
+        mWorkHandler.post(
+                () -> {
+                    if (mStatus != Status.ESTABLISHED) {
+                        externalRequestCallback.onFailure();
+                        return;
+                    }
 
-            TunnelCommand tunnelCmd = TunnelCommand.build(data);
-            try {
-                TunnelResponse response = TunnelResponse.fromResponseApdu(
-                        mSecureElementChannel.transmit(tunnelCmd));
-                if (response.isSuccess() && response.outboundDataOrApdu.isPresent()) {
-                    mWorkHandler.sendMessage(
-                            mWorkHandler.obtainMessage(CMD_SEND_OOB_DATA,
-                                    response.outboundDataOrApdu.get()));
-                    externalRequestCallback.onSuccess();
-                } else {
-                    throw new IllegalStateException("Tunnel CMD error: " + response.statusWord);
-                }
-            } catch (IOException | IllegalStateException e) {
-                logw("Exception for TUNNEL command: " + e);
-                externalRequestCallback.onFailure();
-            }
-        });
+                    TunnelCommand tunnelCmd = TunnelCommand.build(data);
+                    try {
+                        TunnelResponse response =
+                                TunnelResponse.fromResponseApdu(
+                                        mSecureElementChannel.transmit(tunnelCmd));
+                        if (response.isSuccess() && response.outboundDataOrApdu.isPresent()) {
+                            mWorkHandler.sendMessage(
+                                    mWorkHandler.obtainMessage(
+                                            CMD_SEND_OOB_DATA, response.outboundDataOrApdu.get()));
+                            externalRequestCallback.onSuccess();
+                        } else {
+                            throw new IllegalStateException(
+                                    "Tunnel CMD error: " + response.statusWord);
+                        }
+                    } catch (IOException | IllegalStateException e) {
+                        logw("Exception for TUNNEL command: " + e);
+                        externalRequestCallback.onFailure();
+                    }
+                });
     }
 
     private void logw(@NonNull String dbgMsg) {

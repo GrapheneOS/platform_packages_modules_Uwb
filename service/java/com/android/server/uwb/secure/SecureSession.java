@@ -74,7 +74,8 @@ public abstract class SecureSession {
                 }
             };
 
-    SecureSession(@NonNull Looper workLooper,
+    SecureSession(
+            @NonNull Looper workLooper,
             @NonNull FiRaSecureChannel fiRaSecureChannel,
             @NonNull Callback sessionCallback,
             @NonNull RunningProfileSessionInfo runningProfileSessionInfo) {
@@ -114,8 +115,8 @@ public abstract class SecureSession {
          *                            terminate the session accordingly.
          */
         // TODO: what if the 1 to m case? is this sub sessionId ?
-        void onSessionDataReady(int updatedSessionId,
-                @Nullable byte[] sessionData, boolean isSessionTerminated);
+        void onSessionDataReady(
+                int updatedSessionId, @Nullable byte[] sessionData, boolean isSessionTerminated);
 
         /**
          * Something wrong, the session is aborted.

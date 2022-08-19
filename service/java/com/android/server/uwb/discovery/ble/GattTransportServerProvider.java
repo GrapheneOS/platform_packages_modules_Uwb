@@ -253,7 +253,9 @@ public class GattTransportServerProvider extends TransportServerProvider {
     public GattTransportServerProvider(
             AttributionSource attributionSource,
             Context context,
+            int secid,
             TransportServerCallback transportServerCallback) {
+        super(secid);
         Context attributedContext =
                 context.createContext(
                         new ContextParams.Builder()
@@ -272,6 +274,9 @@ public class GattTransportServerProvider extends TransportServerProvider {
 
     @Override
     public boolean start() {
+        if (!super.start()) {
+            return false;
+        }
         if (mBluetoothGattServer == null) {
             Log.w(TAG, "start failed due to mBluetoothGattServer is null.");
             return false;
@@ -284,6 +289,9 @@ public class GattTransportServerProvider extends TransportServerProvider {
 
     @Override
     public boolean stop() {
+        if (!super.stop()) {
+            return false;
+        }
         if (mBluetoothGattServer == null) {
             Log.w(TAG, "stop failed due to mBluetoothGattServer is null.");
             return false;
@@ -416,7 +424,7 @@ public class GattTransportServerProvider extends TransportServerProvider {
             return false;
         }
 
-        mTransportServerCallback.onMessage(latestDataPacket.secid, message);
+        super.onMessageReceived(latestDataPacket.secid, message);
         return true;
     }
 

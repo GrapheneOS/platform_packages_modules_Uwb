@@ -34,7 +34,8 @@ import com.android.server.uwb.util.DataTypeConversionUtil;
 public class ControlleeResponderSession extends ResponderSession {
     private static final String LOG_TAG = "ControlleeResponder";
 
-    public ControlleeResponderSession(@NonNull Looper workLooper,
+    public ControlleeResponderSession(
+            @NonNull Looper workLooper,
             @NonNull FiRaSecureChannel fiRaSecureChannel,
             @NonNull Callback sessionCallback,
             @NonNull RunningProfileSessionInfo runningProfileSessionInfo) {
@@ -52,17 +53,17 @@ public class ControlleeResponderSession extends ResponderSession {
                     break;
                 case NOTIFICATION_EVENT_ID_RDS_AVAILABLE:
                     // Responder notification
-                    rdsAvailable =
-                            (DispatchResponse.RdsAvailableNotification) notification;
+                    rdsAvailable = (DispatchResponse.RdsAvailableNotification) notification;
                     break;
                 default:
-                    logw("Unexpected notification from dispatch response: "
-                            + notification.notificationEventId);
+                    logw(
+                            "Unexpected notification from dispatch response: "
+                                    + notification.notificationEventId);
             }
         }
         if (rdsAvailable != null) {
-            mSessionCallback.onSessionDataReady(rdsAvailable.sessionId,
-                    rdsAvailable.arbitraryData.get(), isSessionTerminated);
+            mSessionCallback.onSessionDataReady(
+                    rdsAvailable.sessionId, rdsAvailable.arbitraryData.get(), isSessionTerminated);
             return true;
         }
         return false;
@@ -70,8 +71,7 @@ public class ControlleeResponderSession extends ResponderSession {
 
     @Override
     protected void onUnsolicitedDataToHostReceived(@NonNull byte[] data) {
-        logd("unsolicited data received: "
-                + DataTypeConversionUtil.byteArrayToHexString(data));
+        logd("unsolicited data received: " + DataTypeConversionUtil.byteArrayToHexString(data));
     }
 
     private void logd(@NonNull String dbgMsg) {
