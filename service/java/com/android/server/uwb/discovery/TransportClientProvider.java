@@ -15,16 +15,13 @@
  */
 package com.android.server.uwb.discovery;
 
-import android.util.Log;
-
 import androidx.annotation.WorkerThread;
 
 import com.android.server.uwb.discovery.info.FiraConnectorCapabilities;
-import com.android.server.uwb.discovery.info.FiraConnectorMessage;
 
 /** Abstract class for Transport Client Provider */
 @WorkerThread
-public abstract class TransportClientProvider {
+public abstract class TransportClientProvider extends TransportProvider {
     private static final String TAG = TransportClientProvider.class.getSimpleName();
 
     public enum TerminationReason {
@@ -58,63 +55,11 @@ public abstract class TransportClientProvider {
          * @param reason indicates the termination reason.
          */
         void onTerminated(TerminationReason reason);
-
-        /**
-         * Called when the client received a new FiRa connector message from the remote device.
-         *
-         * @param secid destination SECID on this device.
-         * @param message FiRa connector message.
-         */
-        void onMessageReceived(int secid, FiraConnectorMessage message);
     }
 
-    /* Indicates whether the client has started.
-     */
-    protected boolean mStarted = false;
-
-    /**
-     * Checks if the client has started.
-     *
-     * @return indicates if the client has started.
-     */
-    public boolean isStarted() {
-        return mStarted;
+    protected TransportClientProvider(int secid) {
+        super(secid);
     }
-
-    /**
-     * Starts the transport client.
-     *
-     * @return indicates if successfully started.
-     */
-    public boolean start() {
-        if (isStarted()) {
-            Log.i(TAG, "Transport client already started.");
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * Stops the transport client.
-     *
-     * @return indicates if successfully stopped.
-     */
-    public boolean stop() {
-        if (!isStarted()) {
-            Log.i(TAG, "Transport client already stopped.");
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * Send a FiRa connector message to the remote device.
-     *
-     * @param secid destination SECID on remote device.
-     * @param message message to be send.
-     * @return indicates if successfully started.
-     */
-    public abstract boolean sendMessage(int secid, FiraConnectorMessage message);
 
     /**
      * Set and sent new FiRa connector capabilites.

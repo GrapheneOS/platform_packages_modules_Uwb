@@ -39,7 +39,8 @@ public class ControlleeInitiatorSession extends InitiatorSession {
     private static final String LOG_TAG = "ControlleeInitiater";
     private static final int GET_SESSION_DATA_RETRY_DELAY_MILLS = 100;
 
-    public ControlleeInitiatorSession(@NonNull Looper workLooper,
+    public ControlleeInitiatorSession(
+            @NonNull Looper workLooper,
             @NonNull FiRaSecureChannel fiRaSecureChannel,
             @NonNull Callback sessionCallback,
             @NonNull RunningProfileSessionInfo runningProfileSessionInfo) {
@@ -48,14 +49,14 @@ public class ControlleeInitiatorSession extends InitiatorSession {
 
     private void sendPutControlleeInfoCommand() {
         // TODO: construct data
-        byte[] data = new byte[]{ (byte) 0x0A, (byte) 0x0B };
+        byte[] data = new byte[] {(byte) 0x0A, (byte) 0x0B};
         tunnelData(MSG_ID_PUT_CONTROLLEE_INFO, data);
     }
 
     private void sendGetControlleeSessionData() {
         logd("send get controllee session data msg.");
         // TODO: construct data
-        byte[] data = new byte[]{(byte) 0x0C, (byte) 0x0D};
+        byte[] data = new byte[] {(byte) 0x0C, (byte) 0x0D};
         tunnelData(MSG_ID_GET_SESSION_DATA, data);
     }
 
@@ -65,8 +66,8 @@ public class ControlleeInitiatorSession extends InitiatorSession {
     }
 
     @Override
-    protected boolean handleTunnelDataResponseReceived(int msgId,
-            @NonNull DispatchResponse response) {
+    protected boolean handleTunnelDataResponseReceived(
+            int msgId, @NonNull DispatchResponse response) {
         switch (msgId) {
             case MSG_ID_PUT_CONTROLLEE_INFO:
                 return handlePutControlleeInfoResponse(response);
@@ -82,10 +83,12 @@ public class ControlleeInitiatorSession extends InitiatorSession {
     private boolean handlePutControlleeInfoResponse(@NonNull DispatchResponse dispatchResponse) {
         if (dispatchResponse.getOutboundData().isPresent()) {
             DispatchResponse.OutboundData outboundData = dispatchResponse.getOutboundData().get();
-            if (outboundData.target == OUTBOUND_TARGET_HOST && outboundData.data != null
+            if (outboundData.target == OUTBOUND_TARGET_HOST
+                    && outboundData.data != null
                     && outboundData.data.length < 5) {
-                StatusWord statusWord = StatusWord.fromInt(
-                        DataTypeConversionUtil.arbitraryByteArrayToI32(outboundData.data));
+                StatusWord statusWord =
+                        StatusWord.fromInt(
+                                DataTypeConversionUtil.arbitraryByteArrayToI32(outboundData.data));
                 logd("dispatch response sw: " + statusWord);
                 if (statusWord.equals(StatusWord.SW_NO_ERROR)) {
                     mWorkHandler.post(() -> sendGetControlleeSessionData());
@@ -116,25 +119,24 @@ public class ControlleeInitiatorSession extends InitiatorSession {
                     isSessionTerminated = true;
                     break;
                 case NOTIFICATION_EVENT_ID_RDS_AVAILABLE:
-                    rdsAvailable =
-                            (DispatchResponse.RdsAvailableNotification) notification;
+                    rdsAvailable = (DispatchResponse.RdsAvailableNotification) notification;
                     break;
                 default:
-                    logw("Unexpected notification from dispatch response: "
-                            + notification.notificationEventId);
+                    logw(
+                            "Unexpected notification from dispatch response: "
+                                    + notification.notificationEventId);
             }
         }
 
         if (rdsAvailable != null) {
             // TODO: is the session ID for the sub session if it is 1 to m case?
-            mSessionCallback.onSessionDataReady(rdsAvailable.sessionId,
-                    rdsAvailable.arbitraryData.get(),
-                    isSessionTerminated);
+            mSessionCallback.onSessionDataReady(
+                    rdsAvailable.sessionId, rdsAvailable.arbitraryData.get(), isSessionTerminated);
             return true;
         } else if (CsmlUtil.isSessionDataNotAvailable(
                 dispatchResponse.getOutboundData().get().data)) {
-            mWorkHandler.postDelayed(() -> sendGetControlleeSessionData(),
-                    GET_SESSION_DATA_RETRY_DELAY_MILLS);
+            mWorkHandler.postDelayed(
+                    () -> sendGetControlleeSessionData(), GET_SESSION_DATA_RETRY_DELAY_MILLS);
             return true;
         }
         logw("unexpected dispatch response for get session data");
@@ -161,6 +163,7 @@ public class ControlleeInitiatorSession extends InitiatorSession {
     private void logd(@NonNull String debugMsg) {
         Log.d(LOG_TAG, debugMsg);
     }
+
     private void logw(@NonNull String debugMsg) {
         Log.w(LOG_TAG, debugMsg);
     }

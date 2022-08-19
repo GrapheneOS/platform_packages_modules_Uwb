@@ -40,7 +40,8 @@ import java.util.Optional;
 public class ControllerResponderSession extends ResponderSession {
     private static final String LOG_TAG = "ControllerResponder";
 
-    public ControllerResponderSession(@NonNull Looper workLooper,
+    public ControllerResponderSession(
+            @NonNull Looper workLooper,
             @NonNull FiRaSecureChannel fiRaSecureChannel,
             @NonNull Callback sessionCallback,
             @NonNull RunningProfileSessionInfo runningProfileSessionInfo) {
@@ -59,26 +60,26 @@ public class ControllerResponderSession extends ResponderSession {
                     break;
                 case NOTIFICATION_EVENT_ID_RDS_AVAILABLE:
                     // Responder notification
-                    rdsAvailable =
-                            (DispatchResponse.RdsAvailableNotification) notification;
+                    rdsAvailable = (DispatchResponse.RdsAvailableNotification) notification;
                     break;
                 case NOTIFICATION_EVENT_ID_CONTROLLEE_INFO_AVAILABLE:
                     controlleeInfoAvailable =
                             (DispatchResponse.ControlleeInfoAvailableNotification) notification;
                     break;
                 default:
-                    logw("Unexpected nofitication from dispatch response: "
-                            + notification.notificationEventId);
+                    logw(
+                            "Unexpected nofitication from dispatch response: "
+                                    + notification.notificationEventId);
             }
         }
         if (controlleeInfoAvailable != null) {
-            handleControlleeInfoAvailable(ControlleeInfo.fromBytes(
-                    controlleeInfoAvailable.controlleeInfo));
+            handleControlleeInfoAvailable(
+                    ControlleeInfo.fromBytes(controlleeInfoAvailable.controlleeInfo));
             return true;
         }
         if (rdsAvailable != null) {
-            mSessionCallback.onSessionDataReady(rdsAvailable.sessionId,
-                    rdsAvailable.arbitraryData.get(), isSessionTerminated);
+            mSessionCallback.onSessionDataReady(
+                    rdsAvailable.sessionId, rdsAvailable.arbitraryData.get(), isSessionTerminated);
             return true;
         }
         return false;
@@ -94,7 +95,8 @@ public class ControllerResponderSession extends ResponderSession {
         // send session data to the applet.
         // TODO: construct put session data.
         CommandApdu commandApdu = null;
-        mFiRaSecureChannel.sendLocalCommandApdu(commandApdu,
+        mFiRaSecureChannel.sendLocalCommandApdu(
+                commandApdu,
                 new FiRaSecureChannel.ExternalRequestCallback() {
                     @Override
                     public void onSuccess() {
@@ -111,8 +113,7 @@ public class ControllerResponderSession extends ResponderSession {
 
     @Override
     protected void onUnsolicitedDataToHostReceived(@NonNull byte[] data) {
-        logd("unsolicited data received: "
-                + DataTypeConversionUtil.byteArrayToHexString(data));
+        logd("unsolicited data received: " + DataTypeConversionUtil.byteArrayToHexString(data));
     }
 
     private void logd(@NonNull String dbgMsg) {

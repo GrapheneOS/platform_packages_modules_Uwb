@@ -59,6 +59,7 @@ import java.util.concurrent.Executor;
 public class TransportProviderFactoryTest {
 
     private static final Executor EXECUTOR = UwbTestUtils.getExecutor();
+    private static final int SECID = 2;
 
     @Mock AttributionSource mMockAttributionSource;
     @Mock Context mMockContext;
@@ -98,28 +99,30 @@ public class TransportProviderFactoryTest {
 
     @Test
     public void testServerStart() {
-        TransportServerProvider privder =
+        TransportServerProvider provider =
                 TransportProviderFactory.createServer(
                         mMockAttributionSource,
                         mMockContext,
+                        SECID,
                         mDiscoveryInfo,
                         mMockTransportServerCallback);
 
-        assertThat(privder).isNotNull();
-        assertThat(privder.start()).isTrue();
+        assertThat(provider).isNotNull();
+        assertThat(provider.start()).isTrue();
     }
 
     @Test
     public void testClientStart() {
-        TransportClientProvider privder =
+        TransportClientProvider provider =
                 TransportProviderFactory.createClient(
                         mMockAttributionSource,
                         mMockContext,
                         EXECUTOR,
+                        SECID,
                         mDiscoveryInfo,
                         mMockTransportClientCallback);
 
-        assertThat(privder).isNotNull();
-        assertThat(privder.start()).isTrue();
+        assertThat(provider).isNotNull();
+        assertThat(provider.start()).isTrue();
     }
 }

@@ -48,6 +48,7 @@ import android.uwb.UwbTestUtils;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.server.uwb.discovery.Transport.DataReceiver;
 import com.android.server.uwb.discovery.TransportClientProvider.TerminationReason;
 import com.android.server.uwb.discovery.TransportClientProvider.TransportClientCallback;
 import com.android.server.uwb.discovery.info.FiraConnectorCapabilities;
@@ -79,7 +80,7 @@ public class GattTransportClientProviderTest {
 
     private static final Executor EXECUTOR = UwbTestUtils.getExecutor();
 
-    private static final int SECID = 10;
+    private static final int SECID = 2;
     private static final byte[] MESSAGE_PAYLOAD1 = new byte[] {(byte) 0xF4, 0x00, 0x40};
     private static final FiraConnectorMessage MESSAGE =
             new FiraConnectorMessage(
@@ -128,6 +129,7 @@ public class GattTransportClientProviderTest {
     @Mock BluetoothDevice mMockBluetoothDevice;
     @Mock BluetoothGatt mMockBluetoothGatt;
     @Mock BluetoothGattService mMockBluetoothGattService;
+    @Mock DataReceiver mMockDataReceiver;
 
     private TransportClientInfo mTransportClientInfo;
     private GattTransportClientProvider mGattTransportClientProvider;
@@ -169,8 +171,10 @@ public class GattTransportClientProviderTest {
                         mMockAttributionSource,
                         mMockContext,
                         EXECUTOR,
+                        SECID,
                         mTransportClientInfo,
                         mMockTransportClientCallback);
+        mGattTransportClientProvider.registerDataReceiver(mMockDataReceiver);
         assertThat(mOutCharacterstic.addDescriptor(mCccdDescriptor)).isTrue();
     }
 
@@ -587,11 +591,9 @@ public class GattTransportClientProviderTest {
 
         verify(mMockBluetoothGatt, times(1))
                 .readCharacteristic(argThat(new CharacteristicMatcher(mOutCharacterstic)));
-        ArgumentCaptor<FiraConnectorMessage> captor =
-                ArgumentCaptor.forClass(FiraConnectorMessage.class);
-        verify(mMockTransportClientCallback, times(1))
-                .onMessageReceived(eq(SECID), captor.capture());
-        assertThat(captor.getValue().toString()).isEqualTo(MESSAGE.toString());
+        ArgumentCaptor<byte[]> captor = ArgumentCaptor.forClass(byte[].class);
+        verify(mMockDataReceiver, times(1)).onDataReceived(captor.capture());
+        assertThat(captor.getValue()).isEqualTo(MESSAGE.payload);
     }
 
     @Test
@@ -630,10 +632,8 @@ public class GattTransportClientProviderTest {
 
         verify(mMockBluetoothGatt, times(3))
                 .readCharacteristic(argThat(new CharacteristicMatcher(mOutCharacterstic)));
-        ArgumentCaptor<FiraConnectorMessage> captor =
-                ArgumentCaptor.forClass(FiraConnectorMessage.class);
-        verify(mMockTransportClientCallback, times(1))
-                .onMessageReceived(eq(SECID), captor.capture());
-        assertThat(captor.getValue().toString()).isEqualTo(message.toString());
+        ArgumentCaptor<byte[]> captor = ArgumentCaptor.forClass(byte[].class);
+        verify(mMockDataReceiver, times(1)).onDataReceived(captor.capture());
+        assertThat(captor.getValue()).isEqualTo(message.payload);
     }
 }

@@ -64,9 +64,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 
-/**
- * Unit test for {@link BleDiscoveryScanProvider}
- */
+/** Unit test for {@link BleDiscoveryScanProvider} */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 public class BleDiscoveryScanProviderTest {
@@ -116,7 +114,7 @@ public class BleDiscoveryScanProviderTest {
                                 new ScanSettings.Builder().setReportDelay(10).build()),
                         mMockDiscoveryScanCallback);
 
-        assertThat(mBleDiscoveryScanProvider.startScan()).isTrue();
+        assertThat(mBleDiscoveryScanProvider.start()).isTrue();
         verify(mMockBluetoothLeScanner, times(1)).startScan(any(), any(), any(ScanCallback.class));
     }
 
@@ -124,7 +122,7 @@ public class BleDiscoveryScanProviderTest {
     public void testStartScan_failedBTUnavailable() {
         when(mMockBluetoothManager.getAdapter()).thenReturn(null);
 
-        assertThat(mBleDiscoveryScanProvider.startScan()).isFalse();
+        assertThat(mBleDiscoveryScanProvider.start()).isFalse();
         verify(mMockBluetoothLeScanner, never()).startScan(any(), any(), any(ScanCallback.class));
     }
 
@@ -133,7 +131,7 @@ public class BleDiscoveryScanProviderTest {
         when(mMockBluetoothManager.getAdapter()).thenReturn(mMockBluetoothAdapter);
         when(mMockBluetoothAdapter.getBluetoothLeScanner()).thenReturn(null);
 
-        assertThat(mBleDiscoveryScanProvider.startScan()).isFalse();
+        assertThat(mBleDiscoveryScanProvider.start()).isFalse();
         verify(mMockBluetoothLeScanner, never()).startScan(any(), any(), any(ScanCallback.class));
     }
 
@@ -145,7 +143,7 @@ public class BleDiscoveryScanProviderTest {
                 .when(mMockBluetoothLeScanner)
                 .startScan(any(), any(), any(ScanCallback.class));
 
-        assertThat(mBleDiscoveryScanProvider.startScan()).isFalse();
+        assertThat(mBleDiscoveryScanProvider.start()).isFalse();
         verify(mMockBluetoothLeScanner, times(1)).startScan(any(), any(), any(ScanCallback.class));
     }
 
@@ -153,7 +151,7 @@ public class BleDiscoveryScanProviderTest {
     public void testStopScan_failedBTUnavailable() {
         when(mMockBluetoothManager.getAdapter()).thenReturn(null);
 
-        assertThat(mBleDiscoveryScanProvider.stopScan()).isFalse();
+        assertThat(mBleDiscoveryScanProvider.stop()).isFalse();
         verify(mMockBluetoothLeScanner, never()).stopScan(any(ScanCallback.class));
     }
 
@@ -162,7 +160,7 @@ public class BleDiscoveryScanProviderTest {
         when(mMockBluetoothManager.getAdapter()).thenReturn(mMockBluetoothAdapter);
         when(mMockBluetoothAdapter.getBluetoothLeScanner()).thenReturn(null);
 
-        assertThat(mBleDiscoveryScanProvider.stopScan()).isFalse();
+        assertThat(mBleDiscoveryScanProvider.stop()).isFalse();
         verify(mMockBluetoothLeScanner, never()).stopScan(any(ScanCallback.class));
     }
 
@@ -185,7 +183,7 @@ public class BleDiscoveryScanProviderTest {
                 .when(mMockBluetoothLeScanner)
                 .startScan(any(), any(), any(ScanCallback.class));
 
-        assertThat(mBleDiscoveryScanProvider.startScan()).isTrue();
+        assertThat(mBleDiscoveryScanProvider.start()).isTrue();
         verify(mMockBluetoothLeScanner, times(1)).startScan(any(), any(), any(ScanCallback.class));
         verify(mMockDiscoveryScanCallback, times(1))
                 .onDiscoveryFailed(ScanCallback.SCAN_FAILED_ALREADY_STARTED);
@@ -223,7 +221,7 @@ public class BleDiscoveryScanProviderTest {
                 .when(mMockBluetoothLeScanner)
                 .startScan(any(), any(), any(ScanCallback.class));
 
-        assertThat(mBleDiscoveryScanProvider.startScan()).isTrue();
+        assertThat(mBleDiscoveryScanProvider.start()).isTrue();
         verify(mMockBluetoothLeScanner, times(1)).startScan(any(), any(), any(ScanCallback.class));
         verifyZeroInteractions(mMockDiscoveryScanCallback);
     }
@@ -263,7 +261,7 @@ public class BleDiscoveryScanProviderTest {
                 .when(mMockBluetoothLeScanner)
                 .startScan(any(), any(), any(ScanCallback.class));
 
-        assertThat(mBleDiscoveryScanProvider.startScan()).isTrue();
+        assertThat(mBleDiscoveryScanProvider.start()).isTrue();
     }
 
     @Test
@@ -271,7 +269,8 @@ public class BleDiscoveryScanProviderTest {
         ScanRecord scanRecord =
                 parseScanRecord(
                         new byte[] {
-                            0x02, 0x01, 0x1a, // advertising flags
+                            // advertising flags
+                            0x02, 0x01, 0x1a,
                         });
         ScanResult scanResult =
                 new ScanResult(
@@ -296,10 +295,22 @@ public class BleDiscoveryScanProviderTest {
         ScanRecord scanRecord =
                 parseScanRecord(
                         new byte[] {
-                            0x02, 0x01, 0x1a, // advertising flags
-                            0x03, 0x03, (byte) 0xF3, (byte) 0xFF, // 16 bit service uuids
+                            // advertising flags
+                            0x02,
+                            0x01,
+                            0x1a,
+                            // 16 bit service uuids
+                            0x03,
+                            0x03,
+                            (byte) 0xF3,
+                            (byte) 0xFF,
                             // service data, invalid indication data length
-                            0x05, 0x16, (byte) 0xF3, (byte) 0xFF, 0x12, (byte) 0b11101001,
+                            0x05,
+                            0x16,
+                            (byte) 0xF3,
+                            (byte) 0xFF,
+                            0x12,
+                            (byte) 0b11101001,
                         });
         ScanResult scanResult =
                 new ScanResult(
@@ -324,10 +335,22 @@ public class BleDiscoveryScanProviderTest {
         ScanRecord scanRecord =
                 parseScanRecord(
                         new byte[] {
-                            0x02, 0x01, 0x1a, // advertising flags
-                            0x03, 0x03, (byte) 0xF3, (byte) 0xFF, // 16 bit service uuids
+                            // advertising flags
+                            0x02,
+                            0x01,
+                            0x1a,
+                            // 16 bit service uuids
+                            0x03,
+                            0x03,
+                            (byte) 0xF3,
+                            (byte) 0xFF,
                             // service data, rssi threhold=-100
-                            0x06, 0x16, (byte) 0xF3, (byte) 0xFF, 0x12, (byte) 0b11101001,
+                            0x06,
+                            0x16,
+                            (byte) 0xF3,
+                            (byte) 0xFF,
+                            0x12,
+                            (byte) 0b11101001,
                             (byte) 0x9C,
                         });
         ScanResult scanResult =
@@ -352,13 +375,30 @@ public class BleDiscoveryScanProviderTest {
         ScanRecord scanRecord =
                 parseScanRecord(
                         new byte[] {
-                            0x02, 0x01, 0x1a, // advertising flags
-                            0x03, 0x03, (byte) 0xF3, (byte) 0xFF, // 16 bit service uuids
+                            // advertising flags
+                            0x02,
+                            0x01,
+                            0x1a,
+                            // 16 bit service uuids
+                            0x03,
+                            0x03,
+                            (byte) 0xF3,
+                            (byte) 0xFF,
                             // service data, rssi threhold=-100
-                            0x06, 0x16, (byte) 0xF3, (byte) 0xFF, 0x12, (byte) 0b11101001,
+                            0x06,
+                            0x16,
+                            (byte) 0xF3,
+                            (byte) 0xFF,
+                            0x12,
+                            (byte) 0b11101001,
                             (byte) 0x9C,
                             // manufacturer specific data
-                            0x05, (byte) 0xff, 0x75, 0x00, 0x02, 0x15,
+                            0x05,
+                            (byte) 0xff,
+                            0x75,
+                            0x00,
+                            0x02,
+                            0x15,
                         });
         ScanResult scanResult =
                 new ScanResult(

@@ -34,7 +34,8 @@ import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.data.ServiceProfileData.ServiceProfileInfo;
 import com.android.server.uwb.data.UwbConfig;
 import com.android.server.uwb.discovery.DiscoveryAdvertiseProvider;
-import com.android.server.uwb.discovery.DiscoveryAdvertiseService;
+import com.android.server.uwb.discovery.DiscoveryProvider;
+import com.android.server.uwb.discovery.DiscoveryProviderFactory;
 import com.android.server.uwb.discovery.TransportProviderFactory;
 import com.android.server.uwb.discovery.TransportServerProvider;
 import com.android.server.uwb.discovery.ble.DiscoveryAdvertisement;
@@ -42,7 +43,6 @@ import com.android.server.uwb.discovery.info.AdvertiseInfo;
 import com.android.server.uwb.discovery.info.DiscoveryInfo;
 import com.android.server.uwb.secure.SecureFactory;
 import com.android.server.uwb.secure.SecureSession;
-import com.android.server.uwb.transport.Transport;
 import com.android.server.uwb.util.ObjectIdentifier;
 
 import java.nio.ByteBuffer;
@@ -56,7 +56,6 @@ public class PacsControleeSession extends RangingSessionController {
     // TODO populate before calling secureSessionInit()
     private PacsControleeSessionInfo mControleeSessionInfo;
     private final PacsControleeSessionCallback mControleeSessionCallback;
-    private final Transport mControleeTransport;
     private final TransportServerProvider.TransportServerCallback mServerCallback;
 
     public PacsControleeSession(
@@ -80,8 +79,6 @@ public class PacsControleeSession extends RangingSessionController {
         mAdvertiseCallback = new PacsAdvertiseCallback(this);
         mControleeSessionInfo = new PacsControleeSessionInfo(this);
         mControleeSessionCallback = new PacsControleeSessionCallback(this);
-        // TODO: Modify based on OOB transport implementation
-        mControleeTransport = null;
         mServerCallback = null;
     }
 
@@ -115,20 +112,18 @@ public class PacsControleeSession extends RangingSessionController {
         return new EndSessionState();
     }
 
-    private DiscoveryAdvertiseService mDiscoveryAdvertiseService;
+    private DiscoveryProvider mDiscoveryProvider;
     private DiscoveryInfo mDiscoveryInfo;
     private TransportServerProvider mTransportServerProvider;
     private SecureSession mSecureSession;
     private DiscoveryAdvertisement mDiscoveryAdvertisement;
     private AdvertisingSetParameters mAdvertisingSetParameters;
 
-    public void setDiscoveryAdvertisement(
-            DiscoveryAdvertisement discoveryAdvertisement) {
+    public void setDiscoveryAdvertisement(DiscoveryAdvertisement discoveryAdvertisement) {
         mDiscoveryAdvertisement = discoveryAdvertisement;
     }
 
-    public void setAdvertisingSetParameters(
-            AdvertisingSetParameters advertisingSetParameters) {
+    public void setAdvertisingSetParameters(AdvertisingSetParameters advertisingSetParameters) {
         mAdvertisingSetParameters = advertisingSetParameters;
     }
 
@@ -137,38 +132,41 @@ public class PacsControleeSession extends RangingSessionController {
         AdvertiseInfo advertiseInfo =
                 new AdvertiseInfo(mAdvertisingSetParameters, mDiscoveryAdvertisement);
 
-        mDiscoveryInfo = new DiscoveryInfo(
-                DiscoveryInfo.TransportType.BLE,
-                Optional.empty(),
-                Optional.of(advertiseInfo),
-                Optional.empty());
+        mDiscoveryInfo =
+                new DiscoveryInfo(
+                        DiscoveryInfo.TransportType.BLE,
+                        Optional.empty(),
+                        Optional.of(advertiseInfo),
+                        Optional.empty());
 
-        mDiscoveryAdvertiseService =
-                new DiscoveryAdvertiseService(
+        mDiscoveryProvider =
+                DiscoveryProviderFactory.createAdvertiser(
                         mSessionInfo.mAttributionSource,
                         mSessionInfo.mContext,
                         new HandlerExecutor(mHandler),
                         mDiscoveryInfo,
                         mAdvertiseCallback);
-        mDiscoveryAdvertiseService.startDiscovery();
-        //sendMessage(TRANSPORT_INIT);
+        mDiscoveryProvider.start();
+        // sendMessage(TRANSPORT_INIT);
     }
 
     /** Stop advertising on ranging stopped or closed */
     public void stopAdvertising() {
-        if (mDiscoveryAdvertiseService != null) {
-            mDiscoveryAdvertiseService.stopDiscovery();
+        if (mDiscoveryProvider != null) {
+            mDiscoveryProvider.stop();
         }
     }
 
     /** Initialize Transport server */
     public void transportServerInit() {
-        mTransportServerProvider = TransportProviderFactory.createServer(
-                mSessionInfo.mAttributionSource,
-                mSessionInfo.mContext,
-                mDiscoveryInfo,
-                mServerCallback
-        );
+        mTransportServerProvider =
+                TransportProviderFactory.createServer(
+                        mSessionInfo.mAttributionSource,
+                        mSessionInfo.mContext,
+                        // TODO: Transport server supports auto assigning secid.
+                        /*secid placeholder*/ 2,
+                        mDiscoveryInfo,
+                        mServerCallback);
         sendMessage(TRANSPORT_STARTED);
     }
 
@@ -184,11 +182,13 @@ public class PacsControleeSession extends RangingSessionController {
 
     /** Initialize controlee responder session */
     public void secureSessionInit() {
-        mSecureSession = SecureFactory.makeResponderSecureSession(mSessionInfo.mContext,
-                mHandler.getLooper(),
-                mControleeSessionCallback,
-                mControleeSessionInfo,
-                mControleeTransport);
+        mSecureSession =
+                SecureFactory.makeResponderSecureSession(
+                        mSessionInfo.mContext,
+                        mHandler.getLooper(),
+                        mControleeSessionCallback,
+                        mControleeSessionInfo,
+                        mTransportServerProvider);
     }
 
     @Override
@@ -213,13 +213,12 @@ public class PacsControleeSession extends RangingSessionController {
         }
     }
 
-    public static class PacsControleeSessionInfo implements
-            RunningProfileSessionInfo {
+    /** Pacs profile controlee implementation of RunningProfileSessionInfo. */
+    public static class PacsControleeSessionInfo implements RunningProfileSessionInfo {
         public final PacsControleeSession mPacsControleeSession;
         private ControlleeInfo mControlleeInfo;
 
-        public PacsControleeSessionInfo(
-                PacsControleeSession pacsControleeSession) {
+        public PacsControleeSessionInfo(PacsControleeSession pacsControleeSession) {
             mPacsControleeSession = pacsControleeSession;
         }
 
@@ -243,10 +242,12 @@ public class PacsControleeSession extends RangingSessionController {
         @NonNull
         @Override
         public ObjectIdentifier getOidOfProvisionedAdf() {
-            byte[] bytes = ByteBuffer.allocate(4).putInt(mPacsControleeSession
-                    .mSessionInfo
-                    .mServiceProfileInfo
-                    .getServiceAdfID()).array();
+            byte[] bytes =
+                    ByteBuffer.allocate(4)
+                            .putInt(
+                                    mPacsControleeSession.mSessionInfo.mServiceProfileInfo
+                                            .getServiceAdfID())
+                            .array();
             return ObjectIdentifier.fromBytes(bytes);
         }
 
@@ -279,28 +280,25 @@ public class PacsControleeSession extends RangingSessionController {
         }
     }
 
-    public static class PacsControleeSessionCallback implements
-            SecureSession.Callback {
+    /** Pacs profile controlee implementation of SecureSession.Callback. */
+    public static class PacsControleeSessionCallback implements SecureSession.Callback {
         public final PacsControleeSession mPacsControleeSession;
 
-        public PacsControleeSessionCallback(
-                PacsControleeSession pacsControleeSession) {
+        public PacsControleeSessionCallback(PacsControleeSession pacsControleeSession) {
             mPacsControleeSession = pacsControleeSession;
         }
 
         @Override
-        public void onSessionDataReady(int updatedSessionId, @Nullable byte[] sessionData,
-                boolean isSessionTerminated) {
+        public void onSessionDataReady(
+                int updatedSessionId, @Nullable byte[] sessionData, boolean isSessionTerminated) {
             mPacsControleeSession.sendMessage(RANGING_INIT);
         }
 
         @Override
-        public void onSessionAborted() {
-        }
+        public void onSessionAborted() {}
 
         @Override
-        public void onSessionTerminated() {
-        }
+        public void onSessionTerminated() {}
     }
 
     public class IdleState extends State {

@@ -39,9 +39,7 @@ import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 
-/**
- * Unit test for {@link DiscoveryAdvertisement}
- */
+/** Unit test for {@link DiscoveryAdvertisement} */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 public class DiscoveryAdvertisementTest {
@@ -49,15 +47,39 @@ public class DiscoveryAdvertisementTest {
     private static final byte[] BYTES =
             new byte[] {
                 // UwbIndicationData
-                0x14, (byte) 0b11101001, (byte) 0x9C, (byte) 0xF1, 0x11,
+                0x14,
+                (byte) 0b11101001,
+                (byte) 0x9C,
+                (byte) 0xF1,
+                0x11,
                 // RegulatoryInfo
-                0x39, 0x41, 0x55, 0x53, 0x62, 0x1E, 0x3B, 0x7F, (byte) 0xD8, (byte) 0x9F,
+                0x39,
+                0x41,
+                0x55,
+                0x53,
+                0x62,
+                0x1E,
+                0x3B,
+                0x7F,
+                (byte) 0xD8,
+                (byte) 0x9F,
                 // FiraProfileSupportInfo
-                0x41, 0x1,
+                0x41,
+                0x1,
                 // VendorSpecificData
-                0x25, 0x75, 0x00, 0x10, (byte) 0xFF, 0x00,
+                0x25,
+                0x75,
+                0x00,
+                0x10,
+                (byte) 0xFF,
+                0x00,
                 // VendorSpecificData
-                0x25, 0x75, 0x00, 0x10, (byte) 0xFF, 0x00,
+                0x25,
+                0x75,
+                0x00,
+                0x10,
+                (byte) 0xFF,
+                0x00,
             };
     private static final byte[] UWB_INDICATION_DATA_BYTES =
             new byte[] {(byte) 0b11101001, (byte) 0x9C, (byte) 0xF1, 0x11};
@@ -69,11 +91,25 @@ public class DiscoveryAdvertisementTest {
     private static final byte[] BYTES_NO_VENDOR =
             new byte[] {
                 // UwbIndicationData
-                0x14, (byte) 0b11101001, (byte) 0x9C, (byte) 0xF1, 0x11,
+                0x14,
+                (byte) 0b11101001,
+                (byte) 0x9C,
+                (byte) 0xF1,
+                0x11,
                 // RegulatoryInfo
-                0x39, 0x41, 0x55, 0x53, 0x62, 0x1E, 0x3B, 0x7F, (byte) 0xD8, (byte) 0x9F,
+                0x39,
+                0x41,
+                0x55,
+                0x53,
+                0x62,
+                0x1E,
+                0x3B,
+                0x7F,
+                (byte) 0xD8,
+                (byte) 0x9F,
                 // FiraProfileSupportInfo
-                0x41, 0x1
+                0x41,
+                0x1
             };
 
     private static final DiscoveryAdvertisement ADVERTISEMENT =
@@ -125,16 +161,14 @@ public class DiscoveryAdvertisementTest {
     @Test
     public void fromBytes_dataEndedUnexpectedly() {
         // Specified field size is 0xF, actual size is 4.
-        byte[] bytes =
-                new byte[] {0x1F, 0x01, 0x01, 0x01, 0x01};
+        byte[] bytes = new byte[] {0x1F, 0x01, 0x01, 0x01, 0x01};
         assertThat(DiscoveryAdvertisement.fromBytes(bytes, null)).isNull();
     }
 
     @Test
     public void fromBytes_invalidFieldType() {
         // Specified field type is 0x9, expect 1-4
-        byte[] bytes =
-                new byte[] {(byte) 0x94, 0x01, 0x01, 0x01, 0x01};
+        byte[] bytes = new byte[] {(byte) 0x94, 0x01, 0x01, 0x01, 0x01};
         assertThat(DiscoveryAdvertisement.fromBytes(bytes, null)).isNull();
     }
 
@@ -142,8 +176,7 @@ public class DiscoveryAdvertisementTest {
     public void fromBytes_vendorSpecificDataExistedInBothAd() {
         // Vendor specific data should only be added to advertisement if not provided in the
         // manufacture data.
-        byte[] bytes =
-                new byte[] {0x24, 0x75, 0x00, 0x10, 0x20};
+        byte[] bytes = new byte[] {0x24, 0x75, 0x00, 0x10, 0x20};
         SparseArray<byte[]> vendorBytes = new SparseArray<byte[]>();
         vendorBytes.put(1, new byte[] {0x23, 0x75, 0x00, 0x10});
         assertThat(DiscoveryAdvertisement.fromBytes(bytes, vendorBytes)).isNull();
