@@ -15,6 +15,8 @@
  */
 package com.android.server.uwb.discovery;
 
+import android.util.Log;
+
 import androidx.annotation.WorkerThread;
 
 import com.android.server.uwb.discovery.info.FiraConnectorCapabilities;
@@ -23,6 +25,7 @@ import com.android.server.uwb.discovery.info.FiraConnectorMessage;
 /** Abstract class for Transport Server Provider */
 @WorkerThread
 public abstract class TransportServerProvider {
+    private static final String TAG = TransportServerProvider.class.getSimpleName();
 
     /** Callback for listening to transport server events. */
     @WorkerThread
@@ -47,7 +50,7 @@ public abstract class TransportServerProvider {
          * @param secid destination SECID on this device.
          * @param message FiRa connector message.
          */
-        void onMessage(int secid, FiraConnectorMessage message);
+        void onMessageReceived(int secid, FiraConnectorMessage message);
     }
 
     /* Indicates whether the server has started.
@@ -66,23 +69,35 @@ public abstract class TransportServerProvider {
     /**
      * Starts the transport server.
      *
-     * @return indicates if succeefully started.
+     * @return indicates if successfully started.
      */
-    public abstract boolean start();
+    public boolean start() {
+        if (isStarted()) {
+            Log.i(TAG, "Transport server already started.");
+            return false;
+        }
+        return true;
+    }
 
     /**
      * Stops the transport server.
      *
-     * @return indicates if succeefully stopped.
+     * @return indicates if successfully stopped.
      */
-    public abstract boolean stop();
+    public boolean stop() {
+        if (!isStarted()) {
+            Log.i(TAG, "Transport server already stopped.");
+            return false;
+        }
+        return true;
+    }
 
     /**
      * Send a FiRa connector message to the remote device through the transport server.
      *
      * @param secid destination SECID on remote device.
      * @param message message to be send.
-     * @return indicates if succeefully started.
+     * @return indicates if successfully started.
      */
     public abstract boolean sendMessage(int secid, FiraConnectorMessage message);
 }

@@ -294,6 +294,9 @@ public class GattTransportClientProvider extends TransportClientProvider {
 
     @Override
     public boolean start() {
+        if (!super.start()) {
+            return false;
+        }
         if (mRemoteBluetoothDevice == null) {
             Log.w(TAG, "start failed due to BluetoothDevice is null.");
             return false;
@@ -317,6 +320,9 @@ public class GattTransportClientProvider extends TransportClientProvider {
 
     @Override
     public boolean stop() {
+        if (!super.stop()) {
+            return false;
+        }
         if (mBluetoothGatt == null) {
             Log.w(TAG, "stop failed due to BluetoothGatt is null.");
             return false;
