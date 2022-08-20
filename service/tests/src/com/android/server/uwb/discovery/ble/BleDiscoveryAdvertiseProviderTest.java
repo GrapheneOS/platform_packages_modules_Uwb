@@ -57,9 +57,7 @@ import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.Executor;
 
-/**
- * Unit test for {@link BleDiscoveryAdvertiseProvider}
- */
+/** Unit test for {@link BleDiscoveryAdvertiseProvider} */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 public class BleDiscoveryAdvertiseProviderTest {
@@ -132,7 +130,7 @@ public class BleDiscoveryAdvertiseProviderTest {
                         .setConnectable(true)
                         .setTxPowerLevel(AdvertisingSetParameters.TX_POWER_HIGH)
                         .build();
-        assertThat(mBleDiscoveryAdvertiseProvider.startAdvertise()).isTrue();
+        assertThat(mBleDiscoveryAdvertiseProvider.start()).isTrue();
         ArgumentCaptor<AdvertisingSetParameters> captor =
                 ArgumentCaptor.forClass(AdvertisingSetParameters.class);
         verify(mMockBluetoothLeAdvertiser, times(1))
@@ -150,7 +148,7 @@ public class BleDiscoveryAdvertiseProviderTest {
     public void testStartAdvertise_failedBTUnavailable() {
         when(mMockBluetoothManager.getAdapter()).thenReturn(null);
 
-        assertThat(mBleDiscoveryAdvertiseProvider.startAdvertise()).isFalse();
+        assertThat(mBleDiscoveryAdvertiseProvider.start()).isFalse();
         verify(mMockBluetoothLeAdvertiser, never())
                 .startAdvertisingSet(
                         any(), any(), any(), any(), any(), any(AdvertisingSetCallback.class));
@@ -161,7 +159,7 @@ public class BleDiscoveryAdvertiseProviderTest {
         when(mMockBluetoothManager.getAdapter()).thenReturn(mMockBluetoothAdapter);
         when(mMockBluetoothAdapter.getBluetoothLeAdvertiser()).thenReturn(null);
 
-        assertThat(mBleDiscoveryAdvertiseProvider.startAdvertise()).isFalse();
+        assertThat(mBleDiscoveryAdvertiseProvider.start()).isFalse();
         verify(mMockBluetoothLeAdvertiser, never())
                 .startAdvertisingSet(
                         any(), any(), any(), any(), any(), any(AdvertisingSetCallback.class));
@@ -177,7 +175,7 @@ public class BleDiscoveryAdvertiseProviderTest {
                 .startAdvertisingSet(
                         any(), any(), any(), any(), any(), any(AdvertisingSetCallback.class));
 
-        assertThat(mBleDiscoveryAdvertiseProvider.startAdvertise()).isFalse();
+        assertThat(mBleDiscoveryAdvertiseProvider.start()).isFalse();
         verify(mMockBluetoothLeAdvertiser, times(1))
                 .startAdvertisingSet(
                         any(), any(), any(), any(), any(), any(AdvertisingSetCallback.class));
@@ -187,7 +185,7 @@ public class BleDiscoveryAdvertiseProviderTest {
     public void testStopAdvertise_failedBTUnavailable() {
         when(mMockBluetoothManager.getAdapter()).thenReturn(null);
 
-        assertThat(mBleDiscoveryAdvertiseProvider.stopAdvertise()).isFalse();
+        assertThat(mBleDiscoveryAdvertiseProvider.stop()).isFalse();
         verify(mMockBluetoothLeAdvertiser, never())
                 .stopAdvertisingSet(any(AdvertisingSetCallback.class));
     }
@@ -197,7 +195,7 @@ public class BleDiscoveryAdvertiseProviderTest {
         when(mMockBluetoothManager.getAdapter()).thenReturn(mMockBluetoothAdapter);
         when(mMockBluetoothAdapter.getBluetoothLeAdvertiser()).thenReturn(null);
 
-        assertThat(mBleDiscoveryAdvertiseProvider.stopAdvertise()).isFalse();
+        assertThat(mBleDiscoveryAdvertiseProvider.stop()).isFalse();
         verify(mMockBluetoothLeAdvertiser, never())
                 .stopAdvertisingSet(any(AdvertisingSetCallback.class));
     }
@@ -225,7 +223,7 @@ public class BleDiscoveryAdvertiseProviderTest {
                 .startAdvertisingSet(
                         any(), any(), any(), any(), any(), any(AdvertisingSetCallback.class));
 
-        assertThat(mBleDiscoveryAdvertiseProvider.startAdvertise()).isTrue();
+        assertThat(mBleDiscoveryAdvertiseProvider.start()).isTrue();
         verify(mMockBluetoothLeAdvertiser, times(1))
                 .startAdvertisingSet(
                         any(), any(), any(), any(), any(), any(AdvertisingSetCallback.class));

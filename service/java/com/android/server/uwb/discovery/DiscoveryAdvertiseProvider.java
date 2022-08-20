@@ -19,38 +19,16 @@ import androidx.annotation.WorkerThread;
 
 /** Abstract class for Discovery Advertise Provider */
 @WorkerThread
-public abstract class DiscoveryAdvertiseProvider {
+public abstract class DiscoveryAdvertiseProvider extends DiscoveryProvider {
 
     /** Callback for listening to discovery events. */
     @WorkerThread
     public interface DiscoveryAdvertiseCallback {
         /**
          * Called when discovery failed.
+         *
          * @param errorCode discovery failure error code.
          */
         void onDiscoveryFailed(int errorCode);
     }
-
-    // Indicates whether discovery advertising has started.
-    protected boolean mStarted = false;
-
-    /**
-     * Check if advertising has started.
-     * @return indicates if advertising has started.
-     */
-    public boolean isStarted() {
-        return mStarted;
-    }
-
-    /**
-     * Start advertising
-     * @return indicates if succeefully started.
-     */
-    public abstract boolean startAdvertise();
-
-    /**
-     * Stop advertising
-     * @return indicates if succeefully stopped.
-     */
-    public abstract boolean stopAdvertise();
 }

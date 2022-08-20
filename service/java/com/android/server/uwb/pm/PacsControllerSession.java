@@ -34,17 +34,17 @@ import com.android.modules.utils.HandlerExecutor;
 import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.data.ServiceProfileData.ServiceProfileInfo;
 import com.android.server.uwb.data.UwbConfig;
+import com.android.server.uwb.discovery.DiscoveryProvider;
+import com.android.server.uwb.discovery.DiscoveryProviderFactory;
 import com.android.server.uwb.discovery.DiscoveryScanProvider;
-import com.android.server.uwb.discovery.DiscoveryScanService;
 import com.android.server.uwb.discovery.TransportClientProvider;
-import com.android.server.uwb.discovery.TransportClientService;
+import com.android.server.uwb.discovery.TransportProviderFactory;
 import com.android.server.uwb.discovery.info.DiscoveryInfo;
 import com.android.server.uwb.discovery.info.FiraConnectorCapabilities;
 import com.android.server.uwb.discovery.info.ScanInfo;
 import com.android.server.uwb.discovery.info.TransportClientInfo;
 import com.android.server.uwb.secure.SecureFactory;
 import com.android.server.uwb.secure.SecureSession;
-import com.android.server.uwb.transport.Transport;
 import com.android.server.uwb.util.ObjectIdentifier;
 
 import java.util.List;
@@ -57,7 +57,6 @@ public class PacsControllerSession extends RangingSessionController {
     // TODO populate before calling secureSessionInit()
     private PacsControllerSessionInfo mControllerSessionInfo;
     private final PacsControllerSessionCallback mControllerSessionCallback;
-    private final Transport mControllerTransport;
     private final TransportClientProvider.TransportClientCallback mClientCallback;
 
     public PacsControllerSession(
@@ -81,8 +80,6 @@ public class PacsControllerSession extends RangingSessionController {
         mScanCallback = new ScanCallback(this);
         mControllerSessionCallback = new PacsControllerSessionCallback(this);
         mControllerSessionInfo = new PacsControllerSessionInfo(this);
-        // TODO: Modify based on OOB transport implementation
-        mControllerTransport = null;
         mClientCallback = null;
     }
 
@@ -116,9 +113,9 @@ public class PacsControllerSession extends RangingSessionController {
         return new EndSessionState();
     }
 
-    private DiscoveryScanService mDiscoveryScanService;
+    private DiscoveryProvider mDiscoveryProvider;
     private DiscoveryInfo mDiscoveryInfo;
-    private TransportClientService mTransportClientService;
+    private TransportClientProvider mTransportClientProvider;
     private SecureSession mSecureSession;
 
     private List<ScanFilter> mScanFilterList;
@@ -146,58 +143,59 @@ public class PacsControllerSession extends RangingSessionController {
                         Optional.empty(),
                         Optional.empty());
 
-        mDiscoveryScanService =
-                new DiscoveryScanService(
+        mDiscoveryProvider =
+                DiscoveryProviderFactory.createScanner(
                         mSessionInfo.mAttributionSource,
                         mSessionInfo.mContext,
                         new HandlerExecutor(mHandler),
                         mDiscoveryInfo,
                         mScanCallback);
-        mDiscoveryScanService.startDiscovery();
+        mDiscoveryProvider.start();
     }
 
     /** Stop scanning on ranging stopped or closed */
     public void stopScan() {
-        if (mDiscoveryScanService != null) {
-            mDiscoveryScanService.stopDiscovery();
+        if (mDiscoveryProvider != null) {
+            mDiscoveryProvider.stop();
         }
     }
 
     /** Initialize transport client with updated TransportClientInfo */
     public void transportClientInit() {
-        mTransportClientService = new TransportClientService(
-                mSessionInfo.mAttributionSource,
-                mSessionInfo.mContext,
-                new HandlerExecutor(mHandler),
-                mDiscoveryInfo,
-                mClientCallback
-        );
+        mTransportClientProvider =
+                TransportProviderFactory.createClient(
+                        mSessionInfo.mAttributionSource,
+                        mSessionInfo.mContext,
+                        new HandlerExecutor(mHandler),
+                        /*secid placeholder*/ 2,
+                        mDiscoveryInfo,
+                        mClientCallback);
 
         FiraConnectorCapabilities firaConnectorCapabilities =
                 new FiraConnectorCapabilities.Builder().build();
-        mTransportClientService.setCapabilites(firaConnectorCapabilities);
+        mTransportClientProvider.setCapabilites(firaConnectorCapabilities);
         sendMessage(TRANSPORT_STARTED);
     }
 
     /** Start Transport client */
     public void transportClientStart() {
-        mTransportClientService.start();
+        mTransportClientProvider.start();
     }
 
     /** Stop Transport client */
     public void transportClientStop() {
-        mTransportClientService.stop();
+        mTransportClientProvider.stop();
     }
 
     /** Initialize controller initiator session */
     public void secureSessionInit() {
-        mSecureSession = SecureFactory.makeInitiatorSecureSession(
-                mSessionInfo.mContext,
-                mHandler.getLooper(),
-                mControllerSessionCallback,
-                mControllerSessionInfo,
-                mControllerTransport
-        );
+        mSecureSession =
+                SecureFactory.makeInitiatorSecureSession(
+                        mSessionInfo.mContext,
+                        mHandler.getLooper(),
+                        mControllerSessionCallback,
+                        mControllerSessionInfo,
+                        mTransportClientProvider);
     }
 
     @Override
@@ -216,8 +214,7 @@ public class PacsControllerSession extends RangingSessionController {
 
         @Override
         public void onDiscovered(DiscoveryScanProvider.DiscoveryResult result) {
-            TransportClientInfo transportClientInfo =
-                    new TransportClientInfo(result.scanResult);
+            TransportClientInfo transportClientInfo = new TransportClientInfo(result.scanResult);
             mPacsControllerSession.setTransportclientInfo(transportClientInfo);
             mPacsControllerSession.sendMessage(TRANSPORT_INIT);
         }
@@ -229,13 +226,12 @@ public class PacsControllerSession extends RangingSessionController {
         }
     }
 
-    public static class PacsControllerSessionInfo implements
-            RunningProfileSessionInfo {
+    /** Pacs profile controller implementation of RunningProfileSessionInfo. */
+    public static class PacsControllerSessionInfo implements RunningProfileSessionInfo {
 
         public final PacsControllerSession mPacsControllerSession;
 
-        public PacsControllerSessionInfo(
-                PacsControllerSession pacsControllerSession) {
+        public PacsControllerSessionInfo(PacsControllerSession pacsControllerSession) {
             mPacsControllerSession = pacsControllerSession;
         }
 
@@ -287,31 +283,27 @@ public class PacsControllerSession extends RangingSessionController {
         }
     }
 
-    public static class PacsControllerSessionCallback implements
-            SecureSession.Callback {
+    /** Pacs profile controller implementation of SecureSession.Callback. */
+    public static class PacsControllerSessionCallback implements SecureSession.Callback {
 
         public final PacsControllerSession mPacsControllerSession;
 
-        public PacsControllerSessionCallback(
-                PacsControllerSession pacsControllerSession) {
+        public PacsControllerSessionCallback(PacsControllerSession pacsControllerSession) {
             mPacsControllerSession = pacsControllerSession;
         }
 
         @Override
-        public void onSessionDataReady(int updatedSessionId, @Nullable byte[] sessionData,
-                boolean isSessionTerminated) {
+        public void onSessionDataReady(
+                int updatedSessionId, @Nullable byte[] sessionData, boolean isSessionTerminated) {
             mPacsControllerSession.sendMessage(RANGING_INIT);
         }
 
         @Override
-        public void onSessionAborted() {
-        }
+        public void onSessionAborted() {}
 
         @Override
-        public void onSessionTerminated() {
-        }
+        public void onSessionTerminated() {}
     }
-
 
     public class IdleState extends State {
         @Override
@@ -477,10 +469,10 @@ public class PacsControllerSession extends RangingSessionController {
         }
 
         /**
-         * TODO Once ranging starts with a client, controller should continue to scan
-         * for other devices as this is a multicast session. Transition to discovery state
-         * after session is started and add new devices discovered.
-         **/
+         * TODO Once ranging starts with a client, controller should continue to scan for other
+         * devices as this is a multicast session. Transition to discovery state after session is
+         * started and add new devices discovered.
+         */
         @Override
         public boolean processMessage(Message message) {
             switch (message.what) {
