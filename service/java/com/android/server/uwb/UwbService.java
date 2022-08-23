@@ -19,11 +19,13 @@ package com.android.server.uwb;
 import android.content.Context;
 import android.util.Log;
 
+import com.android.internal.annotations.Keep;
 import com.android.server.SystemService;
 
 /**
  * Uwb System service.
  */
+@Keep
 public class UwbService extends SystemService {
     private static final String TAG = "UwbService";
 
