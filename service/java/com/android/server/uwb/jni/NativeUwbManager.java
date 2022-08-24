@@ -18,6 +18,7 @@ package com.android.server.uwb.jni;
 import android.annotation.NonNull;
 import android.util.Log;
 
+import com.android.internal.annotations.Keep;
 import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.data.UwbConfigStatusData;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
@@ -28,6 +29,7 @@ import com.android.server.uwb.data.UwbVendorUciResponse;
 import com.android.server.uwb.info.UwbPowerStats;
 import com.android.server.uwb.multchip.UwbMultichipData;
 
+@Keep
 public class NativeUwbManager {
     private static final String TAG = NativeUwbManager.class.getSimpleName();
 
