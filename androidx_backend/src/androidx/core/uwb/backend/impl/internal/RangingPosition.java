@@ -1,0 +1,86 @@
+/*
+ * Copyright (C) 2022 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package androidx.core.uwb.backend.impl.internal;
+
+import android.annotation.Nullable;
+
+import java.util.Locale;
+
+/** Position of a device during ranging. */
+public class RangingPosition {
+
+    private final RangingMeasurement mDistance;
+    @Nullable private final RangingMeasurement mAzimuth;
+    @Nullable private final RangingMeasurement mElevation;
+    private final long mElapsedRealtimeNanos;
+
+    public RangingPosition(
+            RangingMeasurement distance,
+            @Nullable RangingMeasurement azimuth,
+            @Nullable RangingMeasurement elevation,
+            long elapsedRealtimeNanos) {
+        this.mDistance = distance;
+        this.mAzimuth = azimuth;
+        this.mElevation = elevation;
+        this.mElapsedRealtimeNanos = elapsedRealtimeNanos;
+    }
+
+    /** Gets the distance in meters of the ranging device, or null if not available. */
+    public RangingMeasurement getDistance() {
+        return mDistance;
+    }
+
+    /**
+     * Gets the azimuth angle in degrees of the ranging device, or null if not available. The range
+     * is (-90, 90].
+     */
+    @Nullable
+    public RangingMeasurement getAzimuth() {
+        return mAzimuth;
+    }
+
+    /**
+     * Gets the elevation angle in degrees of the ranging device, or null if not available. The
+     * range is (-90, 90].
+     */
+    @Nullable
+    public RangingMeasurement getElevation() {
+        return mElevation;
+    }
+
+    /** Returns nanoseconds since boot when the ranging position was taken. */
+    public long getElapsedRealtimeNanos() {
+        return mElapsedRealtimeNanos;
+    }
+
+    @Override
+    public String toString() {
+        String formatted =
+                String.format(
+                        Locale.US,
+                        "elapsedRealtime (ms) %d | distance (m) %f",
+                        mElapsedRealtimeNanos / 1000000,
+                        mDistance.getValue());
+        if (mAzimuth != null) {
+            formatted += String.format(Locale.US, " | azimuth: %f", mAzimuth.getValue());
+        }
+        if (mElevation != null) {
+            formatted += String.format(Locale.US, " | elevation: %f", mElevation.getValue());
+        }
+        return formatted;
+    }
+}
