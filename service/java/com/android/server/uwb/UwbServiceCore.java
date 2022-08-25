@@ -610,12 +610,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             WatchDogThread watchDog = new WatchDogThread("disableInternal", WATCHDOG_MS);
             watchDog.start();
 
-
             try {
-                for (String chipId : mUwbInjector.getMultichipData().getChipIds()) {
-                    updateState(AdapterStateCallback.STATE_DISABLED,
-                            StateChangeReason.SYSTEM_POLICY, chipId);
-                }
                 Log.i(TAG, "Deinitialization start ...");
                 mUwbWakeLock.acquire();
 
@@ -623,10 +618,10 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                     Log.w(TAG, "Error disabling UWB");
                 } else {
                     Log.i(TAG, "Deinitialization success");
-                    /* UWBS_STATUS_OFF is not the valid state. so handle device state directly */
-                    for (String chipId : mUwbInjector.getMultichipData().getChipIds()) {
-                        handleDeviceStatusNotification(UwbUciConstants.DEVICE_STATE_OFF, chipId);
-                    }
+                }
+                /* UWBS_STATUS_OFF is not the valid state. so handle device state directly */
+                for (String chipId : mUwbInjector.getMultichipData().getChipIds()) {
+                    handleDeviceStatusNotification(UwbUciConstants.DEVICE_STATE_OFF, chipId);
                 }
             } finally {
                 mUwbWakeLock.release();
