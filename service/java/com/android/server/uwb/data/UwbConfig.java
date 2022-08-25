@@ -519,7 +519,8 @@ public class UwbConfig {
                 .setHoppingMode(uwbConfig.mRoundHopping)
                 .setHasTimeOfFlightReport(uwbConfig.mTofReport)
                 .setHasAngleOfArrivalAzimuthReport(uwbConfig.mAoaAzimuthReport)
-                .setHasAngleOfArrivalElevationReport(uwbConfig.mAoaElevationReport);
+                .setHasAngleOfArrivalElevationReport(uwbConfig.mAoaElevationReport)
+                .setRangingIntervalMs(uwbConfig.mRangingIntervalMs);
 
         sessionInfo.subSessionId.ifPresent(firaOpenSessionBuilder::setSubSessionId);
 

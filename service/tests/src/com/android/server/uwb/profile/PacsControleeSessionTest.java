@@ -17,11 +17,17 @@
 package com.android.server.uwb.profile;
 
 import static com.android.server.uwb.data.UwbConfig.CONTROLEE_AND_RESPONDER;
+import static com.android.server.uwb.data.UwbConfig.OOB_TYPE_BLE;
+import static com.android.server.uwb.data.UwbConfig.PERIPHERAL;
 import static com.android.server.uwb.pm.RangingSessionController.RANGING_ENDED;
 import static com.android.server.uwb.pm.RangingSessionController.SECURE_SESSION_ESTABLISHED;
 import static com.android.server.uwb.pm.RangingSessionController.SESSION_START;
 import static com.android.server.uwb.pm.RangingSessionController.TRANSPORT_COMPLETED;
 import static com.android.server.uwb.pm.RangingSessionController.TRANSPORT_INIT;
+
+import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
+import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP3;
+import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_DYNAMIC;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -56,6 +62,9 @@ import com.android.server.uwb.discovery.info.UwbIndicationData;
 import com.android.server.uwb.discovery.info.VendorSpecificData;
 import com.android.server.uwb.multchip.UwbMultichipData;
 import com.android.server.uwb.pm.PacsControleeSession;
+
+import com.google.uwb.support.fira.FiraSpecificationParams;
+import com.google.uwb.support.generic.GenericSpecificationParams;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -93,6 +102,10 @@ public class PacsControleeSessionTest {
     @Mock
     private UwbMultichipData mUwbMultiChipData;
     private PacsControleeSession mRangingSessionController;
+    @Mock
+    private GenericSpecificationParams mGenericSpecificationParams;
+    @Mock
+    private FiraSpecificationParams mFiraSpecificationParams;
 
     @Before
     public void setUp() {
@@ -104,7 +117,10 @@ public class PacsControleeSessionTest {
         when(mUwbInjector.getUwbServiceCore()).thenReturn(mUwbServiceCore);
         when(mUwbMultichipData.getDefaultChipId()).thenReturn(DEFAULT_CHIP_ID);
         when(mUwbInjector.getMultichipData()).thenReturn(mUwbMultichipData);
-        when(mUwbServiceCore.getCachedSpecificationParams(DEFAULT_CHIP_ID)).thenReturn(null);
+        when(mUwbServiceCore.getCachedSpecificationParams(DEFAULT_CHIP_ID)).thenReturn(
+                mGenericSpecificationParams);
+        when(mGenericSpecificationParams.getFiraSpecificationParams()).thenReturn(
+                mFiraSpecificationParams);
         when(mContext.createContext(any())).thenReturn(mContext);
         when(mContext.getSystemService(BluetoothManager.class))
                 .thenReturn(mMockBluetoothManager);
@@ -148,7 +164,15 @@ public class PacsControleeSessionTest {
     @Test
     public void testOpenRangingSession() throws RemoteException {
 
-        UwbConfig uwbConfig = mRangingSessionController.getUwbConfig();
+        UwbConfig uwbConfig = new UwbConfig.Builder()
+                .setUwbRole(CONTROLEE_AND_RESPONDER)
+                .setStsConfig(STS_CONFIG_DYNAMIC)
+                .setMultiNodeMode(MULTI_NODE_MODE_ONE_TO_MANY)
+                .setRframeConfig(RFRAME_CONFIG_SP3)
+                .setTofReport(true)
+                .setOobType(OOB_TYPE_BLE)
+                .setOobBleRole(PERIPHERAL)
+                .build();
         mRangingSessionController.mSessionInfo.setSessionId(1);
 
         mRangingSessionController.mSessionInfo

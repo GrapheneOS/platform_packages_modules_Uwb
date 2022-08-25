@@ -317,6 +317,9 @@ public class UwbCapability {
             }
             uwbCapabilityBuilder.putByte(AOA_SUPPORT, aoaSupport);
         }
+        mExtendedMacSupport.ifPresent(
+                aByte -> uwbCapabilityBuilder.putByte(EXTENDED_MAC_ADDRESS, aByte.byteValue()));
+
         return uwbCapabilityBuilder.build().getByteArray();
     }
 
@@ -386,7 +389,7 @@ public class UwbCapability {
                 deviceRoles.add(
                         FiraParams.DeviceRoleCapabilityFlag.HAS_CONTROLLER_RESPONDER_SUPPORT);
             }
-            uwbCapabilityBuilder.setDeviceRoles(Optional.of(deviceRoles));
+            uwbCapabilityBuilder.setDeviceRoles(deviceRoles);
         }
         if (isPresent(uwbCapabilityTlv, RANGING_METHOD)) {
             EnumSet<FiraParams.RangingRoundCapabilityFlag> rangingMethod = EnumSet.noneOf(
@@ -398,7 +401,7 @@ public class UwbCapability {
             if (isBitSet(rangingMethodRaw, DS_TWR_DEFERRED)) {
                 rangingMethod.add(FiraParams.RangingRoundCapabilityFlag.HAS_DS_TWR_SUPPORT);
             }
-            uwbCapabilityBuilder.setRangingMethod(Optional.of(rangingMethod));
+            uwbCapabilityBuilder.setRangingMethod(rangingMethod);
         }
         if (isPresent(uwbCapabilityTlv, STS_CONFIG)) {
             EnumSet<FiraParams.StsCapabilityFlag> stsConfig = EnumSet.noneOf(
@@ -415,7 +418,7 @@ public class UwbCapability {
                         FiraParams.StsCapabilityFlag
                                 .HAS_DYNAMIC_STS_INDIVIDUAL_CONTROLEE_KEY_SUPPORT);
             }
-            uwbCapabilityBuilder.setStsConfig(Optional.of(stsConfig));
+            uwbCapabilityBuilder.setStsConfig(stsConfig);
         }
         if (isPresent(uwbCapabilityTlv, MULTI_NODE_MODE)) {
             EnumSet<FiraParams.MultiNodeCapabilityFlag> multiNodeMode = EnumSet.noneOf(
@@ -430,27 +433,24 @@ public class UwbCapability {
             if (isBitSet(multiNodeRaw, MANY_TO_MANY)) {
                 multiNodeMode.add(FiraParams.MultiNodeCapabilityFlag.HAS_MANY_TO_MANY_SUPPORT);
             }
-            uwbCapabilityBuilder.setMultiMode(Optional.of(multiNodeMode));
+            uwbCapabilityBuilder.setMultiMode(multiNodeMode);
         }
         if (isPresent(uwbCapabilityTlv, RANGING_TIME_STRUCT)) {
-            uwbCapabilityBuilder.setRangingTimeStruct(Optional.of(
-                    uwbCapabilityTlv.getByte(RANGING_TIME_STRUCT)));
+            uwbCapabilityBuilder.setRangingTimeStruct(
+                    uwbCapabilityTlv.getByte(RANGING_TIME_STRUCT));
         }
         if (isPresent(uwbCapabilityTlv, SCHEDULED_MODE)) {
-            uwbCapabilityBuilder.setScheduledMode(Optional.of(
-                    uwbCapabilityTlv.getByte(SCHEDULED_MODE)));
+            uwbCapabilityBuilder.setScheduledMode(uwbCapabilityTlv.getByte(SCHEDULED_MODE));
         }
         if (isPresent(uwbCapabilityTlv, HOPPING_MODE)) {
-            uwbCapabilityBuilder.setHoppingMode(Optional.of(
-                    uwbCapabilityTlv.getByte(HOPPING_MODE) == 1));
+            uwbCapabilityBuilder.setHoppingMode(uwbCapabilityTlv.getByte(HOPPING_MODE) == 1);
         }
         if (isPresent(uwbCapabilityTlv, BLOCK_STRIDING)) {
-            uwbCapabilityBuilder.setBlockStriding(Optional.of(
-                    uwbCapabilityTlv.getByte(BLOCK_STRIDING) == 1));
+            uwbCapabilityBuilder.setBlockStriding(uwbCapabilityTlv.getByte(BLOCK_STRIDING) == 1);
         }
         if (isPresent(uwbCapabilityTlv, UWB_INITIATION_TIME)) {
-            uwbCapabilityBuilder.setUwbInitiationTime(Optional.of(
-                    uwbCapabilityTlv.getByte(UWB_INITIATION_TIME) == 1));
+            uwbCapabilityBuilder.setUwbInitiationTime(
+                    uwbCapabilityTlv.getByte(UWB_INITIATION_TIME) == 1);
         }
         if (isPresent(uwbCapabilityTlv, CHANNELS)) {
             List<Integer> channels = new ArrayList<>();
@@ -479,7 +479,7 @@ public class UwbCapability {
             if (isBitSet(channelsRaw, CHANNEL_14)) {
                 channels.add(14);
             }
-            uwbCapabilityBuilder.setChannels(Optional.of(channels));
+            uwbCapabilityBuilder.setChannels(channels);
         }
         if (isPresent(uwbCapabilityTlv, RFRAME_CONFIG)) {
             EnumSet<FiraParams.RframeCapabilityFlag> rFrameConfig = EnumSet.noneOf(
@@ -494,7 +494,7 @@ public class UwbCapability {
             if (isBitSet(rFrameConfigRaw, SP3)) {
                 rFrameConfig.add(FiraParams.RframeCapabilityFlag.HAS_SP3_RFRAME_SUPPORT);
             }
-            uwbCapabilityBuilder.setRframeConfig(Optional.of(rFrameConfig));
+            uwbCapabilityBuilder.setRFrameConfig(rFrameConfig);
         }
         if (isPresent(uwbCapabilityTlv, CC_CONSTRAINT_LENGTH)) {
             EnumSet<FiraParams.PsduDataRateCapabilityFlag> ccConstraintLength = EnumSet.noneOf(
@@ -506,7 +506,7 @@ public class UwbCapability {
             if (isBitSet(ccConstraintLengthRaw, CC_CONSTRAINT_LENGTH_K7)) {
                 ccConstraintLength.add(FiraParams.PsduDataRateCapabilityFlag.HAS_7M80_SUPPORT);
             }
-            uwbCapabilityBuilder.setCcConstraintLength(Optional.of(ccConstraintLength));
+            uwbCapabilityBuilder.setCcConstraintLength(ccConstraintLength);
         }
         if (isPresent(uwbCapabilityTlv, AOA_SUPPORT)) {
             EnumSet<FiraParams.AoaCapabilityFlag> aoaSupport = EnumSet.noneOf(
@@ -524,7 +524,7 @@ public class UwbCapability {
             if (isBitSet(aoaSupportRaw, AOA_FOM)) {
                 aoaSupport.add(FiraParams.AoaCapabilityFlag.HAS_FOM_SUPPORT);
             }
-            uwbCapabilityBuilder.setAoaSupport(Optional.of(aoaSupport));
+            uwbCapabilityBuilder.setAoaSupport(aoaSupport);
         }
         if (isPresent(uwbCapabilityTlv, BPRF_PARAMETER_SETS)) {
             byte bprfSets = uwbCapabilityTlv.getByte(BPRF_PARAMETER_SETS);
@@ -532,7 +532,7 @@ public class UwbCapability {
             EnumSet<FiraParams.BprfParameterSetCapabilityFlag> bprfFlag;
             bprfFlag = FlagEnum.toEnumSet(bprfSetsValue,
                     FiraParams.BprfParameterSetCapabilityFlag.values());
-            uwbCapabilityBuilder.setBprfParameterSet(Optional.of(bprfFlag));
+            uwbCapabilityBuilder.setBprfParameterSet(bprfFlag);
         }
         if (isPresent(uwbCapabilityTlv, HPRF_PARAMETER_SETS)) {
             byte hprfSets = uwbCapabilityTlv.getByte(HPRF_PARAMETER_SETS);
@@ -540,7 +540,11 @@ public class UwbCapability {
             EnumSet<FiraParams.HprfParameterSetCapabilityFlag> hprfFlag;
             hprfFlag = FlagEnum.toEnumSet(hprfSetsValue,
                     FiraParams.HprfParameterSetCapabilityFlag.values());
-            uwbCapabilityBuilder.setHprfParameterSet(Optional.of(hprfFlag));
+            uwbCapabilityBuilder.setHprfParameterSet(hprfFlag);
+        }
+        if (isPresent(uwbCapabilityTlv, EXTENDED_MAC_ADDRESS)) {
+            uwbCapabilityBuilder.setExtendedMacSupport(
+                    uwbCapabilityTlv.getByte(EXTENDED_MAC_ADDRESS));
         }
         return uwbCapabilityBuilder.build();
     }
@@ -600,97 +604,97 @@ public class UwbCapability {
         }
 
         public UwbCapability.Builder setDeviceRoles(
-                Optional<EnumSet<FiraParams.DeviceRoleCapabilityFlag>> deviceRoles) {
-            mDeviceRoles = deviceRoles;
+                EnumSet<FiraParams.DeviceRoleCapabilityFlag> deviceRoles) {
+            mDeviceRoles = Optional.of(deviceRoles);
             return this;
         }
 
         public UwbCapability.Builder setRangingMethod(
-                Optional<EnumSet<FiraParams.RangingRoundCapabilityFlag>> rangingMethod) {
-            mRangingMethod = rangingMethod;
+                EnumSet<FiraParams.RangingRoundCapabilityFlag> rangingMethod) {
+            mRangingMethod = Optional.of(rangingMethod);
             return this;
         }
 
         public UwbCapability.Builder setStsConfig(
-                Optional<EnumSet<FiraParams.StsCapabilityFlag>> stsConfig) {
-            mStsConfig = stsConfig;
+                EnumSet<FiraParams.StsCapabilityFlag> stsConfig) {
+            mStsConfig = Optional.of(stsConfig);
             return this;
         }
 
         public UwbCapability.Builder setMultiMode(
-                Optional<EnumSet<FiraParams.MultiNodeCapabilityFlag>> multiNodeMode) {
-            mMultiNodeMode = multiNodeMode;
+                EnumSet<FiraParams.MultiNodeCapabilityFlag> multiNodeMode) {
+            mMultiNodeMode = Optional.of(multiNodeMode);
             return this;
         }
 
-        public UwbCapability.Builder setRangingTimeStruct(Optional<Byte> rangingTimeStruct) {
-            mRangingTimeStruct = rangingTimeStruct;
+        public UwbCapability.Builder setRangingTimeStruct(Byte rangingTimeStruct) {
+            mRangingTimeStruct = Optional.of(rangingTimeStruct);
             return this;
         }
 
-        public UwbCapability.Builder setScheduledMode(Optional<Byte> scheduledMode) {
-            mScheduledMode = scheduledMode;
+        public UwbCapability.Builder setScheduledMode(Byte scheduledMode) {
+            mScheduledMode = Optional.of(scheduledMode);
             return this;
         }
 
-        public UwbCapability.Builder setHoppingMode(Optional<Boolean> hoppingMode) {
-            mHoppingMode = hoppingMode;
+        public UwbCapability.Builder setHoppingMode(Boolean hoppingMode) {
+            mHoppingMode = Optional.of(hoppingMode);
             return this;
         }
 
-        public UwbCapability.Builder setBlockStriding(Optional<Boolean> blockStriding) {
-            mBlockStriding = blockStriding;
+        public UwbCapability.Builder setBlockStriding(Boolean blockStriding) {
+            mBlockStriding = Optional.of(blockStriding);
             return this;
         }
 
-        public UwbCapability.Builder setUwbInitiationTime(Optional<Boolean> uwbInitiationTime) {
-            mUwbInitiationTime = uwbInitiationTime;
+        public UwbCapability.Builder setUwbInitiationTime(Boolean uwbInitiationTime) {
+            mUwbInitiationTime = Optional.of(uwbInitiationTime);
             return this;
         }
 
-        public UwbCapability.Builder setChannels(Optional<List<Integer>> channels) {
-            mChannels = channels;
+        public UwbCapability.Builder setChannels(List<Integer> channels) {
+            mChannels = Optional.of(channels);
             return this;
         }
 
         public UwbCapability.Builder setMultiNodeMode(
-                Optional<EnumSet<FiraParams.MultiNodeCapabilityFlag>> multiNodeMode) {
-            mMultiNodeMode = multiNodeMode;
+                EnumSet<FiraParams.MultiNodeCapabilityFlag> multiNodeMode) {
+            mMultiNodeMode = Optional.of(multiNodeMode);
             return this;
         }
 
-        public UwbCapability.Builder setRframeConfig(
-                Optional<EnumSet<FiraParams.RframeCapabilityFlag>> rframeConfig) {
-            mRframeConfig = rframeConfig;
+        public UwbCapability.Builder setRFrameConfig(
+                EnumSet<FiraParams.RframeCapabilityFlag> rFrameConfig) {
+            mRframeConfig = Optional.of(rFrameConfig);
             return this;
         }
 
         public UwbCapability.Builder setCcConstraintLength(
-                Optional<EnumSet<FiraParams.PsduDataRateCapabilityFlag>> ccConstraintLength) {
-            mCcConstraintLength = ccConstraintLength;
+                EnumSet<FiraParams.PsduDataRateCapabilityFlag> ccConstraintLength) {
+            mCcConstraintLength = Optional.of(ccConstraintLength);
             return this;
         }
 
         public UwbCapability.Builder setBprfParameterSet(
-                Optional<EnumSet<FiraParams.BprfParameterSetCapabilityFlag>> bprfParameterSet) {
-            mBprfParameterSet = bprfParameterSet;
+                EnumSet<FiraParams.BprfParameterSetCapabilityFlag> bprfParameterSet) {
+            mBprfParameterSet = Optional.of(bprfParameterSet);
             return this;
         }
 
         public UwbCapability.Builder setHprfParameterSet(
-                Optional<EnumSet<FiraParams.HprfParameterSetCapabilityFlag>> hprfParameterSet) {
-            mHprfParameterSet = hprfParameterSet;
+                EnumSet<FiraParams.HprfParameterSetCapabilityFlag> hprfParameterSet) {
+            mHprfParameterSet = Optional.of(hprfParameterSet);
             return this;
         }
 
         public UwbCapability.Builder setAoaSupport(
-                Optional<EnumSet<FiraParams.AoaCapabilityFlag>> aoaSupport) {
-            mAoaSupport = aoaSupport;
+                EnumSet<FiraParams.AoaCapabilityFlag> aoaSupport) {
+            mAoaSupport = Optional.of(aoaSupport);
             return this;
         }
 
-        public UwbCapability.Builder setExtendedMacSupport(Optional<Byte> extendedMacSupport) {
-            mExtendedMacSupport = extendedMacSupport;
+        public UwbCapability.Builder setExtendedMacSupport(Byte extendedMacSupport) {
+            mExtendedMacSupport = Optional.of(extendedMacSupport);
             return this;
         }
 
