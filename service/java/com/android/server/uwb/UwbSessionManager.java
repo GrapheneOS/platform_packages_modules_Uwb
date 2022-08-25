@@ -535,7 +535,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         return mSessionTable.keySet();
     }
 
-    public int reconfigure(SessionHandle sessionHandle, @Nullable Params params) {
+    private synchronized int reconfigureInternal(SessionHandle sessionHandle,
+            @Nullable Params params, boolean triggeredByFgStateChange) {
         int status = UwbUciConstants.STATUS_CODE_ERROR_SESSION_NOT_EXIST;
         if (!isExistedSession(sessionHandle)) {
             Log.i(TAG, "Not initialized session ID");
@@ -552,9 +553,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                     + rangingReconfigureParams);
             uwbSession.updateFiraParamsOnReconfigure(rangingReconfigureParams);
         }
-        Pair<SessionHandle, Params> info = new Pair<>(sessionHandle, params);
-        mEventTask.execute(SESSION_RECONFIG_RANGING, info);
+        mEventTask.execute(SESSION_RECONFIG_RANGING,
+                new ReconfigureEventParams(uwbSession, params, triggeredByFgStateChange));
         return 0;
+    }
+
+    public synchronized int reconfigure(SessionHandle sessionHandle, @Nullable Params params) {
+        return reconfigureInternal(sessionHandle, params, false /* triggeredByFgStateChange */);
     }
 
     void removeSession(UwbSession uwbSession) {
@@ -601,6 +606,20 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             }
         }
     }
+
+    private static class ReconfigureEventParams {
+        public final UwbSession uwbSession;
+        public final Params params;
+        public final boolean triggeredByFgStateChange;
+
+        ReconfigureEventParams(UwbSession uwbSession, Params params,
+                boolean triggeredByFgStateChange) {
+            this.uwbSession = uwbSession;
+            this.params = params;
+            this.triggeredByFgStateChange = triggeredByFgStateChange;
+        }
+    }
+
     private class EventTask extends Handler {
 
         EventTask(Looper looper) {
@@ -632,8 +651,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
                 case SESSION_RECONFIG_RANGING: {
                     Log.d(TAG, "SESSION_RECONFIG_RANGING");
-                    Pair<SessionHandle, Params> info = (Pair<SessionHandle, Params>) msg.obj;
-                    reconfigure(info.first, info.second);
+                    ReconfigureEventParams params = (ReconfigureEventParams) msg.obj;
+                    reconfigure(params.uwbSession, params.params, params.triggeredByFgStateChange);
                     break;
                 }
 
@@ -863,8 +882,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             uwbSession.stopRangingResultErrorStreakTimerIfSet();
         }
 
-        private void reconfigure(SessionHandle sessionHandle, @Nullable Params param) {
-            UwbSession uwbSession = getUwbSession(getSessionId(sessionHandle));
+        private void reconfigure(UwbSession uwbSession, @Nullable Params param,
+                boolean triggeredByFgStateChange) {
             if (!(param instanceof FiraRangingReconfigureParams)) {
                 Log.e(TAG, "Invalid reconfigure params: " + param);
                 mSessionNotificationManager.onRangingReconfigureFailed(
@@ -963,7 +982,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                             if (status != UwbUciConstants.STATUS_CODE_OK) {
                                 return status;
                             }
-                            mSessionNotificationManager.onRangingReconfigured(uwbSession);
+                            if (!triggeredByFgStateChange) {
+                                mSessionNotificationManager.onRangingReconfigured(uwbSession);
+                            }
                             return status;
                         }
                     });
@@ -984,7 +1005,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             }
             if (status != UwbUciConstants.STATUS_CODE_OK) {
                 Log.i(TAG, "Failed to Reconfigure : " + status);
-                mSessionNotificationManager.onRangingReconfigureFailed(uwbSession, status);
+                if (!triggeredByFgStateChange) {
+                    mSessionNotificationManager.onRangingReconfigureFailed(uwbSession, status);
+                }
             }
         }
 
@@ -1255,7 +1278,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                             // use to retrieve the latest configured ntf control.
                             ? mOrigRangeDataNtfConfig : FiraParams.RANGE_DATA_NTF_CONFIG_DISABLE)
                     .build();
-            reconfigure(mSessionHandle, reconfigureParams);
+            reconfigureInternal(
+                    mSessionHandle, reconfigureParams, true /* triggeredByFgStateChange */);
         }
 
         @Override
