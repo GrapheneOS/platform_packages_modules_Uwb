@@ -776,13 +776,17 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setRangeDataNtfProximityNear(bundle.getInt(KEY_RANGE_DATA_NTF_PROXIMITY_NEAR))
                 .setRangeDataNtfProximityFar(bundle.getInt(KEY_RANGE_DATA_NTF_PROXIMITY_FAR))
                 .setRangeDataNtfAoaAzimuthLower(
-                        bundle.getDouble(KEY_RANGE_DATA_NTF_AOA_AZIMUTH_LOWER))
+                        bundle.getDouble(KEY_RANGE_DATA_NTF_AOA_AZIMUTH_LOWER,
+                                RANGE_DATA_NTF_AOA_AZIMUTH_LOWER_DEFAULT))
                 .setRangeDataNtfAoaAzimuthUpper(
-                        bundle.getDouble(KEY_RANGE_DATA_NTF_AOA_AZIMUTH_UPPER))
+                        bundle.getDouble(KEY_RANGE_DATA_NTF_AOA_AZIMUTH_UPPER,
+                                RANGE_DATA_NTF_AOA_AZIMUTH_UPPER_DEFAULT))
                 .setRangeDataNtfAoaElevationLower(
-                        bundle.getDouble(KEY_RANGE_DATA_NTF_AOA_ELEVATION_LOWER))
+                        bundle.getDouble(KEY_RANGE_DATA_NTF_AOA_ELEVATION_LOWER,
+                                RANGE_DATA_NTF_AOA_ELEVATION_LOWER_DEFAULT))
                 .setRangeDataNtfAoaElevationUpper(
-                        bundle.getDouble(KEY_RANGE_DATA_NTF_AOA_ELEVATION_UPPER))
+                        bundle.getDouble(KEY_RANGE_DATA_NTF_AOA_ELEVATION_UPPER,
+                                RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT))
                 .setHasTimeOfFlightReport(bundle.getBoolean(KEY_HAS_TIME_OF_FLIGHT_REPORT))
                 .setHasAngleOfArrivalAzimuthReport(
                         bundle.getBoolean(KEY_HAS_ANGLE_OF_ARRIVAL_AZIMUTH_REPORT))
