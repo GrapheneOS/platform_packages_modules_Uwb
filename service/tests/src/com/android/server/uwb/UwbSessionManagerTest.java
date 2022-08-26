@@ -944,24 +944,25 @@ public class UwbSessionManagerTest {
         // Move to background.
         mOnUidImportanceListenerArgumentCaptor.getValue().onUidImportance(
                 UID_2, IMPORTANCE_BACKGROUND);
-        mTestLooper.dispatchNext();
-        assertThat(mTestLooper.nextMessage().what)
-                .isEqualTo(UwbSessionManager.SESSION_RECONFIG_RANGING);
-        FiraOpenSessionParams firaParams = (FiraOpenSessionParams) uwbSession.getParams();
+        mTestLooper.dispatchAll();
+        ArgumentCaptor<Params> paramsArgumentCaptor = ArgumentCaptor.forClass(Params.class);
+        verify(mUwbConfigurationManager).setAppConfigurations(
+                eq(TEST_SESSION_ID), paramsArgumentCaptor.capture(), eq(TEST_CHIP_ID));
+        FiraRangingReconfigureParams firaParams =
+                (FiraRangingReconfigureParams) paramsArgumentCaptor.getValue();
         assertThat(firaParams.getRangeDataNtfConfig()).isEqualTo(
                 FiraParams.RANGE_DATA_NTF_CONFIG_DISABLE);
-        mTestLooper.dispatchAll();
 
         // Move to foreground.
         mOnUidImportanceListenerArgumentCaptor.getValue().onUidImportance(
                 UID_2, IMPORTANCE_FOREGROUND);
-        mTestLooper.dispatchNext();
-        assertThat(mTestLooper.nextMessage().what)
-                .isEqualTo(UwbSessionManager.SESSION_RECONFIG_RANGING);
-        firaParams = (FiraOpenSessionParams) uwbSession.getParams();
+        mTestLooper.dispatchAll();
+        paramsArgumentCaptor = ArgumentCaptor.forClass(Params.class);
+        verify(mUwbConfigurationManager, times(2)).setAppConfigurations(
+                eq(TEST_SESSION_ID), paramsArgumentCaptor.capture(), eq(TEST_CHIP_ID));
+        firaParams = (FiraRangingReconfigureParams) paramsArgumentCaptor.getValue();
         assertThat(firaParams.getRangeDataNtfConfig()).isEqualTo(
                 FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE);
-        mTestLooper.dispatchAll();
     }
 
     @Test
