@@ -16,21 +16,145 @@
 
 package com.android.server.uwb.pm;
 
+import android.util.Log;
+
 import androidx.annotation.NonNull;
+
+import com.android.server.uwb.params.TlvBuffer;
+import com.android.server.uwb.params.TlvDecoderBuffer;
+
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Optional;
+
+import javax.annotation.Nullable;
 
 /**
  * The session data used to config UWB session, see CSML 8.5.3.3.
  */
 public class SessionData {
-    // TODO: add sessionData
+
+    public static final String TAG = SessionData.class.getSimpleName();
+
+    public static final int UWB_SESSION_DATA_VERSION_HEADER = 0x80;
+    public static int UWB_SESSION_DATA_VERSION_MINOR = 1;
+    public static int UWB_SESSION_DATA_VERSION_MAJOR = 1;
+    public static int UWB_SESSION_DATA_VERSION_MINOR_CURRENT = 1;
+    public static int UWB_SESSION_DATA_VERSION_MAJOR_CURRENT = 1;
+    public static int UWB_SESSION_ID = 0x81;
+    public static int UWB_SUB_SESSION_ID = 0x82;
+
+    public static final int CONFIGURATION_PARAMS = 0xA3;
+    public Optional<ConfigurationParams> mConfigurationParams;
+    public static int SESSION_DATA_COUNT_MAX = 8;
+
+    public final int mSessionId;
+    public final Optional<Integer> mSubSessionId;
+
+    private SessionData(int sessionId, Optional<Integer> subSessionId,
+            Optional<ConfigurationParams> configurationParams) {
+        mSessionId = sessionId;
+        mSubSessionId = subSessionId;
+        mConfigurationParams = configurationParams;
+    }
 
     /**
      * Convert to raw data represented as TLV according to CSML 8.5.3.3.
-     * @return
      */
     @NonNull
     public byte[] toBytes() {
-        // TODO: convert to TLV raw data.
-        return new byte[0];
+        TlvBuffer.Builder sessionDataBuilder = new TlvBuffer.Builder()
+                .putByteArray(UWB_SESSION_DATA_VERSION_HEADER, new byte[]{
+                        (byte) UWB_SESSION_DATA_VERSION_MAJOR_CURRENT,
+                        (byte) UWB_SESSION_DATA_VERSION_MINOR_CURRENT});
+
+        sessionDataBuilder.putByteArray(UWB_SESSION_ID, ByteBuffer.allocate(4).putInt(
+                mSessionId).array());
+        mSubSessionId.ifPresent(
+                integer -> sessionDataBuilder.putByteArray(UWB_SUB_SESSION_ID, ByteBuffer.allocate(
+                        4).putInt(
+                        integer).array()));
+        mConfigurationParams.ifPresent(
+                configurationParams -> sessionDataBuilder.putByteArray(CONFIGURATION_PARAMS,
+                        configurationParams.toBytes()));
+
+        return sessionDataBuilder.build().getByteArray();
+    }
+
+    private static boolean isPresent(TlvDecoderBuffer tlvDecoderBuffer, int tagType) {
+        try {
+            tlvDecoderBuffer.getByte(tagType);
+        } catch (IllegalArgumentException e) {
+            try {
+                tlvDecoderBuffer.getByteArray(tagType);
+            } catch (IllegalArgumentException e1) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Nullable
+    public static SessionData fromBytes(@NonNull byte[] data) {
+        TlvDecoderBuffer tlvs = new TlvDecoderBuffer(data, SESSION_DATA_COUNT_MAX);
+        tlvs.parse();
+
+        if (isPresent(tlvs, UWB_SESSION_DATA_VERSION_HEADER)) {
+            byte[] sessionDataVersion = tlvs.getByteArray(UWB_SESSION_DATA_VERSION_HEADER);
+            if (sessionDataVersion.length == 2 && versionCheck(sessionDataVersion)) {
+                Builder sessionDataBuilder = new Builder();
+                if (isPresent(tlvs, UWB_SESSION_ID)) {
+                    sessionDataBuilder.setSessionId(
+                            ByteBuffer.wrap(tlvs.getByteArray(UWB_SESSION_ID)).getInt());
+                }
+                if (isPresent(tlvs, UWB_SUB_SESSION_ID)) {
+                    sessionDataBuilder.setSubSessionId(
+                            ByteBuffer.wrap(tlvs.getByteArray(UWB_SUB_SESSION_ID)).getInt());
+                }
+                if (isPresent(tlvs, CONFIGURATION_PARAMS)) {
+                    byte[] configurationParams = tlvs.getByteArray(CONFIGURATION_PARAMS);
+                    sessionDataBuilder.setConfigParams(
+                            ConfigurationParams.fromBytes(configurationParams));
+                }
+                return sessionDataBuilder.build();
+            }
+            Log.e(TAG, "UWB_SESSION_DATA_VERSION " + Arrays.toString(sessionDataVersion)
+                    + " Not supported");
+        } else {
+            Log.e(TAG, "Controlee info version is not included. Failure !");
+        }
+        return null;
+    }
+
+    private static boolean versionCheck(byte[] sessionDataVersion) {
+        return sessionDataVersion[0] == UWB_SESSION_DATA_VERSION_MAJOR
+                && sessionDataVersion[1] == UWB_SESSION_DATA_VERSION_MINOR;
+    }
+
+    /** Builder */
+    public static class Builder {
+        private int mSessionId;
+        private Optional<Integer> mSubSessionId;
+        private Optional<ConfigurationParams> mConfigurationParams;
+
+        public SessionData.Builder setSessionId(int sessionId) {
+            mSessionId = sessionId;
+            return this;
+        }
+
+        public SessionData.Builder setSubSessionId(int subSessionId) {
+            mSubSessionId = Optional.of(subSessionId);
+            return this;
+        }
+
+        public SessionData.Builder setConfigParams(
+                ConfigurationParams configurationParams) {
+            mConfigurationParams = Optional.of(configurationParams);
+            return this;
+        }
+
+        public SessionData build() {
+            return new SessionData(mSessionId, mSubSessionId, mConfigurationParams);
+        }
     }
 }

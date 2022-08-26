@@ -522,7 +522,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
 
     private void startFiraRangingSession(PrintWriter pw) throws Exception {
         GenericSpecificationParams specificationParams =
-                mUwbServiceCore.getCachedSpecificationParams(null);
+                mUwbServiceCore.getCachedSpecificationParams(mUwbService.getDefaultChipId());
         Pair<FiraOpenSessionParams, Boolean> firaOpenSessionParams =
                 buildFiraOpenSessionParams(specificationParams);
         startRangingSession(
