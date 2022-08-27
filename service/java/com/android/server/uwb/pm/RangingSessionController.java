@@ -48,7 +48,7 @@ public abstract class RangingSessionController extends StateMachine {
     public SessionInfo mSessionInfo;
     public Handler mHandler;
     public UwbInjector mUwbInjector;
-    private boolean mFiraSpecificationParams;
+    private GenericSpecificationParams mSpecificationParams;
     protected boolean mVerboseLoggingEnabled = false;
 
     protected State mIdleState = null;
@@ -190,10 +190,13 @@ public abstract class RangingSessionController extends StateMachine {
         mUwbInjector.getUwbServiceCore().closeRanging(mSessionInfo.mSessionHandle);
     }
 
-    // TODO Use this to fill in controlee info
-    protected void getSpecificationInfo() {
-        GenericSpecificationParams specificationParams =
-                mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(mSessionInfo.mChipId);
+    protected GenericSpecificationParams getSpecificationInfo() {
+        if (mSpecificationParams == null) {
+            mSpecificationParams =
+                    mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(
+                            mSessionInfo.mChipId);
+        }
+        return mSpecificationParams;
     }
 
     /**
@@ -211,6 +214,7 @@ public abstract class RangingSessionController extends StateMachine {
         public final List<UwbAddress> mDestAddressList;
         public Optional<Integer> subSessionId;
         public final String mChipId;
+        public SessionData mSessionData;
 
         public SessionInfo(AttributionSource attributionSource, SessionHandle sessionHandle,
                 ServiceProfileInfo serviceProfileInfo,

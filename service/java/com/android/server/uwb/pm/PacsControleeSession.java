@@ -16,6 +16,14 @@
 
 package com.android.server.uwb.pm;
 
+import static com.android.server.uwb.data.UwbConfig.CONTROLEE_AND_RESPONDER;
+import static com.android.server.uwb.data.UwbConfig.OOB_TYPE_BLE;
+import static com.android.server.uwb.data.UwbConfig.PERIPHERAL;
+
+import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
+import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP3;
+import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_DYNAMIC;
+
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.bluetooth.le.AdvertisingSetParameters;
@@ -44,6 +52,9 @@ import com.android.server.uwb.discovery.info.DiscoveryInfo;
 import com.android.server.uwb.secure.SecureFactory;
 import com.android.server.uwb.secure.SecureSession;
 import com.android.server.uwb.util.ObjectIdentifier;
+
+import com.google.uwb.support.fira.FiraSpecificationParams;
+import com.google.uwb.support.generic.GenericSpecificationParams;
 
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -193,7 +204,42 @@ public class PacsControleeSession extends RangingSessionController {
 
     @Override
     public UwbConfig getUwbConfig() {
-        return PacsProfile.getPacsControleeProfile();
+        // PACS controlee config
+        UwbConfig.Builder builder = new UwbConfig.Builder()
+                .setUwbRole(CONTROLEE_AND_RESPONDER)
+                .setStsConfig(STS_CONFIG_DYNAMIC)
+                .setMultiNodeMode(MULTI_NODE_MODE_ONE_TO_MANY)
+                .setRframeConfig(RFRAME_CONFIG_SP3)
+                .setTofReport(true)
+                .setOobType(OOB_TYPE_BLE)
+                .setOobBleRole(PERIPHERAL);
+        // Config received in sessionData
+        if (mSessionInfo.mSessionData != null) {
+            mSessionInfo.setSessionId(mSessionInfo.mSessionData.mSessionId);
+            mSessionInfo.mSessionData.mSubSessionId.ifPresent(
+                    integer -> mSessionInfo.setSubSessionId(integer));
+
+            if (mSessionInfo.mSessionData.mConfigurationParams.isPresent()) {
+                ConfigurationParams configurationParams =
+                        mSessionInfo.mSessionData.mConfigurationParams.get();
+                configurationParams.mScheduledMode.ifPresent(builder::setScheduledMode);
+                configurationParams.mBlockStriding.ifPresent(builder::setBlockStriding);
+                configurationParams.mChannel.ifPresent(builder::setUwbChannel);
+                configurationParams.mSp0PhyParameterSet.ifPresent(builder::setSp0PhyParameterSet);
+                configurationParams.mSp1PhyParameterSet.ifPresent(builder::setSp1PhyParameterSet);
+                configurationParams.mSp3PhyParameterSet.ifPresent(builder::setSp3PhyParameterSet);
+                configurationParams.mPreambleCodeIndex.ifPresent(builder::setUwbPreambleCodeIndex);
+                configurationParams.mSlotsPerRangingRound.ifPresent(
+                        builder::setSlotsPerRangingRound);
+                configurationParams.mMaxContentionPhaseLength.ifPresent(
+                        builder::setMaxContentionPhaseLength);
+                configurationParams.mSlotDuration.ifPresent(builder::setSlotDurationRstu);
+                configurationParams.mRangingIntervalMs.ifPresent(builder::setRangingIntervalMs);
+                configurationParams.mKeyRotationRate.ifPresent(builder::setKeyRotationRate);
+                configurationParams.mMacFcsType.ifPresent(builder::setKMacFcsType);
+            }
+        }
+        return builder.build();
     }
 
     /** Implements callback of DiscoveryAdvertiseProvider */
@@ -216,20 +262,45 @@ public class PacsControleeSession extends RangingSessionController {
     /** Pacs profile controlee implementation of RunningProfileSessionInfo. */
     public static class PacsControleeSessionInfo implements RunningProfileSessionInfo {
         public final PacsControleeSession mPacsControleeSession;
-        private ControlleeInfo mControlleeInfo;
 
         public PacsControleeSessionInfo(PacsControleeSession pacsControleeSession) {
             mPacsControleeSession = pacsControleeSession;
         }
 
-        public void setControlleeInfo(ControlleeInfo controlleeInfo) {
-            mControlleeInfo = controlleeInfo;
-        }
-
         @NonNull
         @Override
         public ControlleeInfo getControlleeInfo() {
-            return mControlleeInfo;
+            GenericSpecificationParams genericSpecificationParams =
+                    mPacsControleeSession.getSpecificationInfo();
+            if (genericSpecificationParams == null
+                    || genericSpecificationParams.getFiraSpecificationParams() == null) {
+                Log.e(TAG, "Specification params not populated, sending default values");
+                return new ControlleeInfo.Builder()
+                        .setUwbCapability(new UwbCapability.Builder()
+                                .build())
+                        .build();
+            }
+            FiraSpecificationParams firaSpecificationParams =
+                    genericSpecificationParams.getFiraSpecificationParams();
+            UwbCapability uwbCapability = new UwbCapability.Builder()
+                    .setMinPhyVersionSupported(firaSpecificationParams.getMinPhyVersionSupported())
+                    .setMaxPhyVersionSupported(firaSpecificationParams.getMaxPhyVersionSupported())
+                    .setMinMacVersionSupported(firaSpecificationParams.getMinMacVersionSupported())
+                    .setMaxMacVersionSupported(firaSpecificationParams.getMaxMacVersionSupported())
+                    .setDeviceRoles(firaSpecificationParams.getDeviceRoleCapabilities())
+                    .setRangingMethod(firaSpecificationParams.getRangingRoundCapabilities())
+                    .setStsConfig(firaSpecificationParams.getStsCapabilities())
+                    .setMultiNodeMode(firaSpecificationParams.getMultiNodeCapabilities())
+                    .setBlockStriding(firaSpecificationParams.hasBlockStridingSupport())
+                    .setUwbInitiationTime(firaSpecificationParams.hasInitiationTimeSupport())
+                    .setChannels(firaSpecificationParams.getSupportedChannels())
+                    .setRFrameConfig(firaSpecificationParams.getRframeCapabilities())
+                    .setCcConstraintLength(firaSpecificationParams.getPsduDataRateCapabilities())
+                    .setBprfParameterSet(firaSpecificationParams.getBprfParameterSetCapabilities())
+                    .setHprfParameterSet(firaSpecificationParams.getHprfParameterSetCapabilities())
+                    .setAoaSupport(firaSpecificationParams.getAoaCapabilities())
+                    .build();
+            return new ControlleeInfo.Builder().setUwbCapability(uwbCapability).build();
         }
 
         @NonNull
@@ -291,14 +362,19 @@ public class PacsControleeSession extends RangingSessionController {
         @Override
         public void onSessionDataReady(
                 int updatedSessionId, @Nullable byte[] sessionData, boolean isSessionTerminated) {
+            mPacsControleeSession.mSessionInfo.mSessionData = SessionData.fromBytes(sessionData);
             mPacsControleeSession.sendMessage(RANGING_INIT);
         }
 
         @Override
-        public void onSessionAborted() {}
+        public void onSessionAborted() {
+            Log.w(TAG, "Secure Session aborted");
+        }
 
         @Override
-        public void onSessionTerminated() {}
+        public void onSessionTerminated() {
+            Log.w(TAG, "Secure Session terminated");
+        }
     }
 
     public class IdleState extends State {
@@ -410,6 +486,9 @@ public class PacsControleeSession extends RangingSessionController {
                     transportServerStart();
                     break;
                 case SESSION_STOP:
+                    stopAdvertising();
+                    transportServerStop();
+                    break;
                 case TRANSPORT_COMPLETED:
                     stopAdvertising();
                     transportServerStop();
