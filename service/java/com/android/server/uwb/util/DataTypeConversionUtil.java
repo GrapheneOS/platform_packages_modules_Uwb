@@ -105,7 +105,7 @@ public class DataTypeConversionUtil {
      */
     public static int arbitraryByteArrayToI32(byte[] bytes) {
         if (bytes.length > 4 || bytes.length < 1) {
-            throw new NumberFormatException("Expected length less than 4 but was " + bytes.length);
+            throw new NumberFormatException("Expected length less than 5 but was " + bytes.length);
         }
         ByteBuffer byteBuffer = ByteBuffer.allocate(Integer.BYTES);
         byteBuffer.position(Integer.BYTES - bytes.length);
