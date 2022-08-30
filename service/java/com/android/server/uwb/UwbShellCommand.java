@@ -108,6 +108,9 @@ public class UwbShellCommand extends BasicShellCommandHandler {
     @VisibleForTesting
     public static String SHELL_PACKAGE_NAME = "com.android.shell";
     private static final long RANGE_CTL_TIMEOUT_MILLIS = 10_000;
+    private static final int RSSI_FLAG = 1;
+    private static final int AOA_FLAG = 1 << 1;
+    private static final int CIR_FLAG = 1 << 2;
 
     // These don't require root access.
     // However, these do perform permission checks in the corresponding UwbService methods.
@@ -891,11 +894,25 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     return 0;
                 }
                 case "enable-diagnostics-notification": {
-                    mUwbServiceCore.enableDiagnostics(true);
+                    int diagramFrameReportsFlags = 0;
+                    String option = getNextOption();
+                    while (option != null) {
+                        if (option.equals("-r")) {
+                            diagramFrameReportsFlags |= RSSI_FLAG;
+                        }
+                        if (option.equals("-a")) {
+                            diagramFrameReportsFlags |= AOA_FLAG;
+                        }
+                        if (option.equals("-c")) {
+                            diagramFrameReportsFlags |= CIR_FLAG;
+                        }
+                        option = getNextOption();
+                    }
+                    mUwbServiceCore.enableDiagnostics(true, diagramFrameReportsFlags);
                     return 0;
                 }
                 case "disable-diagnostics-notification": {
-                    mUwbServiceCore.enableDiagnostics(false);
+                    mUwbServiceCore.enableDiagnostics(false, 0);
                     return 0;
                 }
                 default:
@@ -991,7 +1008,10 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         pw.println("    Stops all ongoing ranging sessions");
         pw.println("  get-specification-info");
         pw.println("    Gets specification info from uwb chip");
-        pw.println("  enable-diagnostics-notification");
+        pw.println("  enable-diagnostics-notification"
+                + " [-r](enable rssi)"
+                + " [-a](enable aoa)"
+                + " [-c](enable cir)");
         pw.println("    Enable vendor diagnostics notification");
         pw.println("  disable-diagnostics-notification");
         pw.println("    Disable vendor diagnostics notification");

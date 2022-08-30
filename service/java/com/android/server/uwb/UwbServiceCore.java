@@ -90,6 +90,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     private static final int SEND_VENDOR_CMD_TIMEOUT_MS = 10000;
 
     private boolean mIsDiagnosticsEnabled = false;
+    private int mDiagramsFrameReportsFieldsFlags = 0;
 
     private final PowerManager.WakeLock mUwbWakeLock;
     private final Context mContext;
@@ -307,9 +308,10 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         return mNativeUwbManager.getTimestampResolutionNanos();
     }
 
-    /** Set whether diagnostics is enabled */
-    public void enableDiagnostics(boolean value) {
-        this.mIsDiagnosticsEnabled = value;
+    /** Set whether diagnostics is enabled and set enabled fields */
+    public void enableDiagnostics(boolean enabled, int flags) {
+        this.mIsDiagnosticsEnabled = enabled;
+        this.mDiagramsFrameReportsFieldsFlags = flags;
     }
 
     public void openRanging(
@@ -342,6 +344,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             if (this.mIsDiagnosticsEnabled && getCachedSpecificationParams(chipId)
                     .getFiraSpecificationParams().hasDiagnosticsSupport()) {
                 builder.setIsDiagnosticsEnabled(true);
+                builder.setDiagramsFrameReportsFieldsFlags(mDiagramsFrameReportsFieldsFlags);
             }
             FiraOpenSessionParams firaOpenSessionParams = builder.build();
             sessionId = firaOpenSessionParams.getSessionId();
