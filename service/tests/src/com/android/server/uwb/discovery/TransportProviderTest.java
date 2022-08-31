@@ -18,6 +18,8 @@ package com.android.server.uwb.discovery;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -28,6 +30,11 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.server.uwb.discovery.Transport.DataReceiver;
 import com.android.server.uwb.discovery.Transport.SendingDataCallback;
+import com.android.server.uwb.discovery.TransportProvider.TerminationReason;
+import com.android.server.uwb.discovery.info.AdminErrorMessage;
+import com.android.server.uwb.discovery.info.AdminErrorMessage.ErrorType;
+import com.android.server.uwb.discovery.info.AdminEventMessage;
+import com.android.server.uwb.discovery.info.AdminEventMessage.EventType;
 import com.android.server.uwb.discovery.info.FiraConnectorMessage;
 import com.android.server.uwb.discovery.info.FiraConnectorMessage.InstructionCode;
 import com.android.server.uwb.discovery.info.FiraConnectorMessage.MessageType;
@@ -56,6 +63,7 @@ public class TransportProviderTest {
         public boolean sendMessageSuccess = true;
         public FiraConnectorMessage lastSendMessage;
         public int lastSendMessageSecid;
+        public TerminationReason lastTerminationReason;
 
         FakeTransportProvider() {
             super(SECID);
@@ -84,6 +92,11 @@ public class TransportProviderTest {
             }
             mStarted = false;
             return true;
+        }
+
+        @Override
+        protected void terminateOnError(TerminationReason reason) {
+            lastTerminationReason = reason;
         }
     }
 
@@ -168,5 +181,57 @@ public class TransportProviderTest {
         mTransportProvider.onMessageReceived(SECID2, MESSAGE);
 
         verifyZeroInteractions(mMockDataReceiver);
+    }
+
+    @Test
+    public void testSentAdminErrorMessage() {
+        mTransportProvider.sentAdminErrorMessage(ErrorType.DATA_PACKET_LENGTH_OVERFLOW);
+
+        assertThat(mFakeTransportProvider.lastSendMessageSecid)
+                .isEqualTo(TransportProvider.ADMIN_SECID);
+        assertThat(mFakeTransportProvider.lastSendMessage.toString())
+                .isEqualTo(new AdminErrorMessage(ErrorType.DATA_PACKET_LENGTH_OVERFLOW).toString());
+    }
+
+    @Test
+    public void testSentAdminEventMessage() {
+        mTransportProvider.sentAdminEventMessage(EventType.CAPABILITIES_CHANGED, new byte[] {});
+
+        assertThat(mFakeTransportProvider.lastSendMessageSecid)
+                .isEqualTo(TransportProvider.ADMIN_SECID);
+        assertThat(mFakeTransportProvider.lastSendMessage.toString())
+                .isEqualTo(
+                        new AdminEventMessage(EventType.CAPABILITIES_CHANGED, new byte[] {})
+                                .toString());
+    }
+
+    private void verifyAdminMessageReceive(ErrorType errorType, TerminationReason reason) {
+        mTransportProvider.registerDataReceiver(mMockDataReceiver);
+        mTransportProvider.onMessageReceived(
+                TransportProvider.ADMIN_SECID, new AdminErrorMessage(errorType));
+        verify(mMockDataReceiver, never()).onDataReceived(any());
+        assertThat(mFakeTransportProvider.lastTerminationReason).isEqualTo(reason);
+    }
+
+    @Test
+    public void testOutCharactersticNotifyAndRead_receiveAdminPacket() {
+        verifyAdminMessageReceive(
+                ErrorType.DATA_PACKET_LENGTH_OVERFLOW,
+                TerminationReason.REMOTE_DEVICE_MESSAGE_ERROR);
+        verifyAdminMessageReceive(
+                ErrorType.MESSAGE_LENGTH_OVERFLOW, TerminationReason.REMOTE_DEVICE_MESSAGE_ERROR);
+        verifyAdminMessageReceive(
+                ErrorType.TOO_MANY_CONCURRENT_FRAGMENTED_MESSAGE_SESSIONS,
+                TerminationReason.REMOTE_DEVICE_MESSAGE_ERROR);
+        verifyAdminMessageReceive(
+                ErrorType.SECID_INVALID, TerminationReason.REMOTE_DEVICE_SECID_ERROR);
+        verifyAdminMessageReceive(
+                ErrorType.SECID_INVALID_FOR_RESPONSE, TerminationReason.REMOTE_DEVICE_SECID_ERROR);
+        verifyAdminMessageReceive(
+                ErrorType.SECID_BUSY, TerminationReason.REMOTE_DEVICE_SECID_ERROR);
+        verifyAdminMessageReceive(
+                ErrorType.SECID_PROTOCOL_ERROR, TerminationReason.REMOTE_DEVICE_SECID_ERROR);
+        verifyAdminMessageReceive(
+                ErrorType.SECID_INTERNAL_ERROR, TerminationReason.REMOTE_DEVICE_SECID_ERROR);
     }
 }
