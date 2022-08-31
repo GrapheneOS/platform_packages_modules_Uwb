@@ -328,8 +328,77 @@ public class FiraTests {
         assertEquals(fromBundle.getNumOfMsrmtFocusOnAoaAzimuth(), numOfMsrmtFocusOnAoaAzimuth);
         assertEquals(fromBundle.getNumOfMsrmtFocusOnAoaElevation(), numOfMsrmtFocusOnAoaElevation);
 
-        verifyProtocolPresent(params);
+        verifyProtocolPresent(fromBundle);
         verifyBundlesEqual(params, fromBundle);
+
+        FiraOpenSessionParams fromCopy = new FiraOpenSessionParams.Builder(params).build();
+
+        assertEquals(fromCopy.getRangingRoundUsage(), rangingRoundUsage);
+        assertEquals(fromCopy.getMultiNodeMode(), multiNodeMode);
+
+        assertEquals(fromCopy.getDeviceAddress(), deviceAddress);
+        assertEquals(fromCopy.getDestAddressList().size(), destAddressList.size());
+        for (int i = 0; i < destAddressList.size(); i++) {
+            assertEquals(fromCopy.getDestAddressList().get(i), destAddressList.get(i));
+        }
+
+        assertEquals(fromCopy.getInitiationTimeMs(), initiationTimeMs);
+        assertEquals(fromCopy.getSlotDurationRstu(), slotDurationRstu);
+        assertEquals(fromCopy.getSlotsPerRangingRound(), slotsPerRangingRound);
+        assertEquals(fromCopy.getRangingIntervalMs(), rangingIntervalMs);
+        assertEquals(fromCopy.getBlockStrideLength(), blockStrideLength);
+        assertEquals(fromCopy.getMaxRangingRoundRetries(), maxRangingRoundRetries);
+        assertEquals(fromCopy.getSessionPriority(), sessionPriority);
+        assertEquals(fromCopy.getMacAddressMode(), addressMode);
+        assertEquals(fromCopy.hasResultReportPhase(), hasResultReportPhase);
+        assertEquals(fromCopy.getMeasurementReportType(), measurementReportType);
+        assertEquals(fromCopy.getInBandTerminationAttemptCount(), inBandTerminationAttemptCount);
+        assertEquals(fromCopy.getChannelNumber(), channelNumber);
+        assertEquals(fromCopy.getPreambleCodeIndex(), preambleCodeIndex);
+        assertEquals(fromCopy.getRframeConfig(), rframeConfig);
+        assertEquals(fromCopy.getPrfMode(), prfMode);
+        assertEquals(fromCopy.getPreambleDuration(), preambleDuration);
+        assertEquals(fromCopy.getSfdId(), sfdId);
+        assertEquals(fromCopy.getStsSegmentCount(), stsSegmentCount);
+        assertEquals(fromCopy.getStsLength(), stsLength);
+        assertArrayEquals(fromCopy.getSessionKey(), sessionKey);
+        assertArrayEquals(fromCopy.getSubsessionKey(), subsessionKey);
+        assertEquals(fromCopy.getPsduDataRate(), psduDataRate);
+        assertEquals(fromCopy.getBprfPhrDataRate(), bprfPhrDataRate);
+        assertEquals(fromCopy.getFcsType(), fcsType);
+        assertEquals(fromCopy.isTxAdaptivePayloadPowerEnabled(), isTxAdaptivePayloadPowerEnabled);
+        assertEquals(fromCopy.getStsConfig(), stsConfig);
+        assertEquals(fromCopy.getSubSessionId(), subSessionId);
+        assertArrayEquals(fromCopy.getVendorId(), vendorId);
+        assertArrayEquals(fromCopy.getStaticStsIV(), staticStsIV);
+        assertEquals(fromCopy.isKeyRotationEnabled(), isKeyRotationEnabled);
+        assertEquals(fromCopy.getKeyRotationRate(), keyRotationRate);
+        assertEquals(fromCopy.getAoaResultRequest(), aoaResultRequest);
+        assertEquals(fromCopy.getRangeDataNtfConfig(), rangeDataNtfConfig);
+        assertEquals(fromCopy.getRangeDataNtfProximityNear(), rangeDataNtfProximityNear, 0.0d);
+        assertEquals(fromCopy.getRangeDataNtfProximityFar(), rangeDataNtfProximityFar, 0.0d);
+        assertEquals(fromCopy.getRangeDataNtfAoaAzimuthLower(), rangeDataNtfAoaAzimuthLower,
+                0.0d);
+        assertEquals(fromCopy.getRangeDataNtfAoaAzimuthUpper(), rangeDataNtfAoaAzimuthUpper,
+                0.0d);
+        assertEquals(fromCopy.getRangeDataNtfAoaElevationLower(), rangeDataNtfAoaElevationLower,
+                0.0d);
+        assertEquals(fromCopy.getRangeDataNtfAoaElevationUpper(), rangeDataNtfAoaElevationUpper,
+                0.0d);
+        assertEquals(fromCopy.hasTimeOfFlightReport(), hasTimeOfFlightReport);
+        assertEquals(fromCopy.hasAngleOfArrivalAzimuthReport(), hasAngleOfArrivalAzimuthReport);
+        assertEquals(
+                fromCopy.hasAngleOfArrivalElevationReport(), hasAngleOfArrivalElevationReport);
+        assertEquals(
+                fromCopy.hasAngleOfArrivalFigureOfMeritReport(),
+                hasAngleOfArrivalFigureOfMeritReport);
+        assertEquals(fromCopy.getAoaType(), aoaType);
+        assertEquals(fromCopy.getNumOfMsrmtFocusOnRange(), numOfMsrmtFocusOnRange);
+        assertEquals(fromCopy.getNumOfMsrmtFocusOnAoaAzimuth(), numOfMsrmtFocusOnAoaAzimuth);
+        assertEquals(fromCopy.getNumOfMsrmtFocusOnAoaElevation(), numOfMsrmtFocusOnAoaElevation);
+
+        verifyProtocolPresent(fromCopy);
+        verifyBundlesEqual(params, fromCopy);
     }
 
     @Test
