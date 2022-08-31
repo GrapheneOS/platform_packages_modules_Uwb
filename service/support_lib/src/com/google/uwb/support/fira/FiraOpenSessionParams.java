@@ -1037,6 +1037,9 @@ public class FiraOpenSessionParams extends FiraParams {
             mHasAngleOfArrivalElevationReport = builder.mHasAngleOfArrivalElevationReport;
             mHasAngleOfArrivalFigureOfMeritReport = builder.mHasAngleOfArrivalFigureOfMeritReport;
             mAoaType = builder.mAoaType;
+            mNumOfMsrmtFocusOnRange = builder.mNumOfMsrmtFocusOnRange;
+            mNumOfMsrmtFocusOnAoaAzimuth = builder.mNumOfMsrmtFocusOnAoaAzimuth;
+            mNumOfMsrmtFocusOnAoaElevation = builder.mNumOfMsrmtFocusOnAoaElevation;
         }
 
         public Builder(@NonNull FiraOpenSessionParams params) {
@@ -1096,6 +1099,9 @@ public class FiraOpenSessionParams extends FiraParams {
             mHasAngleOfArrivalElevationReport = params.mHasAngleOfArrivalElevationReport;
             mHasAngleOfArrivalFigureOfMeritReport = params.mHasAngleOfArrivalFigureOfMeritReport;
             mAoaType = params.mAoaType;
+            mNumOfMsrmtFocusOnRange = params.mNumOfMsrmtFocusOnRange;
+            mNumOfMsrmtFocusOnAoaAzimuth = params.mNumOfMsrmtFocusOnAoaAzimuth;
+            mNumOfMsrmtFocusOnAoaElevation = params.mNumOfMsrmtFocusOnAoaElevation;
         }
 
         public FiraOpenSessionParams.Builder setProtocolVersion(FiraProtocolVersion version) {
