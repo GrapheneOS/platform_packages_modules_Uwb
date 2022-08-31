@@ -172,6 +172,8 @@ public class ConfigurationManager {
                         .setDeviceRole(deviceRole)
                         .setSessionId(rangingParameters.getSessionId())
                         .setDeviceAddress(Conversions.convertUwbAddress(localAddress))
+                        .setDestAddressList(Conversions.convertUwbAddressList(
+                                rangingParameters.getPeerAddresses().toArray(new UwbAddress[0])))
                         .setAoaResultRequest(configuration.getAoaResultRequestMode())
                         .setChannelNumber(rangingParameters.getComplexChannel().getChannel())
                         .setPreambleCodeIndex(
