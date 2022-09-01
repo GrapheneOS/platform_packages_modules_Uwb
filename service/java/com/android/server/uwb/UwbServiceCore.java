@@ -90,6 +90,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     private static final int SEND_VENDOR_CMD_TIMEOUT_MS = 10000;
 
     private boolean mIsDiagnosticsEnabled = false;
+    private int mDiagramsFrameReportsFieldsFlags = 0;
 
     private final PowerManager.WakeLock mUwbWakeLock;
     private final Context mContext;
@@ -307,9 +308,10 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         return mNativeUwbManager.getTimestampResolutionNanos();
     }
 
-    /** Set whether diagnostics is enabled */
-    public void enableDiagnostics(boolean value) {
-        this.mIsDiagnosticsEnabled = value;
+    /** Set whether diagnostics is enabled and set enabled fields */
+    public void enableDiagnostics(boolean enabled, int flags) {
+        this.mIsDiagnosticsEnabled = enabled;
+        this.mDiagramsFrameReportsFieldsFlags = flags;
     }
 
     public void openRanging(
@@ -342,6 +344,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             if (this.mIsDiagnosticsEnabled && getCachedSpecificationParams(chipId)
                     .getFiraSpecificationParams().hasDiagnosticsSupport()) {
                 builder.setIsDiagnosticsEnabled(true);
+                builder.setDiagramsFrameReportsFieldsFlags(mDiagramsFrameReportsFieldsFlags);
             }
             FiraOpenSessionParams firaOpenSessionParams = builder.build();
             sessionId = firaOpenSessionParams.getSessionId();
@@ -610,12 +613,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             WatchDogThread watchDog = new WatchDogThread("disableInternal", WATCHDOG_MS);
             watchDog.start();
 
-
             try {
-                for (String chipId : mUwbInjector.getMultichipData().getChipIds()) {
-                    updateState(AdapterStateCallback.STATE_DISABLED,
-                            StateChangeReason.SYSTEM_POLICY, chipId);
-                }
                 Log.i(TAG, "Deinitialization start ...");
                 mUwbWakeLock.acquire();
 
@@ -623,10 +621,10 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                     Log.w(TAG, "Error disabling UWB");
                 } else {
                     Log.i(TAG, "Deinitialization success");
-                    /* UWBS_STATUS_OFF is not the valid state. so handle device state directly */
-                    for (String chipId : mUwbInjector.getMultichipData().getChipIds()) {
-                        handleDeviceStatusNotification(UwbUciConstants.DEVICE_STATE_OFF, chipId);
-                    }
+                }
+                /* UWBS_STATUS_OFF is not the valid state. so handle device state directly */
+                for (String chipId : mUwbInjector.getMultichipData().getChipIds()) {
+                    handleDeviceStatusNotification(UwbUciConstants.DEVICE_STATE_OFF, chipId);
                 }
             } finally {
                 mUwbWakeLock.release();

@@ -49,8 +49,11 @@ import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.server.uwb.discovery.Transport.DataReceiver;
-import com.android.server.uwb.discovery.TransportClientProvider.TerminationReason;
 import com.android.server.uwb.discovery.TransportClientProvider.TransportClientCallback;
+import com.android.server.uwb.discovery.TransportProvider;
+import com.android.server.uwb.discovery.TransportProvider.TerminationReason;
+import com.android.server.uwb.discovery.info.AdminErrorMessage;
+import com.android.server.uwb.discovery.info.AdminErrorMessage.ErrorType;
 import com.android.server.uwb.discovery.info.FiraConnectorCapabilities;
 import com.android.server.uwb.discovery.info.FiraConnectorDataPacket;
 import com.android.server.uwb.discovery.info.FiraConnectorMessage;
@@ -81,10 +84,11 @@ public class GattTransportClientProviderTest {
     private static final Executor EXECUTOR = UwbTestUtils.getExecutor();
 
     private static final int SECID = 2;
+    private static final int SECID2 = 3;
     private static final byte[] MESSAGE_PAYLOAD1 = new byte[] {(byte) 0xF4, 0x00, 0x40};
     private static final FiraConnectorMessage MESSAGE =
             new FiraConnectorMessage(
-                    MessageType.EVENT, InstructionCode.DATA_EXCHANGE, MESSAGE_PAYLOAD1);
+                    MessageType.COMMAND, InstructionCode.DATA_EXCHANGE, MESSAGE_PAYLOAD1);
     private static final FiraConnectorDataPacket DATA_PACKET =
             new FiraConnectorDataPacket(/*lastChainingPacket=*/ true, SECID, MESSAGE.toBytes());
     private static final byte[] DATA_PACKET_BYTES = DATA_PACKET.toBytes();
@@ -602,7 +606,7 @@ public class GattTransportClientProviderTest {
         Arrays.fill(messagePayload, (byte) 3);
         FiraConnectorMessage message =
                 new FiraConnectorMessage(
-                        MessageType.EVENT, InstructionCode.DATA_EXCHANGE, messagePayload);
+                        MessageType.COMMAND, InstructionCode.DATA_EXCHANGE, messagePayload);
         byte[] messageBytes = message.toBytes();
         int payloadSize = OPTIMIZED_DATA_PACKET_SIZE - 1;
         byte[] packet_bytes1 =
@@ -626,6 +630,7 @@ public class GattTransportClientProviderTest {
                         .toBytes();
 
         startProcessing();
+        assertThat(mGattTransportClientProvider.setCapabilites(CAPABILITIES)).isTrue();
         notifyAndReadOutCharacteristic(packet_bytes1);
         notifyAndReadOutCharacteristic(packet_bytes2);
         notifyAndReadOutCharacteristic(packet_bytes3);
@@ -635,5 +640,150 @@ public class GattTransportClientProviderTest {
         ArgumentCaptor<byte[]> captor = ArgumentCaptor.forClass(byte[].class);
         verify(mMockDataReceiver, times(1)).onDataReceived(captor.capture());
         assertThat(captor.getValue()).isEqualTo(message.payload);
+    }
+
+    @Test
+    public void testOutCharactersticNotifyAndRead_receiveAdminPacket() {
+        byte[] packetBytes =
+                new FiraConnectorDataPacket(
+                                /*lastChainingPacket=*/ true,
+                                TransportProvider.ADMIN_SECID,
+                                new AdminErrorMessage(ErrorType.SECID_INVALID).toBytes())
+                        .toBytes();
+        startProcessing();
+        notifyAndReadOutCharacteristic(packetBytes);
+
+        verify(mMockBluetoothGatt, times(1))
+                .readCharacteristic(argThat(new CharacteristicMatcher(mOutCharacterstic)));
+        verify(mMockDataReceiver, never()).onDataReceived(any());
+        verify(mMockTransportClientCallback, times(1))
+                .onTerminated(TerminationReason.REMOTE_DEVICE_SECID_ERROR);
+        assertThat(mGattTransportClientProvider.isStarted()).isFalse();
+    }
+
+    @Test
+    public void testOutCharactersticNotifyAndRead_packetLengthOverflow() {
+        byte[] messagePayload = new byte[OPTIMIZED_DATA_PACKET_SIZE + 1];
+        Arrays.fill(messagePayload, (byte) 3);
+        byte[] messageBytes =
+                new FiraConnectorMessage(
+                                MessageType.COMMAND, InstructionCode.DATA_EXCHANGE, messagePayload)
+                        .toBytes();
+        byte[] packet_bytes =
+                new FiraConnectorDataPacket(
+                                /*lastChainingPacket=*/ false,
+                                SECID,
+                                Arrays.copyOf(messageBytes, messageBytes.length))
+                        .toBytes();
+
+        FiraConnectorDataPacket expectedInPacket =
+                new FiraConnectorDataPacket(
+                        /*lastChainingPacket=*/ true,
+                        TransportProvider.ADMIN_SECID,
+                        new AdminErrorMessage(ErrorType.DATA_PACKET_LENGTH_OVERFLOW).toBytes());
+
+        startProcessing();
+        assertThat(mGattTransportClientProvider.setCapabilites(CAPABILITIES)).isTrue();
+        notifyAndReadOutCharacteristic(packet_bytes);
+
+        verify(mMockBluetoothGatt, times(1))
+                .readCharacteristic(argThat(new CharacteristicMatcher(mOutCharacterstic)));
+        verify(mMockDataReceiver, never()).onDataReceived(any());
+        verify(mMockBluetoothGatt, times(1))
+                .writeCharacteristic(
+                        argThat(new CharacteristicMatcher(IN_CHARACTERSTIC)),
+                        eq(expectedInPacket.toBytes()),
+                        eq(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT));
+    }
+
+    @Test
+    public void testOutCharactersticNotifyAndRead_tooManyConcurrentSessions() {
+        byte[] messagePayload = new byte[24];
+        Arrays.fill(messagePayload, (byte) 3);
+        int payloadSize = OPTIMIZED_DATA_PACKET_SIZE - 1;
+        byte[] messageBytes =
+                new FiraConnectorMessage(
+                                MessageType.COMMAND, InstructionCode.DATA_EXCHANGE, messagePayload)
+                        .toBytes();
+        byte[] packet_bytes1 =
+                new FiraConnectorDataPacket(
+                                /*lastChainingPacket=*/ false,
+                                SECID,
+                                Arrays.copyOf(messageBytes, payloadSize))
+                        .toBytes();
+        byte[] packet_bytes2 =
+                new FiraConnectorDataPacket(
+                                /*lastChainingPacket=*/ true,
+                                SECID2,
+                                Arrays.copyOfRange(messageBytes, payloadSize, messageBytes.length))
+                        .toBytes();
+        FiraConnectorDataPacket expectedInPacket =
+                new FiraConnectorDataPacket(
+                        /*lastChainingPacket=*/ true,
+                        TransportProvider.ADMIN_SECID,
+                        new AdminErrorMessage(
+                                        ErrorType.TOO_MANY_CONCURRENT_FRAGMENTED_MESSAGE_SESSIONS)
+                                .toBytes());
+
+        startProcessing();
+        assertThat(mGattTransportClientProvider.setCapabilites(CAPABILITIES)).isTrue();
+        notifyAndReadOutCharacteristic(packet_bytes1);
+        notifyAndReadOutCharacteristic(packet_bytes2);
+
+        verify(mMockBluetoothGatt, times(2))
+                .readCharacteristic(argThat(new CharacteristicMatcher(mOutCharacterstic)));
+        verify(mMockDataReceiver, never()).onDataReceived(any());
+        verify(mMockBluetoothGatt, times(1))
+                .writeCharacteristic(
+                        argThat(new CharacteristicMatcher(IN_CHARACTERSTIC)),
+                        eq(expectedInPacket.toBytes()),
+                        eq(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT));
+    }
+
+    @Test
+    public void testOutCharactersticNotifyAndRead_messageLengthOverflow() {
+        int payloadSize = 200;
+        FiraConnectorCapabilities capabilities =
+                new FiraConnectorCapabilities.Builder()
+                        .setOptimizedDataPacketSize(payloadSize + 1)
+                        .setMaxMessageBufferSize(264)
+                        .build();
+        byte[] messagePayload = new byte[265];
+        Arrays.fill(messagePayload, (byte) 3);
+        byte[] messageBytes =
+                new FiraConnectorMessage(
+                                MessageType.COMMAND, InstructionCode.DATA_EXCHANGE, messagePayload)
+                        .toBytes();
+        byte[] packet_bytes1 =
+                new FiraConnectorDataPacket(
+                                /*lastChainingPacket=*/ false,
+                                SECID,
+                                Arrays.copyOf(messageBytes, payloadSize))
+                        .toBytes();
+        byte[] packet_bytes2 =
+                new FiraConnectorDataPacket(
+                                /*lastChainingPacket=*/ true,
+                                SECID,
+                                Arrays.copyOfRange(messageBytes, payloadSize, messageBytes.length))
+                        .toBytes();
+        FiraConnectorDataPacket expectedInPacket =
+                new FiraConnectorDataPacket(
+                        /*lastChainingPacket=*/ true,
+                        TransportProvider.ADMIN_SECID,
+                        new AdminErrorMessage(ErrorType.MESSAGE_LENGTH_OVERFLOW).toBytes());
+
+        startProcessing();
+        assertThat(mGattTransportClientProvider.setCapabilites(capabilities)).isTrue();
+        notifyAndReadOutCharacteristic(packet_bytes1);
+        notifyAndReadOutCharacteristic(packet_bytes2);
+
+        verify(mMockBluetoothGatt, times(2))
+                .readCharacteristic(argThat(new CharacteristicMatcher(mOutCharacterstic)));
+        verify(mMockDataReceiver, never()).onDataReceived(any());
+        verify(mMockBluetoothGatt, times(1))
+                .writeCharacteristic(
+                        argThat(new CharacteristicMatcher(IN_CHARACTERSTIC)),
+                        eq(expectedInPacket.toBytes()),
+                        eq(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT));
     }
 }

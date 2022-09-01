@@ -31,6 +31,8 @@ import android.util.Log;
 
 import androidx.annotation.WorkerThread;
 
+import com.android.server.uwb.discovery.TransportProvider.MessagePacket;
+import com.android.server.uwb.discovery.TransportProvider.TerminationReason;
 import com.android.server.uwb.discovery.TransportServerProvider;
 import com.android.server.uwb.discovery.TransportServerProvider.TransportServerCallback;
 import com.android.server.uwb.discovery.info.FiraConnectorCapabilities;
@@ -43,7 +45,7 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 
 /**
- * Class for UWB transport server provider using Bluetooth GATT.
+ * Class for FiRa CP UWB transport server provider using Bluetooth GATT.
  *
  * <p>The GATT server simply waits for the discovery from client side. It shall also wait for at
  * least one valid update of FiRa Connector Capabilities characteristic value from the client side.
@@ -78,18 +80,6 @@ public class GattTransportServerProvider extends TransportServerProvider {
      * incomplete to be constructed as FiRa Connector Message.
      */
     private ArrayDeque<FiraConnectorDataPacket> mIncompleteInDataPacketQueue;
-
-    /* Wraps Fira Connector Message byte array and the associated SECID.
-     */
-    private static class MessagePacket {
-        public final int secid;
-        public ByteBuffer messageBytes;
-
-        MessagePacket(int secid, ByteBuffer messageBytes) {
-            this.secid = secid;
-            this.messageBytes = messageBytes;
-        }
-    }
 
     /* Queue of Fira Connector Message wrapped as MessagePacket to be sent via the
      * mOutControlPointCharacteristic.
@@ -496,5 +486,12 @@ public class GattTransportServerProvider extends TransportServerProvider {
                         BluetoothGattCharacteristic.PROPERTY_WRITE,
                         BluetoothGattCharacteristic.PERMISSION_WRITE);
         mFiraCPService.addCharacteristic(mCapabilitiesCharacteristic);
+    }
+
+    @Override
+    protected void terminateOnError(TerminationReason reason) {
+        Log.e(TAG, "GattTransportServerProvider terminated with reason:" + reason);
+        stop();
+        mTransportServerCallback.onTerminated(reason);
     }
 }
