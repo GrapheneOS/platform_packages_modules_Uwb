@@ -85,5 +85,7 @@ public class FiraConnectorDataPacketTest {
         byte[] result = packet.toBytes();
         assertThat(result.length).isEqualTo(TEST_BYTES.length);
         assertThat(result).isEqualTo(TEST_BYTES);
+        assertThat(packet.toString())
+                .isEqualTo(FiraConnectorDataPacket.fromBytes(TEST_BYTES).toString());
     }
 }
