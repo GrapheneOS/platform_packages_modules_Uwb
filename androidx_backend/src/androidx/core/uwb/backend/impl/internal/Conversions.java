@@ -16,6 +16,7 @@
 
 package androidx.core.uwb.backend.impl.internal;
 
+import android.os.Build;
 import android.os.Build.VERSION_CODES;
 import android.uwb.AngleMeasurement;
 import android.uwb.AngleOfArrivalMeasurement;
@@ -75,7 +76,14 @@ final class Conversions {
                                 altitudeMeasurement.getConfidenceLevel());
             }
         }
-
+        if (Build.VERSION.SDK_INT >= VERSION_CODES.TIRAMISU) {
+            return new RangingPosition(
+                    distance,
+                    azimuth,
+                    altitude,
+                    measurement.getElapsedRealtimeNanos(),
+                    measurement.getRssiDbm());
+        }
         return new RangingPosition(
                 distance, azimuth, altitude, measurement.getElapsedRealtimeNanos());
     }
