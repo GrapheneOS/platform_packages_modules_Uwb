@@ -31,8 +31,10 @@ import android.util.Log;
 import androidx.annotation.WorkerThread;
 
 import com.android.server.uwb.discovery.TransportClientProvider;
-import com.android.server.uwb.discovery.TransportClientProvider.TerminationReason;
 import com.android.server.uwb.discovery.TransportClientProvider.TransportClientCallback;
+import com.android.server.uwb.discovery.TransportProvider.MessagePacket;
+import com.android.server.uwb.discovery.TransportProvider.TerminationReason;
+import com.android.server.uwb.discovery.info.AdminErrorMessage.ErrorType;
 import com.android.server.uwb.discovery.info.FiraConnectorCapabilities;
 import com.android.server.uwb.discovery.info.FiraConnectorDataPacket;
 import com.android.server.uwb.discovery.info.FiraConnectorMessage;
@@ -45,7 +47,7 @@ import java.util.ArrayDeque;
 import java.util.concurrent.Executor;
 
 /**
- * Class for UWB transport client provider using Bluetooth GATT.
+ * Class for FiRa CS UWB transport client provider using Bluetooth GATT.
  *
  * <p>The GATT client is responsible for the entire Service discovery procedure. Once the device
  * discovery phase passed, the client establishes the Bluetooth connection and perform GATT service
@@ -83,18 +85,6 @@ public class GattTransportClientProvider extends TransportClientProvider {
      * incomplete to be constructed as FiRa Connector Message.
      */
     private ArrayDeque<FiraConnectorDataPacket> mIncompleteOutDataPacketQueue;
-
-    /* Wraps Fira Connector Message byte array and the associated SECID.
-     */
-    private static class MessagePacket {
-        public final int secid;
-        public ByteBuffer messageBytes;
-
-        MessagePacket(int secid, ByteBuffer messageBytes) {
-            this.secid = secid;
-            this.messageBytes = messageBytes;
-        }
-    }
 
     /* Queue of Fira Connector Message wrapped as MessagePacket to be sent via the
      * mInControlPointCharacteristic.
@@ -435,6 +425,11 @@ public class GattTransportClientProvider extends TransportClientProvider {
             Log.w(TAG, "processOutDataPacket failed due to server not ready for processing.");
             return false;
         }
+        if (bytes.length > mCapabilities.optimizedDataPacketSize) {
+            Log.w(TAG, "processOutDataPacket failed due to data packet length overflow.");
+            super.sentAdminErrorMessage(ErrorType.DATA_PACKET_LENGTH_OVERFLOW);
+            return false;
+        }
         FiraConnectorDataPacket latestDataPacket = FiraConnectorDataPacket.fromBytes(bytes);
         if (latestDataPacket == null) {
             Log.w(
@@ -449,6 +444,7 @@ public class GattTransportClientProvider extends TransportClientProvider {
                     TAG,
                     "processOutDataPacket failed due to latest FiraConnectorDataPacket's SECID"
                             + " doesn't match previous data packet.");
+            super.sentAdminErrorMessage(ErrorType.TOO_MANY_CONCURRENT_FRAGMENTED_MESSAGE_SESSIONS);
             return false;
         }
         mIncompleteOutDataPacketQueue.add(latestDataPacket);
@@ -461,6 +457,12 @@ public class GattTransportClientProvider extends TransportClientProvider {
             byteStream.write(dataPacket.payload, /*off=*/ 0, dataPacket.payload.length);
         }
         mIncompleteOutDataPacketQueue.clear();
+
+        if (byteStream.size() > mCapabilities.maxMessageBufferSize) {
+            Log.w(TAG, "processOutDataPacket failed due to message length overflow.");
+            super.sentAdminErrorMessage(ErrorType.MESSAGE_LENGTH_OVERFLOW);
+            return false;
+        }
 
         FiraConnectorMessage message = FiraConnectorMessage.fromBytes(byteStream.toByteArray());
         if (message == null) {
@@ -586,8 +588,9 @@ public class GattTransportClientProvider extends TransportClientProvider {
         }
     }
 
-    private void terminateOnError(TerminationReason reason) {
-        Log.e(TAG, "GattTransportClient terminated with reason:" + reason);
+    @Override
+    protected void terminateOnError(TerminationReason reason) {
+        Log.e(TAG, "GattTransportClientProvider terminated with reason:" + reason);
         stop();
         mTransportClientCallback.onTerminated(reason);
     }
