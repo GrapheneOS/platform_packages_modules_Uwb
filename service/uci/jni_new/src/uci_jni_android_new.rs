@@ -18,9 +18,10 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 use std::sync::{Arc, Once};
 
-use jni::objects::{GlobalRef, JMethodID, JObject, JValue};
+use jni::objects::{GlobalRef, JClass, JMethodID, JObject, JValue};
 use jni::signature::TypeSignature;
 use jni::{AttachGuard, JavaVM};
+use log::{debug, error};
 use uwb_core::error::{Error as UwbCoreError, Result as UwbCoreResult};
 use uwb_core::uci::uci_manager_sync::{NotificationManager, NotificationManagerBuilder};
 use uwb_core::uci::{CoreNotification, RangingMeasurements, SessionNotification, SessionRangeData};
@@ -129,25 +130,87 @@ fn to_static_ref(jvm: JavaVM) -> &'static Arc<JavaVM> {
 pub(crate) struct NotificationManagerAndroid {
     // 'static annotation is needed as env is 'sent' by tokio::task::spawn_local.
     env: AttachGuard<'static>,
+    /// Global reference to the class loader object (java/lang/ClassLoader) from the java thread
+    /// that local java UCI classes can be loaded.
+    class_loader_obj: GlobalRef,
+    /// Global reference to the java class holding the various UCI notification callback functions.
     callback_obj: GlobalRef,
     // *_jmethod_id are cached for faster callback using call_method_unchecked
     jmethod_id_map: HashMap<String, JMethodID<'static>>,
+    // jclass are cached for faster callback
+    jclass_map: HashMap<String, GlobalRef>,
 }
 
 impl NotificationManagerAndroid {
+    /// Finds JClass stored in jclass map. Should be a member function, but disjoint field borrow
+    /// checker fails and mutability of individual fields has to be annotated.
+    fn find_local_class<'a>(
+        jclass_map: &'a mut HashMap<String, GlobalRef>,
+        class_loader_obj: &'a GlobalRef,
+        env: &'a AttachGuard<'static>,
+        class_name: &'a str,
+    ) -> UwbCoreResult<JClass<'a>> {
+        debug!("UCI JNI: find local class {}", class_name);
+        // Look for cached class
+        if jclass_map.get(class_name).is_none() {
+            // Find class using the class loader object, needed as this call is initiated from a
+            // different native thread.
+            let class_value = env
+                .call_method(
+                    class_loader_obj.as_obj(),
+                    "findClass",
+                    "(Ljava/lang/String;)Ljava/lang/Class;",
+                    &[JValue::Object(JObject::from(env.new_string(class_name).map_err(|e| {
+                        error!("UCI JNI: failed to create Java String: {:?}", e);
+                        UwbCoreError::Unknown
+                    })?))],
+                )
+                .map_err(|e| {
+                    error!("UCI JNI: failed to find java class {}: {:?}", class_name, e);
+                    UwbCoreError::Unknown
+                })?;
+            let jclass = match class_value.l() {
+                Ok(obj) => Ok(JClass::from(obj)),
+                Err(e) => {
+                    error!("UCI JNI: failed to find java class {}: {:?}", class_name, e);
+                    Err(UwbCoreError::Unknown)
+                }
+            }?;
+            // Cache JClass as a global reference.
+            jclass_map.insert(
+                class_name.to_owned(),
+                env.new_global_ref(jclass).map_err(|e| {
+                    error!("UCI JNI: global reference conversion failed: {:?}", e);
+                    UwbCoreError::Unknown
+                })?,
+            );
+        }
+        // Return JClass
+        Ok(jclass_map.get(class_name).unwrap().as_obj().into())
+    }
+
     fn cached_jni_call(&mut self, name: &str, sig: &str, args: &[JValue]) -> UwbCoreResult<()> {
-        let type_signature =
-            TypeSignature::from_str(sig).map_err(|_| UwbCoreError::BadParameters)?;
+        debug!("UCI JNI: callback {}", name);
+        let type_signature = TypeSignature::from_str(sig).map_err(|e| {
+            error!("UCI JNI: Invalid type signature: {:?}", e);
+            UwbCoreError::BadParameters
+        })?;
         if type_signature.args.len() != args.len() {
+            error!(
+                "UCI: type_signature requires {} args, but {} is provided",
+                type_signature.args.len(),
+                args.len()
+            );
             return Err(UwbCoreError::BadParameters);
         }
         let name_signature = name.to_owned() + sig;
         if self.jmethod_id_map.get(&name_signature).is_none() {
             self.jmethod_id_map.insert(
                 name_signature.clone(),
-                self.env
-                    .get_method_id(self.callback_obj.as_obj(), name, sig)
-                    .map_err(|_| UwbCoreError::BadParameters)?,
+                self.env.get_method_id(self.callback_obj.as_obj(), name, sig).map_err(|e| {
+                    error!("UCI JNI: failed to get method: {:?}", e);
+                    UwbCoreError::Unknown
+                })?,
             );
         }
         match self.env.call_method_unchecked(
@@ -157,7 +220,10 @@ impl NotificationManagerAndroid {
             args,
         ) {
             Ok(_) => Ok(()),
-            Err(_) => Err(UwbCoreError::Unknown),
+            Err(_) => {
+                error!("UCI JNI: callback {} failed!", name);
+                Err(UwbCoreError::Unknown)
+            }
         }
     }
 
@@ -206,10 +272,12 @@ impl NotificationManagerAndroid {
         self.env
             .set_int_array_region(status_jintarray, 0, &status_vec)
             .map_err(|_| UwbCoreError::Unknown)?;
-        let multicast_update_jclass = self
-            .env
-            .find_class(MULTICAST_LIST_UPDATE_STATUS_CLASS)
-            .map_err(|_| UwbCoreError::Unknown)?;
+        let multicast_update_jclass = NotificationManagerAndroid::find_local_class(
+            &mut self.jclass_map,
+            &self.class_loader_obj,
+            &self.env,
+            MULTICAST_LIST_UPDATE_STATUS_CLASS,
+        )?;
         let method_sig = "(L".to_owned() + MULTICAST_LIST_UPDATE_STATUS_CLASS + ";)V";
         let multicast_update_jobject = self
             .env
@@ -237,10 +305,12 @@ impl NotificationManagerAndroid {
         &mut self,
         range_data: SessionRangeData,
     ) -> UwbCoreResult<()> {
-        let measurement_jclass = self
-            .env
-            .find_class(UWB_TWO_WAY_MEASUREMENT_CLASS)
-            .map_err(|_| UwbCoreError::Unknown)?;
+        let measurement_jclass = NotificationManagerAndroid::find_local_class(
+            &mut self.jclass_map,
+            &self.class_loader_obj,
+            &self.env,
+            UWB_TWO_WAY_MEASUREMENT_CLASS,
+        )?;
         let bytearray_len: i32 = match &range_data.ranging_measurements {
             uwb_core::uci::RangingMeasurements::Short(_) => SHORT_MAC_ADDRESS_LEN,
             uwb_core::uci::RangingMeasurements::Extended(_) => EXTENDED_MAC_ADDRESS_LEN,
@@ -269,7 +339,10 @@ impl NotificationManagerAndroid {
                     JValue::Int(0),
                 ],
             )
-            .map_err(|_| UwbCoreError::Unknown)?;
+            .map_err(|e| {
+                error!("UCI JNI: measurement object creation failed: {:?}", e);
+                UwbCoreError::Unknown
+            })?;
         let measurement_count: i32 = match &range_data.ranging_measurements {
             RangingMeasurements::Short(v) => v.len(),
             RangingMeasurements::Extended(v) => v.len(),
@@ -336,14 +409,24 @@ impl NotificationManagerAndroid {
                         JValue::Int(measurement.rssi as i32),
                     ],
                 )
-                .map_err(|_| UwbCoreError::Unknown)?;
+                .map_err(|e| {
+                    error!("UCI JNI: measurement object creation failed: {:?}", e);
+                    UwbCoreError::Unknown
+                })?;
             self.env
                 .set_object_array_element(measurements_jobjectarray, i as i32, measurement_jobject)
-                .map_err(|_| UwbCoreError::Unknown)?;
+                .map_err(|e| {
+                    error!("UCI JNI: measurement object copy failed: {:?}", e);
+                    UwbCoreError::Unknown
+                })?;
         }
         // Create UwbRangingData
-        let ranging_data_jclass =
-            self.env.find_class(UWB_RANGING_DATA_CLASS).map_err(|_| UwbCoreError::Unknown)?;
+        let ranging_data_jclass = NotificationManagerAndroid::find_local_class(
+            &mut self.jclass_map,
+            &self.class_loader_obj,
+            &self.env,
+            UWB_RANGING_DATA_CLASS,
+        )?;
         let method_sig = "(JJIJIII[L".to_owned() + UWB_TWO_WAY_MEASUREMENT_CLASS + ";)V";
         let range_data_jobject = self
             .env
@@ -361,7 +444,10 @@ impl NotificationManagerAndroid {
                     JValue::Object(JObject::from(measurements_jobjectarray)),
                 ],
             )
-            .map_err(|_| UwbCoreError::Unknown)?;
+            .map_err(|e| {
+                error!("UCI JNI: Ranging Data object creation failed: {:?}", e);
+                UwbCoreError::Unknown
+            })?;
         let method_sig = "(L".to_owned() + UWB_RANGING_DATA_CLASS + ";)V";
         self.cached_jni_call(
             "onRangeDataNotificationReceived",
@@ -373,6 +459,7 @@ impl NotificationManagerAndroid {
 
 impl NotificationManager for NotificationManagerAndroid {
     fn on_core_notification(&mut self, core_notification: CoreNotification) -> UwbCoreResult<()> {
+        debug!("UCI JNI: core notification callback.");
         match core_notification {
             CoreNotification::DeviceStatus(device_state) => self.cached_jni_call(
                 "onDeviceStatusNotificationReceived",
@@ -391,6 +478,7 @@ impl NotificationManager for NotificationManagerAndroid {
         &mut self,
         session_notification: SessionNotification,
     ) -> UwbCoreResult<()> {
+        debug!("UCI JNI: session notification callback.");
         match session_notification {
             SessionNotification::Status { session_id, session_state, reason_code } => {
                 self.on_session_status_notification(session_id, session_state, reason_code)
@@ -414,6 +502,7 @@ impl NotificationManager for NotificationManagerAndroid {
         &mut self,
         vendor_notification: uwb_core::params::RawVendorMessage,
     ) -> UwbCoreResult<()> {
+        debug!("UCI JNI: vendor notification callback.");
         let payload_jbytearray = self
             .env
             .byte_array_from_slice(&vendor_notification.payload)
@@ -436,15 +525,19 @@ impl NotificationManager for NotificationManagerAndroid {
 }
 struct NotificationManagerAndroidBuilder {
     vm: &'static Arc<JavaVM>,
+    class_loader_obj: GlobalRef,
     callback_obj: GlobalRef,
 }
+
 impl NotificationManagerBuilder<NotificationManagerAndroid> for NotificationManagerAndroidBuilder {
     fn build(self) -> Option<NotificationManagerAndroid> {
         if let Ok(env) = self.vm.attach_current_thread() {
             Some(NotificationManagerAndroid {
                 env,
+                class_loader_obj: self.class_loader_obj,
                 callback_obj: self.callback_obj,
                 jmethod_id_map: HashMap::new(),
+                jclass_map: HashMap::new(),
             })
         } else {
             None
