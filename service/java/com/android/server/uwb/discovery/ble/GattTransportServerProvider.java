@@ -282,10 +282,6 @@ public class GattTransportServerProvider extends TransportServerProvider {
         if (!super.stop()) {
             return false;
         }
-        if (mBluetoothGattServer == null) {
-            Log.w(TAG, "stop failed due to mBluetoothGattServer is null.");
-            return false;
-        }
         boolean succeed = mBluetoothGattServer.removeService(mFiraCPService);
 
         // Clear in/out message queue.
