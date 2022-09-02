@@ -12,17 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! New rust UCI JNI library.
-//!
-//! This library takes the JNI calls from Uwb System service to the UWB core library (libuwb_core)
-//! UciManager. In conjunction with libuci_hal_android and libuwb_core, this provides a replacement
-//! for libuwb_uci_jni_rust.
+//! Error type.
 
-mod dispatcher;
-mod error;
-mod helper;
-mod jclass_name;
-mod notification_manager_android;
-mod unique_jvm;
+use jni::errors::Error as JNIError;
+use uwb_core::error::Error as UwbCoreError;
 
-pub mod uci_jni_android_new;
+#[derive(Debug, thiserror::Error)]
+pub(crate) enum Error {
+    #[error("UwbCore error: {0:?}")]
+    UwbCoreError(#[from] UwbCoreError),
+    #[error("JNI error: {0:?}")]
+    JNIError(#[from] JNIError),
+}
+pub(crate) type Result<T> = std::result::Result<T, Error>;

@@ -1,0 +1,65 @@
+// Copyright 2022, The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//! Helper functions and macros
+
+use crate::error::{Error, Result};
+
+use jni::sys::{jboolean, jbyte};
+use log::error;
+use num_traits::ToPrimitive;
+use uwb_core::error::Error as UwbCoreError;
+use uwb_uci_packets::StatusCode;
+
+pub(crate) fn boolean_result_helper<T>(result: Result<T>, error_msg: &str) -> jboolean {
+    match result {
+        Ok(_) => true,
+        Err(e) => {
+            error!("{} failed with {:?}", error_msg, &e);
+            false
+        }
+    }
+    .into()
+}
+
+pub(crate) fn byte_result_helper<T>(result: Result<T>, error_msg: &str) -> jbyte {
+    // StatusCode do not overflow i8
+    result_to_status_code(result, error_msg).to_i8().unwrap()
+}
+
+/// helper function to convert Result to StatusCode
+fn result_to_status_code<T>(result: Result<T>, error_msg: &str) -> StatusCode {
+    match result.map_err(|e| {
+        error!("{} failed with {:?}", error_msg, &e);
+        e
+    }) {
+        Ok(_) => StatusCode::UciStatusOk,
+        Err(Error::UwbCoreError(UwbCoreError::BadParameters)) => StatusCode::UciStatusInvalidParam,
+        Err(Error::UwbCoreError(UwbCoreError::MaxSessionsExceeded)) => {
+            StatusCode::UciStatusMaxSessionsExceeded
+        }
+        Err(Error::UwbCoreError(UwbCoreError::CommandRetry)) => StatusCode::UciStatusCommandRetry,
+        // For JNIError and other UwbCoreError, only generic fail can be given.
+        Err(_) => StatusCode::UciStatusFailed,
+    }
+}
+
+pub(crate) fn option_result_helper<T>(result: Result<T>, error_msg: &str) -> Option<T> {
+    result
+        .map_err(|e| {
+            error!("{} failed with {:?}", error_msg, &e);
+            e
+        })
+        .ok()
+}
