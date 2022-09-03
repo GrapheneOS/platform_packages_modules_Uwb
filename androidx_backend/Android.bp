@@ -31,13 +31,26 @@ aidl_interface {
     visibility: ["//visibility:public"],
 }
 
-android_app {
+java_library {
     name: "uwb_androidx_backend",
+    installable: false,
     platform_apis: true,
-    certificate: "platform",
     srcs: [
         "src/**/*.java",
     ],
+    libs: ["android-support-annotations"],
+    static_libs: [
+        "androidx.concurrent_concurrent-futures",
+        "androidx.core.uwb.backend.aidl_interface-V1-java",
+        "com.uwb.support.fira",
+        "guava",
+    ],
+}
+
+android_app {
+    name: "uwb_androidx_backend_app",
+    platform_apis: true,
+    certificate: "platform",
     manifest: "AndroidManifest.xml",
     libs: ["android-support-annotations"],
     static_libs: [
@@ -45,5 +58,6 @@ android_app {
         "androidx.core.uwb.backend.aidl_interface-V1-java",
         "com.uwb.support.fira",
         "guava",
+	"uwb_androidx_backend"
     ],
 }

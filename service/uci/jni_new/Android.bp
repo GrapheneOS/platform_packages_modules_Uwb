@@ -15,9 +15,10 @@ rust_defaults {
         "liblog_rust",
         "liblogger",
         "libnum_traits",
+        "libthiserror",
+        "libuci_hal_android",
         "libuwb_core",
         "libuwb_uci_packets",
-        "libuwb_uci_rust",
     ],
     prefer_rlib: true,
     apex_available: [
