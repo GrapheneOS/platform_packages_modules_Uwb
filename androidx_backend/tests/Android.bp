@@ -39,6 +39,7 @@ android_test {
         "frameworks-base-testutils",
         "truth-prebuilt",
         "com.uwb.support.fira",
+        "com.uwb.support.multichip",
         "guava",
         "uwb_androidx_backend",
     ],

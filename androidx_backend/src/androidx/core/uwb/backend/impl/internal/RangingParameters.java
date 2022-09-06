@@ -22,7 +22,7 @@ import java.util.List;
 
 /** Ranging parameters that exposed through public API. */
 public class RangingParameters {
-    private final int mUwbConfigId;
+    @Utils.UwbConfigId private final int mUwbConfigId;
     private final int mSessionId;
     private final byte[] mSessionKeyInfo;
     private final UwbComplexChannel mComplexChannel;
@@ -30,7 +30,7 @@ public class RangingParameters {
     @Utils.RangingUpdateRate private final int mRangingUpdateRate;
 
     public RangingParameters(
-            int uwbConfigId,
+            @Utils.UwbConfigId int uwbConfigId,
             int sessionId,
             byte[] sessionKeyInfo,
             UwbComplexChannel complexChannel,
@@ -48,6 +48,7 @@ public class RangingParameters {
         return mSessionId;
     }
 
+    @Utils.UwbConfigId
     public int getUwbConfigId() {
         return mUwbConfigId;
     }
