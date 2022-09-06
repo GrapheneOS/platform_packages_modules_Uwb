@@ -62,8 +62,8 @@ public class TransportProviderTest {
     static class FakeTransportProvider extends TransportProvider {
         public boolean sendMessageSuccess = true;
         public FiraConnectorMessage lastSendMessage;
-        public int lastSendMessageSecid;
-        public TerminationReason lastTerminationReason;
+        public int lastSendMessageSecid = -1;
+        public TerminationReason lastTerminationReason = null;
 
         FakeTransportProvider() {
             super(SECID);
@@ -71,8 +71,10 @@ public class TransportProviderTest {
 
         @Override
         public boolean sendMessage(int secid, FiraConnectorMessage message) {
-            lastSendMessageSecid = secid;
-            lastSendMessage = message;
+            if (sendMessageSuccess) {
+                lastSendMessageSecid = secid;
+                lastSendMessage = message;
+            }
             return sendMessageSuccess;
         }
 
@@ -176,11 +178,62 @@ public class TransportProviderTest {
     }
 
     @Test
-    public void testOnMessageReceived_failed() {
+    public void testOnMessageReceived_secidMismatch() {
         mTransportProvider.registerDataReceiver(mMockDataReceiver);
         mTransportProvider.onMessageReceived(SECID2, MESSAGE);
 
         verifyZeroInteractions(mMockDataReceiver);
+    }
+
+    private void verifyAdminErrorMessageReceive(ErrorType errorType, TerminationReason reason) {
+        mTransportProvider.registerDataReceiver(mMockDataReceiver);
+        mTransportProvider.onMessageReceived(
+                TransportProvider.ADMIN_SECID, new AdminErrorMessage(errorType));
+        verify(mMockDataReceiver, never()).onDataReceived(any());
+        assertThat(mFakeTransportProvider.lastTerminationReason).isEqualTo(reason);
+    }
+
+    @Test
+    public void testOnMessageReceived_receiveAdminErrorPacket() {
+        verifyAdminErrorMessageReceive(
+                ErrorType.DATA_PACKET_LENGTH_OVERFLOW,
+                TerminationReason.REMOTE_DEVICE_MESSAGE_ERROR);
+        verifyAdminErrorMessageReceive(
+                ErrorType.MESSAGE_LENGTH_OVERFLOW, TerminationReason.REMOTE_DEVICE_MESSAGE_ERROR);
+        verifyAdminErrorMessageReceive(
+                ErrorType.TOO_MANY_CONCURRENT_FRAGMENTED_MESSAGE_SESSIONS,
+                TerminationReason.REMOTE_DEVICE_MESSAGE_ERROR);
+        verifyAdminErrorMessageReceive(
+                ErrorType.SECID_INVALID, TerminationReason.REMOTE_DEVICE_SECID_ERROR);
+        verifyAdminErrorMessageReceive(
+                ErrorType.SECID_INVALID_FOR_RESPONSE, TerminationReason.REMOTE_DEVICE_SECID_ERROR);
+        verifyAdminErrorMessageReceive(
+                ErrorType.SECID_BUSY, TerminationReason.REMOTE_DEVICE_SECID_ERROR);
+        verifyAdminErrorMessageReceive(
+                ErrorType.SECID_PROTOCOL_ERROR, TerminationReason.REMOTE_DEVICE_SECID_ERROR);
+        verifyAdminErrorMessageReceive(
+                ErrorType.SECID_INTERNAL_ERROR, TerminationReason.REMOTE_DEVICE_SECID_ERROR);
+    }
+
+    @Test
+    public void testOnMessageReceived_receiveAdminEventPacket() {
+        mTransportProvider.registerDataReceiver(mMockDataReceiver);
+        mTransportProvider.onMessageReceived(
+                TransportProvider.ADMIN_SECID,
+                new AdminEventMessage(EventType.CAPABILITIES_CHANGED, new byte[] {}));
+        verify(mMockDataReceiver, never()).onDataReceived(any());
+        assertThat(mFakeTransportProvider.lastTerminationReason).isNull();
+    }
+
+    @Test
+    public void testOnMessageReceived_receiveInvalidAdminPacket() {
+        mTransportProvider.registerDataReceiver(mMockDataReceiver);
+        mTransportProvider.onMessageReceived(
+                TransportProvider.ADMIN_SECID,
+                new FiraConnectorMessage(
+                        MessageType.COMMAND, InstructionCode.DATA_EXCHANGE, MESSAGE_PAYLOAD));
+        verify(mMockDataReceiver, never()).onDataReceived(any());
+        assertThat(mFakeTransportProvider.lastTerminationReason).isNull();
     }
 
     @Test
@@ -191,6 +244,15 @@ public class TransportProviderTest {
                 .isEqualTo(TransportProvider.ADMIN_SECID);
         assertThat(mFakeTransportProvider.lastSendMessage.toString())
                 .isEqualTo(new AdminErrorMessage(ErrorType.DATA_PACKET_LENGTH_OVERFLOW).toString());
+    }
+
+    @Test
+    public void testSentAdminErrorMessage_failed() {
+        mFakeTransportProvider.sendMessageSuccess = false;
+        mTransportProvider.sentAdminErrorMessage(ErrorType.DATA_PACKET_LENGTH_OVERFLOW);
+
+        assertThat(mFakeTransportProvider.lastSendMessageSecid).isEqualTo(-1);
+        assertThat(mFakeTransportProvider.lastSendMessage).isNull();
     }
 
     @Test
@@ -205,33 +267,12 @@ public class TransportProviderTest {
                                 .toString());
     }
 
-    private void verifyAdminMessageReceive(ErrorType errorType, TerminationReason reason) {
-        mTransportProvider.registerDataReceiver(mMockDataReceiver);
-        mTransportProvider.onMessageReceived(
-                TransportProvider.ADMIN_SECID, new AdminErrorMessage(errorType));
-        verify(mMockDataReceiver, never()).onDataReceived(any());
-        assertThat(mFakeTransportProvider.lastTerminationReason).isEqualTo(reason);
-    }
-
     @Test
-    public void testOutCharactersticNotifyAndRead_receiveAdminPacket() {
-        verifyAdminMessageReceive(
-                ErrorType.DATA_PACKET_LENGTH_OVERFLOW,
-                TerminationReason.REMOTE_DEVICE_MESSAGE_ERROR);
-        verifyAdminMessageReceive(
-                ErrorType.MESSAGE_LENGTH_OVERFLOW, TerminationReason.REMOTE_DEVICE_MESSAGE_ERROR);
-        verifyAdminMessageReceive(
-                ErrorType.TOO_MANY_CONCURRENT_FRAGMENTED_MESSAGE_SESSIONS,
-                TerminationReason.REMOTE_DEVICE_MESSAGE_ERROR);
-        verifyAdminMessageReceive(
-                ErrorType.SECID_INVALID, TerminationReason.REMOTE_DEVICE_SECID_ERROR);
-        verifyAdminMessageReceive(
-                ErrorType.SECID_INVALID_FOR_RESPONSE, TerminationReason.REMOTE_DEVICE_SECID_ERROR);
-        verifyAdminMessageReceive(
-                ErrorType.SECID_BUSY, TerminationReason.REMOTE_DEVICE_SECID_ERROR);
-        verifyAdminMessageReceive(
-                ErrorType.SECID_PROTOCOL_ERROR, TerminationReason.REMOTE_DEVICE_SECID_ERROR);
-        verifyAdminMessageReceive(
-                ErrorType.SECID_INTERNAL_ERROR, TerminationReason.REMOTE_DEVICE_SECID_ERROR);
+    public void testSentAdminEventMessage_failed() {
+        mFakeTransportProvider.sendMessageSuccess = false;
+        mTransportProvider.sentAdminEventMessage(EventType.CAPABILITIES_CHANGED, new byte[] {});
+
+        assertThat(mFakeTransportProvider.lastSendMessageSecid).isEqualTo(-1);
+        assertThat(mFakeTransportProvider.lastSendMessage).isNull();
     }
 }
