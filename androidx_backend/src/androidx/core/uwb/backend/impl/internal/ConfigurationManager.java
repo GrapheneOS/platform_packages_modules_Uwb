@@ -33,8 +33,9 @@ import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_RESPOND
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLLER;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
 
-import android.annotation.Nullable;
 import android.util.ArrayMap;
+
+import androidx.annotation.Nullable;
 
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
@@ -47,7 +48,7 @@ import java.util.Map;
  * Creates the session-opening bundles for a FiRa session. The default parameters are
  * profile-dependent.
  */
-public class ConfigurationManager {
+public final class ConfigurationManager {
 
     private static final Map<Integer, UwbConfiguration> sConfigs = new ArrayMap<>();
 
@@ -145,6 +146,8 @@ public class ConfigurationManager {
                     }
                 });
     }
+
+    private ConfigurationManager() {}
 
     /** Creates a {@link FiraOpenSessionParams}. */
     public static FiraOpenSessionParams createOpenSessionParams(

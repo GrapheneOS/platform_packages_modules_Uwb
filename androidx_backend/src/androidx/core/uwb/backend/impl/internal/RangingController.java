@@ -141,7 +141,7 @@ public class RangingController extends RangingDevice {
         if (!isAlive()) {
             return INVALID_API_CALL;
         }
-        if (ConfigurationManager.isUnicast(mRangingParameters.getSessionId())) {
+        if (ConfigurationManager.isUnicast(mRangingParameters.getUwbConfigId())) {
             return INVALID_API_CALL;
         }
         if (isKnownPeer(controleeAddress) || mDynamicallyAddedPeers.contains(controleeAddress)) {
