@@ -181,25 +181,6 @@ public class BleDiscoveryAdvertiseProviderTest {
                         any(), any(), any(), any(), any(), any(AdvertisingSetCallback.class));
     }
 
-    @Test
-    public void testStopAdvertise_failedBTUnavailable() {
-        when(mMockBluetoothManager.getAdapter()).thenReturn(null);
-
-        assertThat(mBleDiscoveryAdvertiseProvider.stop()).isFalse();
-        verify(mMockBluetoothLeAdvertiser, never())
-                .stopAdvertisingSet(any(AdvertisingSetCallback.class));
-    }
-
-    @Test
-    public void testStopAdvertise_failedBTDisabled() {
-        when(mMockBluetoothManager.getAdapter()).thenReturn(mMockBluetoothAdapter);
-        when(mMockBluetoothAdapter.getBluetoothLeAdvertiser()).thenReturn(null);
-
-        assertThat(mBleDiscoveryAdvertiseProvider.stop()).isFalse();
-        verify(mMockBluetoothLeAdvertiser, never())
-                .stopAdvertisingSet(any(AdvertisingSetCallback.class));
-    }
-
     private void teststartAdvertisingSet(int status) {
         when(mMockBluetoothManager.getAdapter()).thenReturn(mMockBluetoothAdapter);
         when(mMockBluetoothAdapter.getBluetoothLeAdvertiser())
@@ -267,5 +248,48 @@ public class BleDiscoveryAdvertiseProviderTest {
         teststartAdvertisingSet(AdvertisingSetCallback.ADVERTISE_FAILED_TOO_MANY_ADVERTISERS);
         verify(mMockDiscoveryAdvertiseCallback, times(1))
                 .onDiscoveryFailed(AdvertisingSetCallback.ADVERTISE_FAILED_TOO_MANY_ADVERTISERS);
+    }
+
+    @Test
+    public void testStopAdvertise_failedNotStarted() {
+        assertThat(mBleDiscoveryAdvertiseProvider.stop()).isFalse();
+        verify(mMockBluetoothManager, never()).getAdapter();
+        verify(mMockBluetoothLeAdvertiser, never())
+                .stopAdvertisingSet(any(AdvertisingSetCallback.class));
+    }
+
+    @Test
+    public void testStopAdvertise_failedBTUnavailable() {
+        teststartAdvertisingSet(AdvertisingSetCallback.ADVERTISE_SUCCESS);
+        verifyZeroInteractions(mMockDiscoveryAdvertiseCallback);
+
+        when(mMockBluetoothManager.getAdapter()).thenReturn(null);
+
+        assertThat(mBleDiscoveryAdvertiseProvider.stop()).isFalse();
+        verify(mMockBluetoothLeAdvertiser, never())
+                .stopAdvertisingSet(any(AdvertisingSetCallback.class));
+    }
+
+    @Test
+    public void testStopAdvertise_failedBTDisabled() {
+        teststartAdvertisingSet(AdvertisingSetCallback.ADVERTISE_SUCCESS);
+        verifyZeroInteractions(mMockDiscoveryAdvertiseCallback);
+
+        when(mMockBluetoothManager.getAdapter()).thenReturn(mMockBluetoothAdapter);
+        when(mMockBluetoothAdapter.getBluetoothLeAdvertiser()).thenReturn(null);
+
+        assertThat(mBleDiscoveryAdvertiseProvider.stop()).isFalse();
+        verify(mMockBluetoothLeAdvertiser, never())
+                .stopAdvertisingSet(any(AdvertisingSetCallback.class));
+    }
+
+    @Test
+    public void testStopAdvertise_success() {
+        teststartAdvertisingSet(AdvertisingSetCallback.ADVERTISE_SUCCESS);
+        verifyZeroInteractions(mMockDiscoveryAdvertiseCallback);
+
+        assertThat(mBleDiscoveryAdvertiseProvider.stop()).isTrue();
+        verify(mMockBluetoothLeAdvertiser, times(1))
+                .stopAdvertisingSet(any(AdvertisingSetCallback.class));
     }
 }

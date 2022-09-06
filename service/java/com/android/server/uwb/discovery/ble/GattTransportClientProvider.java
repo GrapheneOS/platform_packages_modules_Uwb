@@ -326,6 +326,11 @@ public class GattTransportClientProvider extends TransportClientProvider {
         mInMessageQueue.clear();
 
         mStarted = false;
+        mConnected = false;
+        mServiceDiscovered = false;
+        mCapabilitiesWritten = false;
+        mNotificationEnabled = false;
+        startProcessing();
         return true;
     }
 
@@ -553,16 +558,6 @@ public class GattTransportClientProvider extends TransportClientProvider {
     }
 
     private void enableNotification() {
-        if (mBluetoothGatt == null) {
-            Log.e(TAG, "enableNotification failed due to Gatt is null.");
-            terminateOnError(TerminationReason.DESCRIPTOR_WRITE_FAILURE);
-            return;
-        }
-        if (mOutControlPointCccdDescriptor == null) {
-            Log.e(TAG, "enableNotification failed due to descriptor is null.");
-            terminateOnError(TerminationReason.DESCRIPTOR_WRITE_FAILURE);
-            return;
-        }
         final int status =
                 mBluetoothGatt.writeDescriptor(
                         mOutControlPointCccdDescriptor,
@@ -575,11 +570,6 @@ public class GattTransportClientProvider extends TransportClientProvider {
     private void readOutControlPointCharacteristic() {
         if (mBluetoothGatt == null) {
             Log.e(TAG, "readOutControlPointCharacteristic failed due to Gatt is null.");
-            terminateOnError(TerminationReason.CHARACTERSTIC_READ_FAILURE);
-            return;
-        }
-        if (mOutControlPointCharacteristic == null) {
-            Log.e(TAG, "readOutControlPointCharacteristic failed due to descriptor is null.");
             terminateOnError(TerminationReason.CHARACTERSTIC_READ_FAILURE);
             return;
         }

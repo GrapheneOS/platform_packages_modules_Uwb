@@ -31,6 +31,7 @@ import java.util.concurrent.Executor;
 /** Factory for creating DiscoveryProvider. */
 @WorkerThread
 public class DiscoveryProviderFactory {
+    private DiscoveryProviderFactory() {}
 
     /**
      * Create a DiscoveryScanProvider.
@@ -57,11 +58,8 @@ public class DiscoveryProviderFactory {
                         executor,
                         discoveryInfo.scanInfo.get(),
                         discoveryScanCallback);
-            default:
-                throw new AssertionError(
-                        "Failed to create DiscoveryScanProvider due to invalid transport type: "
-                                + discoveryInfo.transportType);
         }
+        return null;
     }
 
     /**
@@ -89,11 +87,7 @@ public class DiscoveryProviderFactory {
                         executor,
                         discoveryInfo.advertiseInfo.get(),
                         discoveryAdvertiseCallback);
-            default:
-                throw new AssertionError(
-                        "Failed to create DiscoveryAdvertiseProvider due to invalid transport type:"
-                                + " "
-                                + discoveryInfo.transportType);
         }
+        return null;
     }
 }

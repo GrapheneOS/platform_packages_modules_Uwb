@@ -28,6 +28,7 @@ import java.util.concurrent.Executor;
 
 /** Factory for creating TransportProvider. */
 public class TransportProviderFactory {
+    private TransportProviderFactory() {}
 
     /**
      * Create a TransportServerProvider.
@@ -50,12 +51,8 @@ public class TransportProviderFactory {
             case BLE:
                 return new GattTransportServerProvider(
                         attributionSource, context, secid, transportServerCallback);
-            default:
-                throw new AssertionError(
-                        "Failed to create TransportServerProvider due to invalid transport type:"
-                                + " "
-                                + discoveryInfo.transportType);
         }
+        return null;
     }
 
     /**
@@ -92,11 +89,7 @@ public class TransportProviderFactory {
                         secid,
                         discoveryInfo.transportClientInfo.get(),
                         transportClientCallback);
-            default:
-                throw new AssertionError(
-                        "Failed to create TransportClientProvider due to invalid transport type:"
-                                + " "
-                                + discoveryInfo.transportType);
         }
+        return null;
     }
 }

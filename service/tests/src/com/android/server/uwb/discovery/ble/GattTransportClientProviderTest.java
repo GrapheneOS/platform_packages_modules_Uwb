@@ -396,6 +396,77 @@ public class GattTransportClientProviderTest {
     }
 
     @Test
+    public void testConnectionStateChange_disconnected() {
+        startProcessing();
+        verify(mMockTransportClientCallback, times(1)).onProcessingStarted();
+
+        mBluetoothGattCallback.onConnectionStateChange(
+                mMockBluetoothGatt,
+                BluetoothGatt.GATT_SUCCESS,
+                BluetoothProfile.STATE_DISCONNECTED);
+        verify(mMockTransportClientCallback, times(1)).onProcessingStopped();
+        verify(mMockTransportClientCallback, times(1))
+                .onTerminated(TerminationReason.REMOTE_DISCONNECTED);
+        assertThat(mGattTransportClientProvider.isStarted()).isFalse();
+    }
+
+    @Test
+    public void testConnectionStateChange_statusFailed() {
+        startProcessing();
+        verify(mMockTransportClientCallback, times(1)).onProcessingStarted();
+
+        mBluetoothGattCallback.onConnectionStateChange(
+                mMockBluetoothGatt, BluetoothGatt.GATT_FAILURE, BluetoothProfile.STATE_CONNECTED);
+        verify(mMockTransportClientCallback, times(1)).onProcessingStopped();
+        verify(mMockTransportClientCallback, times(1))
+                .onTerminated(TerminationReason.REMOTE_DISCONNECTED);
+        assertThat(mGattTransportClientProvider.isStarted()).isFalse();
+    }
+
+    @Test
+    public void testServiceChanged() {
+        startProcessing();
+        mBluetoothGattCallback.onServiceChanged(mMockBluetoothGatt);
+        verify(mMockBluetoothGatt, times(2)).discoverServices();
+    }
+
+    @Test
+    public void testDescriptorWrite_statusFailed() {
+        startProcessing();
+        verify(mMockTransportClientCallback, times(1)).onProcessingStarted();
+
+        mBluetoothGattCallback.onDescriptorWrite(
+                mMockBluetoothGatt, mCccdDescriptor, BluetoothGatt.GATT_FAILURE);
+        verify(mMockTransportClientCallback, times(1))
+                .onTerminated(TerminationReason.DESCRIPTOR_WRITE_FAILURE);
+        assertThat(mGattTransportClientProvider.isStarted()).isFalse();
+    }
+
+    @Test
+    public void testCharacteristicWrite_statusFailed() {
+        startProcessing();
+        verify(mMockTransportClientCallback, times(1)).onProcessingStarted();
+
+        mBluetoothGattCallback.onCharacteristicWrite(
+                mMockBluetoothGatt, mOutCharacterstic, BluetoothGatt.GATT_FAILURE);
+        verify(mMockTransportClientCallback, times(1))
+                .onTerminated(TerminationReason.CHARACTERSTIC_WRITE_FAILURE);
+        assertThat(mGattTransportClientProvider.isStarted()).isFalse();
+    }
+
+    @Test
+    public void testCharacteristicRead_statusFailed() {
+        startProcessing();
+        verify(mMockTransportClientCallback, times(1)).onProcessingStarted();
+
+        mBluetoothGattCallback.onCharacteristicRead(
+                mMockBluetoothGatt, mOutCharacterstic, new byte[] {}, BluetoothGatt.GATT_FAILURE);
+        verify(mMockTransportClientCallback, times(1))
+                .onTerminated(TerminationReason.CHARACTERSTIC_READ_FAILURE);
+        assertThat(mGattTransportClientProvider.isStarted()).isFalse();
+    }
+
+    @Test
     public void testSetCapabilities_emptyCapabilities() {
         assertThat(mGattTransportClientProvider.setCapabilites(null)).isFalse();
     }
@@ -434,19 +505,35 @@ public class GattTransportClientProviderTest {
     @Test
     public void testOnMtuChanged_failed() {
         startProcessing();
-
         mBluetoothGattCallback.onMtuChanged(
                 mMockBluetoothGatt, /*mtu=*/ 40, BluetoothStatusCodes.ERROR_UNKNOWN);
-        assertThat(mGattTransportClientProvider.setCapabilites(CAPABILITIES)).isTrue();
+
+        ArgumentCaptor<byte[]> captor = ArgumentCaptor.forClass(byte[].class);
+        verify(mMockBluetoothGatt, times(1))
+                .writeCharacteristic(
+                        argThat(new CharacteristicMatcher(CAPABILITIES_CHARACTERSTIC)),
+                        captor.capture(),
+                        anyInt());
+        assertThat(captor.getValue()).isEqualTo(mDefaultCapabilities.toBytes());
     }
 
     @Test
     public void testOnMtuChanged_succeed() {
         startProcessing();
+        int mtu = 40;
+        mBluetoothGattCallback.onMtuChanged(mMockBluetoothGatt, mtu, BluetoothGatt.GATT_SUCCESS);
 
-        mBluetoothGattCallback.onMtuChanged(
-                mMockBluetoothGatt, /*mtu=*/ 40, BluetoothStatusCodes.ERROR_UNKNOWN);
-        assertThat(mGattTransportClientProvider.setCapabilites(CAPABILITIES)).isTrue();
+        FiraConnectorCapabilities newCapabilities =
+                new FiraConnectorCapabilities.Builder().setOptimizedDataPacketSize(mtu - 3).build();
+
+        ArgumentCaptor<byte[]> captor = ArgumentCaptor.forClass(byte[].class);
+        verify(mMockBluetoothGatt, times(2))
+                .writeCharacteristic(
+                        argThat(new CharacteristicMatcher(CAPABILITIES_CHARACTERSTIC)),
+                        captor.capture(),
+                        anyInt());
+        assertThat(captor.getAllValues().get(0)).isEqualTo(mDefaultCapabilities.toBytes());
+        assertThat(captor.getAllValues().get(1)).isEqualTo(newCapabilities.toBytes());
     }
 
     @Test
@@ -506,12 +593,11 @@ public class GattTransportClientProviderTest {
                         MessageType.EVENT, InstructionCode.DATA_EXCHANGE, messagePayload);
         byte[] messageBytes = message.toBytes();
         int payloadSize = mDefaultCapabilities.optimizedDataPacketSize - 1;
-        byte[] packet_bytes1 =
+        FiraConnectorDataPacket packet1 =
                 new FiraConnectorDataPacket(
-                                /*lastChainingPacket=*/ false,
-                                SECID,
-                                Arrays.copyOf(messageBytes, payloadSize))
-                        .toBytes();
+                        /*lastChainingPacket=*/ false,
+                        SECID,
+                        Arrays.copyOf(messageBytes, payloadSize));
         byte[] packet_bytes2 =
                 new FiraConnectorDataPacket(
                                 /*lastChainingPacket=*/ false,
@@ -536,9 +622,11 @@ public class GattTransportClientProviderTest {
                         argThat(new CharacteristicMatcher(IN_CHARACTERSTIC)),
                         captor.capture(),
                         anyInt());
-        assertThat(captor.getAllValues().get(0)).isEqualTo(packet_bytes1);
+        assertThat(captor.getAllValues().get(0)).isEqualTo(packet1.toBytes());
         assertThat(captor.getAllValues().get(1)).isEqualTo(packet_bytes2);
         assertThat(captor.getAllValues().get(2)).isEqualTo(packet_bytes3);
+        assertThat(FiraConnectorDataPacket.fromBytes(captor.getAllValues().get(0)).toString())
+                .isEqualTo(packet1.toString());
     }
 
     private void notifyAndReadOutCharacteristic(byte[] bytes) {
@@ -574,6 +662,18 @@ public class GattTransportClientProviderTest {
 
         verify(mMockBluetoothGatt, times(1))
                 .readCharacteristic(argThat(new CharacteristicMatcher(mOutCharacterstic)));
+        verify(mMockTransportClientCallback, times(1))
+                .onTerminated(TerminationReason.CHARACTERSTIC_READ_FAILURE);
+    }
+
+    @Test
+    public void testOutCharactersticNotifyAndRead_nullGatt() {
+        startProcessing();
+
+        mBluetoothGattCallback.onCharacteristicChanged(
+                /*gatt=*/ null, mOutCharacterstic, DATA_PACKET_BYTES);
+
+        verify(mMockBluetoothGatt, never()).readCharacteristic(any());
         verify(mMockTransportClientCallback, times(1))
                 .onTerminated(TerminationReason.CHARACTERSTIC_READ_FAILURE);
     }
