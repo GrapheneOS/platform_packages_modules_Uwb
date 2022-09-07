@@ -16,27 +16,42 @@
 
 package androidx.core.uwb.backend.impl.internal;
 
-import android.annotation.Nullable;
+import androidx.annotation.IntRange;
+import androidx.annotation.Nullable;
 
 import java.util.Locale;
 
 /** Position of a device during ranging. */
 public class RangingPosition {
+    public static final int RSSI_UNKNOWN = -128;
+    public static final int RSSI_MIN = -127;
+    public static final int RSSI_MAX = -1;
 
     private final RangingMeasurement mDistance;
     @Nullable private final RangingMeasurement mAzimuth;
     @Nullable private final RangingMeasurement mElevation;
     private final long mElapsedRealtimeNanos;
+    private final int mRssi;
 
     public RangingPosition(
             RangingMeasurement distance,
             @Nullable RangingMeasurement azimuth,
             @Nullable RangingMeasurement elevation,
             long elapsedRealtimeNanos) {
+        this(distance, azimuth, elevation, elapsedRealtimeNanos, RSSI_UNKNOWN);
+    }
+
+    public RangingPosition(
+            RangingMeasurement distance,
+            @Nullable RangingMeasurement azimuth,
+            @Nullable RangingMeasurement elevation,
+            long elapsedRealtimeNanos,
+            int rssi) {
         this.mDistance = distance;
         this.mAzimuth = azimuth;
         this.mElevation = elevation;
         this.mElapsedRealtimeNanos = elapsedRealtimeNanos;
+        this.mRssi = rssi;
     }
 
     /** Gets the distance in meters of the ranging device, or null if not available. */
@@ -67,6 +82,12 @@ public class RangingPosition {
         return mElapsedRealtimeNanos;
     }
 
+    /** Returns the measured RSSI in dBm. */
+    @IntRange(from = RSSI_UNKNOWN, to = RSSI_MAX)
+    public int getRssiDbm() {
+        return mRssi;
+    }
+
     @Override
     public String toString() {
         String formatted =
@@ -81,6 +102,7 @@ public class RangingPosition {
         if (mElevation != null) {
             formatted += String.format(Locale.US, " | elevation: %f", mElevation.getValue());
         }
+        formatted += String.format(Locale.US, " | rssi: %d", mRssi);
         return formatted;
     }
 }

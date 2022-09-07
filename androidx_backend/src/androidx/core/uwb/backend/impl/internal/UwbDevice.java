@@ -16,7 +16,7 @@
 
 package androidx.core.uwb.backend.impl.internal;
 
-import android.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 import java.util.Objects;
 

@@ -43,6 +43,7 @@ java_library {
         "androidx.concurrent_concurrent-futures",
         "androidx.core.uwb.backend.aidl_interface-V1-java",
         "com.uwb.support.fira",
+        "com.uwb.support.multichip",
         "guava",
     ],
 }

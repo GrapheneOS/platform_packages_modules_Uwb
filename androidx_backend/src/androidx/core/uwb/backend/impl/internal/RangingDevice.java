@@ -27,7 +27,6 @@ import static androidx.core.uwb.backend.impl.internal.Utils.UWB_SYSTEM_CALLBACK_
 
 import static java.util.Objects.requireNonNull;
 
-import android.annotation.Nullable;
 import android.annotation.WorkerThread;
 import android.os.PersistableBundle;
 import android.util.Log;
@@ -35,6 +34,8 @@ import android.uwb.RangingMeasurement;
 import android.uwb.RangingReport;
 import android.uwb.RangingSession;
 import android.uwb.UwbManager;
+
+import androidx.annotation.Nullable;
 
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 
@@ -78,9 +79,17 @@ public abstract class RangingDevice {
 
     private boolean mRangingReportedAllowed = false;
 
+    @Nullable private String mChipId = null;
+
     RangingDevice(UwbManager manager, Executor executor) {
         mUwbManager = manager;
         this.mSystemCallbackExecutor = executor;
+        mOpAsyncCallbackRunner.setOperationTimeoutMillis(RANGING_START_TIMEOUT_MILLIS);
+    }
+
+    /** Sets the chip ID. By default, the default chip is used. */
+    public void setChipId(String chipId) {
+        mChipId = chipId;
     }
 
     public Boolean isForTesting() {
@@ -300,11 +309,20 @@ public abstract class RangingDevice {
         mBackendCallbackExecutor = Executors.newSingleThreadExecutor();
         boolean success =
                 mOpAsyncCallbackRunner.execOperation(
-                        () ->
+                        () -> {
+                            if (mChipId != null) {
                                 mUwbManager.openRangingSession(
                                         parameters,
                                         mSystemCallbackExecutor,
-                                        convertCallback(callback)),
+                                        convertCallback(callback),
+                                        mChipId);
+                            } else {
+                                mUwbManager.openRangingSession(
+                                        parameters,
+                                        mSystemCallbackExecutor,
+                                        convertCallback(callback));
+                            }
+                        },
                         "Open session");
 
         if (!success) {
