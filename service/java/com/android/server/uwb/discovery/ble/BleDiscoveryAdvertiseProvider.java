@@ -61,11 +61,6 @@ public class BleDiscoveryAdvertiseProvider extends DiscoveryAdvertiseProvider {
                                     + status);
                     mExecutor.execute(() -> processAdvertiseFailed(status));
                 }
-
-                @Override
-                public void onAdvertisingSetStopped(AdvertisingSet advertisingSet) {
-                    Log.i(TAG, "onAdvertisingSetStopped():");
-                }
             };
 
     public BleDiscoveryAdvertiseProvider(

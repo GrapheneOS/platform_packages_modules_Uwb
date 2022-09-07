@@ -21,17 +21,19 @@ import static android.uwb.UwbManager.AdapterStateCallback.STATE_DISABLED;
 
 import static java.util.Objects.requireNonNull;
 
-import android.annotation.Nullable;
 import android.content.Context;
 import android.os.PersistableBundle;
 import android.uwb.UwbManager;
 
-import androidx.core.uwb.backend.RangingCapabilities;
+import androidx.annotation.Nullable;
 
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
+import com.google.uwb.support.multichip.ChipInfoParams;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -68,10 +70,25 @@ public class UwbServiceImpl {
         return new RangingController(uwbManagerWithContext, mSerialExecutor);
     }
 
-    /** Gets a Ranging Controle session with given context. */
+    /** Gets a Ranging Controlee session with given context. */
     public RangingControlee getControlee(Context context) {
         UwbManager uwbManagerWithContext = context.getSystemService(UwbManager.class);
         return new RangingControlee(uwbManagerWithContext, mSerialExecutor);
+    }
+
+    /** Returns multi-chip information. */
+    public List<ChipInfoParams> getChipInfos() {
+        List<PersistableBundle> chipInfoBundles = mUwbManager.getChipInfos();
+        List<ChipInfoParams> chipInfos = new ArrayList<>();
+        for (PersistableBundle chipInfo : chipInfoBundles) {
+            chipInfos.add(ChipInfoParams.fromBundle(chipInfo));
+        }
+        return chipInfos;
+    }
+
+    /** Gets the default chip of the system. */
+    String getDefaultChipId() {
+        return mUwbManager.getDefaultChipId();
     }
 
     /**
@@ -98,14 +115,21 @@ public class UwbServiceImpl {
             bundle = requireNonNull(bundle.getPersistableBundle(FIRA_SPECIFICATION_BUNDLE_KEY));
         }
         FiraSpecificationParams specificationParams = FiraSpecificationParams.fromBundle(bundle);
+        int minRangingInterval = specificationParams.getMinRangingInterval();
         EnumSet<FiraParams.AoaCapabilityFlag> aoaCapabilityFlags =
                 specificationParams.getAoaCapabilities();
-        RangingCapabilities capabilities = new RangingCapabilities();
-        capabilities.supportsDistance = true;
-        capabilities.supportsAzimuthalAngle =
-                aoaCapabilityFlags.contains(FiraParams.AoaCapabilityFlag.HAS_AZIMUTH_SUPPORT);
-        capabilities.supportsElevationAngle =
-                aoaCapabilityFlags.contains(FiraParams.AoaCapabilityFlag.HAS_ELEVATION_SUPPORT);
-        return capabilities;
+        if (minRangingInterval <= 0) {
+            return new RangingCapabilities(
+                    true,
+                    aoaCapabilityFlags.contains(FiraParams.AoaCapabilityFlag.HAS_AZIMUTH_SUPPORT),
+                    aoaCapabilityFlags.contains(
+                            FiraParams.AoaCapabilityFlag.HAS_ELEVATION_SUPPORT));
+        } else {
+            return new RangingCapabilities(
+                    true,
+                    aoaCapabilityFlags.contains(FiraParams.AoaCapabilityFlag.HAS_AZIMUTH_SUPPORT),
+                    aoaCapabilityFlags.contains(FiraParams.AoaCapabilityFlag.HAS_ELEVATION_SUPPORT),
+                    minRangingInterval);
+        }
     }
 }

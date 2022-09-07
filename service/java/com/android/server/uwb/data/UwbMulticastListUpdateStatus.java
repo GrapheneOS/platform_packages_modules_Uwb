@@ -14,24 +14,48 @@
  * limitations under the License.
  */
 package com.android.server.uwb.data;
+
+import android.util.Log;
+import android.uwb.UwbAddress;
+
+import com.google.common.primitives.Shorts;
+
 import java.util.Arrays;
 
 public class UwbMulticastListUpdateStatus {
+    private static final String TAG = "UwbM*ListUpdateStatus";
     private long mSessionId;
     private int mRemainingSize;
     private int mNumOfControlees;
-    private int [] mContolleeMacAddress;
+    private int [] mControleeMacAddresses;
     private long[] mSubSessionId;
     private int[] mStatus;
+    private UwbAddress[] mControleeUwbAddresses;
 
     public UwbMulticastListUpdateStatus(long sessionID, int remainingSize, int numOfControlees,
-            int[] contolleeMacAddress, long[] subSessionId, int[] status) {
+            int[] controleeMacAddresses, long[] subSessionId, int[] status) {
         this.mSessionId = sessionID;
         this.mRemainingSize = remainingSize;
         this.mNumOfControlees = numOfControlees;
-        this.mContolleeMacAddress = contolleeMacAddress;
+        this.mControleeMacAddresses = controleeMacAddresses;
         this.mSubSessionId = subSessionId;
         this.mStatus = status;
+
+        // controleeMacAddresses is currently 4-byte integers. UWB addresses
+        //  are 4-byte or 8-byte.  When 8-byte support is needed, controleeMacAddress
+        //  will need to be updated.
+
+        Log.d(TAG, "Controlee count: " + numOfControlees + " mac addresses: "
+                + Arrays.toString(controleeMacAddresses));
+
+        if (controleeMacAddresses != null) {
+            // Precache mac addresses in a more usable and universal form.
+            mControleeUwbAddresses = new UwbAddress[controleeMacAddresses.length];
+            for (int i = 0; i < controleeMacAddresses.length; i++) {
+                mControleeUwbAddresses[i] = UwbAddress.fromBytes(
+                        Shorts.toByteArray((short) controleeMacAddresses[i]));
+            }
+        }
     }
 
     public long getSessionId() {
@@ -46,8 +70,9 @@ public class UwbMulticastListUpdateStatus {
         return mNumOfControlees;
     }
 
-    public int[] getContolleeMacAddress() {
-        return mContolleeMacAddress;
+    // This should go obsolete as we shift to UwbAddresses.
+    public int[] getControleeMacAddresses() {
+        return mControleeMacAddresses;
     }
 
     public long[] getSubSessionId() {
@@ -58,13 +83,17 @@ public class UwbMulticastListUpdateStatus {
         return mStatus;
     }
 
+    public UwbAddress[] getControleeUwbAddresses() {
+        return mControleeUwbAddresses;
+    }
+
     @Override
     public String toString() {
         return "UwbMulticastListUpdateEvent { "
                 + " SessionID =" + mSessionId
                 + ", RemainingSize =" + mRemainingSize
                 + ", NumOfControlee =" + mNumOfControlees
-                + ", MacAddress =" + Arrays.toString(mContolleeMacAddress)
+                + ", MacAddress =" + Arrays.toString(mControleeMacAddresses)
                 + ", SubSessionId =" + Arrays.toString(mSubSessionId)
                 + ", Status =" + Arrays.toString(mStatus)
                 + '}';

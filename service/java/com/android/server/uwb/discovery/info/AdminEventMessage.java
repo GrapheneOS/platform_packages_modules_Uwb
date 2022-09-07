@@ -143,7 +143,7 @@ public class AdminEventMessage extends FiraConnectorMessage {
         if (additionalData == null) {
             throw new IllegalArgumentException("additionalData is null");
         }
-        byte[] eventTypeBytes = DataTypeConversionUtil.i32ToByteArray(eventType.mValue);
+        byte[] eventTypeBytes = DataTypeConversionUtil.i32ToByteArray(eventType.getValue());
         return Bytes.concat(new byte[] {eventTypeBytes[2], eventTypeBytes[3]}, additionalData);
     }
 

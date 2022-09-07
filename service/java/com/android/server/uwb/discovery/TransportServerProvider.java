@@ -26,13 +26,13 @@ public abstract class TransportServerProvider extends TransportProvider {
 
     /** Callback for listening to transport server events. */
     @WorkerThread
-    public abstract static class TransportServerCallback implements TransportCallback {
+    public interface TransportServerCallback extends TransportCallback {
         /**
          * Called when the server receive new capabilites from the remote device.
          *
          * @param capabilities new capabilities.
          */
-        public abstract void onCapabilitesUpdated(FiraConnectorCapabilities capabilities);
+        void onCapabilitesUpdated(FiraConnectorCapabilities capabilities);
     }
 
     protected TransportServerProvider(int secid) {

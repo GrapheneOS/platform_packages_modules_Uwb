@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.Map;
 
 /** Definitions that are common for all classes. */
-public class Utils {
+public final class Utils {
 
     public static final String TAG = "UwbBackend";
 
@@ -178,4 +178,6 @@ public class Utils {
     // frequency) support will be added.
     public static final ImmutableList<Integer> SUPPORTED_BPRF_PREAMBLE_INDEX =
             ImmutableList.of(9, 10, 11, 12);
+
+    private Utils() {}
 }

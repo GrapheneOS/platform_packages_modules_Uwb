@@ -26,7 +26,7 @@ public abstract class TransportClientProvider extends TransportProvider {
 
     /** Callback for listening to transport client events. */
     @WorkerThread
-    public abstract static class TransportClientCallback implements TransportCallback {}
+    public interface TransportClientCallback extends TransportCallback {}
 
     protected TransportClientProvider(int secid) {
         super(secid);

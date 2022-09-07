@@ -190,7 +190,7 @@ public class AdminErrorMessage extends FiraConnectorMessage {
         if (errorType == null) {
             throw new IllegalArgumentException("errorType is null");
         }
-        byte[] errorTypeBytes = DataTypeConversionUtil.i32ToByteArray(errorType.mValue);
+        byte[] errorTypeBytes = DataTypeConversionUtil.i32ToByteArray(errorType.getValue());
         return new byte[] {errorTypeBytes[2], errorTypeBytes[3]};
     }
 
