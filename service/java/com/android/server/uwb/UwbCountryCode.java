@@ -46,6 +46,7 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -159,7 +160,10 @@ public class UwbCountryCode {
         }
         Log.d(TAG, "Default country code from system property is "
                 + mUwbInjector.getOemDefaultCountryCode());
-        Set<Integer> slotIdxs = mSubscriptionManager.getActiveSubscriptionInfoList()
+        List<SubscriptionInfo> subscriptionInfoList =
+                mSubscriptionManager.getActiveSubscriptionInfoList();
+        if (subscriptionInfoList == null) return; // No sim
+        Set<Integer> slotIdxs = subscriptionInfoList
                 .stream()
                 .map(SubscriptionInfo::getSimSlotIndex)
                 .collect(Collectors.toSet());
