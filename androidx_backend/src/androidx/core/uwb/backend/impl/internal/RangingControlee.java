@@ -19,8 +19,9 @@ package androidx.core.uwb.backend.impl.internal;
 import static java.util.Objects.requireNonNull;
 
 import android.os.Build.VERSION_CODES;
-import android.support.annotation.RequiresApi;
 import android.uwb.UwbManager;
+
+import androidx.annotation.RequiresApi;
 
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
