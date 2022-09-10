@@ -118,18 +118,19 @@ public class UwbServiceImpl {
         int minRangingInterval = specificationParams.getMinRangingInterval();
         EnumSet<FiraParams.AoaCapabilityFlag> aoaCapabilityFlags =
                 specificationParams.getAoaCapabilities();
+        List<Integer> supportedChannels = specificationParams.getSupportedChannels();
         if (minRangingInterval <= 0) {
-            return new RangingCapabilities(
-                    true,
-                    aoaCapabilityFlags.contains(FiraParams.AoaCapabilityFlag.HAS_AZIMUTH_SUPPORT),
-                    aoaCapabilityFlags.contains(
-                            FiraParams.AoaCapabilityFlag.HAS_ELEVATION_SUPPORT));
-        } else {
-            return new RangingCapabilities(
-                    true,
-                    aoaCapabilityFlags.contains(FiraParams.AoaCapabilityFlag.HAS_AZIMUTH_SUPPORT),
-                    aoaCapabilityFlags.contains(FiraParams.AoaCapabilityFlag.HAS_ELEVATION_SUPPORT),
-                    minRangingInterval);
+            minRangingInterval = RangingCapabilities.FIRA_DEFAULT_RANGING_INTERVAL_MS;
         }
+        if (supportedChannels == null || supportedChannels.isEmpty()) {
+            supportedChannels =
+                    new ArrayList<Integer>(RangingCapabilities.FIRA_DEFAULT_SUPPORTED_CHANNEL);
+        }
+        return new RangingCapabilities(
+                true,
+                aoaCapabilityFlags.contains(FiraParams.AoaCapabilityFlag.HAS_AZIMUTH_SUPPORT),
+                aoaCapabilityFlags.contains(FiraParams.AoaCapabilityFlag.HAS_ELEVATION_SUPPORT),
+                minRangingInterval,
+                supportedChannels);
     }
 }
