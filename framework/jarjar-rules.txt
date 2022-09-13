@@ -6,7 +6,8 @@ rule com.android.modules.utils.** com.android.x.uwb.@0
 # Statically included HAL stubs.
 rule android.hardware.uwb.** com.android.x.uwb.@0
 # Statically included UWB support lib and guava lib.
-rule com.google.** com.android.x.uwb.@0
+rule com.google.common.** com.android.x.uwb.@0
+rule com.google.uwb.** com.android.x.uwb.@0
 # Included by support lib.
 rule com.android.internal.util.** com.android.x.uwb.@0
 # Use our statically linked protobuf library
