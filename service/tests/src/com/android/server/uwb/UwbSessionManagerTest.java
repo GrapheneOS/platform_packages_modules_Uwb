@@ -89,6 +89,7 @@ import org.mockito.quality.Strictness;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -106,6 +107,12 @@ public class UwbSessionManagerTest {
     private static final String PACKAGE_NAME_2 = "com.android.uwb.2";
     private static final AttributionSource ATTRIBUTION_SOURCE =
             new AttributionSource.Builder(UID).setPackageName(PACKAGE_NAME).build();
+    private static final UwbAddress UWB_DEST_ADDRESS =
+            UwbAddress.fromBytes(new byte[] {(byte) 0x03, (byte) 0x04 });
+    private static final UwbAddress UWB_DEST_ADDRESS_2 =
+            UwbAddress.fromBytes(new byte[] {(byte) 0x05, (byte) 0x06 });
+    private static final UwbAddress UWB_DEST_ADDRESS_3 =
+            UwbAddress.fromBytes(new byte[] {(byte) 0x07, (byte) 0x08 });
 
     @Mock
     private UwbConfigurationManager mUwbConfigurationManager;
@@ -337,6 +344,7 @@ public class UwbSessionManagerTest {
         SessionHandle mockSessionHandle = mock(SessionHandle.class);
         Params mockParams = mock(FiraParams.class);
         IBinder mockBinder = mock(IBinder.class);
+
         UwbSession uwbSession = spy(
                 mUwbSessionManager.new UwbSession(ATTRIBUTION_SOURCE, mockSessionHandle,
                         TEST_SESSION_ID, FiraParams.PROTOCOL_NAME, mockParams,
@@ -347,6 +355,40 @@ public class UwbSessionManagerTest {
 
         mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, mockSessionHandle, TEST_SESSION_ID,
                 FiraParams.PROTOCOL_NAME, mockParams, mockRangingCallbacks, TEST_CHIP_ID);
+
+        verify(uwbSession, never()).binderDied();
+        verify(mockRangingCallbacks, never()).onRangingOpenFailed(any(), anyInt(), any());
+        verify(mockBinder, never()).unlinkToDeath(any(), anyInt());
+        assertThat(mUwbSessionManager.getUwbSession(TEST_SESSION_ID)).isEqualTo(uwbSession);
+        assertThat(mTestLooper.nextMessage().what).isEqualTo(1); // SESSION_OPEN_RANGING
+    }
+
+    @Test
+    public void initSession_controleeList() throws RemoteException {
+        doReturn(0).when(mUwbSessionManager).getSessionCount();
+        doReturn(false).when(mUwbSessionManager).isExistedSession(anyInt());
+        IUwbRangingCallbacks mockRangingCallbacks = mock(IUwbRangingCallbacks.class);
+        SessionHandle mockSessionHandle = mock(SessionHandle.class);
+        FiraOpenSessionParams mockParams = mock(FiraOpenSessionParams.class);
+        IBinder mockBinder = mock(IBinder.class);
+
+        when(mockParams.getDestAddressList())
+                .thenReturn(Collections.singletonList(UWB_DEST_ADDRESS));
+
+        UwbSession uwbSession = spy(
+                mUwbSessionManager.new UwbSession(ATTRIBUTION_SOURCE, mockSessionHandle,
+                        TEST_SESSION_ID, FiraParams.PROTOCOL_NAME, mockParams,
+                        mockRangingCallbacks, TEST_CHIP_ID));
+        doReturn(mockBinder).when(uwbSession).getBinder();
+        doReturn(uwbSession).when(mUwbSessionManager).createUwbSession(any(), any(), anyInt(),
+                anyString(), any(), any(), anyString());
+
+        mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, mockSessionHandle, TEST_SESSION_ID,
+                FiraParams.PROTOCOL_NAME, mockParams, mockRangingCallbacks, TEST_CHIP_ID);
+
+        assertThat(uwbSession.getControleeList().size() == 1
+                && uwbSession.getControleeList().get(0).getUwbAddress().equals(UWB_DEST_ADDRESS))
+                .isTrue();
 
         verify(uwbSession, never()).binderDied();
         verify(mockRangingCallbacks, never()).onRangingOpenFailed(any(), anyInt(), any());
@@ -672,7 +714,7 @@ public class UwbSessionManagerTest {
                 .setStaticStsIV(new byte[] { (byte) 0x01, (byte) 0x02, (byte) 0x03,
                         (byte) 0x04, (byte) 0x05, (byte) 0x06 })
                 .setDestAddressList(Arrays.asList(
-                        UwbAddress.fromBytes(new byte[] {(byte) 0x03, (byte) 0x04 })))
+                        UWB_DEST_ADDRESS))
                 .setProtocolVersion(new FiraProtocolVersion(1, 0))
                 .setSessionId(10)
                 .setDeviceType(FiraParams.RANGING_DEVICE_TYPE_CONTROLLER)
@@ -1438,6 +1480,8 @@ public class UwbSessionManagerTest {
         UwbMulticastListUpdateStatus uwbMulticastListUpdateStatus =
                 mock(UwbMulticastListUpdateStatus.class);
         when(uwbMulticastListUpdateStatus.getNumOfControlee()).thenReturn(1);
+        when(uwbMulticastListUpdateStatus.getControleeUwbAddresses())
+                .thenReturn(new UwbAddress[] {UWB_DEST_ADDRESS_2});
         when(uwbMulticastListUpdateStatus.getStatus()).thenReturn(
                 new int[] { UwbUciConstants.STATUS_CODE_OK });
         doReturn(uwbMulticastListUpdateStatus).when(uwbSession).getMulticastListUpdateStatus();
@@ -1446,6 +1490,16 @@ public class UwbSessionManagerTest {
 
         mUwbSessionManager.reconfigure(uwbSession.getSessionHandle(), reconfigureParams);
         mTestLooper.dispatchNext();
+
+        // Make sure the original address is still there.
+        assertThat(uwbSession.getControleeList().stream()
+                .anyMatch(e -> e.getUwbAddress().equals(UWB_DEST_ADDRESS)))
+                .isTrue();
+
+        // Make sure this new address was added.
+        assertThat(uwbSession.getControleeList().stream()
+                .anyMatch(e -> e.getUwbAddress().equals(UWB_DEST_ADDRESS_2)))
+                .isTrue();
 
         short dstAddress =
                 ByteBuffer.wrap(reconfigureParams.getAddressList()[0].toBytes()).getShort(0);
@@ -1469,14 +1523,27 @@ public class UwbSessionManagerTest {
         UwbMulticastListUpdateStatus uwbMulticastListUpdateStatus =
                 mock(UwbMulticastListUpdateStatus.class);
         when(uwbMulticastListUpdateStatus.getNumOfControlee()).thenReturn(1);
+        when(uwbMulticastListUpdateStatus.getControleeUwbAddresses())
+                .thenReturn(new UwbAddress[] {UWB_DEST_ADDRESS});
         when(uwbMulticastListUpdateStatus.getStatus()).thenReturn(
                 new int[] { UwbUciConstants.STATUS_CODE_OK });
         doReturn(uwbMulticastListUpdateStatus).when(uwbSession).getMulticastListUpdateStatus();
         when(mUwbConfigurationManager.setAppConfigurations(anyInt(), any(), anyString()))
                 .thenReturn(UwbUciConstants.STATUS_CODE_OK);
 
+        // Make sure the address exists in the first place. This should have been set up by
+        //  prepareExistingUwbSession
+        assertThat(uwbSession.getControleeList().stream()
+                .anyMatch(e -> e.getUwbAddress().equals(UWB_DEST_ADDRESS)))
+                .isTrue();
+
         mUwbSessionManager.reconfigure(uwbSession.getSessionHandle(), reconfigureParams);
         mTestLooper.dispatchNext();
+
+        // Make sure the address was removed.
+        assertThat(uwbSession.getControleeList().stream()
+                .anyMatch(e -> e.getUwbAddress().equals(UWB_DEST_ADDRESS)))
+                .isFalse();
 
         short dstAddress =
                 ByteBuffer.wrap(reconfigureParams.getAddressList()[0].toBytes()).getShort(0);
@@ -1503,6 +1570,44 @@ public class UwbSessionManagerTest {
 
         verify(mUwbSessionNotificationManager).onControleeAddFailed(eq(uwbSession),
                 eq(UwbUciConstants.STATUS_CODE_FAILED));
+        verify(mUwbSessionNotificationManager).onRangingReconfigureFailed(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
+    }
+
+    @Test
+    public void execReconfigure_uwbSessionUpdateMixedSuccess() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        FiraRangingReconfigureParams reconfigureParams =
+                buildReconfigureParams();
+        when(mNativeUwbManager
+                .controllerMulticastListUpdate(anyInt(), anyInt(), anyInt(), any(), any(),
+                        anyString()))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+        UwbMulticastListUpdateStatus uwbMulticastListUpdateStatus =
+                mock(UwbMulticastListUpdateStatus.class);
+        when(uwbMulticastListUpdateStatus.getNumOfControlee()).thenReturn(2);
+        when(uwbMulticastListUpdateStatus.getControleeUwbAddresses()).thenReturn(
+                new UwbAddress[] { UWB_DEST_ADDRESS_2, UWB_DEST_ADDRESS_3 });
+        // One fail, one success
+        when(uwbMulticastListUpdateStatus.getStatus()).thenReturn(
+                new int[] { UwbUciConstants.STATUS_CODE_FAILED, UwbUciConstants.STATUS_CODE_OK });
+        doReturn(uwbMulticastListUpdateStatus).when(uwbSession).getMulticastListUpdateStatus();
+
+        mUwbSessionManager.reconfigure(uwbSession.getSessionHandle(), reconfigureParams);
+        mTestLooper.dispatchNext();
+
+        // Fail callback for the first one.
+        verify(mUwbSessionNotificationManager).onControleeAddFailed(eq(uwbSession),
+                eq(UwbUciConstants.STATUS_CODE_FAILED));
+        // Success callback for the second.
+        verify(mUwbSessionNotificationManager).onControleeAdded(eq(uwbSession));
+
+        // Make sure the failed address was not added.
+        assertThat(uwbSession.getControleeList().stream()
+                .anyMatch(e -> e.getUwbAddress().equals(UWB_DEST_ADDRESS_2)))
+                .isFalse();
+
+        // Overall reconfigure fail.
         verify(mUwbSessionNotificationManager).onRangingReconfigureFailed(
                 eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
     }
