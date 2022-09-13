@@ -123,6 +123,10 @@ public class UwbInjector {
         mUwbDiagnostics = new UwbDiagnostics(mContext, this, mSystemBuildProperties);
     }
 
+    public Looper getUwbServiceLooper() {
+        return mLooper;
+    }
+
     public UserManager getUserManager() {
         return mUserManager;
     }
