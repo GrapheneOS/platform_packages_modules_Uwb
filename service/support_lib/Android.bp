@@ -34,6 +34,7 @@ java_defaults {
         "//external/sl4a/Common",
         "//packages/modules/Uwb/service:__subpackages__",
         "//packages/modules/Uwb/androidx_backend:__subpackages__",
+        "//packages/modules/Uwb/indev_uwb_adaptation:__subpackages__",
     ]
 }
 
