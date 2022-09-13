@@ -198,10 +198,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         if (uwbSession != null) {
             mUwbMetrics.logRangingResult(uwbSession.getProfileType(), rangingData);
             mSessionNotificationManager.onRangingResult(uwbSession, rangingData);
-            if (hasAllRangingResultError(rangingData)) {
-                uwbSession.startRangingResultErrorStreakTimerIfNotSet();
-            } else {
-                uwbSession.stopRangingResultErrorStreakTimerIfSet();
+            if (uwbSession.mRangingErrorStreakTimeoutMs
+                    != UwbSession.RANGING_RESULT_ERROR_NO_TIMEOUT) {
+                if (hasAllRangingResultError(rangingData)) {
+                    uwbSession.startRangingResultErrorStreakTimerIfNotSet();
+                } else {
+                    uwbSession.stopRangingResultErrorStreakTimerIfSet();
+                }
             }
         } else {
             Log.i(TAG, "Session is not initialized or Ranging Data is Null");
@@ -1059,9 +1062,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     }
 
     public class UwbSession implements IBinder.DeathRecipient {
-        // Amount of time we allow continuous failures before stopping the session.
         @VisibleForTesting
-        public static final long RANGING_RESULT_ERROR_STREAK_TIMER_TIMEOUT_MS = 30_000L;
+        public static final long RANGING_RESULT_ERROR_NO_TIMEOUT = 0;
         private static final String RANGING_RESULT_ERROR_STREAK_TIMER_TAG =
                 "UwbSessionRangingResultError";
 
@@ -1080,6 +1082,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         private final String mChipId;
         private boolean mHasNonPrivilegedFgApp = false;
         private @FiraParams.RangeDataNtfConfig Integer mOrigRangeDataNtfConfig;
+        private long mRangingErrorStreakTimeoutMs = RANGING_RESULT_ERROR_NO_TIMEOUT;
 
         @VisibleForTesting
         public List<UwbControlee> mControleeList;
@@ -1107,6 +1110,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                             .map(UwbControlee::new)
                             .collect(Collectors.toList());
                 }
+                mRangingErrorStreakTimeoutMs = firaParams
+                        .getRangingErrorStreakTimeoutMs();
             }
         }
 
@@ -1286,7 +1291,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
         /**
          * Starts a timer to detect if the error streak is longer than
-         * {@link #RANGING_RESULT_ERROR_STREAK_TIMER_TIMEOUT_MS}.
+         * {@link UwbSession#mRangingErrorStreakTimeoutMs }.
          */
         public void startRangingResultErrorStreakTimerIfNotSet() {
             // Start a timer on first failure to detect continuous failures.
@@ -1298,7 +1303,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 };
                 mAlarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP,
                         mUwbInjector.getElapsedSinceBootMillis()
-                                + RANGING_RESULT_ERROR_STREAK_TIMER_TIMEOUT_MS,
+                                + mRangingErrorStreakTimeoutMs,
                         RANGING_RESULT_ERROR_STREAK_TIMER_TAG,
                         mRangingResultErrorStreakTimerListener, mEventTask);
             }
