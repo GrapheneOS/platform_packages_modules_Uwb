@@ -497,14 +497,14 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         Log.d(TAG, "deinitAllSession()");
         for (Map.Entry<Integer, UwbSession> sessionEntry : mSessionTable.entrySet()) {
             UwbSession uwbSession = sessionEntry.getValue();
-            onDeInit(uwbSession);
+            handleOnDeInit(uwbSession);
         }
 
         // Not resetting chip on UWB toggle off.
         // mNativeUwbManager.resetDevice(UwbUciConstants.UWBS_RESET);
     }
 
-    public synchronized void onDeInit(UwbSession uwbSession) {
+    public synchronized void handleOnDeInit(UwbSession uwbSession) {
         if (!isExistedSession(uwbSession.getSessionId())) {
             Log.i(TAG, "onDeinit - Ignoring already deleted session "
                     + uwbSession.getSessionId());
@@ -637,39 +637,40 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             switch (type) {
                 case SESSION_OPEN_RANGING: {
                     UwbSession uwbSession = (UwbSession) msg.obj;
-                    openRanging(uwbSession);
+                    handleOpenRanging(uwbSession);
                     break;
                 }
 
                 case SESSION_START_RANGING: {
                     UwbSession uwbSession = (UwbSession) msg.obj;
-                    startRanging(uwbSession);
+                    handleStartRanging(uwbSession);
                     break;
                 }
 
                 case SESSION_STOP_RANGING: {
                     UwbSession uwbSession = (UwbSession) msg.obj;
                     boolean triggeredBySystemPolicy = msg.arg1 == 1;
-                    stopRanging(uwbSession, triggeredBySystemPolicy);
+                    handleStopRanging(uwbSession, triggeredBySystemPolicy);
                     break;
                 }
 
                 case SESSION_RECONFIG_RANGING: {
                     Log.d(TAG, "SESSION_RECONFIG_RANGING");
                     ReconfigureEventParams params = (ReconfigureEventParams) msg.obj;
-                    reconfigure(params.uwbSession, params.params, params.triggeredByFgStateChange);
+                    handleReconfigure(
+                            params.uwbSession, params.params, params.triggeredByFgStateChange);
                     break;
                 }
 
                 case SESSION_CLOSE: {
                     UwbSession uwbSession = (UwbSession) msg.obj;
-                    close(uwbSession);
+                    handleClose(uwbSession);
                     break;
                 }
 
                 case SESSION_ON_DEINIT : {
                     UwbSession uwbSession = (UwbSession) msg.obj;
-                    onDeInit(uwbSession);
+                    handleOnDeInit(uwbSession);
                     break;
                 }
 
@@ -695,7 +696,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             this.sendMessage(msg);
         }
 
-        private void openRanging(UwbSession uwbSession) {
+        private void handleOpenRanging(UwbSession uwbSession) {
             // TODO(b/211445008): Consolidate to a single uwb thread.
             ExecutorService executor = Executors.newSingleThreadExecutor();
             FutureTask<Integer> initSessionTask = new FutureTask<>(
@@ -758,7 +759,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             Log.i(TAG, "sessionInit() : finish - sessionId : " + uwbSession.getSessionId());
         }
 
-        private void startRanging(UwbSession uwbSession) {
+        private void handleStartRanging(UwbSession uwbSession) {
             // TODO(b/211445008): Consolidate to a single uwb thread.
             ExecutorService executor = Executors.newSingleThreadExecutor();
             FutureTask<Integer> startRangingTask = new FutureTask<>(
@@ -834,7 +835,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             mUwbMetrics.longRangingStartEvent(uwbSession, status);
         }
 
-        private void stopRanging(UwbSession uwbSession, boolean triggeredBySystemPolicy) {
+        private void handleStopRanging(UwbSession uwbSession, boolean triggeredBySystemPolicy) {
             // TODO(b/211445008): Consolidate to a single uwb thread.
             ExecutorService executor = Executors.newSingleThreadExecutor();
             FutureTask<Integer> stopRangingTask = new FutureTask<>(
@@ -887,7 +888,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             uwbSession.stopRangingResultErrorStreakTimerIfSet();
         }
 
-        private void reconfigure(UwbSession uwbSession, @Nullable Params param,
+        private void handleReconfigure(UwbSession uwbSession, @Nullable Params param,
                 boolean triggeredByFgStateChange) {
             if (!(param instanceof FiraRangingReconfigureParams)) {
                 Log.e(TAG, "Invalid reconfigure params: " + param);
@@ -1023,7 +1024,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             }
         }
 
-        private void close(UwbSession uwbSession) {
+        private void handleClose(UwbSession uwbSession) {
             // TODO(b/211445008): Consolidate to a single uwb thread.
             ExecutorService executor = Executors.newSingleThreadExecutor();
             FutureTask<Integer> closeTask = new FutureTask<>(
