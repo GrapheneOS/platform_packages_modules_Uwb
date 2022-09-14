@@ -21,6 +21,7 @@ import static com.android.server.uwb.data.UwbUciConstants.REASON_STATE_CHANGE_WI
 
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE;
+import static com.google.uwb.support.fira.FiraParams.PROTOCOL_NAME;
 import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_DISABLE;
 import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_ENABLE;
 
@@ -75,10 +76,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
@@ -698,7 +696,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
         private void handleOpenRanging(UwbSession uwbSession) {
             // TODO(b/211445008): Consolidate to a single uwb thread.
-            ExecutorService executor = Executors.newSingleThreadExecutor();
             FutureTask<Integer> initSessionTask = new FutureTask<>(
                     () -> {
                         int status = UwbUciConstants.STATUS_CODE_FAILED;
@@ -734,14 +731,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                             return status;
                         }
                     });
-            executor.submit(initSessionTask);
 
             int status = UwbUciConstants.STATUS_CODE_FAILED;
             try {
-                status = initSessionTask.get(
-                        IUwbAdapter.RANGING_SESSION_OPEN_THRESHOLD_MS, TimeUnit.MILLISECONDS);
+                status = mUwbInjector.runTaskOnSingleThreadExecutor(initSessionTask,
+                        IUwbAdapter.RANGING_SESSION_OPEN_THRESHOLD_MS);
             } catch (TimeoutException e) {
-                executor.shutdownNow();
                 Log.i(TAG, "Failed to initialize session - status : TIMEOUT");
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -761,7 +756,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
         private void handleStartRanging(UwbSession uwbSession) {
             // TODO(b/211445008): Consolidate to a single uwb thread.
-            ExecutorService executor = Executors.newSingleThreadExecutor();
             FutureTask<Integer> startRangingTask = new FutureTask<>(
                     () -> {
                         int status = UwbUciConstants.STATUS_CODE_FAILED;
@@ -815,16 +809,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                         }
                         return status;
                     });
-
-            executor.submit(startRangingTask);
-
             int status = UwbUciConstants.STATUS_CODE_FAILED;
             try {
-                status = startRangingTask.get(
-                        IUwbAdapter.RANGING_SESSION_START_THRESHOLD_MS, TimeUnit.MILLISECONDS);
+                status = mUwbInjector.runTaskOnSingleThreadExecutor(startRangingTask,
+                        IUwbAdapter.RANGING_SESSION_START_THRESHOLD_MS);
             } catch (TimeoutException e) {
                 Log.i(TAG, "Failed to Start Ranging - status : TIMEOUT");
-                executor.shutdownNow();
                 mSessionNotificationManager.onRangingStartFailed(
                         uwbSession, UwbUciConstants.STATUS_CODE_FAILED);
             } catch (InterruptedException e) {
@@ -837,7 +827,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
         private void handleStopRanging(UwbSession uwbSession, boolean triggeredBySystemPolicy) {
             // TODO(b/211445008): Consolidate to a single uwb thread.
-            ExecutorService executor = Executors.newSingleThreadExecutor();
             FutureTask<Integer> stopRangingTask = new FutureTask<>(
                     () -> {
                         int status = UwbUciConstants.STATUS_CODE_FAILED;
@@ -865,15 +854,19 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                         return status;
                     });
 
-            executor.submit(stopRangingTask);
 
             int status = UwbUciConstants.STATUS_CODE_FAILED;
+            int timeoutMs;
+            if (uwbSession.getProtocolName().equals(PROTOCOL_NAME)) {
+                // TODO (b/235714647): Temporary workaround to 2x ranging interval.
+                timeoutMs = uwbSession.getCurrentFiraRangingIntervalMs() * 2;
+            } else {
+                timeoutMs = IUwbAdapter.RANGING_SESSION_START_THRESHOLD_MS;
+            }
             try {
-                status = stopRangingTask.get(
-                        IUwbAdapter.RANGING_SESSION_START_THRESHOLD_MS, TimeUnit.MILLISECONDS);
+                status = mUwbInjector.runTaskOnSingleThreadExecutor(stopRangingTask, timeoutMs);
             } catch (TimeoutException e) {
                 Log.i(TAG, "Failed to Stop Ranging - status : TIMEOUT");
-                executor.shutdownNow();
                 mSessionNotificationManager.onRangingStopFailed(
                         uwbSession, UwbUciConstants.STATUS_CODE_FAILED);
             } catch (InterruptedException e) {
@@ -899,7 +892,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             FiraRangingReconfigureParams rangingReconfigureParams =
                     (FiraRangingReconfigureParams) param;
             // TODO(b/211445008): Consolidate to a single uwb thread.
-            ExecutorService executor = Executors.newSingleThreadExecutor();
             FutureTask<Integer> cmdTask = new FutureTask<>(
                     () -> {
                         int status = UwbUciConstants.STATUS_CODE_FAILED;
@@ -1001,16 +993,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                             return status;
                         }
                     });
-
-            executor.submit(cmdTask);
-
             int status = UwbUciConstants.STATUS_CODE_FAILED;
             try {
-                status = cmdTask.get(
-                        IUwbAdapter.RANGING_SESSION_OPEN_THRESHOLD_MS, TimeUnit.MILLISECONDS);
+                status = mUwbInjector.runTaskOnSingleThreadExecutor(cmdTask,
+                        IUwbAdapter.RANGING_SESSION_OPEN_THRESHOLD_MS);
             } catch (TimeoutException e) {
                 Log.i(TAG, "Failed to Reconfigure - status : TIMEOUT");
-                executor.shutdownNow();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
@@ -1026,7 +1014,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
         private void handleClose(UwbSession uwbSession) {
             // TODO(b/211445008): Consolidate to a single uwb thread.
-            ExecutorService executor = Executors.newSingleThreadExecutor();
             FutureTask<Integer> closeTask = new FutureTask<>(
                     (Callable<Integer>) () -> {
                         int status = UwbUciConstants.STATUS_CODE_FAILED;
@@ -1043,15 +1030,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                         }
                         return status;
                     });
-            executor.submit(closeTask);
 
             int status = UwbUciConstants.STATUS_CODE_FAILED;
             try {
-                status = closeTask.get(
-                        IUwbAdapter.RANGING_SESSION_CLOSE_THRESHOLD_MS, TimeUnit.MILLISECONDS);
+                status = mUwbInjector.runTaskOnSingleThreadExecutor(closeTask,
+                        IUwbAdapter.RANGING_SESSION_CLOSE_THRESHOLD_MS);
             } catch (TimeoutException e) {
                 Log.i(TAG, "Failed to Stop Ranging - status : TIMEOUT");
-                executor.shutdownNow();
                 mSessionNotificationManager.onRangingClosed(uwbSession, status);
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
@@ -1233,6 +1218,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                         reconfigureParams.getRangeDataAoaElevationUpper());
             }
             this.mParams = newParamsBuilder.build();
+        }
+
+        public int getCurrentFiraRangingIntervalMs() {
+            FiraOpenSessionParams firaOpenSessionParams = (FiraOpenSessionParams) mParams;
+            return firaOpenSessionParams.getRangingIntervalMs()
+                    * (firaOpenSessionParams.getBlockStrideLength() + 1);
         }
 
         public String getProtocolName() {

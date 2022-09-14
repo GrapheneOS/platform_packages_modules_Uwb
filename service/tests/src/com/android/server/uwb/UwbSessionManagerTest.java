@@ -55,7 +55,6 @@ import android.uwb.SessionHandle;
 import android.uwb.StateChangeReason;
 import android.uwb.UwbAddress;
 
-import com.android.dx.mockito.inline.extended.ExtendedMockito;
 import com.android.server.uwb.UwbSessionManager.UwbSession;
 import com.android.server.uwb.UwbSessionManager.WaitObj;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
@@ -82,10 +81,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.mockito.MockitoSession;
-import org.mockito.quality.Strictness;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -93,9 +89,10 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeoutException;
 
 public class UwbSessionManagerTest {
     private static final int TEST_SESSION_ID = 7;
@@ -113,6 +110,7 @@ public class UwbSessionManagerTest {
             UwbAddress.fromBytes(new byte[] {(byte) 0x05, (byte) 0x06 });
     private static final UwbAddress UWB_DEST_ADDRESS_3 =
             UwbAddress.fromBytes(new byte[] {(byte) 0x07, (byte) 0x08 });
+    private static final int TEST_RANGING_INTERVAL_MS = 200;
 
     @Mock
     private UwbConfigurationManager mUwbConfigurationManager;
@@ -134,18 +132,22 @@ public class UwbSessionManagerTest {
     private UwbServiceCore mUwbServiceCore;
     private TestLooper mTestLooper = new TestLooper();
     private UwbSessionManager mUwbSessionManager;
-    private MockitoSession mMockitoSession;
     @Captor
     private ArgumentCaptor<OnUidImportanceListener> mOnUidImportanceListenerArgumentCaptor;
     private GenericSpecificationParams.Builder mSpecificationParamsBuilder;
 
     @Before
-    public void setup() {
+    public void setup() throws ExecutionException, InterruptedException, TimeoutException {
         MockitoAnnotations.initMocks(this);
         when(mNativeUwbManager.getMaxSessionNumber()).thenReturn(MAX_SESSION_NUM);
         when(mUwbInjector.isSystemApp(UID, PACKAGE_NAME)).thenReturn(true);
         when(mUwbInjector.isForegroundAppOrService(UID, PACKAGE_NAME)).thenReturn(true);
         when(mUwbInjector.getUwbServiceCore()).thenReturn(mUwbServiceCore);
+        doAnswer(invocation -> {
+            FutureTask t = invocation.getArgument(0);
+            t.run();
+            return t.get();
+        }).when(mUwbInjector).runTaskOnSingleThreadExecutor(any(FutureTask.class), anyInt());
         mSpecificationParamsBuilder = new GenericSpecificationParams.Builder()
                 .setCccSpecificationParams(mock(CccSpecificationParams.class))
                 .setFiraSpecificationParams(
@@ -172,30 +174,13 @@ public class UwbSessionManagerTest {
 
         verify(mActivityManager).addOnUidImportanceListener(
                 mOnUidImportanceListenerArgumentCaptor.capture(), anyInt());
-
-        // static mocking for executor service.
-        mMockitoSession = ExtendedMockito.mockitoSession()
-                .mockStatic(Executors.class, Mockito.withSettings().lenient())
-                .strictness(Strictness.LENIENT)
-                .startMocking();
-
-        doAnswer(invocation -> {
-            FutureTask t = invocation.getArgument(0);
-            t.run();
-            return t;
-        }).when(mExecutorService).submit(any(Runnable.class));
-        when(Executors.newSingleThreadExecutor()).thenReturn(mExecutorService);
     }
 
     /**
      * Called after each test
      */
     @After
-    public void cleanup() {
-        if (mMockitoSession != null) {
-            mMockitoSession.finishMocking();
-        }
-    }
+    public void cleanup() { }
 
     @Test
     public void onRangeDataNotificationReceivedWithValidUwbSession() {
@@ -720,6 +705,7 @@ public class UwbSessionManagerTest {
                 .setDeviceType(FiraParams.RANGING_DEVICE_TYPE_CONTROLLER)
                 .setDeviceRole(FiraParams.RANGING_DEVICE_ROLE_INITIATOR)
                 .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_UNICAST)
+                .setRangingIntervalMs(TEST_RANGING_INTERVAL_MS)
                 .build();
         IBinder mockBinder = mock(IBinder.class);
         UwbSession uwbSession = spy(
@@ -1398,6 +1384,7 @@ public class UwbSessionManagerTest {
         mUwbSessionManager.stopRanging(uwbSession.getSessionHandle());
         mTestLooper.dispatchNext();
 
+        verify(mUwbInjector).runTaskOnSingleThreadExecutor(any(), eq(TEST_RANGING_INTERVAL_MS * 2));
         verify(mUwbSessionNotificationManager)
                 .onRangingStoppedWithApiReasonCode(eq(uwbSession),
                         eq(RangingChangeReason.LOCAL_API));
@@ -1635,6 +1622,37 @@ public class UwbSessionManagerTest {
                 eq(UwbUciConstants.STATUS_CODE_FAILED));
         verify(mUwbSessionNotificationManager).onRangingReconfigureFailed(
                 eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
+    }
+
+    @Test
+    public void execReconfigureBlockStriding_success_stop() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        FiraRangingReconfigureParams reconfigureParams =
+                new FiraRangingReconfigureParams.Builder()
+                        .setBlockStrideLength(4)
+                        .build();
+        when(mUwbConfigurationManager.setAppConfigurations(anyInt(), any(), anyString()))
+                .thenReturn(UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.reconfigure(uwbSession.getSessionHandle(), reconfigureParams);
+        mTestLooper.dispatchNext();
+
+        verify(mUwbSessionNotificationManager).onRangingReconfigured(uwbSession);
+
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE, UwbUciConstants.UWB_SESSION_STATE_IDLE)
+                .when(uwbSession).getSessionState();
+        when(mNativeUwbManager.stopRanging(eq(TEST_SESSION_ID), anyString()))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.stopRanging(uwbSession.getSessionHandle());
+        mTestLooper.dispatchNext();
+
+        verify(mUwbInjector).runTaskOnSingleThreadExecutor(
+                any(), eq(TEST_RANGING_INTERVAL_MS * 2 * 5));
+        verify(mUwbSessionNotificationManager)
+                .onRangingStoppedWithApiReasonCode(eq(uwbSession),
+                        eq(RangingChangeReason.LOCAL_API));
+        verify(mUwbMetrics).longRangingStopEvent(eq(uwbSession));
     }
 
     @Test
