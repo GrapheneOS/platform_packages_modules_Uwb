@@ -19,8 +19,6 @@ package com.google.uwb.support.fira;
 import static com.android.internal.util.Preconditions.checkArgument;
 import static com.android.internal.util.Preconditions.checkNotNull;
 
-import static com.google.uwb.support.fira.FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_INTERLEAVED;
-
 import static java.util.Objects.requireNonNull;
 
 import android.os.PersistableBundle;
@@ -124,6 +122,7 @@ public class FiraOpenSessionParams extends FiraParams {
     private final int mNumOfMsrmtFocusOnRange;
     private final int mNumOfMsrmtFocusOnAoaAzimuth;
     private final int mNumOfMsrmtFocusOnAoaElevation;
+    private final Long mRangingErrorStreakTimeoutMs;
 
     private static final int BUNDLE_VERSION_1 = 1;
     private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_1;
@@ -200,6 +199,8 @@ public class FiraOpenSessionParams extends FiraParams {
             "num_of_msrmt_focus_on_aoa_azimuth";
     private static final String KEY_NUM_OF_MSRMT_FOCUS_ON_AOA_ELEVATION =
             "num_of_msrmt_focus_on_aoa_elevation";
+    private static final String RANGING_ERROR_STREAK_TIMEOUT_MS =
+            "ranging_error_streak_timeout_ms";
 
     private FiraOpenSessionParams(
             FiraProtocolVersion protocolVersion,
@@ -260,7 +261,8 @@ public class FiraOpenSessionParams extends FiraParams {
             @AoaType int aoaType,
             int numOfMsrmtFocusOnRange,
             int numOfMsrmtFocusOnAoaAzimuth,
-            int numOfMsrmtFocusOnAoaElevation) {
+            int numOfMsrmtFocusOnAoaElevation,
+            Long rangingErrorStreakTimeoutMs) {
         mProtocolVersion = protocolVersion;
         mSessionId = sessionId;
         mDeviceType = deviceType;
@@ -320,6 +322,7 @@ public class FiraOpenSessionParams extends FiraParams {
         mNumOfMsrmtFocusOnRange = numOfMsrmtFocusOnRange;
         mNumOfMsrmtFocusOnAoaAzimuth = numOfMsrmtFocusOnAoaAzimuth;
         mNumOfMsrmtFocusOnAoaElevation = numOfMsrmtFocusOnAoaElevation;
+        mRangingErrorStreakTimeoutMs = rangingErrorStreakTimeoutMs;
     }
 
     @Override
@@ -585,6 +588,10 @@ public class FiraOpenSessionParams extends FiraParams {
         return mNumOfMsrmtFocusOnAoaElevation;
     }
 
+    public long getRangingErrorStreakTimeoutMs() {
+        return mRangingErrorStreakTimeoutMs;
+    }
+
     @Nullable
     private static int[] byteArrayToIntArray(@Nullable byte[] bytes) {
         if (bytes == null) {
@@ -690,6 +697,7 @@ public class FiraOpenSessionParams extends FiraParams {
         bundle.putInt(KEY_NUM_OF_MSRMT_FOCUS_ON_RANGE, mNumOfMsrmtFocusOnRange);
         bundle.putInt(KEY_NUM_OF_MSRMT_FOCUS_ON_AOA_AZIMUTH, mNumOfMsrmtFocusOnAoaAzimuth);
         bundle.putInt(KEY_NUM_OF_MSRMT_FOCUS_ON_AOA_ELEVATION, mNumOfMsrmtFocusOnAoaElevation);
+        bundle.putLong(RANGING_ERROR_STREAK_TIMEOUT_MS, mRangingErrorStreakTimeoutMs);
         return bundle;
     }
 
@@ -799,6 +807,8 @@ public class FiraOpenSessionParams extends FiraParams {
                         bundle.getInt(KEY_NUM_OF_MSRMT_FOCUS_ON_RANGE),
                         bundle.getInt(KEY_NUM_OF_MSRMT_FOCUS_ON_AOA_AZIMUTH),
                         bundle.getInt(KEY_NUM_OF_MSRMT_FOCUS_ON_AOA_ELEVATION))
+                .setRangingErrorStreakTimeoutMs(bundle
+                        .getLong(RANGING_ERROR_STREAK_TIMEOUT_MS, 30_000L))
                 .build();
     }
 
@@ -978,6 +988,9 @@ public class FiraOpenSessionParams extends FiraParams {
         private int mNumOfMsrmtFocusOnAoaAzimuth = 0;
         private int mNumOfMsrmtFocusOnAoaElevation = 0;
 
+        /** Ranging result error streak timeout in Milliseconds*/
+        private long mRangingErrorStreakTimeoutMs = 30_000L;
+
         public Builder() {}
 
         public Builder(@NonNull Builder builder) {
@@ -1040,6 +1053,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mNumOfMsrmtFocusOnRange = builder.mNumOfMsrmtFocusOnRange;
             mNumOfMsrmtFocusOnAoaAzimuth = builder.mNumOfMsrmtFocusOnAoaAzimuth;
             mNumOfMsrmtFocusOnAoaElevation = builder.mNumOfMsrmtFocusOnAoaElevation;
+            mRangingErrorStreakTimeoutMs = builder.mRangingErrorStreakTimeoutMs;
         }
 
         public Builder(@NonNull FiraOpenSessionParams params) {
@@ -1102,6 +1116,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mNumOfMsrmtFocusOnRange = params.mNumOfMsrmtFocusOnRange;
             mNumOfMsrmtFocusOnAoaAzimuth = params.mNumOfMsrmtFocusOnAoaAzimuth;
             mNumOfMsrmtFocusOnAoaElevation = params.mNumOfMsrmtFocusOnAoaElevation;
+            mRangingErrorStreakTimeoutMs = params.mRangingErrorStreakTimeoutMs;
         }
 
         public FiraOpenSessionParams.Builder setProtocolVersion(FiraProtocolVersion version) {
@@ -1429,6 +1444,12 @@ public class FiraOpenSessionParams extends FiraParams {
             return this;
         }
 
+        public FiraOpenSessionParams.Builder setRangingErrorStreakTimeoutMs(
+                long rangingErrorStreakTimeoutMs) {
+            mRangingErrorStreakTimeoutMs = rangingErrorStreakTimeoutMs;
+            return this;
+        }
+
        /**
         * After the session has been started, the device starts by
         * performing numOfMsrmtFocusOnRange range-only measurements (no
@@ -1633,7 +1654,8 @@ public class FiraOpenSessionParams extends FiraParams {
                     mAoaType,
                     mNumOfMsrmtFocusOnRange,
                     mNumOfMsrmtFocusOnAoaAzimuth,
-                    mNumOfMsrmtFocusOnAoaElevation);
+                    mNumOfMsrmtFocusOnAoaElevation,
+                    mRangingErrorStreakTimeoutMs);
         }
     }
 }
