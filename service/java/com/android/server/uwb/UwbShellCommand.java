@@ -52,6 +52,8 @@ import android.annotation.NonNull;
 import android.content.AttributionSource;
 import android.content.Context;
 import android.os.Binder;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.PersistableBundle;
 import android.os.Process;
 import android.os.RemoteException;
@@ -130,6 +132,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             "get-specification-info",
             "enable-diagnostics-notification",
             "disable-diagnostics-notification",
+            "take-bugreport",
     };
 
     @VisibleForTesting
@@ -173,6 +176,9 @@ public class UwbShellCommand extends BasicShellCommandHandler {
     private final UwbServiceCore mUwbServiceCore;
     private final UwbCountryCode mUwbCountryCode;
     private final NativeUwbManager mNativeUwbManager;
+    private final UwbDiagnostics mUwbDiagnostics;
+    private final DeviceConfigFacade mDeviceConfig;
+    private final Looper mLooper;
     private final Context mContext;
 
     UwbShellCommand(UwbInjector uwbInjector, UwbServiceImpl uwbService, Context context) {
@@ -181,6 +187,9 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         mUwbCountryCode = uwbInjector.getUwbCountryCode();
         mNativeUwbManager = uwbInjector.getNativeUwbManager();
         mUwbServiceCore = uwbInjector.getUwbServiceCore();
+        mUwbDiagnostics = uwbInjector.getUwbDiagnostics();
+        mDeviceConfig = uwbInjector.getDeviceConfigFacade();
+        mLooper = uwbInjector.getUwbServiceLooper();
     }
 
     private static String bundleToString(@Nullable PersistableBundle bundle) {
@@ -915,6 +924,14 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     mUwbServiceCore.enableDiagnostics(false, 0);
                     return 0;
                 }
+                case "take-bugreport": {
+                    new Handler(mLooper).post(() -> {
+                        if (mDeviceConfig.isDeviceErrorBugreportEnabled()) {
+                            mUwbDiagnostics.takeBugReport("Uwb bugreport test");
+                        }
+                    });
+                    return 0;
+                }
                 default:
                     return handleDefaultCommands(cmd);
             }
@@ -1015,6 +1032,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         pw.println("    Enable vendor diagnostics notification");
         pw.println("  disable-diagnostics-notification");
         pw.println("    Disable vendor diagnostics notification");
+        pw.println("  take-bugreport");
+        pw.println("    take bugreport through betterBug or alternatively bugreport manager");
     }
 
     private void onHelpPrivileged(PrintWriter pw) {
