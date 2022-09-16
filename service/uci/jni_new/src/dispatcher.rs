@@ -23,6 +23,7 @@ use jni::objects::GlobalRef;
 use jni::JavaVM;
 use uci_hal_android::uci_hal_android::UciHalAndroid;
 use uwb_core::error::Result as UwbCoreResult;
+use uwb_core::uci::uci_logger::UciLoggerNull;
 use uwb_core::uci::uci_manager_sync::UciManagerSync;
 
 /// Dispatcher is managed by Java side. Construction and Destruction are provoked by JNI function
@@ -50,6 +51,7 @@ impl Dispatcher {
                     class_loader_obj: class_loader_obj.clone(),
                     callback_obj: callback_obj.clone(),
                 },
+                UciLoggerNull::default(),
             )?;
             manager_map.insert(chip_id.as_ref().to_string(), manager);
         }
