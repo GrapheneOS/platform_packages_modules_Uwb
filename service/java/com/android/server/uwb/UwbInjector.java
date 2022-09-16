@@ -49,6 +49,12 @@ import com.android.server.uwb.pm.ProfileManager;
 
 import java.io.File;
 import java.util.Locale;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * To be used for dependency injection (especially helps mocking static dependencies).
@@ -363,6 +369,19 @@ public class UwbInjector {
         } catch (SecurityException e) {
             Log.e(TAG, "Failed to retrieve the app importance", e);
             return false;
+        }
+    }
+
+    /* Helps to mock the executor for tests */
+    public int runTaskOnSingleThreadExecutor(FutureTask<Integer> task, int timeoutMs)
+            throws InterruptedException, TimeoutException, ExecutionException {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.submit(task);
+        try {
+            return task.get(timeoutMs, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            executor.shutdownNow();
+            throw e;
         }
     }
 }

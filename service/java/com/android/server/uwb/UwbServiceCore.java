@@ -557,22 +557,22 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             int type = msg.what;
             switch (type) {
                 case TASK_ENABLE:
-                    enableInternal();
+                    handleEnable();
                     break;
 
                 case TASK_DISABLE:
                     mSessionManager.deinitAllSession();
-                    disableInternal();
+                    handleDisable();
                     break;
 
                 case TASK_RESTART:
                     mSessionManager.deinitAllSession();
-                    disableInternal();
-                    enableInternal();
+                    handleDisable();
+                    handleEnable();
                     break;
 
                 case TASK_NOTIFY_ADAPTER_STATE:
-                    notifyAdapterStateInternal();
+                    handleNotifyAdapterState();
                     break;
 
                 default:
@@ -593,13 +593,13 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             this.sendMessageDelayed(msg, delayMillis);
         }
 
-        private void enableInternal() {
+        private void handleEnable() {
             if (isUwbEnabled()) {
                 Log.i(TAG, "UWB service is already enabled");
                 return;
             }
             try {
-                WatchDogThread watchDog = new WatchDogThread("enableInternal", WATCHDOG_MS);
+                WatchDogThread watchDog = new WatchDogThread("handleEnable", WATCHDOG_MS);
                 watchDog.start();
 
                 Log.i(TAG, "Initialization start ...");
@@ -643,13 +643,13 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             }
         }
 
-        private void disableInternal() {
+        private void handleDisable() {
             if (!isUwbEnabled()) {
                 Log.i(TAG, "UWB service is already disabled");
                 return;
             }
 
-            WatchDogThread watchDog = new WatchDogThread("disableInternal", WATCHDOG_MS);
+            WatchDogThread watchDog = new WatchDogThread("handleDisable", WATCHDOG_MS);
             watchDog.start();
 
             try {
@@ -671,7 +671,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             }
         }
 
-        private void notifyAdapterStateInternal() {
+        private void handleNotifyAdapterState() {
             try {
                 for (String chipId : mUwbInjector.getMultichipData().getChipIds()) {
                     Log.d(TAG, "enabling chip " + chipId);
