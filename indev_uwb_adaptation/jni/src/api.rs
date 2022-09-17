@@ -25,6 +25,7 @@ use num_traits::FromPrimitive;
 use uci_hal_android::uci_hal_android::UciHalAndroid;
 use uwb_core::params::{AppConfigParams, CountryCode};
 use uwb_core::service::{UwbService, UwbServiceBuilder};
+use uwb_core::uci::uci_logger::UciLoggerNull;
 use uwb_uci_packets::{SessionType, UpdateMulticastListAction};
 
 use crate::callback::UwbServiceCallbackImpl;
@@ -59,6 +60,7 @@ pub extern "system" fn Java_com_android_server_uwb_indev_UwbServiceCore_nativeUw
     if let Some(uwb_service) = UwbServiceBuilder::new()
         .callback(UwbServiceCallbackImpl {})
         .uci_hal(UciHalAndroid::new("default"))
+        .uci_logger(UciLoggerNull::default())
         .build()
     {
         return Box::into_raw(Box::new(uwb_service)) as jlong;
