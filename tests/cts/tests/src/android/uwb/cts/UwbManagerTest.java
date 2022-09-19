@@ -494,6 +494,16 @@ public class UwbManagerTest {
             /* pass */
             Log.i(TAG, "Failed with expected security exception: " + e);
         }
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            mUwbManager.unregisterUwbVendorUciCallback(cb);
+            /* pass */
+        } catch (SecurityException e) {
+            /* fail */
+            fail();
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
     }
 
     @Test
