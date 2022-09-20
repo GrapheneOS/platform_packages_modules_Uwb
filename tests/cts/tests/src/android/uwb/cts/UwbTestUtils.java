@@ -18,6 +18,7 @@ package android.uwb.cts;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.PersistableBundle;
 import android.os.SystemClock;
 import android.uwb.AngleMeasurement;
 import android.uwb.AngleOfArrivalMeasurement;
@@ -63,6 +64,12 @@ public class UwbTestUtils {
         return getRangingMeasurement(getUwbAddress(false));
     }
 
+    public static PersistableBundle getTestRangingMetadata() {
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putInt("TEST_KEY", 1);
+        return bundle;
+    }
+
     public static RangingMeasurement getRangingMeasurement(UwbAddress address) {
         return new RangingMeasurement.Builder()
                 .setDistanceMeasurement(getDistanceMeasurement())
@@ -74,6 +81,7 @@ public class UwbTestUtils {
                 .setLineOfSight(RangingMeasurement.NLOS)
                 .setMeasurementFocus(RangingMeasurement.MEASUREMENT_FOCUS_RANGE)
                 .setRssiDbm(-85)
+                .setRangingMeasurementMetadata(getTestRangingMetadata())
                 .build();
     }
 
