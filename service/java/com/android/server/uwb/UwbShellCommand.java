@@ -34,6 +34,7 @@ import static com.google.uwb.support.fira.FiraParams.AOA_RESULT_REQUEST_MODE_REQ
 import static com.google.uwb.support.fira.FiraParams.HOPPING_MODE_DISABLE;
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE;
+import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_MANY_TO_MANY;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_UNICAST;
 import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG;
@@ -422,6 +423,18 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                         ? MULTI_NODE_MODE_ONE_TO_MANY
                         : MULTI_NODE_MODE_UNICAST);
             }
+            if (option.equals("-m")) {
+                String mode = getNextArgRequired();
+                if (mode.equals("unicast")) {
+                    builder.setMultiNodeMode(MULTI_NODE_MODE_UNICAST);
+                } else if (mode.equals("one-to-many")) {
+                    builder.setMultiNodeMode(MULTI_NODE_MODE_ONE_TO_MANY);
+                } else if (mode.equals("many-to-many")) {
+                    builder.setMultiNodeMode(MULTI_NODE_MODE_MANY_TO_MANY);
+                } else {
+                    throw new IllegalArgumentException("Unknown multi-node mode: " + mode);
+                }
+            }
             if (option.equals("-u")) {
                 String usage = getNextArgRequired();
                 if (usage.equals("ds-twr")) {
@@ -435,6 +448,12 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 } else {
                     throw new IllegalArgumentException("Unknown round usage: " + usage);
                 }
+            }
+            if (option.equals("-l")) {
+                builder.setRangingIntervalMs(Integer.parseInt(getNextArgRequired()));
+            }
+            if (option.equals("-s")) {
+                builder.setSlotsPerRangingRound(Integer.parseInt(getNextArgRequired()));
             }
             if (option.equals("-x")) {
                 String[] rangeDataNtfProximityString = getNextArgRequired().split(",");
@@ -982,7 +1001,10 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " [-r initiator|responder](device-role)"
                 + " [-a <deviceAddress>](device-address)"
                 + " [-d <destAddress-1, destAddress-2,...>](dest-addresses)"
+                + " [-m <unicast|one-to-many|many-to-many>](multi-node mode)"
                 + " [-u ds-twr|ss-twr|ds-twr-non-deferred|ss-twr-non-deferred](round-usage)"
+                + " [-l <ranging-interval-ms>](ranging-interval-ms)"
+                + " [-s <slots-per-ranging-round>](slots-per-ranging-round)"
                 + " [-x <proximity-near-cm, proximity-far-cm>](range-data-ntf-proximity)"
                 + " [-z <numRangeMrmts, numAoaAzimuthMrmts, numAoaElevationMrmts>"
                 + "(interleaving-ratio)"
