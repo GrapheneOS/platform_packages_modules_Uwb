@@ -340,7 +340,6 @@ public final class UwbManager {
 
     /**
      * Interface for Oem extensions on ongoing session
-     * @hide
      */
     public interface UwbOemExtensionCallback {
         /**
@@ -367,6 +366,7 @@ public final class UwbManager {
                 @NonNull PersistableBundle sessionConfig);
 
         /**
+         * Invoked when ranging report is generated
          *
          * @param rangingReport ranging report generated
          * @return Oem modified ranging report
@@ -455,7 +455,6 @@ public final class UwbManager {
     }
 
     /**
-     * @hide
      * Register an {@link UwbOemExtensionCallback} to listen for UWB oem extension callbacks
      * <p>The provided callback will be invoked by the given {@link Executor}.
      *
@@ -469,13 +468,12 @@ public final class UwbManager {
     }
 
     /**
-     * @hide
      * Unregister the specified {@link UwbOemExtensionCallback}
      *
      * <p>The same {@link UwbOemExtensionCallback} object used when calling
      * {@link #registerUwbOemExtensionCallback(Executor, UwbOemExtensionCallback)} must be used.
      *
-     * <p>Callbacks are automatically unregistered when application process goes away
+     * <p>Callbacks are automatically unregistered when an application process goes away
      *
      * @param callback oem implementation of {@link UwbOemExtensionCallback}
      */

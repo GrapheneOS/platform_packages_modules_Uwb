@@ -60,7 +60,7 @@ public final class RangingReport implements Parcelable {
 
     /**
      * Gets ranging report metadata passed by vendor
-     * @hide
+     *
      * @return vendor data for ranging report
      */
     @NonNull
@@ -161,11 +161,16 @@ public final class RangingReport implements Parcelable {
 
         /**
          * Add ranging report metadata
-         * @hide
+         *
          * @param rangingReportMetadata vendor data per ranging report
+         *
+         * @throws IllegalStateException if rangingReportMetadata is null
          */
         @NonNull
         public Builder addRangingReportMetadata(@NonNull PersistableBundle rangingReportMetadata) {
+            if (rangingReportMetadata == null) {
+                throw new IllegalStateException("Expected non-null rangingReportMetadata");
+            }
             mRangingReportMetadata = rangingReportMetadata;
             return this;
         }
