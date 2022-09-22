@@ -35,11 +35,7 @@ python_test_host {
         ":uwb_snippet",
     ],
     version: {
-        py2: {
-            enabled: false,
-        },
         py3: {
-            enabled: true,
             embedded_launcher: true,
         },
     },
