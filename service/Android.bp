@@ -76,6 +76,7 @@ java_library {
         "modules-utils-preconditions",
         "uwb-config-proto",
         "modules-utils-statemachine",
+        "modules-utils-build",
     ],
 
     apex_available: [
