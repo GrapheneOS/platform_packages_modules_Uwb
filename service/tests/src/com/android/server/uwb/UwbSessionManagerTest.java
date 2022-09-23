@@ -49,6 +49,7 @@ import android.content.AttributionSource;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.os.test.TestLooper;
+import android.uwb.IUwbAdapter;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.RangingChangeReason;
 import android.uwb.SessionHandle;
@@ -1384,7 +1385,8 @@ public class UwbSessionManagerTest {
         mUwbSessionManager.stopRanging(uwbSession.getSessionHandle());
         mTestLooper.dispatchNext();
 
-        verify(mUwbInjector).runTaskOnSingleThreadExecutor(any(), eq(TEST_RANGING_INTERVAL_MS * 2));
+        verify(mUwbInjector).runTaskOnSingleThreadExecutor(
+                any(), eq(IUwbAdapter.RANGING_SESSION_START_THRESHOLD_MS));
         verify(mUwbSessionNotificationManager)
                 .onRangingStoppedWithApiReasonCode(eq(uwbSession),
                         eq(RangingChangeReason.LOCAL_API));
@@ -1629,7 +1631,7 @@ public class UwbSessionManagerTest {
         UwbSession uwbSession = prepareExistingUwbSession();
         FiraRangingReconfigureParams reconfigureParams =
                 new FiraRangingReconfigureParams.Builder()
-                        .setBlockStrideLength(4)
+                        .setBlockStrideLength(10)
                         .build();
         when(mUwbConfigurationManager.setAppConfigurations(anyInt(), any(), anyString()))
                 .thenReturn(UwbUciConstants.STATUS_CODE_OK);
@@ -1648,7 +1650,7 @@ public class UwbSessionManagerTest {
         mTestLooper.dispatchNext();
 
         verify(mUwbInjector).runTaskOnSingleThreadExecutor(
-                any(), eq(TEST_RANGING_INTERVAL_MS * 2 * 5));
+                any(), eq(TEST_RANGING_INTERVAL_MS * 2 * 11));
         verify(mUwbSessionNotificationManager)
                 .onRangingStoppedWithApiReasonCode(eq(uwbSession),
                         eq(RangingChangeReason.LOCAL_API));
