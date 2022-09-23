@@ -856,12 +856,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
 
             int status = UwbUciConstants.STATUS_CODE_FAILED;
-            int timeoutMs;
+            int timeoutMs = IUwbAdapter.RANGING_SESSION_START_THRESHOLD_MS;
             if (uwbSession.getProtocolName().equals(PROTOCOL_NAME)) {
                 // TODO (b/235714647): Temporary workaround to 2x ranging interval.
-                timeoutMs = uwbSession.getCurrentFiraRangingIntervalMs() * 2;
-            } else {
-                timeoutMs = IUwbAdapter.RANGING_SESSION_START_THRESHOLD_MS;
+                int minTimeoutNecessary = uwbSession.getCurrentFiraRangingIntervalMs() * 2;
+                timeoutMs = timeoutMs > minTimeoutNecessary ? timeoutMs : minTimeoutNecessary;
             }
             try {
                 status = mUwbInjector.runTaskOnSingleThreadExecutor(stopRangingTask, timeoutMs);
