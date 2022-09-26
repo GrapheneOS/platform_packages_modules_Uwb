@@ -22,10 +22,16 @@ import static androidx.core.uwb.backend.impl.internal.Utils.STATUS_OK;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import android.os.CancellationSignal;
+import android.os.PersistableBundle;
 import android.platform.test.annotations.Presubmit;
 import android.test.suitebuilder.annotation.SmallTest;
+import android.uwb.RangingSession;
 import android.uwb.UwbManager;
 
 import androidx.test.runner.AndroidJUnit4;
@@ -50,6 +56,7 @@ public class RangingControllerTest {
     @Mock private UwbManager mUwbManager;
     @Mock private RangingSessionCallback mRangingSessionCallback;
     @Mock private UwbComplexChannel mComplexChannel;
+    @Mock private OpAsyncCallbackRunner mOpAsyncCallbackRunner;
     private RangingController mRangingController;
 
     private static Executor getExecutor() {
@@ -60,13 +67,25 @@ public class RangingControllerTest {
             }
         };
     }
+
+    private static class Mutable<E> {
+        public E value;
+    }
+
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
+        doAnswer(invocation -> {
+            Runnable t = invocation.getArgument(0);
+            t.run();
+            return true;
+        }).when(mOpAsyncCallbackRunner).execOperation(any(Runnable.class), anyString());
+
         RangingParameters rangingParameters = new RangingParameters(CONFIG_ID_1, 1,
                 new byte[]{1, 2}, mComplexChannel,
                 new ArrayList<>(List.of(UwbAddress.getRandomizedShortAddress())), INFREQUENT);
-        mRangingController = new RangingController(mUwbManager, getExecutor());
+        mRangingController = new RangingController(
+                mUwbManager, getExecutor(), mOpAsyncCallbackRunner);
         mRangingController.setRangingParameters(rangingParameters);
         mRangingController.setForTesting(true);
     }
@@ -92,10 +111,30 @@ public class RangingControllerTest {
 
     @Test
     public void testStartRanging() {
-        mRangingController.getLocalAddress();
+        UwbAddress deviceAddress = mRangingController.getLocalAddress();
         mRangingController.getComplexChannel();
-        int status = mRangingController.startRanging(mRangingSessionCallback);
+
+        final RangingSessionCallback rangingSessionCallback = mock(RangingSessionCallback.class);
+        final RangingSession pfRangingSession = mock(RangingSession.class);
+        final Mutable<RangingSession.Callback> pfRangingSessionCallback = new Mutable<>();
+
+        doAnswer(invocation -> {
+            pfRangingSessionCallback.value = invocation.getArgument(2);
+            pfRangingSessionCallback.value.onOpened(pfRangingSession);
+            return new CancellationSignal();
+        }).when(mUwbManager).openRangingSession(
+                any(PersistableBundle.class), any(Executor.class),
+                any(RangingSession.Callback.class));
+
+        doAnswer(invocation -> {
+            pfRangingSessionCallback.value.onStarted(new PersistableBundle());
+            return true;
+        }).when(pfRangingSession).start(any(PersistableBundle.class));
+
+        assertEquals(mRangingController.startRanging(rangingSessionCallback), STATUS_OK);
         verify(mUwbManager).openRangingSession(any(), any(), any());
-        assertEquals(status, STATUS_OK);
+        verify(pfRangingSession).start(any());
+        verify(rangingSessionCallback).onRangingInitialized(
+                UwbDevice.createForAddress(deviceAddress.toBytes()));
     }
 }

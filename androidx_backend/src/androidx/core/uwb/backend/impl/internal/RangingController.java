@@ -52,8 +52,9 @@ public class RangingController extends RangingDevice {
 
     @Nullable private RangingSessionCallback mRangingSessionCallback;
 
-    RangingController(UwbManager manager, Executor executor) {
-        super(manager, executor);
+    RangingController(UwbManager manager, Executor executor,
+            OpAsyncCallbackRunner opAsyncCallbackRunner) {
+        super(manager, executor, opAsyncCallbackRunner);
     }
 
     @Override
