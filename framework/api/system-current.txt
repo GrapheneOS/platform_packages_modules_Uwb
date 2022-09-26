@@ -50,6 +50,7 @@ package android.uwb {
     method public long getElapsedRealtimeNanos();
     method public int getLineOfSight();
     method public int getMeasurementFocus();
+    method @NonNull public android.os.PersistableBundle getRangingMeasurementMetadata();
     method @NonNull public android.uwb.UwbAddress getRemoteDeviceAddress();
     method @IntRange(from=android.uwb.RangingMeasurement.RSSI_UNKNOWN, to=android.uwb.RangingMeasurement.RSSI_MAX) public int getRssiDbm();
     method public int getStatus();
@@ -79,6 +80,7 @@ package android.uwb {
     method @NonNull public android.uwb.RangingMeasurement.Builder setElapsedRealtimeNanos(long);
     method @NonNull public android.uwb.RangingMeasurement.Builder setLineOfSight(int);
     method @NonNull public android.uwb.RangingMeasurement.Builder setMeasurementFocus(int);
+    method @NonNull public android.uwb.RangingMeasurement.Builder setRangingMeasurementMetadata(@NonNull android.os.PersistableBundle);
     method @NonNull public android.uwb.RangingMeasurement.Builder setRemoteDeviceAddress(@NonNull android.uwb.UwbAddress);
     method @NonNull public android.uwb.RangingMeasurement.Builder setRssiDbm(@IntRange(from=android.uwb.RangingMeasurement.RSSI_UNKNOWN, to=android.uwb.RangingMeasurement.RSSI_MAX) int);
     method @NonNull public android.uwb.RangingMeasurement.Builder setStatus(int);
@@ -87,6 +89,7 @@ package android.uwb {
   public final class RangingReport implements android.os.Parcelable {
     method public int describeContents();
     method @NonNull public java.util.List<android.uwb.RangingMeasurement> getMeasurements();
+    method @NonNull public android.os.PersistableBundle getRangingReportMetadata();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field @NonNull public static final android.os.Parcelable.Creator<android.uwb.RangingReport> CREATOR;
   }
@@ -95,6 +98,7 @@ package android.uwb {
     ctor public RangingReport.Builder();
     method @NonNull public android.uwb.RangingReport.Builder addMeasurement(@NonNull android.uwb.RangingMeasurement);
     method @NonNull public android.uwb.RangingReport.Builder addMeasurements(@NonNull java.util.List<android.uwb.RangingMeasurement>);
+    method @NonNull public android.uwb.RangingReport.Builder addRangingReportMetadata(@NonNull android.os.PersistableBundle);
     method @NonNull public android.uwb.RangingReport build();
   }
 
@@ -180,12 +184,14 @@ package android.uwb {
     method @NonNull @RequiresPermission(allOf={android.Manifest.permission.UWB_PRIVILEGED, android.Manifest.permission.UWB_RANGING}) public android.os.CancellationSignal openRangingSession(@NonNull android.os.PersistableBundle, @NonNull java.util.concurrent.Executor, @NonNull android.uwb.RangingSession.Callback, @NonNull String);
     method public void provisionProfileAdfByScript(@NonNull android.os.PersistableBundle, @NonNull java.util.concurrent.Executor, @NonNull android.uwb.UwbManager.AdfProvisionStateCallback);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void registerAdapterStateCallback(@NonNull java.util.concurrent.Executor, @NonNull android.uwb.UwbManager.AdapterStateCallback);
+    method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void registerUwbOemExtensionCallback(@NonNull java.util.concurrent.Executor, @NonNull android.uwb.UwbManager.UwbOemExtensionCallback);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void registerUwbVendorUciCallback(@NonNull java.util.concurrent.Executor, @NonNull android.uwb.UwbManager.UwbVendorUciCallback);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public int removeProfileAdf(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public int removeServiceProfile(@NonNull android.os.PersistableBundle);
     method @NonNull @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public int sendVendorUciMessage(@IntRange(from=9, to=15) int, int, @NonNull byte[]);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void setUwbEnabled(boolean);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void unregisterAdapterStateCallback(@NonNull android.uwb.UwbManager.AdapterStateCallback);
+    method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void unregisterUwbOemExtensionCallback(@NonNull android.uwb.UwbManager.UwbOemExtensionCallback);
     method public void unregisterUwbVendorUciCallback(@NonNull android.uwb.UwbManager.UwbVendorUciCallback);
     field public static final int REMOVE_PROFILE_ADF_ERROR_INTERNAL = 2; // 0x2
     field public static final int REMOVE_PROFILE_ADF_ERROR_UNKNOWN_SERVICE = 1; // 0x1
@@ -219,6 +225,13 @@ package android.uwb {
     field public static final int REASON_INVALID_OID = 1; // 0x1
     field public static final int REASON_SE_FAILURE = 2; // 0x2
     field public static final int REASON_UNKNOWN = 3; // 0x3
+  }
+
+  public static interface UwbManager.UwbOemExtensionCallback {
+    method public void onDeviceStatusNotificationReceived(@NonNull android.os.PersistableBundle);
+    method @NonNull public android.os.PersistableBundle onRangingReportReceived(@NonNull android.os.PersistableBundle);
+    method @NonNull public int onSessionConfigurationComplete(@NonNull android.os.PersistableBundle);
+    method public void onSessionStatusNotificationReceived(@NonNull android.os.PersistableBundle);
   }
 
   public static interface UwbManager.UwbVendorUciCallback {

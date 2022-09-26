@@ -66,6 +66,7 @@ public class UwbSessionNotificationManagerTest {
     @Mock private SessionHandle mSessionHandle;
     @Mock private IUwbRangingCallbacks mIUwbRangingCallbacks;
     @Mock private FiraOpenSessionParams mFiraParams;
+    @Mock private UwbServiceCore mUwbServiceCore;
 
     private UwbSessionNotificationManager mUwbSessionNotificationManager;
 
@@ -82,6 +83,7 @@ public class UwbSessionNotificationManagerTest {
         when(mFiraParams.hasResultReportPhase()).thenReturn(false);
         when(mUwbInjector.checkUwbRangingPermissionForDataDelivery(any(), any())).thenReturn(true);
         when(mUwbInjector.getElapsedSinceBootNanos()).thenReturn(TEST_ELAPSED_NANOS);
+        when(mUwbInjector.getUwbServiceCore()).thenReturn(mUwbServiceCore);
         mUwbSessionNotificationManager = new UwbSessionNotificationManager(mUwbInjector);
     }
 

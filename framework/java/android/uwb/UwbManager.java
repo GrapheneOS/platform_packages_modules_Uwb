@@ -65,6 +65,7 @@ public final class UwbManager {
     private final AdapterStateListener mAdapterStateListener;
     private final RangingManager mRangingManager;
     private final UwbVendorUciCallbackListener mUwbVendorUciCallbackListener;
+    private final UwbOemExtensionCallbackListener mUwbOemExtensionCallbackListener;
 
     /**
      * Interface for receiving UWB adapter state changes
@@ -313,6 +314,67 @@ public final class UwbManager {
                 @IntRange(from = 9, to = 15) int gid, int oid, @NonNull byte[] payload);
     }
 
+
+    /**
+     * @hide
+     * Vendor configuration successful for the session
+     */
+    public static final int VENDOR_SET_SESSION_CONFIGURATION_SUCCESS = 0;
+
+    /**
+     * @hide
+     * Failure to set vendor configuration for the session
+     */
+    public static final int VENDOR_SET_SESSION_CONFIGURATION_FAILURE = 1;
+
+    /**
+     * @hide
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef(value = {
+            VENDOR_SET_SESSION_CONFIGURATION_SUCCESS,
+            VENDOR_SET_SESSION_CONFIGURATION_FAILURE,
+    })
+    @interface VendorConfigStatus {}
+
+
+    /**
+     * Interface for Oem extensions on ongoing session
+     */
+    public interface UwbOemExtensionCallback {
+        /**
+         * Invoked when session status changes
+         *
+         * @param sessionStatus session related info
+         */
+        void onSessionStatusNotificationReceived(@NonNull PersistableBundle sessionStatus);
+
+        /**
+         * Invoked when DeviceStatusNotification is received from UCI
+         *
+         * @param deviceState device state
+         */
+        void onDeviceStatusNotificationReceived(@NonNull PersistableBundle deviceState);
+
+        /**
+         * Invoked when session configuration is complete
+         *
+         * @param sessionConfig Session Params
+         * @return Error code
+         */
+        @NonNull @VendorConfigStatus int onSessionConfigurationComplete(
+                @NonNull PersistableBundle sessionConfig);
+
+        /**
+         * Invoked when ranging report is generated
+         *
+         * @param rangingReport ranging report generated
+         * @return Oem modified ranging report
+         */
+        @NonNull PersistableBundle onRangingReportReceived(
+                @NonNull PersistableBundle rangingReport);
+    }
+
     /**
      * Use <code>Context.getSystemService(UwbManager.class)</code> to get an instance.
      *
@@ -326,6 +388,7 @@ public final class UwbManager {
         mAdapterStateListener = new AdapterStateListener(adapter);
         mRangingManager = new RangingManager(adapter);
         mUwbVendorUciCallbackListener = new UwbVendorUciCallbackListener(adapter);
+        mUwbOemExtensionCallbackListener = new UwbOemExtensionCallbackListener(adapter);
     }
 
     /**
@@ -389,6 +452,34 @@ public final class UwbManager {
      */
     public void unregisterUwbVendorUciCallback(@NonNull UwbVendorUciCallback callback) {
         mUwbVendorUciCallbackListener.unregister(callback);
+    }
+
+    /**
+     * Register an {@link UwbOemExtensionCallback} to listen for UWB oem extension callbacks
+     * <p>The provided callback will be invoked by the given {@link Executor}.
+     *
+     * @param executor an {@link Executor} to execute given callback
+     * @param callback oem implementation of {@link UwbOemExtensionCallback}
+     */
+    @RequiresPermission(permission.UWB_PRIVILEGED)
+    public void registerUwbOemExtensionCallback(@NonNull @CallbackExecutor Executor executor,
+            @NonNull UwbOemExtensionCallback callback) {
+        mUwbOemExtensionCallbackListener.register(executor, callback);
+    }
+
+    /**
+     * Unregister the specified {@link UwbOemExtensionCallback}
+     *
+     * <p>The same {@link UwbOemExtensionCallback} object used when calling
+     * {@link #registerUwbOemExtensionCallback(Executor, UwbOemExtensionCallback)} must be used.
+     *
+     * <p>Callbacks are automatically unregistered when an application process goes away
+     *
+     * @param callback oem implementation of {@link UwbOemExtensionCallback}
+     */
+    @RequiresPermission(permission.UWB_PRIVILEGED)
+    public void unregisterUwbOemExtensionCallback(@NonNull UwbOemExtensionCallback callback) {
+        mUwbOemExtensionCallbackListener.unregister(callback);
     }
 
     /**
