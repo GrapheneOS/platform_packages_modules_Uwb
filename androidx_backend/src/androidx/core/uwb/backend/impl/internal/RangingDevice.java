@@ -52,8 +52,7 @@ public abstract class RangingDevice {
 
     protected final UwbManager mUwbManager;
 
-    private final OpAsyncCallbackRunner<Boolean> mOpAsyncCallbackRunner =
-            new OpAsyncCallbackRunner<>();
+    private final OpAsyncCallbackRunner<Boolean> mOpAsyncCallbackRunner;
 
     @Nullable private UwbAddress mLocalAddress;
 
@@ -81,9 +80,11 @@ public abstract class RangingDevice {
 
     @Nullable private String mChipId = null;
 
-    RangingDevice(UwbManager manager, Executor executor) {
+    RangingDevice(UwbManager manager, Executor executor,
+            OpAsyncCallbackRunner opAsyncCallbackRunner) {
         mUwbManager = manager;
         this.mSystemCallbackExecutor = executor;
+        mOpAsyncCallbackRunner = opAsyncCallbackRunner;
         mOpAsyncCallbackRunner.setOperationTimeoutMillis(RANGING_START_TIMEOUT_MILLIS);
     }
 
