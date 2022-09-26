@@ -17,6 +17,7 @@ package com.android.server.uwb;
 
 import android.annotation.NonNull;
 import android.os.PersistableBundle;
+import android.os.RemoteException;
 import android.util.Log;
 import android.uwb.AngleMeasurement;
 import android.uwb.AngleOfArrivalMeasurement;
@@ -63,11 +64,20 @@ public class UwbSessionNotificationManager {
                     + sessionHandle);
             return;
         }
+
+        RangingReport rangingReport = getRangingReport(rangingData, uwbSession.getProtocolName(),
+                uwbSession.getParams(), mUwbInjector.getElapsedSinceBootNanos());
+        PersistableBundle bundle = new PersistableBundle();
+        if (mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
+            try {
+                bundle = mUwbInjector.getUwbServiceCore().getOemExtensionCallback()
+                                .onRangingReportReceived(bundle);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
         try {
-            uwbRangingCallbacks.onRangingResult(
-                    sessionHandle,
-                    getRangingReport(rangingData, uwbSession.getProtocolName(),
-                            uwbSession.getParams(), mUwbInjector.getElapsedSinceBootNanos()));
+            uwbRangingCallbacks.onRangingResult(sessionHandle, rangingReport);
             Log.i(TAG, "IUwbRangingCallbacks - onRangingResult");
         } catch (Exception e) {
             Log.e(TAG, "IUwbRangingCallbacks - onRangingResult : Failed");
@@ -416,12 +426,23 @@ public class UwbSessionNotificationManager {
             if (rssi < 0) {
                 rangingMeasurementBuilder.setRssiDbm(rssi);
             }
+            // TODO: Fill this with vendor data
+            PersistableBundle rangingMeasurementMetadata = new PersistableBundle();
+            rangingMeasurementBuilder.setRangingMeasurementMetadata(rangingMeasurementMetadata);
             rangingMeasurements.add(rangingMeasurementBuilder.build());
         }
+        // TODO: Fill this with vendor data
+        PersistableBundle rangingReportMetadata = new PersistableBundle();
         if (rangingMeasurements.size() == 1) {
-            return new RangingReport.Builder().addMeasurement(rangingMeasurements.get(0)).build();
+            return new RangingReport.Builder()
+                    .addMeasurement(rangingMeasurements.get(0))
+                    .addRangingReportMetadata(rangingReportMetadata)
+                    .build();
         } else {
-            return new RangingReport.Builder().addMeasurements(rangingMeasurements).build();
+            return new RangingReport.Builder()
+                    .addMeasurements(rangingMeasurements)
+                    .addRangingReportMetadata(rangingReportMetadata)
+                    .build();
         }
     }
 }
