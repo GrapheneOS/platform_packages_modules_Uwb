@@ -344,6 +344,9 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
      * Get specification info
      */
     public PersistableBundle getSpecificationInfo(String chipId) {
+        if (!isUwbEnabled()) {
+            throw new IllegalStateException("Uwb is not enabled");
+        }
         // TODO(b/211445008): Consolidate to a single uwb thread.
         Pair<Integer, GenericSpecificationParams> specificationParams =
                 mConfigurationManager.getCapsInfo(
