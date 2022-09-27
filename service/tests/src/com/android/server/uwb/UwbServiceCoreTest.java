@@ -233,11 +233,6 @@ public class UwbServiceCoreTest {
                 genericSpecificationParams);
     }
 
-    @Test
-    public void testGetSpecificationInfoSuccess() throws Exception {
-        verifyGetSpecificationInfoSuccess();
-    }
-
     private void enableUwb() throws Exception {
         when(mNativeUwbManager.doInitialize()).thenReturn(true);
         when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(true);
@@ -260,6 +255,22 @@ public class UwbServiceCoreTest {
 
         mUwbServiceCore.setEnabled(false);
         mTestLooper.dispatchAll();
+    }
+
+    @Test
+    public void testGetSpecificationInfoSuccess() throws Exception {
+        enableUwbWithCountryCode();
+        verifyGetSpecificationInfoSuccess();
+    }
+
+    @Test
+    public void testGetSpecificationInfoFailWhenUwbDisabled() throws Exception {
+        try {
+            mUwbServiceCore.getCachedSpecificationParams(TEST_CHIP_ID);
+            fail();
+        } catch (IllegalStateException e) {
+            // pass
+        }
     }
 
     @Test
