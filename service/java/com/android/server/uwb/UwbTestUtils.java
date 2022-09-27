@@ -20,6 +20,7 @@ import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TY
 import static com.android.server.uwb.util.UwbUtil.convertFloatToQFormat;
 import static com.android.server.uwb.util.UwbUtil.degreeToRadian;
 
+import android.os.PersistableBundle;
 import android.util.Pair;
 import android.uwb.AngleMeasurement;
 import android.uwb.AngleOfArrivalMeasurement;
@@ -79,6 +80,7 @@ public class UwbTestUtils {
             boolean isDestAoaAzimuthEnabled, boolean isDestAoaElevationEnabled,
             long elapsedRealtimeNanos) {
         UwbRangingData uwbRangingData = generateRangingData(TEST_STATUS);
+        PersistableBundle rangingReportMetadata = new PersistableBundle();
 
         AngleOfArrivalMeasurement aoaMeasurement = null;
         AngleOfArrivalMeasurement aoaDestMeasurement = null;
@@ -120,6 +122,7 @@ public class UwbTestUtils {
                     .setAltitude(aoaDestElevation)
                     .build();
         }
+        PersistableBundle rangingMeasurementMetadata = new PersistableBundle();
         RangingMeasurement rangingMeasurement = new RangingMeasurement.Builder()
                 .setRemoteDeviceAddress(UwbAddress.fromBytes(
                         TlvUtil.getReverseBytes(TEST_MAC_ADDRESS)))
@@ -135,9 +138,11 @@ public class UwbTestUtils {
                 .setDestinationAngleOfArrivalMeasurement(aoaDestMeasurement)
                 .setLineOfSight(TEST_LOS)
                 .setRssiDbm(-TEST_RSSI / 2)
+                .setRangingMeasurementMetadata(rangingMeasurementMetadata)
                 .build();
         RangingReport rangingReport = new RangingReport.Builder()
                 .addMeasurement(rangingMeasurement)
+                .addRangingReportMetadata(rangingReportMetadata)
                 .build();
         return Pair.create(uwbRangingData, rangingReport);
     }

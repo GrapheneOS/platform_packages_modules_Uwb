@@ -87,7 +87,7 @@ pub extern "system" fn Java_com_android_server_uwb_indev_UwbServiceCore_nativeUw
     };
 
     unsafe {
-        Box::from_raw(uwb_service_ptr as *mut UwbService);
+        drop(Box::from_raw(uwb_service_ptr as *mut UwbService));
     }
     debug!("Uwb Service successfully destroyed.");
 }
