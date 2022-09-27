@@ -16,8 +16,15 @@
 //! when certain events happen such as device reset, data or notification received
 //! and status changes.
 use uwb_core::params::uci_packets::{DeviceState, ReasonCode, SessionId, SessionState};
-use uwb_core::service::UwbServiceCallback;
+use uwb_core::service::{UwbServiceCallback, UwbServiceCallbackBuilder};
 use uwb_core::uci::SessionRangeData;
+
+pub struct UwbServiceCallbackBuilderImpl {}
+impl UwbServiceCallbackBuilder<UwbServiceCallbackImpl> for UwbServiceCallbackBuilderImpl {
+    fn build(self) -> Option<UwbServiceCallbackImpl> {
+        Some(UwbServiceCallbackImpl {})
+    }
+}
 
 // TODO(b/244785972): implement this with caching
 pub struct UwbServiceCallbackImpl {}
