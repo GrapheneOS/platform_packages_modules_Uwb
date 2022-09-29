@@ -29,10 +29,11 @@ java_defaults {
         "com.android.uwb",
     ],
     visibility : [
+        //TODO(b/244347268): Remove these 2 after code move.
         "//cts/tests/uwb",
         "//cts/hostsidetests/multidevices/uwb/snippet",
         "//external/sl4a/Common",
-        "//packages/modules/Uwb/service:__subpackages__",
+        "//packages/modules/Uwb:__subpackages__",
     ]
 }
 
@@ -97,7 +98,6 @@ java_library {
     ],
     static_libs: [
     ],
-    visibility: ["//cts/tests/uwb"],
 }
 
 java_library {
