@@ -96,6 +96,7 @@ java_sdk_library {
     hostdex: true, // for hiddenapi check
 
     impl_library_visibility: [
+        //TODO(b/244347268): Remove this after code move.
         "//cts/tests/uwb:__subpackages__",
         "//external/sl4a/Common:__subpackages__",
         "//packages/modules/Uwb:__subpackages__",
@@ -142,7 +143,9 @@ java_defaults {
         "framework-res",
     ],
     defaults_visibility: [
-        "//cts/tests/uwb:__subpackages__"
+        //TODO(b/244347268): Remove this after code move.
+        "//cts/tests/uwb:__subpackages__",
+        "//packages/modules/Uwb/tests/cts:__subpackages__",
     ],
 }
 
