@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 /** Represents a UWB ranging controller */
 @RequiresApi(api = VERSION_CODES.S)
@@ -97,7 +98,8 @@ public class RangingController extends RangingDevice {
     }
 
     @Override
-    public synchronized int startRanging(RangingSessionCallback callback) {
+    public synchronized int startRanging(
+            RangingSessionCallback callback, ExecutorService backendCallbackExecutor) {
         requireNonNull(mRangingParameters);
         if (mComplexChannel == null) {
             Log.w(TAG, "Need to call getComplexChannel() first");
@@ -114,7 +116,7 @@ public class RangingController extends RangingDevice {
             return INVALID_API_CALL;
         }
 
-        int status = super.startRanging(callback);
+        int status = super.startRanging(callback, backendCallbackExecutor);
         if (isAlive()) {
             mRangingSessionCallback = callback;
         }

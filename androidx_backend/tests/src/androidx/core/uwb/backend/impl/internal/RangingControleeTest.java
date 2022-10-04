@@ -16,6 +16,7 @@
 
 package androidx.core.uwb.backend.impl.internal;
 
+import static androidx.core.uwb.backend.impl.internal.RangingSessionCallback.REASON_STOP_RANGING_CALLED;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_1;
 import static androidx.core.uwb.backend.impl.internal.Utils.INFREQUENT;
 import static androidx.core.uwb.backend.impl.internal.Utils.STATUS_OK;
@@ -48,6 +49,7 @@ import org.mockito.MockitoAnnotations;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
@@ -56,6 +58,7 @@ public class RangingControleeTest {
     @Mock private UwbManager mUwbManager;
     @Mock private UwbComplexChannel mComplexChannel;
     @Mock private OpAsyncCallbackRunner mOpAsyncCallbackRunner;
+    @Mock private ExecutorService mBackendCallbackExecutor;
     private RangingControlee mRangingControlee;
 
     private static Executor getExecutor() {
@@ -79,6 +82,12 @@ public class RangingControleeTest {
             t.run();
             return true;
         }).when(mOpAsyncCallbackRunner).execOperation(any(Runnable.class), anyString());
+
+        doAnswer(invocation -> {
+            Runnable t = invocation.getArgument(0);
+            t.run();
+            return true;
+        }).when(mBackendCallbackExecutor).execute(any(Runnable.class));
 
         mRangingControlee = new RangingControlee(
                 mUwbManager, getExecutor(), mOpAsyncCallbackRunner);
@@ -115,10 +124,52 @@ public class RangingControleeTest {
             return true;
         }).when(pfRangingSession).start(any(PersistableBundle.class));
 
-        assertEquals(mRangingControlee.startRanging(rangingSessionCallback), STATUS_OK);
+        assertEquals(mRangingControlee.startRanging(
+                rangingSessionCallback, mBackendCallbackExecutor), STATUS_OK);
         verify(mUwbManager).openRangingSession(any(), any(), any());
         verify(pfRangingSession).start(any());
         verify(rangingSessionCallback).onRangingInitialized(
                 UwbDevice.createForAddress(deviceAddress.toBytes()));
+    }
+
+    @Test
+    public void testStopRanging() {
+        UwbAddress deviceAddress = mRangingControlee.getLocalAddress();
+
+        final RangingSessionCallback rangingSessionCallback = mock(RangingSessionCallback.class);
+        final RangingSession pfRangingSession = mock(RangingSession.class);
+        final Mutable<RangingSession.Callback> pfRangingSessionCallback = new Mutable<>();
+
+        doAnswer(invocation -> {
+            pfRangingSessionCallback.value = invocation.getArgument(2);
+            pfRangingSessionCallback.value.onOpened(pfRangingSession);
+            return new CancellationSignal();
+        }).when(mUwbManager).openRangingSession(
+                any(PersistableBundle.class), any(Executor.class),
+                any(RangingSession.Callback.class));
+
+        doAnswer(invocation -> {
+            pfRangingSessionCallback.value.onStarted(new PersistableBundle());
+            return true;
+        }).when(pfRangingSession).start(any(PersistableBundle.class));
+
+        doAnswer(invocation -> {
+            pfRangingSessionCallback.value.onStopped(
+                    RangingSession.Callback.REASON_LOCAL_REQUEST, new PersistableBundle());
+            return true;
+        }).when(pfRangingSession).stop();
+
+        doAnswer(invocation -> {
+            pfRangingSessionCallback.value.onClosed(
+                    RangingSession.Callback.REASON_LOCAL_REQUEST, new PersistableBundle());
+            return true;
+        }).when(pfRangingSession).close();
+
+        mRangingControlee.startRanging(rangingSessionCallback, mBackendCallbackExecutor);
+        assertEquals(mRangingControlee.stopRanging(), STATUS_OK);
+        verify(pfRangingSession).stop();
+        verify(pfRangingSession).close();
+        verify(rangingSessionCallback).onRangingSuspended(
+                UwbDevice.createForAddress(deviceAddress.toBytes()), REASON_STOP_RANGING_CALLED);
     }
 }
