@@ -113,3 +113,14 @@ java_library {
         "modules-utils-preconditions",
     ],
 }
+
+java_library {
+    name: "com.uwb.support.oemextension",
+    defaults: ["support-lib-uwb-common-defaults"],
+    srcs: [
+        "src/com/google/uwb/support/oemextension/**/*.java",
+    ],
+    static_libs: [
+        "com.uwb.support.base",
+    ],
+}

@@ -65,6 +65,7 @@ import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
+import com.google.uwb.support.oemextension.SessionStatus;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -236,11 +237,15 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             return;
         }
         if (mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
-            // TODO: Fill in all required info
-            PersistableBundle sessionStatusChange = new PersistableBundle();
+            PersistableBundle sessionStatusBundle = new SessionStatus.Builder()
+                    .setSessionId(sessionId)
+                    .setState(state)
+                    .setReasonCode(reasonCode)
+                    .build()
+                    .toBundle();
             try {
                 mUwbInjector.getUwbServiceCore().getOemExtensionCallback()
-                        .onSessionStatusNotificationReceived(sessionStatusChange);
+                        .onSessionStatusNotificationReceived(sessionStatusBundle);
             } catch (RemoteException e) {
                 Log.e(TAG, "Failed to send vendor notification", e);
             }
