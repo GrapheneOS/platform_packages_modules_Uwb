@@ -26,6 +26,7 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -59,6 +60,8 @@ import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.multichip.ChipInfoParams;
+import com.google.uwb.support.oemextension.DeviceStatus;
+import com.google.uwb.support.oemextension.SessionStatus;
 
 import org.junit.Assume;
 import org.junit.Before;
@@ -84,6 +87,9 @@ public class UwbManagerTest {
     private final Context mContext = InstrumentationRegistry.getContext();
     private UwbManager mUwbManager;
     private String mDefaultChipId;
+    public static final int UWB_SESSION_STATE_IDLE = 0x03;
+    public static final byte DEVICE_STATE_ACTIVE = 0x02;
+    public static final int REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS = 0x00;
 
     @Before
     public void setup() throws Exception {
@@ -1035,21 +1041,22 @@ public class UwbManagerTest {
         public boolean onDeviceStatusNtfCalled = false;
 
         @Override
-        public void onSessionStatusNotificationReceived(@NonNull PersistableBundle bundle) {
-            mSessionChangeNtf = bundle;
+        public void onSessionStatusNotificationReceived(
+                @NonNull PersistableBundle sessionStatusBundle) {
+            mSessionChangeNtf = sessionStatusBundle;
             onSessionChangedCalled = true;
         }
 
         @Override
-        public void onDeviceStatusNotificationReceived(PersistableBundle deviceState) {
-            mDeviceStatusNtf = deviceState;
+        public void onDeviceStatusNotificationReceived(PersistableBundle deviceStatusBundle) {
+            mDeviceStatusNtf = deviceStatusBundle;
             onDeviceStatusNtfCalled = true;
         }
 
         @NonNull
         @Override
-        public int onSessionConfigurationComplete(@NonNull PersistableBundle bundle) {
-            mSessionConfig = bundle;
+        public int onSessionConfigurationComplete(@NonNull PersistableBundle openSessionBundle) {
+            mSessionConfig = openSessionBundle;
             onSessionConfigCompleteCalled = true;
             return 0;
         }
@@ -1057,9 +1064,9 @@ public class UwbManagerTest {
         @NonNull
         @Override
         public PersistableBundle onRangingReportReceived(
-                @NonNull PersistableBundle rangingReport) {
+                @NonNull PersistableBundle rangingReportBundle) {
             onRangingReportReceivedCalled = true;
-            mRangingReport = rangingReport;
+            mRangingReport = rangingReportBundle;
             return mRangingReport;
         }
     }
@@ -1074,11 +1081,12 @@ public class UwbManagerTest {
         CountDownLatch resultCountDownLatch = new CountDownLatch(1);
         UwbOemExtensionCallback uwbOemExtensionCallback = new UwbOemExtensionCallback();
 
+        int sessionId = 1;
         RangingSessionCallback rangingSessionCallback =
                 new RangingSessionCallback(countDownLatch, resultCountDownLatch);
         FiraOpenSessionParams firaOpenSessionParams = new FiraOpenSessionParams.Builder()
                 .setProtocolVersion(new FiraProtocolVersion(1, 1))
-                .setSessionId(1)
+                .setSessionId(sessionId)
                 .setStsConfig(FiraParams.STS_CONFIG_STATIC)
                 .setVendorId(new byte[]{0x5, 0x6})
                 .setStaticStsIV(new byte[]{0x5, 0x6, 0x9, 0xa, 0x4, 0x6})
@@ -1103,8 +1111,23 @@ public class UwbManagerTest {
             assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
             assertThat(uwbOemExtensionCallback.onSessionConfigCompleteCalled).isTrue();
             assertThat(uwbOemExtensionCallback.mSessionConfig).isNotNull();
+
+            FiraOpenSessionParams openSessionParamsBundle = FiraOpenSessionParams
+                    .fromBundle(uwbOemExtensionCallback.mSessionConfig);
+            assertEquals(openSessionParamsBundle.getSessionId(), sessionId);
+            assertEquals(openSessionParamsBundle.getStsConfig(), FiraParams.STS_CONFIG_STATIC);
+            assertEquals(openSessionParamsBundle.getDeviceType(),
+                    FiraParams.RANGING_DEVICE_TYPE_CONTROLLER);
+
             assertThat(uwbOemExtensionCallback.onSessionChangedCalled).isTrue();
             assertThat(uwbOemExtensionCallback.mSessionChangeNtf).isNotNull();
+
+            SessionStatus sessionStatusBundle = SessionStatus
+                    .fromBundle(uwbOemExtensionCallback.mSessionChangeNtf);
+            assertEquals(sessionStatusBundle.getSessionId(), sessionId);
+            assertEquals(sessionStatusBundle.getState(), UWB_SESSION_STATE_IDLE);
+            assertEquals(sessionStatusBundle.getReasonCode(),
+                    REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS);
 
             countDownLatch = new CountDownLatch(1);
             rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
@@ -1115,6 +1138,10 @@ public class UwbManagerTest {
             assertThat(uwbOemExtensionCallback.mSessionChangeNtf).isNotNull();
             assertThat(uwbOemExtensionCallback.onDeviceStatusNtfCalled).isTrue();
             assertThat(uwbOemExtensionCallback.mDeviceStatusNtf).isNotNull();
+
+            DeviceStatus deviceStatusBundle = DeviceStatus
+                    .fromBundle(uwbOemExtensionCallback.mDeviceStatusNtf);
+            assertEquals(deviceStatusBundle.getDeviceState(), DEVICE_STATE_ACTIVE);
 
             // Wait for the on ranging report callback.
             assertThat(resultCountDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
