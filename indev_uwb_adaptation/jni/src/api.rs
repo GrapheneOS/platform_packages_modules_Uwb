@@ -16,7 +16,8 @@
 //!
 //! Internally after the UWB core service is instantiated, the pointer to the service is saved
 //! on the calling Java side.
-use jni::objects::JObject;
+use jni::objects::{GlobalRef, JObject, JValue};
+use jni::signature::JavaType;
 use jni::sys::{jboolean, jbyte, jbyteArray, jint, jlong, jobject};
 use jni::JNIEnv;
 use log::{debug, error};
@@ -35,10 +36,11 @@ use crate::object_mapping::{
     CccOpenRangingParamsJni, CountryCodeJni, FiraControleeParamsJni, FiraOpenSessionParamsJni,
     PowerStatsJni, PowerStatsWithEnv,
 };
+use crate::unique_jvm;
 
-/// Initialize native logging
+/// Initialize native logging and capture static JavaVM ref
 #[no_mangle]
-pub extern "system" fn Java_com_android_server_uwb_indev_UwbServiceCore_nativeInitLogging(
+pub extern "system" fn Java_com_android_server_uwb_indev_UwbServiceCore_nativeInit(
     env: JNIEnv,
     obj: JObject,
 ) {
@@ -48,6 +50,15 @@ pub extern "system" fn Java_com_android_server_uwb_indev_UwbServiceCore_nativeIn
             .with_min_level(log::Level::Trace)
             .with_filter("trace,jni=info"),
     );
+
+    match env.get_java_vm() {
+        Ok(vm) => {
+            unique_jvm::set_once(vm);
+        }
+        Err(err) => {
+            error!("Couldn't get a JavaVM from JNIEnv: {:?}", err);
+        }
+    };
 }
 
 /// Create a new UWB service and return the pointer
@@ -57,8 +68,29 @@ pub extern "system" fn Java_com_android_server_uwb_indev_UwbServiceCore_nativeUw
     obj: JObject,
 ) -> jlong {
     debug!("Java_com_android_server_uwb_indev_UwbServiceCore_nativeUwbServiceNew : enter");
+    let vm = match unique_jvm::get_static_ref() {
+        Some(vm_ref) => vm_ref,
+        None => {
+            error!("Failed to get JavaVM reference");
+            return *JObject::null() as jlong;
+        }
+    };
+    let callback_obj = match env.new_global_ref(obj) {
+        Ok(cb) => cb,
+        Err(err) => {
+            error!("Couldn't create global ref for callback obj: {:?}", err);
+            return *JObject::null() as jlong;
+        }
+    };
+    let class_loader_obj = match get_class_loader_obj(&env) {
+        Ok(cl) => cl,
+        Err(err) => {
+            error!("Couldn't get class loader obj: {:?}", err);
+            return *JObject::null() as jlong;
+        }
+    };
     if let Some(uwb_service) = UwbServiceBuilder::new()
-        .callback_builder(UwbServiceCallbackBuilderImpl {})
+        .callback_builder(UwbServiceCallbackBuilderImpl::new(vm, callback_obj, class_loader_obj))
         .uci_hal(UciHalAndroid::new("default"))
         .uci_logger(UciLoggerNull::default())
         .build()
@@ -401,4 +433,22 @@ fn object_result_helper(result: Result<jobject>, function_name: &str) -> jobject
             *JObject::null()
         }
     }
+}
+
+/// Get the class loader object. Has to be called from a JNIEnv where the local java classes are
+/// loaded. Results in a global reference to the class loader object that can be used to look for
+/// classes in other native thread.
+fn get_class_loader_obj(env: &JNIEnv) -> Result<GlobalRef> {
+    let uwb_service_core_class = env.find_class("com/android/server/uwb/indev/UwbServiceCore")?;
+    let uwb_service_core_obj = env.get_object_class(uwb_service_core_class)?;
+    let get_class_loader_method =
+        env.get_method_id(uwb_service_core_obj, "getClassLoader", "()Ljava/lang/ClassLoader;")?;
+    let class_loader = env.call_method_unchecked(
+        uwb_service_core_class,
+        get_class_loader_method,
+        JavaType::Object("java/lang/ClassLoader".into()),
+        &[JValue::Void],
+    )?;
+    let class_loader_jobject = class_loader.l()?;
+    Ok(env.new_global_ref(class_loader_jobject)?)
 }

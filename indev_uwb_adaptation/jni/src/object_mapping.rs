@@ -14,7 +14,7 @@
 
 //! This module contains structures and methods for converting
 //! Java objects into native rust objects and vice versa.
-use jni::objects::{JObject, JValue};
+use jni::objects::{JClass, JObject, JValue};
 use jni::sys::{jbyteArray, jint};
 use jni::JNIEnv;
 use num_traits::FromPrimitive;
@@ -28,7 +28,11 @@ use uwb_core::params::{
     RangeDataNtfConfig, RangingRoundUsage, RframeConfig, StsConfig, StsLength,
     TxAdaptivePayloadPower, UwbAddress, UwbChannel,
 };
-use uwb_uci_packets::{Controlee, PowerStats};
+use uwb_core::uci::{RangingMeasurements, SessionRangeData};
+use uwb_uci_packets::{
+    Controlee, ExtendedAddressTwoWayRangingMeasurement, MacAddressIndicator, PowerStats,
+    ShortAddressTwoWayRangingMeasurement, StatusCode,
+};
 
 use crate::context::JniContext;
 use crate::error::{Error, Result};
@@ -464,6 +468,235 @@ impl<'a> TryFrom<PowerStatsWithEnv<'a>> for PowerStatsJni<'a> {
         let new_obj = pse.env.new_object(cls, "(IIII)V", vals.as_slice())?;
 
         Ok(Self { jni_context: JniContext { env: pse.env, obj: new_obj } })
+    }
+}
+
+pub struct SessionRangeDataWithEnv<'a> {
+    env: JNIEnv<'a>,
+    uwb_ranging_data_jclass: JClass<'a>,
+    uwb_two_way_measurement_jclass: JClass<'a>,
+    session_range_data: SessionRangeData,
+}
+
+impl<'a> SessionRangeDataWithEnv<'a> {
+    pub fn new(
+        env: JNIEnv<'a>,
+        uwb_ranging_data_jclass: JClass<'a>,
+        uwb_two_way_measurement_jclass: JClass<'a>,
+        session_range_data: SessionRangeData,
+    ) -> Self {
+        Self { env, uwb_ranging_data_jclass, uwb_two_way_measurement_jclass, session_range_data }
+    }
+}
+pub struct UwbRangingDataJni<'a> {
+    pub jni_context: JniContext<'a>,
+}
+
+impl<'a> TryFrom<SessionRangeDataWithEnv<'a>> for UwbRangingDataJni<'a> {
+    type Error = Error;
+    fn try_from(data_obj: SessionRangeDataWithEnv<'a>) -> Result<Self> {
+        let (mac_address_indicator, measurements_size) = match data_obj
+            .session_range_data
+            .ranging_measurements
+        {
+            RangingMeasurements::Short(ref m) => (MacAddressIndicator::ShortAddress, m.len()),
+            RangingMeasurements::Extended(ref m) => (MacAddressIndicator::ExtendedAddress, m.len()),
+        };
+        let measurements_jni = UwbTwoWayMeasurementJni::try_from(RangingMeasurementsWithEnv::new(
+            data_obj.env,
+            data_obj.uwb_two_way_measurement_jclass,
+            data_obj.session_range_data.ranging_measurements,
+        ))?;
+        let ranging_data_jni = data_obj.env.new_object(
+            data_obj.uwb_ranging_data_jclass,
+            "(JJIJIII[Lcom/android/server/uwb/data/UwbTwoWayMeasurement;)V",
+            &[
+                JValue::Long(data_obj.session_range_data.sequence_number as i64),
+                JValue::Long(data_obj.session_range_data.session_id as i64),
+                JValue::Int(data_obj.session_range_data.rcr_indicator as i32),
+                JValue::Long(data_obj.session_range_data.current_ranging_interval_ms as i64),
+                JValue::Int(data_obj.session_range_data.ranging_measurement_type as i32),
+                JValue::Int(mac_address_indicator as i32),
+                JValue::Int(measurements_size as i32),
+                JValue::Object(measurements_jni.jni_context.obj),
+            ],
+        )?;
+
+        Ok(UwbRangingDataJni { jni_context: JniContext::new(data_obj.env, ranging_data_jni) })
+    }
+}
+
+// Byte size of mac address length:
+const SHORT_MAC_ADDRESS_LEN: i32 = 2;
+const EXTENDED_MAC_ADDRESS_LEN: i32 = 8;
+
+enum MacAddress {
+    Short(u16),
+    Extended(u64),
+}
+impl MacAddress {
+    fn into_ne_bytes_i8(self) -> Vec<i8> {
+        match self {
+            MacAddress::Short(val) => val.to_ne_bytes().into_iter().map(|b| b as i8).collect(),
+            MacAddress::Extended(val) => val.to_ne_bytes().into_iter().map(|b| b as i8).collect(),
+        }
+    }
+}
+struct TwoWayRangingMeasurement {
+    mac_address: MacAddress,
+    status: StatusCode,
+    nlos: u8,
+    distance: u16,
+    aoa_azimuth: u16,
+    aoa_azimuth_fom: u8,
+    aoa_elevation: u16,
+    aoa_elevation_fom: u8,
+    aoa_destination_azimuth: u16,
+    aoa_destination_azimuth_fom: u8,
+    aoa_destination_elevation: u16,
+    aoa_destination_elevation_fom: u8,
+    slot_index: u8,
+    rssi: u8,
+}
+
+impl From<ShortAddressTwoWayRangingMeasurement> for TwoWayRangingMeasurement {
+    fn from(measurement: ShortAddressTwoWayRangingMeasurement) -> Self {
+        TwoWayRangingMeasurement {
+            mac_address: MacAddress::Short(measurement.mac_address),
+            status: (measurement.status),
+            nlos: (measurement.nlos),
+            distance: (measurement.distance),
+            aoa_azimuth: (measurement.aoa_azimuth),
+            aoa_azimuth_fom: (measurement.aoa_azimuth_fom),
+            aoa_elevation: (measurement.aoa_elevation),
+            aoa_elevation_fom: (measurement.aoa_elevation_fom),
+            aoa_destination_azimuth: (measurement.aoa_destination_azimuth),
+            aoa_destination_azimuth_fom: (measurement.aoa_destination_azimuth_fom),
+            aoa_destination_elevation: (measurement.aoa_destination_elevation),
+            aoa_destination_elevation_fom: (measurement.aoa_destination_elevation_fom),
+            slot_index: (measurement.slot_index),
+            rssi: (measurement.rssi),
+        }
+    }
+}
+
+impl From<ExtendedAddressTwoWayRangingMeasurement> for TwoWayRangingMeasurement {
+    fn from(measurement: ExtendedAddressTwoWayRangingMeasurement) -> Self {
+        TwoWayRangingMeasurement {
+            mac_address: MacAddress::Extended(measurement.mac_address),
+            status: (measurement.status),
+            nlos: (measurement.nlos),
+            distance: (measurement.distance),
+            aoa_azimuth: (measurement.aoa_azimuth),
+            aoa_azimuth_fom: (measurement.aoa_azimuth_fom),
+            aoa_elevation: (measurement.aoa_elevation),
+            aoa_elevation_fom: (measurement.aoa_elevation_fom),
+            aoa_destination_azimuth: (measurement.aoa_destination_azimuth),
+            aoa_destination_azimuth_fom: (measurement.aoa_destination_azimuth_fom),
+            aoa_destination_elevation: (measurement.aoa_destination_elevation),
+            aoa_destination_elevation_fom: (measurement.aoa_destination_elevation_fom),
+            slot_index: (measurement.slot_index),
+            rssi: (measurement.rssi),
+        }
+    }
+}
+
+pub struct RangingMeasurementsWithEnv<'a> {
+    env: JNIEnv<'a>,
+    uwb_two_way_measurement_jclass: JClass<'a>,
+    ranging_measurements: RangingMeasurements,
+}
+impl<'a> RangingMeasurementsWithEnv<'a> {
+    pub fn new(
+        env: JNIEnv<'a>,
+        uwb_two_way_measurement_jclass: JClass<'a>,
+        ranging_measurements: RangingMeasurements,
+    ) -> Self {
+        Self { env, uwb_two_way_measurement_jclass, ranging_measurements }
+    }
+}
+pub struct UwbTwoWayMeasurementJni<'a> {
+    pub jni_context: JniContext<'a>,
+}
+
+impl<'a> TryFrom<RangingMeasurementsWithEnv<'a>> for UwbTwoWayMeasurementJni<'a> {
+    type Error = Error;
+    fn try_from(measurements_obj: RangingMeasurementsWithEnv<'a>) -> Result<Self> {
+        let (measurements_vec, byte_arr_size) = match measurements_obj.ranging_measurements {
+            RangingMeasurements::Short(m) => (
+                m.into_iter().map(TwoWayRangingMeasurement::from).collect::<Vec<_>>(),
+                SHORT_MAC_ADDRESS_LEN,
+            ),
+            RangingMeasurements::Extended(m) => (
+                m.into_iter().map(TwoWayRangingMeasurement::from).collect::<Vec<_>>(),
+                EXTENDED_MAC_ADDRESS_LEN,
+            ),
+        };
+        let address_jbytearray = measurements_obj.env.new_byte_array(byte_arr_size)?;
+        let zero_initiated_measurement_jobject = measurements_obj.env.new_object(
+            measurements_obj.uwb_two_way_measurement_jclass,
+            "([BIIIIIIIIIIIII)V",
+            &[
+                JValue::Object(JObject::from(address_jbytearray)),
+                JValue::Int(0),
+                JValue::Int(0),
+                JValue::Int(0),
+                JValue::Int(0),
+                JValue::Int(0),
+                JValue::Int(0),
+                JValue::Int(0),
+                JValue::Int(0),
+                JValue::Int(0),
+                JValue::Int(0),
+                JValue::Int(0),
+                JValue::Int(0),
+                JValue::Int(0),
+            ],
+        )?;
+        let measurements_array_jobject = measurements_obj.env.new_object_array(
+            measurements_vec.len() as i32,
+            measurements_obj.uwb_two_way_measurement_jclass,
+            zero_initiated_measurement_jobject,
+        )?;
+        for (i, measurement) in measurements_vec.into_iter().enumerate() {
+            let mac_address_bytes = measurement.mac_address.into_ne_bytes_i8();
+            let mac_address_bytes_jbytearray =
+                measurements_obj.env.new_byte_array(byte_arr_size)?;
+            measurements_obj.env.set_byte_array_region(
+                mac_address_bytes_jbytearray,
+                0,
+                mac_address_bytes.as_slice(),
+            )?;
+            let measurement_jobject = measurements_obj.env.new_object(
+                measurements_obj.uwb_two_way_measurement_jclass,
+                "([BIIIIIIIIIIIII)V",
+                &[
+                    JValue::Object(JObject::from(mac_address_bytes_jbytearray)),
+                    JValue::Int(measurement.status as i32),
+                    JValue::Int(measurement.nlos as i32),
+                    JValue::Int(measurement.distance as i32),
+                    JValue::Int(measurement.aoa_azimuth as i32),
+                    JValue::Int(measurement.aoa_azimuth_fom as i32),
+                    JValue::Int(measurement.aoa_elevation as i32),
+                    JValue::Int(measurement.aoa_elevation_fom as i32),
+                    JValue::Int(measurement.aoa_destination_azimuth as i32),
+                    JValue::Int(measurement.aoa_destination_azimuth_fom as i32),
+                    JValue::Int(measurement.aoa_destination_elevation as i32),
+                    JValue::Int(measurement.aoa_destination_elevation_fom as i32),
+                    JValue::Int(measurement.slot_index as i32),
+                    JValue::Int(measurement.rssi as i32),
+                ],
+            )?;
+            measurements_obj.env.set_object_array_element(
+                measurements_array_jobject,
+                i as i32,
+                measurement_jobject,
+            )?;
+        }
+
+        Ok(UwbTwoWayMeasurementJni {
+            jni_context: JniContext::new(measurements_obj.env, measurements_array_jobject.into()),
+        })
     }
 }
 
