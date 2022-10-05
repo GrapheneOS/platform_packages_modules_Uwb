@@ -341,38 +341,39 @@ public final class UwbManager {
     /**
      * Interface for Oem extensions on ongoing session
      */
+    // TODO: Add @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE) after ag/19901449
     public interface UwbOemExtensionCallback {
         /**
          * Invoked when session status changes
          *
-         * @param sessionStatus session related info
+         * @param sessionStatusBundle session related info
          */
-        void onSessionStatusNotificationReceived(@NonNull PersistableBundle sessionStatus);
+        void onSessionStatusNotificationReceived(@NonNull PersistableBundle sessionStatusBundle);
 
         /**
          * Invoked when DeviceStatusNotification is received from UCI
          *
-         * @param deviceState device state
+         * @param deviceStatusBundle device state
          */
-        void onDeviceStatusNotificationReceived(@NonNull PersistableBundle deviceState);
+        void onDeviceStatusNotificationReceived(@NonNull PersistableBundle deviceStatusBundle);
 
         /**
          * Invoked when session configuration is complete
          *
-         * @param sessionConfig Session Params
+         * @param openSessionBundle Session Params
          * @return Error code
          */
         @NonNull @VendorConfigStatus int onSessionConfigurationComplete(
-                @NonNull PersistableBundle sessionConfig);
+                @NonNull PersistableBundle openSessionBundle);
 
         /**
          * Invoked when ranging report is generated
          *
-         * @param rangingReport ranging report generated
+         * @param rangingReportBundle ranging report generated
          * @return Oem modified ranging report
          */
         @NonNull PersistableBundle onRangingReportReceived(
-                @NonNull PersistableBundle rangingReport);
+                @NonNull PersistableBundle rangingReportBundle);
     }
 
     /**
@@ -461,6 +462,7 @@ public final class UwbManager {
      * @param executor an {@link Executor} to execute given callback
      * @param callback oem implementation of {@link UwbOemExtensionCallback}
      */
+    // TODO: Add @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE) after ag/19901449
     @RequiresPermission(permission.UWB_PRIVILEGED)
     public void registerUwbOemExtensionCallback(@NonNull @CallbackExecutor Executor executor,
             @NonNull UwbOemExtensionCallback callback) {
@@ -477,6 +479,7 @@ public final class UwbManager {
      *
      * @param callback oem implementation of {@link UwbOemExtensionCallback}
      */
+    // TODO: Add @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE) after ag/19901449
     @RequiresPermission(permission.UWB_PRIVILEGED)
     public void unregisterUwbOemExtensionCallback(@NonNull UwbOemExtensionCallback callback) {
         mUwbOemExtensionCallbackListener.unregister(callback);
