@@ -83,13 +83,13 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
     }
 
     @Override
-    public void onSessionStatusNotificationReceived(PersistableBundle sessionStatus)
+    public void onSessionStatusNotificationReceived(PersistableBundle sessionStatusBundle)
             throws RemoteException {
         synchronized (this) {
             final long identity = Binder.clearCallingIdentity();
             try {
                 mExecutor.execute(() ->
-                        mCallback.onSessionStatusNotificationReceived(sessionStatus));
+                        mCallback.onSessionStatusNotificationReceived(sessionStatusBundle));
             } finally {
                 Binder.restoreCallingIdentity(identity);
             }
@@ -97,13 +97,13 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
     }
 
     @Override
-    public void onDeviceStatusNotificationReceived(PersistableBundle deviceState)
+    public void onDeviceStatusNotificationReceived(PersistableBundle deviceStateBundle)
             throws RemoteException {
         synchronized (this) {
             final long identity = Binder.clearCallingIdentity();
             try {
                 mExecutor.execute(() ->
-                        mCallback.onDeviceStatusNotificationReceived(deviceState));
+                        mCallback.onDeviceStatusNotificationReceived(deviceStateBundle));
             } finally {
                 Binder.restoreCallingIdentity(identity);
             }
@@ -112,7 +112,7 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
     }
 
     @Override
-    public int onSessionConfigurationReceived(PersistableBundle vendorConfigBundle)
+    public int onSessionConfigurationReceived(PersistableBundle openSessionBundle)
             throws RemoteException {
         synchronized (this) {
             int status = 0;
@@ -120,7 +120,7 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
             try {
                 ExecutorService executor = Executors.newSingleThreadExecutor();
                 FutureTask<Integer> p = new FutureTask<>(
-                        () -> mCallback.onSessionConfigurationComplete(vendorConfigBundle));
+                        () -> mCallback.onSessionConfigurationComplete(openSessionBundle));
                 executor.submit(p);
                 try {
                     status = p.get(OEM_EXTENSION_RESPONSE_THRESHOLD_MS, TimeUnit.MILLISECONDS);
@@ -140,21 +140,22 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
     }
 
     @Override
-    public PersistableBundle onRangingReportReceived(PersistableBundle rangingReport)
+    public PersistableBundle onRangingReportReceived(PersistableBundle rangingReportBundle)
             throws RemoteException {
         synchronized (this) {
             final long identity = Binder.clearCallingIdentity();
-            PersistableBundle vendorRangingReport = rangingReport;
+            PersistableBundle vendorRangingReportBundle = rangingReportBundle;
             try {
                 ExecutorService executor = Executors.newSingleThreadExecutor();
                 FutureTask<PersistableBundle> getOemRangingReport = new FutureTask<>(
-                        () -> mCallback.onRangingReportReceived(rangingReport)
+                        () -> mCallback.onRangingReportReceived(rangingReportBundle)
                 );
                 executor.submit(getOemRangingReport);
                 try {
-                    vendorRangingReport = getOemRangingReport.get(
+                    vendorRangingReportBundle = getOemRangingReport.get(
                             OEM_EXTENSION_RESPONSE_THRESHOLD_MS, TimeUnit.MILLISECONDS);
-                    return vendorRangingReport;
+                    return vendorRangingReportBundle == null ? rangingReportBundle
+                            : vendorRangingReportBundle;
                 } catch (ExecutionException | InterruptedException e) {
                     e.printStackTrace();
                 } catch (TimeoutException e) {
@@ -164,7 +165,7 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
             } finally {
                 Binder.restoreCallingIdentity(identity);
             }
-            return vendorRangingReport;
+            return vendorRangingReportBundle;
         }
     }
 }
