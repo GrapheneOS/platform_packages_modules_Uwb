@@ -159,6 +159,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
         mUwbServiceCore.unregisterAdapterStateCallbacks(adapterStateCallbacks);
     }
 
+    // TODO: Add @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE) after ag/19901449
     @Override
     public void registerOemExtensionCallback(IUwbOemExtensionCallback callbacks)
             throws RemoteException {
@@ -170,6 +171,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
         mUwbServiceCore.registerOemExtensionCallback(callbacks);
     }
 
+    // TODO: Add @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE) after ag/19901449
     @Override
     public void unregisterOemExtensionCallback(IUwbOemExtensionCallback callbacks)
             throws RemoteException {
