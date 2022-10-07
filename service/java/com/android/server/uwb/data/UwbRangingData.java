@@ -26,10 +26,12 @@ public class UwbRangingData {
     public int mMacAddressMode;
     public int mNoOfRangingMeasures;
     public UwbTwoWayMeasurement[] mRangingTwoWayMeasures;
+    public byte[] mRawNtfData;
 
     public UwbRangingData(long seqCounter, long sessionId, int rcrIndication,
             long currRangingInterval, int rangingMeasuresType, int macAddressMode,
-            int noOfRangingMeasures, UwbTwoWayMeasurement[] rangingTwoWayMeasures) {
+            int noOfRangingMeasures, UwbTwoWayMeasurement[] rangingTwoWayMeasures,
+            byte[] rawNtfData) {
         this.mSeqCounter = seqCounter;
         this.mSessionId = sessionId;
         this.mRcrIndication = rcrIndication;
@@ -38,6 +40,7 @@ public class UwbRangingData {
         this.mMacAddressMode = macAddressMode;
         this.mNoOfRangingMeasures = noOfRangingMeasures;
         this.mRangingTwoWayMeasures = rangingTwoWayMeasures;
+        this.mRawNtfData = rawNtfData;
     }
 
     public long getSequenceCounter() {
@@ -72,6 +75,10 @@ public class UwbRangingData {
         return mRangingTwoWayMeasures;
     }
 
+    public byte[] getRawNtfData() {
+        return mRawNtfData;
+    }
+
     public String toString() {
         if (mRangingMeasuresType == UwbUciConstants.RANGING_MEASUREMENT_TYPE_TWO_WAY) {
             return "UwbRangingData { "
@@ -83,6 +90,7 @@ public class UwbRangingData {
                     + ", MacAddressMode = " + mMacAddressMode
                     + ", NoOfRangingMeasures = " + mNoOfRangingMeasures
                     + ", RangingTwoWayMeasures = " + Arrays.toString(mRangingTwoWayMeasures)
+                    + ", RawNotificationData = " + Arrays.toString(mRawNtfData)
                     + '}';
         } else {
             // TODO(jh0.jang) : ONE WAY RANGING(TDOA)?
