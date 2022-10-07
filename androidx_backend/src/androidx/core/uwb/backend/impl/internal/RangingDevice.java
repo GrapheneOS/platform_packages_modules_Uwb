@@ -42,7 +42,6 @@ import com.google.uwb.support.fira.FiraOpenSessionParams;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /** Implements start/stop ranging operations. */
 public abstract class RangingDevice {
@@ -291,7 +290,8 @@ public abstract class RangingDevice {
      * RangingSessionCallback#REASON_FAILED_TO_START}
      */
     @Utils.UwbStatusCodes
-    public synchronized int startRanging(RangingSessionCallback callback) {
+    public synchronized int startRanging(
+            RangingSessionCallback callback, ExecutorService backendCallbackExecutor) {
         if (isAlive()) {
             return RANGING_ALREADY_STARTED;
         }
@@ -307,7 +307,7 @@ public abstract class RangingDevice {
                     TAG,
                     String.format("UWB parameter: %s, value: %s", key, parameters.getString(key)));
         }
-        mBackendCallbackExecutor = Executors.newSingleThreadExecutor();
+        mBackendCallbackExecutor = backendCallbackExecutor;
         boolean success =
                 mOpAsyncCallbackRunner.execOperation(
                         () -> {
