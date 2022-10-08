@@ -59,6 +59,7 @@ import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 import com.google.uwb.support.generic.GenericParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
+import com.google.uwb.support.oemextension.DeviceStatus;
 import com.google.uwb.support.profile.UuidBundleWrapper;
 
 import java.io.FileDescriptor;
@@ -216,11 +217,14 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             return;
         }
 
-        // TODO: Add support library
-        PersistableBundle bundle = new PersistableBundle();
         if (mOemExtensionCallback != null) {
+            PersistableBundle deviceStateBundle = new DeviceStatus.Builder()
+                    .setDeviceState(deviceState)
+                    .setChipId(chipId)
+                    .build()
+                    .toBundle();
             try {
-                mOemExtensionCallback.onDeviceStatusNotificationReceived(bundle);
+                mOemExtensionCallback.onDeviceStatusNotificationReceived(deviceStateBundle);
             } catch (RemoteException e) {
                 Log.e(TAG, "Failed to send status notification to oem", e);
             }
