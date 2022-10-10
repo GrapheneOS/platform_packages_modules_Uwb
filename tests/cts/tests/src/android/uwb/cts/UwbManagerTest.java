@@ -61,6 +61,7 @@ import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.multichip.ChipInfoParams;
 import com.google.uwb.support.oemextension.DeviceStatus;
+import com.google.uwb.support.oemextension.RangingReportMetadata;
 import com.google.uwb.support.oemextension.SessionStatus;
 
 import org.junit.Assume;
@@ -1034,7 +1035,7 @@ public class UwbManagerTest {
         public PersistableBundle mSessionChangeNtf;
         public PersistableBundle mDeviceStatusNtf;
         public PersistableBundle mSessionConfig;
-        public PersistableBundle mRangingReport;
+        public RangingReport mRangingReport;
         public boolean onSessionConfigCompleteCalled = false;
         public boolean onRangingReportReceivedCalled = false;
         public boolean onSessionChangedCalled = false;
@@ -1063,10 +1064,10 @@ public class UwbManagerTest {
 
         @NonNull
         @Override
-        public PersistableBundle onRangingReportReceived(
-                @NonNull PersistableBundle rangingReportBundle) {
+        public RangingReport onRangingReportReceived(
+                @NonNull RangingReport rangingReport) {
             onRangingReportReceivedCalled = true;
-            mRangingReport = rangingReportBundle;
+            mRangingReport = rangingReport;
             return mRangingReport;
         }
     }
@@ -1148,6 +1149,12 @@ public class UwbManagerTest {
             assertThat(rangingSessionCallback.rangingReport).isNotNull();
             assertThat(uwbOemExtensionCallback.onRangingReportReceivedCalled).isTrue();
             assertThat(uwbOemExtensionCallback.mRangingReport).isNotNull();
+            PersistableBundle reportMetadataBundle = uwbOemExtensionCallback
+                    .mRangingReport.getRangingReportMetadata();
+            RangingReportMetadata reportMetadata = RangingReportMetadata
+                    .fromBundle(reportMetadataBundle);
+            assertEquals(reportMetadata.getSessionId(), sessionId);
+            assertThat(reportMetadata.getRawNtfData()).isNotEmpty();
 
             // Check the UWB state.
             assertThat(mUwbManager.getAdapterState()).isEqualTo(STATE_ENABLED_ACTIVE);
