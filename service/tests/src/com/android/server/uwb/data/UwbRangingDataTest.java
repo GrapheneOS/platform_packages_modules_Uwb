@@ -66,6 +66,7 @@ public class UwbRangingDataTest {
     @Test
     public void testInitializeUwbRangingData() throws Exception {
         final int noOfRangingMeasures = 1;
+        final byte[] rawNtfData = {0x10, 0x01};
         final UwbTwoWayMeasurement[] uwbTwoWayMeasurements =
                 new UwbTwoWayMeasurement[noOfRangingMeasures];
         uwbTwoWayMeasurements[0] = new UwbTwoWayMeasurement(TEST_MAC_ADDRESS, TEST_STATUS, TEST_LOS,
@@ -76,7 +77,7 @@ public class UwbRangingDataTest {
                 TEST_AOA_DEST_ELEVATION_FOM, TEST_SLOT_IDX, TEST_RSSI);
         mUwbRangingData = new UwbRangingData(TEST_SEQ_COUNTER, TEST_SESSION_ID,
                 TEST_RCR_INDICATION, TEST_CURR_RANGING_INTERVAL, TEST_RANGING_MEASURES_TYPE,
-                TEST_MAC_ADDRESS_MODE, noOfRangingMeasures, uwbTwoWayMeasurements);
+                TEST_MAC_ADDRESS_MODE, noOfRangingMeasures, uwbTwoWayMeasurements, rawNtfData);
 
         assertThat(mUwbRangingData.getSequenceCounter()).isEqualTo(TEST_SEQ_COUNTER);
         assertThat(mUwbRangingData.getSessionId()).isEqualTo(TEST_SESSION_ID);
@@ -85,6 +86,7 @@ public class UwbRangingDataTest {
         assertThat(mUwbRangingData.getRangingMeasuresType()).isEqualTo(TEST_RANGING_MEASURES_TYPE);
         assertThat(mUwbRangingData.getMacAddressMode()).isEqualTo(TEST_MAC_ADDRESS_MODE);
         assertThat(mUwbRangingData.getNoOfRangingMeasures()).isEqualTo(1);
+        assertThat(mUwbRangingData.getRawNtfData()).isEqualTo(rawNtfData);
 
         final String testString = "UwbRangingData { "
                 + " SeqCounter = " + TEST_SEQ_COUNTER
@@ -95,6 +97,7 @@ public class UwbRangingDataTest {
                 + ", MacAddressMode = " + TEST_MAC_ADDRESS_MODE
                 + ", NoOfRangingMeasures = " + noOfRangingMeasures
                 + ", RangingTwoWayMeasures = " + Arrays.toString(uwbTwoWayMeasurements)
+                + ", RawNotificationData = " + Arrays.toString(rawNtfData)
                 + '}';
 
         assertThat(mUwbRangingData.toString()).isEqualTo(testString);
