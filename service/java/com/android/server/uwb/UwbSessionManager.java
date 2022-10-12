@@ -228,8 +228,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     @Override
     public void onSessionStatusNotificationReceived(long sessionId, int state, int reasonCode) {
         Log.i(TAG, "onSessionStatusNotificationReceived - Session ID : " + sessionId + ", state : "
-                + UwbSessionNotificationHelper.getSessionStateString(state) + " reasonCode:"
-                + reasonCode);
+                + UwbSessionNotificationHelper.getSessionStateString(state)
+                + ", reasonCode:" + reasonCode);
         UwbSession uwbSession = mSessionTable.get((int) sessionId);
 
         if (uwbSession == null) {
@@ -536,6 +536,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         mSessionNotificationManager.onRangingClosedWithApiReasonCode(uwbSession,
                 RangingChangeReason.SYSTEM_POLICY);
         mUwbMetrics.logRangingCloseEvent(uwbSession, UwbUciConstants.STATUS_CODE_OK);
+
+        // Reset all UWB session timers when the session is de-init.
+        uwbSession.stopTimers();
         removeSession(uwbSession);
     }
 
@@ -900,8 +903,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             if (status != UwbUciConstants.STATUS_CODE_FAILED) {
                 mUwbMetrics.longRangingStopEvent(uwbSession);
             }
-            // Reset any stored error streak timestamp when session is stopped.
-            uwbSession.stopRangingResultErrorStreakTimerIfSet();
+            // Reset all UWB session timers when the session is stopped.
+            uwbSession.stopTimers();
         }
 
         private void handleReconfigure(UwbSession uwbSession, @Nullable Params param,
@@ -1065,6 +1068,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 e.printStackTrace();
             }
             mUwbMetrics.logRangingCloseEvent(uwbSession, status);
+
+            // Reset all UWB session timers when the session is closed.
+            uwbSession.stopTimers();
             removeSession(uwbSession);
             Log.i(TAG, "deinit finish : status :" + status);
         }
@@ -1075,6 +1081,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         public static final long RANGING_RESULT_ERROR_NO_TIMEOUT = 0;
         private static final String RANGING_RESULT_ERROR_STREAK_TIMER_TAG =
                 "UwbSessionRangingResultError";
+        private static final long NON_PRIVILEGED_BG_APP_TIMEOUT_MS = 300000;
+        @VisibleForTesting
+        public static final String NON_PRIVILEGED_BG_APP_TIMER_TAG =
+                "UwbSessionNonPrivilegedBgAppError";
 
         private final AttributionSource mAttributionSource;
         private final SessionHandle mSessionHandle;
@@ -1088,6 +1098,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         private UwbMulticastListUpdateStatus mMulticastListUpdateStatus;
         private final int mProfileType;
         private AlarmManager.OnAlarmListener mRangingResultErrorStreakTimerListener;
+        private AlarmManager.OnAlarmListener mNonPrivilegedBgAppTimerListener;
         private final String mChipId;
         private boolean mHasNonPrivilegedFgApp = false;
         private @FiraParams.RangeDataNtfConfig Integer mOrigRangeDataNtfConfig;
@@ -1332,6 +1343,41 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             }
         }
 
+
+        /**
+         * Starts a timer to detect if the app that started the UWB session is in the background
+         * for longer than {@link UwbSession#mNonPrivilegedBgTimeoutMs }.
+         */
+        private void startNonPrivilegedBgAppTimerIfNotSet() {
+            // Start a timer when the non-privileged app goes into the background.
+            if (mNonPrivilegedBgAppTimerListener == null) {
+                mNonPrivilegedBgAppTimerListener = () -> {
+                    Log.w(TAG, "Non-privileged app in background for longer than timeout - "
+                            + " Stopping session");
+                    stopRangingInternal(mSessionHandle, true /* triggeredBySystemPolicy */);
+                };
+                mAlarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                        mUwbInjector.getElapsedSinceBootMillis()
+                                + NON_PRIVILEGED_BG_APP_TIMEOUT_MS,
+                        NON_PRIVILEGED_BG_APP_TIMER_TAG,
+                        mNonPrivilegedBgAppTimerListener, mEventTask);
+            }
+        }
+
+        private void stopNonPrivilegedBgAppTimerIfSet() {
+            // Stop the timer when the non-privileged app goes into the foreground.
+            if (mNonPrivilegedBgAppTimerListener != null) {
+                mAlarmManager.cancel(mNonPrivilegedBgAppTimerListener);
+                mNonPrivilegedBgAppTimerListener = null;
+            }
+        }
+
+        private void stopTimers() {
+            // Reset any stored error streak or non-privileged background app timestamps.
+            stopRangingResultErrorStreakTimerIfSet();
+            stopNonPrivilegedBgAppTimerIfSet();
+        }
+
         public void reconfigureFiraSessionOnFgStateChange() {
             if (mOrigRangeDataNtfConfig == null) {
                 mOrigRangeDataNtfConfig = ((FiraOpenSessionParams) mParams).getRangeDataNtfConfig();
@@ -1347,6 +1393,15 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                     .build();
             reconfigureInternal(
                     mSessionHandle, reconfigureParams, true /* triggeredByFgStateChange */);
+
+            // When a non-privileged app goes into the background, start a timer (that will stop the
+            // ranging session). If the app goes back into the foreground, the timer will get reset
+            // (but any stopped UWB session will not be auto-resumed).
+            if (!mHasNonPrivilegedFgApp) {
+                startNonPrivilegedBgAppTimerIfNotSet();
+            } else {
+                stopNonPrivilegedBgAppTimerIfSet();
+            }
         }
 
         @Override

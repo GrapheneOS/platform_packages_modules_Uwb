@@ -419,7 +419,7 @@ impl NotificationManagerAndroid {
                 &[
                     JValue::Long(range_data.sequence_number as i64),
                     JValue::Long(range_data.session_id as i64),
-                    JValue::Int(0x0), // TODO: rcr_indicator u8 missing in core library(b/241336806)
+                    JValue::Int(range_data.rcr_indicator as i32),
                     JValue::Long(range_data.current_ranging_interval_ms as i64),
                     JValue::Int(range_data.ranging_measurement_type as i32),
                     JValue::Int(mac_indicator as i32),
