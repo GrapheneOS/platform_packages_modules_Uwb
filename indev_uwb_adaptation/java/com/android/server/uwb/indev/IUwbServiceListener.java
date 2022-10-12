@@ -42,12 +42,12 @@ interface IUwbServiceListener {
     /**
      * Interface for receiving Session Status Notification
      *
-     * @param id         : Session ID
+     * @param sessionId         : Session ID
      * @param state      : Session State
      * @param reasonCode : Reason Code - UCI GENERIC SPECIFICATION Table 15 : state change with
      *                   reason codes
      */
-    void onSessionStatusNotificationReceived(long id, int state, int reasonCode);
+    void onSessionStatusNotificationReceived(long sessionId, int state, int reasonCode);
 
     /**
      * Interface for receiving Device Status Notification

@@ -31,7 +31,7 @@ import java.util.Arrays;
 /**
  * Uwb Service Core placeholder
  */
-public class UwbServiceCore {
+public class UwbServiceCore implements IUwbServiceListener {
     private static final String TAG = UwbServiceCore.class.getSimpleName();
 
     protected IUwbServiceListener mUwbServiceListener;
@@ -39,7 +39,7 @@ public class UwbServiceCore {
 
     public UwbServiceCore() {
         System.loadLibrary("uwb_adaptation_jni");
-        nativeInitLogging();
+        nativeInit();
     }
 
     public long getUwbServicePtr() {
@@ -239,7 +239,7 @@ public class UwbServiceCore {
         return nativeGetPowerStats();
     }
 
-    private native void nativeInitLogging();
+    private native void nativeInit();
 
     private native long nativeUwbServiceNew();
 
