@@ -22,5 +22,6 @@ mod callback;
 mod context;
 mod error;
 mod object_mapping;
+mod unique_jvm;
 
 pub mod api;
