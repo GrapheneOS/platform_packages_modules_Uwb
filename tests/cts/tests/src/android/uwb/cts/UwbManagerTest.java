@@ -31,6 +31,8 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+import static java.util.Objects.requireNonNull;
+
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.app.UiAutomation;
@@ -56,9 +58,11 @@ import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.modules.utils.build.SdkLevel;
 
+import com.google.uwb.support.fira.FiraControleeParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraProtocolVersion;
+import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.multichip.ChipInfoParams;
 import com.google.uwb.support.oemextension.DeviceStatus;
 import com.google.uwb.support.oemextension.SessionStatus;
@@ -68,6 +72,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -543,6 +548,8 @@ public class UwbManagerTest {
         public boolean onOpenFailedCalled;
         public boolean onStartedCalled;
         public boolean onStartFailedCalled;
+        public boolean onReconfiguredCalled;
+        public boolean onReconfiguredFailedCalled;
         public boolean onClosedCalled;
         public RangingSession rangingSession;
         public RangingReport rangingReport;
@@ -584,9 +591,15 @@ public class UwbManagerTest {
             mCtrlCountDownLatch.countDown();
         }
 
-        public void onReconfigured(@NonNull PersistableBundle params) { }
+        public void onReconfigured(@NonNull PersistableBundle params) {
+            onReconfiguredCalled = true;
+            mCtrlCountDownLatch.countDown();
+        }
 
-        public void onReconfigureFailed(@Reason int reason, @NonNull PersistableBundle params) { }
+        public void onReconfigureFailed(@Reason int reason, @NonNull PersistableBundle params) {
+            onReconfiguredFailedCalled = true;
+            mCtrlCountDownLatch.countDown();
+        }
 
         public void onStopped(@Reason int reason, @NonNull PersistableBundle parameters) { }
 
@@ -894,6 +907,107 @@ public class UwbManagerTest {
             assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
             assertThat(rangingSessionCallback.onStartedCalled).isTrue();
             assertThat(rangingSessionCallback.onStartFailedCalled).isFalse();
+
+            // Wait for the on ranging report callback.
+            assertThat(resultCountDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.rangingReport).isNotNull();
+
+            // Check the UWB state.
+            assertThat(mUwbManager.getAdapterState()).isEqualTo(STATE_ENABLED_ACTIVE);
+
+            // Stop ongoing session.
+            rangingSessionCallback.rangingSession.stop();
+        } finally {
+            if (cancellationSignal != null) {
+                countDownLatch = new CountDownLatch(1);
+                rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+
+                // Close session.
+                cancellationSignal.cancel();
+
+                // Wait for the on closed callback.
+                assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+                assertThat(rangingSessionCallback.onClosedCalled).isTrue();
+            }
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
+    public void testFiraRangingSessionWithProvisionedSTS() throws Exception {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        // Needs UWB_PRIVILEGED permission which is held by shell.
+        uiAutomation.adoptShellPermissionIdentity();
+        CancellationSignal cancellationSignal = null;
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        CountDownLatch resultCountDownLatch = new CountDownLatch(1);
+        RangingSessionCallback rangingSessionCallback =
+                new RangingSessionCallback(countDownLatch, resultCountDownLatch);
+        PersistableBundle bundle = mUwbManager.getSpecificationInfo();
+        if (bundle.keySet().contains(FiraParams.PROTOCOL_NAME)) {
+            bundle = requireNonNull(bundle.getPersistableBundle(FiraParams.PROTOCOL_NAME));
+        }
+        FiraSpecificationParams params =
+                FiraSpecificationParams.fromBundle(bundle);
+        EnumSet<FiraParams.StsCapabilityFlag> stsCapabilities = EnumSet.of(
+                FiraParams.StsCapabilityFlag.HAS_STATIC_STS_SUPPORT,
+                FiraParams.StsCapabilityFlag.HAS_PROVISIONED_STS_SUPPORT);
+        assumeTrue(params.getStsCapabilities() == stsCapabilities);
+
+        FiraOpenSessionParams firaOpenSessionParams = new FiraOpenSessionParams.Builder()
+                .setProtocolVersion(new FiraProtocolVersion(1, 1))
+                .setSessionId(1)
+                .setStsConfig(FiraParams.STS_CONFIG_PROVISIONED)
+                .setSessionKey(new byte[]{
+                    0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8,
+                    0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8
+                })
+                .setSubsessionKey(new byte[]{
+                    0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8,
+                    0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8
+                })
+                .setDeviceType(FiraParams.RANGING_DEVICE_TYPE_CONTROLLER)
+                .setDeviceRole(FiraParams.RANGING_DEVICE_ROLE_INITIATOR)
+                .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_UNICAST)
+                .setDeviceAddress(UwbAddress.fromBytes(new byte[] {0x5, 6}))
+                .setDestAddressList(List.of(UwbAddress.fromBytes(new byte[] {0x5, 6})))
+                .build();
+        try {
+            // Needs UWB_PRIVILEGED & UWB_RANGING permission which is held by shell.
+            uiAutomation.adoptShellPermissionIdentity();
+            cancellationSignal = mUwbManager.openRangingSession(
+                firaOpenSessionParams.toBundle(),
+                Executors.newSingleThreadExecutor(),
+                rangingSessionCallback,
+                mDefaultChipId);
+            // Wait for the on opened callback.
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.onOpenedCalled).isTrue();
+            assertThat(rangingSessionCallback.onOpenFailedCalled).isFalse();
+            assertThat(rangingSessionCallback.rangingSession).isNotNull();
+
+            countDownLatch = new CountDownLatch(1);
+            rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+            rangingSessionCallback.rangingSession.start(new PersistableBundle());
+            // Wait for the on started callback.
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.onStartedCalled).isTrue();
+            assertThat(rangingSessionCallback.onStartFailedCalled).isFalse();
+
+            countDownLatch = new CountDownLatch(1);
+            rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+            UwbAddress uwbAddress = UwbAddress.fromBytes(new byte[] {0x5, 5});
+            rangingSessionCallback.rangingSession.addControlee(
+                    new FiraControleeParams.Builder()
+                    .setAddressList(new UwbAddress[] {uwbAddress})
+                    .setSubSessionIdList(new int[] {1})
+                    .build().toBundle()
+            );
+            // Wait for the on reconfigured callback.
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.onReconfiguredCalled).isTrue();
+            assertThat(rangingSessionCallback.onReconfiguredFailedCalled).isFalse();
 
             // Wait for the on ranging report callback.
             assertThat(resultCountDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
