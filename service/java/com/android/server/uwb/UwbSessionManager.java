@@ -293,7 +293,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     private int setAppConfigurations(UwbSession uwbSession) {
         int status = mConfigurationManager.setAppConfigurations(uwbSession.getSessionId(),
                 uwbSession.getParams(), uwbSession.getChipId());
-        if (mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
+        if (status == UwbUciConstants.STATUS_CODE_OK
+                && mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
             try {
                 status = mUwbInjector.getUwbServiceCore().getOemExtensionCallback()
                         .onSessionConfigurationReceived(uwbSession.getParams().toBundle());
