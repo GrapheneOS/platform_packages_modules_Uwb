@@ -530,12 +530,16 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 }
             }
             if (option.equals("-v")) {
-                String vendor_id = getNextArgRequired();
-                if (vendor_id.length() == 4) {
-                    builder.setVendorId(BaseEncoding.base16().decode(vendor_id.toUpperCase()));
+                String vendorId = getNextArgRequired();
+                if (vendorId.length() == 4) {
+                    builder.setVendorId(BaseEncoding.base16().decode(vendorId.toUpperCase()));
                 } else {
                     throw new IllegalArgumentException("vendorId expecting 2 bytes");
                 }
+            }
+            if (option.equals("-h")) {
+                int slotDurationRstu = Integer.parseInt(getNextArgRequired());
+                builder.setSlotDurationRstu(slotDurationRstu);
             }
             option = getNextOption();
         }
@@ -1011,7 +1015,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " [-e none|enabled|azimuth-only|elevation-only](aoa type)"
                 + " [-f <tof,azimuth,elevation,aoa-fom>(result-report-config)"
                 + " [-g <staticStsIV>(staticStsIV 6-bytes)"
-                + " [-v <staticStsVendorId>(staticStsVendorId 2-bytes)");
+                + " [-v <staticStsVendorId>(staticStsVendorId 2-bytes)"
+                + " [-h <slot-duration-rstu>(slot-duration-rstu, default=2400)");
         pw.println("    Starts a FIRA ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
                 + " retrieved using |get-ranging-session-reports|");
