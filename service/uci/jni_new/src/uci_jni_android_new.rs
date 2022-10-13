@@ -36,11 +36,13 @@ use jni::JNIEnv;
 use log::{debug, error};
 use num_traits::cast::FromPrimitive;
 use uwb_core::error::Error as UwbCoreError;
-use uwb_core::params::{CountryCode, RawVendorMessage, SetAppConfigResponse};
+use uwb_core::params::{
+    AppConfigTlv, CountryCode, RawAppConfigTlv, RawVendorMessage, SetAppConfigResponse,
+};
 use uwb_core::uci::uci_manager_sync::UciManagerSync;
 use uwb_uci_packets::{
-    AppConfigTlv, AppConfigTlvType, CapTlv, Controlee, PowerStats, ResetConfig, SessionState,
-    SessionType, StatusCode, UpdateMulticastListAction,
+    AppConfigTlvType, CapTlv, Controlee, PowerStats, ResetConfig, SessionState, SessionType,
+    StatusCode, UpdateMulticastListAction,
 };
 
 /// Macro capturing the name of the function calling this macro.
@@ -348,11 +350,11 @@ fn parse_app_config_tlv_vec(no_of_params: i32, mut byte_array: &[u8]) -> Result<
         // The tlv consists of the type of payload in 1 byte, the length of payload as u8
         // in 1 byte, and the payload.
         const TLV_HEADER_SIZE: usize = 2;
-        let tlv = AppConfigTlv::parse(byte_array).map_err(|_| UwbCoreError::BadParameters)?;
+        let tlv = RawAppConfigTlv::parse(byte_array).map_err(|_| UwbCoreError::BadParameters)?;
         byte_array =
             byte_array.get(tlv.v.len() + TLV_HEADER_SIZE..).ok_or(UwbCoreError::BadParameters)?;
         parsed_tlvs_len += tlv.v.len() + TLV_HEADER_SIZE;
-        tlvs.push(tlv);
+        tlvs.push(tlv.into());
     }
     if parsed_tlvs_len != received_tlvs_len {
         return Err(Error::UwbCoreError(UwbCoreError::BadParameters));
@@ -431,8 +433,10 @@ fn native_set_app_configurations(
 
 fn create_get_config_response(tlvs: Vec<AppConfigTlv>, env: JNIEnv) -> Result<jbyteArray> {
     let tlv_data_class = env.find_class(TLV_DATA_CLASS)?;
+    let tlvs_len = tlvs.len();
     let mut buf = Vec::<u8>::new();
-    for tlv in &tlvs {
+    for tlv in tlvs.into_iter() {
+        let tlv = tlv.into_inner();
         buf.push(tlv.cfg_id as u8);
         buf.push(tlv.v.len() as u8);
         buf.extend(&tlv.v);
@@ -443,7 +447,7 @@ fn create_get_config_response(tlvs: Vec<AppConfigTlv>, env: JNIEnv) -> Result<jb
         "(II[B)V",
         &[
             JValue::Int(StatusCode::UciStatusOk as i32),
-            JValue::Int(tlvs.len() as i32),
+            JValue::Int(tlvs_len as i32),
             JValue::Object(JObject::from(tlvs_jbytearray)),
         ],
     )?;
