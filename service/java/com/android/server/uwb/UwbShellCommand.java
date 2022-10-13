@@ -148,8 +148,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     .setDestAddressList(Arrays.asList(UwbAddress.fromBytes(new byte[] { 0x4, 0x6})))
                     .setMultiNodeMode(MULTI_NODE_MODE_UNICAST)
                     .setRangingRoundUsage(RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE)
-                    .setVendorId(new byte[]{0x5, 0x78})
-                    .setStaticStsIV(new byte[]{0x1a, 0x55, 0x77, 0x47, 0x7e, 0x7d});
+                    .setVendorId(new byte[]{0x7, 0x8})
+                    .setStaticStsIV(new byte[]{0x1, 0x2, 0x3, 0x4, 0x5, 0x6});
 
     @VisibleForTesting
     public static final CccOpenRangingParams.Builder DEFAULT_CCC_OPEN_RANGING_PARAMS =
