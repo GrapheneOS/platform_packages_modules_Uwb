@@ -1089,7 +1089,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         public static final long RANGING_RESULT_ERROR_NO_TIMEOUT = 0;
         private static final String RANGING_RESULT_ERROR_STREAK_TIMER_TAG =
                 "UwbSessionRangingResultError";
-        private static final long NON_PRIVILEGED_BG_APP_TIMEOUT_MS = 300000;
+        private static final long NON_PRIVILEGED_BG_APP_TIMEOUT_MS = 120_000;
         @VisibleForTesting
         public static final String NON_PRIVILEGED_BG_APP_TIMER_TAG =
                 "UwbSessionNonPrivilegedBgAppError";
