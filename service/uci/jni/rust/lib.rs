@@ -32,6 +32,7 @@ trait Context<'a> {
         start: jsize,
         buf: &mut [jint],
     ) -> Result<(), jni::errors::Error>;
+    fn is_same_object(&self, obj1: JObject, obj2: JObject) -> Result<bool, jni::errors::Error>;
     fn get_dispatcher(&self) -> Result<&'a mut dyn Dispatcher, UwbErr>;
 }
 
@@ -44,6 +45,13 @@ impl<'a> JniContext<'a> {
     fn new(env: JNIEnv<'a>, obj: JObject<'a>) -> Self {
         Self { env, obj }
     }
+}
+
+struct ControleeData {
+    addresses: jshortArray,
+    sub_session_ids: jintArray,
+    message_control: jint,
+    sub_session_keys: jbyteArray,
 }
 
 impl<'a> Context<'a> for JniContext<'a> {
@@ -68,6 +76,9 @@ impl<'a> Context<'a> for JniContext<'a> {
         buf: &mut [jint],
     ) -> Result<(), jni::errors::Error> {
         self.env.get_int_array_region(array, start, buf)
+    }
+    fn is_same_object(&self, obj1: JObject, obj2: JObject) -> Result<bool, jni::errors::Error> {
+        self.env.is_same_object(obj1, obj2)
     }
     fn get_dispatcher(&self) -> Result<&'a mut dyn Dispatcher, UwbErr> {
         let dispatcher_ptr_value = self.env.get_field(self.obj, "mDispatcherPointer", "J")?;
@@ -427,17 +438,20 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeCo
     no_of_controlee: jbyte,
     addresses: jshortArray,
     sub_session_ids: jintArray,
+    message_control: jint,
+    sub_session_keys: jbyteArray,
     chip_id: JString,
 ) -> jbyte {
     info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeControllerMulticastListUpdate: enter");
+    let controlee_data =
+        ControleeData { addresses, sub_session_ids, message_control, sub_session_keys };
     byte_result_helper(
         multicast_list_update(
             &JniContext::new(env, obj),
             session_id as u32,
             action as u8,
             no_of_controlee as u8,
-            addresses,
-            sub_session_ids,
+            controlee_data,
             env.get_string(chip_id).unwrap().into(),
         ),
         "ControllerMulticastListUpdate",
@@ -766,15 +780,29 @@ fn multicast_list_update<'a, T: Context<'a>>(
     session_id: u32,
     action: u8,
     no_of_controlee: u8,
-    addresses: jshortArray,
-    sub_session_ids: jintArray,
+    controlee_data: ControleeData,
     chip_id: String,
 ) -> Result<(), UwbErr> {
-    let mut address_list = vec![0i16; context.get_array_length(addresses)?.try_into().unwrap()];
-    context.get_short_array_region(addresses, 0, &mut address_list)?;
-    let mut sub_session_id_list =
-        vec![0i32; context.get_array_length(sub_session_ids)?.try_into().unwrap()];
-    context.get_int_array_region(sub_session_ids, 0, &mut sub_session_id_list)?;
+    let mut address_list = vec![0i16; no_of_controlee as usize];
+    context.get_short_array_region(controlee_data.addresses, 0, &mut address_list)?;
+    let mut sub_session_id_list = vec![0i32; no_of_controlee as usize];
+    context.get_int_array_region(controlee_data.sub_session_ids, 0, &mut sub_session_id_list)?;
+
+    let sub_session_key_list = match context
+        .is_same_object(controlee_data.sub_session_keys.into(), JObject::null())?
+    {
+        true => vec![0i32; no_of_controlee as usize],
+        false => {
+            let mut keys =
+                vec![
+                    0i32;
+                    context.get_array_length(controlee_data.sub_session_keys)?.try_into().unwrap()
+                ];
+            context.get_int_array_region(controlee_data.sub_session_keys, 0, &mut keys)?;
+            keys
+        }
+    };
+
     let dispatcher = context.get_dispatcher()?;
     let res = match dispatcher.block_on_jni_command(
         JNICommand::UciSessionUpdateMulticastList {
@@ -783,6 +811,11 @@ fn multicast_list_update<'a, T: Context<'a>>(
             no_of_controlee,
             address_list: address_list.to_vec(),
             sub_session_id_list: sub_session_id_list.to_vec(),
+            message_control: controlee_data.message_control,
+            sub_session_key_list: split_sub_session_keys(
+                sub_session_key_list,
+                controlee_data.message_control,
+            )?,
         },
         chip_id,
     )? {
@@ -790,6 +823,36 @@ fn multicast_list_update<'a, T: Context<'a>>(
         _ => return Err(UwbErr::failed()),
     };
     status_code_to_res(res.get_status())
+}
+
+fn split_sub_session_keys(
+    sub_session_key_list: Vec<i32>,
+    message_control: i32,
+) -> Result<Vec<Vec<u8>>, UwbErr> {
+    if (message_control >> 3) & 1 == 0 {
+        Ok(Vec::new())
+    } else {
+        match message_control & 1 {
+            0 => sub_session_key_builder(sub_session_key_list, 4),
+            1 => sub_session_key_builder(sub_session_key_list, 8),
+            _ => Err(UwbErr::InvalidArgs),
+        }
+    }
+}
+
+fn sub_session_key_builder(
+    sub_session_key_list: Vec<i32>,
+    size: usize,
+) -> Result<Vec<Vec<u8>>, UwbErr> {
+    let mut res = Vec::new();
+    for chunk in sub_session_key_list.chunks(size) {
+        let mut key_in_byte = Vec::new();
+        for key in chunk.iter() {
+            key_in_byte.extend_from_slice(&key.to_be_bytes());
+        }
+        res.push(key_in_byte);
+    }
+    Ok(res)
 }
 
 fn set_country_code<'a, T: Context<'a>>(
@@ -1293,6 +1356,11 @@ mod tests {
         let address_list = Box::new([1, 3, 5, 7, 9]);
         let fake_sub_session_ids = std::ptr::null_mut();
         let sub_session_id_list = Box::new([2, 4, 6, 8, 10]);
+        let message_control = 8;
+        let fake_sub_session_key_list = std::ptr::null_mut();
+        let sub_session_key_list = Box::new([1, 2, 3, 4]);
+        let split_sub_session_keys =
+            split_sub_session_keys(sub_session_key_list.to_vec(), message_control).unwrap();
         let packet = uwb_uci_packets::SessionUpdateControllerMulticastListRspBuilder {
             status: StatusCode::UciStatusOk,
         }
@@ -1306,15 +1374,19 @@ mod tests {
                 no_of_controlee,
                 address_list: address_list.to_vec(),
                 sub_session_id_list: sub_session_id_list.to_vec(),
+                message_control,
+                sub_session_key_list: split_sub_session_keys,
             },
             Ok(UciResponse::SessionUpdateControllerMulticastListRsp(packet)),
         );
         let mut context = MockContext::new(dispatcher);
-        context.expect_get_array_length(fake_addresses, Ok(address_list.len() as jsize));
         context.expect_get_short_array_region(fake_addresses, 0, Ok(address_list));
-        context
-            .expect_get_array_length(fake_sub_session_ids, Ok(sub_session_id_list.len() as jsize));
         context.expect_get_int_array_region(fake_sub_session_ids, 0, Ok(sub_session_id_list));
+        context.expect_get_array_length(
+            fake_sub_session_key_list,
+            Ok(sub_session_key_list.len() as jsize),
+        );
+        context.expect_get_int_array_region(fake_sub_session_key_list, 0, Ok(sub_session_key_list));
         let chip_id = String::from("chip_id");
 
         let result = multicast_list_update(
@@ -1322,8 +1394,12 @@ mod tests {
             session_id,
             action,
             no_of_controlee,
-            fake_addresses,
-            fake_sub_session_ids,
+            ControleeData {
+                addresses: fake_addresses,
+                sub_session_ids: fake_sub_session_ids,
+                message_control,
+                sub_session_keys: fake_sub_session_key_list,
+            },
             chip_id,
         );
         assert!(result.is_ok());
@@ -1428,5 +1504,17 @@ mod tests {
 
         let result = reset_device(&context, reset_config, chip_id);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_split_sub_session_keys() {
+        let sub_session_key_list = vec![1, 2, 3, 4, 5, 6, 7, 8];
+        let message_control = 8;
+        let expected_res = vec![
+            vec![0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x2, 0x0, 0x0, 0x0, 0x3, 0x0, 0x0, 0x0, 0x4],
+            vec![0x0, 0x0, 0x0, 0x5, 0x0, 0x0, 0x0, 0x6, 0x0, 0x0, 0x0, 0x7, 0x0, 0x0, 0x0, 0x8],
+        ];
+        let byte_array = split_sub_session_keys(sub_session_key_list, message_control).unwrap();
+        assert_eq!(byte_array, expected_res);
     }
 }
