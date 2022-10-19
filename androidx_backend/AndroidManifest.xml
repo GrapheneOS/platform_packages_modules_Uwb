@@ -11,6 +11,12 @@
          android:persistent="true"
          android:directBootAware="true"
          android:defaultToDeviceProtectedStorage="true">
-    <service android:name=".impl.UwbService" android:process=":remote"/>
+    <service android:name=".impl.UwbService"
+            android:exported="true"
+            android:process=":remote">
+        <intent-filter>
+          <action android:name="androidx.core.uwb.backend.service"></action>
+        </intent-filter>
+    </service>
   </application>
 </manifest>
