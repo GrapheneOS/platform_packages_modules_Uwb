@@ -26,7 +26,7 @@ use num_traits::FromPrimitive;
 use uci_hal_android::uci_hal_android::UciHalAndroid;
 use uwb_core::params::{AppConfigParams, CountryCode};
 use uwb_core::service::{UwbService, UwbServiceBuilder};
-use uwb_core::uci::uci_logger::UciLoggerNull;
+use uwb_core::uci::pcapng_uci_logger_factory::PcapngUciLoggerFactoryBuilder;
 use uwb_uci_packets::{SessionType, UpdateMulticastListAction};
 
 use crate::callback::UwbServiceCallbackBuilderImpl;
@@ -89,10 +89,21 @@ pub extern "system" fn Java_com_android_server_uwb_indev_UwbServiceCore_nativeUw
             return *JObject::null() as jlong;
         }
     };
+    let uci_logger_factory = match PcapngUciLoggerFactoryBuilder::new()
+        .log_path("/data/misc/apexdata/com.android.uwb/log")
+        .filename_prefix("uwb_uci")
+        .build()
+    {
+        Some(m) => m,
+        None => {
+            error!("Couldn't build uci_logger_factory.");
+            return *JObject::null() as jlong;
+        }
+    };
     if let Some(uwb_service) = UwbServiceBuilder::new()
         .callback_builder(UwbServiceCallbackBuilderImpl::new(vm, callback_obj, class_loader_obj))
         .uci_hal(UciHalAndroid::new("default"))
-        .uci_logger(UciLoggerNull::default())
+        .uci_logger_factory(uci_logger_factory)
         .build()
     {
         return Box::into_raw(Box::new(uwb_service)) as jlong;

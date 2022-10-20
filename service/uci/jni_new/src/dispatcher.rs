@@ -22,8 +22,9 @@ use std::sync::Arc;
 use jni::objects::GlobalRef;
 use jni::JavaVM;
 use uci_hal_android::uci_hal_android::UciHalAndroid;
-use uwb_core::error::Result as UwbCoreResult;
-use uwb_core::uci::uci_logger::UciLoggerNull;
+use uwb_core::error::{Error as UwbCoreError, Result as UwbCoreResult};
+use uwb_core::uci::pcapng_uci_logger_factory::PcapngUciLoggerFactoryBuilder;
+use uwb_core::uci::uci_logger_factory::UciLoggerFactory;
 use uwb_core::uci::uci_manager_sync::UciManagerSync;
 
 /// Dispatcher is managed by Java side. Construction and Destruction are provoked by JNI function
@@ -41,8 +42,14 @@ impl Dispatcher {
         chip_ids: &[T],
     ) -> UwbCoreResult<Dispatcher> {
         let mut manager_map = HashMap::<String, UciManagerSync>::new();
-
+        let mut log_file_factory = PcapngUciLoggerFactoryBuilder::new()
+            .log_path("/data/misc/apexdata/com.android.uwb/log")
+            .filename_prefix("uwb_uci")
+            .build()
+            .ok_or(UwbCoreError::Unknown)?;
         for chip_id in chip_ids {
+            let logger =
+                log_file_factory.build_logger(chip_id.as_ref()).ok_or(UwbCoreError::Unknown)?;
             let manager = UciManagerSync::new(
                 UciHalAndroid::new(chip_id.as_ref()),
                 NotificationManagerAndroidBuilder {
@@ -51,7 +58,7 @@ impl Dispatcher {
                     class_loader_obj: class_loader_obj.clone(),
                     callback_obj: callback_obj.clone(),
                 },
-                UciLoggerNull::default(),
+                logger,
             )?;
             manager_map.insert(chip_id.as_ref().to_string(), manager);
         }
