@@ -52,6 +52,20 @@ public interface INativeUwbManager {
          */
         void onMulticastListUpdateNotificationReceived(
                 UwbMulticastListUpdateStatus multicastListUpdateData);
+
+        /**
+         * Interface for receiving data from remote device
+         *
+         * @param sessionID   : Session ID
+         * @param status      : Status
+         * @param sequenceNum : Sequence Number
+         * @param address     : Address of remote address
+         * @param sourceEndPoint   : SourceEndPoint
+         * @param destEndPoint   : DestEndPoint
+         * @param data        : Data received from remote address
+         */
+        void onDataReceived(long sessionID, int status, long sequenceNum, byte[] address,
+                int sourceEndPoint, int destEndPoint, byte[] data);
     }
 
     interface DeviceNotification {

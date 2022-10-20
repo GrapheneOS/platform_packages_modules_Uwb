@@ -38,6 +38,7 @@ import android.uwb.IUwbVendorUciCallback;
 import android.uwb.RangingChangeReason;
 import android.uwb.SessionHandle;
 import android.uwb.StateChangeReason;
+import android.uwb.UwbAddress;
 import android.uwb.UwbManager.AdapterStateCallback;
 
 import androidx.annotation.Nullable;
@@ -508,6 +509,16 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                     .build();
         }
         mSessionManager.reconfigure(sessionHandle, reconfigureRangingParams);
+    }
+
+    /** Send the payload data to a remote device in the UWB session */
+    public void sendData(SessionHandle sessionHandle, UwbAddress remoteDeviceAddress,
+            PersistableBundle params, byte[] data) throws RemoteException {
+        if (!isUwbEnabled()) {
+            throw new IllegalStateException("Uwb is not enabled");
+        }
+
+        mSessionManager.sendData(sessionHandle, remoteDeviceAddress, params, data);
     }
 
     public /* @UwbManager.AdapterStateCallback.State */ int getAdapterState() {

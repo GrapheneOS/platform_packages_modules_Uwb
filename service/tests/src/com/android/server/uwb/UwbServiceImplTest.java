@@ -574,11 +574,26 @@ public class UwbServiceImplTest {
         final SessionHandle sessionHandle = mock(SessionHandle.class);
         final UwbAddress mUwbAddress = mock(UwbAddress.class);
         final PersistableBundle parameters = new PersistableBundle();
+        final byte[] data = new byte[] {1, 3, 5, 7, 11, 13};
 
+        mUwbServiceImpl.sendData(sessionHandle, mUwbAddress, parameters, data);
+        verify(mUwbServiceCore).sendData(sessionHandle, mUwbAddress, parameters, data);
+    }
+
+    @Test
+    public void testThrowSecurityExceptionWhenSendDataWithoutUwbPrivilegedPermission()
+            throws Exception {
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
+        final UwbAddress mUwbAddress = mock(UwbAddress.class);
+        final PersistableBundle parameters = new PersistableBundle();
+        final byte[] data = new byte[] {1, 3, 5, 7, 11, 13};
+
+        doThrow(new SecurityException()).when(mContext).enforceCallingOrSelfPermission(
+                eq(UWB_PRIVILEGED), any());
         try {
-            mUwbServiceImpl.sendData(sessionHandle, mUwbAddress, parameters, null);
+            mUwbServiceImpl.sendData(sessionHandle, mUwbAddress, parameters, data);
             fail();
-        } catch (IllegalStateException e) { /* pass */ }
+        } catch (SecurityException e) { /* pass */ }
     }
 
     @Test
