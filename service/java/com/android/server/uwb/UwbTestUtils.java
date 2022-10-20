@@ -71,7 +71,7 @@ public class UwbTestUtils {
                 TEST_AOA_DEST_ELEVATION_FOM, TEST_SLOT_IDX, TEST_RSSI);
         return new UwbRangingData(TEST_SEQ_COUNTER, TEST_SESSION_ID,
                 TEST_RCR_INDICATION, TEST_CURR_RANGING_INTERVAL, TEST_RANGING_MEASURES_TYPE,
-                TEST_MAC_ADDRESS_MODE, noOfRangingMeasures, uwbTwoWayMeasurements);
+                TEST_MAC_ADDRESS_MODE, noOfRangingMeasures, uwbTwoWayMeasurements, new byte[0]);
     }
 
     // Helper method to generate a UwbRangingData instance and corresponding RangingMeasurement

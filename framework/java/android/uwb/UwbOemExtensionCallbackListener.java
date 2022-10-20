@@ -140,22 +140,22 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
     }
 
     @Override
-    public PersistableBundle onRangingReportReceived(PersistableBundle rangingReportBundle)
+    public RangingReport onRangingReportReceived(RangingReport rangingReport)
             throws RemoteException {
         synchronized (this) {
             final long identity = Binder.clearCallingIdentity();
-            PersistableBundle vendorRangingReportBundle = rangingReportBundle;
+            RangingReport vendorRangingReport = rangingReport;
             try {
                 ExecutorService executor = Executors.newSingleThreadExecutor();
-                FutureTask<PersistableBundle> getOemRangingReport = new FutureTask<>(
-                        () -> mCallback.onRangingReportReceived(rangingReportBundle)
+                FutureTask<RangingReport> getOemRangingReport = new FutureTask<RangingReport>(
+                        () -> mCallback.onRangingReportReceived(rangingReport)
                 );
                 executor.submit(getOemRangingReport);
                 try {
-                    vendorRangingReportBundle = getOemRangingReport.get(
+                    vendorRangingReport = getOemRangingReport.get(
                             OEM_EXTENSION_RESPONSE_THRESHOLD_MS, TimeUnit.MILLISECONDS);
-                    return vendorRangingReportBundle == null ? rangingReportBundle
-                            : vendorRangingReportBundle;
+                    return vendorRangingReport == null ? rangingReport
+                            : vendorRangingReport;
                 } catch (ExecutionException | InterruptedException e) {
                     e.printStackTrace();
                 } catch (TimeoutException e) {
@@ -165,7 +165,7 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
             } finally {
                 Binder.restoreCallingIdentity(identity);
             }
-            return vendorRangingReportBundle;
+            return vendorRangingReport;
         }
     }
 }
