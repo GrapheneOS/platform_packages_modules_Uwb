@@ -229,7 +229,7 @@ package android.uwb {
 
   public static interface UwbManager.UwbOemExtensionCallback {
     method public void onDeviceStatusNotificationReceived(@NonNull android.os.PersistableBundle);
-    method @NonNull public android.os.PersistableBundle onRangingReportReceived(@NonNull android.os.PersistableBundle);
+    method @NonNull public android.uwb.RangingReport onRangingReportReceived(@NonNull android.uwb.RangingReport);
     method @NonNull public int onSessionConfigurationComplete(@NonNull android.os.PersistableBundle);
     method public void onSessionStatusNotificationReceived(@NonNull android.os.PersistableBundle);
   }

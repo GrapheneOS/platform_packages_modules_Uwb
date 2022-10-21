@@ -41,6 +41,7 @@ import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccRangingReconfiguredParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.oemextension.RangingReportMetadata;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,11 +68,11 @@ public class UwbSessionNotificationManager {
 
         RangingReport rangingReport = getRangingReport(rangingData, uwbSession.getProtocolName(),
                 uwbSession.getParams(), mUwbInjector.getElapsedSinceBootNanos());
-        PersistableBundle bundle = new PersistableBundle();
+
         if (mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
             try {
-                bundle = mUwbInjector.getUwbServiceCore().getOemExtensionCallback()
-                                .onRangingReportReceived(bundle);
+                rangingReport = mUwbInjector.getUwbServiceCore().getOemExtensionCallback()
+                                .onRangingReportReceived(rangingReport);
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
@@ -321,9 +322,11 @@ public class UwbSessionNotificationManager {
         boolean isAoaElevationEnabled = true;
         boolean isDestAoaAzimuthEnabled = false;
         boolean isDestAoaElevationEnabled = false;
+        long sessionId = 0;
         // For FIRA sessions, check if AOA is enabled for the session or not.
         if (protocolName.equals(FiraParams.PROTOCOL_NAME)) {
             FiraOpenSessionParams openSessionParams = (FiraOpenSessionParams) sessionParams;
+            sessionId = openSessionParams.getSessionId();
             switch (openSessionParams.getAoaResultRequest()) {
                 case FiraParams.AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT:
                     isAoaAzimuthEnabled = false;
@@ -426,13 +429,18 @@ public class UwbSessionNotificationManager {
             if (rssi < 0) {
                 rangingMeasurementBuilder.setRssiDbm(rssi);
             }
-            // TODO: Fill this with vendor data
+            // TODO: No ranging measurement metadata defined, added for future usage
             PersistableBundle rangingMeasurementMetadata = new PersistableBundle();
             rangingMeasurementBuilder.setRangingMeasurementMetadata(rangingMeasurementMetadata);
             rangingMeasurements.add(rangingMeasurementBuilder.build());
         }
-        // TODO: Fill this with vendor data
-        PersistableBundle rangingReportMetadata = new PersistableBundle();
+
+        PersistableBundle rangingReportMetadata = new RangingReportMetadata.Builder()
+                .setSessionId(sessionId)
+                .setRawNtfData(rangingData.getRawNtfData())
+                .build()
+                .toBundle();
+
         if (rangingMeasurements.size() == 1) {
             return new RangingReport.Builder()
                     .addMeasurement(rangingMeasurements.get(0))
