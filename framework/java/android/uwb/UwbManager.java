@@ -369,11 +369,11 @@ public final class UwbManager {
         /**
          * Invoked when ranging report is generated
          *
-         * @param rangingReportBundle ranging report generated
+         * @param rangingReport ranging report generated
          * @return Oem modified ranging report
          */
-        @NonNull PersistableBundle onRangingReportReceived(
-                @NonNull PersistableBundle rangingReportBundle);
+        @NonNull RangingReport onRangingReportReceived(
+                @NonNull RangingReport rangingReport);
     }
 
     /**

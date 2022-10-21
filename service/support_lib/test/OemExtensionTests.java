@@ -20,10 +20,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import com.google.uwb.support.oemextension.DeviceStatus;
+import com.google.uwb.support.oemextension.RangingReportMetadata;
 import com.google.uwb.support.oemextension.SessionStatus;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.Arrays;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
@@ -69,5 +72,23 @@ public class OemExtensionTests {
         assertEquals(fromBundle.getSessionId(), sessionId);
         assertEquals(fromBundle.getState(), state);
         assertEquals(fromBundle.getReasonCode(), reasonCode);
+    }
+
+    @Test
+    public void testRangingReportMetadata() {
+        byte[] testRawDataNtf = {0x0a, 0x0b, 0x10, 0x20, 0x6f};
+        long sessionId = 3;
+        RangingReportMetadata rangingReportMetadata = new RangingReportMetadata.Builder()
+                .setSessionId(sessionId)
+                .setRawNtfData(testRawDataNtf)
+                .build();
+
+        assertEquals(rangingReportMetadata.getRawNtfData(), testRawDataNtf);
+
+        RangingReportMetadata fromBundle = RangingReportMetadata
+                .fromBundle(rangingReportMetadata.toBundle());
+
+        assertEquals(fromBundle.getSessionId(), sessionId);
+        assertEquals(Arrays.toString(fromBundle.getRawNtfData()), Arrays.toString(testRawDataNtf));
     }
 }
