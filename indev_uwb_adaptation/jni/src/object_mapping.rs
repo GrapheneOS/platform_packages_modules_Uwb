@@ -507,9 +507,11 @@ impl<'a> TryFrom<SessionRangeDataWithEnv<'a>> for UwbRangingDataJni<'a> {
             data_obj.uwb_two_way_measurement_jclass,
             data_obj.session_range_data.ranging_measurements,
         ))?;
+        let raw_notification_jbytearray =
+            data_obj.env.byte_array_from_slice(&data_obj.session_range_data.raw_ranging_data)?;
         let ranging_data_jni = data_obj.env.new_object(
             data_obj.uwb_ranging_data_jclass,
-            "(JJIJIII[Lcom/android/server/uwb/data/UwbTwoWayMeasurement;)V",
+            "(JJIJIII[Lcom/android/server/uwb/data/UwbTwoWayMeasurement;[B)V",
             &[
                 JValue::Long(data_obj.session_range_data.sequence_number as i64),
                 JValue::Long(data_obj.session_range_data.session_id as i64),
@@ -519,6 +521,7 @@ impl<'a> TryFrom<SessionRangeDataWithEnv<'a>> for UwbRangingDataJni<'a> {
                 JValue::Int(mac_address_indicator as i32),
                 JValue::Int(measurements_size as i32),
                 JValue::Object(measurements_jni.jni_context.obj),
+                JValue::Object(JObject::from(raw_notification_jbytearray)),
             ],
         )?;
 
