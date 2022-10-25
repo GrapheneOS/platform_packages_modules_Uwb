@@ -84,6 +84,8 @@ public class UwbSettingsStore {
      */
     public static final Key<Boolean> SETTINGS_TOGGLE_STATE =
             new Key<>("settings_toggle", true);
+    public static final Key<String> SETTINGS_LOG_MODE =
+            new Key<>("settings_log_mode", UciLogModeStore.Mode.DISABLED.getMode());
 
     /******** Uwb shared pref keys ***************/
 
@@ -101,13 +103,14 @@ public class UwbSettingsStore {
 
     /**
      * Interface for a settings change listener.
+     *
      * @param <T> Type of the value.
      */
     public interface OnSettingsChangedListener<T> {
         /**
          * Invoked when a particular key settings changes.
          *
-         * @param key Key that was changed.
+         * @param key      Key that was changed.
          * @param newValue New value that was assigned to the key.
          */
         void onSettingsChanged(@NonNull Key<T> key, @Nullable T newValue);
@@ -222,7 +225,7 @@ public class UwbSettingsStore {
     /**
      * Store a value to the stored settings.
      *
-     * @param key One of the settings keys.
+     * @param key   One of the settings keys.
      * @param value Value to be stored.
      */
     public <T> void put(@NonNull Key<T> key, @Nullable T value) {
@@ -243,9 +246,9 @@ public class UwbSettingsStore {
     /**
      * Register for settings change listener.
      *
-     * @param key One of the settings keys.
+     * @param key      One of the settings keys.
      * @param listener Listener to be registered.
-     * @param handler Handler to post the listener
+     * @param handler  Handler to post the listener
      */
     public <T> void registerChangeListener(@NonNull Key<T> key,
             @NonNull OnSettingsChangedListener<T> listener, @NonNull Handler handler) {
@@ -258,7 +261,7 @@ public class UwbSettingsStore {
     /**
      * Unregister for settings change listener.
      *
-     * @param key One of the settings keys.
+     * @param key      One of the settings keys.
      * @param listener Listener to be unregistered.
      */
     public <T> void unregisterChangeListener(@NonNull Key<T> key,
@@ -288,6 +291,7 @@ public class UwbSettingsStore {
 
     /**
      * Base class to store string key and its default value.
+     *
      * @param <T> Type of the value.
      */
     public static class Key<T> {

@@ -477,6 +477,17 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
     )
 }
 
+/// Set log mode for new stack.
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSetLogMode(
+    _env: JNIEnv,
+    _obj: JObject,
+    _log_mode_jstring: JString, // Ignored as existing stack sets log mode differently.
+) -> jboolean {
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeSetLogMode: enter");
+    false as jboolean
+}
+
 /// set country code
 #[no_mangle]
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSendRawVendorCmd(
