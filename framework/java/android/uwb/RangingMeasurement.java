@@ -350,12 +350,16 @@ public final class RangingMeasurement implements Parcelable {
     @Override
     public String toString() {
         return "RangingMeasurement["
-                + "distance measurement: " + mDistanceMeasurement
+                + "remote device address:" + mRemoteDeviceAddress
+                + ", distance measurement: " + mDistanceMeasurement
                 + ", aoa measurement: " + mAngleOfArrivalMeasurement
                 + ", dest aoa measurement: " + mDestinationAngleOfArrivalMeasurement
                 + ", lineOfSight: " + mLineOfSight
+                + ", measurementFocus: " + mMeasurementFocus
                 + ", rssiDbm: " + mRssiDbm
                 + ", ranging measurement metadata: " + mRangingMeasurementMetadata
+                + ", elapsed real time nanos: " + mElapsedRealtimeNanos
+                + ", status: " + mStatus
                 + "]";
     }
 
