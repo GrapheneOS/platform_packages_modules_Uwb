@@ -21,6 +21,7 @@ package {
 android_test {
     name: "IndevUwbServiceTests",
     defaults: ["uwb-module-sdk-version-defaults"],
+    target_sdk_version: "33",
 
     srcs: ["src/**/*.java"],
 
