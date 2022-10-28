@@ -19,7 +19,6 @@ package {
 java_defaults {
     name: "uwb-module-sdk-version-defaults",
     min_sdk_version: "Tiramisu",
-    target_sdk_version: "Tiramisu",
 }
 
 filegroup {
