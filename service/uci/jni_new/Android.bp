@@ -16,6 +16,7 @@ rust_defaults {
         "liblogger",
         "libnum_traits",
         "libthiserror",
+        "libtokio",
         "libuci_hal_android",
         "libuwb_core",
         "libuwb_uci_packets",

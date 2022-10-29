@@ -22,6 +22,7 @@ use jni::sys::{jboolean, jbyte, jbyteArray, jint, jlong, jobject};
 use jni::JNIEnv;
 use log::{debug, error};
 use num_traits::FromPrimitive;
+use tokio::runtime::Builder as RuntimeBuilder;
 
 use uci_hal_android::uci_hal_android::UciHalAndroid;
 use uwb_core::params::{AppConfigParams, CountryCode};
@@ -89,9 +90,17 @@ pub extern "system" fn Java_com_android_server_uwb_indev_UwbServiceCore_nativeUw
             return *JObject::null() as jlong;
         }
     };
+    let runtime = match RuntimeBuilder::new_multi_thread().enable_all().build() {
+        Ok(r) => r,
+        Err(e) => {
+            error!("Couldn't build tokio Runtime.");
+            return *JObject::null() as jlong;
+        }
+    };
     let uci_logger_factory = match PcapngUciLoggerFactoryBuilder::new()
         .log_path("/data/misc/apexdata/com.android.uwb/log")
         .filename_prefix("uwb_uci")
+        .runtime_handle(runtime.handle().to_owned())
         .build()
     {
         Some(m) => m,
@@ -102,6 +111,7 @@ pub extern "system" fn Java_com_android_server_uwb_indev_UwbServiceCore_nativeUw
     };
     if let Some(uwb_service) = UwbServiceBuilder::new()
         .callback_builder(UwbServiceCallbackBuilderImpl::new(vm, callback_obj, class_loader_obj))
+        .runtime(runtime)
         .uci_hal(UciHalAndroid::new("default"))
         .uci_logger_factory(uci_logger_factory)
         .build()
