@@ -138,40 +138,43 @@ public class UwbTestUtils {
         if (isAoaAzimuthEnabled || isAoaElevationEnabled) {
             AngleMeasurement aoaAzimuth = null;
             AngleMeasurement aoaElevation = null;
+            AngleOfArrivalMeasurement.Builder aoaBuilder = null;
+
             if (isAoaAzimuthEnabled) {
-                aoaAzimuth =
-                        new AngleMeasurement(
-                                degreeToRadian(TEST_AOA_AZIMUTH), 0,
-                                TEST_AOA_AZIMUTH_FOM / (double) 100);
+                aoaAzimuth = new AngleMeasurement(
+                        degreeToRadian(TEST_AOA_AZIMUTH), 0,
+                        TEST_AOA_AZIMUTH_FOM / (double) 100);
+                aoaBuilder = new AngleOfArrivalMeasurement.Builder(aoaAzimuth);
             }
-            if (isAoaElevationEnabled) {
-                aoaElevation =
-                        new AngleMeasurement(
-                                degreeToRadian(TEST_AOA_ELEVATION), 0,
-                                TEST_AOA_ELEVATION_FOM / (double) 100);
+            if (isAoaElevationEnabled && aoaBuilder != null) {
+                aoaElevation = new AngleMeasurement(
+                        degreeToRadian(TEST_AOA_ELEVATION), 0,
+                        TEST_AOA_ELEVATION_FOM / (double) 100);
+                aoaBuilder.setAltitude(aoaElevation);
             }
-            aoaMeasurement = new AngleOfArrivalMeasurement.Builder(aoaAzimuth)
-                    .setAltitude(aoaElevation)
-                    .build();
+
+            aoaMeasurement = (aoaBuilder != null) ? aoaBuilder.build() : null;
         }
         if (isDestAoaAzimuthEnabled || isDestAoaElevationEnabled) {
             AngleMeasurement aoaDestAzimuth = null;
             AngleMeasurement aoaDestElevation = null;
+            AngleOfArrivalMeasurement.Builder aoaBuilder = null;
+
             if (isDestAoaAzimuthEnabled) {
                 aoaDestAzimuth =
                         new AngleMeasurement(
                                 degreeToRadian(TEST_AOA_DEST_AZIMUTH), 0,
                                 TEST_AOA_DEST_AZIMUTH_FOM / (double) 100);
+                aoaBuilder = new AngleOfArrivalMeasurement.Builder(aoaDestAzimuth);
             }
-            if (isDestAoaElevationEnabled) {
+            if (isDestAoaElevationEnabled && aoaBuilder != null) {
                 aoaDestElevation =
                         new AngleMeasurement(
                                 degreeToRadian(TEST_AOA_DEST_ELEVATION), 0,
                                 TEST_AOA_DEST_ELEVATION_FOM / (double) 100);
+                aoaBuilder.setAltitude(aoaDestElevation);
             }
-            aoaDestMeasurement = new AngleOfArrivalMeasurement.Builder(aoaDestAzimuth)
-                    .setAltitude(aoaDestElevation)
-                    .build();
+            aoaDestMeasurement = (aoaBuilder != null) ? aoaBuilder.build() : null;
         }
 
         RangingReport rangingReport = buildRangingReport(macAddress, rangingMeasurementType,

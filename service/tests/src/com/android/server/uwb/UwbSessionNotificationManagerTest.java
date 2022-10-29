@@ -146,9 +146,6 @@ public class UwbSessionNotificationManagerTest {
                 mSessionHandle, testRangingDataAndRangingReport.second);
     }
 
-    // TODO(b/246678053): Confirm tests are checking case when one of Azimuth/Elevation is null, as
-    // code sends null while the AngleOfArrivalMeasurement builder takes only non-null as input.
-
     @Test
     public void testOnRangingResult_forTwoWay_WithNoAoaElevation() throws Exception {
         when(mFiraParams.getAoaResultRequest()).thenReturn(
@@ -188,6 +185,91 @@ public class UwbSessionNotificationManagerTest {
                 UwbTestUtils.generateRangingDataAndRangingReport(
                         PEER_SHORT_MAC_ADDRESS, RANGING_MEASUREMENT_TYPE_TWO_WAY,
                         true, true, true, true, TEST_ELAPSED_NANOS);
+        mUwbSessionNotificationManager.onRangingResult(
+                mUwbSession, testRangingDataAndRangingReport.first);
+        verify(mIUwbRangingCallbacks).onRangingResult(
+                mSessionHandle, testRangingDataAndRangingReport.second);
+    }
+
+    @Test
+    public void testOnRangingResult_forTwoWay_WithAoaAndNoDestAzimuth() throws Exception {
+        when(mFiraParams.getAoaResultRequest()).thenReturn(
+                FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS);
+        when(mFiraParams.hasResultReportPhase()).thenReturn(true);
+        when(mFiraParams.hasAngleOfArrivalAzimuthReport()).thenReturn(false);
+        when(mFiraParams.hasAngleOfArrivalElevationReport()).thenReturn(true);
+        Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
+                UwbTestUtils.generateRangingDataAndRangingReport(
+                        PEER_SHORT_MAC_ADDRESS, RANGING_MEASUREMENT_TYPE_TWO_WAY,
+                        true, true, false, true, TEST_ELAPSED_NANOS);
+        mUwbSessionNotificationManager.onRangingResult(
+                mUwbSession, testRangingDataAndRangingReport.first);
+        verify(mIUwbRangingCallbacks).onRangingResult(
+                mSessionHandle, testRangingDataAndRangingReport.second);
+    }
+
+    @Test
+    public void testOnRangingResult_forTwoWay_WithAoaAndNoDestElevation() throws Exception {
+        when(mFiraParams.getAoaResultRequest()).thenReturn(
+                FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS);
+        when(mFiraParams.hasResultReportPhase()).thenReturn(true);
+        when(mFiraParams.hasAngleOfArrivalAzimuthReport()).thenReturn(true);
+        when(mFiraParams.hasAngleOfArrivalElevationReport()).thenReturn(false);
+        Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
+                UwbTestUtils.generateRangingDataAndRangingReport(
+                        PEER_SHORT_MAC_ADDRESS, RANGING_MEASUREMENT_TYPE_TWO_WAY,
+                        true, true, true, false, TEST_ELAPSED_NANOS);
+        mUwbSessionNotificationManager.onRangingResult(
+                mUwbSession, testRangingDataAndRangingReport.first);
+        verify(mIUwbRangingCallbacks).onRangingResult(
+                mSessionHandle, testRangingDataAndRangingReport.second);
+    }
+
+    @Test
+    public void testOnRangingResult_forTwoWay_WithNoAoaAndDestAoa() throws Exception {
+        when(mFiraParams.getAoaResultRequest()).thenReturn(
+                FiraParams.AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT);
+        when(mFiraParams.hasResultReportPhase()).thenReturn(true);
+        when(mFiraParams.hasAngleOfArrivalAzimuthReport()).thenReturn(true);
+        when(mFiraParams.hasAngleOfArrivalElevationReport()).thenReturn(true);
+        Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
+                UwbTestUtils.generateRangingDataAndRangingReport(
+                        PEER_SHORT_MAC_ADDRESS, RANGING_MEASUREMENT_TYPE_TWO_WAY,
+                        false, false, true, true, TEST_ELAPSED_NANOS);
+        mUwbSessionNotificationManager.onRangingResult(
+                mUwbSession, testRangingDataAndRangingReport.first);
+        verify(mIUwbRangingCallbacks).onRangingResult(
+                mSessionHandle, testRangingDataAndRangingReport.second);
+    }
+
+    @Test
+    public void testOnRangingResult_forTwoWay_WithNoAoaAzimuthAndDestAoa() throws Exception {
+        when(mFiraParams.getAoaResultRequest()).thenReturn(
+                FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_ELEVATION_ONLY);
+        when(mFiraParams.hasResultReportPhase()).thenReturn(true);
+        when(mFiraParams.hasAngleOfArrivalAzimuthReport()).thenReturn(true);
+        when(mFiraParams.hasAngleOfArrivalElevationReport()).thenReturn(true);
+        Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
+                UwbTestUtils.generateRangingDataAndRangingReport(
+                        PEER_SHORT_MAC_ADDRESS, RANGING_MEASUREMENT_TYPE_TWO_WAY,
+                        false, true, true, true, TEST_ELAPSED_NANOS);
+        mUwbSessionNotificationManager.onRangingResult(
+                mUwbSession, testRangingDataAndRangingReport.first);
+        verify(mIUwbRangingCallbacks).onRangingResult(
+                mSessionHandle, testRangingDataAndRangingReport.second);
+    }
+
+    @Test
+    public void testOnRangingResult_forTwoWay_WithNoAoaElevationAndDestAoa() throws Exception {
+        when(mFiraParams.getAoaResultRequest()).thenReturn(
+                FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_AZIMUTH_ONLY);
+        when(mFiraParams.hasResultReportPhase()).thenReturn(true);
+        when(mFiraParams.hasAngleOfArrivalAzimuthReport()).thenReturn(true);
+        when(mFiraParams.hasAngleOfArrivalElevationReport()).thenReturn(true);
+        Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
+                UwbTestUtils.generateRangingDataAndRangingReport(
+                        PEER_SHORT_MAC_ADDRESS, RANGING_MEASUREMENT_TYPE_TWO_WAY,
+                        true, false, true, true, TEST_ELAPSED_NANOS);
         mUwbSessionNotificationManager.onRangingResult(
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
