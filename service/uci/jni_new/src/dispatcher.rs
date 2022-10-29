@@ -21,6 +21,7 @@ use std::sync::Arc;
 
 use jni::objects::GlobalRef;
 use jni::JavaVM;
+use tokio::runtime::{Builder as RuntimeBuilder, Runtime};
 use uci_hal_android::uci_hal_android::UciHalAndroid;
 use uwb_core::error::{Error as UwbCoreError, Result as UwbCoreResult};
 use uwb_core::uci::pcapng_uci_logger_factory::PcapngUciLoggerFactoryBuilder;
@@ -32,6 +33,7 @@ use uwb_core::uci::uci_manager_sync::UciManagerSync;
 /// Destruction does NOT wait until the spawned threads are closed.
 pub(crate) struct Dispatcher {
     pub manager_map: HashMap<String, UciManagerSync>,
+    _runtime: Runtime,
 }
 impl Dispatcher {
     /// Constructs Dispatcher.
@@ -41,10 +43,16 @@ impl Dispatcher {
         callback_obj: GlobalRef,
         chip_ids: &[T],
     ) -> UwbCoreResult<Dispatcher> {
+        let runtime = RuntimeBuilder::new_multi_thread()
+            .thread_name("UwbService")
+            .enable_all()
+            .build()
+            .map_err(|_| UwbCoreError::Unknown)?;
         let mut manager_map = HashMap::<String, UciManagerSync>::new();
         let mut log_file_factory = PcapngUciLoggerFactoryBuilder::new()
             .log_path("/data/misc/apexdata/com.android.uwb/log")
             .filename_prefix("uwb_uci")
+            .runtime_handle(runtime.handle().to_owned())
             .build()
             .ok_or(UwbCoreError::Unknown)?;
         for chip_id in chip_ids {
@@ -59,10 +67,11 @@ impl Dispatcher {
                     callback_obj: callback_obj.clone(),
                 },
                 logger,
+                runtime.handle().to_owned(),
             )?;
             manager_map.insert(chip_id.as_ref().to_string(), manager);
         }
-        Ok(Self { manager_map })
+        Ok(Self { manager_map, _runtime: runtime })
     }
 
     /// Constructs dispatcher, and return a pointer owning it.
