@@ -51,6 +51,7 @@ import static org.mockito.Mockito.when;
 
 import android.content.AttributionSource;
 import android.content.Context;
+import android.content.res.Resources;
 import android.os.IBinder;
 import android.os.PersistableBundle;
 import android.os.PowerManager;
@@ -75,7 +76,9 @@ import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.data.UwbVendorUciResponse;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.multchip.UwbMultichipData;
+import com.android.server.uwb.multichip.MultichipConfigFileCreator;
 import com.android.server.uwb.pm.ProfileManager;
+import com.android.uwb.resources.R;
 
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
@@ -91,7 +94,9 @@ import com.google.uwb.support.generic.GenericSpecificationParams;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -100,7 +105,6 @@ import org.mockito.MockitoSession;
 import org.mockito.quality.Strictness;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -113,9 +117,13 @@ import java.util.concurrent.FutureTask;
 @SmallTest
 @Presubmit
 public class UwbServiceCoreTest {
+    @Rule
+    public TemporaryFolder mTempFolder = TemporaryFolder.builder().build();
+
     private static final int TEST_UID = 44;
     private static final String TEST_PACKAGE_NAME = "com.android.uwb";
-    private static final String TEST_CHIP_ID = "default";
+    private static final String TEST_DEFAULT_CHIP_ID = "default";
+    private static final String TEST_CHIP_ONE_CHIP_ID = "chipIdString1";
     private static final AttributionSource TEST_ATTRIBUTION_SOURCE =
             new AttributionSource.Builder(TEST_UID)
                     .setPackageName(TEST_PACKAGE_NAME)
@@ -160,6 +168,7 @@ public class UwbServiceCoreTest {
     @Mock private UwbInjector mUwbInjector;
     @Mock DeviceConfigFacade mDeviceConfigFacade;
     @Mock private ProfileManager mProfileManager;
+    @Mock private Resources mResources;
 
     private TestLooper mTestLooper;
     private MockitoSession mMockitoSession;
@@ -175,13 +184,16 @@ public class UwbServiceCoreTest {
                 .thenReturn(mock(PowerManager.WakeLock.class));
         when(mContext.getSystemService(PowerManager.class)).thenReturn(powerManager);
         when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
-        when(mUwbInjector.getMultichipData()).thenReturn(new UwbMultichipData(mContext));
+        UwbMultichipData uwbMultichipData = setUpMultichipDataForOneChip();
+        when(mUwbInjector.getMultichipData()).thenReturn(uwbMultichipData);
         when(mDeviceConfigFacade.getBugReportMinIntervalMs())
                 .thenReturn(DeviceConfigFacade.DEFAULT_BUG_REPORT_MIN_INTERVAL_MS);
         when(mUwbInjector.getProfileManager()).thenReturn(mProfileManager);
         mUwbServiceCore = new UwbServiceCore(mContext, mNativeUwbManager, mUwbMetrics,
                 mUwbCountryCode, mUwbSessionManager, mUwbConfigurationManager,
                 mUwbInjector, mTestLooper.getLooper());
+
+        uwbMultichipData.initialize();
 
         // static mocking for executor service.
         mMockitoSession = ExtendedMockito.mockitoSession()
@@ -213,6 +225,21 @@ public class UwbServiceCoreTest {
         }
     }
 
+    private UwbMultichipData setUpMultichipDataForOneChip() throws Exception {
+        when(mResources.getBoolean(R.bool.config_isMultichip)).thenReturn(false);
+        when(mContext.getResources()).thenReturn(mResources);
+        return new UwbMultichipData(mContext);
+    }
+
+    private UwbMultichipData setUpMultichipDataForTwoChips() throws Exception {
+        when(mResources.getBoolean(R.bool.config_isMultichip)).thenReturn(true);
+        String path = MultichipConfigFileCreator.createTwoChipFileFromResource(mTempFolder,
+                getClass()).getCanonicalPath();
+        when(mResources.getString(R.string.config_multichipConfigPath)).thenReturn(path);
+        when(mContext.getResources()).thenReturn(mResources);
+        return new UwbMultichipData(mContext);
+    }
+
     private void verifyGetSpecificationInfoSuccess() throws Exception {
         GenericSpecificationParams genericSpecificationParams =
                 mock(GenericSpecificationParams.class);
@@ -224,12 +251,13 @@ public class UwbServiceCoreTest {
                 .thenReturn(Pair.create(
                         UwbUciConstants.STATUS_CODE_OK, genericSpecificationParams));
 
-        PersistableBundle specifications = mUwbServiceCore.getSpecificationInfo(TEST_CHIP_ID);
+        PersistableBundle specifications = mUwbServiceCore.getSpecificationInfo(
+                TEST_DEFAULT_CHIP_ID);
         assertThat(specifications).isEqualTo(genericSpecificationBundle);
         verify(mUwbConfigurationManager)
-                .getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any(), eq(TEST_CHIP_ID));
+                .getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any(), eq(TEST_DEFAULT_CHIP_ID));
 
-        assertThat(mUwbServiceCore.getCachedSpecificationParams(TEST_CHIP_ID)).isEqualTo(
+        assertThat(mUwbServiceCore.getCachedSpecificationParams(TEST_DEFAULT_CHIP_ID)).isEqualTo(
                 genericSpecificationParams);
     }
 
@@ -266,7 +294,7 @@ public class UwbServiceCoreTest {
     @Test
     public void testGetSpecificationInfoFailWhenUwbDisabled() throws Exception {
         try {
-            mUwbServiceCore.getCachedSpecificationParams(TEST_CHIP_ID);
+            mUwbServiceCore.getCachedSpecificationParams(TEST_DEFAULT_CHIP_ID);
             fail();
         } catch (IllegalStateException e) {
             // pass
@@ -461,13 +489,13 @@ public class UwbServiceCoreTest {
         when(firaSpecificationParams.hasRssiReportingSupport())
                 .thenReturn(true);
         mUwbServiceCore.openRanging(
-                attributionSource, sessionHandle, cb, params.toBundle(), TEST_CHIP_ID);
+                attributionSource, sessionHandle, cb, params.toBundle(), TEST_DEFAULT_CHIP_ID);
 
         verify(mUwbSessionManager).initSession(
                 eq(attributionSource),
                 eq(sessionHandle), eq(params.getSessionId()), eq(FiraParams.PROTOCOL_NAME),
                 argThat(p -> ((FiraOpenSessionParams) p).getSessionId() == params.getSessionId()),
-                eq(cb), eq(TEST_CHIP_ID));
+                eq(cb), eq(TEST_DEFAULT_CHIP_ID));
 
     }
 
@@ -480,13 +508,13 @@ public class UwbServiceCoreTest {
         CccOpenRangingParams params = TEST_CCC_OPEN_RANGING_PARAMS.build();
         AttributionSource attributionSource = TEST_ATTRIBUTION_SOURCE;
         mUwbServiceCore.openRanging(
-                attributionSource, sessionHandle, cb, params.toBundle(), TEST_CHIP_ID);
+                attributionSource, sessionHandle, cb, params.toBundle(), TEST_DEFAULT_CHIP_ID);
 
         verify(mUwbSessionManager).initSession(
                 eq(attributionSource),
                 eq(sessionHandle), eq(params.getSessionId()), eq(CccParams.PROTOCOL_NAME),
                 argThat(p -> ((CccOpenRangingParams) p).getSessionId() == params.getSessionId()),
-                eq(cb), eq(TEST_CHIP_ID));
+                eq(cb), eq(TEST_DEFAULT_CHIP_ID));
     }
 
     @Test
@@ -501,7 +529,7 @@ public class UwbServiceCoreTest {
                     sessionHandle,
                     cb,
                     params.toBundle(),
-                    TEST_CHIP_ID);
+                    TEST_DEFAULT_CHIP_ID);
             fail();
         } catch (IllegalStateException e) {
             // pass
@@ -646,14 +674,13 @@ public class UwbServiceCoreTest {
 
     @Test
     public void testGetAdapterState_multichip() throws Exception {
-        UwbMultichipData mockUwbMultichipData = mock(UwbMultichipData.class);
-        when(mockUwbMultichipData.getChipIds()).thenReturn(List.of(TEST_CHIP_ID, "chip2"));
-
-        when(mUwbInjector.getMultichipData()).thenReturn(mockUwbMultichipData);
+        UwbMultichipData multichipData = setUpMultichipDataForTwoChips();
+        when(mUwbInjector.getMultichipData()).thenReturn(multichipData);
 
         mUwbServiceCore = new UwbServiceCore(mContext, mNativeUwbManager, mUwbMetrics,
                 mUwbCountryCode, mUwbSessionManager, mUwbConfigurationManager,
                 mUwbInjector, mTestLooper.getLooper());
+        multichipData.initialize();
 
         enableUwbWithCountryCode();
         assertThat(mUwbServiceCore.getAdapterState())
@@ -661,7 +688,7 @@ public class UwbServiceCoreTest {
 
         // If one chip is active, then getAdapterState should return STATE_ENABLED_ACTIVE.
         mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ACTIVE,
-                TEST_CHIP_ID);
+                TEST_CHIP_ONE_CHIP_ID);
         mTestLooper.dispatchAll();
         assertThat(mUwbServiceCore.getAdapterState()).isEqualTo(AdapterState.STATE_ENABLED_ACTIVE);
 
@@ -670,10 +697,20 @@ public class UwbServiceCoreTest {
                 .isEqualTo(AdapterState.STATE_DISABLED);
 
         // If one chip is disabled, then getAdapter state should always return STATE_DISABLED.
-        // (Although in practice, there should never be on ACTIVE chip and one DISABLED chip.)
+        // (Although in practice, there should never be one ACTIVE chip and one DISABLED chip.)
         mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ACTIVE,
-                TEST_CHIP_ID);
+                TEST_CHIP_ONE_CHIP_ID);
         mTestLooper.dispatchAll();
+        assertThat(mUwbServiceCore.getAdapterState()).isEqualTo(AdapterState.STATE_DISABLED);
+    }
+
+    @Test
+    public void testGetAdapterState_noChips() throws Exception {
+        // Create a new UwbServiceCore instance without initializing multichip data or enabling UWB
+        mUwbServiceCore = new UwbServiceCore(mContext, mNativeUwbManager, mUwbMetrics,
+                mUwbCountryCode, mUwbSessionManager, mUwbConfigurationManager,
+                mUwbInjector, mTestLooper.getLooper());
+
         assertThat(mUwbServiceCore.getAdapterState()).isEqualTo(AdapterState.STATE_DISABLED);
     }
 
@@ -693,7 +730,7 @@ public class UwbServiceCoreTest {
         IUwbVendorUciCallback vendorCb = mock(IUwbVendorUciCallback.class);
         mUwbServiceCore.registerVendorExtensionCallback(vendorCb);
 
-        assertThat(mUwbServiceCore.sendVendorUciMessage(0, 0, new byte[0], TEST_CHIP_ID))
+        assertThat(mUwbServiceCore.sendVendorUciMessage(0, 0, new byte[0], TEST_DEFAULT_CHIP_ID))
                 .isEqualTo(UwbUciConstants.STATUS_CODE_OK);
 
         verify(vendorCb).onVendorResponseReceived(gid, oid, payload);
@@ -710,7 +747,7 @@ public class UwbServiceCoreTest {
                 StateChangeReason.SYSTEM_POLICY);
 
         mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ACTIVE,
-                TEST_CHIP_ID);
+                TEST_DEFAULT_CHIP_ID);
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_ACTIVE,
                 StateChangeReason.SESSION_STARTED);
     }
@@ -750,7 +787,7 @@ public class UwbServiceCoreTest {
         when(mUwbCountryCode.getCountryCode()).thenReturn("US");
 
         mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ERROR,
-                TEST_CHIP_ID);
+                TEST_DEFAULT_CHIP_ID);
         mTestLooper.dispatchAll();
         // Verify UWB toggle off.
         verify(mNativeUwbManager).doDeinitialize();
