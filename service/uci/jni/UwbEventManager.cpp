@@ -35,6 +35,8 @@ const char *RANGING_MEASURES_CLASS_NAME =
        TODO support for these class to be added in service.*/
 const char *MULTICAST_UPDATE_LIST_DATA_CLASS_NAME =
     "com/android/server/uwb/data/UwbMulticastListUpdateStatus";
+const char *RANGING_OWR_AOA_MEASURES_CLASS_NAME =
+    "com/android/server/uwb/data/UwbOwrAoaMeasurement";
 
 UwbEventManager UwbEventManager::mObjUwbManager;
 
@@ -46,6 +48,7 @@ UwbEventManager::UwbEventManager() {
   mObject = NULL;
   mRangeDataClass = NULL;
   mRangingTwoWayMeasuresClass = NULL;
+  mRangingOwrAoaMeasuresClass = NULL;
   mRangeTdoaMeasuresClass = NULL;
   mMulticastUpdateListDataClass = NULL;
   mOnDeviceStateNotificationReceived = NULL;
@@ -150,6 +153,54 @@ void UwbEventManager::onRangeDataNotificationReceived(
         ranging_ntf_data->ranging_measure_type,
         ranging_ntf_data->mac_addr_mode_indicator,
         (int)ranging_ntf_data->no_of_measurements, rangeMeasuresArray);
+  } else if (ranging_ntf_data->ranging_measure_type ==
+             MEASUREMENT_TYPE_OWR_WITH_AOA) {
+    JNI_TRACE_I("%s: ranging_measure_type = MEASUREMENT_TYPE_OWR_WITH_AOA", fn);
+    jmethodID rngOwrAoaMeasuresCtor, rngDataCtorOwrAoa;
+    jobject rangeOwrAoaMeasures;
+
+    jbyteArray owrAoaMacAddress = NULL;
+    if (ranging_ntf_data->mac_addr_mode_indicator == SHORT_MAC_ADDRESS) {
+      owrAoaMacAddress = env->NewByteArray(2);
+      env->SetByteArrayRegion(owrAoaMacAddress, 0, 2,
+                              (jbyte *)ranging_ntf_data->ranging_measures
+                                  .owr_with_aoa_range_measr.mac_addr);
+    } else {
+      owrAoaMacAddress = env->NewByteArray(8);
+      env->SetByteArrayRegion(owrAoaMacAddress, 0, 8,
+                              (jbyte *)ranging_ntf_data->ranging_measures
+                                  .owr_with_aoa_range_measr.mac_addr);
+    }
+    rngOwrAoaMeasuresCtor = env->GetMethodID(mRangingOwrAoaMeasuresClass,
+                                             "<init>", "([BIIIIIIII)V");
+    rangeOwrAoaMeasures = env->NewObject(
+        mRangingOwrAoaMeasuresClass, rngOwrAoaMeasuresCtor, owrAoaMacAddress,
+        (int)ranging_ntf_data->ranging_measures.owr_with_aoa_range_measr.status,
+        (int)ranging_ntf_data->ranging_measures.owr_with_aoa_range_measr.nLos,
+        (int)ranging_ntf_data->ranging_measures.owr_with_aoa_range_measr
+            .frame_seq_num,
+        (int)ranging_ntf_data->ranging_measures.owr_with_aoa_range_measr
+            .block_index,
+        (int)ranging_ntf_data->ranging_measures.owr_with_aoa_range_measr
+            .aoa_azimuth,
+        (int)ranging_ntf_data->ranging_measures.owr_with_aoa_range_measr
+            .aoa_azimuth_FOM,
+        (int)ranging_ntf_data->ranging_measures.owr_with_aoa_range_measr
+            .aoa_elevation,
+        (int)ranging_ntf_data->ranging_measures.owr_with_aoa_range_measr
+            .aoa_elevation_FOM);
+
+    rngDataCtorOwrAoa = env->GetMethodID(
+        mRangeDataClass, "<init>",
+        "(JJIJIIILcom/android/server/uwb/data/UwbOwrAoaMeasurement;)V");
+    rangeDataObject = env->NewObject(
+        mRangeDataClass, rngDataCtorOwrAoa, (long)ranging_ntf_data->seq_counter,
+        (long)ranging_ntf_data->session_id,
+        (int)ranging_ntf_data->rcr_indication,
+        (long)ranging_ntf_data->curr_range_interval,
+        ranging_ntf_data->ranging_measure_type,
+        ranging_ntf_data->mac_addr_mode_indicator,
+        (int)ranging_ntf_data->no_of_measurements, rangeOwrAoaMeasures);
   }
 
   if (mOnRangeDataNotificationReceived != NULL) {
@@ -441,7 +492,7 @@ void UwbEventManager::doLoadSymbols(JNIEnv *env, jobject thiz) {
         clazz, "onSessionStatusNotificationReceived", "(JII)V");
     mOnCoreGenericErrorNotificationReceived = env->GetMethodID(
         clazz, "onCoreGenericErrorNotificationReceived", "(I)V");
-
+    mOnDataReceived = env->GetMethodID(clazz, "onDataReceived", "(JIJ[BII[B)V");
     // TDB, this should be reworked
     mOnMulticastListUpdateNotificationReceived = env->GetMethodID(
         clazz, "onMulticastListUpdateNotificationReceived",
@@ -456,6 +507,8 @@ void UwbEventManager::doLoadSymbols(JNIEnv *env, jobject thiz) {
     uwb_jni_cache_jclass(env, RANGING_DATA_CLASS_NAME, &mRangeDataClass);
     uwb_jni_cache_jclass(env, RANGING_MEASURES_CLASS_NAME,
                          &mRangingTwoWayMeasuresClass);
+    uwb_jni_cache_jclass(env, RANGING_OWR_AOA_MEASURES_CLASS_NAME,
+                         &mRangingOwrAoaMeasuresClass);
     uwb_jni_cache_jclass(env, MULTICAST_UPDATE_LIST_DATA_CLASS_NAME,
                          &mMulticastUpdateListDataClass);
   }

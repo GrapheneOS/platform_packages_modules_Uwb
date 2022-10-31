@@ -58,6 +58,7 @@ import android.uwb.UwbAddress;
 
 import com.android.server.uwb.UwbSessionManager.UwbSession;
 import com.android.server.uwb.UwbSessionManager.WaitObj;
+import com.android.server.uwb.advertisement.UwbAdvertiseManager;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbRangingData;
 import com.android.server.uwb.data.UwbUciConstants;
@@ -120,6 +121,8 @@ public class UwbSessionManagerTest {
     @Mock
     private UwbMetrics mUwbMetrics;
     @Mock
+    private UwbAdvertiseManager mUwbAdvertiseManager;
+    @Mock
     private UwbSessionNotificationManager mUwbSessionNotificationManager;
     @Mock
     private UwbInjector mUwbInjector;
@@ -167,6 +170,7 @@ public class UwbSessionManagerTest {
                 mUwbConfigurationManager,
                 mNativeUwbManager,
                 mUwbMetrics,
+                mUwbAdvertiseManager,
                 mUwbSessionNotificationManager,
                 mUwbInjector,
                 mAlarmManager,
