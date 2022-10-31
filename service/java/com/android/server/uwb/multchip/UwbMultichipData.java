@@ -51,6 +51,7 @@ public class UwbMultichipData {
     private List<ChipInfoParams> mChipInfoParamsList =
             List.of(ChipInfoParams.createBuilder().setChipId(mDefaultChipId).build());
     private List<String> mChipIds = List.of(mDefaultChipId);
+    private OnInitializedListener mListener;
 
     public UwbMultichipData(Context context) {
         mContext = context;
@@ -72,6 +73,9 @@ public class UwbMultichipData {
             } else {
                 readConfigurationFile(filePath);
             }
+        }
+        if (mListener != null) {
+            mListener.onInitialized();
         }
     }
 
@@ -119,6 +123,13 @@ public class UwbMultichipData {
         return mDefaultChipId;
     }
 
+    /**
+     * Sets an {@link OnInitializedListener}.
+     */
+    public void setOnInitializedListener(OnInitializedListener listener) {
+        mListener = listener;
+    }
+
     private void readConfigurationFile(String filePath) {
         try {
             InputStream stream = new BufferedInputStream(new FileInputStream(filePath));
@@ -159,5 +170,15 @@ public class UwbMultichipData {
         } catch (XmlPullParserException | IOException | DatatypeConfigurationException e) {
             Log.e(TAG, "Cannot read file " + filePath, e);
         }
+    }
+
+    /**
+     * Listener for initialization of {@link UwbMultichipData}.
+     */
+    public interface OnInitializedListener {
+        /**
+         * Invoked by {@link UwbMultichipData#initialize()}.
+         */
+        void onInitialized();
     }
 }
