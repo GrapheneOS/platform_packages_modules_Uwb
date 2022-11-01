@@ -126,7 +126,7 @@ public final class RangingReport implements Parcelable {
     public String toString() {
         return "RangingReport["
                 + "measurements: " + mRangingMeasurements
-                + "ranging report measurement: " + mRangingReportMetadata
+                + ", ranging report measurement: " + mRangingReportMetadata
                 + "]";
     }
 

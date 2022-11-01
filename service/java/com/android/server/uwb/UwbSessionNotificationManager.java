@@ -570,7 +570,11 @@ public class UwbSessionNotificationManager {
                     .build();
 
             // TODO(b/246678053): Add rawNtfData[] for the OWR AoA Measurements.
-            PersistableBundle rangingReportMetadata = new PersistableBundle();
+            PersistableBundle rangingReportMetadata = new RangingReportMetadata.Builder()
+                    .setSessionId(sessionId)
+                    .build()
+                    .toBundle();
+
             return new RangingReport.Builder()
                         .addMeasurement(rangingMeasurement)
                         .addRangingReportMetadata(rangingReportMetadata)

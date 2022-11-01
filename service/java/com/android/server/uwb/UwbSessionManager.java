@@ -18,6 +18,7 @@ package com.android.server.uwb;
 import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE;
 
 import static com.android.server.uwb.data.UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS;
+import static com.android.server.uwb.data.UwbUciConstants.UWB_DEVICE_EXT_MAC_ADDRESS_LEN;
 
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE;
@@ -217,7 +218,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         if (uwbSession != null) {
             mUwbMetrics.logRangingResult(uwbSession.getProfileType(), rangingData);
             mSessionNotificationManager.onRangingResult(uwbSession, rangingData);
-            processRangeData(rangingData);
+            processRangeData(rangingData, uwbSession);
             if (uwbSession.mRangingErrorStreakTimeoutMs
                     != UwbSession.RANGING_RESULT_ERROR_NO_TIMEOUT) {
                 if (hasAllRangingResultError(rangingData)) {
@@ -237,7 +238,14 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             long sessionId, int status, long sequenceNum,
             byte[] address, int sourceEndPoint, int destEndPoint, byte[] data) {
         Log.d(TAG, "onDataReceived - Data: " + UwbUtil.toHexString(data));
-        //size of address is always 8(EXTENDED_ADDRESS_BYTE_LENGTH)
+
+        // Size of address is always expected to be 8(EXTENDED_ADDRESS_BYTE_LENGTH). It can contain
+        // the MacAddress in short format however (2 LSB with MacAddress, 6 MSB zeroed out).
+        if (address.length != UWB_DEVICE_EXT_MAC_ADDRESS_LEN) {
+            Log.e(TAG, "onDataReceived(): Received data for sessionId=" + sessionId
+                    + ", with unexpected MacAddress length = " + address.length);
+            return;
+        }
         Long longAddress = ByteBuffer.wrap(address).getLong();
 
         ReceivedDataInfo info = new ReceivedDataInfo();
@@ -542,15 +550,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         return count;
     }
 
-    private void processRangeData(UwbRangingData rangingData) {
+    private void processRangeData(UwbRangingData rangingData, UwbSession uwbSession) {
         if (rangingData.getRangingMeasuresType()
                 != UwbUciConstants.RANGING_MEASUREMENT_TYPE_OWR_AOA) {
-            return;
-        }
-
-        int sessionId = (int) rangingData.getSessionId();
-        UwbSession uwbSession = getUwbSession(sessionId);
-        if (uwbSession == null) {
             return;
         }
 
@@ -563,6 +565,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             return;
         }
 
+        UwbSession uwbSessionFromReceivedData = getUwbSession((int) receivedDataInfo.sessionId);
+        if (uwbSessionFromReceivedData != uwbSession) {
+            return;
+        }
+
         if (mAdvertiseManager.isPointedTarget(macAddress)) {
             UwbAddress uwbAddress = UwbAddress.fromBytes(TlvUtil.getReverseBytes(macAddress));
             mSessionNotificationManager.onDataReceived(
@@ -570,8 +577,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
     }
 
-    private ReceivedDataInfo getReceivedDataInfo(byte[] macAddress) {
-        /* extend the size of addr because addr size from onDataReceived() is always 8*/
+    /** Get any received data for the given device MacAddress */
+    @VisibleForTesting
+    public ReceivedDataInfo getReceivedDataInfo(byte[] macAddress) {
+        /* Extend the size of addr because addr size from onDataReceived() is always 8 */
         byte[] extendedAddr = new byte[] {0, 0, 0, 0, 0, 0, 0, 0};
         for (int i = 0; i < macAddress.length; i++) {
             extendedAddr[i] = macAddress[i];
@@ -1201,38 +1210,78 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
         private void handleSendData(SendDataInfo sendDataInfo) {
             int status = UwbUciConstants.STATUS_CODE_ERROR_SESSION_NOT_EXIST;
-            int sessionId = getSessionId(sendDataInfo.sessionHandle);
+            SessionHandle sessionHandle = sendDataInfo.sessionHandle;
+            if (sessionHandle == null) {
+                Log.i(TAG, "Not present sessionHandle");
+                mSessionNotificationManager.onDataSendFailed(
+                        null, sendDataInfo.remoteDeviceAddress, status, sendDataInfo.params);
+                return;
+            }
+
+            Integer sessionId = getSessionId(sessionHandle);
+            if (sessionId == null) {
+                Log.i(TAG, "UwbSessionId not found");
+                mSessionNotificationManager.onDataSendFailed(
+                        null, sendDataInfo.remoteDeviceAddress, status, sendDataInfo.params);
+                return;
+            }
+
+            // TODO(b/256675656): Check if there is race condition between uwbSession being
+            // retrieved here and used below (and similar for uwbSession being stored in the
+            //  mLooper message and being used during processing for all other message types).
             UwbSession uwbSession = getUwbSession(sessionId);
-
-            if (!isExistedSession(sendDataInfo.sessionHandle)) {
-                Log.i(TAG, "Not initialized session ID");
+            if (uwbSession == null) {
+                Log.i(TAG, "UwbSession not found");
                 mSessionNotificationManager.onDataSendFailed(
-                        uwbSession, sendDataInfo.remoteDeviceAddress, status, sendDataInfo.params);
+                        null, sendDataInfo.remoteDeviceAddress, status, sendDataInfo.params);
                 return;
             }
 
-            if (!isValidSendDataInfo(sendDataInfo)) {
-                status = UwbUciConstants.STATUS_CODE_INVALID_PARAM;
-                mSessionNotificationManager.onDataSendFailed(
-                        uwbSession, sendDataInfo.remoteDeviceAddress, status, sendDataInfo.params);
-                return;
-            }
+            // TODO(b/211445008): Consolidate to a single uwb thread.
+            FutureTask<Integer> sendDataTask = new FutureTask<>((Callable<Integer>) () -> {
+                int sendDataStatus = UwbUciConstants.STATUS_CODE_FAILED;
+                synchronized (uwbSession.getWaitObj()) {
+                    if (!isValidSendDataInfo(sendDataInfo)) {
+                        sendDataStatus = UwbUciConstants.STATUS_CODE_INVALID_PARAM;
+                        mSessionNotificationManager.onDataSendFailed(
+                                uwbSession, sendDataInfo.remoteDeviceAddress, sendDataStatus,
+                                sendDataInfo.params);
+                        return sendDataStatus;
+                    }
 
-            // TODO(b/246678053): Check on the usage of sequenceNum field, is it used for ordering
-            // the data payload packets by firmware ?
-            int sequenceNum = 1;
+                    // TODO(b/246678053): Check on the usage of sequenceNum field, is it used
+                    //  for ordering the data payload packets by host or firmware ?
+                    int sequenceNum = 1;
 
-            status = mNativeUwbManager.sendData(
-                    sessionId, sendDataInfo.remoteDeviceAddress.toBytes(),
-                    UwbUciConstants.UWB_DESTINATION_END_POINT_HOST, sequenceNum, sendDataInfo.data);
-            Log.d(TAG, "MSG_SESSION_SEND_DATA status: " + status);
+                    sendDataStatus = mNativeUwbManager.sendData(
+                            uwbSession.getSessionId(), sendDataInfo.remoteDeviceAddress.toBytes(),
+                            UwbUciConstants.UWB_DESTINATION_END_POINT_HOST, sequenceNum,
+                            sendDataInfo.data);
+                    Log.d(TAG, "MSG_SESSION_SEND_DATA status: " + sendDataStatus);
 
-            if (status == UwbUciConstants.STATUS_CODE_OK) {
-                mSessionNotificationManager.onDataSent(
-                        uwbSession, sendDataInfo.remoteDeviceAddress, sendDataInfo.params);
-            } else {
-                mSessionNotificationManager.onDataSendFailed(
-                        uwbSession, sendDataInfo.remoteDeviceAddress, status, sendDataInfo.params);
+                    if (sendDataStatus == UwbUciConstants.STATUS_CODE_OK) {
+                        mSessionNotificationManager.onDataSent(
+                                uwbSession, sendDataInfo.remoteDeviceAddress,
+                                sendDataInfo.params);
+                    } else {
+                        mSessionNotificationManager.onDataSendFailed(
+                                uwbSession, sendDataInfo.remoteDeviceAddress, sendDataStatus,
+                                sendDataInfo.params);
+                    }
+                    return sendDataStatus;
+                }
+            });
+
+            status = UwbUciConstants.STATUS_CODE_FAILED;
+            try {
+                status = mUwbInjector.runTaskOnSingleThreadExecutor(sendDataTask,
+                        IUwbAdapter.RANGING_SESSION_OPEN_THRESHOLD_MS);
+            } catch (TimeoutException e) {
+                Log.i(TAG, "Failed to Send data - status : TIMEOUT");
+                mSessionNotificationManager.onDataSendFailed(uwbSession,
+                        sendDataInfo.remoteDeviceAddress, status, sendDataInfo.params);
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
             }
         }
     }
