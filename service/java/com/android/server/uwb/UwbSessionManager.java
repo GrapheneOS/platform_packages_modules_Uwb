@@ -1065,21 +1065,31 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                     // Set to 0's for the UCI stack.
                                     subSessionIdList = new int[dstAddressListSize];
                                 }
-                                int messageControl =
-                                        rangingReconfigureParams.getMessageControl() == null
-                                        ? -1 : rangingReconfigureParams.getMessageControl();
-                                int[] subsessionKeyList =
-                                        rangingReconfigureParams.getSubSessionKeyList();
+                                boolean isV2 = rangingReconfigureParams.getMessageControl() != null;
+                                if (isV2) {
+                                    int messageControl =
+                                            rangingReconfigureParams.getMessageControl();
+                                    int[] subsessionKeyList =
+                                            rangingReconfigureParams.getSubSessionKeyList();
 
-                                status = mNativeUwbManager.controllerMulticastListUpdate(
-                                        uwbSession.getSessionId(),
-                                        action,
-                                        subSessionIdList.length,
-                                        ArrayUtils.toPrimitive(dstAddressList),
-                                        subSessionIdList,
-                                        messageControl,
-                                        subsessionKeyList,
-                                        uwbSession.getChipId());
+                                    status = mNativeUwbManager.controllerMulticastListUpdateV2(
+                                            uwbSession.getSessionId(),
+                                            action,
+                                            subSessionIdList.length,
+                                            ArrayUtils.toPrimitive(dstAddressList),
+                                            subSessionIdList,
+                                            messageControl,
+                                            subsessionKeyList,
+                                            uwbSession.getChipId());
+                                } else {
+                                    status = mNativeUwbManager.controllerMulticastListUpdateV1(
+                                            uwbSession.getSessionId(),
+                                            action,
+                                            subSessionIdList.length,
+                                            ArrayUtils.toPrimitive(dstAddressList),
+                                            subSessionIdList,
+                                            uwbSession.getChipId());
+                                }
                                 if (status != UwbUciConstants.STATUS_CODE_OK) {
                                     Log.e(TAG, "Unable to update controller multicast list.");
                                     if (action == MULTICAST_LIST_UPDATE_ACTION_ADD) {
