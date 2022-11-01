@@ -42,6 +42,7 @@ import android.provider.Settings;
 import android.util.AtomicFile;
 import android.util.Log;
 
+import com.android.server.uwb.advertisement.UwbAdvertiseManager;
 import com.android.server.uwb.data.ServiceProfileData;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.multchip.UwbMultichipData;
@@ -119,9 +120,10 @@ public class UwbInjector {
                 new UwbConfigurationManager(mNativeUwbManager);
         UwbSessionNotificationManager uwbSessionNotificationManager =
                 new UwbSessionNotificationManager(this);
+        UwbAdvertiseManager uwbAdvertiseManager = new UwbAdvertiseManager(this);
         UwbSessionManager uwbSessionManager =
                 new UwbSessionManager(uwbConfigurationManager, mNativeUwbManager, mUwbMetrics,
-                        uwbSessionNotificationManager, this,
+                        uwbAdvertiseManager, uwbSessionNotificationManager, this,
                         mContext.getSystemService(AlarmManager.class),
                         mContext.getSystemService(ActivityManager.class),
                         mLooper);
