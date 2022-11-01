@@ -304,7 +304,28 @@ public class NativeUwbManager {
     }
 
     /**
-     * Update Multicast list for the requested UWB session
+     * Update Multicast list for the requested UWB session using V1 command.
+     *
+     * @param sessionId         : Session ID to which multicast list to be updated
+     * @param action            : Update the multicast list by adding or removing
+     *                          0x00 - Adding
+     *                          0x01 - removing
+     * @param noOfControlee     : The number(n) of Controlees
+     * @param addresses         : address list of Controlees
+     * @param subSessionIds     : Specific sub-session ID list of Controlees
+     * @return : refer to SESSION_SET_APP_CONFIG_RSP
+     * in the Table 16: Control messages to set Application configurations
+     */
+    public byte controllerMulticastListUpdateV1(int sessionId, int action, int noOfControlee,
+            short[] addresses, int[] subSessionIds, String chipId) {
+        synchronized (mSessionFnLock) {
+            return nativeControllerMulticastListUpdateV1(sessionId, (byte) action,
+                    (byte) noOfControlee, addresses, subSessionIds, chipId);
+        }
+    }
+
+    /**
+     * Update Multicast list for the requested UWB session using V2 command.
      *
      * @param sessionId         : Session ID to which multicast list to be updated
      * @param action            : Update the multicast list by adding or removing
@@ -325,11 +346,11 @@ public class NativeUwbManager {
      * @return : refer to SESSION_SET_APP_CONFIG_RSP
      * in the Table 16: Control messages to set Application configurations
      */
-    public byte controllerMulticastListUpdate(int sessionId, int action, int noOfControlee,
+    public byte controllerMulticastListUpdateV2(int sessionId, int action, int noOfControlee,
             short[] addresses, int[] subSessionIds, int messageControl,
             int[] subSessionKeyList, String chipId) {
         synchronized (mSessionFnLock) {
-            return nativeControllerMulticastListUpdate(sessionId, (byte) action,
+            return nativeControllerMulticastListUpdateV2(sessionId, (byte) action,
                     (byte) noOfControlee, addresses, subSessionIds, messageControl,
                     subSessionKeyList, chipId);
         }
@@ -435,7 +456,10 @@ public class NativeUwbManager {
 
     private native UwbTlvData nativeGetCapsInfo(String chipId);
 
-    private native byte nativeControllerMulticastListUpdate(int sessionId, byte action,
+    private native byte nativeControllerMulticastListUpdateV1(int sessionId, byte action,
+            byte noOfControlee, short[] address, int[] subSessionId, String chipId);
+
+    private native byte nativeControllerMulticastListUpdateV2(int sessionId, byte action,
             byte noOfControlee, short[] address, int[] subSessionId, int messageControl,
             int[] subSessionKeyList, String chipId);
 
