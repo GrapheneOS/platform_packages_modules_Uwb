@@ -72,13 +72,13 @@ public class UwbRangingDataTest {
     private static final int TEST_AOA_DEST_ELEVATION_FOM = 90;
     private static final int TEST_SLOT_IDX = 10;
     private static final int TEST_RSSI = -1;
+    private static final byte[] TEST_RAW_NTF_DATA = {0x10, 0x01};
 
     private UwbRangingData mUwbRangingData;
 
     @Test
     public void testInitializeUwbRangingData_withUwbTwoWayMeasurement() throws Exception {
         final int noOfRangingMeasures = 1;
-        final byte[] rawNtfData = {0x10, 0x01};
         final UwbTwoWayMeasurement[] uwbTwoWayMeasurements =
                 new UwbTwoWayMeasurement[noOfRangingMeasures];
         final int rangingMeasuresType = RANGING_MEASUREMENT_TYPE_TWO_WAY;
@@ -90,7 +90,8 @@ public class UwbRangingDataTest {
                 TEST_AOA_DEST_ELEVATION_FOM, TEST_SLOT_IDX, TEST_RSSI);
         mUwbRangingData = new UwbRangingData(TEST_SEQ_COUNTER, TEST_SESSION_ID,
                 TEST_RCR_INDICATION, TEST_CURR_RANGING_INTERVAL, rangingMeasuresType,
-                TEST_MAC_ADDRESS_MODE, noOfRangingMeasures, uwbTwoWayMeasurements, rawNtfData);
+                TEST_MAC_ADDRESS_MODE, noOfRangingMeasures, uwbTwoWayMeasurements,
+                TEST_RAW_NTF_DATA);
 
         assertThat(mUwbRangingData.getSequenceCounter()).isEqualTo(TEST_SEQ_COUNTER);
         assertThat(mUwbRangingData.getSessionId()).isEqualTo(TEST_SESSION_ID);
@@ -99,7 +100,7 @@ public class UwbRangingDataTest {
         assertThat(mUwbRangingData.getRangingMeasuresType()).isEqualTo(rangingMeasuresType);
         assertThat(mUwbRangingData.getMacAddressMode()).isEqualTo(TEST_MAC_ADDRESS_MODE);
         assertThat(mUwbRangingData.getNoOfRangingMeasures()).isEqualTo(1);
-        assertThat(mUwbRangingData.getRawNtfData()).isEqualTo(rawNtfData);
+        assertThat(mUwbRangingData.getRawNtfData()).isEqualTo(TEST_RAW_NTF_DATA);
 
         final String testString = "UwbRangingData { "
                 + " SeqCounter = " + TEST_SEQ_COUNTER
@@ -110,7 +111,7 @@ public class UwbRangingDataTest {
                 + ", MacAddressMode = " + TEST_MAC_ADDRESS_MODE
                 + ", NoOfRangingMeasures = " + noOfRangingMeasures
                 + ", RangingTwoWayMeasures = " + Arrays.toString(uwbTwoWayMeasurements)
-                + ", RawNotificationData = " + Arrays.toString(rawNtfData)
+                + ", RawNotificationData = " + Arrays.toString(TEST_RAW_NTF_DATA)
                 + '}';
 
         assertThat(mUwbRangingData.toString()).isEqualTo(testString);
@@ -126,7 +127,8 @@ public class UwbRangingDataTest {
         final int rangingMeasuresType = RANGING_MEASUREMENT_TYPE_OWR_AOA;
         mUwbRangingData = new UwbRangingData(TEST_SEQ_COUNTER, TEST_SESSION_ID,
                 TEST_RCR_INDICATION, TEST_CURR_RANGING_INTERVAL, rangingMeasuresType,
-                TEST_MAC_ADDRESS_MODE, noOfRangingMeasures, uwbOwrAoaMeasurement);
+                TEST_MAC_ADDRESS_MODE, noOfRangingMeasures, uwbOwrAoaMeasurement,
+                TEST_RAW_NTF_DATA);
 
         assertThat(mUwbRangingData.getSequenceCounter()).isEqualTo(TEST_SEQ_COUNTER);
         assertThat(mUwbRangingData.getSessionId()).isEqualTo(TEST_SESSION_ID);
@@ -135,6 +137,7 @@ public class UwbRangingDataTest {
         assertThat(mUwbRangingData.getRangingMeasuresType()).isEqualTo(rangingMeasuresType);
         assertThat(mUwbRangingData.getMacAddressMode()).isEqualTo(TEST_MAC_ADDRESS_MODE);
         assertThat(mUwbRangingData.getNoOfRangingMeasures()).isEqualTo(1);
+        assertThat(mUwbRangingData.getRawNtfData()).isEqualTo(TEST_RAW_NTF_DATA);
 
         final String testString = "UwbRangingData { "
                 + " SeqCounter = " + TEST_SEQ_COUNTER
@@ -145,6 +148,7 @@ public class UwbRangingDataTest {
                 + ", MacAddressMode = " + TEST_MAC_ADDRESS_MODE
                 + ", NoOfRangingMeasures = " + noOfRangingMeasures
                 + ", RangingOwrAoaMeasure = " + uwbOwrAoaMeasurement.toString()
+                + ", RawNotificationData = " + Arrays.toString(TEST_RAW_NTF_DATA)
                 + '}';
 
         assertThat(mUwbRangingData.toString()).isEqualTo(testString);
