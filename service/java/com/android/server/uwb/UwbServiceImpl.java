@@ -278,10 +278,9 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
 
     @Override
     public void sendData(SessionHandle sessionHandle, UwbAddress remoteDeviceAddress,
-            PersistableBundle params, byte[] data) {
+            PersistableBundle params, byte[] data) throws RemoteException {
         enforceUwbPrivilegedPermission();
-        // TODO(b/200678461): Implement this.
-        throw new IllegalStateException("Not implemented");
+        mUwbServiceCore.sendData(sessionHandle, remoteDeviceAddress, params, data);
     }
 
     @Override

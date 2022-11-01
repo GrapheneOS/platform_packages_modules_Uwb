@@ -1796,10 +1796,10 @@ static JNINativeMethod gMethods[] = {
     {"nativeSessionInit", "(IB)B", (void *)uwbNativeManager_sessionInit},
     {"nativeSessionDeInit", "(I)B", (void *)uwbNativeManager_sessionDeInit},
     {"nativeSetAppConfigurations",
-      "(III[B)Lcom/android/server/uwb/data/UwbConfigStatusData;",
+     "(III[B)Lcom/android/server/uwb/data/UwbConfigStatusData;",
      (void *)uwbNativeManager_setAppConfigurations},
     {"nativeGetAppConfigurations",
-      "(III[B)Lcom/android/server/uwb/data/UwbTlvData;",
+     "(III[B)Lcom/android/server/uwb/data/UwbTlvData;",
      (void *)uwbNativeManager_getAppConfigurations},
     {"nativeRangingStart", "(I)B", (void *)uwbNativeManager_startRanging},
     {"nativeRangingStop", "(I)B", (void *)uwbNativeManager_stopRanging},
@@ -1808,10 +1808,12 @@ static JNINativeMethod gMethods[] = {
     {"nativeControllerMulticastListUpdate", "(IBB[S[I)B",
      (void *)uwbNativeManager_ControllerMulticastListUpdate},
     {"nativeSetCountryCode", "([B)B", (void *)uwbNativeManager_SetCountryCode},
-    {"nativeSendRawVendorCmd", "(II[B)Lcom/android/server/uwb/data/UwbVendorUciResponse;",
-    (void*)uwbNativeManager_sendRawUci},
+    {"nativeSendData", "(I[BBI[B)B", (void *)uwbManager_sendData},
+    {"nativeSendRawVendorCmd",
+     "(II[B)Lcom/android/server/uwb/data/UwbVendorUciResponse;",
+     (void *)uwbNativeManager_sendRawUci},
     {"nativeEnableConformanceTest", "(Z)B",
-     (void*)uwbNativeManager_enableConformanceTest},
+     (void *)uwbNativeManager_enableConformanceTest},
     {"nativeGetMaxSessionNumber", "()I",
      (void *)uwbNativeManager_getMaxSessionNumber},
     {"nativeResetDevice", "(B)B", (void *)uwbNativeManager_resetDevice},
@@ -1819,8 +1821,7 @@ static JNINativeMethod gMethods[] = {
      "()Lcom/android/server/uwb/info/UwbSpecificationInfo;",
      (void *)uwbNativeManager_getSpecificationInfo},
     {"nativeGetCapsInfo", "()Lcom/android/server/uwb/data/UwbTlvData;",
-     (void*)uwbNativeManager_GetDeviceCapebilityParams}
-};
+     (void *)uwbNativeManager_GetDeviceCapebilityParams}};
 
 /*******************************************************************************
 **

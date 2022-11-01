@@ -118,7 +118,11 @@ public class UwbUciConstants {
     public static final int RANGING_DEVICE_ROLE_INITIATOR =
             FiraParams.RANGING_DEVICE_ROLE_INITIATOR;
 
+    /**
+     * Table 22: Ranging Data Notification
+     */
     public static final byte RANGING_MEASUREMENT_TYPE_TWO_WAY = 0X01;
+    public static final byte RANGING_MEASUREMENT_TYPE_OWR_AOA = 0x03;
 
     /**
      * Table 32: Status Codes
@@ -176,6 +180,9 @@ public class UwbUciConstants {
     public static final int STATUS_CODE_CCC_SE_BUSY = STATUS_ERROR_CCC_SE_BUSY;
     public static final int STATUS_CODE_CCC_LIFECYCLE = STATUS_ERROR_CCC_LIFECYCLE;
 
+    /* UWB Device Extended Mac address length */
+    public static final int UWB_DEVICE_EXT_MAC_ADDRESS_LEN = 8;
+
     /* UWB Data Session Specific Status Codes */
     public static final int STATUS_CODE_DATA_MAX_TX_APDU_SIZE_EXCEEDED = 0x30;
     public static final int STATUS_CODE_DATA_RX_CRC_ERROR = 0x31;
@@ -183,4 +190,11 @@ public class UwbUciConstants {
     /* UWB STS Mode Codes */
     public static final int STS_MODE_STATIC = 0x00;
     public static final int STS_MODE_DYNAMIC = 0x01;
+
+    /**
+     * UWB LL Spec Table 3: Endpoints field
+     */
+    public static final byte UWB_DESTINATION_END_POINT_UWBS = 0x00;
+    public static final byte UWB_DESTINATION_END_POINT_HOST = 0x01;
+    public static final byte UWB_DESTINATION_END_POINT_SECURE_ELEMENT = 0x02;
 }

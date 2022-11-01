@@ -57,6 +57,34 @@ public class DataTypeConversionUtilTest {
     }
 
     @Test
+    public void byteArrayToI16_success() {
+        assertThat(DataTypeConversionUtil.byteArrayToI16(new byte[]{0x01, 0x02}))
+                .isEqualTo((short) 0x0102);
+    }
+
+    // Test Big-Endian behavior of the conversion.
+    @Test
+    public void byteArrayToI16_highByte_success() {
+        assertThat(
+                DataTypeConversionUtil.byteArrayToI16(new byte[]{(byte) 0xFF, (byte) 0xA5}))
+                .isEqualTo((short) 0xFFA5);
+    }
+
+    @Test
+    public void byteArrayToI16_shortArray_Failure() {
+        assertThrows(
+                NumberFormatException.class,
+                () -> DataTypeConversionUtil.byteArrayToI16(new byte[]{0x01}));
+    }
+
+    @Test
+    public void byteArrayToI16_longArray_failure() {
+        assertThrows(
+                NumberFormatException.class,
+                () -> DataTypeConversionUtil.byteArrayToI16(new byte[]{0x01, 0x02, 0x03}));
+    }
+
+    @Test
     public void i32ToByteArray_success() {
         assertThat(DataTypeConversionUtil.i32ToByteArray(0x01020304))
                 .isEqualTo(new byte[] { (byte) 0x01, (byte) 0x02, (byte) 0x03, (byte) 0x04 });
