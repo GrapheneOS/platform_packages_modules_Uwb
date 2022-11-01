@@ -121,6 +121,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             "help",
             "status",
             "get-country-code",
+            "get-log-mode",
             "enable-uwb",
             "disable-uwb",
             "start-fira-ranging-session",
@@ -176,6 +177,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
     private final UwbServiceImpl mUwbService;
     private final UwbServiceCore mUwbServiceCore;
     private final UwbCountryCode mUwbCountryCode;
+    private final UciLogModeStore mUciLogModeStore;
     private final NativeUwbManager mNativeUwbManager;
     private final UwbDiagnostics mUwbDiagnostics;
     private final DeviceConfigFacade mDeviceConfig;
@@ -186,6 +188,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         mUwbService = uwbService;
         mContext = context;
         mUwbCountryCode = uwbInjector.getUwbCountryCode();
+        mUciLogModeStore = uwbInjector.getUciLogModeStore();
         mNativeUwbManager = uwbInjector.getNativeUwbManager();
         mUwbServiceCore = uwbInjector.getUwbServiceCore();
         mUwbDiagnostics = uwbInjector.getUwbDiagnostics();
@@ -855,6 +858,20 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 case "get-country-code":
                     pw.println("Uwb Country Code = " + mUwbCountryCode.getCountryCode());
                     return 0;
+                case "set-log-mode": {
+                    String logMode = getNextArgRequired();
+                    if (!UciLogModeStore.isValid(logMode)) {
+                        pw.println("Invalid argument: Log mode must be one of the following:"
+                                + " Disabled, Filtered, or Unfiltered. But got log mode " + logMode
+                                + " instead");
+                        return -1;
+                    }
+                    mUciLogModeStore.storeMode(logMode);
+                    return 0;
+                }
+                case "get-log-mode":
+                    pw.println("UWB Log Mode = " + mUciLogModeStore.getMode());
+                    return 0;
                 case "status":
                     printStatus(pw);
                     return 0;
@@ -993,6 +1010,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         pw.println("    Gets status of UWB stack");
         pw.println("  get-country-code");
         pw.println("    Gets country code as a two-letter string");
+        pw.println("  get-log-mode");
+        pw.println("    Get the log mode for UCI packet capturing");
         pw.println("  enable-uwb");
         pw.println("    Toggle UWB on");
         pw.println("  disable-uwb");
@@ -1068,6 +1087,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         pw.println("    Sets country code to <two-letter code> or left for normal value");
         pw.println("  get-power-stats");
         pw.println("    Get power stats");
+        pw.println("  set-log-mode disabled|filtered|unfiltered");
+        pw.println("    Sets the log mode for UCI packet capturing");
     }
 
     @Override
