@@ -141,9 +141,14 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         mUwbInjector = uwbInjector;
 
         mChipIdToStateMap = new HashMap<>();
-        for (String chipId : mUwbInjector.getMultichipData().getChipIds()) {
-            updateState(AdapterStateCallback.STATE_DISABLED, StateChangeReason.SYSTEM_BOOT, chipId);
-        }
+        mUwbInjector.getMultichipData().setOnInitializedListener(
+                () -> {
+                    for (String chipId : mUwbInjector.getMultichipData().getChipIds()) {
+                        updateState(AdapterStateCallback.STATE_DISABLED,
+                                StateChangeReason.SYSTEM_BOOT,
+                                chipId);
+                    }
+                });
 
         mEnableDisableTask = new EnableDisableTask(serviceLooper);
         mHandler = new Handler(serviceLooper);
@@ -512,6 +517,10 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
 
     public /* @UwbManager.AdapterStateCallback.State */ int getAdapterState() {
         synchronized (UwbServiceCore.this) {
+            if (mChipIdToStateMap.isEmpty()) {
+                return AdapterStateCallback.STATE_DISABLED;
+            }
+
             boolean isActive = false;
             for (int state : mChipIdToStateMap.values()) {
                 if (state == AdapterStateCallback.STATE_DISABLED) {
