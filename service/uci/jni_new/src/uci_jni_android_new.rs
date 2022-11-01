@@ -98,6 +98,20 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGe
     5
 }
 
+/// get mutable reference to Dispatcher.
+///
+/// # Safety
+/// Must be called from a Java object holding a valid or null mDispatcherPointer, and remains valid
+/// until env and obj goes out of scope.
+unsafe fn get_dispatcher<'a>(env: JNIEnv<'a>, obj: JObject<'a>) -> Result<&'a mut Dispatcher> {
+    let dispatcher_ptr_value = env.get_field(obj, "mDispatcherPointer", "J")?.j()?;
+    if dispatcher_ptr_value == 0 {
+        return Err(Error::UwbCoreError(UwbCoreError::BadParameters));
+    }
+    let dispatcher_ptr = dispatcher_ptr_value as *mut Dispatcher;
+    Ok(&mut *dispatcher_ptr)
+}
+
 /// get mutable reference to UciManagerSync with chip_id.
 ///
 /// # Safety
@@ -108,13 +122,10 @@ unsafe fn get_uci_manager<'a>(
     obj: JObject<'a>,
     chip_id: JString,
 ) -> Result<&'a mut UciManagerSync> {
-    let dispatcher_ptr_value = env.get_field(obj, "mDispatcherPointer", "J")?.j()?;
-    if dispatcher_ptr_value == 0 {
-        return Err(Error::UwbCoreError(UwbCoreError::BadParameters));
-    }
+    // Safety: get_dispatcher and get_uci_manager has the same assumption.
+    let dispatcher_ref = get_dispatcher(env, obj)?;
     let chip_id_str = String::from(env.get_string(chip_id)?);
-    let dispatcher_ptr = dispatcher_ptr_value as *mut Dispatcher;
-    match (*dispatcher_ptr).manager_map.get_mut(&chip_id_str) {
+    match dispatcher_ref.manager_map.get_mut(&chip_id_str) {
         Some(m) => Ok(m),
         None => Err(Error::UwbCoreError(UwbCoreError::BadParameters)),
     }
@@ -657,6 +668,27 @@ fn native_set_country_code(
                 .ok_or(Error::UwbCoreError(UwbCoreError::BadParameters))?,
         )
         .map_err(|e| e.into())
+}
+
+/// Set log mode.
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSetLogMode(
+    env: JNIEnv,
+    obj: JObject,
+    log_mode_jstring: JString,
+) -> jboolean {
+    debug!("{}: enter", function_name!());
+    boolean_result_helper(native_set_log_mode(env, obj, log_mode_jstring), function_name!())
+}
+
+fn native_set_log_mode(env: JNIEnv, obj: JObject, log_mode_jstring: JString) -> Result<()> {
+    // Safety: Java side owns Dispatcher by pointer, and borrows to this function until it goes
+    // out of scope.
+    let dispatcher = unsafe { get_dispatcher(env, obj) }?;
+    let logger_mode_str = String::from(env.get_string(log_mode_jstring)?);
+    debug!("UCI log: log started in {} mode", &logger_mode_str);
+    let logger_mode = logger_mode_str.try_into()?;
+    dispatcher.set_logger_mode(logger_mode).map_err(|e| e.into())
 }
 
 fn create_vendor_response(msg: RawVendorMessage, env: JNIEnv) -> Result<jobject> {

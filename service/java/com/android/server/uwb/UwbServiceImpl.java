@@ -82,6 +82,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
         mUwbSettingsStore.initialize();
         mUwbInjector.getMultichipData().initialize();
         mUwbInjector.getUwbCountryCode().initialize();
+        mUwbInjector.getUciLogModeStore().initialize();
         // Initialize the UCI stack at bootup.
         mUwbServiceCore.setEnabled(isUwbEnabled());
     }
