@@ -98,8 +98,8 @@ pub extern "system" fn Java_com_android_server_uwb_indev_UwbServiceCore_nativeUw
         }
     };
     let uci_logger_factory = match PcapngUciLoggerFactoryBuilder::new()
-        .log_path("/data/misc/apexdata/com.android.uwb/log")
-        .filename_prefix("uwb_uci")
+        .log_path("/data/misc/apexdata/com.android.uwb/log".into())
+        .filename_prefix("uwb_uci".to_owned())
         .runtime_handle(runtime.handle().to_owned())
         .build()
     {
