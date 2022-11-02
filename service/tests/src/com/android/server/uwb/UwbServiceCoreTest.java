@@ -583,6 +583,35 @@ public class UwbServiceCoreTest {
     }
 
     @Test
+    public void testSendData_success() throws Exception {
+        enableUwbWithCountryCode();
+
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+        UwbAddress uwbAddress = UwbAddress.fromBytes(new byte[] {15, 27});
+        PersistableBundle params = mock(PersistableBundle.class);
+        byte[] data = new byte[] {1, 3, 5, 7, 11, 13};
+
+        mUwbServiceCore.sendData(sessionHandle, uwbAddress, params, data);
+        verify(mUwbSessionManager).sendData(
+                eq(sessionHandle), eq(uwbAddress), eq(params), eq(data));
+    }
+
+    @Test
+    public void testSendData_whenUwbIsDisabled() throws Exception {
+        disableUwb();
+
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+        UwbAddress uwbAddress = UwbAddress.fromBytes(new byte[] {15, 27});
+        PersistableBundle params = mock(PersistableBundle.class);
+        byte[] data = new byte[] {1, 3, 5, 7, 11, 13};
+
+        try {
+            mUwbServiceCore.sendData(sessionHandle, uwbAddress, params, data);
+            fail();
+        } catch (IllegalStateException e) { }
+    }
+
+    @Test
     public void testAddControlee() throws Exception {
         enableUwbWithCountryCode();
 
