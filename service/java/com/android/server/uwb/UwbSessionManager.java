@@ -17,8 +17,11 @@ package com.android.server.uwb;
 
 import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE;
 
+import static com.android.server.uwb.data.UwbUciConstants.RANGING_DEVICE_ROLE_OBSERVER;
 import static com.android.server.uwb.data.UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS;
+import static com.android.server.uwb.data.UwbUciConstants.ROUND_USAGE_OWR_AOA_MEASUREMENT;
 import static com.android.server.uwb.data.UwbUciConstants.UWB_DEVICE_EXT_MAC_ADDRESS_LEN;
+import static com.android.server.uwb.data.UwbUciConstants.UWB_SESSION_STATE_ACTIVE;
 
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE;
@@ -556,9 +559,15 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             return;
         }
 
+        if (!isValidUwbSessionForOwrAoaRanging(uwbSession)) {
+            return;
+        }
+
+        // Record the OWR Aoa Measurement from the RANGE_DATA_NTF.
         UwbOwrAoaMeasurement uwbOwrAoaMeasurement = rangingData.getRangingOwrAoaMeasure();
         mAdvertiseManager.updateAdvertiseTarget(uwbOwrAoaMeasurement);
 
+        // Get any application payload data received in this OWR AOA ranging session and notify it.
         byte[] macAddress = uwbOwrAoaMeasurement.getMacAddress();
         ReceivedDataInfo receivedDataInfo = getReceivedDataInfo(macAddress);
         if (receivedDataInfo == null) {
@@ -1251,6 +1260,14 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             FutureTask<Integer> sendDataTask = new FutureTask<>((Callable<Integer>) () -> {
                 int sendDataStatus = UwbUciConstants.STATUS_CODE_FAILED;
                 synchronized (uwbSession.getWaitObj()) {
+                    if (!isValidUwbSessionForApplicationDataTransfer(uwbSession)) {
+                        sendDataStatus = UwbUciConstants.STATUS_CODE_FAILED;
+                        Log.i(TAG, "UwbSession not in active state");
+                        mSessionNotificationManager.onDataSendFailed(
+                                uwbSession, sendDataInfo.remoteDeviceAddress, sendDataStatus,
+                                sendDataInfo.params);
+                        return sendDataStatus;
+                    }
                     if (!isValidSendDataInfo(sendDataInfo)) {
                         sendDataStatus = UwbUciConstants.STATUS_CODE_INVALID_PARAM;
                         mSessionNotificationManager.onDataSendFailed(
@@ -1294,6 +1311,27 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 e.printStackTrace();
             }
         }
+    }
+
+    private boolean isValidUwbSessionForOwrAoaRanging(UwbSession uwbSession) {
+        Params params = uwbSession.getParams();
+        if (params instanceof FiraOpenSessionParams) {
+            FiraOpenSessionParams firaParams = (FiraOpenSessionParams) params;
+            if (firaParams.getRangingRoundUsage() != ROUND_USAGE_OWR_AOA_MEASUREMENT) {
+                return false;
+            }
+            if (firaParams.getDeviceRole() != RANGING_DEVICE_ROLE_OBSERVER) {
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isValidUwbSessionForApplicationDataTransfer(UwbSession uwbSession) {
+        // The session state must be SESSION_STATE_ACTIVE, as that's required to transmit or receive
+        // application data.
+        return uwbSession != null && uwbSession.getSessionState() == UWB_SESSION_STATE_ACTIVE;
     }
 
     private boolean isValidSendDataInfo(SendDataInfo sendDataInfo) {
