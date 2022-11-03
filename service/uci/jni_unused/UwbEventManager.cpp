@@ -203,7 +203,7 @@ void UwbEventManager::onRangeDataNotificationReceived(
         (int)ranging_ntf_data->no_of_measurements, rangeOwrAoaMeasures);
   }
 
-  if (mOnRangeDataNotificationReceived != NULL) {
+  if ((mOnRangeDataNotificationReceived != NULL) && (rangeDataObject != NULL)) {
     env->CallVoidMethod(mObject, mOnRangeDataNotificationReceived,
                         rangeDataObject);
     if (env->ExceptionCheck()) {
