@@ -60,7 +60,8 @@ public class FiraEncoder extends TlvEncoder {
         for (UwbAddress address : params.getDestAddressList()) {
             dstAddressList.put(TlvUtil.getReverseBytes(address.toBytes()));
         }
-
+        int stsConfig = params.getStsConfig();
+        int deviceType = params.getDeviceType();
         int resultReportConfig = getResultReportConfig(params);
         int rangingRoundControl = getRangingRoundControl(params);
 
@@ -115,17 +116,32 @@ public class FiraEncoder extends TlvEncoder {
                 .putByte(ConfigParam.RESULT_REPORT_CONFIG, (byte) resultReportConfig)
                 .putByte(ConfigParam.IN_BAND_TERMINATION_ATTEMPT_COUNT,
                         (byte) params.getInBandTerminationAttemptCount())
-                .putInt(ConfigParam.SUB_SESSION_ID, params.getSubSessionId())
-                .putByte(ConfigParam.BPRF_PHR_DATA_RATE, (byte) params.getBprfPhrDataRate())
-                .putByte(ConfigParam.STS_LENGTH, (byte) params.getStsLength())
-                .putByteArray(ConfigParam.SESSION_KEY, params.getSessionKey())
-                .putByteArray(ConfigParam.SUBSESSION_KEY, params.getSubsessionKey())
-                .putByte(ConfigParam.NUM_RANGE_MEASUREMENTS,
-                        (byte) params.getNumOfMsrmtFocusOnRange())
-                .putByte(ConfigParam.NUM_AOA_AZIMUTH_MEASUREMENTS,
-                        (byte) params.getNumOfMsrmtFocusOnAoaAzimuth())
-                .putByte(ConfigParam.NUM_AOA_ELEVATION_MEASUREMENTS,
-                        (byte) params.getNumOfMsrmtFocusOnAoaElevation());
+                .putByte(ConfigParam.BPRF_PHR_DATA_RATE,
+                        (byte) params.getBprfPhrDataRate())
+                .putByte(ConfigParam.STS_LENGTH, (byte) params.getStsLength());
+        if ((stsConfig == FiraParams.STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY)
+                && (deviceType == FiraParams.RANGING_DEVICE_TYPE_CONTROLEE)) {
+            tlvBufferBuilder.putInt(ConfigParam.SUB_SESSION_ID, params.getSubSessionId());
+        }
+        if ((stsConfig == FiraParams.STS_CONFIG_PROVISIONED)
+                || (stsConfig
+                == FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY)) {
+            tlvBufferBuilder.putByteArray(ConfigParam.SESSION_KEY, params.getSessionKey());
+            if (stsConfig
+                    == FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
+                tlvBufferBuilder.putByteArray(ConfigParam.SUBSESSION_KEY,
+                        params.getSubsessionKey());
+            }
+        }
+        if (params.getAoaResultRequest()
+                == FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_INTERLEAVED) {
+            tlvBufferBuilder.putByte(ConfigParam.NUM_RANGE_MEASUREMENTS,
+                            (byte) params.getNumOfMsrmtFocusOnRange())
+                    .putByte(ConfigParam.NUM_AOA_AZIMUTH_MEASUREMENTS,
+                            (byte) params.getNumOfMsrmtFocusOnAoaAzimuth())
+                    .putByte(ConfigParam.NUM_AOA_ELEVATION_MEASUREMENTS,
+                            (byte) params.getNumOfMsrmtFocusOnAoaElevation());
+        }
         if (hasAoaBoundInRangeDataNfConfig(params.getRangeDataNtfConfig())) {
             tlvBufferBuilder.putByteArray(ConfigParam.RANGE_DATA_NTF_AOA_BOUND, new byte[]{
                     // TODO (b/235355249): Verify this conversion. This is using AOA value
