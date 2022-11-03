@@ -55,7 +55,7 @@ public class FiraOpenSessionParams extends FiraParams {
     // Dest address list
     private final List<UwbAddress> mDestAddressList;
 
-    private final int mInitiationTimeMs;
+    private final long mInitiationTimeMs;
     private final int mSlotDurationRstu;
     private final int mSlotsPerRangingRound;
     private final int mRangingIntervalMs;
@@ -213,7 +213,7 @@ public class FiraOpenSessionParams extends FiraParams {
             @MultiNodeMode int multiNodeMode,
             UwbAddress deviceAddress,
             List<UwbAddress> destAddressList,
-            int initiationTimeMs,
+            long initiationTimeMs,
             int slotDurationRstu,
             int slotsPerRangingRound,
             int rangingIntervalMs,
@@ -366,7 +366,7 @@ public class FiraOpenSessionParams extends FiraParams {
         return Collections.unmodifiableList(mDestAddressList);
     }
 
-    public int getInitiationTimeMs() {
+    public long getInitiationTimeMs() {
         return mInitiationTimeMs;
     }
 
@@ -646,7 +646,7 @@ public class FiraOpenSessionParams extends FiraParams {
         }
         bundle.putLongArray(KEY_DEST_ADDRESS_LIST, destAddressList);
 
-        bundle.putInt(KEY_INITIATION_TIME_MS, mInitiationTimeMs);
+        bundle.putLong(KEY_INITIATION_TIME_MS, mInitiationTimeMs);
         bundle.putInt(KEY_SLOT_DURATION_RSTU, mSlotDurationRstu);
         bundle.putInt(KEY_SLOTS_PER_RANGING_ROUND, mSlotsPerRangingRound);
         bundle.putInt(KEY_RANGING_INTERVAL_MS, mRangingIntervalMs);
@@ -751,7 +751,10 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setMultiNodeMode(bundle.getInt(KEY_MULTI_NODE_MODE))
                 .setDeviceAddress(deviceAddress)
                 .setDestAddressList(destAddressList)
-                .setInitiationTimeMs(bundle.getInt(KEY_INITIATION_TIME_MS))
+                // Changed from int to long. Look for int value, if long value not found to
+                // maintain backwards compatibility.
+                .setInitiationTimeMs(bundle.getLong(
+                        KEY_INITIATION_TIME_MS, bundle.getInt(KEY_INITIATION_TIME_MS)))
                 .setSlotDurationRstu(bundle.getInt(KEY_SLOT_DURATION_RSTU))
                 .setSlotsPerRangingRound(bundle.getInt(KEY_SLOTS_PER_RANGING_ROUND))
                 .setRangingIntervalMs(bundle.getInt(KEY_RANGING_INTERVAL_MS))
@@ -844,7 +847,7 @@ public class FiraOpenSessionParams extends FiraParams {
         private List<UwbAddress> mDestAddressList = null;
 
         /** UCI spec default: 0ms */
-        private int mInitiationTimeMs = 0;
+        private long mInitiationTimeMs = 0;
 
         /** UCI spec default: 2400 RSTU (2 ms). */
         private int mSlotDurationRstu = 2400;
@@ -1175,7 +1178,7 @@ public class FiraOpenSessionParams extends FiraParams {
             return this;
         }
 
-        public FiraOpenSessionParams.Builder setInitiationTimeMs(int initiationTimeMs) {
+        public FiraOpenSessionParams.Builder setInitiationTimeMs(long initiationTimeMs) {
             mInitiationTimeMs = initiationTimeMs;
             return this;
         }
