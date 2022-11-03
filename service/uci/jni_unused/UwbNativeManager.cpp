@@ -800,9 +800,10 @@ bool UwbDeviceReset(uint8_t resetConfig) {
 ** Returns:         True if UWB device initialization is success.
 **
 *******************************************************************************/
-jboolean uwbNativeManager_doInitialize(JNIEnv *env, jobject o) {
+jboolean uwbNativeManager_doInitialize(JNIEnv *env, jobject o, jstring string) {
   static const char fn[] = "uwbNativeManager_doInitialize";
   UNUSED(fn);
+  UNUSED(string);
   tUWA_STATUS status;
   uint8_t resetConfig = 0;
   JNI_TRACE_I("%s: enter", fn);
@@ -897,9 +898,11 @@ end:
 ** Returns:         True if UWB device De-initialization is success.
 **
 *******************************************************************************/
-jboolean uwbNativeManager_doDeinitialize(JNIEnv *env, jobject obj) {
+jboolean uwbNativeManager_doDeinitialize(JNIEnv *env, jobject obj,
+                                         jstring string) {
   static const char fn[] = "uwbNativeManager_doDeinitialize";
   UNUSED(fn);
+  UNUSED(string);
   tUWA_STATUS status;
   JNI_TRACE_I("%s: Enter", fn);
   UwbAdaptation &theInstance = UwbAdaptation::GetInstance();
@@ -1111,9 +1114,10 @@ jbyte uwbNativeManager_deviceReset(JNIEnv *env, jobject obj,
 **
 *******************************************************************************/
 jbyte uwbNativeManager_sessionInit(JNIEnv *env, jobject o, jint sessionId,
-                                   jbyte sessionType) {
+                                   jbyte sessionType, jstring string) {
   static const char fn[] = "uwbNativeManager_sessionInit";
   UNUSED(fn);
+  UNUSED(string);
   tUWA_STATUS status = UWA_STATUS_FAILED;
   JNI_TRACE_I("%s: Enter", fn);
   if (!gIsUwaEnabled) {
@@ -1147,9 +1151,11 @@ jbyte uwbNativeManager_sessionInit(JNIEnv *env, jobject o, jint sessionId,
 ** Returns:         If Success UWA_STATUS_OK  else UWA_STATUS_FAILED
 **
 *******************************************************************************/
-jbyte uwbNativeManager_sessionDeInit(JNIEnv *env, jobject o, jint sessionId) {
+jbyte uwbNativeManager_sessionDeInit(JNIEnv *env, jobject o, jint sessionId,
+                                     jstring string) {
   static const char fn[] = "uwbNativeManager_sessionDeInit";
   UNUSED(fn);
+  UNUSED(string);
   tUWA_STATUS status = UWA_STATUS_FAILED;
   JNI_TRACE_I("%s: Enter", fn);
   if (!gIsUwaEnabled) {
@@ -1189,12 +1195,13 @@ jbyte uwbNativeManager_sessionDeInit(JNIEnv *env, jobject o, jint sessionId) {
 **
 *******************************************************************************/
 jobject uwbNativeManager_setAppConfigurations(JNIEnv *env, jobject o,
-                                                 jint sessionId,
-                                                 jint noOfParams,
-                                                 jint appConfigLen,
-                                                 jbyteArray AppConfig) {
+                                              jint sessionId, jint noOfParams,
+                                              jint appConfigLen,
+                                              jbyteArray AppConfig,
+                                              jstring string) {
   static const char fn[] = "uwbNativeManager_setAppConfigurations";
   UNUSED(fn);
+  UNUSED(string);
   uint8_t *appConfigData = NULL;
   tUWA_STATUS status = UWA_STATUS_FAILED;
   JNI_TRACE_I("%s: Enter", fn);
@@ -1251,11 +1258,11 @@ jobject uwbNativeManager_setAppConfigurations(JNIEnv *env, jobject o,
 ** Returns:         Returns byte array for raw uci rsp
 **
 *******************************************************************************/
-jobject uwbNativeManager_sendRawUci(JNIEnv *env, jobject o,
-                                       jint gid, jint oid,
-                                       jbyteArray rawUci) {
+jobject uwbNativeManager_sendRawUci(JNIEnv *env, jobject o, jint gid, jint oid,
+                                    jbyteArray rawUci, jstring string) {
   static const char fn[] = "uwbNativeManager_sendRawUci";
   UNUSED(fn);
+  UNUSED(string);
   JNI_TRACE_I("%s: enter; ", fn);
   uint8_t *cmd = NULL;
   tUWA_STATUS status = UWA_STATUS_FAILED;
@@ -1301,7 +1308,6 @@ jobject uwbNativeManager_sendRawUci(JNIEnv *env, jobject o,
   } else {
      return env->NewObject(resDataClass, constructor, status, gid, oid, NULL);
   }
-
 }
 
 /*******************************************************************************
@@ -1321,12 +1327,13 @@ jobject uwbNativeManager_sendRawUci(JNIEnv *env, jobject o,
 **
 *******************************************************************************/
 jobject uwbNativeManager_getAppConfigurations(JNIEnv *env, jobject o,
-                                                 jint sessionId,
-                                                 jint noOfParams,
-                                                 jint appConfigLen,
-                                                 jbyteArray AppConfig) {
+                                              jint sessionId, jint noOfParams,
+                                              jint appConfigLen,
+                                              jbyteArray AppConfig,
+                                              jstring string) {
   static const char fn[] = "uwbNativeManager_getAppConfigurations";
   UNUSED(fn);
+  UNUSED(string);
   tUWA_STATUS status;
   uint8_t *appConfigData = NULL;
   JNI_TRACE_I("%s: Enter", fn);
@@ -1390,9 +1397,11 @@ jobject uwbNativeManager_getAppConfigurations(JNIEnv *env, jobject o,
 ** Returns:         If Success UWA_STATUS_OK  else UWA_STATUS_FAILED
 **
 *******************************************************************************/
-jbyte uwbNativeManager_startRanging(JNIEnv *env, jobject obj, jint sessionId) {
+jbyte uwbNativeManager_startRanging(JNIEnv *env, jobject obj, jint sessionId,
+                                    jstring string) {
   static const char fn[] = "uwbNativeManager_startRanging";
   UNUSED(fn);
+  UNUSED(string);
   tUWA_STATUS status = UWA_STATUS_FAILED;
   JNI_TRACE_I("%s: enter", fn);
 
@@ -1424,9 +1433,11 @@ jbyte uwbNativeManager_startRanging(JNIEnv *env, jobject obj, jint sessionId) {
 ** Returns:         UWA_STATUS_OK if ranging session stop is success.
 **
 *******************************************************************************/
-jbyte uwbNativeManager_stopRanging(JNIEnv *env, jobject obj, jint sessionId) {
+jbyte uwbNativeManager_stopRanging(JNIEnv *env, jobject obj, jint sessionId,
+                                   jstring string) {
   static const char fn[] = "uwbNativeManager_stopRanging";
   UNUSED(fn);
+  UNUSED(string);
   tUWA_STATUS status = UWA_STATUS_FAILED;
   JNI_TRACE_I("%s: enter", fn);
   if (!gIsUwaEnabled) {
@@ -1458,9 +1469,11 @@ jbyte uwbNativeManager_stopRanging(JNIEnv *env, jobject obj, jint sessionId) {
 ** Returns:         session count on success
 **
 *******************************************************************************/
-jbyte uwbNativeManager_getSessionCount(JNIEnv *env, jobject obj) {
+jbyte uwbNativeManager_getSessionCount(JNIEnv *env, jobject obj,
+                                       jstring string) {
   static const char fn[] = "uwbNativeManager_getSessionCount";
   UNUSED(fn);
+  UNUSED(string);
   tUWA_STATUS status;
   sSessionCount = -1;
   JNI_TRACE_I("%s: Enter", fn);
@@ -1488,9 +1501,11 @@ jint uwbNativeManager_getMaxSessionNumber(JNIEnv *env, jobject obj) {
   return 5;
 }
 
-jbyte uwbNativeManager_resetDevice(JNIEnv *env, jbyte resetConfig) {
+jbyte uwbNativeManager_resetDevice(JNIEnv *env, jbyte resetConfig,
+                                   jstring string) {
   static const char fn[] = "uwbNativeManager_resetDevice";
   UNUSED(fn);
+  UNUSED(string);
 
   return UWA_STATUS_OK;
 }
@@ -1509,10 +1524,11 @@ jbyte uwbNativeManager_resetDevice(JNIEnv *env, jbyte resetConfig) {
 **                  UWA_STATUS_FAILED.
 **
 *******************************************************************************/
-jbyte uwbNativeManager_getSessionState(JNIEnv *env, jobject obj,
-                                       jint sessionId) {
+jbyte uwbNativeManager_getSessionState(JNIEnv *env, jobject obj, jint sessionId,
+                                       jstring string) {
   static const char fn[] = "uwbNativeManager_getSessionState";
   UNUSED(fn);
+  UNUSED(string);
   tUWA_STATUS status;
   JNI_TRACE_I("%s: enter", fn);
   sSessionState = UWB_UNKNOWN_SESSION;
@@ -1550,9 +1566,10 @@ jbyte uwbNativeManager_getSessionState(JNIEnv *env, jobject obj,
 *******************************************************************************/
 jbyte uwbNativeManager_ControllerMulticastListUpdate(
     JNIEnv *env, jobject o, jint sessionId, jbyte action, jbyte noOfControlees,
-    jshortArray shortAddressList, jintArray subSessionIdList) {
+    jshortArray shortAddressList, jintArray subSessionIdList, jstring string) {
   static const char fn[] = "uwbNativeManager_ControllerMulticastListUpdate";
   UNUSED(fn);
+  UNUSED(string);
   tUWA_STATUS status = UWA_STATUS_FAILED;
   uint16_t *shortAddressArray = NULL;
   uint32_t *subSessionIdArray = NULL;
@@ -1625,8 +1642,9 @@ jbyte uwbNativeManager_ControllerMulticastListUpdate(
 **
 *******************************************************************************/
 jbyte uwbNativeManager_SetCountryCode(JNIEnv *env, jobject o,
-                                      jbyteArray countryCode) {
+                                      jbyteArray countryCode, jstring string) {
   static const char fn[] = "uwbNativeManager_SetCountryCode";
+  UNUSED(string);
   tUWA_STATUS status = UWA_STATUS_FAILED;
   uint8_t *countryCodeArray = NULL;
   JNI_TRACE_E("%s: enter; ", fn);
@@ -1721,7 +1739,9 @@ jbyte uwbNativeManager_enableConformanceTest(JNIEnv *env, jobject o,
 ** Returns:         Returns byte array
 **
 *******************************************************************************/
-jobject uwbNativeManager_GetDeviceCapebilityParams(JNIEnv* env, jobject o) {
+jobject uwbNativeManager_GetDeviceCapebilityParams(JNIEnv *env, jobject o,
+                                                   jstring chipId) {
+  UNUSED(chipId);
   JNI_TRACE_I("%s: Entry", __func__);
   tUWA_STATUS status;
 
@@ -1791,36 +1811,49 @@ jobject uwbNativeManager_GetDeviceCapebilityParams(JNIEnv* env, jobject o) {
 *****************************************************************************/
 static JNINativeMethod gMethods[] = {
     {"nativeInit", "()Z", (void *)uwbNativeManager_init},
-    {"nativeDoInitialize", "()Z", (void *)uwbNativeManager_doInitialize},
-    {"nativeDoDeinitialize", "()Z", (void *)uwbNativeManager_doDeinitialize},
-    {"nativeSessionInit", "(IB)B", (void *)uwbNativeManager_sessionInit},
-    {"nativeSessionDeInit", "(I)B", (void *)uwbNativeManager_sessionDeInit},
+    {"nativeDoInitialize", "(Ljava/lang/String;)Z",
+     (void *)uwbNativeManager_doInitialize},
+    {"nativeDoDeinitialize", "(Ljava/lang/String;)Z",
+     (void *)uwbNativeManager_doDeinitialize},
+    {"nativeSessionInit", "(IBLjava/lang/String;)B",
+     (void *)uwbNativeManager_sessionInit},
+    {"nativeSessionDeInit", "(ILjava/lang/String;)B",
+     (void *)uwbNativeManager_sessionDeInit},
     {"nativeSetAppConfigurations",
-     "(III[B)Lcom/android/server/uwb/data/UwbConfigStatusData;",
+     "(III[BLjava/lang/String;)Lcom/android/server/uwb/data/"
+     "UwbConfigStatusData;",
      (void *)uwbNativeManager_setAppConfigurations},
     {"nativeGetAppConfigurations",
-     "(III[B)Lcom/android/server/uwb/data/UwbTlvData;",
+     "(III[BLjava/lang/String;)Lcom/android/server/uwb/data/UwbTlvData;",
      (void *)uwbNativeManager_getAppConfigurations},
-    {"nativeRangingStart", "(I)B", (void *)uwbNativeManager_startRanging},
-    {"nativeRangingStop", "(I)B", (void *)uwbNativeManager_stopRanging},
-    {"nativeGetSessionCount", "()B", (void *)uwbNativeManager_getSessionCount},
-    {"nativeGetSessionState", "(I)B", (void *)uwbNativeManager_getSessionState},
-    {"nativeControllerMulticastListUpdate", "(IBB[S[I)B",
+    {"nativeRangingStart", "(ILjava/lang/String;)B",
+     (void *)uwbNativeManager_startRanging},
+    {"nativeRangingStop", "(ILjava/lang/String;)B",
+     (void *)uwbNativeManager_stopRanging},
+    {"nativeGetSessionCount", "(Ljava/lang/String;)B",
+     (void *)uwbNativeManager_getSessionCount},
+    {"nativeGetSessionState", "(ILjava/lang/String;)B",
+     (void *)uwbNativeManager_getSessionState},
+    {"nativeControllerMulticastListUpdate", "(IBB[S[ILjava/lang/String;)B",
      (void *)uwbNativeManager_ControllerMulticastListUpdate},
-    {"nativeSetCountryCode", "([B)B", (void *)uwbNativeManager_SetCountryCode},
+    {"nativeSetCountryCode", "([BLjava/lang/String;)B",
+     (void *)uwbNativeManager_SetCountryCode},
     {"nativeSendData", "(I[BBI[B)B", (void *)uwbManager_sendData},
     {"nativeSendRawVendorCmd",
-     "(II[B)Lcom/android/server/uwb/data/UwbVendorUciResponse;",
+     "(II[BLjava/lang/String;)Lcom/android/server/uwb/data/"
+     "UwbVendorUciResponse;",
      (void *)uwbNativeManager_sendRawUci},
     {"nativeEnableConformanceTest", "(Z)B",
      (void *)uwbNativeManager_enableConformanceTest},
     {"nativeGetMaxSessionNumber", "()I",
      (void *)uwbNativeManager_getMaxSessionNumber},
-    {"nativeResetDevice", "(B)B", (void *)uwbNativeManager_resetDevice},
+    {"nativeResetDevice", "(BLjava/lang/String;)B",
+     (void *)uwbNativeManager_resetDevice},
     {"nativeGetSpecificationInfo",
      "()Lcom/android/server/uwb/info/UwbSpecificationInfo;",
      (void *)uwbNativeManager_getSpecificationInfo},
-    {"nativeGetCapsInfo", "()Lcom/android/server/uwb/data/UwbTlvData;",
+    {"nativeGetCapsInfo",
+     "(Ljava/lang/String;)Lcom/android/server/uwb/data/UwbTlvData;",
      (void *)uwbNativeManager_GetDeviceCapebilityParams}};
 
 /*******************************************************************************
