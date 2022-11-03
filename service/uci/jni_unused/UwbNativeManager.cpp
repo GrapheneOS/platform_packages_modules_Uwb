@@ -620,6 +620,14 @@ static tUWA_STATUS setAppConfiguration(uint32_t session_id, uint8_t noOfParams,
   UNUSED(fn);
   tUWA_STATUS status;
   sSetAppConfigRespStatus = false;
+
+  uint16_t payloadLen = sizeof(session_id) + sizeof(noOfParams) + paramLen;
+  if (payloadLen > UCI_MAX_PAYLOAD_SIZE) {
+    JNI_TRACE_E("%s: payLoad Size exceeds the limit %d", fn,
+                UCI_MAX_PAYLOAD_SIZE);
+    return UWA_STATUS_FAILED;
+  }
+
   SyncEventGuard guard(sUwaSetAppConfigEvent);
   status = UWA_SetAppConfig(session_id, noOfParams, paramLen, appConfigParams);
   if (status == UWA_STATUS_OK) {
@@ -1344,6 +1352,12 @@ jobject uwbNativeManager_getAppConfigurations(JNIEnv *env, jobject o,
   }
 
   sGetAppConfigRespStatus = false;
+  uint16_t payloadLen = sizeof(sessionId) + sizeof(noOfParams) + appConfigLen;
+  if (payloadLen > UCI_MAX_PAYLOAD_SIZE) {
+    JNI_TRACE_E("%s: payLoad Size exceeds the limit %d", fn,
+                UCI_MAX_PAYLOAD_SIZE);
+    return NULL;
+  }
   appConfigData = (uint8_t *)malloc(sizeof(uint8_t) * appConfigLen);
   if (appConfigData != NULL) {
       memset(appConfigData, 0, (sizeof(uint8_t) * appConfigLen));
