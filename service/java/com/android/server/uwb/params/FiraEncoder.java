@@ -153,6 +153,9 @@ public class FiraEncoder extends TlvEncoder {
             tlvBufferBuilder.putInt(ConfigParam.ENABLE_DIAGRAMS_FRAME_REPORTS_FIELDS,
                     params.getDiagramsFrameReportsFieldsFlags());
         }
+        if (params.getScheduledMode() == FiraParams.CONTENTION_BASED_RANGING) {
+            tlvBufferBuilder.putByte(ConfigParam.SCHEDULED_MODE, (byte) params.getScheduledMode());
+        }
         return tlvBufferBuilder.build();
     }
 
@@ -247,6 +250,9 @@ public class FiraEncoder extends TlvEncoder {
         if (params.getMeasurementReportType()
                 == FiraParams.MEASUREMENT_REPORT_TYPE_RESPONDER_TO_INITIATOR) {
             rangingRoundControl |= 0x80;
+        }
+        if (params.getScheduledMode() == FiraParams.CONTENTION_BASED_RANGING) {
+            rangingRoundControl = 0x00;
         }
         return rangingRoundControl;
     }

@@ -213,6 +213,18 @@ public abstract class FiraParams extends Params {
     /** Unuported in Fira 1.1 */
     public static final int MULTI_NODE_MODE_MANY_TO_MANY = 2;
 
+    /** Scheduling Mode */
+    @IntDef(
+            value = {
+                CONTENTION_BASED_RANGING,
+                TIME_SCHEDULED_RANGING,
+            })
+    public @interface SchedulingMode {}
+
+    public static final int CONTENTION_BASED_RANGING = 0;
+
+    public static final int TIME_SCHEDULED_RANGING = 1;
+
     /** Measurement Report */
     @IntDef(
             value = {
