@@ -30,6 +30,7 @@ import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
 
 import com.android.server.uwb.UwbSessionManager.UwbSession;
+import com.android.server.uwb.data.UwbDlTDoAMeasurement;
 import com.android.server.uwb.data.UwbOwrAoaMeasurement;
 import com.android.server.uwb.data.UwbRangingData;
 import com.android.server.uwb.data.UwbTwoWayMeasurement;
@@ -40,6 +41,7 @@ import com.android.server.uwb.util.UwbUtil;
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccRangingReconfiguredParams;
+import com.google.uwb.support.dltdoa.DlTDoAMeasurement;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.oemextension.RangingReportMetadata;
@@ -514,6 +516,57 @@ public class UwbSessionNotificationManager {
             }
 
             rangingReportBuilder.addMeasurement(rangingMeasurementBuilder.build());
+        } else if (rangingData.getRangingMeasuresType()
+                == UwbUciConstants.RANGING_MEASUREMENT_TYPE_DL_TDOA) {
+            List<RangingMeasurement> rangingMeasurements = new ArrayList<>();
+            UwbDlTDoAMeasurement[] uwbDlTDoAMeasurements = rangingData.getUwbDlTDoAMeasurements();
+            for (int i = 0; i < rangingData.getNoOfRangingMeasures(); ++i) {
+                int rangingStatus = uwbDlTDoAMeasurements[i].getStatus();
+
+                RangingMeasurement.Builder rangingMeasurementBuilder = buildRangingMeasurement(
+                        uwbDlTDoAMeasurements[i].getMacAddress(), rangingStatus,
+                        elapsedRealtimeNanos, uwbDlTDoAMeasurements[i].getNLoS());
+                int rssi = uwbDlTDoAMeasurements[i].getRssi();
+                if (rssi < 0) {
+                    rangingMeasurementBuilder.setRssiDbm(rssi);
+                }
+                if (rangingStatus == FiraParams.STATUS_CODE_OK) {
+                    AngleOfArrivalMeasurement angleOfArrivalMeasurement =
+                            computeAngleOfArrivalMeasurement(
+                                    isAoaAzimuthEnabled, isAoaElevationEnabled,
+                                    uwbDlTDoAMeasurements[i].getAoaAzimuth(),
+                                    uwbDlTDoAMeasurements[i].getAoaAzimuthFom(),
+                                    uwbDlTDoAMeasurements[i].getAoaElevation(),
+                                    uwbDlTDoAMeasurements[i].getAoaElevationFom());
+                    if (angleOfArrivalMeasurement != null) {
+                        rangingMeasurementBuilder.setAngleOfArrivalMeasurement(
+                                angleOfArrivalMeasurement);
+                    }
+                }
+                DlTDoAMeasurement dlTDoAMeasurement = new DlTDoAMeasurement.Builder()
+                        .setMessageType(uwbDlTDoAMeasurements[i].getMessageType())
+                        .setMessageControl(uwbDlTDoAMeasurements[i].getMessageControl())
+                        .setBlockIndex(uwbDlTDoAMeasurements[i].getBlockIndex())
+                        .setNLoS(uwbDlTDoAMeasurements[i].getNLoS())
+                        .setTxTimestamp(uwbDlTDoAMeasurements[i].getTxTimestamp())
+                        .setRxTimestamp(uwbDlTDoAMeasurements[i].getRxTimestamp())
+                        .setAnchorCfo(uwbDlTDoAMeasurements[i].getAnchorCfo())
+                        .setCfo(uwbDlTDoAMeasurements[i].getCfo())
+                        .setInitiatorReplyTime(uwbDlTDoAMeasurements[i].getInitiatorReplyTime())
+                        .setResponderReplyTime(uwbDlTDoAMeasurements[i].getResponderReplyTime())
+                        .setInitiatorResponderTof(uwbDlTDoAMeasurements[i]
+                                .getInitiatorResponderTof())
+                        .setAnchorLocation(uwbDlTDoAMeasurements[i].getAnchorLocation())
+                        .setActiveRangingRounds(uwbDlTDoAMeasurements[i].getActiveRangingRounds())
+                        .build();
+
+                rangingMeasurementBuilder.setRangingMeasurementMetadata(
+                        dlTDoAMeasurement.toBundle());
+
+                rangingMeasurements.add(rangingMeasurementBuilder.build());
+            }
+
+            rangingReportBuilder.addMeasurements(rangingMeasurements);
         }
         return rangingReportBuilder.build();
     }
