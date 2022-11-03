@@ -849,8 +849,8 @@ public class FiraOpenSessionParams extends FiraParams {
         /** UCI spec default: 2400 RSTU (2 ms). */
         private int mSlotDurationRstu = 2400;
 
-        /** UCI spec default: 30 slots per ranging round. */
-        private int mSlotsPerRangingRound = 30;
+        /** UCI spec default: 25 slots per ranging round. */
+        private int mSlotsPerRangingRound = 25;
 
         /** UCI spec default: RANGING_INTERVAL 200 ms */
         private int mRangingIntervalMs = 200;
