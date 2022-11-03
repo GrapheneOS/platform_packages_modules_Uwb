@@ -40,6 +40,7 @@ public class CccEncoder extends TlvEncoder {
         int hoppingSequence = params.getHoppingSequence();
 
         int hoppingMode = CccParams.HOPPING_CONFIG_MODE_NONE;
+        byte[] protocolVer = params.getProtocolVersion().toBytes();
 
         switch (hoppingConfig) {
 
@@ -61,7 +62,7 @@ public class CccEncoder extends TlvEncoder {
 
         TlvBuffer tlvBuffer = new TlvBuffer.Builder()
                 .putByte(ConfigParam.DEVICE_TYPE,
-                        (byte) UwbUciConstants.DEVICE_TYPE_CONTROLEE) // DEVICE_TYPE
+                        (byte) UwbUciConstants.DEVICE_TYPE_CONTROLLER) // DEVICE_TYPE
                 .putByte(ConfigParam.STS_CONFIG,
                         (byte) UwbUciConstants.STS_MODE_DYNAMIC) // STS_CONFIG
                 .putByte(ConfigParam.CHANNEL_NUMBER, (byte) params.getChannel()) // CHANNEL_ID
@@ -81,7 +82,7 @@ public class CccEncoder extends TlvEncoder {
                 .putByte(ConfigParam.HOPPING_MODE, (byte) hoppingMode) // HOPPING_MODE
                 .putByteArray(ConfigParam.RANGING_PROTOCOL_VER,
                         ConfigParam.RANGING_PROTOCOL_VER_BYTE_COUNT,
-                        params.getProtocolVersion().toBytes()) // RANGING_PROTOCOL_VER
+                        new byte[] { protocolVer[1], protocolVer[0] }) // RANGING_PROTOCOL_VER
                 .putShort(ConfigParam.UWB_CONFIG_ID, (short) params.getUwbConfig()) // UWB_CONFIG_ID
                 .putByte(ConfigParam.PULSESHAPE_COMBO,
                         params.getPulseShapeCombo().toBytes()[0]) // PULSESHAPE_COMBO

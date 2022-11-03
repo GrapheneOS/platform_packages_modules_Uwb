@@ -46,7 +46,8 @@ public class UwbRangingData {
 
     public UwbRangingData(long seqCounter, long sessionId, int rcrIndication,
             long currRangingInterval, int rangingMeasuresType, int macAddressMode,
-            int noOfRangingMeasures, UwbOwrAoaMeasurement rangingOwrAoaMeasure) {
+            int noOfRangingMeasures, UwbOwrAoaMeasurement rangingOwrAoaMeasure,
+            byte[] rawNtfData) {
         this.mSeqCounter = seqCounter;
         this.mSessionId = sessionId;
         this.mRcrIndication = rcrIndication;
@@ -55,6 +56,7 @@ public class UwbRangingData {
         this.mMacAddressMode = macAddressMode;
         this.mNoOfRangingMeasures = noOfRangingMeasures;
         this.mRangingOwrAoaMeasure = rangingOwrAoaMeasure;
+        this.mRawNtfData = rawNtfData;
     }
 
     public long getSequenceCounter() {
@@ -120,6 +122,7 @@ public class UwbRangingData {
                     + ", MacAddressMode = " + mMacAddressMode
                     + ", NoOfRangingMeasures = " + mNoOfRangingMeasures
                     + ", RangingOwrAoaMeasure = " + mRangingOwrAoaMeasure.toString()
+                    + ", RawNotificationData = " + Arrays.toString(mRawNtfData)
                     + '}';
         } else {
             // TODO(jh0.jang) : ONE WAY RANGING(TDOA)?
