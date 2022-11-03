@@ -42,6 +42,7 @@ import android.provider.Settings;
 import android.util.AtomicFile;
 import android.util.Log;
 
+import com.android.server.uwb.advertisement.UwbAdvertiseManager;
 import com.android.server.uwb.data.ServiceProfileData;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.multchip.UwbMultichipData;
@@ -83,6 +84,7 @@ public class UwbInjector {
     private final UwbSettingsStore mUwbSettingsStore;
     private final NativeUwbManager mNativeUwbManager;
     private final UwbCountryCode mUwbCountryCode;
+    private final UciLogModeStore mUciLogModeStore;
     private final UwbServiceCore mUwbService;
     private final UwbMetrics mUwbMetrics;
     private final DeviceConfigFacade mDeviceConfigFacade;
@@ -108,7 +110,8 @@ public class UwbInjector {
                 new AtomicFile(new File(getDeviceProtectedDataDir(),
                         UwbSettingsStore.FILE_NAME)), this);
         mUwbMultichipData = new UwbMultichipData(mContext);
-        mNativeUwbManager = new NativeUwbManager(this, mUwbMultichipData);
+        mUciLogModeStore = new UciLogModeStore(mUwbSettingsStore);
+        mNativeUwbManager = new NativeUwbManager(this, mUciLogModeStore, mUwbMultichipData);
         mUwbCountryCode =
                 new UwbCountryCode(mContext, mNativeUwbManager, new Handler(mLooper), this);
         mUwbMetrics = new UwbMetrics(this);
@@ -117,9 +120,10 @@ public class UwbInjector {
                 new UwbConfigurationManager(mNativeUwbManager);
         UwbSessionNotificationManager uwbSessionNotificationManager =
                 new UwbSessionNotificationManager(this);
+        UwbAdvertiseManager uwbAdvertiseManager = new UwbAdvertiseManager(this);
         UwbSessionManager uwbSessionManager =
                 new UwbSessionManager(uwbConfigurationManager, mNativeUwbManager, mUwbMetrics,
-                        uwbSessionNotificationManager, this,
+                        uwbAdvertiseManager, uwbSessionNotificationManager, this,
                         mContext.getSystemService(AlarmManager.class),
                         mContext.getSystemService(ActivityManager.class),
                         mLooper);
@@ -136,9 +140,10 @@ public class UwbInjector {
     public UserManager getUserManager() {
         return mUserManager;
     }
+
     /**
-    * Construct an instance of {@link ServiceProfileData}.
-    */
+     * Construct an instance of {@link ServiceProfileData}.
+     */
     public ServiceProfileData makeServiceProfileData(ServiceProfileData.DataSource dataSource) {
         return new ServiceProfileData(dataSource);
     }
@@ -161,6 +166,10 @@ public class UwbInjector {
 
     public UwbCountryCode getUwbCountryCode() {
         return mUwbCountryCode;
+    }
+
+    public UciLogModeStore getUciLogModeStore() {
+        return mUciLogModeStore;
     }
 
     public UwbMetrics getUwbMetrics() {
@@ -252,6 +261,7 @@ public class UwbInjector {
         return ApexEnvironment.getApexEnvironment(APEX_NAME)
                 .getCredentialProtectedDataDirForUser(UserHandle.of(userId));
     }
+
     /**
      * Returns true if the app is in the Uwb apex, false otherwise.
      * Checks if the app's path starts with "/apex/com.android.uwb".
@@ -289,6 +299,7 @@ public class UwbInjector {
 
     /**
      * Is this a valid country code
+     *
      * @param countryCode A 2-Character alphanumeric country code.
      * @return true if the countryCode is valid, false otherwise.
      */

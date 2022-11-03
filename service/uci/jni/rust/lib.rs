@@ -428,9 +428,41 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGe
     }
 }
 
-/// update multicast list
+/// update multicast list by SESSION_UPDATE_CONTROLLER_MULTICAST_LIST_CMD
 #[no_mangle]
-pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeControllerMulticastListUpdate(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeControllerMulticastListUpdateV1(
+    env: JNIEnv,
+    obj: JObject,
+    session_id: jint,
+    action: jbyte,
+    no_of_controlee: jbyte,
+    addresses: jshortArray,
+    sub_session_ids: jintArray,
+    chip_id: JString,
+) -> jbyte {
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeControllerMulticastListUpdateV1: enter");
+    let controlee_data = ControleeData {
+        addresses,
+        sub_session_ids,
+        message_control: -1,
+        sub_session_keys: *JObject::null(),
+    };
+    byte_result_helper(
+        multicast_list_update(
+            &JniContext::new(env, obj),
+            session_id as u32,
+            action as u8,
+            no_of_controlee as u8,
+            controlee_data,
+            env.get_string(chip_id).unwrap().into(),
+        ),
+        "ControllerMulticastListUpdate",
+    )
+}
+
+/// update multicast list by SESSION_UPDATE_CONTROLLER_MULTICAST_LIST_V2_CMD
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeControllerMulticastListUpdateV2(
     env: JNIEnv,
     obj: JObject,
     session_id: jint,
@@ -442,7 +474,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeCo
     sub_session_keys: jbyteArray,
     chip_id: JString,
 ) -> jbyte {
-    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeControllerMulticastListUpdate: enter");
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeControllerMulticastListUpdateV2: enter");
     let controlee_data =
         ControleeData { addresses, sub_session_ids, message_control, sub_session_keys };
     byte_result_helper(
@@ -475,6 +507,17 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
         ),
         "SetCountryCode",
     )
+}
+
+/// Set log mode for new stack.
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSetLogMode(
+    _env: JNIEnv,
+    _obj: JObject,
+    _log_mode_jstring: JString, // Ignored as existing stack sets log mode differently.
+) -> jboolean {
+    info!("Java_com_android_server_uwb_jni_NativeUwbManager_nativeSetLogMode: enter");
+    false as jboolean
 }
 
 /// set country code

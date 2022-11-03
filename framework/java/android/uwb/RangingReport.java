@@ -80,7 +80,7 @@ public final class RangingReport implements Parcelable {
         if (obj instanceof RangingReport) {
             RangingReport other = (RangingReport) obj;
             return mRangingMeasurements.equals(other.getMeasurements());
-            // TODO: Equality for RangingReportMetadata
+            // TODO(b/256734264): Equality for RangingReportMetadata
         }
         return false;
     }
@@ -126,7 +126,7 @@ public final class RangingReport implements Parcelable {
     public String toString() {
         return "RangingReport["
                 + "measurements: " + mRangingMeasurements
-                + "ranging report measurement: " + mRangingReportMetadata
+                + ", ranging report measurement: " + mRangingReportMetadata
                 + "]";
     }
 

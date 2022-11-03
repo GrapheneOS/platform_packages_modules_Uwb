@@ -19,6 +19,7 @@ import android.annotation.NonNull;
 import android.util.Log;
 
 import com.android.internal.annotations.Keep;
+import com.android.server.uwb.UciLogModeStore;
 import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.data.UwbConfigStatusData;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
@@ -41,14 +42,17 @@ public class NativeUwbManager {
     public final Object mGetSessionStatusFnLock = new Object();
     public final Object mSetAppConfigFnLock = new Object();
     private final UwbInjector mUwbInjector;
+    private final UciLogModeStore mUciLogModeStore;
     private final UwbMultichipData mUwbMultichipData;
     protected INativeUwbManager.DeviceNotification mDeviceListener;
     protected INativeUwbManager.SessionNotification mSessionListener;
     private long mDispatcherPointer;
     protected INativeUwbManager.VendorNotification mVendorListener;
 
-    public NativeUwbManager(@NonNull UwbInjector uwbInjector, UwbMultichipData uwbMultichipData) {
+    public NativeUwbManager(@NonNull UwbInjector uwbInjector, UciLogModeStore uciLogModeStore,
+            UwbMultichipData uwbMultichipData) {
         mUwbInjector = uwbInjector;
+        mUciLogModeStore = uciLogModeStore;
         mUwbMultichipData = uwbMultichipData;
         loadLibrary();
     }
@@ -119,12 +123,12 @@ public class NativeUwbManager {
      */
     public synchronized boolean doInitialize() {
         mDispatcherPointer = nativeDispatcherNew(mUwbMultichipData.getChipIds().toArray());
-
         for (String chipId : mUwbMultichipData.getChipIds()) {
             if (!nativeDoInitialize(chipId)) {
                 return false;
             }
         }
+        nativeSetLogMode(mUciLogModeStore.getMode());
         return true;
     }
 
@@ -134,7 +138,7 @@ public class NativeUwbManager {
      * @return : If this returns true, UWB is off
      */
     public synchronized boolean doDeinitialize() {
-        for (String chipId: mUwbMultichipData.getChipIds()) {
+        for (String chipId : mUwbMultichipData.getChipIds()) {
             nativeDoDeinitialize(chipId);
         }
 
@@ -160,7 +164,6 @@ public class NativeUwbManager {
 
     /**
      * Retrieves power related stats
-     *
      */
     public UwbPowerStats getPowerStats(String chipId) {
         return nativeGetPowerStats(chipId);
@@ -209,7 +212,7 @@ public class NativeUwbManager {
     /**
      * Retrieves number of UWB sessions in the UWBS.
      *
-     * @param chipId  : Identifier of UWB chip for multi-HAL devices
+     * @param chipId : Identifier of UWB chip for multi-HAL devices
      * @return : Number of UWB sessions present in the UWBS.
      */
     public byte getSessionCount(String chipId) {
@@ -294,7 +297,7 @@ public class NativeUwbManager {
     /**
      * Get Core Capabilities information
      *
-     * @param chipId    : Identifier of UWB chip for multi-HAL devices
+     * @param chipId : Identifier of UWB chip for multi-HAL devices
      * @return :  {@link UwbTlvData} : All tlvs that are to be decoded
      */
     public UwbTlvData getCapsInfo(String chipId) {
@@ -304,32 +307,53 @@ public class NativeUwbManager {
     }
 
     /**
-     * Update Multicast list for the requested UWB session
+     * Update Multicast list for the requested UWB session using V1 command.
      *
-     * @param sessionId  : Session ID to which multicast list to be updated
-     * @param action     : Update the multicast list by adding or removing
-     *                     0x00 - Adding
-     *                     0x01 - removing
-     * @param noOfControlee : The number(n) of Controlees
-     * @param addresses     : address list of Controlees
-     * @param subSessionIds : Specific sub-session ID list of Controlees
-     * @param messageControl : Bitmap indicating the presence and length of Sub-session Key
-     *                         Bits 0-2: Sub-Session key type
-     *                         0 = Key length of 128 bits (16 bytes)
-     *                         1 = Key length of 256 bits (32 bytes)
-     *                         2-7 = RFU
-     *                         Bit 3: Sub-Session key presence
-     *                         0 = Sub-session Key is not configured by the Host
-     *                         1 = Sub-session Key parameter is configured by the Host
-     * @param subSessionKeyList  : The list of Sub-session Keys
+     * @param sessionId         : Session ID to which multicast list to be updated
+     * @param action            : Update the multicast list by adding or removing
+     *                          0x00 - Adding
+     *                          0x01 - removing
+     * @param noOfControlee     : The number(n) of Controlees
+     * @param addresses         : address list of Controlees
+     * @param subSessionIds     : Specific sub-session ID list of Controlees
      * @return : refer to SESSION_SET_APP_CONFIG_RSP
      * in the Table 16: Control messages to set Application configurations
      */
-    public byte controllerMulticastListUpdate(int sessionId, int action, int noOfControlee,
-            short[] addresses, int[]subSessionIds, int messageControl,
+    public byte controllerMulticastListUpdateV1(int sessionId, int action, int noOfControlee,
+            short[] addresses, int[] subSessionIds, String chipId) {
+        synchronized (mSessionFnLock) {
+            return nativeControllerMulticastListUpdateV1(sessionId, (byte) action,
+                    (byte) noOfControlee, addresses, subSessionIds, chipId);
+        }
+    }
+
+    /**
+     * Update Multicast list for the requested UWB session using V2 command.
+     *
+     * @param sessionId         : Session ID to which multicast list to be updated
+     * @param action            : Update the multicast list by adding or removing
+     *                          0x00 - Adding
+     *                          0x01 - removing
+     * @param noOfControlee     : The number(n) of Controlees
+     * @param addresses         : address list of Controlees
+     * @param subSessionIds     : Specific sub-session ID list of Controlees
+     * @param messageControl    : Bitmap indicating the presence and length of Sub-session Key
+     *                          Bits 0-2: Sub-Session key type
+     *                          0 = Key length of 128 bits (16 bytes)
+     *                          1 = Key length of 256 bits (32 bytes)
+     *                          2-7 = RFU
+     *                          Bit 3: Sub-Session key presence
+     *                          0 = Sub-session Key is not configured by the Host
+     *                          1 = Sub-session Key parameter is configured by the Host
+     * @param subSessionKeyList : The list of Sub-session Keys
+     * @return : refer to SESSION_SET_APP_CONFIG_RSP
+     * in the Table 16: Control messages to set Application configurations
+     */
+    public byte controllerMulticastListUpdateV2(int sessionId, int action, int noOfControlee,
+            short[] addresses, int[] subSessionIds, int messageControl,
             int[] subSessionKeyList, String chipId) {
         synchronized (mSessionFnLock) {
-            return nativeControllerMulticastListUpdate(sessionId, (byte) action,
+            return nativeControllerMulticastListUpdateV2(sessionId, (byte) action,
                     (byte) noOfControlee, addresses, subSessionIds, messageControl,
                     subSessionKeyList, chipId);
         }
@@ -354,12 +378,48 @@ public class NativeUwbManager {
         }
     }
 
+    /**
+     * Sets the log mode for the current and future UWB UCI messages.
+     *
+     * @param logModeStr is one of Disabled, Filtered, or Unfiltered (case insensitive).
+     * @return true if the log mode is set successfully, false otherwise.
+     */
+    public boolean setLogMode(String logModeStr) {
+        if (mUciLogModeStore.storeMode(logModeStr)) {
+            return nativeSetLogMode(mUciLogModeStore.getMode());
+        } else {
+            return false;
+        }
+    }
+
     @NonNull
     public UwbVendorUciResponse sendRawVendorCmd(int gid, int oid, byte[] payload, String chipId) {
         synchronized (mGlobalStateFnLock) {
             return nativeSendRawVendorCmd(gid, oid, payload, chipId);
         }
     }
+
+    /**
+     * Receive payload data from a remote device in a UWB ranging session.
+     */
+    public void onDataReceived(
+            long sessionID, int status, long sequenceNum, byte[] address,
+            int sourceEndPoint, int destEndPoint, byte[] data) {
+        Log.d(TAG, "onDataReceived ");
+        mSessionListener.onDataReceived(
+                sessionID, status, sequenceNum, address, sourceEndPoint, destEndPoint, data);
+    }
+
+    /**
+     * Send payload data to a remote device in a UWB ranging session.
+     */
+    public byte sendData(
+            int sessionId, byte[] address, byte destEndPoint, int sequenceNum, byte[] appData) {
+        return nativeSendData(sessionId, address, destEndPoint, sequenceNum, appData);
+    }
+
+    private native byte nativeSendData(int sessionId, byte[] address,
+            byte destEndPoint, int sequenceNum, byte[] appData);
 
     private native long nativeDispatcherNew(Object[] chipIds);
 
@@ -399,11 +459,16 @@ public class NativeUwbManager {
 
     private native UwbTlvData nativeGetCapsInfo(String chipId);
 
-    private native byte nativeControllerMulticastListUpdate(int sessionId, byte action,
-            byte noOfControlee, short[] address, int[]subSessionId, int messageControl,
+    private native byte nativeControllerMulticastListUpdateV1(int sessionId, byte action,
+            byte noOfControlee, short[] address, int[] subSessionId, String chipId);
+
+    private native byte nativeControllerMulticastListUpdateV2(int sessionId, byte action,
+            byte noOfControlee, short[] address, int[] subSessionId, int messageControl,
             int[] subSessionKeyList, String chipId);
 
     private native byte nativeSetCountryCode(byte[] countryCode, String chipId);
+
+    private native boolean nativeSetLogMode(String logMode);
 
     private native UwbVendorUciResponse nativeSendRawVendorCmd(int gid, int oid, byte[] payload,
             String chipId);

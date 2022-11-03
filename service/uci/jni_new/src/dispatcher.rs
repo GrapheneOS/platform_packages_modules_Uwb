@@ -25,6 +25,7 @@ use tokio::runtime::{Builder as RuntimeBuilder, Runtime};
 use uci_hal_android::uci_hal_android::UciHalAndroid;
 use uwb_core::error::{Error as UwbCoreError, Result as UwbCoreResult};
 use uwb_core::uci::pcapng_uci_logger_factory::PcapngUciLoggerFactoryBuilder;
+use uwb_core::uci::uci_logger::UciLoggerMode;
 use uwb_core::uci::uci_logger_factory::UciLoggerFactory;
 use uwb_core::uci::uci_manager_sync::UciManagerSync;
 
@@ -50,8 +51,8 @@ impl Dispatcher {
             .map_err(|_| UwbCoreError::Unknown)?;
         let mut manager_map = HashMap::<String, UciManagerSync>::new();
         let mut log_file_factory = PcapngUciLoggerFactoryBuilder::new()
-            .log_path("/data/misc/apexdata/com.android.uwb/log")
-            .filename_prefix("uwb_uci")
+            .log_path("/data/misc/apexdata/com.android.uwb/log".into())
+            .filename_prefix("uwb_uci".to_owned())
             .runtime_handle(runtime.handle().to_owned())
             .build()
             .ok_or(UwbCoreError::Unknown)?;
@@ -72,6 +73,14 @@ impl Dispatcher {
             manager_map.insert(chip_id.as_ref().to_string(), manager);
         }
         Ok(Self { manager_map, _runtime: runtime })
+    }
+
+    /// Sets log mode for all chips.
+    pub fn set_logger_mode(&mut self, logger_mode: UciLoggerMode) -> UwbCoreResult<()> {
+        for (_, manager) in self.manager_map.iter_mut() {
+            manager.set_logger_mode(logger_mode.clone())?;
+        }
+        Ok(())
     }
 
     /// Constructs dispatcher, and return a pointer owning it.
