@@ -55,6 +55,7 @@ public class UwbTestUtils {
             PEER_EXTENDED_MAC_ADDRESS_REVERSE_BYTES);
     public static final PersistableBundle PERSISTABLE_BUNDLE = new PersistableBundle();
     public static final byte[] DATA_PAYLOAD = new byte[] {0x13, 0x15, 0x18};
+    public static final int RANGING_MEASUREMENT_TYPE_UNDEFINED = 0; // RFU in spec
 
     private static final byte[] TEST_RAW_NTF_DATA = {0x10, 0x01, 0x05};
     private static final long TEST_SEQ_COUNTER = 5;
@@ -89,7 +90,7 @@ public class UwbTestUtils {
             case RANGING_MEASUREMENT_TYPE_OWR_AOA:
                 return generateOwrAoaMeasurementRangingData(rangingStatus);
             default:
-                return null;
+                return generateDefaultRangingData();
         }
     }
 
@@ -119,6 +120,18 @@ public class UwbTestUtils {
         return new UwbRangingData(TEST_SEQ_COUNTER, TEST_SESSION_ID,
                 TEST_RCR_INDICATION, TEST_CURR_RANGING_INTERVAL, RANGING_MEASUREMENT_TYPE_OWR_AOA,
                 TEST_MAC_ADDRESS_MODE, noOfRangingMeasures, uwbOwrAoaMeasurement,
+                TEST_RAW_NTF_DATA);
+    }
+
+    // Create a UwbRangingData with no measurements, for negative test cases (example: incorrect
+    // ranging measurement type).
+    private static UwbRangingData generateDefaultRangingData() {
+        final int noOfRangingMeasures = 0;
+        final UwbTwoWayMeasurement[] uwbEmptyTwoWayMeasurements =
+                new UwbTwoWayMeasurement[noOfRangingMeasures];
+        return new UwbRangingData(TEST_SEQ_COUNTER, TEST_SESSION_ID,
+                TEST_RCR_INDICATION, TEST_CURR_RANGING_INTERVAL, RANGING_MEASUREMENT_TYPE_UNDEFINED,
+                TEST_MAC_ADDRESS_MODE, noOfRangingMeasures, uwbEmptyTwoWayMeasurements,
                 TEST_RAW_NTF_DATA);
     }
 
