@@ -103,7 +103,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     @VisibleForTesting
     public static final int SESSION_RECONFIG_RANGING = 4;
     @VisibleForTesting
-    public static final int SESSION_CLOSE = 5;
+    public static final int SESSION_DEINIT = 5;
     @VisibleForTesting
     public static final int SESSION_ON_DEINIT = 6;
     @VisibleForTesting
@@ -460,7 +460,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         Log.i(TAG, "deinitSession() - sessionId: " + sessionId
                 + ", sessionHandle: " + sessionHandle);
         UwbSession uwbSession = getUwbSession(sessionId);
-        mEventTask.execute(SESSION_CLOSE, uwbSession);
+        mEventTask.execute(SESSION_DEINIT, uwbSession);
         return;
     }
 
@@ -823,9 +823,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                     break;
                 }
 
-                case SESSION_CLOSE: {
+                case SESSION_DEINIT: {
                     UwbSession uwbSession = (UwbSession) msg.obj;
-                    handleClose(uwbSession);
+                    handleDeInit(uwbSession);
                     break;
                 }
 
@@ -1199,9 +1199,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             }
         }
 
-        private void handleClose(UwbSession uwbSession) {
+        private void handleDeInit(UwbSession uwbSession) {
             // TODO(b/211445008): Consolidate to a single uwb thread.
-            FutureTask<Integer> closeTask = new FutureTask<>(
+            FutureTask<Integer> deInitTask = new FutureTask<>(
                     (Callable<Integer>) () -> {
                         int status = UwbUciConstants.STATUS_CODE_FAILED;
                         synchronized (uwbSession.getWaitObj()) {
@@ -1220,7 +1220,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
             int status = UwbUciConstants.STATUS_CODE_FAILED;
             try {
-                status = mUwbInjector.runTaskOnSingleThreadExecutor(closeTask,
+                status = mUwbInjector.runTaskOnSingleThreadExecutor(deInitTask,
                         IUwbAdapter.RANGING_SESSION_CLOSE_THRESHOLD_MS);
             } catch (TimeoutException e) {
                 Log.i(TAG, "Failed to Stop Ranging - status : TIMEOUT");
@@ -1230,7 +1230,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             }
             mUwbMetrics.logRangingCloseEvent(uwbSession, status);
 
-            // Reset all UWB session timers when the session is closed.
+            // Reset all UWB session timers when the session is de-initialized (ie, closed).
             uwbSession.stopTimers();
             removeSession(uwbSession);
             Log.i(TAG, "deinit finish : status :" + status);
