@@ -3,23 +3,20 @@ package {
 }
 
 rust_defaults {
-    name: "libuwb_uci_jni_rust_new_defaults",
-    crate_name: "uwb_uci_jni_rust_new",
+    name: "libuwb_uci_jni_rust_unused_defaults",
+    crate_name: "uwb_uci_jni_rust_unused",
     lints: "android",
     clippy_lints: "android",
     min_sdk_version: "Tiramisu",
-    srcs: ["src/lib.rs"],
+    srcs: ["rust/lib.rs"],
     rustlibs: [
-        "libbinder_rs",
         "libjni",
+        "libbinder_rs",
         "liblog_rust",
         "liblogger",
         "libnum_traits",
-        "libthiserror",
-        "libtokio",
-        "libuci_hal_android",
-        "libuwb_core",
         "libuwb_uci_packets",
+        "libuwb_uci_rust",
     ],
     prefer_rlib: true,
     apex_available: [
@@ -29,22 +26,33 @@ rust_defaults {
 }
 
 rust_ffi_shared {
-    name: "libuwb_uci_jni_rust_new",
-    defaults: ["libuwb_uci_jni_rust_new_defaults"],
+    name: "libuwb_uci_jni_rust_unused",
+    defaults: ["libuwb_uci_jni_rust_unused_defaults"],
 }
 
 rust_test {
-    name: "libuwb_uci_jni_rust_new_tests",
-    defaults: ["libuwb_uci_jni_rust_new_defaults"],
+    name: "libuwb_uci_jni_rust_unused_tests",
+    defaults: ["libuwb_uci_jni_rust_unused_defaults"],
     target: {
         android: {
             test_suites: [
                 "general-tests",
+                "mts-uwb"
             ],
+            test_config_template: "uwb_rust_test_config_template.xml",
         },
         host: {
             test_suites: [
                 "general-tests",
+            ],
+            data_libs: [
+                "libandroid_runtime_lazy",
+                "libbase",
+                "libbinder",
+                "libbinder_ndk",
+                "libcutils",
+                "liblog",
+                "libutils",
             ],
         },
     },
@@ -57,7 +65,7 @@ rust_test {
             suffix: "32",
         },
         lib64: {
-            suffix: "",
+            suffix: "64",
         },
     },
     auto_gen_config: true,
