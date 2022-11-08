@@ -26,6 +26,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.PersistableBundle;
 import android.os.SystemClock;
+import android.uwb.util.PersistableBundleUtils;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -282,8 +283,9 @@ public final class RangingMeasurement implements Parcelable {
                             other.getDestinationAngleOfArrivalMeasurement())
                     && mLineOfSight == other.getLineOfSight()
                     && mMeasurementFocus == other.getMeasurementFocus()
-                    && mRssiDbm == other.getRssiDbm();
-            // TODO: Equality for RangingMeasurementMetadata
+                    && mRssiDbm == other.getRssiDbm()
+                    && PersistableBundleUtils.isEqual(mRangingMeasurementMetadata,
+                    other.mRangingMeasurementMetadata);
         }
         return false;
     }
@@ -295,7 +297,8 @@ public final class RangingMeasurement implements Parcelable {
     public int hashCode() {
         return Objects.hash(mRemoteDeviceAddress, mStatus, mElapsedRealtimeNanos,
                 mDistanceMeasurement, mAngleOfArrivalMeasurement,
-                mDestinationAngleOfArrivalMeasurement, mLineOfSight, mMeasurementFocus, mRssiDbm);
+                mDestinationAngleOfArrivalMeasurement, mLineOfSight, mMeasurementFocus, mRssiDbm,
+                PersistableBundleUtils.getHashCode(mRangingMeasurementMetadata));
     }
 
     @Override

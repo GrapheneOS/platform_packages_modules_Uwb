@@ -108,6 +108,7 @@ bootclasspath_fragment {
         // result in a build failure due to inconsistent flags.
         package_prefixes: [
             "com.android.x",
+            "android.uwb.util",
         ],
     },
 }

@@ -143,9 +143,9 @@ public class UwbTestUtils {
             long elapsedRealtimeNanos) {
         UwbRangingData uwbRangingData = generateRangingData(rangingMeasurementType, TEST_STATUS);
 
-        // TODO(b/246678053): Add rawNtfData[] for both TwoWay and OWR AoA Measurements..
         PersistableBundle rangingReportMetadata = new RangingReportMetadata.Builder()
                 .setSessionId(0)
+                .setRawNtfData(new byte[] {0x10, 0x01, 0x05})
                 .build()
                 .toBundle();
 
