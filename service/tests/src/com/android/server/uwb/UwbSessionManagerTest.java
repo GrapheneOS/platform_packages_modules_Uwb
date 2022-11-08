@@ -681,53 +681,6 @@ public class UwbSessionManagerTest {
     }
 
     @Test
-    public void deInitSession_notExistedSession() {
-        doReturn(false).when(mUwbSessionManager).isExistedSession(any());
-
-        mUwbSessionManager.deInitSession(mock(SessionHandle.class));
-
-        verify(mUwbSessionManager, never()).getSessionId(any());
-        assertThat(mTestLooper.nextMessage()).isNull();
-    }
-
-    @Test
-    public void deInitSession_success() {
-        doReturn(true).when(mUwbSessionManager).isExistedSession(any());
-        doReturn(TEST_SESSION_ID).when(mUwbSessionManager).getSessionId(any());
-
-        mUwbSessionManager.deInitSession(mock(SessionHandle.class));
-
-        verify(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
-        assertThat(mTestLooper.nextMessage().what).isEqualTo(5); // SESSION_CLOSE
-
-        verifyZeroInteractions(mUwbAdvertiseManager);
-    }
-
-    @Test
-    public void deInitSession_success_afterOwrAoaMeasurement() {
-        UwbSession mockUwbSession = mock(UwbSession.class);
-        when(mockUwbSession.getWaitObj()).thenReturn(mock(WaitObj.class));
-        doReturn(mockUwbSession).when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
-
-        // Setup the UwbSession to have the peer device's MacAddress stored (which happens when
-        // a valid RANGE_DATA_NTF with an OWR AoA Measurement is received).
-        doReturn(PEER_EXTENDED_MAC_ADDRESS).when(mockUwbSession).getRemoteMacAddress();
-
-        // Call deInitSession().
-        IBinder mockBinder = mock(IBinder.class);
-        doReturn(mockBinder).when(mockUwbSession).getBinder();
-        doReturn(FiraParams.PROTOCOL_NAME).when(mockUwbSession).getProtocolName();
-        doReturn(null).when(mockUwbSession).getAnyNonPrivilegedAppInAttributionSource();
-        doReturn(true).when(mUwbSessionManager).isExistedSession(any());
-        doReturn(TEST_SESSION_ID).when(mUwbSessionManager).getSessionId(any());
-        mUwbSessionManager.deInitSession(mock(SessionHandle.class));
-
-        mTestLooper.dispatchNext();
-
-        verify(mUwbAdvertiseManager).removeAdvertiseTarget(PEER_EXTENDED_MAC_ADDRESS);
-    }
-
-    @Test
     public void startRanging_notExistedSession() {
         doReturn(false).when(mUwbSessionManager).isExistedSession(any());
         doReturn(TEST_SESSION_ID).when(mUwbSessionManager).getSessionId(any());
@@ -961,29 +914,6 @@ public class UwbSessionManagerTest {
                 .stopRanging(anyInt(), anyString());
         verify(mockUwbSession1, never()).setSessionState(anyInt());
         verify(mockUwbSession2).setSessionState(eq(UwbUciConstants.UWB_SESSION_STATE_IDLE));
-    }
-
-    @Test
-    public void deinitAllSession() {
-        UwbSession mockUwbSession1 = mock(UwbSession.class);
-        mUwbSessionManager.mSessionTable.put(TEST_SESSION_ID, mockUwbSession1);
-        when(mockUwbSession1.getBinder()).thenReturn(mock(IBinder.class));
-        when(mockUwbSession1.getSessionId()).thenReturn(TEST_SESSION_ID);
-        when(mockUwbSession1.getProtocolName()).thenReturn(FiraParams.PROTOCOL_NAME);
-        UwbSession mockUwbSession2 = mock(UwbSession.class);
-        mUwbSessionManager.mSessionTable.put(TEST_SESSION_ID + 100, mockUwbSession2);
-        when(mockUwbSession2.getBinder()).thenReturn(mock(IBinder.class));
-        when(mockUwbSession2.getSessionId()).thenReturn(TEST_SESSION_ID + 100);
-        when(mockUwbSession2.getProtocolName()).thenReturn(FiraParams.PROTOCOL_NAME);
-
-        mUwbSessionManager.deinitAllSession();
-
-        verify(mUwbSessionNotificationManager, times(2))
-                .onRangingClosedWithApiReasonCode(any(), eq(RangingChangeReason.SYSTEM_POLICY));
-        verify(mUwbSessionManager, times(2)).removeSession(any());
-        // TODO: enable it when the resetDevice is enabled.
-        // verify(mNativeUwbManager).resetDevice(eq(UwbUciConstants.UWBS_RESET));
-        assertThat(mUwbSessionManager.getSessionCount()).isEqualTo(0);
     }
 
     @Test
@@ -2384,16 +2314,63 @@ public class UwbSessionManagerTest {
     }
 
     @Test
-    public void deInitSession() throws Exception {
+    public void deInitSession_notExistedSession() {
+        doReturn(false).when(mUwbSessionManager).isExistedSession(any());
+
+        mUwbSessionManager.deInitSession(mock(SessionHandle.class));
+
+        verify(mUwbSessionManager, never()).getSessionId(any());
+        assertThat(mTestLooper.nextMessage()).isNull();
+    }
+
+    @Test
+    public void deInitSession_success() {
+        doReturn(true).when(mUwbSessionManager).isExistedSession(any());
+        doReturn(TEST_SESSION_ID).when(mUwbSessionManager).getSessionId(any());
+
+        mUwbSessionManager.deInitSession(mock(SessionHandle.class));
+
+        verify(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
+        assertThat(mTestLooper.nextMessage().what).isEqualTo(5); // SESSION_DEINIT
+
+        verifyZeroInteractions(mUwbAdvertiseManager);
+    }
+
+    @Test
+    public void deInitSession_success_afterOwrAoaMeasurement() {
+        UwbSession mockUwbSession = mock(UwbSession.class);
+        when(mockUwbSession.getWaitObj()).thenReturn(mock(WaitObj.class));
+        doReturn(mockUwbSession).when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
+
+        // Setup the UwbSession to have the peer device's MacAddress stored (which happens when
+        // a valid RANGE_DATA_NTF with an OWR AoA Measurement is received).
+        doReturn(PEER_EXTENDED_MAC_ADDRESS).when(mockUwbSession).getRemoteMacAddress();
+
+        // Call deInitSession().
+        IBinder mockBinder = mock(IBinder.class);
+        doReturn(mockBinder).when(mockUwbSession).getBinder();
+        doReturn(FiraParams.PROTOCOL_NAME).when(mockUwbSession).getProtocolName();
+        doReturn(null).when(mockUwbSession).getAnyNonPrivilegedAppInAttributionSource();
+        doReturn(true).when(mUwbSessionManager).isExistedSession(any());
+        doReturn(TEST_SESSION_ID).when(mUwbSessionManager).getSessionId(any());
+        mUwbSessionManager.deInitSession(mock(SessionHandle.class));
+
+        mTestLooper.dispatchNext();
+
+        verify(mUwbAdvertiseManager).removeAdvertiseTarget(PEER_EXTENDED_MAC_ADDRESS);
+    }
+
+    @Test
+    public void execDeInitSession() throws Exception {
         UwbSession uwbSession = prepareExistingUwbSession();
 
         mUwbSessionManager.deInitSession(uwbSession.getSessionHandle());
 
-        assertThat(mTestLooper.nextMessage().what).isEqualTo(5); // SESSION_CLOSE
+        assertThat(mTestLooper.nextMessage().what).isEqualTo(5); // SESSION_DEINIT
     }
 
     @Test
-    public void execCloseSession_success() throws Exception {
+    public void execDeInitSession_success() throws Exception {
         UwbSession uwbSession = prepareExistingUwbSession();
         when(mNativeUwbManager.deInitSession(eq(TEST_SESSION_ID), anyString()))
                 .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
@@ -2410,7 +2387,7 @@ public class UwbSessionManagerTest {
     }
 
     @Test
-    public void execCloseSession_failed() throws Exception {
+    public void execDeInitSession_failed() throws Exception {
         UwbSession uwbSession = prepareExistingUwbSession();
         when(mNativeUwbManager.deInitSession(eq(TEST_SESSION_ID), anyString()))
                 .thenReturn((byte) UwbUciConstants.STATUS_CODE_FAILED);
@@ -2425,6 +2402,29 @@ public class UwbSessionManagerTest {
                 eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
         assertThat(mUwbSessionManager.getSessionCount()).isEqualTo(0);
         verifyZeroInteractions(mUwbAdvertiseManager);
+    }
+
+    @Test
+    public void deinitAllSession() {
+        UwbSession mockUwbSession1 = mock(UwbSession.class);
+        mUwbSessionManager.mSessionTable.put(TEST_SESSION_ID, mockUwbSession1);
+        when(mockUwbSession1.getBinder()).thenReturn(mock(IBinder.class));
+        when(mockUwbSession1.getSessionId()).thenReturn(TEST_SESSION_ID);
+        when(mockUwbSession1.getProtocolName()).thenReturn(FiraParams.PROTOCOL_NAME);
+        UwbSession mockUwbSession2 = mock(UwbSession.class);
+        mUwbSessionManager.mSessionTable.put(TEST_SESSION_ID + 100, mockUwbSession2);
+        when(mockUwbSession2.getBinder()).thenReturn(mock(IBinder.class));
+        when(mockUwbSession2.getSessionId()).thenReturn(TEST_SESSION_ID + 100);
+        when(mockUwbSession2.getProtocolName()).thenReturn(FiraParams.PROTOCOL_NAME);
+
+        mUwbSessionManager.deinitAllSession();
+
+        verify(mUwbSessionNotificationManager, times(2))
+                .onRangingClosedWithApiReasonCode(any(), eq(RangingChangeReason.SYSTEM_POLICY));
+        verify(mUwbSessionManager, times(2)).removeSession(any());
+        // TODO: enable it when the resetDevice is enabled.
+        // verify(mNativeUwbManager).resetDevice(eq(UwbUciConstants.UWBS_RESET));
+        assertThat(mUwbSessionManager.getSessionCount()).isEqualTo(0);
     }
 
     @Test
