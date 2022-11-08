@@ -20,14 +20,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import android.os.Parcel;
-import android.os.PersistableBundle;
 import android.uwb.RangingMeasurement;
 import android.uwb.RangingReport;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-
-import com.google.uwb.support.oemextension.RangingReportMetadata;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -44,13 +41,6 @@ public class RangingReportTest {
     @Test
     public void testBuilder() {
         List<RangingMeasurement> measurements = UwbTestUtils.getRangingMeasurements(5);
-        long sessionId = 1;
-        byte[] rawNtf = new byte[]{0x01, 0x02, 0x02};
-        PersistableBundle rangingReportMetadata = new RangingReportMetadata.Builder()
-                .setSessionId(sessionId)
-                .setRawNtfData(rawNtf)
-                .build()
-                .toBundle();
 
         RangingReport.Builder builder = new RangingReport.Builder();
         builder.addMeasurements(measurements);
@@ -62,11 +52,6 @@ public class RangingReportTest {
         }
         report = tryBuild(builder, true);
         verifyMeasurementsEqual(measurements, report.getMeasurements());
-
-        builder.addRangingReportMetadata(rangingReportMetadata);
-        report = tryBuild(builder, true);
-
-        assertEquals(rangingReportMetadata, report.getRangingReportMetadata());
     }
 
     private void verifyMeasurementsEqual(List<RangingMeasurement> expected,
