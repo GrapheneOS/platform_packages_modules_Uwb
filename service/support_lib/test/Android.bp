@@ -13,6 +13,7 @@ android_test {
         "com.uwb.support.generic",
         "com.uwb.support.multichip",
         "com.uwb.support.oemextension",
+        "com.uwb.support.dltdoa",
     ],
     platform_apis: true,
     certificate: "platform",
