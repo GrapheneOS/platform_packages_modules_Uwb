@@ -137,5 +137,18 @@ public class DataTypeConversionUtil {
         return ByteBuffer.allocate(Integer.BYTES).order(ByteOrder.LITTLE_ENDIAN).putInt(n).array();
     }
 
+    /**
+     * Convert the byte array to a long. The input array could be of shorter size (eg: 2 bytes).
+     */
+    public static long byteArrayToLong(byte[] bytes) {
+        /* Create a byte array of size 8 to convert it to a long */
+        byte[] extendedArray = new byte[] {0, 0, 0, 0, 0, 0, 0, 0};
+        for (int i = 0; i < bytes.length; i++) {
+            extendedArray[i] = bytes[i];
+        }
+
+        return ByteBuffer.wrap(extendedArray).getLong();
+    }
+
     private DataTypeConversionUtil() {}
 }
