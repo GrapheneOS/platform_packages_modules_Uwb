@@ -19,6 +19,7 @@ package com.android.server.uwb.advertisement;
 import static com.android.server.uwb.advertisement.UwbAdvertiseManager.CRITERIA_ANGLE;
 import static com.android.server.uwb.advertisement.UwbAdvertiseManager.SIZE_OF_ARRAY_TO_CHECK;
 import static com.android.server.uwb.advertisement.UwbAdvertiseManager.TRUSTED_VALUE_OF_VARIANCE;
+import static com.android.server.uwb.util.DataTypeConversionUtil.macAddressByteArrayToLong;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -53,8 +54,8 @@ import java.nio.ByteBuffer;
 @Presubmit
 public class UwbAdvertiseManagerTest {
     private static final byte[] TEST_MAC_ADDRESS_A = {0x11, 0x13};
-    private static final int TEST_MAC_ADDRESS_A_INT =
-            ByteBuffer.wrap(TEST_MAC_ADDRESS_A).getShort();
+    private static final long TEST_MAC_ADDRESS_A_LONG =
+            macAddressByteArrayToLong(TEST_MAC_ADDRESS_A);
     private static final byte[] TEST_MAC_ADDRESS_B = {0x15, 0x17};
     private static final int TEST_MAC_ADDRESS_B_INT =
             ByteBuffer.wrap(TEST_MAC_ADDRESS_B).getShort();
@@ -155,7 +156,7 @@ public class UwbAdvertiseManagerTest {
     @Test
     public void testIsTarget_beforeUpdate() throws Exception {
         assertFalse(mUwbAdvertiseManager.isPointedTarget(TEST_MAC_ADDRESS_A));
-        assertNull(mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_A_INT));
+        assertNull(mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_A_LONG));
     }
 
     // Call isPointedTarget() with a different MacAddress (device B), after a call to
@@ -164,7 +165,7 @@ public class UwbAdvertiseManagerTest {
     public void testIsTarget_differentMacAddress() throws Exception {
         mUwbAdvertiseManager.updateAdvertiseTarget(UWB_OWR_AOA_MEASUREMENT_DEVICE_A);
         assertFalse(mUwbAdvertiseManager.isPointedTarget(TEST_MAC_ADDRESS_B));
-        assertNotNull(mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_A_INT));
+        assertNotNull(mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_A_LONG));
     }
 
     // Confirm the device is not considered to be a target when there aren't sufficient OWR AoA
@@ -290,7 +291,7 @@ public class UwbAdvertiseManagerTest {
                 TEST_AOA_ELEVATION_Q97_FORMAT, TEST_DELTA_AOA_INSIDE_VARIANCE);
         assertTrue(mUwbAdvertiseManager.isPointedTarget(TEST_MAC_ADDRESS_A));
         UwbAdvertiseManager.UwbAdvertiseTarget uwbAdvertiseTarget =
-                mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_A_INT);
+                mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_A_LONG);
         assertTrue(uwbAdvertiseTarget.isVarianceCalculated());
 
         // Fake the current time such that the stored OwR AoA Measurements now seem to be stale, and
@@ -302,7 +303,7 @@ public class UwbAdvertiseManagerTest {
 
         // Check that the variance is not calculated (as a proxy for the number of stored OwR AoA
         // measurements for the target, which should now be just 1).
-        uwbAdvertiseTarget = mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_A_INT);
+        uwbAdvertiseTarget = mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_A_LONG);
         assertFalse(uwbAdvertiseTarget.isVarianceCalculated());
         assertFalse(mUwbAdvertiseManager.isPointedTarget(TEST_MAC_ADDRESS_A));
     }
@@ -317,12 +318,12 @@ public class UwbAdvertiseManagerTest {
                 TEST_AOA_ELEVATION_Q97_FORMAT, TEST_DELTA_AOA_INSIDE_VARIANCE);
         mUwbAdvertiseManager.updateAdvertiseTarget(uwbOwrAoaMeasurement);
 
-        assertNotNull(mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_A_INT));
+        assertNotNull(mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_A_LONG));
         assertNull(mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_B_INT));
 
         // Call removeAdvertiseTarget() for the device and verify that it has been removed.
         mUwbAdvertiseManager.removeAdvertiseTarget(TEST_MAC_ADDRESS_A);
-        assertNull(mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_A_INT));
+        assertNull(mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_A_LONG));
 
         // Call removeAdvertiseTarget() for a device that doesn't exist and verify no exceptions.
         mUwbAdvertiseManager.removeAdvertiseTarget(TEST_MAC_ADDRESS_B);

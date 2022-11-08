@@ -15,7 +15,7 @@
  */
 package com.android.server.uwb.advertisement;
 
-import static com.android.server.uwb.util.DataTypeConversionUtil.byteArrayToI16;
+import static com.android.server.uwb.util.DataTypeConversionUtil.macAddressByteArrayToLong;
 
 import androidx.annotation.Nullable;
 
@@ -23,7 +23,6 @@ import com.android.internal.annotations.VisibleForTesting;
 import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.data.UwbOwrAoaMeasurement;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class UwbAdvertiseManager {
     private static final String TAG = "UwbAdvertiseManager";
 
-    private final ConcurrentHashMap<Integer, UwbAdvertiseTarget> mAdvertiseTargetMap =
+    private final ConcurrentHashMap<Long, UwbAdvertiseTarget> mAdvertiseTargetMap =
             new ConcurrentHashMap<>();
 
     // TODO(b/246678053): Use overlays to allow OEMs to modify these values.
@@ -53,7 +52,8 @@ public class UwbAdvertiseManager {
      * One-way Ranging AoA Measurement(s).
      */
     public boolean isPointedTarget(byte[] macAddressBytes) {
-        UwbAdvertiseTarget uwbAdvertiseTarget = getAdvertiseTarget(byteArrayToI16(macAddressBytes));
+        UwbAdvertiseTarget uwbAdvertiseTarget = getAdvertiseTarget(
+                macAddressByteArrayToLong(macAddressBytes));
         if (uwbAdvertiseTarget == null) {
             return false;
         }
@@ -86,7 +86,7 @@ public class UwbAdvertiseManager {
      * Remove all the stored AdvertiseTarget data for the given device.
      */
     public void removeAdvertiseTarget(byte[] macAddressBytes) {
-        int macAddress = byteArrayToI16(macAddressBytes);
+        long macAddress = macAddressByteArrayToLong(macAddressBytes);
         mAdvertiseTargetMap.remove(macAddress);
     }
 
@@ -106,7 +106,7 @@ public class UwbAdvertiseManager {
     }
 
     private void checkAndRemoveStaleAdvertiseTarget(byte[] macAddressBytes) {
-        int macAddress = byteArrayToI16(macAddressBytes);
+        long macAddress = macAddressByteArrayToLong(macAddressBytes);
         UwbAdvertiseTarget uwbAdvertiseTarget = getAdvertiseTarget(macAddress);
         if (uwbAdvertiseTarget == null) {
             return;
@@ -128,8 +128,7 @@ public class UwbAdvertiseManager {
     private UwbAdvertiseTarget updateAdvertiseTargetInfo(
             UwbOwrAoaMeasurement uwbOwrAoaMeasurement) {
         long currentTime = mUwbInjector.getElapsedSinceBootMillis();
-        ByteBuffer byteBuffer = ByteBuffer.wrap(uwbOwrAoaMeasurement.getMacAddress());
-        int macAddress = (int) byteBuffer.getShort();
+        long macAddress = macAddressByteArrayToLong(uwbOwrAoaMeasurement.getMacAddress());
 
         UwbAdvertiseTarget advertiseTarget = getOrAddAdvertiseTarget(macAddress);
         advertiseTarget.calculateAoaVariance(uwbOwrAoaMeasurement);
@@ -140,11 +139,11 @@ public class UwbAdvertiseManager {
 
     @VisibleForTesting
     @Nullable
-    public UwbAdvertiseTarget getAdvertiseTarget(int macAddress) {
+    public UwbAdvertiseTarget getAdvertiseTarget(long macAddress) {
         return isAdvertiseTargetExist(macAddress) ? mAdvertiseTargetMap.get(macAddress) : null;
     }
 
-    private UwbAdvertiseTarget getOrAddAdvertiseTarget(int macAddress) {
+    private UwbAdvertiseTarget getOrAddAdvertiseTarget(long macAddress) {
         UwbAdvertiseTarget uwbAdvertiseTarget;
         if (isAdvertiseTargetExist(macAddress)) {
             uwbAdvertiseTarget = mAdvertiseTargetMap.get(macAddress);
@@ -154,11 +153,11 @@ public class UwbAdvertiseManager {
         return uwbAdvertiseTarget;
     }
 
-    private boolean isAdvertiseTargetExist(int macAddress) {
+    private boolean isAdvertiseTargetExist(long macAddress) {
         return mAdvertiseTargetMap.containsKey(macAddress);
     }
 
-    private UwbAdvertiseTarget addAdvertiseTarget(int macAddress) {
+    private UwbAdvertiseTarget addAdvertiseTarget(long macAddress) {
         UwbAdvertiseTarget advertiseTarget = new UwbAdvertiseTarget(macAddress);
         mAdvertiseTargetMap.put(macAddress, advertiseTarget);
         return advertiseTarget;
@@ -170,7 +169,7 @@ public class UwbAdvertiseManager {
      */
     @VisibleForTesting
     public static class UwbAdvertiseTarget {
-        private final int mMacAddress;
+        private final long mMacAddress;
         private final ArrayList<Double> mRecentAoaAzimuth = new ArrayList<>();
         private final ArrayList<Double> mRecentAoaElevation = new ArrayList<>();
         private double mVarianceOfAzimuth;
@@ -178,7 +177,7 @@ public class UwbAdvertiseManager {
         private long mLastMeasuredTime;
         private boolean mIsVarianceCalculated;
 
-        private UwbAdvertiseTarget(int macAddress) {
+        private UwbAdvertiseTarget(long macAddress) {
             mMacAddress = macAddress;
             mIsVarianceCalculated = false;
         }
