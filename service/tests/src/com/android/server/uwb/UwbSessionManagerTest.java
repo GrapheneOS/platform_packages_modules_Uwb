@@ -38,6 +38,7 @@ import static com.android.server.uwb.data.UwbUciConstants.ROUND_USAGE_DS_TWR_DEF
 import static com.android.server.uwb.data.UwbUciConstants.ROUND_USAGE_OWR_AOA_MEASUREMENT;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.uwb.support.fira.FiraParams.PROTOCOL_NAME;
 import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_DISABLE;
 import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_ENABLE;
 
@@ -295,6 +296,7 @@ public class UwbSessionManagerTest {
         verify(mUwbSessionNotificationManager)
                 .onDataReceived(eq(mockUwbSession), eq(PEER_UWB_ADDRESS),
                         isA(PersistableBundle.class), eq(DATA_PAYLOAD));
+        verify(mUwbAdvertiseManager).removeAdvertiseTarget(PEER_EXTENDED_MAC_ADDRESS);
         verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
     }
 
@@ -403,7 +405,8 @@ public class UwbSessionManagerTest {
         doReturn(mockUwbSession)
                 .when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
 
-        // Skip call to mUwbSessionManager.onDataReceived()
+        // Skip call to mUwbSessionManager.onDataReceived(). This means there is no application
+        // payload data, and so mUwbSessionNotificationManager.onDataReceived() shouldn't be called.
         Params firaParams = setupFiraParams(
                 RANGING_DEVICE_ROLE_OBSERVER, Optional.of(ROUND_USAGE_OWR_AOA_MEASUREMENT));
         when(mockUwbSession.getParams()).thenReturn(firaParams);
@@ -503,6 +506,7 @@ public class UwbSessionManagerTest {
         verify(mUwbSessionNotificationManager)
                 .onRangingResult(eq(mockUwbSession), eq(uwbRangingData));
         verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
+        verify(mUwbAdvertiseManager, never()).removeAdvertiseTarget(isA(byte[].class));
         verifyZeroInteractions(mUwbSessionNotificationManager);
     }
 
@@ -695,6 +699,32 @@ public class UwbSessionManagerTest {
 
         verify(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
         assertThat(mTestLooper.nextMessage().what).isEqualTo(5); // SESSION_CLOSE
+
+        verifyZeroInteractions(mUwbAdvertiseManager);
+    }
+
+    @Test
+    public void deInitSession_success_afterOwrAoaMeasurement() {
+        UwbSession mockUwbSession = mock(UwbSession.class);
+        when(mockUwbSession.getWaitObj()).thenReturn(mock(WaitObj.class));
+        doReturn(mockUwbSession).when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
+
+        // Setup the UwbSession to have the peer device's MacAddress stored (which happens when
+        // a valid RANGE_DATA_NTF with an OWR AoA Measurement is received).
+        doReturn(PEER_EXTENDED_MAC_ADDRESS).when(mockUwbSession).getRemoteMacAddress();
+
+        // Call deInitSession().
+        IBinder mockBinder = mock(IBinder.class);
+        doReturn(mockBinder).when(mockUwbSession).getBinder();
+        doReturn(FiraParams.PROTOCOL_NAME).when(mockUwbSession).getProtocolName();
+        doReturn(null).when(mockUwbSession).getAnyNonPrivilegedAppInAttributionSource();
+        doReturn(true).when(mUwbSessionManager).isExistedSession(any());
+        doReturn(TEST_SESSION_ID).when(mUwbSessionManager).getSessionId(any());
+        mUwbSessionManager.deInitSession(mock(SessionHandle.class));
+
+        mTestLooper.dispatchNext();
+
+        verify(mUwbAdvertiseManager).removeAdvertiseTarget(PEER_EXTENDED_MAC_ADDRESS);
     }
 
     @Test
@@ -779,6 +809,31 @@ public class UwbSessionManagerTest {
         mUwbSessionManager.stopRanging(mock(SessionHandle.class));
 
         assertThat(mTestLooper.nextMessage().what).isEqualTo(3); // SESSION_STOP_RANGING
+    }
+
+    @Test
+    public void stopRanging_currentSessionStateActive_owrAoa() {
+        UwbSession mockUwbSession = mock(UwbSession.class);
+
+        doReturn(true).when(mUwbSessionManager).isExistedSession(any());
+        doReturn(TEST_SESSION_ID).when(mUwbSessionManager).getSessionId(any());
+        doReturn(mockUwbSession).when(mUwbSessionManager).getUwbSession(anyInt());
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE)
+                .when(mUwbSessionManager).getCurrentSessionState(anyInt());
+        when(mNativeUwbManager.stopRanging(eq(TEST_SESSION_ID), anyString()))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+
+        doReturn(PROTOCOL_NAME).when(mockUwbSession).getProtocolName();
+        doReturn(0).when(mockUwbSession).getCurrentFiraRangingIntervalMs();
+
+        // Setup the UwbSession to have the peer device's MacAddress stored (which happens when
+        // a valid RANGE_DATA_NTF with an OWR AoA Measurement is received).
+        doReturn(PEER_EXTENDED_MAC_ADDRESS).when(mockUwbSession).getRemoteMacAddress();
+
+        mUwbSessionManager.stopRanging(mock(SessionHandle.class));
+        mTestLooper.dispatchNext();
+
+        verify(mUwbAdvertiseManager).removeAdvertiseTarget(PEER_EXTENDED_MAC_ADDRESS);
     }
 
     @Test
@@ -2351,6 +2406,7 @@ public class UwbSessionManagerTest {
         verify(mUwbMetrics).logRangingCloseEvent(
                 eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
         assertThat(mUwbSessionManager.getSessionCount()).isEqualTo(0);
+        verifyZeroInteractions(mUwbAdvertiseManager);
     }
 
     @Test
@@ -2364,9 +2420,11 @@ public class UwbSessionManagerTest {
 
         verify(mUwbSessionNotificationManager).onRangingClosed(
                 eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
+        verify(mUwbAdvertiseManager, never()).removeAdvertiseTarget(isA(byte[].class));
         verify(mUwbMetrics).logRangingCloseEvent(
                 eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
         assertThat(mUwbSessionManager.getSessionCount()).isEqualTo(0);
+        verifyZeroInteractions(mUwbAdvertiseManager);
     }
 
     @Test
@@ -2385,6 +2443,48 @@ public class UwbSessionManagerTest {
         verify(mUwbMetrics).logRangingCloseEvent(
                 eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
         assertThat(mUwbSessionManager.getSessionCount()).isEqualTo(0);
+    }
+
+    @Test
+    public void onSessionStatusNotification_session_deinit_owrAoa() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
+                RANGING_MEASUREMENT_TYPE_OWR_AOA, UwbUciConstants.STATUS_CODE_OK);
+
+        // First call onDataReceived() to get the application payload data.
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
+                DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS, SOURCE_END_POINT, DEST_END_POINT,
+                DATA_PAYLOAD);
+
+        // Next call onRangeDataNotificationReceived() to process the RANGE_DATA_NTF. Setup
+        // isPointedTarget() to return "false", as in that scenario the stored AdvertiseTarget
+        // is not removed.
+        Params firaParams = setupFiraParams(
+                RANGING_DEVICE_ROLE_OBSERVER, Optional.of(ROUND_USAGE_OWR_AOA_MEASUREMENT));
+        when(uwbSession.getParams()).thenReturn(firaParams);
+        when(mUwbAdvertiseManager.isPointedTarget(PEER_EXTENDED_MAC_ADDRESS)).thenReturn(false);
+        mUwbSessionManager.onRangeDataNotificationReceived(uwbRangingData);
+
+        verify(mUwbAdvertiseManager).updateAdvertiseTarget(uwbRangingData.mRangingOwrAoaMeasure);
+        verify(mUwbAdvertiseManager).isPointedTarget(PEER_EXTENDED_MAC_ADDRESS);
+
+        // Now call onSessionStatusNotificationReceived() on the same UwbSession, and verify that
+        // removeAdvertiseTarget() is called to remove any stored OwR AoA Measurement(s).
+        when(mNativeUwbManager.deInitSession(eq(TEST_SESSION_ID), anyString()))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.onSessionStatusNotificationReceived(
+                uwbSession.getSessionId(), UwbUciConstants.UWB_SESSION_STATE_DEINIT,
+                UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS);
+        mTestLooper.dispatchNext();
+
+        verify(mUwbSessionNotificationManager).onRangingClosedWithApiReasonCode(
+                eq(uwbSession), eq(RangingChangeReason.SYSTEM_POLICY));
+        verify(mUwbMetrics).logRangingCloseEvent(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
+        assertThat(mUwbSessionManager.getSessionCount()).isEqualTo(0);
+
+        verify(mUwbAdvertiseManager).removeAdvertiseTarget(isA(byte[].class));
     }
 
     @Test

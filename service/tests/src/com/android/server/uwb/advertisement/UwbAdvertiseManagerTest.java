@@ -56,6 +56,8 @@ public class UwbAdvertiseManagerTest {
     private static final int TEST_MAC_ADDRESS_A_INT =
             ByteBuffer.wrap(TEST_MAC_ADDRESS_A).getShort();
     private static final byte[] TEST_MAC_ADDRESS_B = {0x15, 0x17};
+    private static final int TEST_MAC_ADDRESS_B_INT =
+            ByteBuffer.wrap(TEST_MAC_ADDRESS_B).getShort();
     private static final byte[] TEST_MAC_ADDRESS_C = {0x12, 0x14};
     private static final int TEST_STATUS = FiraParams.STATUS_CODE_OK;
     private static final int TEST_LOS = 3;
@@ -277,6 +279,54 @@ public class UwbAdvertiseManagerTest {
         when(mUwbInjector.getElapsedSinceBootMillis()).thenReturn(
                 OWR_AOA_MEASUREMENT_TIME_OUTSIDE_THRESHOLD_MILLIS);
         assertFalse(mUwbAdvertiseManager.isPointedTarget(TEST_MAC_ADDRESS_A));
+    }
+
+    @Test
+    public void testUpdateAdvertiseTarget_outsideTimeThreshold() throws Exception {
+        // Setup OwR AoA Measurements such that the device is a pointed target.
+        UwbOwrAoaMeasurement uwbOwrAoaMeasurement = setupOwrAoaMeasurements(TEST_MAC_ADDRESS_A,
+                NUM_REQUIRED_OWR_AOA_MEASUREMENTS,
+                TEST_AOA_AZIMUTH_Q97_FORMAT, TEST_DELTA_AOA_INSIDE_VARIANCE,
+                TEST_AOA_ELEVATION_Q97_FORMAT, TEST_DELTA_AOA_INSIDE_VARIANCE);
+        assertTrue(mUwbAdvertiseManager.isPointedTarget(TEST_MAC_ADDRESS_A));
+        UwbAdvertiseManager.UwbAdvertiseTarget uwbAdvertiseTarget =
+                mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_A_INT);
+        assertTrue(uwbAdvertiseTarget.isVarianceCalculated());
+
+        // Fake the current time such that the stored OwR AoA Measurements now seem to be stale, and
+        // record one more OwR AoA Measurement.
+        uwbOwrAoaMeasurement.mFrameSequenceNumber++;
+        when(mUwbInjector.getElapsedSinceBootMillis()).thenReturn(
+                OWR_AOA_MEASUREMENT_TIME_OUTSIDE_THRESHOLD_MILLIS);
+        mUwbAdvertiseManager.updateAdvertiseTarget(uwbOwrAoaMeasurement);
+
+        // Check that the variance is not calculated (as a proxy for the number of stored OwR AoA
+        // measurements for the target, which should now be just 1).
+        uwbAdvertiseTarget = mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_A_INT);
+        assertFalse(uwbAdvertiseTarget.isVarianceCalculated());
+        assertFalse(mUwbAdvertiseManager.isPointedTarget(TEST_MAC_ADDRESS_A));
+    }
+
+    @Test
+    public void testRemoveAdvertiseTarget() throws Exception {
+        // Call updateAdvertiseTarget() with a OwR AoA Measurement and verify that a
+        // UwbAdvertiseTarget gets created for it (but not for another random device).
+        UwbOwrAoaMeasurement uwbOwrAoaMeasurement = setupOwrAoaMeasurements(TEST_MAC_ADDRESS_A,
+                NUM_REQUIRED_OWR_AOA_MEASUREMENTS,
+                TEST_AOA_AZIMUTH_Q97_FORMAT, TEST_DELTA_AOA_INSIDE_VARIANCE,
+                TEST_AOA_ELEVATION_Q97_FORMAT, TEST_DELTA_AOA_INSIDE_VARIANCE);
+        mUwbAdvertiseManager.updateAdvertiseTarget(uwbOwrAoaMeasurement);
+
+        assertNotNull(mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_A_INT));
+        assertNull(mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_B_INT));
+
+        // Call removeAdvertiseTarget() for the device and verify that it has been removed.
+        mUwbAdvertiseManager.removeAdvertiseTarget(TEST_MAC_ADDRESS_A);
+        assertNull(mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_A_INT));
+
+        // Call removeAdvertiseTarget() for a device that doesn't exist and verify no exceptions.
+        mUwbAdvertiseManager.removeAdvertiseTarget(TEST_MAC_ADDRESS_B);
+        assertNull(mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_B_INT));
     }
 
     private UwbOwrAoaMeasurement setupOwrAoaMeasurements(byte[] macAddress, int numMeasurements,
