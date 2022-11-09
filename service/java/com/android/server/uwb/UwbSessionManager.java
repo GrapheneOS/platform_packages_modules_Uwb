@@ -17,12 +17,15 @@ package com.android.server.uwb;
 
 import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE;
 
+import static com.android.server.uwb.data.UwbUciConstants.MAC_ADDRESSING_MODE_EXTENDED;
+import static com.android.server.uwb.data.UwbUciConstants.MAC_ADDRESSING_MODE_SHORT;
 import static com.android.server.uwb.data.UwbUciConstants.RANGING_DEVICE_ROLE_OBSERVER;
 import static com.android.server.uwb.data.UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS;
 import static com.android.server.uwb.data.UwbUciConstants.ROUND_USAGE_OWR_AOA_MEASUREMENT;
 import static com.android.server.uwb.data.UwbUciConstants.UWB_DEVICE_EXT_MAC_ADDRESS_LEN;
+import static com.android.server.uwb.data.UwbUciConstants.UWB_DEVICE_SHORT_MAC_ADDRESS_LEN;
 import static com.android.server.uwb.data.UwbUciConstants.UWB_SESSION_STATE_ACTIVE;
-import static com.android.server.uwb.util.DataTypeConversionUtil.byteArrayToLong;
+import static com.android.server.uwb.util.DataTypeConversionUtil.macAddressByteArrayToLong;
 
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE;
@@ -60,7 +63,6 @@ import com.android.server.uwb.data.UwbTwoWayMeasurement;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.jni.INativeUwbManager;
 import com.android.server.uwb.jni.NativeUwbManager;
-import com.android.server.uwb.params.TlvUtil;
 import com.android.server.uwb.proto.UwbStatsLog;
 import com.android.server.uwb.util.ArrayUtils;
 import com.android.server.uwb.util.UwbUtil;
@@ -242,16 +244,18 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     public void onDataReceived(
             long sessionId, int status, long sequenceNum,
             byte[] address, int sourceEndPoint, int destEndPoint, byte[] data) {
-        Log.d(TAG, "onDataReceived - Data: " + UwbUtil.toHexString(data));
+        Log.d(TAG, "onDataReceived - address: " + UwbUtil.toHexString(address)
+                + ", Data: " + UwbUtil.toHexString(data));
 
-        // Size of address is always expected to be 8(EXTENDED_ADDRESS_BYTE_LENGTH). It can contain
-        // the MacAddress in short format however (2 LSB with MacAddress, 6 MSB zeroed out).
+        // Size of address in the UCI Packet for DATA_MESSAGE_RCV is always expected to be 8
+        // (EXTENDED_ADDRESS_BYTE_LENGTH). It can contain the MacAddress in short format however
+        // (2 LSB with MacAddress, 6 MSB zeroed out).
         if (address.length != UWB_DEVICE_EXT_MAC_ADDRESS_LEN) {
-            Log.e(TAG, "onDataReceived(): Received data for sessionId=" + sessionId
+            Log.e(TAG, "onDataReceived(): Received data for sessionId = " + sessionId
                     + ", with unexpected MacAddress length = " + address.length);
             return;
         }
-        Long longAddress = ByteBuffer.wrap(address).getLong();
+        Long longAddress = macAddressByteArrayToLong(address);
 
         ReceivedDataInfo info = new ReceivedDataInfo();
         info.sessionId = sessionId;
@@ -569,7 +573,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         UwbOwrAoaMeasurement uwbOwrAoaMeasurement = rangingData.getRangingOwrAoaMeasure();
         mAdvertiseManager.updateAdvertiseTarget(uwbOwrAoaMeasurement);
 
-        byte[] macAddress = uwbOwrAoaMeasurement.getMacAddress();
+        byte[] macAddress = getValidMacAddressFromOwrAoaMeasurement(
+                rangingData, uwbOwrAoaMeasurement);
+        if (macAddress == null)  {
+            Log.i(TAG, "OwR Aoa UwbSession: Invalid MacAddress for remote device");
+            return;
+        }
         uwbSession.setRemoteMacAddress(macAddress);
 
         // Get any application payload data received in this OWR AOA ranging session and notify it.
@@ -584,19 +593,30 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
 
         if (mAdvertiseManager.isPointedTarget(macAddress)) {
-            UwbAddress uwbAddress = UwbAddress.fromBytes(TlvUtil.getReverseBytes(macAddress));
+            UwbAddress uwbAddress = UwbAddress.fromBytes(macAddress);
             mSessionNotificationManager.onDataReceived(
                     uwbSession, uwbAddress, new PersistableBundle(), receivedDataInfo.payload);
             mAdvertiseManager.removeAdvertiseTarget(macAddress);
         }
     }
 
+    @Nullable
+    private byte[] getValidMacAddressFromOwrAoaMeasurement(UwbRangingData rangingData,
+            UwbOwrAoaMeasurement uwbOwrAoaMeasurement) {
+        byte[] macAddress = uwbOwrAoaMeasurement.getMacAddress();
+        if (rangingData.getMacAddressMode() == MAC_ADDRESSING_MODE_SHORT) {
+            return (macAddress.length == UWB_DEVICE_SHORT_MAC_ADDRESS_LEN) ? macAddress : null;
+        } else if (rangingData.getMacAddressMode() == MAC_ADDRESSING_MODE_EXTENDED) {
+            return (macAddress.length == UWB_DEVICE_EXT_MAC_ADDRESS_LEN) ? macAddress : null;
+        }
+        return null;
+    }
+
     /** Get any received data for the given device MacAddress */
     @VisibleForTesting
     public ReceivedDataInfo getReceivedDataInfo(byte[] macAddress) {
         // Convert the macAddress to a long as the address could be in short or extended format.
-        Long longAddress = byteArrayToLong(macAddress);
-        return mReceivedDataMap.get(longAddress);
+        return mReceivedDataMap.get(macAddressByteArrayToLong(macAddress));
     }
 
     public boolean isExistedSession(SessionHandle sessionHandle) {
@@ -1327,9 +1347,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         if (params instanceof FiraOpenSessionParams) {
             FiraOpenSessionParams firaParams = (FiraOpenSessionParams) params;
             if (firaParams.getRangingRoundUsage() != ROUND_USAGE_OWR_AOA_MEASUREMENT) {
+                Log.i(TAG, "OwR Aoa UwbSession: Invalid ranging round usage value = "
+                        + firaParams.getRangingRoundUsage());
                 return false;
             }
             if (firaParams.getDeviceRole() != RANGING_DEVICE_ROLE_OBSERVER) {
+                Log.i(TAG, "OwR Aoa UwbSession: Invalid device role value = "
+                        + firaParams.getDeviceRole());
                 return false;
             }
             return true;
