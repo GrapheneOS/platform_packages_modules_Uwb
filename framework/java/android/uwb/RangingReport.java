@@ -22,6 +22,7 @@ import android.annotation.SystemApi;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.PersistableBundle;
+import android.uwb.util.PersistableBundleUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,8 +80,9 @@ public final class RangingReport implements Parcelable {
 
         if (obj instanceof RangingReport) {
             RangingReport other = (RangingReport) obj;
-            return mRangingMeasurements.equals(other.getMeasurements());
-            // TODO(b/256734264): Equality for RangingReportMetadata
+            return mRangingMeasurements.equals(other.getMeasurements())
+                    && PersistableBundleUtils.isEqual(mRangingReportMetadata,
+                    other.getRangingReportMetadata());
         }
         return false;
     }
@@ -90,7 +92,8 @@ public final class RangingReport implements Parcelable {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(mRangingMeasurements);
+        return Objects.hash(mRangingMeasurements, PersistableBundleUtils
+                .getHashCode(mRangingReportMetadata));
     }
 
     @Override
