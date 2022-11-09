@@ -25,11 +25,15 @@ import static com.android.server.uwb.UwbTestUtils.PEER_BAD_MAC_ADDRESS;
 import static com.android.server.uwb.UwbTestUtils.PEER_EXTENDED_MAC_ADDRESS;
 import static com.android.server.uwb.UwbTestUtils.PEER_EXTENDED_MAC_ADDRESS_2;
 import static com.android.server.uwb.UwbTestUtils.PEER_EXTENDED_SHORT_MAC_ADDRESS;
-import static com.android.server.uwb.UwbTestUtils.PEER_UWB_ADDRESS;
+import static com.android.server.uwb.UwbTestUtils.PEER_EXTENDED_UWB_ADDRESS;
+import static com.android.server.uwb.UwbTestUtils.PEER_SHORT_MAC_ADDRESS;
+import static com.android.server.uwb.UwbTestUtils.PEER_SHORT_UWB_ADDRESS;
 import static com.android.server.uwb.UwbTestUtils.PERSISTABLE_BUNDLE;
 import static com.android.server.uwb.UwbTestUtils.RANGING_MEASUREMENT_TYPE_UNDEFINED;
 import static com.android.server.uwb.UwbTestUtils.TEST_SESSION_ID;
 import static com.android.server.uwb.UwbTestUtils.TEST_SESSION_ID_2;
+import static com.android.server.uwb.data.UwbUciConstants.MAC_ADDRESSING_MODE_EXTENDED;
+import static com.android.server.uwb.data.UwbUciConstants.MAC_ADDRESSING_MODE_SHORT;
 import static com.android.server.uwb.data.UwbUciConstants.RANGING_DEVICE_ROLE_ADVERTISER;
 import static com.android.server.uwb.data.UwbUciConstants.RANGING_DEVICE_ROLE_OBSERVER;
 import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TYPE_OWR_AOA;
@@ -242,7 +246,8 @@ public class UwbSessionManagerTest {
     @Test
     public void onRangeDataNotificationReceivedWithValidUwbSession_twoWay() {
         UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
-                RANGING_MEASUREMENT_TYPE_TWO_WAY, UwbUciConstants.STATUS_CODE_OK);
+                RANGING_MEASUREMENT_TYPE_TWO_WAY, MAC_ADDRESSING_MODE_EXTENDED,
+                UwbUciConstants.STATUS_CODE_OK);
         UwbSession mockUwbSession = mock(UwbSession.class);
         when(mockUwbSession.getWaitObj()).thenReturn(mock(WaitObj.class));
         doReturn(mockUwbSession)
@@ -258,7 +263,8 @@ public class UwbSessionManagerTest {
     @Test
     public void onRangeDataNotificationReceivedWithInvalidSession_twoWay() {
         UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
-                RANGING_MEASUREMENT_TYPE_TWO_WAY, UwbUciConstants.STATUS_CODE_OK);
+                RANGING_MEASUREMENT_TYPE_TWO_WAY, MAC_ADDRESSING_MODE_EXTENDED,
+                UwbUciConstants.STATUS_CODE_OK);
         doReturn(null)
                 .when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
 
@@ -269,10 +275,10 @@ public class UwbSessionManagerTest {
         verify(mUwbMetrics, never()).logRangingResult(anyInt(), eq(uwbRangingData));
     }
 
+    // Test scenario for receiving Application payload data followed by a RANGE_DATA_NTF with an
+    // OWR Aoa Measurement (such that the ExtendedMacAddress format is used for the remote device).
     @Test
-    public void onRangeDataNotificationReceived_owrAoa_success() {
-        UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
-                RANGING_MEASUREMENT_TYPE_OWR_AOA, UwbUciConstants.STATUS_CODE_OK);
+    public void onRangeDataNotificationReceived_owrAoa_success_extendedMacAddress() {
         UwbSession mockUwbSession = mock(UwbSession.class);
         when(mockUwbSession.getWaitObj()).thenReturn(mock(WaitObj.class));
         doReturn(mockUwbSession)
@@ -284,6 +290,9 @@ public class UwbSessionManagerTest {
                 DATA_PAYLOAD);
 
         // Next call onRangeDataNotificationReceived() to process the RANGE_DATA_NTF.
+        UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
+                RANGING_MEASUREMENT_TYPE_OWR_AOA, MAC_ADDRESSING_MODE_EXTENDED,
+                UwbUciConstants.STATUS_CODE_OK);
         Params firaParams = setupFiraParams(
                 RANGING_DEVICE_ROLE_OBSERVER, Optional.of(ROUND_USAGE_OWR_AOA_MEASUREMENT));
         when(mockUwbSession.getParams()).thenReturn(firaParams);
@@ -294,16 +303,52 @@ public class UwbSessionManagerTest {
                 .onRangingResult(eq(mockUwbSession), eq(uwbRangingData));
         verify(mUwbAdvertiseManager).updateAdvertiseTarget(uwbRangingData.mRangingOwrAoaMeasure);
         verify(mUwbSessionNotificationManager)
-                .onDataReceived(eq(mockUwbSession), eq(PEER_UWB_ADDRESS),
+                .onDataReceived(eq(mockUwbSession), eq(PEER_EXTENDED_UWB_ADDRESS),
                         isA(PersistableBundle.class), eq(DATA_PAYLOAD));
         verify(mUwbAdvertiseManager).removeAdvertiseTarget(PEER_EXTENDED_MAC_ADDRESS);
+        verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
+    }
+
+    // Test scenario for receiving Application payload data followed by a RANGE_DATA_NTF with an
+    // OWR Aoa Measurement (such that the ShortMacAddress format is used for the remote device).
+    @Test
+    public void onRangeDataNotificationReceived_owrAoa_success_shortMacAddress() {
+        UwbSession mockUwbSession = mock(UwbSession.class);
+        when(mockUwbSession.getWaitObj()).thenReturn(mock(WaitObj.class));
+        doReturn(mockUwbSession)
+                .when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
+
+        // First call onDataReceived() to get the application payload data. This should always have
+        // the MacAddress (in 8 Bytes), even for a Short MacAddress (MSB are zeroed out).
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
+                DATA_SEQUENCE_NUM, PEER_EXTENDED_SHORT_MAC_ADDRESS,
+                SOURCE_END_POINT, DEST_END_POINT, DATA_PAYLOAD);
+
+        // Next call onRangeDataNotificationReceived() to process the RANGE_DATA_NTF.
+        UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
+                RANGING_MEASUREMENT_TYPE_OWR_AOA, MAC_ADDRESSING_MODE_SHORT,
+                UwbUciConstants.STATUS_CODE_OK);
+        Params firaParams = setupFiraParams(
+                RANGING_DEVICE_ROLE_OBSERVER, Optional.of(ROUND_USAGE_OWR_AOA_MEASUREMENT));
+        when(mockUwbSession.getParams()).thenReturn(firaParams);
+        when(mUwbAdvertiseManager.isPointedTarget(PEER_SHORT_MAC_ADDRESS)).thenReturn(true);
+        mUwbSessionManager.onRangeDataNotificationReceived(uwbRangingData);
+
+        verify(mUwbSessionNotificationManager)
+                .onRangingResult(eq(mockUwbSession), eq(uwbRangingData));
+        verify(mUwbAdvertiseManager).updateAdvertiseTarget(uwbRangingData.mRangingOwrAoaMeasure);
+        verify(mUwbSessionNotificationManager)
+                .onDataReceived(eq(mockUwbSession), eq(PEER_SHORT_UWB_ADDRESS),
+                        isA(PersistableBundle.class), eq(DATA_PAYLOAD));
+        verify(mUwbAdvertiseManager).removeAdvertiseTarget(PEER_SHORT_MAC_ADDRESS);
         verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
     }
 
     @Test
     public void onRangeDataNotificationReceived_owrAoa_missingUwbSession() {
         UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
-                RANGING_MEASUREMENT_TYPE_OWR_AOA, UwbUciConstants.STATUS_CODE_OK);
+                RANGING_MEASUREMENT_TYPE_OWR_AOA, MAC_ADDRESSING_MODE_EXTENDED,
+                UwbUciConstants.STATUS_CODE_OK);
 
         // Setup the test scenario such that the UwbSession (from the RANGE_DATA_NTF) doesn't exist.
         doReturn(null)
@@ -323,7 +368,8 @@ public class UwbSessionManagerTest {
     @Test
     public void onRangeDataNotificationReceived_incorrectRangingMeasureType() {
         UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
-                RANGING_MEASUREMENT_TYPE_UNDEFINED, UwbUciConstants.STATUS_CODE_OK);
+                RANGING_MEASUREMENT_TYPE_UNDEFINED, MAC_ADDRESSING_MODE_EXTENDED,
+                UwbUciConstants.STATUS_CODE_OK);
         UwbSession mockUwbSession = mock(UwbSession.class);
         when(mockUwbSession.getWaitObj()).thenReturn(mock(WaitObj.class));
         doReturn(mockUwbSession)
@@ -346,7 +392,8 @@ public class UwbSessionManagerTest {
     @Test
     public void onRangeDataNotificationReceived_owrAoa_incorrectRangingRoundUsage() {
         UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
-                RANGING_MEASUREMENT_TYPE_OWR_AOA, UwbUciConstants.STATUS_CODE_OK);
+                RANGING_MEASUREMENT_TYPE_OWR_AOA, MAC_ADDRESSING_MODE_EXTENDED,
+                UwbUciConstants.STATUS_CODE_OK);
         UwbSession mockUwbSession = mock(UwbSession.class);
         when(mockUwbSession.getWaitObj()).thenReturn(mock(WaitObj.class));
         doReturn(mockUwbSession)
@@ -373,7 +420,8 @@ public class UwbSessionManagerTest {
     @Test
     public void onRangeDataNotificationReceived_owrAoa_incorrectDeviceRole() {
         UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
-                RANGING_MEASUREMENT_TYPE_OWR_AOA, UwbUciConstants.STATUS_CODE_OK);
+                RANGING_MEASUREMENT_TYPE_OWR_AOA, MAC_ADDRESSING_MODE_EXTENDED,
+                UwbUciConstants.STATUS_CODE_OK);
         UwbSession mockUwbSession = mock(UwbSession.class);
         when(mockUwbSession.getWaitObj()).thenReturn(mock(WaitObj.class));
         doReturn(mockUwbSession)
@@ -399,7 +447,8 @@ public class UwbSessionManagerTest {
     @Test
     public void onRangeDataNotificationReceived_owrAoa_receivedDataNotCalled() {
         UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
-                RANGING_MEASUREMENT_TYPE_OWR_AOA, UwbUciConstants.STATUS_CODE_OK);
+                RANGING_MEASUREMENT_TYPE_OWR_AOA, MAC_ADDRESSING_MODE_EXTENDED,
+                UwbUciConstants.STATUS_CODE_OK);
         UwbSession mockUwbSession = mock(UwbSession.class);
         when(mockUwbSession.getWaitObj()).thenReturn(mock(WaitObj.class));
         doReturn(mockUwbSession)
@@ -424,7 +473,8 @@ public class UwbSessionManagerTest {
     @Test
     public void onRangeDataNotificationReceived_owrAoa_receivedDataDifferentMacAddress() {
         UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
-                RANGING_MEASUREMENT_TYPE_OWR_AOA, UwbUciConstants.STATUS_CODE_OK);
+                RANGING_MEASUREMENT_TYPE_OWR_AOA, MAC_ADDRESSING_MODE_EXTENDED,
+                UwbUciConstants.STATUS_CODE_OK);
         UwbSession mockUwbSession = mock(UwbSession.class);
         when(mockUwbSession.getWaitObj()).thenReturn(mock(WaitObj.class));
         doReturn(mockUwbSession)
@@ -454,7 +504,8 @@ public class UwbSessionManagerTest {
     @Test
     public void onRangeDataNotificationReceived_owrAoa_receivedDataDifferentUwbSession() {
         UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
-                RANGING_MEASUREMENT_TYPE_OWR_AOA, UwbUciConstants.STATUS_CODE_OK);
+                RANGING_MEASUREMENT_TYPE_OWR_AOA, MAC_ADDRESSING_MODE_EXTENDED,
+                UwbUciConstants.STATUS_CODE_OK);
         UwbSession mockUwbSession = mock(UwbSession.class);
         when(mockUwbSession.getWaitObj()).thenReturn(mock(WaitObj.class));
         doReturn(mockUwbSession)
@@ -489,7 +540,8 @@ public class UwbSessionManagerTest {
     @Test
     public void onRangeDataNotificationReceived_owrAoa_notPointedTarget() {
         UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
-                RANGING_MEASUREMENT_TYPE_OWR_AOA, UwbUciConstants.STATUS_CODE_OK);
+                RANGING_MEASUREMENT_TYPE_OWR_AOA, MAC_ADDRESSING_MODE_EXTENDED,
+                UwbUciConstants.STATUS_CODE_OK);
         UwbSession mockUwbSession = mock(UwbSession.class);
         when(mockUwbSession.getWaitObj()).thenReturn(mock(WaitObj.class));
         doReturn(mockUwbSession)
@@ -1495,7 +1547,8 @@ public class UwbSessionManagerTest {
 
         // Now send a range data notification.
         UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
-                RANGING_MEASUREMENT_TYPE_TWO_WAY, UwbUciConstants.STATUS_CODE_OK);
+                RANGING_MEASUREMENT_TYPE_TWO_WAY, MAC_ADDRESSING_MODE_EXTENDED,
+                UwbUciConstants.STATUS_CODE_OK);
         mUwbSessionManager.onRangeDataNotificationReceived(uwbRangingData);
         verify(mUwbSessionNotificationManager).onRangingResult(uwbSession, uwbRangingData);
     }
@@ -1529,7 +1582,8 @@ public class UwbSessionManagerTest {
 
         // Now send a range data notification with an error.
         UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
-                rangingMeasurementType, UwbUciConstants.STATUS_CODE_RANGING_RX_TIMEOUT);
+                rangingMeasurementType, MAC_ADDRESSING_MODE_EXTENDED,
+                UwbUciConstants.STATUS_CODE_RANGING_RX_TIMEOUT);
         mUwbSessionManager.onRangeDataNotificationReceived(uwbRangingData);
         verify(mUwbSessionNotificationManager).onRangingResult(uwbSession, uwbRangingData);
         ArgumentCaptor<AlarmManager.OnAlarmListener> alarmListenerCaptor =
@@ -1540,7 +1594,8 @@ public class UwbSessionManagerTest {
 
         // Send one more error and ensure that the timer is not cancelled.
         uwbRangingData = UwbTestUtils.generateRangingData(
-                rangingMeasurementType, UwbUciConstants.STATUS_CODE_RANGING_RX_TIMEOUT);
+                rangingMeasurementType, MAC_ADDRESSING_MODE_EXTENDED,
+                UwbUciConstants.STATUS_CODE_RANGING_RX_TIMEOUT);
         mUwbSessionManager.onRangeDataNotificationReceived(uwbRangingData);
         verify(mUwbSessionNotificationManager).onRangingResult(uwbSession, uwbRangingData);
 
@@ -1582,7 +1637,8 @@ public class UwbSessionManagerTest {
 
         // Now send a range data notification with an error.
         UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
-                RANGING_MEASUREMENT_TYPE_TWO_WAY, UwbUciConstants.STATUS_CODE_RANGING_RX_TIMEOUT);
+                RANGING_MEASUREMENT_TYPE_TWO_WAY, MAC_ADDRESSING_MODE_EXTENDED,
+                UwbUciConstants.STATUS_CODE_RANGING_RX_TIMEOUT);
         mUwbSessionManager.onRangeDataNotificationReceived(uwbRangingData);
         verify(mUwbSessionNotificationManager).onRangingResult(uwbSession, uwbRangingData);
         ArgumentCaptor<AlarmManager.OnAlarmListener> alarmListenerCaptor =
@@ -1593,7 +1649,8 @@ public class UwbSessionManagerTest {
 
         // Send success and ensure that the timer is cancelled.
         uwbRangingData = UwbTestUtils.generateRangingData(
-                RANGING_MEASUREMENT_TYPE_TWO_WAY, UwbUciConstants.STATUS_CODE_OK);
+                RANGING_MEASUREMENT_TYPE_TWO_WAY, MAC_ADDRESSING_MODE_EXTENDED,
+                UwbUciConstants.STATUS_CODE_OK);
         mUwbSessionManager.onRangeDataNotificationReceived(uwbRangingData);
         verify(mUwbSessionNotificationManager).onRangingResult(uwbSession, uwbRangingData);
 
@@ -1707,33 +1764,36 @@ public class UwbSessionManagerTest {
         doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE).when(uwbSession).getSessionState();
 
         // Send data on the UWB session.
-        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID), eq(PEER_UWB_ADDRESS.toBytes()),
+        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID),
+                eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
                 eq(DATA_PAYLOAD))).thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
 
-        mUwbSessionManager.sendData(uwbSession.getSessionHandle(), PEER_UWB_ADDRESS,
+        mUwbSessionManager.sendData(uwbSession.getSessionHandle(), PEER_EXTENDED_UWB_ADDRESS,
                 PERSISTABLE_BUNDLE, DATA_PAYLOAD);
         mTestLooper.dispatchNext();
 
-        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID), eq(PEER_UWB_ADDRESS.toBytes()),
+        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID),
+                eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
                 eq(DATA_PAYLOAD));
         verify(mUwbSessionNotificationManager).onDataSent(
-                eq(uwbSession), eq(PEER_UWB_ADDRESS), eq(PERSISTABLE_BUNDLE));
+                eq(uwbSession), eq(PEER_EXTENDED_UWB_ADDRESS), eq(PERSISTABLE_BUNDLE));
     }
 
     @Test
     public void sendData_missingSessionHandle() throws Exception {
         mUwbSessionManager.sendData(
-                null /* sessionHandle */, PEER_UWB_ADDRESS, PERSISTABLE_BUNDLE, DATA_PAYLOAD);
+                null /* sessionHandle */, PEER_EXTENDED_UWB_ADDRESS, PERSISTABLE_BUNDLE,
+                DATA_PAYLOAD);
         mTestLooper.dispatchNext();
 
         verify(mNativeUwbManager, never()).sendData(
-                eq(TEST_SESSION_ID), eq(PEER_UWB_ADDRESS.toBytes()),
+                eq(TEST_SESSION_ID), eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
                 eq(DATA_PAYLOAD));
         verify(mUwbSessionNotificationManager).onDataSendFailed(
-                eq(null), eq(PEER_UWB_ADDRESS),
+                eq(null), eq(PEER_EXTENDED_UWB_ADDRESS),
                 eq(UwbUciConstants.STATUS_CODE_ERROR_SESSION_NOT_EXIST), eq(PERSISTABLE_BUNDLE));
     }
 
@@ -1744,15 +1804,15 @@ public class UwbSessionManagerTest {
         SessionHandle sessionHandle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
 
         mUwbSessionManager.sendData(
-                sessionHandle, PEER_UWB_ADDRESS, PERSISTABLE_BUNDLE, DATA_PAYLOAD);
+                sessionHandle, PEER_EXTENDED_UWB_ADDRESS, PERSISTABLE_BUNDLE, DATA_PAYLOAD);
         mTestLooper.dispatchNext();
 
         verify(mNativeUwbManager, never()).sendData(
-                eq(TEST_SESSION_ID), eq(PEER_UWB_ADDRESS.toBytes()),
+                eq(TEST_SESSION_ID), eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
                 eq(DATA_PAYLOAD));
         verify(mUwbSessionNotificationManager).onDataSendFailed(
-                eq(null), eq(PEER_UWB_ADDRESS),
+                eq(null), eq(PEER_EXTENDED_UWB_ADDRESS),
                 eq(UwbUciConstants.STATUS_CODE_ERROR_SESSION_NOT_EXIST), eq(PERSISTABLE_BUNDLE));
     }
 
@@ -1764,15 +1824,15 @@ public class UwbSessionManagerTest {
 
         // Attempt to send data on the UWB session.
         mUwbSessionManager.sendData(
-                uwbSession.getSessionHandle(), PEER_UWB_ADDRESS, PERSISTABLE_BUNDLE, null);
+                uwbSession.getSessionHandle(), PEER_EXTENDED_UWB_ADDRESS, PERSISTABLE_BUNDLE, null);
         mTestLooper.dispatchNext();
 
         verify(mNativeUwbManager, never()).sendData(
-                eq(TEST_SESSION_ID), eq(PEER_UWB_ADDRESS.toBytes()),
+                eq(TEST_SESSION_ID), eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
                 eq(DATA_PAYLOAD));
         verify(mUwbSessionNotificationManager).onDataSendFailed(
-                eq(uwbSession), eq(PEER_UWB_ADDRESS),
+                eq(uwbSession), eq(PEER_EXTENDED_UWB_ADDRESS),
                 eq(UwbUciConstants.STATUS_CODE_FAILED), eq(PERSISTABLE_BUNDLE));
     }
 
@@ -1792,15 +1852,15 @@ public class UwbSessionManagerTest {
 
         // Attempt to send data on the UWB session.
         mUwbSessionManager.sendData(
-                uwbSession.getSessionHandle(), PEER_UWB_ADDRESS, PERSISTABLE_BUNDLE, null);
+                uwbSession.getSessionHandle(), PEER_EXTENDED_UWB_ADDRESS, PERSISTABLE_BUNDLE, null);
         mTestLooper.dispatchNext();
 
         verify(mNativeUwbManager, never()).sendData(
-                eq(TEST_SESSION_ID), eq(PEER_UWB_ADDRESS.toBytes()),
+                eq(TEST_SESSION_ID), eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
                 eq(DATA_PAYLOAD));
         verify(mUwbSessionNotificationManager).onDataSendFailed(
-                eq(uwbSession), eq(PEER_UWB_ADDRESS),
+                eq(uwbSession), eq(PEER_EXTENDED_UWB_ADDRESS),
                 eq(UwbUciConstants.STATUS_CODE_INVALID_PARAM), eq(PERSISTABLE_BUNDLE));
     }
 
@@ -1824,7 +1884,7 @@ public class UwbSessionManagerTest {
         mTestLooper.dispatchNext();
 
         verify(mNativeUwbManager, never()).sendData(
-                eq(TEST_SESSION_ID), eq(PEER_UWB_ADDRESS.toBytes()),
+                eq(TEST_SESSION_ID), eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
                 eq(DATA_PAYLOAD));
         verify(mUwbSessionNotificationManager).onDataSendFailed(
@@ -1847,19 +1907,21 @@ public class UwbSessionManagerTest {
         doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE).when(uwbSession).getSessionState();
 
         // Attempt to send data on the UWB session.
-        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID), eq(PEER_UWB_ADDRESS.toBytes()),
+        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID),
+                eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
                 eq(DATA_PAYLOAD))).thenReturn((byte) UwbUciConstants.STATUS_CODE_FAILED);
 
-        mUwbSessionManager.sendData(uwbSession.getSessionHandle(), PEER_UWB_ADDRESS,
+        mUwbSessionManager.sendData(uwbSession.getSessionHandle(), PEER_EXTENDED_UWB_ADDRESS,
                 PERSISTABLE_BUNDLE, DATA_PAYLOAD);
         mTestLooper.dispatchNext();
 
-        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID), eq(PEER_UWB_ADDRESS.toBytes()),
+        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID),
+                eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
                 eq(DATA_PAYLOAD));
         verify(mUwbSessionNotificationManager).onDataSendFailed(
-                eq(uwbSession), eq(PEER_UWB_ADDRESS),
+                eq(uwbSession), eq(PEER_EXTENDED_UWB_ADDRESS),
                 eq(UwbUciConstants.STATUS_CODE_FAILED), eq(PERSISTABLE_BUNDLE));
     }
 
@@ -2449,7 +2511,8 @@ public class UwbSessionManagerTest {
     public void onSessionStatusNotification_session_deinit_owrAoa() throws Exception {
         UwbSession uwbSession = prepareExistingUwbSession();
         UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
-                RANGING_MEASUREMENT_TYPE_OWR_AOA, UwbUciConstants.STATUS_CODE_OK);
+                RANGING_MEASUREMENT_TYPE_OWR_AOA, MAC_ADDRESSING_MODE_EXTENDED,
+                UwbUciConstants.STATUS_CODE_OK);
 
         // First call onDataReceived() to get the application payload data.
         mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,

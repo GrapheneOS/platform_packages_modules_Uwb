@@ -128,11 +128,14 @@ public class UwbUciConstants {
             FiraParams.RANGING_DEVICE_ROLE_OBSERVER;
 
     /**
-     * Table 22: Ranging Data Notification
+     * Table 37: Ranging Data Notification
      */
     public static final byte RANGING_MEASUREMENT_TYPE_TWO_WAY = 0X01;
     public static final byte RANGING_MEASUREMENT_TYPE_DL_TDOA = 0x02;
     public static final byte RANGING_MEASUREMENT_TYPE_OWR_AOA = 0x03;
+
+    public static final byte MAC_ADDRESSING_MODE_SHORT = 0x00;
+    public static final byte MAC_ADDRESSING_MODE_EXTENDED = 0x01;
 
     /**
      * Table 32: Status Codes
@@ -191,6 +194,7 @@ public class UwbUciConstants {
     public static final int STATUS_CODE_CCC_LIFECYCLE = STATUS_ERROR_CCC_LIFECYCLE;
 
     /* UWB Device Extended Mac address length */
+    public static final int UWB_DEVICE_SHORT_MAC_ADDRESS_LEN = 2;
     public static final int UWB_DEVICE_EXT_MAC_ADDRESS_LEN = 8;
 
     /* UWB Data Session Specific Status Codes */
