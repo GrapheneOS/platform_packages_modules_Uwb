@@ -52,8 +52,8 @@ public class UwbAdvertiseManager {
      * Check if the current device is pointing at the remote device, from which we have received
      * One-way Ranging AoA Measurement(s).
      */
-    public boolean isPointedTarget(byte[] macAddress) {
-        UwbAdvertiseTarget uwbAdvertiseTarget = getAdvertiseTarget(byteArrayToI16(macAddress));
+    public boolean isPointedTarget(byte[] macAddressBytes) {
+        UwbAdvertiseTarget uwbAdvertiseTarget = getAdvertiseTarget(byteArrayToI16(macAddressBytes));
         if (uwbAdvertiseTarget == null) {
             return false;
         }
@@ -75,7 +75,19 @@ public class UwbAdvertiseManager {
      * Store a One-way Ranging AoA Measurement from the remote device in a UWB ranging session.
      */
     public void updateAdvertiseTarget(UwbOwrAoaMeasurement uwbOwrAoaMeasurement) {
+        // First check if there exists a stale UwbAdvertiseTarget for the device, and remove it.
+        checkAndRemoveStaleAdvertiseTarget(uwbOwrAoaMeasurement.mMacAddress);
+
+        // Now store the new measurement for the device.
         updateAdvertiseTargetInfo(uwbOwrAoaMeasurement);
+    }
+
+    /**
+     * Remove all the stored AdvertiseTarget data for the given device.
+     */
+    public void removeAdvertiseTarget(byte[] macAddressBytes) {
+        int macAddress = byteArrayToI16(macAddressBytes);
+        mAdvertiseTargetMap.remove(macAddress);
     }
 
     private boolean isWithinCriterionVariance(UwbAdvertiseTarget uwbAdvertiseTarget) {
@@ -91,6 +103,18 @@ public class UwbAdvertiseManager {
             return false;
         }
         return true;
+    }
+
+    private void checkAndRemoveStaleAdvertiseTarget(byte[] macAddressBytes) {
+        int macAddress = byteArrayToI16(macAddressBytes);
+        UwbAdvertiseTarget uwbAdvertiseTarget = getAdvertiseTarget(macAddress);
+        if (uwbAdvertiseTarget == null) {
+            return;
+        }
+
+        if (!isWithinTimeThreshold(uwbAdvertiseTarget)) {
+            removeAdvertiseTarget(macAddressBytes);
+        }
     }
 
     private boolean isWithinTimeThreshold(UwbAdvertiseTarget uwbAdvertiseTarget) {
@@ -140,7 +164,12 @@ public class UwbAdvertiseManager {
         return advertiseTarget;
     }
 
-    private static class UwbAdvertiseTarget {
+    /**
+     * Stored Owr Aoa Measurements for the remote devices. The data should be cleared when the
+     * UWB session is closed.
+     */
+    @VisibleForTesting
+    public static class UwbAdvertiseTarget {
         private final int mMacAddress;
         private final ArrayList<Double> mRecentAoaAzimuth = new ArrayList<>();
         private final ArrayList<Double> mRecentAoaElevation = new ArrayList<>();

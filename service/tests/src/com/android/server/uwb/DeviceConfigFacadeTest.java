@@ -113,7 +113,7 @@ public class DeviceConfigFacadeTest {
     public void testDefaultValue() throws Exception {
         assertEquals(DeviceConfigFacade.DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS,
                 mDeviceConfigFacade.getRangingResultLogIntervalMs());
-        assertEquals(true, mDeviceConfigFacade.isDeviceErrorBugreportEnabled());
+        assertEquals(false, mDeviceConfigFacade.isDeviceErrorBugreportEnabled());
         assertEquals(DeviceConfigFacade.DEFAULT_BUG_REPORT_MIN_INTERVAL_MS,
                 mDeviceConfigFacade.getBugReportMinIntervalMs());
     }
