@@ -131,6 +131,7 @@ public class UwbUciConstants {
      * Table 22: Ranging Data Notification
      */
     public static final byte RANGING_MEASUREMENT_TYPE_TWO_WAY = 0X01;
+    public static final byte RANGING_MEASUREMENT_TYPE_DL_TDOA = 0x02;
     public static final byte RANGING_MEASUREMENT_TYPE_OWR_AOA = 0x03;
 
     /**
