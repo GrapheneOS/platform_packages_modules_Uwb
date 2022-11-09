@@ -124,3 +124,14 @@ java_library {
         "com.uwb.support.base",
     ],
 }
+
+java_library {
+    name: "com.uwb.support.dltdoa",
+    defaults: ["support-lib-uwb-common-defaults"],
+    srcs: [
+        "src/com/google/uwb/support/dltdoa/**/*.java",
+    ],
+    static_libs: [
+            "com.uwb.support.base",
+        ],
+}

@@ -71,6 +71,7 @@ java_library {
         "com.uwb.support.multichip",
         "com.uwb.support.profile",
         "com.uwb.support.oemextension",
+        "com.uwb.support.dltdoa",
         "guava",
         "modules-utils-shell-command-handler",
         "modules-utils-handlerexecutor",
