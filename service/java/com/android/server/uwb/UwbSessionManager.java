@@ -53,6 +53,7 @@ import android.uwb.UwbAddress;
 import androidx.annotation.VisibleForTesting;
 
 import com.android.server.uwb.advertisement.UwbAdvertiseManager;
+import com.android.server.uwb.data.DtTagUpdateRangingRoundsStatus;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbOwrAoaMeasurement;
 import com.android.server.uwb.data.UwbRangingData;
@@ -70,6 +71,8 @@ import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccRangingStartedParams;
 import com.google.uwb.support.ccc.CccStartRangingParams;
+import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
+import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdateStatus;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
@@ -711,6 +714,40 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         info.data = data;
 
         mEventTask.execute(SESSION_SEND_DATA, info);
+    }
+
+    /** DT Tag ranging round update */
+    public PersistableBundle handleRangingRoundUpdate(SessionHandle sessionHandle,
+            PersistableBundle bundle) {
+        DlTDoARangingRoundsUpdate dlTDoARangingRoundsUpdate = DlTDoARangingRoundsUpdate
+                .fromBundle(bundle);
+        if (dlTDoARangingRoundsUpdate.getSessionId() != getSessionId(sessionHandle)) {
+            throw new IllegalArgumentException("Wrong session ID");
+        }
+        UwbSession uwbSession = mSessionTable.get(getSessionId(sessionHandle));
+        DtTagUpdateRangingRoundsStatus status = mNativeUwbManager.sessionUpdateActiveRoundsDtTag(
+                (int) dlTDoARangingRoundsUpdate.getSessionId(),
+                dlTDoARangingRoundsUpdate.getNoOfActiveRangingRounds(),
+                dlTDoARangingRoundsUpdate.getRangingRoundIndexes(),
+                uwbSession.getChipId());
+        if (status.getStatus() != UwbUciConstants.STATUS_CODE_OK) {
+            Log.e(TAG, "DlTagRangingRoundUpdate failed for sessionId "
+                    + dlTDoARangingRoundsUpdate.getSessionId());
+            Log.e(TAG, status.toString());
+            return new DlTDoARangingRoundsUpdateStatus.Builder()
+                    .setStatus(status.getStatus())
+                    .setNoOfActiveRangingRounds(status.getNoOfActiveRangingRounds())
+                    .setRangingRoundIndexes(status.getRangingRoundIndexes())
+                    .build()
+                    .toBundle();
+        } else {
+            Log.i(TAG, "DlTagRangingRoundUpdate successful for sessionId "
+                    + dlTDoARangingRoundsUpdate.getSessionId());
+            return new DlTDoARangingRoundsUpdateStatus.Builder()
+                    .setStatus(UwbUciConstants.STATUS_CODE_OK)
+                    .build()
+                    .toBundle();
+        }
     }
 
     private static final class SendDataInfo {
