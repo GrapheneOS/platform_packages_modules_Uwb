@@ -71,6 +71,9 @@ public class UwbSessionNotificationHelper {
             case UwbUciConstants.STATUS_CODE_CCC_SE_BUSY:
                 rangingChangeReason = RangingChangeReason.PROTOCOL_SPECIFIC;
                 break;
+            case UwbUciConstants.REASON_ERROR_INSUFFICIENT_SLOTS_PER_RR:
+                rangingChangeReason = RangingChangeReason.INSUFFICIENT_SLOTS_PER_RR;
+                break;
         }
         return rangingChangeReason;
     }

@@ -68,6 +68,7 @@ public class ConfigParam {
     public static final int RANGE_DATA_NTF_AOA_BOUND = 0x1D;
     public static final int RESPONDER_SLOT_INDEX = 0x1E;
     public static final int PRF_MODE = 0x1F;
+    public static final int CAP_SIZE_RANGE = 0x20;
     public static final int SCHEDULED_MODE = 0x22;
     public static final int KEY_ROTATION = 0x23;
     public static final int KEY_ROTATION_RATE = 0x24;
