@@ -15,6 +15,9 @@
  */
 package com.android.server.uwb.util;
 
+import static com.android.server.uwb.data.UwbUciConstants.UWB_DEVICE_EXT_MAC_ADDRESS_LEN;
+import static com.android.server.uwb.data.UwbUciConstants.UWB_DEVICE_SHORT_MAC_ADDRESS_LEN;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -138,17 +141,33 @@ public class DataTypeConversionUtil {
     }
 
     /**
-     * Convert the byte array to a long. The input array could be of shorter size (eg: 2 bytes).
+     * Convert the byte array (in Little Endian format) to a long. The input array could be: of
+     * shorter size (eg: 2 bytes, to represent a shortMacAddress). It could also have length of 8
+     * bytes, but have the MSB 6 bytes zeroed out (the 2 LSB bytes contain the MacAddress).
      */
-    public static long byteArrayToLong(byte[] bytes) {
-        /* Create a byte array of size 8 to convert it to a long */
-        byte[] extendedArray = new byte[] {0, 0, 0, 0, 0, 0, 0, 0};
-        for (int i = 0; i < bytes.length; i++) {
-            extendedArray[i] = bytes[i];
+    public static long macAddressByteArrayToLong(byte[] bytes) {
+        if (bytes.length == 2) {
+            return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getShort();
+        } else if (bytes.length == 4) {
+            return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
+        } else if (bytes.length == 8) {
+            if (isExtendedMSBZeroedOut(bytes)) {
+                return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getShort();
+            } else {
+                return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getLong();
+            }
+        } else {
+            throw new NumberFormatException("Expected length one of (2, 4, 8) but was "
+                    + bytes.length);
         }
-
-        return ByteBuffer.wrap(extendedArray).getLong();
     }
 
+    // Check if the MSB bytes are zeroed out.
+    private static boolean isExtendedMSBZeroedOut(byte[] bytes) {
+        for (int i = UWB_DEVICE_SHORT_MAC_ADDRESS_LEN; i < UWB_DEVICE_EXT_MAC_ADDRESS_LEN; i++) {
+            if (bytes[i] != 0) return false;
+        }
+        return true;
+    }
     private DataTypeConversionUtil() {}
 }
