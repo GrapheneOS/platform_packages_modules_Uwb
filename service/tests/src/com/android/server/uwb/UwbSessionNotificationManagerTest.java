@@ -17,10 +17,10 @@
 package com.android.server.uwb;
 
 import static com.android.server.uwb.UwbTestUtils.DATA_PAYLOAD;
-import static com.android.server.uwb.UwbTestUtils.PEER_EXTENDED_MAC_ADDRESS;
+import static com.android.server.uwb.UwbTestUtils.PEER_EXTENDED_UWB_ADDRESS;
 import static com.android.server.uwb.UwbTestUtils.PEER_SHORT_MAC_ADDRESS;
-import static com.android.server.uwb.UwbTestUtils.PEER_UWB_ADDRESS;
 import static com.android.server.uwb.UwbTestUtils.PERSISTABLE_BUNDLE;
+import static com.android.server.uwb.data.UwbUciConstants.MAC_ADDRESSING_MODE_SHORT;
 import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TYPE_OWR_AOA;
 import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TYPE_TWO_WAY;
 import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_FAILED;
@@ -110,7 +110,8 @@ public class UwbSessionNotificationManagerTest {
     public void testOnRangingResultWithoutUwbRangingPermission() throws Exception {
         Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
                 UwbTestUtils.generateRangingDataAndRangingReport(
-                        PEER_SHORT_MAC_ADDRESS, RANGING_MEASUREMENT_TYPE_TWO_WAY,
+                        PEER_SHORT_MAC_ADDRESS, MAC_ADDRESSING_MODE_SHORT,
+                        RANGING_MEASUREMENT_TYPE_TWO_WAY,
                         true, true, false, false, TEST_ELAPSED_NANOS);
         when(mUwbInjector.checkUwbRangingPermissionForDataDelivery(eq(ATTRIBUTION_SOURCE), any()))
                 .thenReturn(false);
@@ -124,7 +125,8 @@ public class UwbSessionNotificationManagerTest {
     public void testOnRangingResult_forTwoWay_WithAoa() throws Exception {
         Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
                 UwbTestUtils.generateRangingDataAndRangingReport(
-                        PEER_SHORT_MAC_ADDRESS, RANGING_MEASUREMENT_TYPE_TWO_WAY,
+                        PEER_SHORT_MAC_ADDRESS, MAC_ADDRESSING_MODE_SHORT,
+                        RANGING_MEASUREMENT_TYPE_TWO_WAY,
                         true, true, false, false, TEST_ELAPSED_NANOS);
         mUwbSessionNotificationManager.onRangingResult(
                 mUwbSession, testRangingDataAndRangingReport.first);
@@ -138,7 +140,8 @@ public class UwbSessionNotificationManagerTest {
                 FiraParams.AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT);
         Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
                 UwbTestUtils.generateRangingDataAndRangingReport(
-                        PEER_SHORT_MAC_ADDRESS, RANGING_MEASUREMENT_TYPE_TWO_WAY,
+                        PEER_SHORT_MAC_ADDRESS, MAC_ADDRESSING_MODE_SHORT,
+                        RANGING_MEASUREMENT_TYPE_TWO_WAY,
                         false, false, false, false, TEST_ELAPSED_NANOS);
         mUwbSessionNotificationManager.onRangingResult(
                 mUwbSession, testRangingDataAndRangingReport.first);
@@ -152,7 +155,8 @@ public class UwbSessionNotificationManagerTest {
                 FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_AZIMUTH_ONLY);
         Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
                 UwbTestUtils.generateRangingDataAndRangingReport(
-                        PEER_SHORT_MAC_ADDRESS, RANGING_MEASUREMENT_TYPE_TWO_WAY,
+                        PEER_SHORT_MAC_ADDRESS, MAC_ADDRESSING_MODE_SHORT,
+                        RANGING_MEASUREMENT_TYPE_TWO_WAY,
                         true, false, false, false, TEST_ELAPSED_NANOS);
         mUwbSessionNotificationManager.onRangingResult(
                 mUwbSession, testRangingDataAndRangingReport.first);
@@ -166,7 +170,8 @@ public class UwbSessionNotificationManagerTest {
                 FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_ELEVATION_ONLY);
         Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
                 UwbTestUtils.generateRangingDataAndRangingReport(
-                        PEER_SHORT_MAC_ADDRESS, RANGING_MEASUREMENT_TYPE_TWO_WAY,
+                        PEER_SHORT_MAC_ADDRESS, MAC_ADDRESSING_MODE_SHORT,
+                        RANGING_MEASUREMENT_TYPE_TWO_WAY,
                         false, true, false, false, TEST_ELAPSED_NANOS);
         mUwbSessionNotificationManager.onRangingResult(
                 mUwbSession, testRangingDataAndRangingReport.first);
@@ -183,7 +188,8 @@ public class UwbSessionNotificationManagerTest {
         when(mFiraParams.hasAngleOfArrivalElevationReport()).thenReturn(true);
         Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
                 UwbTestUtils.generateRangingDataAndRangingReport(
-                        PEER_SHORT_MAC_ADDRESS, RANGING_MEASUREMENT_TYPE_TWO_WAY,
+                        PEER_SHORT_MAC_ADDRESS, MAC_ADDRESSING_MODE_SHORT,
+                        RANGING_MEASUREMENT_TYPE_TWO_WAY,
                         true, true, true, true, TEST_ELAPSED_NANOS);
         mUwbSessionNotificationManager.onRangingResult(
                 mUwbSession, testRangingDataAndRangingReport.first);
@@ -200,7 +206,8 @@ public class UwbSessionNotificationManagerTest {
         when(mFiraParams.hasAngleOfArrivalElevationReport()).thenReturn(true);
         Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
                 UwbTestUtils.generateRangingDataAndRangingReport(
-                        PEER_SHORT_MAC_ADDRESS, RANGING_MEASUREMENT_TYPE_TWO_WAY,
+                        PEER_SHORT_MAC_ADDRESS, MAC_ADDRESSING_MODE_SHORT,
+                        RANGING_MEASUREMENT_TYPE_TWO_WAY,
                         true, true, false, true, TEST_ELAPSED_NANOS);
         mUwbSessionNotificationManager.onRangingResult(
                 mUwbSession, testRangingDataAndRangingReport.first);
@@ -217,7 +224,8 @@ public class UwbSessionNotificationManagerTest {
         when(mFiraParams.hasAngleOfArrivalElevationReport()).thenReturn(false);
         Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
                 UwbTestUtils.generateRangingDataAndRangingReport(
-                        PEER_SHORT_MAC_ADDRESS, RANGING_MEASUREMENT_TYPE_TWO_WAY,
+                        PEER_SHORT_MAC_ADDRESS, MAC_ADDRESSING_MODE_SHORT,
+                        RANGING_MEASUREMENT_TYPE_TWO_WAY,
                         true, true, true, false, TEST_ELAPSED_NANOS);
         mUwbSessionNotificationManager.onRangingResult(
                 mUwbSession, testRangingDataAndRangingReport.first);
@@ -234,7 +242,8 @@ public class UwbSessionNotificationManagerTest {
         when(mFiraParams.hasAngleOfArrivalElevationReport()).thenReturn(true);
         Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
                 UwbTestUtils.generateRangingDataAndRangingReport(
-                        PEER_SHORT_MAC_ADDRESS, RANGING_MEASUREMENT_TYPE_TWO_WAY,
+                        PEER_SHORT_MAC_ADDRESS, MAC_ADDRESSING_MODE_SHORT,
+                        RANGING_MEASUREMENT_TYPE_TWO_WAY,
                         false, false, true, true, TEST_ELAPSED_NANOS);
         mUwbSessionNotificationManager.onRangingResult(
                 mUwbSession, testRangingDataAndRangingReport.first);
@@ -251,7 +260,8 @@ public class UwbSessionNotificationManagerTest {
         when(mFiraParams.hasAngleOfArrivalElevationReport()).thenReturn(true);
         Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
                 UwbTestUtils.generateRangingDataAndRangingReport(
-                        PEER_SHORT_MAC_ADDRESS, RANGING_MEASUREMENT_TYPE_TWO_WAY,
+                        PEER_SHORT_MAC_ADDRESS, MAC_ADDRESSING_MODE_SHORT,
+                        RANGING_MEASUREMENT_TYPE_TWO_WAY,
                         false, true, true, true, TEST_ELAPSED_NANOS);
         mUwbSessionNotificationManager.onRangingResult(
                 mUwbSession, testRangingDataAndRangingReport.first);
@@ -268,7 +278,8 @@ public class UwbSessionNotificationManagerTest {
         when(mFiraParams.hasAngleOfArrivalElevationReport()).thenReturn(true);
         Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
                 UwbTestUtils.generateRangingDataAndRangingReport(
-                        PEER_SHORT_MAC_ADDRESS, RANGING_MEASUREMENT_TYPE_TWO_WAY,
+                        PEER_SHORT_MAC_ADDRESS, MAC_ADDRESSING_MODE_SHORT,
+                        RANGING_MEASUREMENT_TYPE_TWO_WAY,
                         true, false, true, true, TEST_ELAPSED_NANOS);
         mUwbSessionNotificationManager.onRangingResult(
                 mUwbSession, testRangingDataAndRangingReport.first);
@@ -280,7 +291,8 @@ public class UwbSessionNotificationManagerTest {
     public void testOnRangingResult_forOwrAoa() throws Exception {
         Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
                 UwbTestUtils.generateRangingDataAndRangingReport(
-                        PEER_EXTENDED_MAC_ADDRESS, RANGING_MEASUREMENT_TYPE_OWR_AOA,
+                        PEER_SHORT_MAC_ADDRESS, MAC_ADDRESSING_MODE_SHORT,
+                        RANGING_MEASUREMENT_TYPE_OWR_AOA,
                         true, true, false, false, TEST_ELAPSED_NANOS);
         mUwbSessionNotificationManager.onRangingResult(
                 mUwbSession, testRangingDataAndRangingReport.first);
@@ -436,37 +448,40 @@ public class UwbSessionNotificationManagerTest {
 
     @Test
     public void testOnDataReceived() throws Exception {
-        mUwbSessionNotificationManager.onDataReceived(mUwbSession, PEER_UWB_ADDRESS,
+        mUwbSessionNotificationManager.onDataReceived(mUwbSession, PEER_EXTENDED_UWB_ADDRESS,
                 PERSISTABLE_BUNDLE, DATA_PAYLOAD);
 
-        verify(mIUwbRangingCallbacks).onDataReceived(eq(mSessionHandle), eq(PEER_UWB_ADDRESS),
+        verify(mIUwbRangingCallbacks).onDataReceived(eq(mSessionHandle), eq(
+                        PEER_EXTENDED_UWB_ADDRESS),
                 eq(PERSISTABLE_BUNDLE), eq(DATA_PAYLOAD));
     }
 
     @Test
     public void testOnDataReceiveFailed() throws Exception {
-        mUwbSessionNotificationManager.onDataReceiveFailed(mUwbSession, PEER_UWB_ADDRESS,
+        mUwbSessionNotificationManager.onDataReceiveFailed(mUwbSession, PEER_EXTENDED_UWB_ADDRESS,
                 STATUS_CODE_FAILED, PERSISTABLE_BUNDLE);
 
-        verify(mIUwbRangingCallbacks).onDataReceiveFailed(eq(mSessionHandle), eq(PEER_UWB_ADDRESS),
+        verify(mIUwbRangingCallbacks).onDataReceiveFailed(eq(mSessionHandle), eq(
+                        PEER_EXTENDED_UWB_ADDRESS),
                 eq(STATUS_CODE_FAILED), eq(PERSISTABLE_BUNDLE));
     }
 
     @Test
     public void testOnDataSent() throws Exception {
-        mUwbSessionNotificationManager.onDataSent(mUwbSession, PEER_UWB_ADDRESS,
+        mUwbSessionNotificationManager.onDataSent(mUwbSession, PEER_EXTENDED_UWB_ADDRESS,
                 PERSISTABLE_BUNDLE);
 
-        verify(mIUwbRangingCallbacks).onDataSent(eq(mSessionHandle), eq(PEER_UWB_ADDRESS),
+        verify(mIUwbRangingCallbacks).onDataSent(eq(mSessionHandle), eq(PEER_EXTENDED_UWB_ADDRESS),
                 eq(PERSISTABLE_BUNDLE));
     }
 
     @Test
     public void testOnDataSendFailed() throws Exception {
-        mUwbSessionNotificationManager.onDataSendFailed(mUwbSession, PEER_UWB_ADDRESS,
+        mUwbSessionNotificationManager.onDataSendFailed(mUwbSession, PEER_EXTENDED_UWB_ADDRESS,
                 STATUS_CODE_FAILED, PERSISTABLE_BUNDLE);
 
-        verify(mIUwbRangingCallbacks).onDataSendFailed(eq(mSessionHandle), eq(PEER_UWB_ADDRESS),
+        verify(mIUwbRangingCallbacks).onDataSendFailed(eq(mSessionHandle), eq(
+                        PEER_EXTENDED_UWB_ADDRESS),
                 eq(STATUS_CODE_FAILED), eq(PERSISTABLE_BUNDLE));
     }
 }

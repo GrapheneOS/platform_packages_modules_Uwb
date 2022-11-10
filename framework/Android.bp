@@ -106,6 +106,7 @@ java_sdk_library {
     ],
     permitted_packages: [
         "android.uwb",
+        "android.uwb.util",
         // Created by jarjar rules.
         "com.android.x.uwb",
     ],
