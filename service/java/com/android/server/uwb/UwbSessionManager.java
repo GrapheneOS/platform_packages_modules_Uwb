@@ -102,6 +102,8 @@ import java.util.stream.Collectors;
 public class UwbSessionManager implements INativeUwbManager.SessionNotification {
 
     private static final String TAG = "UwbSessionManager";
+    private static final byte OPERATION_TYPE_INIT_SESSION = 0;
+
     @VisibleForTesting
     public static final int SESSION_OPEN_RANGING = 1;
     @VisibleForTesting
@@ -327,9 +329,18 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             }
         }
         int prevState = uwbSession.getSessionState();
-        synchronized (uwbSession.getWaitObj()) {
-            uwbSession.getWaitObj().blockingNotify();
-            setCurrentSessionState((int) sessionId, state);
+        setCurrentSessionState((int) sessionId, state);
+
+        if ((uwbSession.getOperationType() == SESSION_ON_DEINIT
+                && state == UwbUciConstants.UWB_SESSION_STATE_IDLE)
+                || (uwbSession.getOperationType() == SESSION_STOP_RANGING
+                && state == UwbUciConstants.UWB_SESSION_STATE_IDLE
+                && reasonCode != REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS)) {
+            Log.d(TAG, "Session status NTF is received due to in-band session state change");
+        } else {
+            synchronized (uwbSession.getWaitObj()) {
+                uwbSession.getWaitObj().blockingNotify();
+            }
         }
 
         //TODO : process only error handling in this switch function, b/218921154
@@ -977,6 +988,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                     () -> {
                         int status = UwbUciConstants.STATUS_CODE_FAILED;
                         synchronized (uwbSession.getWaitObj()) {
+                            uwbSession.setOperationType(OPERATION_TYPE_INIT_SESSION);
                             status = mNativeUwbManager.initSession(
                                     uwbSession.getSessionId(),
                                     getSessionType(uwbSession.getParams().getProtocolName()),
@@ -1025,6 +1037,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             if (status != UwbUciConstants.STATUS_CODE_OK) {
                 Log.i(TAG, "Failed to initialize session - status : " + status);
                 mSessionNotificationManager.onRangingOpenFailed(uwbSession, status);
+                uwbSession.setOperationType(SESSION_ON_DEINIT);
                 mNativeUwbManager.deInitSession(uwbSession.getSessionId(), uwbSession.getChipId());
                 removeSession(uwbSession);
             }
@@ -1049,6 +1062,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                 }
                             }
 
+                            uwbSession.setOperationType(SESSION_START_RANGING);
                             status = mNativeUwbManager.startRanging(uwbSession.getSessionId(),
                                     uwbSession.getChipId());
                             if (status != UwbUciConstants.STATUS_CODE_OK) {
@@ -1108,6 +1122,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                     () -> {
                         int status = UwbUciConstants.STATUS_CODE_FAILED;
                         synchronized (uwbSession.getWaitObj()) {
+                            uwbSession.setOperationType(SESSION_STOP_RANGING);
                             status = mNativeUwbManager.stopRanging(uwbSession.getSessionId(),
                                     uwbSession.getChipId());
                             if (status != UwbUciConstants.STATUS_CODE_OK) {
@@ -1494,6 +1509,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         private final int mProfileType;
         private AlarmManager.OnAlarmListener mRangingResultErrorStreakTimerListener;
         private AlarmManager.OnAlarmListener mNonPrivilegedBgAppTimerListener;
+        private int mOperationType = OPERATION_TYPE_INIT_SESSION;
         private final String mChipId;
         private boolean mHasNonPrivilegedFgApp = false;
         private @FiraParams.RangeDataNtfConfig Integer mOrigRangeDataNtfConfig;
@@ -1805,6 +1821,14 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             } else {
                 stopNonPrivilegedBgAppTimerIfSet();
             }
+        }
+
+        public int getOperationType() {
+            return mOperationType;
+        }
+
+        public void setOperationType(int type) {
+            mOperationType = type;
         }
 
         @Override
