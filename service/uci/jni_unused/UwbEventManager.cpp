@@ -123,7 +123,7 @@ void UwbEventManager::onRangeDataNotificationReceived(
             (jbyte *)ranging_ntf_data->ranging_measures.twr_range_measr[i].rfu);
       }
       rngMeasuresCtor = env->GetMethodID(mRangingTwoWayMeasuresClass, "<init>",
-                                         "([BIIIIIIIIIIII)V");
+                                         "([BIIIIIIIIIIIII)V");
 
       env->SetObjectArrayElement(
           rangeMeasuresArray, i,
@@ -151,6 +151,7 @@ void UwbEventManager::onRangeDataNotificationReceived(
                   .aoa_dest_elevation_FOM,
               (int)ranging_ntf_data->ranging_measures.twr_range_measr[i]
                   .slot_index,
+              (int)ranging_ntf_data->ranging_measures.twr_range_measr[i].rssi,
               rfu));
     }
 
