@@ -577,7 +577,7 @@ public class UwbManagerTest {
             mCtrlCountDownLatch.countDown();
         }
 
-        public void onOpenFailed(@Reason int reason, @NonNull PersistableBundle params) {
+        public void onOpenFailed(int reason, @NonNull PersistableBundle params) {
             onOpenFailedCalled = true;
             mCtrlCountDownLatch.countDown();
         }
@@ -587,7 +587,7 @@ public class UwbManagerTest {
             mCtrlCountDownLatch.countDown();
         }
 
-        public void onStartFailed(@Reason int reason, @NonNull PersistableBundle params) {
+        public void onStartFailed(int reason, @NonNull PersistableBundle params) {
             onStartFailedCalled = true;
             mCtrlCountDownLatch.countDown();
         }
@@ -597,16 +597,16 @@ public class UwbManagerTest {
             mCtrlCountDownLatch.countDown();
         }
 
-        public void onReconfigureFailed(@Reason int reason, @NonNull PersistableBundle params) {
+        public void onReconfigureFailed(int reason, @NonNull PersistableBundle params) {
             onReconfiguredFailedCalled = true;
             mCtrlCountDownLatch.countDown();
         }
 
-        public void onStopped(@Reason int reason, @NonNull PersistableBundle parameters) { }
+        public void onStopped(int reason, @NonNull PersistableBundle parameters) { }
 
-        public void onStopFailed(@Reason int reason, @NonNull PersistableBundle params) { }
+        public void onStopFailed(int reason, @NonNull PersistableBundle params) { }
 
-        public void onClosed(@Reason int reason, @NonNull PersistableBundle parameters) {
+        public void onClosed(int reason, @NonNull PersistableBundle parameters) {
             onClosedCalled = true;
             mCtrlCountDownLatch.countDown();
         }
@@ -1037,17 +1037,17 @@ public class UwbManagerTest {
 
     private class AdapterStateCallback implements UwbManager.AdapterStateCallback {
         private final CountDownLatch mCountDownLatch;
-        private final @State Integer mWaitForState;
+        private final Integer mWaitForState;
         public int state;
         public int reason;
 
         AdapterStateCallback(@NonNull CountDownLatch countDownLatch,
-                @Nullable @State Integer waitForState) {
+                @Nullable Integer waitForState) {
             mCountDownLatch = countDownLatch;
             mWaitForState = waitForState;
         }
 
-        public void onStateChanged(@State int state, @StateChangedReason int reason) {
+        public void onStateChanged(int state, int reason) {
             this.state = state;
             this.reason = reason;
             if (mWaitForState != null) {
