@@ -21,6 +21,7 @@ import android.util.Log;
 import com.android.internal.annotations.Keep;
 import com.android.server.uwb.UciLogModeStore;
 import com.android.server.uwb.UwbInjector;
+import com.android.server.uwb.data.DtTagUpdateRangingRoundsStatus;
 import com.android.server.uwb.data.UwbConfigStatusData;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbRangingData;
@@ -421,6 +422,24 @@ public class NativeUwbManager {
     private native byte nativeSendData(int sessionId, byte[] address,
             byte destEndPoint, int sequenceNum, byte[] appData);
 
+
+    /**
+     * Update active Ranging Rounds for DT Tag
+     *
+     * @param sessionId Session ID to which ranging round to be updated
+     * @param noOfActiveRangingRounds new active ranging round
+     * @param rangingRoundIndexes Indexes of ranging rounds
+     * @return refer to SESSION_SET_APP_CONFIG_RSP
+     * in the Table 16: Control messages to set Application configurations
+     */
+    public DtTagUpdateRangingRoundsStatus sessionUpdateActiveRoundsDtTag(int sessionId,
+            int noOfActiveRangingRounds, byte[] rangingRoundIndexes, String chipId) {
+        synchronized (mSessionFnLock) {
+            return nativeSessionUpdateActiveRoundsDtTag(sessionId, noOfActiveRangingRounds,
+                    rangingRoundIndexes, chipId);
+        }
+    }
+
     private native long nativeDispatcherNew(Object[] chipIds);
 
     private native void nativeDispatcherDestroy();
@@ -472,4 +491,7 @@ public class NativeUwbManager {
 
     private native UwbVendorUciResponse nativeSendRawVendorCmd(int gid, int oid, byte[] payload,
             String chipId);
+
+    private native DtTagUpdateRangingRoundsStatus nativeSessionUpdateActiveRoundsDtTag(
+            int sessionId, int noOfActiveRangingRounds, byte[] rangingRoundIndexes, String chipId);
 }
