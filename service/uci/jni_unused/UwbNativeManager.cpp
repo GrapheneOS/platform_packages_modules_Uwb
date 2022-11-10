@@ -1207,15 +1207,6 @@ jboolean uwbNativeManager_doInitialize(JNIEnv *env, jobject o, jstring string) {
                         status);
             goto error;
           }
-          status = getDataXferDeviceCapInfo();
-          if (status == UWA_STATUS_OK) {
-            JNI_TRACE_D("%s: getDataXferDeviceCapInfo is SUCCESS %d", __func__,
-                        status);
-          } else {
-            JNI_TRACE_E("%s: getDataXferDeviceCapInfo is Failed %d", __func__,
-                        status);
-            goto error;
-          }
           goto end;
         }
       }
@@ -2038,6 +2029,12 @@ jbyte uwbNativeManager_SetCountryCode(JNIEnv *env, jobject o,
     sUwaSetCountryCodeEvent.wait(UWB_CMD_TIMEOUT);
   }
   free(countryCodeArray);
+  status = getDataXferDeviceCapInfo();
+  if (status == UWA_STATUS_OK) {
+    JNI_TRACE_D("%s: getDataXferDeviceCapInfo is SUCCESS %d", __func__, status);
+  } else {
+    JNI_TRACE_E("%s: getDataXferDeviceCapInfo is Failed %d", __func__, status);
+  }
   JNI_TRACE_I("%s: exit", fn);
   return (sSetCountryCodeStatus) ? UWA_STATUS_OK : UWA_STATUS_FAILED;
 }
