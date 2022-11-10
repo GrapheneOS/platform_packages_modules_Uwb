@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2021 The Android Open Source Project
  *
- * Copyright 2021 NXP.
+ * Copyright 2021-2022 NXP.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * You may not use this file except in compliance with the License.
@@ -81,6 +81,8 @@ static uint8_t sGetCoreConfig[UCI_MAX_PAYLOAD_SIZE];
 static uint8_t sSetCoreConfig[UCI_MAX_PAYLOAD_SIZE];
 static uint8_t sUwbDeviceCapability[UCI_MAX_PKT_SIZE];
 static uint8_t sSendRawResData[UCI_MAX_PAYLOAD_SIZE];
+static uint8_t sUpdateActiveRngIndexStatusRsp[UCI_MAX_PAYLOAD_SIZE];
+static uint8_t sConfigureRrRdmListStatusRsp[UCI_MAX_PAYLOAD_SIZE];
 static uint32_t sRangingCount = 0;
 static uint8_t sNoOfAppConfigIds = 0x00;
 static uint8_t sNoOfCoreConfigIds = 0x00;
@@ -93,8 +95,12 @@ static uint16_t sSetAppConfigLen;
 static uint8_t sGetAppConfigStatus;
 static uint8_t sSetAppConfigStatus;
 static uint8_t sSendBlinkDataStatus;
+static uint16_t sUpdateActiveRngIndexLen;
+static uint16_t numOfRangingRounds;
 static uint16_t sSendRawResLen;
 static SyncEvent sUwaSendDataEvent; // event for send data
+static SyncEvent sUwaUpdateActiveRngIndex;
+static SyncEvent sConfigureRrRdmList;
 
 /* command response status */
 static bool sSessionInitStatus = false;
@@ -109,6 +115,8 @@ static bool sMulticastListUpdateStatus = false;
 static bool sSetCountryCodeStatus = false;
 static bool sGetDeviceCapsRespStatus = false;
 static bool parse_date_xfer_caps_during_init = false;
+static bool sUpdateActiveRngIndexStatus = false;
+static bool sConfigureRrRdmListStatus = false;
 
 static uint8_t sSessionState = UWB_UNKNOWN_SESSION;
 
@@ -568,6 +576,55 @@ static void uwaDeviceManagementCallback(uint8_t dmEvent,
     }
     break;
 
+  case UWA_DM_SESSION_CONFIGURE_DT_ANCHOR_RR_RDM_REVT: /* Result of configure DT
+                                                          Anchor RR RDM List Cmd
+                                                        */
+    JNI_TRACE_I("%s: UWA_DM_SESSION_CONFIGURE_DT_ANCHOR_RR_RDM_REVT", __func__);
+    {
+      SyncEventGuard guard(sConfigureRrRdmList);
+      numOfRangingRounds = eventData->sConfigure_dt_anchor_rr_rdm_list.len;
+      sConfigureRrRdmListStatus = true;
+      if (eventData->status == UWA_STATUS_OK) {
+        JNI_TRACE_I(
+            "%s: UWA_DM_SESSION_CONFIGURE_DT_ANCHOR_RR_RDM_REVT Success",
+            __func__);
+      } else {
+        JNI_TRACE_E("%s: UWA_DM_SESSION_CONFIGURE_DT_ANCHOR_RR_RDM_REVT failed",
+                    __func__);
+      }
+      if (numOfRangingRounds > 0) {
+        memcpy(sConfigureRrRdmListStatusRsp,
+               eventData->sConfigure_dt_anchor_rr_rdm_list.rng_round_indexs,
+               numOfRangingRounds);
+      }
+      sConfigureRrRdmList.notifyOne();
+    }
+    break;
+
+  case UWA_DM_SESSION_ACTIVE_ROUNDS_INDEX_UPDATE_REVT: /* result of Update Range
+                                                          Round Index */
+    JNI_TRACE_I("%s: UWA_DM_SESSION_ACTIVE_ROUNDS_INDEX_UPDATE_REVT", __func__);
+    {
+      SyncEventGuard guard(sUwaUpdateActiveRngIndex);
+      sUpdateActiveRngIndexLen = eventData->sRange_round_index.len;
+      sUpdateActiveRngIndexStatus = true;
+      if (eventData->status == UWA_STATUS_OK) {
+        JNI_TRACE_I(
+            "%s: UWA_DM_SESSION_ACTIVE_ROUNDS_INDEX_UPDATE_REVT Success",
+            __func__);
+      } else {
+        JNI_TRACE_E("%s: UWA_DM_SESSION_ACTIVE_ROUNDS_INDEX_UPDATE_REVT failed",
+                    __func__);
+      }
+      if (sUpdateActiveRngIndexLen > 0) {
+        memcpy(sUpdateActiveRngIndexStatusRsp,
+               eventData->sRange_round_index.rng_round_index,
+               sUpdateActiveRngIndexLen);
+      }
+      sUwaUpdateActiveRngIndex.notifyOne();
+    }
+    break;
+
   case UWA_DM_SESSION_MC_LIST_UPDATE_NTF_EVT:
     JNI_TRACE_I("%s: UWA_DM_SESSION_MC_LIST_UPDATE_NTF_EVT", fn);
     {
@@ -811,6 +868,158 @@ static tUWA_STATUS sendRawUci(uint8_t gid, uint8_t oid, uint8_t *rawCmd, uint16_
 
   JNI_TRACE_I("%s: Exit", __func__);
   return status;
+}
+
+/*******************************************************************************
+**
+** Function:        uwbNativeManager_ConfigureDTAnchorForRrRdmList()
+**
+** Description:     API to Configure DT Anchor RR RDM list
+**
+** Params:          env: JVM environment.
+**                  o: Java object.
+**                  sessionId: Session Id to which update the list
+**                  noOfParams: Number of RR RDM need to configure
+**                  rrRdmConfigParamLen: Total Params Lentgh
+**                  rrRdmConfigParam: List of destination MAC Address
+**
+** Returns:         UFA_STATUS_OK on success or UFA_STATUS_FAILED on failure
+**
+*******************************************************************************/
+jbyteArray uwbNativeManager_ConfigureDTAnchorForRrRdmList(
+    JNIEnv *env, jobject o, jint sessionId, jint noOfParams,
+    jint rrRdmConfigParamLen, jbyteArray rrRdmConfigParam) {
+  static const char fn[] = "uwbNativeManager_ConfigureDTAnchorForRrRdmList";
+  UNUSED(fn);
+  tUWA_STATUS status = UWA_STATUS_FAILED;
+  jbyteArray rspArray = NULL;
+  uint8_t *pMacAddrList = NULL;
+  JNI_TRACE_I("%s: enter; ", __func__);
+
+  if (!gIsUwaEnabled) {
+    JNI_TRACE_E("%s: UWB device is not initialized", __func__);
+    return rspArray;
+  }
+
+  pMacAddrList = (uint8_t *)malloc(sizeof(uint8_t) * rrRdmConfigParamLen);
+  if (pMacAddrList == NULL) {
+    JNI_TRACE_E("%s: malloc failure for pMacAddrList", fn);
+    return rspArray;
+  }
+
+  memset(pMacAddrList, 0, (sizeof(uint8_t) * rrRdmConfigParamLen));
+  env->GetByteArrayRegion(rrRdmConfigParam, 0, rrRdmConfigParamLen,
+                          (jbyte *)pMacAddrList);
+
+  sConfigureRrRdmListStatus = false;
+
+  uint8_t payloadLen =
+      TDOA_SESSION_ID_LEN + TDOA_PARAM_LEN_1_BYTE + rrRdmConfigParamLen;
+  if (payloadLen > UCI_MAX_PAYLOAD_SIZE) {
+    JNI_TRACE_E("%s: payLoad Size exceeds the limit %d", fn,
+                UCI_MAX_PAYLOAD_SIZE);
+    free(pMacAddrList);
+    return rspArray;
+  }
+  {
+    SyncEventGuard guard(sConfigureRrRdmList);
+    status = UWA_ConfigureDTAnchorForRrRdmList(
+        sessionId, noOfParams, rrRdmConfigParamLen, pMacAddrList);
+    if (status == UWA_STATUS_OK) {
+      JNI_TRACE_D("%s: Success UWA_ConfigureDTAnchorForRrRdmList", __func__);
+      sConfigureRrRdmList.wait(UWB_CMD_TIMEOUT);
+      if (sConfigureRrRdmListStatus) {
+        rspArray = env->NewByteArray(numOfRangingRounds);
+        env->SetByteArrayRegion(rspArray, 0, numOfRangingRounds,
+                                (jbyte *)&sConfigureRrRdmListStatusRsp[0]);
+      } else {
+        JNI_TRACE_E("%s: Failed sConfigureRrRdmListStatus, Status = %d",
+                    __func__, sConfigureRrRdmListStatus);
+      }
+    } else {
+      JNI_TRACE_E("%s: Failed UWA_ConfigureDTAnchorForRrRdmList", __func__);
+    }
+  }
+  free(pMacAddrList);
+  JNI_TRACE_I("%s: exit status= 0x%x", __func__,
+              sConfigureRrRdmListStatusRsp[0]);
+  return rspArray;
+}
+
+/*******************************************************************************
+**
+** Function:        uwbManager_updateActiveRangingRoundIndex()
+**
+** Description:     API to update Ranging Round Index for DL-TDOA Feature
+**
+** Params:          e: JVM environment.
+**                  o: Java object.
+**                  sessionId: Session Id
+**                  noOfActiveRngRounds: Number of ranging rounds in which a
+*UWBS is active as receiver.
+**                  rngRoundIndex: List of active ranging round indexes where
+*the DEVICE_ROLE of UWBS is
+**                                 configured as receiver in each active ranging
+*round.
+**
+** Returns:         UFA_STATUS_OK on success or UFA_STATUS_FAILED on failure
+**
+*******************************************************************************/
+jbyteArray uwbManager_updateActiveRangingRoundIndex(JNIEnv *env, jobject o,
+                                                    jbyte dlTdoaRole,
+                                                    jint sessionId,
+                                                    jbyte noOfActiveRngRounds,
+                                                    jbyteArray rngRoundIndex) {
+  uint8_t status[1] = {UWA_STATUS_FAILED};
+  jbyteArray rspArray = NULL;
+  uint8_t *pRngRoundIndex = NULL;
+  jbyteArray errorStatus = env->NewByteArray(1);
+  env->SetByteArrayRegion(errorStatus, 0, 1, (jbyte *)&status[0]);
+  JNI_TRACE_I("%s: enter; ", __func__);
+
+  if (!gIsUwaEnabled) {
+    JNI_TRACE_E("%s: UWB device is not initialized", __func__);
+    return errorStatus;
+  }
+
+  uint16_t rngRoundIndexLen = env->GetArrayLength(rngRoundIndex);
+
+  if (rngRoundIndexLen > 0) {
+    pRngRoundIndex = (uint8_t *)malloc(sizeof(uint8_t) * rngRoundIndexLen);
+    if (pRngRoundIndex == NULL) {
+      JNI_TRACE_E("%s: malloc failure for pRngRoundIndex", __func__);
+      return errorStatus;
+    }
+  } else {
+    JNI_TRACE_E("%s: rngRoundIndexLen is zero", __func__);
+    return errorStatus;
+  }
+  memset(pRngRoundIndex, 0, (sizeof(uint8_t) * rngRoundIndexLen));
+  env->GetByteArrayRegion(rngRoundIndex, 0, rngRoundIndexLen,
+                          (jbyte *)pRngRoundIndex);
+
+  sUpdateActiveRngIndexStatus = false;
+  SyncEventGuard guard(sUwaUpdateActiveRngIndex);
+  status[0] = UWA_UpdateRangingRoundIndex(dlTdoaRole, sessionId,
+                                          (jbyte)noOfActiveRngRounds,
+                                          rngRoundIndexLen, pRngRoundIndex);
+  sUwaUpdateActiveRngIndex.wait(UWB_CMD_TIMEOUT);
+  /* Will not check the status here just passing resp as it is to Application */
+  if (sUpdateActiveRngIndexStatus) {
+    rspArray = env->NewByteArray(sUpdateActiveRngIndexLen);
+    env->SetByteArrayRegion(rspArray, 0, sUpdateActiveRngIndexLen,
+                            (jbyte *)&sUpdateActiveRngIndexStatusRsp[0]);
+  } else {
+    JNI_TRACE_E("%s: Failed sUpdateActiveRngIndexStatus, Status = %d", __func__,
+                sUpdateActiveRngIndexStatus);
+    free(pRngRoundIndex);
+    return errorStatus;
+  }
+
+  free(pRngRoundIndex);
+  JNI_TRACE_I("%s: exit status= 0x%x", __func__,
+              sUpdateActiveRngIndexStatusRsp[0]);
+  return rspArray;
 }
 
 /*******************************************************************************

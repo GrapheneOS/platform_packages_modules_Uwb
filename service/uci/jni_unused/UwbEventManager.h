@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2021 The Android Open Source Project
  *
- * Copyright 2021 NXP.
+ * Copyright 2021-2022 NXP.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * You may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ private:
   jclass mRangeDataClass;
   jclass mRangingTwoWayMeasuresClass;
   jclass mRangeTdoaMeasuresClass;
+  jclass mRangeDlTdoaMeasuresClass;
   jclass mMulticastUpdateListDataClass;
 
   jmethodID mOnRangeDataNotificationReceived;
