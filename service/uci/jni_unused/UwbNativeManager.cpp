@@ -18,17 +18,19 @@
 
 #include <vector>
 
-#include "UwbJniInternal.h"
 #include "JniLog.h"
 #include "ScopedJniEnv.h"
 #include "SyncEvent.h"
 #include "UwbAdaptation.h"
 #include "UwbEventManager.h"
+#include "UwbJniInternal.h"
 #include "uwb_api.h"
 #include "uwb_config.h"
 #include "uwb_hal_int.h"
+#include "uwb_int.h"
 
 #define INVALID_SESSION_ID 0xFFFFFFFF
+#define UCI_EXT_PARAM_ID 0xE0
 
 namespace android {
 
@@ -92,6 +94,7 @@ static uint8_t sGetAppConfigStatus;
 static uint8_t sSetAppConfigStatus;
 static uint8_t sSendBlinkDataStatus;
 static uint16_t sSendRawResLen;
+static SyncEvent sUwaSendDataEvent; // event for send data
 
 /* command response status */
 static bool sSessionInitStatus = false;
@@ -105,6 +108,7 @@ static bool sGetAppConfigRespStatus = false;
 static bool sMulticastListUpdateStatus = false;
 static bool sSetCountryCodeStatus = false;
 static bool sGetDeviceCapsRespStatus = false;
+static bool parse_date_xfer_caps_during_init = false;
 
 static uint8_t sSessionState = UWB_UNKNOWN_SESSION;
 
@@ -195,6 +199,101 @@ void notifyRangeDataNotification(tUWA_RANGE_DATA_NTF *ranging_data) {
     }
     uwbEventManager.onRangeDataNotificationReceived(ranging_data);
   }
+}
+
+/*******************************************************************************
+**
+** Function:        parseDataXferCapsInfo
+**
+** Description:     Parse the capability response for Data Xfer Capability
+*Params
+**
+**
+**
+** Returns:         None
+**
+*******************************************************************************/
+void parseDataXferCapsInfo(uint8_t *rspBuf, uint8_t len) {
+  JNI_TRACE_I("%s: Enter ", __func__);
+
+  parse_date_xfer_caps_during_init = false;
+  uint8_t paramId, length = 0;
+  uint16_t maxMsgSize, maxDtaPktSize;
+  if (len == 0) {
+    JNI_TRACE_I("%s: Len of response buffer is 0 ", __func__);
+  }
+
+  for (uint8_t index = 0; index < len;) {
+    uint8_t extParamId = rspBuf[index++];
+    if (((extParamId & EXTENDED_PARAM_ID_MASK) == UCI_EXT_PARAM_ID)) {
+      paramId = rspBuf[index++];
+      length = rspBuf[index++];
+      index = index + length;
+    } else {
+      paramId = extParamId;
+      switch (paramId) {
+      case MAX_DATA_MSG_SIZE: {
+        length = rspBuf[index++];
+        uint8_t *deviceCapVal = &rspBuf[index];
+        STREAM_TO_UINT16(maxMsgSize, deviceCapVal);
+        UWB_SetDataXferCapMaxMsgSize(maxMsgSize);
+        index += length;
+      } break;
+      case MAX_DATA_PKT_PAYLOAD_SIZE: {
+        length = rspBuf[index++];
+        uint8_t *deviceCapVal = &rspBuf[index];
+        STREAM_TO_UINT16(maxDtaPktSize, deviceCapVal);
+        UWB_SetDataXferCapMaxDataPktPayloadSize(maxDtaPktSize);
+        index += length;
+      } break;
+      default: {
+        length = rspBuf[index++];
+        index = index + length;
+      } break;
+      }
+    }
+  }
+  return;
+}
+
+/*******************************************************************************
+**
+** Function:        getDataXferDeviceCapInfo
+**
+** Description:    Get the data Xfer related device capability parameters
+**
+**
+**
+** Returns:         UWA_STATUS_OK if status is 0x00 else UWA_STATUS_FAILED
+**
+*******************************************************************************/
+tUWA_STATUS getDataXferDeviceCapInfo() {
+  JNI_TRACE_I("%s: Entry", __func__);
+
+  parse_date_xfer_caps_during_init = true;
+  tUWA_STATUS status;
+  sGetDeviceCapsRespStatus = false;
+  if (!gIsUwaEnabled) {
+    JNI_TRACE_E("%s: UWB device is not enabled", __func__);
+    return UWA_STATUS_FAILED;
+  }
+  SyncEventGuard guard(sUwaGetDeviceCapsEvent);
+  status = UWA_GetCoreGetDeviceCapability();
+  if (status == UWA_STATUS_OK) {
+    JNI_TRACE_D("%s: Success UWA_GetCoreGetDeviceCapability", __func__);
+    sUwaGetDeviceCapsEvent.wait(UWB_CMD_TIMEOUT);
+  } else {
+    JNI_TRACE_E("%s: Failed UWA_GetCoreGetDeviceCapability", __func__);
+    return UWA_STATUS_FAILED;
+  }
+
+  if (!sGetDeviceCapsRespStatus) {
+    JNI_TRACE_E("%s: Failed getDeviceCapabilityInfo, Status = %d", __func__,
+                sGetDeviceCapsRespStatus);
+    return UWA_STATUS_FAILED;
+  }
+
+  return UWA_STATUS_OK;
 }
 
 /*******************************************************************************
@@ -498,6 +597,30 @@ static void uwaDeviceManagementCallback(uint8_t dmEvent,
       sSendBlinkDataStatus = eventData->status;
       sUwaSendBlinkDataEvent.notifyOne();
     }
+    break;
+
+  case UWA_DM_SEND_DATA_STATUS_EVT:
+    JNI_TRACE_D("%s: UWA_DM_SEND_DATA_STATUS_EVT", fn);
+    {
+      SyncEventGuard guard(sUwaSendDataEvent);
+      sSendDataStatus = eventData->status;
+      sUwaSendDataEvent.notifyOne();
+    }
+    break;
+
+  case UWA_DM_DATA_TRANSFER_STATUS_NTF_EVT:
+    JNI_TRACE_D("%s: UWA_DM_DATA_TRANSFER_STATUS_NTF_EVT", fn);
+    {
+      uwbEventManager.onDataTransferStatusReceived(
+          eventData->sData_xfer_status.session_id,
+          eventData->sData_xfer_status.sequence_num,
+          eventData->sData_xfer_status.status);
+    }
+    break;
+
+  case UWA_DM_DATA_RECV_EVT:
+    JNI_TRACE_D("%s: UWA_DM_DATA_RECV_EVT", fn);
+    { uwbEventManager.onDataReceived(&eventData->sRcvd_data); }
     break;
 
   case UWA_DM_GET_CORE_DEVICE_CAP_RSP_EVT:
@@ -868,6 +991,15 @@ jboolean uwbNativeManager_doInitialize(JNIEnv *env, jobject o, jstring string) {
                         status);
           } else {
             JNI_TRACE_I("%s: SetCoreDeviceConfigurations is Failed %d", fn,
+                        status);
+            goto error;
+          }
+          status = getDataXferDeviceCapInfo();
+          if (status == UWA_STATUS_OK) {
+            JNI_TRACE_D("%s: getDataXferDeviceCapInfo is SUCCESS %d", __func__,
+                        status);
+          } else {
+            JNI_TRACE_E("%s: getDataXferDeviceCapInfo is Failed %d", __func__,
                         status);
             goto error;
           }
@@ -1815,6 +1947,80 @@ jobject uwbNativeManager_GetDeviceCapebilityParams(JNIEnv *env, jobject o,
                           (jbyte*)&sUwbDeviceCapaInfos[0]);
   JNI_TRACE_I("%s: Exit", __func__);
   return env->NewObject(tlvDataClass, constructor, status, sDevCapInfoIds, deviceCapabilityInfo);
+}
+
+/*******************************************************************************
+**
+** Function:        uwbManager_sendData()
+**
+** Description:     API to send application data over UWB to remote UWB device
+**
+** Params:          e: JVM environment.
+**                  o: Java object.
+**                  sessionId: Session Id
+**                  address: Remote UWB device adddress
+**                  appData: Application data.
+**
+** Returns:         UFA_STATUS_OK on success or UFA_STATUS_FAILED on failure
+**
+*******************************************************************************/
+jbyte uwbManager_sendData(JNIEnv *env, jobject o, jint sessionId,
+                          jbyteArray address, jbyte destEndPoint,
+                          jint sequenceNum, jbyteArray appData) {
+  static const char fn[] = "uwbManager_sendData";
+  UNUSED(fn);
+  tUWA_STATUS status = UWA_STATUS_FAILED;
+  uint8_t *pData = NULL;
+  uint8_t *pAddress = NULL;
+  JNI_TRACE_I("%s: enter; ", fn);
+
+  if (!gIsUwaEnabled) {
+    JNI_TRACE_E("%s: UWB device is not initialized", fn);
+    return status;
+  }
+
+  uint16_t dataLen = env->GetArrayLength(appData);
+  uint8_t addrLen = env->GetArrayLength(address);
+
+  if (dataLen > data_tx_cb.max_msg_size) {
+    JNI_TRACE_E("%s :Data len is greater the Max message size supported ",
+                __func__);
+    return UWA_STATUS_FAILED;
+  }
+
+  if ((dataLen > 0) && (addrLen == EXTENDED_ADDRESS_LEN)) {
+    pData = (uint8_t *)malloc(sizeof(uint8_t) * dataLen);
+    if (pData == NULL) {
+      JNI_TRACE_E("%s: malloc failure for pData", fn);
+      return status;
+    }
+    pAddress = (uint8_t *)malloc(sizeof(uint8_t) * addrLen);
+    if (pAddress == NULL) {
+      JNI_TRACE_E("%s: malloc failure for pAddress", fn);
+      free(pData);
+      return status;
+    }
+  } else {
+    JNI_TRACE_E("%s: data or address is null", fn);
+    return status;
+  }
+  memset(pData, 0, (sizeof(uint8_t) * dataLen));
+  env->GetByteArrayRegion(appData, 0, dataLen, (jbyte *)pData);
+  memset(pAddress, 0, (sizeof(uint8_t) * addrLen));
+  env->GetByteArrayRegion(address, 0, addrLen, (jbyte *)pAddress);
+
+  sSendDataStatus = UWA_STATUS_FAILED;
+  SyncEventGuard guard(sUwaSendDataEvent);
+  status = UWA_SendUwbData(sessionId, addrLen, pAddress, destEndPoint,
+                           sequenceNum, dataLen, pData);
+  if (status == UWA_STATUS_OK) {
+    sUwaSendDataEvent.wait(UWB_CMD_TIMEOUT);
+  }
+
+  free(pData);
+  free(pAddress);
+  JNI_TRACE_I("%s: exit status= 0x%x", fn, sSendDataStatus);
+  return sSendDataStatus;
 }
 
 /*****************************************************************************
