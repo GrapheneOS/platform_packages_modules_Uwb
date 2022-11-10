@@ -18,8 +18,8 @@ use crate::dispatcher::Dispatcher;
 use crate::error::{Error, Result};
 use crate::helper::{boolean_result_helper, byte_result_helper, option_result_helper};
 use crate::jclass_name::{
-    CONFIG_STATUS_DATA_CLASS, POWER_STATS_CLASS, TLV_DATA_CLASS, UWB_RANGING_DATA_CLASS,
-    VENDOR_RESPONSE_CLASS,
+    CONFIG_STATUS_DATA_CLASS, DT_RANGING_ROUNDS_STATUS_CLASS, POWER_STATS_CLASS, TLV_DATA_CLASS,
+    UWB_RANGING_DATA_CLASS, VENDOR_RESPONSE_CLASS,
 };
 use crate::unique_jvm;
 
@@ -37,7 +37,8 @@ use log::{debug, error};
 use num_traits::cast::FromPrimitive;
 use uwb_core::error::Error as UwbCoreError;
 use uwb_core::params::{
-    AppConfigTlv, CountryCode, RawAppConfigTlv, RawVendorMessage, SetAppConfigResponse,
+    AppConfigTlv, CountryCode, RawAppConfigTlv, RawVendorMessage,
+    SessionUpdateActiveRoundsDtTagResponse, SetAppConfigResponse,
 };
 use uwb_core::uci::uci_manager_sync::UciManagerSync;
 use uwb_uci_packets::{
@@ -725,6 +726,26 @@ fn create_invalid_vendor_response(env: JNIEnv) -> Result<jobject> {
     }
 }
 
+fn create_ranging_round_status(
+    response: SessionUpdateActiveRoundsDtTagResponse,
+    env: JNIEnv,
+) -> Result<jobject> {
+    let dt_ranging_rounds_update_status_class = env.find_class(DT_RANGING_ROUNDS_STATUS_CLASS)?;
+    let indexes = response.ranging_round_indexes;
+    match env.new_object(
+        dt_ranging_rounds_update_status_class,
+        "(II[B)V",
+        &[
+            JValue::Int(response.status as i32),
+            JValue::Int(indexes.len() as i32),
+            JValue::Object(JObject::from(env.byte_array_from_slice(indexes.as_ref())?)),
+        ],
+    ) {
+        Ok(o) => Ok(*o),
+        Err(e) => Err(e.into()),
+    }
+}
+
 /// Send Raw vendor command on a single UWB device. Returns an invalid response if failed.
 #[no_mangle]
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSendRawVendorCmd(
@@ -808,6 +829,51 @@ fn native_get_power_stats(env: JNIEnv, obj: JObject, chip_id: JString) -> Result
     // goes out of scope.
     let uci_manager = unsafe { get_uci_manager(env, obj, chip_id) }?;
     uci_manager.android_get_power_stats().map_err(|e| e.into())
+}
+
+/// Update active ranging rounds for DT-TAG
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSessionUpdateActiveRoundsDtTag(
+    env: JNIEnv,
+    obj: JObject,
+    session_id: jint,
+    _ranging_rounds: jint,
+    ranging_round_indexes: jbyteArray,
+    chip_id: JString,
+) -> jobject {
+    debug!("{}: enter", function_name!());
+    match option_result_helper(
+        native_set_ranging_rounds_dt_tag(
+            env,
+            obj,
+            session_id as u32,
+            ranging_round_indexes,
+            chip_id,
+        ),
+        function_name!(),
+    ) {
+        Some(rr) => create_ranging_round_status(rr, env)
+            .map_err(|e| {
+                error!("{} failed with {:?}", function_name!(), &e);
+                e
+            })
+            .unwrap_or(*JObject::null()),
+        None => *JObject::null(),
+    }
+}
+
+fn native_set_ranging_rounds_dt_tag(
+    env: JNIEnv,
+    obj: JObject,
+    session_id: u32,
+    ranging_round_indexes: jbyteArray,
+    chip_id: JString,
+) -> Result<SessionUpdateActiveRoundsDtTagResponse> {
+    // Safety: Java side owns Dispatcher by pointer, and borrows to this function until it
+    // goes out of scope.
+    let uci_manager = unsafe { get_uci_manager(env, obj, chip_id) }?;
+    let indexes = env.convert_byte_array(ranging_round_indexes)?;
+    uci_manager.session_update_active_rounds_dt_tag(session_id, indexes).map_err(|e| e.into())
 }
 
 /// Get the class loader object. Has to be called from a JNIEnv where the local java classes are
