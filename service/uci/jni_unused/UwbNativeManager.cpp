@@ -762,19 +762,23 @@ static void uwaDeviceManagementCallback(uint8_t dmEvent,
 static void CommandResponse_Cb(uint8_t event, uint16_t paramLength,
                                uint8_t *pResponseBuffer) {
   JNI_TRACE_I("%s: Entry", __func__);
-
-  if ((paramLength > UCI_RESPONSE_STATUS_OFFSET) && (pResponseBuffer != NULL)) {
-    JNI_TRACE_I("CommandResponse_Cb Received length data = 0x%x status = 0x%x",
-                paramLength, pResponseBuffer[UCI_RESPONSE_STATUS_OFFSET]);
-   sSendRawResLen = paramLength-UCI_MSG_HDR_SIZE;
-   memcpy(sSendRawResData, pResponseBuffer+UCI_MSG_HDR_SIZE, sSendRawResLen);
-  } else {
-    JNI_TRACE_E("%s:CommandResponse_Cb responseBuffer is NULL or Length < "
-                "UCI_RESPONSE_STATUS_OFFSET",
-                __func__);
+  {
+    SyncEventGuard guard(sUwaSendRawUciEvt);
+    if ((paramLength > UCI_RESPONSE_STATUS_OFFSET) &&
+        (pResponseBuffer != NULL)) {
+      JNI_TRACE_I(
+          "CommandResponse_Cb Received length data = 0x%x status = 0x%x",
+          paramLength, pResponseBuffer[UCI_RESPONSE_STATUS_OFFSET]);
+      sSendRawResLen = paramLength - UCI_MSG_HDR_SIZE;
+      memcpy(sSendRawResData, pResponseBuffer + UCI_MSG_HDR_SIZE,
+             sSendRawResLen);
+    } else {
+      JNI_TRACE_E("%s:CommandResponse_Cb responseBuffer is NULL or Length < "
+                  "UCI_RESPONSE_STATUS_OFFSET",
+                  __func__);
+    }
+    sUwaSendRawUciEvt.notifyOne();
   }
-  SyncEventGuard guard(sUwaSendRawUciEvt);
-  sUwaSendRawUciEvt.notifyOne();
 
   JNI_TRACE_I("%s: Exit", __func__);
 }
