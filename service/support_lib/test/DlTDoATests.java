@@ -21,6 +21,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import com.google.uwb.support.dltdoa.DlTDoAMeasurement;
+import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
+import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdateStatus;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -79,5 +81,47 @@ public class DlTDoATests {
         assertEquals(fromBundle.getInitiatorResponderTof(), initiatorResponderTof);
         assertArrayEquals(fromBundle.getAnchorLocation(), anchorLocation);
         assertArrayEquals(fromBundle.getActiveRangingRounds(), activeRangingRounds);
+    }
+
+    @Test
+    public void dlTDoARangingRoundsUpdateTest() {
+        int sessionId = 1234;
+        int noOfActiveRangingRounds = 3;
+        byte[] rangingRoundIndexes = new byte[]{0x01, 0x02, 0x03};
+
+        DlTDoARangingRoundsUpdate dlTDoARangingRoundsUpdate = new DlTDoARangingRoundsUpdate
+                .Builder()
+                .setSessionId(sessionId)
+                .setNoOfActiveRangingRounds(noOfActiveRangingRounds)
+                .setRangingRoundIndexes(rangingRoundIndexes)
+                .build();
+
+        DlTDoARangingRoundsUpdate fromBundle = DlTDoARangingRoundsUpdate.fromBundle(
+                dlTDoARangingRoundsUpdate.toBundle());
+
+        assertEquals(fromBundle.getSessionId(), sessionId);
+        assertEquals(fromBundle.getNoOfActiveRangingRounds(), noOfActiveRangingRounds);
+        assertArrayEquals(fromBundle.getRangingRoundIndexes(), rangingRoundIndexes);
+    }
+
+    @Test
+    public void dlTDoARangingRoundsUpdateStatusTest() {
+        int status = 1;
+        int noOfActiveRangingRounds = 2;
+        byte[] rangingRoundIndexes = new byte[]{0x02, 0x03};
+
+        DlTDoARangingRoundsUpdateStatus dlTDoARangingRoundsUpdateStatus =
+                new DlTDoARangingRoundsUpdateStatus.Builder()
+                        .setStatus(status)
+                        .setNoOfActiveRangingRounds(noOfActiveRangingRounds)
+                        .setRangingRoundIndexes(rangingRoundIndexes)
+                        .build();
+
+        DlTDoARangingRoundsUpdateStatus fromBundle = DlTDoARangingRoundsUpdateStatus.fromBundle(
+                dlTDoARangingRoundsUpdateStatus.toBundle());
+
+        assertEquals(fromBundle.getStatus(), status);
+        assertEquals(fromBundle.getNoOfActiveRangingRounds(), noOfActiveRangingRounds);
+        assertArrayEquals(fromBundle.getRangingRoundIndexes(), rangingRoundIndexes);
     }
 }
