@@ -37,6 +37,7 @@ android_test {
         "com.uwb.support.fira",
         "com.uwb.support.multichip",
         "com.uwb.support.oemextension",
+        "com.uwb.support.dltdoa",
     ],
     srcs: ["src/**/*.java"],
     platform_apis: true,

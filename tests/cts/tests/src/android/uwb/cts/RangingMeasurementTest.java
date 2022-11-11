@@ -21,6 +21,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.os.Parcel;
+import android.os.PersistableBundle;
 import android.os.SystemClock;
 import android.uwb.AngleOfArrivalMeasurement;
 import android.uwb.DistanceMeasurement;
@@ -29,6 +30,8 @@ import android.uwb.UwbAddress;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
+
+import com.google.uwb.support.dltdoa.DlTDoAMeasurement;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,6 +57,38 @@ public class RangingMeasurementTest {
         int los = RangingMeasurement.NLOS;
         int measurementFocus = RangingMeasurement.MEASUREMENT_FOCUS_RANGE;
 
+        int messageType = 0x02;
+        int messageControl = 0x513;
+        int blockIndex = 4;
+        int roundIndex = 6;
+        int nLoS = 40;
+        long txTimestamp = 40_000L;
+        long rxTimestamp = 50_000L;
+        int anchorCfo = 433;
+        int cfo = 0x56;
+        long initiatorReplyTime = 100;
+        long responderReplyTime = 200;
+        int initiatorResponderTof = 400;
+        byte[] anchorLocation = new byte[]{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+        byte[] activeRangingRounds = new byte[]{0x01, 0x02};
+
+        PersistableBundle dlTDoAMeasurement = new DlTDoAMeasurement.Builder()
+                .setMessageType(messageType)
+                .setMessageControl(messageControl)
+                .setBlockIndex(blockIndex)
+                .setRoundIndex(roundIndex)
+                .setNLoS(nLoS)
+                .setTxTimestamp(txTimestamp)
+                .setRxTimestamp(rxTimestamp)
+                .setAnchorCfo(anchorCfo)
+                .setCfo(cfo)
+                .setInitiatorReplyTime(initiatorReplyTime)
+                .setResponderReplyTime(responderReplyTime)
+                .setInitiatorResponderTof(initiatorResponderTof)
+                .setAnchorLocation(anchorLocation)
+                .setActiveRangingRounds(activeRangingRounds)
+                .build()
+                .toBundle();
 
         RangingMeasurement.Builder builder = new RangingMeasurement.Builder();
 
@@ -82,6 +117,9 @@ public class RangingMeasurementTest {
         tryBuild(builder, true);
 
         builder.setMeasurementFocus(measurementFocus);
+        tryBuild(builder, true);
+
+        builder.setRangingMeasurementMetadata(dlTDoAMeasurement);
         RangingMeasurement measurement = tryBuild(builder, true);
 
         assertEquals(status, measurement.getStatus());
@@ -94,6 +132,7 @@ public class RangingMeasurementTest {
         assertEquals(los, measurement.getLineOfSight());
         assertEquals(measurementFocus, measurement.getMeasurementFocus());
         assertEquals(TEST_RSSI_DBM, measurement.getRssiDbm());
+        assertEquals(dlTDoAMeasurement, measurement.getRangingMeasurementMetadata());
     }
 
     @Test
