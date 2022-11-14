@@ -157,7 +157,7 @@ void UwbEventManager::onRangeDataNotificationReceived(
 
     rngDataCtorTwm = env->GetMethodID(
         mRangeDataClass, "<init>",
-        "(JJIJIII[Lcom/android/server/uwb/data/UwbTwoWayMeasurement;)V");
+        "(JJIJIII[Lcom/android/server/uwb/data/UwbTwoWayMeasurement;[B)V");
     rangeDataObject = env->NewObject(
         mRangeDataClass, rngDataCtorTwm, (long)ranging_ntf_data->seq_counter,
         (long)ranging_ntf_data->session_id,
@@ -165,7 +165,8 @@ void UwbEventManager::onRangeDataNotificationReceived(
         (long)ranging_ntf_data->curr_range_interval,
         ranging_ntf_data->ranging_measure_type,
         ranging_ntf_data->mac_addr_mode_indicator,
-        (int)ranging_ntf_data->no_of_measurements, rangeMeasuresArray);
+        (int)ranging_ntf_data->no_of_measurements, rangeMeasuresArray,
+        vendorSpecificData == NULL ? nullptr : vendorSpecificData);
   } else if (ranging_ntf_data->ranging_measure_type ==
              MEASUREMENT_TYPE_DLTDOA) {
     JNI_TRACE_I("%s: ranging_measure_type = MEASUREMENT_TYPE_DLTDOA", fn);
@@ -370,7 +371,7 @@ void UwbEventManager::onRangeDataNotificationReceived(
 
     rngDataCtorOwrAoa = env->GetMethodID(
         mRangeDataClass, "<init>",
-        "(JJIJIIILcom/android/server/uwb/data/UwbOwrAoaMeasurement;)V");
+        "(JJIJIIILcom/android/server/uwb/data/UwbOwrAoaMeasurement;[B)V");
     rangeDataObject = env->NewObject(
         mRangeDataClass, rngDataCtorOwrAoa, (long)ranging_ntf_data->seq_counter,
         (long)ranging_ntf_data->session_id,
@@ -378,7 +379,8 @@ void UwbEventManager::onRangeDataNotificationReceived(
         (long)ranging_ntf_data->curr_range_interval,
         ranging_ntf_data->ranging_measure_type,
         ranging_ntf_data->mac_addr_mode_indicator,
-        (int)ranging_ntf_data->no_of_measurements, rangeOwrAoaMeasures);
+        (int)ranging_ntf_data->no_of_measurements, rangeOwrAoaMeasures,
+        vendorSpecificData == NULL ? nullptr : vendorSpecificData);
   }
 
   if ((mOnRangeDataNotificationReceived != NULL) && (rangeDataObject != NULL)) {
