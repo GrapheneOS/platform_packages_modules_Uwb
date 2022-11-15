@@ -340,6 +340,7 @@ public final class UwbManager {
 
     /**
      * Interface for Oem extensions on ongoing session
+     * @hide
      */
     // TODO: Add @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE) after ag/19901449
     public interface UwbOemExtensionCallback {
@@ -456,6 +457,7 @@ public final class UwbManager {
     }
 
     /**
+     * @hide
      * Register an {@link UwbOemExtensionCallback} to listen for UWB oem extension callbacks
      * <p>The provided callback will be invoked by the given {@link Executor}.
      *
@@ -470,6 +472,7 @@ public final class UwbManager {
     }
 
     /**
+     * @hide
      * Unregister the specified {@link UwbOemExtensionCallback}
      *
      * <p>The same {@link UwbOemExtensionCallback} object used when calling
