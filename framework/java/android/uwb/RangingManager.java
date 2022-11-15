@@ -459,6 +459,21 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks.Stub {
         }
     }
 
+    @Override
+    public void onRangingRoundsUpdateDtTagStatus(SessionHandle sessionHandle,
+            @NonNull PersistableBundle parameters) {
+        synchronized (this) {
+            if (!hasSession(sessionHandle)) {
+                Log.w(mTag, "onRangingRoundsUpdateDtTagStatus - received unexpected "
+                        + "SessionHandle: " + sessionHandle);
+                return;
+            }
+
+            RangingSession session = mRangingSessionTable.get(sessionHandle);
+            session.onRangingRoundsUpdateDtTagStatus(parameters);
+        }
+    }
+
     // TODO(b/211025367): Remove this conversion and use direct API values.
     @RangingSession.Callback.Reason
     private static int convertToReason(@RangingChangeReason int reason) {
