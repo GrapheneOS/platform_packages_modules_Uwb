@@ -1,4 +1,4 @@
-use std::cell::{Cell, RefCell};
+use std::cell::{Ref, RefCell};
 use std::collections::VecDeque;
 
 use jni::sys::{jarray, jbyteArray, jint, jintArray, jshort, jshortArray, jsize};
@@ -10,14 +10,14 @@ use crate::Context;
 
 #[cfg(test)]
 pub struct MockContext {
-    dispatcher: Cell<MockDispatcher>,
+    dispatcher: RefCell<MockDispatcher>,
     expected_calls: RefCell<VecDeque<ExpectedCall>>,
 }
 
 #[cfg(test)]
 impl MockContext {
     pub fn new(dispatcher: MockDispatcher) -> Self {
-        Self { dispatcher: Cell::new(dispatcher), expected_calls: Default::default() }
+        Self { dispatcher: RefCell::new(dispatcher), expected_calls: Default::default() }
     }
 
     pub fn get_mock_dispatcher(&mut self) -> &mut MockDispatcher {
@@ -73,6 +73,7 @@ impl MockContext {
 
 #[cfg(test)]
 impl<'a> Context<'a> for MockContext {
+    type DispatcherGuard<'g> = Ref<'g, dyn Dispatcher>;
     fn convert_byte_array(&self, array: jbyteArray) -> Result<Vec<u8>, jni::errors::Error> {
         let mut expected_calls = self.expected_calls.borrow_mut();
         match expected_calls.pop_front() {
@@ -159,8 +160,8 @@ impl<'a> Context<'a> for MockContext {
         }
     }
 
-    fn get_dispatcher(&self) -> Result<&'a mut dyn Dispatcher, UwbErr> {
-        unsafe { Ok(&mut *(self.dispatcher.as_ptr())) }
+    fn get_dispatcher(&self) -> Result<Ref<'_, dyn Dispatcher>, UwbErr> {
+        Ok(self.dispatcher.borrow())
     }
 }
 
