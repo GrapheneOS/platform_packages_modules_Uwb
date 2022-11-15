@@ -49,6 +49,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -586,6 +587,27 @@ public class UwbManagerSnippet implements Snippet {
         RangingSessionCallback rangingSessionCallback = sRangingSessionCallbackMap.get(key);
         rangingSessionCallback.rangingSession.close();
         sRangingSessionCallbackMap.remove(key);
+    }
+
+    private JSONObject convertPersistableBundleToJson(PersistableBundle bundle)
+            throws JSONException {
+        JSONObject jsonObj = new JSONObject();
+        Set<String> keys = bundle.keySet();
+        for (String key: keys) {
+            if (bundle.get(key) instanceof PersistableBundle) {
+                jsonObj.put(key, convertPersistableBundleToJson(
+                        (PersistableBundle) bundle.get(key)));
+            } else {
+                jsonObj.put(key, JSONObject.wrap(bundle.get(key)));
+            }
+        }
+        return jsonObj;
+    }
+
+    /** Get UWB specification info */
+    @Rpc(description = "Get Uwb specification info")
+    public JSONObject getSpecificationInfo() throws JSONException {
+        return convertPersistableBundleToJson(mUwbManager.getSpecificationInfo());
     }
 
     @Override
