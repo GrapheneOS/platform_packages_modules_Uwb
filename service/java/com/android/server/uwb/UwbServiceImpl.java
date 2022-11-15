@@ -283,6 +283,17 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
         mUwbServiceCore.sendData(sessionHandle, remoteDeviceAddress, params, data);
     }
 
+    // TODO: Add @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE) after ag/19901449
+    @Override
+    public void onRangingRoundsUpdateDtTag(SessionHandle sessionHandle,
+            PersistableBundle parameters) throws RemoteException {
+        if (!SdkLevel.isAtLeastU()) {
+            throw new UnsupportedOperationException();
+        }
+        enforceUwbPrivilegedPermission();
+        mUwbServiceCore.rangingRoundsUpdateDtTag(sessionHandle, parameters);
+    }
+
     @Override
     public synchronized int getAdapterState() throws RemoteException {
         return mUwbServiceCore.getAdapterState();

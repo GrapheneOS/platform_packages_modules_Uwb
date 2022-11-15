@@ -329,6 +329,9 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         public void onServiceDiscovered(SessionHandle sessionHandle, PersistableBundle params) {}
 
         public void onServiceConnected(SessionHandle sessionHandle, PersistableBundle params) {}
+
+        public void onRangingRoundsUpdateDtTagStatus(SessionHandle sessionHandle,
+                PersistableBundle params) {}
     }
 
 

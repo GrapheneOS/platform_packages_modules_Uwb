@@ -377,6 +377,21 @@ public class UwbSessionNotificationManager {
         }
     }
 
+    /** Notify the response for Ranging rounds update status for Dt Tag. */
+    public void onRangingRoundsUpdateStatus(
+            UwbSession uwbSession, PersistableBundle parameters) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            uwbRangingCallbacks.onRangingRoundsUpdateDtTagStatus(sessionHandle,
+                    parameters);
+            Log.i(TAG, "IUwbRangingCallbacks - onRangingRoundsUpdateDtTagStatus");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onRangingRoundsUpdateDtTagStatus : Failed");
+            e.printStackTrace();
+        }
+    }
+
     private static RangingReport getRangingReport(
             @NonNull UwbRangingData rangingData, String protocolName,
             Params sessionParams, long elapsedRealtimeNanos) {
