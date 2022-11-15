@@ -40,7 +40,6 @@ use uwb_core::params::{
     AppConfigTlv, CountryCode, RawAppConfigTlv, RawVendorMessage,
     SessionUpdateActiveRoundsDtTagResponse, SetAppConfigResponse,
 };
-use uwb_core::uci::uci_manager_sync::UciManagerSync;
 use uwb_uci_packets::{
     AppConfigTlvType, CapTlv, Controlee, PowerStats, ResetConfig, SessionState, SessionType,
     StatusCode, UpdateMulticastListAction,
@@ -99,39 +98,6 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGe
     5
 }
 
-/// get mutable reference to Dispatcher.
-///
-/// # Safety
-/// Must be called from a Java object holding a valid or null mDispatcherPointer, and remains valid
-/// until env and obj goes out of scope.
-unsafe fn get_dispatcher<'a>(env: JNIEnv<'a>, obj: JObject<'a>) -> Result<&'a mut Dispatcher> {
-    let dispatcher_ptr_value = env.get_field(obj, "mDispatcherPointer", "J")?.j()?;
-    if dispatcher_ptr_value == 0 {
-        return Err(Error::UwbCoreError(UwbCoreError::BadParameters));
-    }
-    let dispatcher_ptr = dispatcher_ptr_value as *mut Dispatcher;
-    Ok(&mut *dispatcher_ptr)
-}
-
-/// get mutable reference to UciManagerSync with chip_id.
-///
-/// # Safety
-/// Must be called from a Java object holding a valid or null mDispatcherPointer, and remains valid
-/// until env and obj goes out of scope.
-unsafe fn get_uci_manager<'a>(
-    env: JNIEnv<'a>,
-    obj: JObject<'a>,
-    chip_id: JString,
-) -> Result<&'a mut UciManagerSync> {
-    // Safety: get_dispatcher and get_uci_manager has the same assumption.
-    let dispatcher_ref = get_dispatcher(env, obj)?;
-    let chip_id_str = String::from(env.get_string(chip_id)?);
-    match dispatcher_ref.manager_map.get_mut(&chip_id_str) {
-        Some(m) => Ok(m),
-        None => Err(Error::UwbCoreError(UwbCoreError::BadParameters)),
-    }
-}
-
 /// Turn on Single UWB chip.
 #[no_mangle]
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDoInitialize(
@@ -146,7 +112,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDo
 fn native_do_initialize(env: JNIEnv, obj: JObject, chip_id: JString) -> Result<()> {
     // Safety: Java side owns Dispatcher by pointer, and borrows to this function until it
     // goes out of scope.
-    let uci_manager = unsafe { get_uci_manager(env, obj, chip_id) }?;
+    let uci_manager = unsafe { Dispatcher::get_uci_manager(env, obj, chip_id) }?;
     uci_manager.open_hal().map_err(|e| e.into())
 }
 
@@ -164,7 +130,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDo
 fn native_do_deinitialize(env: JNIEnv, obj: JObject, chip_id: JString) -> Result<()> {
     // Safety: Java side owns Dispatcher by pointer, and borrows to this function until it
     // goes out of scope.
-    let uci_manager = unsafe { get_uci_manager(env, obj, chip_id) }?;
+    let uci_manager = unsafe { Dispatcher::get_uci_manager(env, obj, chip_id) }?;
     uci_manager.close_hal(true).map_err(|e| e.into())
 }
 
@@ -194,7 +160,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDe
 fn native_device_reset(env: JNIEnv, obj: JObject, chip_id: JString) -> Result<()> {
     // Safety: Java side owns Dispatcher by pointer, and borrows to this function until it
     // goes out of scope.
-    let uci_manager = unsafe { get_uci_manager(env, obj, chip_id) }?;
+    let uci_manager = unsafe { Dispatcher::get_uci_manager(env, obj, chip_id) }?;
     uci_manager.device_reset(ResetConfig::UwbsReset).map_err(|e| e.into())
 }
 
@@ -225,7 +191,7 @@ fn native_session_init(
         SessionType::from_u8(session_type as u8).ok_or(UwbCoreError::BadParameters)?;
     // Safety: Java side owns Dispatcher by pointer, and borrows to this function until it
     // goes out of scope.
-    let uci_manager = unsafe { get_uci_manager(env, obj, chip_id) }?;
+    let uci_manager = unsafe { Dispatcher::get_uci_manager(env, obj, chip_id) }?;
     uci_manager.session_init(session_id as u32, session_type).map_err(|e| e.into())
 }
 
@@ -249,7 +215,7 @@ fn native_session_deinit(
 ) -> Result<()> {
     // Safety: Java side owns Dispatcher by pointer, and borrows to this function until it
     // goes out of scope.
-    let uci_manager = unsafe { get_uci_manager(env, obj, chip_id) }?;
+    let uci_manager = unsafe { Dispatcher::get_uci_manager(env, obj, chip_id) }?;
     uci_manager.session_deinit(session_id as u32).map_err(|e| e.into())
 }
 
@@ -271,7 +237,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGe
 fn native_get_session_count(env: JNIEnv, obj: JObject, chip_id: JString) -> Result<u8> {
     // Safety: Java side owns Dispatcher by pointer, and borrows to this function until it
     // goes out of scope.
-    let uci_manager = unsafe { get_uci_manager(env, obj, chip_id) }?;
+    let uci_manager = unsafe { Dispatcher::get_uci_manager(env, obj, chip_id) }?;
     uci_manager.session_get_count().map_err(|e| e.into())
 }
 
@@ -295,7 +261,7 @@ fn native_ranging_start(
 ) -> Result<()> {
     // Safety: Java side owns Dispatcher by pointer, and borrows to this function until it
     // goes out of scope.
-    let uci_manager = unsafe { get_uci_manager(env, obj, chip_id) }?;
+    let uci_manager = unsafe { Dispatcher::get_uci_manager(env, obj, chip_id) }?;
     uci_manager.range_start(session_id as u32).map_err(|e| e.into())
 }
 
@@ -319,7 +285,7 @@ fn native_ranging_stop(
 ) -> Result<()> {
     // Safety: Java side owns Dispatcher by pointer, and borrows to this function until it
     // goes out of scope.
-    let uci_manager = unsafe { get_uci_manager(env, obj, chip_id) }?;
+    let uci_manager = unsafe { Dispatcher::get_uci_manager(env, obj, chip_id) }?;
     uci_manager.range_stop(session_id as u32).map_err(|e| e.into())
 }
 
@@ -350,7 +316,7 @@ fn native_get_session_state(
 ) -> Result<SessionState> {
     // Safety: Java side owns Dispatcher by pointer, and borrows to this function until it
     // goes out of scope.
-    let uci_manager = unsafe { get_uci_manager(env, obj, chip_id) }?;
+    let uci_manager = unsafe { Dispatcher::get_uci_manager(env, obj, chip_id) }?;
     uci_manager.session_get_state(session_id as u32).map_err(|e| e.into())
 }
 
@@ -437,7 +403,7 @@ fn native_set_app_configurations(
 ) -> Result<SetAppConfigResponse> {
     // Safety: Java side owns Dispatcher by pointer, and borrows to this function until it
     // goes out of scope.
-    let uci_manager = unsafe { get_uci_manager(env, obj, chip_id) }?;
+    let uci_manager = unsafe { Dispatcher::get_uci_manager(env, obj, chip_id) }?;
     let config_byte_array = env.convert_byte_array(app_config_params)?;
     let tlvs = parse_app_config_tlv_vec(no_of_params, &config_byte_array)?;
     uci_manager.session_set_app_config(session_id as u32, tlvs).map_err(|e| e.into())
@@ -501,7 +467,7 @@ fn native_get_app_configurations(
 ) -> Result<Vec<AppConfigTlv>> {
     // Safety: Java side owns Dispatcher by pointer, and borrows to this function until it
     // goes out of scope.
-    let uci_manager = unsafe { get_uci_manager(env, obj, chip_id) }?;
+    let uci_manager = unsafe { Dispatcher::get_uci_manager(env, obj, chip_id) }?;
     let app_config_bytearray = env.convert_byte_array(app_config_params)?;
     uci_manager
         .session_get_app_config(
@@ -558,7 +524,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGe
 fn native_get_caps_info(env: JNIEnv, obj: JObject, chip_id: JString) -> Result<Vec<CapTlv>> {
     // Safety: Java side owns Dispatcher by pointer, and borrows to this function until it
     // goes out of scope.
-    let uci_manager = unsafe { get_uci_manager(env, obj, chip_id) }?;
+    let uci_manager = unsafe { Dispatcher::get_uci_manager(env, obj, chip_id) }?;
     uci_manager.core_get_caps_info().map_err(|e| e.into())
 }
 
@@ -604,7 +570,7 @@ fn native_controller_multicast_list_update(
 ) -> Result<()> {
     // Safety: Java side owns Dispatcher by pointer, and borrows to this function until it goes
     // out of scope.
-    let uci_manager = unsafe { get_uci_manager(env, obj, chip_id) }?;
+    let uci_manager = unsafe { Dispatcher::get_uci_manager(env, obj, chip_id) }?;
     let mut address_list = vec![
         0i16;
         env.get_array_length(addresses)?.try_into().map_err(|_| {
@@ -657,7 +623,7 @@ fn native_set_country_code(
 ) -> Result<()> {
     // Safety: Java side owns Dispatcher by pointer, and borrows to this function until it goes
     // out of scope.
-    let uci_manager = unsafe { get_uci_manager(env, obj, chip_id) }?;
+    let uci_manager = unsafe { Dispatcher::get_uci_manager(env, obj, chip_id) }?;
     let country_code = env.convert_byte_array(country_code)?;
     debug!("Country code: {:?}", country_code);
     if country_code.len() != 2 {
@@ -685,7 +651,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
 fn native_set_log_mode(env: JNIEnv, obj: JObject, log_mode_jstring: JString) -> Result<()> {
     // Safety: Java side owns Dispatcher by pointer, and borrows to this function until it goes
     // out of scope.
-    let dispatcher = unsafe { get_dispatcher(env, obj) }?;
+    let dispatcher = unsafe { Dispatcher::get_dispatcher(env, obj) }?;
     let logger_mode_str = String::from(env.get_string(log_mode_jstring)?);
     debug!("UCI log: log started in {} mode", &logger_mode_str);
     let logger_mode = logger_mode_str.try_into()?;
@@ -783,7 +749,7 @@ fn native_send_raw_vendor_cmd(
 ) -> Result<RawVendorMessage> {
     // Safety: Java side owns Dispatcher by pointer, and borrows to this function until it
     // goes out of scope.
-    let uci_manager = unsafe { get_uci_manager(env, obj, chip_id) }?;
+    let uci_manager = unsafe { Dispatcher::get_uci_manager(env, obj, chip_id) }?;
     let payload = env.convert_byte_array(payload_jarray)?;
     uci_manager.raw_vendor_cmd(gid as u32, oid as u32, payload).map_err(|e| e.into())
 }
@@ -827,7 +793,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGe
 fn native_get_power_stats(env: JNIEnv, obj: JObject, chip_id: JString) -> Result<PowerStats> {
     // Safety: Java side owns Dispatcher by pointer, and borrows to this function until it
     // goes out of scope.
-    let uci_manager = unsafe { get_uci_manager(env, obj, chip_id) }?;
+    let uci_manager = unsafe { Dispatcher::get_uci_manager(env, obj, chip_id) }?;
     uci_manager.android_get_power_stats().map_err(|e| e.into())
 }
 
@@ -871,7 +837,7 @@ fn native_set_ranging_rounds_dt_tag(
 ) -> Result<SessionUpdateActiveRoundsDtTagResponse> {
     // Safety: Java side owns Dispatcher by pointer, and borrows to this function until it
     // goes out of scope.
-    let uci_manager = unsafe { get_uci_manager(env, obj, chip_id) }?;
+    let uci_manager = unsafe { Dispatcher::get_uci_manager(env, obj, chip_id) }?;
     let indexes = env.convert_byte_array(ranging_round_indexes)?;
     uci_manager.session_update_active_rounds_dt_tag(session_id, indexes).map_err(|e| e.into())
 }
