@@ -347,6 +347,8 @@ interface IUwbAdapter {
 
   int sendVendorUciMessage(int gid, int oid, in byte[] payload);
 
+  void onRangingRoundsUpdateDtTag(in SessionHandle sessionHandle, in PersistableBundle parameters);
+
   /**
    * The maximum allowed time to open a ranging session.
    */
@@ -362,4 +364,9 @@ interface IUwbAdapter {
    * closed.
    */
   const int RANGING_SESSION_CLOSE_THRESHOLD_MS = 3000; // Value TBD
+
+  /**
+   * The maximum allowed time to configure ranging rounds update for DT Tag
+   */
+  const int RANGING_ROUNDS_UPDATE_DT_TAG_THRESHOLD_MS = 3000; // Value TBD
 }

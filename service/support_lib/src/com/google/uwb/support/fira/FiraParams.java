@@ -484,6 +484,10 @@ public abstract class FiraParams extends Params {
                 STATUS_CODE_RANGING_RX_MAC_DEC_FAILED,
                 STATUS_CODE_RANGING_RX_MAC_IE_DEC_FAILED,
                 STATUS_CODE_RANGING_RX_MAC_IE_MISSING,
+                STATUS_CODE_ERROR_ROUND_INDEX_NOT_ACTIVATED,
+                STATUS_CODE_ERROR_NUMBER_OF_ACTIVE_RANGING_ROUNDS_EXCEEDED,
+                STATUS_CODE_ERROR_ROUND_INDEX_NOT_SET_AS_INITIATOR,
+                STATUS_CODE_ERROR_DL_TDOA_DEVICE_ADDRESS_NOT_MATCHING_IN_REPLY_TIME_LIST,
             })
     public @interface StatusCode {}
 
@@ -515,6 +519,11 @@ public abstract class FiraParams extends Params {
     public static final int STATUS_CODE_RANGING_RX_MAC_DEC_FAILED = 0x25;
     public static final int STATUS_CODE_RANGING_RX_MAC_IE_DEC_FAILED = 0x26;
     public static final int STATUS_CODE_RANGING_RX_MAC_IE_MISSING = 0x27;
+    public static final int STATUS_CODE_ERROR_ROUND_INDEX_NOT_ACTIVATED = 0X28;
+    public static final int STATUS_CODE_ERROR_NUMBER_OF_ACTIVE_RANGING_ROUNDS_EXCEEDED = 0X29;
+    public static final int STATUS_CODE_ERROR_ROUND_INDEX_NOT_SET_AS_INITIATOR = 0X2A;
+    public static final int
+            STATUS_CODE_ERROR_DL_TDOA_DEVICE_ADDRESS_NOT_MATCHING_IN_REPLY_TIME_LIST = 0X2B;
 
     /** State change reason codes defined in UCI table-15 */
     @IntDef(

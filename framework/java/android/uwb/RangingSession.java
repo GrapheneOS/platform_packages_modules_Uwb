@@ -417,6 +417,16 @@ public final class RangingSession implements AutoCloseable {
          * @param parameters protocol specific params for connected service.
          */
         default void onServiceConnected(@NonNull PersistableBundle parameters) {}
+
+        /**
+         * @hide
+         * Invoked when a response/status is received for active ranging rounds update
+         *
+         * @param parameters bundle of ranging rounds update status
+         * {@link com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdateStatus}
+         */
+        // TODO: Add @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE) after ag/19901449
+        default void onRangingRoundsUpdateDtTagStatus(@NonNull PersistableBundle parameters) {}
     }
 
     /**
@@ -726,6 +736,32 @@ public final class RangingSession implements AutoCloseable {
             throw e.rethrowFromSystemServer();
         }
     }
+
+    /**
+     * @hide
+     * Update active ranging rounds for DT Tag
+     *
+     * <p> On successfully sending the command,
+     * {@link RangingSession.Callback#onRangingRoundsUpdateDtTag(PersistableBundle)}
+     * is invoked
+     * @param params Parameters to configure active ranging rounds
+     * {@link com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate}
+     */
+    // TODO: Add @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE) after ag/19901449
+    @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
+    public void onRangingRoundsUpdateDtTag(@NonNull PersistableBundle params) {
+        if (mState != State.ACTIVE) {
+            throw new IllegalStateException();
+        }
+
+        Log.v(mTag, "onRangingRoundsUpdateDtTag - sessionHandle: " + mSessionHandle);
+        try {
+            mAdapter.onRangingRoundsUpdateDtTag(mSessionHandle, params);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
 
     /**
      * @hide
@@ -1051,6 +1087,19 @@ public final class RangingSession implements AutoCloseable {
 
         Log.v(mTag, "onServiceConnected - sessionHandle: " + mSessionHandle);
         executeCallback(() -> mCallback.onServiceConnected(params));
+    }
+
+    /**
+     * @hide
+     */
+    public void onRangingRoundsUpdateDtTagStatus(@NonNull PersistableBundle params) {
+        if (!isOpen()) {
+            Log.w(mTag, "onDlTDoARangingRoundsUpdateStatus invoked for non-open session");
+            return;
+        }
+
+        Log.v(mTag, "onDlTDoARangingRoundsUpdateStatus - sessionHandle: " + mSessionHandle);
+        executeCallback(() -> mCallback.onRangingRoundsUpdateDtTagStatus(params));
     }
 
     /**
