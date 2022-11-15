@@ -1,10 +1,12 @@
+// Stabilizes without significant change in 1.65, which we're in the process of landing.
+#![feature(generic_associated_types)]
 //! jni for uwb native stack
 use jni::objects::{JObject, JValue};
 use jni::sys::{
     jarray, jboolean, jbyte, jbyteArray, jint, jintArray, jlong, jobject, jshort, jshortArray,
     jsize,
 };
-use jni::JNIEnv;
+use jni::{JNIEnv, MonitorGuard};
 use log::{error, info};
 use num_traits::ToPrimitive;
 use uwb_uci_packets::{
@@ -17,7 +19,38 @@ use uwb_uci_rust::error::UwbErr;
 use uwb_uci_rust::event_manager::EventManagerImpl as EventManager;
 use uwb_uci_rust::uci::{uci_hrcv::UciResponse, Dispatcher, DispatcherImpl, JNICommand};
 
+use std::ops::Deref;
+
+struct DispatcherGuard<'a> {
+    _guard: MonitorGuard<'a>,
+    dispatcher: &'a dyn Dispatcher,
+}
+
+impl<'a> DispatcherGuard<'a> {
+    /// Safety:
+    /// To call this function:
+    /// * dispatcher_ptr must point to a value of type T which is alive
+    /// * The passed in guard must protect the passed in dispatcher_ptr
+    /// * The value must not be modified by Rust code, even by others holding the monitor.
+    unsafe fn from_guard_and_ptr<T: Dispatcher + 'a>(
+        guard: MonitorGuard<'a>,
+        dispatcher_ptr: *const T,
+    ) -> Self {
+        Self { _guard: guard, dispatcher: &*dispatcher_ptr }
+    }
+}
+
+impl<'a> Deref for DispatcherGuard<'a> {
+    type Target = dyn Dispatcher + 'a;
+    fn deref(&self) -> &Self::Target {
+        self.dispatcher
+    }
+}
+
 trait Context<'a> {
+    type DispatcherGuard<'g>: Deref<Target = dyn Dispatcher + 'g>
+    where
+        Self: 'g;
     fn convert_byte_array(&self, array: jbyteArray) -> Result<Vec<u8>, jni::errors::Error>;
     fn get_array_length(&self, array: jarray) -> Result<jsize, jni::errors::Error>;
     fn get_short_array_region(
@@ -32,7 +65,7 @@ trait Context<'a> {
         start: jsize,
         buf: &mut [jint],
     ) -> Result<(), jni::errors::Error>;
-    fn get_dispatcher(&self) -> Result<&'a mut dyn Dispatcher, UwbErr>;
+    fn get_dispatcher(&self) -> Result<Self::DispatcherGuard<'_>, UwbErr>;
 }
 
 struct JniContext<'a> {
@@ -47,6 +80,7 @@ impl<'a> JniContext<'a> {
 }
 
 impl<'a> Context<'a> for JniContext<'a> {
+    type DispatcherGuard<'g> = DispatcherGuard<'g> where Self: 'g;
     fn convert_byte_array(&self, array: jbyteArray) -> Result<Vec<u8>, jni::errors::Error> {
         self.env.convert_byte_array(array)
     }
@@ -69,17 +103,25 @@ impl<'a> Context<'a> for JniContext<'a> {
     ) -> Result<(), jni::errors::Error> {
         self.env.get_int_array_region(array, start, buf)
     }
-    fn get_dispatcher(&self) -> Result<&'a mut dyn Dispatcher, UwbErr> {
+    fn get_dispatcher(&self) -> Result<DispatcherGuard<'a>, UwbErr> {
+        let guard = self.env.lock_obj(self.obj).unwrap();
         let dispatcher_ptr_value = self.env.get_field(self.obj, "mDispatcherPointer", "J")?;
         let dispatcher_ptr = dispatcher_ptr_value.j()?;
         if dispatcher_ptr == 0i64 {
             error!("The dispatcher is not initialized.");
             return Err(UwbErr::NoneDispatcher);
         }
-        // Safety: dispatcher pointer must not be a null pointer and it must point to a valid dispatcher object.
-        // This can be ensured because the dispatcher is created in an earlier stage and
-        // won't be deleted before calling doDeinitialize.
-        unsafe { Ok(&mut *(dispatcher_ptr as *mut DispatcherImpl)) }
+        // Safety:
+        // For this to be safe, `mDispatcherPointer` must point to a valid `DispatcherImpl` object
+        // and no other parties may be modifying or deleting the pointed-to object.
+        //
+        // The first property is ensured by the Java object, which always either sets this field to
+        // 0 (which is checked for above) or a pointer returned to it by `nativeDispatcherNew`.
+        // The second property is maintained by holding the Java monitor lock and retrieving
+        // read-only references. No safe APIs for mutable access to this object exist.
+        Ok(unsafe {
+            DispatcherGuard::from_guard_and_ptr(guard, dispatcher_ptr as *mut DispatcherImpl)
+        })
     }
 }
 
@@ -497,7 +539,7 @@ fn byte_result_helper(result: Result<(), UwbErr>, function_name: &str) -> jbyte 
 fn do_initialize<'a, T: Context<'a>>(context: &T) -> Result<(), UwbErr> {
     let dispatcher = context.get_dispatcher()?;
     dispatcher.send_jni_command(JNICommand::Enable)?;
-    match uwa_get_device_info(dispatcher) {
+    match uwa_get_device_info(&*dispatcher) {
         Ok(res) => {
             if let UciResponse::GetDeviceInfoRsp(device_info) = res {
                 dispatcher.set_device_info(Some(device_info));
@@ -779,8 +821,15 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDi
 }
 
 /// destroy the dispatcher instance
+/// # Safety
+/// The passed in JObject must be a NativeUwbManager object which does not currently have any
+/// outstanding `DispatcherGuard` objects.
+///
+/// This function is only intended to be called from Java code, and it is the caller's
+/// responsibility to ensure there are no outstanding operations using a `DispatcherGuard` at
+/// destruction time.
 #[no_mangle]
-pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDispatcherDestroy(
+pub unsafe extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDispatcherDestroy(
     env: JNIEnv,
     obj: JObject,
 ) {
@@ -798,11 +847,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDi
             return;
         }
     };
-    // Safety: dispatcher pointer must not be a null pointer and must point to a valid dispatcher object.
-    // This can be ensured because the dispatcher is created in an earlier stage and
-    // won't be deleted before calling this destroy function.
-    // This function will early return if the instance is already destroyed.
-    let _boxed_dispatcher = unsafe { Box::from_raw(dispatcher_ptr as *mut DispatcherImpl) };
+    let _boxed_dispatcher = Box::from_raw(dispatcher_ptr as *mut DispatcherImpl);
     info!("The dispatcher successfully destroyed.");
 }
 
@@ -819,7 +864,7 @@ fn get_power_stats<'a, T: Context<'a>>(context: &T) -> Result<[JValue<'a>; 4], U
     }
 }
 
-fn uwa_get_device_info(dispatcher: &dyn Dispatcher) -> Result<UciResponse, UwbErr> {
+fn uwa_get_device_info<T: Dispatcher + ?Sized>(dispatcher: &T) -> Result<UciResponse, UwbErr> {
     let res = dispatcher.block_on_jni_command(JNICommand::UciGetDeviceInfo)?;
     Ok(res)
 }
@@ -885,7 +930,7 @@ mod tests {
         let mut context = MockContext::new(dispatcher);
 
         let result = do_initialize(&context);
-        let device_info = context.get_mock_dispatcher().get_device_info().clone();
+        let device_info = context.get_mock_dispatcher().get_device_info();
         assert!(result.is_ok());
         assert_eq!(device_info.unwrap().to_vec(), packet.to_vec());
     }
@@ -923,7 +968,7 @@ mod tests {
             0,   // ccc_minor_version
         ];
 
-        let mut dispatcher = MockDispatcher::new();
+        let dispatcher = MockDispatcher::new();
         dispatcher.set_device_info(Some(packet));
         let context = MockContext::new(dispatcher);
 

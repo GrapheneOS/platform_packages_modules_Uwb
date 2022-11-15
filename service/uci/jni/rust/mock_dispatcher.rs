@@ -9,7 +9,7 @@ use uwb_uci_rust::uci::{uci_hrcv::UciResponse, Dispatcher, JNICommand, Result};
 #[derive(Default)]
 pub struct MockDispatcher {
     expected_calls: RefCell<VecDeque<ExpectedCall>>,
-    device_info: Option<GetDeviceInfoRspPacket>,
+    device_info: RefCell<Option<GetDeviceInfoRspPacket>>,
 }
 
 #[cfg(test)]
@@ -72,7 +72,7 @@ impl Dispatcher for MockDispatcher {
             None => Err(UwbErr::Undefined),
         }
     }
-    fn wait_for_exit(&mut self) -> Result<()> {
+    fn wait_for_exit(&self) -> Result<()> {
         let mut expected_calls = self.expected_calls.borrow_mut();
         match expected_calls.pop_front() {
             Some(ExpectedCall::WaitForExit { out }) => out,
@@ -84,12 +84,12 @@ impl Dispatcher for MockDispatcher {
         }
     }
 
-    fn set_device_info(&mut self, device_info: Option<GetDeviceInfoRspPacket>) {
-        self.device_info = device_info;
+    fn set_device_info(&self, device_info: Option<GetDeviceInfoRspPacket>) {
+        *self.device_info.borrow_mut() = device_info;
     }
 
-    fn get_device_info(&self) -> &Option<GetDeviceInfoRspPacket> {
-        &self.device_info
+    fn get_device_info(&self) -> Option<GetDeviceInfoRspPacket> {
+        self.device_info.borrow().clone()
     }
 }
 
