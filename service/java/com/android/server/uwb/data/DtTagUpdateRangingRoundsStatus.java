@@ -46,7 +46,7 @@ public class DtTagUpdateRangingRoundsStatus {
     public String toString() {
         return "DtTagActiveRoundsStatus { "
                 + "Status = " + mStatus
-                + ", NoOfActiveRangingRound s=" + mNoOfActiveRangingRounds
+                + ", NoOfActiveRangingRounds =" + mNoOfActiveRangingRounds
                 + ", RangingRoundIndexes = " + Arrays.toString(mRangingRoundIndexes)
                 + '}';
     }
