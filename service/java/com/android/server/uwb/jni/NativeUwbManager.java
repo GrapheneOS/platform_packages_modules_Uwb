@@ -35,11 +35,7 @@ import com.android.server.uwb.multchip.UwbMultichipData;
 public class NativeUwbManager {
     private static final String TAG = NativeUwbManager.class.getSimpleName();
 
-    public final Object mSessionFnLock = new Object();
-    public final Object mSessionCountFnLock = new Object();
-    public final Object mGlobalStateFnLock = new Object();
-    public final Object mGetSessionStatusFnLock = new Object();
-    public final Object mSetAppConfigFnLock = new Object();
+    public final Object mNativeLock = new Object();
     private final UwbInjector mUwbInjector;
     private final UciLogModeStore mUciLogModeStore;
     private final UwbMultichipData mUwbMultichipData;
@@ -58,7 +54,9 @@ public class NativeUwbManager {
 
     protected void loadLibrary() {
         System.loadLibrary("uwb_uci_jni_rust");
-        nativeInit();
+        synchronized (mNativeLock) {
+            nativeInit();
+        }
     }
 
     public void setDeviceListener(INativeUwbManager.DeviceNotification deviceListener) {
@@ -119,14 +117,16 @@ public class NativeUwbManager {
      *
      * @return : If this returns true, UWB is on
      */
-    public synchronized boolean doInitialize() {
-        mDispatcherPointer = nativeDispatcherNew(mUwbMultichipData.getChipIds().toArray());
-        for (String chipId : mUwbMultichipData.getChipIds()) {
-            if (!nativeDoInitialize(chipId)) {
-                return false;
+    public boolean doInitialize() {
+        synchronized (mNativeLock) {
+            mDispatcherPointer = nativeDispatcherNew(mUwbMultichipData.getChipIds().toArray());
+            for (String chipId : mUwbMultichipData.getChipIds()) {
+                if (!nativeDoInitialize(chipId)) {
+                    return false;
+                }
             }
+            nativeSetLogMode(mUciLogModeStore.getMode());
         }
-        nativeSetLogMode(mUciLogModeStore.getMode());
         return true;
     }
 
@@ -135,17 +135,24 @@ public class NativeUwbManager {
      *
      * @return : If this returns true, UWB is off
      */
-    public synchronized boolean doDeinitialize() {
-        for (String chipId : mUwbMultichipData.getChipIds()) {
-            nativeDoDeinitialize(chipId);
-        }
+    public boolean doDeinitialize() {
+        synchronized (mNativeLock) {
+            for (String chipId : mUwbMultichipData.getChipIds()) {
+                nativeDoDeinitialize(chipId);
+            }
 
-        nativeDispatcherDestroy();
-        mDispatcherPointer = 0L;
+            nativeDispatcherDestroy();
+            mDispatcherPointer = 0L;
+        }
         return true;
     }
 
-    public synchronized long getTimestampResolutionNanos() {
+    /**
+     * Gets the timestamp resolution in nanosecond
+     *
+     * @return : timestamp resolution in nanosecond
+     */
+    public long getTimestampResolutionNanos() {
         return 0L;
         /* TODO: Not Implemented in native stack
         return nativeGetTimestampResolutionNanos(); */
@@ -157,14 +164,18 @@ public class NativeUwbManager {
      * @return : Retrieves maximum number of UWB sessions concurrently
      */
     public int getMaxSessionNumber() {
-        return nativeGetMaxSessionNumber();
+        synchronized (mNativeLock) {
+            return nativeGetMaxSessionNumber();
+        }
     }
 
     /**
      * Retrieves power related stats
      */
     public UwbPowerStats getPowerStats(String chipId) {
-        return nativeGetPowerStats(chipId);
+        synchronized (mNativeLock) {
+            return nativeGetPowerStats(chipId);
+        }
     }
 
     /**
@@ -178,7 +189,7 @@ public class NativeUwbManager {
      * @return : {@link UwbUciConstants}  Status code
      */
     public byte initSession(int sessionId, byte sessionType, String chipId) {
-        synchronized (mSessionFnLock) {
+        synchronized (mNativeLock) {
             return nativeSessionInit(sessionId, sessionType, chipId);
         }
     }
@@ -191,7 +202,7 @@ public class NativeUwbManager {
      * @return : {@link UwbUciConstants}  Status code
      */
     public byte deInitSession(int sessionId, String chipId) {
-        synchronized (mSessionFnLock) {
+        synchronized (mNativeLock) {
             return nativeSessionDeInit(sessionId, chipId);
         }
     }
@@ -204,7 +215,9 @@ public class NativeUwbManager {
      * @return : {@link UwbUciConstants}  Status code
      */
     public byte resetDevice(byte resetConfig, String chipId) {
-        return nativeResetDevice(resetConfig, chipId);
+        synchronized (mNativeLock) {
+            return nativeResetDevice(resetConfig, chipId);
+        }
     }
 
     /**
@@ -214,7 +227,7 @@ public class NativeUwbManager {
      * @return : Number of UWB sessions present in the UWBS.
      */
     public byte getSessionCount(String chipId) {
-        synchronized (mSessionCountFnLock) {
+        synchronized (mNativeLock) {
             return nativeGetSessionCount(chipId);
         }
     }
@@ -227,7 +240,7 @@ public class NativeUwbManager {
      * @return : {@link UwbUciConstants}  Session State
      */
     public byte getSessionState(int sessionId, String chipId) {
-        synchronized (mGetSessionStatusFnLock) {
+        synchronized (mNativeLock) {
             return nativeGetSessionState(sessionId, chipId);
         }
     }
@@ -240,7 +253,7 @@ public class NativeUwbManager {
      * @return : {@link UwbUciConstants}  Status code
      */
     public byte startRanging(int sessionId, String chipId) {
-        synchronized (mSessionFnLock) {
+        synchronized (mNativeLock) {
             return nativeRangingStart(sessionId, chipId);
         }
     }
@@ -253,7 +266,7 @@ public class NativeUwbManager {
      * @return : {@link UwbUciConstants}  Status code
      */
     public byte stopRanging(int sessionId, String chipId) {
-        synchronized (mSessionFnLock) {
+        synchronized (mNativeLock) {
             return nativeRangingStop(sessionId, chipId);
         }
     }
@@ -269,7 +282,7 @@ public class NativeUwbManager {
      */
     public UwbConfigStatusData setAppConfigurations(int sessionId, int noOfParams,
             int appConfigParamLen, byte[] appConfigParams, String chipId) {
-        synchronized (mSetAppConfigFnLock) {
+        synchronized (mNativeLock) {
             return nativeSetAppConfigurations(sessionId, noOfParams, appConfigParamLen,
                     appConfigParams, chipId);
         }
@@ -286,7 +299,7 @@ public class NativeUwbManager {
      */
     public UwbTlvData getAppConfigurations(int sessionId, int noOfParams, int appConfigParamLen,
             byte[] appConfigIds, String chipId) {
-        synchronized (mSetAppConfigFnLock) {
+        synchronized (mNativeLock) {
             return nativeGetAppConfigurations(sessionId, noOfParams, appConfigParamLen,
                     appConfigIds, chipId);
         }
@@ -299,7 +312,7 @@ public class NativeUwbManager {
      * @return :  {@link UwbTlvData} : All tlvs that are to be decoded
      */
     public UwbTlvData getCapsInfo(String chipId) {
-        synchronized (mGlobalStateFnLock) {
+        synchronized (mNativeLock) {
             return nativeGetCapsInfo(chipId);
         }
     }
@@ -319,7 +332,7 @@ public class NativeUwbManager {
      */
     public byte controllerMulticastListUpdateV1(int sessionId, int action, int noOfControlee,
             short[] addresses, int[] subSessionIds, String chipId) {
-        synchronized (mSessionFnLock) {
+        synchronized (mNativeLock) {
             return nativeControllerMulticastListUpdateV1(sessionId, (byte) action,
                     (byte) noOfControlee, addresses, subSessionIds, chipId);
         }
@@ -350,7 +363,7 @@ public class NativeUwbManager {
     public byte controllerMulticastListUpdateV2(int sessionId, int action, int noOfControlee,
             short[] addresses, int[] subSessionIds, int messageControl,
             int[] subSessionKeyList, String chipId) {
-        synchronized (mSessionFnLock) {
+        synchronized (mNativeLock) {
             return nativeControllerMulticastListUpdateV2(sessionId, (byte) action,
                     (byte) noOfControlee, addresses, subSessionIds, messageControl,
                     subSessionKeyList, chipId);
@@ -365,7 +378,7 @@ public class NativeUwbManager {
     public byte setCountryCode(byte[] countryCode) {
         Log.i(TAG, "setCountryCode: " + new String(countryCode));
 
-        synchronized (mGlobalStateFnLock) {
+        synchronized (mNativeLock) {
             for (String chipId : mUwbMultichipData.getChipIds()) {
                 byte status = nativeSetCountryCode(countryCode, chipId);
                 if (status != UwbUciConstants.STATUS_CODE_OK) {
@@ -384,7 +397,9 @@ public class NativeUwbManager {
      */
     public boolean setLogMode(String logModeStr) {
         if (mUciLogModeStore.storeMode(logModeStr)) {
-            return nativeSetLogMode(mUciLogModeStore.getMode());
+            synchronized (mNativeLock) {
+                return nativeSetLogMode(mUciLogModeStore.getMode());
+            }
         } else {
             return false;
         }
@@ -392,7 +407,7 @@ public class NativeUwbManager {
 
     @NonNull
     public UwbVendorUciResponse sendRawVendorCmd(int gid, int oid, byte[] payload, String chipId) {
-        synchronized (mGlobalStateFnLock) {
+        synchronized (mNativeLock) {
             return nativeSendRawVendorCmd(gid, oid, payload, chipId);
         }
     }
@@ -413,11 +428,10 @@ public class NativeUwbManager {
      */
     public byte sendData(
             int sessionId, byte[] address, byte destEndPoint, int sequenceNum, byte[] appData) {
-        return nativeSendData(sessionId, address, destEndPoint, sequenceNum, appData);
+        synchronized (mNativeLock) {
+            return nativeSendData(sessionId, address, destEndPoint, sequenceNum, appData);
+        }
     }
-
-    private native byte nativeSendData(int sessionId, byte[] address,
-            byte destEndPoint, int sequenceNum, byte[] appData);
 
 
     /**
@@ -431,11 +445,15 @@ public class NativeUwbManager {
      */
     public DtTagUpdateRangingRoundsStatus sessionUpdateActiveRoundsDtTag(int sessionId,
             int noOfActiveRangingRounds, byte[] rangingRoundIndexes, String chipId) {
-        synchronized (mSessionFnLock) {
+        synchronized (mNativeLock) {
             return nativeSessionUpdateActiveRoundsDtTag(sessionId, noOfActiveRangingRounds,
                     rangingRoundIndexes, chipId);
         }
     }
+
+    // TODO(b/259487023): no native implementation
+    private native byte nativeSendData(int sessionId, byte[] address, byte destEndPoint,
+            int sequenceNum, byte[] appData);
 
     private native long nativeDispatcherNew(Object[] chipIds);
 
@@ -453,6 +471,7 @@ public class NativeUwbManager {
 
     private native int nativeGetMaxSessionNumber();
 
+    // TODO(b/259487023): no native implementation
     private native byte nativeResetDevice(byte resetConfig, String chipId);
 
     private native byte nativeSessionInit(int sessionId, byte sessionType, String chipId);
@@ -478,6 +497,7 @@ public class NativeUwbManager {
     private native byte nativeControllerMulticastListUpdateV1(int sessionId, byte action,
             byte noOfControlee, short[] address, int[] subSessionId, String chipId);
 
+    // TODO(b/259487023): no native implementation
     private native byte nativeControllerMulticastListUpdateV2(int sessionId, byte action,
             byte noOfControlee, short[] address, int[] subSessionId, int messageControl,
             int[] subSessionKeyList, String chipId);
