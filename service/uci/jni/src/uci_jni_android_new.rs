@@ -942,9 +942,14 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDi
 
 fn native_dispatcher_destroy(env: JNIEnv, obj: JObject) -> Result<()> {
     let dispatcher_ptr_long = env.get_field(obj, "mDispatcherPointer", "J")?.j()?;
-    // Safety: Java side owns Dispatcher through the pointer, and asks it to be destroyed
-    unsafe {
-        Dispatcher::destroy_ptr(dispatcher_ptr_long as *mut Dispatcher);
+    if dispatcher_ptr_long == 0 {
+        error!("UCI JNI: pointer to dispatcher to be destroyed is null.");
+        Err(Error::UwbCoreError(UwbCoreError::BadParameters))
+    } else {
+        // Safety: Java side owns Dispatcher through the pointer, and asks it to be destroyed
+        unsafe {
+            Dispatcher::destroy_ptr(dispatcher_ptr_long as *mut Dispatcher);
+        }
+        Ok(())
     }
-    Ok(())
 }
