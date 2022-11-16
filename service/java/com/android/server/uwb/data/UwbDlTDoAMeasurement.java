@@ -16,6 +16,7 @@
 
 package com.android.server.uwb.data;
 
+import com.android.server.uwb.util.UwbUtil;
 
 import java.util.Arrays;
 
@@ -43,8 +44,8 @@ public class UwbDlTDoAMeasurement {
     public byte[] mActiveRangingRounds;
 
     public UwbDlTDoAMeasurement(byte[] macAddress, int status, int messageType, int messageControl,
-            int blockIndex, int roundIndex, int NLoS, float aoaAzimuth, int aoaAzimuthFom,
-            float aoaElevation, int aoaElevationFom, int rssi, long txTimestamp, long rxTimestamp,
+            int blockIndex, int roundIndex, int nLoS, int aoaAzimuth, int aoaAzimuthFom,
+            int aoaElevation, int aoaElevationFom, int rssi, long txTimestamp, long rxTimestamp,
             int anchorCfo, int cfo, long initiatorReplyTime, long responderReplyTime,
             int initiatorResponderTof, byte[] anchorLocation, byte[] activeRangingRounds) {
         mMacAddress = macAddress;
@@ -53,10 +54,10 @@ public class UwbDlTDoAMeasurement {
         mMessageControl = messageControl;
         mBlockIndex = blockIndex;
         mRoundIndex = roundIndex;
-        mNLoS = NLoS;
-        mAoaAzimuth = aoaAzimuth;
+        mNLoS = nLoS;
+        mAoaAzimuth = toFloatFromQFormat(aoaAzimuth);
         mAoaAzimuthFom = aoaAzimuthFom;
-        mAoaElevation = aoaElevation;
+        mAoaElevation = toFloatFromQFormat(aoaElevation);
         mAoaElevationFom = aoaElevationFom;
         mRssi = rssi;
         mTxTimestamp = txTimestamp;
@@ -152,6 +153,11 @@ public class UwbDlTDoAMeasurement {
 
     public byte[] getActiveRangingRounds() {
         return mActiveRangingRounds;
+    }
+
+    private float toFloatFromQFormat(int value) {
+        return UwbUtil.convertQFormatToFloat(UwbUtil.twos_compliment(value, 16),
+                9, 7);
     }
 
     @Override
