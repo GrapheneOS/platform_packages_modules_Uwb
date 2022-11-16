@@ -21,6 +21,7 @@ import static com.android.server.uwb.UwbTestUtils.PEER_EXTENDED_UWB_ADDRESS;
 import static com.android.server.uwb.UwbTestUtils.PEER_SHORT_MAC_ADDRESS;
 import static com.android.server.uwb.UwbTestUtils.PERSISTABLE_BUNDLE;
 import static com.android.server.uwb.data.UwbUciConstants.MAC_ADDRESSING_MODE_SHORT;
+import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TYPE_DL_TDOA;
 import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TYPE_OWR_AOA;
 import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TYPE_TWO_WAY;
 import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_FAILED;
@@ -293,6 +294,19 @@ public class UwbSessionNotificationManagerTest {
                 UwbTestUtils.generateRangingDataAndRangingReport(
                         PEER_SHORT_MAC_ADDRESS, MAC_ADDRESSING_MODE_SHORT,
                         RANGING_MEASUREMENT_TYPE_OWR_AOA,
+                        true, true, false, false, TEST_ELAPSED_NANOS);
+        mUwbSessionNotificationManager.onRangingResult(
+                mUwbSession, testRangingDataAndRangingReport.first);
+        verify(mIUwbRangingCallbacks).onRangingResult(
+                mSessionHandle, testRangingDataAndRangingReport.second);
+    }
+
+    @Test
+    public void testOnRangingResult_forDlTDoA() throws Exception {
+        Pair<UwbRangingData, RangingReport> testRangingDataAndRangingReport =
+                UwbTestUtils.generateRangingDataAndRangingReport(
+                        PEER_SHORT_MAC_ADDRESS, MAC_ADDRESSING_MODE_SHORT,
+                        RANGING_MEASUREMENT_TYPE_DL_TDOA,
                         true, true, false, false, TEST_ELAPSED_NANOS);
         mUwbSessionNotificationManager.onRangingResult(
                 mUwbSession, testRangingDataAndRangingReport.first);
