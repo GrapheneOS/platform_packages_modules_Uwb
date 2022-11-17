@@ -501,6 +501,10 @@ impl<'a> TryFrom<SessionRangeDataWithEnv<'a>> for UwbRangingDataJni<'a> {
         {
             RangingMeasurements::Short(ref m) => (MacAddressIndicator::ShortAddress, m.len()),
             RangingMeasurements::Extended(ref m) => (MacAddressIndicator::ExtendedAddress, m.len()),
+            RangingMeasurements::ShortDltdoa(ref m) => (MacAddressIndicator::ShortAddress, m.len()),
+            RangingMeasurements::ExtendedDltdoa(ref m) => {
+                (MacAddressIndicator::ExtendedAddress, m.len())
+            }
         };
         let measurements_jni = UwbTwoWayMeasurementJni::try_from(RangingMeasurementsWithEnv::new(
             data_obj.env,
@@ -634,6 +638,8 @@ impl<'a> TryFrom<RangingMeasurementsWithEnv<'a>> for UwbTwoWayMeasurementJni<'a>
                 m.into_iter().map(TwoWayRangingMeasurement::from).collect::<Vec<_>>(),
                 EXTENDED_MAC_ADDRESS_LEN,
             ),
+            // TODO(b/260495115): Re-work needed to handle DlTDoAShort and DlTDoAExtended.
+            _ => todo!(),
         };
         let address_jbytearray = measurements_obj.env.new_byte_array(byte_arr_size)?;
         let zero_initiated_measurement_jobject = measurements_obj.env.new_object(
