@@ -419,13 +419,12 @@ public final class RangingSession implements AutoCloseable {
         default void onServiceConnected(@NonNull PersistableBundle parameters) {}
 
         /**
-         * @hide
-         * Invoked when a response/status is received for active ranging rounds update
+         * Invoked when a response/status is received for active ranging rounds update.
          *
          * @param parameters bundle of ranging rounds update status
          * {@link com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdateStatus}
          */
-        // TODO: Add @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE) after ag/19901449
+        //TODO(b/260387438): Add @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
         default void onRangingRoundsUpdateDtTagStatus(@NonNull PersistableBundle parameters) {}
     }
 
@@ -738,16 +737,15 @@ public final class RangingSession implements AutoCloseable {
     }
 
     /**
-     * @hide
-     * Update active ranging rounds for DT Tag
+     * Update active ranging rounds for DT Tag.
      *
      * <p> On successfully sending the command,
-     * {@link RangingSession.Callback#onRangingRoundsUpdateDtTag(PersistableBundle)}
-     * is invoked
+     * {@link RangingSession.Callback#onRangingRoundsUpdateDtTagStatus(PersistableBundle)}
+     * is invoked.
      * @param params Parameters to configure active ranging rounds
      * {@link com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate}
      */
-    // TODO: Add @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE) after ag/19901449
+    //TODO(b/260387438): Add @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
     public void onRangingRoundsUpdateDtTag(@NonNull PersistableBundle params) {
         if (mState != State.ACTIVE) {
