@@ -153,7 +153,7 @@ public class UwbRangingData {
                     + ", RangingMeasuresType = " + mRangingMeasuresType
                     + ", MacAddressMode = " + mMacAddressMode
                     + ", NoOfRangingMeasures = " + mNoOfRangingMeasures
-                    + ", RangingDlTDoAMeasure = " + Arrays.toString(mRangingTwoWayMeasures)
+                    + ", RangingDlTDoAMeasure = " + Arrays.toString(mUwbDlTDoAMeasurements)
                     + ", RawNotificationData = " + Arrays.toString(mRawNtfData)
                     + '}';
         } else {

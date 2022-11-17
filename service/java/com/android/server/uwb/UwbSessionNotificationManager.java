@@ -397,7 +397,9 @@ public class UwbSessionNotificationManager {
             Params sessionParams, long elapsedRealtimeNanos) {
         if (rangingData.getRangingMeasuresType() != UwbUciConstants.RANGING_MEASUREMENT_TYPE_TWO_WAY
                 && rangingData.getRangingMeasuresType()
-                    != UwbUciConstants.RANGING_MEASUREMENT_TYPE_OWR_AOA) {
+                    != UwbUciConstants.RANGING_MEASUREMENT_TYPE_OWR_AOA
+                && rangingData.getRangingMeasuresType()
+                    != UwbUciConstants.RANGING_MEASUREMENT_TYPE_DL_TDOA) {
             return null;
         }
         boolean isAoaAzimuthEnabled = true;
