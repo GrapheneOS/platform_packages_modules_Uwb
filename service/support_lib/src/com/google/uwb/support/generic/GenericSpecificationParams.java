@@ -103,7 +103,7 @@ public class GenericSpecificationParams extends GenericParams {
                 .setCccSpecificationParams(
                         CccSpecificationParams.fromBundle(
                                 bundle.getPersistableBundle(KEY_CCC_SPECIFICATION_PARAMS)))
-                .hasPowerStatsSupport(bundle.getBoolean(KEY_FIRA_SPECIFICATION_PARAMS))
+                .hasPowerStatsSupport(bundle.getBoolean(KEY_POWER_STATS_QUERY_SUPPORT))
                 .build();
     }
 

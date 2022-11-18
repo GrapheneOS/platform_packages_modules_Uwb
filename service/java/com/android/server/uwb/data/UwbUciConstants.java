@@ -87,6 +87,8 @@ public class UwbUciConstants {
             FiraParams.RANGING_ROUND_USAGE_SS_TWR_NON_DEFERRED_MODE;
     public static final int ROUND_USAGE_DS_TWR_NON_DEFERRED_MODE =
             FiraParams.RANGING_ROUND_USAGE_DS_TWR_NON_DEFERRED_MODE;
+    public static final int ROUND_USAGE_OWR_AOA_MEASUREMENT =
+            FiraParams.RANGING_ROUND_USAGE_OWR_AOA_MEASUREMENT;
 
     public static final int MULTI_NODE_MODE_UNICAST = FiraParams.MULTI_NODE_MODE_UNICAST;
     public static final int MULTI_NODE_MODE_ONE_TO_MANY = FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
@@ -111,14 +113,29 @@ public class UwbUciConstants {
             FiraParams.RANGE_DATA_NTF_CONFIG_DISABLE;
     public static final int RANGE_DATA_NTF_CONFIG_ENABLE = FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE;
     public static final int RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY =
-            FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY;
+            FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG;
 
+    /**
+     * Table 54: APP Configuration Parameter IDs
+     */
     public static final int RANGING_DEVICE_ROLE_RESPONDER =
             FiraParams.RANGING_DEVICE_ROLE_RESPONDER;
     public static final int RANGING_DEVICE_ROLE_INITIATOR =
             FiraParams.RANGING_DEVICE_ROLE_INITIATOR;
+    public static final int RANGING_DEVICE_ROLE_ADVERTISER =
+            FiraParams.RANGING_DEVICE_ROLE_ADVERTISER;
+    public static final int RANGING_DEVICE_ROLE_OBSERVER =
+            FiraParams.RANGING_DEVICE_ROLE_OBSERVER;
 
+    /**
+     * Table 37: Ranging Data Notification
+     */
     public static final byte RANGING_MEASUREMENT_TYPE_TWO_WAY = 0X01;
+    public static final byte RANGING_MEASUREMENT_TYPE_DL_TDOA = 0x02;
+    public static final byte RANGING_MEASUREMENT_TYPE_OWR_AOA = 0x03;
+
+    public static final byte MAC_ADDRESSING_MODE_SHORT = 0x00;
+    public static final byte MAC_ADDRESSING_MODE_EXTENDED = 0x01;
 
     /**
      * Table 32: Status Codes
@@ -172,9 +189,22 @@ public class UwbUciConstants {
             FiraParams.STATUS_CODE_RANGING_RX_MAC_IE_DEC_FAILED;
     public static final int STATUS_CODE_RANGING_RX_MAC_IE_MISSING =
             FiraParams.STATUS_CODE_RANGING_RX_MAC_IE_MISSING;
+    public static final int STATUS_CODE_ERROR_ROUND_INDEX_NOT_ACTIVATED =
+            FiraParams.STATUS_CODE_ERROR_ROUND_INDEX_NOT_ACTIVATED;
+    public static final int STATUS_CODE_ERROR_NUMBER_OF_ACTIVE_RANGING_ROUNDS_EXCEEDED =
+            FiraParams.STATUS_CODE_ERROR_NUMBER_OF_ACTIVE_RANGING_ROUNDS_EXCEEDED;
+    public static final int STATUS_CODE_ERROR_ROUND_INDEX_NOT_SET_AS_INITIATOR =
+            FiraParams.STATUS_CODE_ERROR_ROUND_INDEX_NOT_SET_AS_INITIATOR;
+    public static final int
+                STATUS_CODE_ERROR_DL_TDOA_DEVICE_ADDRESS_NOT_MATCHING_IN_REPLY_TIME_LIST =
+            FiraParams.STATUS_CODE_ERROR_DL_TDOA_DEVICE_ADDRESS_NOT_MATCHING_IN_REPLY_TIME_LIST;
 
     public static final int STATUS_CODE_CCC_SE_BUSY = STATUS_ERROR_CCC_SE_BUSY;
     public static final int STATUS_CODE_CCC_LIFECYCLE = STATUS_ERROR_CCC_LIFECYCLE;
+
+    /* UWB Device Extended Mac address length */
+    public static final int UWB_DEVICE_SHORT_MAC_ADDRESS_LEN = 2;
+    public static final int UWB_DEVICE_EXT_MAC_ADDRESS_LEN = 8;
 
     /* UWB Data Session Specific Status Codes */
     public static final int STATUS_CODE_DATA_MAX_TX_APDU_SIZE_EXCEEDED = 0x30;
@@ -183,4 +213,11 @@ public class UwbUciConstants {
     /* UWB STS Mode Codes */
     public static final int STS_MODE_STATIC = 0x00;
     public static final int STS_MODE_DYNAMIC = 0x01;
+
+    /**
+     * UWB LL Spec Table 3: Endpoints field
+     */
+    public static final byte UWB_DESTINATION_END_POINT_UWBS = 0x00;
+    public static final byte UWB_DESTINATION_END_POINT_HOST = 0x01;
+    public static final byte UWB_DESTINATION_END_POINT_SECURE_ELEMENT = 0x02;
 }

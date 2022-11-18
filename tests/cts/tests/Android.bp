@@ -20,7 +20,6 @@ android_test {
     name: "CtsUwbTestCases",
     defaults: [
         "cts_defaults",
-        "framework-uwb-cts-defaults",
     ],
     // Tag this module as a cts test artifact
     test_suites: [
@@ -36,6 +35,8 @@ android_test {
         "mockito-target-minus-junit4",
         "com.uwb.support.fira",
         "com.uwb.support.multichip",
+        "com.uwb.support.oemextension",
+        "com.uwb.support.dltdoa",
     ],
     srcs: ["src/**/*.java"],
     platform_apis: true,

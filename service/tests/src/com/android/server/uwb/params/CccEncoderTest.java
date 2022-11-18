@@ -65,8 +65,8 @@ public class CccEncoderTest {
                     .setHoppingSequence(HOPPING_SEQUENCE_DEFAULT);
 
     private static final byte[] TEST_CCC_OPEN_RANGING_TLV_DATA =
-            UwbUtil.getByteArray("0001000201010401090501010904800100000E010011010103010"
-                    + "11B01062301012C0100A3020100A4020000A50100A602D0020802B004140101");
+            UwbUtil.getByteArray("0001010201010401090501010904800100000E010011010103010"
+                    + "11B01062301012C0100A3020001A4020000A50100A602D0020802B004140101");
 
     private final CccEncoder mCccEncoder = new CccEncoder();
 

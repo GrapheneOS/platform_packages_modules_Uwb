@@ -15,6 +15,8 @@
  */
 package com.android.server.uwb.data;
 
+import static android.uwb.RangingMeasurement.RSSI_MIN;
+
 import com.android.server.uwb.util.UwbUtil;
 
 public class UwbTwoWayMeasurement {
@@ -31,11 +33,12 @@ public class UwbTwoWayMeasurement {
     public float mAoaDestElevation;
     public int mAoaDestElevationFom;
     public int mSlotIndex;
+    public int mRssi;
 
     public UwbTwoWayMeasurement(byte[] macAddress, int status, int nLoS, int distance,
             int aoaAzimuth, int aoaAzimuthFom, int aoaElevation,
             int aoaElevationFom, int aoaDestAzimuth, int aoaDestAzimuthFom,
-            int aoaDestElevation, int aoaDestElevationFom, int slotIndex) {
+            int aoaDestElevation, int aoaDestElevationFom, int slotIndex, int rssiHalfDbmAbs) {
 
         this.mMacAddress = macAddress;
         this.mStatus = status;
@@ -50,6 +53,13 @@ public class UwbTwoWayMeasurement {
         this.mAoaDestElevation = toFloatFromQFormat(aoaDestElevation);
         this.mAoaDestElevationFom = aoaDestElevationFom;
         this.mSlotIndex = slotIndex;
+        /*
+         * According to FiRa UCI Generic Technical Specification v2.0.0,
+         * decode the rssi value in dBm format where the abs value was encoded in FP Q7.1 format.
+         * Just need to divide this number by two and take the negative value.
+         * If the reported RSSI is lower than RSSI_MIN, set it to RSSI_MIN to avoid exceptions.
+         */
+        this.mRssi = Math.max(-rssiHalfDbmAbs / 2, RSSI_MIN);
     }
 
     public byte[] getMacAddress() {
@@ -103,6 +113,9 @@ public class UwbTwoWayMeasurement {
     public int getSlotIndex() {
         return mSlotIndex;
     }
+    public int getRssi() {
+        return mRssi;
+    }
 
     private float toFloatFromQFormat(int value) {
         return UwbUtil.convertQFormatToFloat(UwbUtil.twos_compliment(value, 16),
@@ -124,6 +137,7 @@ public class UwbTwoWayMeasurement {
                 + ", AoaDestElevation = " + mAoaDestElevation
                 + ", AoaDestElevationFom = " + mAoaDestElevationFom
                 + ", SlotIndex = 0x" + UwbUtil.toHexString(mSlotIndex)
+                + ", RSSI = " + mRssi
                 + '}';
     }
 }

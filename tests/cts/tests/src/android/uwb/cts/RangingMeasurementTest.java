@@ -54,7 +54,6 @@ public class RangingMeasurementTest {
         int los = RangingMeasurement.NLOS;
         int measurementFocus = RangingMeasurement.MEASUREMENT_FOCUS_RANGE;
 
-
         RangingMeasurement.Builder builder = new RangingMeasurement.Builder();
 
         builder.setStatus(status);

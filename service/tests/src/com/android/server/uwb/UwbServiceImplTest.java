@@ -23,12 +23,15 @@ import static android.uwb.UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE
 import static com.android.server.uwb.UwbSettingsStore.SETTINGS_TOGGLE_STATE;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY;
+import static com.google.uwb.support.fira.FiraParams.PACS_PROFILE_SERVICE_ID;
+import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -56,11 +59,15 @@ import android.uwb.UwbAddress;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.multchip.UwbMultichipData;
+import com.android.server.uwb.pm.ProfileManager;
 
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 import com.google.uwb.support.multichip.ChipInfoParams;
+import com.google.uwb.support.profile.ServiceProfile;
+import com.google.uwb.support.profile.UuidBundleWrapper;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -71,6 +78,8 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Tests for {@link UwbServiceImpl}.
@@ -93,6 +102,7 @@ public class UwbServiceImplTest {
     @Mock private UwbSettingsStore mUwbSettingsStore;
     @Mock private NativeUwbManager mNativeUwbManager;
     @Mock private UwbMultichipData mUwbMultichipData;
+    @Mock private ProfileManager mProfileManager;
     @Captor private ArgumentCaptor<IUwbRangingCallbacks> mRangingCbCaptor;
     @Captor private ArgumentCaptor<IUwbRangingCallbacks> mRangingCbCaptor2;
     @Captor private ArgumentCaptor<IBinder.DeathRecipient> mClientDeathCaptor;
@@ -163,23 +173,23 @@ public class UwbServiceImplTest {
     }
 
     @Test
-    public void testGetSpecificationInfo() throws Exception {
+    public void testGetSpecificationInfo_nullChipId() throws Exception {
         final PersistableBundle specification = new PersistableBundle();
-        when(mUwbServiceCore.getSpecificationInfo()).thenReturn(specification);
+        when(mUwbServiceCore.getSpecificationInfo(anyString())).thenReturn(specification);
         assertThat(mUwbServiceImpl.getSpecificationInfo(/* chipId= */ null))
                 .isEqualTo(specification);
 
-        verify(mUwbServiceCore).getSpecificationInfo();
+        verify(mUwbServiceCore).getSpecificationInfo(DEFAULT_CHIP_ID);
     }
 
     @Test
     public void testGetSpecificationInfo_validChipId() throws Exception {
         final PersistableBundle specification = new PersistableBundle();
-        when(mUwbServiceCore.getSpecificationInfo()).thenReturn(specification);
+        when(mUwbServiceCore.getSpecificationInfo(anyString())).thenReturn(specification);
         assertThat(mUwbServiceImpl.getSpecificationInfo(DEFAULT_CHIP_ID))
                 .isEqualTo(specification);
 
-        verify(mUwbServiceCore).getSpecificationInfo();
+        verify(mUwbServiceCore).getSpecificationInfo(DEFAULT_CHIP_ID);
     }
 
     @Test
@@ -189,8 +199,8 @@ public class UwbServiceImplTest {
     }
 
     @Test
-    public void testOpenRanging() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
+    public void testOpenRanging_nullChipId() throws Exception {
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
         final IUwbRangingCallbacks cb = mock(IUwbRangingCallbacks.class);
         final PersistableBundle parameters = new PersistableBundle();
         final IBinder cbBinder = mock(IBinder.class);
@@ -201,13 +211,13 @@ public class UwbServiceImplTest {
 
         verify(mUwbServiceCore).openRanging(
                 eq(ATTRIBUTION_SOURCE), eq(sessionHandle), mRangingCbCaptor.capture(),
-                eq(parameters));
+                eq(parameters), eq(DEFAULT_CHIP_ID));
         assertThat(mRangingCbCaptor.getValue()).isNotNull();
     }
 
     @Test
     public void testStartRanging() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
         final PersistableBundle parameters = new PersistableBundle();
 
         mUwbServiceImpl.startRanging(sessionHandle, parameters);
@@ -217,11 +227,11 @@ public class UwbServiceImplTest {
 
     @Test
     public void testReconfigureRanging() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
         final FiraRangingReconfigureParams parameters =
                 new FiraRangingReconfigureParams.Builder()
                         .setBlockStrideLength(6)
-                        .setRangeDataNtfConfig(RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY)
+                        .setRangeDataNtfConfig(RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG)
                         .setRangeDataProximityFar(6)
                         .setRangeDataProximityNear(4)
                         .build();
@@ -232,7 +242,7 @@ public class UwbServiceImplTest {
 
     @Test
     public void testStopRanging() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
 
         mUwbServiceImpl.stopRanging(sessionHandle);
 
@@ -241,7 +251,7 @@ public class UwbServiceImplTest {
 
     @Test
     public void testCloseRanging() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
 
         mUwbServiceImpl.closeRanging(sessionHandle);
 
@@ -277,7 +287,7 @@ public class UwbServiceImplTest {
         doThrow(new SecurityException()).when(mUwbInjector).enforceUwbRangingPermissionForPreflight(
                 any());
 
-        final SessionHandle sessionHandle = new SessionHandle(5);
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
         final IUwbRangingCallbacks cb = mock(IUwbRangingCallbacks.class);
         final PersistableBundle parameters = new PersistableBundle();
         final IBinder cbBinder = mock(IBinder.class);
@@ -417,7 +427,7 @@ public class UwbServiceImplTest {
 
     @Test
     public void testAddControlee() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
         final PersistableBundle parameters = new PersistableBundle();
 
         mUwbServiceImpl.addControlee(sessionHandle, parameters);
@@ -426,7 +436,7 @@ public class UwbServiceImplTest {
 
     @Test
     public void testRemoveControlee() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
         final PersistableBundle parameters = new PersistableBundle();
 
         mUwbServiceImpl.removeControlee(sessionHandle, parameters);
@@ -434,13 +444,27 @@ public class UwbServiceImplTest {
     }
 
     @Test
-    public void testAddServiceProfile() throws Exception {
-        final PersistableBundle parameters = new PersistableBundle();
+    public void testAddServiceProfile() {
+        UUID serviceInstanceID = new UUID(100, 50);
 
-        try {
-            mUwbServiceImpl.addServiceProfile(parameters);
-            fail();
-        } catch (IllegalStateException e) { /* pass */ }
+        when(mUwbInjector.getProfileManager()).thenReturn(mProfileManager);
+        when(mProfileManager.addServiceProfile(anyInt()))
+                .thenReturn(Optional.of(serviceInstanceID));
+
+        PersistableBundle bundle = new ServiceProfile.Builder()
+                .setServiceID(PACS_PROFILE_SERVICE_ID)
+                .build()
+                .toBundle();
+
+        assertEquals(ServiceProfile.fromBundle(bundle).getServiceID(),
+                PACS_PROFILE_SERVICE_ID);
+
+        PersistableBundle statusBundle = mUwbServiceImpl.addServiceProfile(bundle);
+
+        verify(mProfileManager).addServiceProfile(1);
+
+        assertEquals(UuidBundleWrapper.fromBundle(statusBundle).getServiceInstanceID().get(),
+                serviceInstanceID);
     }
 
     @Test
@@ -508,17 +532,24 @@ public class UwbServiceImplTest {
 
     @Test
     public void testRemoveServiceProfile() throws Exception {
-        final PersistableBundle parameters = new PersistableBundle();
+        UUID serviceInstanceID = new UUID(100, 50);
 
-        try {
-            mUwbServiceImpl.removeServiceProfile(parameters);
-            fail();
-        } catch (IllegalStateException e) { /* pass */ }
+        when(mUwbInjector.getProfileManager()).thenReturn(mProfileManager);
+        when(mProfileManager.removeServiceProfile(any()))
+                .thenReturn(UwbUciConstants.STATUS_CODE_OK);
+
+        UuidBundleWrapper uuidBundleWrapper = new UuidBundleWrapper.Builder()
+                .setServiceInstanceID(Optional.of(serviceInstanceID))
+                .build();
+        int status = mUwbServiceImpl.removeServiceProfile(uuidBundleWrapper.toBundle());
+
+        verify(mProfileManager).removeServiceProfile(any());
+        assertEquals(status, UwbUciConstants.STATUS_CODE_OK);
     }
 
     @Test
     public void testResume() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
         final PersistableBundle parameters = new PersistableBundle();
 
         try {
@@ -529,7 +560,7 @@ public class UwbServiceImplTest {
 
     @Test
     public void testPause() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
         final PersistableBundle parameters = new PersistableBundle();
 
         try {
@@ -540,14 +571,29 @@ public class UwbServiceImplTest {
 
     @Test
     public void testSendData() throws Exception {
-        final SessionHandle sessionHandle = new SessionHandle(5);
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
         final UwbAddress mUwbAddress = mock(UwbAddress.class);
         final PersistableBundle parameters = new PersistableBundle();
+        final byte[] data = new byte[] {1, 3, 5, 7, 11, 13};
 
+        mUwbServiceImpl.sendData(sessionHandle, mUwbAddress, parameters, data);
+        verify(mUwbServiceCore).sendData(sessionHandle, mUwbAddress, parameters, data);
+    }
+
+    @Test
+    public void testThrowSecurityExceptionWhenSendDataWithoutUwbPrivilegedPermission()
+            throws Exception {
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
+        final UwbAddress mUwbAddress = mock(UwbAddress.class);
+        final PersistableBundle parameters = new PersistableBundle();
+        final byte[] data = new byte[] {1, 3, 5, 7, 11, 13};
+
+        doThrow(new SecurityException()).when(mContext).enforceCallingOrSelfPermission(
+                eq(UWB_PRIVILEGED), any());
         try {
-            mUwbServiceImpl.sendData(sessionHandle, mUwbAddress, parameters, null);
+            mUwbServiceImpl.sendData(sessionHandle, mUwbAddress, parameters, data);
             fail();
-        } catch (IllegalStateException e) { /* pass */ }
+        } catch (SecurityException e) { /* pass */ }
     }
 
     @Test
@@ -555,6 +601,7 @@ public class UwbServiceImplTest {
         final int gid = 0;
         final int oid = 0;
         mUwbServiceImpl.sendVendorUciMessage(gid, oid, null);
-        verify(mUwbServiceCore).sendVendorUciMessage(gid, oid, null);
+        verify(mUwbServiceCore).sendVendorUciMessage(gid, oid, null,
+                mUwbInjector.getMultichipData().getDefaultChipId());
     }
 }
