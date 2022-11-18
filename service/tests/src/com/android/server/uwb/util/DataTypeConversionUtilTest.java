@@ -57,6 +57,34 @@ public class DataTypeConversionUtilTest {
     }
 
     @Test
+    public void byteArrayToI16_success() {
+        assertThat(DataTypeConversionUtil.byteArrayToI16(new byte[]{0x01, 0x02}))
+                .isEqualTo((short) 0x0102);
+    }
+
+    // Test Big-Endian behavior of the conversion.
+    @Test
+    public void byteArrayToI16_highByte_success() {
+        assertThat(
+                DataTypeConversionUtil.byteArrayToI16(new byte[]{(byte) 0xFF, (byte) 0xA5}))
+                .isEqualTo((short) 0xFFA5);
+    }
+
+    @Test
+    public void byteArrayToI16_shortArray_Failure() {
+        assertThrows(
+                NumberFormatException.class,
+                () -> DataTypeConversionUtil.byteArrayToI16(new byte[]{0x01}));
+    }
+
+    @Test
+    public void byteArrayToI16_longArray_failure() {
+        assertThrows(
+                NumberFormatException.class,
+                () -> DataTypeConversionUtil.byteArrayToI16(new byte[]{0x01, 0x02, 0x03}));
+    }
+
+    @Test
     public void i32ToByteArray_success() {
         assertThat(DataTypeConversionUtil.i32ToByteArray(0x01020304))
                 .isEqualTo(new byte[] { (byte) 0x01, (byte) 0x02, (byte) 0x03, (byte) 0x04 });
@@ -138,6 +166,56 @@ public class DataTypeConversionUtilTest {
                 NumberFormatException.class,
                 () -> DataTypeConversionUtil.arbitraryByteArrayToI32(
                         new byte[0]));
+
+    }
+
+    @Test
+    public void macAddressByteArrayToLong_success_shortMacAddress_LittleEndian() {
+        assertThat(
+                DataTypeConversionUtil.macAddressByteArrayToLong(new byte[] {0x35, 0x37}))
+                .isEqualTo(0x3735);
+    }
+
+    @Test
+    public void macAddressByteArrayToLong_success_int_LittleEndian() {
+        assertThat(
+                DataTypeConversionUtil.macAddressByteArrayToLong(
+                        new byte[] {0x35, 0x37, 0x38, 0x48}))
+                .isEqualTo(0x48383735);
+    }
+
+    @Test
+    public void macAddressByteArrayToLong_success_extendedMacAddress_LittleEndian() {
+        assertThat(
+                DataTypeConversionUtil.macAddressByteArrayToLong(
+                        new byte[] {0x35, 0x37, 0x38, 0x48, 0x22, 0x24, 0x26, 0x28}))
+                .isEqualTo(0x2826242248383735L);
+    }
+
+    @Test
+    public void macAddressByteArrayToLong_success_shortInExtendedMacAddressFormat_LittleEndian() {
+        assertThat(
+                DataTypeConversionUtil.macAddressByteArrayToLong(
+                        new byte[] {0x35, 0x37, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}))
+                .isEqualTo(0x3735);
+    }
+
+    @Test
+    public void macAddressByteArrayToLong_badLength() {
+        // Unsupported lengths.
+        assertThrows(
+                NumberFormatException.class,
+                () -> DataTypeConversionUtil.macAddressByteArrayToLong(new byte[]{0x01}));
+        assertThrows(
+                NumberFormatException.class,
+                () -> DataTypeConversionUtil.macAddressByteArrayToLong(
+                        new byte[]{0x01, 0x02, 0x03}));
+
+        // Too long
+        assertThrows(
+                NumberFormatException.class,
+                () -> DataTypeConversionUtil.macAddressByteArrayToLong(
+                        new byte[]{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09}));
 
     }
 }

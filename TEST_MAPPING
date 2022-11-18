@@ -4,12 +4,6 @@
       "name": "CtsUwbTestCases"
     },
     {
-      "name": "FrameworkUwbTests"
-    },
-    {
-      "name": "ServiceUwbTests"
-    },
-    {
       "name": "UwbSupportLibTests"
     },
     {

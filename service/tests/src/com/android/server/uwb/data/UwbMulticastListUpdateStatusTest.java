@@ -20,8 +20,11 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.platform.test.annotations.Presubmit;
 import android.test.suitebuilder.annotation.SmallTest;
+import android.uwb.UwbAddress;
 
 import androidx.test.runner.AndroidJUnit4;
+
+import com.google.common.primitives.Shorts;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,8 +40,13 @@ import java.util.Arrays;
 public class UwbMulticastListUpdateStatusTest {
     private static final long TEST_SESSION_ID = 1;
     private static final int TEST_REMAINING_SIZE = 2;
-    private static final int TEST_NUM_OF_CONTROLLEES = 1;
+    private static final int TEST_NUM_OF_CONTROLLEES = 2;
+
+    // Note that an int (4-byte) is the wrong data type for a Uwb address, which is
+    //  either 2 or 8 bytes. This test will need to be updated when the native code
+    //  catches up. Consider using the UwbAddress data type.
     private static final int[] TEST_CONTROLEE_ADDRESS = new int[] {0x0A, 0x04};
+
     private static final long[] TEST_SUB_SESSION_ID = new long[] {1, 1};
     private static final int[] TEST_STATUS = new int[] {0};
 
@@ -54,8 +62,17 @@ public class UwbMulticastListUpdateStatusTest {
         assertThat(mUwbMulticastListUpdateStatus.getRemainingSize()).isEqualTo(TEST_REMAINING_SIZE);
         assertThat(mUwbMulticastListUpdateStatus.getNumOfControlee())
                 .isEqualTo(TEST_NUM_OF_CONTROLLEES);
-        assertThat(mUwbMulticastListUpdateStatus.getContolleeMacAddress())
+
+        // This should go obsolete as we shift to UwbAddresses.
+        assertThat(mUwbMulticastListUpdateStatus.getControleeMacAddresses())
                 .isEqualTo(TEST_CONTROLEE_ADDRESS);
+
+        for (int i = 0; i < TEST_NUM_OF_CONTROLLEES; i++) {
+            assertThat(mUwbMulticastListUpdateStatus.getControleeUwbAddresses()[i])
+                    .isEqualTo(UwbAddress.fromBytes(
+                            Shorts.toByteArray((short) TEST_CONTROLEE_ADDRESS[i])));
+        }
+
         assertThat(mUwbMulticastListUpdateStatus.getSubSessionId()).isEqualTo(TEST_SUB_SESSION_ID);
         assertThat(mUwbMulticastListUpdateStatus.getStatus()).isEqualTo(TEST_STATUS);
 
