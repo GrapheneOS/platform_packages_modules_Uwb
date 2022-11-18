@@ -12,15 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Implementation of Dispatcher.
+//! Implementation of Dispatcher and related methods.
 
+use crate::error::{Error, Result};
 use crate::notification_manager_android::NotificationManagerAndroidBuilder;
 
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::sync::Arc;
 
-use jni::objects::GlobalRef;
-use jni::JavaVM;
+use jni::objects::{GlobalRef, JObject, JString};
+use jni::{JNIEnv, JavaVM, MonitorGuard};
 use tokio::runtime::{Builder as RuntimeBuilder, Runtime};
 use uci_hal_android::uci_hal_android::UciHalAndroid;
 use uwb_core::error::{Error as UwbCoreError, Result as UwbCoreResult};
@@ -76,8 +78,8 @@ impl Dispatcher {
     }
 
     /// Sets log mode for all chips.
-    pub fn set_logger_mode(&mut self, logger_mode: UciLoggerMode) -> UwbCoreResult<()> {
-        for (_, manager) in self.manager_map.iter_mut() {
+    pub fn set_logger_mode(&self, logger_mode: UciLoggerMode) -> UwbCoreResult<()> {
+        for (_, manager) in self.manager_map.iter() {
             manager.set_logger_mode(logger_mode.clone())?;
         }
         Ok(())
@@ -100,5 +102,74 @@ impl Dispatcher {
     /// Dispatcher_ptr must point to a valid dispatcher object it owns.
     pub unsafe fn destroy_ptr(dispatcher_ptr: *mut Dispatcher) {
         let _ = Box::from_raw(dispatcher_ptr);
+    }
+
+    /// Gets reference to Dispatcher.
+    ///
+    /// # Safety
+    /// Must be called from a Java object holding a valid or null mDispatcherPointer.
+    pub unsafe fn get_dispatcher<'a>(
+        env: JNIEnv<'a>,
+        obj: JObject<'a>,
+    ) -> Result<GuardedDispatcher<'a>> {
+        let guard = env.lock_obj(obj)?;
+        let dispatcher_ptr_value = env.get_field(obj, "mDispatcherPointer", "J")?.j()?;
+        if dispatcher_ptr_value == 0 {
+            return Err(Error::UwbCoreError(UwbCoreError::BadParameters));
+        }
+        let dispatcher_ptr = dispatcher_ptr_value as *const Dispatcher;
+        Ok(GuardedDispatcher { _guard: guard, dispatcher: &*dispatcher_ptr })
+    }
+
+    /// Gets reference to UciManagerSync with chip_id.
+    ///
+    /// # Safety
+    /// Must be called from a Java object holding a valid or null mDispatcherPointer.
+    pub unsafe fn get_uci_manager<'a>(
+        env: JNIEnv<'a>,
+        obj: JObject<'a>,
+        chip_id: JString,
+    ) -> Result<GuardedUciManager<'a>> {
+        // Safety: get_dispatcher and get_uci_manager has the same assumption.
+        let guarded_dispatcher = Self::get_dispatcher(env, obj)?;
+        let chip_id_str = String::from(env.get_string(chip_id)?);
+        guarded_dispatcher.into_guarded_uci_manager(&chip_id_str)
+    }
+}
+
+/// Lifetimed reference to UciManagerSync that locks Java object while reference is alive.
+pub(crate) struct GuardedUciManager<'a> {
+    _guard: MonitorGuard<'a>,
+    uci_manager: &'a UciManagerSync,
+}
+
+impl<'a> Deref for GuardedUciManager<'a> {
+    type Target = UciManagerSync;
+    fn deref(&self) -> &Self::Target {
+        self.uci_manager
+    }
+}
+
+/// Lifetimed reference to Dispatcher that locks Java object while reference is alive.
+pub(crate) struct GuardedDispatcher<'a> {
+    _guard: MonitorGuard<'a>,
+    dispatcher: &'a Dispatcher,
+}
+
+impl<'a> GuardedDispatcher<'a> {
+    pub fn into_guarded_uci_manager(self, chip_id: &str) -> Result<GuardedUciManager<'a>> {
+        let uci_manager = self
+            .dispatcher
+            .manager_map
+            .get(chip_id)
+            .ok_or(Error::UwbCoreError(UwbCoreError::BadParameters))?;
+        Ok(GuardedUciManager { _guard: self._guard, uci_manager })
+    }
+}
+
+impl<'a> Deref for GuardedDispatcher<'a> {
+    type Target = Dispatcher;
+    fn deref(&self) -> &Self::Target {
+        self.dispatcher
     }
 }
