@@ -238,6 +238,21 @@ public class CccOpenRangingParams extends CccParams {
             mHoppingSequence.set(builder.mHoppingSequence.get());
         }
 
+        public Builder(@NonNull CccOpenRangingParams params) {
+            mProtocolVersion.set(params.mProtocolVersion);
+            mUwbConfig.set(params.mUwbConfig);
+            mPulseShapeCombo.set(params.mPulseShapeCombo);
+            mSessionId.set(params.mSessionId);
+            mRanMultiplier.set(params.mRanMultiplier);
+            mChannel.set(params.mChannel);
+            mNumChapsPerSlot.set(params.mNumChapsPerSlot);
+            mNumResponderNodes.set(params.mNumResponderNodes);
+            mNumSlotsPerRound.set(params.mNumSlotsPerRound);
+            mSyncCodeIndex.set(params.mSyncCodeIndex);
+            mHoppingConfigMode.set(params.mHoppingConfigMode);
+            mHoppingSequence.set(params.mHoppingSequence);
+        }
+
         public Builder setProtocolVersion(CccProtocolVersion version) {
             mProtocolVersion.set(version);
             return this;

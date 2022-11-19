@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 
 import android.content.AttributionSource;
 import android.os.PersistableBundle;
+import android.os.Process;
 import android.os.RemoteException;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -54,11 +55,13 @@ public class RangingManagerTest {
     private static final @RangingChangeReason int REASON = RangingChangeReason.UNKNOWN;
     private static final UwbAddress ADDRESS = UwbAddress.fromBytes(new byte[] {0x0, 0x1});
     private static final byte[] DATA = new byte[] {0x0, 0x1};
-    private static final int UID = 343453;
+    private static final int UID = Process.myUid();
     private static final String PACKAGE_NAME = "com.uwb.test";
     private static final AttributionSource ATTRIBUTION_SOURCE =
             new AttributionSource.Builder(UID).setPackageName(PACKAGE_NAME).build();
     private static final String VALID_CHIP_ID = "validChipId";
+    private static final int HANDLE_ID = 12;
+    private static final int PID = Process.myPid();
 
     @Test
     public void testOpenSession_OpenRangingInvoked() throws RemoteException {
@@ -120,7 +123,7 @@ public class RangingManagerTest {
         RangingManager rangingManager = new RangingManager(adapter);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
 
-        rangingManager.onRangingOpened(new SessionHandle(2));
+        rangingManager.onRangingOpened(new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID));
         verify(callback, times(0)).onOpened(any());
     }
 

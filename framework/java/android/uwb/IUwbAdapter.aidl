@@ -24,6 +24,7 @@ import android.uwb.IUwbRangingCallbacks;
 import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
 import android.uwb.IUwbVendorUciCallback;
+import android.uwb.IUwbOemExtensionCallback;
 
 /**
  * @hide
@@ -68,6 +69,10 @@ interface IUwbAdapter {
    * @param callbacks callback to unregister
    */
   void unregisterAdapterStateCallbacks(in IUwbAdapterStateCallbacks callbacks);
+
+  void registerOemExtensionCallback(in IUwbOemExtensionCallback callbacks);
+
+  void unregisterOemExtensionCallback(in IUwbOemExtensionCallback callbacks);
 
   /**
    * Get the accuracy of the ranging timestamps
@@ -342,6 +347,8 @@ interface IUwbAdapter {
 
   int sendVendorUciMessage(int gid, int oid, in byte[] payload);
 
+  void onRangingRoundsUpdateDtTag(in SessionHandle sessionHandle, in PersistableBundle parameters);
+
   /**
    * The maximum allowed time to open a ranging session.
    */
@@ -357,4 +364,9 @@ interface IUwbAdapter {
    * closed.
    */
   const int RANGING_SESSION_CLOSE_THRESHOLD_MS = 3000; // Value TBD
+
+  /**
+   * The maximum allowed time to configure ranging rounds update for DT Tag
+   */
+  const int RANGING_ROUNDS_UPDATE_DT_TAG_THRESHOLD_MS = 3000; // Value TBD
 }

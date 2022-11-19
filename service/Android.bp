@@ -59,20 +59,26 @@ java_library {
         "ServiceUwbResources",
         "framework-statsd.stubs.module_lib",
         "framework-wifi.stubs.module_lib",
+        "framework-bluetooth.stubs.module_lib",
     ],
 
     static_libs: [
         "androidx.annotation_annotation",
-        "android.hardware.uwb.fira_android-V1-java",
+        "android.hardware.uwb.fira_android-V2-java",
         "com.uwb.support.ccc",
         "com.uwb.support.fira",
         "com.uwb.support.generic",
         "com.uwb.support.multichip",
         "com.uwb.support.profile",
+        "com.uwb.support.oemextension",
+        "com.uwb.support.dltdoa",
+        "guava",
         "modules-utils-shell-command-handler",
         "modules-utils-handlerexecutor",
         "modules-utils-preconditions",
-        "guava",
+        "uwb-config-proto",
+        "modules-utils-statemachine",
+        "modules-utils-build",
     ],
 
     apex_available: [
@@ -84,27 +90,37 @@ java_library {
 // ============================================================
 java_library {
     name: "service-uwb",
-    defaults: ["service-uwb-common-defaults"],
+    defaults: [
+        "service-uwb-common-defaults",
+        "standalone-system-server-module-optimize-defaults",
+    ],
     installable: true,
     static_libs: ["service-uwb-pre-jarjar"],
 
-    // need to include `libs` so that Soong doesn't complain about missing classes after jarjaring
+    // Need to include `libs` so that Soong doesn't complain about missing classes after jarjaring
+    // The below libraries are not actually needed to build since no source is compiled
+    // but they are necessary so that R8 has the right references to optimize the code.
+    // Without these, there will be missing class warnings and code may be wrongly optimized.
+    // TODO(b/242088131): remove libraries that aren't used directly
     libs: [
         "framework-uwb.impl",
+        "framework-statsd.stubs.module_lib",
+        "framework-wifi.stubs.module_lib",
+        "framework-bluetooth.stubs.module_lib",
+        "framework-connectivity.stubs.module_lib",
     ],
 
     sdk_version: "system_server_Tiramisu",
 
     jarjar_rules: ":uwb-jarjar-rules",
     optimize: {
-        enabled: true,
-        shrink: true,
         proguard_flags_files: ["proguard.flags"],
     },
-
     visibility: [
         "//packages/modules/Uwb/apex",
         "//packages/modules/Uwb/service/tests/uwbtests/apex",
+        "//packages/modules/Uwb/indev_uwb_adaptation",
+        "//packages/modules/Uwb/indev_uwb_adaptation/tests",
     ],
     apex_available: [
         "com.android.uwb",

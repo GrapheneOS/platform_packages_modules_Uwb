@@ -46,8 +46,6 @@ public class RangingReportTest {
         builder.addMeasurements(measurements);
         RangingReport report = tryBuild(builder, true);
         verifyMeasurementsEqual(measurements, report.getMeasurements());
-
-
         builder = new RangingReport.Builder();
         for (RangingMeasurement measurement : measurements) {
             builder.addMeasurement(measurement);

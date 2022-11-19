@@ -19,7 +19,6 @@ package {
 java_defaults {
     name: "uwb-module-sdk-version-defaults",
     min_sdk_version: "Tiramisu",
-    target_sdk_version: "Tiramisu",
 }
 
 filegroup {
@@ -96,8 +95,6 @@ java_sdk_library {
     hostdex: true, // for hiddenapi check
 
     impl_library_visibility: [
-        //TODO(b/244347268): Remove this after code move.
-        "//cts/tests/uwb:__subpackages__",
         "//external/sl4a/Common:__subpackages__",
         "//packages/modules/Uwb:__subpackages__",
     ],
@@ -107,6 +104,7 @@ java_sdk_library {
     ],
     permitted_packages: [
         "android.uwb",
+        "android.uwb.util",
         // Created by jarjar rules.
         "com.android.x.uwb",
     ],
@@ -125,27 +123,6 @@ java_defaults {
     defaults_visibility: [
         "//packages/modules/Uwb/framework/tests:__subpackages__",
         "//packages/modules/Uwb/service/tests:__subpackages__",
-    ],
-}
-
-// TODO(b/186585880): Fix all @hide dependencies.
-// defaults for CTS tests that need to build against framework-uwb's @hide APIs
-java_defaults {
-    name: "framework-uwb-cts-defaults",
-    sdk_version: "core_current",
-    libs: [
-        // order matters: classes in framework-uwb are resolved before framework, meaning
-        // @hide APIs in framework-uwb are resolved before @SystemApi stubs in framework
-        "framework-uwb.impl",
-        "framework",
-
-        // if sdk_version="" this gets automatically included, but here we need to add manually.
-        "framework-res",
-    ],
-    defaults_visibility: [
-        //TODO(b/244347268): Remove this after code move.
-        "//cts/tests/uwb:__subpackages__",
-        "//packages/modules/Uwb/tests/cts:__subpackages__",
     ],
 }
 
