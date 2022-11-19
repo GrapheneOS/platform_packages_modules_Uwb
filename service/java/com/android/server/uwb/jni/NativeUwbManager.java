@@ -31,6 +31,8 @@ import com.android.server.uwb.data.UwbVendorUciResponse;
 import com.android.server.uwb.info.UwbPowerStats;
 import com.android.server.uwb.multchip.UwbMultichipData;
 
+import java.util.Arrays;
+
 @Keep
 public class NativeUwbManager {
     private static final String TAG = NativeUwbManager.class.getSimpleName();
@@ -108,7 +110,8 @@ public class NativeUwbManager {
      * Vendor callback invoked via the JNI
      */
     public void onVendorUciNotificationReceived(int gid, int oid, byte[] payload) {
-        Log.d(TAG, "onVendorUciNotificationReceived: " + gid + ", " + oid + ", " + payload);
+        Log.d(TAG, "onVendorUciNotificationReceived: " + gid + ", " + oid + ", "
+                + Arrays.toString(payload));
         mVendorListener.onVendorUciNotificationReceived(gid, oid, payload);
     }
 
