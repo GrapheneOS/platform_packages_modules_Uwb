@@ -113,8 +113,9 @@ public final class RangingReport implements Parcelable {
                 public RangingReport createFromParcel(Parcel in) {
                     Builder builder = new Builder();
                     builder.addMeasurements(in.createTypedArrayList(RangingMeasurement.CREATOR));
-                    builder.addRangingReportMetadata(in.readPersistableBundle(
-                            getClass().getClassLoader()));
+                    PersistableBundle metadata =
+                            in.readPersistableBundle(getClass().getClassLoader());
+                    if (metadata != null) builder.addRangingReportMetadata(metadata);
                     return builder.build();
                 }
 
