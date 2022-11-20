@@ -338,8 +338,9 @@ public final class RangingMeasurement implements Parcelable {
                     builder.setLineOfSight(in.readInt());
                     builder.setMeasurementFocus(in.readInt());
                     builder.setRssiDbm(in.readInt());
-                    builder.setRangingMeasurementMetadata(
-                            in.readPersistableBundle(getClass().getClassLoader()));
+                    PersistableBundle metadata =
+                            in.readPersistableBundle(getClass().getClassLoader());
+                    if (metadata != null) builder.setRangingMeasurementMetadata(metadata);
                     return builder.build();
                 }
 
