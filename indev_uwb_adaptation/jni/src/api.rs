@@ -412,8 +412,8 @@ fn send_raw_vendor_cmd(
             return Err(Error::Parse(format!("Failed to convert payload {:?}", err)));
         }
     };
-    let vendor_message = uwb_service.send_vendor_cmd(gid, oid, payload);
-    // TODO(cante): figure out if we send RawVendorMessage back in a callback
+    let vendor_message = uwb_service.raw_uci_cmd(gid, oid, payload);
+    // TODO(cante): figure out if we send RawUciMessage back in a callback
     todo!();
 }
 
