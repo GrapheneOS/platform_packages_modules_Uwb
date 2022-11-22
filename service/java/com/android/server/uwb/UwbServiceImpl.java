@@ -19,6 +19,7 @@ package com.android.server.uwb;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
 import android.annotation.NonNull;
+import android.app.admin.SecurityLog;
 import android.content.AttributionSource;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -29,6 +30,7 @@ import android.os.ParcelFileDescriptor;
 import android.os.PersistableBundle;
 import android.os.Process;
 import android.os.RemoteException;
+import android.os.UserManager;
 import android.provider.Settings;
 import android.util.Log;
 import android.uwb.IUwbAdapter;
@@ -66,6 +68,8 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     private final UwbSettingsStore mUwbSettingsStore;
     private final UwbServiceCore mUwbServiceCore;
 
+    private boolean mUwbUserRestricted;
+
 
     UwbServiceImpl(@NonNull Context context, @NonNull UwbInjector uwbInjector) {
         mContext = context;
@@ -73,6 +77,8 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
         mUwbSettingsStore = uwbInjector.getUwbSettingsStore();
         mUwbServiceCore = uwbInjector.getUwbServiceCore();
         registerAirplaneModeReceiver();
+        mUwbUserRestricted = isUwbUserRestricted();
+        registerUserRestrictionsReceiver();
     }
 
     /**
@@ -127,6 +133,31 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     private void enforceUwbPrivilegedPermission() {
         mContext.enforceCallingOrSelfPermission(android.Manifest.permission.UWB_PRIVILEGED,
                 "UwbService");
+    }
+
+    private void onUserRestrictionsChanged() {
+        if (mUwbUserRestricted == isUwbUserRestricted()) {
+            return;
+        }
+
+        Log.i(TAG, "Disallow UWB user restriction changed from " + mUwbUserRestricted + " to "
+                + !mUwbUserRestricted + ".");
+        mUwbUserRestricted = !mUwbUserRestricted;
+        logSecurityUwbUserRestrictionChanged(mUwbUserRestricted);
+
+        try {
+            mUwbServiceCore.setEnabled(isUwbEnabled());
+        } catch (Exception e) {
+            Log.e(TAG, "Unable to set UWB Adapter state.", e);
+        }
+    }
+
+    private void logSecurityUwbUserRestrictionChanged(boolean restricted) {
+        if (restricted) {
+            SecurityLog.writeEvent(SecurityLog.TAG_USER_RESTRICTION_ADDED);
+        } else {
+            SecurityLog.writeEvent(SecurityLog.TAG_USER_RESTRICTION_ADDED);
+        }
     }
 
     @Override
@@ -303,7 +334,8 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     public synchronized void setEnabled(boolean enabled) throws RemoteException {
         enforceUwbPrivilegedPermission();
         persistUwbToggleState(enabled);
-        // Shell command from rooted shell, we allow UWB toggle on even if APM mode is on.
+        // Shell command from rooted shell, we allow UWB toggle on even if APM mode and
+        // user restriction are on.
         if (Binder.getCallingUid() == Process.ROOT_UID) {
             mUwbServiceCore.setEnabled(isUwbToggleEnabled());
             return;
@@ -407,7 +439,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
             @NonNull ParcelFileDescriptor out, @NonNull ParcelFileDescriptor err,
             @NonNull String[] args) {
 
-        UwbShellCommand shellCommand =  mUwbInjector.makeUwbShellCommand(this);
+        UwbShellCommand shellCommand = mUwbInjector.makeUwbShellCommand(this);
         return shellCommand.exec(this, in.getFileDescriptor(), out.getFileDescriptor(),
                 err.getFileDescriptor(), args);
     }
@@ -426,9 +458,20 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
                 Settings.Global.AIRPLANE_MODE_ON, 0) == 1;
     }
 
-    /** Returns true if UWB is enabled - based on UWB and APM toggle */
+    /** Returns true if UWB has user restriction set. */
+    private boolean isUwbUserRestricted() {
+        if (!SdkLevel.isAtLeastU()) {
+            return false; // older platforms did not have a uwb user restriction.
+        }
+        return mUwbInjector.getUserManager().getUserRestrictions().getBoolean(
+                // Not available on tm-mainline-prod
+                // UserManager.DISALLOW_ULTRA_WIDEBAND_RADIO);
+                "no_ultra_wideband_radio");
+    }
+
+    /** Returns true if UWB is enabled - based on UWB, APM toggle and user restriction */
     private boolean isUwbEnabled() {
-        return isUwbToggleEnabled() && !isAirplaneModeOn();
+        return isUwbToggleEnabled() && !isAirplaneModeOn() && !isUwbUserRestricted();
     }
 
     private void registerAirplaneModeReceiver() {
@@ -438,6 +481,18 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
                 handleAirplaneModeEvent();
             }
         }, new IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED));
+    }
+
+    private void registerUserRestrictionsReceiver() {
+        mContext.registerReceiver(
+                new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        onUserRestrictionsChanged();
+                    }
+                },
+                new IntentFilter(UserManager.ACTION_USER_RESTRICTIONS_CHANGED)
+        );
     }
 
     private void handleAirplaneModeEvent() {
