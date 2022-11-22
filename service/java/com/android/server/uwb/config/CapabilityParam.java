@@ -51,6 +51,8 @@ public class CapabilityParam {
             UwbVendorCapabilityTlvTypes.SUPPORTED_RSSI_REPORTING;
     public static final int SUPPORTED_DIAGNOSTICS =
             UwbVendorCapabilityTlvTypes.SUPPORTED_DIAGNOSTICS;
+    public static final int SUPPORTED_MIN_SLOT_DURATION =
+            UwbVendorCapabilityTlvTypes.SUPPORTED_MIN_SLOT_DURATION;
 
     // CCC specific
     public static final int CCC_SUPPORTED_VERSIONS =
