@@ -65,6 +65,7 @@ public class UwbMetricsTest {
     private static final int NLOS_DEFAULT = 1;
     private static final int VALID_RANGING_COUNT = 5;
     private static final int RSSI_DEFAULT_DBM = -75;
+    private static final boolean IS_STATUS_CODE_OK_DEFAULT = true;
     @Mock
     private UwbInjector mUwbInjector;
     @Mock
@@ -93,6 +94,7 @@ public class UwbMetricsTest {
         when(mRangingData.getRangingMeasuresType()).thenReturn(
                 (int) UwbUciConstants.RANGING_MEASUREMENT_TYPE_TWO_WAY);
         when(mTwoWayMeasurement.getRangingStatus()).thenReturn(FiraParams.STATUS_CODE_OK);
+        when(mTwoWayMeasurement.isStatusCodeOk()).thenReturn(IS_STATUS_CODE_OK_DEFAULT);
         when(mRangingData.getRangingTwoWayMeasures()).thenReturn(mTwoWayMeasurements);
 
         when(mUwbSession.getSessionId()).thenReturn(1);
@@ -165,6 +167,7 @@ public class UwbMetricsTest {
                     mRangingData);
         }
         when(mTwoWayMeasurement.getRangingStatus()).thenReturn(UwbUciConstants.STATUS_CODE_FAILED);
+        when(mTwoWayMeasurement.isStatusCodeOk()).thenReturn(!IS_STATUS_CODE_OK_DEFAULT);
         mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
                 mRangingData);
 
