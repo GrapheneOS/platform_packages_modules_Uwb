@@ -463,10 +463,15 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
         if (!SdkLevel.isAtLeastU()) {
             return false; // older platforms did not have a uwb user restriction.
         }
-        return mUwbInjector.getUserManager().getUserRestrictions().getBoolean(
-                // Not available on tm-mainline-prod
-                // UserManager.DISALLOW_ULTRA_WIDEBAND_RADIO);
-                "no_ultra_wideband_radio");
+        final long ident = Binder.clearCallingIdentity();
+        try {
+            return mUwbInjector.getUserManager().getUserRestrictions().getBoolean(
+                    // Not available on tm-mainline-prod
+                    // UserManager.DISALLOW_ULTRA_WIDEBAND_RADIO);
+                    "no_ultra_wideband_radio");
+        } finally {
+            Binder.restoreCallingIdentity(ident);
+        }
     }
 
     /** Returns true if UWB is enabled - based on UWB, APM toggle and user restriction */
