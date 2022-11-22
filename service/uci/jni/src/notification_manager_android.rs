@@ -494,7 +494,7 @@ impl NotificationManager for NotificationManagerAndroid {
 
     fn on_vendor_notification(
         &mut self,
-        vendor_notification: uwb_core::params::RawVendorMessage,
+        vendor_notification: uwb_core::params::RawUciMessage,
     ) -> UwbCoreResult<()> {
         debug!("UCI JNI: vendor notification callback.");
         let payload_jbytearray = self
