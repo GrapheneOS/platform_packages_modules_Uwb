@@ -60,6 +60,8 @@ public class FiraSpecificationParams extends FiraParams {
 
     private final int mMinRangingInterval;
 
+    private final int mMinSlotDuration;
+
     private final EnumSet<MultiNodeCapabilityFlag> mMultiNodeCapabilities;
 
     private final EnumSet<PrfCapabilityFlag> mPrfCapabilities;
@@ -92,6 +94,7 @@ public class FiraSpecificationParams extends FiraParams {
     private static final String KEY_RSSI_REPORTING_SUPPORT = "rssi_reporting";
     private static final String KEY_DIAGNOSTICS_SUPPORT = "diagnostics";
     private static final String KEY_MIN_RANGING_INTERVAL = "min_ranging_interval";
+    private static final String KEY_MIN_SLOT_DURATION = "min_slot_duration";
     private static final String KEY_MULTI_NODE_CAPABILITIES = "multi_node_capabilities";
     private static final String KEY_PRF_CAPABILITIES = "prf_capabilities";
     private static final String KEY_RANGING_ROUND_CAPABILITIES = "ranging_round_capabilities";
@@ -119,6 +122,7 @@ public class FiraSpecificationParams extends FiraParams {
             boolean hasRssiReportingSupport,
             boolean hasDiagnosticsSupport,
             int minRangingInterval,
+            int minSlotDuration,
             EnumSet<MultiNodeCapabilityFlag> multiNodeCapabilities,
             EnumSet<PrfCapabilityFlag> prfCapabilities,
             EnumSet<RangingRoundCapabilityFlag> rangingRoundCapabilities,
@@ -141,6 +145,7 @@ public class FiraSpecificationParams extends FiraParams {
         mHasRssiReportingSupport = hasRssiReportingSupport;
         mHasDiagnosticsSupport = hasDiagnosticsSupport;
         mMinRangingInterval = minRangingInterval;
+        mMinSlotDuration = minSlotDuration;
         mMultiNodeCapabilities = multiNodeCapabilities;
         mPrfCapabilities = prfCapabilities;
         mRangingRoundCapabilities = rangingRoundCapabilities;
@@ -211,6 +216,10 @@ public class FiraSpecificationParams extends FiraParams {
         return mMinRangingInterval;
     }
 
+    public int getMinSlotDuration() {
+        return mMinSlotDuration;
+    }
+
     public EnumSet<MultiNodeCapabilityFlag> getMultiNodeCapabilities() {
         return mMultiNodeCapabilities;
     }
@@ -271,6 +280,7 @@ public class FiraSpecificationParams extends FiraParams {
         bundle.putBoolean(KEY_RSSI_REPORTING_SUPPORT, mHasRssiReportingSupport);
         bundle.putBoolean(KEY_DIAGNOSTICS_SUPPORT, mHasDiagnosticsSupport);
         bundle.putInt(KEY_MIN_RANGING_INTERVAL, mMinRangingInterval);
+        bundle.putInt(KEY_MIN_SLOT_DURATION, mMinSlotDuration);
         bundle.putInt(KEY_MULTI_NODE_CAPABILITIES, FlagEnum.toInt(mMultiNodeCapabilities));
         bundle.putInt(KEY_PRF_CAPABILITIES, FlagEnum.toInt(mPrfCapabilities));
         bundle.putInt(KEY_RANGING_ROUND_CAPABILITIES, FlagEnum.toInt(mRangingRoundCapabilities));
@@ -332,6 +342,7 @@ public class FiraSpecificationParams extends FiraParams {
                 .hasNonDeferredModeSupport(bundle.getBoolean(KEY_NON_DEFERRED_MODE_SUPPORT))
                 .hasInitiationTimeSupport(bundle.getBoolean(KEY_INITIATION_TIME_SUPPORT))
                 .setMinRangingIntervalSupported(bundle.getInt(KEY_MIN_RANGING_INTERVAL, -1))
+                .setMinSlotDurationSupported(bundle.getInt(KEY_MIN_SLOT_DURATION, -1))
                 .setMultiNodeCapabilities(
                         FlagEnum.toEnumSet(
                                 bundle.getInt(KEY_MULTI_NODE_CAPABILITIES),
@@ -412,6 +423,8 @@ public class FiraSpecificationParams extends FiraParams {
         private boolean mHasDiagnosticsSupport = false;
 
         private int mMinRangingInterval = -1;
+
+        private int mMinSlotDuration = -1;
 
         // Unicast support is mandatory
         private final EnumSet<MultiNodeCapabilityFlag> mMultiNodeCapabilities =
@@ -522,6 +535,16 @@ public class FiraSpecificationParams extends FiraParams {
             return this;
         }
 
+        /**
+         * Set minimum supported slot duration
+         * @param value : minimum slot duration supported
+         * @return FiraSpecificationParams builder
+         */
+        public FiraSpecificationParams.Builder setMinSlotDurationSupported(int value) {
+            mMinSlotDuration = value;
+            return this;
+        }
+
         public FiraSpecificationParams.Builder setMultiNodeCapabilities(
                 Collection<MultiNodeCapabilityFlag> multiNodeCapabilities) {
             mMultiNodeCapabilities.addAll(multiNodeCapabilities);
@@ -595,6 +618,7 @@ public class FiraSpecificationParams extends FiraParams {
                     mHasRssiReportingSupport,
                     mHasDiagnosticsSupport,
                     mMinRangingInterval,
+                    mMinSlotDuration,
                     mMultiNodeCapabilities,
                     mPrfCapabilities,
                     mRangingRoundCapabilities,
