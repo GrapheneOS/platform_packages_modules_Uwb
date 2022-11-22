@@ -476,6 +476,7 @@ public abstract class FiraParams extends Params {
                 STATUS_CODE_ERROR_MULTICAST_LIST_FULL,
                 STATUS_CODE_ERROR_ADDRESS_NOT_FOUND,
                 STATUS_CODE_ERROR_ADDRESS_ALREADY_PRESENT,
+                STATUS_CODE_OK_NEGATIVE_DISTANCE_REPORT,
                 STATUS_CODE_RANGING_TX_FAILED,
                 STATUS_CODE_RANGING_RX_TIMEOUT,
                 STATUS_CODE_RANGING_RX_PHY_DEC_FAILED,
@@ -511,6 +512,7 @@ public abstract class FiraParams extends Params {
     public static final int STATUS_CODE_ERROR_MULTICAST_LIST_FULL = 0x17;
     public static final int STATUS_CODE_ERROR_ADDRESS_NOT_FOUND = 0x18;
     public static final int STATUS_CODE_ERROR_ADDRESS_ALREADY_PRESENT = 0x19;
+    public static final int STATUS_CODE_OK_NEGATIVE_DISTANCE_REPORT = 0x1B;
     public static final int STATUS_CODE_RANGING_TX_FAILED = 0x20;
     public static final int STATUS_CODE_RANGING_RX_TIMEOUT = 0x21;
     public static final int STATUS_CODE_RANGING_RX_PHY_DEC_FAILED = 0x22;
