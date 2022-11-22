@@ -15,7 +15,7 @@
  */
 package com.android.server.uwb.data;
 
-import static android.uwb.RangingMeasurement.RSSI_MIN;
+import android.uwb.RangingMeasurement;
 
 import com.android.server.uwb.util.UwbUtil;
 
@@ -43,7 +43,9 @@ public class UwbTwoWayMeasurement {
         this.mMacAddress = macAddress;
         this.mStatus = status;
         this.mNLoS = nLoS;
-        this.mDistance = distance;
+        // Set distance to negative value if the status code indicates negative distance
+        this.mDistance = status == UwbUciConstants.STATUS_CODE_OK_NEGATIVE_DISTANCE_REPORT
+                ? -distance : distance;
         this.mAoaAzimuth = toFloatFromQFormat(aoaAzimuth);
         this.mAoaAzimuthFom = aoaAzimuthFom;
         this.mAoaElevation = toFloatFromQFormat(aoaElevation);
@@ -59,7 +61,7 @@ public class UwbTwoWayMeasurement {
          * Just need to divide this number by two and take the negative value.
          * If the reported RSSI is lower than RSSI_MIN, set it to RSSI_MIN to avoid exceptions.
          */
-        this.mRssi = Math.max(-rssiHalfDbmAbs / 2, RSSI_MIN);
+        this.mRssi = Math.max(-rssiHalfDbmAbs / 2, RangingMeasurement.RSSI_MIN);
     }
 
     public byte[] getMacAddress() {
@@ -115,6 +117,26 @@ public class UwbTwoWayMeasurement {
     }
     public int getRssi() {
         return mRssi;
+    }
+
+    public boolean isStatusCodeOk() {
+        return mStatus == UwbUciConstants.STATUS_CODE_OK
+                || mStatus == UwbUciConstants.STATUS_CODE_OK_NEGATIVE_DISTANCE_REPORT;
+    }
+
+    /**
+     * Convert the UCI status code to success, out of range, or unknown error
+     */
+    public int convertStatusCode() {
+        switch (mStatus) {
+            case UwbUciConstants.STATUS_CODE_OK:
+            case UwbUciConstants.STATUS_CODE_OK_NEGATIVE_DISTANCE_REPORT:
+                return RangingMeasurement.RANGING_STATUS_SUCCESS;
+            case UwbUciConstants.STATUS_CODE_INVALID_RANGE:
+                return RangingMeasurement.RANGING_STATUS_FAILURE_OUT_OF_RANGE;
+            default:
+                return RangingMeasurement.RANGING_STATUS_FAILURE_UNKNOWN_ERROR;
+        }
     }
 
     private float toFloatFromQFormat(int value) {
