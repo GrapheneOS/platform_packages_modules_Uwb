@@ -73,6 +73,7 @@ import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_FIRA_MAC_V
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_FIRA_PHY_VERSION_RANGE;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_HPRF_PARAMETER_SETS;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MIN_RANGING_INTERVAL_MS;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MIN_SLOT_DURATION;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MULTI_NODE_MODES;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_RANGE_DATA_NTF_CONFIG;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_RANGING_METHOD;
@@ -131,6 +132,13 @@ public class FiraDecoder extends TlvDecoder {
             builder.setMinRangingIntervalSupported(minRangingInterval);
         } catch (IllegalArgumentException e) {
             Log.w(TAG, "SUPPORTED_MIN_RANGING_INTERVAL_MS not found.");
+        }
+
+        try {
+            int minSlotDuration = tlvs.getInt(SUPPORTED_MIN_SLOT_DURATION);
+            builder.setMinRangingIntervalSupported(minSlotDuration);
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "SUPPORTED_MIN_SLOT_DURATION not found.");
         }
 
         try {
