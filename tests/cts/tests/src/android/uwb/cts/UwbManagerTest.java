@@ -1073,7 +1073,7 @@ public class UwbManagerTest {
 
     @Test
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
-    public void testSendVendorUciMessage() throws Exception {
+    public void testSendVendorUciMessageVendorGid() throws Exception {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         CountDownLatch rspCountDownLatch = new CountDownLatch(1);
         CountDownLatch ntfCountDownLatch = new CountDownLatch(1);
@@ -1090,6 +1090,40 @@ public class UwbManagerTest {
             new Random().nextBytes(payload);
             int gid = 9;
             int oid = 1;
+            mUwbManager.sendVendorUciMessage(gid, oid, payload);
+
+            // Wait for response.
+            assertThat(rspCountDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(cb.gid).isEqualTo(gid);
+            assertThat(cb.oid).isEqualTo(oid);
+            assertThat(cb.payload).isNotEmpty();
+        } catch (SecurityException e) {
+            /* pass */
+        } finally {
+            mUwbManager.unregisterUwbVendorUciCallback(cb);
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    public void testSendVendorUciMessageFiraGid() throws Exception {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        CountDownLatch rspCountDownLatch = new CountDownLatch(1);
+        CountDownLatch ntfCountDownLatch = new CountDownLatch(1);
+        UwbVendorUciCallback cb =
+                new UwbVendorUciCallback(rspCountDownLatch, ntfCountDownLatch);
+        try {
+            // Needs UWB_PRIVILEGED & UWB_RANGING permission which is held by shell.
+            uiAutomation.adoptShellPermissionIdentity();
+            mUwbManager.registerUwbVendorUciCallback(
+                    Executors.newSingleThreadExecutor(), cb);
+
+            // Send random payload with a FIRA gid.
+            byte[] payload = new byte[100];
+            new Random().nextBytes(payload);
+            int gid = 1;
+            int oid = 3;
             mUwbManager.sendVendorUciMessage(gid, oid, payload);
 
             // Wait for response.

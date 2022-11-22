@@ -37,7 +37,7 @@ use log::{debug, error};
 use num_traits::cast::FromPrimitive;
 use uwb_core::error::Error as UwbCoreError;
 use uwb_core::params::{
-    AppConfigTlv, CountryCode, RawAppConfigTlv, RawVendorMessage,
+    AppConfigTlv, CountryCode, RawAppConfigTlv, RawUciMessage,
     SessionUpdateActiveRoundsDtTagResponse, SetAppConfigResponse,
 };
 use uwb_uci_packets::{
@@ -658,7 +658,7 @@ fn native_set_log_mode(env: JNIEnv, obj: JObject, log_mode_jstring: JString) -> 
     dispatcher.set_logger_mode(logger_mode).map_err(|e| e.into())
 }
 
-fn create_vendor_response(msg: RawVendorMessage, env: JNIEnv) -> Result<jobject> {
+fn create_vendor_response(msg: RawUciMessage, env: JNIEnv) -> Result<jobject> {
     let vendor_response_class = env.find_class(VENDOR_RESPONSE_CLASS)?;
     match env.new_object(
         vendor_response_class,
@@ -746,12 +746,12 @@ fn native_send_raw_vendor_cmd(
     oid: jint,
     payload_jarray: jbyteArray,
     chip_id: JString,
-) -> Result<RawVendorMessage> {
+) -> Result<RawUciMessage> {
     // Safety: Java side owns Dispatcher by pointer, and borrows to this function until it
     // goes out of scope.
     let uci_manager = unsafe { Dispatcher::get_uci_manager(env, obj, chip_id) }?;
     let payload = env.convert_byte_array(payload_jarray)?;
-    uci_manager.raw_vendor_cmd(gid as u32, oid as u32, payload).map_err(|e| e.into())
+    uci_manager.raw_uci_cmd(gid as u32, oid as u32, payload).map_err(|e| e.into())
 }
 
 fn create_power_stats(power_stats: PowerStats, env: JNIEnv) -> Result<jobject> {
