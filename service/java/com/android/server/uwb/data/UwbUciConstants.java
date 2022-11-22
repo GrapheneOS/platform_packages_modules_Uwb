@@ -172,6 +172,8 @@ public class UwbUciConstants {
             FiraParams.STATUS_CODE_ERROR_ADDRESS_NOT_FOUND;
     public static final int STATUS_CODE_ERROR_ADDRESS_ALREADY_PRESENT =
             FiraParams.STATUS_CODE_ERROR_ADDRESS_ALREADY_PRESENT;
+    public static final int STATUS_CODE_OK_NEGATIVE_DISTANCE_REPORT =
+            FiraParams.STATUS_CODE_OK_NEGATIVE_DISTANCE_REPORT;
     /* UWB Ranging Session Specific Status Codes */
     public static final int STATUS_CODE_RANGING_TX_FAILED =
             FiraParams.STATUS_CODE_RANGING_TX_FAILED;
