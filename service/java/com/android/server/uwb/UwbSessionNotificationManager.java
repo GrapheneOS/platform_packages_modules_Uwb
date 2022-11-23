@@ -458,7 +458,7 @@ public class UwbSessionNotificationManager {
             List<RangingMeasurement> rangingMeasurements = new ArrayList<>();
             UwbTwoWayMeasurement[] uwbTwoWayMeasurement = rangingData.getRangingTwoWayMeasures();
             for (int i = 0; i < rangingData.getNoOfRangingMeasures(); ++i) {
-                int rangingStatus = uwbTwoWayMeasurement[i].getRangingStatus();
+                int rangingStatus = uwbTwoWayMeasurement[i].convertStatusCode();
 
                 RangingMeasurement.Builder rangingMeasurementBuilder = buildRangingMeasurement(
                         uwbTwoWayMeasurement[i].getMacAddress(), rangingStatus,
@@ -468,7 +468,7 @@ public class UwbSessionNotificationManager {
                     rangingMeasurementBuilder.setRssiDbm(rssi);
                 }
 
-                if (rangingStatus == FiraParams.STATUS_CODE_OK) {
+                if (uwbTwoWayMeasurement[i].isStatusCodeOk()) {
                     // Distance measurement is mandatory
                     rangingMeasurementBuilder.setDistanceMeasurement(
                             buildDistanceMeasurement(uwbTwoWayMeasurement[i].getDistance()));

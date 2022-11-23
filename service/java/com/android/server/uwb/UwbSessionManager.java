@@ -212,7 +212,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         if (rangingData.getRangingMeasuresType()
                 == UwbUciConstants.RANGING_MEASUREMENT_TYPE_TWO_WAY) {
             for (UwbTwoWayMeasurement measure : rangingData.getRangingTwoWayMeasures()) {
-                if (measure.getRangingStatus() == UwbUciConstants.STATUS_CODE_OK) {
+                if (measure.isStatusCodeOk()) {
                     return false;
                 }
             }
