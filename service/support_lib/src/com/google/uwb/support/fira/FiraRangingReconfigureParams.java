@@ -16,7 +16,7 @@
 
 package com.google.uwb.support.fira;
 
-import static com.android.internal.util.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkArgument;
 
 import static java.util.Objects.requireNonNull;
 
