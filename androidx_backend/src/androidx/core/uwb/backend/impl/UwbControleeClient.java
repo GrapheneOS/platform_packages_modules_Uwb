@@ -16,7 +16,11 @@
 
 package androidx.core.uwb.backend.impl;
 
+import static androidx.core.uwb.backend.impl.internal.Utils.STATUS_OK;
+import static androidx.core.uwb.backend.impl.internal.Utils.TAG;
+
 import android.os.RemoteException;
+import android.util.Log;
 
 import androidx.core.uwb.backend.IRangingSessionCallback;
 import androidx.core.uwb.backend.RangingParameters;
@@ -43,12 +47,19 @@ public class UwbControleeClient extends UwbClient {
     public void startRanging(RangingParameters parameters, IRangingSessionCallback callback)
             throws RemoteException {
         setRangingParameters(parameters);
-        mDevice.startRanging(convertCallback(callback), Executors.newSingleThreadExecutor());
+        int status = mDevice.startRanging(
+                convertCallback(callback), Executors.newSingleThreadExecutor());
+        if (status != STATUS_OK) {
+            Log.w(TAG, String.format("Ranging start failed with status %d", status));
+        }
     }
 
     @Override
     public void stopRanging(IRangingSessionCallback callback) throws RemoteException {
-        mDevice.stopRanging();
+        int status = mDevice.stopRanging();
+        if (status != STATUS_OK) {
+            Log.w(TAG, String.format("Ranging stop failed with status %d", status));
+        }
     }
 
     @Override
