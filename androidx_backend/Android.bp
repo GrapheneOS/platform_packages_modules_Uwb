@@ -25,7 +25,8 @@ aidl_interface {
     ],
     backend: {
         java: {
-            platform_apis: true,
+            enabled: true,
+            min_sdk_version: "31",
         },
     },
     visibility: ["//visibility:public"],
