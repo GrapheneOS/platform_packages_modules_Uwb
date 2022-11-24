@@ -16,14 +16,13 @@
 
 package com.google.uwb.support.fira;
 
-import static com.android.internal.util.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkArgument;
 
 import static java.util.Objects.requireNonNull;
 
 import android.os.PersistableBundle;
 import android.uwb.RangingSession;
 import android.uwb.UwbAddress;
-import android.uwb.UwbManager;
 
 import androidx.annotation.Nullable;
 

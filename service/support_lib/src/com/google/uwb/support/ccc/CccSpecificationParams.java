@@ -16,7 +16,7 @@
 
 package com.google.uwb.support.ccc;
 
-import static com.android.internal.util.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import android.os.Build.VERSION_CODES;
 import android.os.PersistableBundle;

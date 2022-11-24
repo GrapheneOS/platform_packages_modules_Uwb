@@ -16,9 +16,10 @@
 
 package com.google.uwb.support.generic;
 
-import android.annotation.NonNull;
 import android.os.PersistableBundle;
 import android.uwb.UwbManager;
+
+import androidx.annotation.NonNull;
 
 import com.google.uwb.support.base.RequiredParam;
 import com.google.uwb.support.ccc.CccParams;
