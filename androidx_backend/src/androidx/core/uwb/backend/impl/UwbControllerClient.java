@@ -16,7 +16,11 @@
 
 package androidx.core.uwb.backend.impl;
 
+import static androidx.core.uwb.backend.impl.internal.Utils.STATUS_OK;
+import static androidx.core.uwb.backend.impl.internal.Utils.TAG;
+
 import android.os.RemoteException;
+import android.util.Log;
 
 import androidx.core.uwb.backend.IRangingSessionCallback;
 import androidx.core.uwb.backend.RangingParameters;
@@ -49,27 +53,39 @@ public class UwbControllerClient extends UwbClient {
     public void startRanging(RangingParameters parameters, IRangingSessionCallback callback)
             throws RemoteException {
         setRangingParameters(parameters);
-        ((RangingController) mDevice)
+        int status = ((RangingController) mDevice)
                 .startRanging(convertCallback(callback), Executors.newSingleThreadExecutor());
+        if (status != STATUS_OK) {
+            Log.w(TAG, String.format("Ranging start failed with status %d", status));
+        }
     }
 
     @Override
     public void stopRanging(IRangingSessionCallback callback) throws RemoteException {
-        ((RangingController) mDevice).stopRanging();
+        int status = ((RangingController) mDevice).stopRanging();
+        if (status != STATUS_OK) {
+            Log.w(TAG, String.format("Ranging stop failed with status %d", status));
+        }
     }
 
     @Override
     public void addControlee(UwbAddress address) throws RemoteException {
         androidx.core.uwb.backend.impl.internal.UwbAddress uwbAddress =
                 androidx.core.uwb.backend.impl.internal.UwbAddress.fromBytes(address.address);
-        ((RangingController) mDevice).addControlee(uwbAddress);
+        int status = ((RangingController) mDevice).addControlee(uwbAddress);
+        if (status != STATUS_OK) {
+            Log.w(TAG, String.format("Adding controlee failed with status %d", status));
+        }
     }
 
     @Override
     public void removeControlee(UwbAddress address) throws RemoteException {
         androidx.core.uwb.backend.impl.internal.UwbAddress uwbAddress =
                 androidx.core.uwb.backend.impl.internal.UwbAddress.fromBytes(address.address);
-        ((RangingController) mDevice).removeControlee(uwbAddress);
+        int status = ((RangingController) mDevice).removeControlee(uwbAddress);
+        if (status != STATUS_OK) {
+            Log.w(TAG, String.format("Removing controlee failed with status %d", status));
+        }
     }
 
     @Override
