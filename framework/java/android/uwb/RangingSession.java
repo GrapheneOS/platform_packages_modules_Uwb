@@ -22,9 +22,14 @@ import android.annotation.NonNull;
 import android.annotation.RequiresPermission;
 import android.annotation.SystemApi;
 import android.os.Binder;
+import android.os.Build;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.util.Log;
+
+import androidx.annotation.RequiresApi;
+
+import com.android.modules.utils.build.SdkLevel;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -424,7 +429,7 @@ public final class RangingSession implements AutoCloseable {
          * @param parameters bundle of ranging rounds update status
          * {@link com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdateStatus}
          */
-        //TODO(b/260387438): Add @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+        @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
         default void onRangingRoundsUpdateDtTagStatus(@NonNull PersistableBundle parameters) {}
     }
 
@@ -745,7 +750,7 @@ public final class RangingSession implements AutoCloseable {
      * @param params Parameters to configure active ranging rounds
      * {@link com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate}
      */
-    //TODO(b/260387438): Add @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
     public void onRangingRoundsUpdateDtTag(@NonNull PersistableBundle params) {
         if (mState != State.ACTIVE) {
@@ -1097,7 +1102,9 @@ public final class RangingSession implements AutoCloseable {
         }
 
         Log.v(mTag, "onDlTDoARangingRoundsUpdateStatus - sessionHandle: " + mSessionHandle);
-        executeCallback(() -> mCallback.onRangingRoundsUpdateDtTagStatus(params));
+        if (SdkLevel.isAtLeastU()) {
+            executeCallback(() -> mCallback.onRangingRoundsUpdateDtTagStatus(params));
+        }
     }
 
     /**

@@ -58,8 +58,10 @@ java_defaults {
     defaults: ["uwb-module-sdk-version-defaults"],
     static_libs : [
         "modules-utils-preconditions",
+        "modules-utils-build",
     ],
     libs: [
+        "androidx.annotation_annotation",
         "unsupportedappusage", // for android.compat.annotation.UnsupportedAppUsage
     ],
     srcs: [
@@ -72,7 +74,7 @@ java_defaults {
 java_library {
     name: "framework-uwb-pre-jarjar",
     defaults: ["framework-uwb-defaults"],
-    sdk_version: "module_Tiramisu",
+    sdk_version: "module_current",
     libs: ["framework-annotations-lib",],
     installable: false,
 }
@@ -114,7 +116,7 @@ java_sdk_library {
 // defaults for tests that need to build against framework-uwb's @hide APIs
 java_defaults {
     name: "framework-uwb-test-defaults",
-    sdk_version: "module_Tiramisu",
+    sdk_version: "module_current",
     libs: [
         "framework-uwb.impl",
     ],

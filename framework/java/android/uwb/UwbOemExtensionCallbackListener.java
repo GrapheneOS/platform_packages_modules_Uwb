@@ -22,6 +22,8 @@ import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.util.Log;
 
+import com.android.modules.utils.build.SdkLevel;
+
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -88,8 +90,10 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
         synchronized (this) {
             final long identity = Binder.clearCallingIdentity();
             try {
-                mExecutor.execute(() ->
-                        mCallback.onSessionStatusNotificationReceived(sessionStatusBundle));
+                if (SdkLevel.isAtLeastU()) {
+                    mExecutor.execute(() ->
+                            mCallback.onSessionStatusNotificationReceived(sessionStatusBundle));
+                }
             } finally {
                 Binder.restoreCallingIdentity(identity);
             }
@@ -102,8 +106,10 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
         synchronized (this) {
             final long identity = Binder.clearCallingIdentity();
             try {
-                mExecutor.execute(() ->
-                        mCallback.onDeviceStatusNotificationReceived(deviceStateBundle));
+                if (SdkLevel.isAtLeastU()) {
+                    mExecutor.execute(() ->
+                            mCallback.onDeviceStatusNotificationReceived(deviceStateBundle));
+                }
             } finally {
                 Binder.restoreCallingIdentity(identity);
             }
@@ -118,19 +124,21 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
             int status = 0;
             final long identity = Binder.clearCallingIdentity();
             try {
-                ExecutorService executor = Executors.newSingleThreadExecutor();
-                FutureTask<Integer> p = new FutureTask<>(
-                        () -> mCallback.onSessionConfigurationComplete(openSessionBundle));
-                executor.submit(p);
-                try {
-                    status = p.get(OEM_EXTENSION_RESPONSE_THRESHOLD_MS, TimeUnit.MILLISECONDS);
-                } catch (ExecutionException | InterruptedException e) {
-                    e.printStackTrace();
-                } catch (TimeoutException e) {
-                    Log.w(TAG,
-                            "Failed to get response for session config from vendor - status :"
-                                    + " TIMEOUT");
-                    e.printStackTrace();
+                if (SdkLevel.isAtLeastU()) {
+                    ExecutorService executor = Executors.newSingleThreadExecutor();
+                    FutureTask<Integer> p = new FutureTask<>(
+                            () -> mCallback.onSessionConfigurationComplete(openSessionBundle));
+                    executor.submit(p);
+                    try {
+                        status = p.get(OEM_EXTENSION_RESPONSE_THRESHOLD_MS, TimeUnit.MILLISECONDS);
+                    } catch (ExecutionException | InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (TimeoutException e) {
+                        Log.w(TAG,
+                                "Failed to get response for session config from vendor - status :"
+                                        + " TIMEOUT");
+                        e.printStackTrace();
+                    }
                 }
             } finally {
                 Binder.restoreCallingIdentity(identity);
@@ -146,21 +154,23 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
             final long identity = Binder.clearCallingIdentity();
             RangingReport vendorRangingReport = rangingReport;
             try {
-                ExecutorService executor = Executors.newSingleThreadExecutor();
-                FutureTask<RangingReport> getOemRangingReport = new FutureTask<RangingReport>(
-                        () -> mCallback.onRangingReportReceived(rangingReport)
-                );
-                executor.submit(getOemRangingReport);
-                try {
-                    vendorRangingReport = getOemRangingReport.get(
-                            OEM_EXTENSION_RESPONSE_THRESHOLD_MS, TimeUnit.MILLISECONDS);
-                    return vendorRangingReport == null ? rangingReport
-                            : vendorRangingReport;
-                } catch (ExecutionException | InterruptedException e) {
-                    e.printStackTrace();
-                } catch (TimeoutException e) {
-                    Log.w(TAG, "Failed to get ranging report from vendor: TIMEOUT");
-                    e.printStackTrace();
+                if (SdkLevel.isAtLeastU()) {
+                    ExecutorService executor = Executors.newSingleThreadExecutor();
+                    FutureTask<RangingReport> getOemRangingReport = new FutureTask<RangingReport>(
+                            () -> mCallback.onRangingReportReceived(rangingReport)
+                    );
+                    executor.submit(getOemRangingReport);
+                    try {
+                        vendorRangingReport = getOemRangingReport.get(
+                                OEM_EXTENSION_RESPONSE_THRESHOLD_MS, TimeUnit.MILLISECONDS);
+                        return vendorRangingReport == null ? rangingReport
+                                : vendorRangingReport;
+                    } catch (ExecutionException | InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (TimeoutException e) {
+                        Log.w(TAG, "Failed to get ranging report from vendor: TIMEOUT");
+                        e.printStackTrace();
+                    }
                 }
             } finally {
                 Binder.restoreCallingIdentity(identity);
