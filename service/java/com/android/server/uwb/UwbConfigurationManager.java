@@ -83,7 +83,7 @@ public class UwbConfigurationManager {
         UwbTlvData getAppConfig = mNativeUwbManager.getAppConfigurations(sessionId,
                     appConfigIds.length, appConfigIds.length, appConfigIds, chipId);
         Log.i(TAG, "getAppConfigurations respData: "
-                + getAppConfig != null ? getAppConfig.toString() : "null");
+                + (getAppConfig != null ? getAppConfig.toString() : "null"));
         return decodeTLV(protocolName, getAppConfig, paramType);
     }
 
@@ -95,7 +95,8 @@ public class UwbConfigurationManager {
 
         Log.d(TAG, "getCapsInfo for protocol: " + protocolName);
         UwbTlvData capsInfo = mNativeUwbManager.getCapsInfo(chipId);
-        Log.i(TAG, "getCapsInfo respData: " + capsInfo != null ? capsInfo.toString() : "null");
+        Log.i(TAG, "getCapsInfo respData: "
+                + (capsInfo != null ? capsInfo.toString() : "null"));
         return decodeTLV(protocolName, capsInfo, paramType);
     }
 
