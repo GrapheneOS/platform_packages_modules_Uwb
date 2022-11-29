@@ -29,6 +29,7 @@ import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABL
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -60,6 +61,7 @@ import android.uwb.UwbAddress;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.modules.utils.build.SdkLevel;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.multchip.UwbMultichipData;
@@ -366,6 +368,8 @@ public class UwbServiceImplTest {
 
     @Test
     public void testUserRestrictionChanged() throws Exception {
+        assumeTrue(SdkLevel.isAtLeastU()); // Test should only run on U+ devices.
+
         mUwbServiceImpl.setEnabled(true);
 
         // User restriction changes to disallow UWB
