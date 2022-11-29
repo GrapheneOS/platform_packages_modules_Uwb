@@ -25,7 +25,6 @@ import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP3;
 import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_DYNAMIC;
 
 import android.annotation.NonNull;
-import android.annotation.Nullable;
 import android.bluetooth.le.AdvertisingSetParameters;
 import android.content.AttributionSource;
 import android.content.Context;
@@ -361,8 +360,9 @@ public class PacsControleeSession extends RangingSessionController {
 
         @Override
         public void onSessionDataReady(
-                int updatedSessionId, @Nullable byte[] sessionData, boolean isSessionTerminated) {
-            mPacsControleeSession.mSessionInfo.mSessionData = SessionData.fromBytes(sessionData);
+                int updatedSessionId, Optional<byte[]> sessionData, boolean isSessionTerminated) {
+            mPacsControleeSession.mSessionInfo.mSessionData =
+                    SessionData.fromBytes(sessionData.get());
             mPacsControleeSession.sendMessage(RANGING_INIT);
         }
 
