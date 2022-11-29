@@ -24,3 +24,5 @@ pub(crate) const UWB_TWO_WAY_MEASUREMENT_CLASS: &str =
 pub(crate) const VENDOR_RESPONSE_CLASS: &str = "com/android/server/uwb/data/UwbVendorUciResponse";
 pub(crate) const DT_RANGING_ROUNDS_STATUS_CLASS: &str =
     "com/android/server/uwb/data/DtTagUpdateRangingRoundsStatus";
+pub(crate) const UWB_DL_TDOA_MEASUREMENT_CLASS: &str =
+    "com/android/server/uwb/data/UwbDlTDoAMeasurement";
