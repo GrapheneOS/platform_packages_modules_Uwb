@@ -499,10 +499,20 @@ impl<'a> TryFrom<SessionRangeDataWithEnv<'a>> for UwbRangingDataJni<'a> {
             .session_range_data
             .ranging_measurements
         {
-            RangingMeasurements::Short(ref m) => (MacAddressIndicator::ShortAddress, m.len()),
-            RangingMeasurements::Extended(ref m) => (MacAddressIndicator::ExtendedAddress, m.len()),
+            RangingMeasurements::ShortAddressTwoWay(ref m) => {
+                (MacAddressIndicator::ShortAddress, m.len())
+            }
+            RangingMeasurements::ExtendedAddressTwoWay(ref m) => {
+                (MacAddressIndicator::ExtendedAddress, m.len())
+            }
             RangingMeasurements::ShortDltdoa(ref m) => (MacAddressIndicator::ShortAddress, m.len()),
             RangingMeasurements::ExtendedDltdoa(ref m) => {
+                (MacAddressIndicator::ExtendedAddress, m.len())
+            }
+            RangingMeasurements::ShortAddressOwrAoa(ref m) => {
+                (MacAddressIndicator::ShortAddress, m.len())
+            }
+            RangingMeasurements::ExtendedAddressOwrAoa(ref m) => {
                 (MacAddressIndicator::ExtendedAddress, m.len())
             }
         };
@@ -513,6 +523,7 @@ impl<'a> TryFrom<SessionRangeDataWithEnv<'a>> for UwbRangingDataJni<'a> {
         ))?;
         let raw_notification_jbytearray =
             data_obj.env.byte_array_from_slice(&data_obj.session_range_data.raw_ranging_data)?;
+        // TODO(b/246678053): Check on using OwrAoa measurement class here.
         let ranging_data_jni = data_obj.env.new_object(
             data_obj.uwb_ranging_data_jclass,
             "(JJIJIII[Lcom/android/server/uwb/data/UwbTwoWayMeasurement;[B)V",
@@ -630,15 +641,16 @@ impl<'a> TryFrom<RangingMeasurementsWithEnv<'a>> for UwbTwoWayMeasurementJni<'a>
     type Error = Error;
     fn try_from(measurements_obj: RangingMeasurementsWithEnv<'a>) -> Result<Self> {
         let (measurements_vec, byte_arr_size) = match measurements_obj.ranging_measurements {
-            RangingMeasurements::Short(m) => (
+            RangingMeasurements::ShortAddressTwoWay(m) => (
                 m.into_iter().map(TwoWayRangingMeasurement::from).collect::<Vec<_>>(),
                 SHORT_MAC_ADDRESS_LEN,
             ),
-            RangingMeasurements::Extended(m) => (
+            RangingMeasurements::ExtendedAddressTwoWay(m) => (
                 m.into_iter().map(TwoWayRangingMeasurement::from).collect::<Vec<_>>(),
                 EXTENDED_MAC_ADDRESS_LEN,
             ),
             // TODO(b/260495115): Re-work needed to handle DlTDoAShort and DlTDoAExtended.
+            // TODO(b/246678053): Handle OwrAoa (Short and Extended).
             _ => todo!(),
         };
         let address_jbytearray = measurements_obj.env.new_byte_array(byte_arr_size)?;
