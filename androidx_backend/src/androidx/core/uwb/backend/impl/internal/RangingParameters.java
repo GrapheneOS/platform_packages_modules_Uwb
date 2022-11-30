@@ -24,7 +24,9 @@ import java.util.List;
 public class RangingParameters {
     @Utils.UwbConfigId private final int mUwbConfigId;
     private final int mSessionId;
+    private final int mSubSessionId;
     private final byte[] mSessionKeyInfo;
+    private final byte[] mSubSessionKeyInfo;
     private final UwbComplexChannel mComplexChannel;
     private final ImmutableList<UwbAddress> mPeerAddresses;
     @Utils.RangingUpdateRate private final int mRangingUpdateRate;
@@ -32,13 +34,17 @@ public class RangingParameters {
     public RangingParameters(
             @Utils.UwbConfigId int uwbConfigId,
             int sessionId,
+            int subSessionId,
             byte[] sessionKeyInfo,
+            byte[] subSessionKeyInfo,
             UwbComplexChannel complexChannel,
             List<UwbAddress> peerAddresses,
             @Utils.RangingUpdateRate int rangingUpdateRate) {
         mUwbConfigId = uwbConfigId;
         mSessionId = sessionId;
+        mSubSessionId = subSessionId;
         mSessionKeyInfo = sessionKeyInfo;
+        mSubSessionKeyInfo = subSessionKeyInfo;
         mComplexChannel = complexChannel;
         mPeerAddresses = ImmutableList.copyOf(peerAddresses);
         mRangingUpdateRate = rangingUpdateRate;
@@ -48,6 +54,10 @@ public class RangingParameters {
         return mSessionId;
     }
 
+    public int getSubSessionId() {
+        return mSubSessionId;
+    }
+
     @Utils.UwbConfigId
     public int getUwbConfigId() {
         return mUwbConfigId;
@@ -55,6 +65,10 @@ public class RangingParameters {
 
     public byte[] getSessionKeyInfo() {
         return mSessionKeyInfo;
+    }
+
+    public byte[] getSubSessionKeyInfo() {
+        return mSubSessionKeyInfo;
     }
 
     public UwbComplexChannel getComplexChannel() {
