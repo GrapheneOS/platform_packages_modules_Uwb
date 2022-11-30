@@ -208,6 +208,8 @@ pub(crate) struct NotificationManagerAndroid {
     pub jclass_map: HashMap<String, GlobalRef>,
 }
 
+// TODO(b/246678053): Need to add callbacks for Data Packet Rx, and Data Packet Tx events (like
+// DATA_CREDIT_NTF, DATA_STATUS_NTF).
 impl NotificationManagerAndroid {
     /// Finds JClass stored in jclass map. Should be a member function, but disjoint field borrow
     /// checker fails and mutability of individual fields has to be annotated.
@@ -368,6 +370,8 @@ impl NotificationManagerAndroid {
         )
     }
 
+    // TODO(b/246678053): Re-factor usage of the RangingMeasurement enum below, to extract the
+    // fields in a common/caller method (and preferably not handle TwoWay/OwrAoa in this method).
     fn on_session_dl_tdoa_range_data_notification(
         &mut self,
         range_data: SessionRangeData,
@@ -383,10 +387,15 @@ impl NotificationManagerAndroid {
             UWB_DL_TDOA_MEASUREMENT_CLASS,
         )?;
         let bytearray_len: i32 = match &range_data.ranging_measurements {
-            uwb_core::uci::RangingMeasurements::Short(_) => SHORT_MAC_ADDRESS_LEN,
-            uwb_core::uci::RangingMeasurements::Extended(_) => EXTENDED_MAC_ADDRESS_LEN,
+            uwb_core::uci::RangingMeasurements::ShortAddressTwoWay(_) => SHORT_MAC_ADDRESS_LEN,
+            uwb_core::uci::RangingMeasurements::ExtendedAddressTwoWay(_) => {
+                EXTENDED_MAC_ADDRESS_LEN
+            }
             uwb_core::uci::RangingMeasurements::ShortDltdoa(_) => SHORT_MAC_ADDRESS_LEN,
             uwb_core::uci::RangingMeasurements::ExtendedDltdoa(_) => EXTENDED_MAC_ADDRESS_LEN,
+            _ => {
+                return Err(UwbCoreError::BadParameters);
+            }
         };
         let address_jbytearray =
             self.env.new_byte_array(bytearray_len).map_err(|_| UwbCoreError::Unknown)?;
@@ -428,18 +437,24 @@ impl NotificationManagerAndroid {
                 UwbCoreError::Unknown
             })?;
         let measurement_count: i32 = match &range_data.ranging_measurements {
-            RangingMeasurements::Short(v) => v.len(),
-            RangingMeasurements::Extended(v) => v.len(),
+            RangingMeasurements::ShortAddressTwoWay(v) => v.len(),
+            RangingMeasurements::ExtendedAddressTwoWay(v) => v.len(),
             RangingMeasurements::ShortDltdoa(v) => v.len(),
             RangingMeasurements::ExtendedDltdoa(v) => v.len(),
+            _ => {
+                return Err(UwbCoreError::BadParameters);
+            }
         }
         .try_into()
         .map_err(|_| UwbCoreError::BadParameters)?;
         let mac_indicator = match &range_data.ranging_measurements {
-            RangingMeasurements::Short(_) => MacAddressIndicator::ShortAddress,
-            RangingMeasurements::Extended(_) => MacAddressIndicator::ExtendedAddress,
+            RangingMeasurements::ShortAddressTwoWay(_) => MacAddressIndicator::ShortAddress,
+            RangingMeasurements::ExtendedAddressTwoWay(_) => MacAddressIndicator::ExtendedAddress,
             RangingMeasurements::ShortDltdoa(_) => MacAddressIndicator::ShortAddress,
             RangingMeasurements::ExtendedDltdoa(_) => MacAddressIndicator::ExtendedAddress,
+            _ => {
+                return Err(UwbCoreError::BadParameters);
+            }
         };
 
         let measurements_jobjectarray = self
@@ -565,6 +580,8 @@ impl NotificationManagerAndroid {
         )
     }
 
+    // TODO(b/246678053): Update to send OwrAoaMeasurement, based on ranging measurement type. For
+    // doing this, the method below should be bifurcated to handle TwoWay/OwrAoa appropriately.
     fn on_session_range_data_notification(
         &mut self,
         range_data: SessionRangeData,
@@ -579,12 +596,25 @@ impl NotificationManagerAndroid {
             &self.env,
             UWB_TWO_WAY_MEASUREMENT_CLASS,
         )?;
-        let bytearray_len: i32 = match &range_data.ranging_measurements {
-            uwb_core::uci::RangingMeasurements::Short(_) => SHORT_MAC_ADDRESS_LEN,
-            uwb_core::uci::RangingMeasurements::Extended(_) => EXTENDED_MAC_ADDRESS_LEN,
-            // Need not handle other cases, defaulting to SHORT_MAC_ADDRESS_LEN
-            _ => SHORT_MAC_ADDRESS_LEN,
-        };
+        let (bytearray_len, mac_indicator, measurement_count, measurements) =
+            match range_data.ranging_measurements {
+                RangingMeasurements::ShortAddressTwoWay(v) => (
+                    SHORT_MAC_ADDRESS_LEN,
+                    MacAddressIndicator::ShortAddress,
+                    v.len().try_into().unwrap(),
+                    v.into_iter().map(TwoWayRangingMeasurement::from).collect::<Vec<_>>(),
+                ),
+                RangingMeasurements::ExtendedAddressTwoWay(v) => (
+                    EXTENDED_MAC_ADDRESS_LEN,
+                    MacAddressIndicator::ExtendedAddress,
+                    v.len().try_into().unwrap(),
+                    v.into_iter().map(TwoWayRangingMeasurement::from).collect::<Vec<_>>(),
+                ),
+                _ => {
+                    return Err(UwbCoreError::BadParameters);
+                }
+            };
+
         let address_jbytearray =
             self.env.new_byte_array(bytearray_len).map_err(|_| UwbCoreError::Unknown)?;
         let zero_initiated_measurement_jobject = self
@@ -613,20 +643,6 @@ impl NotificationManagerAndroid {
                 error!("UCI JNI: measurement object creation failed: {:?}", e);
                 UwbCoreError::Unknown
             })?;
-        let measurement_count: i32 = match &range_data.ranging_measurements {
-            RangingMeasurements::Short(v) => v.len(),
-            RangingMeasurements::Extended(v) => v.len(),
-            // Need not handle other cases, setting count to 0
-            _ => 0,
-        }
-        .try_into()
-        .map_err(|_| UwbCoreError::BadParameters)?;
-        let mac_indicator = match &range_data.ranging_measurements {
-            RangingMeasurements::Short(_) => MacAddressIndicator::ShortAddress,
-            RangingMeasurements::Extended(_) => MacAddressIndicator::ExtendedAddress,
-            // Need not handle other cases, defaulting to SHORT_MAC_ADDRESS_LEN
-            _ => MacAddressIndicator::ShortAddress,
-        };
         let measurements_jobjectarray = self
             .env
             .new_object_array(
@@ -635,19 +651,7 @@ impl NotificationManagerAndroid {
                 zero_initiated_measurement_jobject,
             )
             .map_err(|_| UwbCoreError::Unknown)?;
-        for (i, measurement) in match range_data.ranging_measurements {
-            RangingMeasurements::Short(v) => {
-                v.into_iter().map(TwoWayRangingMeasurement::from).collect::<Vec<_>>()
-            }
-            RangingMeasurements::Extended(v) => {
-                v.into_iter().map(TwoWayRangingMeasurement::from).collect::<Vec<_>>()
-            }
-            // measurement_count is 0 for cases other than TwoWayRangingMeasurement
-            _ => Vec::new(),
-        }
-        .into_iter()
-        .enumerate()
-        {
+        for (i, measurement) in measurements.into_iter().enumerate() {
             // cast to i8 as java do not support unsigned:
             let mac_address_i8 = measurement
                 .mac_address
@@ -776,10 +780,10 @@ impl NotificationManager for NotificationManagerAndroid {
                 status_list,
             ),
             SessionNotification::RangeData(range_data) => match range_data.ranging_measurements {
-                uwb_core::uci::RangingMeasurements::Short(_) => {
+                uwb_core::uci::RangingMeasurements::ShortAddressTwoWay(_) => {
                     self.on_session_range_data_notification(range_data)
                 }
-                uwb_core::uci::RangingMeasurements::Extended(_) => {
+                uwb_core::uci::RangingMeasurements::ExtendedAddressTwoWay(_) => {
                     self.on_session_range_data_notification(range_data)
                 }
                 uwb_core::uci::RangingMeasurements::ShortDltdoa(_) => {
@@ -788,6 +792,8 @@ impl NotificationManager for NotificationManagerAndroid {
                 uwb_core::uci::RangingMeasurements::ExtendedDltdoa(_) => {
                     self.on_session_dl_tdoa_range_data_notification(range_data)
                 }
+                // TODO(b/246678053)
+                _ => todo!(),
             },
         }
     }
