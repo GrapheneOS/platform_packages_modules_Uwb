@@ -105,6 +105,7 @@ package android.uwb {
   public final class RangingSession implements java.lang.AutoCloseable {
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void addControlee(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void close();
+    method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void onRangingRoundsUpdateDtTag(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void pause(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void reconfigure(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void removeControlee(@NonNull android.os.PersistableBundle);
@@ -128,6 +129,7 @@ package android.uwb {
     method public void onOpened(@NonNull android.uwb.RangingSession);
     method public default void onPauseFailed(int, @NonNull android.os.PersistableBundle);
     method public default void onPaused(@NonNull android.os.PersistableBundle);
+    method public default void onRangingRoundsUpdateDtTagStatus(@NonNull android.os.PersistableBundle);
     method public void onReconfigureFailed(int, @NonNull android.os.PersistableBundle);
     method public void onReconfigured(@NonNull android.os.PersistableBundle);
     method public void onReportReceived(@NonNull android.uwb.RangingReport);

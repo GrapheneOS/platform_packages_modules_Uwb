@@ -30,10 +30,13 @@ import android.annotation.SystemApi;
 import android.annotation.SystemService;
 import android.content.Context;
 import android.os.Binder;
+import android.os.Build;
 import android.os.CancellationSignal;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.util.Log;
+
+import androidx.annotation.RequiresApi;
 
 import com.android.internal.annotations.GuardedBy;
 
@@ -341,7 +344,7 @@ public final class UwbManager {
     /**
      * Interface for Oem extensions on ongoing session
      */
-    // TODO: Add @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE) after ag/19901449
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public interface UwbOemExtensionCallback {
         /**
          * Invoked when session status changes
@@ -462,7 +465,7 @@ public final class UwbManager {
      * @param executor an {@link Executor} to execute given callback
      * @param callback oem implementation of {@link UwbOemExtensionCallback}
      */
-    // TODO: Add @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE) after ag/19901449
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @RequiresPermission(permission.UWB_PRIVILEGED)
     public void registerUwbOemExtensionCallback(@NonNull @CallbackExecutor Executor executor,
             @NonNull UwbOemExtensionCallback callback) {
@@ -479,7 +482,7 @@ public final class UwbManager {
      *
      * @param callback oem implementation of {@link UwbOemExtensionCallback}
      */
-    // TODO: Add @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE) after ag/19901449
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @RequiresPermission(permission.UWB_PRIVILEGED)
     public void unregisterUwbOemExtensionCallback(@NonNull UwbOemExtensionCallback callback) {
         mUwbOemExtensionCallbackListener.unregister(callback);

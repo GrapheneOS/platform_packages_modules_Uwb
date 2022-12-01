@@ -254,6 +254,10 @@ public class RangingManagerTest {
         rangingManager.onServiceConnected(handle, PARAMS);
         verify(callback, times(1)).onServiceConnected(eq(PARAMS));
 
+        rangingManager.onRangingRoundsUpdateDtTagStatus(handle, PARAMS);
+        verify(callback, times(1))
+                .onRangingRoundsUpdateDtTagStatus(eq(PARAMS));
+
         rangingManager.onRangingClosed(handle, REASON, PARAMS);
         verify(callback, times(1)).onClosed(eq(REASON), eq(PARAMS));
     }
