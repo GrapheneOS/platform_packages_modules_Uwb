@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -37,6 +38,8 @@ import android.os.RemoteException;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
+
+import com.android.modules.utils.build.SdkLevel;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -443,6 +446,7 @@ public class RangingSessionTest {
 
     @Test
     public void testOnRangingRoundsUpdateDtTag() throws RemoteException {
+        assumeTrue(SdkLevel.isAtLeastU()); // Test should only run on U+ devices.
         SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         IUwbAdapter adapter = mock(IUwbAdapter.class);
@@ -459,6 +463,7 @@ public class RangingSessionTest {
 
     @Test
     public void testOnRangingRoundsUpdateDtTagStatus() {
+        assumeTrue(SdkLevel.isAtLeastU()); // Test should only run on U+ devices.
         SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         IUwbAdapter adapter = mock(IUwbAdapter.class);
