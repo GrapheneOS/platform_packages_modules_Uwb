@@ -441,6 +441,37 @@ public class RangingSessionTest {
         verify(callback, times(0)).onReportReceived(report);
     }
 
+    @Test
+    public void testOnRangingRoundsUpdateDtTag() throws RemoteException {
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
+        PersistableBundle params = new PersistableBundle();
+        assertFalse(session.isOpen());
+
+        session.onRangingOpened();
+        session.onRangingStarted(params);
+        session.onRangingRoundsUpdateDtTag(params);
+
+        verify(adapter, times(1)).onRangingRoundsUpdateDtTag(handle, params);
+    }
+
+    @Test
+    public void testOnRangingRoundsUpdateDtTagStatus() {
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
+        PersistableBundle params = new PersistableBundle();
+        assertFalse(session.isOpen());
+
+        session.onRangingOpened();
+        session.onRangingRoundsUpdateDtTagStatus(params);
+
+        verify(callback, times(1)).onRangingRoundsUpdateDtTagStatus(params);
+    }
+
     private void verifyOpenState(RangingSession session, boolean expected) {
         assertEquals(expected, session.isOpen());
     }
