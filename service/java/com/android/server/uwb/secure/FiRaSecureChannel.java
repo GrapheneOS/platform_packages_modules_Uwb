@@ -16,6 +16,7 @@
 package com.android.server.uwb.secure;
 
 import static com.android.server.uwb.secure.csml.DispatchResponse.NOTIFICATION_EVENT_ID_ADF_SELECTED;
+import static com.android.server.uwb.secure.csml.DispatchResponse.NOTIFICATION_EVENT_ID_RDS_AVAILABLE;
 import static com.android.server.uwb.secure.csml.DispatchResponse.NOTIFICATION_EVENT_ID_SECURE_CHANNEL_ESTABLISHED;
 import static com.android.server.uwb.secure.csml.DispatchResponse.NOTIFICATION_EVENT_ID_SECURE_SESSION_ABORTED;
 import static com.android.server.uwb.secure.iso7816.StatusWord.SW_NO_ERROR;
@@ -294,11 +295,23 @@ public abstract class FiRaSecureChannel {
                     // TODO: put controllee info for controllee if it is not dynamic slot
                     break;
                 case NOTIFICATION_EVENT_ID_SECURE_CHANNEL_ESTABLISHED:
+                    logd("SC established");
                     mStatus = Status.ESTABLISHED;
                     mSecureChannelCallback.onEstablished();
                     break;
                 case NOTIFICATION_EVENT_ID_SECURE_SESSION_ABORTED:
                     cleanUpTerminatedOrAbortedSession();
+                    break;
+                case NOTIFICATION_EVENT_ID_RDS_AVAILABLE:
+                    logd("RDS available and SC terminated automatically");
+                    // see CSML 8.2.2.7.1.8 Table 64 - ADF Extended Options
+                    // RDS available means the session is using the default session id and key
+                    // Also the secure channel is terminated automatically.
+                    DispatchResponse.RdsAvailableNotification rdsAvailableNotification =
+                            (DispatchResponse.RdsAvailableNotification) notification;
+                    mStatus = Status.TERMINATED;
+                    mSecureChannelCallback.onRdsAvailableAndTerminated(
+                            rdsAvailableNotification.sessionId);
                     break;
                 default:
                     logw(
@@ -417,6 +430,13 @@ public abstract class FiRaSecureChannel {
          * The secure element channel for the session  is closed.
          */
         void onSeChannelClosed(boolean withError);
+
+        /**
+         * The session is set up completed and terminated automatically.
+         *
+         * @param sessionId - the uwb session ID derived in the FiRa applet
+         */
+        void onRdsAvailableAndTerminated(int sessionId);
     }
 
     interface ExternalRequestCallback {
@@ -433,5 +453,8 @@ public abstract class FiRaSecureChannel {
 
     private void logw(@NonNull String dbgMsg) {
         Log.w(LOG_TAG, dbgMsg);
+    }
+    private void logd(@NonNull String dbgMsg) {
+        Log.d(LOG_TAG, dbgMsg);
     }
 }
