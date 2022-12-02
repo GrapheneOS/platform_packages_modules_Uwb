@@ -24,8 +24,14 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
+import com.android.server.uwb.pm.SessionData;
+import com.android.server.uwb.secure.csml.CsmlUtil;
 import com.android.server.uwb.secure.csml.DispatchResponse;
+import com.android.server.uwb.secure.csml.GetDoCommand;
+import com.android.server.uwb.secure.iso7816.TlvParser;
 import com.android.server.uwb.util.DataTypeConversionUtil;
+
+import java.util.Optional;
 
 /**
  * The responder of dynamic STS session managed by the UWB controllee.
@@ -43,7 +49,6 @@ public class ControlleeResponderSession extends ResponderSession {
 
     @Override
     protected boolean onDispatchResponseReceived(@NonNull DispatchResponse dispatchResponse) {
-        boolean isSessionTerminated = false;
         DispatchResponse.RdsAvailableNotification rdsAvailable = null;
         for (DispatchResponse.Notification notification : dispatchResponse.notifications) {
             switch (notification.notificationEventId) {
@@ -58,8 +63,53 @@ public class ControlleeResponderSession extends ResponderSession {
             }
         }
         if (rdsAvailable != null) {
-            mSessionCallback.onSessionDataReady(
-                    rdsAvailable.sessionId, rdsAvailable.arbitraryData, isSessionTerminated);
+            if (mIsDefaultUniqueSessionId && mUniqueSessionId.get() != rdsAvailable.sessionId) {
+                logw("The default session Id is changed, which is not expected.");
+            }
+            mUniqueSessionId = Optional.of(rdsAvailable.sessionId);
+
+            if (rdsAvailable.arbitraryData.isPresent()
+                    && CsmlUtil.isSessionDataDo(rdsAvailable.arbitraryData.get())) {
+                logd("SessionData is in RDS available notification.");
+                mSessionData = SessionData.fromBytes(
+                        TlvParser.parseOneTlv(rdsAvailable.arbitraryData.get()).value);
+                mSessionCallback.onSessionDataReady(
+                        mUniqueSessionId.get(),
+                        Optional.of(mSessionData),
+                        /*isTerminatedSession=*/false);
+            } else {
+                logd("try to read SessionData in applet.");
+                // try to get session Data
+                GetDoCommand getSessionDataCommand =
+                        GetDoCommand.build(CsmlUtil.constructSessionDataGetDoTlv());
+                mFiRaSecureChannel.sendLocalFiRaCommand(getSessionDataCommand,
+                        new FiRaSecureChannel.ExternalRequestCallback() {
+                            @Override
+                            public void onSuccess(byte[] responseData) {
+                                logd("success to get session data from local FiRa applet.");
+                                if (!CsmlUtil.isSessionDataDo(responseData)) {
+                                    logw("session data is expected from applet.");
+                                    terminateSession();
+                                    mSessionCallback.onSessionAborted();
+                                    return;
+                                }
+                                mSessionData = SessionData.fromBytes(
+                                        TlvParser.parseOneTlv(responseData).value);
+                                mSessionCallback.onSessionDataReady(
+                                        mUniqueSessionId.get(),
+                                        Optional.of(mSessionData),
+                                        /*isTerminatedSession=*/ false);
+                            }
+
+                            @Override
+                            public void onFailure() {
+                                logw("failed to get session data from applet.");
+                                terminateSession();
+                                mSessionCallback.onSessionAborted();
+                            }
+                        });
+            }
+
             return true;
         }
         return false;

@@ -161,7 +161,7 @@ class InitiatorSecureChannel extends FiRaSecureChannel {
                             mWorkHandler.sendMessage(
                                     mWorkHandler.obtainMessage(
                                             CMD_SEND_OOB_DATA, response.outboundDataOrApdu.get()));
-                            externalRequestCallback.onSuccess();
+                            externalRequestCallback.onSuccess(new byte[0]);
                         } else {
                             throw new IllegalStateException(
                                     "Tunnel CMD error: " + response.statusWord);

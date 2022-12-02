@@ -142,8 +142,39 @@ public class DispatchResponseTest {
         DispatchResponse dispatchResponse = DispatchResponse.fromResponseApdu(responseApdu);
 
         assertThat(dispatchResponse.notifications).hasSize(1);
-        assertThat(dispatchResponse.notifications.get(0).notificationEventId)
+        DispatchResponse.SecureChannelEstablishedNotification eNotification =
+                (DispatchResponse.SecureChannelEstablishedNotification)
+                        dispatchResponse.notifications.get(0);
+        assertThat(eNotification.notificationEventId)
                 .isEqualTo(DispatchResponse.NOTIFICATION_EVENT_ID_SECURE_CHANNEL_ESTABLISHED);
+        assertThat(eNotification.defaultSessionId.isEmpty()).isTrue();
+    }
+
+    @Test
+    public void validResponseWithSecureSessionEstablishedNotificationAndValidSessionId() {
+        TlvDatum notiFormat = new TlvDatum(DispatchResponse.NOTIFICATION_FORMAT_TAG,
+                new byte[] {(byte) 0x00});
+        TlvDatum notiId = new TlvDatum(DispatchResponse.NOTIFICATION_EVENT_ID_TAG,
+                new byte[] { (byte) 0x01});
+        // sessionIdLen | sessionId
+        TlvDatum notiData = new TlvDatum(DispatchResponse.NOTIFICATION_DATA_TAG,
+                DataTypeConversionUtil.hexStringToByteArray("0101"));
+        TlvDatum notiTlv = new TlvDatum(DispatchResponse.NOTIFICATION_TAG,
+                Bytes.concat(notiFormat.toBytes(), notiId.toBytes(), notiData.toBytes()));
+        TlvDatum responseTlv = new TlvDatum(FiRaResponse.PROPRIETARY_RESPONSE_TAG,
+                notiTlv.toBytes());
+        ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(
+                responseTlv.toBytes(),
+                StatusWord.SW_NO_ERROR.toInt());
+        DispatchResponse dispatchResponse = DispatchResponse.fromResponseApdu(responseApdu);
+
+        assertThat(dispatchResponse.notifications).hasSize(1);
+        DispatchResponse.SecureChannelEstablishedNotification eNotification =
+                (DispatchResponse.SecureChannelEstablishedNotification)
+                        dispatchResponse.notifications.get(0);
+        assertThat(eNotification.notificationEventId)
+                .isEqualTo(DispatchResponse.NOTIFICATION_EVENT_ID_SECURE_CHANNEL_ESTABLISHED);
+        assertThat(eNotification.defaultSessionId.get()).isEqualTo(1);
     }
 
     @Test

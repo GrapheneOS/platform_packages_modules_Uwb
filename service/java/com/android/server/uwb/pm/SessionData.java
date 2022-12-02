@@ -134,8 +134,8 @@ public class SessionData {
     /** Builder */
     public static class Builder {
         private int mSessionId;
-        private Optional<Integer> mSubSessionId;
-        private Optional<ConfigurationParams> mConfigurationParams;
+        private Optional<Integer> mSubSessionId = Optional.empty();
+        private Optional<ConfigurationParams> mConfigurationParams = Optional.empty();
 
         public SessionData.Builder setSessionId(int sessionId) {
             mSessionId = sessionId;

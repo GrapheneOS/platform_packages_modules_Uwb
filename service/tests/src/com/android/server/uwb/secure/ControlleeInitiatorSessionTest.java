@@ -41,6 +41,8 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.Optional;
+
 public class ControlleeInitiatorSessionTest {
     @Mock
     private FiRaSecureChannel mFiRaSecureChannel;
@@ -91,14 +93,14 @@ public class ControlleeInitiatorSessionTest {
                 ArgumentCaptor.forClass(FiRaSecureChannel.ExternalRequestCallback.class);
         when(mFiRaSecureChannel.isEstablished()).thenReturn(true);
 
-        mSecureChannelCallbackCaptor.getValue().onEstablished();
+        mSecureChannelCallbackCaptor.getValue().onEstablished(Optional.empty());
 
         verify(mFiRaSecureChannel).tunnelToRemoteDevice(
                 any(), externalRequestCallbackCaptor.capture());
         assertThat(externalRequestCallbackCaptor.getValue()).isNotNull();
 
         // TODO: capture and assert put controlleeInfo command data.
-        externalRequestCallbackCaptor.getValue().onSuccess();
+        externalRequestCallbackCaptor.getValue().onSuccess(new byte[0]);
     }
 
     @Test
@@ -131,7 +133,7 @@ public class ControlleeInitiatorSessionTest {
         ArgumentCaptor<FiRaSecureChannel.ExternalRequestCallback> externalRequestCallbackCaptor =
                 ArgumentCaptor.forClass(FiRaSecureChannel.ExternalRequestCallback.class);
 
-        mSecureChannelCallbackCaptor.getValue().onEstablished();
+        mSecureChannelCallbackCaptor.getValue().onEstablished(Optional.empty());
 
         verify(mFiRaSecureChannel).tunnelToRemoteDevice(
                 any(), externalRequestCallbackCaptor.capture());
@@ -155,7 +157,7 @@ public class ControlleeInitiatorSessionTest {
                 ArgumentCaptor.forClass(FiRaSecureChannel.ExternalRequestCallback.class);
         verify(mFiRaSecureChannel, times(2)).tunnelToRemoteDevice(
                 any(), externalRequestCallbackCaptor.capture());
-        externalRequestCallbackCaptor.getValue().onSuccess();
+        externalRequestCallbackCaptor.getValue().onSuccess(new byte[0]);
     }
 
     @Test
