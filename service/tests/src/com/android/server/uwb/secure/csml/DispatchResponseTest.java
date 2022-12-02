@@ -39,9 +39,6 @@ public class DispatchResponseTest {
                 StatusWord.SW_NO_ERROR.toInt());
         DispatchResponse dispatchResponse = DispatchResponse.fromResponseApdu(responseApdu);
 
-        assertThat(dispatchResponse.notifications).hasSize(1);
-        assertThat(dispatchResponse.notifications.get(0).notificationEventId)
-                .isEqualTo(DispatchResponse.NOTIFICATION_EVENT_ID_SECURE_SESSION_AUTO_TERMINATED);
         assertThat(dispatchResponse.getOutboundData().isPresent()).isFalse();
     }
 
