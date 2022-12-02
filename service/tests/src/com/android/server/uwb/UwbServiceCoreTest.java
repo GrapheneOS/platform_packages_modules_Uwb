@@ -386,9 +386,13 @@ public class UwbServiceCoreTest {
         IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
         when(cb.asBinder()).thenReturn(mock(IBinder.class));
         mUwbServiceCore.registerAdapterStateCallbacks(cb);
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.SYSTEM_BOOT);
 
         // Enable first
         enableUwbWithCountryCode();
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
+                StateChangeReason.SYSTEM_POLICY);
 
         disableUwb();
 
@@ -407,6 +411,8 @@ public class UwbServiceCoreTest {
         IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
         when(cb.asBinder()).thenReturn(mock(IBinder.class));
         mUwbServiceCore.registerAdapterStateCallbacks(cb);
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.SYSTEM_BOOT);
 
         // Enable first
         enableUwbWithCountryCode();
@@ -432,6 +438,8 @@ public class UwbServiceCoreTest {
         IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
         when(cb.asBinder()).thenReturn(mock(IBinder.class));
         mUwbServiceCore.registerAdapterStateCallbacks(cb);
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.SYSTEM_BOOT);
 
         // Enable first (with country code initially unknown, like at boot time).
         when(mUwbCountryCode.getCountryCode()).thenReturn(null);
@@ -467,6 +475,46 @@ public class UwbServiceCoreTest {
                 StateChangeReason.SYSTEM_POLICY);
 
         clearInvocations(mNativeUwbManager, mUwbCountryCode, cb);
+    }
+
+    @Test
+    public void testToggleMultipleEnableDisableQuickly() throws Exception {
+        when(mNativeUwbManager.doInitialize()).thenReturn(true);
+        when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(true);
+        when(mNativeUwbManager.doDeinitialize()).thenReturn(true);
+
+        IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
+        when(cb.asBinder()).thenReturn(mock(IBinder.class));
+        mUwbServiceCore.registerAdapterStateCallbacks(cb);
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.SYSTEM_BOOT);
+
+        when(mUwbCountryCode.getCountryCode()).thenReturn("US");
+
+        clearInvocations(mNativeUwbManager, mUwbCountryCode, cb);
+
+        // Quickly enqueue a UWB enable followed by a UWB disable message. Both of these will be
+        // processed (in order), and the TASK_NOTIFY_ADAPTER_STATE messages they enqueue will be
+        // processed after.
+        mUwbServiceCore.setEnabled(true);
+        mUwbServiceCore.setEnabled(false);
+        mUwbServiceCore.onCountryCodeChanged("US");
+
+        // Now process all the looper messages
+        mTestLooper.dispatchAll();
+
+        verify(mNativeUwbManager).doInitialize();
+        verify(mUwbCountryCode).setCountryCode(anyBoolean());
+        verify(mNativeUwbManager).doDeinitialize();
+
+        // We expect only one onAdapterStateChanged() call, for the final "UWB Disabled" state, as
+        // the looper messages(s) for "UWB Enable" notification will be overridden.
+        verify(cb, times(1)).onAdapterStateChanged(
+                UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.SYSTEM_POLICY);
+        verify(cb, times(0)).onAdapterStateChanged(
+                UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
+                StateChangeReason.SYSTEM_POLICY);
     }
 
     @Test
@@ -770,13 +818,17 @@ public class UwbServiceCoreTest {
         IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
         when(cb.asBinder()).thenReturn(mock(IBinder.class));
         mUwbServiceCore.registerAdapterStateCallbacks(cb);
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.SYSTEM_BOOT);
 
         enableUwbWithCountryCode();
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
                 StateChangeReason.SYSTEM_POLICY);
 
+        when(mUwbCountryCode.getCountryCode()).thenReturn("US");
         mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ACTIVE,
                 TEST_DEFAULT_CHIP_ID);
+        mTestLooper.dispatchAll();
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_ACTIVE,
                 StateChangeReason.SESSION_STARTED);
     }
@@ -802,7 +854,10 @@ public class UwbServiceCoreTest {
     public void testToggleOfOnDeviceStateErrorCallback() throws Exception {
         IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
         when(cb.asBinder()).thenReturn(mock(IBinder.class));
+
         mUwbServiceCore.registerAdapterStateCallbacks(cb);
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.SYSTEM_BOOT);
 
         enableUwbWithCountryCode();
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
@@ -811,6 +866,8 @@ public class UwbServiceCoreTest {
         when(mNativeUwbManager.doDeinitialize()).thenReturn(true);
         when(mNativeUwbManager.doInitialize()).thenReturn(true);
 
+        clearInvocations(mNativeUwbManager, mUwbCountryCode, cb);
+
         // In the second toggle-on iteration, there should be a valid country code known to
         // UwbCountryCode class (from earlier notifications from the Wifi/Telephony stack).
         when(mUwbCountryCode.getCountryCode()).thenReturn("US");
@@ -818,14 +875,15 @@ public class UwbServiceCoreTest {
         mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ERROR,
                 TEST_DEFAULT_CHIP_ID);
         mTestLooper.dispatchAll();
+
         // Verify UWB toggle off.
         verify(mNativeUwbManager).doDeinitialize();
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
                 StateChangeReason.SYSTEM_POLICY);
 
         // Verify UWB toggle on.
-        verify(mNativeUwbManager, times(2)).doInitialize();
-        verify(cb, times(2)).onAdapterStateChanged(
+        verify(mNativeUwbManager).doInitialize();
+        verify(cb).onAdapterStateChanged(
                 UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
                 StateChangeReason.SYSTEM_POLICY);
     }
