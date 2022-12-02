@@ -21,10 +21,11 @@ import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
 import com.android.server.uwb.secure.csml.DispatchResponse;
+
+import java.util.Optional;
 
 /**
  * Interface for a Dynamic STS session, which set up secure channel and exchange
@@ -72,6 +73,12 @@ public abstract class SecureSession {
                 public void onSeChannelClosed(boolean withError) {
                     // TODO: no action, may be removed.
                 }
+
+                @Override
+                public void onRdsAvailableAndTerminated(int sessionId) {
+                    mSessionCallback.onSessionDataReady(
+                            sessionId, Optional.empty(), /*isSessionTerminated=*/ true);
+                }
             };
 
     SecureSession(
@@ -110,13 +117,15 @@ public abstract class SecureSession {
         /**
          * The session data is ready, the UWB configuration of Controller can be sent to UWBS.
          *
-         * @param sessionData         null for controller, TLV data for controllee.
+         * @param sessionData         empty for controller, TLV data for controllee; And empty
+         *                            if the session is terminated automatically, profile/app
+         *                            defined the session data in advance.
          * @param isSessionTerminated If the session is not terminated, the client should
          *                            terminate the session accordingly.
          */
         // TODO: what if the 1 to m case? is this sub sessionId ?
         void onSessionDataReady(
-                int updatedSessionId, @Nullable byte[] sessionData, boolean isSessionTerminated);
+                int updatedSessionId, Optional<byte[]> sessionData, boolean isSessionTerminated);
 
         /**
          * Something wrong, the session is aborted.

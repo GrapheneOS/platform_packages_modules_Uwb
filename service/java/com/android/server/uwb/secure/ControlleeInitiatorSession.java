@@ -17,7 +17,6 @@
 package com.android.server.uwb.secure;
 
 import static com.android.server.uwb.secure.csml.DispatchResponse.NOTIFICATION_EVENT_ID_RDS_AVAILABLE;
-import static com.android.server.uwb.secure.csml.DispatchResponse.NOTIFICATION_EVENT_ID_SECURE_SESSION_AUTO_TERMINATED;
 import static com.android.server.uwb.secure.csml.DispatchResponse.OUTBOUND_TARGET_HOST;
 import static com.android.server.uwb.secure.csml.DispatchResponse.OUTBOUND_TARGET_REMOTE;
 
@@ -115,9 +114,6 @@ public class ControlleeInitiatorSession extends InitiatorSession {
         DispatchResponse.RdsAvailableNotification rdsAvailable = null;
         for (DispatchResponse.Notification notification : dispatchResponse.notifications) {
             switch (notification.notificationEventId) {
-                case NOTIFICATION_EVENT_ID_SECURE_SESSION_AUTO_TERMINATED:
-                    isSessionTerminated = true;
-                    break;
                 case NOTIFICATION_EVENT_ID_RDS_AVAILABLE:
                     rdsAvailable = (DispatchResponse.RdsAvailableNotification) notification;
                     break;
@@ -131,7 +127,7 @@ public class ControlleeInitiatorSession extends InitiatorSession {
         if (rdsAvailable != null) {
             // TODO: is the session ID for the sub session if it is 1 to m case?
             mSessionCallback.onSessionDataReady(
-                    rdsAvailable.sessionId, rdsAvailable.arbitraryData.get(), isSessionTerminated);
+                    rdsAvailable.sessionId, rdsAvailable.arbitraryData, isSessionTerminated);
             return true;
         } else if (CsmlUtil.isSessionDataNotAvailable(
                 dispatchResponse.getOutboundData().get().data)) {
