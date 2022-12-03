@@ -29,11 +29,11 @@ public class SwapInAdfCommandTest {
         byte[] secureBlob = DataTypeConversionUtil.hexStringToByteArray("0A0B");
         ObjectIdentifier oid = ObjectIdentifier.fromBytes(
                 DataTypeConversionUtil.hexStringToByteArray("0102"));
-        byte[] uwbControlleInfo = DataTypeConversionUtil.hexStringToByteArray("0C0C");
+        byte[] uwbControleeInfo = DataTypeConversionUtil.hexStringToByteArray("0C0C");
         // <code>cla | ins | p1 | p2 | lc | data | le</code>
         byte[] expectedApdu = DataTypeConversionUtil.hexStringToByteArray(
                 "804000000EDF51020A0B06020102BF70020C0C00");
-        byte[] actualApdu = SwapInAdfCommand.build(secureBlob, oid, uwbControlleInfo)
+        byte[] actualApdu = SwapInAdfCommand.build(secureBlob, oid, uwbControleeInfo)
                 .getCommandApdu().getEncoded();
 
         assertThat(actualApdu).isEqualTo(expectedApdu);

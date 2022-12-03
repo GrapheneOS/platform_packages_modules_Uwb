@@ -37,7 +37,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-public class ControlleeResponderSessionTest {
+public class ControleeResponderSessionTest {
     @Mock
     private FiRaSecureChannel mFiRaSecureChannel;
     @Mock
@@ -48,7 +48,7 @@ public class ControlleeResponderSessionTest {
     @Captor
     private ArgumentCaptor<FiRaSecureChannel.SecureChannelCallback> mSecureChannelCallbackCaptor;
 
-    private ControlleeResponderSession mControlleeResponderSession;
+    private ControleeResponderSession mControleeResponderSession;
 
     private final TestLooper mTestLooper = new TestLooper();
 
@@ -56,11 +56,11 @@ public class ControlleeResponderSessionTest {
     public void setup() {
         MockitoAnnotations.initMocks(this);
 
-        mControlleeResponderSession = new ControlleeResponderSession(
+        mControleeResponderSession = new ControleeResponderSession(
                 mTestLooper.getLooper(), mFiRaSecureChannel, mSecureSessionCallback,
                 mRunningProfileSessionInfo);
 
-        mControlleeResponderSession.startSession();
+        mControleeResponderSession.startSession();
 
         verify(mFiRaSecureChannel).init(mSecureChannelCallbackCaptor.capture());
     }
@@ -84,7 +84,7 @@ public class ControlleeResponderSessionTest {
 
     @Test
     public void terminateSession() {
-        mControlleeResponderSession.terminateSession();
+        mControleeResponderSession.terminateSession();
         mTestLooper.dispatchAll();
 
         verify(mFiRaSecureChannel).terminateLocally();
