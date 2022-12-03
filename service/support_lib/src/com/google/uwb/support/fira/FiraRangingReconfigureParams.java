@@ -40,7 +40,7 @@ public class FiraRangingReconfigureParams extends FiraParams {
     @Nullable private final UwbAddress[] mAddressList;
     @Nullable private final int[] mSubSessionIdList;
     @Nullable private final Integer mMessageControl;
-    @Nullable private final int[] mSubSessionKeyList;
+    @Nullable private final byte[] mSubSessionKeyList;
 
     @Nullable private final Integer mBlockStrideLength;
 
@@ -58,7 +58,6 @@ public class FiraRangingReconfigureParams extends FiraParams {
     private static final String KEY_SUB_SESSION_ID_LIST = "sub_session_id_list";
     private static final String KEY_MESSAGE_CONTROL = "message_control";
     private static final String KEY_SUB_SESSION_KEY_LIST = "sub_session_key_list";
-    private static final String KEY_SUB_SESSION_KEY_LENGTH = "sub_session_key_length";
     private static final String KEY_UPDATE_BLOCK_STRIDE_LENGTH = "update_block_stride_length";
     private static final String KEY_UPDATE_RANGE_DATA_NTF_CONFIG = "update_range_data_ntf_config";
     private static final String KEY_UPDATE_RANGE_DATA_NTF_PROXIMITY_NEAR =
@@ -79,7 +78,7 @@ public class FiraRangingReconfigureParams extends FiraParams {
             @Nullable UwbAddress[] addressList,
             @Nullable int[] subSessionIdList,
             @Nullable Integer messageControl,
-            @Nullable int[] subSessionKeyList,
+            @Nullable byte[] subSessionKeyList,
             @Nullable Integer blockStrideLength,
             @Nullable Integer rangeDataNtfConfig,
             @Nullable Integer rangeDataProximityNear,
@@ -130,7 +129,7 @@ public class FiraRangingReconfigureParams extends FiraParams {
     }
 
     @Nullable
-    public int[] getSubSessionKeyList() {
+    public byte[] getSubSessionKeyList() {
         return mSubSessionKeyList;
     }
 
@@ -174,6 +173,31 @@ public class FiraRangingReconfigureParams extends FiraParams {
         return mRangeDataAoaElevationUpper;
     }
 
+    @Nullable
+    private static int[] byteArrayToIntArray(@Nullable byte[] bytes) {
+        if (bytes == null) {
+            return null;
+        }
+
+        int[] values = new int[bytes.length];
+        for (int i = 0; i < values.length; i++) {
+            values[i] = bytes[i];
+        }
+        return values;
+    }
+
+    @Nullable
+    private static byte[] intArrayToByteArray(@Nullable int[] values) {
+        if (values == null) {
+            return null;
+        }
+        byte[] bytes = new byte[values.length];
+        for (int i = 0; i < values.length; i++) {
+            bytes[i] = (byte) values[i];
+        }
+        return bytes;
+    }
+
     @Override
     public PersistableBundle toBundle() {
         PersistableBundle bundle = super.toBundle();
@@ -195,7 +219,7 @@ public class FiraRangingReconfigureParams extends FiraParams {
             if (mMessageControl != null) {
                 bundle.putInt(KEY_MESSAGE_CONTROL, mMessageControl);
             }
-            bundle.putIntArray(KEY_SUB_SESSION_KEY_LIST, mSubSessionKeyList);
+            bundle.putIntArray(KEY_SUB_SESSION_KEY_LIST, byteArrayToIntArray(mSubSessionKeyList));
             bundle.putIntArray(KEY_SUB_SESSION_ID_LIST, mSubSessionIdList);
         }
 
@@ -269,7 +293,8 @@ public class FiraRangingReconfigureParams extends FiraParams {
             builder.setAction(bundle.getInt(KEY_ACTION))
                     .setAddressList(addressList)
                     .setSubSessionIdList(bundle.getIntArray(KEY_SUB_SESSION_ID_LIST))
-                    .setSubSessionKeyList(bundle.getIntArray(KEY_SUB_SESSION_KEY_LIST));
+                    .setSubSessionKeyList(
+                            intArrayToByteArray(bundle.getIntArray(KEY_SUB_SESSION_KEY_LIST)));
             if (bundle.containsKey(KEY_MESSAGE_CONTROL)) {
                 builder.setMessageControl(bundle.getInt(KEY_MESSAGE_CONTROL));
             }
@@ -321,7 +346,7 @@ public class FiraRangingReconfigureParams extends FiraParams {
         @Nullable private UwbAddress[] mAddressList = null;
         @Nullable private int[] mSubSessionIdList = null;
         @Nullable private Integer mMessageControl = null;
-        @Nullable private int[] mSubSessionKeyList = null;
+        @Nullable private byte[] mSubSessionKeyList = null;
 
         @Nullable private Integer mBlockStrideLength = null;
 
@@ -356,7 +381,7 @@ public class FiraRangingReconfigureParams extends FiraParams {
         }
 
         /** Sub Session Key List setter */
-        public FiraRangingReconfigureParams.Builder setSubSessionKeyList(int[] subSessionKeyList) {
+        public FiraRangingReconfigureParams.Builder setSubSessionKeyList(byte[] subSessionKeyList) {
             mSubSessionKeyList = subSessionKeyList;
             return this;
         }
