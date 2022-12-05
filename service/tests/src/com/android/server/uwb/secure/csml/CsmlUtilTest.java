@@ -36,10 +36,18 @@ public class CsmlUtilTest {
     }
 
     @Test
-    public void constructGetDoTlvUsingTagList() {
+    public void constructGetDoTlvForTopTag() {
         TlvDatum.Tag doTag = new TlvDatum.Tag((byte) 0x0A);
         byte[] actual = CsmlUtil.constructGetDoTlv(doTag).toBytes();
-        byte[] expected = DataTypeConversionUtil.hexStringToByteArray("5C010A");
+        byte[] expected = DataTypeConversionUtil.hexStringToByteArray("4D020A00");
+
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void constructSessionDataGetDoTlv() {
+        byte[] actual = CsmlUtil.constructSessionDataGetDoTlv().toBytes();
+        byte[] expected = DataTypeConversionUtil.hexStringToByteArray("4D03BF7800");
 
         assertThat(actual).isEqualTo(expected);
     }

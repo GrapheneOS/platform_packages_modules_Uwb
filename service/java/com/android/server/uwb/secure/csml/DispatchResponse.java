@@ -117,8 +117,12 @@ public class DispatchResponse extends FiRaResponse {
      * The notification of the secure channel established.
      */
     public static class SecureChannelEstablishedNotification extends Notification {
-        private SecureChannelEstablishedNotification() {
+        public final Optional<Integer> defaultSessionId;
+
+        private SecureChannelEstablishedNotification(Optional<Integer> defaultSessionId) {
             super(NOTIFICATION_EVENT_ID_SECURE_CHANNEL_ESTABLISHED);
+
+            this.defaultSessionId = defaultSessionId;
         }
     }
 
@@ -290,7 +294,25 @@ public class DispatchResponse extends FiRaResponse {
                     notificationList.add(new AdfSelectedNotification(adfOid));
                     break;
                 case (byte) 0x01:
-                    notificationList.add(new SecureChannelEstablishedNotification());
+                    // TODO: not defined by CSML, may be changed.
+                    Optional<Integer> defaultSessionId = Optional.empty();
+                    notificationDataTlvs = curTlvs.get(NOTIFICATION_DATA_TAG);
+                    if (notificationDataTlvs != null && notificationDataTlvs.size() != 0) {
+                        // try to get the default session Id from the notification.
+                        byte[] payload = notificationDataTlvs.get(0).value;
+                        if (payload == null || payload.length < 2
+                                || payload.length < 1 + payload[0]) {
+                            logd("not valid session id in sc established notification.");
+                        } else {
+                            int sessionIdLen = payload[0];
+                            byte[] sessionId = new byte[sessionIdLen];
+                            System.arraycopy(payload, 1, sessionId, 0, sessionIdLen);
+                            defaultSessionId = Optional.of(
+                                    DataTypeConversionUtil.arbitraryByteArrayToI32(sessionId));
+                        }
+                    }
+                    notificationList.add(
+                            new SecureChannelEstablishedNotification(defaultSessionId));
                     break;
                 case (byte) 0x02:
                     // parse sessionId and arbitrary data

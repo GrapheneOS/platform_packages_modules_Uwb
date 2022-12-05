@@ -316,6 +316,7 @@ public class InitiatorSecureChannelTest {
 
         mTestLooper.dispatchAll();
     }
+
     private void doEstablishSC() throws IOException {
         doPrepareSC();
         // response: status-81,data-9000, notification format-00, notification id-01
@@ -327,13 +328,38 @@ public class InitiatorSecureChannelTest {
         mInitiatorSecureChannel.processRemoteCommandOrResponse(new byte[0]);
     }
 
+    private void doEstablishSCWithDefaultSessionId() throws IOException {
+        doPrepareSC();
+        // response: status-81,data-9000, notification format-00, notification id-01
+        ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(
+                DataTypeConversionUtil.hexStringToByteArray("710F80018181029000E106800100810101"),
+                StatusWord.SW_NO_ERROR.toInt());
+        when(mSecureElementChannel.transmit(any(DispatchCommand.class))).thenReturn(responseApdu);
+        ResponseApdu sessionIdResponseApdu = ResponseApdu.fromDataAndStatusWord(
+                DataTypeConversionUtil.hexStringToByteArray("810101"),
+                StatusWord.SW_NO_ERROR.toInt());
+        when(mSecureElementChannel.transmit(any(GetDoCommand.class)))
+                .thenReturn(sessionIdResponseApdu);
+        mInitiatorSecureChannel.processRemoteCommandOrResponse(new byte[0]);
+        verify(mSecureElementChannel).transmit(any(GetDoCommand.class));
+    }
+
     @Test
     public void receiveResponseOfScSetupSuccess() throws IOException {
         doEstablishSC();
 
         assertThat(mInitiatorSecureChannel.getStatus()).isEqualTo(
                 FiRaSecureChannel.Status.ESTABLISHED);
-        verify(mSecureChannelCallback).onEstablished();
+        verify(mSecureChannelCallback).onEstablished(any());
+    }
+
+    @Test
+    public void receiveResponseOfScSetupSuccessWithDefaultSessionId() throws IOException {
+        doEstablishSCWithDefaultSessionId();
+
+        assertThat(mInitiatorSecureChannel.getStatus()).isEqualTo(
+                FiRaSecureChannel.Status.ESTABLISHED);
+        verify(mSecureChannelCallback).onEstablished(eq(Optional.of(1)));
     }
 
     @Test
@@ -440,7 +466,7 @@ public class InitiatorSecureChannelTest {
         mInitiatorSecureChannel.sendLocalCommandApdu(commandApdu, externalRequestCallback);
         mTestLooper.dispatchAll();
 
-        verify(externalRequestCallback).onSuccess();
+        verify(externalRequestCallback).onSuccess(any());
     }
 
     @Test
@@ -556,7 +582,7 @@ public class InitiatorSecureChannelTest {
         mTestLooper.dispatchNext();
 
         assertThat(mTestLooper.nextMessage().what).isEqualTo(CMD_SEND_OOB_DATA);
-        verify(externalRequestCallback).onSuccess();
+        verify(externalRequestCallback).onSuccess(any());
     }
 
     @Test
