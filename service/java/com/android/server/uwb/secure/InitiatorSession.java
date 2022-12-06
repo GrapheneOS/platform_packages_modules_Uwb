@@ -127,7 +127,7 @@ public abstract class InitiatorSession extends SecureSession {
                 getDoCommand.getCommandApdu().getEncoded(),
                 new FiRaSecureChannel.ExternalRequestCallback() {
                     @Override
-                    public void onSuccess() {
+                    public void onSuccess(@NonNull byte[] responseData) {
                         // do nothing.
                     }
 
@@ -144,7 +144,7 @@ public abstract class InitiatorSession extends SecureSession {
                 data,
                 new FiRaSecureChannel.ExternalRequestCallback() {
                     @Override
-                    public void onSuccess() {
+                    public void onSuccess(@NonNull byte[] responseData) {
                         TunnelMessageRequest tunnelMessageRequest = new TunnelMessageRequest(msgId);
                         mPendingTunnelRequests.addLast(tunnelMessageRequest);
                         logd("message: " + msgId + " is send out, waiting for response.");

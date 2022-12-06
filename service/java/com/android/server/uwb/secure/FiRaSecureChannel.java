@@ -35,6 +35,7 @@ import com.android.server.uwb.pm.RunningProfileSessionInfo;
 import com.android.server.uwb.secure.csml.CsmlUtil;
 import com.android.server.uwb.secure.csml.DispatchCommand;
 import com.android.server.uwb.secure.csml.DispatchResponse;
+import com.android.server.uwb.secure.csml.FiRaCommand;
 import com.android.server.uwb.secure.csml.GetDoCommand;
 import com.android.server.uwb.secure.csml.GetDoResponse;
 import com.android.server.uwb.secure.csml.SwapInAdfCommand;
@@ -44,10 +45,12 @@ import com.android.server.uwb.secure.csml.SwapOutAdfResponse;
 import com.android.server.uwb.secure.iso7816.CommandApdu;
 import com.android.server.uwb.secure.iso7816.ResponseApdu;
 import com.android.server.uwb.secure.iso7816.TlvDatum;
+import com.android.server.uwb.secure.iso7816.TlvParser;
 import com.android.server.uwb.util.DataTypeConversionUtil;
 import com.android.server.uwb.util.ObjectIdentifier;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -297,7 +300,15 @@ public abstract class FiRaSecureChannel {
                 case NOTIFICATION_EVENT_ID_SECURE_CHANNEL_ESTABLISHED:
                     logd("SC established");
                     mStatus = Status.ESTABLISHED;
-                    mSecureChannelCallback.onEstablished();
+                    DispatchResponse.SecureChannelEstablishedNotification eNotification =
+                            (DispatchResponse.SecureChannelEstablishedNotification) notification;
+                    logd("defaultSessionId from notification: "
+                            + eNotification.defaultSessionId);
+                    Optional<Integer> defaultSessionId = Optional.empty();
+                    if (eNotification.defaultSessionId.isEmpty()) {
+                        defaultSessionId = readDefaultSessionId();
+                    }
+                    mSecureChannelCallback.onEstablished(defaultSessionId);
                     break;
                 case NOTIFICATION_EVENT_ID_SECURE_SESSION_ABORTED:
                     cleanUpTerminatedOrAbortedSession();
@@ -321,6 +332,28 @@ public abstract class FiRaSecureChannel {
         }
     }
 
+    private Optional<Integer> readDefaultSessionId() {
+        TlvDatum getSessionIdTlv = CsmlUtil.constructGetSessionIdGetDoTlv();
+        GetDoCommand getSessionIdCommand = GetDoCommand.build(getSessionIdTlv);
+        try {
+            ResponseApdu responseApdu =
+                    mSecureElementChannel.transmit(getSessionIdCommand);
+            if (responseApdu != null && responseApdu.getStatusWord() == SW_NO_ERROR.toInt()) {
+                TlvDatum sessionIdTlv = TlvParser.parseOneTlv(responseApdu.getResponseData());
+                if (sessionIdTlv != null
+                        && Objects.equals(sessionIdTlv.tag, CsmlUtil.SESSION_ID_TAG)) {
+                    return Optional.of(
+                            DataTypeConversionUtil.arbitraryByteArrayToI32(sessionIdTlv.value));
+                }
+            } else {
+                throw new IllegalStateException("no valid APDU response.");
+            }
+        } catch (IOException | IllegalStateException e) {
+            logw("error to getSessionId DO.");
+        }
+        return Optional.empty();
+    }
+
     boolean isEstablished() {
         return mStatus == Status.ESTABLISHED;
     }
@@ -332,6 +365,12 @@ public abstract class FiRaSecureChannel {
     void cleanUpTerminatedOrAbortedSession() {
         mWorkHandler.sendMessage(
                 mWorkHandler.obtainMessage(CMD_CLEAN_UP_TERMINATED_OR_ABORTED_CHANNEL));
+    }
+
+    void sendLocalFiRaCommand(
+            @NonNull FiRaCommand fiRaCommand,
+            @NonNull ExternalRequestCallback externalRequestCallback) {
+        sendLocalCommandApdu(fiRaCommand.getCommandApdu(), externalRequestCallback);
     }
 
     /**
@@ -349,7 +388,7 @@ public abstract class FiRaSecureChannel {
 
                         ResponseApdu responseApdu = mSecureElementChannel.transmit(commandApdu);
                         if (responseApdu.getStatusWord() == SW_NO_ERROR.toInt()) {
-                            externalRequestCallback.onSuccess();
+                            externalRequestCallback.onSuccess(responseApdu.getResponseData());
                         } else {
                             logw("Applet failed to handle the APDU: " + commandApdu);
                             externalRequestCallback.onFailure();
@@ -402,7 +441,7 @@ public abstract class FiRaSecureChannel {
         /**
          * The secure session is set up. Ready to handle secure message exchanging.
          */
-        void onEstablished();
+        void onEstablished(@NonNull Optional<Integer> defaultUniqueSessionId);
 
         /**
          * Error happens during the secure session set up.
@@ -443,7 +482,7 @@ public abstract class FiRaSecureChannel {
         /**
          * The request is handled correctly.
          */
-        void onSuccess();
+        void onSuccess(@NonNull byte[] responseData);
 
         /**
          * The request cannot be handled.

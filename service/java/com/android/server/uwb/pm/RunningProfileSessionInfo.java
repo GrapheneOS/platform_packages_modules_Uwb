@@ -34,11 +34,10 @@ public interface RunningProfileSessionInfo {
     ControlleeInfo getControlleeInfo();
 
     /**
-     * Gets the session data for controllee, if the device take the role of controllee, this
-     * may be empty.
+     * Gets the UWB capability of the current device.
      */
     @NonNull
-    Optional<SessionData> getSessionDataForControllee(ControlleeInfo controlleeInfoOfPeerDevice);
+    UwbCapability getUwbCapability();
 
     /**
      * Gets the OID of ADF which was provisioned successfully for the current profile.
