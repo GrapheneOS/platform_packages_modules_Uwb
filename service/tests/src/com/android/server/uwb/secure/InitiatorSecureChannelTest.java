@@ -34,7 +34,7 @@ import android.os.Message;
 import android.os.test.TestLooper;
 
 import com.android.server.uwb.discovery.Transport;
-import com.android.server.uwb.pm.ControlleeInfo;
+import com.android.server.uwb.pm.ControleeInfo;
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
 import com.android.server.uwb.secure.csml.DispatchCommand;
 import com.android.server.uwb.secure.csml.DispatchResponse;
@@ -156,9 +156,9 @@ public class InitiatorSecureChannelTest {
         when(mRunningProfileSessionInfo.getSecureBlob()).thenReturn(Optional.of(new byte[0]));
         when(mRunningProfileSessionInfo.getOidOfProvisionedAdf())
                 .thenReturn(ObjectIdentifier.INVALID_OID);
-        ControlleeInfo mockControlleeInfo = mock(ControlleeInfo.class);
-        when(mockControlleeInfo.toBytes()).thenReturn(new byte[0]);
-        when(mRunningProfileSessionInfo.getControlleeInfo()).thenReturn(mockControlleeInfo);
+        ControleeInfo mockControleeInfo = mock(ControleeInfo.class);
+        when(mockControleeInfo.toBytes()).thenReturn(new byte[0]);
+        when(mRunningProfileSessionInfo.getControleeInfo()).thenReturn(mockControleeInfo);
         when(mSecureElementChannel.transmit(any(SwapInAdfCommand.class))).thenReturn(
                 ResponseApdu.fromResponse(
                         DataTypeConversionUtil.hexStringToByteArray("0604000000019000")));
@@ -174,9 +174,9 @@ public class InitiatorSecureChannelTest {
     public void openChannelSwapInAdfFailed() throws IOException {
         when(mSecureElementChannel.openChannel()).thenReturn(true);
         when(mRunningProfileSessionInfo.getSecureBlob()).thenReturn(Optional.of(new byte[0]));
-        ControlleeInfo mockControlleeInfo = mock(ControlleeInfo.class);
-        when(mockControlleeInfo.toBytes()).thenReturn(new byte[0]);
-        when(mRunningProfileSessionInfo.getControlleeInfo()).thenReturn(mockControlleeInfo);
+        ControleeInfo mockControleeInfo = mock(ControleeInfo.class);
+        when(mockControleeInfo.toBytes()).thenReturn(new byte[0]);
+        when(mRunningProfileSessionInfo.getControleeInfo()).thenReturn(mockControleeInfo);
         when(mRunningProfileSessionInfo.getOidOfProvisionedAdf())
                 .thenReturn(ObjectIdentifier.INVALID_OID);
         when(mSecureElementChannel.transmit(any(SwapInAdfCommand.class))).thenReturn(

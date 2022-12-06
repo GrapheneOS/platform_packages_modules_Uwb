@@ -28,11 +28,11 @@ import java.util.Arrays;
 import java.util.Optional;
 
 /**
- * Provide the controllee info, see CSML 8.5.3.2
+ * Provide the controlee info, see CSML 8.5.3.2
  */
-public class ControlleeInfo {
+public class ControleeInfo {
 
-    public static final String TAG = ControlleeInfo.class.getSimpleName();
+    public static final String TAG = ControleeInfo.class.getSimpleName();
 
     public static final int UWB_CONTROLEE_INFO_VERSION_HEADER = 0x80;
     public static int UWB_CONTROLEE_INFO_VERSION_MINOR = 1;
@@ -44,12 +44,12 @@ public class ControlleeInfo {
     public static final int CONTROLEE_INFO_MAX_COUNT = 6;
 
 
-    public ControlleeInfo(Optional<UwbCapability> uwbCapability) {
+    public ControleeInfo(Optional<UwbCapability> uwbCapability) {
         mUwbCapability = uwbCapability;
     }
 
     /**
-     * Converts the controllee info to the bytes which are combined per the TLV of CSML 8.5.3.2.
+     * Converts the controlee info to the bytes which are combined per the TLV of CSML 8.5.3.2.
      */
     @NonNull
     public byte[] toBytes() {
@@ -79,12 +79,13 @@ public class ControlleeInfo {
     }
 
     /**
-     * Converts the controlleeInfo from the data stream, which is encoded per the CSML 8.5.3.2.
+     * Converts the {@link ControleeInfo} from the data stream, which is encoded
+     * per the CSML 8.5.3.2.
      *
      * @return null if the data cannot be decoded per spec.
      */
     @Nullable
-    public static ControlleeInfo fromBytes(@NonNull byte[] data) {
+    public static ControleeInfo fromBytes(@NonNull byte[] data) {
         TlvDecoderBuffer tlvs = new TlvDecoderBuffer(data, CONTROLEE_INFO_MAX_COUNT);
         tlvs.parse();
 
@@ -103,7 +104,7 @@ public class ControlleeInfo {
         } else {
             Log.e(TAG, "Controlee info version is not included. Failure !");
         }
-        return new ControlleeInfo(Optional.empty());
+        return new ControleeInfo(Optional.empty());
     }
 
     private static boolean versionCheck(byte[] controleeInfoVersion) {
@@ -115,13 +116,15 @@ public class ControlleeInfo {
     public static class Builder {
         private Optional<UwbCapability> mUwbCapability;
 
-        public ControlleeInfo.Builder setUwbCapability(UwbCapability uwbCapability) {
+        /** set {@link com.android.server.uwb.pm.UwbCapability} in the ControleeInfo. */
+        public ControleeInfo.Builder setUwbCapability(UwbCapability uwbCapability) {
             mUwbCapability = Optional.of(uwbCapability);
             return this;
         }
 
-        public ControlleeInfo build() {
-            return new ControlleeInfo(mUwbCapability);
+        /** build the ControleeInfo instance */
+        public ControleeInfo build() {
+            return new ControleeInfo(mUwbCapability);
         }
     }
 }

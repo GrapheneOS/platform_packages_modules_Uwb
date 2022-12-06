@@ -102,7 +102,7 @@ public class ControllerResponderSessionTest {
     }
 
     @Test
-    public void controlleeInfoAvailableNotification() {
+    public void controleeInfoAvailableNotification() {
         byte[] data = DataTypeConversionUtil.hexStringToByteArray(
                 "711480018181029000E10B8001008101038203020A0B");
         ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(data, 0x9000);
