@@ -1203,7 +1203,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                 if (isV2) {
                                     int messageControl =
                                             rangingReconfigureParams.getMessageControl();
-                                    byte[] subSessionKeyList =
+                                    int[] subsessionKeyList =
                                             rangingReconfigureParams.getSubSessionKeyList();
 
                                     status = mNativeUwbManager.controllerMulticastListUpdateV2(
@@ -1213,7 +1213,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                             ArrayUtils.toPrimitive(dstAddressList),
                                             subSessionIdList,
                                             messageControl,
-                                            subSessionKeyList,
+                                            subsessionKeyList,
                                             uwbSession.getChipId());
                                 } else {
                                     status = mNativeUwbManager.controllerMulticastListUpdateV1(

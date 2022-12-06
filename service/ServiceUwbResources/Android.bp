@@ -21,7 +21,6 @@ package {
 
 android_app {
     name: "ServiceUwbResources",
-    package_name: "com.android.uwb.resources",
     defaults: ["service-uwb-common-defaults"],
     resource_dirs: [
         "res",

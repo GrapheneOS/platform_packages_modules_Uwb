@@ -365,7 +365,7 @@ public class NativeUwbManager {
      */
     public byte controllerMulticastListUpdateV2(int sessionId, int action, int noOfControlee,
             short[] addresses, int[] subSessionIds, int messageControl,
-            byte[] subSessionKeyList, String chipId) {
+            int[] subSessionKeyList, String chipId) {
         synchronized (mNativeLock) {
             return nativeControllerMulticastListUpdateV2(sessionId, (byte) action,
                     (byte) noOfControlee, addresses, subSessionIds, messageControl,
@@ -503,7 +503,7 @@ public class NativeUwbManager {
     // TODO(b/259487023): no native implementation
     private native byte nativeControllerMulticastListUpdateV2(int sessionId, byte action,
             byte noOfControlee, short[] address, int[] subSessionId, int messageControl,
-            byte[] subSessionKeyList, String chipId);
+            int[] subSessionKeyList, String chipId);
 
     private native byte nativeSetCountryCode(byte[] countryCode, String chipId);
 

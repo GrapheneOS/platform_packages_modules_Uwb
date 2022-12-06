@@ -18,6 +18,7 @@ package com.android.server.uwb.secure;
 
 import static com.android.server.uwb.secure.csml.DispatchResponse.NOTIFICATION_EVENT_ID_CONTROLLEE_INFO_AVAILABLE;
 import static com.android.server.uwb.secure.csml.DispatchResponse.NOTIFICATION_EVENT_ID_RDS_AVAILABLE;
+import static com.android.server.uwb.secure.csml.DispatchResponse.NOTIFICATION_EVENT_ID_SECURE_SESSION_AUTO_TERMINATED;
 
 import android.os.Looper;
 import android.util.Log;
@@ -49,10 +50,14 @@ public class ControllerResponderSession extends ResponderSession {
 
     @Override
     protected boolean onDispatchResponseReceived(@NonNull DispatchResponse dispatchResponse) {
+        boolean isSessionTerminated = false;
         DispatchResponse.RdsAvailableNotification rdsAvailable = null;
         DispatchResponse.ControlleeInfoAvailableNotification controlleeInfoAvailable = null;
         for (DispatchResponse.Notification notification : dispatchResponse.notifications) {
             switch (notification.notificationEventId) {
+                case NOTIFICATION_EVENT_ID_SECURE_SESSION_AUTO_TERMINATED:
+                    isSessionTerminated = true;
+                    break;
                 case NOTIFICATION_EVENT_ID_RDS_AVAILABLE:
                     // Responder notification
                     rdsAvailable = (DispatchResponse.RdsAvailableNotification) notification;
@@ -73,8 +78,8 @@ public class ControllerResponderSession extends ResponderSession {
             return true;
         }
         if (rdsAvailable != null) {
-            mSessionCallback.onSessionDataReady(rdsAvailable.sessionId,
-                    rdsAvailable.arbitraryData, /*isSessionTerminated=*/ false);
+            mSessionCallback.onSessionDataReady(
+                    rdsAvailable.sessionId, rdsAvailable.arbitraryData.get(), isSessionTerminated);
             return true;
         }
         return false;

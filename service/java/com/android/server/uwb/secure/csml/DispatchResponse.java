@@ -76,6 +76,7 @@ public class DispatchResponse extends FiRaResponse {
             NOTIFICATION_EVENT_ID_SECURE_CHANNEL_ESTABLISHED,
             NOTIFICATION_EVENT_ID_RDS_AVAILABLE,
             NOTIFICATION_EVENT_ID_SECURE_SESSION_ABORTED,
+            NOTIFICATION_EVENT_ID_SECURE_SESSION_AUTO_TERMINATED,
             NOTIFICATION_EVENT_ID_CONTROLLEE_INFO_AVAILABLE,
     })
     @Retention(RetentionPolicy.SOURCE)
@@ -85,7 +86,8 @@ public class DispatchResponse extends FiRaResponse {
     public static final int NOTIFICATION_EVENT_ID_SECURE_CHANNEL_ESTABLISHED = 1;
     public static final int NOTIFICATION_EVENT_ID_RDS_AVAILABLE = 2;
     public static final int NOTIFICATION_EVENT_ID_SECURE_SESSION_ABORTED = 3;
-    public static final int NOTIFICATION_EVENT_ID_CONTROLLEE_INFO_AVAILABLE = 4;
+    public static final int NOTIFICATION_EVENT_ID_SECURE_SESSION_AUTO_TERMINATED = 4;
+    public static final int NOTIFICATION_EVENT_ID_CONTROLLEE_INFO_AVAILABLE = 5;
 
     /**
      * The base class of notification from the FiRa applet.
@@ -128,6 +130,15 @@ public class DispatchResponse extends FiRaResponse {
     public static class SecureSessionAbortedNotification extends Notification {
         private SecureSessionAbortedNotification() {
             super(NOTIFICATION_EVENT_ID_SECURE_SESSION_ABORTED);
+        }
+    }
+
+    /**
+     * The notification of the secure session terminated automatically.
+     */
+    public static class SecureSessionAutoTerminatedNotification extends Notification {
+        private SecureSessionAutoTerminatedNotification() {
+            super(NOTIFICATION_EVENT_ID_SECURE_SESSION_AUTO_TERMINATED);
         }
     }
 
@@ -207,6 +218,9 @@ public class DispatchResponse extends FiRaResponse {
         }
         mTransactionStatus = parseTransctionStatus(statusTlvs.get(0).value);
         switch (mTransactionStatus) {
+            case TRANSACTION_STATUS_COMPLETE:
+                notifications.add(new SecureSessionAutoTerminatedNotification());
+                break;
             case TRANSACTION_STATUS_WITH_ERROR:
                 notifications.add(new SecureSessionAbortedNotification());
                 break;
@@ -229,10 +243,7 @@ public class DispatchResponse extends FiRaResponse {
                 break;
             case TRANSACTION_STATUS_UNDEFINED:
                 // fall through
-            case TRANSACTION_STATUS_COMPLETE:
-                // fall through
             default:
-                logd("Dispatch response: transaction status: " + mTransactionStatus);
                 break;
         }
     }
@@ -384,8 +395,5 @@ public class DispatchResponse extends FiRaResponse {
 
     private void logw(@NonNull String dbgMsg) {
         Log.w(LOG_TAG, dbgMsg);
-    }
-    private void logd(@NonNull String dbgMsg) {
-        Log.d(LOG_TAG, dbgMsg);
     }
 }

@@ -337,25 +337,6 @@ public class InitiatorSecureChannelTest {
     }
 
     @Test
-    public void receiveResponseOfAutoTerminatedAndRdsAvailable() throws IOException {
-        doPrepareSC();
-
-        // response: status-81,data-9000, notification format-00, notification id-01
-        // TLV - refer to CSML table 107 - DISPATCH Response Data
-        ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(
-                DataTypeConversionUtil.hexStringToByteArray(
-                        "711380018181029000E10A80010081010282020101"),
-                StatusWord.SW_NO_ERROR.toInt());
-        when(mSecureElementChannel.transmit(any(DispatchCommand.class))).thenReturn(responseApdu);
-
-        mInitiatorSecureChannel.processRemoteCommandOrResponse(new byte[0]);
-
-        assertThat(mInitiatorSecureChannel.getStatus()).isEqualTo(
-                FiRaSecureChannel.Status.TERMINATED);
-        verify(mSecureChannelCallback).onRdsAvailableAndTerminated(eq(1));
-    }
-
-    @Test
     public void receiveResponseOfScSetupChannelWasNotOpen() {
         mTestLooper.dispatchAll();
 
