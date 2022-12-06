@@ -19,10 +19,12 @@ use crate::notification_manager_android::NotificationManagerAndroidBuilder;
 
 use std::collections::HashMap;
 use std::ops::Deref;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock, RwLockReadGuard};
 
 use jni::objects::{GlobalRef, JObject, JString};
 use jni::{JNIEnv, JavaVM, MonitorGuard};
+use lazy_static::lazy_static;
+use log::error;
 use tokio::runtime::{Builder as RuntimeBuilder, Runtime};
 use uci_hal_android::uci_hal_android::UciHalAndroid;
 use uwb_core::error::{Error as UwbCoreError, Result as UwbCoreResult};
@@ -30,6 +32,11 @@ use uwb_core::uci::pcapng_uci_logger_factory::PcapngUciLoggerFactoryBuilder;
 use uwb_core::uci::uci_logger::UciLoggerMode;
 use uwb_core::uci::uci_logger_factory::UciLoggerFactory;
 use uwb_core::uci::uci_manager_sync::UciManagerSync;
+
+lazy_static! {
+    /// Shared unique dispatchewr that may be created and deleted during runtime.
+    static ref DISPATCHER: RwLock<Option<Dispatcher>> = RwLock::new(None);
+}
 
 /// Dispatcher is managed by Java side. Construction and Destruction are provoked by JNI function
 /// nativeDispatcherNew and nativeDispatcherDestroy respectively.
@@ -40,7 +47,7 @@ pub(crate) struct Dispatcher {
 }
 impl Dispatcher {
     /// Constructs Dispatcher.
-    pub fn new<T: AsRef<str>>(
+    fn new<T: AsRef<str>>(
         vm: &'static Arc<JavaVM>,
         class_loader_obj: GlobalRef,
         callback_obj: GlobalRef,
@@ -85,52 +92,61 @@ impl Dispatcher {
         Ok(())
     }
 
-    /// Constructs dispatcher, and return a pointer owning it.
-    pub fn new_as_ptr<T: AsRef<str>>(
+    /// Constructs the unique dispatcher.
+    pub fn new_dispatcher<T: AsRef<str>>(
         vm: &'static Arc<JavaVM>,
         class_loader_obj: GlobalRef,
         callback_obj: GlobalRef,
         chip_ids: &[T],
-    ) -> UwbCoreResult<*mut Dispatcher> {
+    ) -> Result<()> {
+        if DISPATCHER.try_read().map_err(|_| Error::UwbCoreError(UwbCoreError::Unknown))?.is_some()
+        {
+            error!("UCI JNI: Dispatcher already exists when trying to create.");
+            return Err(UwbCoreError::BadParameters.into());
+        }
         let dispatcher = Dispatcher::new(vm, class_loader_obj, callback_obj, chip_ids)?;
-        Ok(Box::into_raw(Box::new(dispatcher)))
+        DISPATCHER
+            .write()
+            .map_err(|_| Error::UwbCoreError(UwbCoreError::Unknown))?
+            .replace(dispatcher);
+        Ok(())
     }
 
-    /// Destroys the Dispatcher pointed by dispatcher_ptr
-    ///
-    /// # Safety
-    /// Dispatcher_ptr must point to a valid dispatcher object it owns.
-    pub unsafe fn destroy_ptr(dispatcher_ptr: *mut Dispatcher) {
-        let _ = Box::from_raw(dispatcher_ptr);
+    /// Gets pointer value of the unique dispatcher
+    pub fn get_dispatcher_ptr() -> Result<*const Dispatcher> {
+        let read_lock =
+            DISPATCHER.read().map_err(|_| Error::UwbCoreError(UwbCoreError::Unknown))?;
+        match &*read_lock {
+            Some(dispatcher_ref) => Ok(dispatcher_ref),
+            None => Err(UwbCoreError::BadParameters.into()),
+        }
     }
 
-    /// Gets reference to Dispatcher.
-    ///
-    /// # Safety
-    /// Must be called from a Java object holding a valid or null mDispatcherPointer.
-    pub unsafe fn get_dispatcher<'a>(
-        env: JNIEnv<'a>,
-        obj: JObject<'a>,
-    ) -> Result<GuardedDispatcher<'a>> {
-        let guard = env.lock_obj(obj)?;
-        let dispatcher_ptr_value = env.get_field(obj, "mDispatcherPointer", "J")?.j()?;
-        if dispatcher_ptr_value == 0 {
+    /// Destroys the unique Dispather.
+    pub fn destroy_dispatcher() -> Result<()> {
+        if DISPATCHER.try_read().map_err(|_| Error::UwbCoreError(UwbCoreError::Unknown))?.is_none()
+        {
+            error!("UCI JNI: Dispatcher already does not exist when trying to destroy.");
             return Err(Error::UwbCoreError(UwbCoreError::BadParameters));
         }
-        let dispatcher_ptr = dispatcher_ptr_value as *const Dispatcher;
-        Ok(GuardedDispatcher { _guard: guard, dispatcher: &*dispatcher_ptr })
+        let _ = DISPATCHER.write().map_err(|_| Error::UwbCoreError(UwbCoreError::Unknown))?.take();
+        Ok(())
+    }
+
+    /// Gets reference to the unique Dispatcher.
+    pub fn get_dispatcher<'a>(env: JNIEnv<'a>, obj: JObject<'a>) -> Result<GuardedDispatcher<'a>> {
+        let jni_guard = env.lock_obj(obj)?;
+        let read_lock =
+            DISPATCHER.read().map_err(|_| Error::UwbCoreError(UwbCoreError::Unknown))?;
+        GuardedDispatcher::new(jni_guard, read_lock)
     }
 
     /// Gets reference to UciManagerSync with chip_id.
-    ///
-    /// # Safety
-    /// Must be called from a Java object holding a valid or null mDispatcherPointer.
-    pub unsafe fn get_uci_manager<'a>(
+    pub fn get_uci_manager<'a>(
         env: JNIEnv<'a>,
         obj: JObject<'a>,
         chip_id: JString,
     ) -> Result<GuardedUciManager<'a>> {
-        // Safety: get_dispatcher and get_uci_manager has the same assumption.
         let guarded_dispatcher = Self::get_dispatcher(env, obj)?;
         let chip_id_str = String::from(env.get_string(chip_id)?);
         guarded_dispatcher.into_guarded_uci_manager(&chip_id_str)
@@ -139,37 +155,59 @@ impl Dispatcher {
 
 /// Lifetimed reference to UciManagerSync that locks Java object while reference is alive.
 pub(crate) struct GuardedUciManager<'a> {
-    _guard: MonitorGuard<'a>,
-    uci_manager: &'a UciManagerSync,
+    _jni_guard: MonitorGuard<'a>,
+    read_lock: RwLockReadGuard<'a, Option<Dispatcher>>,
+    chip_id: String,
 }
 
 impl<'a> Deref for GuardedUciManager<'a> {
     type Target = UciManagerSync;
     fn deref(&self) -> &Self::Target {
-        self.uci_manager
+        // Unwrap GuardedUciManager will not panic since content is checked at creation.
+        self.read_lock.as_ref().unwrap().manager_map.get(&self.chip_id).unwrap()
     }
 }
 
 /// Lifetimed reference to Dispatcher that locks Java object while reference is alive.
 pub(crate) struct GuardedDispatcher<'a> {
-    _guard: MonitorGuard<'a>,
-    dispatcher: &'a Dispatcher,
+    _jni_guard: MonitorGuard<'a>,
+    read_lock: RwLockReadGuard<'a, Option<Dispatcher>>,
 }
 
 impl<'a> GuardedDispatcher<'a> {
+    /// Constructor:
+    pub fn new(
+        jni_guard: MonitorGuard<'a>,
+        read_lock: RwLockReadGuard<'a, Option<Dispatcher>>,
+    ) -> Result<Self> {
+        // Check RwLockReadGuard contains Dispatcher:
+        let _dispatcher_ref = match &*read_lock {
+            Some(dispatcher_ref) => dispatcher_ref,
+            None => {
+                return Err(Error::UwbCoreError(UwbCoreError::BadParameters));
+            }
+        };
+        Ok(GuardedDispatcher { _jni_guard: jni_guard, read_lock })
+    }
+
+    /// Conversion to GuardedUciManager:
     pub fn into_guarded_uci_manager(self, chip_id: &str) -> Result<GuardedUciManager<'a>> {
-        let uci_manager = self
-            .dispatcher
+        let _uci_manager = self
             .manager_map
             .get(chip_id)
             .ok_or(Error::UwbCoreError(UwbCoreError::BadParameters))?;
-        Ok(GuardedUciManager { _guard: self._guard, uci_manager })
+        Ok(GuardedUciManager {
+            _jni_guard: self._jni_guard,
+            read_lock: self.read_lock,
+            chip_id: chip_id.to_owned(),
+        })
     }
 }
 
 impl<'a> Deref for GuardedDispatcher<'a> {
     type Target = Dispatcher;
     fn deref(&self) -> &Self::Target {
-        self.dispatcher
+        // Unwrap GuardedDispatcher will not panic since content is checked at creation.
+        self.read_lock.as_ref().unwrap()
     }
 }
