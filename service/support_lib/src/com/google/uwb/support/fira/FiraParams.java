@@ -136,12 +136,15 @@ public abstract class FiraParams extends Params {
             value = {
                 RANGING_DEVICE_TYPE_CONTROLEE,
                 RANGING_DEVICE_TYPE_CONTROLLER,
+                RANGING_DEVICE_TYPE_DT_TAG,
             })
     public @interface RangingDeviceType {}
 
     public static final int RANGING_DEVICE_TYPE_CONTROLEE = 0;
 
     public static final int RANGING_DEVICE_TYPE_CONTROLLER = 1;
+
+    public static final int RANGING_DEVICE_TYPE_DT_TAG = 2;
 
     /** Device role defined in FiRa */
     @IntDef(

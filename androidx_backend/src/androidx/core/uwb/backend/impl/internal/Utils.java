@@ -37,6 +37,7 @@ public final class Utils {
         CONFIG_ID_5,
         CONFIG_ID_6,
         CONFIG_ID_7,
+        CONFIG_ID_8,
     })
     public @interface UwbConfigId {}
 
@@ -64,6 +65,9 @@ public final class Utils {
 
     /** Same as {@code CONFIG_ID_2}, except P-STS individual controlee key mode is enabled.*/
     public static final int CONFIG_ID_7 = 7;
+
+    /** FiRa- defined Downlink-TDoA for DT-Tag ranging */
+    public static final int CONFIG_ID_8 = 8;
 
     @IntDef({
         INFREQUENT,
@@ -216,6 +220,17 @@ public final class Utils {
 
         setRangingTimingParams(
                 CONFIG_ID_7,
+                new RangingTimingParams(
+                        /*rangingIntervalNormal=*/ 200,
+                        /*rangingIntervalFast=*/ 40,
+                        /*rangingIntervalInfrequent=*/ 2000,
+                        /*slotPerRangingRound=*/ 20,
+                        /*slotDurationRstu=*/ 2400,
+                        /*initiationTimeMs=*/ 0,
+                        /*hoppingEnabled=*/ true));
+
+        setRangingTimingParams(
+                CONFIG_ID_8,
                 new RangingTimingParams(
                         /*rangingIntervalNormal=*/ 200,
                         /*rangingIntervalFast=*/ 40,
