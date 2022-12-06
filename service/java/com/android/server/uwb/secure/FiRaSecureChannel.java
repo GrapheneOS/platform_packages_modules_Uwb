@@ -196,9 +196,9 @@ public abstract class FiRaSecureChannel {
     protected final boolean swapInAdf(
             @NonNull byte[] secureBlob,
             @NonNull ObjectIdentifier adfOid,
-            @NonNull byte[] uwbControlleeInfo) {
+            @NonNull byte[] uwbControleeInfo) {
         SwapInAdfCommand swapInAdfCmd =
-                SwapInAdfCommand.build(secureBlob, adfOid, uwbControlleeInfo);
+                SwapInAdfCommand.build(secureBlob, adfOid, uwbControleeInfo);
         try {
             SwapInAdfResponse response =
                     SwapInAdfResponse.fromResponseApdu(
@@ -295,7 +295,7 @@ public abstract class FiRaSecureChannel {
                 case NOTIFICATION_EVENT_ID_ADF_SELECTED:
                     DispatchResponse.AdfSelectedNotification adfSelected =
                             (DispatchResponse.AdfSelectedNotification) notification;
-                    // TODO: put controllee info for controllee if it is not dynamic slot
+                    // TODO: put controlee info for controlee if it is not dynamic slot
                     break;
                 case NOTIFICATION_EVENT_ID_SECURE_CHANNEL_ESTABLISHED:
                     logd("SC established");

@@ -43,7 +43,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.Optional;
 
-public class ControlleeInitiatorSessionTest {
+public class ControleeInitiatorSessionTest {
     @Mock
     private FiRaSecureChannel mFiRaSecureChannel;
     @Mock
@@ -54,7 +54,7 @@ public class ControlleeInitiatorSessionTest {
     @Captor
     private ArgumentCaptor<FiRaSecureChannel.SecureChannelCallback> mSecureChannelCallbackCaptor;
 
-    private ControlleeInitiatorSession mControlleeInitiatorSession;
+    private ControleeInitiatorSession mControleeInitiatorSession;
 
     private final TestLooper mTestLooper = new TestLooper();
 
@@ -62,11 +62,11 @@ public class ControlleeInitiatorSessionTest {
     public void setup() {
         MockitoAnnotations.initMocks(this);
 
-        mControlleeInitiatorSession = new ControlleeInitiatorSession(
+        mControleeInitiatorSession = new ControleeInitiatorSession(
                 mTestLooper.getLooper(), mFiRaSecureChannel, mSecureSessionCallback,
                 mRunningProfileSessionInfo);
 
-        mControlleeInitiatorSession.startSession();
+        mControleeInitiatorSession.startSession();
 
         verify(mFiRaSecureChannel).init(mSecureChannelCallbackCaptor.capture());
     }
@@ -88,7 +88,7 @@ public class ControlleeInitiatorSessionTest {
         verify(mSecureSessionCallback).onSessionTerminated();
     }
 
-    private void putControlleeInfo() {
+    private void putControleeInfo() {
         ArgumentCaptor<FiRaSecureChannel.ExternalRequestCallback> externalRequestCallbackCaptor =
                 ArgumentCaptor.forClass(FiRaSecureChannel.ExternalRequestCallback.class);
         when(mFiRaSecureChannel.isEstablished()).thenReturn(true);
@@ -99,13 +99,13 @@ public class ControlleeInitiatorSessionTest {
                 any(), externalRequestCallbackCaptor.capture());
         assertThat(externalRequestCallbackCaptor.getValue()).isNotNull();
 
-        // TODO: capture and assert put controlleeInfo command data.
+        // TODO: capture and assert put ControleeInfo command data.
         externalRequestCallbackCaptor.getValue().onSuccess(new byte[0]);
     }
 
     @Test
-    public void onSecureChannelEstablishedPutControlleeInfoSuccess() {
-        putControlleeInfo();
+    public void onSecureChannelEstablishedPutControleeInfoSuccess() {
+        putControleeInfo();
         mTestLooper.moveTimeForward(2000);
 
         // timeout callback
@@ -113,8 +113,8 @@ public class ControlleeInitiatorSessionTest {
     }
 
     @Test
-    public void onSecureChannelEstablishedPutControlleeInfoTimeOut() {
-        putControlleeInfo();
+    public void onSecureChannelEstablishedPutControleeInfoTimeOut() {
+        putControleeInfo();
 
         mTestLooper.moveTimeForward(2000);
         mTestLooper.dispatchNext(); // timeout callback
@@ -129,7 +129,7 @@ public class ControlleeInitiatorSessionTest {
     }
 
     @Test
-    public void onSecureChannelEstablishedPutControlleeInfoFail() {
+    public void onSecureChannelEstablishedPutControleeInfoFail() {
         ArgumentCaptor<FiRaSecureChannel.ExternalRequestCallback> externalRequestCallbackCaptor =
                 ArgumentCaptor.forClass(FiRaSecureChannel.ExternalRequestCallback.class);
 
@@ -139,14 +139,14 @@ public class ControlleeInitiatorSessionTest {
                 any(), externalRequestCallbackCaptor.capture());
         assertThat(externalRequestCallbackCaptor.getValue()).isNotNull();
 
-        // TODO: capture and assert put controlleeInfo command data.
+        // TODO: capture and assert put controleeInfo command data.
         externalRequestCallbackCaptor.getValue().onFailure();
 
         verify(mSecureSessionCallback).onSessionAborted();
     }
 
-    private void getControlleeSessionData() {
-        putControlleeInfo();
+    private void getControleeSessionData() {
+        putControleeInfo();
         byte[] data = DataTypeConversionUtil.hexStringToByteArray("710780018181029000");
         ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(data, 0x9000);
         DispatchResponse dispatchResponse = DispatchResponse.fromResponseApdu(responseApdu);
@@ -161,8 +161,8 @@ public class ControlleeInitiatorSessionTest {
     }
 
     @Test
-    public void putControlleeInfoSuccessResponse() {
-        getControlleeSessionData();
+    public void putControleeInfoSuccessResponse() {
+        getControleeSessionData();
 
         ArgumentCaptor<byte[]> tunnelDataCaptor = ArgumentCaptor.forClass(byte[].class);
         verify(mFiRaSecureChannel, times(2))
@@ -174,8 +174,8 @@ public class ControlleeInitiatorSessionTest {
     }
 
     @Test
-    public void putControlleeInfoErrorResponse() {
-        putControlleeInfo();
+    public void putControleeInfoErrorResponse() {
+        putControleeInfo();
         byte[] data = DataTypeConversionUtil.hexStringToByteArray("710780018181029090");
         ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(data, 0x9000);
         DispatchResponse dispatchResponse = DispatchResponse.fromResponseApdu(responseApdu);
@@ -191,8 +191,8 @@ public class ControlleeInitiatorSessionTest {
     }
 
     @Test
-    public void getControlleeSessionDataSuccessResponse() {
-        getControlleeSessionData();
+    public void getControleeSessionDataSuccessResponse() {
+        getControleeSessionData();
         byte[] data = DataTypeConversionUtil.hexStringToByteArray(
                 "711680018181029000E10D80010081010282050101020C0D");
         ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(data, 0x9000);
@@ -205,8 +205,8 @@ public class ControlleeInitiatorSessionTest {
     }
 
     @Test
-    public void getControlleeSessionDataErrorResponse() {
-        getControlleeSessionData();
+    public void getControleeSessionDataErrorResponse() {
+        getControleeSessionData();
         byte[] data = DataTypeConversionUtil.hexStringToByteArray(
                 "710780018081029000"); // outbound to remote
         ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(data, 0x9000);
@@ -222,8 +222,8 @@ public class ControlleeInitiatorSessionTest {
     }
 
     @Test
-    public void getControlleeSessionDataRetry() {
-        getControlleeSessionData();
+    public void getControleeSessionDataRetry() {
+        getControleeSessionData();
         byte[] data = DataTypeConversionUtil.hexStringToByteArray(
                 "71088001818103870100"); // session data not available.
         ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(data, 0x9000);
@@ -240,7 +240,7 @@ public class ControlleeInitiatorSessionTest {
 
     @Test
     public void abortSessionNotification() {
-        getControlleeSessionData();
+        getControleeSessionData();
 
         byte[] data = DataTypeConversionUtil.hexStringToByteArray(
                 "71038001FF"); // transaction complete with errors
@@ -256,7 +256,7 @@ public class ControlleeInitiatorSessionTest {
 
     @Test
     public void dispatchCommandFailureFromApplet() {
-        getControlleeSessionData();
+        getControleeSessionData();
 
         mSecureChannelCallbackCaptor.getValue().onDispatchCommandFailure();
         mTestLooper.dispatchAll();

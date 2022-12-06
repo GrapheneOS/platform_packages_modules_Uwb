@@ -53,7 +53,7 @@ public class SecureFactory {
                     secureSessionCallback,
                     runningProfileSessionInfo);
         } else {
-            return new ControlleeInitiatorSession(
+            return new ControleeInitiatorSession(
                     workLooper,
                     fiRaSecureChannel,
                     secureSessionCallback,
@@ -83,7 +83,7 @@ public class SecureFactory {
                     secureSessionCallback,
                     runningProfileSessionInfo);
         } else {
-            return new ControlleeResponderSession(
+            return new ControleeResponderSession(
                     workLooper,
                     fiRaSecureChannel,
                     secureSessionCallback,

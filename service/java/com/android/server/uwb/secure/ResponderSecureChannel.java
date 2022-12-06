@@ -55,7 +55,7 @@ class ResponderSecureChannel extends FiRaSecureChannel {
                             if (!swapInAdf(
                                     mRunningProfileSessionInfo.getSecureBlob().get(),
                                     mRunningProfileSessionInfo.getOidOfProvisionedAdf(),
-                                    mRunningProfileSessionInfo.getControlleeInfo().toBytes())) {
+                                    mRunningProfileSessionInfo.getControleeInfo().toBytes())) {
                                 mSecureElementChannel.closeChannel();
                                 throw new IllegalStateException("Error on swapping in ADF");
                             }

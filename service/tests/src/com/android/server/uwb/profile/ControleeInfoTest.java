@@ -23,7 +23,7 @@ import android.test.suitebuilder.annotation.SmallTest;
 
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.server.uwb.pm.ControlleeInfo;
+import com.android.server.uwb.pm.ControleeInfo;
 import com.android.server.uwb.pm.UwbCapability;
 
 import com.google.uwb.support.fira.FiraParams;
@@ -102,13 +102,13 @@ public class ControleeInfoTest {
                 .setAoaSupport(aoaSupport)
                 .setExtendedMacSupport(extendedMacSupport)
                 .build();
-        ControlleeInfo controlleeInfo = new ControlleeInfo.Builder()
+        ControleeInfo controleeInfo = new ControleeInfo.Builder()
                 .setUwbCapability(uwbCapability)
                 .build();
 
-        byte[] controleeRaw = controlleeInfo.toBytes();
+        byte[] controleeRaw = controleeInfo.toBytes();
 
-        ControlleeInfo controleeInfo1 = ControlleeInfo.fromBytes(controleeRaw);
+        ControleeInfo controleeInfo1 = ControleeInfo.fromBytes(controleeRaw);
         UwbCapability uwbCapability1 = controleeInfo1.mUwbCapability.get();
 
         assertEquals(uwbCapability1.mMinPhyVersionSupported, minPhyVersionSupported);
