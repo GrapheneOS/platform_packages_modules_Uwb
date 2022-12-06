@@ -21,7 +21,7 @@ import static com.android.server.uwb.secure.iso7816.Iso7816Constants.TAG_LIST;
 
 import androidx.annotation.NonNull;
 
-import com.android.server.uwb.pm.ControlleeInfo;
+import com.android.server.uwb.pm.ControleeInfo;
 import com.android.server.uwb.pm.SessionData;
 import com.android.server.uwb.pm.UwbCapability;
 import com.android.server.uwb.secure.iso7816.TlvDatum;
@@ -187,8 +187,8 @@ public final class CsmlUtil {
      * all information from the controller and the controlee.
      *
      * @param controllerUwbCapability the UwbCapability of Controller
-     * @param controlleeInfo The ControlleeInfo which includes UwbCapability of
-     *                       the controlee and other information, see {@link ControlleeInfo}
+     * @param controleeInfo The {@link ControleeInfo} which includes UwbCapability of
+     *                       the controlee and other information.
      * @param needSessionSecureInfo If the session Id and key are not derived in
      *                              applet (AKA default sessionId/Key), the session
      *                              secure info should be provided in {@link SessionData}.
@@ -199,7 +199,7 @@ public final class CsmlUtil {
      */
     public static SessionData generateSessionData(
             UwbCapability controllerUwbCapability,
-            ControlleeInfo controlleeInfo,
+            ControleeInfo controleeInfo,
             Optional<Integer> shareSessionId,
             int uniqueSessionId,
             boolean needSessionSecureInfo) {

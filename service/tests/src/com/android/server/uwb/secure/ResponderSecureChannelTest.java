@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
 import android.os.test.TestLooper;
 
 import com.android.server.uwb.discovery.Transport;
-import com.android.server.uwb.pm.ControlleeInfo;
+import com.android.server.uwb.pm.ControleeInfo;
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
 import com.android.server.uwb.secure.csml.SwapInAdfCommand;
 import com.android.server.uwb.secure.iso7816.CommandApdu;
@@ -150,9 +150,9 @@ public class ResponderSecureChannelTest {
         when(mSecureElementChannel.openChannelWithResponse())
                 .thenReturn(ResponseApdu.SW_SUCCESS_APDU);
         when(mRunningProfileSessionInfo.getSecureBlob()).thenReturn(Optional.of(new byte[0]));
-        ControlleeInfo mockControlleeInfo = mock(ControlleeInfo.class);
-        when(mRunningProfileSessionInfo.getControlleeInfo()).thenReturn(mockControlleeInfo);
-        when(mockControlleeInfo.toBytes()).thenReturn(new byte[0]);
+        ControleeInfo mockControleeInfo = mock(ControleeInfo.class);
+        when(mRunningProfileSessionInfo.getControleeInfo()).thenReturn(mockControleeInfo);
+        when(mockControleeInfo.toBytes()).thenReturn(new byte[0]);
         when(mRunningProfileSessionInfo.getOidOfProvisionedAdf())
                 .thenReturn(ObjectIdentifier.fromBytes(new byte[] { (byte) 0x01 }));
         when(mSecureElementChannel.transmit(any(SwapInAdfCommand.class)))

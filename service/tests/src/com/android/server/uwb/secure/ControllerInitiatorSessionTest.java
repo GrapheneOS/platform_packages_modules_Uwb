@@ -73,7 +73,7 @@ public class ControllerInitiatorSessionTest {
         verify(mFiRaSecureChannel).init(mSecureChannelCallbackCaptor.capture());
     }
 
-    private void getControlleeInfo() {
+    private void getControleeInfo() {
         ArgumentCaptor<FiRaSecureChannel.ExternalRequestCallback> externalRequestCallbackCaptor =
                 ArgumentCaptor.forClass(FiRaSecureChannel.ExternalRequestCallback.class);
         when(mFiRaSecureChannel.isEstablished()).thenReturn(true);
@@ -93,8 +93,8 @@ public class ControllerInitiatorSessionTest {
     }
 
     @Test
-    public void onSecureChannelEstablishedPutControlleeInfoSuccess() {
-        getControlleeInfo();
+    public void onSecureChannelEstablishedPutControleeInfoSuccess() {
+        getControleeInfo();
         mTestLooper.moveTimeForward(2000);
 
         // timeout callback
@@ -102,8 +102,8 @@ public class ControllerInitiatorSessionTest {
     }
 
     @Test
-    public void onSecureChannelEstablishedPutControlleeInfoTimeOut() {
-        getControlleeInfo();
+    public void onSecureChannelEstablishedPutControleeInfoTimeOut() {
+        getControleeInfo();
 
         mTestLooper.moveTimeForward(2000);
         mTestLooper.dispatchNext(); // timeout callback
@@ -118,7 +118,7 @@ public class ControllerInitiatorSessionTest {
     }
 
     @Test
-    public void onSecureChannelEstablishedGetControlleeInfoFail() {
+    public void onSecureChannelEstablishedGetControleeInfoFail() {
         ArgumentCaptor<FiRaSecureChannel.ExternalRequestCallback> externalRequestCallbackCaptor =
                 ArgumentCaptor.forClass(FiRaSecureChannel.ExternalRequestCallback.class);
 
@@ -134,8 +134,8 @@ public class ControllerInitiatorSessionTest {
     }
 
     @Test
-    public void getControlleeInfoErrorResponse() {
-        getControlleeInfo();
+    public void getControleeInfoErrorResponse() {
+        getControleeInfo();
         byte[] data = DataTypeConversionUtil.hexStringToByteArray(
                 "710780018181029000"); // outbound to host without ControleeInfo data
         ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(data, 0x9000);
@@ -152,7 +152,7 @@ public class ControllerInitiatorSessionTest {
     }
 
     private void doGetControleeInfoResponse() {
-        getControlleeInfo();
+        getControleeInfo();
         // Response of getControleeInfo
         byte[] data = DataTypeConversionUtil.hexStringToByteArray(
                 "710A8001818105BF70020A0B"); // controlee info DO (BF70xxxx)
@@ -183,9 +183,9 @@ public class ControllerInitiatorSessionTest {
     }
 
     @Test
-    public void putControlleeSessionDataSuccessResponseWithNotification() {
+    public void putControleeSessionDataSuccessResponseWithNotification() {
         doGetControleeInfoResponse();
-        // response of put ControlleeSessionData
+        // response of put SessionData to controlee
         byte[] data = DataTypeConversionUtil.hexStringToByteArray(
                 "711380018181029000E10A80010081010282020101");
         ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(data, 0x9000);
@@ -260,7 +260,7 @@ public class ControllerInitiatorSessionTest {
     }
 
     @Test
-    public void putControlleeSessionDataResponseDataWrongResponseFromRemote() {
+    public void putControleeSessionDataResponseDataWrongResponseFromRemote() {
         doGetControleeInfoResponse();
         byte[] data = DataTypeConversionUtil.hexStringToByteArray(
                 "710781018081029001");

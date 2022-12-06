@@ -61,7 +61,7 @@ class InitiatorSecureChannel extends FiRaSecureChannel {
                         if (!swapInAdf(
                                 mRunningProfileSessionInfo.getSecureBlob().get(),
                                 mRunningProfileSessionInfo.getOidOfProvisionedAdf(),
-                                mRunningProfileSessionInfo.getControlleeInfo().toBytes())) {
+                                mRunningProfileSessionInfo.getControleeInfo().toBytes())) {
                             mSecureChannelCallback.onSetUpError(SetupError.OPEN_SE_CHANNEL);
                             return;
                         }
