@@ -28,10 +28,10 @@ import java.util.Optional;
  */
 public interface RunningProfileSessionInfo {
     /**
-     * Gets the controlleeInfo.
+     * Gets the {@link ControleeInfo}.
      */
     @NonNull
-    ControlleeInfo getControlleeInfo();
+    ControleeInfo getControleeInfo();
 
     /**
      * Gets the UWB capability of the current device.

@@ -16,7 +16,7 @@
 
 package com.android.server.uwb.secure;
 
-import static com.android.server.uwb.secure.csml.DispatchResponse.NOTIFICATION_EVENT_ID_CONTROLLEE_INFO_AVAILABLE;
+import static com.android.server.uwb.secure.csml.DispatchResponse.NOTIFICATION_EVENT_ID_CONTROLEE_INFO_AVAILABLE;
 import static com.android.server.uwb.secure.csml.DispatchResponse.NOTIFICATION_EVENT_ID_RDS_AVAILABLE;
 
 import android.os.Looper;
@@ -24,7 +24,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import com.android.server.uwb.pm.ControlleeInfo;
+import com.android.server.uwb.pm.ControleeInfo;
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
 import com.android.server.uwb.secure.csml.CsmlUtil;
 import com.android.server.uwb.secure.csml.DispatchResponse;
@@ -50,16 +50,16 @@ public class ControllerResponderSession extends ResponderSession {
     @Override
     protected boolean onDispatchResponseReceived(@NonNull DispatchResponse dispatchResponse) {
         DispatchResponse.RdsAvailableNotification rdsAvailable = null;
-        DispatchResponse.ControlleeInfoAvailableNotification controlleeInfoAvailable = null;
+        DispatchResponse.ControleeInfoAvailableNotification controleeInfoAvailable = null;
         for (DispatchResponse.Notification notification : dispatchResponse.notifications) {
             switch (notification.notificationEventId) {
                 case NOTIFICATION_EVENT_ID_RDS_AVAILABLE:
                     // Responder notification
                     rdsAvailable = (DispatchResponse.RdsAvailableNotification) notification;
                     break;
-                case NOTIFICATION_EVENT_ID_CONTROLLEE_INFO_AVAILABLE:
-                    controlleeInfoAvailable =
-                            (DispatchResponse.ControlleeInfoAvailableNotification) notification;
+                case NOTIFICATION_EVENT_ID_CONTROLEE_INFO_AVAILABLE:
+                    controleeInfoAvailable =
+                            (DispatchResponse.ControleeInfoAvailableNotification) notification;
                     break;
                 default:
                     logw(
@@ -67,9 +67,9 @@ public class ControllerResponderSession extends ResponderSession {
                                     + notification.notificationEventId);
             }
         }
-        if (controlleeInfoAvailable != null) {
-            handleControlleeInfoAvailable(
-                    ControlleeInfo.fromBytes(controlleeInfoAvailable.controlleeInfo));
+        if (controleeInfoAvailable != null) {
+            handleControleeInfoAvailable(
+                    ControleeInfo.fromBytes(controleeInfoAvailable.controleeInfo));
             return true;
         }
         if (rdsAvailable != null) {
@@ -80,12 +80,12 @@ public class ControllerResponderSession extends ResponderSession {
         return false;
     }
 
-    private void handleControlleeInfoAvailable(@NonNull ControlleeInfo controlleeInfo) {
+    private void handleControleeInfoAvailable(@NonNull ControleeInfo controleeInfo) {
         // TODO: remove the placeHolder for mUniqueSessionId
         mUniqueSessionId = Optional.of(1);
         mSessionData = CsmlUtil.generateSessionData(
                 mRunningProfileSessionInfo.getUwbCapability(),
-                controlleeInfo,
+                controleeInfo,
                 mRunningProfileSessionInfo.getSharedPrimarySessionId(),
                 mUniqueSessionId.get(),
                 mIsDefaultUniqueSessionId);
@@ -97,7 +97,7 @@ public class ControllerResponderSession extends ResponderSession {
                 new FiRaSecureChannel.ExternalRequestCallback() {
                     @Override
                     public void onSuccess(byte[] responseData) {
-                        // do nothing, wait for request from the controllee.
+                        // do nothing, wait for request from the controlee.
                     }
 
                     @Override
