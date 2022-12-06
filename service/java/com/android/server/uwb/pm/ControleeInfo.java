@@ -114,7 +114,7 @@ public class ControleeInfo {
 
     /** Builder */
     public static class Builder {
-        private Optional<UwbCapability> mUwbCapability;
+        private Optional<UwbCapability> mUwbCapability = Optional.empty();
 
         /** set {@link com.android.server.uwb.pm.UwbCapability} in the ControleeInfo. */
         public ControleeInfo.Builder setUwbCapability(UwbCapability uwbCapability) {
