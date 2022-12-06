@@ -18,7 +18,6 @@ package com.android.server.uwb.secure;
 
 import static com.android.server.uwb.secure.csml.DispatchResponse.NOTIFICATION_EVENT_ID_CONTROLLEE_INFO_AVAILABLE;
 import static com.android.server.uwb.secure.csml.DispatchResponse.NOTIFICATION_EVENT_ID_RDS_AVAILABLE;
-import static com.android.server.uwb.secure.csml.DispatchResponse.NOTIFICATION_EVENT_ID_SECURE_SESSION_AUTO_TERMINATED;
 import static com.android.server.uwb.secure.csml.DispatchResponse.OUTBOUND_TARGET_HOST;
 
 import android.os.Looper;
@@ -128,15 +127,11 @@ public class ControllerInitiatorSession extends InitiatorSession {
     }
 
     private boolean handlePutSessionDataResponse(@NonNull DispatchResponse response) {
-        boolean isSessionTerminated = false;
         DispatchResponse.RdsAvailableNotification rdsAvailable = null;
         // The outboundData to host supposed to be 0x9000 if the session is not terminated,
         // ignore it as NOTIFICATION_EVENT_ID_RDS_AVAILABLE is enough.
         for (DispatchResponse.Notification notification : response.notifications) {
             switch (notification.notificationEventId) {
-                case NOTIFICATION_EVENT_ID_SECURE_SESSION_AUTO_TERMINATED:
-                    isSessionTerminated = true;
-                    break;
                 case NOTIFICATION_EVENT_ID_RDS_AVAILABLE:
                     // Responder notification
                     rdsAvailable = (DispatchResponse.RdsAvailableNotification) notification;
@@ -150,7 +145,8 @@ public class ControllerInitiatorSession extends InitiatorSession {
         if (rdsAvailable != null) {
             // TODO: is the session ID for the sub session if it is 1 to m case?
             // Or the applet shouldn't update the sessionId, sub session ID assigned by FW.
-            mSessionCallback.onSessionDataReady(rdsAvailable.sessionId, null, isSessionTerminated);
+            mSessionCallback.onSessionDataReady(
+                    rdsAvailable.sessionId, Optional.empty(), /*isSessionTerminated=*/ false);
             return true;
         }
         if (response.getOutboundData().isPresent()
