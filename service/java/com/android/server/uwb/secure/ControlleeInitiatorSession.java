@@ -31,6 +31,8 @@ import com.android.server.uwb.secure.csml.DispatchResponse;
 import com.android.server.uwb.secure.iso7816.StatusWord;
 import com.android.server.uwb.util.DataTypeConversionUtil;
 
+import java.util.Optional;
+
 /**
  * The initiator of dynamic STS session managed by the UWB controllee.
  */
@@ -127,7 +129,7 @@ public class ControlleeInitiatorSession extends InitiatorSession {
         if (rdsAvailable != null) {
             // TODO: is the session ID for the sub session if it is 1 to m case?
             mSessionCallback.onSessionDataReady(
-                    rdsAvailable.sessionId, rdsAvailable.arbitraryData, isSessionTerminated);
+                    rdsAvailable.sessionId, Optional.empty(), isSessionTerminated);
             return true;
         } else if (CsmlUtil.isSessionDataNotAvailable(
                 dispatchResponse.getOutboundData().get().data)) {

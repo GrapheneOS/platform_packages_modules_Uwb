@@ -26,7 +26,7 @@ import androidx.annotation.NonNull;
 
 import com.android.server.uwb.pm.ControlleeInfo;
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
-import com.android.server.uwb.pm.SessionData;
+import com.android.server.uwb.secure.csml.CsmlUtil;
 import com.android.server.uwb.secure.csml.DispatchResponse;
 import com.android.server.uwb.secure.iso7816.CommandApdu;
 import com.android.server.uwb.util.DataTypeConversionUtil;
@@ -74,19 +74,21 @@ public class ControllerResponderSession extends ResponderSession {
         }
         if (rdsAvailable != null) {
             mSessionCallback.onSessionDataReady(rdsAvailable.sessionId,
-                    rdsAvailable.arbitraryData, /*isSessionTerminated=*/ false);
+                    Optional.empty(), /*isSessionTerminated=*/ false);
             return true;
         }
         return false;
     }
 
     private void handleControlleeInfoAvailable(@NonNull ControlleeInfo controlleeInfo) {
-        Optional<SessionData> sessionData =
-                mRunningProfileSessionInfo.getSessionDataForControllee(controlleeInfo);
-        if (sessionData.isEmpty()) {
-            logw("session data is not available.");
-            terminateSession();
-        }
+        // TODO: remove the placeHolder for mUniqueSessionId
+        mUniqueSessionId = Optional.of(1);
+        mSessionData = CsmlUtil.generateSessionData(
+                mRunningProfileSessionInfo.getUwbCapability(),
+                controlleeInfo,
+                mRunningProfileSessionInfo.getSharedPrimarySessionId(),
+                mUniqueSessionId.get(),
+                mIsDefaultUniqueSessionId);
         // send session data to the applet.
         // TODO: construct put session data.
         CommandApdu commandApdu = null;
@@ -94,7 +96,7 @@ public class ControllerResponderSession extends ResponderSession {
                 commandApdu,
                 new FiRaSecureChannel.ExternalRequestCallback() {
                     @Override
-                    public void onSuccess() {
+                    public void onSuccess(byte[] responseData) {
                         // do nothing, wait for request from the controllee.
                     }
 
