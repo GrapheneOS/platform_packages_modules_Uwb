@@ -77,6 +77,7 @@ public class FiraOpenSessionParams extends FiraParams {
     private final int mPreambleCodeIndex;
     @RframeConfig private final int mRframeConfig;
     @PrfMode private final int mPrfMode;
+    @SchedulingMode private final int mScheduledMode;
     @PreambleDuration private final int mPreambleDuration;
     @SfdIdValue private final int mSfdId;
     @StsSegmentCountValue private final int mStsSegmentCount;
@@ -150,6 +151,7 @@ public class FiraOpenSessionParams extends FiraParams {
     private static final String KEY_PREAMBLE_CODE_INDEX = "preamble_code_index";
     private static final String KEY_RFRAME_CONFIG = "rframe_config";
     private static final String KEY_PRF_MODE = "prf_mode";
+    private static final String KEY_SCHEDULED_MODE = "scheduled_mode";
     private static final String KEY_PREAMBLE_DURATION = "preamble_duration";
     private static final String KEY_SFD_ID = "sfd_id";
     private static final String KEY_STS_SEGMENT_COUNT = "sts_segment_count";
@@ -227,6 +229,7 @@ public class FiraOpenSessionParams extends FiraParams {
             int preambleCodeIndex,
             @RframeConfig int rframeConfig,
             @PrfMode int prfMode,
+            @SchedulingMode int scheduledMode,
             @PreambleDuration int preambleDuration,
             @SfdIdValue int sfdId,
             @StsSegmentCountValue int stsSegmentCount,
@@ -287,6 +290,7 @@ public class FiraOpenSessionParams extends FiraParams {
         mPreambleCodeIndex = preambleCodeIndex;
         mRframeConfig = rframeConfig;
         mPrfMode = prfMode;
+        mScheduledMode = scheduledMode;
         mPreambleDuration = preambleDuration;
         mSfdId = sfdId;
         mStsSegmentCount = stsSegmentCount;
@@ -431,6 +435,11 @@ public class FiraOpenSessionParams extends FiraParams {
     @PrfMode
     public int getPrfMode() {
         return mPrfMode;
+    }
+
+    @SchedulingMode
+    public int getScheduledMode() {
+        return mScheduledMode;
     }
 
     @PreambleDuration
@@ -653,6 +662,7 @@ public class FiraOpenSessionParams extends FiraParams {
         bundle.putInt(KEY_PREAMBLE_CODE_INDEX, mPreambleCodeIndex);
         bundle.putInt(KEY_RFRAME_CONFIG, mRframeConfig);
         bundle.putInt(KEY_PRF_MODE, mPrfMode);
+        bundle.putInt(KEY_SCHEDULED_MODE, mScheduledMode);
         bundle.putInt(KEY_PREAMBLE_DURATION, mPreambleDuration);
         bundle.putInt(KEY_SFD_ID, mSfdId);
         bundle.putInt(KEY_STS_SEGMENT_COUNT, mStsSegmentCount);
@@ -758,6 +768,7 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setPreambleCodeIndex(bundle.getInt(KEY_PREAMBLE_CODE_INDEX))
                 .setRframeConfig(bundle.getInt(KEY_RFRAME_CONFIG))
                 .setPrfMode(bundle.getInt(KEY_PRF_MODE))
+                .setScheduledMode(bundle.getInt(KEY_SCHEDULED_MODE, 0))
                 .setPreambleDuration(bundle.getInt(KEY_PREAMBLE_DURATION))
                 .setSfdId(bundle.getInt(KEY_SFD_ID))
                 .setStsSegmentCount(bundle.getInt(KEY_STS_SEGMENT_COUNT))
@@ -838,8 +849,8 @@ public class FiraOpenSessionParams extends FiraParams {
         /** UCI spec default: 2400 RSTU (2 ms). */
         private int mSlotDurationRstu = 2400;
 
-        /** UCI spec default: 30 slots per ranging round. */
-        private int mSlotsPerRangingRound = 30;
+        /** UCI spec default: 25 slots per ranging round. */
+        private int mSlotsPerRangingRound = 25;
 
         /** UCI spec default: RANGING_INTERVAL 200 ms */
         private int mRangingIntervalMs = 200;
@@ -882,6 +893,9 @@ public class FiraOpenSessionParams extends FiraParams {
 
         /** UCI spec default: BPRF */
         @PrfMode private int mPrfMode = PRF_MODE_BPRF;
+
+        /** UCI spec default: Time scheduled ranging */
+        @SchedulingMode private int mScheduledMode = TIME_SCHEDULED_RANGING;
 
         /** UCI spec default: 64 symbols */
         @PreambleDuration private int mPreambleDuration = PREAMBLE_DURATION_T64_SYMBOLS;
@@ -1050,6 +1064,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mHasAngleOfArrivalElevationReport = builder.mHasAngleOfArrivalElevationReport;
             mHasAngleOfArrivalFigureOfMeritReport = builder.mHasAngleOfArrivalFigureOfMeritReport;
             mAoaType = builder.mAoaType;
+            mScheduledMode = builder.mScheduledMode;
             mNumOfMsrmtFocusOnRange = builder.mNumOfMsrmtFocusOnRange;
             mNumOfMsrmtFocusOnAoaAzimuth = builder.mNumOfMsrmtFocusOnAoaAzimuth;
             mNumOfMsrmtFocusOnAoaElevation = builder.mNumOfMsrmtFocusOnAoaElevation;
@@ -1241,6 +1256,11 @@ public class FiraOpenSessionParams extends FiraParams {
 
         public FiraOpenSessionParams.Builder setPrfMode(@PrfMode int prfMode) {
             mPrfMode = prfMode;
+            return this;
+        }
+
+        public FiraOpenSessionParams.Builder setScheduledMode(@SchedulingMode int scheduledMode) {
+            mScheduledMode = scheduledMode;
             return this;
         }
 
@@ -1620,6 +1640,7 @@ public class FiraOpenSessionParams extends FiraParams {
                     mPreambleCodeIndex,
                     mRframeConfig,
                     mPrfMode,
+                    mScheduledMode,
                     mPreambleDuration,
                     mSfdId,
                     mStsSegmentCount,

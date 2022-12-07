@@ -213,6 +213,42 @@ public abstract class FiraParams extends Params {
     /** Unuported in Fira 1.1 */
     public static final int MULTI_NODE_MODE_MANY_TO_MANY = 2;
 
+    /** Scheduling Mode */
+    @IntDef(
+            value = {
+                CONTENTION_BASED_RANGING,
+                TIME_SCHEDULED_RANGING,
+            })
+    public @interface SchedulingMode {}
+
+    public static final int CONTENTION_BASED_RANGING = 0;
+
+    public static final int TIME_SCHEDULED_RANGING = 1;
+
+    /** Ranging Time Struct */
+    @IntDef(
+            value = {
+                INTERVAL_BASED_SCHEDULING,
+                BLOCK_BASED_SCHEDULING,
+            })
+    public @interface RangingTimeStruct {}
+
+    public static final int INTERVAL_BASED_SCHEDULING = 0;
+
+    public static final int BLOCK_BASED_SCHEDULING = 1;
+
+    /** Cc Constraint Length */
+    @IntDef(
+            value = {
+                CONSTRAINT_LENGTH_3,
+                CONSTRAINT_LENGTH_7,
+            })
+    public @interface CcConstraintLength {}
+
+    public static final int CONSTRAINT_LENGTH_3 = 3;
+
+    public static final int CONSTRAINT_LENGTH_7 = 7;
+
     /** Measurement Report */
     @IntDef(
             value = {
@@ -640,6 +676,54 @@ public abstract class FiraParams extends Params {
         private final long mValue;
 
         private MultiNodeCapabilityFlag(long value) {
+            mValue = value;
+        }
+
+        @Override
+        public long getValue() {
+            return mValue;
+        }
+    }
+
+    public enum RangingTimeStructCapabilitiesFlag implements FlagEnum {
+        HAS_INTERVAL_BASED_SCHEDULING_SUPPORT(1),
+        HAS_BLOCK_BASED_SCHEDULING_SUPPORT(1 << 1);
+
+        private final long mValue;
+
+        private RangingTimeStructCapabilitiesFlag(long value) {
+            mValue = value;
+        }
+
+        @Override
+        public long getValue() {
+            return mValue;
+        }
+    }
+
+    public enum SchedulingModeCapabilitiesFlag implements FlagEnum {
+        HAS_CONTENTION_BASED_RANGING_SUPPORT(1),
+        HAS_TIME_SCHEDULED_RANGING_SUPPORT(1 << 1);
+
+        private final long mValue;
+
+        private SchedulingModeCapabilitiesFlag(long value) {
+            mValue = value;
+        }
+
+        @Override
+        public long getValue() {
+            return mValue;
+        }
+    }
+
+    public enum CcConstraintLengthCapabilitiesFlag implements FlagEnum {
+        HAS_CONSTRAINT_LENGTH_3_SUPPORT(1),
+        HAS_CONSTRAINT_LENGTH_7_SUPPORT(1 << 1);
+
+        private final long mValue;
+
+        private CcConstraintLengthCapabilitiesFlag(long value) {
             mValue = value;
         }
 
