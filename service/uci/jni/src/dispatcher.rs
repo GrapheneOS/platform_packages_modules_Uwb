@@ -181,11 +181,8 @@ impl<'a> GuardedDispatcher<'a> {
         read_lock: RwLockReadGuard<'a, Option<Dispatcher>>,
     ) -> Result<Self> {
         // Check RwLockReadGuard contains Dispatcher:
-        let _dispatcher_ref = match &*read_lock {
-            Some(dispatcher_ref) => dispatcher_ref,
-            None => {
-                return Err(Error::UwbCoreError(UwbCoreError::BadParameters));
-            }
+        if read_lock.is_none() {
+            return Err(Error::UwbCoreError(UwbCoreError::BadParameters));
         };
         Ok(GuardedDispatcher { _jni_guard: jni_guard, read_lock })
     }
