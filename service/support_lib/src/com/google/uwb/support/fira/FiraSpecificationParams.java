@@ -66,6 +66,8 @@ public class FiraSpecificationParams extends FiraParams {
 
     private final int mMinSlotDuration;
 
+    private final int mMaxRangingSessionNumber;
+
     private final EnumSet<MultiNodeCapabilityFlag> mMultiNodeCapabilities;
 
     private final EnumSet<RangingTimeStructCapabilitiesFlag> mRangingTimeStructCapabilities;
@@ -111,6 +113,7 @@ public class FiraSpecificationParams extends FiraParams {
     private static final String KEY_DIAGNOSTICS_SUPPORT = "diagnostics";
     private static final String KEY_MIN_RANGING_INTERVAL = "min_ranging_interval";
     private static final String KEY_MIN_SLOT_DURATION = "min_slot_duration";
+    private static final String KEY_MAX_RANGING_SESSION_NUMBER = "max_ranging_session_number";
     private static final String KEY_MULTI_NODE_CAPABILITIES = "multi_node_capabilities";
     private static final String KEY_RANGING_TIME_STRUCT_CAPABILITIES =
             "ranging_time_struct_capabilities";
@@ -149,6 +152,7 @@ public class FiraSpecificationParams extends FiraParams {
             boolean hasDiagnosticsSupport,
             int minRangingInterval,
             int minSlotDuration,
+            int maxRangingSessionNumber,
             EnumSet<MultiNodeCapabilityFlag> multiNodeCapabilities,
             EnumSet<RangingTimeStructCapabilitiesFlag> rangingTimeStructCapabilities,
             EnumSet<SchedulingModeCapabilitiesFlag> schedulingModeCapabilities,
@@ -179,6 +183,7 @@ public class FiraSpecificationParams extends FiraParams {
         mHasDiagnosticsSupport = hasDiagnosticsSupport;
         mMinRangingInterval = minRangingInterval;
         mMinSlotDuration = minSlotDuration;
+        mMaxRangingSessionNumber = maxRangingSessionNumber;
         mMultiNodeCapabilities = multiNodeCapabilities;
         mRangingTimeStructCapabilities = rangingTimeStructCapabilities;
         mSchedulingModeCapabilities = schedulingModeCapabilities;
@@ -266,6 +271,10 @@ public class FiraSpecificationParams extends FiraParams {
         return mMinSlotDuration;
     }
 
+    public int getMaxRangingSessionNumber() {
+        return mMaxRangingSessionNumber;
+    }
+
     public EnumSet<MultiNodeCapabilityFlag> getMultiNodeCapabilities() {
         return mMultiNodeCapabilities;
     }
@@ -349,6 +358,7 @@ public class FiraSpecificationParams extends FiraParams {
         bundle.putBoolean(KEY_DIAGNOSTICS_SUPPORT, mHasDiagnosticsSupport);
         bundle.putInt(KEY_MIN_RANGING_INTERVAL, mMinRangingInterval);
         bundle.putInt(KEY_MIN_SLOT_DURATION, mMinSlotDuration);
+        bundle.putInt(KEY_MAX_RANGING_SESSION_NUMBER, mMaxRangingSessionNumber);
         bundle.putInt(KEY_MULTI_NODE_CAPABILITIES, FlagEnum.toInt(mMultiNodeCapabilities));
         bundle.putInt(KEY_RANGING_TIME_STRUCT_CAPABILITIES,
                 FlagEnum.toInt(mRangingTimeStructCapabilities));
@@ -478,6 +488,10 @@ public class FiraSpecificationParams extends FiraParams {
         if (bundle.containsKey(KEY_DIAGNOSTICS_SUPPORT)) {
             builder.hasBlockStridingSupport(bundle.getBoolean(KEY_DIAGNOSTICS_SUPPORT));
         }
+        if (bundle.containsKey(KEY_MAX_RANGING_SESSION_NUMBER)) {
+            builder.setMaxRangingSessionNumberSupported(
+                    bundle.getInt(KEY_MAX_RANGING_SESSION_NUMBER));
+        }
         return builder.build();
     }
 
@@ -521,6 +535,8 @@ public class FiraSpecificationParams extends FiraParams {
         private int mMinRangingInterval = -1;
 
         private int mMinSlotDuration = -1;
+
+        private int mMaxRangingSessionNumber = -1;
 
         // Unicast support is mandatory
         private final EnumSet<MultiNodeCapabilityFlag> mMultiNodeCapabilities =
@@ -670,6 +686,16 @@ public class FiraSpecificationParams extends FiraParams {
             return this;
         }
 
+        /**
+         * Set maximum supported ranging session number
+         * @param value : maximum ranging session number supported
+         * @return FiraSpecificationParams builder
+         */
+        public FiraSpecificationParams.Builder setMaxRangingSessionNumberSupported(int value) {
+            mMaxRangingSessionNumber = value;
+            return this;
+        }
+
         public FiraSpecificationParams.Builder setMultiNodeCapabilities(
                 Collection<MultiNodeCapabilityFlag> multiNodeCapabilities) {
             mMultiNodeCapabilities.addAll(multiNodeCapabilities);
@@ -774,6 +800,7 @@ public class FiraSpecificationParams extends FiraParams {
                     mHasDiagnosticsSupport,
                     mMinRangingInterval,
                     mMinSlotDuration,
+                    mMaxRangingSessionNumber,
                     mMultiNodeCapabilities,
                     mRangingTimeStructCapabilities,
                     mSchedulingModeCapabilities,
