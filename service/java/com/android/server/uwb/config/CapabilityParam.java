@@ -55,6 +55,8 @@ public class CapabilityParam {
             UwbVendorCapabilityTlvTypes.SUPPORTED_DIAGNOSTICS;
     public static final int SUPPORTED_MIN_SLOT_DURATION =
             UwbVendorCapabilityTlvTypes.SUPPORTED_MIN_SLOT_DURATION;
+    public static final int SUPPORTED_MAX_RANGING_SESSION_NUMBER =
+            UwbVendorCapabilityTlvTypes.SUPPORTED_MAX_RANGING_SESSION_NUMBER;
 
     // CCC specific
     public static final int CCC_SUPPORTED_VERSIONS =
@@ -65,6 +67,8 @@ public class CapabilityParam {
              UwbVendorCapabilityTlvTypes.CCC_SUPPORTED_PULSE_SHAPE_COMBOS;
     public static final int CCC_SUPPORTED_RAN_MULTIPLIER =
              UwbVendorCapabilityTlvTypes.CCC_SUPPORTED_RAN_MULTIPLIER;
+    public static final int CCC_SUPPORTED_MAX_RANGING_SESSION_NUMBER =
+             UwbVendorCapabilityTlvTypes.CCC_SUPPORTED_MAX_RANGING_SESSION_NUMBER;
     public static final int CCC_SUPPORTED_CHAPS_PER_SLOT =
              UwbVendorCapabilityTlvTypes.CCC_SUPPORTED_CHAPS_PER_SLOT;
     public static final int CCC_SUPPORTED_SYNC_CODES =
