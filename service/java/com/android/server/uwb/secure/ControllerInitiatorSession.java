@@ -112,9 +112,9 @@ public class ControllerInitiatorSession extends InitiatorSession {
             ControleeInfo controleeInfo = ControleeInfo.fromBytes(outboundData.data);
 
             mSessionData = CsmlUtil.generateSessionData(
-                    mRunningProfileSessionInfo.getUwbCapability(),
+                    mRunningProfileSessionInfo.uwbCapability,
                     controleeInfo,
-                    mRunningProfileSessionInfo.getSharedPrimarySessionId(),
+                    mRunningProfileSessionInfo.sharedPrimarySessionId,
                     mUniqueSessionId.get(),
                     !mIsDefaultUniqueSessionId);
 

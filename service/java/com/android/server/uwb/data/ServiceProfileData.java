@@ -63,6 +63,7 @@ public class ServiceProfileData implements UwbConfigStore.StoreData {
         /**
          * ADF OID
          */
+        // TODO: refactor, not int, use ObjectIdentifier.
         private int serviceAdfID;
 
         /**
