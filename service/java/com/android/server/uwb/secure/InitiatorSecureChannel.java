@@ -61,7 +61,7 @@ class InitiatorSecureChannel extends FiRaSecureChannel {
                         if (!swapInAdf(
                                 mRunningProfileSessionInfo.getSecureBlob().get(),
                                 mRunningProfileSessionInfo.getOidOfProvisionedAdf(),
-                                mRunningProfileSessionInfo.getControlleeInfo().toBytes())) {
+                                mRunningProfileSessionInfo.getControleeInfo().toBytes())) {
                             mSecureChannelCallback.onSetUpError(SetupError.OPEN_SE_CHANNEL);
                             return;
                         }
@@ -161,7 +161,7 @@ class InitiatorSecureChannel extends FiRaSecureChannel {
                             mWorkHandler.sendMessage(
                                     mWorkHandler.obtainMessage(
                                             CMD_SEND_OOB_DATA, response.outboundDataOrApdu.get()));
-                            externalRequestCallback.onSuccess();
+                            externalRequestCallback.onSuccess(new byte[0]);
                         } else {
                             throw new IllegalStateException(
                                     "Tunnel CMD error: " + response.statusWord);

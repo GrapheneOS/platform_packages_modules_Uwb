@@ -31,14 +31,16 @@ import com.android.server.uwb.secure.csml.DispatchResponse;
 import com.android.server.uwb.secure.iso7816.StatusWord;
 import com.android.server.uwb.util.DataTypeConversionUtil;
 
+import java.util.Optional;
+
 /**
- * The initiator of dynamic STS session managed by the UWB controllee.
+ * The initiator of dynamic STS session managed by the UWB controlee.
  */
-public class ControlleeInitiatorSession extends InitiatorSession {
-    private static final String LOG_TAG = "ControlleeInitiater";
+public class ControleeInitiatorSession extends InitiatorSession {
+    private static final String LOG_TAG = "ControleeInitiator";
     private static final int GET_SESSION_DATA_RETRY_DELAY_MILLS = 100;
 
-    public ControlleeInitiatorSession(
+    public ControleeInitiatorSession(
             @NonNull Looper workLooper,
             @NonNull FiRaSecureChannel fiRaSecureChannel,
             @NonNull Callback sessionCallback,
@@ -46,14 +48,14 @@ public class ControlleeInitiatorSession extends InitiatorSession {
         super(workLooper, fiRaSecureChannel, sessionCallback, runningProfileSessionInfo);
     }
 
-    private void sendPutControlleeInfoCommand() {
+    private void sendPutControleeInfoCommand() {
         // TODO: construct data
         byte[] data = new byte[] {(byte) 0x0A, (byte) 0x0B};
-        tunnelData(MSG_ID_PUT_CONTROLLEE_INFO, data);
+        tunnelData(MSG_ID_PUT_CONTROLEE_INFO, data);
     }
 
-    private void sendGetControlleeSessionData() {
-        logd("send get controllee session data msg.");
+    private void sendGetControleeSessionData() {
+        logd("send get controlee session data msg.");
         // TODO: construct data
         byte[] data = new byte[] {(byte) 0x0C, (byte) 0x0D};
         tunnelData(MSG_ID_GET_SESSION_DATA, data);
@@ -61,15 +63,15 @@ public class ControlleeInitiatorSession extends InitiatorSession {
 
     @Override
     protected void handleFiRaSecureChannelEstablished() {
-        sendPutControlleeInfoCommand();
+        sendPutControleeInfoCommand();
     }
 
     @Override
     protected boolean handleTunnelDataResponseReceived(
             int msgId, @NonNull DispatchResponse response) {
         switch (msgId) {
-            case MSG_ID_PUT_CONTROLLEE_INFO:
-                return handlePutControlleeInfoResponse(response);
+            case MSG_ID_PUT_CONTROLEE_INFO:
+                return handlePutControleeInfoResponse(response);
             case MSG_ID_GET_SESSION_DATA:
                 return handleGetSessionDataResponse(response);
             default:
@@ -79,7 +81,7 @@ public class ControlleeInitiatorSession extends InitiatorSession {
         return false;
     }
 
-    private boolean handlePutControlleeInfoResponse(@NonNull DispatchResponse dispatchResponse) {
+    private boolean handlePutControleeInfoResponse(@NonNull DispatchResponse dispatchResponse) {
         if (dispatchResponse.getOutboundData().isPresent()) {
             DispatchResponse.OutboundData outboundData = dispatchResponse.getOutboundData().get();
             if (outboundData.target == OUTBOUND_TARGET_HOST
@@ -90,7 +92,7 @@ public class ControlleeInitiatorSession extends InitiatorSession {
                                 DataTypeConversionUtil.arbitraryByteArrayToI32(outboundData.data));
                 logd("dispatch response sw: " + statusWord);
                 if (statusWord.equals(StatusWord.SW_NO_ERROR)) {
-                    mWorkHandler.post(() -> sendGetControlleeSessionData());
+                    mWorkHandler.post(() -> sendGetControleeSessionData());
                 } else {
                     // abort the current session
                     terminateSession();
@@ -98,9 +100,9 @@ public class ControlleeInitiatorSession extends InitiatorSession {
                 }
                 return true;
             }
-            logw("unexpected outbound data for controllee info." + outboundData);
+            logw("unexpected outbound data for controlee info." + outboundData);
         }
-        logw("Unexpected response for controllee info.");
+        logw("Unexpected response for controlee info.");
         return false;
     }
 
@@ -127,12 +129,12 @@ public class ControlleeInitiatorSession extends InitiatorSession {
         if (rdsAvailable != null) {
             // TODO: is the session ID for the sub session if it is 1 to m case?
             mSessionCallback.onSessionDataReady(
-                    rdsAvailable.sessionId, rdsAvailable.arbitraryData, isSessionTerminated);
+                    rdsAvailable.sessionId, Optional.empty(), isSessionTerminated);
             return true;
         } else if (CsmlUtil.isSessionDataNotAvailable(
                 dispatchResponse.getOutboundData().get().data)) {
             mWorkHandler.postDelayed(
-                    () -> sendGetControlleeSessionData(), GET_SESSION_DATA_RETRY_DELAY_MILLS);
+                    () -> sendGetControleeSessionData(), GET_SESSION_DATA_RETRY_DELAY_MILLS);
             return true;
         }
         logw("unexpected dispatch response for get session data");
@@ -142,7 +144,7 @@ public class ControlleeInitiatorSession extends InitiatorSession {
     @Override
     protected void handleTunnelDataFailure(int msgId, @NonNull TunnelDataFailReason failReason) {
         switch (msgId) {
-            case MSG_ID_PUT_CONTROLLEE_INFO:
+            case MSG_ID_PUT_CONTROLEE_INFO:
                 // fall through
             case MSG_ID_GET_SESSION_DATA:
                 // simply abort the session.

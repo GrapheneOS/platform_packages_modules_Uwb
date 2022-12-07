@@ -31,7 +31,7 @@ import java.util.List;
  */
 public class SwapInAdfCommand extends FiRaCommand {
     private static final Tag SECURE_BLOB_TAG = new Tag((byte) 0xDF, (byte) 0x51);
-    private static final Tag UWB_CONTROLLEE_INFO_TAG = new Tag((byte) 0xBF, (byte) 0x70);
+    private static final Tag UWB_CONTROLEE_INFO_TAG = new Tag((byte) 0xBF, (byte) 0x70);
 
     // the secure blob should have OID and its ADF contents.
     @NonNull
@@ -41,14 +41,14 @@ public class SwapInAdfCommand extends FiRaCommand {
     private final ObjectIdentifier mOid;
 
     @NonNull
-    private final byte[] mUwbControlleeInfo;
+    private final byte[] mUwbControleeInfo;
 
     private SwapInAdfCommand(@NonNull byte[] secureBlob, @NonNull ObjectIdentifier oid,
-            @NonNull byte[] uwbControlleeInfo) {
+            @NonNull byte[] uwbControleeInfo) {
         super();
         mSecureBlob = secureBlob;
         mOid = oid;
-        mUwbControlleeInfo = uwbControlleeInfo;
+        mUwbControleeInfo = uwbControleeInfo;
     }
 
     @Override
@@ -79,7 +79,7 @@ public class SwapInAdfCommand extends FiRaCommand {
     protected List<TlvDatum> getTlvPayload() {
         return Arrays.asList(new TlvDatum(SECURE_BLOB_TAG, mSecureBlob),
                 CsmlUtil.encodeObjectIdentifierAsTlv(mOid),
-                new TlvDatum(UWB_CONTROLLEE_INFO_TAG, mUwbControlleeInfo));
+                new TlvDatum(UWB_CONTROLEE_INFO_TAG, mUwbControleeInfo));
     }
 
     /**
@@ -87,7 +87,7 @@ public class SwapInAdfCommand extends FiRaCommand {
      */
     @NonNull
     public static SwapInAdfCommand build(@NonNull byte[] secureBlob, @NonNull ObjectIdentifier oid,
-            @NonNull byte[] uwbControlleeInfo) {
-        return new SwapInAdfCommand(secureBlob, oid, uwbControlleeInfo);
+            @NonNull byte[] uwbControleeInfo) {
+        return new SwapInAdfCommand(secureBlob, oid, uwbControleeInfo);
     }
 }

@@ -76,7 +76,7 @@ public class DispatchResponse extends FiRaResponse {
             NOTIFICATION_EVENT_ID_SECURE_CHANNEL_ESTABLISHED,
             NOTIFICATION_EVENT_ID_RDS_AVAILABLE,
             NOTIFICATION_EVENT_ID_SECURE_SESSION_ABORTED,
-            NOTIFICATION_EVENT_ID_CONTROLLEE_INFO_AVAILABLE,
+            NOTIFICATION_EVENT_ID_CONTROLEE_INFO_AVAILABLE,
     })
     @Retention(RetentionPolicy.SOURCE)
     public @interface NotificationEventId {}
@@ -85,7 +85,7 @@ public class DispatchResponse extends FiRaResponse {
     public static final int NOTIFICATION_EVENT_ID_SECURE_CHANNEL_ESTABLISHED = 1;
     public static final int NOTIFICATION_EVENT_ID_RDS_AVAILABLE = 2;
     public static final int NOTIFICATION_EVENT_ID_SECURE_SESSION_ABORTED = 3;
-    public static final int NOTIFICATION_EVENT_ID_CONTROLLEE_INFO_AVAILABLE = 4;
+    public static final int NOTIFICATION_EVENT_ID_CONTROLEE_INFO_AVAILABLE = 4;
 
     /**
      * The base class of notification from the FiRa applet.
@@ -117,8 +117,12 @@ public class DispatchResponse extends FiRaResponse {
      * The notification of the secure channel established.
      */
     public static class SecureChannelEstablishedNotification extends Notification {
-        private SecureChannelEstablishedNotification() {
+        public final Optional<Integer> defaultSessionId;
+
+        private SecureChannelEstablishedNotification(Optional<Integer> defaultSessionId) {
             super(NOTIFICATION_EVENT_ID_SECURE_CHANNEL_ESTABLISHED);
+
+            this.defaultSessionId = defaultSessionId;
         }
     }
 
@@ -153,14 +157,14 @@ public class DispatchResponse extends FiRaResponse {
     }
 
     /**
-     * The notification of the controllee info available.
+     * The notification of the controlee info available.
      */
-    public static class ControlleeInfoAvailableNotification extends Notification {
-        public final byte[] controlleeInfo;
+    public static class ControleeInfoAvailableNotification extends Notification {
+        public final byte[] controleeInfo;
 
-        private ControlleeInfoAvailableNotification(@NonNull byte[] controlleeInfo) {
-            super(NOTIFICATION_EVENT_ID_CONTROLLEE_INFO_AVAILABLE);
-            this.controlleeInfo = controlleeInfo;
+        private ControleeInfoAvailableNotification(@NonNull byte[] controleeInfo) {
+            super(NOTIFICATION_EVENT_ID_CONTROLEE_INFO_AVAILABLE);
+            this.controleeInfo = controleeInfo;
         }
     }
 
@@ -290,7 +294,25 @@ public class DispatchResponse extends FiRaResponse {
                     notificationList.add(new AdfSelectedNotification(adfOid));
                     break;
                 case (byte) 0x01:
-                    notificationList.add(new SecureChannelEstablishedNotification());
+                    // TODO: not defined by CSML, may be changed.
+                    Optional<Integer> defaultSessionId = Optional.empty();
+                    notificationDataTlvs = curTlvs.get(NOTIFICATION_DATA_TAG);
+                    if (notificationDataTlvs != null && notificationDataTlvs.size() != 0) {
+                        // try to get the default session Id from the notification.
+                        byte[] payload = notificationDataTlvs.get(0).value;
+                        if (payload == null || payload.length < 2
+                                || payload.length < 1 + payload[0]) {
+                            logd("not valid session id in sc established notification.");
+                        } else {
+                            int sessionIdLen = payload[0];
+                            byte[] sessionId = new byte[sessionIdLen];
+                            System.arraycopy(payload, 1, sessionId, 0, sessionIdLen);
+                            defaultSessionId = Optional.of(
+                                    DataTypeConversionUtil.arbitraryByteArrayToI32(sessionId));
+                        }
+                    }
+                    notificationList.add(
+                            new SecureChannelEstablishedNotification(defaultSessionId));
                     break;
                 case (byte) 0x02:
                     // parse sessionId and arbitrary data
@@ -329,19 +351,19 @@ public class DispatchResponse extends FiRaResponse {
                     break;
                 case (byte) 0x03:
                     // TODO: change it according to the final CSML spec, this is not defined yet.
-                    // use 0x03 and controllee info data as notification data.
+                    // use 0x03 and controlee info data as notification data.
                     notificationDataTlvs = curTlvs.get(NOTIFICATION_DATA_TAG);
                     if (notificationDataTlvs == null || notificationDataTlvs.size() == 0) {
-                        throw new IllegalStateException("controllee info data is required.");
+                        throw new IllegalStateException("controlee info data is required.");
                     }
                     payload = notificationDataTlvs.get(0).value;
                     if (payload == null || payload.length == 0) {
                         throw new IllegalStateException(
-                                "payload of cotrollee info available is bad.");
+                                "payload of controlee info available notification is bad.");
                     }
                     byte[] sessionData = new byte[payload.length];
                     System.arraycopy(payload, 0, sessionData, 0, payload.length);
-                    notificationList.add(new ControlleeInfoAvailableNotification(sessionData));
+                    notificationList.add(new ControleeInfoAvailableNotification(sessionData));
                     break;
                 default:
             }

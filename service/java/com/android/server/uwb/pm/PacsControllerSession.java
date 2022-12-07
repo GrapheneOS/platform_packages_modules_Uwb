@@ -236,15 +236,14 @@ public class PacsControllerSession extends RangingSessionController {
 
         @NonNull
         @Override
-        public ControlleeInfo getControlleeInfo() {
+        public ControleeInfo getControleeInfo() {
             return null;
         }
 
         @NonNull
         @Override
-        public Optional<SessionData> getSessionDataForControllee(
-                ControlleeInfo controlleeInfoOfPeerDevice) {
-            return Optional.empty();
+        public UwbCapability getUwbCapability() {
+            return null;
         }
 
         @NonNull
@@ -293,7 +292,8 @@ public class PacsControllerSession extends RangingSessionController {
 
         @Override
         public void onSessionDataReady(
-                int updatedSessionId, Optional<byte[]> sessionData, boolean isSessionTerminated) {
+                int updatedSessionId, Optional<SessionData> sessionData,
+                boolean isSessionTerminated) {
             mPacsControllerSession.sendMessage(RANGING_INIT);
         }
 

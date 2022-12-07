@@ -23,6 +23,8 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
+import com.android.server.uwb.pm.SessionData;
+import com.android.server.uwb.secure.csml.CsmlUtil;
 import com.android.server.uwb.secure.csml.DispatchResponse;
 
 import java.util.Optional;
@@ -39,10 +41,24 @@ public abstract class SecureSession {
     protected final Callback mSessionCallback;
     protected final RunningProfileSessionInfo mRunningProfileSessionInfo;
 
+    // it could be sessionId for unicast session or subSessionId for multicast session.
+    protected Optional<Integer> mUniqueSessionId = Optional.empty();
+    // default session id/sub session id is derived in FiRa applet.
+    protected boolean mIsDefaultUniqueSessionId = false;
+    // session data is used by both controller and controlee finally.
+    protected SessionData mSessionData;
+
     private final FiRaSecureChannel.SecureChannelCallback mSecureChannelCallback =
             new FiRaSecureChannel.SecureChannelCallback() {
                 @Override
-                public void onEstablished() {
+                public void onEstablished(Optional<Integer> defaultUniqueSessionId) {
+                    if (defaultUniqueSessionId.isPresent()) {
+                        mUniqueSessionId = defaultUniqueSessionId;
+                    } else {
+                        // generate a random Unique Session Id to be used.
+                        logd("default session id is not available, provide a random one.");
+                        mUniqueSessionId = Optional.of(CsmlUtil.generateRandomSessionId());
+                    }
                     handleFiRaSecureChannelEstablished();
                 }
 
@@ -76,6 +92,8 @@ public abstract class SecureSession {
 
                 @Override
                 public void onRdsAvailableAndTerminated(int sessionId) {
+                    mUniqueSessionId = Optional.of(sessionId);
+                    mIsDefaultUniqueSessionId = true;
                     mSessionCallback.onSessionDataReady(
                             sessionId, Optional.empty(), /*isSessionTerminated=*/ true);
                 }
@@ -117,15 +135,15 @@ public abstract class SecureSession {
         /**
          * The session data is ready, the UWB configuration of Controller can be sent to UWBS.
          *
-         * @param sessionData         empty for controller, TLV data for controllee; And empty
-         *                            if the session is terminated automatically, profile/app
+         * @param sessionData         empty if the session is terminated automatically, profile/app
          *                            defined the session data in advance.
-         * @param isSessionTerminated If the session is not terminated, the client should
-         *                            terminate the session accordingly.
+         * @param isSessionTerminated If the session is terminated, the client shouldn't use
+         *                            the session further.
          */
-        // TODO: what if the 1 to m case? is this sub sessionId ?
         void onSessionDataReady(
-                int updatedSessionId, Optional<byte[]> sessionData, boolean isSessionTerminated);
+                int updatedSessionId,
+                Optional<SessionData> sessionData,
+                boolean isSessionTerminated);
 
         /**
          * Something wrong, the session is aborted.
