@@ -806,11 +806,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 }
         );
 
-        DtTagUpdateRangingRoundsStatus status = new DtTagUpdateRangingRoundsStatus(
-                UwbUciConstants.STATUS_CODE_ERROR_ROUND_INDEX_NOT_ACTIVATED,
-                0,
-                new byte[]{});
-
+        DtTagUpdateRangingRoundsStatus status = null;
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.submit(rangingRoundsUpdateTask);
         try {
@@ -821,6 +817,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             executor.shutdownNow();
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
+        }
+        // Native stack returns null if unsuccessful
+        if (status == null) {
+            status = new DtTagUpdateRangingRoundsStatus(
+                    UwbUciConstants.STATUS_CODE_ERROR_ROUND_INDEX_NOT_ACTIVATED,
+                    0,
+                    new byte[]{});
         }
         PersistableBundle params = new DlTDoARangingRoundsUpdateStatus.Builder()
                 .setStatus(status.getStatus())
