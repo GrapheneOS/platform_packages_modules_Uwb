@@ -416,6 +416,9 @@ public abstract class FiraParams extends Params {
             })
     public @interface HoppingMode {}
 
+      /** UCI spec default: 25 slots per ranging round. */
+    public static final int SLOTS_PER_RR = 25;
+    public static final int MIN_CAP_SIZE = 5;
     public static final int HOPPING_MODE_DISABLE = 0;
     public static final int HOPPING_MODE_FIRA_HOPPING_ENABLE = 1;
 

@@ -108,6 +108,7 @@ public final class RangingSession implements AutoCloseable {
                 REASON_SERVICE_CONNECTION_FAILURE,
                 REASON_SE_NOT_SUPPORTED,
                 REASON_SE_INTERACTION_FAILURE,
+                REASON_INSUFFICIENT_SLOTS_PER_RR,
         })
         @interface Reason {}
 
@@ -180,6 +181,12 @@ public final class RangingSession implements AutoCloseable {
          * SE interactions failed.
          */
         int REASON_SE_INTERACTION_FAILURE = 13;
+
+        /**
+         * Indicate insufficient slots per ranging round.
+         * @hide
+         */
+        int REASON_INSUFFICIENT_SLOTS_PER_RR = 14;
 
         /**
          * @hide

@@ -65,5 +65,9 @@ enum RangingChangeReason {
    * Max ranging round retries reached.
    */
   MAX_RR_RETRY_REACHED,
-}
 
+  /**
+   * Insufficient slot per rr.
+   */
+  INSUFFICIENT_SLOTS_PER_RR,
+}
