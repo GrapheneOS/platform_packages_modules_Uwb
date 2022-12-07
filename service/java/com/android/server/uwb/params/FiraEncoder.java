@@ -171,6 +171,7 @@ public class FiraEncoder extends TlvEncoder {
         }
         if (params.getScheduledMode() == FiraParams.CONTENTION_BASED_RANGING) {
             tlvBufferBuilder.putByte(ConfigParam.SCHEDULED_MODE, (byte) params.getScheduledMode());
+            tlvBufferBuilder.putByteArray(ConfigParam.CAP_SIZE_RANGE, params.getCapSize());
         }
         return tlvBufferBuilder.build();
     }
