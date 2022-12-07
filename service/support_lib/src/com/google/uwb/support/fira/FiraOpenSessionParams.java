@@ -77,6 +77,7 @@ public class FiraOpenSessionParams extends FiraParams {
     private final int mPreambleCodeIndex;
     @RframeConfig private final int mRframeConfig;
     @PrfMode private final int mPrfMode;
+    private final byte[] mCapSize;
     @SchedulingMode private final int mScheduledMode;
     @PreambleDuration private final int mPreambleDuration;
     @SfdIdValue private final int mSfdId;
@@ -151,6 +152,7 @@ public class FiraOpenSessionParams extends FiraParams {
     private static final String KEY_PREAMBLE_CODE_INDEX = "preamble_code_index";
     private static final String KEY_RFRAME_CONFIG = "rframe_config";
     private static final String KEY_PRF_MODE = "prf_mode";
+    private static final String KEY_CAP_SIZE_RANGE = "cap_size_range";
     private static final String KEY_SCHEDULED_MODE = "scheduled_mode";
     private static final String KEY_PREAMBLE_DURATION = "preamble_duration";
     private static final String KEY_SFD_ID = "sfd_id";
@@ -229,6 +231,7 @@ public class FiraOpenSessionParams extends FiraParams {
             int preambleCodeIndex,
             @RframeConfig int rframeConfig,
             @PrfMode int prfMode,
+            byte[] capSize,
             @SchedulingMode int scheduledMode,
             @PreambleDuration int preambleDuration,
             @SfdIdValue int sfdId,
@@ -290,6 +293,7 @@ public class FiraOpenSessionParams extends FiraParams {
         mPreambleCodeIndex = preambleCodeIndex;
         mRframeConfig = rframeConfig;
         mPrfMode = prfMode;
+        mCapSize = capSize;
         mScheduledMode = scheduledMode;
         mPreambleDuration = preambleDuration;
         mSfdId = sfdId;
@@ -435,6 +439,10 @@ public class FiraOpenSessionParams extends FiraParams {
     @PrfMode
     public int getPrfMode() {
         return mPrfMode;
+    }
+
+    public byte[] getCapSize() {
+        return mCapSize;
     }
 
     @SchedulingMode
@@ -663,6 +671,9 @@ public class FiraOpenSessionParams extends FiraParams {
         bundle.putInt(KEY_RFRAME_CONFIG, mRframeConfig);
         bundle.putInt(KEY_PRF_MODE, mPrfMode);
         bundle.putInt(KEY_SCHEDULED_MODE, mScheduledMode);
+        if (mScheduledMode == CONTENTION_BASED_RANGING) {
+            bundle.putIntArray(KEY_CAP_SIZE_RANGE, byteArrayToIntArray(mCapSize));
+        }
         bundle.putInt(KEY_PREAMBLE_DURATION, mPreambleDuration);
         bundle.putInt(KEY_SFD_ID, mSfdId);
         bundle.putInt(KEY_STS_SEGMENT_COUNT, mStsSegmentCount);
@@ -768,6 +779,7 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setPreambleCodeIndex(bundle.getInt(KEY_PREAMBLE_CODE_INDEX))
                 .setRframeConfig(bundle.getInt(KEY_RFRAME_CONFIG))
                 .setPrfMode(bundle.getInt(KEY_PRF_MODE))
+                .setCapSize(intArrayToByteArray(bundle.getIntArray(KEY_CAP_SIZE_RANGE)))
                 .setScheduledMode(bundle.getInt(KEY_SCHEDULED_MODE, 0))
                 .setPreambleDuration(bundle.getInt(KEY_PREAMBLE_DURATION))
                 .setSfdId(bundle.getInt(KEY_SFD_ID))
@@ -850,7 +862,7 @@ public class FiraOpenSessionParams extends FiraParams {
         private int mSlotDurationRstu = 2400;
 
         /** UCI spec default: 25 slots per ranging round. */
-        private int mSlotsPerRangingRound = 25;
+        private int mSlotsPerRangingRound = SLOTS_PER_RR;
 
         /** UCI spec default: RANGING_INTERVAL 200 ms */
         private int mRangingIntervalMs = 200;
@@ -893,6 +905,9 @@ public class FiraOpenSessionParams extends FiraParams {
 
         /** UCI spec default: BPRF */
         @PrfMode private int mPrfMode = PRF_MODE_BPRF;
+
+        /** UCI spec default: Octet [0] = SLOTS_PER_RR-1 Octet [1] = 0x05 */
+        private byte[] mCapSize = {(SLOTS_PER_RR - 1) , MIN_CAP_SIZE};
 
         /** UCI spec default: Time scheduled ranging */
         @SchedulingMode private int mScheduledMode = TIME_SCHEDULED_RANGING;
@@ -1032,6 +1047,10 @@ public class FiraOpenSessionParams extends FiraParams {
             mPreambleCodeIndex = builder.mPreambleCodeIndex;
             mRframeConfig = builder.mRframeConfig;
             mPrfMode = builder.mPrfMode;
+            mScheduledMode = builder.mScheduledMode;
+            if (builder.mScheduledMode == CONTENTION_BASED_RANGING) {
+                mCapSize = builder.mCapSize;
+            }
             mPreambleDuration = builder.mPreambleDuration;
             mSfdId = builder.mSfdId;
             mStsSegmentCount = builder.mStsSegmentCount;
@@ -1064,7 +1083,6 @@ public class FiraOpenSessionParams extends FiraParams {
             mHasAngleOfArrivalElevationReport = builder.mHasAngleOfArrivalElevationReport;
             mHasAngleOfArrivalFigureOfMeritReport = builder.mHasAngleOfArrivalFigureOfMeritReport;
             mAoaType = builder.mAoaType;
-            mScheduledMode = builder.mScheduledMode;
             mNumOfMsrmtFocusOnRange = builder.mNumOfMsrmtFocusOnRange;
             mNumOfMsrmtFocusOnAoaAzimuth = builder.mNumOfMsrmtFocusOnAoaAzimuth;
             mNumOfMsrmtFocusOnAoaElevation = builder.mNumOfMsrmtFocusOnAoaElevation;
@@ -1096,6 +1114,10 @@ public class FiraOpenSessionParams extends FiraParams {
             mPreambleCodeIndex = params.mPreambleCodeIndex;
             mRframeConfig = params.mRframeConfig;
             mPrfMode = params.mPrfMode;
+            mScheduledMode = params.mScheduledMode;
+            if (params.mScheduledMode == CONTENTION_BASED_RANGING) {
+                mCapSize = params.mCapSize;
+            }
             mPreambleDuration = params.mPreambleDuration;
             mSfdId = params.mSfdId;
             mStsSegmentCount = params.mStsSegmentCount;
@@ -1256,6 +1278,11 @@ public class FiraOpenSessionParams extends FiraParams {
 
         public FiraOpenSessionParams.Builder setPrfMode(@PrfMode int prfMode) {
             mPrfMode = prfMode;
+            return this;
+        }
+
+        public FiraOpenSessionParams.Builder setCapSize(byte[] capSize) {
+            mCapSize = capSize;
             return this;
         }
 
@@ -1640,6 +1667,7 @@ public class FiraOpenSessionParams extends FiraParams {
                     mPreambleCodeIndex,
                     mRframeConfig,
                     mPrfMode,
+                    mCapSize,
                     mScheduledMode,
                     mPreambleDuration,
                     mSfdId,
