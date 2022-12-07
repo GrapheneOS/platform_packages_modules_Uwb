@@ -41,6 +41,8 @@ public class CapabilityParam {
     public static final int SUPPORTED_HPRF_PARAMETER_SETS = 0x0F;
     public static final int SUPPORTED_AOA = 0x10;
     public static final int SUPPORTED_EXTENDED_MAC_ADDRESS = 0x11;
+    public static final int SUPPORTED_MAX_MESSAGE_SIZE = 0x12;
+    public static final int SUPPORTED_MAX_DATA_PACKET_PAYLOAD_SIZE = 0x13;
     public static final int SUPPORTED_AOA_RESULT_REQ_INTERLEAVING =
             UwbVendorCapabilityTlvTypes.SUPPORTED_AOA_RESULT_REQ_ANTENNA_INTERLEAVING;
     public static final int SUPPORTED_MIN_RANGING_INTERVAL_MS =
@@ -91,8 +93,23 @@ public class CapabilityParam {
     public static final int ONE_TO_MANY = 0x2;
     public static final int MANY_TO_MANY = 0x4;
 
+    public static final int INTERVAL_BASED_SCHEDULING = 0x1;
+    public static final int BLOCK_BASED_SCHEDULING = 0x2;
+
+    public static final int CONTENTION_BASED_RANGING = 0x1;
+    public static final int TIME_SCHEDULED_RANGING = 0x2;
+
+    public static final int CONSTRAINT_LENGTH_3 = 0x1;
+    public static final int CONSTRAINT_LENGTH_7 = 0x2;
+
     public static final int NO_BLOCK_STRIDING = 0x0;
     public static final int BLOCK_STRIDING = 0x1;
+
+    public static final int NO_HOPPING_MODE = 0x0;
+    public static final int HOPPING_MODE = 0x1;
+
+    public static final int NO_EXTENDED_MAC_ADDRESS = 0x0;
+    public static final int EXTENDED_MAC_ADDRESS = 0x1;
 
     public static final int NO_UWB_INITIATION_TIME = 0x0;
     public static final int UWB_INITIATION_TIME = 0x1;
