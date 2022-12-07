@@ -40,8 +40,8 @@ public abstract class InitiatorSession extends SecureSession {
     private static final String LOG_TAG = "InitiatorSession";
     private static final int TUNNEL_TIMEOUT_MILLIS = 2000;
 
-    protected static final int MSG_ID_GET_CONTROLLEE_INFO = 0;
-    protected static final int MSG_ID_PUT_CONTROLLEE_INFO = 1;
+    protected static final int MSG_ID_GET_CONTROLEE_INFO = 0;
+    protected static final int MSG_ID_PUT_CONTROLEE_INFO = 1;
     protected static final int MSG_ID_GET_SESSION_DATA = 2;
     protected static final int MSG_ID_PUT_SESSION_DATA = 3;
 
@@ -127,7 +127,7 @@ public abstract class InitiatorSession extends SecureSession {
                 getDoCommand.getCommandApdu().getEncoded(),
                 new FiRaSecureChannel.ExternalRequestCallback() {
                     @Override
-                    public void onSuccess() {
+                    public void onSuccess(@NonNull byte[] responseData) {
                         // do nothing.
                     }
 
@@ -144,7 +144,7 @@ public abstract class InitiatorSession extends SecureSession {
                 data,
                 new FiRaSecureChannel.ExternalRequestCallback() {
                     @Override
-                    public void onSuccess() {
+                    public void onSuccess(@NonNull byte[] responseData) {
                         TunnelMessageRequest tunnelMessageRequest = new TunnelMessageRequest(msgId);
                         mPendingTunnelRequests.addLast(tunnelMessageRequest);
                         logd("message: " + msgId + " is send out, waiting for response.");

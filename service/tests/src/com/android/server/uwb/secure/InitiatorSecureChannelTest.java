@@ -34,7 +34,7 @@ import android.os.Message;
 import android.os.test.TestLooper;
 
 import com.android.server.uwb.discovery.Transport;
-import com.android.server.uwb.pm.ControlleeInfo;
+import com.android.server.uwb.pm.ControleeInfo;
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
 import com.android.server.uwb.secure.csml.DispatchCommand;
 import com.android.server.uwb.secure.csml.DispatchResponse;
@@ -156,9 +156,9 @@ public class InitiatorSecureChannelTest {
         when(mRunningProfileSessionInfo.getSecureBlob()).thenReturn(Optional.of(new byte[0]));
         when(mRunningProfileSessionInfo.getOidOfProvisionedAdf())
                 .thenReturn(ObjectIdentifier.INVALID_OID);
-        ControlleeInfo mockControlleeInfo = mock(ControlleeInfo.class);
-        when(mockControlleeInfo.toBytes()).thenReturn(new byte[0]);
-        when(mRunningProfileSessionInfo.getControlleeInfo()).thenReturn(mockControlleeInfo);
+        ControleeInfo mockControleeInfo = mock(ControleeInfo.class);
+        when(mockControleeInfo.toBytes()).thenReturn(new byte[0]);
+        when(mRunningProfileSessionInfo.getControleeInfo()).thenReturn(mockControleeInfo);
         when(mSecureElementChannel.transmit(any(SwapInAdfCommand.class))).thenReturn(
                 ResponseApdu.fromResponse(
                         DataTypeConversionUtil.hexStringToByteArray("0604000000019000")));
@@ -174,9 +174,9 @@ public class InitiatorSecureChannelTest {
     public void openChannelSwapInAdfFailed() throws IOException {
         when(mSecureElementChannel.openChannel()).thenReturn(true);
         when(mRunningProfileSessionInfo.getSecureBlob()).thenReturn(Optional.of(new byte[0]));
-        ControlleeInfo mockControlleeInfo = mock(ControlleeInfo.class);
-        when(mockControlleeInfo.toBytes()).thenReturn(new byte[0]);
-        when(mRunningProfileSessionInfo.getControlleeInfo()).thenReturn(mockControlleeInfo);
+        ControleeInfo mockControleeInfo = mock(ControleeInfo.class);
+        when(mockControleeInfo.toBytes()).thenReturn(new byte[0]);
+        when(mRunningProfileSessionInfo.getControleeInfo()).thenReturn(mockControleeInfo);
         when(mRunningProfileSessionInfo.getOidOfProvisionedAdf())
                 .thenReturn(ObjectIdentifier.INVALID_OID);
         when(mSecureElementChannel.transmit(any(SwapInAdfCommand.class))).thenReturn(
@@ -316,6 +316,7 @@ public class InitiatorSecureChannelTest {
 
         mTestLooper.dispatchAll();
     }
+
     private void doEstablishSC() throws IOException {
         doPrepareSC();
         // response: status-81,data-9000, notification format-00, notification id-01
@@ -327,13 +328,38 @@ public class InitiatorSecureChannelTest {
         mInitiatorSecureChannel.processRemoteCommandOrResponse(new byte[0]);
     }
 
+    private void doEstablishSCWithDefaultSessionId() throws IOException {
+        doPrepareSC();
+        // response: status-81,data-9000, notification format-00, notification id-01
+        ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(
+                DataTypeConversionUtil.hexStringToByteArray("710F80018181029000E106800100810101"),
+                StatusWord.SW_NO_ERROR.toInt());
+        when(mSecureElementChannel.transmit(any(DispatchCommand.class))).thenReturn(responseApdu);
+        ResponseApdu sessionIdResponseApdu = ResponseApdu.fromDataAndStatusWord(
+                DataTypeConversionUtil.hexStringToByteArray("810101"),
+                StatusWord.SW_NO_ERROR.toInt());
+        when(mSecureElementChannel.transmit(any(GetDoCommand.class)))
+                .thenReturn(sessionIdResponseApdu);
+        mInitiatorSecureChannel.processRemoteCommandOrResponse(new byte[0]);
+        verify(mSecureElementChannel).transmit(any(GetDoCommand.class));
+    }
+
     @Test
     public void receiveResponseOfScSetupSuccess() throws IOException {
         doEstablishSC();
 
         assertThat(mInitiatorSecureChannel.getStatus()).isEqualTo(
                 FiRaSecureChannel.Status.ESTABLISHED);
-        verify(mSecureChannelCallback).onEstablished();
+        verify(mSecureChannelCallback).onEstablished(any());
+    }
+
+    @Test
+    public void receiveResponseOfScSetupSuccessWithDefaultSessionId() throws IOException {
+        doEstablishSCWithDefaultSessionId();
+
+        assertThat(mInitiatorSecureChannel.getStatus()).isEqualTo(
+                FiRaSecureChannel.Status.ESTABLISHED);
+        verify(mSecureChannelCallback).onEstablished(eq(Optional.of(1)));
     }
 
     @Test
@@ -440,7 +466,7 @@ public class InitiatorSecureChannelTest {
         mInitiatorSecureChannel.sendLocalCommandApdu(commandApdu, externalRequestCallback);
         mTestLooper.dispatchAll();
 
-        verify(externalRequestCallback).onSuccess();
+        verify(externalRequestCallback).onSuccess(any());
     }
 
     @Test
@@ -556,7 +582,7 @@ public class InitiatorSecureChannelTest {
         mTestLooper.dispatchNext();
 
         assertThat(mTestLooper.nextMessage().what).isEqualTo(CMD_SEND_OOB_DATA);
-        verify(externalRequestCallback).onSuccess();
+        verify(externalRequestCallback).onSuccess(any());
     }
 
     @Test

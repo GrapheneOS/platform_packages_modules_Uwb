@@ -268,13 +268,13 @@ public class PacsControleeSession extends RangingSessionController {
 
         @NonNull
         @Override
-        public ControlleeInfo getControlleeInfo() {
+        public ControleeInfo getControleeInfo() {
             GenericSpecificationParams genericSpecificationParams =
                     mPacsControleeSession.getSpecificationInfo();
             if (genericSpecificationParams == null
                     || genericSpecificationParams.getFiraSpecificationParams() == null) {
                 Log.e(TAG, "Specification params not populated, sending default values");
-                return new ControlleeInfo.Builder()
+                return new ControleeInfo.Builder()
                         .setUwbCapability(new UwbCapability.Builder()
                                 .build())
                         .build();
@@ -299,14 +299,13 @@ public class PacsControleeSession extends RangingSessionController {
                     .setHprfParameterSet(firaSpecificationParams.getHprfParameterSetCapabilities())
                     .setAoaSupport(firaSpecificationParams.getAoaCapabilities())
                     .build();
-            return new ControlleeInfo.Builder().setUwbCapability(uwbCapability).build();
+            return new ControleeInfo.Builder().setUwbCapability(uwbCapability).build();
         }
 
         @NonNull
         @Override
-        public Optional<SessionData> getSessionDataForControllee(
-                ControlleeInfo controlleeInfoOfPeerDevice) {
-            return Optional.empty();
+        public UwbCapability getUwbCapability() {
+            return null;
         }
 
         @NonNull
@@ -360,9 +359,9 @@ public class PacsControleeSession extends RangingSessionController {
 
         @Override
         public void onSessionDataReady(
-                int updatedSessionId, Optional<byte[]> sessionData, boolean isSessionTerminated) {
-            mPacsControleeSession.mSessionInfo.mSessionData =
-                    SessionData.fromBytes(sessionData.get());
+                int updatedSessionId, Optional<SessionData> sessionData,
+                boolean isSessionTerminated) {
+            mPacsControleeSession.mSessionInfo.mSessionData = sessionData.get();
             mPacsControleeSession.sendMessage(RANGING_INIT);
         }
 

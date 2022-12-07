@@ -21,6 +21,9 @@ import static com.android.server.uwb.secure.iso7816.Iso7816Constants.TAG_LIST;
 
 import androidx.annotation.NonNull;
 
+import com.android.server.uwb.pm.ControleeInfo;
+import com.android.server.uwb.pm.SessionData;
+import com.android.server.uwb.pm.UwbCapability;
 import com.android.server.uwb.secure.iso7816.TlvDatum;
 import com.android.server.uwb.secure.iso7816.TlvDatum.Tag;
 import com.android.server.uwb.secure.iso7816.TlvParser;
@@ -29,6 +32,8 @@ import com.android.server.uwb.util.ObjectIdentifier;
 import com.google.common.primitives.Bytes;
 
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Random;
 
 /**
  * Utils used by the FiRa CSML related modules.
@@ -44,6 +49,9 @@ public final class CsmlUtil {
     private static final Tag TERMINATE_SESSION_TOP_DO_TAG = new Tag((byte) 0xBF, (byte) 0x79);
 
     public static final Tag UWB_CONFIG_AVAILABLE_TAG = new Tag((byte) 0x87);
+    public static final Tag SESSION_DATA_DO_TAG = new Tag((byte) 0xBF, (byte) 0x78);
+    public static final Tag SESSION_ID_TAG = new Tag((byte) 0x81);
+    public static final Tag CONTROLEE_INFO_DO_TAG = new Tag((byte) 0xBF, (byte) 0x70);
 
     /**
      * Check if the data represents the session data is not available,
@@ -62,6 +70,38 @@ public final class CsmlUtil {
     }
 
     /**
+     * check if the data contains the Session Data.
+     */
+    public static boolean isSessionDataDo(@NonNull byte[] data) {
+        return isSpecifiedDo(SESSION_DATA_DO_TAG, data);
+    }
+
+    /**
+     * Get the TLV for get session data command.
+     */
+    public static TlvDatum constructSessionDataGetDoTlv() {
+        return constructGetDoTlv(SESSION_DATA_DO_TAG);
+    }
+
+    /**
+     * check if the data contains the ControleeInfo DO.
+     * @param data
+     * @return
+     */
+    public static boolean isControleeInfoDo(@NonNull byte[] data) {
+        return isSpecifiedDo(CONTROLEE_INFO_DO_TAG, data);
+    }
+
+    private static boolean isSpecifiedDo(@NonNull Tag specifiedTag, @NonNull byte[] data) {
+        TlvDatum tlvDatum = TlvParser.parseOneTlv(data);
+        if (tlvDatum != null && Objects.equals(tlvDatum.tag, specifiedTag)) {
+            return  true;
+        }
+
+        return false;
+    }
+
+    /**
      * Encode the {@link ObjectIdentifier} as TLV format, which is used as the payload of TlvDatum
      * @param oid the ObjectIdentifier
      * @return The instance of TlvDatum.
@@ -72,12 +112,12 @@ public final class CsmlUtil {
     }
 
     /**
-     * Construct the TLV payload for {@link getDoCommand} with
-     * TAG LIST defined in ISO7816-4.
+     * Construct the TLV payload for {@link getDoCommand} top Tag (not nested)
+     * defined in ISO7816-4.
      */
     @NonNull
     public static TlvDatum constructGetDoTlv(@NonNull Tag tag) {
-        return new TlvDatum(TAG_LIST_TAG, tag.literalValue);
+        return new TlvDatum(EXTENDED_HEAD_LIST_TAG, constructDeepestTagOfGetDoAllContent(tag));
     }
 
     /**
@@ -89,6 +129,15 @@ public final class CsmlUtil {
         byte[] value = constructDeepestTagOfGetDoAllContent(TERMINATE_SESSION_DO_TAG);
         return constructGetOrPutDoTlv(
                 new TlvDatum(TERMINATE_SESSION_TOP_DO_TAG, value));
+    }
+
+    /**
+     * Get the TLV for session id in the session data.
+     */
+    @NonNull
+    public static TlvDatum constructGetSessionIdGetDoTlv() {
+        byte[] value = constructDeepestTagOfGetDoAllContent(SESSION_ID_TAG);
+        return constructGetOrPutDoTlv(new TlvDatum(SESSION_DATA_DO_TAG, value));
     }
 
     /**
@@ -118,5 +167,43 @@ public final class CsmlUtil {
         }
 
         return Bytes.concat(tag.literalValue, new byte[] { (byte) len});
+    }
+
+    /**
+     * Generates a session id, it is an integer random value and greater than 0.
+     */
+    public static int generateRandomSessionId() {
+        Random random = new Random();
+        int sessionId = random.nextInt();
+        while (sessionId <= 0) {
+            sessionId = random.nextInt();
+        }
+
+        return sessionId;
+    }
+
+    /**
+     * Generates the session data used by both controller and controlee by combining
+     * all information from the controller and the controlee.
+     *
+     * @param controllerUwbCapability the UwbCapability of Controller
+     * @param controleeInfo The {@link ControleeInfo} which includes UwbCapability of
+     *                       the controlee and other information.
+     * @param needSessionSecureInfo If the session Id and key are not derived in
+     *                              applet (AKA default sessionId/Key), the session
+     *                              secure info should be provided in {@link SessionData}.
+     * @param shareSessionId The main session Id shared amid sessions for multicast case
+     * @param uniqueSessionId The session Id/sub session Id(multicast), which is unique
+     *                        per session
+     * @return The Session Data used by both controller and controlee.
+     */
+    public static SessionData generateSessionData(
+            UwbCapability controllerUwbCapability,
+            ControleeInfo controleeInfo,
+            Optional<Integer> shareSessionId,
+            int uniqueSessionId,
+            boolean needSessionSecureInfo) {
+        // TODO: get the Session data by comparing uwb capabilities.
+        return new SessionData.Builder().build();
     }
 }

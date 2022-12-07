@@ -16,7 +16,6 @@
 
 package com.android.server.uwb.secure;
 
-import static com.android.server.uwb.secure.csml.DispatchResponse.NOTIFICATION_EVENT_ID_CONTROLLEE_INFO_AVAILABLE;
 import static com.android.server.uwb.secure.csml.DispatchResponse.NOTIFICATION_EVENT_ID_RDS_AVAILABLE;
 import static com.android.server.uwb.secure.csml.DispatchResponse.OUTBOUND_TARGET_HOST;
 
@@ -25,10 +24,15 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import com.android.server.uwb.pm.ControlleeInfo;
+import com.android.server.uwb.pm.ControleeInfo;
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
-import com.android.server.uwb.pm.SessionData;
+import com.android.server.uwb.secure.csml.CsmlUtil;
 import com.android.server.uwb.secure.csml.DispatchResponse;
+import com.android.server.uwb.secure.csml.GetDoCommand;
+import com.android.server.uwb.secure.csml.PutDoCommand;
+import com.android.server.uwb.secure.iso7816.StatusWord;
+import com.android.server.uwb.secure.iso7816.TlvDatum;
+import com.android.server.uwb.util.DataTypeConversionUtil;
 
 import java.util.Optional;
 
@@ -46,21 +50,22 @@ public class ControllerInitiatorSession extends InitiatorSession {
         super(workLooper, fiRaSecureChannel, sessionCallback, runningProfileSessionInfo);
     }
 
-    private void sendGetControlleeInfoCommand() {
-        // TODO: construct command data
-        byte[] data = new byte[] {};
-        tunnelData(MSG_ID_GET_CONTROLLEE_INFO, data);
+    private void sendGetControleeInfoCommand() {
+        GetDoCommand putControleeInfoCommand = GetDoCommand.build(
+                CsmlUtil.constructGetDoTlv(CsmlUtil.CONTROLEE_INFO_DO_TAG));
+        tunnelData(MSG_ID_GET_CONTROLEE_INFO,
+                putControleeInfoCommand.getCommandApdu().getEncoded());
     }
 
     @Override
     protected void handleFiRaSecureChannelEstablished() {
-        sendGetControlleeInfoCommand();
+        sendGetControleeInfoCommand();
     }
 
     @Override
     protected void handleTunnelDataFailure(int msgId, @NonNull TunnelDataFailReason failReason) {
         switch (msgId) {
-            case MSG_ID_GET_CONTROLLEE_INFO:
+            case MSG_ID_GET_CONTROLEE_INFO:
                 // fall through
             case MSG_ID_PUT_SESSION_DATA:
                 // simply abort the session.
@@ -82,10 +87,10 @@ public class ControllerInitiatorSession extends InitiatorSession {
     protected boolean handleTunnelDataResponseReceived(
             int msgId, @NonNull DispatchResponse response) {
         switch (msgId) {
-            case MSG_ID_GET_CONTROLLEE_INFO:
-                return handleGetControlleeInfoResponse(response);
+            case MSG_ID_GET_CONTROLEE_INFO:
+                return handleTunnelGetControleeInfoResponse(response);
             case MSG_ID_PUT_SESSION_DATA:
-                return handlePutSessionDataResponse(response);
+                return handleTunnelPutSessionDataResponse(response);
             default:
                 logd("unknown response for tunnel message: " + msgId);
                 break;
@@ -93,43 +98,51 @@ public class ControllerInitiatorSession extends InitiatorSession {
         return false;
     }
 
-    private boolean handleGetControlleeInfoResponse(@NonNull DispatchResponse response) {
-        for (DispatchResponse.Notification notification : response.notifications) {
-            if (notification.notificationEventId
-                    == NOTIFICATION_EVENT_ID_CONTROLLEE_INFO_AVAILABLE) {
-                byte[] controlleeInfoData =
-                        ((DispatchResponse.ControlleeInfoAvailableNotification) notification)
-                                .controlleeInfo;
-                ControlleeInfo controlleeInfo = ControlleeInfo.fromBytes(controlleeInfoData);
-                if (controlleeInfo == null) {
-                    logw("received controllee info is not expected.");
-                    break;
-                }
-                Optional<SessionData> sessionData =
-                        mRunningProfileSessionInfo.getSessionDataForControllee(controlleeInfo);
-                if (sessionData.isEmpty()) {
-                    logw("session data must be provided for controller");
-                    break;
-                }
-                // TODO: construct a PUT_DATA command for put session data
-                tunnelData(MSG_ID_PUT_SESSION_DATA, sessionData.get().toBytes());
-                return true;
+    private boolean handleTunnelGetControleeInfoResponse(@NonNull DispatchResponse response) {
+        try {
+            if (response.getOutboundData().isEmpty()) {
+                throw new IllegalStateException("data response is expected for GetControleeInfo.");
             }
+            DispatchResponse.OutboundData outboundData = response.getOutboundData().get();
+            if (outboundData.target != OUTBOUND_TARGET_HOST
+                    || !CsmlUtil.isControleeInfoDo(outboundData.data)) {
+                throw new IllegalStateException("controlee info from the response is not valid.");
+            }
+            ControleeInfo controleeInfo = ControleeInfo.fromBytes(outboundData.data);
+
+            mSessionData = CsmlUtil.generateSessionData(
+                    mRunningProfileSessionInfo.getUwbCapability(),
+                    controleeInfo,
+                    mRunningProfileSessionInfo.getSharedPrimarySessionId(),
+                    mUniqueSessionId.get(),
+                    !mIsDefaultUniqueSessionId);
+
+            PutDoCommand putSessionDataCommand = PutDoCommand.build(
+                    CsmlUtil.constructGetOrPutDoTlv(
+                            new TlvDatum(CsmlUtil.SESSION_DATA_DO_TAG, mSessionData.toBytes())));
+            tunnelData(MSG_ID_PUT_SESSION_DATA,
+                    putSessionDataCommand.getCommandApdu().getEncoded());
+        } catch (IllegalStateException e) {
+            logw("unexpected response for getControleeInfo" + e);
+            terminateSession();
+            mSessionCallback.onSessionAborted();
         }
-        if (response.getOutboundData().isPresent()
-                && response.getOutboundData().get().target == OUTBOUND_TARGET_HOST) {
-            logw("unexpected response for getControlleeInfo");
+        return true;
+    }
+
+    private boolean handleTunnelPutSessionDataResponse(@NonNull DispatchResponse response) {
+        Optional<DispatchResponse.OutboundData> outboundData = response.getOutboundData();
+        if (!response.statusWord.equals(StatusWord.SW_NO_ERROR)
+                || outboundData.isEmpty()
+                || (!StatusWord.SW_NO_ERROR.equals(
+                        StatusWord.fromInt(DataTypeConversionUtil.arbitraryByteArrayToI32(
+                                outboundData.get().data))))) {
+            logw("unexpected response for tunnel putSessionData.");
             terminateSession();
             mSessionCallback.onSessionAborted();
             return true;
         }
-        return false;
-    }
-
-    private boolean handlePutSessionDataResponse(@NonNull DispatchResponse response) {
         DispatchResponse.RdsAvailableNotification rdsAvailable = null;
-        // The outboundData to host supposed to be 0x9000 if the session is not terminated,
-        // ignore it as NOTIFICATION_EVENT_ID_RDS_AVAILABLE is enough.
         for (DispatchResponse.Notification notification : response.notifications) {
             switch (notification.notificationEventId) {
                 case NOTIFICATION_EVENT_ID_RDS_AVAILABLE:
@@ -138,25 +151,50 @@ public class ControllerInitiatorSession extends InitiatorSession {
                     break;
                 default:
                     logw(
-                            "Unexpected nofitication from dispatch response: "
+                            "Unexpected notification from dispatch response: "
                                     + notification.notificationEventId);
             }
         }
+
         if (rdsAvailable != null) {
-            // TODO: is the session ID for the sub session if it is 1 to m case?
-            // Or the applet shouldn't update the sessionId, sub session ID assigned by FW.
+            if (mIsDefaultUniqueSessionId && mUniqueSessionId.get() != rdsAvailable.sessionId) {
+                logw("default session Id is changed, which is not expected.");
+            }
+            mUniqueSessionId = Optional.of(rdsAvailable.sessionId);
             mSessionCallback.onSessionDataReady(
-                    rdsAvailable.sessionId, Optional.empty(), /*isSessionTerminated=*/ false);
-            return true;
+                    rdsAvailable.sessionId,
+                    Optional.of(mSessionData),
+                    /*isSessionTerminated=*/ false);
+        } else {
+            // push session data to FiRa applet if there is no RDS available notification;
+            // FiRa applet didn't send RDS to SUS.
+            PutDoCommand putSessionDataCommand = PutDoCommand.build(
+                    new TlvDatum(CsmlUtil.SESSION_DATA_DO_TAG,
+                            mSessionData.toBytes()));
+
+            mFiRaSecureChannel.sendLocalCommandApdu(
+                    putSessionDataCommand.getCommandApdu(),
+                    new FiRaSecureChannel.ExternalRequestCallback() {
+                        @Override
+                        public void onSuccess(byte[] responseData) {
+                            logd("success to send session data to local FiRa applet.");
+                            mSessionCallback.onSessionDataReady(
+                                    mUniqueSessionId.get(),
+                                    Optional.of(mSessionData),
+                                    /*isTerminatedSession=*/ false);
+
+                        }
+
+                        @Override
+                        public void onFailure() {
+                            logw("failed to put session data to applet.");
+                            terminateSession();
+                            mSessionCallback.onSessionAborted();
+                        }
+                    });
         }
-        if (response.getOutboundData().isPresent()
-                && response.getOutboundData().get().target == OUTBOUND_TARGET_HOST) {
-            logw("unexpected response for getControlleeInfo");
-            terminateSession();
-            mSessionCallback.onSessionAborted();
-            return true;
-        }
-        return false;
+
+        return true;
     }
 
     private void logd(@NonNull String dbgMsg) {

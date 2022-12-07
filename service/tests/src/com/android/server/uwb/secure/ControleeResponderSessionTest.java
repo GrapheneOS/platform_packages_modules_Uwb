@@ -19,6 +19,7 @@ package com.android.server.uwb.secure;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
@@ -36,7 +37,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-public class ControlleeResponderSessionTest {
+public class ControleeResponderSessionTest {
     @Mock
     private FiRaSecureChannel mFiRaSecureChannel;
     @Mock
@@ -47,7 +48,7 @@ public class ControlleeResponderSessionTest {
     @Captor
     private ArgumentCaptor<FiRaSecureChannel.SecureChannelCallback> mSecureChannelCallbackCaptor;
 
-    private ControlleeResponderSession mControlleeResponderSession;
+    private ControleeResponderSession mControleeResponderSession;
 
     private final TestLooper mTestLooper = new TestLooper();
 
@@ -55,11 +56,11 @@ public class ControlleeResponderSessionTest {
     public void setup() {
         MockitoAnnotations.initMocks(this);
 
-        mControlleeResponderSession = new ControlleeResponderSession(
+        mControleeResponderSession = new ControleeResponderSession(
                 mTestLooper.getLooper(), mFiRaSecureChannel, mSecureSessionCallback,
                 mRunningProfileSessionInfo);
 
-        mControlleeResponderSession.startSession();
+        mControleeResponderSession.startSession();
 
         verify(mFiRaSecureChannel).init(mSecureChannelCallbackCaptor.capture());
     }
@@ -83,7 +84,7 @@ public class ControlleeResponderSessionTest {
 
     @Test
     public void terminateSession() {
-        mControlleeResponderSession.terminateSession();
+        mControleeResponderSession.terminateSession();
         mTestLooper.dispatchAll();
 
         verify(mFiRaSecureChannel).terminateLocally();
@@ -104,15 +105,64 @@ public class ControlleeResponderSessionTest {
     }
 
     @Test
-    public void rdsAvailableNotification() {
+    public void abortSessionWithWrongDispatchResponseStatusWord() {
+        ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(new byte[0], 0x9032);
+        DispatchResponse dispatchResponse = DispatchResponse.fromResponseApdu(responseApdu);
+
+        mSecureChannelCallbackCaptor.getValue().onDispatchResponseAvailable(dispatchResponse);
+        mTestLooper.dispatchAll();
+
+        verify(mFiRaSecureChannel).terminateLocally();
+        verify(mSecureSessionCallback).onSessionAborted();
+    }
+
+    @Test
+    public void rdsAvailableNotificationWithSessionData() {
         byte[] data = DataTypeConversionUtil.hexStringToByteArray(
-                "711680018181029000E10D80010081010282050101020C0D");
+                "711B80018181029000E112800100810102820A010107BF780480020101");
         ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(data, 0x9000);
         DispatchResponse dispatchResponse = DispatchResponse.fromResponseApdu(responseApdu);
 
         mSecureChannelCallbackCaptor.getValue().onDispatchResponseAvailable(dispatchResponse);
 
-        verify(mSecureSessionCallback).onSessionDataReady(eq(1), any(), eq(false));
+        verify(mSecureSessionCallback).onSessionDataReady(anyInt(), any(), eq(false));
+    }
+
+    @Test
+    public void rdsAvailableNotificationWithSessionDataInApplet() {
+        byte[] data = DataTypeConversionUtil.hexStringToByteArray(
+                "711380018181029000E10A80010081010282020101");
+        ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(data, 0x9000);
+        DispatchResponse dispatchResponse = DispatchResponse.fromResponseApdu(responseApdu);
+
+        mSecureChannelCallbackCaptor.getValue().onDispatchResponseAvailable(dispatchResponse);
+
+        ArgumentCaptor<FiRaSecureChannel.ExternalRequestCallback> externalRequestCbCaptor =
+                ArgumentCaptor.forClass(FiRaSecureChannel.ExternalRequestCallback.class);
+        verify(mFiRaSecureChannel).sendLocalFiRaCommand(any(), externalRequestCbCaptor.capture());
+
+        externalRequestCbCaptor.getValue().onSuccess(
+                DataTypeConversionUtil.hexStringToByteArray("BF780480020101"));
+
+        verify(mSecureSessionCallback).onSessionDataReady(anyInt(), any(), eq(false));
+    }
+
+    @Test
+    public void failedToGetSessionDataFromApplet() {
+        byte[] data = DataTypeConversionUtil.hexStringToByteArray(
+                "711380018181029000E10A80010081010282020101");
+        ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(data, 0x9000);
+        DispatchResponse dispatchResponse = DispatchResponse.fromResponseApdu(responseApdu);
+
+        mSecureChannelCallbackCaptor.getValue().onDispatchResponseAvailable(dispatchResponse);
+
+        ArgumentCaptor<FiRaSecureChannel.ExternalRequestCallback> externalRequestCbCaptor =
+                ArgumentCaptor.forClass(FiRaSecureChannel.ExternalRequestCallback.class);
+        verify(mFiRaSecureChannel).sendLocalFiRaCommand(any(), externalRequestCbCaptor.capture());
+
+        externalRequestCbCaptor.getValue().onFailure();
+
+        verify(mSecureSessionCallback).onSessionAborted();
     }
 
     @Test
