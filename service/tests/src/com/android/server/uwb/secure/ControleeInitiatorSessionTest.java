@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -29,6 +30,7 @@ import android.os.test.TestLooper;
 
 import com.android.server.uwb.pm.ControleeInfo;
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
+import com.android.server.uwb.pm.UwbCapability;
 import com.android.server.uwb.secure.csml.CsmlUtil;
 import com.android.server.uwb.secure.csml.DispatchResponse;
 import com.android.server.uwb.secure.csml.FiRaCommand;
@@ -36,6 +38,7 @@ import com.android.server.uwb.secure.csml.GetDoCommand;
 import com.android.server.uwb.secure.iso7816.ResponseApdu;
 import com.android.server.uwb.secure.iso7816.TlvDatum;
 import com.android.server.uwb.util.DataTypeConversionUtil;
+import com.android.server.uwb.util.ObjectIdentifier;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -52,8 +55,7 @@ public class ControleeInitiatorSessionTest {
     private FiRaSecureChannel mFiRaSecureChannel;
     @Mock
     private SecureSession.Callback mSecureSessionCallback;
-    @Mock
-    private RunningProfileSessionInfo mRunningProfileSessionInfo;
+
 
     @Captor
     private ArgumentCaptor<FiRaSecureChannel.SecureChannelCallback> mSecureChannelCallbackCaptor;
@@ -66,9 +68,14 @@ public class ControleeInitiatorSessionTest {
     public void setup() {
         MockitoAnnotations.initMocks(this);
 
+        RunningProfileSessionInfo runningProfileSessionInfo =
+                new RunningProfileSessionInfo.Builder(mock(UwbCapability.class), mock(
+                        ObjectIdentifier.class))
+                        .setControleeInfo(new ControleeInfo.Builder().build())
+                        .build();
         mControleeInitiatorSession = new ControleeInitiatorSession(
                 mTestLooper.getLooper(), mFiRaSecureChannel, mSecureSessionCallback,
-                mRunningProfileSessionInfo);
+                runningProfileSessionInfo);
 
         mControleeInitiatorSession.startSession();
 
@@ -96,8 +103,6 @@ public class ControleeInitiatorSessionTest {
         ArgumentCaptor<FiRaSecureChannel.ExternalRequestCallback> externalRequestCallbackCaptor =
                 ArgumentCaptor.forClass(FiRaSecureChannel.ExternalRequestCallback.class);
         when(mFiRaSecureChannel.isEstablished()).thenReturn(true);
-        ControleeInfo controleeInfo = new ControleeInfo.Builder().build();
-        when(mRunningProfileSessionInfo.getControleeInfo()).thenReturn(controleeInfo);
 
         mSecureChannelCallbackCaptor.getValue().onEstablished(Optional.empty());
 
@@ -141,8 +146,6 @@ public class ControleeInitiatorSessionTest {
 
     @Test
     public void onSecureChannelEstablishedPutControleeInfoFail() {
-        ControleeInfo controleeInfo = new ControleeInfo.Builder().build();
-        when(mRunningProfileSessionInfo.getControleeInfo()).thenReturn(controleeInfo);
         ArgumentCaptor<FiRaSecureChannel.ExternalRequestCallback> externalRequestCallbackCaptor =
                 ArgumentCaptor.forClass(FiRaSecureChannel.ExternalRequestCallback.class);
 

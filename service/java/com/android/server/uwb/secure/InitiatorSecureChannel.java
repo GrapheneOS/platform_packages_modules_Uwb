@@ -57,11 +57,11 @@ class InitiatorSecureChannel extends FiRaSecureChannel {
         switch (msg.what) {
             case CMD_OPEN_CHANNEL:
                 if (mSecureElementChannel.openChannel()) {
-                    if (mRunningProfileSessionInfo.getSecureBlob().isPresent()) {
+                    if (mRunningProfileSessionInfo.secureBlob.isPresent()) {
                         if (!swapInAdf(
-                                mRunningProfileSessionInfo.getSecureBlob().get(),
-                                mRunningProfileSessionInfo.getOidOfProvisionedAdf(),
-                                mRunningProfileSessionInfo.getControleeInfo().toBytes())) {
+                                mRunningProfileSessionInfo.secureBlob.get(),
+                                mRunningProfileSessionInfo.oidOfProvisionedAdf,
+                                mRunningProfileSessionInfo.controleeInfo.get().toBytes())) {
                             mSecureChannelCallback.onSetUpError(SetupError.OPEN_SE_CHANNEL);
                             return;
                         }
@@ -74,7 +74,7 @@ class InitiatorSecureChannel extends FiRaSecureChannel {
                 mWorkHandler.sendMessage(mWorkHandler.obtainMessage(CMD_SELECT_ADF));
                 break;
             case CMD_SELECT_ADF:
-                if (selectAdf(mRunningProfileSessionInfo.getOidOfProvisionedAdf())) {
+                if (selectAdf(mRunningProfileSessionInfo.oidOfProvisionedAdf)) {
                     mWorkHandler.sendMessage(mWorkHandler.obtainMessage(CMD_INITIATE_TRANSACTION));
                     mStatus = Status.ADF_SELECTED;
                 } else {
@@ -82,13 +82,10 @@ class InitiatorSecureChannel extends FiRaSecureChannel {
                 }
                 break;
             case CMD_INITIATE_TRANSACTION:
-                Optional<Integer> uwbSessionId = Optional.empty();
-                if (!mRunningProfileSessionInfo.isUnicast()) {
-                    uwbSessionId = mRunningProfileSessionInfo.getSharedPrimarySessionId();
-                }
+                Optional<Integer> uwbSessionId = mRunningProfileSessionInfo.sharedPrimarySessionId;
 
                 execInitiateTransactionCmd(
-                        mRunningProfileSessionInfo.getSelectableOidsOfPeerDevice(), uwbSessionId);
+                        mRunningProfileSessionInfo.selectableOidsOfResponder.get(), uwbSessionId);
                 break;
             default:
                 super.handleScMessage(msg);

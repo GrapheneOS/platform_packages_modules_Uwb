@@ -51,11 +51,11 @@ class ResponderSecureChannel extends FiRaSecureChannel {
                 try {
                     ResponseApdu responseApdu = mSecureElementChannel.openChannelWithResponse();
                     if (responseApdu.getStatusWord() == SW_NO_ERROR.toInt()) {
-                        if (mRunningProfileSessionInfo.getSecureBlob().isPresent()) {
+                        if (mRunningProfileSessionInfo.secureBlob.isPresent()) {
                             if (!swapInAdf(
-                                    mRunningProfileSessionInfo.getSecureBlob().get(),
-                                    mRunningProfileSessionInfo.getOidOfProvisionedAdf(),
-                                    mRunningProfileSessionInfo.getControleeInfo().toBytes())) {
+                                    mRunningProfileSessionInfo.secureBlob.get(),
+                                    mRunningProfileSessionInfo.oidOfProvisionedAdf,
+                                    mRunningProfileSessionInfo.controleeInfo.get().toBytes())) {
                                 mSecureElementChannel.closeChannel();
                                 throw new IllegalStateException("Error on swapping in ADF");
                             }
