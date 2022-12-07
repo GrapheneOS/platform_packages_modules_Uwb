@@ -48,13 +48,14 @@ public class ControllerInitiatorSession extends InitiatorSession {
             @NonNull Callback sessionCallback,
             @NonNull RunningProfileSessionInfo runningProfileSessionInfo) {
         super(workLooper, fiRaSecureChannel, sessionCallback, runningProfileSessionInfo);
+        mIsController = true;
     }
 
     private void sendGetControleeInfoCommand() {
-        GetDoCommand putControleeInfoCommand = GetDoCommand.build(
+        GetDoCommand getControleeInfoCommand = GetDoCommand.build(
                 CsmlUtil.constructGetDoTlv(CsmlUtil.CONTROLEE_INFO_DO_TAG));
         tunnelData(MSG_ID_GET_CONTROLEE_INFO,
-                putControleeInfoCommand.getCommandApdu().getEncoded());
+                getControleeInfoCommand.getCommandApdu().getEncoded());
     }
 
     @Override
