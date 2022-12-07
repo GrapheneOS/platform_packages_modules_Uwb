@@ -76,10 +76,9 @@ public class ControleeResponderSession extends ResponderSession {
                 mSessionCallback.onSessionDataReady(
                         mUniqueSessionId.get(),
                         Optional.of(mSessionData),
-                        /*isTerminatedSession=*/false);
+                        /* isSessionTerminated= */ false);
             } else {
                 logd("try to read SessionData in applet.");
-                // try to get session Data
                 GetDoCommand getSessionDataCommand =
                         GetDoCommand.build(CsmlUtil.constructSessionDataGetDoTlv());
                 mFiRaSecureChannel.sendLocalFiRaCommand(getSessionDataCommand,
@@ -98,7 +97,7 @@ public class ControleeResponderSession extends ResponderSession {
                                 mSessionCallback.onSessionDataReady(
                                         mUniqueSessionId.get(),
                                         Optional.of(mSessionData),
-                                        /*isTerminatedSession=*/ false);
+                                        /* isSessionTerminated= */ false);
                             }
 
                             @Override

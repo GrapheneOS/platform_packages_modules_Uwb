@@ -20,15 +20,18 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import android.os.test.TestLooper;
 
+import com.android.server.uwb.pm.ControleeInfo;
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
 import com.android.server.uwb.secure.csml.CsmlUtil;
 import com.android.server.uwb.secure.csml.DispatchResponse;
+import com.android.server.uwb.secure.csml.FiRaCommand;
 import com.android.server.uwb.secure.csml.GetDoCommand;
 import com.android.server.uwb.secure.iso7816.ResponseApdu;
 import com.android.server.uwb.secure.iso7816.TlvDatum;
@@ -44,6 +47,7 @@ import org.mockito.MockitoAnnotations;
 import java.util.Optional;
 
 public class ControleeInitiatorSessionTest {
+    private static final int UNIQUE_SESSION_ID = 1;
     @Mock
     private FiRaSecureChannel mFiRaSecureChannel;
     @Mock
@@ -92,14 +96,21 @@ public class ControleeInitiatorSessionTest {
         ArgumentCaptor<FiRaSecureChannel.ExternalRequestCallback> externalRequestCallbackCaptor =
                 ArgumentCaptor.forClass(FiRaSecureChannel.ExternalRequestCallback.class);
         when(mFiRaSecureChannel.isEstablished()).thenReturn(true);
+        ControleeInfo controleeInfo = new ControleeInfo.Builder().build();
+        when(mRunningProfileSessionInfo.getControleeInfo()).thenReturn(controleeInfo);
 
         mSecureChannelCallbackCaptor.getValue().onEstablished(Optional.empty());
 
+        ArgumentCaptor<byte[]> controleeInfoCaptor = ArgumentCaptor.forClass(byte[].class);
         verify(mFiRaSecureChannel).tunnelToRemoteDevice(
-                any(), externalRequestCallbackCaptor.capture());
+                controleeInfoCaptor.capture(), externalRequestCallbackCaptor.capture());
         assertThat(externalRequestCallbackCaptor.getValue()).isNotNull();
+        assertThat(DataTypeConversionUtil.byteArrayToHexString(controleeInfoCaptor.getValue()))
+                .startsWith("00DB3FFF"); // PUT DO COMMAND
+        assertThat(DataTypeConversionUtil.byteArrayToHexString(controleeInfoCaptor.getValue()))
+                .contains("BF70"); // controlee info DO tag
 
-        // TODO: capture and assert put ControleeInfo command data.
+        // tunnel the put controlee info cmd.
         externalRequestCallbackCaptor.getValue().onSuccess(new byte[0]);
     }
 
@@ -130,16 +141,17 @@ public class ControleeInitiatorSessionTest {
 
     @Test
     public void onSecureChannelEstablishedPutControleeInfoFail() {
+        ControleeInfo controleeInfo = new ControleeInfo.Builder().build();
+        when(mRunningProfileSessionInfo.getControleeInfo()).thenReturn(controleeInfo);
         ArgumentCaptor<FiRaSecureChannel.ExternalRequestCallback> externalRequestCallbackCaptor =
                 ArgumentCaptor.forClass(FiRaSecureChannel.ExternalRequestCallback.class);
 
-        mSecureChannelCallbackCaptor.getValue().onEstablished(Optional.empty());
+        mSecureChannelCallbackCaptor.getValue().onEstablished(Optional.of(UNIQUE_SESSION_ID));
 
         verify(mFiRaSecureChannel).tunnelToRemoteDevice(
                 any(), externalRequestCallbackCaptor.capture());
         assertThat(externalRequestCallbackCaptor.getValue()).isNotNull();
 
-        // TODO: capture and assert put controleeInfo command data.
         externalRequestCallbackCaptor.getValue().onFailure();
 
         verify(mSecureSessionCallback).onSessionAborted();
@@ -147,6 +159,7 @@ public class ControleeInitiatorSessionTest {
 
     private void getControleeSessionData() {
         putControleeInfo();
+        // get DispatchResponse for Tunnel(PutControleeInfo)
         byte[] data = DataTypeConversionUtil.hexStringToByteArray("710780018181029000");
         ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(data, 0x9000);
         DispatchResponse dispatchResponse = DispatchResponse.fromResponseApdu(responseApdu);
@@ -157,20 +170,23 @@ public class ControleeInitiatorSessionTest {
                 ArgumentCaptor.forClass(FiRaSecureChannel.ExternalRequestCallback.class);
         verify(mFiRaSecureChannel, times(2)).tunnelToRemoteDevice(
                 any(), externalRequestCallbackCaptor.capture());
+
+        // tunnel(GetSessionData)
         externalRequestCallbackCaptor.getValue().onSuccess(new byte[0]);
     }
 
     @Test
-    public void putControleeInfoSuccessResponse() {
+    public void tunnelCorrectGetSessionData() {
         getControleeSessionData();
 
         ArgumentCaptor<byte[]> tunnelDataCaptor = ArgumentCaptor.forClass(byte[].class);
         verify(mFiRaSecureChannel, times(2))
                 .tunnelToRemoteDevice(tunnelDataCaptor.capture(), any());
 
-        // TODO: verify the true getSessionData
-        assertThat(tunnelDataCaptor.getValue())
-                .isEqualTo(DataTypeConversionUtil.hexStringToByteArray("0C0D"));
+        assertThat(DataTypeConversionUtil.byteArrayToHexString(tunnelDataCaptor.getValue()))
+                .startsWith("00CB3FFF"); // GET DO command
+        assertThat(DataTypeConversionUtil.byteArrayToHexString(tunnelDataCaptor.getValue()))
+                .contains("BF78");  // SessionData DO tag
     }
 
     @Test
@@ -191,21 +207,131 @@ public class ControleeInitiatorSessionTest {
     }
 
     @Test
-    public void getControleeSessionDataSuccessResponse() {
+    public void getControleeSessionDataSuccessResponseWithRdsAvailable() {
         getControleeSessionData();
         byte[] data = DataTypeConversionUtil.hexStringToByteArray(
-                "711680018181029000E10D80010081010282050101020C0D");
+                "71188001818107BF780480020101E10A80010081010282020101");
         ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(data, 0x9000);
         DispatchResponse dispatchResponse = DispatchResponse.fromResponseApdu(responseApdu);
 
         mSecureChannelCallbackCaptor.getValue().onDispatchResponseAvailable(dispatchResponse);
         mTestLooper.dispatchAll();
 
-        verify(mSecureSessionCallback).onSessionDataReady(eq(1), any(), eq(false));
+        // send PutSessionData to local applet.
+        verify(mFiRaSecureChannel, never()).sendLocalFiRaCommand(
+                any(), any());
+
+        verify(mSecureSessionCallback)
+                .onSessionDataReady(eq(UNIQUE_SESSION_ID), any(), eq(false));
     }
 
     @Test
-    public void getControleeSessionDataErrorResponse() {
+    public void successToGetSessionDataFromLocalAppletAsRdsAvailable() {
+        getControleeSessionData();
+        byte[] data = DataTypeConversionUtil.hexStringToByteArray(
+                "711380018181029000E10A80010081010282020101");
+        ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(data, 0x9000);
+        DispatchResponse dispatchResponse = DispatchResponse.fromResponseApdu(responseApdu);
+
+        mSecureChannelCallbackCaptor.getValue().onDispatchResponseAvailable(dispatchResponse);
+        mTestLooper.dispatchAll();
+
+        ArgumentCaptor<FiRaSecureChannel.ExternalRequestCallback> cbCaptor =
+                ArgumentCaptor.forClass(FiRaSecureChannel.ExternalRequestCallback.class);
+        ArgumentCaptor<FiRaCommand> fiRaCommandCaptor =
+                ArgumentCaptor.forClass(FiRaCommand.class);
+        // send PutSessionData to local applet.
+        verify(mFiRaSecureChannel).sendLocalFiRaCommand(
+                fiRaCommandCaptor.capture(), cbCaptor.capture());
+        assertThat(fiRaCommandCaptor.getValue().getCommandApdu().getIns()).isEqualTo((byte) 0xCB);
+        assertThat(fiRaCommandCaptor.getValue().getCommandApdu().getP1()).isEqualTo((byte) 0x3F);
+        assertThat(fiRaCommandCaptor.getValue().getCommandApdu().getP2()).isEqualTo((byte) 0xFF);
+
+        // success get session data from local applet
+        cbCaptor.getValue().onSuccess(
+                DataTypeConversionUtil.hexStringToByteArray("BF780480020101"));
+
+        verify(mSecureSessionCallback)
+                .onSessionDataReady(eq(UNIQUE_SESSION_ID), any(), eq(false));
+    }
+
+    @Test
+    public void failToGetSessionDataFromLocalAppletAsRdsAvailable() {
+        getControleeSessionData();
+        byte[] data = DataTypeConversionUtil.hexStringToByteArray(
+                "711380018181029000E10A80010081010282020101");
+        ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(data, 0x9000);
+        DispatchResponse dispatchResponse = DispatchResponse.fromResponseApdu(responseApdu);
+
+        mSecureChannelCallbackCaptor.getValue().onDispatchResponseAvailable(dispatchResponse);
+        mTestLooper.dispatchAll();
+
+        ArgumentCaptor<FiRaSecureChannel.ExternalRequestCallback> cbCaptor =
+                ArgumentCaptor.forClass(FiRaSecureChannel.ExternalRequestCallback.class);
+        // send getSessionData from local applet.
+        verify(mFiRaSecureChannel).sendLocalFiRaCommand(
+                any(), cbCaptor.capture());
+
+        // fail to get session data from local applet
+        cbCaptor.getValue().onFailure();
+
+        verify(mSecureSessionCallback).onSessionAborted();
+    }
+
+    @Test
+    public void getControleeSessionDataSuccessResponseWithoutRdsAvailable() {
+        getControleeSessionData();
+        byte[] data = DataTypeConversionUtil.hexStringToByteArray(
+                "7112800181810DBF780A80020101810400000001");
+        ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(data, 0x9000);
+        DispatchResponse dispatchResponse = DispatchResponse.fromResponseApdu(responseApdu);
+
+        mSecureChannelCallbackCaptor.getValue().onDispatchResponseAvailable(dispatchResponse);
+        mTestLooper.dispatchAll();
+
+        ArgumentCaptor<FiRaSecureChannel.ExternalRequestCallback> cbCaptor =
+                ArgumentCaptor.forClass(FiRaSecureChannel.ExternalRequestCallback.class);
+        ArgumentCaptor<FiRaCommand> fiRaCommandCaptor =
+                ArgumentCaptor.forClass(FiRaCommand.class);
+        // send PutSessionData to local applet.
+        verify(mFiRaSecureChannel).sendLocalFiRaCommand(
+                fiRaCommandCaptor.capture(), cbCaptor.capture());
+        assertThat(fiRaCommandCaptor.getValue().getCommandApdu().getIns()).isEqualTo((byte) 0xDB);
+        assertThat(fiRaCommandCaptor.getValue().getCommandApdu().getP1()).isEqualTo((byte) 0x3F);
+        assertThat(fiRaCommandCaptor.getValue().getCommandApdu().getP2()).isEqualTo((byte) 0xFF);
+
+        // success put session data to local applet
+        cbCaptor.getValue().onSuccess(new byte[0]);
+
+        verify(mSecureSessionCallback)
+                .onSessionDataReady(eq(UNIQUE_SESSION_ID), any(), eq(false));
+    }
+
+    @Test
+    public void failedPutSessionDataToLocalApplet() {
+        getControleeSessionData();
+        byte[] data = DataTypeConversionUtil.hexStringToByteArray(
+                "710C8001818107BF780480020101");
+        ResponseApdu responseApdu = ResponseApdu.fromDataAndStatusWord(data, 0x9000);
+        DispatchResponse dispatchResponse = DispatchResponse.fromResponseApdu(responseApdu);
+
+        mSecureChannelCallbackCaptor.getValue().onDispatchResponseAvailable(dispatchResponse);
+        mTestLooper.dispatchAll();
+
+        ArgumentCaptor<FiRaSecureChannel.ExternalRequestCallback> cbCaptor =
+                ArgumentCaptor.forClass(FiRaSecureChannel.ExternalRequestCallback.class);
+        // send PutSessionData to local applet.
+        verify(mFiRaSecureChannel).sendLocalFiRaCommand(
+                any(), cbCaptor.capture());
+
+        // success put session data to local applet
+        cbCaptor.getValue().onFailure();
+
+        verify(mSecureSessionCallback).onSessionAborted();
+    }
+
+    @Test
+    public void getControleeSessionDataResponseWithTargetRemoteData() {
         getControleeSessionData();
         byte[] data = DataTypeConversionUtil.hexStringToByteArray(
                 "710780018081029000"); // outbound to remote
@@ -234,8 +360,10 @@ public class ControleeInitiatorSessionTest {
 
         ArgumentCaptor<byte[]> dataCaptor = ArgumentCaptor.forClass(byte[].class);
         verify(mFiRaSecureChannel, times(2)).tunnelToRemoteDevice(dataCaptor.capture(), any());
-        assertThat(dataCaptor.getValue())
-                .isEqualTo(DataTypeConversionUtil.hexStringToByteArray("0C0D"));
+        assertThat(DataTypeConversionUtil.byteArrayToHexString(dataCaptor.getValue()))
+                .startsWith("00CB3FFF"); // GET DO command
+        assertThat(DataTypeConversionUtil.byteArrayToHexString(dataCaptor.getValue()))
+                .contains("BF78");  // SessionData DO tag
     }
 
     @Test
