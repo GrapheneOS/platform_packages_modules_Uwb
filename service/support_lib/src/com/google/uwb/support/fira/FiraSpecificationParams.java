@@ -50,6 +50,10 @@ public class FiraSpecificationParams extends FiraParams {
 
     private final boolean mHasBlockStridingSupport;
 
+    private final boolean mHasHoppingPreferenceSupport;
+
+    private final boolean mHasExtendedMacAddressSupport;
+
     private final boolean mHasNonDeferredModeSupport;
 
     private final boolean mHasInitiationTimeSupport;
@@ -63,6 +67,12 @@ public class FiraSpecificationParams extends FiraParams {
     private final int mMinSlotDuration;
 
     private final EnumSet<MultiNodeCapabilityFlag> mMultiNodeCapabilities;
+
+    private final EnumSet<RangingTimeStructCapabilitiesFlag> mRangingTimeStructCapabilities;
+
+    private final EnumSet<SchedulingModeCapabilitiesFlag> mSchedulingModeCapabilities;
+
+    private final EnumSet<CcConstraintLengthCapabilitiesFlag> mCcConstraintLengthCapabilities;
 
     private final EnumSet<PrfCapabilityFlag> mPrfCapabilities;
 
@@ -78,6 +88,10 @@ public class FiraSpecificationParams extends FiraParams {
 
     private final EnumSet<HprfParameterSetCapabilityFlag> mHprfParameterSetCapabilities;
 
+    private final Integer mMaxMessageSize;
+
+    private final Integer mMaxDataPacketPayloadSize;
+
     private final EnumSet<RangeDataNtfConfigCapabilityFlag> mRangeDataNtfConfigCapabilities;
 
     private static final String KEY_MIN_PHY_VERSION = "min_phy_version";
@@ -89,6 +103,8 @@ public class FiraSpecificationParams extends FiraParams {
     private static final String KEY_AOA_CAPABILITIES = "aoa_capabilities";
     private static final String KEY_DEVICE_ROLE_CAPABILITIES = "device_role_capabilities";
     private static final String KEY_BLOCK_STRIDING_SUPPORT = "block_striding";
+    private static final String KEY_HOPPING_PREFERENCE_SUPPORT = "hopping_preference";
+    private static final String KEY_EXTENDED_MAC_ADDRESS_SUPPORT = "extended_mac_address";
     private static final String KEY_NON_DEFERRED_MODE_SUPPORT = "non_deferred_mode";
     private static final String KEY_INITIATION_TIME_SUPPORT = "initiation_time";
     private static final String KEY_RSSI_REPORTING_SUPPORT = "rssi_reporting";
@@ -96,8 +112,14 @@ public class FiraSpecificationParams extends FiraParams {
     private static final String KEY_MIN_RANGING_INTERVAL = "min_ranging_interval";
     private static final String KEY_MIN_SLOT_DURATION = "min_slot_duration";
     private static final String KEY_MULTI_NODE_CAPABILITIES = "multi_node_capabilities";
+    private static final String KEY_RANGING_TIME_STRUCT_CAPABILITIES =
+            "ranging_time_struct_capabilities";
+    private static final String KEY_SCHEDULING_MODE_CAPABILITIES = "scheduling_mode_capabilities";
+    private static final String KEY_CC_CONSTRAINT_LENGTH_CAPABILITIES =
+            "cc_constraint_length_capabilities";
     private static final String KEY_PRF_CAPABILITIES = "prf_capabilities";
-    private static final String KEY_RANGING_ROUND_CAPABILITIES = "ranging_round_capabilities";
+    private static final String KEY_RANGING_ROUND_CAPABILITIES =
+            "ranging_round_capabilities";
     private static final String KEY_RFRAME_CAPABILITIES = "rframe_capabilities";
     private static final String KEY_STS_CAPABILITIES = "sts_capabilities";
     private static final String KEY_PSDU_DATA_RATE_CAPABILITIES = "psdu_data_rate_capabilities";
@@ -105,6 +127,8 @@ public class FiraSpecificationParams extends FiraParams {
             "bprf_parameter_set_capabilities";
     private static final String KEY_HPRF_PARAMETER_SET_CAPABILITIES =
             "hprf_parameter_set_capabilities";
+    private static final String KEY_MAX_MESSAGE_SIZE = "max_message_size";
+    private static final String KEY_MAX_DATA_PACKET_PAYLOAD_SIZE = "max_data_packet_payload_size";
     private static final String KEY_RANGE_DATA_NTF_CONFIG_CAPABILITIES =
             "range_data_ntf_config_capabilities";
 
@@ -117,6 +141,8 @@ public class FiraSpecificationParams extends FiraParams {
             EnumSet<AoaCapabilityFlag> aoaCapabilities,
             EnumSet<DeviceRoleCapabilityFlag> deviceRoleCapabilities,
             boolean hasBlockStridingSupport,
+            boolean hasHoppingPreferenceSupport,
+            boolean hasExtendedMacAddressSupport,
             boolean hasNonDeferredModeSupport,
             boolean hasInitiationTimeSupport,
             boolean hasRssiReportingSupport,
@@ -124,6 +150,9 @@ public class FiraSpecificationParams extends FiraParams {
             int minRangingInterval,
             int minSlotDuration,
             EnumSet<MultiNodeCapabilityFlag> multiNodeCapabilities,
+            EnumSet<RangingTimeStructCapabilitiesFlag> rangingTimeStructCapabilities,
+            EnumSet<SchedulingModeCapabilitiesFlag> schedulingModeCapabilities,
+            EnumSet<CcConstraintLengthCapabilitiesFlag> ccConstraintLengthCapabilities,
             EnumSet<PrfCapabilityFlag> prfCapabilities,
             EnumSet<RangingRoundCapabilityFlag> rangingRoundCapabilities,
             EnumSet<RframeCapabilityFlag> rframeCapabilities,
@@ -131,6 +160,8 @@ public class FiraSpecificationParams extends FiraParams {
             EnumSet<PsduDataRateCapabilityFlag> psduDataRateCapabilities,
             EnumSet<BprfParameterSetCapabilityFlag> bprfParameterSetCapabilities,
             EnumSet<HprfParameterSetCapabilityFlag> hprfParameterSetCapabilities,
+            Integer maxMessageSize,
+            Integer maxDataPacketPayloadSize,
             EnumSet<RangeDataNtfConfigCapabilityFlag> rangeDataNtfConfigCapabilities) {
         mMinPhyVersionSupported = minPhyVersionSupported;
         mMaxPhyVersionSupported = maxPhyVersionSupported;
@@ -140,6 +171,8 @@ public class FiraSpecificationParams extends FiraParams {
         mAoaCapabilities = aoaCapabilities;
         mDeviceRoleCapabilities = deviceRoleCapabilities;
         mHasBlockStridingSupport = hasBlockStridingSupport;
+        mHasHoppingPreferenceSupport = hasHoppingPreferenceSupport;
+        mHasExtendedMacAddressSupport = hasExtendedMacAddressSupport;
         mHasNonDeferredModeSupport = hasNonDeferredModeSupport;
         mHasInitiationTimeSupport = hasInitiationTimeSupport;
         mHasRssiReportingSupport = hasRssiReportingSupport;
@@ -147,6 +180,9 @@ public class FiraSpecificationParams extends FiraParams {
         mMinRangingInterval = minRangingInterval;
         mMinSlotDuration = minSlotDuration;
         mMultiNodeCapabilities = multiNodeCapabilities;
+        mRangingTimeStructCapabilities = rangingTimeStructCapabilities;
+        mSchedulingModeCapabilities = schedulingModeCapabilities;
+        mCcConstraintLengthCapabilities = ccConstraintLengthCapabilities;
         mPrfCapabilities = prfCapabilities;
         mRangingRoundCapabilities = rangingRoundCapabilities;
         mRframeCapabilities = rframeCapabilities;
@@ -154,6 +190,8 @@ public class FiraSpecificationParams extends FiraParams {
         mPsduDataRateCapabilities = psduDataRateCapabilities;
         mBprfParameterSetCapabilities = bprfParameterSetCapabilities;
         mHprfParameterSetCapabilities = hprfParameterSetCapabilities;
+        mMaxMessageSize = maxMessageSize;
+        mMaxDataPacketPayloadSize = maxDataPacketPayloadSize;
         mRangeDataNtfConfigCapabilities = rangeDataNtfConfigCapabilities;
     }
 
@@ -194,6 +232,14 @@ public class FiraSpecificationParams extends FiraParams {
         return mHasBlockStridingSupport;
     }
 
+    public boolean hasHoppingPreferenceSupport() {
+        return mHasHoppingPreferenceSupport;
+    }
+
+    public boolean hasExtendedMacAddressSupport() {
+        return mHasExtendedMacAddressSupport;
+    }
+
     public boolean hasNonDeferredModeSupport() {
         return mHasNonDeferredModeSupport;
     }
@@ -222,6 +268,18 @@ public class FiraSpecificationParams extends FiraParams {
 
     public EnumSet<MultiNodeCapabilityFlag> getMultiNodeCapabilities() {
         return mMultiNodeCapabilities;
+    }
+
+    public EnumSet<RangingTimeStructCapabilitiesFlag> getRangingTimeStructCapabilities() {
+        return mRangingTimeStructCapabilities;
+    }
+
+    public EnumSet<SchedulingModeCapabilitiesFlag> getSchedulingModeCapabilities() {
+        return mSchedulingModeCapabilities;
+    }
+
+    public EnumSet<CcConstraintLengthCapabilitiesFlag> getCcConstraintLengthCapabilities() {
+        return mCcConstraintLengthCapabilities;
     }
 
     public EnumSet<PrfCapabilityFlag> getPrfCapabilities() {
@@ -256,6 +314,14 @@ public class FiraSpecificationParams extends FiraParams {
         return mRangeDataNtfConfigCapabilities;
     }
 
+    public Integer getMaxMessageSize() {
+        return mMaxMessageSize;
+    }
+
+    public Integer getMaxDataPacketPayloadSize() {
+        return mMaxDataPacketPayloadSize;
+    }
+
     private static int[] toIntArray(List<Integer> data) {
         int[] res = new int[data.size()];
         for (int i = 0; i < data.size(); i++) {
@@ -275,6 +341,8 @@ public class FiraSpecificationParams extends FiraParams {
         bundle.putInt(KEY_AOA_CAPABILITIES, FlagEnum.toInt(mAoaCapabilities));
         bundle.putInt(KEY_DEVICE_ROLE_CAPABILITIES, FlagEnum.toInt(mDeviceRoleCapabilities));
         bundle.putBoolean(KEY_BLOCK_STRIDING_SUPPORT, mHasBlockStridingSupport);
+        bundle.putBoolean(KEY_HOPPING_PREFERENCE_SUPPORT, mHasHoppingPreferenceSupport);
+        bundle.putBoolean(KEY_EXTENDED_MAC_ADDRESS_SUPPORT, mHasExtendedMacAddressSupport);
         bundle.putBoolean(KEY_NON_DEFERRED_MODE_SUPPORT, mHasNonDeferredModeSupport);
         bundle.putBoolean(KEY_INITIATION_TIME_SUPPORT, mHasInitiationTimeSupport);
         bundle.putBoolean(KEY_RSSI_REPORTING_SUPPORT, mHasRssiReportingSupport);
@@ -282,6 +350,12 @@ public class FiraSpecificationParams extends FiraParams {
         bundle.putInt(KEY_MIN_RANGING_INTERVAL, mMinRangingInterval);
         bundle.putInt(KEY_MIN_SLOT_DURATION, mMinSlotDuration);
         bundle.putInt(KEY_MULTI_NODE_CAPABILITIES, FlagEnum.toInt(mMultiNodeCapabilities));
+        bundle.putInt(KEY_RANGING_TIME_STRUCT_CAPABILITIES,
+                FlagEnum.toInt(mRangingTimeStructCapabilities));
+        bundle.putInt(KEY_SCHEDULING_MODE_CAPABILITIES,
+                FlagEnum.toInt(mSchedulingModeCapabilities));
+        bundle.putInt(KEY_CC_CONSTRAINT_LENGTH_CAPABILITIES,
+                FlagEnum.toInt(mCcConstraintLengthCapabilities));
         bundle.putInt(KEY_PRF_CAPABILITIES, FlagEnum.toInt(mPrfCapabilities));
         bundle.putInt(KEY_RANGING_ROUND_CAPABILITIES, FlagEnum.toInt(mRangingRoundCapabilities));
         bundle.putInt(KEY_RFRAME_CAPABILITIES, FlagEnum.toInt(mRframeCapabilities));
@@ -291,6 +365,8 @@ public class FiraSpecificationParams extends FiraParams {
                 FlagEnum.toInt(mBprfParameterSetCapabilities));
         bundle.putLong(KEY_HPRF_PARAMETER_SET_CAPABILITIES,
                 FlagEnum.toLong(mHprfParameterSetCapabilities));
+        bundle.putInt(KEY_MAX_MESSAGE_SIZE, mMaxMessageSize);
+        bundle.putInt(KEY_MAX_DATA_PACKET_PAYLOAD_SIZE, mMaxDataPacketPayloadSize);
         bundle.putInt(KEY_RANGE_DATA_NTF_CONFIG_CAPABILITIES,
                 FlagEnum.toInt(mRangeDataNtfConfigCapabilities));
         return bundle;
@@ -339,6 +415,8 @@ public class FiraSpecificationParams extends FiraParams {
                                 bundle.getInt(KEY_DEVICE_ROLE_CAPABILITIES),
                                 DeviceRoleCapabilityFlag.values()))
                 .hasBlockStridingSupport(bundle.getBoolean(KEY_BLOCK_STRIDING_SUPPORT))
+                .hasHoppingPreferenceSupport(bundle.getBoolean(KEY_HOPPING_PREFERENCE_SUPPORT))
+                .hasExtendedMacAddressSupport(bundle.getBoolean(KEY_EXTENDED_MAC_ADDRESS_SUPPORT))
                 .hasNonDeferredModeSupport(bundle.getBoolean(KEY_NON_DEFERRED_MODE_SUPPORT))
                 .hasInitiationTimeSupport(bundle.getBoolean(KEY_INITIATION_TIME_SUPPORT))
                 .setMinRangingIntervalSupported(bundle.getInt(KEY_MIN_RANGING_INTERVAL, -1))
@@ -347,6 +425,18 @@ public class FiraSpecificationParams extends FiraParams {
                         FlagEnum.toEnumSet(
                                 bundle.getInt(KEY_MULTI_NODE_CAPABILITIES),
                                 MultiNodeCapabilityFlag.values()))
+                .setRangingTimeStructCapabilities(
+                        FlagEnum.toEnumSet(
+                                bundle.getInt(KEY_RANGING_TIME_STRUCT_CAPABILITIES),
+                                RangingTimeStructCapabilitiesFlag.values()))
+                .setSchedulingModeCapabilities(
+                        FlagEnum.toEnumSet(
+                                bundle.getInt(KEY_SCHEDULING_MODE_CAPABILITIES),
+                                SchedulingModeCapabilitiesFlag.values()))
+                .setCcConstraintLengthCapabilities(
+                        FlagEnum.toEnumSet(
+                                bundle.getInt(KEY_CC_CONSTRAINT_LENGTH_CAPABILITIES),
+                                CcConstraintLengthCapabilitiesFlag.values()))
                 .setPrfCapabilities(
                         FlagEnum.toEnumSet(
                                 bundle.getInt(KEY_PRF_CAPABILITIES), PrfCapabilityFlag.values()))
@@ -369,6 +459,8 @@ public class FiraSpecificationParams extends FiraParams {
                         FlagEnum.toEnumSet(
                                 bundle.getInt(KEY_BPRF_PARAMETER_SET_CAPABILITIES),
                                 BprfParameterSetCapabilityFlag.values()))
+                .setMaxMessageSize(bundle.getInt(KEY_MAX_MESSAGE_SIZE))
+                .setMaxDataPacketPayloadSize(bundle.getInt(KEY_MAX_DATA_PACKET_PAYLOAD_SIZE))
                 .setHprfParameterSetCapabilities(
                         FlagEnum.longToEnumSet(
                                 bundle.getLong(KEY_HPRF_PARAMETER_SET_CAPABILITIES),
@@ -414,6 +506,10 @@ public class FiraSpecificationParams extends FiraParams {
 
         private boolean mHasBlockStridingSupport = false;
 
+        private boolean mHasHoppingPreferenceSupport = false;
+
+        private boolean mHasExtendedMacAddressSupport = false;
+
         private boolean mHasNonDeferredModeSupport = false;
 
         private boolean mHasInitiationTimeSupport = false;
@@ -429,6 +525,21 @@ public class FiraSpecificationParams extends FiraParams {
         // Unicast support is mandatory
         private final EnumSet<MultiNodeCapabilityFlag> mMultiNodeCapabilities =
                 EnumSet.of(MultiNodeCapabilityFlag.HAS_UNICAST_SUPPORT);
+
+        private final EnumSet<RangingTimeStructCapabilitiesFlag> mRangingTimeStructCapabilities =
+                EnumSet.of(
+                        RangingTimeStructCapabilitiesFlag.HAS_INTERVAL_BASED_SCHEDULING_SUPPORT,
+                        RangingTimeStructCapabilitiesFlag.HAS_BLOCK_BASED_SCHEDULING_SUPPORT);
+
+        private final EnumSet<SchedulingModeCapabilitiesFlag> mSchedulingModeCapabilities =
+                EnumSet.of(
+                        SchedulingModeCapabilitiesFlag.HAS_CONTENTION_BASED_RANGING_SUPPORT,
+                        SchedulingModeCapabilitiesFlag.HAS_TIME_SCHEDULED_RANGING_SUPPORT);
+
+        private final EnumSet<CcConstraintLengthCapabilitiesFlag> mCcConstraintLengthCapabilities =
+                EnumSet.of(
+                        CcConstraintLengthCapabilitiesFlag.HAS_CONSTRAINT_LENGTH_3_SUPPORT,
+                        CcConstraintLengthCapabilitiesFlag.HAS_CONSTRAINT_LENGTH_7_SUPPORT);
 
         // BPRF mode is mandatory
         private final EnumSet<PrfCapabilityFlag> mPrfCapabilities =
@@ -455,6 +566,10 @@ public class FiraSpecificationParams extends FiraParams {
 
         private final EnumSet<HprfParameterSetCapabilityFlag> mHprfParameterSetCapabilities =
                 EnumSet.noneOf(HprfParameterSetCapabilityFlag.class);
+
+        private Integer mMaxMessageSize = 0;
+
+        private Integer mMaxDataPacketPayloadSize = 0;
 
         public FiraSpecificationParams.Builder setMinPhyVersionSupported(
                 FiraProtocolVersion version) {
@@ -500,6 +615,16 @@ public class FiraSpecificationParams extends FiraParams {
 
         public FiraSpecificationParams.Builder hasBlockStridingSupport(boolean value) {
             mHasBlockStridingSupport = value;
+            return this;
+        }
+
+        public FiraSpecificationParams.Builder hasHoppingPreferenceSupport(boolean value) {
+            mHasHoppingPreferenceSupport = value;
+            return this;
+        }
+
+        public FiraSpecificationParams.Builder hasExtendedMacAddressSupport(boolean value) {
+            mHasExtendedMacAddressSupport = value;
             return this;
         }
 
@@ -551,6 +676,24 @@ public class FiraSpecificationParams extends FiraParams {
             return this;
         }
 
+        public FiraSpecificationParams.Builder setRangingTimeStructCapabilities(
+                Collection<RangingTimeStructCapabilitiesFlag> rangingTimeStructCapabilities) {
+            mRangingTimeStructCapabilities.addAll(rangingTimeStructCapabilities);
+            return this;
+        }
+
+        public FiraSpecificationParams.Builder setSchedulingModeCapabilities(
+                Collection<SchedulingModeCapabilitiesFlag> schedulingModeCapabilities) {
+            mSchedulingModeCapabilities.addAll(schedulingModeCapabilities);
+            return this;
+        }
+
+        public FiraSpecificationParams.Builder setCcConstraintLengthCapabilities(
+                Collection<CcConstraintLengthCapabilitiesFlag> ccConstraintLengthCapabilities) {
+            mCcConstraintLengthCapabilities.addAll(ccConstraintLengthCapabilities);
+            return this;
+        }
+
         public FiraSpecificationParams.Builder setPrfCapabilities(
                 Collection<PrfCapabilityFlag> prfCapabilities) {
             mPrfCapabilities.addAll(prfCapabilities);
@@ -599,6 +742,16 @@ public class FiraSpecificationParams extends FiraParams {
             return this;
         }
 
+        public FiraSpecificationParams.Builder setMaxMessageSize(Integer value) {
+            mMaxMessageSize = value;
+            return this;
+        }
+
+        public FiraSpecificationParams.Builder setMaxDataPacketPayloadSize(Integer value) {
+            mMaxDataPacketPayloadSize = value;
+            return this;
+        }
+
         public FiraSpecificationParams build() {
             if (mSupportedChannels == null || mSupportedChannels.size() == 0) {
                 throw new IllegalStateException("Supported channels are not set");
@@ -613,6 +766,8 @@ public class FiraSpecificationParams extends FiraParams {
                     mAoaCapabilities,
                     mDeviceRoleCapabilities,
                     mHasBlockStridingSupport,
+                    mHasHoppingPreferenceSupport,
+                    mHasExtendedMacAddressSupport,
                     mHasNonDeferredModeSupport,
                     mHasInitiationTimeSupport,
                     mHasRssiReportingSupport,
@@ -620,6 +775,9 @@ public class FiraSpecificationParams extends FiraParams {
                     mMinRangingInterval,
                     mMinSlotDuration,
                     mMultiNodeCapabilities,
+                    mRangingTimeStructCapabilities,
+                    mSchedulingModeCapabilities,
+                    mCcConstraintLengthCapabilities,
                     mPrfCapabilities,
                     mRangingRoundCapabilities,
                     mRframeCapabilities,
@@ -627,6 +785,8 @@ public class FiraSpecificationParams extends FiraParams {
                     mPsduDataRateCapabilities,
                     mBprfParameterSetCapabilities,
                     mHprfParameterSetCapabilities,
+                    mMaxMessageSize,
+                    mMaxDataPacketPayloadSize,
                     mRangeDataNtfConfigCapabilities);
         }
     }

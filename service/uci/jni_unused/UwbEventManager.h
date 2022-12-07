@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2021 The Android Open Source Project
  *
- * Copyright 2021 NXP.
+ * Copyright 2021-2022 NXP.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * You may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@
 #ifndef _UWB_NATIVE_MANAGER_H_
 #define _UWB_NATIVE_MANAGER_H_
 
+#include "uwa_api.h"
+
 namespace android {
 
 class UwbEventManager {
@@ -35,6 +37,9 @@ public:
   void onMulticastListUpdateNotificationReceived(
       tUWA_SESSION_UPDATE_MULTICAST_LIST_NTF *multicast_list_ntf);
   void onBlinkDataTxNotificationReceived(uint8_t state);
+  void onDataTransferStatusReceived(uint32_t sesssionID, uint8_t sequenceNum,
+                                    uint8_t status);
+  void onDataReceived(tUWA_RX_DATA_REVT *rcvd_data);
   void onVendorUciNotificationReceived(uint8_t gid, uint8_t oid, uint8_t* data, uint16_t length);
   void onVendorDeviceInfo(uint8_t* data, uint8_t length);
 
@@ -51,6 +56,7 @@ private:
   jclass mRangeDataClass;
   jclass mRangingTwoWayMeasuresClass;
   jclass mRangeTdoaMeasuresClass;
+  jclass mRangeDlTdoaMeasuresClass;
   jclass mMulticastUpdateListDataClass;
 
   jmethodID mOnRangeDataNotificationReceived;
@@ -61,6 +67,8 @@ private:
   jmethodID mOnDeviceStateNotificationReceived;
   jmethodID mOnBlinkDataTxNotificationReceived;
   jmethodID mOnRawUciNotificationReceived;
+  jmethodID mOnDataTransferStatusReceived;
+  jmethodID mOnDataReceived;
   jmethodID mOnVendorUciNotificationReceived;
   jmethodID mOnVendorDeviceInfo;
 };
