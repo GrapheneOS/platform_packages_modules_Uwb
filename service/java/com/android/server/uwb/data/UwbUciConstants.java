@@ -94,6 +94,15 @@ public class UwbUciConstants {
     public static final int MULTI_NODE_MODE_ONE_TO_MANY = FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
     public static final int MULTI_NODE_MODE_MANY_TO_MANY = FiraParams.MULTI_NODE_MODE_MANY_TO_MANY;
 
+    public static final int INTERVAL_BASED_SCHEDULING = FiraParams.INTERVAL_BASED_SCHEDULING;
+    public static final int BLOCK_BASED_SCHEDULING = FiraParams.BLOCK_BASED_SCHEDULING;
+
+    public static final int CONTENTION_BASED_RANGING = FiraParams.CONTENTION_BASED_RANGING;
+    public static final int TIME_SCHEDULED_RANGING = FiraParams.TIME_SCHEDULED_RANGING;
+
+    public static final int CONSTRAINT_LENGTH_3 = FiraParams.CONSTRAINT_LENGTH_3;
+    public static final int CONSTRAINT_LENGTH_7 = FiraParams.CONSTRAINT_LENGTH_7;
+
     public static final int CHANNEL_5 = FiraParams.UWB_CHANNEL_5;
     public static final int CHANNEL_6 = FiraParams.UWB_CHANNEL_6;
     public static final int CHANNEL_8 = FiraParams.UWB_CHANNEL_8;
