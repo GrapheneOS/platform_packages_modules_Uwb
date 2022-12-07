@@ -280,18 +280,18 @@ public class UwbMetrics {
                 return;
             }
             session.mStartCount++;
+            session.convertRangingStatus(status);
+            UwbStatsLog.write(UwbStatsLog.UWB_RANGING_START, uwbSession.getProfileType(),
+                    session.mStsType, session.mIsInitiator,
+                    session.mIsController, session.mIsDiscoveredByFramework, session.mIsOutOfBand,
+                    session.mRangingStatus);
             if (status != UwbUciConstants.STATUS_CODE_OK) {
                 session.mStartFailureCount++;
                 session.mStartTimeSinceBootMs = 0;
                 session.mHasValidRangingSinceStart = false;
                 return;
             }
-            session.convertRangingStatus(status);
             session.mStartTimeSinceBootMs = mUwbInjector.getElapsedSinceBootMillis();
-            UwbStatsLog.write(UwbStatsLog.UWB_RANGING_START, uwbSession.getProfileType(),
-                    session.mStsType, session.mIsInitiator,
-                    session.mIsController, session.mIsDiscoveredByFramework, session.mIsOutOfBand,
-                    session.mRangingStatus);
         }
     }
 
