@@ -115,9 +115,9 @@ public class ControllerResponderSession extends ResponderSession {
 
     private void generateAndPutSessionDataToApplet(@NonNull ControleeInfo controleeInfo) {
         mSessionData = CsmlUtil.generateSessionData(
-                mRunningProfileSessionInfo.getUwbCapability(),
+                mRunningProfileSessionInfo.uwbCapability,
                 controleeInfo,
-                mRunningProfileSessionInfo.getSharedPrimarySessionId(),
+                mRunningProfileSessionInfo.sharedPrimarySessionId,
                 mUniqueSessionId.get(),
                 !mIsDefaultUniqueSessionId);
         // put session data
