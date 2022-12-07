@@ -82,6 +82,7 @@ import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_HOPPING_MO
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_HPRF_PARAMETER_SETS;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MAX_DATA_PACKET_PAYLOAD_SIZE;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MAX_MESSAGE_SIZE;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MAX_RANGING_SESSION_NUMBER;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MIN_RANGING_INTERVAL_MS;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MIN_SLOT_DURATION;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MULTI_NODE_MODES;
@@ -155,6 +156,13 @@ public class FiraDecoder extends TlvDecoder {
             builder.setMinRangingIntervalSupported(minSlotDuration);
         } catch (IllegalArgumentException e) {
             Log.w(TAG, "SUPPORTED_MIN_SLOT_DURATION not found.");
+        }
+
+        try {
+            int maxRangingSessionNumber = tlvs.getInt(SUPPORTED_MAX_RANGING_SESSION_NUMBER);
+            builder.setMaxRangingSessionNumberSupported(maxRangingSessionNumber);
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "SUPPORTED_MAX_RANGING_SESSION_NUMBER not found");
         }
 
         try {

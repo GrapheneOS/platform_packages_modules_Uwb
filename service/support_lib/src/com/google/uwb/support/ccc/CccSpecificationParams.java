@@ -47,6 +47,7 @@ public class CccSpecificationParams extends CccParams {
     @UwbConfig private final List<Integer> mUwbConfigs;
     private final List<CccPulseShapeCombo> mPulseShapeCombos;
     private final int mRanMultiplier;
+    private final int mMaxRangingSessionNumber;
     @ChapsPerSlot private final List<Integer> mChapsPerSlot;
     @SyncCodeIndex private final List<Integer> mSyncCodes;
     @Channel private final List<Integer> mChannels;
@@ -57,6 +58,7 @@ public class CccSpecificationParams extends CccParams {
     private static final String KEY_UWB_CONFIGS = "uwb_configs";
     private static final String KEY_PULSE_SHAPE_COMBOS = "pulse_shape_combos";
     private static final String KEY_RAN_MULTIPLIER = "ran_multiplier";
+    private static final String KEY_MAX_RANGING_SESSION_NUMBER = "max_ranging_session_number";
     private static final String KEY_CHAPS_PER_SLOTS = "chaps_per_slots";
     private static final String KEY_SYNC_CODES = "sync_codes";
     private static final String KEY_CHANNELS = "channels";
@@ -68,6 +70,7 @@ public class CccSpecificationParams extends CccParams {
             @UwbConfig List<Integer> uwbConfigs,
             List<CccPulseShapeCombo> pulseShapeCombos,
             int ranMultiplier,
+            int maxRangingSessionNumber,
             @ChapsPerSlot List<Integer> chapsPerSlot,
             @SyncCodeIndex List<Integer> syncCodes,
             @Channel List<Integer> channels,
@@ -77,6 +80,7 @@ public class CccSpecificationParams extends CccParams {
         mUwbConfigs = uwbConfigs;
         mPulseShapeCombos = pulseShapeCombos;
         mRanMultiplier = ranMultiplier;
+        mMaxRangingSessionNumber = maxRangingSessionNumber;
         mChapsPerSlot = chapsPerSlot;
         mSyncCodes = syncCodes;
         mChannels = channels;
@@ -104,6 +108,7 @@ public class CccSpecificationParams extends CccParams {
         bundle.putIntArray(KEY_UWB_CONFIGS, toIntArray(mUwbConfigs));
         bundle.putStringArray(KEY_PULSE_SHAPE_COMBOS, pulseShapeCombos);
         bundle.putInt(KEY_RAN_MULTIPLIER, mRanMultiplier);
+        bundle.putInt(KEY_MAX_RANGING_SESSION_NUMBER, mMaxRangingSessionNumber);
         bundle.putIntArray(KEY_CHAPS_PER_SLOTS, toIntArray(mChapsPerSlot));
         bundle.putIntArray(KEY_SYNC_CODES, toIntArray(mSyncCodes));
         bundle.putIntArray(KEY_CHANNELS, toIntArray(mChannels));
@@ -144,6 +149,10 @@ public class CccSpecificationParams extends CccParams {
         }
 
         builder.setRanMultiplier(bundle.getInt(KEY_RAN_MULTIPLIER));
+
+        if (bundle.containsKey(KEY_MAX_RANGING_SESSION_NUMBER)) {
+            builder.setMaxRangingSessionNumber(bundle.getInt(KEY_MAX_RANGING_SESSION_NUMBER));
+        }
 
         for (int chapsPerSlot : checkNotNull(bundle.getIntArray(KEY_CHAPS_PER_SLOTS))) {
             builder.addChapsPerSlot(chapsPerSlot);
@@ -194,6 +203,10 @@ public class CccSpecificationParams extends CccParams {
         return mRanMultiplier;
     }
 
+    public int getMaxRangingSessionNumber() {
+        return mMaxRangingSessionNumber;
+    }
+
     @ChapsPerSlot
     public List<Integer> getChapsPerSlot() {
         return mChapsPerSlot;
@@ -227,6 +240,7 @@ public class CccSpecificationParams extends CccParams {
                 && otherSpecificationParams.mPulseShapeCombos.equals(mPulseShapeCombos)
                 && otherSpecificationParams.mUwbConfigs.equals(mUwbConfigs)
                 && otherSpecificationParams.mRanMultiplier == mRanMultiplier
+                && otherSpecificationParams.mMaxRangingSessionNumber == mMaxRangingSessionNumber
                 && otherSpecificationParams.mChapsPerSlot.equals(mChapsPerSlot)
                 && otherSpecificationParams.mSyncCodes.equals(mSyncCodes)
                 && otherSpecificationParams.mChannels.equals(mChannels)
@@ -244,6 +258,7 @@ public class CccSpecificationParams extends CccParams {
                 mPulseShapeCombos.hashCode(),
                 mUwbConfigs.hashCode(),
                 mRanMultiplier,
+                mMaxRangingSessionNumber,
                 mChapsPerSlot.hashCode(),
                 mSyncCodes.hashCode(),
                 mChannels.hashCode(),
@@ -258,6 +273,7 @@ public class CccSpecificationParams extends CccParams {
         @UwbConfig private List<Integer> mUwbConfigs = new ArrayList<>();
         private List<CccPulseShapeCombo> mPulseShapeCombos = new ArrayList<>();
         private RequiredParam<Integer> mRanMultiplier = new RequiredParam<>();
+        private int mMaxRangingSessionNumber = -1;
         @ChapsPerSlot private List<Integer> mChapsPerSlot = new ArrayList<>();
         @SyncCodeIndex private List<Integer> mSyncCodes = new ArrayList<>();
         @Channel private List<Integer> mChannels = new ArrayList<>();
@@ -284,6 +300,16 @@ public class CccSpecificationParams extends CccParams {
                 throw new IllegalArgumentException("Invalid RAN Multiplier");
             }
             mRanMultiplier.set(ranMultiplier);
+            return this;
+        }
+
+        /**
+         * Set maximum supported ranging session number
+         * @param maxRangingSessionNumber : maximum ranging session number supported
+         * @return CccSpecificationParams builder
+         */
+        public Builder setMaxRangingSessionNumber(int maxRangingSessionNumber) {
+            mMaxRangingSessionNumber = maxRangingSessionNumber;
             return this;
         }
 
@@ -350,6 +376,7 @@ public class CccSpecificationParams extends CccParams {
                     mUwbConfigs,
                     mPulseShapeCombos,
                     mRanMultiplier.get(),
+                    mMaxRangingSessionNumber,
                     mChapsPerSlot,
                     mSyncCodes,
                     mChannels,
