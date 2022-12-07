@@ -26,9 +26,14 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
+import com.android.server.uwb.pm.SessionData;
 import com.android.server.uwb.secure.csml.CsmlUtil;
 import com.android.server.uwb.secure.csml.DispatchResponse;
+import com.android.server.uwb.secure.csml.GetDoCommand;
+import com.android.server.uwb.secure.csml.PutDoCommand;
 import com.android.server.uwb.secure.iso7816.StatusWord;
+import com.android.server.uwb.secure.iso7816.TlvDatum;
+import com.android.server.uwb.secure.iso7816.TlvParser;
 import com.android.server.uwb.util.DataTypeConversionUtil;
 
 import java.util.Optional;
@@ -49,16 +54,19 @@ public class ControleeInitiatorSession extends InitiatorSession {
     }
 
     private void sendPutControleeInfoCommand() {
-        // TODO: construct data
-        byte[] data = new byte[] {(byte) 0x0A, (byte) 0x0B};
-        tunnelData(MSG_ID_PUT_CONTROLEE_INFO, data);
+        PutDoCommand putControleeInfoCommand = PutDoCommand.build(
+                CsmlUtil.constructGetOrPutDoTlv(
+                        new TlvDatum(CsmlUtil.CONTROLEE_INFO_DO_TAG,
+                                mRunningProfileSessionInfo.getControleeInfo().toBytes())));
+        tunnelData(MSG_ID_PUT_CONTROLEE_INFO,
+                putControleeInfoCommand.getCommandApdu().getEncoded());
     }
 
     private void sendGetControleeSessionData() {
         logd("send get controlee session data msg.");
-        // TODO: construct data
-        byte[] data = new byte[] {(byte) 0x0C, (byte) 0x0D};
-        tunnelData(MSG_ID_GET_SESSION_DATA, data);
+        GetDoCommand getSessionDataCommand =
+                GetDoCommand.build(CsmlUtil.constructSessionDataGetDoTlv());
+        tunnelData(MSG_ID_GET_SESSION_DATA, getSessionDataCommand.getCommandApdu().getEncoded());
     }
 
     @Override
@@ -92,7 +100,7 @@ public class ControleeInitiatorSession extends InitiatorSession {
                                 DataTypeConversionUtil.arbitraryByteArrayToI32(outboundData.data));
                 logd("dispatch response sw: " + statusWord);
                 if (statusWord.equals(StatusWord.SW_NO_ERROR)) {
-                    mWorkHandler.post(() -> sendGetControleeSessionData());
+                    sendGetControleeSessionData();
                 } else {
                     // abort the current session
                     terminateSession();
@@ -107,12 +115,12 @@ public class ControleeInitiatorSession extends InitiatorSession {
     }
 
     private boolean handleGetSessionDataResponse(@NonNull DispatchResponse dispatchResponse) {
-        boolean isSessionTerminated = false;
         if (dispatchResponse.getOutboundData().isEmpty()
                 || dispatchResponse.getOutboundData().get().target == OUTBOUND_TARGET_REMOTE) {
             logw("unexpected dispatch response for getSessionData");
             return false;
         }
+        // check rds available notification and retrieve the session data
         DispatchResponse.RdsAvailableNotification rdsAvailable = null;
         for (DispatchResponse.Notification notification : dispatchResponse.notifications) {
             switch (notification.notificationEventId) {
@@ -125,16 +133,77 @@ public class ControleeInitiatorSession extends InitiatorSession {
                                     + notification.notificationEventId);
             }
         }
-
         if (rdsAvailable != null) {
-            // TODO: is the session ID for the sub session if it is 1 to m case?
-            mSessionCallback.onSessionDataReady(
-                    rdsAvailable.sessionId, Optional.empty(), isSessionTerminated);
-            return true;
-        } else if (CsmlUtil.isSessionDataNotAvailable(
-                dispatchResponse.getOutboundData().get().data)) {
+            if (mUniqueSessionId.isPresent() && mUniqueSessionId.get() != rdsAvailable.sessionId) {
+                logw("using default session id, it shouldn't be updated as ."
+                        + rdsAvailable.sessionId);
+            }
+            mUniqueSessionId = Optional.of(rdsAvailable.sessionId);
+        }
+        DispatchResponse.OutboundData outboundData = dispatchResponse.getOutboundData().get();
+        if (CsmlUtil.isSessionDataNotAvailable(outboundData.data)) {
             mWorkHandler.postDelayed(
                     () -> sendGetControleeSessionData(), GET_SESSION_DATA_RETRY_DELAY_MILLS);
+            return true;
+        } else if (CsmlUtil.isSessionDataDo(outboundData.data)) {
+            mSessionData = SessionData.fromBytes(
+                    TlvParser.parseOneTlv(outboundData.data).value);
+            if (rdsAvailable == null) {
+                if (!mIsDefaultUniqueSessionId) {
+                    // get session Id from session data.
+                    mUniqueSessionId = Optional.of(mSessionData.mSessionId);
+                }
+                // the applet didn't send RDS to SUS
+                // put session data to applet
+                PutDoCommand putSessionDataCommand =
+                        PutDoCommand.build(CsmlUtil.constructGetOrPutDoTlv(outboundData.data));
+                mFiRaSecureChannel.sendLocalFiRaCommand(putSessionDataCommand,
+                        new FiRaSecureChannel.ExternalRequestCallback() {
+                            @Override
+                            public void onSuccess(@NonNull byte[] responseData) {
+                                mSessionCallback.onSessionDataReady(mUniqueSessionId.get(),
+                                        Optional.of(mSessionData),
+                                        /*isSessionTerminated=*/ false);
+                            }
+
+                            @Override
+                            public void onFailure() {
+                                terminateSession();
+                                mSessionCallback.onSessionAborted();
+                            }
+                        });
+            } else {
+                // the applet sent the RDS to SUS.
+                mSessionCallback.onSessionDataReady(mUniqueSessionId.get(),
+                        Optional.of(mSessionData),
+                        /*isSessionTerminated=*/ false);
+            }
+            return true;
+        }
+
+        if (rdsAvailable != null) {
+            // try to get session data from applet.
+            GetDoCommand getSessionDataCommand =
+                    GetDoCommand.build(CsmlUtil.constructSessionDataGetDoTlv());
+            mFiRaSecureChannel.sendLocalFiRaCommand(getSessionDataCommand,
+                    new FiRaSecureChannel.ExternalRequestCallback() {
+                        @Override
+                        public void onSuccess(@NonNull byte[] responseData) {
+                            mSessionData = SessionData.fromBytes(
+                                    TlvParser.parseOneTlv(responseData).value);
+                            mSessionCallback.onSessionDataReady(
+                                    mUniqueSessionId.get(),
+                                    Optional.of(mSessionData),
+                                    /*isSessionTerminated=*/ false);
+                        }
+
+                        @Override
+                        public void onFailure() {
+                            logw("cannot get session data from applet");
+                            terminateSession();
+                            mSessionCallback.onSessionAborted();
+                        }
+                    });
             return true;
         }
         logw("unexpected dispatch response for get session data");
