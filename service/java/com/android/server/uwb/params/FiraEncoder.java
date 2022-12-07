@@ -31,6 +31,7 @@ import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 
+import java.lang.Math;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -109,7 +110,6 @@ public class FiraEncoder extends TlvEncoder {
                         params.getStaticStsIV())
                 .putByte(ConfigParam.NUMBER_OF_STS_SEGMENTS, (byte) params.getStsSegmentCount())
                 .putShort(ConfigParam.MAX_RR_RETRY, (short) params.getMaxRangingRoundRetries())
-                .putInt(ConfigParam.UWB_INITIATION_TIME, params.getInitiationTimeMs())
                 .putByte(ConfigParam.HOPPING_MODE,
                         (byte) params.getHoppingMode())
                 .putByte(ConfigParam.BLOCK_STRIDE_LENGTH, (byte) params.getBlockStrideLength())
@@ -119,6 +119,13 @@ public class FiraEncoder extends TlvEncoder {
                 .putByte(ConfigParam.BPRF_PHR_DATA_RATE,
                         (byte) params.getBprfPhrDataRate())
                 .putByte(ConfigParam.STS_LENGTH, (byte) params.getStsLength());
+        // Initiation time Changed from 4 byte field to 8 byte field in version 2.
+        if (params.getProtocolVersion().getMajor() >= 2) {
+            tlvBufferBuilder.putLong(ConfigParam.UWB_INITIATION_TIME, params.getInitiationTimeMs());
+        } else {
+            tlvBufferBuilder.putInt(ConfigParam.UWB_INITIATION_TIME,
+                    Math.toIntExact(params.getInitiationTimeMs()));
+        }
         if ((stsConfig == FiraParams.STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY)
                 && (deviceType == FiraParams.RANGING_DEVICE_TYPE_CONTROLEE)) {
             tlvBufferBuilder.putInt(ConfigParam.SUB_SESSION_ID, params.getSubSessionId());
