@@ -63,6 +63,7 @@ import com.android.server.uwb.discovery.info.VendorSpecificData;
 import com.android.server.uwb.multchip.UwbMultichipData;
 import com.android.server.uwb.pm.PacsControleeSession;
 
+import com.google.common.collect.ImmutableList;
 import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
 
@@ -104,7 +105,6 @@ public class PacsControleeSessionTest {
     private PacsControleeSession mRangingSessionController;
     @Mock
     private GenericSpecificationParams mGenericSpecificationParams;
-    @Mock
     private FiraSpecificationParams mFiraSpecificationParams;
 
     @Before
@@ -119,6 +119,8 @@ public class PacsControleeSessionTest {
         when(mUwbInjector.getMultichipData()).thenReturn(mUwbMultichipData);
         when(mUwbServiceCore.getCachedSpecificationParams(DEFAULT_CHIP_ID)).thenReturn(
                 mGenericSpecificationParams);
+        mFiraSpecificationParams = new FiraSpecificationParams.Builder()
+                .setSupportedChannels(ImmutableList.of(5, 9)).build();
         when(mGenericSpecificationParams.getFiraSpecificationParams()).thenReturn(
                 mFiraSpecificationParams);
         when(mContext.createContext(any())).thenReturn(mContext);
