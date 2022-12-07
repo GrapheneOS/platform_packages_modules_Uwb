@@ -53,6 +53,7 @@ import com.android.server.uwb.params.TlvDecoderBuffer;
 import com.google.uwb.support.base.FlagEnum;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraProtocolVersion;
+import com.google.uwb.support.fira.FiraSpecificationParams;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -338,6 +339,30 @@ public class UwbCapability {
             }
         }
         return true;
+    }
+
+    /** Converts the FiRaSpecificationParam to UwbCapability. */
+    @NonNull
+    public static UwbCapability fromFiRaSpecificationParam(
+            @NonNull FiraSpecificationParams firaSpecificationParams) {
+        return new UwbCapability.Builder()
+                .setMinPhyVersionSupported(firaSpecificationParams.getMinPhyVersionSupported())
+                .setMaxPhyVersionSupported(firaSpecificationParams.getMaxPhyVersionSupported())
+                .setMinMacVersionSupported(firaSpecificationParams.getMinMacVersionSupported())
+                .setMaxMacVersionSupported(firaSpecificationParams.getMaxMacVersionSupported())
+                .setDeviceRoles(firaSpecificationParams.getDeviceRoleCapabilities())
+                .setRangingMethod(firaSpecificationParams.getRangingRoundCapabilities())
+                .setStsConfig(firaSpecificationParams.getStsCapabilities())
+                .setMultiNodeMode(firaSpecificationParams.getMultiNodeCapabilities())
+                .setBlockStriding(firaSpecificationParams.hasBlockStridingSupport())
+                .setUwbInitiationTime(firaSpecificationParams.hasInitiationTimeSupport())
+                .setChannels(firaSpecificationParams.getSupportedChannels())
+                .setRFrameConfig(firaSpecificationParams.getRframeCapabilities())
+                .setCcConstraintLength(firaSpecificationParams.getPsduDataRateCapabilities())
+                .setBprfParameterSet(firaSpecificationParams.getBprfParameterSetCapabilities())
+                .setHprfParameterSet(firaSpecificationParams.getHprfParameterSetCapabilities())
+                .setAoaSupport(firaSpecificationParams.getAoaCapabilities())
+                .build();
     }
 
     /**

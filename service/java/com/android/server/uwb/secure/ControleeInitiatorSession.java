@@ -57,7 +57,7 @@ public class ControleeInitiatorSession extends InitiatorSession {
         PutDoCommand putControleeInfoCommand = PutDoCommand.build(
                 CsmlUtil.constructGetOrPutDoTlv(
                         new TlvDatum(CsmlUtil.CONTROLEE_INFO_DO_TAG,
-                                mRunningProfileSessionInfo.getControleeInfo().toBytes())));
+                                mRunningProfileSessionInfo.controleeInfo.get().toBytes())));
         tunnelData(MSG_ID_PUT_CONTROLEE_INFO,
                 putControleeInfoCommand.getCommandApdu().getEncoded());
     }
