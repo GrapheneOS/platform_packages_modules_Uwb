@@ -40,13 +40,14 @@ public class SecureFactory {
             @NonNull Looper workLooper,
             @NonNull SecureSession.Callback secureSessionCallback,
             @NonNull RunningProfileSessionInfo runningProfileSessionInfo,
-            @NonNull Transport transport) {
+            @NonNull Transport transport,
+            boolean isController) {
         OmapiConnection omapiConnection = new OmapiConnectionImpl(context);
         SecureElementChannel secureElementChannel = new SecureElementChannel(omapiConnection);
         FiRaSecureChannel fiRaSecureChannel =
                 new InitiatorSecureChannel(
                         secureElementChannel, transport, workLooper, runningProfileSessionInfo);
-        if (runningProfileSessionInfo.isUwbController()) {
+        if (isController) {
             return new ControllerInitiatorSession(
                     workLooper,
                     fiRaSecureChannel,
@@ -70,13 +71,14 @@ public class SecureFactory {
             @NonNull Looper workLooper,
             @NonNull SecureSession.Callback secureSessionCallback,
             @NonNull RunningProfileSessionInfo runningProfileSessionInfo,
-            @NonNull Transport transport) {
+            @NonNull Transport transport,
+            boolean isController) {
         OmapiConnection omapiConnection = new OmapiConnectionImpl(context);
         SecureElementChannel secureElementChannel = new SecureElementChannel(omapiConnection);
         FiRaSecureChannel fiRaSecureChannel =
                 new ResponderSecureChannel(
                         secureElementChannel, transport, workLooper, runningProfileSessionInfo);
-        if (runningProfileSessionInfo.isUwbController()) {
+        if (isController) {
             return new ControllerResponderSession(
                     workLooper,
                     fiRaSecureChannel,
