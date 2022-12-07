@@ -53,6 +53,7 @@ java_library {
     },
     libs: [
         "framework-annotations-lib",
+        "framework-configinfrastructure",
         "framework-uwb-pre-jarjar",
         "ServiceUwbResources",
         "framework-statsd.stubs.module_lib",
