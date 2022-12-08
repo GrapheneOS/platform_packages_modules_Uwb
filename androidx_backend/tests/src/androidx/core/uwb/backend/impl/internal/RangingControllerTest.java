@@ -91,8 +91,8 @@ public class RangingControllerTest {
             return true;
         }).when(mBackendCallbackExecutor).execute(any(Runnable.class));
 
-        RangingParameters rangingParameters = new RangingParameters(CONFIG_ID_2, 1,
-                new byte[]{1, 2}, mComplexChannel,
+        RangingParameters rangingParameters = new RangingParameters(CONFIG_ID_2, 1, 0,
+                new byte[]{1, 2}, new byte[]{1, 2}, mComplexChannel,
                 new ArrayList<>(List.of(UwbAddress.getRandomizedShortAddress())), INFREQUENT);
         mRangingController = new RangingController(
                 mUwbManager, getExecutor(), mOpAsyncCallbackRunner);
