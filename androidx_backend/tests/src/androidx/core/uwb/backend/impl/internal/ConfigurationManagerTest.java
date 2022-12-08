@@ -60,8 +60,8 @@ public class ConfigurationManagerTest {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-        mRangingParameters = new RangingParameters(CONFIG_ID_1, 1,
-                new byte[]{1, 2}, mComplexChannel,
+        mRangingParameters = new RangingParameters(CONFIG_ID_1, 1, 1,
+                new byte[]{1, 2}, new byte[]{1, 2}, mComplexChannel,
                 new ArrayList<>(List.of(UwbAddress.getRandomizedShortAddress())), INFREQUENT);
         when(mComplexChannel.getChannel()).thenReturn(1);
         when(mComplexChannel.getPreambleIndex()).thenReturn(1);
@@ -78,7 +78,8 @@ public class ConfigurationManagerTest {
     public void testCreateReconfigureParams() {
         FiraRangingReconfigureParams params = ConfigurationManager
                 .createReconfigureParams(CONFIG_ID_1, MULTICAST_LIST_UPDATE_ACTION_ADD,
-                        new UwbAddress[]{UwbAddress.getRandomizedShortAddress()}, new int[]{0, 1});
+                        new UwbAddress[]{UwbAddress.getRandomizedShortAddress()}, new int[]{0, 1},
+                        new byte[]{0, 1});
         assertNotNull(params.getAction());
         assertEquals(params.getAction().intValue(), MULTICAST_LIST_UPDATE_ACTION_ADD);
         assertNull(params.getSubSessionIdList());

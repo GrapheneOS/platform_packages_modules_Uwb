@@ -78,7 +78,8 @@ public abstract class UwbClient extends IUwbClient.Stub {
         }
         mDevice.setRangingParameters(
                 new androidx.core.uwb.backend.impl.internal.RangingParameters(
-                        parameters.uwbConfigId, parameters.sessionId, parameters.sessionKeyInfo,
+                        parameters.uwbConfigId, parameters.sessionId, parameters.subSessionId,
+                        parameters.sessionKeyInfo, parameters.subSessionKeyInfo,
                         channel, addresses, parameters.rangingUpdateRate));
     }
 
