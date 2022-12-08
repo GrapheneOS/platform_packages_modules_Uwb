@@ -24,7 +24,6 @@ import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_ONE_TO_MANY
 import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP3;
 import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_DYNAMIC;
 
-import android.annotation.NonNull;
 import android.bluetooth.le.AdvertisingSetParameters;
 import android.content.AttributionSource;
 import android.content.Context;
@@ -50,13 +49,12 @@ import com.android.server.uwb.discovery.info.AdvertiseInfo;
 import com.android.server.uwb.discovery.info.DiscoveryInfo;
 import com.android.server.uwb.secure.SecureFactory;
 import com.android.server.uwb.secure.SecureSession;
+import com.android.server.uwb.util.DataTypeConversionUtil;
 import com.android.server.uwb.util.ObjectIdentifier;
 
 import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
 
-import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.Optional;
 
 /** Session for PACS profile controlee */
@@ -64,7 +62,6 @@ public class PacsControleeSession extends RangingSessionController {
     private static final String TAG = "PacsControleeSession";
     private final PacsAdvertiseCallback mAdvertiseCallback;
     // TODO populate before calling secureSessionInit()
-    private PacsControleeSessionInfo mControleeSessionInfo;
     private final PacsControleeSessionCallback mControleeSessionCallback;
     private final TransportServerProvider.TransportServerCallback mServerCallback;
 
@@ -87,7 +84,6 @@ public class PacsControleeSession extends RangingSessionController {
                 handler,
                 chipId);
         mAdvertiseCallback = new PacsAdvertiseCallback(this);
-        mControleeSessionInfo = new PacsControleeSessionInfo(this);
         mControleeSessionCallback = new PacsControleeSessionCallback(this);
         mServerCallback = null;
     }
@@ -192,13 +188,19 @@ public class PacsControleeSession extends RangingSessionController {
 
     /** Initialize controlee responder session */
     public void secureSessionInit() {
-        mSecureSession =
-                SecureFactory.makeResponderSecureSession(
-                        mSessionInfo.mContext,
-                        mHandler.getLooper(),
-                        mControleeSessionCallback,
-                        mControleeSessionInfo,
-                        mTransportServerProvider);
+        try {
+            mSecureSession =
+                    SecureFactory.makeResponderSecureSession(
+                            mSessionInfo.mContext,
+                            mHandler.getLooper(),
+                            mControleeSessionCallback,
+                            getRunningProfileSessionInfo(),
+                            mTransportServerProvider,
+                            /* isController= */ false);
+        } catch (IllegalStateException e) {
+            Log.e(TAG, "secure session init failed as " + e);
+
+        }
     }
 
     @Override
@@ -258,95 +260,27 @@ public class PacsControleeSession extends RangingSessionController {
         }
     }
 
-    /** Pacs profile controlee implementation of RunningProfileSessionInfo. */
-    public static class PacsControleeSessionInfo implements RunningProfileSessionInfo {
-        public final PacsControleeSession mPacsControleeSession;
+    private RunningProfileSessionInfo getRunningProfileSessionInfo() {
 
-        public PacsControleeSessionInfo(PacsControleeSession pacsControleeSession) {
-            mPacsControleeSession = pacsControleeSession;
+        GenericSpecificationParams genericSpecificationParams = getSpecificationInfo();
+        if (genericSpecificationParams == null
+                || genericSpecificationParams.getFiraSpecificationParams() == null) {
+            throw new IllegalStateException("UwbCapability is not available.");
         }
+        FiraSpecificationParams firaSpecificationParams =
+                genericSpecificationParams.getFiraSpecificationParams();
+        UwbCapability uwbCapability =
+                UwbCapability.fromFiRaSpecificationParam(firaSpecificationParams);
+        ControleeInfo controleeInfo =
+                new ControleeInfo.Builder().setUwbCapability(uwbCapability).build();
 
-        @NonNull
-        @Override
-        public ControleeInfo getControleeInfo() {
-            GenericSpecificationParams genericSpecificationParams =
-                    mPacsControleeSession.getSpecificationInfo();
-            if (genericSpecificationParams == null
-                    || genericSpecificationParams.getFiraSpecificationParams() == null) {
-                Log.e(TAG, "Specification params not populated, sending default values");
-                return new ControleeInfo.Builder()
-                        .setUwbCapability(new UwbCapability.Builder()
-                                .build())
-                        .build();
-            }
-            FiraSpecificationParams firaSpecificationParams =
-                    genericSpecificationParams.getFiraSpecificationParams();
-            UwbCapability uwbCapability = new UwbCapability.Builder()
-                    .setMinPhyVersionSupported(firaSpecificationParams.getMinPhyVersionSupported())
-                    .setMaxPhyVersionSupported(firaSpecificationParams.getMaxPhyVersionSupported())
-                    .setMinMacVersionSupported(firaSpecificationParams.getMinMacVersionSupported())
-                    .setMaxMacVersionSupported(firaSpecificationParams.getMaxMacVersionSupported())
-                    .setDeviceRoles(firaSpecificationParams.getDeviceRoleCapabilities())
-                    .setRangingMethod(firaSpecificationParams.getRangingRoundCapabilities())
-                    .setStsConfig(firaSpecificationParams.getStsCapabilities())
-                    .setMultiNodeMode(firaSpecificationParams.getMultiNodeCapabilities())
-                    .setBlockStriding(firaSpecificationParams.hasBlockStridingSupport())
-                    .setUwbInitiationTime(firaSpecificationParams.hasInitiationTimeSupport())
-                    .setChannels(firaSpecificationParams.getSupportedChannels())
-                    .setRFrameConfig(firaSpecificationParams.getRframeCapabilities())
-                    .setCcConstraintLength(firaSpecificationParams.getPsduDataRateCapabilities())
-                    .setBprfParameterSet(firaSpecificationParams.getBprfParameterSetCapabilities())
-                    .setHprfParameterSet(firaSpecificationParams.getHprfParameterSetCapabilities())
-                    .setAoaSupport(firaSpecificationParams.getAoaCapabilities())
-                    .build();
-            return new ControleeInfo.Builder().setUwbCapability(uwbCapability).build();
-        }
+        ObjectIdentifier oidOfProvisionedAdf = ObjectIdentifier.fromBytes(
+                DataTypeConversionUtil.i32ToByteArray(
+                        mSessionInfo.mServiceProfileInfo.getServiceAdfID()));
 
-        @NonNull
-        @Override
-        public UwbCapability getUwbCapability() {
-            return null;
-        }
-
-        @NonNull
-        @Override
-        public ObjectIdentifier getOidOfProvisionedAdf() {
-            byte[] bytes =
-                    ByteBuffer.allocate(4)
-                            .putInt(
-                                    mPacsControleeSession.mSessionInfo.mServiceProfileInfo
-                                            .getServiceAdfID())
-                            .array();
-            return ObjectIdentifier.fromBytes(bytes);
-        }
-
-        @NonNull
-        @Override
-        public List<ObjectIdentifier> getSelectableOidsOfPeerDevice() {
-            return null;
-        }
-
-        @Override
-        public boolean isUwbController() {
-            return false;
-        }
-
-        @Override
-        public boolean isUnicast() {
-            return true;
-        }
-
-        @NonNull
-        @Override
-        public Optional<Integer> getSharedPrimarySessionId() {
-            return Optional.of(mPacsControleeSession.mSessionInfo.getSessionId());
-        }
-
-        @NonNull
-        @Override
-        public Optional<byte[]> getSecureBlob() {
-            return Optional.empty();
-        }
+        return new RunningProfileSessionInfo.Builder(uwbCapability, oidOfProvisionedAdf)
+                .setControleeInfo(controleeInfo)
+                .build();
     }
 
     /** Pacs profile controlee implementation of SecureSession.Callback. */

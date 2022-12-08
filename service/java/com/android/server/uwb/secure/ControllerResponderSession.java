@@ -28,7 +28,10 @@ import com.android.server.uwb.pm.ControleeInfo;
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
 import com.android.server.uwb.secure.csml.CsmlUtil;
 import com.android.server.uwb.secure.csml.DispatchResponse;
-import com.android.server.uwb.secure.iso7816.CommandApdu;
+import com.android.server.uwb.secure.csml.GetDoCommand;
+import com.android.server.uwb.secure.csml.PutDoCommand;
+import com.android.server.uwb.secure.iso7816.TlvDatum;
+import com.android.server.uwb.secure.iso7816.TlvParser;
 import com.android.server.uwb.util.DataTypeConversionUtil;
 
 import java.util.Optional;
@@ -45,6 +48,7 @@ public class ControllerResponderSession extends ResponderSession {
             @NonNull Callback sessionCallback,
             @NonNull RunningProfileSessionInfo runningProfileSessionInfo) {
         super(workLooper, fiRaSecureChannel, sessionCallback, runningProfileSessionInfo);
+        mIsController = true;
     }
 
     @Override
@@ -63,49 +67,94 @@ public class ControllerResponderSession extends ResponderSession {
                     break;
                 default:
                     logw(
-                            "Unexpected nofitication from dispatch response: "
+                            "Unexpected notification from dispatch response: "
                                     + notification.notificationEventId);
             }
         }
         if (controleeInfoAvailable != null) {
-            handleControleeInfoAvailable(
-                    ControleeInfo.fromBytes(controleeInfoAvailable.controleeInfo));
+            handleControleeInfoAvailable(controleeInfoAvailable);
             return true;
         }
         if (rdsAvailable != null) {
-            mSessionCallback.onSessionDataReady(rdsAvailable.sessionId,
-                    Optional.empty(), /*isSessionTerminated=*/ false);
+            handleRdsAvailable(rdsAvailable);
             return true;
         }
         return false;
     }
 
-    private void handleControleeInfoAvailable(@NonNull ControleeInfo controleeInfo) {
-        // TODO: remove the placeHolder for mUniqueSessionId
-        mUniqueSessionId = Optional.of(1);
+    private void handleControleeInfoAvailable(
+            @NonNull DispatchResponse.ControleeInfoAvailableNotification controleeInfoAvailable) {
+        if (CsmlUtil.isControleeInfoDo(controleeInfoAvailable.arbitraryData)) {
+            ControleeInfo controleeInfo =
+                    ControleeInfo.fromBytes(TlvParser.parseOneTlv(
+                            controleeInfoAvailable.arbitraryData).value);
+            generateAndPutSessionDataToApplet(controleeInfo);
+        } else {
+            logd("try to get ControleeInfo from applet.");
+            GetDoCommand getControleeInfoCommand =
+                    GetDoCommand.build(CsmlUtil.constructGetDoTlv(CsmlUtil.CONTROLEE_INFO_DO_TAG));
+            mFiRaSecureChannel.sendLocalFiRaCommand(getControleeInfoCommand,
+                    new FiRaSecureChannel.ExternalRequestCallback() {
+                        @Override
+                        public void onSuccess(@NonNull byte[] responseData) {
+                            ControleeInfo controleeInfo =
+                                    ControleeInfo.fromBytes(
+                                            TlvParser.parseOneTlv(responseData).value);
+                            generateAndPutSessionDataToApplet(controleeInfo);
+                        }
+
+                        @Override
+                        public void onFailure() {
+                            logw("ControleeInfo is not available in applet.");
+                            terminateSession();
+                            mSessionCallback.onSessionAborted();
+                        }
+                    });
+        }
+    }
+
+    private void generateAndPutSessionDataToApplet(@NonNull ControleeInfo controleeInfo) {
         mSessionData = CsmlUtil.generateSessionData(
-                mRunningProfileSessionInfo.getUwbCapability(),
+                mRunningProfileSessionInfo.uwbCapability,
                 controleeInfo,
-                mRunningProfileSessionInfo.getSharedPrimarySessionId(),
+                mRunningProfileSessionInfo.sharedPrimarySessionId,
                 mUniqueSessionId.get(),
-                mIsDefaultUniqueSessionId);
-        // send session data to the applet.
-        // TODO: construct put session data.
-        CommandApdu commandApdu = null;
-        mFiRaSecureChannel.sendLocalCommandApdu(
-                commandApdu,
+                !mIsDefaultUniqueSessionId);
+        // put session data
+
+        PutDoCommand putSessionDataCommand =
+                PutDoCommand.build(CsmlUtil.constructGetOrPutDoTlv(
+                        new TlvDatum(CsmlUtil.SESSION_DATA_DO_TAG, mSessionData.toBytes())));
+        mFiRaSecureChannel.sendLocalFiRaCommand(putSessionDataCommand,
                 new FiRaSecureChannel.ExternalRequestCallback() {
                     @Override
-                    public void onSuccess(byte[] responseData) {
-                        // do nothing, wait for request from the controlee.
+                    public void onSuccess(@NonNull byte[] responseData) {
+                        // do nothing, wait 'GetSessionData' command from remote.
                     }
 
                     @Override
                     public void onFailure() {
                         logw("failed to put session data to applet.");
                         terminateSession();
+                        mSessionCallback.onSessionAborted();
                     }
                 });
+    }
+
+    private void handleRdsAvailable(DispatchResponse.RdsAvailableNotification rdsAvailable) {
+        if (mSessionData == null) {
+            logw("session data is not available.");
+            terminateSession();
+            mSessionCallback.onSessionAborted();
+            return;
+        }
+        if (mUniqueSessionId.isPresent() && mUniqueSessionId.get() != rdsAvailable.sessionId) {
+            logw("unique session id was present, shouldn't be updated as "
+                    + rdsAvailable.sessionId);
+            mUniqueSessionId = Optional.of(rdsAvailable.sessionId);
+        }
+        mSessionCallback.onSessionDataReady(mUniqueSessionId.get(),
+                Optional.of(mSessionData), /*isSessionTerminated=*/ false);
     }
 
     @Override

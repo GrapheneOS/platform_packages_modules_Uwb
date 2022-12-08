@@ -810,7 +810,7 @@ fn native_set_ranging_rounds_dt_tag(
 /// loaded. Results in a global reference to the class loader object that can be used to look for
 /// classes in other native thread.
 fn get_class_loader_obj(env: &JNIEnv) -> Result<GlobalRef> {
-    let ranging_data_class = env.find_class(&UWB_RANGING_DATA_CLASS)?;
+    let ranging_data_class = env.find_class(UWB_RANGING_DATA_CLASS)?;
     let ranging_data_class_class = env.get_object_class(ranging_data_class)?;
     let get_class_loader_method =
         env.get_method_id(ranging_data_class_class, "getClassLoader", "()Ljava/lang/ClassLoader;")?;

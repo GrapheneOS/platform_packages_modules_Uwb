@@ -32,6 +32,7 @@ import android.os.test.TestLooper;
 import com.android.server.uwb.discovery.Transport;
 import com.android.server.uwb.pm.ControleeInfo;
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
+import com.android.server.uwb.pm.UwbCapability;
 import com.android.server.uwb.secure.csml.SwapInAdfCommand;
 import com.android.server.uwb.secure.iso7816.CommandApdu;
 import com.android.server.uwb.secure.iso7816.ResponseApdu;
@@ -46,15 +47,12 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.io.IOException;
-import java.util.Optional;
 
 public class ResponderSecureChannelTest {
     @Mock
     private SecureElementChannel mSecureElementChannel;
     @Mock
     private Transport mTransport;
-    @Mock
-    RunningProfileSessionInfo mRunningProfileSessionInfo;
 
     private TestLooper mTestLooper = new TestLooper();
 
@@ -70,16 +68,13 @@ public class ResponderSecureChannelTest {
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
+    }
 
+    private void doInit(RunningProfileSessionInfo runningProfileSessionInfo) {
         mResponderSecureChannel = new ResponderSecureChannel(mSecureElementChannel,
                 mTransport,
                 mTestLooper.getLooper(),
-                mRunningProfileSessionInfo);
-
-        doInit();
-    }
-
-    private void doInit() {
+                runningProfileSessionInfo);
         doNothing().when(mSecureElementChannel).init(mInitCompletionCallbackCaptor.capture());
 
         mResponderSecureChannel.init(mSecureChannelCallback);
@@ -89,7 +84,7 @@ public class ResponderSecureChannelTest {
 
     @Test
     public void init() {
-        doInit();
+        doInit(mock(RunningProfileSessionInfo.class));
 
         assertThat(mTestLooper.nextMessage()).isNull();
         assertThat(mResponderSecureChannel.getStatus())
@@ -98,6 +93,11 @@ public class ResponderSecureChannelTest {
 
     @Test
     public void openChannelSuccess() throws IOException {
+        RunningProfileSessionInfo runningProfileSessionInfo =
+                new RunningProfileSessionInfo.Builder(
+                        mock(UwbCapability.class), mock(ObjectIdentifier.class))
+                        .build();
+        doInit(runningProfileSessionInfo);
         when(mSecureElementChannel.openChannelWithResponse())
                 .thenReturn(ResponseApdu.SW_SUCCESS_APDU);
         // select command trigger
@@ -113,6 +113,7 @@ public class ResponderSecureChannelTest {
 
     @Test
     public void openChannelFail() throws IOException {
+        doInit(mock(RunningProfileSessionInfo.class));
         when(mSecureElementChannel.openChannelWithResponse())
                 .thenReturn(ResponseApdu.SW_FILE_NOT_FOUND_APDU);
         // select command trigger
@@ -130,6 +131,7 @@ public class ResponderSecureChannelTest {
 
     @Test
     public void openChannelWithException() throws IOException {
+        doInit(mock(RunningProfileSessionInfo.class));
         when(mSecureElementChannel.openChannelWithResponse())
                 .thenThrow(new IOException());
         // select command trigger
@@ -147,14 +149,17 @@ public class ResponderSecureChannelTest {
 
     @Test
     public void openChannelSwapInAdfFailed() throws IOException {
+        ControleeInfo mockControleeInfo = mock(ControleeInfo.class);
+        when(mockControleeInfo.toBytes()).thenReturn(new byte[0]);
+        RunningProfileSessionInfo runningProfileSessionInfo =
+                new RunningProfileSessionInfo.Builder(mock(UwbCapability.class),
+                        ObjectIdentifier.fromBytes(new byte[] { (byte) 0x01 }))
+                        .setSecureBlob(new byte[0])
+                        .setControleeInfo(mockControleeInfo)
+                        .build();
+        doInit(runningProfileSessionInfo);
         when(mSecureElementChannel.openChannelWithResponse())
                 .thenReturn(ResponseApdu.SW_SUCCESS_APDU);
-        when(mRunningProfileSessionInfo.getSecureBlob()).thenReturn(Optional.of(new byte[0]));
-        ControleeInfo mockControleeInfo = mock(ControleeInfo.class);
-        when(mRunningProfileSessionInfo.getControleeInfo()).thenReturn(mockControleeInfo);
-        when(mockControleeInfo.toBytes()).thenReturn(new byte[0]);
-        when(mRunningProfileSessionInfo.getOidOfProvisionedAdf())
-                .thenReturn(ObjectIdentifier.fromBytes(new byte[] { (byte) 0x01 }));
         when(mSecureElementChannel.transmit(any(SwapInAdfCommand.class)))
                 .thenReturn(ResponseApdu.SW_CONDITIONS_NOT_SATISFIED_APDU);
         // select command trigger
@@ -173,6 +178,7 @@ public class ResponderSecureChannelTest {
 
     @Test(expected = IllegalStateException.class)
     public void tunnelDataToRemoteDevice() {
+        doInit(mock(RunningProfileSessionInfo.class));
         mResponderSecureChannel.tunnelToRemoteDevice(new byte[0], mock(
                 FiRaSecureChannel.ExternalRequestCallback.class));
     }
