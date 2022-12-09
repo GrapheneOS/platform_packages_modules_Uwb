@@ -35,7 +35,9 @@ package androidx.core.uwb.backend;
 parcelable RangingParameters {
   int uwbConfigId;
   int sessionId;
+  int subSessionId;
   byte[] sessionKeyInfo;
+  byte[] subSessionKeyInfo;
   androidx.core.uwb.backend.UwbComplexChannel complexChannel;
   List<androidx.core.uwb.backend.UwbDevice> peerDevices;
   int rangingUpdateRate;

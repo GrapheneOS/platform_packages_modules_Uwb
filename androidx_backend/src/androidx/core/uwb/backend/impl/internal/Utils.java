@@ -33,6 +33,10 @@ public final class Utils {
         CONFIG_ID_1,
         CONFIG_ID_2,
         CONFIG_ID_3,
+        CONFIG_ID_4,
+        CONFIG_ID_5,
+        CONFIG_ID_6,
+        CONFIG_ID_7,
     })
     public @interface UwbConfigId {}
 
@@ -48,6 +52,18 @@ public final class Utils {
 
     /** Same as {@code CONFIG_ID_1}, except Angle-of-arrival (AoA) data is not reported. */
     public static final int CONFIG_ID_3 = 3;
+
+    /** Same as {@code CONFIG_ID_1}, except P-STS security mode is enabled. */
+    public static final int CONFIG_ID_4 = 4;
+
+    /** Same as {@code CONFIG_ID_2}, except P-STS security mode is enabled. */
+    public static final int CONFIG_ID_5 = 5;
+
+    /** Same as {@code CONFIG_ID_3}, except P-STS security mode is enabled. */
+    public static final int CONFIG_ID_6 = 6;
+
+    /** Same as {@code CONFIG_ID_2}, except P-STS individual controlee key mode is enabled.*/
+    public static final int CONFIG_ID_7 = 7;
 
     @IntDef({
         INFREQUENT,
@@ -156,6 +172,50 @@ public final class Utils {
 
         setRangingTimingParams(
                 CONFIG_ID_3,
+                new RangingTimingParams(
+                        /*rangingIntervalNormal=*/ 200,
+                        /*rangingIntervalFast=*/ 40,
+                        /*rangingIntervalInfrequent=*/ 2000,
+                        /*slotPerRangingRound=*/ 20,
+                        /*slotDurationRstu=*/ 2400,
+                        /*initiationTimeMs=*/ 0,
+                        /*hoppingEnabled=*/ true));
+
+        setRangingTimingParams(
+                CONFIG_ID_4,
+                new RangingTimingParams(
+                        /*rangingIntervalNormal=*/ 240,
+                        /*rangingIntervalFast=*/ 48,
+                        /*rangingIntervalInfrequent=*/ 2400,
+                        /*slotPerRangingRound=*/ 6,
+                        /*slotDurationRstu=*/ 2400,
+                        /*initiationTimeMs=*/ 0,
+                        /*hoppingEnabled=*/ true));
+
+        setRangingTimingParams(
+                CONFIG_ID_5,
+                new RangingTimingParams(
+                        /*rangingIntervalNormal=*/ 200,
+                        /*rangingIntervalFast=*/ 40,
+                        /*rangingIntervalInfrequent=*/ 2000,
+                        /*slotPerRangingRound=*/ 20,
+                        /*slotDurationRstu=*/ 2400,
+                        /*initiationTimeMs=*/ 0,
+                        /*hoppingEnabled=*/ true));
+
+        setRangingTimingParams(
+                CONFIG_ID_6,
+                new RangingTimingParams(
+                        /*rangingIntervalNormal=*/ 200,
+                        /*rangingIntervalFast=*/ 40,
+                        /*rangingIntervalInfrequent=*/ 2000,
+                        /*slotPerRangingRound=*/ 20,
+                        /*slotDurationRstu=*/ 2400,
+                        /*initiationTimeMs=*/ 0,
+                        /*hoppingEnabled=*/ true));
+
+        setRangingTimingParams(
+                CONFIG_ID_7,
                 new RangingTimingParams(
                         /*rangingIntervalNormal=*/ 200,
                         /*rangingIntervalFast=*/ 40,

@@ -24,6 +24,7 @@ import static androidx.core.uwb.backend.impl.internal.Utils.SUPPORTED_BPRF_PREAM
 import static androidx.core.uwb.backend.impl.internal.Utils.TAG;
 import static androidx.core.uwb.backend.impl.internal.Utils.UWB_SYSTEM_CALLBACK_FAILURE;
 
+import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY;
 import static com.google.uwb.support.fira.FiraParams.UWB_CHANNEL_9;
 
 import static java.util.Objects.requireNonNull;
@@ -151,13 +152,20 @@ public class RangingController extends RangingDevice {
             return STATUS_OK;
         }
         // Reconfigure the session.
+        int[] subSessionIdList = mRangingParameters.getUwbConfigId()
+                == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY
+                ? new int[] {mRangingParameters.getSubSessionId()} : null;
+        byte[] subSessionKeyInfo = mRangingParameters.getUwbConfigId()
+                == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY
+                ? mRangingParameters.getSubSessionKeyInfo() : null;
         boolean success =
                 reconfigureRanging(
                         ConfigurationManager.createReconfigureParams(
                                         mRangingParameters.getUwbConfigId(),
                                         FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD,
                                         new UwbAddress[] {controleeAddress},
-                                        /*subSessionIdList=*/ null)
+                                        subSessionIdList,
+                                        subSessionKeyInfo)
                                 .toBundle());
 
         if (success) {
@@ -213,7 +221,8 @@ public class RangingController extends RangingDevice {
                                         mRangingParameters.getUwbConfigId(),
                                         FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE,
                                         new UwbAddress[] {controleeAddress},
-                                        /*subSessionIdList=*/ null)
+                                        /*subSessionIdList=*/ null,
+                                        /*subSessionKey=*/ null)
                                 .toBundle());
         if (!success) {
             return UWB_SYSTEM_CALLBACK_FAILURE;
