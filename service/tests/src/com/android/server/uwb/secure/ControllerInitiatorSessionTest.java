@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,10 +32,12 @@ import com.android.server.uwb.pm.RunningProfileSessionInfo;
 import com.android.server.uwb.secure.csml.CsmlUtil;
 import com.android.server.uwb.secure.csml.DispatchResponse;
 import com.android.server.uwb.secure.csml.GetDoCommand;
+import com.android.server.uwb.secure.csml.UwbCapability;
 import com.android.server.uwb.secure.iso7816.CommandApdu;
 import com.android.server.uwb.secure.iso7816.ResponseApdu;
 import com.android.server.uwb.secure.iso7816.TlvDatum;
 import com.android.server.uwb.util.DataTypeConversionUtil;
+import com.android.server.uwb.util.ObjectIdentifier;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -50,8 +53,6 @@ public class ControllerInitiatorSessionTest {
     private FiRaSecureChannel mFiRaSecureChannel;
     @Mock
     private SecureSession.Callback mSecureSessionCallback;
-    @Mock
-    private RunningProfileSessionInfo mRunningProfileSessionInfo;
 
     @Captor
     private ArgumentCaptor<FiRaSecureChannel.SecureChannelCallback> mSecureChannelCallbackCaptor;
@@ -63,10 +64,13 @@ public class ControllerInitiatorSessionTest {
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
+        RunningProfileSessionInfo runningProfileSessionInfo =
+                new RunningProfileSessionInfo.Builder(mock(UwbCapability.class),
+                        mock(ObjectIdentifier.class)).build();
 
         mControllerInitiatorSession = new ControllerInitiatorSession(
                 mTestLooper.getLooper(), mFiRaSecureChannel, mSecureSessionCallback,
-                mRunningProfileSessionInfo);
+                runningProfileSessionInfo);
 
         mControllerInitiatorSession.startSession();
 
