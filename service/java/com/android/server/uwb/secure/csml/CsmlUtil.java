@@ -150,6 +150,13 @@ public final class CsmlUtil {
     }
 
     /**
+     * Construct the TLV for {@link GetDoCommand} or {@link PutDoCommand}.
+     */
+    public static TlvDatum constructGetOrPutDoTlv(byte[] tlvData) {
+        return new TlvDatum(EXTENDED_HEAD_LIST_TAG, tlvData);
+    }
+
+    /**
      * Get all content for a specific/deepest Tag in the DO tree with Extented Header List.
      */
     @NonNull

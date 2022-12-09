@@ -48,15 +48,16 @@ public abstract class SecureSession {
     // session data is used by both controller and controlee finally.
     protected SessionData mSessionData;
 
+    protected boolean mIsController = false;
+
     private final FiRaSecureChannel.SecureChannelCallback mSecureChannelCallback =
             new FiRaSecureChannel.SecureChannelCallback() {
                 @Override
                 public void onEstablished(Optional<Integer> defaultUniqueSessionId) {
                     if (defaultUniqueSessionId.isPresent()) {
                         mUniqueSessionId = defaultUniqueSessionId;
-                    } else {
-                        // generate a random Unique Session Id to be used.
-                        logd("default session id is not available, provide a random one.");
+                        mIsDefaultUniqueSessionId = true;
+                    } else if (mIsController) {
                         mUniqueSessionId = Optional.of(CsmlUtil.generateRandomSessionId());
                     }
                     handleFiRaSecureChannelEstablished();
@@ -93,7 +94,6 @@ public abstract class SecureSession {
                 @Override
                 public void onRdsAvailableAndTerminated(int sessionId) {
                     mUniqueSessionId = Optional.of(sessionId);
-                    mIsDefaultUniqueSessionId = true;
                     mSessionCallback.onSessionDataReady(
                             sessionId, Optional.empty(), /*isSessionTerminated=*/ true);
                 }

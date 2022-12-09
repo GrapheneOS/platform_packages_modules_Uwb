@@ -16,7 +16,6 @@
 
 package com.android.server.uwb.pm;
 
-import android.annotation.NonNull;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanSettings;
 import android.content.AttributionSource;
@@ -44,7 +43,11 @@ import com.android.server.uwb.discovery.info.ScanInfo;
 import com.android.server.uwb.discovery.info.TransportClientInfo;
 import com.android.server.uwb.secure.SecureFactory;
 import com.android.server.uwb.secure.SecureSession;
+import com.android.server.uwb.util.DataTypeConversionUtil;
 import com.android.server.uwb.util.ObjectIdentifier;
+
+import com.google.uwb.support.fira.FiraSpecificationParams;
+import com.google.uwb.support.generic.GenericSpecificationParams;
 
 import java.util.List;
 import java.util.Optional;
@@ -54,7 +57,6 @@ public class PacsControllerSession extends RangingSessionController {
     private static final String TAG = "PACSControllerSession";
     private final ScanCallback mScanCallback;
     // TODO populate before calling secureSessionInit()
-    private PacsControllerSessionInfo mControllerSessionInfo;
     private final PacsControllerSessionCallback mControllerSessionCallback;
     private final TransportClientProvider.TransportClientCallback mClientCallback;
 
@@ -78,7 +80,6 @@ public class PacsControllerSession extends RangingSessionController {
                 chipId);
         mScanCallback = new ScanCallback(this);
         mControllerSessionCallback = new PacsControllerSessionCallback(this);
-        mControllerSessionInfo = new PacsControllerSessionInfo(this);
         mClientCallback = null;
     }
 
@@ -193,8 +194,9 @@ public class PacsControllerSession extends RangingSessionController {
                         mSessionInfo.mContext,
                         mHandler.getLooper(),
                         mControllerSessionCallback,
-                        mControllerSessionInfo,
-                        mTransportClientProvider);
+                        getRunningProfileSessionInfo(),
+                        mTransportClientProvider,
+                        /* isController= */ true);
     }
 
     @Override
@@ -226,59 +228,25 @@ public class PacsControllerSession extends RangingSessionController {
     }
 
     /** Pacs profile controller implementation of RunningProfileSessionInfo. */
-    public static class PacsControllerSessionInfo implements RunningProfileSessionInfo {
+    private RunningProfileSessionInfo getRunningProfileSessionInfo() {
 
-        public final PacsControllerSession mPacsControllerSession;
-
-        public PacsControllerSessionInfo(PacsControllerSession pacsControllerSession) {
-            mPacsControllerSession = pacsControllerSession;
+        GenericSpecificationParams genericSpecificationParams = getSpecificationInfo();
+        if (genericSpecificationParams == null
+                || genericSpecificationParams.getFiraSpecificationParams() == null) {
+            throw new IllegalStateException("UwbCapability is not available.");
         }
+        FiraSpecificationParams firaSpecificationParams =
+                genericSpecificationParams.getFiraSpecificationParams();
+        UwbCapability uwbCapability =
+                UwbCapability.fromFiRaSpecificationParam(firaSpecificationParams);
 
-        @NonNull
-        @Override
-        public ControleeInfo getControleeInfo() {
-            return null;
-        }
+        ObjectIdentifier oidOfProvisionedAdf = ObjectIdentifier.fromBytes(
+                DataTypeConversionUtil.i32ToByteArray(
+                        mSessionInfo.mServiceProfileInfo.getServiceAdfID()));
 
-        @NonNull
-        @Override
-        public UwbCapability getUwbCapability() {
-            return null;
-        }
-
-        @NonNull
-        @Override
-        public ObjectIdentifier getOidOfProvisionedAdf() {
-            return null;
-        }
-
-        @NonNull
-        @Override
-        public List<ObjectIdentifier> getSelectableOidsOfPeerDevice() {
-            return null;
-        }
-
-        @Override
-        public boolean isUwbController() {
-            return true;
-        }
-
-        @Override
-        public boolean isUnicast() {
-            return false;
-        }
-
-        @NonNull
-        @Override
-        public Optional<Integer> getSharedPrimarySessionId() {
-            return Optional.of(mPacsControllerSession.mSessionInfo.getSessionId());
-        }
-
-        @NonNull
-        @Override
-        public Optional<byte[]> getSecureBlob() {
-            return Optional.empty();
-        }
+        return new RunningProfileSessionInfo.Builder(uwbCapability, oidOfProvisionedAdf)
+                .setSharedPrimarySessionId(mSessionInfo.getSessionId())
+                .build();
     }
 
     /** Pacs profile controller implementation of SecureSession.Callback. */

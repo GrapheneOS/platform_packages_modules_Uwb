@@ -31,6 +31,7 @@ import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 
+import java.lang.Math;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -60,7 +61,8 @@ public class FiraEncoder extends TlvEncoder {
         for (UwbAddress address : params.getDestAddressList()) {
             dstAddressList.put(TlvUtil.getReverseBytes(address.toBytes()));
         }
-
+        int stsConfig = params.getStsConfig();
+        int deviceType = params.getDeviceType();
         int resultReportConfig = getResultReportConfig(params);
         int rangingRoundControl = getRangingRoundControl(params);
 
@@ -108,24 +110,45 @@ public class FiraEncoder extends TlvEncoder {
                         params.getStaticStsIV())
                 .putByte(ConfigParam.NUMBER_OF_STS_SEGMENTS, (byte) params.getStsSegmentCount())
                 .putShort(ConfigParam.MAX_RR_RETRY, (short) params.getMaxRangingRoundRetries())
-                .putInt(ConfigParam.UWB_INITIATION_TIME, params.getInitiationTimeMs())
                 .putByte(ConfigParam.HOPPING_MODE,
                         (byte) params.getHoppingMode())
                 .putByte(ConfigParam.BLOCK_STRIDE_LENGTH, (byte) params.getBlockStrideLength())
                 .putByte(ConfigParam.RESULT_REPORT_CONFIG, (byte) resultReportConfig)
                 .putByte(ConfigParam.IN_BAND_TERMINATION_ATTEMPT_COUNT,
                         (byte) params.getInBandTerminationAttemptCount())
-                .putInt(ConfigParam.SUB_SESSION_ID, params.getSubSessionId())
-                .putByte(ConfigParam.BPRF_PHR_DATA_RATE, (byte) params.getBprfPhrDataRate())
-                .putByte(ConfigParam.STS_LENGTH, (byte) params.getStsLength())
-                .putByteArray(ConfigParam.SESSION_KEY, params.getSessionKey())
-                .putByteArray(ConfigParam.SUBSESSION_KEY, params.getSubsessionKey())
-                .putByte(ConfigParam.NUM_RANGE_MEASUREMENTS,
-                        (byte) params.getNumOfMsrmtFocusOnRange())
-                .putByte(ConfigParam.NUM_AOA_AZIMUTH_MEASUREMENTS,
-                        (byte) params.getNumOfMsrmtFocusOnAoaAzimuth())
-                .putByte(ConfigParam.NUM_AOA_ELEVATION_MEASUREMENTS,
-                        (byte) params.getNumOfMsrmtFocusOnAoaElevation());
+                .putByte(ConfigParam.BPRF_PHR_DATA_RATE,
+                        (byte) params.getBprfPhrDataRate())
+                .putByte(ConfigParam.STS_LENGTH, (byte) params.getStsLength());
+        // Initiation time Changed from 4 byte field to 8 byte field in version 2.
+        if (params.getProtocolVersion().getMajor() >= 2) {
+            tlvBufferBuilder.putLong(ConfigParam.UWB_INITIATION_TIME, params.getInitiationTimeMs());
+        } else {
+            tlvBufferBuilder.putInt(ConfigParam.UWB_INITIATION_TIME,
+                    Math.toIntExact(params.getInitiationTimeMs()));
+        }
+        if ((stsConfig == FiraParams.STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY)
+                && (deviceType == FiraParams.RANGING_DEVICE_TYPE_CONTROLEE)) {
+            tlvBufferBuilder.putInt(ConfigParam.SUB_SESSION_ID, params.getSubSessionId());
+        }
+        if ((stsConfig == FiraParams.STS_CONFIG_PROVISIONED)
+                || (stsConfig
+                == FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY)) {
+            tlvBufferBuilder.putByteArray(ConfigParam.SESSION_KEY, params.getSessionKey());
+            if (stsConfig
+                    == FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
+                tlvBufferBuilder.putByteArray(ConfigParam.SUBSESSION_KEY,
+                        params.getSubsessionKey());
+            }
+        }
+        if (params.getAoaResultRequest()
+                == FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_INTERLEAVED) {
+            tlvBufferBuilder.putByte(ConfigParam.NUM_RANGE_MEASUREMENTS,
+                            (byte) params.getNumOfMsrmtFocusOnRange())
+                    .putByte(ConfigParam.NUM_AOA_AZIMUTH_MEASUREMENTS,
+                            (byte) params.getNumOfMsrmtFocusOnAoaAzimuth())
+                    .putByte(ConfigParam.NUM_AOA_ELEVATION_MEASUREMENTS,
+                            (byte) params.getNumOfMsrmtFocusOnAoaElevation());
+        }
         if (hasAoaBoundInRangeDataNfConfig(params.getRangeDataNtfConfig())) {
             tlvBufferBuilder.putByteArray(ConfigParam.RANGE_DATA_NTF_AOA_BOUND, new byte[]{
                     // TODO (b/235355249): Verify this conversion. This is using AOA value
@@ -152,6 +175,10 @@ public class FiraEncoder extends TlvEncoder {
             tlvBufferBuilder.putByte(ConfigParam.ENABLE_DIAGNOSTICS_RSSI, (byte) 1);
             tlvBufferBuilder.putInt(ConfigParam.ENABLE_DIAGRAMS_FRAME_REPORTS_FIELDS,
                     params.getDiagramsFrameReportsFieldsFlags());
+        }
+        if (params.getScheduledMode() == FiraParams.CONTENTION_BASED_RANGING) {
+            tlvBufferBuilder.putByte(ConfigParam.SCHEDULED_MODE, (byte) params.getScheduledMode());
+            tlvBufferBuilder.putByteArray(ConfigParam.CAP_SIZE_RANGE, params.getCapSize());
         }
         return tlvBufferBuilder.build();
     }
@@ -247,6 +274,9 @@ public class FiraEncoder extends TlvEncoder {
         if (params.getMeasurementReportType()
                 == FiraParams.MEASUREMENT_REPORT_TYPE_RESPONDER_TO_INITIATOR) {
             rangingRoundControl |= 0x80;
+        }
+        if (params.getScheduledMode() == FiraParams.CONTENTION_BASED_RANGING) {
+            rangingRoundControl = 0x00;
         }
         return rangingRoundControl;
     }

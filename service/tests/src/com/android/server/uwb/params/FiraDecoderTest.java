@@ -93,10 +93,11 @@ public class FiraDecoderTest {
                     + "E50403000000"
                     + "E601FF"
                     + "E70101"
-                    + "E80401010101";
+                    + "E80401010101"
+                    + "E90401000000";
     private static final byte[] TEST_FIRA_SPECIFICATION_TLV_DATA =
             UwbUtil.getByteArray(TEST_FIRA_SPECIFICATION_TLV_STRING);
-    public static final int TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS = 24;
+    public static final int TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS = 25;
     private final FiraDecoder mFiraDecoder = new FiraDecoder();
 
     public static void verifyFiraSpecification(FiraSpecificationParams firaSpecificationParams) {
@@ -132,6 +133,8 @@ public class FiraDecoderTest {
         assertThat(firaSpecificationParams.hasDiagnosticsSupport()).isTrue();
 
         assertThat(firaSpecificationParams.getSupportedChannels()).isEqualTo(List.of(5, 9));
+
+        assertThat(firaSpecificationParams.getMaxRangingSessionNumber()).isEqualTo(1);
 
         assertThat(firaSpecificationParams.getRframeCapabilities()).isEqualTo(
                 EnumSet.of(HAS_SP0_RFRAME_SUPPORT, HAS_SP1_RFRAME_SUPPORT,

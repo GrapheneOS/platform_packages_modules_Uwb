@@ -23,6 +23,7 @@ import static com.android.server.uwb.config.CapabilityParam.AOA_AZIMUTH_90;
 import static com.android.server.uwb.config.CapabilityParam.AOA_ELEVATION;
 import static com.android.server.uwb.config.CapabilityParam.AOA_FOM;
 import static com.android.server.uwb.config.CapabilityParam.AOA_RESULT_REQ_INTERLEAVING;
+import static com.android.server.uwb.config.CapabilityParam.BLOCK_BASED_SCHEDULING;
 import static com.android.server.uwb.config.CapabilityParam.BLOCK_STRIDING;
 import static com.android.server.uwb.config.CapabilityParam.CC_CONSTRAINT_LENGTH_K3;
 import static com.android.server.uwb.config.CapabilityParam.CC_CONSTRAINT_LENGTH_K7;
@@ -34,12 +35,18 @@ import static com.android.server.uwb.config.CapabilityParam.CHANNEL_5;
 import static com.android.server.uwb.config.CapabilityParam.CHANNEL_6;
 import static com.android.server.uwb.config.CapabilityParam.CHANNEL_8;
 import static com.android.server.uwb.config.CapabilityParam.CHANNEL_9;
+import static com.android.server.uwb.config.CapabilityParam.CONSTRAINT_LENGTH_3;
+import static com.android.server.uwb.config.CapabilityParam.CONSTRAINT_LENGTH_7;
+import static com.android.server.uwb.config.CapabilityParam.CONTENTION_BASED_RANGING;
 import static com.android.server.uwb.config.CapabilityParam.DIAGNOSTICS;
 import static com.android.server.uwb.config.CapabilityParam.DS_TWR_DEFERRED;
 import static com.android.server.uwb.config.CapabilityParam.DS_TWR_NON_DEFERRED;
 import static com.android.server.uwb.config.CapabilityParam.DYNAMIC_STS;
 import static com.android.server.uwb.config.CapabilityParam.DYNAMIC_STS_RESPONDER_SPECIFIC_SUBSESSION_KEY;
+import static com.android.server.uwb.config.CapabilityParam.EXTENDED_MAC_ADDRESS;
+import static com.android.server.uwb.config.CapabilityParam.HOPPING_MODE;
 import static com.android.server.uwb.config.CapabilityParam.INITIATOR;
+import static com.android.server.uwb.config.CapabilityParam.INTERVAL_BASED_SCHEDULING;
 import static com.android.server.uwb.config.CapabilityParam.MANY_TO_MANY;
 import static com.android.server.uwb.config.CapabilityParam.ONE_TO_MANY;
 import static com.android.server.uwb.config.CapabilityParam.PROVISIONED_STS;
@@ -71,16 +78,23 @@ import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_DIAGNOSTIC
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_EXTENDED_MAC_ADDRESS;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_FIRA_MAC_VERSION_RANGE;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_FIRA_PHY_VERSION_RANGE;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_HOPPING_MODE;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_HPRF_PARAMETER_SETS;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MAX_DATA_PACKET_PAYLOAD_SIZE;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MAX_MESSAGE_SIZE;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MAX_RANGING_SESSION_NUMBER;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MIN_RANGING_INTERVAL_MS;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MIN_SLOT_DURATION;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MULTI_NODE_MODES;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_RANGE_DATA_NTF_CONFIG;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_RANGING_METHOD;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_RANGING_TIME_STRUCT;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_RFRAME_CONFIG;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_RSSI_REPORTING;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_SCHEDULED_MODE;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_STS_CONFIG;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_UWB_INITIATION_TIME;
+import static com.android.server.uwb.config.CapabilityParam.TIME_SCHEDULED_RANGING;
 import static com.android.server.uwb.config.CapabilityParam.UNICAST;
 import static com.android.server.uwb.config.CapabilityParam.UWB_INITIATION_TIME;
 
@@ -88,12 +102,15 @@ import com.google.uwb.support.base.FlagEnum;
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraParams.BprfParameterSetCapabilityFlag;
+import com.google.uwb.support.fira.FiraParams.CcConstraintLengthCapabilitiesFlag;
 import com.google.uwb.support.fira.FiraParams.DeviceRoleCapabilityFlag;
 import com.google.uwb.support.fira.FiraParams.HprfParameterSetCapabilityFlag;
 import com.google.uwb.support.fira.FiraParams.MultiNodeCapabilityFlag;
 import com.google.uwb.support.fira.FiraParams.PsduDataRateCapabilityFlag;
 import com.google.uwb.support.fira.FiraParams.RangingRoundCapabilityFlag;
+import com.google.uwb.support.fira.FiraParams.RangingTimeStructCapabilitiesFlag;
 import com.google.uwb.support.fira.FiraParams.RframeCapabilityFlag;
+import com.google.uwb.support.fira.FiraParams.SchedulingModeCapabilitiesFlag;
 import com.google.uwb.support.fira.FiraParams.StsCapabilityFlag;
 import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.fira.FiraSpecificationParams;
@@ -139,6 +156,13 @@ public class FiraDecoder extends TlvDecoder {
             builder.setMinRangingIntervalSupported(minSlotDuration);
         } catch (IllegalArgumentException e) {
             Log.w(TAG, "SUPPORTED_MIN_SLOT_DURATION not found.");
+        }
+
+        try {
+            int maxRangingSessionNumber = tlvs.getInt(SUPPORTED_MAX_RANGING_SESSION_NUMBER);
+            builder.setMaxRangingSessionNumberSupported(maxRangingSessionNumber);
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "SUPPORTED_MAX_RANGING_SESSION_NUMBER not found");
         }
 
         try {
@@ -226,9 +250,58 @@ public class FiraDecoder extends TlvDecoder {
         }
         builder.setMultiNodeCapabilities(multiNodeFlag);
 
+        byte rangingTimeStructUci = tlvs.getByte(SUPPORTED_RANGING_TIME_STRUCT);
+        EnumSet<RangingTimeStructCapabilitiesFlag> rangingTimeStructFlag =
+                EnumSet.noneOf(RangingTimeStructCapabilitiesFlag.class);
+        if (isBitSet(rangingTimeStructUci, INTERVAL_BASED_SCHEDULING)) {
+            rangingTimeStructFlag.add(
+                    RangingTimeStructCapabilitiesFlag.HAS_INTERVAL_BASED_SCHEDULING_SUPPORT);
+        }
+        if (isBitSet(rangingTimeStructUci, BLOCK_BASED_SCHEDULING)) {
+            rangingTimeStructFlag.add(
+                    RangingTimeStructCapabilitiesFlag.HAS_BLOCK_BASED_SCHEDULING_SUPPORT);
+        }
+        builder.setRangingTimeStructCapabilities(rangingTimeStructFlag);
+
+        byte schedulingModeUci = tlvs.getByte(SUPPORTED_SCHEDULED_MODE);
+        EnumSet<SchedulingModeCapabilitiesFlag> schedulingModeFlag =
+                EnumSet.noneOf(SchedulingModeCapabilitiesFlag.class);
+        if (isBitSet(schedulingModeUci, CONTENTION_BASED_RANGING)) {
+            schedulingModeFlag.add(
+                    SchedulingModeCapabilitiesFlag.HAS_CONTENTION_BASED_RANGING_SUPPORT);
+        }
+        if (isBitSet(schedulingModeUci, TIME_SCHEDULED_RANGING)) {
+            schedulingModeFlag.add(
+                    SchedulingModeCapabilitiesFlag.HAS_TIME_SCHEDULED_RANGING_SUPPORT);
+        }
+        builder.setSchedulingModeCapabilities(schedulingModeFlag);
+
+        byte ccConstraintLengthUci = tlvs.getByte(SUPPORTED_CC_CONSTRAINT_LENGTH);
+        EnumSet<CcConstraintLengthCapabilitiesFlag> ccConstraintLengthFlag =
+                EnumSet.noneOf(CcConstraintLengthCapabilitiesFlag.class);
+        if (isBitSet(ccConstraintLengthUci, CONSTRAINT_LENGTH_3)) {
+            ccConstraintLengthFlag.add(
+                    CcConstraintLengthCapabilitiesFlag.HAS_CONSTRAINT_LENGTH_3_SUPPORT);
+        }
+        if (isBitSet(ccConstraintLengthUci, CONSTRAINT_LENGTH_7)) {
+            ccConstraintLengthFlag.add(
+                    CcConstraintLengthCapabilitiesFlag.HAS_CONSTRAINT_LENGTH_7_SUPPORT);
+        }
+        builder.setCcConstraintLengthCapabilities(ccConstraintLengthFlag);
+
         byte blockStridingUci = tlvs.getByte(SUPPORTED_BLOCK_STRIDING);
         if (isBitSet(blockStridingUci, BLOCK_STRIDING)) {
             builder.hasBlockStridingSupport(true);
+        }
+
+        byte hoppingPreferenceUci = tlvs.getByte(SUPPORTED_HOPPING_MODE);
+        if (isBitSet(hoppingPreferenceUci, HOPPING_MODE)) {
+            builder.hasHoppingPreferenceSupport(true);
+        }
+
+        byte extendedMacAddressUci = tlvs.getByte(SUPPORTED_EXTENDED_MAC_ADDRESS);
+        if (isBitSet(extendedMacAddressUci, EXTENDED_MAC_ADDRESS)) {
+            builder.hasExtendedMacAddressSupport(true);
         }
 
         byte initiationTimeUci = tlvs.getByte(SUPPORTED_UWB_INITIATION_TIME);
@@ -402,6 +475,19 @@ public class FiraDecoder extends TlvDecoder {
 
         // TODO(b/209053358): This is not present in the FiraSpecificationParams.
         byte extendedMacUci = tlvs.getByte(SUPPORTED_EXTENDED_MAC_ADDRESS);
+
+        try {
+            int maxMessageSizeUci = tlvs.getShort(SUPPORTED_MAX_MESSAGE_SIZE);
+            builder.setMaxMessageSize(Integer.valueOf(maxMessageSizeUci));
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "SUPPORTED_MAX_MESSAGE_SIZE not found.", e);
+        }
+        try {
+            int maxDataPacketPayloadSizeUci = tlvs.getShort(SUPPORTED_MAX_DATA_PACKET_PAYLOAD_SIZE);
+            builder.setMaxDataPacketPayloadSize(Integer.valueOf(maxDataPacketPayloadSizeUci));
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "SUPPORTED_MAX_DATA_PACKET_PAYLOAD_SIZE not found.", e);
+        }
         return builder.build();
     }
 }
