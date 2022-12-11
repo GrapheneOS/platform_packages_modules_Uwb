@@ -39,4 +39,8 @@ public interface UwbConfiguration {
 
     /** Indicates if controller is the initiator. */
     boolean isControllerTheInitiator();
+
+    /** Gets the Ranging round usage of this configuration. */
+    @FiraParams.RangingRoundUsage
+    int getRangingRoundUsage();
 }
