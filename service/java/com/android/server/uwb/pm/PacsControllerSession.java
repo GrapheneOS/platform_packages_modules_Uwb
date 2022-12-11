@@ -45,8 +45,6 @@ import com.android.server.uwb.secure.SecureFactory;
 import com.android.server.uwb.secure.SecureSession;
 import com.android.server.uwb.secure.csml.SessionData;
 import com.android.server.uwb.secure.csml.UwbCapability;
-import com.android.server.uwb.util.DataTypeConversionUtil;
-import com.android.server.uwb.util.ObjectIdentifier;
 
 import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
@@ -240,11 +238,8 @@ public class PacsControllerSession extends RangingSessionController {
         UwbCapability uwbCapability =
                 UwbCapability.fromFiRaSpecificationParam(firaSpecificationParams);
 
-        ObjectIdentifier oidOfProvisionedAdf = ObjectIdentifier.fromBytes(
-                DataTypeConversionUtil.i32ToByteArray(
-                        mSessionInfo.mServiceProfileInfo.getServiceAdfID()));
-
-        return new RunningProfileSessionInfo.Builder(uwbCapability, oidOfProvisionedAdf)
+        return new RunningProfileSessionInfo.Builder(uwbCapability,
+                mSessionInfo.mServiceProfileInfo.getServiceAdfOid())
                 .setSharedPrimarySessionIdAndSessionKeyInfo(
                         mSessionInfo.getSessionId(), mSessionInfo.getSharedSessionKeyInfo())
                 .build();
