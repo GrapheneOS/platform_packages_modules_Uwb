@@ -100,8 +100,6 @@ public class PacsControleeSessionTest {
     private UwbMultichipData mUwbMultichipData;
 
     private TestLooper mLooper;
-    @Mock
-    private UwbMultichipData mUwbMultiChipData;
     private PacsControleeSession mRangingSessionController;
     @Mock
     private GenericSpecificationParams mGenericSpecificationParams;

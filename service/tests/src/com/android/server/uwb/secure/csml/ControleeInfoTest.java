@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.server.uwb.profile;
+package com.android.server.uwb.secure.csml;
+
+import static com.android.server.uwb.config.CapabilityParam.DS_TWR_DEFERRED;
 
 import static org.junit.Assert.assertEquals;
 
@@ -22,9 +24,6 @@ import android.platform.test.annotations.Presubmit;
 import android.test.suitebuilder.annotation.SmallTest;
 
 import androidx.test.runner.AndroidJUnit4;
-
-import com.android.server.uwb.pm.ControleeInfo;
-import com.android.server.uwb.pm.UwbCapability;
 
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraProtocolVersion;
@@ -53,9 +52,7 @@ public class ControleeInfoTest {
         deviceRoles.add(FiraParams.DeviceRoleCapabilityFlag.HAS_CONTROLEE_RESPONDER_SUPPORT);
         deviceRoles.add(FiraParams.DeviceRoleCapabilityFlag.HAS_CONTROLLER_RESPONDER_SUPPORT);
 
-        EnumSet<FiraParams.RangingRoundCapabilityFlag> rangingMethod =
-                EnumSet.noneOf(FiraParams.RangingRoundCapabilityFlag.class);
-        rangingMethod.add(FiraParams.RangingRoundCapabilityFlag.HAS_DS_TWR_SUPPORT);
+        byte rangingMethod = (byte) 0xFF & DS_TWR_DEFERRED;
 
         EnumSet<FiraParams.StsCapabilityFlag> stsConfig =
                 EnumSet.noneOf(FiraParams.StsCapabilityFlag.class);
@@ -72,8 +69,7 @@ public class ControleeInfoTest {
         channels.add(9);
         EnumSet<FiraParams.RframeCapabilityFlag> rFrameConfig = EnumSet.noneOf(
                 FiraParams.RframeCapabilityFlag.class);
-        EnumSet<FiraParams.PsduDataRateCapabilityFlag> ccConstraintLength =
-                EnumSet.noneOf(FiraParams.PsduDataRateCapabilityFlag.class);
+        byte ccConstraintLength = 0;
         EnumSet<FiraParams.AoaCapabilityFlag> aoaSupport = EnumSet.noneOf(
                 FiraParams.AoaCapabilityFlag.class);
         aoaSupport.add(FiraParams.AoaCapabilityFlag.HAS_AZIMUTH_SUPPORT);
@@ -116,7 +112,7 @@ public class ControleeInfoTest {
         assertEquals(uwbCapability1.mMinMacVersionSupported, minMacVersionSupported);
         assertEquals(uwbCapability1.mMaxMacVersionSupported, maxMacVersionSupported);
         assertEquals(uwbCapability1.mDeviceRoles.get(), deviceRoles);
-        assertEquals(uwbCapability1.mRangingMethod.get(), rangingMethod);
+        assertEquals((byte) uwbCapability1.mRangingMethod.get(), rangingMethod);
         assertEquals(uwbCapability1.mStsConfig.get(), stsConfig);
         assertEquals(uwbCapability1.mMultiNodeMode.get(), multiNodeMode);
         assertEquals(uwbCapability1.mRangingTimeStruct.get(), rangingTimeStruct);
@@ -126,7 +122,7 @@ public class ControleeInfoTest {
         assertEquals(uwbCapability1.mUwbInitiationTime.get(), uwbInitiationTime);
         assertEquals(uwbCapability1.mChannels.get(), channels);
         assertEquals(uwbCapability1.mRframeConfig.get(), rFrameConfig);
-        assertEquals(uwbCapability1.mCcConstraintLength.get(), ccConstraintLength);
+        assertEquals((byte) uwbCapability1.mCcConstraintLength.get(), ccConstraintLength);
         assertEquals(uwbCapability1.mAoaSupport.get(), aoaSupport);
         assertEquals(uwbCapability1.mExtendedMacSupport.get(), extendedMacSupport);
     }
