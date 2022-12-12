@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.server.uwb.pm;
+package com.android.server.uwb.secure.csml;
 
 import android.util.Log;
 
@@ -95,7 +95,8 @@ public class ControleeInfo {
                 Builder controleeInfoBuilder = new Builder();
                 if (isPresent(tlvs, UWB_CAPABILITY)) {
                     byte[] uwbCapability = tlvs.getByteArray(UWB_CAPABILITY);
-                    controleeInfoBuilder.setUwbCapability(UwbCapability.fromBytes(uwbCapability));
+                    controleeInfoBuilder.setUwbCapability(
+                            UwbCapability.fromBytes(uwbCapability));
                 }
                 return controleeInfoBuilder.build();
             }
@@ -116,7 +117,7 @@ public class ControleeInfo {
     public static class Builder {
         private Optional<UwbCapability> mUwbCapability = Optional.empty();
 
-        /** set {@link com.android.server.uwb.pm.UwbCapability} in the ControleeInfo. */
+        /** set {@link UwbCapability} in the ControleeInfo. */
         public ControleeInfo.Builder setUwbCapability(UwbCapability uwbCapability) {
             mUwbCapability = Optional.of(uwbCapability);
             return this;

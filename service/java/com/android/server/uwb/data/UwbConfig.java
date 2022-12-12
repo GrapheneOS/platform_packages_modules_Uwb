@@ -16,18 +16,30 @@
 
 package com.android.server.uwb.data;
 
+import static com.google.uwb.support.fira.FiraParams.CONSTRAINT_LENGTH_3;
+import static com.google.uwb.support.fira.FiraParams.CONSTRAINT_LENGTH_7;
 import static com.google.uwb.support.fira.FiraParams.HOPPING_MODE_DISABLE;
 import static com.google.uwb.support.fira.FiraParams.MAC_FCS_TYPE_CRC_16;
 import static com.google.uwb.support.fira.FiraParams.PRF_MODE_BPRF;
+import static com.google.uwb.support.fira.FiraParams.PSDU_DATA_RATE_27M2;
+import static com.google.uwb.support.fira.FiraParams.PSDU_DATA_RATE_31M2;
+import static com.google.uwb.support.fira.FiraParams.PSDU_DATA_RATE_6M81;
+import static com.google.uwb.support.fira.FiraParams.PSDU_DATA_RATE_7M80;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
 import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP3;
+import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_DYNAMIC;
+import static com.google.uwb.support.fira.FiraParams.TIME_SCHEDULED_RANGING;
 import static com.google.uwb.support.fira.FiraParams.UWB_CHANNEL_9;
 import static com.google.uwb.support.fira.FiraParams.UWB_PREAMBLE_CODE_INDEX_10;
 
 import android.annotation.IntDef;
 import android.annotation.Nullable;
 
+import androidx.annotation.NonNull;
+
 import com.android.server.uwb.pm.RangingSessionController;
+import com.android.server.uwb.secure.csml.ConfigurationParams;
+import com.android.server.uwb.secure.csml.SessionData;
 
 import com.google.uwb.support.base.RequiredParam;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
@@ -88,19 +100,6 @@ public class UwbConfig {
     public static final int CONTROLLER_AND_RESPONDER = 2;
     public static final int CONTROLLER_AND_INITIATOR = 3;
 
-    /** UWB Scheduled mode */
-    @IntDef(
-            value = {
-                    CONTENTION_BASED,
-                    TIME_BASED,
-
-            })
-    public @interface ScheduledMode {
-    }
-
-    public static final int CONTENTION_BASED = 0;
-    public static final int TIME_BASED = 1;
-
     public static final int DEVICE_TYPE_BITMASK = 0b00000001; // 1
     public static final int DEVICE_ROLE_BITMASK = 0b00000010; // 2
 
@@ -115,8 +114,8 @@ public class UwbConfig {
     @StsConfig
     public final int mStsConfig;
     public final int mRoundHopping;
-    @ScheduledMode
-    public final int mScheduledMode;
+    @FiraParams.SchedulingMode
+    public final int mScheduleMode;
     public final int mMaxContentionPhaseLength;
     public final boolean mTofReport;
     public final boolean mAoaAzimuthReport;
@@ -135,6 +134,7 @@ public class UwbConfig {
     public final int mSp3PhyParameterSet;
     public final int mMaxRetry;
     @PrfMode
+    public final int mPrfMode;
     public final int mConstraintLengthConvolutionalCode;
     public final int mUwbInitiationTimeMs;
     public final int mKeyRotationRate;
@@ -157,7 +157,7 @@ public class UwbConfig {
             @RframeConfig int rframeConfig,
             @StsConfig int stsConfig,
             int roundHopping,
-            @ScheduledMode int scheduledMode,
+            @FiraParams.SchedulingMode int scheduleMode,
             int maxContentionPhaseLength,
             boolean tofReport,
             boolean aoaAzimuthReport,
@@ -173,7 +173,8 @@ public class UwbConfig {
             int sp1PhyParameterSet,
             int sp3PhyParameterSet,
             int maxRetry,
-            @PrfMode int constraintLengthConvolutionalCode,
+            @PrfMode int prfMode,
+            int constraintLengthConvolutionalCode,
             int uwbInitiationTimeMs,
             int keyRotationRate,
             @MacFcsType int macFcsType,
@@ -188,7 +189,7 @@ public class UwbConfig {
         mRframeConfig = rframeConfig;
         mStsConfig = stsConfig;
         mRoundHopping = roundHopping;
-        mScheduledMode = scheduledMode;
+        mScheduleMode = scheduleMode;
         mMaxContentionPhaseLength = maxContentionPhaseLength;
         mTofReport = tofReport;
         mAoaAzimuthReport = aoaAzimuthReport;
@@ -204,6 +205,7 @@ public class UwbConfig {
         mSp1PhyParameterSet = sp1PhyParameterSet;
         mSp3PhyParameterSet = sp3PhyParameterSet;
         mMaxRetry = maxRetry;
+        mPrfMode = prfMode;
         mConstraintLengthConvolutionalCode = constraintLengthConvolutionalCode;
         mUwbInitiationTimeMs = uwbInitiationTimeMs;
         mKeyRotationRate = keyRotationRate;
@@ -218,9 +220,11 @@ public class UwbConfig {
     public static final class Builder {
         private final RequiredParam<Integer> mUwbRole = new RequiredParam<>();
         private final RequiredParam<Integer> mMultiNodeMode = new RequiredParam<>();
-        private final RequiredParam<Integer> mStsConfig = new RequiredParam<>();
         private final RequiredParam<Integer> mOobType = new RequiredParam<>();
         private final RequiredParam<Integer> mOobBleRole = new RequiredParam<>();
+
+        @StsConfig
+        private int mStsConfig = STS_CONFIG_DYNAMIC;
 
         /** UCI spec default: DS-TWR with deferred mode */
         @RangingRoundUsage
@@ -234,8 +238,8 @@ public class UwbConfig {
         private int mRoundHopping = HOPPING_MODE_DISABLE;
 
         /** UCI spec default: Time Based */
-        @ScheduledMode
-        private int mScheduledMode = TIME_BASED;
+        @FiraParams.SchedulingMode
+        private int mScheduleMode = TIME_SCHEDULED_RANGING;
 
         /** Time based used by default */
         private int mMaxContentionPhaseLength = 0;
@@ -286,7 +290,9 @@ public class UwbConfig {
 
         /** UCI spec default: BPRF */
         @PrfMode
-        private int mConstraintLengthConvolutionalCode = PRF_MODE_BPRF;
+        private int mPrfMode = PRF_MODE_BPRF;
+        @FiraParams.CcConstraintLength
+        private int mConstraintLengthConvolutionalCode = CONSTRAINT_LENGTH_3;
 
         /** UCI spec default: 0ms */
         private int mUwbInitiationTimeMs = 0;
@@ -305,172 +311,185 @@ public class UwbConfig {
         @Nullable
         private byte[] mStaticStsIV = null;
 
+        /** Sets UWB role */
         public UwbConfig.Builder setUwbRole(@UwbRole int uwbRole) {
             mUwbRole.set(uwbRole);
             return this;
         }
 
-        public UwbConfig.Builder setMultiNodeMode(@MultiNodeMode int uwbRole) {
-            mMultiNodeMode.set(uwbRole);
+        /** Sets the multiple node mode, unicast or multicast. */
+        public UwbConfig.Builder setMultiNodeMode(@MultiNodeMode int multiNodeMode) {
+            mMultiNodeMode.set(multiNodeMode);
             return this;
         }
 
-        public UwbConfig.Builder setStsConfig(@StsConfig int uwbRole) {
-            mStsConfig.set(uwbRole);
+        /** Sets the STS config mode */
+        public UwbConfig.Builder setStsConfig(@StsConfig int stsConfig) {
+            mStsConfig = stsConfig;
             return this;
         }
 
-        public UwbConfig.Builder setRangingRoundUsage(@RangingRoundUsage int rangingRoundUsage) {
+        UwbConfig.Builder setRangingRoundUsage(@RangingRoundUsage int rangingRoundUsage) {
             mRangingRoundUsage = rangingRoundUsage;
             return this;
         }
 
+        /** Sets the RFrame config, sp3, sp1 or sp0 */
         public UwbConfig.Builder setRframeConfig(@RframeConfig int rframeConfig) {
             mRframeConfig = rframeConfig;
             return this;
         }
 
-        public UwbConfig.Builder setRoundHopping(int roundHopping) {
+        UwbConfig.Builder setRoundHopping(int roundHopping) {
             mRoundHopping = roundHopping;
             return this;
         }
 
-        public UwbConfig.Builder setScheduledMode(@ScheduledMode int scheduledMode) {
-            mScheduledMode = scheduledMode;
+        UwbConfig.Builder setScheduleMode(@FiraParams.SchedulingMode int scheduleMode) {
+            mScheduleMode = scheduleMode;
             return this;
         }
 
-        public UwbConfig.Builder setMaxContentionPhaseLength(int maxContentionPhaseLength) {
+        UwbConfig.Builder setMaxContentionPhaseLength(int maxContentionPhaseLength) {
             mMaxContentionPhaseLength = maxContentionPhaseLength;
             return this;
         }
 
+        /** Sets TOF report */
         public UwbConfig.Builder setTofReport(boolean tofReport) {
             mTofReport = tofReport;
             return this;
         }
 
-        public UwbConfig.Builder setAoaAzimuthReport(boolean aoaAzimuthReport) {
+        UwbConfig.Builder setAoaAzimuthReport(boolean aoaAzimuthReport) {
             mAoaAzimuthReport = aoaAzimuthReport;
             return this;
         }
 
-        public UwbConfig.Builder setAoaElevationReport(boolean aoaElevationReport) {
+        UwbConfig.Builder setAoaElevationReport(boolean aoaElevationReport) {
             mAoaElevationReport = aoaElevationReport;
             return this;
         }
 
-        public UwbConfig.Builder setAoaFomReport(boolean aoaFomReport) {
+        UwbConfig.Builder setAoaFomReport(boolean aoaFomReport) {
             mAoaFomReport = aoaFomReport;
             return this;
         }
 
-        public UwbConfig.Builder setBlockStriding(boolean blockStriding) {
+        UwbConfig.Builder setBlockStriding(boolean blockStriding) {
             mBlockStriding = blockStriding;
             return this;
         }
 
-        public UwbConfig.Builder setSlotDurationRstu(int slotDurationRstu) {
+        UwbConfig.Builder setSlotDurationRstu(int slotDurationRstu) {
             mSlotDurationRstu = slotDurationRstu;
             return this;
         }
 
-        public UwbConfig.Builder setSlotsPerRangingRound(int slotsPerRangingRound) {
+        UwbConfig.Builder setSlotsPerRangingRound(int slotsPerRangingRound) {
             mSlotsPerRangingRound = slotsPerRangingRound;
             return this;
         }
 
-        public UwbConfig.Builder setRangingIntervalMs(int rangingIntervalMs) {
+        UwbConfig.Builder setRangingIntervalMs(int rangingIntervalMs) {
             mRangingIntervalMs = rangingIntervalMs;
             return this;
         }
 
-        public UwbConfig.Builder setUwbChannel(@UwbChannel int uwbChannel) {
+        UwbConfig.Builder setUwbChannel(@UwbChannel int uwbChannel) {
             mUwbChannel = uwbChannel;
             return this;
         }
 
-        public UwbConfig.Builder setUwbPreambleCodeIndex(@UwbPreambleCodeIndex
+        UwbConfig.Builder setUwbPreambleCodeIndex(@UwbPreambleCodeIndex
                 int uwbPreambleCodeIndex) {
             mUwbPreambleCodeIndex = uwbPreambleCodeIndex;
             return this;
         }
 
-        public UwbConfig.Builder setSp0PhyParameterSet(int sp0PhyParameterSet) {
+        UwbConfig.Builder setSp0PhyParameterSet(int sp0PhyParameterSet) {
             mSp0PhyParameterSet = sp0PhyParameterSet;
             return this;
         }
 
-        public UwbConfig.Builder setSp1PhyParameterSet(int sp1PhyParameterSet) {
+        UwbConfig.Builder setSp1PhyParameterSet(int sp1PhyParameterSet) {
             mSp1PhyParameterSet = sp1PhyParameterSet;
             return this;
         }
 
-        public UwbConfig.Builder setSp3PhyParameterSet(int sp3PhyParameterSet) {
+        UwbConfig.Builder setSp3PhyParameterSet(int sp3PhyParameterSet) {
             mSp3PhyParameterSet = sp3PhyParameterSet;
             return this;
         }
 
-        public UwbConfig.Builder setMaxRetry(int maxRetry) {
+        UwbConfig.Builder setMaxRetry(int maxRetry) {
             mMaxRetry = maxRetry;
             return this;
         }
 
-        public UwbConfig.Builder setConstraintLengthConvolutionalCode(
-                @PrfMode int constraintLengthConvolutionalCode) {
+        UwbConfig.Builder setPrfMode(@PrfMode int prfMode) {
+            mPrfMode = prfMode;
+            return this;
+        }
+
+        UwbConfig.Builder setConstraintLengthConvolutionalCode(
+                int constraintLengthConvolutionalCode) {
             mConstraintLengthConvolutionalCode = constraintLengthConvolutionalCode;
             return this;
         }
 
-        public UwbConfig.Builder setUwbInitiationTimeMs(int uwbInitiationTimeMs) {
+        UwbConfig.Builder setUwbInitiationTimeMs(int uwbInitiationTimeMs) {
             mUwbInitiationTimeMs = uwbInitiationTimeMs;
             return this;
         }
 
-        public UwbConfig.Builder setKeyRotationRate(int keyRotationRate) {
+        UwbConfig.Builder setKeyRotationRate(int keyRotationRate) {
             mKeyRotationRate = keyRotationRate;
             return this;
         }
 
-        public UwbConfig.Builder setKMacFcsType(@MacFcsType int macFcsType) {
+        UwbConfig.Builder setKMacFcsType(@MacFcsType int macFcsType) {
             mMacFcsType = macFcsType;
             return this;
         }
 
-        public UwbConfig.Builder setRangingRoundControl(int rangingRoundControl) {
+        UwbConfig.Builder setRangingRoundControl(int rangingRoundControl) {
             mRangingRoundControl = rangingRoundControl;
             return this;
         }
 
-        public UwbConfig.Builder setVendorID(byte[] vendorID) {
+        UwbConfig.Builder setVendorID(byte[] vendorID) {
             mVendorID = vendorID;
             return this;
         }
 
-        public UwbConfig.Builder setStaticStsIV(byte[] staticStsIV) {
+        UwbConfig.Builder setStaticStsIV(byte[] staticStsIV) {
             mStaticStsIV = staticStsIV;
             return this;
         }
 
+        /** Sets the OOB type */
         public UwbConfig.Builder setOobType(@OobType int uwbRole) {
             mOobType.set(uwbRole);
             return this;
         }
 
+        /** Sets BLE role */
         public UwbConfig.Builder setOobBleRole(@OobBleRole int uwbRole) {
             mOobBleRole.set(uwbRole);
             return this;
         }
 
+        /** build the instance of {@link UwbConfig}. */
         public UwbConfig build() {
             return new UwbConfig(
                     mUwbRole.get(),
                     mRangingRoundUsage,
                     mMultiNodeMode.get(),
                     mRframeConfig,
-                    mStsConfig.get(),
+                    mStsConfig,
                     mRoundHopping,
-                    mScheduledMode,
+                    mScheduleMode,
                     mMaxContentionPhaseLength,
                     mTofReport,
                     mAoaAzimuthReport,
@@ -486,6 +505,7 @@ public class UwbConfig {
                     mSp1PhyParameterSet,
                     mSp3PhyParameterSet,
                     mMaxRetry,
+                    mPrfMode,
                     mConstraintLengthConvolutionalCode,
                     mUwbInitiationTimeMs,
                     mKeyRotationRate,
@@ -495,6 +515,23 @@ public class UwbConfig {
                     mStaticStsIV,
                     mOobType.get(),
                     mOobBleRole.get());
+        }
+    }
+
+    @FiraParams.PsduDataRate
+    int getPsduDataRate() {
+        if (mPrfMode == PRF_MODE_BPRF) {
+            if (mConstraintLengthConvolutionalCode == CONSTRAINT_LENGTH_3) {
+                return PSDU_DATA_RATE_27M2;
+            } else {
+                return PSDU_DATA_RATE_6M81;
+            }
+        } else { // PRF_MODE_HPRF
+            if (mConstraintLengthConvolutionalCode == CONSTRAINT_LENGTH_7) {
+                return PSDU_DATA_RATE_31M2;
+            } else {
+                return PSDU_DATA_RATE_7M80;
+            }
         }
     }
 
@@ -520,11 +557,53 @@ public class UwbConfig {
                 .setHasTimeOfFlightReport(uwbConfig.mTofReport)
                 .setHasAngleOfArrivalAzimuthReport(uwbConfig.mAoaAzimuthReport)
                 .setHasAngleOfArrivalElevationReport(uwbConfig.mAoaElevationReport)
-                .setRangingIntervalMs(uwbConfig.mRangingIntervalMs);
+                .setRangingIntervalMs(uwbConfig.mRangingIntervalMs)
+                .setPsduDataRate(uwbConfig.getPsduDataRate())
+                .setPrfMode(uwbConfig.mPrfMode)
+                .setScheduledMode(uwbConfig.mScheduleMode);
 
         sessionInfo.subSessionId.ifPresent(firaOpenSessionBuilder::setSubSessionId);
 
         return firaOpenSessionBuilder.build();
+    }
 
+    /** Converts the fields of {@link SessionData} to those fields of UwbConfig. */
+    public static UwbConfig fromSessionData(
+            @NonNull UwbConfig.Builder uwbConfigBuilder, @NonNull SessionData sessionData) {
+        if (sessionData.mConfigurationParams.isPresent()) {
+            ConfigurationParams configurationParams =
+                    sessionData.mConfigurationParams.get();
+            configurationParams.mScheduleMode.ifPresent(uwbConfigBuilder::setScheduleMode);
+            configurationParams.mBlockStriding.ifPresent(uwbConfigBuilder::setBlockStriding);
+            configurationParams.mStsConfig.ifPresent(uwbConfigBuilder::setStsConfig);
+            configurationParams.mChannel.ifPresent(uwbConfigBuilder::setUwbChannel);
+            configurationParams.mSp0PhyParameterSet.ifPresent(
+                    uwbConfigBuilder::setSp0PhyParameterSet);
+            configurationParams.mSp1PhyParameterSet.ifPresent(
+                    uwbConfigBuilder::setSp1PhyParameterSet);
+            configurationParams.mSp3PhyParameterSet.ifPresent(
+                    uwbConfigBuilder::setSp3PhyParameterSet);
+            configurationParams.mPreambleCodeIndex.ifPresent(
+                    uwbConfigBuilder::setUwbPreambleCodeIndex);
+            configurationParams.mSlotsPerRangingRound.ifPresent(
+                    uwbConfigBuilder::setSlotsPerRangingRound);
+            configurationParams.mMaxContentionPhaseLength.ifPresent(
+                    uwbConfigBuilder::setMaxContentionPhaseLength);
+            configurationParams.mSlotDuration.ifPresent(
+                    uwbConfigBuilder::setSlotDurationRstu);
+            configurationParams.mRangingIntervalMs.ifPresent(
+                    uwbConfigBuilder::setRangingIntervalMs);
+            configurationParams.mKeyRotationRate.ifPresent(
+                    uwbConfigBuilder::setKeyRotationRate);
+            configurationParams.mMacFcsType.ifPresent(uwbConfigBuilder::setKMacFcsType);
+            configurationParams.mRangingMethod.ifPresent(
+                    uwbConfigBuilder::setRangingRoundUsage);
+            configurationParams.mPrfMode.ifPresent(uwbConfigBuilder::setPrfMode);
+            configurationParams.mCcConstraintLength.ifPresent(
+                    uwbConfigBuilder::setConstraintLengthConvolutionalCode);
+            configurationParams.mRframeConfig.ifPresent(uwbConfigBuilder::setRframeConfig);
+        }
+
+        return uwbConfigBuilder.build();
     }
 }
