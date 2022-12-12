@@ -24,8 +24,8 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import com.android.server.uwb.pm.ControleeInfo;
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
+import com.android.server.uwb.secure.csml.ControleeInfo;
 import com.android.server.uwb.secure.csml.CsmlUtil;
 import com.android.server.uwb.secure.csml.DispatchResponse;
 import com.android.server.uwb.secure.csml.GetDoCommand;
@@ -115,6 +115,7 @@ public class ControllerInitiatorSession extends InitiatorSession {
                     mRunningProfileSessionInfo.uwbCapability,
                     controleeInfo,
                     mRunningProfileSessionInfo.sharedPrimarySessionId,
+                    mRunningProfileSessionInfo.sharedPrimarySessionKeyInfo,
                     mUniqueSessionId.get(),
                     !mIsDefaultUniqueSessionId);
 

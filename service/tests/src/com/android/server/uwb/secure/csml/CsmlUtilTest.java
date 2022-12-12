@@ -24,6 +24,8 @@ import com.android.server.uwb.util.ObjectIdentifier;
 
 import org.junit.Test;
 
+import java.util.Optional;
+
 public class CsmlUtilTest {
     @Test
     public void encodeObjectIdentifierAsTlv() {
@@ -90,4 +92,60 @@ public class CsmlUtilTest {
         assertThat(result).isFalse();
     }
 
+    @Test
+    public void sessionIdAndSecureInfoForMulticastCaseInSessionData() {
+        UwbCapability uwbCapability = new UwbCapability.Builder().build();
+        ControleeInfo controleeInfo = new ControleeInfo.Builder().build();
+        byte[] sharedSessionKeyInfo = CsmlUtil.generate256BitRandomKeyInfo();
+        SessionData sessionData = CsmlUtil.generateSessionData(uwbCapability, controleeInfo,
+                Optional.of(1),
+                Optional.of(sharedSessionKeyInfo),
+                /* uniqueSessionId= */ 2,
+                /* needSecureRangingInfo */ true);
+        SecureRangingInfo secureRangingInfo = sessionData.mSecureRangingInfo.get();
+
+        assertThat(sessionData.mSessionId).isEqualTo(1);
+        assertThat(sessionData.mSubSessionId.get()).isEqualTo(2);
+        assertThat(secureRangingInfo.uwbSessionKeyInfo.get().length).isEqualTo(8);
+        assertThat(secureRangingInfo.uwbSessionKeyInfo.get()).isEqualTo(sharedSessionKeyInfo);
+        assertThat(secureRangingInfo.uwbSubSessionKeyInfo.get().length).isEqualTo(8);
+
+        sessionData = CsmlUtil.generateSessionData(uwbCapability, controleeInfo,
+                Optional.of(1),
+                Optional.of(sharedSessionKeyInfo),
+                /* uniqueSessionId= */ 2,
+                /* needSecureRangingInfo */ false);
+        secureRangingInfo = sessionData.mSecureRangingInfo.get();
+
+        assertThat(sessionData.mSessionId).isEqualTo(1);
+        assertThat(sessionData.mSubSessionId.get()).isEqualTo(2);
+        assertThat(secureRangingInfo.uwbSessionKeyInfo.get()).isEqualTo(sharedSessionKeyInfo);
+        assertThat(secureRangingInfo.uwbSubSessionKeyInfo.isEmpty()).isTrue();
+    }
+
+    @Test
+    public void sessionIdAndSecureInfoForUnicastCaseInSessionData() {
+        UwbCapability uwbCapability = new UwbCapability.Builder().build();
+        ControleeInfo controleeInfo = new ControleeInfo.Builder().build();
+        SessionData sessionData = CsmlUtil.generateSessionData(uwbCapability, controleeInfo,
+                Optional.empty(),
+                Optional.empty(),
+                /* uniqueSessionId= */ 2,
+                /* needSecureRangingInfo */ true);
+        SecureRangingInfo secureRangingInfo = sessionData.mSecureRangingInfo.get();
+
+        assertThat(sessionData.mSessionId).isEqualTo(2);
+        assertThat(sessionData.mSubSessionId.isEmpty()).isTrue();
+        assertThat(secureRangingInfo.uwbSessionKeyInfo.get().length).isEqualTo(8);
+        assertThat(secureRangingInfo.uwbSubSessionKeyInfo.isEmpty()).isTrue();
+
+        sessionData = CsmlUtil.generateSessionData(uwbCapability, controleeInfo,
+                Optional.empty(),
+                Optional.empty(),
+                /* uniqueSessionId= */ 2,
+                /* needSecureRangingInfo */ false);
+
+        assertThat(sessionData.mSessionId).isEqualTo(2);
+        assertThat(sessionData.mSecureRangingInfo.isEmpty()).isTrue();
+    }
 }
