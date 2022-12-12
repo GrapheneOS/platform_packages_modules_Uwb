@@ -50,8 +50,6 @@ import com.android.server.uwb.secure.SecureSession;
 import com.android.server.uwb.secure.csml.ControleeInfo;
 import com.android.server.uwb.secure.csml.SessionData;
 import com.android.server.uwb.secure.csml.UwbCapability;
-import com.android.server.uwb.util.DataTypeConversionUtil;
-import com.android.server.uwb.util.ObjectIdentifier;
 
 import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
@@ -254,11 +252,8 @@ public class PacsControleeSession extends RangingSessionController {
         ControleeInfo controleeInfo =
                 new ControleeInfo.Builder().setUwbCapability(uwbCapability).build();
 
-        ObjectIdentifier oidOfProvisionedAdf = ObjectIdentifier.fromBytes(
-                DataTypeConversionUtil.i32ToByteArray(
-                        mSessionInfo.mServiceProfileInfo.getServiceAdfID()));
-
-        return new RunningProfileSessionInfo.Builder(uwbCapability, oidOfProvisionedAdf)
+        return new RunningProfileSessionInfo.Builder(uwbCapability,
+                mSessionInfo.mServiceProfileInfo.getServiceAdfOid())
                 .setControleeInfo(controleeInfo)
                 .build();
     }
