@@ -16,6 +16,7 @@
 
 package com.android.server.uwb.pm;
 
+import android.annotation.NonNull;
 import android.content.AttributionSource;
 import android.content.Context;
 import android.os.Handler;
@@ -30,6 +31,8 @@ import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.UwbServiceCore;
 import com.android.server.uwb.data.ServiceProfileData.ServiceProfileInfo;
 import com.android.server.uwb.data.UwbConfig;
+import com.android.server.uwb.secure.csml.CsmlUtil;
+import com.android.server.uwb.secure.csml.SessionData;
 
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
@@ -215,6 +218,7 @@ public abstract class RangingSessionController extends StateMachine {
         public Optional<Integer> subSessionId;
         public final String mChipId;
         public SessionData mSessionData;
+        private Optional<byte[]> mSharedSessionKeyInfo = Optional.empty();
 
         public SessionInfo(AttributionSource attributionSource, SessionHandle sessionHandle,
                 ServiceProfileInfo serviceProfileInfo,
@@ -250,6 +254,16 @@ public abstract class RangingSessionController extends StateMachine {
 
         public void setSubSessionId(int subSessionId) {
             this.subSessionId = Optional.of(subSessionId);
+        }
+
+        /**  Gets the session key info, required for controller of multicast case. */
+        @NonNull
+        public byte[] getSharedSessionKeyInfo() {
+            if (mSharedSessionKeyInfo.isEmpty()) {
+                // only set once, as it is shared by all sub sessions.
+                mSharedSessionKeyInfo = Optional.of(CsmlUtil.generate256BitRandomKeyInfo());
+            }
+            return mSharedSessionKeyInfo.get();
         }
     }
 }

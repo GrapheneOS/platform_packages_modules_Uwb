@@ -19,11 +19,11 @@ package com.android.server.uwb.secure.csml;
 import static com.android.server.uwb.secure.iso7816.Iso7816Constants.EXTENDED_HEAD_LIST;
 import static com.android.server.uwb.secure.iso7816.Iso7816Constants.TAG_LIST;
 
+import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
+import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_UNICAST;
+
 import androidx.annotation.NonNull;
 
-import com.android.server.uwb.pm.ControleeInfo;
-import com.android.server.uwb.pm.SessionData;
-import com.android.server.uwb.pm.UwbCapability;
 import com.android.server.uwb.secure.iso7816.TlvDatum;
 import com.android.server.uwb.secure.iso7816.TlvDatum.Tag;
 import com.android.server.uwb.secure.iso7816.TlvParser;
@@ -31,6 +31,7 @@ import com.android.server.uwb.util.ObjectIdentifier;
 
 import com.google.common.primitives.Bytes;
 
+import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
@@ -193,24 +194,94 @@ public final class CsmlUtil {
      * Generates the session data used by both controller and controlee by combining
      * all information from the controller and the controlee.
      *
-     * @param controllerUwbCapability the UwbCapability of Controller
+     * @param localCap The UwbCapability of local device.
      * @param controleeInfo The {@link ControleeInfo} which includes UwbCapability of
      *                       the controlee and other information.
-     * @param needSessionSecureInfo If the session Id and key are not derived in
-     *                              applet (AKA default sessionId/Key), the session
-     *                              secure info should be provided in {@link SessionData}.
+
      * @param shareSessionId The main session Id shared amid sessions for multicast case
+     * @param sharedSessionKeyInfo The session key info shared amid sessions for multicast case
      * @param uniqueSessionId The session Id/sub session Id(multicast), which is unique
      *                        per session
+     * @param needSecureRangingInfo If the session Id and key are no derived in
+     *                              applet (AKA default sessionId/Key), the session
+     *                              secure info should be provided in {@link SessionData}.
      * @return The Session Data used by both controller and controlee.
+     * @throws IllegalStateException The {@link SessionData} is not agreed by both devices.
      */
+    @NonNull
     public static SessionData generateSessionData(
-            UwbCapability controllerUwbCapability,
-            ControleeInfo controleeInfo,
-            Optional<Integer> shareSessionId,
+            @NonNull UwbCapability localCap,
+            @NonNull ControleeInfo controleeInfo,
+            @NonNull Optional<Integer> shareSessionId,
+            @NonNull Optional<byte[]> sharedSessionKeyInfo,
             int uniqueSessionId,
-            boolean needSessionSecureInfo) {
-        // TODO: get the Session data by comparing uwb capabilities.
-        return new SessionData.Builder().build();
+            boolean needSecureRangingInfo) throws IllegalStateException {
+        SessionData.Builder builder = new SessionData.Builder();
+        SecureRangingInfo.Builder secureRangingInfoBuilder = new SecureRangingInfo.Builder();
+        if (shareSessionId.isPresent()) {
+            // multicast case
+            builder.setSessionId(shareSessionId.get());
+            builder.setSubSessionId(uniqueSessionId);
+            secureRangingInfoBuilder.setUwbSessionKeyInfo(sharedSessionKeyInfo.get());
+            if (needSecureRangingInfo) {
+                secureRangingInfoBuilder.setUwbSubSessionKeyInfo(generate256BitRandomKeyInfo());
+            }
+        } else {
+            builder.setSessionId(uniqueSessionId);
+            if (needSecureRangingInfo) {
+                secureRangingInfoBuilder.setUwbSessionKeyInfo(generate256BitRandomKeyInfo());
+            }
+        }
+        if (shareSessionId.isPresent() || needSecureRangingInfo) {
+            builder.setSecureRangingInfo(secureRangingInfoBuilder.build());
+        }
+        if (controleeInfo.mUwbCapability.isEmpty()) {
+            // use default session data
+            return builder.build();
+        }
+        UwbCapability remoteCap = controleeInfo.mUwbCapability.get();
+        if (!localCap.isCompatibleTo(remoteCap)) {
+            throw new IllegalStateException("devices are not compatible.");
+        }
+
+        ConfigurationParams.Builder paramsBuilder = new ConfigurationParams.Builder();
+        paramsBuilder.setPhyVersion(
+                localCap.getPreferredPhyVersion(remoteCap.mMinPhyVersionSupported));
+        paramsBuilder.setMacVersion(
+                localCap.getPreferredMacVersion(remoteCap.mMinMacVersionSupported));
+        paramsBuilder.setStsConfig(
+                localCap.getPreferredStsConfig(remoteCap.mStsConfig, shareSessionId.isPresent()));
+        Optional<Integer> commonChannel = localCap.getPreferredChannel(remoteCap.mChannels);
+        if (commonChannel.isEmpty()) {
+            throw new IllegalStateException("no common channel supported by both devices.");
+        }
+        paramsBuilder.setChannel(commonChannel.get());
+        paramsBuilder.setCcConstraintLength(
+                localCap.getPreferredConstrainLengthOfConvolutionalCode(
+                        remoteCap.mCcConstraintLength));
+        paramsBuilder.setHoppingMode(localCap.getPreferredHoppingMode(remoteCap.mHoppingMode));
+        paramsBuilder.setRframeConfig(localCap.getPreferredRframeConfig(remoteCap.mRframeConfig));
+        paramsBuilder.setMultiNodeMode(
+                shareSessionId.isEmpty() ? MULTI_NODE_MODE_UNICAST : MULTI_NODE_MODE_ONE_TO_MANY);
+        paramsBuilder.setScheduleMode(localCap.getPreferredScheduleMode(remoteCap.mScheduledMode));
+        paramsBuilder.setBlockStriding(
+                localCap.getPreferredBlockStriding(remoteCap.mBlockStriding));
+        paramsBuilder.setRangingMethod(
+                localCap.getPreferredRangingMethod(remoteCap.mRangingMethod));
+        paramsBuilder.setMacAddressMode(
+                localCap.getPreferredMacAddressMode(remoteCap.mExtendedMacSupport));
+
+        builder.setConfigParams(paramsBuilder.build());
+
+        return builder.build();
+    }
+
+    /** Generates the 256bit key info */
+    @NonNull
+    public static byte[] generate256BitRandomKeyInfo() {
+        SecureRandom secureRandom = new SecureRandom();
+        byte[] keyBits256 = new byte[8];
+        secureRandom.nextBytes(keyBits256);
+        return keyBits256;
     }
 }

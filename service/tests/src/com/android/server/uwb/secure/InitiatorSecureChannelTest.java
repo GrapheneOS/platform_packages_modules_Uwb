@@ -33,9 +33,8 @@ import static org.mockito.Mockito.when;
 import android.os.test.TestLooper;
 
 import com.android.server.uwb.discovery.Transport;
-import com.android.server.uwb.pm.ControleeInfo;
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
-import com.android.server.uwb.pm.UwbCapability;
+import com.android.server.uwb.secure.csml.ControleeInfo;
 import com.android.server.uwb.secure.csml.DispatchCommand;
 import com.android.server.uwb.secure.csml.DispatchResponse;
 import com.android.server.uwb.secure.csml.FiRaResponse;
@@ -45,6 +44,7 @@ import com.android.server.uwb.secure.csml.InitiateTransactionResponse;
 import com.android.server.uwb.secure.csml.SelectAdfCommand;
 import com.android.server.uwb.secure.csml.SwapInAdfCommand;
 import com.android.server.uwb.secure.csml.TunnelCommand;
+import com.android.server.uwb.secure.csml.UwbCapability;
 import com.android.server.uwb.secure.iso7816.CommandApdu;
 import com.android.server.uwb.secure.iso7816.ResponseApdu;
 import com.android.server.uwb.secure.iso7816.StatusWord;
@@ -284,7 +284,7 @@ public class InitiatorSecureChannelTest {
         RunningProfileSessionInfo runningProfileSessionInfo =
                 new RunningProfileSessionInfo.Builder(
                         mock(UwbCapability.class), mock(ObjectIdentifier.class))
-                        .setSharedPrimarySessionId(1)
+                        .setSharedPrimarySessionIdAndSessionKeyInfo(1, new byte[0])
                         .setSelectableOidsOfResponder(ImmutableList.of(
                                 ObjectIdentifier.fromBytes(new byte[] { (byte) 0x01 })))
                         .build();
@@ -302,7 +302,7 @@ public class InitiatorSecureChannelTest {
         RunningProfileSessionInfo runningProfileSessionInfo =
                 new RunningProfileSessionInfo.Builder(
                         mock(UwbCapability.class), mock(ObjectIdentifier.class))
-                        .setSharedPrimarySessionId(1)
+                        .setSharedPrimarySessionIdAndSessionKeyInfo(1, new byte[0])
                         .setSelectableOidsOfResponder(ImmutableList.of(
                                 ObjectIdentifier.fromBytes(new byte[] { (byte) 0x01 })))
                         .build();

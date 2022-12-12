@@ -33,7 +33,7 @@ import java.util.UUID;
 
 public class ServiceProfileData implements UwbConfigStore.StoreData {
 
-    private static String TAG = "ServiceProfileData";
+    private static final String LOG_TAG = "ServiceProfileData";
 
     public ServiceProfileData(DataSource dataSource) {
         this.mDataSource = dataSource;
@@ -159,7 +159,7 @@ public class ServiceProfileData implements UwbConfigStore.StoreData {
     @Override
     public void deserializeData(@Nullable UwbConfigProto.UwbConfig uwbConfig) {
         if (uwbConfig == null || !uwbConfig.hasVersion()) {
-            Log.i(TAG, "No data stored");
+            Log.i(LOG_TAG, "No data stored");
             return;
         }
 
@@ -203,7 +203,7 @@ public class ServiceProfileData implements UwbConfigStore.StoreData {
 
     @Override
     public String getName() {
-        return TAG;
+        return LOG_TAG;
     }
 
     @Override

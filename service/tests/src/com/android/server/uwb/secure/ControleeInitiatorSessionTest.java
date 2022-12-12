@@ -28,13 +28,13 @@ import static org.mockito.Mockito.when;
 
 import android.os.test.TestLooper;
 
-import com.android.server.uwb.pm.ControleeInfo;
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
-import com.android.server.uwb.pm.UwbCapability;
+import com.android.server.uwb.secure.csml.ControleeInfo;
 import com.android.server.uwb.secure.csml.CsmlUtil;
 import com.android.server.uwb.secure.csml.DispatchResponse;
 import com.android.server.uwb.secure.csml.FiRaCommand;
 import com.android.server.uwb.secure.csml.GetDoCommand;
+import com.android.server.uwb.secure.csml.UwbCapability;
 import com.android.server.uwb.secure.iso7816.ResponseApdu;
 import com.android.server.uwb.secure.iso7816.TlvDatum;
 import com.android.server.uwb.util.DataTypeConversionUtil;
