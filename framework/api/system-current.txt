@@ -145,6 +145,7 @@ package android.uwb {
     field public static final int DATA_FAILURE_REASON_DATA_SIZE_TOO_LARGE = 10; // 0xa
     field public static final int REASON_BAD_PARAMETERS = 3; // 0x3
     field public static final int REASON_GENERIC_ERROR = 4; // 0x4
+    field public static final int REASON_INSUFFICIENT_SLOTS_PER_RR = 14; // 0xe
     field public static final int REASON_LOCAL_REQUEST = 1; // 0x1
     field public static final int REASON_MAX_RR_RETRY_REACHED = 9; // 0x9
     field public static final int REASON_MAX_SESSIONS_REACHED = 5; // 0x5
