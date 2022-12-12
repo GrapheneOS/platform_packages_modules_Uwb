@@ -14,35 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.server.uwb.pm;
+package com.android.server.uwb.secure.csml;
 
 import static com.android.server.uwb.config.CapabilityParam.AOA_AZIMUTH_180;
 import static com.android.server.uwb.config.CapabilityParam.AOA_AZIMUTH_90;
 import static com.android.server.uwb.config.CapabilityParam.AOA_ELEVATION;
 import static com.android.server.uwb.config.CapabilityParam.AOA_FOM;
-import static com.android.server.uwb.config.CapabilityParam.CC_CONSTRAINT_LENGTH_K3;
-import static com.android.server.uwb.config.CapabilityParam.CC_CONSTRAINT_LENGTH_K7;
-import static com.android.server.uwb.config.CapabilityParam.DYNAMIC_STS;
-import static com.android.server.uwb.config.CapabilityParam.DYNAMIC_STS_RESPONDER_SPECIFIC_SUBSESSION_KEY;
-import static com.android.server.uwb.config.CapabilityParam.MANY_TO_MANY;
-import static com.android.server.uwb.config.CapabilityParam.ONE_TO_MANY;
-import static com.android.server.uwb.config.CapabilityParam.SP0;
-import static com.android.server.uwb.config.CapabilityParam.SP1;
-import static com.android.server.uwb.config.CapabilityParam.SP3;
-import static com.android.server.uwb.config.CapabilityParam.STATIC_STS;
-import static com.android.server.uwb.config.CapabilityParam.UNICAST;
-
-import static com.google.uwb.support.fira.FiraParams.MultiNodeCapabilityFlag.HAS_MANY_TO_MANY_SUPPORT;
-import static com.google.uwb.support.fira.FiraParams.MultiNodeCapabilityFlag.HAS_ONE_TO_MANY_SUPPORT;
-import static com.google.uwb.support.fira.FiraParams.MultiNodeCapabilityFlag.HAS_UNICAST_SUPPORT;
-import static com.google.uwb.support.fira.FiraParams.PsduDataRateCapabilityFlag.HAS_6M81_SUPPORT;
-import static com.google.uwb.support.fira.FiraParams.PsduDataRateCapabilityFlag.HAS_7M80_SUPPORT;
-import static com.google.uwb.support.fira.FiraParams.RframeCapabilityFlag.HAS_SP0_RFRAME_SUPPORT;
-import static com.google.uwb.support.fira.FiraParams.RframeCapabilityFlag.HAS_SP1_RFRAME_SUPPORT;
-import static com.google.uwb.support.fira.FiraParams.RframeCapabilityFlag.HAS_SP3_RFRAME_SUPPORT;
-import static com.google.uwb.support.fira.FiraParams.StsCapabilityFlag.HAS_DYNAMIC_STS_INDIVIDUAL_CONTROLEE_KEY_SUPPORT;
-import static com.google.uwb.support.fira.FiraParams.StsCapabilityFlag.HAS_DYNAMIC_STS_SUPPORT;
-import static com.google.uwb.support.fira.FiraParams.StsCapabilityFlag.HAS_STATIC_STS_SUPPORT;
 
 import android.uwb.UwbAddress;
 
@@ -100,16 +77,16 @@ public class ConfigurationParams {
     public final FiraProtocolVersion mMacVersion;
     public final Optional<Integer> mDeviceRole;
     public final Optional<Integer> mRangingMethod;
-    public final Optional<FiraParams.StsCapabilityFlag> mStsConfig;
-    public final Optional<FiraParams.MultiNodeCapabilityFlag> mMultiNodeMode;
+    public final Optional<Integer> mStsConfig;
+    public final Optional<Integer> mMultiNodeMode;
     public final Optional<Byte> mRangingTimeStruct;
-    public final Optional<Byte> mScheduledMode;
+    public final Optional<Integer> mScheduleMode;
     public final Optional<Boolean> mHoppingMode;
     public final Optional<Boolean> mBlockStriding;
     public final Optional<Boolean> mUwbInitiationTime;
     public final Optional<Integer> mChannel;
-    public final Optional<FiraParams.RframeCapabilityFlag> mRframeConfig;
-    public final Optional<FiraParams.PsduDataRateCapabilityFlag> mCcConstraintLength;
+    public final Optional<Integer> mRframeConfig;
+    public final Optional<Integer> mCcConstraintLength;
     public final Optional<Integer> mPrfMode;
     public final Optional<Integer> mSp0PhyParameterSet;
     public final Optional<Integer> mSp1PhyParameterSet;
@@ -132,14 +109,14 @@ public class ConfigurationParams {
             FiraProtocolVersion macVersion,
             Optional<Integer> deviceRole,
             Optional<Integer> rangingMethod,
-            Optional<FiraParams.StsCapabilityFlag> stsConfig,
-            Optional<FiraParams.MultiNodeCapabilityFlag> multiNodeMode,
-            Optional<Byte> rangingTimeStruct, Optional<Byte> scheduledMode,
+            Optional<Integer> stsConfig,
+            Optional<Integer> multiNodeMode,
+            Optional<Byte> rangingTimeStruct, Optional<Integer> scheduleMode,
             Optional<Boolean> hoppingMode, Optional<Boolean> blockStriding,
             Optional<Boolean> uwbInitiationTime,
             Optional<Integer> channel,
-            Optional<FiraParams.RframeCapabilityFlag> rframeConfig,
-            Optional<FiraParams.PsduDataRateCapabilityFlag> ccConstraintLength,
+            Optional<Integer> rframeConfig,
+            Optional<Integer> ccConstraintLength,
             Optional<Integer> prfMode,
             Optional<Integer> sp0PhyParameterSet,
             Optional<Integer> sp1PhyParameterSet,
@@ -163,7 +140,7 @@ public class ConfigurationParams {
         mStsConfig = stsConfig;
         mMultiNodeMode = multiNodeMode;
         mRangingTimeStruct = rangingTimeStruct;
-        mScheduledMode = scheduledMode;
+        mScheduleMode = scheduleMode;
         mHoppingMode = hoppingMode;
         mBlockStriding = blockStriding;
         mUwbInitiationTime = uwbInitiationTime;
@@ -192,7 +169,7 @@ public class ConfigurationParams {
      * Converts the UwbCapabilities to the bytes which are combined per the TLV of CSML 8.5.3.2.
      */
     @NonNull
-    public byte[] toBytes() {
+    byte[] toBytes() {
         TlvBuffer.Builder configParamsBuilder = new TlvBuffer.Builder()
                 .putByteArray(FIRA_PHY_VERSION, new byte[]{
                         (byte) mPhyVersion.getMajor(),
@@ -211,18 +188,17 @@ public class ConfigurationParams {
 
         //configParamsBuilder.putByte(RANGING_METHOD,(byte) HAS_DS_TWR_SUPPORT.getValue());
 
-        mStsConfig.ifPresent(stsCapabilityFlag -> configParamsBuilder.putByte(STS_CONFIG,
-                (byte) stsCapabilityFlag.getValue()));
+        mStsConfig.ifPresent(
+                integer -> configParamsBuilder.putByte(STS_CONFIG, integer.byteValue()));
 
         mMultiNodeMode.ifPresent(
-                multiNodeCapabilityFlag -> configParamsBuilder.putByte(MULTI_NODE_MODE,
-                        (byte) multiNodeCapabilityFlag.getValue()));
+                integer -> configParamsBuilder.putByte(MULTI_NODE_MODE, integer.byteValue()));
 
         mRangingTimeStruct.ifPresent(
                 aByte -> configParamsBuilder.putByte(RANGING_TIME_STRUCT, aByte));
 
-        mScheduledMode.ifPresent(
-                aByte -> configParamsBuilder.putByte(SCHEDULED_MODE, aByte));
+        mScheduleMode.ifPresent(
+                integer -> configParamsBuilder.putByte(SCHEDULED_MODE, integer.byteValue()));
 
         mHoppingMode.ifPresent(aBoolean -> configParamsBuilder.putByte(HOPPING_MODE,
                 (byte) (aBoolean ? 1 : 0)));
@@ -235,12 +211,11 @@ public class ConfigurationParams {
 
         mChannel.ifPresent(integer -> configParamsBuilder.putByte(CHANNEL, integer.byteValue()));
 
-        mRframeConfig.ifPresent(rframeCapabilityFlag -> configParamsBuilder.putByte(RFRAME_CONFIG,
-                (byte) rframeCapabilityFlag.getValue()));
+        mRframeConfig.ifPresent(integer -> configParamsBuilder.putByte(RFRAME_CONFIG,
+                integer.byteValue()));
 
         mCcConstraintLength.ifPresent(
-                psduDataRateCapabilityFlag -> configParamsBuilder.putByte(CC_CONSTRAINT_LENGTH,
-                        (byte) psduDataRateCapabilityFlag.getValue()));
+                cccLen -> configParamsBuilder.putByte(CC_CONSTRAINT_LENGTH, cccLen.byteValue()));
 
         mPrfMode.ifPresent(integer -> configParamsBuilder.putByte(PRF_MODE, integer.byteValue()));
 
@@ -347,7 +322,7 @@ public class ConfigurationParams {
      * @return null if the data cannot be decoded per spec.
      */
     @Nullable
-    public static ConfigurationParams fromBytes(@NonNull byte[] data) {
+    static ConfigurationParams fromBytes(@NonNull byte[] data) {
         TlvDecoderBuffer configParamsTlv = new TlvDecoderBuffer(data,
                 CONFIGURATION_PARAMS_MAX_COUNT);
         configParamsTlv.parse();
@@ -373,39 +348,21 @@ public class ConfigurationParams {
             configParamsBuilder.setDeviceRole(configParamsTlv.getByte(DEVICE_ROLES));
         }
         if (isPresent(configParamsTlv, RANGING_METHOD)) {
-            configParamsBuilder.setRangingMethod(configParamsTlv.getByte(RANGING_METHOD));
-            /*byte rangingMethodRaw = configParamsTlv.getByte(RANGING_METHOD);
-            if (rangingMethodRaw == SS_TWR_DEFERRED) {
-                configParamsBuilder.setRangingMethod(HAS_SS_TWR_SUPPORT);
-            } else if (rangingMethodRaw == DS_TWR_DEFERRED) {
-                configParamsBuilder.setRangingMethod(HAS_DS_TWR_SUPPORT);
-            }*/
+            configParamsBuilder.setRangingMethod(
+                    configParamsTlv.getByte(RANGING_METHOD).intValue());
         }
         if (isPresent(configParamsTlv, STS_CONFIG)) {
-            byte stsConfigRaw = configParamsTlv.getByte(STS_CONFIG);
-            if (isBitSet(stsConfigRaw, STATIC_STS)) {
-                configParamsBuilder.setStsConfig(HAS_STATIC_STS_SUPPORT);
-            } else if (isBitSet(stsConfigRaw, DYNAMIC_STS)) {
-                configParamsBuilder.setStsConfig(HAS_DYNAMIC_STS_SUPPORT);
-            } else if (isBitSet(stsConfigRaw, DYNAMIC_STS_RESPONDER_SPECIFIC_SUBSESSION_KEY)) {
-                configParamsBuilder.setStsConfig(HAS_DYNAMIC_STS_INDIVIDUAL_CONTROLEE_KEY_SUPPORT);
-            }
+            configParamsBuilder.setStsConfig(configParamsTlv.getByte(STS_CONFIG).intValue());
         }
         if (isPresent(configParamsTlv, MULTI_NODE_MODE)) {
-            byte multiNodeRaw = configParamsTlv.getByte(MULTI_NODE_MODE);
-            if (isBitSet(multiNodeRaw, UNICAST)) {
-                configParamsBuilder.setMultiNodeMode(HAS_UNICAST_SUPPORT);
-            } else if (isBitSet(multiNodeRaw, ONE_TO_MANY)) {
-                configParamsBuilder.setMultiNodeMode(HAS_ONE_TO_MANY_SUPPORT);
-            } else if (isBitSet(multiNodeRaw, MANY_TO_MANY)) {
-                configParamsBuilder.setMultiNodeMode(HAS_MANY_TO_MANY_SUPPORT);
-            }
+            configParamsBuilder.setMultiNodeMode(
+                    configParamsTlv.getByte(MULTI_NODE_MODE).intValue());
         }
         if (isPresent(configParamsTlv, RANGING_TIME_STRUCT)) {
             configParamsBuilder.setRangingTimeStruct(configParamsTlv.getByte(RANGING_TIME_STRUCT));
         }
         if (isPresent(configParamsTlv, SCHEDULED_MODE)) {
-            configParamsBuilder.setScheduledMode(configParamsTlv.getByte(SCHEDULED_MODE));
+            configParamsBuilder.setScheduleMode(configParamsTlv.getByte(SCHEDULED_MODE).intValue());
         }
         if (isPresent(configParamsTlv, HOPPING_MODE)) {
             configParamsBuilder.setHoppingMode(configParamsTlv.getByte(HOPPING_MODE) == 1);
@@ -421,22 +378,11 @@ public class ConfigurationParams {
             configParamsBuilder.setChannel(configParamsTlv.getByte(CHANNEL).intValue());
         }
         if (isPresent(configParamsTlv, RFRAME_CONFIG)) {
-            byte rFrameConfigRaw = configParamsTlv.getByte(RFRAME_CONFIG);
-            if (isBitSet(rFrameConfigRaw, SP0)) {
-                configParamsBuilder.setRframeConfig(HAS_SP0_RFRAME_SUPPORT);
-            } else if (isBitSet(rFrameConfigRaw, SP1)) {
-                configParamsBuilder.setRframeConfig(HAS_SP1_RFRAME_SUPPORT);
-            } else if (isBitSet(rFrameConfigRaw, SP3)) {
-                configParamsBuilder.setRframeConfig(HAS_SP3_RFRAME_SUPPORT);
-            }
+            configParamsBuilder.setRframeConfig(configParamsTlv.getByte(RFRAME_CONFIG).intValue());
         }
         if (isPresent(configParamsTlv, CC_CONSTRAINT_LENGTH)) {
-            byte ccConstraintLengthRaw = configParamsTlv.getByte(CC_CONSTRAINT_LENGTH);
-            if (isBitSet(ccConstraintLengthRaw, CC_CONSTRAINT_LENGTH_K3)) {
-                configParamsBuilder.setCcConstraintLength(HAS_6M81_SUPPORT);
-            } else if (isBitSet(ccConstraintLengthRaw, CC_CONSTRAINT_LENGTH_K7)) {
-                configParamsBuilder.setCcConstraintLength(HAS_7M80_SUPPORT);
-            }
+            configParamsBuilder.setCcConstraintLength(
+                    configParamsTlv.getByte(CC_CONSTRAINT_LENGTH).intValue());
         }
         if (isPresent(configParamsTlv, PRF_MODE)) {
             configParamsBuilder.setPrfMode(configParamsTlv.getByte(PRF_MODE).intValue());
@@ -526,7 +472,7 @@ public class ConfigurationParams {
     }
 
     /** Builder for CONFIGURATION_PARAMS */
-    public static class Builder {
+    static class Builder {
         // Set all default protocol version to FiRa 1.1
         private FiraProtocolVersion mPhyVersion = new FiraProtocolVersion(1, 1);
         private FiraProtocolVersion mMacVersion = new FiraProtocolVersion(1, 1);
@@ -534,17 +480,17 @@ public class ConfigurationParams {
                 Optional.empty();
         private Optional<Integer> mRangingMethod =
                 Optional.empty();
-        private Optional<FiraParams.StsCapabilityFlag> mStsConfig = Optional.empty();
-        private Optional<FiraParams.MultiNodeCapabilityFlag> mMultiNodeMode =
+        private Optional<Integer> mStsConfig = Optional.empty();
+        private Optional<Integer> mMultiNodeMode =
                 Optional.empty();
         private Optional<Byte> mRangingTimeStruct = Optional.empty();
-        private Optional<Byte> mScheduledMode = Optional.empty();
+        private Optional<Integer> mScheduleMode = Optional.empty();
         private Optional<Boolean> mHoppingMode = Optional.empty();
         private Optional<Boolean> mBlockStriding = Optional.empty();
         private Optional<Boolean> mUwbInitiationTime = Optional.empty();
         private Optional<Integer> mChannel = Optional.empty();
-        private Optional<FiraParams.RframeCapabilityFlag> mRframeConfig = Optional.empty();
-        private Optional<FiraParams.PsduDataRateCapabilityFlag> mCcConstraintLength =
+        private Optional<Integer> mRframeConfig = Optional.empty();
+        private Optional<Integer> mCcConstraintLength =
                 Optional.empty();
         private Optional<Integer> mPrfMode = Optional.empty();
         private Optional<Integer> mSp0PhyParameterSet = Optional.empty();
@@ -564,177 +510,177 @@ public class ConfigurationParams {
         private Optional<Integer> mMacFcsType = Optional.empty();
         private Optional<Integer> mMaxRangingRoundRetry = Optional.empty();
 
-        public ConfigurationParams.Builder setPhyVersion(
+        ConfigurationParams.Builder setPhyVersion(
                 FiraProtocolVersion phyVersion) {
             mPhyVersion = phyVersion;
             return this;
         }
 
-        public ConfigurationParams.Builder setMacVersion(
+        ConfigurationParams.Builder setMacVersion(
                 FiraProtocolVersion macVersion) {
             mMacVersion = macVersion;
             return this;
         }
 
-        public ConfigurationParams.Builder setDeviceRole(
+        ConfigurationParams.Builder setDeviceRole(
                 int deviceRole) {
             mDeviceRole = Optional.of(deviceRole);
             return this;
         }
 
-        public ConfigurationParams.Builder setRangingMethod(int rangingMethod) {
+        ConfigurationParams.Builder setRangingMethod(
+                @FiraParams.RangingRoundUsage int rangingMethod) {
             mRangingMethod = Optional.of(rangingMethod);
             return this;
         }
 
-        public ConfigurationParams.Builder setStsConfig(
-                FiraParams.StsCapabilityFlag stsConfig) {
+        ConfigurationParams.Builder setStsConfig(@FiraParams.StsConfig int stsConfig) {
             mStsConfig = Optional.of(stsConfig);
             return this;
         }
 
-        public ConfigurationParams.Builder setMultiNodeMode(
-                FiraParams.MultiNodeCapabilityFlag multiNodeMode) {
+        ConfigurationParams.Builder setMultiNodeMode(
+                @FiraParams.MultiNodeMode int multiNodeMode) {
             mMultiNodeMode = Optional.of(multiNodeMode);
             return this;
         }
 
-        public ConfigurationParams.Builder setRangingTimeStruct(Byte rangingTimeStruct) {
+        ConfigurationParams.Builder setRangingTimeStruct(Byte rangingTimeStruct) {
             mRangingTimeStruct = Optional.of(rangingTimeStruct);
             return this;
         }
 
-        public ConfigurationParams.Builder setScheduledMode(Byte scheduledMode) {
-            mScheduledMode = Optional.of(scheduledMode);
+        ConfigurationParams.Builder setScheduleMode(@FiraParams.SchedulingMode int scheduleMode) {
+            mScheduleMode = Optional.of(scheduleMode);
             return this;
         }
 
-        public ConfigurationParams.Builder setHoppingMode(Boolean hoppingMode) {
+        ConfigurationParams.Builder setHoppingMode(Boolean hoppingMode) {
             mHoppingMode = Optional.of(hoppingMode);
             return this;
         }
 
-        public ConfigurationParams.Builder setBlockStriding(Boolean blockStriding) {
+        ConfigurationParams.Builder setBlockStriding(Boolean blockStriding) {
             mBlockStriding = Optional.of(blockStriding);
             return this;
         }
 
-        public ConfigurationParams.Builder setUwbInitiationTime(
+        ConfigurationParams.Builder setUwbInitiationTime(
                 Boolean uwbInitiationTime) {
             mUwbInitiationTime = Optional.of(uwbInitiationTime);
             return this;
         }
 
-        public ConfigurationParams.Builder setChannel(Integer channel) {
+        ConfigurationParams.Builder setChannel(Integer channel) {
             mChannel = Optional.of(channel);
             return this;
         }
 
-        public ConfigurationParams.Builder setRframeConfig(
-                FiraParams.RframeCapabilityFlag rFrameConfig) {
-            mRframeConfig = Optional.of(rFrameConfig);
+        ConfigurationParams.Builder setRframeConfig(
+                 @FiraParams.RframeConfig int rframeConfig) {
+            mRframeConfig = Optional.of(rframeConfig);
             return this;
         }
 
-        public ConfigurationParams.Builder setCcConstraintLength(
-                FiraParams.PsduDataRateCapabilityFlag ccConstraintLength) {
+        ConfigurationParams.Builder setCcConstraintLength(
+                @FiraParams.CcConstraintLength int ccConstraintLength) {
             mCcConstraintLength = Optional.of(ccConstraintLength);
             return this;
         }
 
-        public ConfigurationParams.Builder setPrfMode(Integer prfMode) {
+        ConfigurationParams.Builder setPrfMode(Integer prfMode) {
             mPrfMode = Optional.of(prfMode);
             return this;
         }
 
-        public ConfigurationParams.Builder setSp0PhyParameterSet(
+        ConfigurationParams.Builder setSp0PhyParameterSet(
                 Integer sp0PhyParameterSet) {
             mSp0PhyParameterSet = Optional.of(sp0PhyParameterSet);
             return this;
         }
 
-        public ConfigurationParams.Builder setSp1PhyParameterSet(
+        ConfigurationParams.Builder setSp1PhyParameterSet(
                 Integer sp1PhyParameterSet) {
             mSp1PhyParameterSet = Optional.of(sp1PhyParameterSet);
             return this;
         }
 
-        public ConfigurationParams.Builder setSp3PhyParameterSet(
+        ConfigurationParams.Builder setSp3PhyParameterSet(
                 Integer sp3PhyParameterSet) {
             mSp3PhyParameterSet = Optional.of(sp3PhyParameterSet);
             return this;
         }
 
-        public ConfigurationParams.Builder setPreambleCodeIndex(
+        ConfigurationParams.Builder setPreambleCodeIndex(
                 Integer preambleCodeIndex) {
             mPreambleCodeIndex = Optional.of(preambleCodeIndex);
             return this;
         }
 
-        public ConfigurationParams.Builder setResultReportConfig(
+        ConfigurationParams.Builder setResultReportConfig(
                 EnumSet<FiraParams.AoaCapabilityFlag> resultReportConfig) {
             mResultReportConfig = Optional.of(resultReportConfig);
             return this;
         }
 
-        public ConfigurationParams.Builder setMacAddressMode(
+        ConfigurationParams.Builder setMacAddressMode(
                 Integer macAddressMode) {
             mMacAddressMode = Optional.of(macAddressMode);
             return this;
         }
 
-        public ConfigurationParams.Builder setControleeShortMacAddress(
+        ConfigurationParams.Builder setControleeShortMacAddress(
                 UwbAddress controleeShortMacAddress) {
             mControleeShortMacAddress = Optional.of(controleeShortMacAddress);
             return this;
         }
 
-        public ConfigurationParams.Builder setControllerMacAddress(
+        ConfigurationParams.Builder setControllerMacAddress(
                 UwbAddress controllerMacAddress) {
             mControllerMacAddress = Optional.of(controllerMacAddress);
             return this;
         }
 
-        public ConfigurationParams.Builder setSlotsPerRangingRound(
+        ConfigurationParams.Builder setSlotsPerRangingRound(
                 Integer slotsPerRangingRound) {
             mSlotsPerRangingRound = Optional.of(slotsPerRangingRound);
             return this;
         }
 
-        public ConfigurationParams.Builder setMaxContentionPhaseLength(
+        ConfigurationParams.Builder setMaxContentionPhaseLength(
                 Integer maxContentionPhaseLength) {
             mMaxContentionPhaseLength = Optional.of((maxContentionPhaseLength));
             return this;
         }
 
-        public ConfigurationParams.Builder setSlotDuration(Integer slotDuration) {
+        ConfigurationParams.Builder setSlotDuration(Integer slotDuration) {
             mSlotDuration = Optional.of(slotDuration);
             return this;
         }
 
-        public ConfigurationParams.Builder setRangingIntervalMs(
+        ConfigurationParams.Builder setRangingIntervalMs(
                 Integer rangingIntervalMs) {
             mRangingIntervalMs = Optional.of(rangingIntervalMs);
             return this;
         }
 
-        public ConfigurationParams.Builder setKeyRotationRate(Integer keyRotationRate) {
+        ConfigurationParams.Builder setKeyRotationRate(Integer keyRotationRate) {
             mKeyRotationRate = Optional.of(keyRotationRate);
             return this;
         }
 
-        public ConfigurationParams.Builder setMacFcsType(Integer macFcsType) {
+        ConfigurationParams.Builder setMacFcsType(Integer macFcsType) {
             mMacFcsType = Optional.of(macFcsType);
             return this;
         }
 
-        public ConfigurationParams.Builder setMaxRangingRoundRetry(
+        ConfigurationParams.Builder setMaxRangingRoundRetry(
                 Integer maxRangingRoundRetry) {
             mMaxRangingRoundRetry = Optional.of(maxRangingRoundRetry);
             return this;
         }
 
-        public ConfigurationParams build() {
+        ConfigurationParams build() {
             return new ConfigurationParams(
                     mPhyVersion,
                     mMacVersion,
@@ -743,7 +689,7 @@ public class ConfigurationParams {
                     mStsConfig,
                     mMultiNodeMode,
                     mRangingTimeStruct,
-                    mScheduledMode,
+                    mScheduleMode,
                     mHoppingMode,
                     mBlockStriding,
                     mUwbInitiationTime,

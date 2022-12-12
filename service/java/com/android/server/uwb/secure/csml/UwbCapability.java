@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.server.uwb.pm;
+package com.android.server.uwb.secure.csml;
 
 import static com.android.server.uwb.config.CapabilityParam.AOA_AZIMUTH_180;
 import static com.android.server.uwb.config.CapabilityParam.AOA_AZIMUTH_90;
@@ -31,27 +31,49 @@ import static com.android.server.uwb.config.CapabilityParam.CHANNEL_6;
 import static com.android.server.uwb.config.CapabilityParam.CHANNEL_8;
 import static com.android.server.uwb.config.CapabilityParam.CHANNEL_9;
 import static com.android.server.uwb.config.CapabilityParam.DS_TWR_DEFERRED;
+import static com.android.server.uwb.config.CapabilityParam.DS_TWR_NON_DEFERRED;
 import static com.android.server.uwb.config.CapabilityParam.DYNAMIC_STS;
 import static com.android.server.uwb.config.CapabilityParam.DYNAMIC_STS_RESPONDER_SPECIFIC_SUBSESSION_KEY;
 import static com.android.server.uwb.config.CapabilityParam.INITIATOR;
 import static com.android.server.uwb.config.CapabilityParam.MANY_TO_MANY;
 import static com.android.server.uwb.config.CapabilityParam.ONE_TO_MANY;
+import static com.android.server.uwb.config.CapabilityParam.OWR;
 import static com.android.server.uwb.config.CapabilityParam.RESPONDER;
 import static com.android.server.uwb.config.CapabilityParam.SP0;
 import static com.android.server.uwb.config.CapabilityParam.SP1;
 import static com.android.server.uwb.config.CapabilityParam.SP3;
 import static com.android.server.uwb.config.CapabilityParam.SS_TWR_DEFERRED;
+import static com.android.server.uwb.config.CapabilityParam.SS_TWR_NON_DEFERRED;
 import static com.android.server.uwb.config.CapabilityParam.STATIC_STS;
 import static com.android.server.uwb.config.CapabilityParam.UNICAST;
+
+import static com.google.uwb.support.fira.FiraParams.CONSTRAINT_LENGTH_3;
+import static com.google.uwb.support.fira.FiraParams.CONSTRAINT_LENGTH_7;
+import static com.google.uwb.support.fira.FiraParams.CONTENTION_BASED_RANGING;
+import static com.google.uwb.support.fira.FiraParams.MAC_ADDRESS_MODE_2_BYTES;
+import static com.google.uwb.support.fira.FiraParams.MAC_ADDRESS_MODE_8_BYTES;
+import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DL_TDOA;
+import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
+import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DS_TWR_NON_DEFERRED_MODE;
+import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE;
+import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_NON_DEFERRED_MODE;
+import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP0;
+import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP1;
+import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP3;
+import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_DYNAMIC;
+import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY;
+import static com.google.uwb.support.fira.FiraParams.TIME_SCHEDULED_RANGING;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.android.server.uwb.config.CapabilityParam;
 import com.android.server.uwb.params.TlvBuffer;
 import com.android.server.uwb.params.TlvDecoderBuffer;
 
 import com.google.uwb.support.base.FlagEnum;
 import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.fira.FiraParams.StsCapabilityFlag;
 import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.fira.FiraSpecificationParams;
 
@@ -59,6 +81,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * UWB_CAPABILITY defined in 8.5.3.2
@@ -84,12 +107,14 @@ public class UwbCapability {
     public static final int EXTENDED_MAC_ADDRESS = 0x91;
     public static final int UWB_CAPABILITY_MAX_COUNT = 18;
 
+    public static final int DEFAULT_CHANNEL = 9;
+
     public final FiraProtocolVersion mMinPhyVersionSupported;
     public final FiraProtocolVersion mMaxPhyVersionSupported;
     public final FiraProtocolVersion mMinMacVersionSupported;
     public final FiraProtocolVersion mMaxMacVersionSupported;
     public final Optional<EnumSet<FiraParams.DeviceRoleCapabilityFlag>> mDeviceRoles;
-    public final Optional<EnumSet<FiraParams.RangingRoundCapabilityFlag>> mRangingMethod;
+    public final Optional<Byte> mRangingMethod;
     public final Optional<EnumSet<FiraParams.StsCapabilityFlag>> mStsConfig;
     public final Optional<EnumSet<FiraParams.MultiNodeCapabilityFlag>> mMultiNodeMode;
     public final Optional<Byte> mRangingTimeStruct;
@@ -99,7 +124,7 @@ public class UwbCapability {
     public final Optional<Boolean> mUwbInitiationTime;
     public final Optional<List<Integer>> mChannels;
     public final Optional<EnumSet<FiraParams.RframeCapabilityFlag>> mRframeConfig;
-    public final Optional<EnumSet<FiraParams.PsduDataRateCapabilityFlag>> mCcConstraintLength;
+    public final Optional<Byte> mCcConstraintLength;
     public final Optional<EnumSet<FiraParams.BprfParameterSetCapabilityFlag>> mBprfParameterSet;
     public final Optional<EnumSet<FiraParams.HprfParameterSetCapabilityFlag>> mHprfParameterSet;
     public final Optional<EnumSet<FiraParams.AoaCapabilityFlag>> mAoaSupport;
@@ -110,7 +135,7 @@ public class UwbCapability {
             FiraProtocolVersion minMacVersionSupported,
             FiraProtocolVersion maxMacVersionSupported,
             Optional<EnumSet<FiraParams.DeviceRoleCapabilityFlag>> deviceRoles,
-            Optional<EnumSet<FiraParams.RangingRoundCapabilityFlag>> rangingMethod,
+            Optional<Byte> rangingMethod,
             Optional<EnumSet<FiraParams.StsCapabilityFlag>> stsConfig,
             Optional<EnumSet<FiraParams.MultiNodeCapabilityFlag>> multiNodeMode,
             Optional<Byte> rangingTimeStruct,
@@ -120,7 +145,7 @@ public class UwbCapability {
             Optional<Boolean> uwbInitiationTime,
             Optional<List<Integer>> channels,
             Optional<EnumSet<FiraParams.RframeCapabilityFlag>> rframeConfig,
-            Optional<EnumSet<FiraParams.PsduDataRateCapabilityFlag>> ccConstraintLength,
+            Optional<Byte> ccConstraintLength,
             Optional<EnumSet<FiraParams.BprfParameterSetCapabilityFlag>> bprfParameterSet,
             Optional<EnumSet<FiraParams.HprfParameterSetCapabilityFlag>> hprfParameterSet,
             Optional<EnumSet<FiraParams.AoaCapabilityFlag>> aoaSupport,
@@ -182,16 +207,7 @@ public class UwbCapability {
             uwbCapabilityBuilder.putByte(DEVICE_ROLES, deviceRoles);
         }
         if (mRangingMethod.isPresent()) {
-            byte rangingMethod = 0;
-            if (mRangingMethod.get().contains(
-                    FiraParams.RangingRoundCapabilityFlag.HAS_SS_TWR_SUPPORT)) {
-                rangingMethod = (byte) (rangingMethod | SS_TWR_DEFERRED);
-            }
-            if (mRangingMethod.get().contains(
-                    FiraParams.RangingRoundCapabilityFlag.HAS_DS_TWR_SUPPORT)) {
-                rangingMethod = (byte) (rangingMethod | DS_TWR_DEFERRED);
-            }
-            uwbCapabilityBuilder.putByte(RANGING_METHOD, rangingMethod);
+            uwbCapabilityBuilder.putByte(RANGING_METHOD, mRangingMethod.get());
         }
         if (mStsConfig.isPresent()) {
             byte stsConfig = 0;
@@ -283,16 +299,7 @@ public class UwbCapability {
             uwbCapabilityBuilder.putByte(RFRAME_CONFIG, rFrameConfig);
         }
         if (mCcConstraintLength.isPresent()) {
-            byte ccConstraintLength = 0;
-            if (mCcConstraintLength.get().contains(
-                    FiraParams.PsduDataRateCapabilityFlag.HAS_6M81_SUPPORT)) {
-                ccConstraintLength = (byte) (ccConstraintLength | CC_CONSTRAINT_LENGTH_K3);
-            }
-            if (mCcConstraintLength.get().contains(
-                    FiraParams.PsduDataRateCapabilityFlag.HAS_7M80_SUPPORT)) {
-                ccConstraintLength = (byte) (ccConstraintLength | CC_CONSTRAINT_LENGTH_K7);
-            }
-            uwbCapabilityBuilder.putByte(CC_CONSTRAINT_LENGTH, ccConstraintLength);
+            uwbCapabilityBuilder.putByte(CC_CONSTRAINT_LENGTH, mCcConstraintLength.get());
         }
         if (mBprfParameterSet.isPresent()) {
             byte bprfParameterSet = (byte) FlagEnum.toInt(mBprfParameterSet.get());
@@ -341,6 +348,27 @@ public class UwbCapability {
         return true;
     }
 
+    private static byte getRangingMethod(@NonNull FiraSpecificationParams firaSpecificationParams) {
+        EnumSet<FiraParams.RangingRoundCapabilityFlag>  rangingRoundCapabilityFlags =
+                firaSpecificationParams.getRangingRoundCapabilities();
+        int rangingMethod = 0;
+        if (rangingRoundCapabilityFlags.contains(
+                FiraParams.RangingRoundCapabilityFlag.HAS_DS_TWR_SUPPORT)) {
+            rangingMethod |= DS_TWR_DEFERRED;
+            if (firaSpecificationParams.hasNonDeferredModeSupport()) {
+                rangingMethod |= DS_TWR_NON_DEFERRED;
+            }
+        }
+        if (rangingRoundCapabilityFlags
+                .contains(FiraParams.RangingRoundCapabilityFlag.HAS_SS_TWR_SUPPORT)) {
+            rangingMethod |= SS_TWR_DEFERRED;
+            if (firaSpecificationParams.hasNonDeferredModeSupport()) {
+                rangingMethod |= SS_TWR_NON_DEFERRED;
+            }
+        }
+        return (byte) rangingMethod;
+    }
+
     /** Converts the FiRaSpecificationParam to UwbCapability. */
     @NonNull
     public static UwbCapability fromFiRaSpecificationParam(
@@ -351,18 +379,229 @@ public class UwbCapability {
                 .setMinMacVersionSupported(firaSpecificationParams.getMinMacVersionSupported())
                 .setMaxMacVersionSupported(firaSpecificationParams.getMaxMacVersionSupported())
                 .setDeviceRoles(firaSpecificationParams.getDeviceRoleCapabilities())
-                .setRangingMethod(firaSpecificationParams.getRangingRoundCapabilities())
+                .setRangingMethod(getRangingMethod(firaSpecificationParams))
                 .setStsConfig(firaSpecificationParams.getStsCapabilities())
                 .setMultiNodeMode(firaSpecificationParams.getMultiNodeCapabilities())
                 .setBlockStriding(firaSpecificationParams.hasBlockStridingSupport())
                 .setUwbInitiationTime(firaSpecificationParams.hasInitiationTimeSupport())
                 .setChannels(firaSpecificationParams.getSupportedChannels())
                 .setRFrameConfig(firaSpecificationParams.getRframeCapabilities())
-                .setCcConstraintLength(firaSpecificationParams.getPsduDataRateCapabilities())
+                .setCcConstraintLength(getCcConstraintLength(
+                        firaSpecificationParams.getPsduDataRateCapabilities()))
                 .setBprfParameterSet(firaSpecificationParams.getBprfParameterSetCapabilities())
                 .setHprfParameterSet(firaSpecificationParams.getHprfParameterSetCapabilities())
                 .setAoaSupport(firaSpecificationParams.getAoaCapabilities())
                 .build();
+    }
+
+    private static byte getCcConstraintLength(
+            EnumSet<FiraParams.PsduDataRateCapabilityFlag> psduDataRateCapabilityFlags) {
+        byte ccConstraintLength = (byte) 0;
+        if (psduDataRateCapabilityFlags.isEmpty()
+                || psduDataRateCapabilityFlags.contains(
+                        FiraParams.PsduDataRateCapabilityFlag.HAS_6M81_SUPPORT)
+                || psduDataRateCapabilityFlags.contains(
+                        FiraParams.PsduDataRateCapabilityFlag.HAS_27M2_SUPPORT)) {
+            ccConstraintLength |= (byte) CC_CONSTRAINT_LENGTH_K3;
+        }
+        if (psduDataRateCapabilityFlags.contains(
+                        FiraParams.PsduDataRateCapabilityFlag.HAS_7M80_SUPPORT)
+                || psduDataRateCapabilityFlags.contains(
+                        FiraParams.PsduDataRateCapabilityFlag.HAS_31M2_SUPPORT)) {
+            ccConstraintLength |= (byte) CC_CONSTRAINT_LENGTH_K7;
+        }
+
+        return ccConstraintLength;
+    }
+
+    /** Checks if the capabilities are compatible. */
+    boolean isCompatibleTo(@NonNull UwbCapability remoteCap) {
+        // mac version
+        if (mMinMacVersionSupported.getMajor() > remoteCap.mMaxMacVersionSupported.getMajor()
+                || mMaxMacVersionSupported.getMajor()
+                        < remoteCap.mMinMacVersionSupported.getMajor()) {
+            return false;
+        } else if (mMinMacVersionSupported.getMinor() > remoteCap.mMaxMacVersionSupported.getMinor()
+                || mMaxMacVersionSupported.getMinor()
+                        < remoteCap.mMinMacVersionSupported.getMinor()) {
+            return false;
+        }
+
+        // phy version
+        if (mMinPhyVersionSupported.getMajor() > remoteCap.mMaxPhyVersionSupported.getMajor()
+                || mMaxPhyVersionSupported.getMajor()
+                        < remoteCap.mMinPhyVersionSupported.getMajor()) {
+            return false;
+        } else if (mMinPhyVersionSupported.getMinor() > remoteCap.mMaxPhyVersionSupported.getMinor()
+                || mMaxPhyVersionSupported.getMinor()
+                        < remoteCap.mMinPhyVersionSupported.getMinor()) {
+            return false;
+        }
+        return true;
+    }
+
+    /** Gets the minimum phy version supported by both devices. */
+    @NonNull
+    FiraProtocolVersion getPreferredPhyVersion(FiraProtocolVersion remoteMinPhyVersion) {
+
+        if (mMinPhyVersionSupported.getMajor() < remoteMinPhyVersion.getMajor()) {
+            return remoteMinPhyVersion;
+        } else if (mMinPhyVersionSupported.getMajor() > remoteMinPhyVersion.getMajor()) {
+            return mMinPhyVersionSupported;
+        } else if (mMinPhyVersionSupported.getMinor() < remoteMinPhyVersion.getMinor()) {
+            return remoteMinPhyVersion;
+        }
+        return mMinPhyVersionSupported;
+    }
+
+    /** Gets the minimum mac version supported by both devices. */
+    @NonNull
+    FiraProtocolVersion getPreferredMacVersion(FiraProtocolVersion remoteMinMacVersion) {
+
+        if (mMinMacVersionSupported.getMajor() < remoteMinMacVersion.getMajor()) {
+            return remoteMinMacVersion;
+        } else if (mMinMacVersionSupported.getMajor() > remoteMinMacVersion.getMajor()) {
+            return mMinMacVersionSupported;
+        } else if (mMinMacVersionSupported.getMinor() < remoteMinMacVersion.getMinor()) {
+            return remoteMinMacVersion;
+        }
+        return mMinMacVersionSupported;
+    }
+
+    @FiraParams.MacAddressMode
+    int getPreferredMacAddressMode(Optional<Byte> remoteExtendedMacSupport) {
+        if (mExtendedMacSupport.isPresent() && mExtendedMacSupport.get() != 0
+                && remoteExtendedMacSupport.isPresent() && remoteExtendedMacSupport.get() != 0) {
+            return MAC_ADDRESS_MODE_8_BYTES;
+        }
+        return MAC_ADDRESS_MODE_2_BYTES;
+    }
+
+    @FiraParams.SchedulingMode
+    int getPreferredScheduleMode(Optional<Byte> remoteScheduleMode) {
+        if (mScheduledMode.isPresent() && remoteScheduleMode.isPresent()
+                && (mScheduledMode.get() & remoteScheduleMode.get()
+                        & (byte) CapabilityParam.CONTENTION_BASED_RANGING) != 0) {
+            return CONTENTION_BASED_RANGING;
+        }
+        return TIME_SCHEDULED_RANGING;
+    }
+
+    @FiraParams.RframeConfig
+    int getPreferredRframeConfig(
+            Optional<EnumSet<FiraParams.RframeCapabilityFlag>> remoteRframeConfig) {
+        if (mRframeConfig.isEmpty() || remoteRframeConfig.isEmpty()) {
+            return RFRAME_CONFIG_SP3;
+        }
+        if (mRframeConfig.get().contains(FiraParams.RframeCapabilityFlag.HAS_SP3_RFRAME_SUPPORT)
+                && remoteRframeConfig.get().contains(
+                        FiraParams.RframeCapabilityFlag.HAS_SP3_RFRAME_SUPPORT)) {
+            return RFRAME_CONFIG_SP3;
+        }
+        if (mRframeConfig.get().contains(FiraParams.RframeCapabilityFlag.HAS_SP1_RFRAME_SUPPORT)
+                && remoteRframeConfig.get().contains(
+                        FiraParams.RframeCapabilityFlag.HAS_SP1_RFRAME_SUPPORT)) {
+            return RFRAME_CONFIG_SP1;
+        }
+        if (mRframeConfig.get().contains(FiraParams.RframeCapabilityFlag.HAS_SP0_RFRAME_SUPPORT)
+                && remoteRframeConfig.get().contains(
+                        FiraParams.RframeCapabilityFlag.HAS_SP0_RFRAME_SUPPORT)) {
+            return RFRAME_CONFIG_SP0;
+        }
+        return RFRAME_CONFIG_SP3;
+    }
+
+    @FiraParams.StsConfig
+    int getPreferredStsConfig(
+            Optional<EnumSet<StsCapabilityFlag>> remoteStsCapFlags,
+            boolean isMultiCast) {
+        if (!isMultiCast) {
+            return STS_CONFIG_DYNAMIC;
+        }
+        if (mStsConfig.isEmpty() && remoteStsCapFlags.isEmpty()) {
+            return STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY;
+        }
+
+        if ((remoteStsCapFlags.isEmpty() && mStsConfig.get().contains(
+                    StsCapabilityFlag.HAS_DYNAMIC_STS_INDIVIDUAL_CONTROLEE_KEY_SUPPORT))
+                    || (mStsConfig.isEmpty() && remoteStsCapFlags.get().contains(
+                            StsCapabilityFlag.HAS_DYNAMIC_STS_INDIVIDUAL_CONTROLEE_KEY_SUPPORT))
+                    || (mStsConfig.get().contains(
+                            StsCapabilityFlag.HAS_DYNAMIC_STS_INDIVIDUAL_CONTROLEE_KEY_SUPPORT)
+                        && remoteStsCapFlags.get().contains(
+                                StsCapabilityFlag
+                                        .HAS_DYNAMIC_STS_INDIVIDUAL_CONTROLEE_KEY_SUPPORT))) {
+            return STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY;
+        }
+
+        return STS_CONFIG_DYNAMIC;
+    }
+
+    @NonNull
+    Optional<Integer> getPreferredChannel(Optional<List<Integer>> remoteChannels) {
+        if ((mChannels.isEmpty() && remoteChannels.isEmpty())
+                || (mChannels.isEmpty() && remoteChannels.get().contains(DEFAULT_CHANNEL))
+                || (remoteChannels.isEmpty() && mChannels.get().contains(DEFAULT_CHANNEL))) {
+            return Optional.of(DEFAULT_CHANNEL);
+        }
+        List<Integer> commonChannels = mChannels.get().stream()
+                .distinct().filter(remoteChannels.get()::contains)
+                .collect(Collectors.toList());
+
+        return commonChannels.stream().findAny();
+    }
+
+    boolean getPreferredHoppingMode(Optional<Boolean> remoteHoppingMode) {
+        if (mHoppingMode.isEmpty() || remoteHoppingMode.isEmpty()) {
+            return false;
+        }
+        return mHoppingMode.get() && remoteHoppingMode.get();
+    }
+
+    @FiraParams.CcConstraintLength
+    int getPreferredConstrainLengthOfConvolutionalCode(
+            Optional<Byte> remoteCcConstrainLength) {
+        if (mCcConstraintLength.isEmpty() || remoteCcConstrainLength.isEmpty()) {
+            return CONSTRAINT_LENGTH_3;
+        }
+        if ((mCcConstraintLength.get() & remoteCcConstrainLength.get()
+                & CC_CONSTRAINT_LENGTH_K7) != 0) {
+            return CONSTRAINT_LENGTH_7;
+        }
+        return CONSTRAINT_LENGTH_3;
+    }
+
+    @FiraParams.RangingRoundUsage
+    int getPreferredRangingMethod(Optional<Byte> remoteRangingMethod) {
+        if (mRangingMethod.isEmpty() || remoteRangingMethod.isEmpty()) {
+            return RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
+        }
+
+        byte rangingMethodMask = (byte) (mRangingMethod.get() & remoteRangingMethod.get());
+
+        if ((rangingMethodMask & DS_TWR_DEFERRED) != 0) {
+            return RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
+        }
+        if ((rangingMethodMask & DS_TWR_NON_DEFERRED) != 0) {
+            return RANGING_ROUND_USAGE_DS_TWR_NON_DEFERRED_MODE;
+        }
+        if ((rangingMethodMask & SS_TWR_DEFERRED) != 0) {
+            return RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE;
+        }
+        if ((rangingMethodMask & SS_TWR_NON_DEFERRED) != 0) {
+            return RANGING_ROUND_USAGE_SS_TWR_NON_DEFERRED_MODE;
+        }
+        if (((rangingMethodMask & OWR) != 0)) {
+            return RANGING_ROUND_USAGE_DL_TDOA;
+        }
+        return RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
+    }
+
+    boolean getPreferredBlockStriding(Optional<Boolean> remoteBlockStriding) {
+        if (mBlockStriding.isEmpty() || remoteBlockStriding.isEmpty()) {
+            return false;
+        }
+        return mBlockStriding.get() && remoteBlockStriding.get();
     }
 
     /**
@@ -417,16 +656,7 @@ public class UwbCapability {
             uwbCapabilityBuilder.setDeviceRoles(deviceRoles);
         }
         if (isPresent(uwbCapabilityTlv, RANGING_METHOD)) {
-            EnumSet<FiraParams.RangingRoundCapabilityFlag> rangingMethod = EnumSet.noneOf(
-                    FiraParams.RangingRoundCapabilityFlag.class);
-            byte rangingMethodRaw = uwbCapabilityTlv.getByte(RANGING_METHOD);
-            if (isBitSet(rangingMethodRaw, SS_TWR_DEFERRED)) {
-                rangingMethod.add(FiraParams.RangingRoundCapabilityFlag.HAS_SS_TWR_SUPPORT);
-            }
-            if (isBitSet(rangingMethodRaw, DS_TWR_DEFERRED)) {
-                rangingMethod.add(FiraParams.RangingRoundCapabilityFlag.HAS_DS_TWR_SUPPORT);
-            }
-            uwbCapabilityBuilder.setRangingMethod(rangingMethod);
+            uwbCapabilityBuilder.setRangingMethod(uwbCapabilityTlv.getByte(RANGING_METHOD));
         }
         if (isPresent(uwbCapabilityTlv, STS_CONFIG)) {
             EnumSet<FiraParams.StsCapabilityFlag> stsConfig = EnumSet.noneOf(
@@ -522,15 +752,7 @@ public class UwbCapability {
             uwbCapabilityBuilder.setRFrameConfig(rFrameConfig);
         }
         if (isPresent(uwbCapabilityTlv, CC_CONSTRAINT_LENGTH)) {
-            EnumSet<FiraParams.PsduDataRateCapabilityFlag> ccConstraintLength = EnumSet.noneOf(
-                    FiraParams.PsduDataRateCapabilityFlag.class);
-            byte ccConstraintLengthRaw = uwbCapabilityTlv.getByte(CC_CONSTRAINT_LENGTH);
-            if (isBitSet(ccConstraintLengthRaw, CC_CONSTRAINT_LENGTH_K3)) {
-                ccConstraintLength.add(FiraParams.PsduDataRateCapabilityFlag.HAS_6M81_SUPPORT);
-            }
-            if (isBitSet(ccConstraintLengthRaw, CC_CONSTRAINT_LENGTH_K7)) {
-                ccConstraintLength.add(FiraParams.PsduDataRateCapabilityFlag.HAS_7M80_SUPPORT);
-            }
+            byte ccConstraintLength = uwbCapabilityTlv.getByte(CC_CONSTRAINT_LENGTH);
             uwbCapabilityBuilder.setCcConstraintLength(ccConstraintLength);
         }
         if (isPresent(uwbCapabilityTlv, AOA_SUPPORT)) {
@@ -583,8 +805,7 @@ public class UwbCapability {
         private FiraProtocolVersion mMaxMacVersionSupported = new FiraProtocolVersion(1, 1);
         private Optional<EnumSet<FiraParams.DeviceRoleCapabilityFlag>> mDeviceRoles =
                 Optional.empty();
-        private Optional<EnumSet<FiraParams.RangingRoundCapabilityFlag>> mRangingMethod =
-                Optional.empty();
+        private Optional<Byte> mRangingMethod = Optional.empty();
         private Optional<EnumSet<FiraParams.StsCapabilityFlag>> mStsConfig = Optional.empty();
         private Optional<EnumSet<FiraParams.MultiNodeCapabilityFlag>> mMultiNodeMode =
                 Optional.empty();
@@ -595,7 +816,7 @@ public class UwbCapability {
         private Optional<Boolean> mUwbInitiationTime = Optional.empty();
         private Optional<List<Integer>> mChannels = Optional.empty();
         private Optional<EnumSet<FiraParams.RframeCapabilityFlag>> mRframeConfig = Optional.empty();
-        private Optional<EnumSet<FiraParams.PsduDataRateCapabilityFlag>> mCcConstraintLength =
+        private Optional<Byte> mCcConstraintLength =
                 Optional.empty();
         private Optional<EnumSet<FiraParams.BprfParameterSetCapabilityFlag>> mBprfParameterSet =
                 Optional.empty();
@@ -604,126 +825,125 @@ public class UwbCapability {
         private Optional<EnumSet<FiraParams.AoaCapabilityFlag>> mAoaSupport = Optional.empty();
         private Optional<Byte> mExtendedMacSupport = Optional.empty();
 
-        public UwbCapability.Builder setMinPhyVersionSupported(
+        UwbCapability.Builder setMinPhyVersionSupported(
                 FiraProtocolVersion minPhyVersionSupported) {
             mMinPhyVersionSupported = minPhyVersionSupported;
             return this;
         }
 
-        public UwbCapability.Builder setMaxPhyVersionSupported(
+        UwbCapability.Builder setMaxPhyVersionSupported(
                 FiraProtocolVersion maxPhyVersionSupported) {
             mMaxPhyVersionSupported = maxPhyVersionSupported;
             return this;
         }
 
-        public UwbCapability.Builder setMinMacVersionSupported(
+        UwbCapability.Builder setMinMacVersionSupported(
                 FiraProtocolVersion minMacVersionSupported) {
             mMinMacVersionSupported = minMacVersionSupported;
             return this;
         }
 
-        public UwbCapability.Builder setMaxMacVersionSupported(
+        UwbCapability.Builder setMaxMacVersionSupported(
                 FiraProtocolVersion maxMacVersionSupported) {
             mMaxMacVersionSupported = maxMacVersionSupported;
             return this;
         }
 
-        public UwbCapability.Builder setDeviceRoles(
+        UwbCapability.Builder setDeviceRoles(
                 EnumSet<FiraParams.DeviceRoleCapabilityFlag> deviceRoles) {
             mDeviceRoles = Optional.of(deviceRoles);
             return this;
         }
 
-        public UwbCapability.Builder setRangingMethod(
-                EnumSet<FiraParams.RangingRoundCapabilityFlag> rangingMethod) {
+        UwbCapability.Builder setRangingMethod(
+                byte rangingMethod) {
             mRangingMethod = Optional.of(rangingMethod);
             return this;
         }
 
-        public UwbCapability.Builder setStsConfig(
+        UwbCapability.Builder setStsConfig(
                 EnumSet<FiraParams.StsCapabilityFlag> stsConfig) {
             mStsConfig = Optional.of(stsConfig);
             return this;
         }
 
-        public UwbCapability.Builder setMultiMode(
+        UwbCapability.Builder setMultiMode(
                 EnumSet<FiraParams.MultiNodeCapabilityFlag> multiNodeMode) {
             mMultiNodeMode = Optional.of(multiNodeMode);
             return this;
         }
 
-        public UwbCapability.Builder setRangingTimeStruct(Byte rangingTimeStruct) {
+        UwbCapability.Builder setRangingTimeStruct(Byte rangingTimeStruct) {
             mRangingTimeStruct = Optional.of(rangingTimeStruct);
             return this;
         }
 
-        public UwbCapability.Builder setScheduledMode(Byte scheduledMode) {
+        UwbCapability.Builder setScheduledMode(Byte scheduledMode) {
             mScheduledMode = Optional.of(scheduledMode);
             return this;
         }
 
-        public UwbCapability.Builder setHoppingMode(Boolean hoppingMode) {
+        UwbCapability.Builder setHoppingMode(Boolean hoppingMode) {
             mHoppingMode = Optional.of(hoppingMode);
             return this;
         }
 
-        public UwbCapability.Builder setBlockStriding(Boolean blockStriding) {
+        UwbCapability.Builder setBlockStriding(Boolean blockStriding) {
             mBlockStriding = Optional.of(blockStriding);
             return this;
         }
 
-        public UwbCapability.Builder setUwbInitiationTime(Boolean uwbInitiationTime) {
+        UwbCapability.Builder setUwbInitiationTime(Boolean uwbInitiationTime) {
             mUwbInitiationTime = Optional.of(uwbInitiationTime);
             return this;
         }
 
-        public UwbCapability.Builder setChannels(List<Integer> channels) {
+        UwbCapability.Builder setChannels(List<Integer> channels) {
             mChannels = Optional.of(channels);
             return this;
         }
 
-        public UwbCapability.Builder setMultiNodeMode(
+        UwbCapability.Builder setMultiNodeMode(
                 EnumSet<FiraParams.MultiNodeCapabilityFlag> multiNodeMode) {
             mMultiNodeMode = Optional.of(multiNodeMode);
             return this;
         }
 
-        public UwbCapability.Builder setRFrameConfig(
+        UwbCapability.Builder setRFrameConfig(
                 EnumSet<FiraParams.RframeCapabilityFlag> rFrameConfig) {
             mRframeConfig = Optional.of(rFrameConfig);
             return this;
         }
 
-        public UwbCapability.Builder setCcConstraintLength(
-                EnumSet<FiraParams.PsduDataRateCapabilityFlag> ccConstraintLength) {
+        UwbCapability.Builder setCcConstraintLength(byte ccConstraintLength) {
             mCcConstraintLength = Optional.of(ccConstraintLength);
             return this;
         }
 
-        public UwbCapability.Builder setBprfParameterSet(
+        UwbCapability.Builder setBprfParameterSet(
                 EnumSet<FiraParams.BprfParameterSetCapabilityFlag> bprfParameterSet) {
             mBprfParameterSet = Optional.of(bprfParameterSet);
             return this;
         }
 
-        public UwbCapability.Builder setHprfParameterSet(
+        UwbCapability.Builder setHprfParameterSet(
                 EnumSet<FiraParams.HprfParameterSetCapabilityFlag> hprfParameterSet) {
             mHprfParameterSet = Optional.of(hprfParameterSet);
             return this;
         }
 
-        public UwbCapability.Builder setAoaSupport(
+        UwbCapability.Builder setAoaSupport(
                 EnumSet<FiraParams.AoaCapabilityFlag> aoaSupport) {
             mAoaSupport = Optional.of(aoaSupport);
             return this;
         }
 
-        public UwbCapability.Builder setExtendedMacSupport(Byte extendedMacSupport) {
+        UwbCapability.Builder setExtendedMacSupport(Byte extendedMacSupport) {
             mExtendedMacSupport = Optional.of(extendedMacSupport);
             return this;
         }
 
-        public UwbCapability build() {
+        UwbCapability build() {
             return new UwbCapability(
                     mMinPhyVersionSupported,
                     mMaxPhyVersionSupported,

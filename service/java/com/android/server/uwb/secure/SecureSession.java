@@ -23,9 +23,9 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
-import com.android.server.uwb.pm.SessionData;
 import com.android.server.uwb.secure.csml.CsmlUtil;
 import com.android.server.uwb.secure.csml.DispatchResponse;
+import com.android.server.uwb.secure.csml.SessionData;
 
 import java.util.Optional;
 
