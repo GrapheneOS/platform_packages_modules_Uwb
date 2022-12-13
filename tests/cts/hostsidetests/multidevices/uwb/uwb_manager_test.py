@@ -45,9 +45,9 @@ class UwbManagerTest(uwb_base_test.UwbBaseTest):
     super().setup_class()
     self.dut = self.android_devices[0]
 
-  def on_fail(self, record):
-    for ad in self.android_devices:
-      ad.take_bug_report(destination=self.current_test_info.output_path)
+  def teardown_class(self):
+    super().teardown_class()
+    self.dut.take_bug_report(destination=self.current_test_info.output_path)
 
   ### Helper methods ###
 

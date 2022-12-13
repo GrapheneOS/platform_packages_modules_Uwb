@@ -17,7 +17,8 @@ class UwbBaseTest(base_test.BaseTestClass):
   def setup_class(self):
     """Sets up the Android devices for Uwb test."""
     super().setup_class()
-    self.android_devices = self.register_controller(android_device)
+    self.android_devices = self.register_controller(android_device,
+                                                    min_number=2)
     for ad in self.android_devices:
       ad.load_snippet("uwb", "com.google.snippet.uwb")
       ad.adb.shell(["cmd", "uwb", "force-country-code", "enabled", "US"])
