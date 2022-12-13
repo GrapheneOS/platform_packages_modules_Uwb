@@ -30,12 +30,6 @@
             <option name="run-command" value="input keyevent KEYCODE_WAKEUP" />
             <option name="run-command" value="wm dismiss-keyguard" />
         </target_preparer>
-        <!-- Any python dependencies can be specified and will be installed with pip -->
-        <!-- TODO(b/225958696): Import python dependencies -->
-        <target_preparer class="com.android.tradefed.targetprep.PythonVirtualenvPreparer">
-          <option name="dep-module" value="mobly" />
-        </target_preparer>
-        -->
     </device>
     <device name="device2">
         <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">

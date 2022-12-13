@@ -19,7 +19,16 @@ package {
 python_test_host {
     name: "CtsUwbMultiDeviceTestCases",
     main: "uwb_manager_test.py",
-    srcs: ["uwb_manager_test.py"],
+    srcs: [
+        "uwb_manager_test.py",
+        "lib/uwb_base_test.py",
+        "lib/uwb_ranging_decorator.py",
+        "lib/uwb_ranging_params.py",
+        "test_utils/uwb_test_utils.py",
+    ],
+    libs: [
+        "mobly",
+    ],
     test_suites: [
         "cts",
         "general-tests",
@@ -31,4 +40,9 @@ python_test_host {
         // Package the snippet with the mobly test
         ":uwb_snippet",
     ],
+    version: {
+        py3: {
+            embedded_launcher: true,
+        },
+    },
 }
