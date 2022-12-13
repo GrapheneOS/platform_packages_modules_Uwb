@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-package com.android.server.uwb.profile;
+package com.android.server.uwb.secure.csml;
 
-import static com.android.server.uwb.config.CapabilityParam.DS_TWR_DEFERRED;
 import static com.android.server.uwb.config.CapabilityParam.RESPONDER;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.uwb.support.fira.FiraParams.MultiNodeCapabilityFlag.HAS_MANY_TO_MANY_SUPPORT;
+import static com.google.uwb.support.fira.FiraParams.CONSTRAINT_LENGTH_7;
+import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
 import static com.google.uwb.support.fira.FiraParams.PRF_MODE_BPRF;
-import static com.google.uwb.support.fira.FiraParams.PsduDataRateCapabilityFlag.HAS_6M81_SUPPORT;
-import static com.google.uwb.support.fira.FiraParams.RframeCapabilityFlag.HAS_SP1_RFRAME_SUPPORT;
-import static com.google.uwb.support.fira.FiraParams.StsCapabilityFlag.HAS_DYNAMIC_STS_SUPPORT;
+import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
+import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP3;
+import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_DYNAMIC;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import android.platform.test.annotations.Presubmit;
@@ -33,9 +34,6 @@ import android.test.suitebuilder.annotation.SmallTest;
 import android.uwb.UwbAddress;
 
 import androidx.test.runner.AndroidJUnit4;
-
-import com.android.server.uwb.pm.ConfigurationParams;
-import com.android.server.uwb.pm.SessionData;
 
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraProtocolVersion;
@@ -57,17 +55,17 @@ public class SessionDataTest {
         FiraProtocolVersion phyVersion = new FiraProtocolVersion(1, 1);
         FiraProtocolVersion macVersion = new FiraProtocolVersion(1, 1);
         int deviceRole = RESPONDER;
-        int rangingMethod = DS_TWR_DEFERRED;
-        FiraParams.StsCapabilityFlag stsConfig = HAS_DYNAMIC_STS_SUPPORT;
-        FiraParams.MultiNodeCapabilityFlag multiNodeMode = HAS_MANY_TO_MANY_SUPPORT;
+        @FiraParams.RangingRoundUsage int rangingMethod = RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
+        @FiraParams.StsConfig int stsConfig = STS_CONFIG_DYNAMIC;
+        @FiraParams.MultiNodeMode int multiNodeMode = MULTI_NODE_MODE_ONE_TO_MANY;
         Byte rangingTimeStruct = 1;
-        Byte scheduledMode = 0;
+        @FiraParams.SchedulingMode int scheduledMode = 0;
         Boolean hoppingMode = true;
         Boolean blockStriding = false;
         Boolean uwbInitiationTime = false;
         Integer channel = 9;
-        FiraParams.RframeCapabilityFlag rFrameConfig = HAS_SP1_RFRAME_SUPPORT;
-        FiraParams.PsduDataRateCapabilityFlag ccConstraintLength = HAS_6M81_SUPPORT;
+        @FiraParams.RframeConfig int rFrameConfig = RFRAME_CONFIG_SP3;
+        @FiraParams.CcConstraintLength int ccConstraintLength = CONSTRAINT_LENGTH_7;
         Integer prfMode = PRF_MODE_BPRF;
         UwbAddress controleeShortAddress = UwbAddress.fromBytes(new byte[]{0x0A, 0x10});
         UwbAddress controllerMacAddress = UwbAddress.fromBytes(
@@ -88,7 +86,7 @@ public class SessionDataTest {
                 .setStsConfig(stsConfig)
                 .setMultiNodeMode(multiNodeMode)
                 .setRangingTimeStruct(rangingTimeStruct)
-                .setScheduledMode(scheduledMode)
+                .setScheduleMode(scheduledMode)
                 .setHoppingMode(hoppingMode)
                 .setBlockStriding(blockStriding)
                 .setUwbInitiationTime(uwbInitiationTime)
@@ -101,10 +99,20 @@ public class SessionDataTest {
                 .setResultReportConfig(rangingReportConfig)
                 .build();
 
+        byte[] expectedSessionKeyInfo = new byte[] { (byte) 1, (byte) 2 };
+        byte[] expectedSubSessionKeyInfo = new byte[] { (byte) 1, (byte) 2 };
+        byte[] expectedSusAdditionalParams = new byte[] { (byte) 5, (byte) 6 };
+        SecureRangingInfo secureRangingInfo = new SecureRangingInfo.Builder()
+                .setUwbSessionKeyInfo(expectedSessionKeyInfo)
+                .setUwbSubSessionKeyInfo(expectedSubSessionKeyInfo)
+                .setSusAdditionalParams(expectedSusAdditionalParams)
+                .build();
+
         SessionData sessionData = new SessionData.Builder()
                 .setSessionId(sessionId)
                 .setSubSessionId(subSessionId)
                 .setConfigParams(configurationParams)
+                .setSecureRangingInfo(secureRangingInfo)
                 .build();
 
         byte[] sessionDataRaw = sessionData.toBytes();
@@ -118,20 +126,28 @@ public class SessionDataTest {
         assertEquals(configParams1.mPhyVersion, phyVersion);
         assertEquals(configParams1.mMacVersion, macVersion);
         assertEquals(configParams1.mDeviceRole.get(), Integer.valueOf(deviceRole));
-        assertEquals(configParams1.mRangingMethod.get(), Integer.valueOf(rangingMethod));
-        assertEquals(configParams1.mStsConfig.get(), stsConfig);
-        assertEquals(configParams1.mMultiNodeMode.get(), multiNodeMode);
+        assertEquals((int) configParams1.mRangingMethod.get(), rangingMethod);
+        assertEquals((int) configParams1.mStsConfig.get(), stsConfig);
+        assertEquals((int) configParams1.mMultiNodeMode.get(), multiNodeMode);
         assertEquals(configParams1.mRangingTimeStruct.get(), rangingTimeStruct);
-        assertEquals(configParams1.mScheduledMode.get(), scheduledMode);
+        assertEquals((int) configParams1.mScheduleMode.get(), scheduledMode);
         assertEquals(configParams1.mHoppingMode.get(), hoppingMode);
         assertEquals(configParams1.mBlockStriding.get(), blockStriding);
         assertEquals(configParams1.mUwbInitiationTime.get(), uwbInitiationTime);
         assertEquals(configParams1.mChannel.get(), channel);
-        assertEquals(configParams1.mRframeConfig.get(), rFrameConfig);
-        assertEquals(configParams1.mCcConstraintLength.get(), ccConstraintLength);
+        assertEquals((int) configParams1.mRframeConfig.get(), rFrameConfig);
+        assertEquals((int) configParams1.mCcConstraintLength.get(), ccConstraintLength);
         assertEquals(configParams1.mPrfMode.get(), prfMode);
         assertEquals(configParams1.mControleeShortMacAddress.get(), controleeShortAddress);
         assertEquals(configParams1.mControllerMacAddress.get(), controllerMacAddress);
         assertEquals(configParams1.mResultReportConfig.get(), rangingReportConfig);
+
+        SecureRangingInfo actualSecureRangingInfo = sessionData1.mSecureRangingInfo.get();
+        assertArrayEquals(actualSecureRangingInfo.uwbSubSessionKeyInfo.get(),
+                expectedSessionKeyInfo);
+        assertArrayEquals(actualSecureRangingInfo.uwbSubSessionKeyInfo.get(),
+                expectedSubSessionKeyInfo);
+        assertArrayEquals(actualSecureRangingInfo.susAdditionalParams.get(),
+                expectedSusAdditionalParams);
     }
 }

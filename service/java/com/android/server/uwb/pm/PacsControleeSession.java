@@ -21,8 +21,6 @@ import static com.android.server.uwb.data.UwbConfig.OOB_TYPE_BLE;
 import static com.android.server.uwb.data.UwbConfig.PERIPHERAL;
 
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
-import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP3;
-import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_DYNAMIC;
 
 import android.bluetooth.le.AdvertisingSetParameters;
 import android.content.AttributionSource;
@@ -49,8 +47,9 @@ import com.android.server.uwb.discovery.info.AdvertiseInfo;
 import com.android.server.uwb.discovery.info.DiscoveryInfo;
 import com.android.server.uwb.secure.SecureFactory;
 import com.android.server.uwb.secure.SecureSession;
-import com.android.server.uwb.util.DataTypeConversionUtil;
-import com.android.server.uwb.util.ObjectIdentifier;
+import com.android.server.uwb.secure.csml.ControleeInfo;
+import com.android.server.uwb.secure.csml.SessionData;
+import com.android.server.uwb.secure.csml.UwbCapability;
 
 import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
@@ -61,7 +60,6 @@ import java.util.Optional;
 public class PacsControleeSession extends RangingSessionController {
     private static final String TAG = "PacsControleeSession";
     private final PacsAdvertiseCallback mAdvertiseCallback;
-    // TODO populate before calling secureSessionInit()
     private final PacsControleeSessionCallback mControleeSessionCallback;
     private final TransportServerProvider.TransportServerCallback mServerCallback;
 
@@ -187,7 +185,7 @@ public class PacsControleeSession extends RangingSessionController {
     }
 
     /** Initialize controlee responder session */
-    public void secureSessionInit() {
+    private void secureSessionInit() {
         try {
             mSecureSession =
                     SecureFactory.makeResponderSecureSession(
@@ -197,9 +195,10 @@ public class PacsControleeSession extends RangingSessionController {
                             getRunningProfileSessionInfo(),
                             mTransportServerProvider,
                             /* isController= */ false);
+            mSecureSession.startSession();
         } catch (IllegalStateException e) {
             Log.e(TAG, "secure session init failed as " + e);
-
+            stopSession();
         }
     }
 
@@ -208,9 +207,7 @@ public class PacsControleeSession extends RangingSessionController {
         // PACS controlee config
         UwbConfig.Builder builder = new UwbConfig.Builder()
                 .setUwbRole(CONTROLEE_AND_RESPONDER)
-                .setStsConfig(STS_CONFIG_DYNAMIC)
                 .setMultiNodeMode(MULTI_NODE_MODE_ONE_TO_MANY)
-                .setRframeConfig(RFRAME_CONFIG_SP3)
                 .setTofReport(true)
                 .setOobType(OOB_TYPE_BLE)
                 .setOobBleRole(PERIPHERAL);
@@ -219,26 +216,7 @@ public class PacsControleeSession extends RangingSessionController {
             mSessionInfo.setSessionId(mSessionInfo.mSessionData.mSessionId);
             mSessionInfo.mSessionData.mSubSessionId.ifPresent(
                     integer -> mSessionInfo.setSubSessionId(integer));
-
-            if (mSessionInfo.mSessionData.mConfigurationParams.isPresent()) {
-                ConfigurationParams configurationParams =
-                        mSessionInfo.mSessionData.mConfigurationParams.get();
-                configurationParams.mScheduledMode.ifPresent(builder::setScheduledMode);
-                configurationParams.mBlockStriding.ifPresent(builder::setBlockStriding);
-                configurationParams.mChannel.ifPresent(builder::setUwbChannel);
-                configurationParams.mSp0PhyParameterSet.ifPresent(builder::setSp0PhyParameterSet);
-                configurationParams.mSp1PhyParameterSet.ifPresent(builder::setSp1PhyParameterSet);
-                configurationParams.mSp3PhyParameterSet.ifPresent(builder::setSp3PhyParameterSet);
-                configurationParams.mPreambleCodeIndex.ifPresent(builder::setUwbPreambleCodeIndex);
-                configurationParams.mSlotsPerRangingRound.ifPresent(
-                        builder::setSlotsPerRangingRound);
-                configurationParams.mMaxContentionPhaseLength.ifPresent(
-                        builder::setMaxContentionPhaseLength);
-                configurationParams.mSlotDuration.ifPresent(builder::setSlotDurationRstu);
-                configurationParams.mRangingIntervalMs.ifPresent(builder::setRangingIntervalMs);
-                configurationParams.mKeyRotationRate.ifPresent(builder::setKeyRotationRate);
-                configurationParams.mMacFcsType.ifPresent(builder::setKMacFcsType);
-            }
+            return UwbConfig.fromSessionData(builder, mSessionInfo.mSessionData);
         }
         return builder.build();
     }
@@ -274,11 +252,8 @@ public class PacsControleeSession extends RangingSessionController {
         ControleeInfo controleeInfo =
                 new ControleeInfo.Builder().setUwbCapability(uwbCapability).build();
 
-        ObjectIdentifier oidOfProvisionedAdf = ObjectIdentifier.fromBytes(
-                DataTypeConversionUtil.i32ToByteArray(
-                        mSessionInfo.mServiceProfileInfo.getServiceAdfID()));
-
-        return new RunningProfileSessionInfo.Builder(uwbCapability, oidOfProvisionedAdf)
+        return new RunningProfileSessionInfo.Builder(uwbCapability,
+                mSessionInfo.mServiceProfileInfo.getServiceAdfOid())
                 .setControleeInfo(controleeInfo)
                 .build();
     }
@@ -295,13 +270,14 @@ public class PacsControleeSession extends RangingSessionController {
         public void onSessionDataReady(
                 int updatedSessionId, Optional<SessionData> sessionData,
                 boolean isSessionTerminated) {
-            mPacsControleeSession.mSessionInfo.mSessionData = sessionData.get();
-            mPacsControleeSession.sendMessage(RANGING_INIT);
+            mPacsControleeSession.sendMessage(
+                    RANGING_INIT, updatedSessionId, 0, sessionData.get());
         }
 
         @Override
         public void onSessionAborted() {
             Log.w(TAG, "Secure Session aborted");
+            mPacsControleeSession.stopSession();
         }
 
         @Override
@@ -387,6 +363,7 @@ public class PacsControleeSession extends RangingSessionController {
                     if (mVerboseLoggingEnabled) {
                         log("Stopped advertising");
                     }
+                    transitionTo(mEndSessionState);
                     break;
                 case TRANSPORT_INIT:
                     transitionTo(mTransportState);
@@ -419,9 +396,8 @@ public class PacsControleeSession extends RangingSessionController {
                     transportServerStart();
                     break;
                 case SESSION_STOP:
-                    stopAdvertising();
                     transportServerStop();
-                    break;
+                    return false;
                 case TRANSPORT_COMPLETED:
                     stopAdvertising();
                     transportServerStop();
@@ -458,6 +434,10 @@ public class PacsControleeSession extends RangingSessionController {
                 case SECURE_SESSION_ESTABLISHED:
                     transitionTo(mRangingState);
                     break;
+                case SESSION_STOP:
+                    mSecureSession.terminateSession();
+                    // continue handle
+                    return false;
             }
             return true;
         }
@@ -482,11 +462,21 @@ public class PacsControleeSession extends RangingSessionController {
         public boolean processMessage(Message message) {
             switch (message.what) {
                 case RANGING_INIT:
+                    // get sessionId from session data ?
+                    if (message.obj == null) {
+                        Log.e(TAG, "Session data is not available.");
+                        stopSession();
+                        break;
+                    }
+                    mSessionInfo.setSessionId(message.arg1);
+                    mSessionInfo.mSessionData = (SessionData) message.obj;
+
                     try {
                         Log.i(TAG, "Starting ranging session");
                         openRangingSession();
                     } catch (RemoteException e) {
                         Log.e(TAG, "Ranging session start failed");
+                        stopSession();
                         e.printStackTrace();
                     }
                     stopAdvertising();
@@ -523,6 +513,9 @@ public class PacsControleeSession extends RangingSessionController {
                 log("Enter EndSessionState");
             }
             stopAdvertising();
+            if (mSecureSession != null) {
+                mSecureSession.terminateSession();
+            }
         }
 
         @Override

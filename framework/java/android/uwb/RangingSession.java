@@ -182,7 +182,6 @@ public final class RangingSession implements AutoCloseable {
 
         /**
          * Indicate insufficient slots per ranging round.
-         * @hide
          */
         int REASON_INSUFFICIENT_SLOTS_PER_RR = 14;
 

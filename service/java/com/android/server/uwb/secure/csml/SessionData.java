@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.server.uwb.pm;
+package com.android.server.uwb.secure.csml;
+
+import static com.android.server.uwb.secure.csml.SecureRangingInfo.SECURE_RANGING_INFO_TAG;
 
 import android.util.Log;
 
@@ -46,16 +48,19 @@ public class SessionData {
 
     public static final int CONFIGURATION_PARAMS = 0xA3;
     public Optional<ConfigurationParams> mConfigurationParams;
+    public Optional<SecureRangingInfo> mSecureRangingInfo;
     public static int SESSION_DATA_COUNT_MAX = 8;
 
     public final int mSessionId;
     public final Optional<Integer> mSubSessionId;
 
     private SessionData(int sessionId, Optional<Integer> subSessionId,
-            Optional<ConfigurationParams> configurationParams) {
+            Optional<ConfigurationParams> configurationParams,
+            Optional<SecureRangingInfo> secureRangingInfo) {
         mSessionId = sessionId;
         mSubSessionId = subSessionId;
         mConfigurationParams = configurationParams;
+        mSecureRangingInfo = secureRangingInfo;
     }
 
     /**
@@ -77,6 +82,9 @@ public class SessionData {
         mConfigurationParams.ifPresent(
                 configurationParams -> sessionDataBuilder.putByteArray(CONFIGURATION_PARAMS,
                         configurationParams.toBytes()));
+        mSecureRangingInfo.ifPresent(
+                secureRangingInfo -> sessionDataBuilder.putByteArray(
+                        SECURE_RANGING_INFO_TAG, secureRangingInfo.toBytes()));
 
         return sessionDataBuilder.build().getByteArray();
     }
@@ -94,6 +102,7 @@ public class SessionData {
         return true;
     }
 
+    /** Converts {@link SessionData} from the TLV data payload. */
     @Nullable
     public static SessionData fromBytes(@NonNull byte[] data) {
         TlvDecoderBuffer tlvs = new TlvDecoderBuffer(data, SESSION_DATA_COUNT_MAX);
@@ -116,6 +125,11 @@ public class SessionData {
                     sessionDataBuilder.setConfigParams(
                             ConfigurationParams.fromBytes(configurationParams));
                 }
+                if (isPresent(tlvs, SECURE_RANGING_INFO_TAG)) {
+                    byte[] secureRangingInfo = tlvs.getByteArray(SECURE_RANGING_INFO_TAG);
+                    sessionDataBuilder.setSecureRangingInfo(
+                            SecureRangingInfo.fromBytes(secureRangingInfo));
+                }
                 return sessionDataBuilder.build();
             }
             Log.e(TAG, "UWB_SESSION_DATA_VERSION " + Arrays.toString(sessionDataVersion)
@@ -136,25 +150,38 @@ public class SessionData {
         private int mSessionId;
         private Optional<Integer> mSubSessionId = Optional.empty();
         private Optional<ConfigurationParams> mConfigurationParams = Optional.empty();
+        private Optional<SecureRangingInfo> mSecureRangingInfo = Optional.empty();
 
-        public SessionData.Builder setSessionId(int sessionId) {
+        public Builder() {
+        }
+
+        SessionData.Builder setSessionId(int sessionId) {
             mSessionId = sessionId;
             return this;
         }
 
-        public SessionData.Builder setSubSessionId(int subSessionId) {
+        SessionData.Builder setSubSessionId(int subSessionId) {
             mSubSessionId = Optional.of(subSessionId);
             return this;
         }
 
-        public SessionData.Builder setConfigParams(
-                ConfigurationParams configurationParams) {
+        @NonNull
+        SessionData.Builder setConfigParams(
+                @NonNull ConfigurationParams configurationParams) {
             mConfigurationParams = Optional.of(configurationParams);
             return this;
         }
 
-        public SessionData build() {
-            return new SessionData(mSessionId, mSubSessionId, mConfigurationParams);
+        @NonNull
+        SessionData.Builder setSecureRangingInfo(@NonNull SecureRangingInfo secureRangingInfo) {
+            mSecureRangingInfo = Optional.of(secureRangingInfo);
+            return this;
+        }
+
+        @NonNull
+        SessionData build() {
+            return new SessionData(mSessionId, mSubSessionId,
+                    mConfigurationParams, mSecureRangingInfo);
         }
     }
 }

@@ -27,7 +27,7 @@ message ServiceConfig {
   required string package_name = 3;
   required int32 service_id = 4;
   optional int32 service_applet_id = 5;
-  optional int32 service_adf_id = 6;
+  optional bytes service_adf_oid = 6;
 }
 message UwbConfig {
   required int32 version = 1;
