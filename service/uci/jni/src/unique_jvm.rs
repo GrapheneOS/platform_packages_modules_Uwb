@@ -21,14 +21,14 @@
 use std::sync::{Arc, Once};
 
 use jni::JavaVM;
-use uwb_core::error::Result as UwbCoreResult;
+use uwb_core::error::Result;
 
 static mut JVM: Option<Arc<JavaVM>> = None;
 static INIT: Once = Once::new();
 /// set_once sets the unique JavaVM that can be then accessed using get_static_ref()
 ///
 /// The function shall only be called once.
-pub(crate) fn set_once(jvm: JavaVM) -> UwbCoreResult<()> {
+pub(crate) fn set_once(jvm: JavaVM) -> Result<()> {
     // Safety: follows [this pattern](https://doc.rust-lang.org/std/sync/struct.Once.html).
     // Modification to static mut is nested inside call_once.
     unsafe {
