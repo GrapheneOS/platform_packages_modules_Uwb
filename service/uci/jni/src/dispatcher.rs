@@ -14,7 +14,6 @@
 
 //! Implementation of Dispatcher and related methods.
 
-use crate::error::{Error, Result};
 use crate::notification_manager_android::NotificationManagerAndroidBuilder;
 
 use std::collections::HashMap;
@@ -27,7 +26,7 @@ use lazy_static::lazy_static;
 use log::error;
 use tokio::runtime::{Builder as RuntimeBuilder, Runtime};
 use uci_hal_android::uci_hal_android::UciHalAndroid;
-use uwb_core::error::{Error as UwbCoreError, Result as UwbCoreResult};
+use uwb_core::error::{Error, Result};
 use uwb_core::uci::pcapng_uci_logger_factory::PcapngUciLoggerFactoryBuilder;
 use uwb_core::uci::uci_logger::UciLoggerMode;
 use uwb_core::uci::uci_logger_factory::UciLoggerFactory;
@@ -52,22 +51,21 @@ impl Dispatcher {
         class_loader_obj: GlobalRef,
         callback_obj: GlobalRef,
         chip_ids: &[T],
-    ) -> UwbCoreResult<Dispatcher> {
+    ) -> Result<Dispatcher> {
         let runtime = RuntimeBuilder::new_multi_thread()
             .thread_name("UwbService")
             .enable_all()
             .build()
-            .map_err(|_| UwbCoreError::Unknown)?;
+            .map_err(|_| Error::ForeignFunctionInterface)?;
         let mut manager_map = HashMap::<String, UciManagerSync>::new();
         let mut log_file_factory = PcapngUciLoggerFactoryBuilder::new()
             .log_path("/data/misc/apexdata/com.android.uwb/log".into())
             .filename_prefix("uwb_uci".to_owned())
             .runtime_handle(runtime.handle().to_owned())
             .build()
-            .ok_or(UwbCoreError::Unknown)?;
+            .ok_or(Error::Unknown)?;
         for chip_id in chip_ids {
-            let logger =
-                log_file_factory.build_logger(chip_id.as_ref()).ok_or(UwbCoreError::Unknown)?;
+            let logger = log_file_factory.build_logger(chip_id.as_ref()).ok_or(Error::Unknown)?;
             let manager = UciManagerSync::new(
                 UciHalAndroid::new(chip_id.as_ref()),
                 NotificationManagerAndroidBuilder {
@@ -85,7 +83,7 @@ impl Dispatcher {
     }
 
     /// Sets log mode for all chips.
-    pub fn set_logger_mode(&self, logger_mode: UciLoggerMode) -> UwbCoreResult<()> {
+    pub fn set_logger_mode(&self, logger_mode: UciLoggerMode) -> Result<()> {
         for (_, manager) in self.manager_map.iter() {
             manager.set_logger_mode(logger_mode.clone())?;
         }
@@ -99,45 +97,38 @@ impl Dispatcher {
         callback_obj: GlobalRef,
         chip_ids: &[T],
     ) -> Result<()> {
-        if DISPATCHER.try_read().map_err(|_| Error::UwbCoreError(UwbCoreError::Unknown))?.is_some()
-        {
+        if DISPATCHER.try_read().map_err(|_| Error::Unknown)?.is_some() {
             error!("UCI JNI: Dispatcher already exists when trying to create.");
-            return Err(UwbCoreError::BadParameters.into());
+            return Err(Error::BadParameters);
         }
         let dispatcher = Dispatcher::new(vm, class_loader_obj, callback_obj, chip_ids)?;
-        DISPATCHER
-            .write()
-            .map_err(|_| Error::UwbCoreError(UwbCoreError::Unknown))?
-            .replace(dispatcher);
+        DISPATCHER.write().map_err(|_| Error::Unknown)?.replace(dispatcher);
         Ok(())
     }
 
     /// Gets pointer value of the unique dispatcher
     pub fn get_dispatcher_ptr() -> Result<*const Dispatcher> {
-        let read_lock =
-            DISPATCHER.read().map_err(|_| Error::UwbCoreError(UwbCoreError::Unknown))?;
+        let read_lock = DISPATCHER.read().map_err(|_| Error::Unknown)?;
         match &*read_lock {
             Some(dispatcher_ref) => Ok(dispatcher_ref),
-            None => Err(UwbCoreError::BadParameters.into()),
+            None => Err(Error::BadParameters),
         }
     }
 
     /// Destroys the unique Dispather.
     pub fn destroy_dispatcher() -> Result<()> {
-        if DISPATCHER.try_read().map_err(|_| Error::UwbCoreError(UwbCoreError::Unknown))?.is_none()
-        {
+        if DISPATCHER.try_read().map_err(|_| Error::Unknown)?.is_none() {
             error!("UCI JNI: Dispatcher already does not exist when trying to destroy.");
-            return Err(Error::UwbCoreError(UwbCoreError::BadParameters));
+            return Err(Error::BadParameters);
         }
-        let _ = DISPATCHER.write().map_err(|_| Error::UwbCoreError(UwbCoreError::Unknown))?.take();
+        let _ = DISPATCHER.write().map_err(|_| Error::Unknown)?.take();
         Ok(())
     }
 
     /// Gets reference to the unique Dispatcher.
     pub fn get_dispatcher<'a>(env: JNIEnv<'a>, obj: JObject<'a>) -> Result<GuardedDispatcher<'a>> {
-        let jni_guard = env.lock_obj(obj)?;
-        let read_lock =
-            DISPATCHER.read().map_err(|_| Error::UwbCoreError(UwbCoreError::Unknown))?;
+        let jni_guard = env.lock_obj(obj).map_err(|_| Error::ForeignFunctionInterface)?;
+        let read_lock = DISPATCHER.read().map_err(|_| Error::Unknown)?;
         GuardedDispatcher::new(jni_guard, read_lock)
     }
 
@@ -148,7 +139,8 @@ impl Dispatcher {
         chip_id: JString,
     ) -> Result<GuardedUciManager<'a>> {
         let guarded_dispatcher = Self::get_dispatcher(env, obj)?;
-        let chip_id_str = String::from(env.get_string(chip_id)?);
+        let chip_id_str =
+            String::from(env.get_string(chip_id).map_err(|_| Error::ForeignFunctionInterface)?);
         guarded_dispatcher.into_guarded_uci_manager(&chip_id_str)
     }
 }
@@ -182,17 +174,14 @@ impl<'a> GuardedDispatcher<'a> {
     ) -> Result<Self> {
         // Check RwLockReadGuard contains Dispatcher:
         if read_lock.is_none() {
-            return Err(Error::UwbCoreError(UwbCoreError::BadParameters));
+            return Err(Error::BadParameters);
         };
         Ok(GuardedDispatcher { _jni_guard: jni_guard, read_lock })
     }
 
     /// Conversion to GuardedUciManager:
     pub fn into_guarded_uci_manager(self, chip_id: &str) -> Result<GuardedUciManager<'a>> {
-        let _uci_manager = self
-            .manager_map
-            .get(chip_id)
-            .ok_or(Error::UwbCoreError(UwbCoreError::BadParameters))?;
+        let _uci_manager = self.manager_map.get(chip_id).ok_or(Error::BadParameters)?;
         Ok(GuardedUciManager {
             _jni_guard: self._jni_guard,
             read_lock: self.read_lock,

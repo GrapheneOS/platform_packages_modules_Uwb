@@ -14,12 +14,10 @@
 
 //! Helper functions and macros
 
-use crate::error::{Error, Result};
-
 use jni::sys::{jboolean, jbyte};
 use log::error;
 use num_traits::ToPrimitive;
-use uwb_core::error::Error as UwbCoreError;
+use uwb_core::error::{Error, Result};
 use uwb_uci_packets::StatusCode;
 
 pub(crate) fn boolean_result_helper<T>(result: Result<T>, error_msg: &str) -> jboolean {
@@ -45,12 +43,10 @@ fn result_to_status_code<T>(result: Result<T>, error_msg: &str) -> StatusCode {
         e
     }) {
         Ok(_) => StatusCode::UciStatusOk,
-        Err(Error::UwbCoreError(UwbCoreError::BadParameters)) => StatusCode::UciStatusInvalidParam,
-        Err(Error::UwbCoreError(UwbCoreError::MaxSessionsExceeded)) => {
-            StatusCode::UciStatusMaxSessionsExceeded
-        }
-        Err(Error::UwbCoreError(UwbCoreError::CommandRetry)) => StatusCode::UciStatusCommandRetry,
-        // For JNIError and other UwbCoreError, only generic fail can be given.
+        Err(Error::BadParameters) => StatusCode::UciStatusInvalidParam,
+        Err(Error::MaxSessionsExceeded) => StatusCode::UciStatusMaxSessionsExceeded,
+        Err(Error::CommandRetry) => StatusCode::UciStatusCommandRetry,
+        // For other Error, only generic fail can be given.
         Err(_) => StatusCode::UciStatusFailed,
     }
 }
