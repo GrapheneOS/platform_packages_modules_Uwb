@@ -26,7 +26,7 @@ use jni::objects::{GlobalRef, JClass, JMethodID, JObject, JValue};
 use jni::signature::TypeSignature;
 use jni::{AttachGuard, JavaVM};
 use log::{debug, error};
-use uwb_core::error::{Error as UwbCoreError, Result as UwbCoreResult};
+use uwb_core::error::{Error, Result};
 use uwb_core::uci::uci_manager_sync::{NotificationManager, NotificationManagerBuilder};
 use uwb_core::uci::{CoreNotification, RangingMeasurements, SessionNotification, SessionRangeData};
 use uwb_uci_packets::{
@@ -265,7 +265,7 @@ impl NotificationManagerAndroid {
         class_loader_obj: &'a GlobalRef,
         env: &'a AttachGuard<'static>,
         class_name: &'a str,
-    ) -> UwbCoreResult<JClass<'a>> {
+    ) -> Result<JClass<'a>> {
         debug!("UCI JNI: find local class {}", class_name);
         // Look for cached class
         if jclass_map.get(class_name).is_none() {
@@ -278,18 +278,18 @@ impl NotificationManagerAndroid {
                     "(Ljava/lang/String;)Ljava/lang/Class;",
                     &[JValue::Object(JObject::from(env.new_string(class_name).map_err(|e| {
                         error!("UCI JNI: failed to create Java String: {:?}", e);
-                        UwbCoreError::Unknown
+                        Error::ForeignFunctionInterface
                     })?))],
                 )
                 .map_err(|e| {
                     error!("UCI JNI: failed to find java class {}: {:?}", class_name, e);
-                    UwbCoreError::Unknown
+                    Error::ForeignFunctionInterface
                 })?;
             let jclass = match class_value.l() {
                 Ok(obj) => Ok(JClass::from(obj)),
                 Err(e) => {
                     error!("UCI JNI: failed to find java class {}: {:?}", class_name, e);
-                    Err(UwbCoreError::Unknown)
+                    Err(Error::ForeignFunctionInterface)
                 }
             }?;
             // Cache JClass as a global reference.
@@ -297,7 +297,7 @@ impl NotificationManagerAndroid {
                 class_name.to_owned(),
                 env.new_global_ref(jclass).map_err(|e| {
                     error!("UCI JNI: global reference conversion failed: {:?}", e);
-                    UwbCoreError::Unknown
+                    Error::ForeignFunctionInterface
                 })?,
             );
         }
@@ -305,11 +305,11 @@ impl NotificationManagerAndroid {
         Ok(jclass_map.get(class_name).unwrap().as_obj().into())
     }
 
-    fn cached_jni_call(&mut self, name: &str, sig: &str, args: &[JValue]) -> UwbCoreResult<()> {
+    fn cached_jni_call(&mut self, name: &str, sig: &str, args: &[JValue]) -> Result<()> {
         debug!("UCI JNI: callback {}", name);
         let type_signature = TypeSignature::from_str(sig).map_err(|e| {
             error!("UCI JNI: Invalid type signature: {:?}", e);
-            UwbCoreError::BadParameters
+            Error::BadParameters
         })?;
         if type_signature.args.len() != args.len() {
             error!(
@@ -317,7 +317,7 @@ impl NotificationManagerAndroid {
                 type_signature.args.len(),
                 args.len()
             );
-            return Err(UwbCoreError::BadParameters);
+            return Err(Error::BadParameters);
         }
         let name_signature = name.to_owned() + sig;
         if self.jmethod_id_map.get(&name_signature).is_none() {
@@ -325,7 +325,7 @@ impl NotificationManagerAndroid {
                 name_signature.clone(),
                 self.env.get_method_id(self.callback_obj.as_obj(), name, sig).map_err(|e| {
                     error!("UCI JNI: failed to get method: {:?}", e);
-                    UwbCoreError::Unknown
+                    Error::ForeignFunctionInterface
                 })?,
             );
         }
@@ -338,7 +338,7 @@ impl NotificationManagerAndroid {
             Ok(_) => Ok(()),
             Err(_) => {
                 error!("UCI JNI: callback {} failed!", name);
-                Err(UwbCoreError::Unknown)
+                Err(Error::ForeignFunctionInterface)
             }
         }
     }
@@ -348,7 +348,7 @@ impl NotificationManagerAndroid {
         session_id: u32,
         session_state: SessionState,
         reason_code: ReasonCode,
-    ) -> UwbCoreResult<()> {
+    ) -> Result<()> {
         self.cached_jni_call(
             "onSessionStatusNotificationReceived",
             "(JII)V",
@@ -365,15 +365,16 @@ impl NotificationManagerAndroid {
         session_id: u32,
         remaining_multicast_list_size: usize,
         status_list: Vec<ControleeStatus>,
-    ) -> UwbCoreResult<()> {
+    ) -> Result<()> {
         let remaining_multicast_list_size: i32 =
-            remaining_multicast_list_size.try_into().map_err(|_| UwbCoreError::BadParameters)?;
-        let count: i32 = status_list.len().try_into().map_err(|_| UwbCoreError::BadParameters)?;
+            remaining_multicast_list_size.try_into().map_err(|_| Error::BadParameters)?;
+        let count: i32 = status_list.len().try_into().map_err(|_| Error::BadParameters)?;
         let mac_address_jintarray =
-            self.env.new_int_array(count).map_err(|_| UwbCoreError::Unknown)?;
+            self.env.new_int_array(count).map_err(|_| Error::ForeignFunctionInterface)?;
         let subsession_id_jlongarray =
-            self.env.new_long_array(count).map_err(|_| UwbCoreError::Unknown)?;
-        let status_jintarray = self.env.new_int_array(count).map_err(|_| UwbCoreError::Unknown)?;
+            self.env.new_long_array(count).map_err(|_| Error::ForeignFunctionInterface)?;
+        let status_jintarray =
+            self.env.new_int_array(count).map_err(|_| Error::ForeignFunctionInterface)?;
         let (mac_address_vec, (subsession_id_vec, status_vec)): (Vec<_>, (Vec<_>, Vec<_>)) =
             status_list
                 .into_iter()
@@ -381,13 +382,13 @@ impl NotificationManagerAndroid {
                 .unzip();
         self.env
             .set_int_array_region(mac_address_jintarray, 0, &mac_address_vec)
-            .map_err(|_| UwbCoreError::Unknown)?;
+            .map_err(|_| Error::ForeignFunctionInterface)?;
         self.env
             .set_long_array_region(subsession_id_jlongarray, 0, &subsession_id_vec)
-            .map_err(|_| UwbCoreError::Unknown)?;
+            .map_err(|_| Error::ForeignFunctionInterface)?;
         self.env
             .set_int_array_region(status_jintarray, 0, &status_vec)
-            .map_err(|_| UwbCoreError::Unknown)?;
+            .map_err(|_| Error::ForeignFunctionInterface)?;
         let multicast_update_jclass = NotificationManagerAndroid::find_local_class(
             &mut self.jclass_map,
             &self.class_loader_obj,
@@ -409,7 +410,7 @@ impl NotificationManagerAndroid {
                     JValue::Object(JObject::from(status_jintarray)),
                 ],
             )
-            .map_err(|_| UwbCoreError::Unknown)?;
+            .map_err(|_| Error::ForeignFunctionInterface)?;
         self.cached_jni_call(
             "onMulticastListUpdateNotificationReceived",
             &method_sig,
@@ -422,11 +423,11 @@ impl NotificationManagerAndroid {
     fn on_session_dl_tdoa_range_data_notification(
         &mut self,
         range_data: SessionRangeData,
-    ) -> UwbCoreResult<()> {
+    ) -> Result<()> {
         let raw_notification_jbytearray = self
             .env
             .byte_array_from_slice(&range_data.raw_ranging_data)
-            .map_err(|_| UwbCoreError::Unknown)?;
+            .map_err(|_| Error::ForeignFunctionInterface)?;
         let measurement_jclass = NotificationManagerAndroid::find_local_class(
             &mut self.jclass_map,
             &self.class_loader_obj,
@@ -441,15 +442,19 @@ impl NotificationManagerAndroid {
             uwb_core::uci::RangingMeasurements::ShortDltdoa(_) => SHORT_MAC_ADDRESS_LEN,
             uwb_core::uci::RangingMeasurements::ExtendedDltdoa(_) => EXTENDED_MAC_ADDRESS_LEN,
             _ => {
-                return Err(UwbCoreError::BadParameters);
+                return Err(Error::ForeignFunctionInterface);
             }
         };
         let address_jbytearray =
-            self.env.new_byte_array(bytearray_len).map_err(|_| UwbCoreError::Unknown)?;
-        let anchor_location =
-            self.env.new_byte_array(MAX_ANCHOR_LOCATION_LEN).map_err(|_| UwbCoreError::Unknown)?;
-        let active_ranging_rounds =
-            self.env.new_byte_array(MAX_RANGING_ROUNDS_LEN).map_err(|_| UwbCoreError::Unknown)?;
+            self.env.new_byte_array(bytearray_len).map_err(|_| Error::ForeignFunctionInterface)?;
+        let anchor_location = self
+            .env
+            .new_byte_array(MAX_ANCHOR_LOCATION_LEN)
+            .map_err(|_| Error::ForeignFunctionInterface)?;
+        let active_ranging_rounds = self
+            .env
+            .new_byte_array(MAX_RANGING_ROUNDS_LEN)
+            .map_err(|_| Error::ForeignFunctionInterface)?;
         let zero_initiated_measurement_jobject = self
             .env
             .new_object(
@@ -481,7 +486,7 @@ impl NotificationManagerAndroid {
             )
             .map_err(|e| {
                 error!("UCI JNI: measurement object creation failed: {:?}", e);
-                UwbCoreError::Unknown
+                Error::ForeignFunctionInterface
             })?;
         let measurement_count: i32 = match &range_data.ranging_measurements {
             RangingMeasurements::ShortAddressTwoWay(v) => v.len(),
@@ -489,18 +494,18 @@ impl NotificationManagerAndroid {
             RangingMeasurements::ShortDltdoa(v) => v.len(),
             RangingMeasurements::ExtendedDltdoa(v) => v.len(),
             _ => {
-                return Err(UwbCoreError::BadParameters);
+                return Err(Error::BadParameters);
             }
         }
         .try_into()
-        .map_err(|_| UwbCoreError::BadParameters)?;
+        .map_err(|_| Error::BadParameters)?;
         let mac_indicator = match &range_data.ranging_measurements {
             RangingMeasurements::ShortAddressTwoWay(_) => MacAddressIndicator::ShortAddress,
             RangingMeasurements::ExtendedAddressTwoWay(_) => MacAddressIndicator::ExtendedAddress,
             RangingMeasurements::ShortDltdoa(_) => MacAddressIndicator::ShortAddress,
             RangingMeasurements::ExtendedDltdoa(_) => MacAddressIndicator::ExtendedAddress,
             _ => {
-                return Err(UwbCoreError::BadParameters);
+                return Err(Error::BadParameters);
             }
         };
 
@@ -511,7 +516,7 @@ impl NotificationManagerAndroid {
                 measurement_jclass,
                 zero_initiated_measurement_jobject,
             )
-            .map_err(|_| UwbCoreError::Unknown)?;
+            .map_err(|_| Error::ForeignFunctionInterface)?;
 
         for (i, measurement) in match range_data.ranging_measurements {
             RangingMeasurements::ShortDltdoa(v) => {
@@ -535,20 +540,20 @@ impl NotificationManagerAndroid {
             let mac_address_jbytearray = self
                 .env
                 .new_byte_array(mac_address_i8.len() as i32)
-                .map_err(|_| UwbCoreError::Unknown)?;
+                .map_err(|_| Error::ForeignFunctionInterface)?;
             self.env
                 .set_byte_array_region(mac_address_jbytearray, 0, &mac_address_i8)
-                .map_err(|_| UwbCoreError::Unknown)?;
+                .map_err(|_| Error::ForeignFunctionInterface)?;
 
             let dt_anchor_location_jbytearray = self
                 .env
                 .byte_array_from_slice(&measurement.dt_anchor_location)
-                .map_err(|_| UwbCoreError::Unknown)?;
+                .map_err(|_| Error::ForeignFunctionInterface)?;
 
             let ranging_rounds_jbytearray = self
                 .env
                 .byte_array_from_slice(&measurement.ranging_rounds)
-                .map_err(|_| UwbCoreError::Unknown)?;
+                .map_err(|_| Error::ForeignFunctionInterface)?;
             let measurement_jobject = self
                 .env
                 .new_object(
@@ -580,13 +585,13 @@ impl NotificationManagerAndroid {
                 )
                 .map_err(|e| {
                     error!("UCI JNI: measurement object creation failed: {:?}", e);
-                    UwbCoreError::Unknown
+                    Error::ForeignFunctionInterface
                 })?;
             self.env
                 .set_object_array_element(measurements_jobjectarray, i as i32, measurement_jobject)
                 .map_err(|e| {
                     error!("UCI JNI: measurement object copy failed: {:?}", e);
-                    UwbCoreError::Unknown
+                    Error::ForeignFunctionInterface
                 })?;
         }
         // Create UwbRangingData
@@ -617,7 +622,7 @@ impl NotificationManagerAndroid {
             )
             .map_err(|e| {
                 error!("UCI JNI: Ranging Data object creation failed: {:?}", e);
-                UwbCoreError::Unknown
+                Error::ForeignFunctionInterface
             })?;
         let method_sig = "(L".to_owned() + UWB_RANGING_DATA_CLASS + ";)V";
         self.cached_jni_call(
@@ -632,7 +637,7 @@ impl NotificationManagerAndroid {
         bytearray_len: i32,
         measurement_count: i32,
         measurements: Vec<TwoWayRangingMeasurement>,
-    ) -> UwbCoreResult<jni::sys::jobjectArray> {
+    ) -> Result<jni::sys::jobjectArray> {
         let measurement_jclass = NotificationManagerAndroid::find_local_class(
             &mut self.jclass_map,
             &self.class_loader_obj,
@@ -640,7 +645,7 @@ impl NotificationManagerAndroid {
             UWB_TWO_WAY_MEASUREMENT_CLASS,
         )?;
         let address_jbytearray =
-            self.env.new_byte_array(bytearray_len).map_err(|_| UwbCoreError::Unknown)?;
+            self.env.new_byte_array(bytearray_len).map_err(|_| Error::ForeignFunctionInterface)?;
         let zero_initiated_measurement_jobject = self
             .env
             .new_object(
@@ -665,7 +670,7 @@ impl NotificationManagerAndroid {
             )
             .map_err(|e| {
                 error!("UCI JNI: measurement object creation failed: {:?}", e);
-                UwbCoreError::Unknown
+                Error::ForeignFunctionInterface
             })?;
         let measurements_jobjectarray = self
             .env
@@ -674,7 +679,7 @@ impl NotificationManagerAndroid {
                 measurement_jclass,
                 zero_initiated_measurement_jobject,
             )
-            .map_err(|_| UwbCoreError::Unknown)?;
+            .map_err(|_| Error::ForeignFunctionInterface)?;
         for (i, measurement) in measurements.into_iter().enumerate() {
             // cast to i8 as java do not support unsigned:
             let mac_address_i8 = measurement
@@ -686,10 +691,10 @@ impl NotificationManagerAndroid {
             let mac_address_jbytearray = self
                 .env
                 .new_byte_array(mac_address_i8.len() as i32)
-                .map_err(|_| UwbCoreError::Unknown)?;
+                .map_err(|_| Error::ForeignFunctionInterface)?;
             self.env
                 .set_byte_array_region(mac_address_jbytearray, 0, &mac_address_i8)
-                .map_err(|_| UwbCoreError::Unknown)?;
+                .map_err(|_| Error::ForeignFunctionInterface)?;
             // casting as i32 is fine since it is wider than actual integer type.
             let measurement_jobject = self
                 .env
@@ -715,13 +720,13 @@ impl NotificationManagerAndroid {
                 )
                 .map_err(|e| {
                     error!("UCI JNI: measurement object creation failed: {:?}", e);
-                    UwbCoreError::Unknown
+                    Error::ForeignFunctionInterface
                 })?;
             self.env
                 .set_object_array_element(measurements_jobjectarray, i as i32, measurement_jobject)
                 .map_err(|e| {
                     error!("UCI JNI: measurement object copy failed: {:?}", e);
-                    UwbCoreError::Unknown
+                    Error::ForeignFunctionInterface
                 })?;
         }
 
@@ -733,7 +738,7 @@ impl NotificationManagerAndroid {
         bytearray_len: i32,
         measurement_count: i32,
         measurements: Vec<OwrAoaRangingMeasurement>,
-    ) -> UwbCoreResult<jni::sys::jobjectArray> {
+    ) -> Result<jni::sys::jobjectArray> {
         let measurement_jclass = NotificationManagerAndroid::find_local_class(
             &mut self.jclass_map,
             &self.class_loader_obj,
@@ -741,7 +746,7 @@ impl NotificationManagerAndroid {
             UWB_OWR_AOA_MEASUREMENT_CLASS,
         )?;
         let address_jbytearray =
-            self.env.new_byte_array(bytearray_len).map_err(|_| UwbCoreError::Unknown)?;
+            self.env.new_byte_array(bytearray_len).map_err(|_| Error::ForeignFunctionInterface)?;
         let zero_initiated_measurement_jobject = self
             .env
             .new_object(
@@ -761,7 +766,7 @@ impl NotificationManagerAndroid {
             )
             .map_err(|e| {
                 error!("UCI JNI: measurement object creation failed: {:?}", e);
-                UwbCoreError::Unknown
+                Error::ForeignFunctionInterface
             })?;
         let measurements_jobjectarray = self
             .env
@@ -770,7 +775,7 @@ impl NotificationManagerAndroid {
                 measurement_jclass,
                 zero_initiated_measurement_jobject,
             )
-            .map_err(|_| UwbCoreError::Unknown)?;
+            .map_err(|_| Error::ForeignFunctionInterface)?;
 
         for (i, measurement) in measurements.into_iter().enumerate() {
             // cast to i8 as java do not support unsigned:
@@ -783,10 +788,10 @@ impl NotificationManagerAndroid {
             let mac_address_jbytearray = self
                 .env
                 .new_byte_array(mac_address_i8.len() as i32)
-                .map_err(|_| UwbCoreError::Unknown)?;
+                .map_err(|_| Error::ForeignFunctionInterface)?;
             self.env
                 .set_byte_array_region(mac_address_jbytearray, 0, &mac_address_i8)
-                .map_err(|_| UwbCoreError::Unknown)?;
+                .map_err(|_| Error::ForeignFunctionInterface)?;
             // casting as i32 is fine since it is wider than actual integer type.
             let measurement_jobject = self
                 .env
@@ -807,13 +812,13 @@ impl NotificationManagerAndroid {
                 )
                 .map_err(|e| {
                     error!("UCI JNI: measurement object creation failed: {:?}", e);
-                    UwbCoreError::Unknown
+                    Error::ForeignFunctionInterface
                 })?;
             self.env
                 .set_object_array_element(measurements_jobjectarray, i as i32, measurement_jobject)
                 .map_err(|e| {
                     error!("UCI JNI: measurement object copy failed: {:?}", e);
-                    UwbCoreError::Unknown
+                    Error::ForeignFunctionInterface
                 })?;
         }
 
@@ -822,14 +827,11 @@ impl NotificationManagerAndroid {
 
     // TODO(b/246678053): Re-factor to also compute the common parameters for DlTdoa and call-out
     // it's method from here (instead of on_session_notification())
-    fn on_session_range_data_notification(
-        &mut self,
-        range_data: SessionRangeData,
-    ) -> UwbCoreResult<()> {
+    fn on_session_range_data_notification(&mut self, range_data: SessionRangeData) -> Result<()> {
         let raw_notification_jbytearray = self
             .env
             .byte_array_from_slice(&range_data.raw_ranging_data)
-            .map_err(|_| UwbCoreError::Unknown)?;
+            .map_err(|_| Error::ForeignFunctionInterface)?;
 
         let (bytearray_len, mac_indicator) = match &range_data.ranging_measurements {
             RangingMeasurements::ExtendedAddressTwoWay(_)
@@ -860,7 +862,7 @@ impl NotificationManagerAndroid {
             RangingMeasurements::ShortAddressOwrAoa(v) => v.len().try_into(),
             RangingMeasurements::ExtendedAddressOwrAoa(v) => v.len().try_into(),
         }
-        .map_err(|_| UwbCoreError::BadParameters)?;
+        .map_err(|_| Error::BadParameters)?;
         let measurements_jobjectarray = match range_data.ranging_measurement_type {
             RangingMeasurementType::TwoWay => {
                 let measurements = match range_data.ranging_measurements {
@@ -870,7 +872,7 @@ impl NotificationManagerAndroid {
                     RangingMeasurements::ShortAddressTwoWay(v) => {
                         v.into_iter().map(TwoWayRangingMeasurement::from).collect::<Vec<_>>()
                     }
-                    _ => return Err(UwbCoreError::BadParameters),
+                    _ => return Err(Error::BadParameters),
                 };
                 self.on_two_way_range_data_notification(
                     bytearray_len,
@@ -886,7 +888,7 @@ impl NotificationManagerAndroid {
                     RangingMeasurements::ShortAddressOwrAoa(v) => {
                         v.into_iter().map(OwrAoaRangingMeasurement::from).collect::<Vec<_>>()
                     }
-                    _ => return Err(UwbCoreError::BadParameters),
+                    _ => return Err(Error::BadParameters),
                 };
                 self.on_owr_aoa_range_data_notification(
                     bytearray_len,
@@ -897,7 +899,7 @@ impl NotificationManagerAndroid {
             _ => {
                 // TODO(b/246678053):
                 error!("UCI JNI: DLTdoa is not yet supported.");
-                return Err(UwbCoreError::BadParameters);
+                return Err(Error::ForeignFunctionInterface);
             }
         };
 
@@ -928,7 +930,7 @@ impl NotificationManagerAndroid {
             )
             .map_err(|e| {
                 error!("UCI JNI: Ranging Data object creation failed: {:?}", e);
-                UwbCoreError::Unknown
+                Error::ForeignFunctionInterface
             })?;
         let method_sig = "(L".to_owned() + UWB_RANGING_DATA_CLASS + ";)V";
         self.cached_jni_call(
@@ -940,7 +942,7 @@ impl NotificationManagerAndroid {
 }
 
 impl NotificationManager for NotificationManagerAndroid {
-    fn on_core_notification(&mut self, core_notification: CoreNotification) -> UwbCoreResult<()> {
+    fn on_core_notification(&mut self, core_notification: CoreNotification) -> Result<()> {
         debug!("UCI JNI: core notification callback.");
         match core_notification {
             CoreNotification::DeviceStatus(device_state) => self.cached_jni_call(
@@ -962,10 +964,7 @@ impl NotificationManager for NotificationManagerAndroid {
         }
     }
 
-    fn on_session_notification(
-        &mut self,
-        session_notification: SessionNotification,
-    ) -> UwbCoreResult<()> {
+    fn on_session_notification(&mut self, session_notification: SessionNotification) -> Result<()> {
         debug!("UCI JNI: session notification callback.");
         match session_notification {
             SessionNotification::Status { session_id, session_state, reason_code } => {
@@ -1009,23 +1008,19 @@ impl NotificationManager for NotificationManagerAndroid {
     fn on_vendor_notification(
         &mut self,
         vendor_notification: uwb_core::params::RawUciMessage,
-    ) -> UwbCoreResult<()> {
+    ) -> Result<()> {
         debug!("UCI JNI: vendor notification callback.");
         let payload_jbytearray = self
             .env
             .byte_array_from_slice(&vendor_notification.payload)
-            .map_err(|_| UwbCoreError::Unknown)?;
+            .map_err(|_| Error::ForeignFunctionInterface)?;
         self.cached_jni_call(
             "onVendorUciNotificationReceived",
             "(II[B)V",
             &[
                 // Java only has signed integer. The range for signed int32 should be sufficient.
-                JValue::Int(
-                    vendor_notification.gid.try_into().map_err(|_| UwbCoreError::BadParameters)?,
-                ),
-                JValue::Int(
-                    vendor_notification.oid.try_into().map_err(|_| UwbCoreError::BadParameters)?,
-                ),
+                JValue::Int(vendor_notification.gid.try_into().map_err(|_| Error::BadParameters)?),
+                JValue::Int(vendor_notification.oid.try_into().map_err(|_| Error::BadParameters)?),
                 JValue::Object(JObject::from(payload_jbytearray)),
             ],
         )
