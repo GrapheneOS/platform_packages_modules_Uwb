@@ -303,7 +303,7 @@ public final class UwbManager {
          * @param payload containing vendor Uci message payload.
          */
         void onVendorUciResponse(
-                @IntRange(from = 9, to = 15) int gid, int oid, @NonNull byte[] payload);
+                @IntRange(from = 0, to = 15) int gid, int oid, @NonNull byte[] payload);
 
         /**
          * Invoked when a vendor specific UCI notification is received.
@@ -974,7 +974,7 @@ public final class UwbManager {
     @NonNull
     @RequiresPermission(permission.UWB_PRIVILEGED)
     public @SendVendorUciStatus int sendVendorUciMessage(
-            @IntRange(from = 9, to = 15) int gid, int oid, @NonNull byte[] payload) {
+            @IntRange(from = 0, to = 15) int gid, int oid, @NonNull byte[] payload) {
         try {
             return mUwbAdapter.sendVendorUciMessage(gid, oid, payload);
         } catch (RemoteException e) {

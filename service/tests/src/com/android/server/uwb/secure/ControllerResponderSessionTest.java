@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -30,8 +31,10 @@ import com.android.server.uwb.secure.csml.DispatchResponse;
 import com.android.server.uwb.secure.csml.FiRaCommand;
 import com.android.server.uwb.secure.csml.GetDoCommand;
 import com.android.server.uwb.secure.csml.PutDoCommand;
+import com.android.server.uwb.secure.csml.UwbCapability;
 import com.android.server.uwb.secure.iso7816.ResponseApdu;
 import com.android.server.uwb.util.DataTypeConversionUtil;
+import com.android.server.uwb.util.ObjectIdentifier;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -49,8 +52,6 @@ public class ControllerResponderSessionTest {
     private FiRaSecureChannel mFiRaSecureChannel;
     @Mock
     private SecureSession.Callback mSecureSessionCallback;
-    @Mock
-    private RunningProfileSessionInfo mRunningProfileSessionInfo;
 
     @Captor
     private ArgumentCaptor<FiRaSecureChannel.SecureChannelCallback> mSecureChannelCallbackCaptor;
@@ -63,9 +64,12 @@ public class ControllerResponderSessionTest {
     public void setup() {
         MockitoAnnotations.initMocks(this);
 
+        RunningProfileSessionInfo runningProfileSessionInfo =
+                new RunningProfileSessionInfo.Builder(
+                        mock(UwbCapability.class), mock(ObjectIdentifier.class)).build();
         mControllerResponderSession = new ControllerResponderSession(
                 mTestLooper.getLooper(), mFiRaSecureChannel, mSecureSessionCallback,
-                mRunningProfileSessionInfo);
+                runningProfileSessionInfo);
 
         mControllerResponderSession.startSession();
 

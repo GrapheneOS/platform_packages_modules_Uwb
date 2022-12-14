@@ -37,6 +37,7 @@ import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.data.ServiceProfileData.ServiceProfileInfo;
 import com.android.server.uwb.pm.ProfileManager;
 import com.android.server.uwb.pm.RangingSessionController;
+import com.android.server.uwb.util.ObjectIdentifier;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -106,8 +107,8 @@ public class ProfileManagerTest {
         UUID serviceInstanceID = new UUID(100, 50);
         ServiceProfileInfo serviceProfileInfo = new ServiceProfileInfo(serviceInstanceID,
                 0, "test", 1);
-        serviceProfileInfo.setServiceAdfID(0);
-        serviceProfileInfo.setServiceAppletID(1);
+        serviceProfileInfo.setServiceAdfOid(ObjectIdentifier.fromBytes(new byte[] {(byte) 1}));
+        serviceProfileInfo.setServiceAppletId(1);
         Map<UUID, ServiceProfileInfo> testMap = new HashMap<>();
         testMap.put(serviceProfileInfo.serviceInstanceID, serviceProfileInfo);
 

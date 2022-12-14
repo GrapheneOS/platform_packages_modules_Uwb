@@ -43,8 +43,8 @@ import com.android.server.uwb.discovery.info.ScanInfo;
 import com.android.server.uwb.discovery.info.TransportClientInfo;
 import com.android.server.uwb.secure.SecureFactory;
 import com.android.server.uwb.secure.SecureSession;
-import com.android.server.uwb.util.DataTypeConversionUtil;
-import com.android.server.uwb.util.ObjectIdentifier;
+import com.android.server.uwb.secure.csml.SessionData;
+import com.android.server.uwb.secure.csml.UwbCapability;
 
 import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
@@ -56,7 +56,6 @@ import java.util.Optional;
 public class PacsControllerSession extends RangingSessionController {
     private static final String TAG = "PACSControllerSession";
     private final ScanCallback mScanCallback;
-    // TODO populate before calling secureSessionInit()
     private final PacsControllerSessionCallback mControllerSessionCallback;
     private final TransportClientProvider.TransportClientCallback mClientCallback;
 
@@ -229,7 +228,6 @@ public class PacsControllerSession extends RangingSessionController {
 
     /** Pacs profile controller implementation of RunningProfileSessionInfo. */
     private RunningProfileSessionInfo getRunningProfileSessionInfo() {
-
         GenericSpecificationParams genericSpecificationParams = getSpecificationInfo();
         if (genericSpecificationParams == null
                 || genericSpecificationParams.getFiraSpecificationParams() == null) {
@@ -240,12 +238,10 @@ public class PacsControllerSession extends RangingSessionController {
         UwbCapability uwbCapability =
                 UwbCapability.fromFiRaSpecificationParam(firaSpecificationParams);
 
-        ObjectIdentifier oidOfProvisionedAdf = ObjectIdentifier.fromBytes(
-                DataTypeConversionUtil.i32ToByteArray(
-                        mSessionInfo.mServiceProfileInfo.getServiceAdfID()));
-
-        return new RunningProfileSessionInfo.Builder(uwbCapability, oidOfProvisionedAdf)
-                .setSharedPrimarySessionId(mSessionInfo.getSessionId())
+        return new RunningProfileSessionInfo.Builder(uwbCapability,
+                mSessionInfo.mServiceProfileInfo.getServiceAdfOid())
+                .setSharedPrimarySessionIdAndSessionKeyInfo(
+                        mSessionInfo.getSessionId(), mSessionInfo.getSharedSessionKeyInfo())
                 .build();
     }
 

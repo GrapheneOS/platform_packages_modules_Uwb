@@ -18,6 +18,8 @@ package com.android.server.uwb.pm;
 
 import androidx.annotation.NonNull;
 
+import com.android.server.uwb.secure.csml.ControleeInfo;
+import com.android.server.uwb.secure.csml.UwbCapability;
 import com.android.server.uwb.util.ObjectIdentifier;
 
 import java.util.List;
@@ -45,6 +47,9 @@ public class RunningProfileSessionInfo {
     /** The UWB session ID for multicast case, required by controller */
     @NonNull
     public final Optional<Integer> sharedPrimarySessionId;
+    /** The UWB session ID for multicast case, required by controller */
+    @NonNull
+    public final Optional<byte[]> sharedPrimarySessionKeyInfo;
     /** The secure blob can be loaded into the FiRa applet. */
     @NonNull
     public final Optional<byte[]> secureBlob;
@@ -55,12 +60,14 @@ public class RunningProfileSessionInfo {
             ObjectIdentifier oidOfProvisionedAdf,
             Optional<List<ObjectIdentifier>> selectableOidsOfResponder,
             Optional<Integer> sharedPrimarySessionId,
+            Optional<byte[]> sharedPrimarySessionKeyInfo,
             Optional<byte[]> secureBlob) {
         this.controleeInfo = controleeInfo;
         this.uwbCapability = uwbCapability;
         this.oidOfProvisionedAdf = oidOfProvisionedAdf;
         this.selectableOidsOfResponder = selectableOidsOfResponder;
         this.sharedPrimarySessionId = sharedPrimarySessionId;
+        this.sharedPrimarySessionKeyInfo = sharedPrimarySessionKeyInfo;
         this.secureBlob = secureBlob;
     }
 
@@ -72,6 +79,7 @@ public class RunningProfileSessionInfo {
         private ObjectIdentifier mOidOfProvisionedAdf;
         private Optional<Integer> mSharedPrimarySessionId = Optional.empty();
         private Optional<byte[]> mSecureBlob = Optional.empty();
+        private Optional<byte[]> mSharedPrimarySessionKeyInfo = Optional.empty();
 
         /** The constructor {@link RunningProfileSessionInfo.Builder} */
         public Builder(@NonNull UwbCapability uwbCapability,
@@ -95,10 +103,13 @@ public class RunningProfileSessionInfo {
             return this;
         }
 
-        /** Sets the UWB session ID for multicast case. */
+        /** Sets the UWB session ID and session key info for multicast case. */
         @NonNull
-        public Builder setSharedPrimarySessionId(int sharedPrimarySessionId) {
+        public Builder setSharedPrimarySessionIdAndSessionKeyInfo(
+                int sharedPrimarySessionId,
+                @NonNull byte[] sharedPrimarySessionKeyInfo) {
             this.mSharedPrimarySessionId = Optional.of(sharedPrimarySessionId);
+            this.mSharedPrimarySessionKeyInfo = Optional.of(sharedPrimarySessionKeyInfo);
             return this;
         }
 
@@ -118,6 +129,7 @@ public class RunningProfileSessionInfo {
                     mOidOfProvisionedAdf,
                     mSelectableOidsOfResponder,
                     mSharedPrimarySessionId,
+                    mSharedPrimarySessionKeyInfo,
                     mSecureBlob);
         }
     }

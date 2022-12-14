@@ -21,7 +21,6 @@ import static com.android.server.uwb.data.UwbConfig.CONTROLEE_AND_RESPONDER;
 import static com.android.server.uwb.data.UwbConfig.CONTROLLER_AND_INITIATOR;
 import static com.android.server.uwb.data.UwbConfig.OOB_TYPE_BLE;
 import static com.android.server.uwb.data.UwbConfig.PERIPHERAL;
-import static com.android.server.uwb.data.UwbConfig.TIME_BASED;
 
 import static com.google.uwb.support.fira.FiraParams.HOPPING_MODE_DISABLE;
 import static com.google.uwb.support.fira.FiraParams.MAC_FCS_TYPE_CRC_16;
@@ -32,6 +31,7 @@ import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROL
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
 import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP3;
 import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_DYNAMIC;
+import static com.google.uwb.support.fira.FiraParams.TIME_SCHEDULED_RANGING;
 import static com.google.uwb.support.fira.FiraParams.UWB_CHANNEL_9;
 import static com.google.uwb.support.fira.FiraParams.UWB_PREAMBLE_CODE_INDEX_10;
 
@@ -58,6 +58,7 @@ import com.android.server.uwb.pm.PacsControllerSession;
 import com.android.server.uwb.pm.PacsProfile;
 
 import com.google.uwb.support.fira.FiraOpenSessionParams;
+import com.google.uwb.support.fira.FiraParams;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -101,7 +102,7 @@ public class UwbConfigTest {
         int rangingRoundUsage = RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
         int rframeConfig = RFRAME_CONFIG_SP3;
         int roundHopping = HOPPING_MODE_DISABLE;
-        int scheduledMode = TIME_BASED;
+        @FiraParams.SchedulingMode int scheduledMode = TIME_SCHEDULED_RANGING;
         int maxContentionPhaseLength = 0;
         boolean tofReport = true;
         boolean aoaAzimuthReport = false;
@@ -134,7 +135,7 @@ public class UwbConfigTest {
                 .setRangingRoundUsage(rangingRoundUsage)
                 .setRframeConfig(rframeConfig)
                 .setRoundHopping(roundHopping)
-                .setScheduledMode(scheduledMode)
+                .setScheduleMode(scheduledMode)
                 .setMaxContentionPhaseLength(maxContentionPhaseLength)
                 .setTofReport(tofReport)
                 .setAoaAzimuthReport(aoaAzimuthReport)
@@ -167,7 +168,7 @@ public class UwbConfigTest {
         assertEquals(uwbConfig.mRframeConfig, rframeConfig);
         assertEquals(uwbConfig.mStsConfig, stsConfig);
         assertEquals(uwbConfig.mRoundHopping, roundHopping);
-        assertEquals(uwbConfig.mScheduledMode, scheduledMode);
+        assertEquals(uwbConfig.mScheduleMode, scheduledMode);
         assertEquals(uwbConfig.mMaxContentionPhaseLength, maxContentionPhaseLength);
         assertEquals(uwbConfig.mTofReport, tofReport);
         assertEquals(uwbConfig.mAoaAzimuthReport, aoaAzimuthReport);
