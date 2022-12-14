@@ -1045,10 +1045,10 @@ public class FiraOpenSessionParams extends FiraParams {
         /** UCI spec default: +180 (No upper-bound filtering) */
         private double mRangeDataNtfAoaAzimuthUpper = RANGE_DATA_NTF_AOA_AZIMUTH_UPPER_DEFAULT;
 
-        /** UCI spec default: -180 (No low-bound filtering) */
+        /** UCI spec default: -90 (No low-bound filtering) */
         private double mRangeDataNtfAoaElevationLower = RANGE_DATA_NTF_AOA_ELEVATION_LOWER_DEFAULT;
 
-        /** UCI spec default: +180 (No upper-bound filtering) */
+        /** UCI spec default: +90 (No upper-bound filtering) */
         private double mRangeDataNtfAoaElevationUpper = RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT;
 
         /** UCI spec default: RESULT_REPORT_CONFIG bit 0 is 1 */
