@@ -21,10 +21,6 @@ python_defaults {
     libs: [
         "mobly",
     ],
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
     version: {
         py3: {
             embedded_launcher: true,
@@ -41,6 +37,10 @@ python_test_host {
         "lib/uwb_ranging_decorator.py",
         "lib/uwb_ranging_params.py",
         "test_utils/uwb_test_utils.py",
+    ],
+    test_suites: [
+        "cts",
+        "general-tests",
     ],
     test_config: "UwbManagerTests/AndroidTest.xml",
     test_options: {
@@ -62,6 +62,10 @@ python_test_host {
         "lib/uwb_ranging_decorator.py",
         "lib/uwb_ranging_params.py",
         "test_utils/uwb_test_utils.py",
+    ],
+    test_suites: [
+        "cts",
+        "general-tests",
     ],
     test_config: "FiraRangingTests/AndroidTest.xml",
     test_options: {
