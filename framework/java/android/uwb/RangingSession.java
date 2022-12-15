@@ -437,7 +437,6 @@ public final class RangingSession implements AutoCloseable {
          * Invoked when a response/status is received for active ranging rounds update
          *
          * @param parameters bundle of ranging rounds update status
-         * {@link com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdateStatus}
          */
         @RequiresApi(UPSIDE_DOWN_CAKE)
         default void onRangingRoundsUpdateDtTagStatus(@NonNull PersistableBundle parameters) {}
@@ -759,7 +758,6 @@ public final class RangingSession implements AutoCloseable {
      * {@link RangingSession.Callback#onRangingRoundsUpdateDtTag(PersistableBundle)}
      * is invoked
      * @param params Parameters to configure active ranging rounds
-     * {@link com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate}
      */
     @RequiresApi(UPSIDE_DOWN_CAKE)
     @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
