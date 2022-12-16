@@ -15,6 +15,7 @@
  */
 package com.android.server.uwb;
 
+import android.content.AttributionSource;
 import android.util.SparseArray;
 
 import com.android.server.uwb.UwbSessionManager.UwbSession;
@@ -62,7 +63,7 @@ public class UwbMetrics {
     public class RangingSessionStats {
         private int mSessionId;
         private int mChannel = 9;
-        private long mStartTimeWallClockMs;
+        private long mInitTimeWallClockMs;
         private long mStartTimeSinceBootMs;
         private int mInitLatencyMs;
         private int mInitStatus;
@@ -79,10 +80,12 @@ public class UwbMetrics {
         private boolean mIsController;
         private boolean mIsDiscoveredByFramework = false;
         private boolean mIsOutOfBand = true;
+        private AttributionSource mAttributionSource;
 
-        RangingSessionStats(int sessionId) {
+        RangingSessionStats(int sessionId, AttributionSource attributionSource) {
             mSessionId = sessionId;
-            mStartTimeWallClockMs = mUwbInjector.getWallClockMillis();
+            mInitTimeWallClockMs = mUwbInjector.getWallClockMillis();
+            mAttributionSource = attributionSource;
         }
 
         /**
@@ -173,11 +176,11 @@ public class UwbMetrics {
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
-            sb.append("rangingStartTime=");
+            sb.append("initTime=");
             Calendar c = Calendar.getInstance();
             synchronized (mLock) {
-                c.setTimeInMillis(mStartTimeWallClockMs);
-                sb.append(mStartTimeWallClockMs == 0 ? "            <null>" :
+                c.setTimeInMillis(mInitTimeWallClockMs);
+                sb.append(mInitTimeWallClockMs == 0 ? "            <null>" :
                         String.format("%tm-%td %tH:%tM:%tS.%tL", c, c, c, c, c, c));
                 sb.append(", sessionId=").append(mSessionId);
                 sb.append(", initLatencyMs=").append(mInitLatencyMs);
@@ -192,6 +195,8 @@ public class UwbMetrics {
                 sb.append(", initiator=").append(mIsInitiator);
                 sb.append(", controller=").append(mIsController);
                 sb.append(", discoveredByFramework=").append(mIsDiscoveredByFramework);
+                sb.append(", uid=").append(mAttributionSource.getUid());
+                sb.append(", packageName=").append(mAttributionSource.getPackageName());
                 return sb.toString();
             }
         }
@@ -257,7 +262,8 @@ public class UwbMetrics {
             while (mRangingSessionList.size() >= MAX_RANGING_SESSIONS) {
                 mRangingSessionList.removeFirst();
             }
-            RangingSessionStats session = new RangingSessionStats(uwbSession.getSessionId());
+            RangingSessionStats session = new RangingSessionStats(uwbSession.getSessionId(),
+                    uwbSession.getAttributionSource());
             session.parseParams(uwbSession.getParams());
             session.convertInitStatus(status);
             mRangingSessionList.add(session);
@@ -266,7 +272,8 @@ public class UwbMetrics {
                     session.mStsType, session.mIsInitiator,
                     session.mIsController, session.mIsDiscoveredByFramework, session.mIsOutOfBand,
                     session.mChannel, session.mInitStatus,
-                    session.mInitLatencyMs, session.mInitLatencyMs / 20);
+                    session.mInitLatencyMs, session.mInitLatencyMs / 20,
+                    uwbSession.getAttributionSource().getUid());
         }
     }
 
