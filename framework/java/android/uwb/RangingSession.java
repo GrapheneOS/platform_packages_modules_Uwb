@@ -755,20 +755,20 @@ public final class RangingSession implements AutoCloseable {
      * Update active ranging rounds for DT Tag
      *
      * <p> On successfully sending the command,
-     * {@link RangingSession.Callback#onRangingRoundsUpdateDtTag(PersistableBundle)}
+     * {@link RangingSession.Callback#onRangingRoundsUpdateDtTagStatus(PersistableBundle)}
      * is invoked
      * @param params Parameters to configure active ranging rounds
      */
     @RequiresApi(UPSIDE_DOWN_CAKE)
     @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
-    public void onRangingRoundsUpdateDtTag(@NonNull PersistableBundle params) {
+    public void updateRangingRoundsDtTag(@NonNull PersistableBundle params) {
         if (mState != State.ACTIVE) {
             throw new IllegalStateException();
         }
 
         Log.v(mTag, "onRangingRoundsUpdateDtTag - sessionHandle: " + mSessionHandle);
         try {
-            mAdapter.onRangingRoundsUpdateDtTag(mSessionHandle, params);
+            mAdapter.updateRangingRoundsDtTag(mSessionHandle, params);
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();
         }
