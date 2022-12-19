@@ -77,6 +77,8 @@ java_library {
         "uwb-config-proto",
         "modules-utils-statemachine",
         "modules-utils-build",
+        "cbor-java",
+        "bouncycastle-uwb",
     ],
 
     apex_available: [
