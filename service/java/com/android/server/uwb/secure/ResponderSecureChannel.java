@@ -67,14 +67,16 @@ class ResponderSecureChannel extends FiRaSecureChannel {
                     }
                     mWorkHandler.sendMessage(
                             mWorkHandler.obtainMessage(
-                                    CMD_SEND_OOB_DATA, responseApdu.toByteArray()));
+                                    CMD_SEND_OOB_DATA, OOB_MSG_TYPE_APDU_RESPONSE, 0,
+                                    responseApdu.toByteArray()));
                 } catch (IOException | IllegalStateException e) {
                     logw("Error on open channel: " + e);
                     mSecureChannelCallback.onSetUpError(SetupError.OPEN_SE_CHANNEL);
                     ResponseApdu responseApdu = ResponseApdu.SW_APPLET_SELECT_FAILED_APDU;
                     mWorkHandler.sendMessage(
                             mWorkHandler.obtainMessage(
-                                    CMD_SEND_OOB_DATA, responseApdu.toByteArray()));
+                                    CMD_SEND_OOB_DATA, OOB_MSG_TYPE_APDU_RESPONSE, 0,
+                                    responseApdu.toByteArray()));
                 }
                 // waiting for next request from the initiator.
                 break;

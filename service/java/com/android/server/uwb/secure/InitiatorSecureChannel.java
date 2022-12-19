@@ -130,7 +130,8 @@ class InitiatorSecureChannel extends FiRaSecureChannel {
                     && !response.outboundDataToRemoteApplet.isEmpty()) {
                 mWorkHandler.sendMessage(
                         mWorkHandler.obtainMessage(
-                                CMD_SEND_OOB_DATA, response.outboundDataToRemoteApplet.get()));
+                                CMD_SEND_OOB_DATA, OOB_MSG_TYPE_APDU_COMMAND, 0,
+                                response.outboundDataToRemoteApplet.get()));
             } else {
                 throw new IllegalStateException("No outbound data for InitiateTransaction CMD");
             }
@@ -157,7 +158,8 @@ class InitiatorSecureChannel extends FiRaSecureChannel {
                         if (response.isSuccess() && response.outboundDataOrApdu.isPresent()) {
                             mWorkHandler.sendMessage(
                                     mWorkHandler.obtainMessage(
-                                            CMD_SEND_OOB_DATA, response.outboundDataOrApdu.get()));
+                                            CMD_SEND_OOB_DATA, OOB_MSG_TYPE_APDU_COMMAND, 0,
+                                            response.outboundDataOrApdu.get()));
                             externalRequestCallback.onSuccess(new byte[0]);
                         } else {
                             throw new IllegalStateException(

@@ -110,11 +110,6 @@ public abstract class TransportProvider implements Transport {
     }
 
     @Override
-    public void sendData(@NonNull byte[] data, SendingDataCallback sendingDataCallback) {
-        sendData(MessageType.COMMAND, data, sendingDataCallback);
-    }
-
-    @Override
     public void sendData(
             MessageType messageType,
             @NonNull byte[] data,
