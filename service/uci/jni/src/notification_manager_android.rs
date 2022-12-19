@@ -27,8 +27,12 @@ use jni::signature::TypeSignature;
 use jni::{AttachGuard, JavaVM};
 use log::{debug, error};
 use uwb_core::error::{Error, Result};
+use uwb_core::params::UwbAddress;
 use uwb_core::uci::uci_manager_sync::{NotificationManager, NotificationManagerBuilder};
-use uwb_core::uci::{CoreNotification, RangingMeasurements, SessionNotification, SessionRangeData};
+use uwb_core::uci::{
+    CoreNotification, DataRcvNotification, RangingMeasurements, SessionNotification,
+    SessionRangeData,
+};
 use uwb_uci_packets::{
     ControleeStatus, ExtendedAddressDlTdoaRangingMeasurement,
     ExtendedAddressOwrAoaRangingMeasurement, ExtendedAddressTwoWayRangingMeasurement,
@@ -1021,6 +1025,39 @@ impl NotificationManager for NotificationManagerAndroid {
                 // Java only has signed integer. The range for signed int32 should be sufficient.
                 JValue::Int(vendor_notification.gid.try_into().map_err(|_| Error::BadParameters)?),
                 JValue::Int(vendor_notification.oid.try_into().map_err(|_| Error::BadParameters)?),
+                JValue::Object(JObject::from(payload_jbytearray)),
+            ],
+        )
+    }
+
+    fn on_data_rcv_notification(
+        &mut self,
+        data_rcv_notification: DataRcvNotification,
+    ) -> Result<()> {
+        debug!("UCI JNI: Data Rcv notification callback.");
+
+        let source_address_jbytearray = match &data_rcv_notification.source_address {
+            UwbAddress::Short(a) => {
+                self.env.byte_array_from_slice(a).map_err(|_| Error::ForeignFunctionInterface)?
+            }
+            UwbAddress::Extended(a) => {
+                self.env.byte_array_from_slice(a).map_err(|_| Error::ForeignFunctionInterface)?
+            }
+        };
+        let payload_jbytearray = self
+            .env
+            .byte_array_from_slice(&data_rcv_notification.payload)
+            .map_err(|_| Error::ForeignFunctionInterface)?;
+        self.cached_jni_call(
+            "onDataReceived",
+            "(JIJ[BII[B)V",
+            &[
+                JValue::Long(data_rcv_notification.session_id as i64),
+                JValue::Int(data_rcv_notification.status as i32),
+                JValue::Long(data_rcv_notification.uci_sequence_num as i64),
+                JValue::Object(JObject::from(source_address_jbytearray)),
+                JValue::Int(data_rcv_notification.source_fira_component as i32),
+                JValue::Int(data_rcv_notification.dest_fira_component as i32),
                 JValue::Object(JObject::from(payload_jbytearray)),
             ],
         )
