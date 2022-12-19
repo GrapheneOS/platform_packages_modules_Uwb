@@ -26,4 +26,5 @@ interface IUwbOemExtensionCallback {
     oneway void onDeviceStatusNotificationReceived(in PersistableBundle bundle);
     int onSessionConfigurationReceived(in PersistableBundle bundle);
     RangingReport onRangingReportReceived(in RangingReport bundle);
+    boolean onCheckPointedTarget(in PersistableBundle bundle);
 }
