@@ -79,6 +79,7 @@ import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
+import com.google.uwb.support.oemextension.AdvertisePointedTarget;
 import com.google.uwb.support.oemextension.SessionStatus;
 
 import java.nio.ByteBuffer;
@@ -611,7 +612,25 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             return;
         }
 
-        if (mAdvertiseManager.isPointedTarget(macAddress)) {
+        boolean advertisePointingResult = mAdvertiseManager.isPointedTarget(macAddress);
+        if (mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
+            try {
+                PersistableBundle pointedTargetBundle = new AdvertisePointedTarget.Builder()
+                        .setMacAddress(macAddress)
+                        .setAdvertisePointingResult(advertisePointingResult)
+                        .build()
+                        .toBundle();
+
+                advertisePointingResult = mUwbInjector
+                        .getUwbServiceCore()
+                        .getOemExtensionCallback()
+                        .onCheckPointedTarget(pointedTargetBundle);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (advertisePointingResult) {
             UwbAddress uwbAddress = UwbAddress.fromBytes(macAddress);
             mSessionNotificationManager.onDataReceived(
                     uwbSession, uwbAddress, new PersistableBundle(), receivedDataInfo.payload);
