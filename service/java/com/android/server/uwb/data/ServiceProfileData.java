@@ -43,6 +43,9 @@ public class ServiceProfileData implements UwbConfigStore.StoreData {
     }
 
     public static class ServiceProfileInfo {
+        public static final int ADF_STATUS_NOT_PROVISIONED = 0;
+        public static final int ADF_STATUS_CREATED = 1;
+        public static final int ADF_STATUS_PROVISIONED = 2;
         /**
          * Unique 128-bit service instance ID
          */
@@ -63,6 +66,8 @@ public class ServiceProfileData implements UwbConfigStore.StoreData {
          * Applet ID for dynamic STS
          */
         private int mServiceAppletId;
+
+        private int mAdfStatus = ADF_STATUS_NOT_PROVISIONED;
         /**
          * ADF OID
          */
@@ -107,6 +112,14 @@ public class ServiceProfileData implements UwbConfigStore.StoreData {
 
         public Optional<ObjectIdentifier> getServiceAdfOid() {
             return mServiceAdfOid;
+        }
+
+        public void setAdfStatus(int status) {
+            mAdfStatus = status;
+        }
+
+        public int getAdfStatus() {
+            return mAdfStatus;
         }
 
     }
@@ -162,6 +175,7 @@ public class ServiceProfileData implements UwbConfigStore.StoreData {
             serviceConfigBuilder.setUid(serviceProfileInfo.uid);
             serviceConfigBuilder.setServiceId(serviceProfileInfo.serviceID);
             serviceConfigBuilder.setServiceAppletId(serviceProfileInfo.getServiceAppletId());
+            serviceConfigBuilder.setAdfStatus(serviceProfileInfo.getAdfStatus());
             serviceProfileInfo.getServiceAdfOid().ifPresent(
                     adfOid -> serviceConfigBuilder.setServiceAdfOid(
                             ByteString.copyFrom(adfOid.value)));
@@ -205,6 +219,7 @@ public class ServiceProfileData implements UwbConfigStore.StoreData {
                     serviceConfig.getPackageName(),
                     serviceConfig.getServiceId());
             serviceProfileInfo.setServiceAppletId(serviceConfig.getServiceAppletId());
+            serviceProfileInfo.setAdfStatus(serviceConfig.getAdfStatus());
 
             serviceProfileInfo.setServiceAdfOid(
                     ObjectIdentifier.fromBytes(serviceConfig.getServiceAdfOid().toByteArray()));
