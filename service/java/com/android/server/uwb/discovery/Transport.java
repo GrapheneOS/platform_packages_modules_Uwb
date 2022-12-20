@@ -22,15 +22,6 @@ import com.android.server.uwb.discovery.info.FiraConnectorMessage.MessageType;
 
 /** The interface of the physical data communication channel. */
 public interface Transport {
-
-    /**
-     * Send Command MessageType data to the remote device.
-     *
-     * @param data Raw bytes of data to be sent.
-     * @param sendingDataCallback Callback for sending data.
-     */
-    void sendData(@NonNull byte[] data, SendingDataCallback sendingDataCallback);
-
     /**
      * Send data to the remote device.
      *
