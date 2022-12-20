@@ -36,7 +36,11 @@ public class ObjectIdentifier {
     /**
      * Convert the byte array to ObjectIdentifier.
      */
+    @Nullable
     public static ObjectIdentifier fromBytes(@NonNull byte[] bytes) {
+        if (bytes.length == 0) {
+            return null;
+        }
         return new ObjectIdentifier(bytes);
     }
 
