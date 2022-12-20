@@ -16,6 +16,8 @@
 
 package com.android.server.uwb.data;
 
+import static com.android.server.uwb.data.ServiceProfileData.ServiceProfileInfo.ADF_STATUS_PROVISIONED;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -66,6 +68,7 @@ public class ServiceProfileDataTest {
         assertEquals(serviceConfig.getServiceInstanceId(), serviceInstanceID.toString());
         assertEquals(serviceConfig.getUid(), 1);
         assertEquals(serviceConfig.getPackageName(), "test");
+        assertEquals(serviceConfig.getAdfStatus(), ADF_STATUS_PROVISIONED);
         assertEquals(serviceConfig.getServiceAdfOid(), ByteString.copyFrom(new byte[] {(byte) 1}));
         assertEquals(serviceConfig.getSecureBlob(), ByteString.EMPTY);
 
@@ -106,6 +109,7 @@ public class ServiceProfileDataTest {
             int serviceID = 1;
             ServiceProfileInfo mServiceProfileInfo =
                     new ServiceProfileInfo(serviceInstanceID, uid, packageName, serviceID);
+            mServiceProfileInfo.setAdfStatus(ADF_STATUS_PROVISIONED);
             mServiceProfileInfo.setServiceAdfOid(
                     ObjectIdentifier.fromBytes(new byte[] {(byte) 1}));
             mServiceProfileMap.put(serviceInstanceID, mServiceProfileInfo);
