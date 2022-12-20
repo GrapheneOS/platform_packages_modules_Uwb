@@ -27,7 +27,9 @@ import com.android.server.uwb.pm.RunningProfileSessionInfo;
 import com.android.server.uwb.secure.csml.CsmlUtil;
 import com.android.server.uwb.secure.csml.DispatchResponse;
 import com.android.server.uwb.secure.csml.GetDoCommand;
+import com.android.server.uwb.secure.csml.PutDoCommand;
 import com.android.server.uwb.secure.csml.SessionData;
+import com.android.server.uwb.secure.iso7816.TlvDatum;
 import com.android.server.uwb.secure.iso7816.TlvParser;
 import com.android.server.uwb.util.DataTypeConversionUtil;
 
@@ -45,6 +47,30 @@ public class ControleeResponderSession extends ResponderSession {
             @NonNull Callback sessionCallback,
             @NonNull RunningProfileSessionInfo runningProfileSessionInfo) {
         super(workLooper, fiRaSecureChannel, sessionCallback, runningProfileSessionInfo);
+    }
+
+    @Override
+    protected void handleFiRaSecureChannelEstablished() {
+        super.handleFiRaSecureChannelEstablished();
+
+        PutDoCommand putControleeInfoCommand = PutDoCommand.build(
+                CsmlUtil.constructGetOrPutDoTlv(
+                        new TlvDatum(CsmlUtil.CONTROLEE_INFO_DO_TAG,
+                                mRunningProfileSessionInfo.controleeInfo.get().toBytes())));
+        mFiRaSecureChannel.sendLocalFiRaCommand(putControleeInfoCommand,
+                new FiRaSecureChannel.ExternalRequestCallback() {
+                    @Override
+                    public void onSuccess(@NonNull byte[] responseData) {
+                        logd("controlee info is sent to applet.");
+                    }
+
+                    @Override
+                    public void onFailure() {
+                        logw("failed to send controlee info to applet.");
+                        terminateSession();
+                        mSessionCallback.onSessionAborted();
+                    }
+                });
     }
 
     @Override
