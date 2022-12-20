@@ -32,11 +32,15 @@ import android.os.test.TestLooper;
 import com.android.server.uwb.discovery.Transport;
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
 import com.android.server.uwb.secure.csml.ControleeInfo;
+import com.android.server.uwb.secure.csml.FiRaCommand;
+import com.android.server.uwb.secure.csml.SelectAdfCommand;
 import com.android.server.uwb.secure.csml.SwapInAdfCommand;
 import com.android.server.uwb.secure.csml.UwbCapability;
 import com.android.server.uwb.secure.iso7816.CommandApdu;
 import com.android.server.uwb.secure.iso7816.ResponseApdu;
+import com.android.server.uwb.secure.iso7816.StatusWord;
 import com.android.server.uwb.secure.omapi.OmapiConnection;
+import com.android.server.uwb.util.DataTypeConversionUtil;
 import com.android.server.uwb.util.ObjectIdentifier;
 
 import org.junit.Before;
@@ -49,6 +53,9 @@ import org.mockito.MockitoAnnotations;
 import java.io.IOException;
 
 public class ResponderSecureChannelTest {
+    private static final ObjectIdentifier PROVISIONED_ADF_OID =
+            ObjectIdentifier.fromBytes(new byte[] {(byte) 0x01});
+
     @Mock
     private SecureElementChannel mSecureElementChannel;
     @Mock
@@ -109,6 +116,66 @@ public class ResponderSecureChannelTest {
         assertThat(mResponderSecureChannel.getStatus()).isEqualTo(
                 FiRaSecureChannel.Status.CHANNEL_OPENED);
         assertThat(mTestLooper.nextMessage().what).isEqualTo(CMD_SEND_OOB_DATA);
+    }
+
+    @Test
+    public void remoteSelectAdfWithMatchedAdfOid() throws IOException {
+        RunningProfileSessionInfo runningProfileSessionInfo =
+                new RunningProfileSessionInfo.Builder(
+                        mock(UwbCapability.class), PROVISIONED_ADF_OID)
+                        .build();
+        doInit(runningProfileSessionInfo);
+        when(mSecureElementChannel.openChannelWithResponse())
+                .thenReturn(ResponseApdu.SW_SUCCESS_APDU);
+        // select command trigger
+        CommandApdu selectCommand = CommandApdu.builder(0x00, 0xA4, 0x04, 0x00).build();
+
+        mResponderSecureChannel.processRemoteCommandOrResponse(selectCommand.getEncoded());
+        mTestLooper.dispatchAll();
+
+        when(mSecureElementChannel.isOpened()).thenReturn(true);
+        SelectAdfCommand selectAdfCommand = SelectAdfCommand.build(PROVISIONED_ADF_OID);
+        byte[] responseData = DataTypeConversionUtil.hexStringToByteArray(
+                "711280018081029000E109800100810100820101"); // ADF SELECTED notification
+        when(mSecureElementChannel.transmit(any(FiRaCommand.class)))
+                .thenReturn(ResponseApdu.fromDataAndStatusWord(
+                        responseData, StatusWord.SW_NO_ERROR.toInt()));
+        mResponderSecureChannel.processRemoteCommandOrResponse(
+                selectAdfCommand.getCommandApdu().getEncoded());
+
+        assertThat(mResponderSecureChannel.getStatus()).isEqualTo(
+                FiRaSecureChannel.Status.ADF_SELECTED);
+    }
+
+    @Test
+    public void remoteSelectAdfWithMismatchedAdfOid() throws IOException {
+        RunningProfileSessionInfo runningProfileSessionInfo =
+                new RunningProfileSessionInfo.Builder(
+                        mock(UwbCapability.class), PROVISIONED_ADF_OID)
+                        .build();
+        doInit(runningProfileSessionInfo);
+        when(mSecureElementChannel.openChannelWithResponse())
+                .thenReturn(ResponseApdu.SW_SUCCESS_APDU);
+        // select command trigger
+        CommandApdu selectCommand = CommandApdu.builder(0x00, 0xA4, 0x04, 0x00).build();
+
+        mResponderSecureChannel.processRemoteCommandOrResponse(selectCommand.getEncoded());
+        mTestLooper.dispatchNext();
+
+        when(mSecureElementChannel.isOpened()).thenReturn(true);
+        SelectAdfCommand selectAdfCommand = SelectAdfCommand.build(PROVISIONED_ADF_OID);
+        byte[] responseData = DataTypeConversionUtil.hexStringToByteArray(
+                "711280018081029000E109800100810100820102"); // ADF SELECTED notification
+        when(mSecureElementChannel.transmit(any(FiRaCommand.class)))
+                .thenReturn(ResponseApdu.fromDataAndStatusWord(
+                        responseData, StatusWord.SW_NO_ERROR.toInt()));
+        mResponderSecureChannel.processRemoteCommandOrResponse(
+                selectAdfCommand.getCommandApdu().getEncoded());
+
+        assertThat(mResponderSecureChannel.getStatus()).isEqualTo(
+                FiRaSecureChannel.Status.CHANNEL_OPENED);
+        verify(mSecureChannelCallback)
+                .onSetUpError(eq(FiRaSecureChannel.SetupError.ADF_NOT_MATCHED));
     }
 
     @Test
