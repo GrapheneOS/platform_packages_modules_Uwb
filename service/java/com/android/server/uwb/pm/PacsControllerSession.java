@@ -239,7 +239,7 @@ public class PacsControllerSession extends RangingSessionController {
                 UwbCapability.fromFiRaSpecificationParam(firaSpecificationParams);
 
         return new RunningProfileSessionInfo.Builder(uwbCapability,
-                mSessionInfo.mServiceProfileInfo.getServiceAdfOid())
+                mSessionInfo.mServiceProfileInfo.getServiceAdfOid().get())
                 .setSharedPrimarySessionIdAndSessionKeyInfo(
                         mSessionInfo.getSessionId(), mSessionInfo.getSharedSessionKeyInfo())
                 .build();

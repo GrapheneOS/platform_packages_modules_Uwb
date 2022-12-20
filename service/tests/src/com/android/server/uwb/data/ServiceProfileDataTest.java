@@ -67,6 +67,7 @@ public class ServiceProfileDataTest {
         assertEquals(serviceConfig.getUid(), 1);
         assertEquals(serviceConfig.getPackageName(), "test");
         assertEquals(serviceConfig.getServiceAdfOid(), ByteString.copyFrom(new byte[] {(byte) 1}));
+        assertEquals(serviceConfig.getSecureBlob(), ByteString.EMPTY);
 
     }
 
