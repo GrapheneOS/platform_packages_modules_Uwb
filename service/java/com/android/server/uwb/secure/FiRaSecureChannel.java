@@ -75,6 +75,7 @@ public abstract class FiRaSecureChannel {
         INITIATE_TRANSACTION,
         OPEN_SE_CHANNEL,
         DISPATCH,
+        ADF_NOT_MATCHED,
     }
 
     enum Status {
@@ -302,9 +303,17 @@ public abstract class FiRaSecureChannel {
         for (DispatchResponse.Notification notification : dispatchResponse.notifications) {
             switch (notification.notificationEventId) {
                 case NOTIFICATION_EVENT_ID_ADF_SELECTED:
+                    logd("ADF selected");
                     DispatchResponse.AdfSelectedNotification adfSelected =
                             (DispatchResponse.AdfSelectedNotification) notification;
-                    // TODO: put controlee info for controlee if it is not dynamic slot
+                    ObjectIdentifier selectedAdfOid = adfSelected.adfOid;
+                    if (!mRunningProfileSessionInfo.oidOfProvisionedAdf
+                            .equals(adfSelected.adfOid)) {
+                        logw("The selected ADF doesn't match the provisioned ADF.");
+                        mSecureChannelCallback.onSetUpError(SetupError.ADF_NOT_MATCHED);
+                    } else {
+                        mStatus = Status.ADF_SELECTED;
+                    }
                     break;
                 case NOTIFICATION_EVENT_ID_SECURE_CHANNEL_ESTABLISHED:
                     logd("SC established");
