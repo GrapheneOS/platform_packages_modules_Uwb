@@ -55,6 +55,7 @@ import com.android.server.uwb.data.UwbConfig;
 import com.android.server.uwb.discovery.info.TransportClientInfo;
 import com.android.server.uwb.multchip.UwbMultichipData;
 import com.android.server.uwb.pm.PacsControllerSession;
+import com.android.server.uwb.util.ObjectIdentifier;
 
 import com.google.common.collect.ImmutableList;
 import com.google.uwb.support.fira.FiraSpecificationParams;
@@ -67,6 +68,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
+import java.util.Optional;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
@@ -127,6 +129,8 @@ public class PacsControllerSessionTest {
                 .thenReturn(mMockBluetoothManager);
         mTransportClientInfo = new TransportClientInfo(mScanResult);
         when(mScanResult.getDevice()).thenReturn(mBluetoothDevice);
+        when(mServiceProfileInfo.getServiceAdfOid()).thenReturn(
+                Optional.of(ObjectIdentifier.fromBytes(new byte[] {(byte) 1})));
         SessionHandle sessionHandle = mock(SessionHandle.class);
 
         mRangingSessionController = new PacsControllerSession(sessionHandle,

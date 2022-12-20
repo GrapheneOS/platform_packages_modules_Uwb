@@ -28,6 +28,7 @@ message ServiceConfig {
   required int32 service_id = 4;
   optional int32 service_applet_id = 5;
   optional bytes service_adf_oid = 6;
+  optional bytes secure_blob = 7;
 }
 message UwbConfig {
   required int32 version = 1;
