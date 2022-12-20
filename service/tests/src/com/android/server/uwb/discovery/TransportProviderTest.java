@@ -150,7 +150,7 @@ public class TransportProviderTest {
 
     @Test
     public void testSendData_succeed() {
-        mTransportProvider.sendData(MESSAGE_PAYLOAD, mMockSendingDataCallback);
+        mTransportProvider.sendData(MessageType.COMMAND, MESSAGE_PAYLOAD, mMockSendingDataCallback);
         verify(mMockSendingDataCallback, times(1)).onSuccess();
     }
 
@@ -158,14 +158,15 @@ public class TransportProviderTest {
     public void testSendData_failed() {
         mFakeTransportProvider.sendMessageSuccess = false;
 
-        mTransportProvider.sendData(MESSAGE_PAYLOAD, mMockSendingDataCallback);
+        mTransportProvider.sendData(MessageType.COMMAND , MESSAGE_PAYLOAD,
+                mMockSendingDataCallback);
         verify(mMockSendingDataCallback, times(1)).onFailure();
     }
 
     @Test
     public void testSendData_updateDestinationSecid() {
         mTransportProvider.setDestinationSecid(SECID3);
-        mTransportProvider.sendData(MESSAGE_PAYLOAD, mMockSendingDataCallback);
+        mTransportProvider.sendData(MessageType.COMMAND, MESSAGE_PAYLOAD, mMockSendingDataCallback);
         verify(mMockSendingDataCallback, times(1)).onSuccess();
         assertThat(mFakeTransportProvider.lastSendMessageSecid).isEqualTo(SECID3);
         assertThat(mFakeTransportProvider.lastSendMessage.toString())
