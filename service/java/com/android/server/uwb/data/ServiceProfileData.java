@@ -32,6 +32,7 @@ import com.google.protobuf.ByteString;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 public class ServiceProfileData implements UwbConfigStore.StoreData {
@@ -65,7 +66,12 @@ public class ServiceProfileData implements UwbConfigStore.StoreData {
         /**
          * ADF OID
          */
-        private ObjectIdentifier mServiceAdfOid;
+        private Optional<ObjectIdentifier> mServiceAdfOid = Optional.empty();
+
+        /**
+         * secure blob for ADF.
+         */
+        private Optional<byte[]> mSecureBlob = Optional.empty();
 
         /**
          *
@@ -83,15 +89,23 @@ public class ServiceProfileData implements UwbConfigStore.StoreData {
             this.mServiceAppletId = serviceAppletId;
         }
 
-        public void setServiceAdfOid(ObjectIdentifier serviceAdfOid) {
-            this.mServiceAdfOid = serviceAdfOid;
+        public void setServiceAdfOid(@Nullable ObjectIdentifier serviceAdfOid) {
+            this.mServiceAdfOid = Optional.ofNullable(serviceAdfOid);
         }
 
         public int getServiceAppletId() {
             return mServiceAppletId;
         }
 
-        public ObjectIdentifier getServiceAdfOid() {
+        public void setSecureBlob(@Nullable byte[] secureBlob) {
+            mSecureBlob = Optional.ofNullable(secureBlob);
+        }
+
+        public Optional<byte[]> getSecureBlob() {
+            return mSecureBlob;
+        }
+
+        public Optional<ObjectIdentifier> getServiceAdfOid() {
             return mServiceAdfOid;
         }
 
@@ -148,8 +162,12 @@ public class ServiceProfileData implements UwbConfigStore.StoreData {
             serviceConfigBuilder.setUid(serviceProfileInfo.uid);
             serviceConfigBuilder.setServiceId(serviceProfileInfo.serviceID);
             serviceConfigBuilder.setServiceAppletId(serviceProfileInfo.getServiceAppletId());
-            serviceConfigBuilder.setServiceAdfOid(
-                    ByteString.copyFrom(serviceProfileInfo.getServiceAdfOid().value));
+            serviceProfileInfo.getServiceAdfOid().ifPresent(
+                    adfOid -> serviceConfigBuilder.setServiceAdfOid(
+                            ByteString.copyFrom(adfOid.value)));
+            serviceProfileInfo.getSecureBlob().ifPresent(
+                    secureBlob -> serviceConfigBuilder.setSecureBlob(
+                            ByteString.copyFrom(secureBlob)));
             builder.addServiceConfig(serviceConfigBuilder.build());
         }
     }
@@ -187,8 +205,12 @@ public class ServiceProfileData implements UwbConfigStore.StoreData {
                     serviceConfig.getPackageName(),
                     serviceConfig.getServiceId());
             serviceProfileInfo.setServiceAppletId(serviceConfig.getServiceAppletId());
+
             serviceProfileInfo.setServiceAdfOid(
                     ObjectIdentifier.fromBytes(serviceConfig.getServiceAdfOid().toByteArray()));
+
+            serviceProfileInfo.setSecureBlob(
+                    serviceConfig.getSecureBlob().toByteArray());
             serviceProfileDataMap.put(serviceProfileInfo.serviceInstanceID, serviceProfileInfo);
         }
         mDataSource.fromDeserialized(serviceProfileDataMap);
