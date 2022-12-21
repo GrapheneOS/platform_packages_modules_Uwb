@@ -2190,7 +2190,6 @@ jbyte uwbManager_sendData(JNIEnv *env, jobject o, jint sessionId,
   }
 
   uint16_t dataLen = env->GetArrayLength(appData);
-  uint8_t addrLen = env->GetArrayLength(address);
 
   if (dataLen > data_tx_cb.max_msg_size) {
     JNI_TRACE_E("%s :Data len is greater the Max message size supported ",
@@ -2198,13 +2197,13 @@ jbyte uwbManager_sendData(JNIEnv *env, jobject o, jint sessionId,
     return UWA_STATUS_FAILED;
   }
 
-  if ((dataLen > 0) && (addrLen == EXTENDED_ADDRESS_LEN)) {
+  if (dataLen > 0) {
     pData = (uint8_t *)malloc(sizeof(uint8_t) * dataLen);
     if (pData == NULL) {
       JNI_TRACE_E("%s: malloc failure for pData", fn);
       return status;
     }
-    pAddress = (uint8_t *)malloc(sizeof(uint8_t) * addrLen);
+    pAddress = (uint8_t *)malloc(sizeof(uint8_t) * EXTENDED_ADDRESS_LEN);
     if (pAddress == NULL) {
       JNI_TRACE_E("%s: malloc failure for pAddress", fn);
       free(pData);
@@ -2216,13 +2215,13 @@ jbyte uwbManager_sendData(JNIEnv *env, jobject o, jint sessionId,
   }
   memset(pData, 0, (sizeof(uint8_t) * dataLen));
   env->GetByteArrayRegion(appData, 0, dataLen, (jbyte *)pData);
-  memset(pAddress, 0, (sizeof(uint8_t) * addrLen));
+  memset(pAddress, 0, (sizeof(uint8_t) * EXTENDED_ADDRESS_LEN));
   env->GetByteArrayRegion(address, 0, addrLen, (jbyte *)pAddress);
 
   sSendDataStatus = UWA_STATUS_FAILED;
   SyncEventGuard guard(sUwaSendDataEvent);
-  status = UWA_SendUwbData(sessionId, addrLen, pAddress, destEndPoint,
-                           sequenceNum, dataLen, pData);
+  status = UWA_SendUwbData(sessionId, pAddress, destEndPoint, sequenceNum,
+                           dataLen, pData);
   if (status == UWA_STATUS_OK) {
     sUwaSendDataEvent.wait(UWB_CMD_TIMEOUT);
   }

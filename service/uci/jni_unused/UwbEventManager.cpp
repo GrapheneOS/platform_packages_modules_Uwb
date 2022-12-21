@@ -611,6 +611,71 @@ void UwbEventManager::onVendorDeviceInfo(uint8_t* data, uint8_t length) {
   JNI_TRACE_I("%s: exit", __func__);
 }
 
+void UwbEventManager::onDataTransferStatusReceived(uint32_t sesssionID,
+                                                   uint8_t sequenceNum,
+                                                   uint8_t status) {
+  JNI_TRACE_I("%s: enter:  State = %x", __func__, status);
+
+  ScopedJniEnv env(mVm);
+  if (env == NULL) {
+    JNI_TRACE_E("%s: jni env is null", __func__);
+    return;
+  }
+
+  if (mOnDataTransferStatusReceived != NULL) {
+    env->CallVoidMethod(mObject, mOnDataTransferStatusReceived,
+                        (long)sesssionID, (int)sequenceNum, (int)status);
+    if (env->ExceptionCheck()) {
+      env->ExceptionClear();
+      JNI_TRACE_E("%s: fail to notify", __func__);
+    }
+  } else {
+    JNI_TRACE_E("%s: transfer status ntf MID is null ", __func__);
+  }
+  JNI_TRACE_I("%s: exit", __func__);
+}
+
+void UwbEventManager::onDataReceived(tUWA_RX_DATA_REVT *rcvd_data) {
+  jbyteArray address = NULL;
+  jbyteArray data = NULL;
+
+  JNI_TRACE_I("%s: enter", __func__);
+  ScopedJniEnv env(mVm);
+  if (env == NULL) {
+    JNI_TRACE_E("%s: jni env is null", __func__);
+    return;
+  }
+  if (rcvd_data == NULL) {
+    JNI_TRACE_E("%s: rcvd_data is null", __func__);
+    return;
+  }
+  address = env->NewByteArray(EXTENDED_ADDRESS_LEN);
+  if (address != NULL) {
+    env->SetByteArrayRegion(address, 0, EXTENDED_ADDRESS_LEN,
+                            (jbyte *)rcvd_data->address);
+  }
+  if (rcvd_data->data_len > 0) {
+    data = env->NewByteArray(rcvd_data->data_len);
+    if (data != NULL) {
+      env->SetByteArrayRegion(data, 0, rcvd_data->data_len,
+                              (jbyte *)rcvd_data->data);
+    }
+  }
+  if (mOnDataReceived != NULL) {
+    env->CallVoidMethod(mObject, mOnDataReceived, (long)rcvd_data->session_id,
+                        (int)rcvd_data->status, (long)rcvd_data->sequence_num,
+                        address, (int)rcvd_data->source_end_point,
+                        (int)rcvd_data->dest_end_point, data);
+    if (env->ExceptionCheck()) {
+      env->ExceptionClear();
+      JNI_TRACE_E("%s: fail to notify", __func__);
+    }
+  } else {
+    JNI_TRACE_E("%s: MID is null ", __func__);
+  }
+  JNI_TRACE_I("%s: exit", __func__);
+}
+
 void UwbEventManager::doLoadSymbols(JNIEnv *env, jobject thiz) {
   static const char fn[] = "UwbEventManager::doLoadSymbols";
   UNUSED(fn);
@@ -632,6 +697,8 @@ void UwbEventManager::doLoadSymbols(JNIEnv *env, jobject thiz) {
         clazz, "onSessionStatusNotificationReceived", "(JII)V");
     mOnCoreGenericErrorNotificationReceived = env->GetMethodID(
         clazz, "onCoreGenericErrorNotificationReceived", "(I)V");
+    mOnDataTransferStatusReceived =
+        env->GetMethodID(clazz, "onDataTransferStatusReceived", "(JII)V");
     mOnDataReceived = env->GetMethodID(clazz, "onDataReceived", "(JIJ[BII[B)V");
     // TDB, this should be reworked
     mOnMulticastListUpdateNotificationReceived = env->GetMethodID(
