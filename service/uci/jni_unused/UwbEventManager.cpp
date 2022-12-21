@@ -427,9 +427,10 @@ void UwbEventManager::onDeviceStateNotificationReceived(uint8_t state) {
     return;
   }
 
+  jstring chipId = env->NewStringUTF("default");
   if (mOnDeviceStateNotificationReceived != NULL) {
-    env->CallVoidMethod(mObject, mOnDeviceStateNotificationReceived,
-                        (int)state);
+    env->CallVoidMethod(mObject, mOnDeviceStateNotificationReceived, (int)state,
+                        chipId);
     if (env->ExceptionCheck()) {
       env->ExceptionClear();
       JNI_TRACE_E("%s: fail to notify", fn);
@@ -688,8 +689,8 @@ void UwbEventManager::doLoadSymbols(JNIEnv *env, jobject thiz) {
     // The reference is only used as a proxy for callbacks.
     mObject = env->NewGlobalRef(thiz);
 
-    mOnDeviceStateNotificationReceived =
-        env->GetMethodID(clazz, "onDeviceStatusNotificationReceived", "(I)V");
+    mOnDeviceStateNotificationReceived = env->GetMethodID(
+        clazz, "onDeviceStatusNotificationReceived", "(ILjava/lang/String;)V");
     mOnRangeDataNotificationReceived =
         env->GetMethodID(clazz, "onRangeDataNotificationReceived",
                          "(Lcom/android/server/uwb/data/UwbRangingData;)V");

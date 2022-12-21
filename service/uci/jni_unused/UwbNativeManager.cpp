@@ -730,15 +730,14 @@ static void uwaDeviceManagementCallback(uint8_t dmEvent,
           eventData->sCore_gen_err_status.status);
     }
     break;
-
-    //    case UWA_DM_UWBS_RESP_TIMEOUT_EVT:
-    //      JNI_TRACE_I("%s: UWA_DM_UWBS_RESP_TIMEOUT_EVT", fn);
-    //      {
-    //        sErrNotify.notifyAll();
-    //        sDeviceState = UWBS_STATUS_TIMEOUT;
-    //        uwbEventManager.onDeviceStateNotificationReceived(sDeviceState);
-    //      }
-    //      break;
+  case UWA_DM_UWBS_RESP_TIMEOUT_EVT:
+    JNI_TRACE_I("%s: UWA_DM_UWBS_RESP_TIMEOUT_EVT", fn);
+    {
+      sErrNotify.notifyAll();
+      sDeviceState = UWBS_STATUS_ERROR;
+      uwbEventManager.onDeviceStateNotificationReceived(sDeviceState);
+    }
+    break;
   default:
     JNI_TRACE_I("%s: unhandled event", fn);
     break;
