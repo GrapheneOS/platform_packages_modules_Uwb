@@ -253,7 +253,7 @@ public class PacsControleeSession extends RangingSessionController {
                 new ControleeInfo.Builder().setUwbCapability(uwbCapability).build();
 
         return new RunningProfileSessionInfo.Builder(uwbCapability,
-                mSessionInfo.mServiceProfileInfo.getServiceAdfOid())
+                mSessionInfo.mServiceProfileInfo.getServiceAdfOid().get())
                 .setControleeInfo(controleeInfo)
                 .build();
     }

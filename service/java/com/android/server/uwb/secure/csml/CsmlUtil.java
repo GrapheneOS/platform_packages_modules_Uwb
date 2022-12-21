@@ -17,7 +17,6 @@
 package com.android.server.uwb.secure.csml;
 
 import static com.android.server.uwb.secure.iso7816.Iso7816Constants.EXTENDED_HEAD_LIST;
-import static com.android.server.uwb.secure.iso7816.Iso7816Constants.TAG_LIST;
 
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_UNICAST;
@@ -42,8 +41,8 @@ import java.util.Random;
 public final class CsmlUtil {
     private CsmlUtil() {}
 
-    static final Tag OID_TAG = new Tag((byte) 0x06);
-    private static final Tag TAG_LIST_TAG = new Tag(TAG_LIST);
+    public static final Tag OID_TAG = new Tag((byte) 0x06);
+
     private static final Tag EXTENDED_HEAD_LIST_TAG = new Tag(EXTENDED_HEAD_LIST);
     // FiRa CSML 8.2.2.7.1.4
     private static final Tag TERMINATE_SESSION_DO_TAG = new Tag((byte) 0x80);

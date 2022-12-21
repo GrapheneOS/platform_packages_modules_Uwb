@@ -16,9 +16,12 @@
 
 package com.android.server.uwb.pm;
 
+import static com.android.server.uwb.data.ServiceProfileData.ServiceProfileInfo.ADF_STATUS_CREATED;
+import static com.android.server.uwb.data.ServiceProfileData.ServiceProfileInfo.ADF_STATUS_NOT_PROVISIONED;
+import static com.android.server.uwb.data.ServiceProfileData.ServiceProfileInfo.ADF_STATUS_PROVISIONED;
+
 import static com.google.uwb.support.fira.FiraParams.PACS_PROFILE_SERVICE_ID;
 
-import android.annotation.NonNull;
 import android.content.AttributionSource;
 import android.content.Context;
 import android.os.Binder;
@@ -27,11 +30,16 @@ import android.util.Log;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.SessionHandle;
 
+import androidx.annotation.NonNull;
+
 import com.android.server.uwb.UwbConfigStore;
 import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.data.ServiceProfileData;
 import com.android.server.uwb.data.ServiceProfileData.ServiceProfileInfo;
 import com.android.server.uwb.data.UwbUciConstants;
+import com.android.server.uwb.secure.SecureFactory;
+import com.android.server.uwb.secure.provisioning.ProvisioningManager;
+import com.android.server.uwb.util.ObjectIdentifier;
 
 import com.google.uwb.support.fira.FiraParams.ServiceID;
 
@@ -44,7 +52,7 @@ import java.util.UUID;
 
 public class ProfileManager {
 
-    private static final String TAG = "UwbServiceProfileStore";
+    private static final String LOG_TAG = "UwbServiceProfileStore";
 
     public final Map<UUID, ServiceProfileInfo> mServiceProfileMap =
             new HashMap<>();
@@ -160,6 +168,152 @@ public class ProfileManager {
         return UwbUciConstants.STATUS_CODE_OK;
     }
 
+    /**
+     * Create ADF, provision created ADF, import ADF or delete ADF with the CMS signed,
+     * encrypted script.
+     */
+
+    public void provisioningAdf(@NonNull UUID serviceInstanceId, @NonNull byte[] script,
+            AdfOpCallback adfOpCallback) {
+        ServiceProfileInfo serviceProfileInfo = mServiceProfileMap.get(serviceInstanceId);
+        if (serviceProfileInfo == null) {
+            Log.e(LOG_TAG, "service profile info is not available, is it initialized?");
+            adfOpCallback.onFailure(serviceInstanceId);
+            return;
+        }
+
+        ProvisioningManager provisioningManager =
+                SecureFactory.makeProvisioningManager(mContext, mHandler.getLooper());
+
+        provisioningManager.provisioningAdf(serviceInstanceId, script,
+                new ProvisioningManager.ProvisioningCallback() {
+                    @Override
+                    public void onAdfCreated(@NonNull UUID serviceInstanceId,
+                            @androidx.annotation.NonNull ObjectIdentifier adfOid) {
+                        tryToCleanUpStaleAdfOnNewAdfAvailable(
+                                serviceInstanceId, serviceProfileInfo, adfOid);
+                        serviceProfileInfo.setServiceAdfOid(adfOid);
+                        serviceProfileInfo.setAdfStatus(ADF_STATUS_CREATED);
+                        mHandler.post(() -> mUwbConfigStore.saveToStore(/* forceWrite= */ true));
+                        adfOpCallback.onSuccess(serviceInstanceId, adfOid, AdfOp.CREATE_ADF);
+                    }
+
+                    @Override
+                    public void onAdfProvisioned(
+                            @NonNull UUID serviceInstanceId,
+                            @NonNull ObjectIdentifier adfOid) {
+                        if (serviceProfileInfo.getServiceAdfOid().isEmpty()
+                                || !adfOid.equals(serviceProfileInfo.getServiceAdfOid().get())) {
+                            Log.e(LOG_TAG,
+                                    "something wrong, the ADF wasn't created before provisioning");
+                            serviceProfileInfo.setServiceAdfOid(adfOid);
+                        }
+                        serviceProfileInfo.setAdfStatus(ADF_STATUS_PROVISIONED);
+                        mHandler.post(() -> mUwbConfigStore.saveToStore(/* forceWrite= */ true));
+                        adfOpCallback.onSuccess(serviceInstanceId, adfOid, AdfOp.PROVISIONING_ADF);
+                    }
+
+                    @Override
+                    public void onAdfImported(@NonNull UUID serviceInstanceId,
+                            @NonNull ObjectIdentifier adfOid,
+                            @NonNull byte[] secureBlob) {
+                        tryToCleanUpStaleAdfOnNewAdfAvailable(
+                                serviceInstanceId, serviceProfileInfo, adfOid);
+                        serviceProfileInfo.setServiceAdfOid(adfOid);
+                        serviceProfileInfo.setSecureBlob(secureBlob);
+                        serviceProfileInfo.setAdfStatus(ADF_STATUS_PROVISIONED);
+                        mHandler.post(() -> mUwbConfigStore.saveToStore(/* forceWrite= */ true));
+                        adfOpCallback.onSuccess(serviceInstanceId, adfOid, AdfOp.IMPORT_ADF);
+                    }
+
+                    @Override
+                    public void onAdfDeleted(@NonNull UUID serviceInstanceId,
+                            @NonNull ObjectIdentifier adfOid) {
+                        serviceProfileInfo.setServiceAdfOid(null);
+                        serviceProfileInfo.setAdfStatus(ADF_STATUS_NOT_PROVISIONED);
+                        mHandler.post(() -> mUwbConfigStore.saveToStore(/* forceWrite= */ true));
+                        adfOpCallback.onSuccess(serviceInstanceId, adfOid, AdfOp.DELETE_ADF);
+                    }
+
+                    @Override
+                    public void onFail(@androidx.annotation.NonNull UUID serviceInstanceId) {
+                        adfOpCallback.onFailure(serviceInstanceId);
+                    }
+                });
+    }
+
+    private void tryToCleanUpStaleAdfOnNewAdfAvailable(UUID serviceInstanceId,
+            ServiceProfileInfo serviceProfileInfo,
+            ObjectIdentifier newAdfOid) {
+        if (serviceProfileInfo.getServiceAdfOid().isEmpty()
+                || newAdfOid.equals(serviceProfileInfo.getServiceAdfOid().get())) {
+            return;
+        }
+        Log.w(LOG_TAG, "The old ADF should be deleted, only 1 ADF is allowed.");
+        if (serviceProfileInfo.getSecureBlob().isPresent()) {
+            serviceProfileInfo.setServiceAdfOid(null);
+            serviceProfileInfo.setSecureBlob(null);
+            return;
+        }
+
+        ProvisioningManager provisioningManager =
+                SecureFactory.makeProvisioningManager(mContext, mHandler.getLooper());
+        // overwrite anyway
+        serviceProfileInfo.setServiceAdfOid(null);
+        provisioningManager.deleteAdf(serviceInstanceId,
+                serviceProfileInfo.getServiceAdfOid().get(),
+                new ProvisioningManager.DeleteAdfCallback() {
+                    @Override
+                    public void onSuccess(UUID serviceInstanceId, ObjectIdentifier adfOid) {
+                        Log.d(LOG_TAG, "old ADF is deleted.");
+                    }
+
+                    @Override
+                    public void onFail(UUID serviceInstanceId, ObjectIdentifier adfOid) {
+                        // TODO: add the adfOid in a garbage queue, remove later.
+                        Log.e(LOG_TAG, "old ADF is not deleted.");
+                    }
+                });
+    }
+
+    /** Deletes the ADF associated with the service instance. */
+    public void deleteAdf(UUID serviceInstanceId, AdfOpCallback adfOpCallback) {
+        ServiceProfileInfo serviceProfileInfo = mServiceProfileMap.get(serviceInstanceId);
+        if (serviceProfileInfo == null || serviceProfileInfo.getServiceAdfOid().isEmpty()) {
+            adfOpCallback.onFailure(serviceInstanceId);
+            return;
+        }
+        if (serviceProfileInfo.getSecureBlob().isPresent()) {
+            serviceProfileInfo.setServiceAdfOid(null);
+            serviceProfileInfo.setSecureBlob(null);
+            serviceProfileInfo.setAdfStatus(ADF_STATUS_NOT_PROVISIONED);
+            mHandler.post(() -> mUwbConfigStore.saveToStore(/* forceWrite= */ true));
+            adfOpCallback.onSuccess(serviceInstanceId,
+                    serviceProfileInfo.getServiceAdfOid().get(), AdfOp.DELETE_ADF);
+        } else {
+            ProvisioningManager provisioningManager =
+                    SecureFactory.makeProvisioningManager(mContext, mHandler.getLooper());
+            provisioningManager.deleteAdf(serviceInstanceId,
+                    serviceProfileInfo.getServiceAdfOid().get(),
+                    new ProvisioningManager.DeleteAdfCallback() {
+                        @Override
+                        public void onSuccess(UUID serviceInstanceId, ObjectIdentifier adfOid) {
+                            serviceProfileInfo.setServiceAdfOid(null);
+                            serviceProfileInfo.setAdfStatus(ADF_STATUS_NOT_PROVISIONED);
+                            mHandler.post(
+                                    () -> mUwbConfigStore.saveToStore(/* forceWrite= */ true));
+                            adfOpCallback.onSuccess(serviceInstanceId, adfOid, AdfOp.DELETE_ADF);
+                        }
+
+                        @Override
+                        public void onFail(UUID serviceInstanceId, ObjectIdentifier adfOid) {
+                            adfOpCallback.onFailure(serviceInstanceId);
+                        }
+                    });
+        }
+
+    }
+
     public void loadServiceProfile(Map<UUID, ServiceProfileInfo> serviceProfileDataMap) {
         mServiceProfileMap.clear();
         mAppServiceProfileMap.clear();
@@ -192,7 +346,7 @@ public class ProfileManager {
             UUID serviceInstanceId, IUwbRangingCallbacks rangingCallbacks, String chipId) {
 
         if (!mServiceProfileMap.containsKey(serviceInstanceId)) {
-            Log.e(TAG, "UUID not found");
+            Log.e(LOG_TAG, "UUID not found");
             return;
         }
         ServiceProfileInfo profileInfo = mServiceProfileMap.get(serviceInstanceId);
@@ -206,16 +360,16 @@ public class ProfileManager {
                 mRangingSessionTable.put(sessionHandle, rangingSessionController);
                 break;
             default:
-                Log.e(TAG, "Service ID not supported yet");
+                Log.e(LOG_TAG, "Service ID not supported yet");
                 return;
         }
 
         /* Session has been initialized, notify app */
         try {
             rangingCallbacks.onRangingOpened(sessionHandle);
-            Log.i(TAG, "IUwbRangingCallbacks - onRangingOpened");
+            Log.i(LOG_TAG, "IUwbRangingCallbacks - onRangingOpened");
         } catch (Exception e) {
-            Log.e(TAG, "IUwbRangingCallbacks - onRangingOpened : Failed");
+            Log.e(LOG_TAG, "IUwbRangingCallbacks - onRangingOpened : Failed");
             e.printStackTrace();
         }
     }
@@ -227,7 +381,7 @@ public class ProfileManager {
                     sessionHandle);
             rangingSessionController.startSession();
         } else {
-            Log.e(TAG, "Session Handle not found");
+            Log.e(LOG_TAG, "Session Handle not found");
         }
     }
 
@@ -238,7 +392,7 @@ public class ProfileManager {
                     sessionHandle);
             rangingSessionController.stopSession();
         } else {
-            Log.e(TAG, "Session Handle not found");
+            Log.e(LOG_TAG, "Session Handle not found");
         }
     }
 
@@ -250,7 +404,25 @@ public class ProfileManager {
             rangingSessionController.closeSession();
             mRangingSessionTable.remove(sessionHandle);
         } else {
-            Log.e(TAG, "Session Handle not found");
+            Log.e(LOG_TAG, "Session Handle not found");
         }
+    }
+
+    /** Operating to the ADF. */
+    public enum AdfOp {
+        CREATE_ADF,
+        PROVISIONING_ADF,
+        IMPORT_ADF,
+        DELETE_ADF
+    }
+
+    /** Callback for the ADF operating result.*/
+    public interface AdfOpCallback {
+
+        /** The operating on the specified ADF is success */
+        void onSuccess(UUID serviceInstanceId, ObjectIdentifier adfOid, AdfOp adfOp);
+
+        /** The operating on the specified ADF is failed. */
+        void onFailure(UUID serviceInstanceId);
     }
 }
