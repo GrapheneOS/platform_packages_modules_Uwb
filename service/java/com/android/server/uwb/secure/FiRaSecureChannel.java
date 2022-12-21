@@ -31,6 +31,7 @@ import androidx.annotation.WorkerThread;
 
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.server.uwb.discovery.Transport;
+import com.android.server.uwb.discovery.info.FiraConnectorMessage.MessageType;
 import com.android.server.uwb.pm.RunningProfileSessionInfo;
 import com.android.server.uwb.secure.csml.CsmlUtil;
 import com.android.server.uwb.secure.csml.DispatchCommand;
@@ -74,6 +75,7 @@ public abstract class FiRaSecureChannel {
         INITIATE_TRANSACTION,
         OPEN_SE_CHANNEL,
         DISPATCH,
+        ADF_NOT_MATCHED,
     }
 
     enum Status {
@@ -93,6 +95,9 @@ public abstract class FiRaSecureChannel {
     static final int CMD_SEND_OOB_DATA = 4;
     static final int CMD_PROCESS_RECEIVED_OOB_DATA = 5;
     static final int CMD_CLEAN_UP_TERMINATED_OR_ABORTED_CHANNEL = 6;
+
+    static final int OOB_MSG_TYPE_APDU_COMMAND = 0;
+    static final int OOB_MSG_TYPE_APDU_RESPONSE = 1;
 
     protected Status mStatus = Status.UNINITIALIZED;
     private Optional<byte[]> mDynamicSlotIdentifier = Optional.empty();
@@ -140,7 +145,12 @@ public abstract class FiRaSecureChannel {
                 break;
             case CMD_SEND_OOB_DATA:
                 byte[] payload = (byte[]) msg.obj;
+                int msgType = msg.arg1;
+                MessageType firaMsgType =
+                        msgType == OOB_MSG_TYPE_APDU_COMMAND
+                                ? MessageType.COMMAND : MessageType.COMMAND_RESPOND;
                 mTransport.sendData(
+                        firaMsgType,
                         payload,
                         new Transport.SendingDataCallback() {
                             @Override
@@ -293,9 +303,17 @@ public abstract class FiRaSecureChannel {
         for (DispatchResponse.Notification notification : dispatchResponse.notifications) {
             switch (notification.notificationEventId) {
                 case NOTIFICATION_EVENT_ID_ADF_SELECTED:
+                    logd("ADF selected");
                     DispatchResponse.AdfSelectedNotification adfSelected =
                             (DispatchResponse.AdfSelectedNotification) notification;
-                    // TODO: put controlee info for controlee if it is not dynamic slot
+                    ObjectIdentifier selectedAdfOid = adfSelected.adfOid;
+                    if (!mRunningProfileSessionInfo.oidOfProvisionedAdf
+                            .equals(adfSelected.adfOid)) {
+                        logw("The selected ADF doesn't match the provisioned ADF.");
+                        mSecureChannelCallback.onSetUpError(SetupError.ADF_NOT_MATCHED);
+                    } else {
+                        mStatus = Status.ADF_SELECTED;
+                    }
                     break;
                 case NOTIFICATION_EVENT_ID_SECURE_CHANNEL_ESTABLISHED:
                     logd("SC established");
