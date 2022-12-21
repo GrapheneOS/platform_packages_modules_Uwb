@@ -176,12 +176,8 @@ void UwbEventManager::onRangeDataNotificationReceived(
         ranging_ntf_data->no_of_measurements, mRangeDlTdoaMeasuresClass, NULL);
     for (int i = 0; i < ranging_ntf_data->no_of_measurements; i++) {
       jbyteArray dlTdoaMacAddress = NULL;
-      jbyteArray dlTdoaTxTimeStamp = NULL;
-      jbyteArray dlTdoaRxTimeStamp = NULL;
       jbyteArray dlTdoaAnchorLocation = NULL;
       jbyteArray dlTdoaActiveRangingRound = NULL;
-      uint16_t txTimeStampValue = 0;
-      uint16_t rxTimeStampValue = 0;
       uint16_t anchorLocationValue = 0;
       uint16_t activeRangingRoundValue = 0;
 
@@ -198,48 +194,6 @@ void UwbEventManager::onRangeDataNotificationReceived(
             dlTdoaMacAddress, 0, MAC_EXT_ADD_LEN,
             (jbyte *)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
                 .mac_addr);
-      }
-
-      txTimeStampValue =
-          ((ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
-                .message_control &
-            TDOA_TX_TIMESTAMP_OFFSET) &
-           (TDOA_TX_TIMESTAMP_OFFSET_MASK));
-      if (txTimeStampValue == TDOA_TX_TIMESTAMP_40BITS) {
-        dlTdoaTxTimeStamp = env->NewByteArray(TDOA_TIMESTAMP_LEN_40BITS);
-        env->SetByteArrayRegion(
-            dlTdoaTxTimeStamp, 0, TDOA_TIMESTAMP_LEN_40BITS,
-            (jbyte *)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
-                .txTimeStamp);
-      } else if (txTimeStampValue == TDOA_TX_TIMESTAMP_64BITS) {
-        dlTdoaTxTimeStamp = env->NewByteArray(TDOA_TIMESTAMP_LEN_64BITS);
-        env->SetByteArrayRegion(
-            dlTdoaTxTimeStamp, 0, TDOA_TIMESTAMP_LEN_64BITS,
-            (jbyte *)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
-                .txTimeStamp);
-      } else {
-        JNI_TRACE_E("%s: Invalid dlTdoaTxTimeStamp", fn);
-      }
-
-      rxTimeStampValue =
-          ((ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
-                .message_control &
-            TDOA_RX_TIMESTAMP_OFFSET) &
-           (TDOA_RX_TIMESTAMP_OFFSET_MASK));
-      if (rxTimeStampValue == TDOA_RX_TIMESTAMP_40BITS) {
-        dlTdoaRxTimeStamp = env->NewByteArray(TDOA_TIMESTAMP_LEN_40BITS);
-        env->SetByteArrayRegion(
-            dlTdoaRxTimeStamp, 0, TDOA_TIMESTAMP_LEN_40BITS,
-            (jbyte *)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
-                .rxTimeStamp);
-      } else if (rxTimeStampValue == TDOA_RX_TIMESTAMP_64BITS) {
-        dlTdoaRxTimeStamp = env->NewByteArray(TDOA_TIMESTAMP_LEN_64BITS);
-        env->SetByteArrayRegion(
-            dlTdoaRxTimeStamp, 0, TDOA_TIMESTAMP_LEN_64BITS,
-            (jbyte *)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
-                .rxTimeStamp);
-      } else {
-        JNI_TRACE_E("%s: Invalid dlTdoaRxTimeStamp", fn);
       }
 
       anchorLocationValue =
@@ -281,7 +235,7 @@ void UwbEventManager::onRangeDataNotificationReceived(
         JNI_TRACE_I("%s: dlTdoaActiveRangingRound not included", fn);
       }
       rngDlTdoaMeasuresCtor = env->GetMethodID(
-          mRangeDlTdoaMeasuresClass, "<init>", "([BIIIIIIIIII[B[BIIJJI[B[B)V");
+          mRangeDlTdoaMeasuresClass, "<init>", "([BIIIIIIFIFIIJJFFJJI[B[B)V");
       env->SetObjectArrayElement(
           rangeDlTdoaMeasuresArray, i,
           env->NewObject(
@@ -299,18 +253,24 @@ void UwbEventManager::onRangeDataNotificationReceived(
                   .round_index,
               (int)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
                   .nLos,
-              (int)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
+              (float)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
                   .aoa_azimuth,
               (int)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
                   .aoa_azimuth_FOM,
-              (int)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
+              (float)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
                   .aoa_elevation,
               (int)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
                   .aoa_elevation_FOM,
-              dlTdoaTxTimeStamp, dlTdoaRxTimeStamp,
               (int)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
+                  .rssi,
+              (long)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
+                  .txTimeStamp,
+              (long)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
+                  .rxTimeStamp,
+              (float)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
                   .cfo_anchor,
-              (int)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i].cfo,
+              (float)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
+                  .cfo,
               (long)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
                   .initiator_reply_time,
               (long)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
@@ -321,15 +281,15 @@ void UwbEventManager::onRangeDataNotificationReceived(
     }
     jmethodID rngDataCtorDlTdoa =
         env->GetMethodID(mRangeDataClass, "<init>",
-                         "(JJIJBBI[Lcom/android/server/uwb/data/"
+                         "(JJIJIII[Lcom/android/server/uwb/data/"
                          "UwbDownLinkTDoAMeasurement;[B)V");
     rangeDataObject = env->NewObject(
         mRangeDataClass, rngDataCtorDlTdoa, (long)ranging_ntf_data->seq_counter,
         (long)ranging_ntf_data->session_id,
         (int)ranging_ntf_data->rcr_indication,
         (long)ranging_ntf_data->curr_range_interval,
-        ranging_ntf_data->ranging_measure_type,
-        ranging_ntf_data->mac_addr_mode_indicator,
+        (int)ranging_ntf_data->ranging_measure_type,
+        (int)ranging_ntf_data->mac_addr_mode_indicator,
         (int)ranging_ntf_data->no_of_measurements, rangeDlTdoaMeasuresArray,
         vendorSpecificData == NULL ? nullptr : vendorSpecificData);
   } else if (ranging_ntf_data->ranging_measure_type ==
