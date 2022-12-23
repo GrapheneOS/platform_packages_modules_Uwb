@@ -1070,10 +1070,8 @@ pub(crate) struct NotificationManagerAndroidBuilder {
     pub callback_obj: GlobalRef,
 }
 
-impl NotificationManagerBuilder for NotificationManagerAndroidBuilder {
-    type NotificationManager = NotificationManagerAndroid;
-
-    fn build(self) -> Option<Self::NotificationManager> {
+impl NotificationManagerBuilder<NotificationManagerAndroid> for NotificationManagerAndroidBuilder {
+    fn build(self) -> Option<NotificationManagerAndroid> {
         if let Ok(env) = self.vm.attach_current_thread() {
             Some(NotificationManagerAndroid {
                 chip_id: self.chip_id,

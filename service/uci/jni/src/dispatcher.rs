@@ -31,10 +31,9 @@ use uwb_core::uci::pcapng_uci_logger_factory::PcapngUciLoggerFactoryBuilder;
 use uwb_core::uci::uci_logger::UciLoggerMode;
 use uwb_core::uci::uci_logger_factory::UciLoggerFactory;
 use uwb_core::uci::uci_manager_sync::UciManagerSync;
-use uwb_core::uci::UciManagerImpl;
 
 lazy_static! {
-    /// Shared unique dispatcher that may be created and deleted during runtime.
+    /// Shared unique dispatchewr that may be created and deleted during runtime.
     static ref DISPATCHER: RwLock<Option<Dispatcher>> = RwLock::new(None);
 }
 
@@ -42,7 +41,7 @@ lazy_static! {
 /// nativeDispatcherNew and nativeDispatcherDestroy respectively.
 /// Destruction does NOT wait until the spawned threads are closed.
 pub(crate) struct Dispatcher {
-    pub manager_map: HashMap<String, UciManagerSync<UciManagerImpl>>,
+    pub manager_map: HashMap<String, UciManagerSync>,
     _runtime: Runtime,
 }
 impl Dispatcher {
@@ -58,7 +57,7 @@ impl Dispatcher {
             .enable_all()
             .build()
             .map_err(|_| Error::ForeignFunctionInterface)?;
-        let mut manager_map = HashMap::<String, UciManagerSync<UciManagerImpl>>::new();
+        let mut manager_map = HashMap::<String, UciManagerSync>::new();
         let mut log_file_factory = PcapngUciLoggerFactoryBuilder::new()
             .log_path("/data/misc/apexdata/com.android.uwb/log".into())
             .filename_prefix("uwb_uci".to_owned())
@@ -154,7 +153,7 @@ pub(crate) struct GuardedUciManager<'a> {
 }
 
 impl<'a> Deref for GuardedUciManager<'a> {
-    type Target = UciManagerSync<UciManagerImpl>;
+    type Target = UciManagerSync;
     fn deref(&self) -> &Self::Target {
         // Unwrap GuardedUciManager will not panic since content is checked at creation.
         self.read_lock.as_ref().unwrap().manager_map.get(&self.chip_id).unwrap()
