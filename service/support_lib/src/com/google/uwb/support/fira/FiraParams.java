@@ -597,11 +597,15 @@ public abstract class FiraParams extends Params {
             value = {
                 MULTICAST_LIST_UPDATE_ACTION_ADD,
                 MULTICAST_LIST_UPDATE_ACTION_DELETE,
+                P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_16_BYTE,
+                P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_32_BYTE,
             })
     public @interface MulticastListUpdateAction {}
 
-    public static final int MULTICAST_LIST_UPDATE_ACTION_ADD = 0;
-    public static final int MULTICAST_LIST_UPDATE_ACTION_DELETE = 1;
+    public static final int MULTICAST_LIST_UPDATE_ACTION_ADD = 0x0;
+    public static final int MULTICAST_LIST_UPDATE_ACTION_DELETE = 0x1;
+    public static final int P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_16_BYTE = 0x2;
+    public static final int P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_32_BYTE = 0x3;
 
     @IntDef(
             value = {

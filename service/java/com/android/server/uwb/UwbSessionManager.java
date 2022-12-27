@@ -30,6 +30,8 @@ import static com.android.server.uwb.util.DataTypeConversionUtil.macAddressByteA
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE;
 import static com.google.uwb.support.fira.FiraParams.PROTOCOL_NAME;
+import static com.google.uwb.support.fira.FiraParams.P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_16_BYTE;
+import static com.google.uwb.support.fira.FiraParams.P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_32_BYTE;
 import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_DISABLE;
 import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_ENABLE;
 
@@ -1217,34 +1219,22 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                     // Set to 0's for the UCI stack.
                                     subSessionIdList = new int[dstAddressListSize];
                                 }
-                                boolean isV2 = rangingReconfigureParams.getMessageControl() != null;
-                                if (isV2) {
-                                    int messageControl =
-                                            rangingReconfigureParams.getMessageControl();
-                                    byte[] subSessionKeyList =
-                                            rangingReconfigureParams.getSubSessionKeyList();
-
-                                    status = mNativeUwbManager.controllerMulticastListUpdateV2(
-                                            uwbSession.getSessionId(),
-                                            action,
-                                            subSessionIdList.length,
-                                            ArrayUtils.toPrimitive(dstAddressList),
-                                            subSessionIdList,
-                                            messageControl,
-                                            subSessionKeyList,
-                                            uwbSession.getChipId());
-                                } else {
-                                    status = mNativeUwbManager.controllerMulticastListUpdateV1(
-                                            uwbSession.getSessionId(),
-                                            action,
-                                            subSessionIdList.length,
-                                            ArrayUtils.toPrimitive(dstAddressList),
-                                            subSessionIdList,
-                                            uwbSession.getChipId());
-                                }
+                                boolean isV2 = action
+                                        == P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_16_BYTE
+                                        || action
+                                        == P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_32_BYTE;
+                                status = mNativeUwbManager.controllerMulticastListUpdate(
+                                        uwbSession.getSessionId(),
+                                        action,
+                                        subSessionIdList.length,
+                                        ArrayUtils.toPrimitive(dstAddressList),
+                                        subSessionIdList,
+                                        isV2 ? rangingReconfigureParams
+                                                .getSubSessionKeyList() : null,
+                                        uwbSession.getChipId());
                                 if (status != UwbUciConstants.STATUS_CODE_OK) {
                                     Log.e(TAG, "Unable to update controller multicast list.");
-                                    if (action == MULTICAST_LIST_UPDATE_ACTION_ADD) {
+                                    if (isMulticastActionAdd(action)) {
                                         mSessionNotificationManager.onControleeAddFailed(
                                                 uwbSession, status);
                                     } else if (action == MULTICAST_LIST_UPDATE_ACTION_DELETE) {
@@ -1267,7 +1257,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                 for (int i = 0; i < multicastList.getNumOfControlee(); i++) {
                                     int actionStatus = multicastList.getStatus()[i];
                                     if (actionStatus == UwbUciConstants.STATUS_CODE_OK) {
-                                        if (action == MULTICAST_LIST_UPDATE_ACTION_ADD) {
+                                        if (isMulticastActionAdd(action)) {
                                             uwbSession.addControlee(
                                                     multicastList.getControleeUwbAddresses()[i]);
                                             mSessionNotificationManager.onControleeAdded(
@@ -1281,7 +1271,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                                     }
                                     else {
                                         status = actionStatus;
-                                        if (action == MULTICAST_LIST_UPDATE_ACTION_ADD) {
+                                        if (isMulticastActionAdd(action)) {
                                             mSessionNotificationManager.onControleeAddFailed(
                                                     uwbSession, actionStatus);
                                         } else if (action == MULTICAST_LIST_UPDATE_ACTION_DELETE) {
@@ -1322,6 +1312,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                     mSessionNotificationManager.onRangingReconfigureFailed(uwbSession, status);
                 }
             }
+        }
+
+        private boolean isMulticastActionAdd(Integer action) {
+            return action == MULTICAST_LIST_UPDATE_ACTION_ADD
+                    || action == P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_16_BYTE
+                    || action == P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_32_BYTE;
         }
 
         private void handleDeInit(UwbSession uwbSession) {
