@@ -756,14 +756,14 @@ public final class RangingSession implements AutoCloseable {
      */
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
-    public void onRangingRoundsUpdateDtTag(@NonNull PersistableBundle params) {
+    public void updateRangingRoundsDtTag(@NonNull PersistableBundle params) {
         if (mState != State.ACTIVE) {
             throw new IllegalStateException();
         }
 
         Log.v(mTag, "onRangingRoundsUpdateDtTag - sessionHandle: " + mSessionHandle);
         try {
-            mAdapter.onRangingRoundsUpdateDtTag(mSessionHandle, params);
+            mAdapter.updateRangingRoundsDtTag(mSessionHandle, params);
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();
         }

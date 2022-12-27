@@ -640,7 +640,7 @@ public class UwbServiceImplTest {
         assumeTrue(SdkLevel.isAtLeastU()); // Test should only run on U+ devices.
         final SessionHandle sessionHandle = mock(SessionHandle.class);
         final PersistableBundle parameters = new PersistableBundle();
-        mUwbServiceImpl.onRangingRoundsUpdateDtTag(sessionHandle, parameters);
+        mUwbServiceImpl.updateRangingRoundsDtTag(sessionHandle, parameters);
 
         verify(mUwbServiceCore).rangingRoundsUpdateDtTag(sessionHandle, parameters);
     }
