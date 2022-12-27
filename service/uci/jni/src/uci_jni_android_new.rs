@@ -40,7 +40,8 @@ use uwb_core::params::{
     SessionUpdateActiveRoundsDtTagResponse, SetAppConfigResponse,
 };
 use uwb_uci_packets::{
-    AppConfigTlvType, CapTlv, Controlee, PowerStats, ResetConfig, SessionState, SessionType,
+    AppConfigTlvType, CapTlv, Controlee, Controlee_V2_0_16_Byte_Version,
+    Controlee_V2_0_32_Byte_Version, Controlees, PowerStats, ResetConfig, SessionState, SessionType,
     StatusCode, UpdateMulticastListAction,
 };
 
@@ -516,7 +517,7 @@ fn native_get_caps_info(env: JNIEnv, obj: JObject, chip_id: JString) -> Result<V
 
 /// Update multicast list on a single UWB device. Return value defined by uci_packets.pdl
 #[no_mangle]
-pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeControllerMulticastListUpdateV1(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeControllerMulticastListUpdate(
     env: JNIEnv,
     obj: JObject,
     session_id: jint,
@@ -524,6 +525,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeCo
     no_of_controlee: jbyte,
     addresses: jshortArray,
     sub_session_ids: jintArray,
+    sub_session_keys: jbyteArray,
     chip_id: JString,
 ) -> jbyte {
     debug!("{}: enter", function_name!());
@@ -536,6 +538,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeCo
             no_of_controlee,
             addresses,
             sub_session_ids,
+            sub_session_keys,
             chip_id,
         ),
         function_name!(),
@@ -552,6 +555,7 @@ fn native_controller_multicast_list_update(
     no_of_controlee: jbyte,
     addresses: jshortArray,
     sub_session_ids: jintArray,
+    sub_session_keys: jbyteArray,
     chip_id: JString,
 ) -> Result<()> {
     let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
@@ -578,9 +582,43 @@ fn native_controller_multicast_list_update(
     {
         return Err(Error::BadParameters);
     }
-    let controlee_list = zip(address_list, sub_session_id_list)
-        .map(|(a, s)| Controlee { short_address: a as u16, subsession_id: s as u32 })
-        .collect::<Vec<Controlee>>();
+    let sub_session_key_list =
+        env.convert_byte_array(sub_session_keys).map_err(|_| Error::ForeignFunctionInterface)?;
+    let controlee_list = match UpdateMulticastListAction::from_u8(action as u8)
+        .ok_or(Error::BadParameters)?
+    {
+        UpdateMulticastListAction::AddControlee | UpdateMulticastListAction::RemoveControlee => {
+            Controlees::NoSessionKey(
+                zip(address_list, sub_session_id_list)
+                    .map(|(a, s)| Controlee { short_address: a as u16, subsession_id: s as u32 })
+                    .collect::<Vec<Controlee>>(),
+            )
+        }
+        UpdateMulticastListAction::AddControleeWithShortSubSessionKey => {
+            Controlees::ShortSessionKey(
+                zip(zip(address_list, sub_session_id_list), sub_session_key_list.chunks(16))
+                    .map(|((address, id), key)| {
+                        Ok(Controlee_V2_0_16_Byte_Version {
+                            short_address: address as u16,
+                            subsession_id: id as u32,
+                            subsession_key: key.try_into().map_err(|_| Error::BadParameters)?,
+                        })
+                    })
+                    .collect::<Result<Vec<Controlee_V2_0_16_Byte_Version>>>()?,
+            )
+        }
+        UpdateMulticastListAction::AddControleeWithLongSubSessionKey => Controlees::LongSessionKey(
+            zip(zip(address_list, sub_session_id_list), sub_session_key_list.chunks(32))
+                .map(|((address, id), key)| {
+                    Ok(Controlee_V2_0_32_Byte_Version {
+                        short_address: address as u16,
+                        subsession_id: id as u32,
+                        subsession_key: key.try_into().map_err(|_| Error::BadParameters)?,
+                    })
+                })
+                .collect::<Result<Vec<Controlee_V2_0_32_Byte_Version>>>()?,
+        ),
+    };
     uci_manager.session_update_controller_multicast_list(
         session_id as u32,
         UpdateMulticastListAction::from_u8(action as u8).ok_or(Error::BadParameters)?,

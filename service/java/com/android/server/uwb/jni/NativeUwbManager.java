@@ -327,49 +327,21 @@ public class NativeUwbManager {
      * @param action            : Update the multicast list by adding or removing
      *                          0x00 - Adding
      *                          0x01 - removing
+     *                          0x02 - Adding with 16 bits sub-session key
+     *                          0x03 - Adding with 32 bits sub-session key
      * @param noOfControlee     : The number(n) of Controlees
      * @param addresses         : address list of Controlees
      * @param subSessionIds     : Specific sub-session ID list of Controlees
+     * @param subSessionKeyList : Sub-session key list of Controlees
      * @return : refer to SESSION_SET_APP_CONFIG_RSP
      * in the Table 16: Control messages to set Application configurations
      */
-    public byte controllerMulticastListUpdateV1(int sessionId, int action, int noOfControlee,
-            short[] addresses, int[] subSessionIds, String chipId) {
+    public byte controllerMulticastListUpdate(int sessionId, int action, int noOfControlee,
+            short[] addresses, int[] subSessionIds, byte[] subSessionKeyList,
+            String chipId) {
         synchronized (mNativeLock) {
-            return nativeControllerMulticastListUpdateV1(sessionId, (byte) action,
-                    (byte) noOfControlee, addresses, subSessionIds, chipId);
-        }
-    }
-
-    /**
-     * Update Multicast list for the requested UWB session using V2 command.
-     *
-     * @param sessionId         : Session ID to which multicast list to be updated
-     * @param action            : Update the multicast list by adding or removing
-     *                          0x00 - Adding
-     *                          0x01 - removing
-     * @param noOfControlee     : The number(n) of Controlees
-     * @param addresses         : address list of Controlees
-     * @param subSessionIds     : Specific sub-session ID list of Controlees
-     * @param messageControl    : Bitmap indicating the presence and length of Sub-session Key
-     *                          Bits 0-2: Sub-Session key type
-     *                          0 = Key length of 128 bits (16 bytes)
-     *                          1 = Key length of 256 bits (32 bytes)
-     *                          2-7 = RFU
-     *                          Bit 3: Sub-Session key presence
-     *                          0 = Sub-session Key is not configured by the Host
-     *                          1 = Sub-session Key parameter is configured by the Host
-     * @param subSessionKeyList : The list of Sub-session Keys
-     * @return : refer to SESSION_SET_APP_CONFIG_RSP
-     * in the Table 16: Control messages to set Application configurations
-     */
-    public byte controllerMulticastListUpdateV2(int sessionId, int action, int noOfControlee,
-            short[] addresses, int[] subSessionIds, int messageControl,
-            byte[] subSessionKeyList, String chipId) {
-        synchronized (mNativeLock) {
-            return nativeControllerMulticastListUpdateV2(sessionId, (byte) action,
-                    (byte) noOfControlee, addresses, subSessionIds, messageControl,
-                    subSessionKeyList, chipId);
+            return nativeControllerMulticastListUpdate(sessionId, (byte) action,
+                    (byte) noOfControlee, addresses, subSessionIds, subSessionKeyList, chipId);
         }
     }
 
@@ -497,13 +469,9 @@ public class NativeUwbManager {
 
     private native UwbTlvData nativeGetCapsInfo(String chipId);
 
-    private native byte nativeControllerMulticastListUpdateV1(int sessionId, byte action,
-            byte noOfControlee, short[] address, int[] subSessionId, String chipId);
-
-    // TODO(b/259487023): no native implementation
-    private native byte nativeControllerMulticastListUpdateV2(int sessionId, byte action,
-            byte noOfControlee, short[] address, int[] subSessionId, int messageControl,
-            byte[] subSessionKeyList, String chipId);
+    private native byte nativeControllerMulticastListUpdate(int sessionId, byte action,
+            byte noOfControlee, short[] address, int[] subSessionId, byte[] subSessionKeyList,
+            String chipId);
 
     private native byte nativeSetCountryCode(byte[] countryCode, String chipId);
 
