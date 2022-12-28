@@ -40,6 +40,8 @@ import static com.google.uwb.support.fira.FiraParams.STATUS_CODE_ERROR_ADDRESS_A
 import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY;
 import static com.google.uwb.support.fira.FiraParams.STS_LENGTH_128_SYMBOLS;
 import static com.google.uwb.support.fira.FiraParams.STS_SEGMENT_COUNT_VALUE_2;
+import static com.google.uwb.support.fira.FiraParams.TX_TIMESTAMP_40_BIT;
+import static com.google.uwb.support.fira.FiraParams.UL_TDOA_DEVICE_ID_16_BIT;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -136,6 +138,11 @@ public class FiraTests {
         int numOfMsrmtFocusOnRange = 1;
         int numOfMsrmtFocusOnAoaAzimuth = 2;
         int numOfMsrmtFocusOnAoaElevation = 3;
+        long ulTdoaTxIntervalMs = 1_000L;
+        long ulTdoaRandomWindowMS = 100;
+        int ulTdoaDeviceIdType = UL_TDOA_DEVICE_ID_16_BIT;
+        byte[] ulTdoaDeviceId = new byte[] {(byte) 0x0C, (byte) 0x0B};
+        int ulTdoaTxTimestampType = TX_TIMESTAMP_40_BIT;
 
         FiraOpenSessionParams params =
                 new FiraOpenSessionParams.Builder()
@@ -196,6 +203,11 @@ public class FiraTests {
                                 numOfMsrmtFocusOnRange,
                                 numOfMsrmtFocusOnAoaAzimuth,
                                 numOfMsrmtFocusOnAoaElevation)
+                        .setUlTdoaTxIntervalMs(ulTdoaTxIntervalMs)
+                        .setUlTdoaRandomWindowMs(ulTdoaRandomWindowMS)
+                        .setUlTdoaDeviceIdType(ulTdoaDeviceIdType)
+                        .setUlTdoaDeviceId(ulTdoaDeviceId)
+                        .setUlTdoaTxTimestampType(ulTdoaTxTimestampType)
                         .build();
 
         assertEquals(params.getProtocolVersion(), protocolVersion);
@@ -261,6 +273,11 @@ public class FiraTests {
         assertEquals(params.getNumOfMsrmtFocusOnRange(), numOfMsrmtFocusOnRange);
         assertEquals(params.getNumOfMsrmtFocusOnAoaAzimuth(), numOfMsrmtFocusOnAoaAzimuth);
         assertEquals(params.getNumOfMsrmtFocusOnAoaElevation(), numOfMsrmtFocusOnAoaElevation);
+        assertEquals(params.getUlTdoaTxIntervalMs(), ulTdoaTxIntervalMs);
+        assertEquals(params.getUlTdoaRandomWindowMs(), ulTdoaRandomWindowMS);
+        assertEquals(params.getUlTdoaDeviceIdType(), ulTdoaDeviceIdType);
+        assertArrayEquals(params.getUlTdoaDeviceId(), ulTdoaDeviceId);
+        assertEquals(params.getUlTdoaTxTimestampType(), ulTdoaTxTimestampType);
 
         FiraOpenSessionParams fromBundle = FiraOpenSessionParams.fromBundle(params.toBundle());
 
@@ -327,6 +344,11 @@ public class FiraTests {
         assertEquals(fromBundle.getNumOfMsrmtFocusOnRange(), numOfMsrmtFocusOnRange);
         assertEquals(fromBundle.getNumOfMsrmtFocusOnAoaAzimuth(), numOfMsrmtFocusOnAoaAzimuth);
         assertEquals(fromBundle.getNumOfMsrmtFocusOnAoaElevation(), numOfMsrmtFocusOnAoaElevation);
+        assertEquals(fromBundle.getUlTdoaTxIntervalMs(), ulTdoaTxIntervalMs);
+        assertEquals(fromBundle.getUlTdoaRandomWindowMs(), ulTdoaRandomWindowMS);
+        assertEquals(fromBundle.getUlTdoaDeviceIdType(), ulTdoaDeviceIdType);
+        assertArrayEquals(fromBundle.getUlTdoaDeviceId(), ulTdoaDeviceId);
+        assertEquals(fromBundle.getUlTdoaTxTimestampType(), ulTdoaTxTimestampType);
 
         verifyProtocolPresent(fromBundle);
         verifyBundlesEqual(params, fromBundle);
@@ -396,6 +418,11 @@ public class FiraTests {
         assertEquals(fromCopy.getNumOfMsrmtFocusOnRange(), numOfMsrmtFocusOnRange);
         assertEquals(fromCopy.getNumOfMsrmtFocusOnAoaAzimuth(), numOfMsrmtFocusOnAoaAzimuth);
         assertEquals(fromCopy.getNumOfMsrmtFocusOnAoaElevation(), numOfMsrmtFocusOnAoaElevation);
+        assertEquals(fromCopy.getUlTdoaTxIntervalMs(), ulTdoaTxIntervalMs);
+        assertEquals(fromCopy.getUlTdoaRandomWindowMs(), ulTdoaRandomWindowMS);
+        assertEquals(fromCopy.getUlTdoaDeviceIdType(), ulTdoaDeviceIdType);
+        assertArrayEquals(fromCopy.getUlTdoaDeviceId(), ulTdoaDeviceId);
+        assertEquals(fromCopy.getUlTdoaTxTimestampType(), ulTdoaTxTimestampType);
 
         verifyProtocolPresent(fromCopy);
         verifyBundlesEqual(params, fromCopy);
