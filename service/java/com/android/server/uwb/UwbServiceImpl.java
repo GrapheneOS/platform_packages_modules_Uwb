@@ -313,7 +313,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     }
 
     @Override
-    public void onRangingRoundsUpdateDtTag(SessionHandle sessionHandle,
+    public void updateRangingRoundsDtTag(SessionHandle sessionHandle,
             PersistableBundle parameters) throws RemoteException {
         if (!SdkLevel.isAtLeastU()) {
             throw new UnsupportedOperationException();

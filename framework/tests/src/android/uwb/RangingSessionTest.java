@@ -456,9 +456,9 @@ public class RangingSessionTest {
 
         session.onRangingOpened();
         session.onRangingStarted(params);
-        session.onRangingRoundsUpdateDtTag(params);
+        session.updateRangingRoundsDtTag(params);
 
-        verify(adapter, times(1)).onRangingRoundsUpdateDtTag(handle, params);
+        verify(adapter, times(1)).updateRangingRoundsDtTag(handle, params);
     }
 
     @Test
