@@ -125,6 +125,11 @@ public class FiraOpenSessionParams extends FiraParams {
     private final int mNumOfMsrmtFocusOnAoaAzimuth;
     private final int mNumOfMsrmtFocusOnAoaElevation;
     private final Long mRangingErrorStreakTimeoutMs;
+    private final long mUlTdoaTxIntervalMs;
+    private final long mUlTdoaRandomWindowMs;
+    @UlTdoaDeviceIdType private final int mUlTdoaDeviceIdType;
+    @Nullable private final byte[] mUlTdoaDeviceId;
+    @UlTdoaTxTimestampType private final int mUlTdoaTxTimestampType;
 
     private static final int BUNDLE_VERSION_1 = 1;
     private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_1;
@@ -205,6 +210,11 @@ public class FiraOpenSessionParams extends FiraParams {
             "num_of_msrmt_focus_on_aoa_elevation";
     private static final String RANGING_ERROR_STREAK_TIMEOUT_MS =
             "ranging_error_streak_timeout_ms";
+    private static final String UL_TDOA_TX_INTERVAL = "ul_tdoa_tx_interval";
+    private static final String UL_TDOA_RANDOM_WINDOW = "ul_tdoa_random_window";
+    private static final String UL_TDOA_DEVICE_ID_TYPE = "ul_tdoa_device_id_type";
+    private static final String UL_TDOA_DEVICE_ID = "ul_tdoa_device_id";
+    private static final String UL_TDOA_TX_TIMESTAMP_TYPE = "ul_tdoa_tx_timestamp_type";
 
     private FiraOpenSessionParams(
             FiraProtocolVersion protocolVersion,
@@ -268,7 +278,12 @@ public class FiraOpenSessionParams extends FiraParams {
             int numOfMsrmtFocusOnRange,
             int numOfMsrmtFocusOnAoaAzimuth,
             int numOfMsrmtFocusOnAoaElevation,
-            Long rangingErrorStreakTimeoutMs) {
+            Long rangingErrorStreakTimeoutMs,
+            long ulTdoaTxIntervalMs,
+            long ulTdoaRandomWindowMs,
+            int ulTdoaDeviceIdType,
+            @Nullable byte[] ulTdoaDeviceId,
+            int ulTdoaTxTimestampType) {
         mProtocolVersion = protocolVersion;
         mSessionId = sessionId;
         mDeviceType = deviceType;
@@ -331,6 +346,11 @@ public class FiraOpenSessionParams extends FiraParams {
         mNumOfMsrmtFocusOnAoaAzimuth = numOfMsrmtFocusOnAoaAzimuth;
         mNumOfMsrmtFocusOnAoaElevation = numOfMsrmtFocusOnAoaElevation;
         mRangingErrorStreakTimeoutMs = rangingErrorStreakTimeoutMs;
+        mUlTdoaTxIntervalMs = ulTdoaTxIntervalMs;
+        mUlTdoaRandomWindowMs = ulTdoaRandomWindowMs;
+        mUlTdoaDeviceIdType = ulTdoaDeviceIdType;
+        mUlTdoaDeviceId = ulTdoaDeviceId;
+        mUlTdoaTxTimestampType = ulTdoaTxTimestampType;
     }
 
     @Override
@@ -609,6 +629,27 @@ public class FiraOpenSessionParams extends FiraParams {
         return mRangingErrorStreakTimeoutMs;
     }
 
+    public long getUlTdoaTxIntervalMs() {
+        return mUlTdoaTxIntervalMs;
+    }
+
+    public long getUlTdoaRandomWindowMs() {
+        return mUlTdoaRandomWindowMs;
+    }
+
+    public int getUlTdoaDeviceIdType() {
+        return mUlTdoaDeviceIdType;
+    }
+
+    @Nullable
+    public byte[] getUlTdoaDeviceId() {
+        return mUlTdoaDeviceId;
+    }
+
+    public int getUlTdoaTxTimestampType() {
+        return mUlTdoaTxTimestampType;
+    }
+
     @Nullable
     private static int[] byteArrayToIntArray(@Nullable byte[] bytes) {
         if (bytes == null) {
@@ -719,6 +760,11 @@ public class FiraOpenSessionParams extends FiraParams {
         bundle.putInt(KEY_NUM_OF_MSRMT_FOCUS_ON_AOA_AZIMUTH, mNumOfMsrmtFocusOnAoaAzimuth);
         bundle.putInt(KEY_NUM_OF_MSRMT_FOCUS_ON_AOA_ELEVATION, mNumOfMsrmtFocusOnAoaElevation);
         bundle.putLong(RANGING_ERROR_STREAK_TIMEOUT_MS, mRangingErrorStreakTimeoutMs);
+        bundle.putLong(UL_TDOA_TX_INTERVAL, mUlTdoaTxIntervalMs);
+        bundle.putLong(UL_TDOA_RANDOM_WINDOW, mUlTdoaRandomWindowMs);
+        bundle.putInt(UL_TDOA_DEVICE_ID_TYPE, mUlTdoaDeviceIdType);
+        bundle.putIntArray(UL_TDOA_DEVICE_ID, byteArrayToIntArray(mUlTdoaDeviceId));
+        bundle.putInt(UL_TDOA_TX_TIMESTAMP_TYPE, mUlTdoaTxTimestampType);
         return bundle;
     }
 
@@ -835,6 +881,11 @@ public class FiraOpenSessionParams extends FiraParams {
                         bundle.getInt(KEY_NUM_OF_MSRMT_FOCUS_ON_AOA_ELEVATION))
                 .setRangingErrorStreakTimeoutMs(bundle
                         .getLong(RANGING_ERROR_STREAK_TIMEOUT_MS, 30_000L))
+                .setUlTdoaTxIntervalMs(bundle.getLong(UL_TDOA_TX_INTERVAL))
+                .setUlTdoaRandomWindowMs(bundle.getLong(UL_TDOA_RANDOM_WINDOW))
+                .setUlTdoaDeviceIdType(bundle.getInt(UL_TDOA_DEVICE_ID_TYPE))
+                .setUlTdoaDeviceId(intArrayToByteArray(bundle.getIntArray(UL_TDOA_DEVICE_ID)))
+                .setUlTdoaTxTimestampType(bundle.getInt(UL_TDOA_TX_TIMESTAMP_TYPE))
                 .build();
     }
 
@@ -1023,6 +1074,21 @@ public class FiraOpenSessionParams extends FiraParams {
         /** Ranging result error streak timeout in Milliseconds*/
         private long mRangingErrorStreakTimeoutMs = 30_000L;
 
+        /** Ul-TDoA Tx Interval in Milliseconds */
+        private long mUlTdoaTxIntervalMs = 2_000L;
+
+        /** Ul-TDoA Random Window in Milliseconds */
+        private long mUlTdoaRandomWindowMs = 0;
+
+        /** Ul-TDoA Device ID type */
+        @UlTdoaDeviceIdType private int mUlTdoaDeviceIdType = UL_TDOA_DEVICE_ID_NONE;
+
+        /** Ul-TDoA Device ID */
+        @Nullable private byte[] mUlTdoaDeviceId;
+
+        /** Ul-TDoA Tx Timestamp Type */
+        @UlTdoaTxTimestampType private int mUlTdoaTxTimestampType = TX_TIMESTAMP_NONE;
+
         public Builder() {}
 
         public Builder(@NonNull Builder builder) {
@@ -1090,6 +1156,11 @@ public class FiraOpenSessionParams extends FiraParams {
             mNumOfMsrmtFocusOnAoaAzimuth = builder.mNumOfMsrmtFocusOnAoaAzimuth;
             mNumOfMsrmtFocusOnAoaElevation = builder.mNumOfMsrmtFocusOnAoaElevation;
             mRangingErrorStreakTimeoutMs = builder.mRangingErrorStreakTimeoutMs;
+            mUlTdoaTxIntervalMs = builder.mUlTdoaTxIntervalMs;
+            mUlTdoaRandomWindowMs = builder.mUlTdoaRandomWindowMs;
+            mUlTdoaDeviceIdType = builder.mUlTdoaDeviceIdType;
+            mUlTdoaDeviceId = builder.mUlTdoaDeviceId;
+            mUlTdoaTxTimestampType = builder.mUlTdoaTxTimestampType;
         }
 
         public Builder(@NonNull FiraOpenSessionParams params) {
@@ -1157,6 +1228,11 @@ public class FiraOpenSessionParams extends FiraParams {
             mNumOfMsrmtFocusOnAoaAzimuth = params.mNumOfMsrmtFocusOnAoaAzimuth;
             mNumOfMsrmtFocusOnAoaElevation = params.mNumOfMsrmtFocusOnAoaElevation;
             mRangingErrorStreakTimeoutMs = params.mRangingErrorStreakTimeoutMs;
+            mUlTdoaTxIntervalMs = params.mUlTdoaTxIntervalMs;
+            mUlTdoaRandomWindowMs = params.mUlTdoaRandomWindowMs;
+            mUlTdoaDeviceIdType = params.mUlTdoaDeviceIdType;
+            mUlTdoaDeviceId = params.mUlTdoaDeviceId;
+            mUlTdoaTxTimestampType = params.mUlTdoaTxTimestampType;
         }
 
         public FiraOpenSessionParams.Builder setProtocolVersion(FiraProtocolVersion version) {
@@ -1500,6 +1576,36 @@ public class FiraOpenSessionParams extends FiraParams {
             return this;
         }
 
+        public FiraOpenSessionParams.Builder setUlTdoaTxIntervalMs(
+                long ulTdoaTxIntervalMs) {
+            mUlTdoaTxIntervalMs = ulTdoaTxIntervalMs;
+            return this;
+        }
+
+        public FiraOpenSessionParams.Builder setUlTdoaRandomWindowMs(
+                long ulTdoaRandomWindowMs) {
+            mUlTdoaRandomWindowMs = ulTdoaRandomWindowMs;
+            return this;
+        }
+
+        public FiraOpenSessionParams.Builder setUlTdoaDeviceIdType(
+                int ulTdoaDeviceIdType) {
+            mUlTdoaDeviceIdType = ulTdoaDeviceIdType;
+            return this;
+        }
+
+        public FiraOpenSessionParams.Builder setUlTdoaDeviceId(
+                byte[] ulTdoaDeviceId) {
+            mUlTdoaDeviceId = ulTdoaDeviceId;
+            return this;
+        }
+
+        public FiraOpenSessionParams.Builder setUlTdoaTxTimestampType(
+                int ulTdoatxTimestampType) {
+            mUlTdoaTxTimestampType = ulTdoatxTimestampType;
+            return this;
+        }
+
        /**
         * After the session has been started, the device starts by
         * performing numOfMsrmtFocusOnRange range-only measurements (no
@@ -1707,7 +1813,12 @@ public class FiraOpenSessionParams extends FiraParams {
                     mNumOfMsrmtFocusOnRange,
                     mNumOfMsrmtFocusOnAoaAzimuth,
                     mNumOfMsrmtFocusOnAoaElevation,
-                    mRangingErrorStreakTimeoutMs);
+                    mRangingErrorStreakTimeoutMs,
+                    mUlTdoaTxIntervalMs,
+                    mUlTdoaRandomWindowMs,
+                    mUlTdoaDeviceIdType,
+                    mUlTdoaDeviceId,
+                    mUlTdoaTxTimestampType);
         }
     }
 }
