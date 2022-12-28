@@ -347,7 +347,7 @@ interface IUwbAdapter {
 
   int sendVendorUciMessage(int gid, int oid, in byte[] payload);
 
-  void onRangingRoundsUpdateDtTag(in SessionHandle sessionHandle, in PersistableBundle parameters);
+  void updateRangingRoundsDtTag(in SessionHandle sessionHandle, in PersistableBundle parameters);
 
   /**
    * The maximum allowed time to open a ranging session.
