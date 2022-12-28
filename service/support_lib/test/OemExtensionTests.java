@@ -19,6 +19,7 @@ import static org.junit.Assert.assertEquals;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import com.google.uwb.support.oemextension.AdvertisePointedTarget;
 import com.google.uwb.support.oemextension.DeviceStatus;
 import com.google.uwb.support.oemextension.RangingReportMetadata;
 import com.google.uwb.support.oemextension.SessionStatus;
@@ -90,5 +91,25 @@ public class OemExtensionTests {
 
         assertEquals(fromBundle.getSessionId(), sessionId);
         assertEquals(Arrays.toString(fromBundle.getRawNtfData()), Arrays.toString(testRawDataNtf));
+    }
+
+    @Test
+    public void testAdvertisePointedTarget() {
+        byte[] macAddress = {0x0a, 0x0b};
+        boolean advertisePointingResult = true;
+
+        AdvertisePointedTarget advertisePointedTarget = new AdvertisePointedTarget.Builder()
+                .setMacAddress(macAddress)
+                .setAdvertisePointingResult(advertisePointingResult)
+                .build();
+        assertEquals(advertisePointedTarget.getMacAddress().toBytes(), macAddress);
+        assertEquals(advertisePointedTarget.isAdvertisePointingResult(), advertisePointingResult);
+
+        AdvertisePointedTarget fromBundle = AdvertisePointedTarget.fromBundle(
+                advertisePointedTarget.toBundle());
+
+        assertEquals(Arrays.toString(fromBundle.getMacAddress().toBytes()),
+                Arrays.toString(macAddress));
+        assertEquals(fromBundle.isAdvertisePointingResult(), advertisePointingResult);
     }
 }
