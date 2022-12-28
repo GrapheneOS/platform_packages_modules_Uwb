@@ -86,7 +86,11 @@ public class ConfigParam {
     public static final int SUB_SESSION_ID = 0x30;
     public static final int BPRF_PHR_DATA_RATE = 0x31;
     public static final int MAX_NUMBER_OF_MEASUREMENTS = 0x32;
+    public static final int UL_TDOA_TX_INTERVAL = 0x33;
+    public static final int UL_TDOA_RANDOM_WINDOW = 0x34;
     public static final int STS_LENGTH = 0x35;
+    public static final int UL_TDOA_DEVICE_ID = 0x37;
+    public static final int UL_TDOA_TX_TIMESTAMP = 0x38;
     public static final int SESSION_KEY = 0x45;
     public static final int SUBSESSION_KEY = 0x46;
 
