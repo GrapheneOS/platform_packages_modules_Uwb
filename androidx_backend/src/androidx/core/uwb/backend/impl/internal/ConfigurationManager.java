@@ -16,7 +16,6 @@
 
 package androidx.core.uwb.backend.impl.internal;
 
-import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_1;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_2;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_3;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_4;
@@ -24,6 +23,7 @@ import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_5;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_6;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_7;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_8;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_UNICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.STATIC_STS_SESSION_KEY_INFO_SIZE;
 import static androidx.core.uwb.backend.impl.internal.Utils.VENDOR_ID_SIZE;
 import static androidx.core.uwb.backend.impl.internal.Utils.getRangingTimingParams;
@@ -66,12 +66,12 @@ public final class ConfigurationManager {
     static {
         // ID_1 properties.
         sConfigs.put(
-                CONFIG_ID_1,
+                CONFIG_UNICAST_DS_TWR,
                 new UwbConfiguration() {
 
                     @Override
                     public int getConfigId() {
-                        return CONFIG_ID_1;
+                        return CONFIG_UNICAST_DS_TWR;
                     }
 
                     @Override

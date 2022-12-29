@@ -17,7 +17,7 @@
 package androidx.core.uwb.backend.impl.internal;
 
 import static androidx.core.uwb.backend.impl.internal.RangingSessionCallback.REASON_STOP_RANGING_CALLED;
-import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_1;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_UNICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.INFREQUENT;
 import static androidx.core.uwb.backend.impl.internal.Utils.STATUS_OK;
 
@@ -91,7 +91,7 @@ public class RangingControleeTest {
 
         mRangingControlee = new RangingControlee(
                 mUwbManager, getExecutor(), mOpAsyncCallbackRunner);
-        RangingParameters rangingParameters = new RangingParameters(CONFIG_ID_1, 1, 1,
+        RangingParameters rangingParameters = new RangingParameters(CONFIG_UNICAST_DS_TWR, 1, 1,
                 new byte[]{1, 2}, new byte[]{1, 2}, mComplexChannel,
                 new ArrayList<>(List.of(UwbAddress.getRandomizedShortAddress())), INFREQUENT);
         mRangingControlee.setRangingParameters(rangingParameters);
