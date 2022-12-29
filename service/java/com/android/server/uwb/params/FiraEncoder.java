@@ -31,7 +31,6 @@ import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 
-import java.lang.Math;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -180,7 +179,28 @@ public class FiraEncoder extends TlvEncoder {
             tlvBufferBuilder.putByte(ConfigParam.SCHEDULED_MODE, (byte) params.getScheduledMode());
             tlvBufferBuilder.putByteArray(ConfigParam.CAP_SIZE_RANGE, params.getCapSize());
         }
+        if (params.getDeviceRole() == FiraParams.RANGING_DEVICE_UT_TAG) {
+            tlvBufferBuilder.putLong(ConfigParam.UL_TDOA_TX_INTERVAL,
+                    params.getUlTdoaTxIntervalMs());
+            tlvBufferBuilder.putLong(ConfigParam.UL_TDOA_RANDOM_WINDOW,
+                    params.getUlTdoaRandomWindowMs());
+            tlvBufferBuilder.putByteArray(ConfigParam.UL_TDOA_DEVICE_ID, getUlTdoaDeviceId(
+                    params.getUlTdoaDeviceIdType(), params.getUlTdoaDeviceId()));
+            tlvBufferBuilder.putByte(ConfigParam.UL_TDOA_TX_TIMESTAMP,
+                    (byte) params.getUlTdoaTxTimestampType());
+        }
         return tlvBufferBuilder.build();
+    }
+
+    private byte[] getUlTdoaDeviceId(int ulTdoaDeviceIdType, byte[] ulTdoaDeviceId) {
+        if (ulTdoaDeviceIdType == FiraParams.UL_TDOA_DEVICE_ID_NONE) {
+            // Device ID not included
+            return new byte[]{0};
+        }
+        ByteBuffer buffer = ByteBuffer.allocate(ulTdoaDeviceId.length + 1);
+        buffer.put((byte) ulTdoaDeviceIdType);
+        buffer.put(ulTdoaDeviceId);
+        return buffer.array();
     }
 
     private TlvBuffer getTlvBufferFromFiraRangingReconfigureParams(Params baseParam) {
