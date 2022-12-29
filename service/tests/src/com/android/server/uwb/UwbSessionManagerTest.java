@@ -287,8 +287,8 @@ public class UwbSessionManagerTest {
                 .when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
         UwbOemExtensionCallbackListener mUwbOemExtensionCallbackListener =
                 mock(UwbOemExtensionCallbackListener.class);
-        when(mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()).thenReturn(true);
-        when(mUwbInjector.getUwbServiceCore().getOemExtensionCallback())
+        when(mUwbServiceCore.isOemExtensionCbRegistered()).thenReturn(true);
+        when(mUwbServiceCore.getOemExtensionCallback())
                 .thenReturn(mUwbOemExtensionCallbackListener);
         when(mUwbOemExtensionCallbackListener.onCheckPointedTarget(any())).thenReturn(true);
 
@@ -328,8 +328,8 @@ public class UwbSessionManagerTest {
                 .when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
         UwbOemExtensionCallbackListener mUwbOemExtensionCallbackListener =
                 mock(UwbOemExtensionCallbackListener.class);
-        when(mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()).thenReturn(true);
-        when(mUwbInjector.getUwbServiceCore().getOemExtensionCallback())
+        when(mUwbServiceCore.isOemExtensionCbRegistered()).thenReturn(true);
+        when(mUwbServiceCore.getOemExtensionCallback())
                 .thenReturn(mUwbOemExtensionCallbackListener);
         when(mUwbOemExtensionCallbackListener.onCheckPointedTarget(any())).thenReturn(true);
 
@@ -368,8 +368,8 @@ public class UwbSessionManagerTest {
                 .when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
         UwbOemExtensionCallbackListener mUwbOemExtensionCallbackListener =
                 mock(UwbOemExtensionCallbackListener.class);
-        when(mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()).thenReturn(true);
-        when(mUwbInjector.getUwbServiceCore().getOemExtensionCallback())
+        when(mUwbServiceCore.isOemExtensionCbRegistered()).thenReturn(true);
+        when(mUwbServiceCore.getOemExtensionCallback())
                 .thenReturn(mUwbOemExtensionCallbackListener);
         when(mUwbOemExtensionCallbackListener.onCheckPointedTarget(any())).thenReturn(false);
 
