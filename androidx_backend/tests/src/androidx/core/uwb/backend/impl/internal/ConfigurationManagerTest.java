@@ -16,8 +16,8 @@
 
 package androidx.core.uwb.backend.impl.internal;
 
-import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_1;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_2;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_UNICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.INFREQUENT;
 
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
@@ -60,7 +60,7 @@ public class ConfigurationManagerTest {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-        mRangingParameters = new RangingParameters(CONFIG_ID_1, 1, 1,
+        mRangingParameters = new RangingParameters(CONFIG_UNICAST_DS_TWR, 1, 1,
                 new byte[]{1, 2}, new byte[]{1, 2}, mComplexChannel,
                 new ArrayList<>(List.of(UwbAddress.getRandomizedShortAddress())), INFREQUENT);
         when(mComplexChannel.getChannel()).thenReturn(1);
@@ -77,7 +77,7 @@ public class ConfigurationManagerTest {
     @Test
     public void testCreateReconfigureParams() {
         FiraRangingReconfigureParams params = ConfigurationManager
-                .createReconfigureParams(CONFIG_ID_1, MULTICAST_LIST_UPDATE_ACTION_ADD,
+                .createReconfigureParams(CONFIG_UNICAST_DS_TWR, MULTICAST_LIST_UPDATE_ACTION_ADD,
                         new UwbAddress[]{UwbAddress.getRandomizedShortAddress()}, new int[]{0, 1},
                         new byte[]{0, 1});
         assertNotNull(params.getAction());
@@ -87,7 +87,7 @@ public class ConfigurationManagerTest {
 
     @Test
     public void testIsUnicast() {
-        assertTrue(ConfigurationManager.isUnicast(CONFIG_ID_1));
+        assertTrue(ConfigurationManager.isUnicast(CONFIG_UNICAST_DS_TWR));
         assertFalse(ConfigurationManager.isUnicast(CONFIG_ID_2));
     }
 }
