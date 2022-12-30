@@ -30,7 +30,7 @@ public final class Utils {
 
     /** Supported Ranging configurations. */
     @IntDef({
-        CONFIG_ID_1,
+        CONFIG_UNICAST_DS_TWR,
         CONFIG_ID_2,
         CONFIG_ID_3,
         CONFIG_ID_4,
@@ -47,7 +47,7 @@ public final class Utils {
      *
      * <p>Typical use case: device tracking tags.
      */
-    public static final int CONFIG_ID_1 = 1;
+    public static final int CONFIG_UNICAST_DS_TWR = 1;
 
     public static final int CONFIG_ID_2 = 2;
 
@@ -153,7 +153,7 @@ public final class Utils {
 
     static {
         setRangingTimingParams(
-                CONFIG_ID_1,
+                CONFIG_UNICAST_DS_TWR,
                 new RangingTimingParams(
                         /*rangingIntervalNormal=*/ 240,
                         /*rangingIntervalFast=*/ 48,
