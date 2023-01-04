@@ -347,21 +347,21 @@ public final class UwbManager {
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public interface UwbOemExtensionCallback {
         /**
-         * Invoked when session status changes
+         * Invoked when session status changes.
          *
          * @param sessionStatusBundle session related info
          */
         void onSessionStatusNotificationReceived(@NonNull PersistableBundle sessionStatusBundle);
 
         /**
-         * Invoked when DeviceStatusNotification is received from UCI
+         * Invoked when DeviceStatusNotification is received from UCI.
          *
          * @param deviceStatusBundle device state
          */
         void onDeviceStatusNotificationReceived(@NonNull PersistableBundle deviceStatusBundle);
 
         /**
-         * Invoked when session configuration is complete
+         * Invoked when session configuration is complete.
          *
          * @param openSessionBundle Session Params
          * @return Error code
@@ -370,13 +370,21 @@ public final class UwbManager {
                 @NonNull PersistableBundle openSessionBundle);
 
         /**
-         * Invoked when ranging report is generated
+         * Invoked when ranging report is generated.
          *
          * @param rangingReport ranging report generated
          * @return Oem modified ranging report
          */
         @NonNull RangingReport onRangingReportReceived(
                 @NonNull RangingReport rangingReport);
+
+        /**
+         * Invoked when requesting a check on pointed target.
+         *
+         * @param pointedTargetBundle pointed target params
+         * @return Oem pointed status
+         */
+        boolean onCheckPointedTarget(@NonNull PersistableBundle pointedTargetBundle);
     }
 
     /**
