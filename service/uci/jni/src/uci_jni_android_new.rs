@@ -746,6 +746,7 @@ fn create_ranging_round_status(
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSendRawVendorCmd(
     env: JNIEnv,
     obj: JObject,
+    mt: jint,
     gid: jint,
     oid: jint,
     payload_jarray: jbyteArray,
@@ -753,7 +754,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
 ) -> jobject {
     debug!("{}: enter", function_name!());
     match option_result_helper(
-        native_send_raw_vendor_cmd(env, obj, gid, oid, payload_jarray, chip_id),
+        native_send_raw_vendor_cmd(env, obj, mt, gid, oid, payload_jarray, chip_id),
         function_name!(),
     ) {
         // Note: unwrap() here is not desirable, but unavoidable given non-null object is returned
@@ -771,6 +772,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
 fn native_send_raw_vendor_cmd(
     env: JNIEnv,
     obj: JObject,
+    mt: jint,
     gid: jint,
     oid: jint,
     payload_jarray: jbyteArray,
@@ -779,7 +781,7 @@ fn native_send_raw_vendor_cmd(
     let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
     let payload =
         env.convert_byte_array(payload_jarray).map_err(|_| Error::ForeignFunctionInterface)?;
-    uci_manager.raw_uci_cmd(gid as u32, oid as u32, payload)
+    uci_manager.raw_uci_cmd(mt as u32, gid as u32, oid as u32, payload)
 }
 
 fn create_power_stats(power_stats: PowerStats, env: JNIEnv) -> Result<jobject> {
