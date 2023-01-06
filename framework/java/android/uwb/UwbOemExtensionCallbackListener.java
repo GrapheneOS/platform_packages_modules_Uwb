@@ -178,4 +178,34 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
             return vendorRangingReport;
         }
     }
+
+    @Override
+    public boolean onCheckPointedTarget(PersistableBundle pointedTargetBundle)
+            throws RemoteException {
+        synchronized (this) {
+            final long identity = Binder.clearCallingIdentity();
+            boolean result = false;
+            try {
+                if (SdkLevel.isAtLeastU()) {
+                    ExecutorService executor = Executors.newSingleThreadExecutor();
+                    FutureTask<Boolean> getCheckPointedTarget = new FutureTask<>(
+                            () -> mCallback.onCheckPointedTarget(pointedTargetBundle)
+                    );
+                    executor.submit(getCheckPointedTarget);
+                    try {
+                        result = getCheckPointedTarget.get(
+                                OEM_EXTENSION_RESPONSE_THRESHOLD_MS, TimeUnit.MILLISECONDS);
+                    } catch (ExecutionException | InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (TimeoutException e) {
+                        Log.w(TAG, "Check pointed target failed: TIMEOUT");
+                        e.printStackTrace();
+                    }
+                }
+            } finally {
+                Binder.restoreCallingIdentity(identity);
+            }
+            return result;
+        }
+    }
 }

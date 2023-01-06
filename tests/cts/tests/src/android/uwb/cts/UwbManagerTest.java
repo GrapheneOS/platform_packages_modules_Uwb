@@ -1218,6 +1218,12 @@ public class UwbManagerTest {
             mRangingReport = rangingReport;
             return mRangingReport;
         }
+
+        @Override
+        public boolean onCheckPointedTarget(
+                @NonNull PersistableBundle pointedTargetBundle) {
+            return true;
+        }
     }
 
     @Test
@@ -1303,6 +1309,8 @@ public class UwbManagerTest {
                     .fromBundle(reportMetadataBundle);
             assertEquals(reportMetadata.getSessionId(), sessionId);
             assertThat(reportMetadata.getRawNtfData()).isNotEmpty();
+
+            // TODO(b/263799939) Add test for onCheckPointedTarget
 
             // Check the UWB state.
             assertThat(mUwbManager.getAdapterState()).isEqualTo(STATE_ENABLED_ACTIVE);

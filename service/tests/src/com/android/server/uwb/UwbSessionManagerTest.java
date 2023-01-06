@@ -82,6 +82,7 @@ import android.uwb.RangingChangeReason;
 import android.uwb.SessionHandle;
 import android.uwb.StateChangeReason;
 import android.uwb.UwbAddress;
+import android.uwb.UwbOemExtensionCallbackListener;
 
 import com.android.server.uwb.UwbSessionManager.UwbSession;
 import com.android.server.uwb.UwbSessionManager.WaitObj;
@@ -278,11 +279,18 @@ public class UwbSessionManagerTest {
     // Test scenario for receiving Application payload data followed by a RANGE_DATA_NTF with an
     // OWR Aoa Measurement (such that the ExtendedMacAddress format is used for the remote device).
     @Test
-    public void onRangeDataNotificationReceived_owrAoa_success_extendedMacAddress() {
+    public void onRangeDataNotificationReceived_owrAoa_success_extendedMacAddress()
+            throws RemoteException {
         UwbSession mockUwbSession = mock(UwbSession.class);
         when(mockUwbSession.getWaitObj()).thenReturn(mock(WaitObj.class));
         doReturn(mockUwbSession)
                 .when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
+        UwbOemExtensionCallbackListener mUwbOemExtensionCallbackListener =
+                mock(UwbOemExtensionCallbackListener.class);
+        when(mUwbServiceCore.isOemExtensionCbRegistered()).thenReturn(true);
+        when(mUwbServiceCore.getOemExtensionCallback())
+                .thenReturn(mUwbOemExtensionCallbackListener);
+        when(mUwbOemExtensionCallbackListener.onCheckPointedTarget(any())).thenReturn(true);
 
         // First call onDataReceived() to get the application payload data.
         mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
@@ -312,11 +320,18 @@ public class UwbSessionManagerTest {
     // Test scenario for receiving Application payload data followed by a RANGE_DATA_NTF with an
     // OWR Aoa Measurement (such that the ShortMacAddress format is used for the remote device).
     @Test
-    public void onRangeDataNotificationReceived_owrAoa_success_shortMacAddress() {
+    public void onRangeDataNotificationReceived_owrAoa_success_shortMacAddress()
+            throws RemoteException {
         UwbSession mockUwbSession = mock(UwbSession.class);
         when(mockUwbSession.getWaitObj()).thenReturn(mock(WaitObj.class));
         doReturn(mockUwbSession)
                 .when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
+        UwbOemExtensionCallbackListener mUwbOemExtensionCallbackListener =
+                mock(UwbOemExtensionCallbackListener.class);
+        when(mUwbServiceCore.isOemExtensionCbRegistered()).thenReturn(true);
+        when(mUwbServiceCore.getOemExtensionCallback())
+                .thenReturn(mUwbOemExtensionCallbackListener);
+        when(mUwbOemExtensionCallbackListener.onCheckPointedTarget(any())).thenReturn(true);
 
         // First call onDataReceived() to get the application payload data. This should always have
         // the MacAddress (in 8 Bytes), even for a Short MacAddress (MSB are zeroed out).
@@ -341,6 +356,46 @@ public class UwbSessionManagerTest {
                 .onDataReceived(eq(mockUwbSession), eq(PEER_SHORT_UWB_ADDRESS),
                         isA(PersistableBundle.class), eq(DATA_PAYLOAD));
         verify(mUwbAdvertiseManager).removeAdvertiseTarget(PEER_SHORT_MAC_ADDRESS);
+        verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
+    }
+
+    @Test
+    public void onRangeDataNotificationReceived_owrAoa_CheckPointedTarget_Failed()
+            throws RemoteException {
+        UwbSession mockUwbSession = mock(UwbSession.class);
+        when(mockUwbSession.getWaitObj()).thenReturn(mock(WaitObj.class));
+        doReturn(mockUwbSession)
+                .when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
+        UwbOemExtensionCallbackListener mUwbOemExtensionCallbackListener =
+                mock(UwbOemExtensionCallbackListener.class);
+        when(mUwbServiceCore.isOemExtensionCbRegistered()).thenReturn(true);
+        when(mUwbServiceCore.getOemExtensionCallback())
+                .thenReturn(mUwbOemExtensionCallbackListener);
+        when(mUwbOemExtensionCallbackListener.onCheckPointedTarget(any())).thenReturn(false);
+
+        // First call onDataReceived() to get the application payload data. This should always have
+        // the MacAddress (in 8 Bytes), even for a Short MacAddress (MSB are zeroed out).
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
+                DATA_SEQUENCE_NUM, PEER_EXTENDED_SHORT_MAC_ADDRESS,
+                SOURCE_END_POINT, DEST_END_POINT, DATA_PAYLOAD);
+
+        // Next call onRangeDataNotificationReceived() to process the RANGE_DATA_NTF.
+        UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
+                RANGING_MEASUREMENT_TYPE_OWR_AOA, MAC_ADDRESSING_MODE_SHORT,
+                UwbUciConstants.STATUS_CODE_OK);
+        Params firaParams = setupFiraParams(
+                RANGING_DEVICE_ROLE_OBSERVER, Optional.of(ROUND_USAGE_OWR_AOA_MEASUREMENT));
+        when(mockUwbSession.getParams()).thenReturn(firaParams);
+        when(mUwbAdvertiseManager.isPointedTarget(PEER_SHORT_MAC_ADDRESS)).thenReturn(true);
+        mUwbSessionManager.onRangeDataNotificationReceived(uwbRangingData);
+
+        verify(mUwbSessionNotificationManager)
+                .onRangingResult(eq(mockUwbSession), eq(uwbRangingData));
+        verify(mUwbAdvertiseManager).updateAdvertiseTarget(uwbRangingData.mRangingOwrAoaMeasure);
+        verify(mUwbSessionNotificationManager, never())
+                .onDataReceived(eq(mockUwbSession), eq(PEER_SHORT_UWB_ADDRESS),
+                        isA(PersistableBundle.class), eq(DATA_PAYLOAD));
+        verify(mUwbAdvertiseManager, never()).removeAdvertiseTarget(PEER_SHORT_MAC_ADDRESS);
         verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
     }
 
