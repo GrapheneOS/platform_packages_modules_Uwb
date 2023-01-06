@@ -105,7 +105,6 @@ package android.uwb {
   public final class RangingSession implements java.lang.AutoCloseable {
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void addControlee(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void close();
-    method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void onRangingRoundsUpdateDtTag(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void pause(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void reconfigure(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void removeControlee(@NonNull android.os.PersistableBundle);
@@ -113,6 +112,7 @@ package android.uwb {
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void sendData(@NonNull android.uwb.UwbAddress, @NonNull android.os.PersistableBundle, @NonNull byte[]);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void start(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void stop();
+    method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void updateRangingRoundsDtTag(@NonNull android.os.PersistableBundle);
   }
 
   public static interface RangingSession.Callback {
@@ -231,6 +231,7 @@ package android.uwb {
   }
 
   public static interface UwbManager.UwbOemExtensionCallback {
+    method public boolean onCheckPointedTarget(@NonNull android.os.PersistableBundle);
     method public void onDeviceStatusNotificationReceived(@NonNull android.os.PersistableBundle);
     method @NonNull public android.uwb.RangingReport onRangingReportReceived(@NonNull android.uwb.RangingReport);
     method @NonNull public int onSessionConfigurationComplete(@NonNull android.os.PersistableBundle);
