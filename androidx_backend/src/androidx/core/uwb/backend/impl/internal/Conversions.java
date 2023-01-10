@@ -49,6 +49,7 @@ final class Conversions {
     @Nullable
     static RangingPosition convertToPosition(android.uwb.RangingMeasurement measurement) {
         DistanceMeasurement distanceMeasurement = measurement.getDistanceMeasurement();
+        // TODO(b/260565854): Either make it nullable or isValid to RangingMeasurement
         if (distanceMeasurement == null) {
             return null;
         }
@@ -76,11 +77,35 @@ final class Conversions {
                                 altitudeMeasurement.getConfidenceLevel());
             }
         }
+        DlTDoAMeasurement dlTdoaMeasurement = null;
+        if (com.google.uwb.support.dltdoa.DlTDoAMeasurement.isDlTDoAMeasurement(
+                measurement.getRangingMeasurementMetadata())) {
+            com.google.uwb.support.dltdoa.DlTDoAMeasurement
+                    dlTDoAMeasurement = com.google.uwb.support.dltdoa.DlTDoAMeasurement.fromBundle(
+                    measurement.getRangingMeasurementMetadata());
+            dlTdoaMeasurement = new DlTDoAMeasurement(
+                    dlTDoAMeasurement.getMessageType(),
+                    dlTDoAMeasurement.getMessageControl(),
+                    dlTDoAMeasurement.getBlockIndex(),
+                    dlTDoAMeasurement.getRoundIndex(),
+                    dlTDoAMeasurement.getNLoS(),
+                    dlTDoAMeasurement.getTxTimestamp(),
+                    dlTDoAMeasurement.getRxTimestamp(),
+                    dlTDoAMeasurement.getAnchorCfo(),
+                    dlTDoAMeasurement.getCfo(),
+                    dlTDoAMeasurement.getInitiatorReplyTime(),
+                    dlTDoAMeasurement.getResponderReplyTime(),
+                    dlTDoAMeasurement.getInitiatorResponderTof(),
+                    dlTDoAMeasurement.getAnchorLocation(),
+                    dlTDoAMeasurement.getActiveRangingRounds()
+            );
+        }
         if (Build.VERSION.SDK_INT >= VERSION_CODES.TIRAMISU) {
             return new RangingPosition(
                     distance,
                     azimuth,
                     altitude,
+                    dlTdoaMeasurement,
                     measurement.getElapsedRealtimeNanos(),
                     measurement.getRssiDbm());
         }
@@ -125,5 +150,6 @@ final class Conversions {
         return list;
     }
 
-    private Conversions() {}
+    private Conversions() {
+    }
 }
