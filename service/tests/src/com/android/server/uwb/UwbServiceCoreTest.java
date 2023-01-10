@@ -801,13 +801,14 @@ public class UwbServiceCoreTest {
         byte[] payload = new byte[0];
         UwbVendorUciResponse rsp = new UwbVendorUciResponse(
                 (byte) UwbUciConstants.STATUS_CODE_OK, gid, oid, payload);
-        when(mNativeUwbManager.sendRawVendorCmd(anyInt(), anyInt(), any(), anyString()))
+        when(mNativeUwbManager.sendRawVendorCmd(anyInt(), anyInt(), anyInt(), any(), anyString()))
                 .thenReturn(rsp);
 
         IUwbVendorUciCallback vendorCb = mock(IUwbVendorUciCallback.class);
         mUwbServiceCore.registerVendorExtensionCallback(vendorCb);
 
-        assertThat(mUwbServiceCore.sendVendorUciMessage(0, 0, new byte[0], TEST_DEFAULT_CHIP_ID))
+        assertThat(mUwbServiceCore.sendVendorUciMessage(1, 0, 0, new byte[0],
+                    TEST_DEFAULT_CHIP_ID))
                 .isEqualTo(UwbUciConstants.STATUS_CODE_OK);
 
         verify(vendorCb).onVendorResponseReceived(gid, oid, payload);
