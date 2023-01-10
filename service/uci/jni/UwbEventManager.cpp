@@ -291,6 +291,12 @@ void UwbEventManager::onMulticastListUpdateNotificationReceived(
     return;
   }
 
+  if (multicast_list_ntf->no_of_controlees > MAX_NUM_CONTROLLEES) {
+    JNI_TRACE_E("%s: no Of Controlees %d exceeded max allowed: %d ", fn,
+                multicast_list_ntf->no_of_controlees, MAX_NUM_CONTROLLEES);
+    return;
+  }
+
   jintArray controleeMacAddressArray =
       env->NewIntArray(multicast_list_ntf->no_of_controlees);
   jlongArray subSessionIdArray =
