@@ -345,7 +345,7 @@ interface IUwbAdapter {
 
   int removeProfileAdf(in PersistableBundle serviceProfileBundle);
 
-  int sendVendorUciMessage(int gid, int oid, in byte[] payload);
+  int sendVendorUciMessage(int mt, int gid, int oid, in byte[] payload);
 
   void updateRangingRoundsDtTag(in SessionHandle sessionHandle, in PersistableBundle parameters);
 
