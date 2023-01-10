@@ -974,6 +974,34 @@ public final class UwbManager {
     @interface SendVendorUciStatus {}
 
     /**
+     * @hide
+     * Message Type for UCI Command.
+     */
+    public static final int MESSAGE_TYPE_COMMAND = 1;
+    /**
+     * @hide
+     * Message Type value reserved for testing.
+     */
+    public static final int MESSAGE_TYPE_TEST_1 = 4;
+
+    /**
+     * @hide
+     * Message Type value reserved for testing.
+     */
+    public static final int MESSAGE_TYPE_TEST_2 = 5;
+
+    /**
+     * @hide
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef(value = {
+            MESSAGE_TYPE_COMMAND,
+            MESSAGE_TYPE_TEST_1,
+            MESSAGE_TYPE_TEST_2,
+    })
+    @interface MessageType {}
+
+    /**
      * Send Vendor specific Uci Messages.
      *
      * The format of the UCI messages are defined in the UCI specification. The platform is
@@ -989,7 +1017,32 @@ public final class UwbManager {
     public @SendVendorUciStatus int sendVendorUciMessage(
             @IntRange(from = 9, to = 15) int gid, int oid, @NonNull byte[] payload) {
         try {
-            return mUwbAdapter.sendVendorUciMessage(gid, oid, payload);
+            return mUwbAdapter.sendVendorUciMessage(MESSAGE_TYPE_COMMAND, gid, oid, payload);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * @hide
+     *
+     * Send Vendor specific Uci Messages with custom message type.
+     *
+     * The format of the UCI messages are defined in the UCI specification. The platform is
+     * responsible for fragmenting the payload if necessary.
+     *
+     * @param mt Message Type of the command
+     * @param gid Group ID of the command. This needs to be one of the vendor reserved GIDs from
+     *            the UCI specification
+     * @param oid Opcode ID of the command. This is left to the OEM / vendor to decide
+     * @param payload containing vendor Uci message payload
+     */
+    @NonNull
+    @RequiresPermission(permission.UWB_PRIVILEGED)
+    public @SendVendorUciStatus int sendVendorUciMessage(@MessageType int mt,
+            @IntRange(from = 9, to = 15) int gid, int oid, @NonNull byte[] payload) {
+        try {
+            return mUwbAdapter.sendVendorUciMessage(mt, gid, oid, payload);
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();
         }
