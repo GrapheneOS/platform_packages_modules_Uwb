@@ -272,11 +272,11 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     }
 
     @Override
-    public synchronized int sendVendorUciMessage(int gid, int oid, byte[] payload)
+    public synchronized int sendVendorUciMessage(int mt, int gid, int oid, byte[] payload)
             throws RemoteException {
         enforceUwbPrivilegedPermission();
         // TODO(b/237533396): Add a sendVendorUciMessage that takes a chipId parameter
-        return mUwbServiceCore.sendVendorUciMessage(gid, oid, payload, getDefaultChipId());
+        return mUwbServiceCore.sendVendorUciMessage(mt, gid, oid, payload, getDefaultChipId());
     }
 
     @Override

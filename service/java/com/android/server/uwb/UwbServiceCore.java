@@ -592,7 +592,8 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
      *
      * @param chipId : Identifier of UWB chip for multi-HAL devices
      */
-    public synchronized int sendVendorUciMessage(int gid, int oid, byte[] payload, String chipId) {
+    public synchronized int sendVendorUciMessage(int mt, int gid, int oid, byte[] payload,
+            String chipId) {
         if ((!isUwbEnabled())) {
             Log.e(TAG, "sendRawVendor : Uwb is not enabled");
             return UwbUciConstants.STATUS_CODE_FAILED;
@@ -602,7 +603,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         FutureTask<Byte> sendVendorCmdTask = new FutureTask<>(
                 () -> {
                     UwbVendorUciResponse response =
-                            mNativeUwbManager.sendRawVendorCmd(gid, oid, payload, chipId);
+                            mNativeUwbManager.sendRawVendorCmd(mt, gid, oid, payload, chipId);
                     if (response.status == UwbUciConstants.STATUS_CODE_OK) {
                         sendVendorUciResponse(response.gid, response.oid, response.payload);
                     }

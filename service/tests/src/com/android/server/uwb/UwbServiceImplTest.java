@@ -628,10 +628,11 @@ public class UwbServiceImplTest {
 
     @Test
     public void testSendVendorUciMessage() throws Exception {
+        final int mt = 1;
         final int gid = 0;
         final int oid = 0;
-        mUwbServiceImpl.sendVendorUciMessage(gid, oid, null);
-        verify(mUwbServiceCore).sendVendorUciMessage(gid, oid, null,
+        mUwbServiceImpl.sendVendorUciMessage(mt, gid, oid, null);
+        verify(mUwbServiceCore).sendVendorUciMessage(mt, gid, oid, null,
                 mUwbInjector.getMultichipData().getDefaultChipId());
     }
 

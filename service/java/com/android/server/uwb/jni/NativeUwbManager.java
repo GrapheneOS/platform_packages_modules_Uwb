@@ -381,9 +381,10 @@ public class NativeUwbManager {
     }
 
     @NonNull
-    public UwbVendorUciResponse sendRawVendorCmd(int gid, int oid, byte[] payload, String chipId) {
+    public UwbVendorUciResponse sendRawVendorCmd(int mt, int gid, int oid, byte[] payload,
+            String chipId) {
         synchronized (mNativeLock) {
-            return nativeSendRawVendorCmd(gid, oid, payload, chipId);
+            return nativeSendRawVendorCmd(mt, gid, oid, payload, chipId);
         }
     }
 
@@ -477,8 +478,8 @@ public class NativeUwbManager {
 
     private native boolean nativeSetLogMode(String logMode);
 
-    private native UwbVendorUciResponse nativeSendRawVendorCmd(int gid, int oid, byte[] payload,
-            String chipId);
+    private native UwbVendorUciResponse nativeSendRawVendorCmd(int mt, int gid, int oid,
+            byte[] payload, String chipId);
 
     private native DtTagUpdateRangingRoundsStatus nativeSessionUpdateActiveRoundsDtTag(
             int sessionId, int noOfActiveRangingRounds, byte[] rangingRoundIndexes, String chipId);
