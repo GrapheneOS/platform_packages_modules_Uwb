@@ -176,12 +176,8 @@ void UwbEventManager::onRangeDataNotificationReceived(
         ranging_ntf_data->no_of_measurements, mRangeDlTdoaMeasuresClass, NULL);
     for (int i = 0; i < ranging_ntf_data->no_of_measurements; i++) {
       jbyteArray dlTdoaMacAddress = NULL;
-      jbyteArray dlTdoaTxTimeStamp = NULL;
-      jbyteArray dlTdoaRxTimeStamp = NULL;
       jbyteArray dlTdoaAnchorLocation = NULL;
       jbyteArray dlTdoaActiveRangingRound = NULL;
-      uint16_t txTimeStampValue = 0;
-      uint16_t rxTimeStampValue = 0;
       uint16_t anchorLocationValue = 0;
       uint16_t activeRangingRoundValue = 0;
 
@@ -198,48 +194,6 @@ void UwbEventManager::onRangeDataNotificationReceived(
             dlTdoaMacAddress, 0, MAC_EXT_ADD_LEN,
             (jbyte *)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
                 .mac_addr);
-      }
-
-      txTimeStampValue =
-          ((ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
-                .message_control &
-            TDOA_TX_TIMESTAMP_OFFSET) &
-           (TDOA_TX_TIMESTAMP_OFFSET_MASK));
-      if (txTimeStampValue == TDOA_TX_TIMESTAMP_40BITS) {
-        dlTdoaTxTimeStamp = env->NewByteArray(TDOA_TIMESTAMP_LEN_40BITS);
-        env->SetByteArrayRegion(
-            dlTdoaTxTimeStamp, 0, TDOA_TIMESTAMP_LEN_40BITS,
-            (jbyte *)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
-                .txTimeStamp);
-      } else if (txTimeStampValue == TDOA_TX_TIMESTAMP_64BITS) {
-        dlTdoaTxTimeStamp = env->NewByteArray(TDOA_TIMESTAMP_LEN_64BITS);
-        env->SetByteArrayRegion(
-            dlTdoaTxTimeStamp, 0, TDOA_TIMESTAMP_LEN_64BITS,
-            (jbyte *)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
-                .txTimeStamp);
-      } else {
-        JNI_TRACE_E("%s: Invalid dlTdoaTxTimeStamp", fn);
-      }
-
-      rxTimeStampValue =
-          ((ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
-                .message_control &
-            TDOA_RX_TIMESTAMP_OFFSET) &
-           (TDOA_RX_TIMESTAMP_OFFSET_MASK));
-      if (rxTimeStampValue == TDOA_RX_TIMESTAMP_40BITS) {
-        dlTdoaRxTimeStamp = env->NewByteArray(TDOA_TIMESTAMP_LEN_40BITS);
-        env->SetByteArrayRegion(
-            dlTdoaRxTimeStamp, 0, TDOA_TIMESTAMP_LEN_40BITS,
-            (jbyte *)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
-                .rxTimeStamp);
-      } else if (rxTimeStampValue == TDOA_RX_TIMESTAMP_64BITS) {
-        dlTdoaRxTimeStamp = env->NewByteArray(TDOA_TIMESTAMP_LEN_64BITS);
-        env->SetByteArrayRegion(
-            dlTdoaRxTimeStamp, 0, TDOA_TIMESTAMP_LEN_64BITS,
-            (jbyte *)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
-                .rxTimeStamp);
-      } else {
-        JNI_TRACE_E("%s: Invalid dlTdoaRxTimeStamp", fn);
       }
 
       anchorLocationValue =
@@ -281,7 +235,7 @@ void UwbEventManager::onRangeDataNotificationReceived(
         JNI_TRACE_I("%s: dlTdoaActiveRangingRound not included", fn);
       }
       rngDlTdoaMeasuresCtor = env->GetMethodID(
-          mRangeDlTdoaMeasuresClass, "<init>", "([BIIIIIIIIII[B[BIIJJI[B[B)V");
+          mRangeDlTdoaMeasuresClass, "<init>", "([BIIIIIIFIFIIJJFFJJI[B[B)V");
       env->SetObjectArrayElement(
           rangeDlTdoaMeasuresArray, i,
           env->NewObject(
@@ -299,18 +253,24 @@ void UwbEventManager::onRangeDataNotificationReceived(
                   .round_index,
               (int)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
                   .nLos,
-              (int)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
+              (float)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
                   .aoa_azimuth,
               (int)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
                   .aoa_azimuth_FOM,
-              (int)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
+              (float)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
                   .aoa_elevation,
               (int)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
                   .aoa_elevation_FOM,
-              dlTdoaTxTimeStamp, dlTdoaRxTimeStamp,
               (int)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
+                  .rssi,
+              (long)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
+                  .txTimeStamp,
+              (long)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
+                  .rxTimeStamp,
+              (float)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
                   .cfo_anchor,
-              (int)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i].cfo,
+              (float)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
+                  .cfo,
               (long)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
                   .initiator_reply_time,
               (long)ranging_ntf_data->ranging_measures.dltdoa_range_measr[i]
@@ -321,15 +281,15 @@ void UwbEventManager::onRangeDataNotificationReceived(
     }
     jmethodID rngDataCtorDlTdoa =
         env->GetMethodID(mRangeDataClass, "<init>",
-                         "(JJIJBBI[Lcom/android/server/uwb/data/"
+                         "(JJIJIII[Lcom/android/server/uwb/data/"
                          "UwbDownLinkTDoAMeasurement;[B)V");
     rangeDataObject = env->NewObject(
         mRangeDataClass, rngDataCtorDlTdoa, (long)ranging_ntf_data->seq_counter,
         (long)ranging_ntf_data->session_id,
         (int)ranging_ntf_data->rcr_indication,
         (long)ranging_ntf_data->curr_range_interval,
-        ranging_ntf_data->ranging_measure_type,
-        ranging_ntf_data->mac_addr_mode_indicator,
+        (int)ranging_ntf_data->ranging_measure_type,
+        (int)ranging_ntf_data->mac_addr_mode_indicator,
         (int)ranging_ntf_data->no_of_measurements, rangeDlTdoaMeasuresArray,
         vendorSpecificData == NULL ? nullptr : vendorSpecificData);
   } else if (ranging_ntf_data->ranging_measure_type ==
@@ -467,9 +427,10 @@ void UwbEventManager::onDeviceStateNotificationReceived(uint8_t state) {
     return;
   }
 
+  jstring chipId = env->NewStringUTF("default");
   if (mOnDeviceStateNotificationReceived != NULL) {
-    env->CallVoidMethod(mObject, mOnDeviceStateNotificationReceived,
-                        (int)state);
+    env->CallVoidMethod(mObject, mOnDeviceStateNotificationReceived, (int)state,
+                        chipId);
     if (env->ExceptionCheck()) {
       env->ExceptionClear();
       JNI_TRACE_E("%s: fail to notify", fn);
@@ -651,6 +612,71 @@ void UwbEventManager::onVendorDeviceInfo(uint8_t* data, uint8_t length) {
   JNI_TRACE_I("%s: exit", __func__);
 }
 
+void UwbEventManager::onDataTransferStatusReceived(uint32_t sesssionID,
+                                                   uint8_t sequenceNum,
+                                                   uint8_t status) {
+  JNI_TRACE_I("%s: enter:  State = %x", __func__, status);
+
+  ScopedJniEnv env(mVm);
+  if (env == NULL) {
+    JNI_TRACE_E("%s: jni env is null", __func__);
+    return;
+  }
+
+  if (mOnDataTransferStatusReceived != NULL) {
+    env->CallVoidMethod(mObject, mOnDataTransferStatusReceived,
+                        (long)sesssionID, (int)sequenceNum, (int)status);
+    if (env->ExceptionCheck()) {
+      env->ExceptionClear();
+      JNI_TRACE_E("%s: fail to notify", __func__);
+    }
+  } else {
+    JNI_TRACE_E("%s: transfer status ntf MID is null ", __func__);
+  }
+  JNI_TRACE_I("%s: exit", __func__);
+}
+
+void UwbEventManager::onDataReceived(tUWA_RX_DATA_REVT *rcvd_data) {
+  jbyteArray address = NULL;
+  jbyteArray data = NULL;
+
+  JNI_TRACE_I("%s: enter", __func__);
+  ScopedJniEnv env(mVm);
+  if (env == NULL) {
+    JNI_TRACE_E("%s: jni env is null", __func__);
+    return;
+  }
+  if (rcvd_data == NULL) {
+    JNI_TRACE_E("%s: rcvd_data is null", __func__);
+    return;
+  }
+  address = env->NewByteArray(EXTENDED_ADDRESS_LEN);
+  if (address != NULL) {
+    env->SetByteArrayRegion(address, 0, EXTENDED_ADDRESS_LEN,
+                            (jbyte *)rcvd_data->address);
+  }
+  if (rcvd_data->data_len > 0) {
+    data = env->NewByteArray(rcvd_data->data_len);
+    if (data != NULL) {
+      env->SetByteArrayRegion(data, 0, rcvd_data->data_len,
+                              (jbyte *)rcvd_data->data);
+    }
+  }
+  if (mOnDataReceived != NULL) {
+    env->CallVoidMethod(mObject, mOnDataReceived, (long)rcvd_data->session_id,
+                        (int)rcvd_data->status, (long)rcvd_data->sequence_num,
+                        address, (int)rcvd_data->source_end_point,
+                        (int)rcvd_data->dest_end_point, data);
+    if (env->ExceptionCheck()) {
+      env->ExceptionClear();
+      JNI_TRACE_E("%s: fail to notify", __func__);
+    }
+  } else {
+    JNI_TRACE_E("%s: MID is null ", __func__);
+  }
+  JNI_TRACE_I("%s: exit", __func__);
+}
+
 void UwbEventManager::doLoadSymbols(JNIEnv *env, jobject thiz) {
   static const char fn[] = "UwbEventManager::doLoadSymbols";
   UNUSED(fn);
@@ -663,8 +689,8 @@ void UwbEventManager::doLoadSymbols(JNIEnv *env, jobject thiz) {
     // The reference is only used as a proxy for callbacks.
     mObject = env->NewGlobalRef(thiz);
 
-    mOnDeviceStateNotificationReceived =
-        env->GetMethodID(clazz, "onDeviceStatusNotificationReceived", "(I)V");
+    mOnDeviceStateNotificationReceived = env->GetMethodID(
+        clazz, "onDeviceStatusNotificationReceived", "(ILjava/lang/String;)V");
     mOnRangeDataNotificationReceived =
         env->GetMethodID(clazz, "onRangeDataNotificationReceived",
                          "(Lcom/android/server/uwb/data/UwbRangingData;)V");
@@ -672,6 +698,8 @@ void UwbEventManager::doLoadSymbols(JNIEnv *env, jobject thiz) {
         clazz, "onSessionStatusNotificationReceived", "(JII)V");
     mOnCoreGenericErrorNotificationReceived = env->GetMethodID(
         clazz, "onCoreGenericErrorNotificationReceived", "(I)V");
+    mOnDataTransferStatusReceived =
+        env->GetMethodID(clazz, "onDataTransferStatusReceived", "(JII)V");
     mOnDataReceived = env->GetMethodID(clazz, "onDataReceived", "(JIJ[BII[B)V");
     // TDB, this should be reworked
     mOnMulticastListUpdateNotificationReceived = env->GetMethodID(
