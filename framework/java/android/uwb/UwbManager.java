@@ -42,6 +42,7 @@ import com.android.internal.annotations.GuardedBy;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 
 /**
@@ -1041,6 +1042,7 @@ public final class UwbManager {
     @RequiresPermission(permission.UWB_PRIVILEGED)
     public @SendVendorUciStatus int sendVendorUciMessage(@MessageType int mt,
             @IntRange(from = 9, to = 15) int gid, int oid, @NonNull byte[] payload) {
+        Objects.requireNonNull(payload, "Payload must not be null");
         try {
             return mUwbAdapter.sendVendorUciMessage(mt, gid, oid, payload);
         } catch (RemoteException e) {
