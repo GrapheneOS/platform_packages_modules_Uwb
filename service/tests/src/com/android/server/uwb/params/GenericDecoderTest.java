@@ -37,45 +37,87 @@ import org.junit.runner.RunWith;
 @SmallTest
 @Presubmit
 public class GenericDecoderTest {
-    private static final byte[] TEST_GENERC_SPECIFICATION_TLV_DATA =
+    private static final byte[] TEST_GENERIC_SPECIFICATION_TLV_DATA_VER_1 =
             UwbUtil.getByteArray("C00101"
-                    + FiraDecoderTest.TEST_FIRA_SPECIFICATION_TLV_STRING
+                    + FiraDecoderTest.TEST_FIRA_SPECIFICATION_TLV_STRING_VER_1
                     + CccDecoderTest.TEST_CCC_SPECIFICATION_TLV_DATA_STRING);
-    private static final int TEST_GENERIC_SPECIFICATION_TLV_NUM_PARAMS = 1
-            + FiraDecoderTest.TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS
+    private static final int TEST_GENERIC_SPECIFICATION_TLV_NUM_PARAMS_VER_1 = 1
+            + FiraDecoderTest.TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_1
+            + CccDecoderTest.TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS;
+
+    private static final byte[] TEST_GENERIC_SPECIFICATION_TLV_DATA_VER_2 =
+            UwbUtil.getByteArray("C00101"
+                    + FiraDecoderTest.TEST_FIRA_SPECIFICATION_TLV_STRING_VER_2
+                    + CccDecoderTest.TEST_CCC_SPECIFICATION_TLV_DATA_STRING);
+    private static final int TEST_GENERIC_SPECIFICATION_TLV_NUM_PARAMS_VER_2 = 1
+            + FiraDecoderTest.TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_2
             + CccDecoderTest.TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS;
 
     private final GenericDecoder mGenericDecoder = new GenericDecoder();
 
     @Test
-    public void testGetGenericSpecification() throws Exception {
+    public void testGetGenericSpecificationVersion1() throws Exception {
         TlvDecoderBuffer tlvDecoderBuffer =
                 new TlvDecoderBuffer(
-                        TEST_GENERC_SPECIFICATION_TLV_DATA,
-                        TEST_GENERIC_SPECIFICATION_TLV_NUM_PARAMS);
+                        TEST_GENERIC_SPECIFICATION_TLV_DATA_VER_1,
+                        TEST_GENERIC_SPECIFICATION_TLV_NUM_PARAMS_VER_1);
         assertThat(tlvDecoderBuffer.parse()).isTrue();
 
         GenericSpecificationParams genericSpecificationParams = mGenericDecoder.getParams(
                 tlvDecoderBuffer, GenericSpecificationParams.class);
         assertThat(genericSpecificationParams.hasPowerStatsSupport()).isTrue();
-        FiraDecoderTest.verifyFiraSpecification(
+        FiraDecoderTest.verifyFiraSpecificationVersion1(
                 genericSpecificationParams.getFiraSpecificationParams());
         CccDecoderTest.verifyCccSpecification(
                 genericSpecificationParams.getCccSpecificationParams());
     }
 
     @Test
-    public void testGetGenericSpecificationViaTlvDecoder() throws Exception {
+    public void testGetGenericSpecificationViaTlvDecoderVersion1() throws Exception {
         TlvDecoderBuffer tlvDecoderBuffer =
                 new TlvDecoderBuffer(
-                        TEST_GENERC_SPECIFICATION_TLV_DATA,
-                        TEST_GENERIC_SPECIFICATION_TLV_NUM_PARAMS);
+                        TEST_GENERIC_SPECIFICATION_TLV_DATA_VER_1,
+                        TEST_GENERIC_SPECIFICATION_TLV_NUM_PARAMS_VER_1);
         assertThat(tlvDecoderBuffer.parse()).isTrue();
 
         GenericSpecificationParams genericSpecificationParams = mGenericDecoder.getParams(
                 tlvDecoderBuffer, GenericSpecificationParams.class);
         assertThat(genericSpecificationParams.hasPowerStatsSupport()).isTrue();
-        FiraDecoderTest.verifyFiraSpecification(
+        FiraDecoderTest.verifyFiraSpecificationVersion1(
+                genericSpecificationParams.getFiraSpecificationParams());
+        CccDecoderTest.verifyCccSpecification(
+                genericSpecificationParams.getCccSpecificationParams());
+    }
+
+    @Test
+    public void testGetGenericSpecificationVersion2() throws Exception {
+        TlvDecoderBuffer tlvDecoderBuffer =
+                new TlvDecoderBuffer(
+                        TEST_GENERIC_SPECIFICATION_TLV_DATA_VER_2,
+                        TEST_GENERIC_SPECIFICATION_TLV_NUM_PARAMS_VER_2);
+        assertThat(tlvDecoderBuffer.parse()).isTrue();
+
+        GenericSpecificationParams genericSpecificationParams = mGenericDecoder.getParams(
+                tlvDecoderBuffer, GenericSpecificationParams.class);
+        assertThat(genericSpecificationParams.hasPowerStatsSupport()).isTrue();
+        FiraDecoderTest.verifyFiraSpecificationVersion2(
+                genericSpecificationParams.getFiraSpecificationParams());
+        CccDecoderTest.verifyCccSpecification(
+                genericSpecificationParams.getCccSpecificationParams());
+    }
+
+    @Test
+    public void testGetGenericSpecificationViaTlvDecoderVersion2() throws Exception {
+        TlvDecoderBuffer tlvDecoderBuffer =
+                new TlvDecoderBuffer(
+                        TEST_GENERIC_SPECIFICATION_TLV_DATA_VER_2,
+                        TEST_GENERIC_SPECIFICATION_TLV_NUM_PARAMS_VER_2);
+        assertThat(tlvDecoderBuffer.parse()).isTrue();
+
+        GenericSpecificationParams genericSpecificationParams = mGenericDecoder.getParams(
+                tlvDecoderBuffer, GenericSpecificationParams.class);
+        assertThat(genericSpecificationParams.hasPowerStatsSupport()).isTrue();
+        FiraDecoderTest.verifyFiraSpecificationVersion2(
                 genericSpecificationParams.getFiraSpecificationParams());
         CccDecoderTest.verifyCccSpecification(
                 genericSpecificationParams.getCccSpecificationParams());

@@ -32,6 +32,7 @@ import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABL
 import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_LEVEL_TRIG;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_INITIATOR;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLEE;
+import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLLER;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE;
 import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP1;
 import static com.google.uwb.support.fira.FiraParams.SFD_ID_VALUE_3;
@@ -614,6 +615,9 @@ public class FiraTests {
                 EnumSet.allOf(FiraParams.HprfParameterSetCapabilityFlag.class);
         EnumSet<FiraParams.RangeDataNtfConfigCapabilityFlag> rangeDataNtfConfigCapabilities =
                 EnumSet.allOf(FiraParams.RangeDataNtfConfigCapabilityFlag.class);
+        int deviceType = RANGING_DEVICE_TYPE_CONTROLLER;
+        boolean suspendRangingSupport = true;
+        int sessionKeyLength = 1;
 
         FiraSpecificationParams params =
                 new FiraSpecificationParams.Builder()
@@ -638,6 +642,9 @@ public class FiraTests {
                         .setBprfParameterSetCapabilities(bprfCapabilities)
                         .setHprfParameterSetCapabilities(hprfCapabilities)
                         .setRangeDataNtfConfigCapabilities(rangeDataNtfConfigCapabilities)
+                        .setDeviceType(deviceType)
+                        .setSuspendRangingSupport(suspendRangingSupport)
+                        .setSessionKeyLength(sessionKeyLength)
                         .build();
         assertEquals(minPhyVersionSupported, params.getMinPhyVersionSupported());
         assertEquals(maxPhyVersionSupported, params.getMaxPhyVersionSupported());
@@ -660,6 +667,9 @@ public class FiraTests {
         assertEquals(bprfCapabilities, params.getBprfParameterSetCapabilities());
         assertEquals(hprfCapabilities, params.getHprfParameterSetCapabilities());
         assertEquals(rangeDataNtfConfigCapabilities, params.getRangeDataNtfConfigCapabilities());
+        assertEquals(deviceType, params.getDeviceType());
+        assertEquals(suspendRangingSupport, params.hasSuspendRangingSupport());
+        assertEquals(sessionKeyLength, params.getSessionKeyLength());
 
         FiraSpecificationParams fromBundle = FiraSpecificationParams.fromBundle(params.toBundle());
         assertEquals(minPhyVersionSupported, fromBundle.getMinPhyVersionSupported());
@@ -682,6 +692,9 @@ public class FiraTests {
         assertEquals(hprfCapabilities, fromBundle.getHprfParameterSetCapabilities());
         assertEquals(rangeDataNtfConfigCapabilities,
                 fromBundle.getRangeDataNtfConfigCapabilities());
+        assertEquals(deviceType, fromBundle.getDeviceType());
+        assertEquals(suspendRangingSupport, fromBundle.hasSuspendRangingSupport());
+        assertEquals(sessionKeyLength, fromBundle.getSessionKeyLength());
         verifyProtocolPresent(params);
         verifyBundlesEqual(params, fromBundle);
     }
