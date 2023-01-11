@@ -746,6 +746,7 @@ fn create_ranging_round_status(
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSendRawVendorCmd(
     env: JNIEnv,
     obj: JObject,
+    mt: jint,
     gid: jint,
     oid: jint,
     payload_jarray: jbyteArray,
@@ -753,7 +754,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
 ) -> jobject {
     debug!("{}: enter", function_name!());
     match option_result_helper(
-        native_send_raw_vendor_cmd(env, obj, gid, oid, payload_jarray, chip_id),
+        native_send_raw_vendor_cmd(env, obj, mt, gid, oid, payload_jarray, chip_id),
         function_name!(),
     ) {
         // Note: unwrap() here is not desirable, but unavoidable given non-null object is returned
@@ -771,6 +772,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
 fn native_send_raw_vendor_cmd(
     env: JNIEnv,
     obj: JObject,
+    mt: jint,
     gid: jint,
     oid: jint,
     payload_jarray: jbyteArray,
@@ -779,7 +781,7 @@ fn native_send_raw_vendor_cmd(
     let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
     let payload =
         env.convert_byte_array(payload_jarray).map_err(|_| Error::ForeignFunctionInterface)?;
-    uci_manager.raw_uci_cmd(gid as u32, oid as u32, payload)
+    uci_manager.raw_uci_cmd(mt as u32, gid as u32, oid as u32, payload)
 }
 
 fn create_power_stats(power_stats: PowerStats, env: JNIEnv) -> Result<jobject> {
@@ -950,5 +952,88 @@ fn native_dispatcher_destroy(env: JNIEnv, obj: JObject) -> Result<()> {
         Dispatcher::destroy_dispatcher()
     } else {
         Err(Error::BadParameters)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use tokio::runtime::Builder;
+    use uwb_core::uci::mock_uci_manager::MockUciManager;
+    use uwb_core::uci::uci_manager_sync::{
+        NotificationManager, NotificationManagerBuilder, UciManagerSync,
+    };
+    use uwb_core::uci::{CoreNotification, DataRcvNotification, SessionNotification};
+
+    struct NullNotificationManager {}
+    impl NotificationManager for NullNotificationManager {
+        fn on_core_notification(&mut self, _core_notification: CoreNotification) -> Result<()> {
+            Ok(())
+        }
+        fn on_session_notification(
+            &mut self,
+            _session_notification: SessionNotification,
+        ) -> Result<()> {
+            Ok(())
+        }
+        fn on_vendor_notification(&mut self, _vendor_notification: RawUciMessage) -> Result<()> {
+            Ok(())
+        }
+        fn on_data_rcv_notification(&mut self, _data_rcv_notf: DataRcvNotification) -> Result<()> {
+            Ok(())
+        }
+    }
+
+    struct NullNotificationManagerBuilder {}
+
+    impl NullNotificationManagerBuilder {
+        fn new() -> Self {
+            Self {}
+        }
+    }
+
+    impl NotificationManagerBuilder for NullNotificationManagerBuilder {
+        type NotificationManager = NullNotificationManager;
+
+        fn build(self) -> Option<Self::NotificationManager> {
+            Some(NullNotificationManager {})
+        }
+    }
+
+    /// Checks validity of the function_name! macro.
+    #[test]
+    fn test_function_name() {
+        assert_eq!(function_name!(), "test_function_name");
+    }
+
+    /// Checks native_set_app_configurations by mocking non-jni logic.
+    #[test]
+    fn test_native_set_app_configurations() {
+        // Constructs mock UciManagerSync.
+        let test_rt = Builder::new_multi_thread().enable_all().build().unwrap();
+        let mut uci_manager_impl = MockUciManager::new();
+        uci_manager_impl.expect_session_set_app_config(
+            42, // Session id
+            vec![
+                AppConfigTlv::new(AppConfigTlvType::DeviceType, vec![1]),
+                AppConfigTlv::new(AppConfigTlvType::RangingRoundUsage, vec![1]),
+            ],
+            vec![],
+            Ok(SetAppConfigResponse { status: StatusCode::UciStatusOk, config_status: vec![] }),
+        );
+        let uci_manager_sync = UciManagerSync::new_mock(
+            uci_manager_impl,
+            test_rt.handle().to_owned(),
+            NullNotificationManagerBuilder::new(),
+        )
+        .unwrap();
+
+        let app_config_byte_array: Vec<u8> = vec![
+            0, 1, 1, // DeviceType: controller
+            1, 1, 1, // RangingRoundUsage: DS_TWR
+        ];
+        let tlvs = parse_app_config_tlv_vec(2, &app_config_byte_array).unwrap();
+        assert!(uci_manager_sync.session_set_app_config(42, tlvs).is_ok());
     }
 }
