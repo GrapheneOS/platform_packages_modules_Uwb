@@ -18,7 +18,7 @@ package com.android.server.uwb.secure.csml;
 
 import static com.android.server.uwb.config.CapabilityParam.DS_TWR_DEFERRED;
 import static com.android.server.uwb.config.CapabilityParam.DS_TWR_NON_DEFERRED;
-import static com.android.server.uwb.config.CapabilityParam.OWR;
+import static com.android.server.uwb.config.CapabilityParam.OWR_UL_TDOA;
 import static com.android.server.uwb.config.CapabilityParam.SS_TWR_DEFERRED;
 import static com.android.server.uwb.config.CapabilityParam.SS_TWR_NON_DEFERRED;
 
@@ -351,7 +351,7 @@ public class UwbCapabilityTest {
 
     @Test
     public void getPreferredRangingMethod() {
-        byte owr = (byte) OWR & 0xFF;
+        byte owr = (byte) OWR_UL_TDOA & 0xFF;
         byte ds = (byte) DS_TWR_DEFERRED & 0xFF;
         byte dsNon = (byte) DS_TWR_NON_DEFERRED & 0xFF;
         byte ss = (byte) SS_TWR_DEFERRED;
