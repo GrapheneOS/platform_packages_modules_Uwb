@@ -168,6 +168,10 @@ public class DlTDoAMeasurement {
         return bytes;
     }
 
+    public static boolean isDlTDoAMeasurement(PersistableBundle bundle) {
+        return bundle.containsKey(ANCHOR_LOCATION) && bundle.containsKey(ACTIVE_RANGING_ROUNDS);
+    }
+
     public PersistableBundle toBundle() {
         PersistableBundle bundle = new PersistableBundle();
         bundle.putInt(KEY_BUNDLE_VERSION, BUNDLE_VERSION_CURRENT);
