@@ -699,7 +699,14 @@ public abstract class FiraParams extends Params {
         HAS_CONTROLEE_INITIATOR_SUPPORT(1),
         HAS_CONTROLEE_RESPONDER_SUPPORT(1 << 1),
         HAS_CONTROLLER_INITIATOR_SUPPORT(1 << 2),
-        HAS_CONTROLLER_RESPONDER_SUPPORT(1 << 3);
+        HAS_CONTROLLER_RESPONDER_SUPPORT(1 << 3),
+        HAS_UT_SYNCHRONIZATION_SUPPORT(1 << 4),
+        HAS_UT_ANCHOR_SUPPORT(1 << 5),
+        HAS_UT_TAG_SUPPORT(1 << 6),
+        HAS_ADVERTISER_SUPPORT(1 << 7),
+        HAS_OBSERVER_SUPPORT(1 << 8),
+        HAS_DT_ANCHOR_SUPPORT(1 << 9),
+        HAS_DT_TAG_SUPPORT(1 << 10);
 
         private final long mValue;
 
@@ -796,7 +803,13 @@ public abstract class FiraParams extends Params {
 
     public enum RangingRoundCapabilityFlag implements FlagEnum {
         HAS_DS_TWR_SUPPORT(1),
-        HAS_SS_TWR_SUPPORT(1 << 1);
+        HAS_SS_TWR_SUPPORT(1 << 1),
+        // TODO(b/265047064) : Check if addition of non-deferred mode is needed.
+        HAS_OWR_UL_TDOA_SUPPORT(1 << 2),
+        HAS_OWR_DL_TDOA_SUPPORT(1 << 3),
+        HAS_OWR_AOA_SUPPORT(1 << 4),
+        HAS_ESS_TWR_SUPPORT(1 << 5),
+        HAS_ADS_TWR_SUPPORT(1 << 6);
 
         private final long mValue;
 
@@ -962,6 +975,32 @@ public abstract class FiraParams extends Params {
             return mValue;
         }
     }
+
+    /**
+     * Suspend Ranging Support (FiRa 2.0)
+     */
+    @IntDef(
+            value = {
+                    SUSPEND_RANGING_DISABLED,
+                    SUSPEND_RANGING_ENABLED,
+            })
+    public @interface SuspendRanging {}
+
+    public static final int SUSPEND_RANGING_DISABLED = 0;
+    public static final int SUSPEND_RANGING_ENABLED = 1;
+
+    /**
+     * Session Key length supported (FiRa 2.0)
+     */
+    @IntDef(
+            value = {
+                    KEY_LENGTH_256_BITS_NOT_SUPPORTED,
+                    KEY_LENGTH_256_BITS_SUPPORTED,
+            })
+    public @interface SessionKeyLength {}
+
+    public static final int KEY_LENGTH_256_BITS_NOT_SUPPORTED = 0;
+    public static final int KEY_LENGTH_256_BITS_SUPPORTED = 1;
 
     // Helper functions
     protected static UwbAddress longToUwbAddress(long value, int length) {
