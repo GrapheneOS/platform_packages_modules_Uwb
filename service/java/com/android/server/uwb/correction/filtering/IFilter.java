@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,23 +36,23 @@ public interface IFilter {
      * Adds a value to the filter.
      * @param value The value to add to the filter.
      * @param instant When the value occurred, used to determine the latency introduced by
-     *  the filter. Note that this has no effect on the order in which the filter operates
-     *  on values.
+     * the filter. Note that this has no effect on the order in which the filter operates
+     * on values.
      */
     void add(float value, @NonNull Instant instant);
 
     /**
      * Alters the state of the filter such that it anticipates a change by the given amount.
      * For example, if the filter is working with distance, and the distance of the next
-     *  reading is expected to increase by 1 meter, 'shift' should be 1.
+     * reading is expected to increase by 1 meter, 'shift' should be 1.
      * @param shift How much to alter the filter state.
      */
     void compensate(float shift);
 
     /**
      * Gets a sample object with the result from the last computation. The sample's time is
-     *  the average time of the samples that created the result, effectively describing the
-     *  latency introduced by the filter.
+     * the average time of the samples that created the result, effectively describing the
+     * latency introduced by the filter.
      * @return The result from the last computation.
      */
     @NonNull
@@ -60,11 +60,11 @@ public interface IFilter {
 
     /**
      * Gets a sample object with the result from the provided time. The returned sample's time is
-     *  the closest the filter can provide to the given time.
+     * the closest the filter can provide to the given time.
      * The default behavior is to return the latest available result, which is likely to be
-     *  older than the requested time (see {@link #getResult()}).
+     * older than the requested time (see {@link #getResult()}).
      * This must be overridden in order to support predicting filters like a Kalman filter or an
-     *  extrapolating median/average filter.
+     * extrapolating median/average filter.
      * @param when The preferred time of the predicted sample.
      * @return The result from the computation.
      */
