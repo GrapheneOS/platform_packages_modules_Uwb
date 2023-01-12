@@ -232,4 +232,10 @@ public class UwbUciConstants {
     public static final byte UWB_DESTINATION_END_POINT_UWBS = 0x00;
     public static final byte UWB_DESTINATION_END_POINT_HOST = 0x01;
     public static final byte UWB_DESTINATION_END_POINT_SECURE_ELEMENT = 0x02;
+
+    /**
+     * FiRa Major versions
+     */
+    public static final int FIRA_VERSION_MAJOR_1 = 1;
+    public static final int FIRA_VERSION_MAJOR_2 = 2;
 }
