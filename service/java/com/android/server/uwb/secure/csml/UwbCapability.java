@@ -37,7 +37,7 @@ import static com.android.server.uwb.config.CapabilityParam.DYNAMIC_STS_RESPONDE
 import static com.android.server.uwb.config.CapabilityParam.INITIATOR;
 import static com.android.server.uwb.config.CapabilityParam.MANY_TO_MANY;
 import static com.android.server.uwb.config.CapabilityParam.ONE_TO_MANY;
-import static com.android.server.uwb.config.CapabilityParam.OWR;
+import static com.android.server.uwb.config.CapabilityParam.OWR_UL_TDOA;
 import static com.android.server.uwb.config.CapabilityParam.RESPONDER;
 import static com.android.server.uwb.config.CapabilityParam.SP0;
 import static com.android.server.uwb.config.CapabilityParam.SP1;
@@ -591,7 +591,7 @@ public class UwbCapability {
         if ((rangingMethodMask & SS_TWR_NON_DEFERRED) != 0) {
             return RANGING_ROUND_USAGE_SS_TWR_NON_DEFERRED_MODE;
         }
-        if (((rangingMethodMask & OWR) != 0)) {
+        if (((rangingMethodMask & OWR_UL_TDOA) != 0)) {
             return RANGING_ROUND_USAGE_DL_TDOA;
         }
         return RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;

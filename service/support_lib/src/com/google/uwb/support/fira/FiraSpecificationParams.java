@@ -35,7 +35,8 @@ import java.util.List;
  */
 public class FiraSpecificationParams extends FiraParams {
     private static final int BUNDLE_VERSION_1 = 1;
-    private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_1;
+    private static final int BUNDLE_VERSION_2 = 2;
+    private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_2;
 
     private final FiraProtocolVersion mMinPhyVersionSupported;
     private final FiraProtocolVersion mMaxPhyVersionSupported;
@@ -96,6 +97,12 @@ public class FiraSpecificationParams extends FiraParams {
 
     private final EnumSet<RangeDataNtfConfigCapabilityFlag> mRangeDataNtfConfigCapabilities;
 
+    private final int mDeviceType;
+
+    private final boolean mSuspendRangingSupport;
+
+    private final int mSessionKeyLength;
+
     private static final String KEY_MIN_PHY_VERSION = "min_phy_version";
     private static final String KEY_MAX_PHY_VERSION = "max_phy_version";
     private static final String KEY_MIN_MAC_VERSION = "min_mac_version";
@@ -134,6 +141,12 @@ public class FiraSpecificationParams extends FiraParams {
     private static final String KEY_MAX_DATA_PACKET_PAYLOAD_SIZE = "max_data_packet_payload_size";
     private static final String KEY_RANGE_DATA_NTF_CONFIG_CAPABILITIES =
             "range_data_ntf_config_capabilities";
+    private static final String KEY_DEVICE_TYPE =
+            "device_type";
+    private static final String KEY_SUSPEND_RANGING_SUPPORT =
+            "suspend_ranging_support";
+    private static final String KEY_SESSION_KEY_LENGTH =
+            "session_key_length";
 
     private FiraSpecificationParams(
             FiraProtocolVersion minPhyVersionSupported,
@@ -166,7 +179,8 @@ public class FiraSpecificationParams extends FiraParams {
             EnumSet<HprfParameterSetCapabilityFlag> hprfParameterSetCapabilities,
             Integer maxMessageSize,
             Integer maxDataPacketPayloadSize,
-            EnumSet<RangeDataNtfConfigCapabilityFlag> rangeDataNtfConfigCapabilities) {
+            EnumSet<RangeDataNtfConfigCapabilityFlag> rangeDataNtfConfigCapabilities,
+            int deviceType, boolean suspendRangingSupport, int sessionKeyLength) {
         mMinPhyVersionSupported = minPhyVersionSupported;
         mMaxPhyVersionSupported = maxPhyVersionSupported;
         mMinMacVersionSupported = minMacVersionSupported;
@@ -198,6 +212,9 @@ public class FiraSpecificationParams extends FiraParams {
         mMaxMessageSize = maxMessageSize;
         mMaxDataPacketPayloadSize = maxDataPacketPayloadSize;
         mRangeDataNtfConfigCapabilities = rangeDataNtfConfigCapabilities;
+        mDeviceType = deviceType;
+        mSuspendRangingSupport = suspendRangingSupport;
+        mSessionKeyLength = sessionKeyLength;
     }
 
     @Override
@@ -331,6 +348,18 @@ public class FiraSpecificationParams extends FiraParams {
         return mMaxDataPacketPayloadSize;
     }
 
+    public int getDeviceType() {
+        return mDeviceType;
+    }
+
+    public boolean hasSuspendRangingSupport() {
+        return mSuspendRangingSupport;
+    }
+
+    public int getSessionKeyLength() {
+        return mSessionKeyLength;
+    }
+
     private static int[] toIntArray(List<Integer> data) {
         int[] res = new int[data.size()];
         for (int i = 0; i < data.size(); i++) {
@@ -379,6 +408,9 @@ public class FiraSpecificationParams extends FiraParams {
         bundle.putInt(KEY_MAX_DATA_PACKET_PAYLOAD_SIZE, mMaxDataPacketPayloadSize);
         bundle.putInt(KEY_RANGE_DATA_NTF_CONFIG_CAPABILITIES,
                 FlagEnum.toInt(mRangeDataNtfConfigCapabilities));
+        bundle.putInt(KEY_DEVICE_TYPE, mDeviceType);
+        bundle.putBoolean(KEY_SUSPEND_RANGING_SUPPORT, mSuspendRangingSupport);
+        bundle.putInt(KEY_SESSION_KEY_LENGTH, mSessionKeyLength);
         return bundle;
     }
 
@@ -389,8 +421,9 @@ public class FiraSpecificationParams extends FiraParams {
 
         switch (getBundleVersion(bundle)) {
             case BUNDLE_VERSION_1:
-                return parseVersion1(bundle);
-
+                return parseVersion1(bundle).build();
+            case BUNDLE_VERSION_2:
+                return parseVersion2(bundle).build();
             default:
                 throw new IllegalArgumentException("Invalid bundle version");
         }
@@ -404,7 +437,15 @@ public class FiraSpecificationParams extends FiraParams {
         return res;
     }
 
-    private static FiraSpecificationParams parseVersion1(PersistableBundle bundle) {
+    private static FiraSpecificationParams.Builder parseVersion2(PersistableBundle bundle) {
+        FiraSpecificationParams.Builder builder = parseVersion1(bundle);
+        builder.setDeviceType(bundle.getInt(KEY_DEVICE_TYPE));
+        builder.setSuspendRangingSupport(bundle.getBoolean(KEY_SUSPEND_RANGING_SUPPORT));
+        builder.setSessionKeyLength(bundle.getInt(KEY_SESSION_KEY_LENGTH));
+        return builder;
+    }
+
+    private static FiraSpecificationParams.Builder parseVersion1(PersistableBundle bundle) {
         FiraSpecificationParams.Builder builder = new FiraSpecificationParams.Builder();
         List<Integer> supportedChannels =
                 toIntList(requireNonNull(bundle.getIntArray(KEY_SUPPORTED_CHANNELS)));
@@ -492,7 +533,7 @@ public class FiraSpecificationParams extends FiraParams {
             builder.setMaxRangingSessionNumberSupported(
                     bundle.getInt(KEY_MAX_RANGING_SESSION_NUMBER));
         }
-        return builder.build();
+        return builder;
     }
 
     /** Builder */
@@ -586,6 +627,15 @@ public class FiraSpecificationParams extends FiraParams {
         private Integer mMaxMessageSize = 0;
 
         private Integer mMaxDataPacketPayloadSize = 0;
+
+        // Default to Controlee
+        private int mDeviceType = RANGING_DEVICE_TYPE_CONTROLEE;
+
+        // Default to no suspend ranging support
+        private boolean mSuspendRangingSupport = false;
+
+        // Default to 256 bits key length not supported
+        private int mSessionKeyLength = 0;
 
         public FiraSpecificationParams.Builder setMinPhyVersionSupported(
                 FiraProtocolVersion version) {
@@ -778,6 +828,22 @@ public class FiraSpecificationParams extends FiraParams {
             return this;
         }
 
+        public FiraSpecificationParams.Builder setDeviceType(Integer value) {
+            mDeviceType = value;
+            return this;
+
+        }
+
+        public FiraSpecificationParams.Builder setSuspendRangingSupport(Boolean value) {
+            mSuspendRangingSupport = value;
+            return this;
+        }
+
+        public FiraSpecificationParams.Builder setSessionKeyLength(Integer value) {
+            mSessionKeyLength = value;
+            return this;
+        }
+
         public FiraSpecificationParams build() {
             if (mSupportedChannels == null || mSupportedChannels.size() == 0) {
                 throw new IllegalStateException("Supported channels are not set");
@@ -814,7 +880,10 @@ public class FiraSpecificationParams extends FiraParams {
                     mHprfParameterSetCapabilities,
                     mMaxMessageSize,
                     mMaxDataPacketPayloadSize,
-                    mRangeDataNtfConfigCapabilities);
+                    mRangeDataNtfConfigCapabilities,
+                    mDeviceType,
+                    mSuspendRangingSupport,
+                    mSessionKeyLength);
         }
     }
 }
