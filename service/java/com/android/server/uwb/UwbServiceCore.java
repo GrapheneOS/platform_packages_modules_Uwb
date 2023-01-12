@@ -16,6 +16,10 @@
 
 package com.android.server.uwb;
 
+import static android.uwb.UwbManager.MESSAGE_TYPE_COMMAND;
+
+import static com.android.server.uwb.data.UwbUciConstants.FIRA_VERSION_MAJOR_2;
+
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE;
 
@@ -597,6 +601,14 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         if ((!isUwbEnabled())) {
             Log.e(TAG, "sendRawVendor : Uwb is not enabled");
             return UwbUciConstants.STATUS_CODE_FAILED;
+        }
+        // Testing message type is only allowed in version FiRa 2.0 and above.
+        if (mt != MESSAGE_TYPE_COMMAND && getCachedSpecificationParams(chipId)
+                .getFiraSpecificationParams()
+                .getMaxMacVersionSupported()
+                .getMajor() < FIRA_VERSION_MAJOR_2) {
+            Log.e(TAG, "Message Type  " + mt + " not supported in this FiRa version");
+            return  UwbUciConstants.STATUS_CODE_FAILED;
         }
         // TODO(b/211445008): Consolidate to a single uwb thread.
         ExecutorService executor = Executors.newSingleThreadExecutor();
