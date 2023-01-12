@@ -82,11 +82,14 @@ import com.android.uwb.resources.R;
 
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
+import com.google.uwb.support.ccc.CccProtocolVersion;
 import com.google.uwb.support.ccc.CccPulseShapeCombo;
+import com.google.uwb.support.ccc.CccSpecificationParams;
 import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.fira.FiraControleeParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.generic.GenericParams;
@@ -105,6 +108,7 @@ import org.mockito.MockitoSession;
 import org.mockito.quality.Strictness;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -174,6 +178,8 @@ public class UwbServiceCoreTest {
     private MockitoSession mMockitoSession;
 
     private UwbServiceCore mUwbServiceCore;
+
+    private static final int MESSAGE_TYPE_TEST_1 = 4;
 
     @Before
     public void setUp() throws Exception {
@@ -815,6 +821,68 @@ public class UwbServiceCoreTest {
     }
 
     @Test
+    public void testSendVendorUciCommandMessageTypeTest() throws Exception {
+        enableUwbWithCountryCode();
+
+        int gid = 0;
+        int oid = 0;
+        byte[] payload = new byte[0];
+        UwbVendorUciResponse rsp = new UwbVendorUciResponse(
+                (byte) UwbUciConstants.STATUS_CODE_OK, gid, oid, payload);
+        when(mNativeUwbManager.sendRawVendorCmd(anyInt(), anyInt(), anyInt(), any(), anyString()))
+                .thenReturn(rsp);
+        FiraProtocolVersion maxMacVersionSupported = new FiraProtocolVersion(2, 0);
+        List<Integer> supportedChannels = List.of(5, 6, 8, 9);
+        FiraSpecificationParams firaSpecificationParams = new FiraSpecificationParams.Builder()
+                .setMaxMacVersionSupported(maxMacVersionSupported)
+                .setSupportedChannels(supportedChannels)
+                .build();
+        CccSpecificationParams cccSpecificationParams = getTestCccSpecificationParams();
+
+        GenericSpecificationParams genericSpecificationParams =
+                new GenericSpecificationParams.Builder()
+                        .setFiraSpecificationParams(firaSpecificationParams)
+                        .setCccSpecificationParams(cccSpecificationParams)
+                        .build();
+        when(mUwbConfigurationManager.getCapsInfo(any(), any(), anyString()))
+                .thenReturn(Pair.create(
+                        UwbUciConstants.STATUS_CODE_OK, genericSpecificationParams));
+
+        IUwbVendorUciCallback vendorCb = mock(IUwbVendorUciCallback.class);
+        mUwbServiceCore.registerVendorExtensionCallback(vendorCb);
+
+        assertThat(mUwbServiceCore.sendVendorUciMessage(MESSAGE_TYPE_TEST_1, 0, 0,
+                new byte[0], TEST_DEFAULT_CHIP_ID))
+                .isEqualTo(UwbUciConstants.STATUS_CODE_OK);
+
+        verify(vendorCb).onVendorResponseReceived(gid, oid, payload);
+    }
+
+    @Test
+    public void testSendVendorUciCommandUnsupportedMessageType() throws Exception {
+        enableUwbWithCountryCode();
+        List<Integer> supportedChannels = List.of(5, 6, 8, 9);
+        FiraSpecificationParams firaSpecificationParams = new FiraSpecificationParams.Builder()
+                .setSupportedChannels(supportedChannels)
+                .build();
+        CccSpecificationParams cccSpecificationParams = getTestCccSpecificationParams();
+        GenericSpecificationParams genericSpecificationParams =
+                new GenericSpecificationParams.Builder()
+                        .setFiraSpecificationParams(firaSpecificationParams)
+                        .setCccSpecificationParams(cccSpecificationParams)
+                        .build();
+        when(mUwbConfigurationManager.getCapsInfo(any(), any(), anyString()))
+                .thenReturn(Pair.create(
+                        UwbUciConstants.STATUS_CODE_OK, genericSpecificationParams));
+        IUwbVendorUciCallback vendorCb = mock(IUwbVendorUciCallback.class);
+        mUwbServiceCore.registerVendorExtensionCallback(vendorCb);
+
+        assertThat(mUwbServiceCore.sendVendorUciMessage(MESSAGE_TYPE_TEST_1, 0, 0,
+                new byte[0], TEST_DEFAULT_CHIP_ID))
+                .isEqualTo(UwbUciConstants.STATUS_CODE_FAILED);
+    }
+
+    @Test
     public void testDeviceStateCallback() throws Exception {
         IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
         when(cb.asBinder()).thenReturn(mock(IBinder.class));
@@ -928,5 +996,76 @@ public class UwbServiceCoreTest {
         byte[] payload = new byte[0];
         mUwbServiceCore.onVendorUciNotificationReceived(gid, oid, payload);
         verify(vendorCb).onVendorNotificationReceived(gid, oid, payload);
+    }
+
+    public CccSpecificationParams getTestCccSpecificationParams() {
+        CccProtocolVersion[] protocolVersions =
+                new CccProtocolVersion[] {
+                        new CccProtocolVersion(1, 0),
+                        new CccProtocolVersion(2, 0),
+                        new CccProtocolVersion(2, 1)
+                };
+
+        Integer[] uwbConfigs = new Integer[] {CccParams.UWB_CONFIG_0, CccParams.UWB_CONFIG_1};
+        CccPulseShapeCombo[] pulseShapeCombos =
+                new CccPulseShapeCombo[] {
+                        new CccPulseShapeCombo(
+                                CccParams.PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE,
+                                CccParams.PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE),
+                        new CccPulseShapeCombo(
+                                CccParams.PULSE_SHAPE_PRECURSOR_FREE,
+                                CccParams.PULSE_SHAPE_PRECURSOR_FREE),
+                        new CccPulseShapeCombo(
+                                CccParams.PULSE_SHAPE_PRECURSOR_FREE_SPECIAL,
+                                CccParams.PULSE_SHAPE_PRECURSOR_FREE_SPECIAL)
+                };
+        int ranMultiplier = 200;
+        Integer[] chapsPerSlots =
+                new Integer[] {CccParams.CHAPS_PER_SLOT_4, CccParams.CHAPS_PER_SLOT_12};
+        Integer[] syncCodes =
+                new Integer[] {10, 23};
+        Integer[] channels = new Integer[] {CccParams.UWB_CHANNEL_5, CccParams.UWB_CHANNEL_9};
+        Integer[] hoppingConfigModes =
+                new Integer[] {
+                        CccParams.HOPPING_CONFIG_MODE_ADAPTIVE,
+                        CccParams.HOPPING_CONFIG_MODE_CONTINUOUS };
+        Integer[] hoppingSequences =
+                new Integer[] {CccParams.HOPPING_SEQUENCE_AES, CccParams.HOPPING_SEQUENCE_DEFAULT};
+
+        CccSpecificationParams.Builder paramsBuilder = new CccSpecificationParams.Builder();
+        for (CccProtocolVersion p : protocolVersions) {
+            paramsBuilder.addProtocolVersion(p);
+        }
+
+        for (int uwbConfig : uwbConfigs) {
+            paramsBuilder.addUwbConfig(uwbConfig);
+        }
+
+        for (CccPulseShapeCombo pulseShapeCombo : pulseShapeCombos) {
+            paramsBuilder.addPulseShapeCombo(pulseShapeCombo);
+        }
+
+        paramsBuilder.setRanMultiplier(ranMultiplier);
+
+        for (int chapsPerSlot : chapsPerSlots) {
+            paramsBuilder.addChapsPerSlot(chapsPerSlot);
+        }
+
+        for (int syncCode : syncCodes) {
+            paramsBuilder.addSyncCode(syncCode);
+        }
+
+        for (int channel : channels) {
+            paramsBuilder.addChannel(channel);
+        }
+
+        for (int hoppingConfigMode : hoppingConfigModes) {
+            paramsBuilder.addHoppingConfigMode(hoppingConfigMode);
+        }
+
+        for (int hoppingSequence : hoppingSequences) {
+            paramsBuilder.addHoppingSequence(hoppingSequence);
+        }
+        return paramsBuilder.build();
     }
 }
