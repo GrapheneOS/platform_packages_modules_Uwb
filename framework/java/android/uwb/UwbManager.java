@@ -43,6 +43,7 @@ import com.android.internal.annotations.GuardedBy;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 
 /**
@@ -969,18 +970,15 @@ public final class UwbManager {
     @interface SendVendorUciStatus {}
 
     /**
-     * @hide
      * Message Type for UCI Command.
      */
     public static final int MESSAGE_TYPE_COMMAND = 1;
     /**
-     * @hide
      * Message Type value reserved for testing.
      */
     public static final int MESSAGE_TYPE_TEST_1 = 4;
 
     /**
-     * @hide
      * Message Type value reserved for testing.
      */
     public static final int MESSAGE_TYPE_TEST_2 = 5;
@@ -1019,12 +1017,13 @@ public final class UwbManager {
     }
 
     /**
-     * @hide
-     *
      * Send Vendor specific Uci Messages with custom message type.
      *
      * The format of the UCI messages are defined in the UCI specification. The platform is
      * responsible for fragmenting the payload if necessary.
+     *
+     * Note that mt (message type) is added at the beginning of method parameters as it is more
+     * distinctive than other parameters and was requested from vendor.
      *
      * @param mt Message Type of the command
      * @param gid Group ID of the command. This needs to be one of the vendor reserved GIDs from
@@ -1033,9 +1032,11 @@ public final class UwbManager {
      * @param payload containing vendor Uci message payload
      */
     @NonNull
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @RequiresPermission(permission.UWB_PRIVILEGED)
     public @SendVendorUciStatus int sendVendorUciMessage(@MessageType int mt,
-            @IntRange(from = 9, to = 15) int gid, int oid, @NonNull byte[] payload) {
+            @IntRange(from = 0, to = 15) int gid, int oid, @NonNull byte[] payload) {
+        Objects.requireNonNull(payload, "Payload must not be null");
         try {
             return mUwbAdapter.sendVendorUciMessage(mt, gid, oid, payload);
         } catch (RemoteException e) {
