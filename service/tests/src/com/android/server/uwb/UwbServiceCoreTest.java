@@ -903,6 +903,37 @@ public class UwbServiceCoreTest {
     }
 
     @Test
+    public void testMultipleDeviceStateCallbacks() throws Exception {
+        IUwbAdapterStateCallbacks cb1 = mock(IUwbAdapterStateCallbacks.class);
+        when(cb1.asBinder()).thenReturn(mock(IBinder.class));
+        IUwbAdapterStateCallbacks cb2 = mock(IUwbAdapterStateCallbacks.class);
+        when(cb2.asBinder()).thenReturn(mock(IBinder.class));
+
+        mUwbServiceCore.registerAdapterStateCallbacks(cb1);
+        verify(cb1).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.SYSTEM_BOOT);
+
+        mUwbServiceCore.registerAdapterStateCallbacks(cb2);
+        verify(cb2).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.SYSTEM_BOOT);
+
+        enableUwbWithCountryCode();
+        verify(cb1).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
+                StateChangeReason.SYSTEM_POLICY);
+        verify(cb2).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
+                StateChangeReason.SYSTEM_POLICY);
+
+        when(mUwbCountryCode.getCountryCode()).thenReturn("US");
+        mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ACTIVE,
+                TEST_DEFAULT_CHIP_ID);
+        mTestLooper.dispatchAll();
+        verify(cb1).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_ACTIVE,
+                StateChangeReason.SESSION_STARTED);
+        verify(cb2).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_ACTIVE,
+                StateChangeReason.SESSION_STARTED);
+    }
+
+    @Test
     public void testDeviceStateCallback_invalidChipId() throws Exception {
         IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
         when(cb.asBinder()).thenReturn(mock(IBinder.class));
