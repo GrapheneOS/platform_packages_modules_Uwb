@@ -40,4 +40,5 @@ android_test {
     ],
     srcs: ["src/**/*.java"],
     platform_apis: true,
+    min_sdk_version: "31",
 }
