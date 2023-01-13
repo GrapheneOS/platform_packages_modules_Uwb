@@ -192,10 +192,14 @@ package android.uwb {
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public int removeProfileAdf(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public int removeServiceProfile(@NonNull android.os.PersistableBundle);
     method @NonNull @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public int sendVendorUciMessage(@IntRange(from=0, to=15) int, int, @NonNull byte[]);
+    method @NonNull @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public int sendVendorUciMessage(int, @IntRange(from=0, to=15) int, int, @NonNull byte[]);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void setUwbEnabled(boolean);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void unregisterAdapterStateCallback(@NonNull android.uwb.UwbManager.AdapterStateCallback);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void unregisterUwbOemExtensionCallback(@NonNull android.uwb.UwbManager.UwbOemExtensionCallback);
     method public void unregisterUwbVendorUciCallback(@NonNull android.uwb.UwbManager.UwbVendorUciCallback);
+    field public static final int MESSAGE_TYPE_COMMAND = 1; // 0x1
+    field public static final int MESSAGE_TYPE_TEST_1 = 4; // 0x4
+    field public static final int MESSAGE_TYPE_TEST_2 = 5; // 0x5
     field public static final int REMOVE_PROFILE_ADF_ERROR_INTERNAL = 2; // 0x2
     field public static final int REMOVE_PROFILE_ADF_ERROR_UNKNOWN_SERVICE = 1; // 0x1
     field public static final int REMOVE_PROFILE_ADF_SUCCESS = 0; // 0x0
