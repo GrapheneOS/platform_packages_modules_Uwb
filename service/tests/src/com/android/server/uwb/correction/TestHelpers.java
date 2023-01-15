@@ -27,6 +27,7 @@ import org.junit.Assert;
 public final class TestHelpers {
     private TestHelpers() {}
 
+    // Asserts that a value is within 0.001, to account for floating point rounding errors.
     public static void assertClose(double v, double c) {
         Assert.assertTrue(abs(v - c) < 0.001);
     }
