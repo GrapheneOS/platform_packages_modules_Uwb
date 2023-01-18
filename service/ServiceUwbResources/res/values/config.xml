@@ -28,4 +28,53 @@
     specified in multichip-parser/uwbConfig.xsd. If config_isMultichip is false, this value will be
     ignored. -->
     <string translatable="false" name="config_multichipConfigPath"></string>
+
+    <!-- When true, the filter engine will alter UWB values to improve accuracy. -->
+    <bool name="enable_filters">false</bool>
+
+    <!-- Used to filter distance measurements. Determines percentage (1-100) of inliers within the
+    sliding window will be used to perform the average. At least one inlier will be used.
+    Therefore, a value of 0 is a true median, and a value  of 100 is a true average. -->
+    <integer name="filter_distance_inliers_percent">50</integer>
+
+    <!-- The size in samples of the sliding window for the distance filter. Note that this increases
+    latency to about half the window size. -->
+    <integer name="filter_distance_window">5</integer>
+
+    <!-- Used to filter AoA angle measurements. Determines percentage (1-100) of inliers within the
+    sliding window will be used to perform the average. At least one inlier will be used.
+    Therefore, a value of 0 is a true median, and a value  of 100 is a true average. -->
+    <integer name="filter_angle_inliers_percent">50</integer>
+
+    <!-- The size in samples of the sliding window for the AoA filters. Note that this increases
+    latency to about half the window size. -->
+    <integer name="filter_angle_window">5</integer>
+
+    <!-- Selects which pose source will be used by default to anticipate the next UWB measurement.
+    The pose source helps lower latency by shifting the filter states to reflect how the phone has
+    moved.
+    NONE = No pose source.
+    ROTATION_VECTOR = Requires gyro, accel and compass. Very accurate, rotation only.
+    GYRO = Gyro only. Less accurate, Saves a tiny bit of power.
+    SIXDOF = 6DOF sensor. Extremely accurate, accounts for position. Not available on most hardware.
+    DOUBLE_INTEGRATE = Double integration. Under development. Expect very bad motion drift.
+    -->
+    <string name="pose_source_type">ROTATION_VECTOR</string>
+
+    <!-- Enables elevation estimation. Strongly recommended for hardware that doesn't support
+    elevation. This helps produce better predictions from pose changes, and improves the quality
+    of the AoA primer. -->
+    <bool name="enable_primer_est_elevation">true</bool>
+
+    <!-- Enables the AoA conversion primer. This is needed on hardware that does not convert AoA
+    to spherical coordinates, including hardware that does not support elevation.-->
+    <bool name="enable_primer_aoa">true</bool>
+
+    <!-- Sets the field of view, in degrees. Note that this is in degrees from 0 (straight ahead),
+    which is not the same as how camera FOV is represented.
+    UWB values outside the field of view will be replaced with predicted values based on pose
+    changes. The FOV is circular, so a value of 90 will only provide continuous azimuth values if
+    elevation is zero.
+    If <=0 or >=180, the primer will be disabled, allowing an unlimited field of view. -->
+    <integer name="primer_fov_degrees">60</integer>
 </resources>

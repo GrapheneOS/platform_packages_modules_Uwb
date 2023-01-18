@@ -19,6 +19,8 @@ import static com.android.server.uwb.correction.TestHelpers.assertClose;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.platform.test.annotations.Presubmit;
+
 import com.android.server.uwb.correction.filtering.NullFilter;
 import com.android.server.uwb.correction.filtering.PositionFilterImpl;
 import com.android.server.uwb.correction.math.Pose;
@@ -30,6 +32,7 @@ import com.android.server.uwb.correction.primers.NullPrimer;
 
 import org.junit.Test;
 
+@Presubmit
 public class UwbFilterEngineTest {
 
     @Test

@@ -18,19 +18,19 @@ package com.android.server.uwb.correction.primers;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.android.server.uwb.correction.math.AoAVector;
+import com.android.server.uwb.correction.math.AoaVector;
 import com.android.server.uwb.correction.math.SphericalVector;
 import com.android.server.uwb.correction.pose.IPoseSource;
 
 /**
  * Converts a PDoA azimuth value to a spherical coordinate azimuth by accounting for elevation.
- * See {@link AoAVector} for information on the difference.
+ * See {@link AoaVector} for information on the difference.
  * This primer is needed on hardware that does not support elevation, after the ElevationPrimer,
  * so that the estimated elevation can be used to perform the PDoA-to-azimuth conversion.
  * This primer is also needed on hardware that supports elevation, but with firmware that does
  * not perform the PDoA-to-azimuth conversion.
  */
-public class AoAPrimer implements IPrimer {
+public class AoaPrimer implements IPrimer {
     /**
      * Applies corrections to a raw position.
      *
@@ -47,7 +47,7 @@ public class AoAPrimer implements IPrimer {
         if (input.hasElevation && input.hasAzimuth) {
             // Reinterpret the SphericalVector as an AoAVector, then convert it to a
             // SphericalVector.
-            return AoAVector.fromRadians(
+            return AoaVector.fromRadians(
                             input.vector.azimuth,
                             input.vector.elevation,
                             input.vector.distance)

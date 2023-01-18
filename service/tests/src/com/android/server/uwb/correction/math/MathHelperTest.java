@@ -28,8 +28,11 @@ import static com.google.common.truth.Truth.assertThat;
 import static java.lang.Math.sqrt;
 import static java.lang.Math.toRadians;
 
+import android.platform.test.annotations.Presubmit;
+
 import org.junit.Test;
 
+@Presubmit
 public class MathHelperTest {
 
     @Test
