@@ -91,7 +91,8 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     @VisibleForTesting
     public static final int TASK_NOTIFY_ADAPTER_STATE = 4;
 
-    private static final int WATCHDOG_MS = 10000;
+    @VisibleForTesting
+    public static final int WATCHDOG_MS = 10000;
     private static final int SEND_VENDOR_CMD_TIMEOUT_MS = 10000;
     @VisibleForTesting
     public static final int TASK_NOTIFY_ADAPTER_STATE_MESSAGE_DELAY_MS = 15000;
@@ -740,7 +741,9 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                                 countryCode);
                     }
                 } finally {
-                    mUwbWakeLock.release();
+                    if (mUwbWakeLock.isHeld()) {
+                        mUwbWakeLock.release();
+                    }
                     watchDog.cancel();
                 }
             } catch (Exception e) {
@@ -774,7 +777,9 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                         getAdapterStateFromDeviceState(UwbUciConstants.DEVICE_STATE_OFF),
                         getReasonFromDeviceState(UwbUciConstants.DEVICE_STATE_OFF));
             } finally {
-                mUwbWakeLock.release();
+                if (mUwbWakeLock.isHeld()) {
+                    mUwbWakeLock.release();
+                }
                 watchDog.cancel();
             }
         }
