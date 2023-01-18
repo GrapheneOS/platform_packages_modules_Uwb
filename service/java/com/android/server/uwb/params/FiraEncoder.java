@@ -180,9 +180,9 @@ public class FiraEncoder extends TlvEncoder {
             tlvBufferBuilder.putByteArray(ConfigParam.CAP_SIZE_RANGE, params.getCapSize());
         }
         if (params.getDeviceRole() == FiraParams.RANGING_DEVICE_UT_TAG) {
-            tlvBufferBuilder.putLong(ConfigParam.UL_TDOA_TX_INTERVAL,
+            tlvBufferBuilder.putInt(ConfigParam.UL_TDOA_TX_INTERVAL,
                     params.getUlTdoaTxIntervalMs());
-            tlvBufferBuilder.putLong(ConfigParam.UL_TDOA_RANDOM_WINDOW,
+            tlvBufferBuilder.putInt(ConfigParam.UL_TDOA_RANDOM_WINDOW,
                     params.getUlTdoaRandomWindowMs());
             tlvBufferBuilder.putByteArray(ConfigParam.UL_TDOA_DEVICE_ID, getUlTdoaDeviceId(
                     params.getUlTdoaDeviceIdType(), params.getUlTdoaDeviceId()));
