@@ -495,27 +495,27 @@ pub struct UwbRangingDataJni<'a> {
 impl<'a> TryFrom<SessionRangeDataWithEnv<'a>> for UwbRangingDataJni<'a> {
     type Error = Error;
     fn try_from(data_obj: SessionRangeDataWithEnv<'a>) -> Result<Self> {
-        let (mac_address_indicator, measurements_size) = match data_obj
-            .session_range_data
-            .ranging_measurements
-        {
-            RangingMeasurements::ShortAddressTwoWay(ref m) => {
-                (MacAddressIndicator::ShortAddress, m.len())
-            }
-            RangingMeasurements::ExtendedAddressTwoWay(ref m) => {
-                (MacAddressIndicator::ExtendedAddress, m.len())
-            }
-            RangingMeasurements::ShortDltdoa(ref m) => (MacAddressIndicator::ShortAddress, m.len()),
-            RangingMeasurements::ExtendedDltdoa(ref m) => {
-                (MacAddressIndicator::ExtendedAddress, m.len())
-            }
-            RangingMeasurements::ShortAddressOwrAoa(ref m) => {
-                (MacAddressIndicator::ShortAddress, m.len())
-            }
-            RangingMeasurements::ExtendedAddressOwrAoa(ref m) => {
-                (MacAddressIndicator::ExtendedAddress, m.len())
-            }
-        };
+        let (mac_address_indicator, measurements_size) =
+            match data_obj.session_range_data.ranging_measurements {
+                RangingMeasurements::ShortAddressTwoWay(ref m) => {
+                    (MacAddressIndicator::ShortAddress, m.len())
+                }
+                RangingMeasurements::ExtendedAddressTwoWay(ref m) => {
+                    (MacAddressIndicator::ExtendedAddress, m.len())
+                }
+                RangingMeasurements::ShortAddressDltdoa(ref m) => {
+                    (MacAddressIndicator::ShortAddress, m.len())
+                }
+                RangingMeasurements::ExtendedAddressDltdoa(ref m) => {
+                    (MacAddressIndicator::ExtendedAddress, m.len())
+                }
+                RangingMeasurements::ShortAddressOwrAoa(ref m) => {
+                    (MacAddressIndicator::ShortAddress, m.len())
+                }
+                RangingMeasurements::ExtendedAddressOwrAoa(ref m) => {
+                    (MacAddressIndicator::ExtendedAddress, m.len())
+                }
+            };
         let measurements_jni = UwbTwoWayMeasurementJni::try_from(RangingMeasurementsWithEnv::new(
             data_obj.env,
             data_obj.uwb_two_way_measurement_jclass,
