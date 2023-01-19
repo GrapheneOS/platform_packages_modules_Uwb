@@ -673,8 +673,8 @@ public abstract class FiraParams extends Params {
     public static final int RANGE_DATA_NTF_PROXIMITY_FAR_DEFAULT = 20000;
     public static final double RANGE_DATA_NTF_AOA_AZIMUTH_LOWER_DEFAULT = -Math.PI;
     public static final double RANGE_DATA_NTF_AOA_AZIMUTH_UPPER_DEFAULT = Math.PI;
-    public static final double RANGE_DATA_NTF_AOA_ELEVATION_LOWER_DEFAULT = -Math.PI;
-    public static final double RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT = Math.PI;
+    public static final double RANGE_DATA_NTF_AOA_ELEVATION_LOWER_DEFAULT = -Math.PI / 2;
+    public static final double RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT = Math.PI / 2;
 
     public enum AoaCapabilityFlag implements FlagEnum {
         HAS_AZIMUTH_SUPPORT(1),
