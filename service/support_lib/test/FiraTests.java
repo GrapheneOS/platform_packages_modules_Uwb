@@ -130,7 +130,7 @@ public class FiraTests {
         double rangeDataNtfAoaAzimuthLower = -0.5;
         double rangeDataNtfAoaAzimuthUpper = +1.5;
         double rangeDataNtfAoaElevationLower = -1.5;
-        double rangeDataNtfAoaElevationUpper = +2.5;
+        double rangeDataNtfAoaElevationUpper = +1.2;
         boolean hasTimeOfFlightReport = true;
         boolean hasAngleOfArrivalAzimuthReport = true;
         boolean hasAngleOfArrivalElevationReport = true;
@@ -442,7 +442,7 @@ public class FiraTests {
         double rangeDataAoaAzimuthLower = -0.5;
         double rangeDataAoaAzimuthUpper = +1.5;
         double rangeDataAoaElevationLower = -1.5;
-        double rangeDataAoaElevationUpper = +2.5;
+        double rangeDataAoaElevationUpper = +1.2;
 
         int[] subSessionIdList = new int[] {3, 4};
         FiraRangingReconfigureParams params =
