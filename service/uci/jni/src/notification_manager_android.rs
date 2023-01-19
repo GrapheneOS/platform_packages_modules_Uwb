@@ -443,8 +443,10 @@ impl NotificationManagerAndroid {
             uwb_core::uci::RangingMeasurements::ExtendedAddressTwoWay(_) => {
                 EXTENDED_MAC_ADDRESS_LEN
             }
-            uwb_core::uci::RangingMeasurements::ShortDltdoa(_) => SHORT_MAC_ADDRESS_LEN,
-            uwb_core::uci::RangingMeasurements::ExtendedDltdoa(_) => EXTENDED_MAC_ADDRESS_LEN,
+            uwb_core::uci::RangingMeasurements::ShortAddressDltdoa(_) => SHORT_MAC_ADDRESS_LEN,
+            uwb_core::uci::RangingMeasurements::ExtendedAddressDltdoa(_) => {
+                EXTENDED_MAC_ADDRESS_LEN
+            }
             _ => {
                 return Err(Error::ForeignFunctionInterface);
             }
@@ -495,8 +497,8 @@ impl NotificationManagerAndroid {
         let measurement_count: i32 = match &range_data.ranging_measurements {
             RangingMeasurements::ShortAddressTwoWay(v) => v.len(),
             RangingMeasurements::ExtendedAddressTwoWay(v) => v.len(),
-            RangingMeasurements::ShortDltdoa(v) => v.len(),
-            RangingMeasurements::ExtendedDltdoa(v) => v.len(),
+            RangingMeasurements::ShortAddressDltdoa(v) => v.len(),
+            RangingMeasurements::ExtendedAddressDltdoa(v) => v.len(),
             _ => {
                 return Err(Error::BadParameters);
             }
@@ -506,8 +508,8 @@ impl NotificationManagerAndroid {
         let mac_indicator = match &range_data.ranging_measurements {
             RangingMeasurements::ShortAddressTwoWay(_) => MacAddressIndicator::ShortAddress,
             RangingMeasurements::ExtendedAddressTwoWay(_) => MacAddressIndicator::ExtendedAddress,
-            RangingMeasurements::ShortDltdoa(_) => MacAddressIndicator::ShortAddress,
-            RangingMeasurements::ExtendedDltdoa(_) => MacAddressIndicator::ExtendedAddress,
+            RangingMeasurements::ShortAddressDltdoa(_) => MacAddressIndicator::ShortAddress,
+            RangingMeasurements::ExtendedAddressDltdoa(_) => MacAddressIndicator::ExtendedAddress,
             _ => {
                 return Err(Error::BadParameters);
             }
@@ -523,10 +525,10 @@ impl NotificationManagerAndroid {
             .map_err(|_| Error::ForeignFunctionInterface)?;
 
         for (i, measurement) in match range_data.ranging_measurements {
-            RangingMeasurements::ShortDltdoa(v) => {
+            RangingMeasurements::ShortAddressDltdoa(v) => {
                 v.into_iter().map(DlTdoaRangingMeasurement::from).collect::<Vec<_>>()
             }
-            RangingMeasurements::ExtendedDltdoa(v) => {
+            RangingMeasurements::ExtendedAddressDltdoa(v) => {
                 v.into_iter().map(DlTdoaRangingMeasurement::from).collect::<Vec<_>>()
             }
             _ => Vec::new(),
@@ -840,12 +842,12 @@ impl NotificationManagerAndroid {
         let (bytearray_len, mac_indicator) = match &range_data.ranging_measurements {
             RangingMeasurements::ExtendedAddressTwoWay(_)
             | RangingMeasurements::ExtendedAddressOwrAoa(_)
-            | RangingMeasurements::ExtendedDltdoa(_) => {
+            | RangingMeasurements::ExtendedAddressDltdoa(_) => {
                 (EXTENDED_MAC_ADDRESS_LEN, MacAddressIndicator::ExtendedAddress)
             }
             RangingMeasurements::ShortAddressTwoWay(_)
             | RangingMeasurements::ShortAddressOwrAoa(_)
-            | RangingMeasurements::ShortDltdoa(_) => {
+            | RangingMeasurements::ShortAddressDltdoa(_) => {
                 (SHORT_MAC_ADDRESS_LEN, MacAddressIndicator::ShortAddress)
             }
         };
@@ -854,15 +856,14 @@ impl NotificationManagerAndroid {
             | RangingMeasurements::ShortAddressTwoWay(_) => UWB_TWO_WAY_MEASUREMENT_CLASS,
             RangingMeasurements::ExtendedAddressOwrAoa(_)
             | RangingMeasurements::ShortAddressOwrAoa(_) => UWB_OWR_AOA_MEASUREMENT_CLASS,
-            RangingMeasurements::ExtendedDltdoa(_) | RangingMeasurements::ShortDltdoa(_) => {
-                UWB_DL_TDOA_MEASUREMENT_CLASS
-            }
+            RangingMeasurements::ExtendedAddressDltdoa(_)
+            | RangingMeasurements::ShortAddressDltdoa(_) => UWB_DL_TDOA_MEASUREMENT_CLASS,
         };
         let measurement_count: i32 = match &range_data.ranging_measurements {
             RangingMeasurements::ShortAddressTwoWay(v) => v.len().try_into(),
             RangingMeasurements::ExtendedAddressTwoWay(v) => v.len().try_into(),
-            RangingMeasurements::ShortDltdoa(v) => v.len().try_into(),
-            RangingMeasurements::ExtendedDltdoa(v) => v.len().try_into(),
+            RangingMeasurements::ShortAddressDltdoa(v) => v.len().try_into(),
+            RangingMeasurements::ExtendedAddressDltdoa(v) => v.len().try_into(),
             RangingMeasurements::ShortAddressOwrAoa(v) => v.len().try_into(),
             RangingMeasurements::ExtendedAddressOwrAoa(v) => v.len().try_into(),
         }
@@ -999,10 +1000,10 @@ impl NotificationManager for NotificationManagerAndroid {
                 uwb_core::uci::RangingMeasurements::ExtendedAddressOwrAoa(_) => {
                     self.on_session_range_data_notification(range_data)
                 }
-                uwb_core::uci::RangingMeasurements::ShortDltdoa(_) => {
+                uwb_core::uci::RangingMeasurements::ShortAddressDltdoa(_) => {
                     self.on_session_dl_tdoa_range_data_notification(range_data)
                 }
-                uwb_core::uci::RangingMeasurements::ExtendedDltdoa(_) => {
+                uwb_core::uci::RangingMeasurements::ExtendedAddressDltdoa(_) => {
                     self.on_session_dl_tdoa_range_data_notification(range_data)
                 }
             },
