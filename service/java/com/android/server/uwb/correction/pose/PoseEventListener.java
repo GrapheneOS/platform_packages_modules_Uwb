@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@ import com.android.server.uwb.correction.math.Pose;
 public interface PoseEventListener {
     /**
      * Called when there is an update to the device's pose. The origin is arbitrary, but
-     *  position could be relative to the starting position, and rotation could be relative
-     *  to magnetic north and the direction of gravity.
+     * position could be relative to the starting position, and rotation could be relative
+     * to magnetic north and the direction of gravity.
      * @param pose The new location and orientation of the device.
      */
     void onPoseChanged(@NonNull Pose pose);

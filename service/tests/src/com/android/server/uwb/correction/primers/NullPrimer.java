@@ -36,7 +36,7 @@ public class NullPrimer implements IPrimer {
     public Sparse prime(@NonNull Sparse input, @Nullable SphericalVector prediction,
             @Nullable IPoseSource poseSource) {
         // This test primer will just turn any negative azimuth values to positive ones,
-        //  and use the prediction for any missing values.
+        // and use the prediction for any missing values.
         float azimuth = input.vector.azimuth;
         float elevation = input.vector.elevation;
         float distance = input.vector.distance;

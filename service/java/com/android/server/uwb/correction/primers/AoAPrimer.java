@@ -18,25 +18,42 @@ package com.android.server.uwb.correction.primers;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.android.server.uwb.correction.math.AoAVector;
 import com.android.server.uwb.correction.math.SphericalVector;
 import com.android.server.uwb.correction.pose.IPoseSource;
 
 /**
- * Given known data about a UWB reading, applies corrections that correct for nonlinearities,
- * missing data or other hardware limitations.
+ * Converts a PDoA azimuth value to a spherical coordinate azimuth by accounting for elevation.
+ * See {@link AoAVector} for information on the difference.
+ * This primer is needed on hardware that does not support elevation, after the ElevationPrimer,
+ * so that the estimated elevation can be used to perform the PDoA-to-azimuth conversion.
+ * This primer is also needed on hardware that supports elevation, but with firmware that does
+ * not perform the PDoA-to-azimuth conversion.
  */
-public interface IPrimer {
+public class AoAPrimer implements IPrimer {
     /**
      * Applies corrections to a raw position.
      *
-     * @param input The original UWB reading.
+     * @param input      The original UWB reading.
      * @param prediction A prediction of where the signal probably came from.
      * @param poseSource A pose source that may indicate phone orientation.
      * @return A replacement value for the UWB input that has been corrected for  the situation.
      */
-    SphericalVector.Sparse prime(
+    @Override
+    public SphericalVector.Sparse prime(
             @NonNull SphericalVector.Sparse input,
             @Nullable SphericalVector prediction,
-            @Nullable IPoseSource poseSource
-    );
+            @Nullable IPoseSource poseSource) {
+        if (input.hasElevation && input.hasAzimuth) {
+            // Reinterpret the SphericalVector as an AoAVector, then convert it to a
+            // SphericalVector.
+            return AoAVector.fromRadians(
+                            input.vector.azimuth,
+                            input.vector.elevation,
+                            input.vector.distance)
+                    .toSphericalVector()
+                    .toSparse(true, true, input.hasDistance);
+        }
+        return input;
+    }
 }

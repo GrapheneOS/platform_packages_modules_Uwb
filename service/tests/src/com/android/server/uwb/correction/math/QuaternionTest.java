@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ public class QuaternionTest {
         assertTrue(Math.abs(ypr.z - 1.5) < 0.001);
 
         // See the Javadoc for the 'Quaternion' class for an explanation of how these
-        //  results are determined.
+        // results are determined.
 
         quaternion = Quaternion.yawPitchRoll((float) Math.PI / 2, 0, 0);
         assertClose(quaternion.rotateVector(new Vector3(1, 2, 3)), new Vector3(3, 2, -1));
