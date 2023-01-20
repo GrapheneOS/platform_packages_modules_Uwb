@@ -30,7 +30,7 @@ public class NullFilter implements IFilter {
      *
      * @param value The value to add to the filter.
      * @param instant When the value occurred, used to determine the latency introduced by the
-     * filter. Note that this has no effect on the order in which the filter operates
+     *                filter. Note that this has no effect on the order in which the filter operates
      */
     @Override
     public void add(float value, @NonNull Instant instant) {

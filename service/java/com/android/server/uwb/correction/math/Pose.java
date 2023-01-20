@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ public class Pose {
      *
      * @param translation a {@code float[3]} representing the translation vector
      * @param rotation a {@code float[4]} representing the rotation quaternion following the
-     *                Hamilton convention.
+     *                 Hamilton convention.
      * @throws IllegalArgumentException if translation and rotation lengths are wrong.
      */
     public Pose(float[] translation, float[] rotation) {
@@ -99,9 +99,9 @@ public class Pose {
     }
 
     /**
-     *  Transforms the provided point by the pose. This converts a point relative to the pose into
-     *   a world-relative point.  To convert from a world-relative point to a pose-relative point,
-     *   use pose.inverted().transformPoint(point)
+     * Transforms the provided point by the pose. This converts a point relative to the pose into
+     * a world-relative point.  To convert from a world-relative point to a pose-relative point,
+     * use pose.inverted().transformPoint(point)
      */
     public Vector3 transformPoint(Vector3 point) {
         return rotation.rotateVector(point).add(translation);

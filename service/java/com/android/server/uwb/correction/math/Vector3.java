@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,8 +131,8 @@ public class Vector3 {
 
     /**
      * Gets the square of the length of the vector. When performing length comparisons,
-     *  it is more optimal to compare against a squared length to avoid having to perform
-     *  a sqrt.
+     * it is more optimal to compare against a squared length to avoid having to perform
+     * a sqrt.
      * @return The square of the length of the vector.
      */
     public float lengthSquared() {
@@ -206,7 +206,7 @@ public class Vector3 {
 
     /**
      * Converts a vector expressed in radians (ie - yaw, pitch, roll), into degrees. Primarily
-     *  used as a convenience to display data to a user.
+     * used as a convenience to display data to a user.
      * @return A Vector3 multiplied by 180/PI.
      */
     public Vector3 toDegrees() {
