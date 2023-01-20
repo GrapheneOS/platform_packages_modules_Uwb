@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,18 +42,18 @@ import java.util.Objects;
 /**
  * Represents a point in space as distance, azimuth and elevation.
  * This uses OpenGL's right-handed coordinate system, where the origin is facing in the
- *  -Z direction. Increasing azimuth rotates around Y and increases X.  Increasing
- *  elevation rotates around X and increases Y.
+ * -Z direction. Increasing azimuth rotates around Y and increases X.  Increasing
+ * elevation rotates around X and increases Y.
  *
  * Note that this is NOT quite a spherical vector.  It represents angles seen by AoA antennas.
  * In this implementation, azimuth and elevation are treated the same. Therefore, for example:
- *  Very "up" or "down" targets will have an azimuth near 0, because the signal will arrive at
- *  both AoA antennas at nearly the same time.
+ * Very "up" or "down" targets will have an azimuth near 0, because the signal will arrive at
+ * both AoA antennas at nearly the same time.
  * In a spherical vector, azimuth is computed exclusively from the horizontal plane and treated
- *  independently of the vertical axis, but elevation is computed along the plane of the azimuth.
+ * independently of the vertical axis, but elevation is computed along the plane of the azimuth.
  * This also means that there are some angles that are impossible.  For example, something with
- *  a 90deg azimuth (directly right of the phone) cannot possibly be viewed by the elevation
- *  antennas from any angle other than 0deg.
+ * a 90deg azimuth (directly right of the phone) cannot possibly be viewed by the elevation
+ * antennas from any angle other than 0deg.
  */
 @Immutable
 public final class AoAVector {
@@ -64,8 +64,8 @@ public final class AoAVector {
 
     /**
      * Creates a AoAVector from the azimuth, elevation and distance of a viewpoint that is
-     *  facing into the -Z axis. Illegal azimuth and elevation combinations will be scaled away
-     *  from +/-90deg such that they are legal.
+     * facing into the -Z axis. Illegal azimuth and elevation combinations will be scaled away
+     * from +/-90deg such that they are legal.
      *
      * @param azimuth The angle along the X axis, around the Y axis.
      * @param elevation The angle along the Y axis, around the X axis.
@@ -76,7 +76,7 @@ public final class AoAVector {
         float ae = abs(elevation);
         if (ae > F_HALF_PI) {
             // Normalize elevation to be only +/-90 - if it's outside that, mirror and bound the
-            //  elevation and flip the azimuth.
+            // elevation and flip the azimuth.
             elevation = (F_PI - ae) * signum(elevation);
             azimuth += F_PI;
         }
@@ -97,11 +97,11 @@ public final class AoAVector {
         float scaleFactor = angleSum / (F_HALF_PI);
         if (scaleFactor > 1) {
             // The combination of degrees isn't possible - for example, the azimuth suggests that
-            //  the target is exactly 90deg to the right, and yet elevation is non-zero.
+            // the target is exactly 90deg to the right, and yet elevation is non-zero.
             // The elevation and azimuth will be scaled down until they are within
-            //  legal limits. This will create a bias away from 90-degree readings.
-            //  Note that azimuth will be corrected to higher than 90deg if it was originally
-            //  above 90deg.
+            // legal limits. This will create a bias away from 90-degree readings.
+            // Note that azimuth will be corrected to higher than 90deg if it was originally
+            // above 90deg.
             elevation /= scaleFactor;
             azimuth = backFacing ? (F_PI * signum(azimuth) - laz / scaleFactor) : (azimuth
                     / scaleFactor);
@@ -159,7 +159,7 @@ public final class AoAVector {
 
     /**
      * Produces an AoA vector from a cartesian vector, converting X, Y and Z values to
-     *  azimuth, elevation and distance.
+     * azimuth, elevation and distance.
      *
      * @param position The cartesian representation to convert.
      * @return An equivalent AoA vector representation.
@@ -172,7 +172,7 @@ public final class AoAVector {
 
     /**
      * Produces a AoA vector from a cartesian vector, converting X, Y and Z values to
-     *  azimuth, elevation and distance.
+     * azimuth, elevation and distance.
      *
      * @param x The cartesian x-coordinate to convert.
      * @param y The cartesian y-coordinate to convert.

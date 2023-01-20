@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ public final class MathHelper {
 
     /**
      * Converts degrees that may be outside +/-180 to an equivalent rotation value between
-     *  -180 (excl) and 180 (incl).
+     * -180 (excl) and 180 (incl).
      * @param deg The degrees to normalize
      * @return A value above -180 and up to 180 that has an equivalent angle to the input.
      */
