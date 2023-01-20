@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,8 @@ public interface IPositionFilter {
      * Adds a value to the filter.
      * @param value The value to add to the filter.
      * @param instant When the value occurred, used to determine the latency introduced by
-     *  the filter. Note that this has no effect on the order in which the filter operates
-     *  on values.
+     * the filter. Note that this has no effect on the order in which the filter operates
+     * on values.
      */
     void add(@NonNull SphericalVector value, @NonNull Instant instant);
 
