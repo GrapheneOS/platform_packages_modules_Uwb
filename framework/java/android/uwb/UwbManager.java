@@ -380,7 +380,7 @@ public final class UwbManager {
                 @NonNull RangingReport rangingReport);
 
         /**
-         * Invoked when requesting a check on pointed target.
+         * Invoked to check pointed target decision by Oem.
          *
          * @param pointedTargetBundle pointed target params
          * @return Oem pointed status
