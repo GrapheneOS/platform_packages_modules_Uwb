@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,12 @@ import java.util.EnumSet;
  * Provides pose update information and a way for subscribers to listen for them.
  */
 public interface IPoseSource extends AutoCloseable {
+    /** The shortest practical update interval for a pose source. */
+    int MIN_INTERVAL_MS = 1000 / 60; // 60Hz
+
+    /** The longest practical update interval for a pose source. */
+    int MAX_INTERVAL_MS = 10000; // 0.1Hz.
+
     /**
      * A set of all possible pose source capabilities.
      */
@@ -32,7 +38,7 @@ public interface IPoseSource extends AutoCloseable {
         YAW, PITCH, ROLL, X, Y, Z,
         /**
          * Indicates that a pitch and roll of 0 means that the phone is upright. If this flag
-         *  is not present, pitch and roll changes are only relative.
+         * is not present, pitch and roll changes are only relative.
          */
         UPRIGHT;
 
@@ -70,7 +76,7 @@ public interface IPoseSource extends AutoCloseable {
      * Unregisters a listener from the pose updates.
      * @param listener The PoseEventListener that will no longer be notified when the pose changes.
      * @return True if successfully removed. Note that a listener may be prematurely removed if it
-     *  has thrown an error.
+     *         has thrown an error.
      */
     boolean unregisterListener(@NonNull PoseEventListener listener);
 
