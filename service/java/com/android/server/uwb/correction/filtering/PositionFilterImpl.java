@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,9 @@ import java.util.Objects;
 
 /**
  * An implementation of a combined azimuth, distance and elevation filter, which can be shifted
- *  as the pose changes.
+ * as the pose changes.
  * A filter that operates on X/Y/Z may be faster, but it would not support filtering differently
- *  for angle and distance.
+ * for angle and distance.
  */
 public class PositionFilterImpl implements IPositionFilter {
     @NonNull private final IFilter mAzimuthFilter;
@@ -41,8 +41,7 @@ public class PositionFilterImpl implements IPositionFilter {
     public PositionFilterImpl(
             @NonNull IFilter azimuthFilter,
             @NonNull IFilter elevationFilter,
-            @NonNull IFilter distanceFilter
-    ) {
+            @NonNull IFilter distanceFilter) {
         Objects.requireNonNull(azimuthFilter);
         Objects.requireNonNull(elevationFilter);
         Objects.requireNonNull(distanceFilter);
@@ -78,7 +77,7 @@ public class PositionFilterImpl implements IPositionFilter {
         Objects.requireNonNull(instant);
         // Cartesian extrapolation would happen here, such as target movement.
         // Spherical extrapolation can happen in the filter because it operates on
-        //  spherical values.
+        // spherical values.
 
         return SphericalVector.fromRadians(
                 mAzimuthFilter.getResult(instant).value,
@@ -89,8 +88,8 @@ public class PositionFilterImpl implements IPositionFilter {
 
     /**
      * Updates the filter history to account for changes to the pose. Note that the entire
-     *  pose source object is provided, so that its capabilities can be assessed as a part
-     *  of the computation.
+     * pose source object is provided, so that its capabilities can be assessed as a part
+     * of the computation.
      *
      * @param poseSource The pose source that has the new pose.
      */
@@ -109,15 +108,15 @@ public class PositionFilterImpl implements IPositionFilter {
 
     /**
      * Applies compensations to the azimuth, elevation and distance filters based on how the
-     *  pose changed, and how the last-known position of the tag would be affected.
+     * pose changed, and how the last-known position of the tag would be affected.
      *
      * @param deltaPose A relative transform describing how the pose changed.
      * @param estimate The last known location of the UWB signal.
      */
     private void updatePoseFromDelta(@NonNull Pose deltaPose, @NonNull SphericalVector estimate) {
         // This conversion (Spherical -> Cartesian -> transform -> Spherical) is the best
-        //  I have for right now. At the expense of readability, this could more efficiently
-        //  transform spherical coordinates if performance is a problem.
+        // I have for right now. At the expense of readability, this could more efficiently
+        // transform spherical coordinates if performance is a problem.
 
         // Last known position of tag, relative to camera as of previous pose.
         Vector3 vecFromOldCam = estimate.toCartesian();

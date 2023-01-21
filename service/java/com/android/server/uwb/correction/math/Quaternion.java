@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,8 @@ import java.util.Locale;
  * Represents an orientation in 3D space.
  *
  * This uses OpenGL's right-handed coordinate system, where the origin is facing in the
- *  -Z direction. Angle operations such as {@link Quaternion#yawPitchRoll(float, float, float)}
- *  assume these operations relative to a quaternion facing in the -Z direction.
+ * -Z direction. Angle operations such as {@link Quaternion#yawPitchRoll(float, float, float)}
+ * assume these operations relative to a quaternion facing in the -Z direction.
  *
  *        +Y
  *        |  -Z
@@ -48,8 +48,8 @@ import java.util.Locale;
  *       -Y
  *
  * Yaw, pitch and roll direction can be determined by "grabbing" the axis you're rotating with
- *  your right hand, orienting your thumb to point in the positive direction.  Your fingers' curl
- *  direction indicates the rotation created by positive numbers.
+ * your right hand, orienting your thumb to point in the positive direction.  Your fingers' curl
+ * direction indicates the rotation created by positive numbers.
  */
 @SuppressWarnings("UnaryPlus")
 @Immutable
