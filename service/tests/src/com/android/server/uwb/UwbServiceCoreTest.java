@@ -105,7 +105,9 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.MockitoSession;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.quality.Strictness;
+import org.mockito.stubbing.Answer;
 
 import java.util.Arrays;
 import java.util.List;
@@ -172,6 +174,7 @@ public class UwbServiceCoreTest {
     @Mock private UwbInjector mUwbInjector;
     @Mock DeviceConfigFacade mDeviceConfigFacade;
     @Mock private ProfileManager mProfileManager;
+    @Mock private PowerManager.WakeLock mUwbWakeLock;
     @Mock private Resources mResources;
 
     private TestLooper mTestLooper;
@@ -187,7 +190,7 @@ public class UwbServiceCoreTest {
         mTestLooper = new TestLooper();
         PowerManager powerManager = mock(PowerManager.class);
         when(powerManager.newWakeLock(anyInt(), anyString()))
-                .thenReturn(mock(PowerManager.WakeLock.class));
+                .thenReturn(mUwbWakeLock);
         when(mContext.getSystemService(PowerManager.class)).thenReturn(powerManager);
         when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
         UwbMultichipData uwbMultichipData = setUpMultichipDataForOneChip();
@@ -386,6 +389,41 @@ public class UwbServiceCoreTest {
         verifyNoMoreInteractions(mNativeUwbManager, mUwbCountryCode, cb);
     }
 
+    // Test the UWB stack enable when the NativeUwbManager.doInitialize() is delayed such that the
+    // watchdog timer expiry happens.
+    @Test
+    public void testEnableWhenInitializeDelayed() throws Exception {
+        IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
+        when(cb.asBinder()).thenReturn(mock(IBinder.class));
+        mUwbServiceCore.registerAdapterStateCallbacks(cb);
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.SYSTEM_BOOT);
+
+        // Setup doInitialize() to take long time, such that the WatchDog thread times out.
+        when(mNativeUwbManager.doInitialize()).thenAnswer(new Answer<Boolean>() {
+            public Boolean answer(InvocationOnMock invocation) throws Throwable {
+                // Return success but too late, so this result shouldn't matter.
+                Thread.sleep(UwbServiceCore.WATCHDOG_MS + 1000);
+                return true;
+            }
+        });
+        when(mUwbCountryCode.getCountryCode()).thenReturn("US");
+        when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(true);
+
+        // Setup the wakelock to be checked twice (once from the watchdog thread after expiry, and
+        // second time from handleEnable()).
+        when(mUwbWakeLock.isHeld()).thenReturn(true).thenReturn(false);
+
+        mUwbServiceCore.setEnabled(true);
+        mTestLooper.dispatchAll();
+
+        verify(mNativeUwbManager).doInitialize();
+        verify(mUwbWakeLock, times(1)).acquire();
+        verify(mUwbWakeLock, times(2)).isHeld();
+        verify(mUwbWakeLock, times(1)).release();
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
+                StateChangeReason.SYSTEM_POLICY);
+    }
 
     @Test
     public void testDisable() throws Exception {
@@ -407,6 +445,47 @@ public class UwbServiceCoreTest {
                 StateChangeReason.SYSTEM_POLICY);
     }
 
+    // Test the UWB stack disable when the NativeUwbManager.doDeinitialize() is delayed such that
+    // the watchdog timer expiry happens.
+    @Test
+    public void testDisableWhenInitializeDelayed() throws Exception {
+        IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
+        when(cb.asBinder()).thenReturn(mock(IBinder.class));
+        mUwbServiceCore.registerAdapterStateCallbacks(cb);
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.SYSTEM_BOOT);
+
+        // Enable first
+        enableUwbWithCountryCode();
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
+                StateChangeReason.SYSTEM_POLICY);
+
+        clearInvocations(mUwbWakeLock);
+
+        // Setup doDeinitialize() to take long time, such that the WatchDog thread times out.
+        when(mNativeUwbManager.doDeinitialize()).thenAnswer(new Answer<Boolean>() {
+            public Boolean answer(InvocationOnMock invocation) throws Throwable {
+                // Return success but too late, so this result shouldn't matter.
+                Thread.sleep(UwbServiceCore.WATCHDOG_MS + 1000);
+                return true;
+            }
+        });
+
+        // Setup the wakelock to be checked twice (once from the watchdog thread after expiry, and
+        // second time from handleDisable()).
+        when(mUwbWakeLock.isHeld()).thenReturn(true).thenReturn(false);
+
+        // Disable UWB.
+        mUwbServiceCore.setEnabled(false);
+        mTestLooper.dispatchAll();
+
+        verify(mNativeUwbManager).doDeinitialize();
+        verify(mUwbWakeLock, times(1)).acquire();
+        verify(mUwbWakeLock, times(2)).isHeld();
+        verify(mUwbWakeLock, times(1)).release();
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.SYSTEM_POLICY);
+    }
 
     @Test
     public void testDisableWhenAlreadyDisabled() throws Exception {
