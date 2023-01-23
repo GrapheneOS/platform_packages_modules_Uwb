@@ -17,8 +17,8 @@
 //! Internally after the UWB core service is instantiated, the pointer to the service is saved
 //! on the calling Java side.
 use jni::objects::{GlobalRef, JObject, JValue};
-use jni::signature::JavaType;
-use jni::sys::{jboolean, jbyte, jbyteArray, jint, jlong, jobject};
+use jni::signature::ReturnType;
+use jni::sys::{jboolean, jbyte, jbyteArray, jint, jlong, jobject, jvalue};
 use jni::JNIEnv;
 use log::{debug, error};
 use num_traits::FromPrimitive;
@@ -425,7 +425,7 @@ fn get_power_stats(ctx: JniContext) -> Result<jobject> {
 
     let power_stats = uwb_service.android_get_power_stats()?;
     let ps_jni = PowerStatsJni::try_from(PowerStatsWithEnv::new(ctx.env, power_stats))?;
-    Ok(ps_jni.jni_context.obj.into_inner())
+    Ok(ps_jni.jni_context.obj.into_raw())
 }
 
 fn get_uwb_service(ctx: JniContext) -> Result<&mut UwbServiceWrapper> {
@@ -471,8 +471,8 @@ fn get_class_loader_obj(env: &JNIEnv) -> Result<GlobalRef> {
     let class_loader = env.call_method_unchecked(
         uwb_service_core_class,
         get_class_loader_method,
-        JavaType::Object("java/lang/ClassLoader".into()),
-        &[JValue::Void],
+        ReturnType::Object,
+        &[jvalue::from(JValue::Void)],
     )?;
     let class_loader_jobject = class_loader.l()?;
     Ok(env.new_global_ref(class_loader_jobject)?)
