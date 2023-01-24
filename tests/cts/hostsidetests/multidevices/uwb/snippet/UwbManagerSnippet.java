@@ -452,15 +452,23 @@ public class UwbManagerSnippet implements Snippet {
         if (j.has("preamble")) {
             builder.setPreambleCodeIndex(j.getInt("preamble"));
         }
-        if (j.has("vendorId")) {
-            JSONArray jArray = j.getJSONArray("vendorId");
-            byte[] bArray = convertJSONArrayToByteArray(jArray);
-            builder.setVendorId(bArray);
-        }
-        if (j.has("staticStsIV")) {
-            JSONArray jArray = j.getJSONArray("staticStsIV");
-            byte[] bArray = convertJSONArrayToByteArray(jArray);
-            builder.setStaticStsIV(bArray);
+        if (j.getInt("stsConfig") == FiraParams.STS_CONFIG_STATIC) {
+            JSONArray jVendorIdArray = j.getJSONArray("vendorId");
+            builder.setVendorId(convertJSONArrayToByteArray(jVendorIdArray));
+            JSONArray jStatisStsIVArray = j.getJSONArray("staticStsIV");
+            builder.setStaticStsIV(convertJSONArrayToByteArray(jStatisStsIVArray));
+        } else if (j.getInt("stsConfig") == FiraParams.STS_CONFIG_PROVISIONED) {
+            builder.setStsConfig(j.getInt("stsConfig"));
+            JSONArray jSessionKeyArray = j.getJSONArray("sessionKey");
+            builder.setSessionKey(convertJSONArrayToByteArray(jSessionKeyArray));
+        } else if (j.getInt(
+                "stsConfig") == FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
+            builder.setStsConfig(j.getInt("stsConfig"));
+            JSONArray jSessionKeyArray = j.getJSONArray("sessionKey");
+            builder.setSessionKey(convertJSONArrayToByteArray(jSessionKeyArray));
+            JSONArray jSubSessionKeyArray = j.getJSONArray("subSessionKey");
+            builder.setSubsessionKey(convertJSONArrayToByteArray(jSubSessionKeyArray));
+            builder.setSubSessionId(j.getInt("subSessionId"));
         }
         if (j.has("aoaResultRequest")) {
             builder.setAoaResultRequest(j.getInt("aoaResultRequest"));
