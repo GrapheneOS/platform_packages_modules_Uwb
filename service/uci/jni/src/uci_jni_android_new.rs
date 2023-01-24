@@ -582,8 +582,6 @@ fn native_controller_multicast_list_update(
     {
         return Err(Error::BadParameters);
     }
-    let sub_session_key_list =
-        env.convert_byte_array(sub_session_keys).map_err(|_| Error::ForeignFunctionInterface)?;
     let controlee_list = match UpdateMulticastListAction::from_u8(action as u8)
         .ok_or(Error::BadParameters)?
     {
@@ -596,27 +594,37 @@ fn native_controller_multicast_list_update(
         }
         UpdateMulticastListAction::AddControleeWithShortSubSessionKey => {
             Controlees::ShortSessionKey(
-                zip(zip(address_list, sub_session_id_list), sub_session_key_list.chunks(16))
-                    .map(|((address, id), key)| {
-                        Ok(Controlee_V2_0_16_Byte_Version {
-                            short_address: address as u16,
-                            subsession_id: id as u32,
-                            subsession_key: key.try_into().map_err(|_| Error::BadParameters)?,
-                        })
-                    })
-                    .collect::<Result<Vec<Controlee_V2_0_16_Byte_Version>>>()?,
-            )
-        }
-        UpdateMulticastListAction::AddControleeWithLongSubSessionKey => Controlees::LongSessionKey(
-            zip(zip(address_list, sub_session_id_list), sub_session_key_list.chunks(32))
+                zip(
+                    zip(address_list, sub_session_id_list),
+                    env.convert_byte_array(sub_session_keys)
+                        .map_err(|_| Error::ForeignFunctionInterface)?
+                        .chunks(16),
+                )
                 .map(|((address, id), key)| {
-                    Ok(Controlee_V2_0_32_Byte_Version {
+                    Ok(Controlee_V2_0_16_Byte_Version {
                         short_address: address as u16,
                         subsession_id: id as u32,
                         subsession_key: key.try_into().map_err(|_| Error::BadParameters)?,
                     })
                 })
-                .collect::<Result<Vec<Controlee_V2_0_32_Byte_Version>>>()?,
+                .collect::<Result<Vec<Controlee_V2_0_16_Byte_Version>>>()?,
+            )
+        }
+        UpdateMulticastListAction::AddControleeWithLongSubSessionKey => Controlees::LongSessionKey(
+            zip(
+                zip(address_list, sub_session_id_list),
+                env.convert_byte_array(sub_session_keys)
+                    .map_err(|_| Error::ForeignFunctionInterface)?
+                    .chunks(32),
+            )
+            .map(|((address, id), key)| {
+                Ok(Controlee_V2_0_32_Byte_Version {
+                    short_address: address as u16,
+                    subsession_id: id as u32,
+                    subsession_key: key.try_into().map_err(|_| Error::BadParameters)?,
+                })
+            })
+            .collect::<Result<Vec<Controlee_V2_0_32_Byte_Version>>>()?,
         ),
     };
     uci_manager.session_update_controller_multicast_list(
