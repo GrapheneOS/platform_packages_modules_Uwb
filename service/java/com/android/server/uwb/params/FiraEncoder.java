@@ -103,8 +103,8 @@ public class FiraEncoder extends TlvEncoder {
                 .putByte(ConfigParam.KEY_ROTATION_RATE, (byte) params.getKeyRotationRate())
                 .putByte(ConfigParam.SESSION_PRIORITY, (byte) params.getSessionPriority())
                 .putByte(ConfigParam.MAC_ADDRESS_MODE, (byte) params.getMacAddressMode())
-                .putByteArray(ConfigParam.VENDOR_ID,
-                        TlvUtil.getReverseBytes(params.getVendorId()))
+                .putByteArray(ConfigParam.VENDOR_ID, params.getVendorId() != null
+                        ? TlvUtil.getReverseBytes(params.getVendorId()) : null)
                 .putByteArray(ConfigParam.STATIC_STS_IV,
                         params.getStaticStsIV())
                 .putByte(ConfigParam.NUMBER_OF_STS_SEGMENTS, (byte) params.getStsSegmentCount())
