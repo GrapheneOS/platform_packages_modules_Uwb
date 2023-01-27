@@ -31,6 +31,7 @@ import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABL
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_RESPONDER;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLLER;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE;
+import static com.google.uwb.support.fira.FiraParams.SESSION_TYPE_RANGING;
 
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -138,6 +139,7 @@ public class UwbServiceCoreTest {
             new FiraOpenSessionParams.Builder()
                     .setProtocolVersion(FiraParams.PROTOCOL_VERSION_1_1)
                     .setSessionId(1)
+                    .setSessionType(SESSION_TYPE_RANGING)
                     .setDeviceType(RANGING_DEVICE_TYPE_CONTROLLER)
                     .setDeviceRole(RANGING_DEVICE_ROLE_RESPONDER)
                     .setDeviceAddress(UwbAddress.fromBytes(new byte[] { 0x4, 0x6}))
@@ -626,7 +628,8 @@ public class UwbServiceCoreTest {
 
         verify(mUwbSessionManager).initSession(
                 eq(attributionSource),
-                eq(sessionHandle), eq(params.getSessionId()), eq(FiraParams.PROTOCOL_NAME),
+                eq(sessionHandle), eq(params.getSessionId()), eq((byte) params.getSessionType()),
+                eq(FiraParams.PROTOCOL_NAME),
                 argThat(p -> ((FiraOpenSessionParams) p).getSessionId() == params.getSessionId()),
                 eq(cb), eq(TEST_DEFAULT_CHIP_ID));
 
@@ -645,7 +648,8 @@ public class UwbServiceCoreTest {
 
         verify(mUwbSessionManager).initSession(
                 eq(attributionSource),
-                eq(sessionHandle), eq(params.getSessionId()), eq(CccParams.PROTOCOL_NAME),
+                eq(sessionHandle), eq(params.getSessionId()), eq((byte) params.getSessionType()),
+                eq(CccParams.PROTOCOL_NAME),
                 argThat(p -> ((CccOpenRangingParams) p).getSessionId() == params.getSessionId()),
                 eq(cb), eq(TEST_DEFAULT_CHIP_ID));
     }

@@ -25,6 +25,7 @@ import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROL
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_UT_TAG;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_UL_TDOA;
+import static com.google.uwb.support.fira.FiraParams.SESSION_TYPE_RANGING;
 import static com.google.uwb.support.fira.FiraParams.TX_TIMESTAMP_40_BIT;
 import static com.google.uwb.support.fira.FiraParams.UL_TDOA_DEVICE_ID_16_BIT;
 
@@ -57,6 +58,7 @@ public class FiraEncoderTest {
             new FiraOpenSessionParams.Builder()
                     .setProtocolVersion(FiraParams.PROTOCOL_VERSION_1_1)
                     .setSessionId(1)
+                    .setSessionType(SESSION_TYPE_RANGING)
                     .setRangeDataNtfConfig(RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_LEVEL_TRIG)
                     .setDeviceType(RANGING_DEVICE_TYPE_CONTROLLER)
                     .setDeviceRole(RANGING_DEVICE_ROLE_RESPONDER)
@@ -96,6 +98,7 @@ public class FiraEncoderTest {
             new FiraOpenSessionParams.Builder()
                     .setProtocolVersion(FiraParams.PROTOCOL_VERSION_1_1)
                     .setSessionId(2)
+                    .setSessionType(SESSION_TYPE_RANGING)
                     .setDeviceType(RANGING_DEVICE_TYPE_CONTROLLER)
                     .setDeviceRole(RANGING_DEVICE_UT_TAG)
                     .setDeviceAddress(UwbAddress.fromBytes(new byte[] { 0x4, 0x6}))

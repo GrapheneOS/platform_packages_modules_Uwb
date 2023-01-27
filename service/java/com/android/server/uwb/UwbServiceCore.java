@@ -412,6 +412,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             throw new IllegalStateException("Uwb is not enabled");
         }
         int sessionId = 0;
+        int sessionType = 0;
 
         if (UuidBundleWrapper.isUuidBundle(params)) {
             UuidBundleWrapper uuidBundleWrapper = UuidBundleWrapper.fromBundle(params);
@@ -436,14 +437,16 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             }
             FiraOpenSessionParams firaOpenSessionParams = builder.build();
             sessionId = firaOpenSessionParams.getSessionId();
+            sessionType = firaOpenSessionParams.getSessionType();
             mSessionManager.initSession(attributionSource, sessionHandle, sessionId,
-                    firaOpenSessionParams.getProtocolName(),
+                    (byte) sessionType, firaOpenSessionParams.getProtocolName(),
                     firaOpenSessionParams, rangingCallbacks, chipId);
         } else if (CccParams.isCorrectProtocol(params)) {
             CccOpenRangingParams cccOpenRangingParams = CccOpenRangingParams.fromBundle(params);
             sessionId = cccOpenRangingParams.getSessionId();
+            sessionType = cccOpenRangingParams.getSessionType();
             mSessionManager.initSession(attributionSource, sessionHandle, sessionId,
-                    cccOpenRangingParams.getProtocolName(),
+                    (byte) sessionType, cccOpenRangingParams.getProtocolName(),
                     cccOpenRangingParams, rangingCallbacks, chipId);
         } else {
             Log.e(TAG, "openRanging - Wrong parameters");

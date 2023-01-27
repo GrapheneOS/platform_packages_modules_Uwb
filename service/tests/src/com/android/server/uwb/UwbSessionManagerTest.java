@@ -37,6 +37,7 @@ import static com.android.server.uwb.UwbTestUtils.PERSISTABLE_BUNDLE;
 import static com.android.server.uwb.UwbTestUtils.RANGING_MEASUREMENT_TYPE_UNDEFINED;
 import static com.android.server.uwb.UwbTestUtils.TEST_SESSION_ID;
 import static com.android.server.uwb.UwbTestUtils.TEST_SESSION_ID_2;
+import static com.android.server.uwb.UwbTestUtils.TEST_SESSION_TYPE;
 import static com.android.server.uwb.data.UwbUciConstants.MAC_ADDRESSING_MODE_EXTENDED;
 import static com.android.server.uwb.data.UwbUciConstants.MAC_ADDRESSING_MODE_SHORT;
 import static com.android.server.uwb.data.UwbUciConstants.RANGING_DEVICE_ROLE_ADVERTISER;
@@ -50,6 +51,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.uwb.support.fira.FiraParams.PROTOCOL_NAME;
 import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_DISABLE;
 import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_ENABLE;
+import static com.google.uwb.support.fira.FiraParams.SESSION_TYPE_RANGING;
 import static com.google.uwb.support.fira.FiraParams.STATUS_CODE_OK;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -784,7 +786,7 @@ public class UwbSessionManagerTest {
         doReturn(true).when(mUwbSessionManager).isExistedSession(anyInt());
 
         mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, mock(SessionHandle.class),
-                TEST_SESSION_ID, "any", mock(Params.class), mockRangingCallbacks,
+                TEST_SESSION_ID, TEST_SESSION_TYPE, "any", mock(Params.class), mockRangingCallbacks,
                 TEST_CHIP_ID);
 
         verify(mockRangingCallbacks).onRangingOpenFailed(
@@ -799,7 +801,7 @@ public class UwbSessionManagerTest {
         IUwbRangingCallbacks mockRangingCallbacks = mock(IUwbRangingCallbacks.class);
 
         mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, mock(SessionHandle.class),
-                TEST_SESSION_ID, "any", mock(Params.class), mockRangingCallbacks,
+                TEST_SESSION_ID, TEST_SESSION_TYPE, "any", mock(Params.class), mockRangingCallbacks,
                 TEST_CHIP_ID);
 
         verify(mockRangingCallbacks).onRangingOpenFailed(any(), anyInt(), any());
@@ -816,15 +818,16 @@ public class UwbSessionManagerTest {
         IBinder mockBinder = mock(IBinder.class);
         UwbSession uwbSession = spy(
                 mUwbSessionManager.new UwbSession(ATTRIBUTION_SOURCE, mockSessionHandle,
-                        TEST_SESSION_ID, FiraParams.PROTOCOL_NAME, mockParams,
+                        TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME, mockParams,
                         mockRangingCallbacks, TEST_CHIP_ID));
         doReturn(mockBinder).when(uwbSession).getBinder();
         doReturn(uwbSession).when(mUwbSessionManager).createUwbSession(any(), any(), anyInt(),
-                anyString(), any(), any(), anyString());
+                anyByte(), anyString(), any(), any(), anyString());
         doThrow(new RemoteException()).when(mockBinder).linkToDeath(any(), anyInt());
 
         mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, mockSessionHandle, TEST_SESSION_ID,
-                FiraParams.PROTOCOL_NAME, mockParams, mockRangingCallbacks, TEST_CHIP_ID);
+                TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME, mockParams, mockRangingCallbacks,
+                TEST_CHIP_ID);
 
         verify(uwbSession).binderDied();
         verify(mockRangingCallbacks).onRangingOpenFailed(any(), anyInt(), any());
@@ -844,14 +847,15 @@ public class UwbSessionManagerTest {
 
         UwbSession uwbSession = spy(
                 mUwbSessionManager.new UwbSession(ATTRIBUTION_SOURCE, mockSessionHandle,
-                        TEST_SESSION_ID, FiraParams.PROTOCOL_NAME, mockParams,
+                        TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME, mockParams,
                         mockRangingCallbacks, TEST_CHIP_ID));
         doReturn(mockBinder).when(uwbSession).getBinder();
         doReturn(uwbSession).when(mUwbSessionManager).createUwbSession(any(), any(), anyInt(),
-                anyString(), any(), any(), anyString());
+                anyByte(), anyString(), any(), any(), anyString());
 
         mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, mockSessionHandle, TEST_SESSION_ID,
-                FiraParams.PROTOCOL_NAME, mockParams, mockRangingCallbacks, TEST_CHIP_ID);
+                TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME, mockParams, mockRangingCallbacks,
+                TEST_CHIP_ID);
 
         verify(uwbSession, never()).binderDied();
         verify(mockRangingCallbacks, never()).onRangingOpenFailed(any(), anyInt(), any());
@@ -874,14 +878,15 @@ public class UwbSessionManagerTest {
 
         UwbSession uwbSession = spy(
                 mUwbSessionManager.new UwbSession(ATTRIBUTION_SOURCE, mockSessionHandle,
-                        TEST_SESSION_ID, FiraParams.PROTOCOL_NAME, mockParams,
+                        TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME, mockParams,
                         mockRangingCallbacks, TEST_CHIP_ID));
         doReturn(mockBinder).when(uwbSession).getBinder();
         doReturn(uwbSession).when(mUwbSessionManager).createUwbSession(any(), any(), anyInt(),
-                anyString(), any(), any(), anyString());
+                anyByte(), anyString(), any(), any(), anyString());
 
         mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, mockSessionHandle, TEST_SESSION_ID,
-                FiraParams.PROTOCOL_NAME, mockParams, mockRangingCallbacks, TEST_CHIP_ID);
+                TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME, mockParams, mockRangingCallbacks,
+                TEST_CHIP_ID);
 
         assertThat(uwbSession.getControleeList().size() == 1
                 && uwbSession.getControleeList().get(0).getUwbAddress().equals(UWB_DEST_ADDRESS))
@@ -1191,11 +1196,11 @@ public class UwbSessionManagerTest {
         Params params = setupFiraParams();
         UwbSession uwbSession = spy(
                 mUwbSessionManager.new UwbSession(attributionSource, mockSessionHandle,
-                        TEST_SESSION_ID, FiraParams.PROTOCOL_NAME, params, mockRangingCallbacks,
-                        TEST_CHIP_ID));
+                        TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME, params,
+                        mockRangingCallbacks, TEST_CHIP_ID));
         doReturn(mockBinder).when(uwbSession).getBinder();
         doReturn(uwbSession).when(mUwbSessionManager).createUwbSession(any(), any(), anyInt(),
-                anyString(), any(), any(), anyString());
+                anyByte(), anyString(), any(), any(), anyString());
         doReturn(mock(WaitObj.class)).when(uwbSession).getWaitObj();
 
         return uwbSession;
@@ -1215,6 +1220,7 @@ public class UwbSessionManagerTest {
                         UWB_DEST_ADDRESS))
                 .setProtocolVersion(new FiraProtocolVersion(1, 0))
                 .setSessionId(10)
+                .setSessionType(SESSION_TYPE_RANGING)
                 .setDeviceType(FiraParams.RANGING_DEVICE_TYPE_CONTROLLER)
                 .setDeviceRole(deviceRole)
                 .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_UNICAST)
@@ -1253,11 +1259,11 @@ public class UwbSessionManagerTest {
         IBinder mockBinder = mock(IBinder.class);
         UwbSession uwbSession = spy(
                 mUwbSessionManager.new UwbSession(ATTRIBUTION_SOURCE, mockSessionHandle,
-                        TEST_SESSION_ID, CccParams.PROTOCOL_NAME, params, mockRangingCallbacks,
-                        TEST_CHIP_ID));
+                        TEST_SESSION_ID, TEST_SESSION_TYPE, CccParams.PROTOCOL_NAME, params,
+                        mockRangingCallbacks, TEST_CHIP_ID));
         doReturn(mockBinder).when(uwbSession).getBinder();
         doReturn(uwbSession).when(mUwbSessionManager).createUwbSession(any(), any(), anyInt(),
-                anyString(), any(), any(), anyString());
+                anyByte(), anyString(), any(), any(), anyString());
         doReturn(mock(WaitObj.class)).when(uwbSession).getWaitObj();
 
         return uwbSession;
@@ -1276,7 +1282,7 @@ public class UwbSessionManagerTest {
 
 
         mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
-                TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
+                TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks(), TEST_CHIP_ID);
         mTestLooper.dispatchAll();
 
@@ -1301,7 +1307,7 @@ public class UwbSessionManagerTest {
 
 
         mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
-                TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
+                TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks(), TEST_CHIP_ID);
         mTestLooper.dispatchAll();
 
@@ -1325,7 +1331,7 @@ public class UwbSessionManagerTest {
 
 
         mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
-                TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
+                TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks(), TEST_CHIP_ID);
         mTestLooper.dispatchAll();
 
@@ -1349,7 +1355,7 @@ public class UwbSessionManagerTest {
 
 
         mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
-                TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
+                TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks(), TEST_CHIP_ID);
         mTestLooper.dispatchAll();
 
@@ -1373,7 +1379,7 @@ public class UwbSessionManagerTest {
 
 
         mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
-                TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
+                TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks(), TEST_CHIP_ID);
         mTestLooper.dispatchAll();
 
@@ -1397,7 +1403,7 @@ public class UwbSessionManagerTest {
 
 
         mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
-                TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
+                TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks(), TEST_CHIP_ID);
         mTestLooper.dispatchAll();
 
@@ -1416,7 +1422,7 @@ public class UwbSessionManagerTest {
 
         UwbSession uwbSession = setUpUwbSessionForExecution(ATTRIBUTION_SOURCE);
         mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
-                TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
+                TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks(), TEST_CHIP_ID);
 
         // OPEN_RANGING message scheduled.
@@ -1431,7 +1437,7 @@ public class UwbSessionManagerTest {
 
         UwbSession uwbSession = setUpUwbSessionForExecution(ATTRIBUTION_SOURCE);
         mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
-                TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
+                TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks(), TEST_CHIP_ID);
 
         verify(uwbSession.getIUwbRangingCallbacks()).onRangingOpenFailed(
@@ -1455,7 +1461,7 @@ public class UwbSessionManagerTest {
 
         UwbSession uwbSession = setUpUwbSessionForExecution(attributionSource);
         mUwbSessionManager.initSession(attributionSource, uwbSession.getSessionHandle(),
-                TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
+                TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks(), TEST_CHIP_ID);
         return uwbSession;
     }
@@ -1569,7 +1575,7 @@ public class UwbSessionManagerTest {
                 .build();
         UwbSession uwbSession = setUpUwbSessionForExecution(attributionSource);
         mUwbSessionManager.initSession(attributionSource, uwbSession.getSessionHandle(),
-                TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
+                TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks(), TEST_CHIP_ID);
 
         verify(uwbSession.getIUwbRangingCallbacks()).onRangingOpenFailed(
@@ -1581,7 +1587,7 @@ public class UwbSessionManagerTest {
     private UwbSession prepareExistingUwbSession() throws Exception {
         UwbSession uwbSession = setUpUwbSessionForExecution(ATTRIBUTION_SOURCE);
         mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
-                TEST_SESSION_ID, FiraParams.PROTOCOL_NAME,
+                TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks(), TEST_CHIP_ID);
         mTestLooper.nextMessage(); // remove the OPEN_RANGING msg;
 
@@ -1593,7 +1599,7 @@ public class UwbSessionManagerTest {
     private UwbSession prepareExistingCccUwbSession() throws Exception {
         UwbSession uwbSession = setUpCccUwbSessionForExecution();
         mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
-                TEST_SESSION_ID, CccParams.PROTOCOL_NAME,
+                TEST_SESSION_ID, TEST_SESSION_TYPE, CccParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks(), TEST_CHIP_ID);
         mTestLooper.nextMessage(); // remove the OPEN_RANGING msg;
 

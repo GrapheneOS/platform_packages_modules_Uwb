@@ -871,6 +871,7 @@ public class UwbManagerTest {
         FiraOpenSessionParams firaOpenSessionParams = new FiraOpenSessionParams.Builder()
                 .setProtocolVersion(new FiraProtocolVersion(1, 1))
                 .setSessionId(1)
+                .setSessionType(FiraParams.SESSION_TYPE_RANGING)
                 .setStsConfig(FiraParams.STS_CONFIG_STATIC)
                 .setVendorId(new byte[]{0x5, 0x6})
                 .setStaticStsIV(new byte[]{0x5, 0x6, 0x9, 0xa, 0x4, 0x6})
