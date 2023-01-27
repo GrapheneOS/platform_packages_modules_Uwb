@@ -72,6 +72,9 @@ class FiraParamEnums:
   MULTICAST_LIST_UPDATE_ACTION_ADD = 0
   MULTICAST_LIST_UPDATE_ACTION_DELETE = 1
 
+  # sts config
+  STS_CONFIG_STATIC = 0
+
 
 @dataclasses.dataclass
 class UwbRangingReconfigureParams():
@@ -127,6 +130,7 @@ class UwbRangingParams():
     multi_node_mode: Ranging mode. Possible values 1 to 1 or 1 to many.
     vendor_id: Ranging device vendor ID.
     static_sts_iv: Static STS value.
+    sts_config: STS config.
 
   Example:
       An example of UWB ranging parameters passed to sl4a is below.
@@ -176,6 +180,7 @@ class UwbRangingParams():
   vendor_id: List[int] = dataclasses.field(default_factory=lambda: [5, 6])
   static_sts_iv: List[int] = dataclasses.field(
       default_factory=lambda: [5, 6, 7, 8, 9, 10])
+  sts_config: int = FiraParamEnums.STS_CONFIG_STATIC
 
   def to_dict(self) -> Dict[str, Any]:
     """Returns UWB ranging parameters in dictionary for sl4a.
@@ -205,6 +210,7 @@ class UwbRangingParams():
         "multiNodeMode": self.multi_node_mode,
         "vendorId": self.vendor_id,
         "staticStsIV": self.static_sts_iv,
+        "stsConfig": self.sts_config,
     }
 
   def update(self, **kwargs: Any):
