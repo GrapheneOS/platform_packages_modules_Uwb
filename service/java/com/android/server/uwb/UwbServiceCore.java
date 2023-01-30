@@ -648,6 +648,17 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         mSessionManager.rangingRoundsUpdateDtTag(sessionHandle, params);
     }
 
+    /**
+     * Query max application data size that can be sent by UWBS in one ranging round.
+     */
+    public int queryDataSize(SessionHandle sessionHandle) {
+        if (!isUwbEnabled()) {
+            throw new IllegalStateException("Uwb is not enabled");
+        }
+
+        return mSessionManager.queryDataSize(sessionHandle);
+    }
+
     private class EnableDisableTask extends Handler {
 
         EnableDisableTask(Looper looper) {
