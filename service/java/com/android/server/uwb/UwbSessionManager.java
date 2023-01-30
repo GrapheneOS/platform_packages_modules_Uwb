@@ -91,7 +91,10 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -127,8 +130,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     // TODO: don't expose the internal field for testing.
     @VisibleForTesting
     final ConcurrentHashMap<Integer, UwbSession> mSessionTable = new ConcurrentHashMap();
-    final ConcurrentHashMap<Long, ReceivedDataInfo> mReceivedDataMap =
-            new ConcurrentHashMap<Long, ReceivedDataInfo>();
     final ConcurrentHashMap<Integer, List<UwbSession>> mNonPrivilegedUidToFiraSessionsTable =
             new ConcurrentHashMap();
     private final ActivityManager mActivityManager;
@@ -260,6 +261,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         Log.d(TAG, "onDataReceived - address: " + UwbUtil.toHexString(address)
                 + ", Data: " + UwbUtil.toHexString(data));
 
+        UwbSession uwbSession = getUwbSession((int) sessionId);
+        if (uwbSession == null) {
+            Log.e(TAG, "onDataReceived(): Received data for unknown sessionId = " + sessionId);
+            return;
+        }
+
         // Size of address in the UCI Packet for DATA_MESSAGE_RCV is always expected to be 8
         // (EXTENDED_ADDRESS_BYTE_LENGTH). It can contain the MacAddress in short format however
         // (2 LSB with MacAddress, 6 MSB zeroed out).
@@ -278,10 +285,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         info.sourceEndPoint = sourceEndPoint;
         info.destEndPoint = destEndPoint;
         info.payload = data;
-        mReceivedDataMap.put(longAddress, info);
+
+        uwbSession.addReceivedDataInfo(info);
     }
 
-    private static final class ReceivedDataInfo {
+    @VisibleForTesting
+    static final class ReceivedDataInfo {
         public long sessionId;
         public int status;
         public long sequenceNum;
@@ -603,17 +612,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
         uwbSession.setRemoteMacAddress(macAddress);
 
-        // Get any application payload data received in this OWR AOA ranging session and notify it.
-        ReceivedDataInfo receivedDataInfo = getReceivedDataInfo(macAddress);
-        if (receivedDataInfo == null) {
-            return;
-        }
-
-        UwbSession uwbSessionFromReceivedData = getUwbSession((int) receivedDataInfo.sessionId);
-        if (uwbSessionFromReceivedData != uwbSession) {
-            return;
-        }
-
         boolean advertisePointingResult = mAdvertiseManager.isPointedTarget(macAddress);
         if (mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
             try {
@@ -633,6 +631,18 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
 
         if (advertisePointingResult) {
+            // Get any application payload data received in this OWR AOA ranging session and
+            // notify it.
+            // TODO(b/246678053): Use a loop to notify all the ReceivedDataInfo(s) for this
+            // UwbSession.
+            ReceivedDataInfo receivedDataInfo = uwbSession.extractFirstReceivedDataInfo(
+                    macAddressByteArrayToLong(macAddress));
+            if (receivedDataInfo == null) {
+                Log.i(TAG, "OwR Aoa UwbSession: Application Payload data not found for"
+                        + " MacAddress = " + UwbUtil.toHexString(macAddress));
+                return;
+            }
+
             UwbAddress uwbAddress = UwbAddress.fromBytes(macAddress);
             mSessionNotificationManager.onDataReceived(
                     uwbSession, uwbAddress, new PersistableBundle(), receivedDataInfo.payload);
@@ -650,13 +660,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             return (macAddress.length == UWB_DEVICE_EXT_MAC_ADDRESS_LEN) ? macAddress : null;
         }
         return null;
-    }
-
-    /** Get any received data for the given device MacAddress */
-    @VisibleForTesting
-    public ReceivedDataInfo getReceivedDataInfo(byte[] macAddress) {
-        // Convert the macAddress to a long as the address could be in short or extended format.
-        return mReceivedDataMap.get(macAddressByteArrayToLong(macAddress));
     }
 
     public boolean isExistedSession(SessionHandle sessionHandle) {
@@ -1532,6 +1535,15 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         private boolean mHasNonPrivilegedFgApp = false;
         private @FiraParams.RangeDataNtfConfig Integer mOrigRangeDataNtfConfig;
         private long mRangingErrorStreakTimeoutMs = RANGING_RESULT_ERROR_NO_TIMEOUT;
+        // Use a Map<RemoteMacAddress, SortedMap<SequenceNumber, ReceivedDataInfo>> to store all
+        // the Application payload data packets received in this (active) UWB Session.
+        // - The outer key (RemoteMacAddress) is used to identify the Advertiser device that sends
+        //   the data (there can be multiple advertisers in the same UWB session).
+        // - The inner key (SequenceNumber) is used to ensure we don't store duplicate packets,
+        //   and notify them to the higher layers in-order.
+        // TODO(b/246678053): Change the type of SequenceNumber from Long to Integer everywhere.
+        private final ConcurrentHashMap<Long, SortedMap<Long, ReceivedDataInfo>>
+                mReceivedDataInfoMap;
 
         @VisibleForTesting
         public List<UwbControlee> mControleeList;
@@ -1562,6 +1574,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 mRangingErrorStreakTimeoutMs = firaParams
                         .getRangingErrorStreakTimeoutMs();
             }
+
+            this.mReceivedDataInfoMap = new ConcurrentHashMap<>();
         }
 
         private boolean isPrivilegedApp(int uid, String packageName) {
@@ -1591,6 +1605,42 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
         public List<UwbControlee> getControleeList() {
             return Collections.unmodifiableList(mControleeList);
+        }
+
+        /**
+         * Store a ReceivedDataInfo for the UwbSession. If we already have stored data from the
+         * same advertiser and with the same sequence number, this is a no-op.
+         */
+        public void addReceivedDataInfo(ReceivedDataInfo receivedDataInfo) {
+            SortedMap<Long, ReceivedDataInfo> innerMap = mReceivedDataInfoMap.get(
+                    receivedDataInfo.address);
+            if (innerMap == null) {
+                innerMap = new TreeMap<>();
+                mReceivedDataInfoMap.put(receivedDataInfo.address, innerMap);
+            }
+            innerMap.putIfAbsent(receivedDataInfo.sequenceNum, receivedDataInfo);
+        }
+
+        /**
+         * Return the ReceivedDataInfo corresponding to the earliest received data (ie, smallest
+         * sequence number). The data is removed from the Map, and so this method can be called
+         * repeatedly to get all the stored data packets.
+         */
+        @Nullable
+        public ReceivedDataInfo extractFirstReceivedDataInfo(long macAddress) {
+            SortedMap<Long, ReceivedDataInfo> innerMap = mReceivedDataInfoMap.get(macAddress);
+            if (innerMap == null) {
+                // No stored ReceivedDataInfo(s) for the address.
+                return null;
+            }
+
+            Long sequenceNumber;
+            try {
+                sequenceNumber = innerMap.firstKey();
+            } catch (NoSuchElementException e) {
+                return null;
+            }
+            return innerMap.remove(sequenceNumber);
         }
 
         /**
@@ -1779,7 +1829,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 mRangingResultErrorStreakTimerListener = null;
             }
         }
-
 
         /**
          * Starts a timer to detect if the app that started the UWB session is in the background
