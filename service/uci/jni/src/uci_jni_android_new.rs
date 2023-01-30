@@ -29,7 +29,8 @@ use jni::errors::Error as JNIError;
 use jni::objects::{GlobalRef, JObject, JString, JValue};
 use jni::signature::ReturnType;
 use jni::sys::{
-    jboolean, jbyte, jbyteArray, jint, jintArray, jlong, jobject, jobjectArray, jshortArray, jvalue,
+    jboolean, jbyte, jbyteArray, jint, jintArray, jlong, jobject, jobjectArray, jshort,
+    jshortArray, jvalue,
 };
 use jni::JNIEnv;
 use log::{debug, error};
@@ -962,6 +963,34 @@ fn native_send_data(
         uci_sequence_number as u8,
         app_payload_data_bytearray,
     )
+}
+
+/// Get max application data size, that can be sent by the UWBS. Return 0 if failed.
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeQueryDataSize(
+    env: JNIEnv,
+    obj: JObject,
+    session_id: jint,
+    chip_id: JString,
+) -> jshort {
+    debug!("{}: enter", function_name!());
+    match option_result_helper(
+        native_query_data_size(env, obj, session_id, chip_id),
+        function_name!(),
+    ) {
+        Some(s) => s.try_into().unwrap(),
+        None => 0,
+    }
+}
+
+fn native_query_data_size(
+    _env: JNIEnv,
+    _obj: JObject,
+    _session_id: jint,
+    _chip_id: JString,
+) -> Result<u16> {
+    // TODO(b/251477752): Implement the Rust command (in UciManager) to support this.
+    Ok(0)
 }
 
 /// Get the class loader object. Has to be called from a JNIEnv where the local java classes are

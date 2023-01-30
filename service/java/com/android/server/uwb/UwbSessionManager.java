@@ -560,10 +560,20 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         stopRangingInternal(sessionHandle, false /* triggeredBySystemPolicy */);
     }
 
+    /**
+     * Get the UwbSession corresponding to the given UWB Session ID. This API returns {@code null}
+     * when the UWB session is not found.
+     */
+    @Nullable
     public UwbSession getUwbSession(int sessionId) {
         return mSessionTable.get(sessionId);
     }
 
+    /**
+     * Get the Uwb Session ID corresponding to the given UWB Session Handle. This API returns
+     * {@code null} when the UWB session ID is not found.
+     */
+    @Nullable
     public Integer getSessionId(SessionHandle sessionHandle) {
         for (Map.Entry<Integer, UwbSession> sessionEntry : mSessionTable.entrySet()) {
             UwbSession uwbSession = sessionEntry.getValue();
@@ -791,6 +801,26 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         info.params = bundle;
 
         mEventTask.execute(SESSION_UPDATE_ACTIVE_RR_DT_TAG, info);
+    }
+
+    /** Query Max Application data size for the given UWB Session */
+    public synchronized int queryDataSize(SessionHandle sessionHandle) {
+        int status = UwbUciConstants.STATUS_CODE_ERROR_SESSION_NOT_EXIST;
+        if (!isExistedSession(sessionHandle)) {
+            Log.i(TAG, "Not initialized session ID");
+            return status;
+        }
+        int sessionId = getSessionId(sessionHandle);
+        UwbSession uwbSession = getUwbSession(sessionId);
+        if (uwbSession == null) {
+            Log.i(TAG, "UwbSession not found");
+            return status;
+        }
+
+        synchronized (uwbSession.getWaitObj()) {
+            return mNativeUwbManager.queryDataSize(uwbSession.getSessionId(),
+                    uwbSession.getChipId());
+        }
     }
 
     /** Handle ranging rounds update for DT Tag */
