@@ -370,10 +370,10 @@ impl<'a> FiraControleeParamsJni<'a> {
         let env = self.jni_context.env;
         let addr_arr =
             self.jni_context.object_getter("getAddressList", "[android/uwb/UwbAddress;")?;
-        let addr_len = env.get_array_length(addr_arr.into_inner())?;
+        let addr_len = env.get_array_length(addr_arr.into_raw())?;
 
         let subs_arr = self.jni_context.object_getter("getSubSessionIdList", "[I")?;
-        let subs_len = env.get_array_length(subs_arr.into_inner())?;
+        let subs_len = env.get_array_length(subs_arr.into_raw())?;
 
         if addr_len != subs_len {
             return Err(Error::Parse(format!(
@@ -386,10 +386,10 @@ impl<'a> FiraControleeParamsJni<'a> {
 
         let size: usize = addr_len.try_into().unwrap();
         let mut subs_arr_vec = vec![0i32; size];
-        env.get_int_array_region(subs_arr.into_inner(), 0, &mut subs_arr_vec)?;
+        env.get_int_array_region(subs_arr.into_raw(), 0, &mut subs_arr_vec)?;
 
         for (i, sub_session) in subs_arr_vec.iter().enumerate() {
-            let uwb_address_obj = env.get_object_array_element(addr_arr.into_inner(), i as i32)?;
+            let uwb_address_obj = env.get_object_array_element(addr_arr.into_raw(), i as i32)?;
             let uwb_address: u16 = UwbAddressJni::new(env, uwb_address_obj).try_into()?;
             controlees
                 .push(Controlee { short_address: uwb_address, subsession_id: *sub_session as u32 });
@@ -524,6 +524,9 @@ impl<'a> TryFrom<SessionRangeDataWithEnv<'a>> for UwbRangingDataJni<'a> {
         let raw_notification_jbytearray =
             data_obj.env.byte_array_from_slice(&data_obj.session_range_data.raw_ranging_data)?;
         // TODO(b/246678053): Check on using OwrAoa measurement class here.
+
+        // Safety: raw_notification_jbytearray safely instantiated above.
+        let raw_notification_jobject = unsafe { JObject::from_raw(raw_notification_jbytearray) };
         let ranging_data_jni = data_obj.env.new_object(
             data_obj.uwb_ranging_data_jclass,
             "(JJIJIII[Lcom/android/server/uwb/data/UwbTwoWayMeasurement;[B)V",
@@ -536,7 +539,7 @@ impl<'a> TryFrom<SessionRangeDataWithEnv<'a>> for UwbRangingDataJni<'a> {
                 JValue::Int(mac_address_indicator as i32),
                 JValue::Int(measurements_size as i32),
                 JValue::Object(measurements_jni.jni_context.obj),
-                JValue::Object(JObject::from(raw_notification_jbytearray)),
+                JValue::Object(raw_notification_jobject),
             ],
         )?;
 
@@ -654,11 +657,14 @@ impl<'a> TryFrom<RangingMeasurementsWithEnv<'a>> for UwbTwoWayMeasurementJni<'a>
             _ => todo!(),
         };
         let address_jbytearray = measurements_obj.env.new_byte_array(byte_arr_size)?;
+
+        // Safety: address_jbytearray safely instantiated above.
+        let address_jobject = unsafe { JObject::from_raw(address_jbytearray) };
         let zero_initiated_measurement_jobject = measurements_obj.env.new_object(
             measurements_obj.uwb_two_way_measurement_jclass,
             "([BIIIIIIIIIIIII)V",
             &[
-                JValue::Object(JObject::from(address_jbytearray)),
+                JValue::Object(address_jobject),
                 JValue::Int(0),
                 JValue::Int(0),
                 JValue::Int(0),
@@ -688,11 +694,16 @@ impl<'a> TryFrom<RangingMeasurementsWithEnv<'a>> for UwbTwoWayMeasurementJni<'a>
                 0,
                 mac_address_bytes.as_slice(),
             )?;
+
+            // Safety: mac_address_bytes_jbytearray safely instantiated above.
+            let mac_address_bytes_jobject =
+                unsafe { JObject::from_raw(mac_address_bytes_jbytearray) };
+
             let measurement_jobject = measurements_obj.env.new_object(
                 measurements_obj.uwb_two_way_measurement_jclass,
                 "([BIIIIIIIIIIIII)V",
                 &[
-                    JValue::Object(JObject::from(mac_address_bytes_jbytearray)),
+                    JValue::Object(mac_address_bytes_jobject),
                     JValue::Int(measurement.status as i32),
                     JValue::Int(measurement.nlos as i32),
                     JValue::Int(measurement.distance as i32),
@@ -715,8 +726,10 @@ impl<'a> TryFrom<RangingMeasurementsWithEnv<'a>> for UwbTwoWayMeasurementJni<'a>
             )?;
         }
 
+        // Safety: measurements_array_jobject safely instantiated above.
+        let measurements_jobject = unsafe { JObject::from_raw(measurements_array_jobject) };
         Ok(UwbTwoWayMeasurementJni {
-            jni_context: JniContext::new(measurements_obj.env, measurements_array_jobject.into()),
+            jni_context: JniContext::new(measurements_obj.env, measurements_jobject),
         })
     }
 }

@@ -43,7 +43,7 @@ impl<'a> JniContext<'a> {
 
     pub fn byte_arr_getter(&self, method: &str) -> Result<Vec<u8>, jni::errors::Error> {
         let val_obj = self.env.call_method(self.obj, method, "()[B", &[])?.l()?;
-        self.env.convert_byte_array(val_obj.into_inner())
+        self.env.convert_byte_array(val_obj.into_raw())
     }
 
     pub fn object_getter(

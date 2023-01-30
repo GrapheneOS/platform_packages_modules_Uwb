@@ -20,6 +20,7 @@ use std::collections::HashMap;
 
 use jni::objects::{GlobalRef, JClass, JMethodID, JObject, JValue};
 use jni::signature::TypeSignature;
+use jni::sys::jvalue;
 use jni::{AttachGuard, JavaVM};
 use log::error;
 
@@ -57,7 +58,7 @@ pub struct UwbServiceCallbackImpl {
     env: AttachGuard<'static>,
     class_loader_obj: GlobalRef,
     callback_obj: GlobalRef,
-    jmethod_id_map: HashMap<String, JMethodID<'static>>,
+    jmethod_id_map: HashMap<String, JMethodID>,
     jclass_map: HashMap<String, GlobalRef>,
 }
 
@@ -77,6 +78,8 @@ impl UwbServiceCallbackImpl {
     }
 
     fn find_local_class(&mut self, class_name: &str) -> Result<GlobalRef> {
+        let class_name_jobject = *self.env.new_string(class_name)?;
+
         let jclass = match self.jclass_map.get(class_name) {
             Some(jclass) => jclass.clone(),
             None => {
@@ -86,7 +89,7 @@ impl UwbServiceCallbackImpl {
                         self.class_loader_obj.as_obj(),
                         "findClass",
                         "(Ljava/lang/String;)Ljava/lang/Class;",
-                        &[JValue::Object(JObject::from(self.env.new_string(class_name)?))],
+                        &[JValue::Object(class_name_jobject)],
                     )?
                     .l()?;
 
@@ -99,7 +102,7 @@ impl UwbServiceCallbackImpl {
         Ok(jclass)
     }
 
-    fn cached_jni_call(&mut self, name: &str, sig: &str, args: &[JValue]) -> Result<()> {
+    fn cached_jni_call(&mut self, name: &str, sig: &str, args: &[jvalue]) -> Result<()> {
         let type_signature = TypeSignature::from_str(sig)?;
         if type_signature.args.len() != args.len() {
             return Err(Error::Jni(jni::errors::Error::InvalidArgList(type_signature)));
@@ -126,8 +129,11 @@ impl UwbServiceCallbackImpl {
 
 impl UwbServiceCallback for UwbServiceCallbackImpl {
     fn on_service_reset(&mut self, success: bool) {
-        let result =
-            self.cached_jni_call("onServiceResetReceived", "(Z)V", &[JValue::Bool(success as u8)]);
+        let result = self.cached_jni_call(
+            "onServiceResetReceived",
+            "(Z)V",
+            &[jvalue::from(JValue::Bool(success as u8))],
+        );
         result_helper("on_service_reset", result);
     }
 
@@ -135,7 +141,7 @@ impl UwbServiceCallback for UwbServiceCallbackImpl {
         let result = self.cached_jni_call(
             "onDeviceStatusNotificationReceived",
             "(I)V",
-            &[JValue::Int(state as i32)],
+            &[jvalue::from(JValue::Int(state as i32))],
         );
         result_helper("on_uci_device_status_changed", result);
     }
@@ -150,9 +156,9 @@ impl UwbServiceCallback for UwbServiceCallbackImpl {
             "onSessionStatusNotificationReceived",
             "(JII)V",
             &[
-                JValue::Long(session_id as i64),
-                JValue::Int(session_state as i32),
-                JValue::Int(reason_code as i32),
+                jvalue::from(JValue::Long(session_id as i64)),
+                jvalue::from(JValue::Int(session_state as i32)),
+                jvalue::from(JValue::Int(reason_code as i32)),
             ],
         );
         result_helper("on_session_state_changed", result);
@@ -198,7 +204,10 @@ impl UwbServiceCallback for UwbServiceCallbackImpl {
         let result = self.cached_jni_call(
             "onRangeDataNotificationReceived",
             "(JLcom/android/server/uwb/data/UwbRangingData;)V",
-            &[JValue::Long(session_id as i64), JValue::Object(uwb_raning_data_jobject)],
+            &[
+                jvalue::from(JValue::Long(session_id as i64)),
+                jvalue::from(JValue::Object(uwb_raning_data_jobject)),
+            ],
         );
         result_helper("on_range_data_received", result);
     }
@@ -218,13 +227,17 @@ impl UwbServiceCallback for UwbServiceCallbackImpl {
             error!("UWB Service Callback: Failed to set byte array: {:?}", err);
             return;
         }
+
+        // Safety: payload_jbyte_array safely instantiated above.
+        let payload_jobject = unsafe { JObject::from_raw(payload_jbyte_array) };
+
         let result = self.cached_jni_call(
             "onVendorUciNotificationReceived",
             "(II[B)V",
             &[
-                JValue::Int(gid as i32),
-                JValue::Int(oid as i32),
-                JValue::Object(JObject::from(payload_jbyte_array)),
+                jvalue::from(JValue::Int(gid as i32)),
+                jvalue::from(JValue::Int(oid as i32)),
+                jvalue::from(JValue::Object(payload_jobject)),
             ],
         );
 
