@@ -1046,7 +1046,7 @@ impl NotificationManager for NotificationManagerAndroid {
             // TODO(b/246678053): Refactor to do this split inside
             // on_session_range_data_notification(), after computing the common parameters based on
             // the RangingMeasurements type.
-            SessionNotification::RangeData(range_data) => match range_data.ranging_measurements {
+            SessionNotification::SessionInfo(range_data) => match range_data.ranging_measurements {
                 uwb_core::uci::RangingMeasurements::ShortAddressTwoWay(_) => {
                     self.on_session_range_data_notification(range_data)
                 }
