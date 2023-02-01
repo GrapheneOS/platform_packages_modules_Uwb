@@ -86,12 +86,10 @@ import com.google.uwb.support.oemextension.SessionStatus;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -604,19 +602,18 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         UwbOwrAoaMeasurement uwbOwrAoaMeasurement = rangingData.getRangingOwrAoaMeasure();
         mAdvertiseManager.updateAdvertiseTarget(uwbOwrAoaMeasurement);
 
-        byte[] macAddress = getValidMacAddressFromOwrAoaMeasurement(
+        byte[] macAddressBytes = getValidMacAddressFromOwrAoaMeasurement(
                 rangingData, uwbOwrAoaMeasurement);
-        if (macAddress == null)  {
+        if (macAddressBytes == null)  {
             Log.i(TAG, "OwR Aoa UwbSession: Invalid MacAddress for remote device");
             return;
         }
-        uwbSession.setRemoteMacAddress(macAddress);
 
-        boolean advertisePointingResult = mAdvertiseManager.isPointedTarget(macAddress);
+        boolean advertisePointingResult = mAdvertiseManager.isPointedTarget(macAddressBytes);
         if (mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
             try {
                 PersistableBundle pointedTargetBundle = new AdvertisePointedTarget.Builder()
-                        .setMacAddress(macAddress)
+                        .setMacAddress(macAddressBytes)
                         .setAdvertisePointingResult(advertisePointingResult)
                         .build()
                         .toBundle();
@@ -631,21 +628,22 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
 
         if (advertisePointingResult) {
-            // Get any application payload data received in this OWR AOA ranging session and
-            // notify it.
-            // TODO(b/246678053): Use a loop to notify all the ReceivedDataInfo(s) for this
-            // UwbSession.
-            ReceivedDataInfo receivedDataInfo = uwbSession.extractFirstReceivedDataInfo(
-                    macAddressByteArrayToLong(macAddress));
-            if (receivedDataInfo == null) {
+            // Use a loop to notify all the received application data payload(s) (in sequence number
+            // order) for this OWR AOA ranging session.
+            long macAddress = macAddressByteArrayToLong(macAddressBytes);
+            UwbAddress uwbAddress = UwbAddress.fromBytes(macAddressBytes);
+
+            List<ReceivedDataInfo> receivedDataInfoList = uwbSession.getAllReceivedDataInfo(
+                    macAddress);
+            if (receivedDataInfoList.isEmpty()) {
                 Log.i(TAG, "OwR Aoa UwbSession: Application Payload data not found for"
                         + " MacAddress = " + UwbUtil.toHexString(macAddress));
                 return;
             }
 
-            UwbAddress uwbAddress = UwbAddress.fromBytes(macAddress);
-            mSessionNotificationManager.onDataReceived(
-                    uwbSession, uwbAddress, new PersistableBundle(), receivedDataInfo.payload);
+            receivedDataInfoList.stream().forEach(r ->
+                    mSessionNotificationManager.onDataReceived(
+                            uwbSession, uwbAddress, new PersistableBundle(), r.payload));
             mAdvertiseManager.removeAdvertiseTarget(macAddress);
         }
     }
@@ -868,8 +866,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     }
 
     private void removeAdvertiserData(UwbSession uwbSession) {
-        byte[] remoteMacAddress = uwbSession.getRemoteMacAddress();
-        if (remoteMacAddress != null) {
+        for (long remoteMacAddress : uwbSession.getRemoteMacAddressList()) {
             mAdvertiseManager.removeAdvertiseTarget(remoteMacAddress);
         }
     }
@@ -1519,7 +1516,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         private final AttributionSource mAttributionSource;
         private final SessionHandle mSessionHandle;
         private final int mSessionId;
-        private byte[] mRemoteMacAddress;
         private final IUwbRangingCallbacks mIUwbRangingCallbacks;
         private final String mProtocolName;
         private final IBinder mIBinder;
@@ -1622,25 +1618,20 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
 
         /**
-         * Return the ReceivedDataInfo corresponding to the earliest received data (ie, smallest
-         * sequence number). The data is removed from the Map, and so this method can be called
-         * repeatedly to get all the stored data packets.
-         */
-        @Nullable
-        public ReceivedDataInfo extractFirstReceivedDataInfo(long macAddress) {
+          * Return all the ReceivedDataInfo from the given remote device, in sequence number order.
+          * This method also removes the returned packets from the Map, so the same packet will
+          * not be returned again (in a future call).
+          */
+        public List<ReceivedDataInfo> getAllReceivedDataInfo(long macAddress) {
             SortedMap<Long, ReceivedDataInfo> innerMap = mReceivedDataInfoMap.get(macAddress);
             if (innerMap == null) {
                 // No stored ReceivedDataInfo(s) for the address.
-                return null;
+                return List.of();
             }
 
-            Long sequenceNumber;
-            try {
-                sequenceNumber = innerMap.firstKey();
-            } catch (NoSuchElementException e) {
-                return null;
-            }
-            return innerMap.remove(sequenceNumber);
+            List<ReceivedDataInfo> receivedDataInfoList = new ArrayList<>(innerMap.values());
+            innerMap.clear();
+            return receivedDataInfoList;
         }
 
         /**
@@ -1755,12 +1746,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             this.mSessionState = state;
         }
 
-        public byte[] getRemoteMacAddress() {
-            return mRemoteMacAddress;
-        }
-
-        public void setRemoteMacAddress(byte[] remoteMacAddress) {
-            this.mRemoteMacAddress = Arrays.copyOf(remoteMacAddress, remoteMacAddress.length);
+        public Set<Long> getRemoteMacAddressList() {
+            return mReceivedDataInfoMap.keySet();
         }
 
         public void setMulticastListUpdateStatus(
