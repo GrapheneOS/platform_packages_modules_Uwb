@@ -322,11 +322,11 @@ public class UwbAdvertiseManagerTest {
         assertNull(mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_B_INT));
 
         // Call removeAdvertiseTarget() for the device and verify that it has been removed.
-        mUwbAdvertiseManager.removeAdvertiseTarget(TEST_MAC_ADDRESS_A);
+        mUwbAdvertiseManager.removeAdvertiseTarget(TEST_MAC_ADDRESS_A_LONG);
         assertNull(mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_A_LONG));
 
         // Call removeAdvertiseTarget() for a device that doesn't exist and verify no exceptions.
-        mUwbAdvertiseManager.removeAdvertiseTarget(TEST_MAC_ADDRESS_B);
+        mUwbAdvertiseManager.removeAdvertiseTarget(TEST_MAC_ADDRESS_B_INT);
         assertNull(mUwbAdvertiseManager.getAdvertiseTarget(TEST_MAC_ADDRESS_B_INT));
     }
 

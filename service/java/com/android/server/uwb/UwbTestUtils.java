@@ -46,6 +46,7 @@ public class UwbTestUtils {
     public static final int TEST_SESSION_ID = 7;
     public static final int TEST_SESSION_ID_2 = 8;
     public static final byte[] PEER_SHORT_MAC_ADDRESS = {0x35, 0x37};
+    public static final long PEER_SHORT_MAC_ADDRESS_LONG = 0x3735L;
     public static final byte[] PEER_EXTENDED_SHORT_MAC_ADDRESS =
             {0x35, 0x37, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     public static final long PEER_EXTENDED_SHORT_MAC_ADDRESS_LONG = 0x3735L;
