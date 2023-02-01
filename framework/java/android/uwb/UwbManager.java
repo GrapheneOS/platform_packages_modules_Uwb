@@ -981,13 +981,15 @@ public final class UwbManager {
     public static final int MESSAGE_TYPE_COMMAND = 1;
     /**
      * @hide
-     * Message Type value reserved for testing.
+     * Message Type for C-APDU (Command - Application Protocol Data Unit),
+     * used for communication with secure component.
      */
     public static final int MESSAGE_TYPE_TEST_1 = 4;
 
     /**
      * @hide
-     * Message Type value reserved for testing.
+     * Message Type for R-APDU (Response - Application Protocol Data Unit),
+     * used for communication with secure component.
      */
     public static final int MESSAGE_TYPE_TEST_2 = 5;
 
