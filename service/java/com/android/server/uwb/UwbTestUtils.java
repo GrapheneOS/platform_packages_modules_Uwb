@@ -77,6 +77,7 @@ public class UwbTestUtils {
     private static final int TEST_DISTANCE = 101;
     private static final float TEST_AOA_AZIMUTH = 67;
     private static final int TEST_AOA_AZIMUTH_FOM = 50;
+    private static final int TEST_BAD_AOA_AZIMUTH_FOM = 150;
     private static final float TEST_AOA_ELEVATION = 37;
     private static final int TEST_AOA_ELEVATION_FOM = 90;
     private static final float TEST_AOA_DEST_AZIMUTH = 67;
@@ -152,6 +153,21 @@ public class UwbTestUtils {
                 macAddress, rangingStatus, TEST_LOS,
                 TEST_FRAME_SEQUENCE_NUMBER, TEST_BLOCK_IDX,
                 convertFloatToQFormat(TEST_AOA_AZIMUTH, 9, 7), TEST_AOA_AZIMUTH_FOM,
+                convertFloatToQFormat(TEST_AOA_ELEVATION, 9, 7), TEST_AOA_ELEVATION_FOM);
+        return new UwbRangingData(TEST_SEQ_COUNTER, TEST_SESSION_ID,
+                TEST_RCR_INDICATION, TEST_CURR_RANGING_INTERVAL, RANGING_MEASUREMENT_TYPE_OWR_AOA,
+                macAddressingMode, noOfRangingMeasures, uwbOwrAoaMeasurement,
+                TEST_RAW_NTF_DATA);
+    }
+
+    /** Generate an OWR ranging data with a bad AoA Azimuth FOM */
+    public static UwbRangingData generateBadOwrAoaMeasurementRangingData(
+            int macAddressingMode, byte[] macAddress) {
+        final int noOfRangingMeasures = 1;
+        final UwbOwrAoaMeasurement uwbOwrAoaMeasurement  = new UwbOwrAoaMeasurement(
+                macAddress, TEST_STATUS, TEST_LOS,
+                TEST_FRAME_SEQUENCE_NUMBER, TEST_BLOCK_IDX,
+                convertFloatToQFormat(TEST_AOA_AZIMUTH, 9, 7), TEST_BAD_AOA_AZIMUTH_FOM,
                 convertFloatToQFormat(TEST_AOA_ELEVATION, 9, 7), TEST_AOA_ELEVATION_FOM);
         return new UwbRangingData(TEST_SEQ_COUNTER, TEST_SESSION_ID,
                 TEST_RCR_INDICATION, TEST_CURR_RANGING_INTERVAL, RANGING_MEASUREMENT_TYPE_OWR_AOA,
