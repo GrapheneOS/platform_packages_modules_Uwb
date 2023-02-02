@@ -139,8 +139,8 @@ public class FiraTests {
         int numOfMsrmtFocusOnRange = 1;
         int numOfMsrmtFocusOnAoaAzimuth = 2;
         int numOfMsrmtFocusOnAoaElevation = 3;
-        long ulTdoaTxIntervalMs = 1_000L;
-        long ulTdoaRandomWindowMS = 100;
+        int ulTdoaTxIntervalMs = 1_000;
+        int ulTdoaRandomWindowMS = 100;
         int ulTdoaDeviceIdType = UL_TDOA_DEVICE_ID_16_BIT;
         byte[] ulTdoaDeviceId = new byte[] {(byte) 0x0C, (byte) 0x0B};
         int ulTdoaTxTimestampType = TX_TIMESTAMP_40_BIT;
