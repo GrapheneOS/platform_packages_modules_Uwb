@@ -85,8 +85,7 @@ public class UwbAdvertiseManager {
     /**
      * Remove all the stored AdvertiseTarget data for the given device.
      */
-    public void removeAdvertiseTarget(byte[] macAddressBytes) {
-        long macAddress = macAddressByteArrayToLong(macAddressBytes);
+    public void removeAdvertiseTarget(long macAddress) {
         mAdvertiseTargetMap.remove(macAddress);
     }
 
@@ -113,7 +112,7 @@ public class UwbAdvertiseManager {
         }
 
         if (!isWithinTimeThreshold(uwbAdvertiseTarget)) {
-            removeAdvertiseTarget(macAddressBytes);
+            removeAdvertiseTarget(macAddress);
         }
     }
 
