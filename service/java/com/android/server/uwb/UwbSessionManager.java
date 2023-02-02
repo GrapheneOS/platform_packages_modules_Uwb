@@ -68,6 +68,7 @@ import com.android.server.uwb.jni.INativeUwbManager;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.proto.UwbStatsLog;
 import com.android.server.uwb.util.ArrayUtils;
+import com.android.server.uwb.util.LruList;
 import com.android.server.uwb.util.UwbUtil;
 
 import com.google.uwb.support.base.Params;
@@ -84,8 +85,11 @@ import com.google.uwb.support.generic.GenericSpecificationParams;
 import com.google.uwb.support.oemextension.AdvertisePointedTarget;
 import com.google.uwb.support.oemextension.SessionStatus;
 
+import java.io.FileDescriptor;
+import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -128,6 +132,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     // TODO: don't expose the internal field for testing.
     @VisibleForTesting
     final ConcurrentHashMap<Integer, UwbSession> mSessionTable = new ConcurrentHashMap();
+    // Used for storing recently closed sessions for debugging purposes.
+    final LruList<UwbSession> mDbgRecentlyClosedSessions = new LruList<>(5);
     final ConcurrentHashMap<Integer, List<UwbSession>> mNonPrivilegedUidToFiraSessionsTable =
             new ConcurrentHashMap();
     private final ActivityManager mActivityManager;
@@ -862,6 +868,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             removeFromNonPrivilegedUidToFiraSessionTableIfNecessary(uwbSession);
             removeAdvertiserData(uwbSession);
             mSessionTable.remove(uwbSession.getSessionId());
+            mDbgRecentlyClosedSessions.add(uwbSession);
         }
     }
 
@@ -1902,6 +1909,17 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 }
             }
         }
+
+        @Override
+        public String toString() {
+            return "UwbSession: { Session Id: " + getSessionId()
+                    + ", Handle: " + getSessionHandle()
+                    + ", Type: " + getProtocolName()
+                    + ", State: " + getSessionState()
+                    + ", Params: " + getParams()
+                    + ", AttributionSource: " + getAttributionSource()
+                    + " }";
+        }
     }
 
     // TODO: refactor the async operation flow.
@@ -1918,5 +1936,32 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         void blockingNotify() {
             notify();
         }
+    }
+
+    /**
+     * Dump the UWB session manager debug info
+     */
+    public synchronized void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
+        pw.println("---- Dump of UwbSessionManager ----");
+        pw.println("Active sessions: ");
+        for (Map.Entry<Integer, UwbSession> entry : mSessionTable.entrySet()) {
+            UwbSession uwbSession = entry.getValue();
+            pw.println(uwbSession);
+        }
+        pw.println("Recently closed sessions: ");
+        for (UwbSession uwbSession: mDbgRecentlyClosedSessions.getEntries()) {
+            pw.println(uwbSession);
+        }
+        List<Integer> nonPrivilegedSessionIds =
+                mNonPrivilegedUidToFiraSessionsTable.entrySet()
+                        .stream()
+                        .map(e -> e.getValue()
+                                .stream()
+                                .map(UwbSession::getSessionId)
+                                .collect(Collectors.toList()))
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.toList());
+        pw.println("Non Privileged Fira Session Ids: " + nonPrivilegedSessionIds);
+        pw.println("---- Dump of UwbSessionManager ----");
     }
 }

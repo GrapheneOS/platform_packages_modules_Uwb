@@ -191,7 +191,6 @@ public class FiraEncoder extends TlvEncoder {
         }
         return tlvBufferBuilder.build();
     }
-
     private byte[] getUlTdoaDeviceId(int ulTdoaDeviceIdType, byte[] ulTdoaDeviceId) {
         if (ulTdoaDeviceIdType == FiraParams.UL_TDOA_DEVICE_ID_NONE) {
             // Device ID not included

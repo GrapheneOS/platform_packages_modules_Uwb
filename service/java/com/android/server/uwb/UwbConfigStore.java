@@ -758,7 +758,7 @@ public class UwbConfigStore {
      * Dump the local log buffer and other internal state of UwbConfigManager.
      */
     public void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
-        pw.println("Dump of UwbConfigStore");
+        pw.println("---- Dump of UwbConfigStore ----");
         pw.println("UwbConfigStore - Store File Begin ----");
         Stream.of(mSharedStores, mUserStores)
                 .filter(Objects::nonNull)
@@ -777,7 +777,7 @@ public class UwbConfigStore {
             pw.print(", ");
             pw.println("File Name: " + STORE_ID_TO_FILE_NAME.get(storeData.getStoreFileId()));
         }
-        pw.println("UwbConfigStore - Store Data End ----");
+        pw.println("---- Dump of UwbConfigStore ----");
     }
 
     /**
