@@ -403,9 +403,10 @@ public class NativeUwbManager {
      * Send payload data to a remote device in a UWB ranging session.
      */
     public byte sendData(
-            int sessionId, byte[] address, byte destEndPoint, int sequenceNum, byte[] appData) {
+            int sessionId, byte[] address, byte destEndPoint, byte sequenceNum, byte[] appData,
+            String chipId) {
         synchronized (mNativeLock) {
-            return nativeSendData(sessionId, address, destEndPoint, sequenceNum, appData);
+            return nativeSendData(sessionId, address, destEndPoint, sequenceNum, appData, chipId);
         }
     }
 
@@ -427,9 +428,8 @@ public class NativeUwbManager {
         }
     }
 
-    // TODO(b/259487023): no native implementation
     private native byte nativeSendData(int sessionId, byte[] address, byte destEndPoint,
-            int sequenceNum, byte[] appData);
+            byte sequenceNum, byte[] appData, String chipId);
 
     private native long nativeDispatcherNew(Object[] chipIds);
 

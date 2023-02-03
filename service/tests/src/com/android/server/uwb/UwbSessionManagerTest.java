@@ -145,8 +145,9 @@ public class UwbSessionManagerTest {
     private static final UwbAddress UWB_DEST_ADDRESS_3 =
             UwbAddress.fromBytes(new byte[] {(byte) 0x07, (byte) 0x08 });
     private static final int TEST_RANGING_INTERVAL_MS = 200;
-    private static final int DATA_SEQUENCE_NUM = 1;
-    private static final int DATA_SEQUENCE_NUM_1 = 2;
+    private static final byte DATA_SEQUENCE_NUM = 1;
+    private static final byte DATA_SEQUENCE_NUM_1 = 2;
+
     private static final int SOURCE_END_POINT = 100;
     private static final int DEST_END_POINT = 200;
     private static final int HANDLE_ID = 12;
@@ -1966,7 +1967,8 @@ public class UwbSessionManagerTest {
         when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID),
                 eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
-                eq(DATA_PAYLOAD))).thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+                eq(DATA_PAYLOAD), eq(TEST_CHIP_ID)))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
 
         mUwbSessionManager.sendData(uwbSession.getSessionHandle(), PEER_EXTENDED_UWB_ADDRESS,
                 PERSISTABLE_BUNDLE, DATA_PAYLOAD);
@@ -1975,7 +1977,7 @@ public class UwbSessionManagerTest {
         verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID),
                 eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
-                eq(DATA_PAYLOAD));
+                eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
         verify(mUwbSessionNotificationManager).onDataSent(
                 eq(uwbSession), eq(PEER_EXTENDED_UWB_ADDRESS), eq(PERSISTABLE_BUNDLE));
     }
@@ -1990,7 +1992,7 @@ public class UwbSessionManagerTest {
         verify(mNativeUwbManager, never()).sendData(
                 eq(TEST_SESSION_ID), eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
-                eq(DATA_PAYLOAD));
+                eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
         verify(mUwbSessionNotificationManager).onDataSendFailed(
                 eq(null), eq(PEER_EXTENDED_UWB_ADDRESS),
                 eq(UwbUciConstants.STATUS_CODE_ERROR_SESSION_NOT_EXIST), eq(PERSISTABLE_BUNDLE));
@@ -2009,7 +2011,7 @@ public class UwbSessionManagerTest {
         verify(mNativeUwbManager, never()).sendData(
                 eq(TEST_SESSION_ID), eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
-                eq(DATA_PAYLOAD));
+                eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
         verify(mUwbSessionNotificationManager).onDataSendFailed(
                 eq(null), eq(PEER_EXTENDED_UWB_ADDRESS),
                 eq(UwbUciConstants.STATUS_CODE_ERROR_SESSION_NOT_EXIST), eq(PERSISTABLE_BUNDLE));
@@ -2029,7 +2031,7 @@ public class UwbSessionManagerTest {
         verify(mNativeUwbManager, never()).sendData(
                 eq(TEST_SESSION_ID), eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
-                eq(DATA_PAYLOAD));
+                eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
         verify(mUwbSessionNotificationManager).onDataSendFailed(
                 eq(uwbSession), eq(PEER_EXTENDED_UWB_ADDRESS),
                 eq(UwbUciConstants.STATUS_CODE_FAILED), eq(PERSISTABLE_BUNDLE));
@@ -2057,7 +2059,7 @@ public class UwbSessionManagerTest {
         verify(mNativeUwbManager, never()).sendData(
                 eq(TEST_SESSION_ID), eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
-                eq(DATA_PAYLOAD));
+                eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
         verify(mUwbSessionNotificationManager).onDataSendFailed(
                 eq(uwbSession), eq(PEER_EXTENDED_UWB_ADDRESS),
                 eq(UwbUciConstants.STATUS_CODE_INVALID_PARAM), eq(PERSISTABLE_BUNDLE));
@@ -2085,7 +2087,7 @@ public class UwbSessionManagerTest {
         verify(mNativeUwbManager, never()).sendData(
                 eq(TEST_SESSION_ID), eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
-                eq(DATA_PAYLOAD));
+                eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
         verify(mUwbSessionNotificationManager).onDataSendFailed(
                 eq(uwbSession), eq(null),
                 eq(UwbUciConstants.STATUS_CODE_INVALID_PARAM), eq(PERSISTABLE_BUNDLE));
@@ -2109,7 +2111,8 @@ public class UwbSessionManagerTest {
         when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID),
                 eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
-                eq(DATA_PAYLOAD))).thenReturn((byte) UwbUciConstants.STATUS_CODE_FAILED);
+                eq(DATA_PAYLOAD), eq(TEST_CHIP_ID)))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_FAILED);
 
         mUwbSessionManager.sendData(uwbSession.getSessionHandle(), PEER_EXTENDED_UWB_ADDRESS,
                 PERSISTABLE_BUNDLE, DATA_PAYLOAD);
@@ -2118,7 +2121,7 @@ public class UwbSessionManagerTest {
         verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID),
                 eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
-                eq(DATA_PAYLOAD));
+                eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
         verify(mUwbSessionNotificationManager).onDataSendFailed(
                 eq(uwbSession), eq(PEER_EXTENDED_UWB_ADDRESS),
                 eq(UwbUciConstants.STATUS_CODE_FAILED), eq(PERSISTABLE_BUNDLE));
