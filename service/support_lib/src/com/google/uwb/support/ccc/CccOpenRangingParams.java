@@ -42,6 +42,7 @@ public class CccOpenRangingParams extends CccParams {
     private static final String KEY_UWB_CONFIG = "uwb_config";
     private static final String KEY_PULSE_SHAPE_COMBO = "pulse_shape_combo";
     private static final String KEY_SESSION_ID = "session_id";
+    private static final String KEY_SESSION_TYPE = "session_type";
     private static final String KEY_RAN_MULTIPLIER = "ran_multiplier";
     private static final String KEY_CHANNEL = "channel";
     private static final String KEY_NUM_CHAPS_PER_SLOT = "num_chaps_per_slot";
@@ -55,6 +56,7 @@ public class CccOpenRangingParams extends CccParams {
     @UwbConfig private final int mUwbConfig;
     private final CccPulseShapeCombo mPulseShapeCombo;
     private final int mSessionId;
+    @SessionType private final int mSessionType;
     private final int mRanMultiplier;
     @Channel private final int mChannel;
     private final int mNumChapsPerSlot;
@@ -69,6 +71,7 @@ public class CccOpenRangingParams extends CccParams {
             @UwbConfig int uwbConfig,
             CccPulseShapeCombo pulseShapeCombo,
             int sessionId,
+            @SessionType int sessionType,
             int ranMultiplier,
             @Channel int channel,
             int numChapsPerSlot,
@@ -81,6 +84,7 @@ public class CccOpenRangingParams extends CccParams {
         mUwbConfig = uwbConfig;
         mPulseShapeCombo = pulseShapeCombo;
         mSessionId = sessionId;
+        mSessionType = sessionType;
         mRanMultiplier = ranMultiplier;
         mChannel = channel;
         mNumChapsPerSlot = numChapsPerSlot;
@@ -103,6 +107,7 @@ public class CccOpenRangingParams extends CccParams {
         bundle.putInt(KEY_UWB_CONFIG, mUwbConfig);
         bundle.putString(KEY_PULSE_SHAPE_COMBO, mPulseShapeCombo.toString());
         bundle.putInt(KEY_SESSION_ID, mSessionId);
+        bundle.putInt(KEY_SESSION_TYPE, mSessionType);
         bundle.putInt(KEY_RAN_MULTIPLIER, mRanMultiplier);
         bundle.putInt(KEY_CHANNEL, mChannel);
         bundle.putInt(KEY_NUM_CHAPS_PER_SLOT, mNumChapsPerSlot);
@@ -166,6 +171,11 @@ public class CccOpenRangingParams extends CccParams {
         return mSessionId;
     }
 
+    @SessionType
+    public int getSessionType() {
+        return mSessionType;
+    }
+
     @IntRange(from = 0, to = 255)
     public int getRanMultiplier() {
         return mRanMultiplier;
@@ -209,6 +219,7 @@ public class CccOpenRangingParams extends CccParams {
         @UwbConfig private RequiredParam<Integer> mUwbConfig = new RequiredParam<>();
         private RequiredParam<CccPulseShapeCombo> mPulseShapeCombo = new RequiredParam<>();
         private RequiredParam<Integer> mSessionId = new RequiredParam<>();
+        @SessionType private int mSessionType = CccParams.SESSION_TYPE_CCC;
         private RequiredParam<Integer> mRanMultiplier = new RequiredParam<>();
         @Channel private RequiredParam<Integer> mChannel = new RequiredParam<>();
         @ChapsPerSlot private RequiredParam<Integer> mNumChapsPerSlot = new RequiredParam<>();
@@ -228,6 +239,7 @@ public class CccOpenRangingParams extends CccParams {
             mUwbConfig.set(builder.mUwbConfig.get());
             mPulseShapeCombo.set(builder.mPulseShapeCombo.get());
             mSessionId.set(builder.mSessionId.get());
+            mSessionType = builder.mSessionType;
             mRanMultiplier.set(builder.mRanMultiplier.get());
             mChannel.set(builder.mChannel.get());
             mNumChapsPerSlot.set(builder.mNumChapsPerSlot.get());
@@ -243,6 +255,7 @@ public class CccOpenRangingParams extends CccParams {
             mUwbConfig.set(params.mUwbConfig);
             mPulseShapeCombo.set(params.mPulseShapeCombo);
             mSessionId.set(params.mSessionId);
+            mSessionType = params.mSessionType;
             mRanMultiplier.set(params.mRanMultiplier);
             mChannel.set(params.mChannel);
             mNumChapsPerSlot.set(params.mNumChapsPerSlot);
@@ -319,6 +332,7 @@ public class CccOpenRangingParams extends CccParams {
                     mUwbConfig.get(),
                     mPulseShapeCombo.get(),
                     mSessionId.get(),
+                    mSessionType,
                     mRanMultiplier.get(),
                     mChannel.get(),
                     mNumChapsPerSlot.get(),
