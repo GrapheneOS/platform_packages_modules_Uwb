@@ -103,15 +103,22 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
             return;
         }
         mUwbSettingsStore.dump(fd, pw, args);
+        pw.println();
         mUwbInjector.getUwbMetrics().dump(fd, pw, args);
+        pw.println();
         mUwbServiceCore.dump(fd, pw, args);
+        pw.println();
+        mUwbInjector.getUwbSessionManager().dump(fd, pw, args);
+        pw.println();
         mUwbInjector.getUwbCountryCode().dump(fd, pw, args);
+        pw.println();
         mUwbInjector.getUwbConfigStore().dump(fd, pw, args);
+        pw.println();
         dumpPowerStats(fd, pw, args);
     }
 
     private void dumpPowerStats(FileDescriptor fd, PrintWriter pw, String[] args) {
-        pw.println("---- powerStats ----");
+        pw.println("---- PowerStats ----");
         try {
             PersistableBundle bundle = getSpecificationInfo(null);
             GenericSpecificationParams params = GenericSpecificationParams.fromBundle(bundle);
@@ -128,6 +135,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
             pw.println("Exception while getting power stats.");
             e.printStackTrace(pw);
         }
+        pw.println("---- PowerStats ----");
     }
 
     private void enforceUwbPrivilegedPermission() {
