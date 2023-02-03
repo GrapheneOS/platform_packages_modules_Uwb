@@ -35,6 +35,7 @@ import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROL
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLLER;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE;
 import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP1;
+import static com.google.uwb.support.fira.FiraParams.SESSION_TYPE_RANGING;
 import static com.google.uwb.support.fira.FiraParams.SFD_ID_VALUE_3;
 import static com.google.uwb.support.fira.FiraParams.STATE_CHANGE_REASON_CODE_ERROR_INVALID_RANGING_INTERVAL;
 import static com.google.uwb.support.fira.FiraParams.STATUS_CODE_ERROR_ADDRESS_ALREADY_PRESENT;
@@ -79,6 +80,7 @@ public class FiraTests {
     public void testOpenSessionParams() {
         FiraProtocolVersion protocolVersion = FiraParams.PROTOCOL_VERSION_1_1;
         int sessionId = 10;
+        int sessionType = SESSION_TYPE_RANGING;
         int deviceType = RANGING_DEVICE_TYPE_CONTROLEE;
         int deviceRole = RANGING_DEVICE_ROLE_INITIATOR;
         int rangingRoundUsage = RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE;
@@ -149,6 +151,7 @@ public class FiraTests {
                 new FiraOpenSessionParams.Builder()
                         .setProtocolVersion(protocolVersion)
                         .setSessionId(sessionId)
+                        .setSessionType(sessionType)
                         .setDeviceType(deviceType)
                         .setDeviceRole(deviceRole)
                         .setRangingRoundUsage(rangingRoundUsage)
@@ -213,6 +216,7 @@ public class FiraTests {
 
         assertEquals(params.getProtocolVersion(), protocolVersion);
         assertEquals(params.getSessionId(), sessionId);
+        assertEquals(params.getSessionType(), sessionType);
         assertEquals(params.getDeviceType(), deviceType);
         assertEquals(params.getDeviceRole(), deviceRole);
         assertEquals(params.getRangingRoundUsage(), rangingRoundUsage);

@@ -1002,6 +1002,29 @@ public abstract class FiraParams extends Params {
     public static final int KEY_LENGTH_256_BITS_NOT_SUPPORTED = 0;
     public static final int KEY_LENGTH_256_BITS_SUPPORTED = 1;
 
+    /**
+     * Session Type (for SESSION_INIT_CMD)
+     */
+    @IntDef(
+            value = {
+                    SESSION_TYPE_RANGING,
+                    SESSION_TYPE_RANGING_AND_IN_BAND_DATA,
+                    SESSION_TYPE_DATA_TRANSFER,
+                    SESSION_TYPE_RANGING_ONLY_PHASE,
+                    SESSION_TYPE_IN_BAND_DATA_PHASE,
+                    SESSION_TYPE_RANGING_WITH_DATA_PHASE,
+                    SESSION_TYPE_DEVICE_TEST_MODE,
+            })
+    public @interface SessionType{}
+
+    public static final int SESSION_TYPE_RANGING = 0;
+    public static final int SESSION_TYPE_RANGING_AND_IN_BAND_DATA = 1;
+    public static final int SESSION_TYPE_DATA_TRANSFER = 2;
+    public static final int SESSION_TYPE_RANGING_ONLY_PHASE = 3;
+    public static final int SESSION_TYPE_IN_BAND_DATA_PHASE = 4;
+    public static final int SESSION_TYPE_RANGING_WITH_DATA_PHASE = 5;
+    public static final int SESSION_TYPE_DEVICE_TEST_MODE = 0xD0;
+
     // Helper functions
     protected static UwbAddress longToUwbAddress(long value, int length) {
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);

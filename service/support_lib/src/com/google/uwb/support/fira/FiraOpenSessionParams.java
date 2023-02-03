@@ -45,6 +45,7 @@ public class FiraOpenSessionParams extends FiraParams {
     private final FiraProtocolVersion mProtocolVersion;
 
     private final int mSessionId;
+    @SessionType private final int mSessionType;
     @RangingDeviceType private final int mDeviceType;
     @RangingDeviceRole private final int mDeviceRole;
     @RangingRoundUsage private final int mRangingRoundUsage;
@@ -136,6 +137,7 @@ public class FiraOpenSessionParams extends FiraParams {
 
     private static final String KEY_PROTOCOL_VERSION = "protocol_version";
     private static final String KEY_SESSION_ID = "session_id";
+    private static final String KEY_SESSION_TYPE = "session_type";
     private static final String KEY_DEVICE_TYPE = "device_type";
     private static final String KEY_DEVICE_ROLE = "device_role";
     private static final String KEY_RANGING_ROUND_USAGE = "ranging_round_usage";
@@ -219,6 +221,7 @@ public class FiraOpenSessionParams extends FiraParams {
     private FiraOpenSessionParams(
             FiraProtocolVersion protocolVersion,
             int sessionId,
+            @SessionType int sessionType,
             @RangingDeviceType int deviceType,
             @RangingDeviceRole int deviceRole,
             @RangingRoundUsage int rangingRoundUsage,
@@ -286,6 +289,7 @@ public class FiraOpenSessionParams extends FiraParams {
             int ulTdoaTxTimestampType) {
         mProtocolVersion = protocolVersion;
         mSessionId = sessionId;
+        mSessionType = sessionType;
         mDeviceType = deviceType;
         mDeviceRole = deviceRole;
         mRangingRoundUsage = rangingRoundUsage;
@@ -360,6 +364,11 @@ public class FiraOpenSessionParams extends FiraParams {
 
     public int getSessionId() {
         return mSessionId;
+    }
+
+    @SessionType
+    public int getSessionType() {
+        return mSessionType;
     }
 
     @RangingDeviceType
@@ -680,6 +689,7 @@ public class FiraOpenSessionParams extends FiraParams {
         PersistableBundle bundle = super.toBundle();
         bundle.putString(KEY_PROTOCOL_VERSION, mProtocolVersion.toString());
         bundle.putInt(KEY_SESSION_ID, mSessionId);
+        bundle.putInt(KEY_SESSION_TYPE, mSessionType);
         bundle.putInt(KEY_DEVICE_TYPE, mDeviceType);
         bundle.putInt(KEY_DEVICE_ROLE, mDeviceRole);
         bundle.putInt(KEY_RANGING_ROUND_USAGE, mRangingRoundUsage);
@@ -802,6 +812,7 @@ public class FiraOpenSessionParams extends FiraParams {
                         FiraProtocolVersion.fromString(
                                 requireNonNull(bundle.getString(KEY_PROTOCOL_VERSION))))
                 .setSessionId(bundle.getInt(KEY_SESSION_ID))
+                .setSessionType(bundle.getInt(KEY_SESSION_TYPE, FiraParams.SESSION_TYPE_RANGING))
                 .setDeviceType(bundle.getInt(KEY_DEVICE_TYPE))
                 .setDeviceRole(bundle.getInt(KEY_DEVICE_ROLE))
                 .setRangingRoundUsage(bundle.getInt(KEY_RANGING_ROUND_USAGE))
@@ -897,6 +908,8 @@ public class FiraOpenSessionParams extends FiraParams {
         private final RequiredParam<FiraProtocolVersion> mProtocolVersion = new RequiredParam<>();
 
         private final RequiredParam<Integer> mSessionId = new RequiredParam<>();
+        @SessionType
+        private int mSessionType = FiraParams.SESSION_TYPE_RANGING;
         private final RequiredParam<Integer> mDeviceType = new RequiredParam<>();
         private final RequiredParam<Integer> mDeviceRole = new RequiredParam<>();
 
@@ -1093,6 +1106,7 @@ public class FiraOpenSessionParams extends FiraParams {
         public Builder(@NonNull Builder builder) {
             mProtocolVersion.set(builder.mProtocolVersion.get());
             mSessionId.set(builder.mSessionId.get());
+            mSessionType = builder.mSessionType;
             mDeviceType.set(builder.mDeviceType.get());
             mDeviceRole.set(builder.mDeviceRole.get());
             mRangingRoundUsage = builder.mRangingRoundUsage;
@@ -1165,6 +1179,7 @@ public class FiraOpenSessionParams extends FiraParams {
         public Builder(@NonNull FiraOpenSessionParams params) {
             mProtocolVersion.set(params.mProtocolVersion);
             mSessionId.set(params.mSessionId);
+            mSessionType = params.mSessionType;
             mDeviceType.set(params.mDeviceType);
             mDeviceRole.set(params.mDeviceRole);
             mRangingRoundUsage = params.mRangingRoundUsage;
@@ -1241,6 +1256,11 @@ public class FiraOpenSessionParams extends FiraParams {
 
         public FiraOpenSessionParams.Builder setSessionId(int sessionId) {
             mSessionId.set(sessionId);
+            return this;
+        }
+
+        public FiraOpenSessionParams.Builder setSessionType(@SessionType int sessionType) {
+            mSessionType = sessionType;
             return this;
         }
 
@@ -1753,6 +1773,7 @@ public class FiraOpenSessionParams extends FiraParams {
             return new FiraOpenSessionParams(
                     mProtocolVersion.get(),
                     mSessionId.get(),
+                    mSessionType,
                     mDeviceType.get(),
                     mDeviceRole.get(),
                     mRangingRoundUsage,

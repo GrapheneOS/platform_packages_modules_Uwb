@@ -142,6 +142,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             new FiraOpenSessionParams.Builder()
                     .setProtocolVersion(FiraParams.PROTOCOL_VERSION_1_1)
                     .setSessionId(1)
+                    .setSessionType(FiraParams.SESSION_TYPE_RANGING)
                     .setChannelNumber(9)
                     .setDeviceType(RANGING_DEVICE_TYPE_CONTROLLER)
                     .setDeviceRole(RANGING_DEVICE_ROLE_INITIATOR)
