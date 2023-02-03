@@ -83,6 +83,7 @@ public class CccTests {
         assertEquals(
                 params.getPulseShapeCombo().getResponderTx(), pulseShapeCombo.getResponderTx());
         assertEquals(params.getSessionId(), sessionId);
+        assertEquals(params.getSessionType(), CccParams.SESSION_TYPE_CCC);
         assertEquals(params.getRanMultiplier(), ranMultiplier);
         assertEquals(params.getChannel(), channel);
         assertEquals(params.getNumChapsPerSlot(), chapsPerSlot);
