@@ -533,24 +533,25 @@ public class UwbMetrics {
     public void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
         synchronized (mLock) {
             pw.println("---- Dump of UwbMetrics ----");
-            pw.println("---- mRangingSessionList ----");
+            pw.println("-- mRangingSessionList --");
             for (RangingSessionStats stats: mRangingSessionList) {
                 pw.println(stats.toString());
             }
-            pw.println("---- mOpenedSessionMap ----");
+            pw.println("-- mOpenedSessionMap --");
             for (int i = 0; i < mOpenedSessionMap.size(); i++) {
                 pw.println(mOpenedSessionMap.valueAt(i).toString());
             }
-            pw.println("---- mRangingReportList ----");
+            pw.println("-- mRangingReportList --");
             for (RangingReportEvent event: mRangingReportList) {
                 pw.println(event.toString());
             }
             pw.println("mNumApps=" + mNumApps);
-            pw.println("---- Device operation success/error count ----");
+            pw.println("-- Device operation success/error count --");
             pw.println("mNumDeviceInitSuccess = " + mNumDeviceInitSuccess);
             pw.println("mNumDeviceInitFailure = " + mNumDeviceInitFailure);
             pw.println("mNumDeviceStatusError = " + mNumDeviceStatusError);
             pw.println("mNumUciGenericError = " + mNumUciGenericError);
+            pw.println("---- Dump of UwbMetrics ----");
         }
     }
 }

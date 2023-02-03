@@ -92,6 +92,8 @@ public class UwbInjector {
     private final SystemBuildProperties mSystemBuildProperties;
     private final UwbDiagnostics mUwbDiagnostics;
 
+    private final UwbSessionManager mUwbSessionManager;
+
     public UwbInjector(@NonNull UwbContext context) {
         // Create UWB service thread.
         HandlerThread uwbHandlerThread = new HandlerThread("UwbService");
@@ -121,14 +123,14 @@ public class UwbInjector {
         UwbSessionNotificationManager uwbSessionNotificationManager =
                 new UwbSessionNotificationManager(this);
         UwbAdvertiseManager uwbAdvertiseManager = new UwbAdvertiseManager(this);
-        UwbSessionManager uwbSessionManager =
+        mUwbSessionManager =
                 new UwbSessionManager(uwbConfigurationManager, mNativeUwbManager, mUwbMetrics,
                         uwbAdvertiseManager, uwbSessionNotificationManager, this,
                         mContext.getSystemService(AlarmManager.class),
                         mContext.getSystemService(ActivityManager.class),
                         mLooper);
         mUwbService = new UwbServiceCore(mContext, mNativeUwbManager, mUwbMetrics,
-                mUwbCountryCode, uwbSessionManager, uwbConfigurationManager, this, mLooper);
+                mUwbCountryCode, mUwbSessionManager, uwbConfigurationManager, this, mLooper);
         mSystemBuildProperties = new SystemBuildProperties();
         mUwbDiagnostics = new UwbDiagnostics(mContext, this, mSystemBuildProperties);
     }
@@ -190,6 +192,10 @@ public class UwbInjector {
 
     public UwbDiagnostics getUwbDiagnostics() {
         return mUwbDiagnostics;
+    }
+
+    public UwbSessionManager getUwbSessionManager() {
+        return mUwbSessionManager;
     }
 
     /**
