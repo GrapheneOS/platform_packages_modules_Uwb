@@ -867,14 +867,15 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     }
 
     /**
-     * Dump the UWB service status
+     * Dump the UWB session manager debug info
      */
     public synchronized void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
         pw.println("---- Dump of UwbServiceCore ----");
         for (String chipId : mUwbInjector.getMultichipData().getChipIds()) {
-            pw.println("device state = " + getDeviceStateString(mChipIdToStateMap.get(chipId))
+            pw.println("Device state = " + getDeviceStateString(mChipIdToStateMap.get(chipId))
                     + " for chip id = " + chipId);
         }
         pw.println("mLastStateChangedReason = " + mLastStateChangedReason);
+        pw.println("---- Dump of UwbServiceCore ----");
     }
 }

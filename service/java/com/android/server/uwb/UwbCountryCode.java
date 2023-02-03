@@ -331,6 +331,7 @@ public class UwbCountryCode {
      * Method to dump the current state of this UwbCountryCode object.
      */
     public synchronized void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
+        pw.println("---- Dump of UwbCountryCode ----");
         pw.println("DefaultCountryCode(system property): "
                 + mUwbInjector.getOemDefaultCountryCode());
         pw.println("mOverrideCountryCode: " + mOverrideCountryCode);
@@ -339,5 +340,6 @@ public class UwbCountryCode {
         pw.println("mWifiCountryTimestamp: " + mWifiCountryTimestamp);
         pw.println("mCountryCode: " + mCountryCode);
         pw.println("mCountryCodeUpdatedTimestamp: " + mCountryCodeUpdatedTimestamp);
+        pw.println("---- Dump of UwbCountryCode ----");
     }
 }
