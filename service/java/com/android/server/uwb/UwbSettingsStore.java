@@ -282,11 +282,11 @@ public class UwbSettingsStore {
      * Dump output for debugging.
      */
     public void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
-        pw.println();
-        pw.println("Dump of " + TAG);
+        pw.println("---- Dump of UwbSettingsStore ----");
         synchronized (mLock) {
             pw.println("Settings: " + mSettings);
         }
+        pw.println("---- Dump of UwbSettingsStore ----");
     }
 
     /**
