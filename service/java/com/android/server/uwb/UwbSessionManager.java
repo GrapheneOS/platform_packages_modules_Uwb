@@ -1432,20 +1432,21 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                         return sendDataStatus;
                     }
 
-                    // TODO(b/246678053): Check on the usage of sequenceNum field, is it used
-                    //  for ordering the data payload packets by host or firmware ?
-                    byte sequenceNum = 1;
+                    // Get the UCI sequence number for this data packet.
+                    byte sequenceNum = uwbSession.getDataSndSequenceNumber();
 
                     sendDataStatus = mNativeUwbManager.sendData(
                             uwbSession.getSessionId(), sendDataInfo.remoteDeviceAddress.toBytes(),
                             UwbUciConstants.UWB_DESTINATION_END_POINT_HOST, sequenceNum,
                             sendDataInfo.data, uwbSession.getChipId());
-                    Log.d(TAG, "MSG_SESSION_SEND_DATA status: " + sendDataStatus);
+                    Log.d(TAG, "MSG_SESSION_SEND_DATA status: " + sendDataStatus
+                            + " for data packet sequence number: " + sequenceNum);
 
                     if (sendDataStatus == UwbUciConstants.STATUS_CODE_OK) {
                         mSessionNotificationManager.onDataSent(
                                 uwbSession, sendDataInfo.remoteDeviceAddress,
                                 sendDataInfo.params);
+                        uwbSession.incrementDataSndSequenceNumber();
                     } else {
                         mSessionNotificationManager.onDataSendFailed(
                                 uwbSession, sendDataInfo.remoteDeviceAddress, sendDataStatus,
@@ -1548,6 +1549,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         private final ConcurrentHashMap<Long, SortedMap<Long, ReceivedDataInfo>>
                 mReceivedDataInfoMap;
 
+        // Store the UCI sequence number for the next Data packet (to be sent to UWBS).
+        private byte mDataSndSequenceNumber;
+
         @VisibleForTesting
         public List<UwbControlee> mControleeList;
 
@@ -1579,6 +1583,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             }
 
             this.mReceivedDataInfoMap = new ConcurrentHashMap<>();
+            this.mDataSndSequenceNumber = 0;
         }
 
         private boolean isPrivilegedApp(int uid, String packageName) {
@@ -1639,6 +1644,20 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             List<ReceivedDataInfo> receivedDataInfoList = new ArrayList<>(innerMap.values());
             innerMap.clear();
             return receivedDataInfoList;
+        }
+
+        /**
+         * Get the UCI sequence number for the next Data packet to be sent to the UWBS.
+         */
+        public byte getDataSndSequenceNumber() {
+            return mDataSndSequenceNumber;
+        }
+
+        /**
+         * Increment the UCI sequence number for the next Data packet to be sent to the UWBS.
+         */
+        public void incrementDataSndSequenceNumber() {
+            mDataSndSequenceNumber++;
         }
 
         /**
@@ -1914,8 +1933,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         public String toString() {
             return "UwbSession: { Session Id: " + getSessionId()
                     + ", Handle: " + getSessionHandle()
-                    + ", Type: " + getProtocolName()
+                    + ", Protocol: " + getProtocolName()
                     + ", State: " + getSessionState()
+                    + ", Data Send Sequence Number: " + getDataSndSequenceNumber()
                     + ", Params: " + getParams()
                     + ", AttributionSource: " + getAttributionSource()
                     + " }";
