@@ -1434,12 +1434,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
                     // TODO(b/246678053): Check on the usage of sequenceNum field, is it used
                     //  for ordering the data payload packets by host or firmware ?
-                    int sequenceNum = 1;
+                    byte sequenceNum = 1;
 
                     sendDataStatus = mNativeUwbManager.sendData(
                             uwbSession.getSessionId(), sendDataInfo.remoteDeviceAddress.toBytes(),
                             UwbUciConstants.UWB_DESTINATION_END_POINT_HOST, sequenceNum,
-                            sendDataInfo.data);
+                            sendDataInfo.data, uwbSession.getChipId());
                     Log.d(TAG, "MSG_SESSION_SEND_DATA status: " + sendDataStatus);
 
                     if (sendDataStatus == UwbUciConstants.STATUS_CODE_OK) {
