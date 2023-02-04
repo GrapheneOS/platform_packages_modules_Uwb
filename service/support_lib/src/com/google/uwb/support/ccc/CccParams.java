@@ -200,4 +200,12 @@ public abstract class CccParams extends Params {
     public static final int PROTOCOL_ERROR_SE_BUSY = 1;
     public static final int PROTOCOL_ERROR_LIFECYCLE = 2;
     public static final int PROTOCOL_ERROR_NOT_FOUND = 3;
+
+    /** Session Type */
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef(
+            value = {SESSION_TYPE_CCC})
+    public @interface SessionType {}
+
+    public static final int SESSION_TYPE_CCC = 160;
 }
