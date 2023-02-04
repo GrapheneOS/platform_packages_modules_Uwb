@@ -41,8 +41,8 @@ use uwb_core::params::{
 };
 use uwb_uci_packets::{
     AppConfigTlvType, CapTlv, Controlee, Controlee_V2_0_16_Byte_Version,
-    Controlee_V2_0_32_Byte_Version, Controlees, PowerStats, ResetConfig, SessionState, SessionType,
-    StatusCode, UpdateMulticastListAction,
+    Controlee_V2_0_32_Byte_Version, Controlees, FiraComponent, PowerStats, ResetConfig,
+    SessionState, SessionType, StatusCode, UpdateMulticastListAction,
 };
 
 /// Macro capturing the name of the function calling this macro.
@@ -906,6 +906,62 @@ fn native_set_ranging_rounds_dt_tag(
         .convert_byte_array(ranging_round_indexes)
         .map_err(|_| Error::ForeignFunctionInterface)?;
     uci_manager.session_update_active_rounds_dt_tag(session_id, indexes)
+}
+
+/// Send a data packet to the remote device.
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSendData(
+    env: JNIEnv,
+    obj: JObject,
+    session_id: jint,
+    address: jbyteArray,
+    dest_fira_component: jbyte,
+    uci_sequence_number: jbyte,
+    app_payload_data: jbyteArray,
+    chip_id: JString,
+) -> jbyte {
+    debug!("{}: enter", function_name!());
+    byte_result_helper(
+        native_send_data(
+            env,
+            obj,
+            session_id,
+            address,
+            dest_fira_component,
+            uci_sequence_number,
+            app_payload_data,
+            chip_id,
+        ),
+        function_name!(),
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn native_send_data(
+    env: JNIEnv,
+    obj: JObject,
+    session_id: jint,
+    address: jbyteArray,
+    dest_fira_component: jbyte,
+    uci_sequence_number: jbyte,
+    app_payload_data: jbyteArray,
+    chip_id: JString,
+) -> Result<()> {
+    let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)
+        .map_err(|_| Error::ForeignFunctionInterface)?;
+    let address_bytearray =
+        env.convert_byte_array(address).map_err(|_| Error::ForeignFunctionInterface)?;
+    let app_payload_data_bytearray =
+        env.convert_byte_array(app_payload_data).map_err(|_| Error::ForeignFunctionInterface)?;
+    let destination_fira_component =
+        FiraComponent::from_u8(dest_fira_component as u8).ok_or(Error::BadParameters)?;
+    uci_manager.send_data_packet(
+        session_id as u32,
+        address_bytearray,
+        destination_fira_component,
+        uci_sequence_number as u8,
+        app_payload_data_bytearray,
+    )
 }
 
 /// Get the class loader object. Has to be called from a JNIEnv where the local java classes are

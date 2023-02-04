@@ -68,6 +68,7 @@ import com.android.server.uwb.jni.INativeUwbManager;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.proto.UwbStatsLog;
 import com.android.server.uwb.util.ArrayUtils;
+import com.android.server.uwb.util.LruList;
 import com.android.server.uwb.util.UwbUtil;
 
 import com.google.uwb.support.base.Params;
@@ -84,8 +85,11 @@ import com.google.uwb.support.generic.GenericSpecificationParams;
 import com.google.uwb.support.oemextension.AdvertisePointedTarget;
 import com.google.uwb.support.oemextension.SessionStatus;
 
+import java.io.FileDescriptor;
+import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -128,6 +132,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     // TODO: don't expose the internal field for testing.
     @VisibleForTesting
     final ConcurrentHashMap<Integer, UwbSession> mSessionTable = new ConcurrentHashMap();
+    // Used for storing recently closed sessions for debugging purposes.
+    final LruList<UwbSession> mDbgRecentlyClosedSessions = new LruList<>(5);
     final ConcurrentHashMap<Integer, List<UwbSession>> mNonPrivilegedUidToFiraSessionsTable =
             new ConcurrentHashMap();
     private final ActivityManager mActivityManager;
@@ -377,16 +383,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
     }
 
-    private byte getSessionType(String protocolName) {
-        byte sessionType = UwbUciConstants.SESSION_TYPE_RANGING;
-        if (protocolName.equals(FiraParams.PROTOCOL_NAME)) {
-            sessionType = UwbUciConstants.SESSION_TYPE_RANGING;
-        } else if (protocolName.equals(CccParams.PROTOCOL_NAME)) {
-            sessionType = UwbUciConstants.SESSION_TYPE_CCC;
-        }
-        return sessionType;
-    }
-
     private int setAppConfigurations(UwbSession uwbSession) {
         int status = mConfigurationManager.setAppConfigurations(uwbSession.getSessionId(),
                 uwbSession.getParams(), uwbSession.getChipId());
@@ -403,13 +399,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     }
 
     public synchronized void initSession(AttributionSource attributionSource,
-            SessionHandle sessionHandle, int sessionId, String protocolName, Params params,
-            IUwbRangingCallbacks rangingCallbacks, String chipId)
+            SessionHandle sessionHandle, int sessionId, byte sessionType, String protocolName,
+            Params params, IUwbRangingCallbacks rangingCallbacks, String chipId)
             throws RemoteException {
-        Log.i(TAG, "initSession() - sessionId: " + sessionId
-                + ", sessionHandle: " + sessionHandle);
+        Log.i(TAG, "initSession() - sessionId: " + sessionId + ", sessionHandle: " + sessionHandle
+                + ", sessionType: " + sessionType);
         UwbSession uwbSession =  createUwbSession(attributionSource, sessionHandle, sessionId,
-                protocolName, params, rangingCallbacks, chipId);
+                sessionType, protocolName, params, rangingCallbacks, chipId);
         // Check the attribution source chain to ensure that there are no 3p apps which are not in
         // fg which can receive the ranging results.
         AttributionSource nonPrivilegedAppAttrSource =
@@ -452,8 +448,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             return;
         }
 
-        byte sessionType = getSessionType(protocolName);
-
         try {
             uwbSession.getBinder().linkToDeath(uwbSession, 0);
         } catch (RemoteException e) {
@@ -477,10 +471,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     // TODO: use UwbInjector.
     @VisibleForTesting
     UwbSession createUwbSession(AttributionSource attributionSource, SessionHandle sessionHandle,
-            int sessionId, String protocolName, Params params,
+            int sessionId, byte sessionType, String protocolName, Params params,
             IUwbRangingCallbacks iUwbRangingCallbacks, String chipId) {
-        return new UwbSession(attributionSource, sessionHandle, sessionId, protocolName, params,
-                iUwbRangingCallbacks, chipId);
+        return new UwbSession(attributionSource, sessionHandle, sessionId, sessionType,
+                protocolName, params, iUwbRangingCallbacks, chipId);
     }
 
     public synchronized void deInitSession(SessionHandle sessionHandle) {
@@ -862,6 +856,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             removeFromNonPrivilegedUidToFiraSessionTableIfNecessary(uwbSession);
             removeAdvertiserData(uwbSession);
             mSessionTable.remove(uwbSession.getSessionId());
+            mDbgRecentlyClosedSessions.add(uwbSession);
         }
     }
 
@@ -872,7 +867,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     }
 
     void addToNonPrivilegedUidToFiraSessionTableIfNecessary(@NonNull UwbSession uwbSession) {
-        if (getSessionType(uwbSession.getProtocolName()) == UwbUciConstants.SESSION_TYPE_RANGING) {
+        if (uwbSession.getSessionType() == UwbUciConstants.SESSION_TYPE_RANGING) {
             AttributionSource nonPrivilegedAppAttrSource =
                     uwbSession.getAnyNonPrivilegedAppInAttributionSource();
             if (nonPrivilegedAppAttrSource != null) {
@@ -886,7 +881,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     }
 
     void removeFromNonPrivilegedUidToFiraSessionTableIfNecessary(@NonNull UwbSession uwbSession) {
-        if (getSessionType(uwbSession.getProtocolName()) == UwbUciConstants.SESSION_TYPE_RANGING) {
+        if (uwbSession.getSessionType() == UwbUciConstants.SESSION_TYPE_RANGING) {
             AttributionSource nonPrivilegedAppAttrSource =
                     uwbSession.getAnyNonPrivilegedAppInAttributionSource();
             if (nonPrivilegedAppAttrSource != null) {
@@ -1015,7 +1010,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                             uwbSession.setOperationType(OPERATION_TYPE_INIT_SESSION);
                             status = mNativeUwbManager.initSession(
                                     uwbSession.getSessionId(),
-                                    getSessionType(uwbSession.getParams().getProtocolName()),
+                                    uwbSession.getSessionType(),
                                     uwbSession.getChipId());
                             if (status != UwbUciConstants.STATUS_CODE_OK) {
                                 return status;
@@ -1427,12 +1422,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
                     // TODO(b/246678053): Check on the usage of sequenceNum field, is it used
                     //  for ordering the data payload packets by host or firmware ?
-                    int sequenceNum = 1;
+                    byte sequenceNum = 1;
 
                     sendDataStatus = mNativeUwbManager.sendData(
                             uwbSession.getSessionId(), sendDataInfo.remoteDeviceAddress.toBytes(),
                             UwbUciConstants.UWB_DESTINATION_END_POINT_HOST, sequenceNum,
-                            sendDataInfo.data);
+                            sendDataInfo.data, uwbSession.getChipId());
                     Log.d(TAG, "MSG_SESSION_SEND_DATA status: " + sendDataStatus);
 
                     if (sendDataStatus == UwbUciConstants.STATUS_CODE_OK) {
@@ -1516,6 +1511,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         private final AttributionSource mAttributionSource;
         private final SessionHandle mSessionHandle;
         private final int mSessionId;
+        private final byte mSessionType;
         private final IUwbRangingCallbacks mIUwbRangingCallbacks;
         private final String mProtocolName;
         private final IBinder mIBinder;
@@ -1545,11 +1541,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         public List<UwbControlee> mControleeList;
 
         UwbSession(AttributionSource attributionSource, SessionHandle sessionHandle, int sessionId,
-                String protocolName, Params params, IUwbRangingCallbacks iUwbRangingCallbacks,
-                String chipId) {
+                byte sessionType, String protocolName, Params params,
+                IUwbRangingCallbacks iUwbRangingCallbacks, String chipId) {
             this.mAttributionSource = attributionSource;
             this.mSessionHandle = sessionHandle;
             this.mSessionId = sessionId;
+            this.mSessionType = sessionType;
             this.mProtocolName = protocolName;
             this.mIUwbRangingCallbacks = iUwbRangingCallbacks;
             this.mIBinder = iUwbRangingCallbacks.asBinder();
@@ -1663,6 +1660,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
         public int getSessionId() {
             return this.mSessionId;
+        }
+
+        public byte getSessionType() {
+            return this.mSessionType;
         }
 
         public String getChipId() {
@@ -1902,6 +1903,17 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 }
             }
         }
+
+        @Override
+        public String toString() {
+            return "UwbSession: { Session Id: " + getSessionId()
+                    + ", Handle: " + getSessionHandle()
+                    + ", Type: " + getProtocolName()
+                    + ", State: " + getSessionState()
+                    + ", Params: " + getParams()
+                    + ", AttributionSource: " + getAttributionSource()
+                    + " }";
+        }
     }
 
     // TODO: refactor the async operation flow.
@@ -1918,5 +1930,32 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         void blockingNotify() {
             notify();
         }
+    }
+
+    /**
+     * Dump the UWB session manager debug info
+     */
+    public synchronized void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
+        pw.println("---- Dump of UwbSessionManager ----");
+        pw.println("Active sessions: ");
+        for (Map.Entry<Integer, UwbSession> entry : mSessionTable.entrySet()) {
+            UwbSession uwbSession = entry.getValue();
+            pw.println(uwbSession);
+        }
+        pw.println("Recently closed sessions: ");
+        for (UwbSession uwbSession: mDbgRecentlyClosedSessions.getEntries()) {
+            pw.println(uwbSession);
+        }
+        List<Integer> nonPrivilegedSessionIds =
+                mNonPrivilegedUidToFiraSessionsTable.entrySet()
+                        .stream()
+                        .map(e -> e.getValue()
+                                .stream()
+                                .map(UwbSession::getSessionId)
+                                .collect(Collectors.toList()))
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.toList());
+        pw.println("Non Privileged Fira Session Ids: " + nonPrivilegedSessionIds);
+        pw.println("---- Dump of UwbSessionManager ----");
     }
 }
