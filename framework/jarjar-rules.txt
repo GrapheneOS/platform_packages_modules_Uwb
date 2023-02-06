@@ -1,6 +1,8 @@
 ## used by service-uwb ##
 # Statically included annotations.
 rule androidx.annotation.** com.android.x.uwb.@0
+# Statically linked cbor library
+rule co.nstant.in.cbor.** com.android.x.uwb.@0
 # Statically included module utils.
 rule com.android.modules.utils.** com.android.x.uwb.@0
 # Statically included HAL stubs.
@@ -12,5 +14,7 @@ rule com.google.uwb.** com.android.x.uwb.@0
 rule com.android.internal.util.** com.android.x.uwb.@0
 # Use our statically linked protobuf library
 rule com.google.protobuf.** com.android.x.uwb.@0
+# Statically linked bouncy castle library
+rule org.bouncycastle.** com.android.x.uwb.@0
 
 ## used by both framework-uwb and service-uwb ##
