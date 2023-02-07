@@ -33,7 +33,8 @@ import java.util.List;
 @RequiresApi(api = VERSION_CODES.S)
 final class Conversions {
 
-    private static RangingMeasurement createMeasurement(double value, double confidence) {
+    private static RangingMeasurement createMeasurement(double value, double confidence,
+            boolean valid) {
         @RangingMeasurement.Confidence int confidenceLevel;
         if (confidence > 0.9) {
             confidenceLevel = RangingMeasurement.CONFIDENCE_HIGH;
@@ -42,41 +43,13 @@ final class Conversions {
         } else {
             confidenceLevel = RangingMeasurement.CONFIDENCE_LOW;
         }
-        return new RangingMeasurement(confidenceLevel, (float) value);
+        return new RangingMeasurement(confidenceLevel, (float) value, valid);
     }
 
     /** Convert system API's {@link android.uwb.RangingMeasurement} to {@link RangingPosition} */
     @Nullable
     static RangingPosition convertToPosition(android.uwb.RangingMeasurement measurement) {
-        DistanceMeasurement distanceMeasurement = measurement.getDistanceMeasurement();
-        // TODO(b/260565854): Either make it nullable or isValid to RangingMeasurement
-        if (distanceMeasurement == null) {
-            return null;
-        }
-        RangingMeasurement distance =
-                createMeasurement(
-                        distanceMeasurement.getMeters(), distanceMeasurement.getConfidenceLevel());
-
-        AngleOfArrivalMeasurement aoaMeasurement = measurement.getAngleOfArrivalMeasurement();
-
-        RangingMeasurement azimuth = null;
-        RangingMeasurement altitude = null;
-        if (aoaMeasurement != null) {
-            AngleMeasurement azimuthMeasurement = aoaMeasurement.getAzimuth();
-            if (azimuthMeasurement != null) {
-                azimuth =
-                        createMeasurement(
-                                Math.toDegrees(azimuthMeasurement.getRadians()),
-                                azimuthMeasurement.getConfidenceLevel());
-            }
-            AngleMeasurement altitudeMeasurement = aoaMeasurement.getAltitude();
-            if (altitudeMeasurement != null) {
-                altitude =
-                        createMeasurement(
-                                Math.toDegrees(altitudeMeasurement.getRadians()),
-                                altitudeMeasurement.getConfidenceLevel());
-            }
-        }
+        RangingMeasurement distance = null;
         DlTDoAMeasurement dlTdoaMeasurement = null;
         if (com.google.uwb.support.dltdoa.DlTDoAMeasurement.isDlTDoAMeasurement(
                 measurement.getRangingMeasurementMetadata())) {
@@ -99,6 +72,39 @@ final class Conversions {
                     dlTDoAMeasurement.getAnchorLocation(),
                     dlTDoAMeasurement.getActiveRangingRounds()
             );
+            // No distance measurement for DL-TDoa, make it invalid.
+            distance = createMeasurement(0.0, 0.0, false);
+        } else {
+            DistanceMeasurement distanceMeasurement = measurement.getDistanceMeasurement();
+            if (distanceMeasurement == null) {
+                return null;
+            }
+            distance = createMeasurement(
+                    distanceMeasurement.getMeters(),
+                    distanceMeasurement.getConfidenceLevel(),
+                    true);
+        }
+        AngleOfArrivalMeasurement aoaMeasurement = measurement.getAngleOfArrivalMeasurement();
+
+        RangingMeasurement azimuth = null;
+        RangingMeasurement altitude = null;
+        if (aoaMeasurement != null) {
+            AngleMeasurement azimuthMeasurement = aoaMeasurement.getAzimuth();
+            if (azimuthMeasurement != null) {
+                azimuth =
+                        createMeasurement(
+                                Math.toDegrees(azimuthMeasurement.getRadians()),
+                                azimuthMeasurement.getConfidenceLevel(),
+                                true);
+            }
+            AngleMeasurement altitudeMeasurement = aoaMeasurement.getAltitude();
+            if (altitudeMeasurement != null) {
+                altitude =
+                        createMeasurement(
+                                Math.toDegrees(altitudeMeasurement.getRadians()),
+                                altitudeMeasurement.getConfidenceLevel(),
+                                true);
+            }
         }
         if (Build.VERSION.SDK_INT >= VERSION_CODES.TIRAMISU) {
             return new RangingPosition(
