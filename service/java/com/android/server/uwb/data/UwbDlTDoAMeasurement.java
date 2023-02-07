@@ -35,8 +35,8 @@ public class UwbDlTDoAMeasurement {
     public int mRssi;
     public long mTxTimestamp;
     public long mRxTimestamp;
-    public int mAnchorCfo;
-    public int mCfo;
+    public float mAnchorCfo;
+    public float mCfo;
     public long mInitiatorReplyTime;
     public long mResponderReplyTime;
     public int mInitiatorResponderTof;
@@ -55,15 +55,15 @@ public class UwbDlTDoAMeasurement {
         mBlockIndex = blockIndex;
         mRoundIndex = roundIndex;
         mNLoS = nLoS;
-        mAoaAzimuth = toFloatFromQFormat(aoaAzimuth);
+        mAoaAzimuth = toFloatFromQ9_7_Format(aoaAzimuth);
         mAoaAzimuthFom = aoaAzimuthFom;
-        mAoaElevation = toFloatFromQFormat(aoaElevation);
+        mAoaElevation = toFloatFromQ9_7_Format(aoaElevation);
         mAoaElevationFom = aoaElevationFom;
         mRssi = rssi;
         mTxTimestamp = txTimestamp;
         mRxTimestamp = rxTimestamp;
-        mAnchorCfo = anchorCfo;
-        mCfo = cfo;
+        mAnchorCfo = toFloatFromQ5_11_Format(anchorCfo);
+        mCfo = toFloatFromQ5_11_Format(cfo);
         mInitiatorReplyTime = initiatorReplyTime;
         mResponderReplyTime = responderReplyTime;
         mInitiatorResponderTof = initiatorResponderTof;
@@ -127,11 +127,11 @@ public class UwbDlTDoAMeasurement {
         return mRxTimestamp;
     }
 
-    public int getAnchorCfo() {
+    public float getAnchorCfo() {
         return mAnchorCfo;
     }
 
-    public int getCfo() {
+    public float getCfo() {
         return mCfo;
     }
 
@@ -155,9 +155,14 @@ public class UwbDlTDoAMeasurement {
         return mActiveRangingRounds;
     }
 
-    private float toFloatFromQFormat(int value) {
+    private float toFloatFromQ9_7_Format(int value) {
         return UwbUtil.convertQFormatToFloat(UwbUtil.twos_compliment(value, 16),
                 9, 7);
+    }
+
+    private float toFloatFromQ5_11_Format(int value) {
+        return UwbUtil.convertQFormatToFloat(UwbUtil.twos_compliment(value, 16),
+                5, 11);
     }
 
     @Override

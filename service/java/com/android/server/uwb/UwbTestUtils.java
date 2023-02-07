@@ -94,8 +94,8 @@ public class UwbTestUtils {
     private static final int TEST_BLOCK_INDEX = 5;
     private static final int TEST_ROUND_INDEX = 1;
     private static final long TEST_TIMESTAMP = 500_000L;
-    private static final int TEST_ANCHOR_CFO = 100;
-    private static final int TEST_CFO = 200;
+    private static final float TEST_ANCHOR_CFO = 100.0f;
+    private static final float TEST_CFO = 200.50f;
     private static final long TEST_INTIATOR_REPLY_TIME = 500_000L;
     private static final long TEST_RESPONDER_REPLY_TIME = 300_000L;
     private static final int TEST_INITIATOR_RESPONDER_TOF = 500;
@@ -188,9 +188,11 @@ public class UwbTestUtils {
                 TEST_MESSAGE_TYPE, TEST_MESSAGE_CONTROL, TEST_BLOCK_INDEX, TEST_ROUND_INDEX,
                 TEST_LOS, convertFloatToQFormat(TEST_AOA_AZIMUTH, 9, 7),
                 TEST_AOA_AZIMUTH_FOM, convertFloatToQFormat(TEST_AOA_ELEVATION, 9, 7),
-                TEST_AOA_ELEVATION_FOM, TEST_RSSI, TEST_TIMESTAMP, TEST_TIMESTAMP, TEST_ANCHOR_CFO,
-                TEST_CFO, TEST_INTIATOR_REPLY_TIME, TEST_RESPONDER_REPLY_TIME,
-                TEST_INITIATOR_RESPONDER_TOF, TEST_ANCHOR_LOCATION, TEST_ACTIVE_RANGING_ROUNDS);
+                TEST_AOA_ELEVATION_FOM, TEST_RSSI, TEST_TIMESTAMP, TEST_TIMESTAMP,
+                convertFloatToQFormat(TEST_ANCHOR_CFO, 5, 11),
+                convertFloatToQFormat(TEST_CFO, 5, 11), TEST_INTIATOR_REPLY_TIME,
+                TEST_RESPONDER_REPLY_TIME, TEST_INITIATOR_RESPONDER_TOF, TEST_ANCHOR_LOCATION,
+                TEST_ACTIVE_RANGING_ROUNDS);
 
         return new UwbRangingData(TEST_SEQ_COUNTER, TEST_SESSION_ID,
                 TEST_RCR_INDICATION, TEST_CURR_RANGING_INTERVAL, RANGING_MEASUREMENT_TYPE_DL_TDOA,
