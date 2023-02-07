@@ -34,6 +34,9 @@ rust_ffi_shared {
         "libuci_hal_android",
         "libuwb_core",
     ],
+    sanitize: {
+        hwaddress: false,
+    },
 }
 
 rust_test {
