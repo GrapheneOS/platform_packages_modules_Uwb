@@ -702,4 +702,15 @@ public class FiraTests {
         verifyProtocolPresent(params);
         verifyBundlesEqual(params, fromBundle);
     }
+
+    @Test
+    public void testSpecificationParams_whenNoChannelsSet() {
+        FiraSpecificationParams params =
+                new FiraSpecificationParams.Builder()
+                        .build();
+        assertEquals(List.of(), params.getSupportedChannels());
+
+        FiraSpecificationParams fromBundle = FiraSpecificationParams.fromBundle(params.toBundle());
+        assertEquals(List.of(), fromBundle.getSupportedChannels());
+    }
 }
