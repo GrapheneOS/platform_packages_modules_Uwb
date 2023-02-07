@@ -226,24 +226,12 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             return;
         }
 
-        if (mOemExtensionCallback != null) {
-            PersistableBundle deviceStateBundle = new DeviceStatus.Builder()
-                    .setDeviceState(deviceState)
-                    .setChipId(chipId)
-                    .build()
-                    .toBundle();
-            try {
-                mOemExtensionCallback.onDeviceStatusNotificationReceived(deviceStateBundle);
-            } catch (RemoteException e) {
-                Log.e(TAG, "Failed to send status notification to oem", e);
-            }
-        }
-
         if ((byte) deviceState == UwbUciConstants.DEVICE_STATE_ERROR) {
             Log.e(TAG, "Error device status received. Restarting...");
             mUwbMetrics.incrementDeviceStatusErrorCount();
             takBugReportAfterDeviceError("UWB Bugreport: restarting UWB due to device error");
             mEnableDisableTask.execute(TASK_RESTART);
+            oemExtensionDeviceStatusUpdate(deviceState, chipId);
             return;
         }
         updateDeviceState(deviceState, chipId);
@@ -260,8 +248,24 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         Log.i(TAG, "updateState(): deviceState = " + getDeviceStateString(deviceState)
                 + ", current adapter state = " + getAdapterState());
 
+        oemExtensionDeviceStatusUpdate(deviceState, chipId);
         updateState(getAdapterStateFromDeviceState(deviceState),
                 getReasonFromDeviceState(deviceState), chipId);
+    }
+
+    void oemExtensionDeviceStatusUpdate(int deviceState, String chipId) {
+        if (mOemExtensionCallback != null) {
+            PersistableBundle deviceStateBundle = new DeviceStatus.Builder()
+                    .setDeviceState(deviceState)
+                    .setChipId(chipId)
+                    .build()
+                    .toBundle();
+            try {
+                mOemExtensionCallback.onDeviceStatusNotificationReceived(deviceStateBundle);
+            } catch (RemoteException e) {
+                Log.e(TAG, "Failed to send status notification to oem", e);
+            }
+        }
     }
 
     void notifyAdapterState(int adapterState, int reason) {
