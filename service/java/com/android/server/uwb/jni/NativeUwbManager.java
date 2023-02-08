@@ -217,9 +217,9 @@ public class NativeUwbManager {
      * @param chipId      : Identifier of UWB chip for multi-HAL devices
      * @return : {@link UwbUciConstants}  Status code
      */
-    public byte resetDevice(byte resetConfig, String chipId) {
+    public byte deviceReset(byte resetConfig, String chipId) {
         synchronized (mNativeLock) {
-            return nativeResetDevice(resetConfig, chipId);
+            return nativeDeviceReset(resetConfig, chipId);
         }
     }
 
@@ -447,8 +447,7 @@ public class NativeUwbManager {
 
     private native int nativeGetMaxSessionNumber();
 
-    // TODO(b/259487023): no native implementation
-    private native byte nativeResetDevice(byte resetConfig, String chipId);
+    private native byte nativeDeviceReset(byte resetConfig, String chipId);
 
     private native byte nativeSessionInit(int sessionId, byte sessionType, String chipId);
 
