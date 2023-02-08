@@ -40,8 +40,8 @@ public class DlTDoATests {
         int nLoS = 40;
         long txTimestamp = 40_000L;
         long rxTimestamp = 50_000L;
-        int anchorCfo = 433;
-        int cfo = 0x56;
+        float anchorCfo = 433.33f;
+        float cfo = 56.33f;
         long initiatorReplyTime = 100;
         long responderReplyTime = 200;
         int initiatorResponderTof = 400;
@@ -74,8 +74,8 @@ public class DlTDoATests {
         assertEquals(fromBundle.getNLoS(), nLoS);
         assertEquals(fromBundle.getTxTimestamp(), txTimestamp);
         assertEquals(fromBundle.getRxTimestamp(), rxTimestamp);
-        assertEquals(fromBundle.getAnchorCfo(), anchorCfo);
-        assertEquals(fromBundle.getCfo(), cfo);
+        assertEquals(fromBundle.getAnchorCfo(), anchorCfo, 0.0);
+        assertEquals(fromBundle.getCfo(), cfo, 0.0);
         assertEquals(fromBundle.getInitiatorReplyTime(), initiatorReplyTime);
         assertEquals(fromBundle.getResponderReplyTime(), responderReplyTime);
         assertEquals(fromBundle.getInitiatorResponderTof(), initiatorResponderTof);

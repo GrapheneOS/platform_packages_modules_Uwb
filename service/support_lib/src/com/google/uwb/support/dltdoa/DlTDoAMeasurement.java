@@ -36,8 +36,8 @@ public class DlTDoAMeasurement {
     private final int mNLoS;
     private final long mTxTimestamp;
     private final long mRxTimestamp;
-    private final int mAnchorCfo;
-    private final int mCfo;
+    private final float mAnchorCfo;
+    private final float mCfo;
     private final long mInitiatorReplyTime;
     private final long mResponderReplyTime;
     private final int mInitiatorResponderTof;
@@ -65,7 +65,7 @@ public class DlTDoAMeasurement {
     private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_1;
 
     public DlTDoAMeasurement(int messageType, int messageControl, int blockIndex, int roundIndex,
-            int NLoS, long txTimestamp, long rxTimestamp, int anchorCfo, int cfo,
+            int NLoS, long txTimestamp, long rxTimestamp, float anchorCfo, float cfo,
             long initiatorReplyTime, long responderReplyTime, int initiatorResponderTof,
             byte[] anchorLocation, byte[] activeRangingRounds) {
         mMessageType = messageType;
@@ -116,11 +116,11 @@ public class DlTDoAMeasurement {
         return mRxTimestamp;
     }
 
-    public int getAnchorCfo() {
+    public float getAnchorCfo() {
         return mAnchorCfo;
     }
 
-    public int getCfo() {
+    public float getCfo() {
         return mCfo;
     }
 
@@ -178,8 +178,8 @@ public class DlTDoAMeasurement {
         bundle.putInt(NLOS, mNLoS);
         bundle.putLong(TX_TIMESTAMP, mTxTimestamp);
         bundle.putLong(RX_TIMESTAMP, mRxTimestamp);
-        bundle.putInt(ANCHOR_CFO, mAnchorCfo);
-        bundle.putInt(CFO, mCfo);
+        bundle.putDouble(ANCHOR_CFO, mAnchorCfo);
+        bundle.putDouble(CFO, mCfo);
         bundle.putLong(INITIATOR_REPLY_TIME, mInitiatorReplyTime);
         bundle.putLong(RESPONDER_REPLY_TIME, mResponderReplyTime);
         bundle.putInt(INITIATOR_RESPONDER_TOF, mInitiatorResponderTof);
@@ -206,8 +206,8 @@ public class DlTDoAMeasurement {
                 .setNLoS(bundle.getInt(NLOS))
                 .setTxTimestamp(bundle.getLong(TX_TIMESTAMP))
                 .setRxTimestamp(bundle.getLong(RX_TIMESTAMP))
-                .setAnchorCfo(bundle.getInt(ANCHOR_CFO))
-                .setCfo(bundle.getInt(CFO))
+                .setAnchorCfo((float) bundle.getDouble(ANCHOR_CFO))
+                .setCfo((float) bundle.getDouble(CFO))
                 .setInitiatorReplyTime(bundle.getLong(INITIATOR_REPLY_TIME))
                 .setResponderReplyTime(bundle.getLong(RESPONDER_REPLY_TIME))
                 .setInitiatorResponderTof(bundle.getInt(INITIATOR_RESPONDER_TOF))
@@ -226,8 +226,8 @@ public class DlTDoAMeasurement {
         private int mNLoS;
         private long mTxTimestamp;
         private long mRxTimestamp;
-        private int mAnchorCfo;
-        private int mCfo;
+        private float mAnchorCfo;
+        private float mCfo;
         private long mInitiatorReplyTime;
         private long mResponderReplyTime;
         private int mInitiatorResponderTof;
@@ -269,12 +269,12 @@ public class DlTDoAMeasurement {
             return this;
         }
 
-        public DlTDoAMeasurement.Builder setAnchorCfo(int anchorCfo) {
+        public DlTDoAMeasurement.Builder setAnchorCfo(float anchorCfo) {
             mAnchorCfo = anchorCfo;
             return this;
         }
 
-        public DlTDoAMeasurement.Builder setCfo(int cfo) {
+        public DlTDoAMeasurement.Builder setCfo(float cfo) {
             mCfo = cfo;
             return this;
         }
