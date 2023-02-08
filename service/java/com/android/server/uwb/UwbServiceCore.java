@@ -117,6 +117,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     private final Map<String, /* @UwbManager.AdapterStateCallback.State */ Integer>
             mChipIdToStateMap;
     private @StateChangeReason int mLastStateChangedReason;
+    private @AdapterStateCallback.State int mLastAdapterStateNotification = -1;
     private  IUwbVendorUciCallback mCallBack = null;
     private IUwbOemExtensionCallback mOemExtensionCallback = null;
     private final Handler mHandler;
@@ -269,9 +270,13 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     }
 
     void notifyAdapterState(int adapterState, int reason) {
-        // TODO(b/244443764): Consider checking on the current adapter state and returning if it's
-        // the same, to avoid sending extra onAdapterStateChanged() notifications. Currently this
-        // will happen when UWB is toggled on and a valid country code is already set.
+        // Check if the current adapter state is same as the state in the last adapter state
+        // notification, to avoid sending extra onAdapterStateChanged() notifications. For example,
+        // this can happen when UWB is toggled on and a valid country code is already set.
+        if (mLastAdapterStateNotification == adapterState) {
+            return;
+        }
+
         if (mAdapterStateCallbacksList.getRegisteredCallbackCount() == 0) {
             return;
         }
@@ -285,6 +290,8 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             }
         }
         mAdapterStateCallbacksList.finishBroadcast();
+
+        mLastAdapterStateNotification = adapterState;
     }
 
     int getAdapterStateFromDeviceState(int deviceState) {

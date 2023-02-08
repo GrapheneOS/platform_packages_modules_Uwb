@@ -555,9 +555,7 @@ public class UwbServiceCoreTest {
 
         verify(mNativeUwbManager).doInitialize();
         verify(mUwbCountryCode).setCountryCode(anyBoolean());
-        // TODO(b/244443764): This currently results in two onAdapterStateChanged() calls, due to
-        // both the enableInternal() and onCountryCode() callback enqueuing a notify message.
-        verify(cb, times(2)).onAdapterStateChanged(
+        verify(cb).onAdapterStateChanged(
                 UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
                 StateChangeReason.SYSTEM_POLICY);
 
