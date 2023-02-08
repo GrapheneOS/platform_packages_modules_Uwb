@@ -331,6 +331,15 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     }
 
     @Override
+    public int queryDataSize(SessionHandle sessionHandle) {
+        if (!SdkLevel.isAtLeastU()) {
+            throw new UnsupportedOperationException();
+        }
+        enforceUwbPrivilegedPermission();
+        return mUwbServiceCore.queryDataSize(sessionHandle);
+    }
+
+    @Override
     public synchronized int getAdapterState() throws RemoteException {
         return mUwbServiceCore.getAdapterState();
     }

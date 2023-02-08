@@ -428,6 +428,19 @@ public class NativeUwbManager {
         }
     }
 
+    /**
+     * Queries the max Application data size for the UWB session.
+     *
+     * @param sessionId : Session of the UWB session for which current max data size to be queried
+     * @param chipId    : Identifier of UWB chip for multi-HAL devices
+     * @return : Max application data size that can be sent by UWBS.
+     */
+    public int queryDataSize(int sessionId, String chipId) {
+        synchronized (mNativeLock) {
+            return nativeQueryDataSize(sessionId, chipId);
+        }
+    }
+
     private native byte nativeSendData(int sessionId, byte[] address, byte destEndPoint,
             byte sequenceNum, byte[] appData, String chipId);
 
@@ -482,4 +495,6 @@ public class NativeUwbManager {
 
     private native DtTagUpdateRangingRoundsStatus nativeSessionUpdateActiveRoundsDtTag(
             int sessionId, int noOfActiveRangingRounds, byte[] rangingRoundIndexes, String chipId);
+
+    private native short nativeQueryDataSize(int sessionId, String chipId);
 }
