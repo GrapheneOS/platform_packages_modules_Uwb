@@ -315,6 +315,14 @@ public class UwbSessionNotificationManagerTest {
     }
 
     @Test
+    public void testOnRangingResult_badRangingDataForOwrAoa() throws Exception {
+        UwbRangingData testRangingData = UwbTestUtils.generateBadOwrAoaMeasurementRangingData(
+                MAC_ADDRESSING_MODE_SHORT, PEER_SHORT_MAC_ADDRESS);
+        mUwbSessionNotificationManager.onRangingResult(mUwbSession, testRangingData);
+        verify(mIUwbRangingCallbacks).onRangingResult(mSessionHandle, null);
+    }
+
+    @Test
     public void testOnRangingOpened() throws Exception {
         mUwbSessionNotificationManager.onRangingOpened(mUwbSession);
 

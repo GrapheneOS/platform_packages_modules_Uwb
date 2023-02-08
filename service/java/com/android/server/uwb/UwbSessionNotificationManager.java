@@ -68,15 +68,22 @@ public class UwbSessionNotificationManager {
                     + sessionHandle);
             return;
         }
-
-        RangingReport rangingReport = getRangingReport(rangingData, uwbSession.getProtocolName(),
-                uwbSession.getParams(), mUwbInjector.getElapsedSinceBootNanos());
+        RangingReport rangingReport = null;
+        try {
+            rangingReport = getRangingReport(rangingData,
+                    uwbSession.getProtocolName(),
+                    uwbSession.getParams(), mUwbInjector.getElapsedSinceBootNanos());
+        } catch (Exception e) {
+            Log.e(TAG, "getRangingReport Failed.");
+            e.printStackTrace();
+        }
 
         if (mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
             try {
                 rangingReport = mUwbInjector.getUwbServiceCore().getOemExtensionCallback()
                                 .onRangingReportReceived(rangingReport);
             } catch (RemoteException e) {
+                Log.e(TAG, "UwbInjector - onRangingReportReceived : Failed.");
                 e.printStackTrace();
             }
         }
