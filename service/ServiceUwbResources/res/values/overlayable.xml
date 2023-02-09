@@ -22,6 +22,15 @@
           <!-- Params from config.xml that can be overlaid -->
             <item name="config_isMultichip" type="bool" />
             <item name="config_multichipConfigPath" type="string" />
+            <item name="enable_filters" type="bool" />
+            <item name="filter_distance_inliers_percent" type="integer" />
+            <item name="filter_distance_window" type="integer" />
+            <item name="filter_angle_inliers_percent" type="integer" />
+            <item name="filter_angle_window" type="integer" />
+            <item name="pose_source_type" type="string" />
+            <item name="enable_primer_est_elevation" type="bool" />
+            <item name="enable_primer_aoa" type="bool" />
+            <item name="primer_fov_degrees" type="integer" />
           <!-- Params from config.xml that can be overlaid -->
 
           <!-- Params from strings.xml that can be overlaid -->

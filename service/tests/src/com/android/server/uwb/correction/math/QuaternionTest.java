@@ -20,8 +20,11 @@ import static com.android.server.uwb.correction.TestHelpers.assertClose;
 
 import static org.junit.Assert.assertTrue;
 
+import android.platform.test.annotations.Presubmit;
+
 import org.junit.Test;
 
+@Presubmit
 public class QuaternionTest {
 
     @Test

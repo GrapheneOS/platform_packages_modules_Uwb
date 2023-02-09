@@ -56,7 +56,10 @@ import java.util.Objects;
  * antennas from any angle other than 0deg.
  */
 @Immutable
-public final class AoAVector {
+public final class AoaVector {
+    // If true, negative distances will be converted to a positive distance facing the opposite
+    // direction.
+    private static final boolean NORMALIZE_NEGATIVE_DISTANCE = false;
     public static boolean logWarnings = false;
     public final float distance;
     public final float azimuth;
@@ -71,7 +74,7 @@ public final class AoAVector {
      * @param elevation The angle along the Y axis, around the X axis.
      * @param distance The distance to the origin.
      */
-    private AoAVector(float azimuth, float elevation, float distance) {
+    private AoaVector(float azimuth, float elevation, float distance) {
         elevation = MathHelper.normalizeRadians(elevation);
         float ae = abs(elevation);
         if (ae > F_HALF_PI) {
@@ -80,7 +83,7 @@ public final class AoAVector {
             elevation = (F_PI - ae) * signum(elevation);
             azimuth += F_PI;
         }
-        if (distance < 0) {
+        if (NORMALIZE_NEGATIVE_DISTANCE && distance < 0) {
             // Negative distance is equivalent to a flipped elevation and azimuth.
             azimuth += F_PI; // turn 180deg.
             elevation = -elevation; // Mirror top-to-bottom
@@ -137,8 +140,8 @@ public final class AoAVector {
      * @return A new AoAVector.
      */
     @NonNull
-    public static AoAVector fromRadians(float azimuth, float elevation, float distance) {
-        return new AoAVector(azimuth, elevation, distance);
+    public static AoaVector fromRadians(float azimuth, float elevation, float distance) {
+        return new AoaVector(azimuth, elevation, distance);
     }
 
     /**
@@ -150,8 +153,8 @@ public final class AoAVector {
      * @return A new AoAVector.
      */
     @NonNull
-    public static AoAVector fromDegrees(float azimuth, float elevation, float distance) {
-        return new AoAVector(
+    public static AoaVector fromDegrees(float azimuth, float elevation, float distance) {
+        return new AoaVector(
                 (float) toRadians(azimuth),
                 (float) toRadians(elevation),
                 distance);
@@ -165,7 +168,7 @@ public final class AoAVector {
      * @return An equivalent AoA vector representation.
      */
     @NonNull
-    public static AoAVector fromCartesian(@NonNull Vector3 position) {
+    public static AoaVector fromCartesian(@NonNull Vector3 position) {
         Objects.requireNonNull(position);
         return fromCartesian(position.x, position.y, position.z);
     }
@@ -180,10 +183,10 @@ public final class AoAVector {
      * @return An equivalent AoA vector representation.
      */
     @NonNull
-    public static AoAVector fromCartesian(float x, float y, float z) {
+    public static AoaVector fromCartesian(float x, float y, float z) {
         float d = (float) sqrt(x * x + y * y + z * z);
         if (d == 0) {
-            return new AoAVector(0, 0, 0);
+            return new AoaVector(0, 0, 0);
         }
         float azimuth = (float) asin(min(max(x / d, -1), 1));
         float elevation = (float) asin(min(max(y / d, -1), 1));
@@ -191,7 +194,7 @@ public final class AoAVector {
             // If z is "behind", mirror azimuth front/back.
             azimuth = F_PI * signum(azimuth) - azimuth;
         }
-        return new AoAVector(azimuth, elevation, d);
+        return new AoaVector(azimuth, elevation, d);
     }
 
     /**
@@ -199,7 +202,7 @@ public final class AoAVector {
      * @param vec The SphericalVector to convert.
      * @return An equivalent AoAVector.
      */
-    public static AoAVector fromSphericalVector(SphericalVector vec) {
+    public static AoaVector fromSphericalVector(SphericalVector vec) {
         float azimuth = vec.azimuth;
         boolean mirrored = abs(azimuth) > F_HALF_PI;
         if (mirrored) {
@@ -211,15 +214,15 @@ public final class AoAVector {
         double az = acos(sqrt(max(ce * ce * ca * ca, 0) + se * se))
                 * signum(vec.azimuth);
         if (mirrored) {
-            return new AoAVector(F_PI - (float) az, vec.elevation, vec.distance);
+            return new AoaVector(F_PI - (float) az, vec.elevation, vec.distance);
         } else {
-            return new AoAVector((float) az, vec.elevation, vec.distance);
+            return new AoaVector((float) az, vec.elevation, vec.distance);
         }
     }
 
     /**
      * Converts to a Vector3.
-     * See {@link #AoAVector} for orientation information.
+     * See {@link #AoaVector} for orientation information.
      *
      * @return A Vector3 whose coordinates are at the indicated location.
      */

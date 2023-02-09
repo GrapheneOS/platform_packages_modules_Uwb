@@ -25,10 +25,10 @@ import com.google.common.truth.Truth;
 
 import org.junit.Test;
 
-public class AoAPrimerTest {
+public class AoaPrimerTest {
     @Test
     public void conversionTest() {
-        AoAPrimer primer = new AoAPrimer();
+        AoaPrimer primer = new AoaPrimer();
         Sparse sv = SphericalVector.fromDegrees(35, 0, 10)
                 .toSparse();
         Sparse result = primer.prime(sv, null, null);
@@ -49,7 +49,7 @@ public class AoAPrimerTest {
     @Test
     public void missingDataTest() {
         // Make sure data is unchanged when there is a missing azimuth or elevation.
-        AoAPrimer primer = new AoAPrimer();
+        AoaPrimer primer = new AoaPrimer();
         SphericalVector sv = SphericalVector.fromDegrees(2, 3, 4);
 
         Sparse result = primer.prime(sv.toSparse(false, true, true), null, null);
