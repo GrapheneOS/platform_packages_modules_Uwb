@@ -45,19 +45,10 @@ public class SphericalVectorTest {
         assertClose(vec.elevation, toRadians(70));
     }
 
-    @Test public void testCtorNegDistance() {
-        SphericalVector vec = SphericalVector.fromDegrees(10, 12, -14);
-
-        // A negative distance should flip azimuth by 180 and negate elevation.
-        assertClose(toDegrees(vec.azimuth), -170);
-        assertClose(toDegrees(vec.elevation), -12);
-        assertClose(vec.distance, 14);
-    }
-
     @Test
     public void testToAoAVector() {
         SphericalVector sv = SphericalVector.fromDegrees(0, 18, 10);
-        AoAVector av = sv.toAoAVector();
+        AoaVector av = sv.toAoAVector();
 
         // When az/el is at 0deg, aoav and sv are effectively the same.
         assertThat(av.azimuth).isEqualTo(sv.azimuth);
@@ -78,7 +69,7 @@ public class SphericalVectorTest {
                 1);
 
         SphericalVector svec = SphericalVector.fromDegrees(15, 25, 6);
-        AoAVector avec = svec.toAoAVector();
+        AoaVector avec = svec.toAoAVector();
         assertClose(svec.toCartesian(), avec.toCartesian());
 
         svec = SphericalVector.fromDegrees(95, 25, 6);

@@ -22,7 +22,6 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -46,7 +45,7 @@ public class RotationPoseSource extends PoseSourceBase implements SensorEventLis
     private static final String TAG = "RotationPoseSource";
     private final SensorManager mSensorManager;
     private final Sensor mSensor;
-    private final int mInterval;
+    private final int mIntervalUs;
 
     // The local system is oriented with Y up.  The Android rotation vector has Z up. Pitching down
     // will correct this.
@@ -66,7 +65,7 @@ public class RotationPoseSource extends PoseSourceBase implements SensorEventLis
         if (mSensor == null) {
             throw new UnsupportedOperationException("Device does not support the rotation vector.");
         }
-        mInterval = intervalMs * 1000;
+        mIntervalUs = intervalMs * 1000;
     }
 
     /**
@@ -74,7 +73,7 @@ public class RotationPoseSource extends PoseSourceBase implements SensorEventLis
      */
     @Override
     protected void start() {
-        mSensorManager.registerListener(this, mSensor, mInterval);
+        mSensorManager.registerListener(this, mSensor, mIntervalUs);
     }
 
     /**
@@ -107,7 +106,7 @@ public class RotationPoseSource extends PoseSourceBase implements SensorEventLis
      */
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        Log.d(TAG, "onAccuracyChanged() $sensor");
+        // Don't need to know when accuracy changes.
     }
 
     /**
