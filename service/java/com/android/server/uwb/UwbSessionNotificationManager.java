@@ -582,6 +582,7 @@ public class UwbSessionNotificationManager {
                                 .getInitiatorResponderTof())
                         .setAnchorLocation(uwbDlTDoAMeasurements[i].getAnchorLocation())
                         .setActiveRangingRounds(uwbDlTDoAMeasurements[i].getActiveRangingRounds())
+                        .setRoundIndex(uwbDlTDoAMeasurements[i].getRoundIndex())
                         .build();
 
                 rangingMeasurementBuilder.setRangingMeasurementMetadata(
