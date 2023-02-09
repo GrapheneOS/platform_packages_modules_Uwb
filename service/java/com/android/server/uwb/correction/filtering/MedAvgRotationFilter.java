@@ -24,13 +24,13 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * A median and average filter that operates identically to {@link MAFilter}, but uses the radians
- * circular number system, wherein numbers refer to points on a circle such that +PI and -PI are
- * the same, and averages refer to the average angle on a circle rather than the average of their
- * linear numerical values.
+ * A median and average filter that operates identically to {@link MedAvgFilter}, but uses the
+ * radians circular number system, wherein numbers refer to points on a circle such that +PI and
+ * -PI are the same, and averages refer to the average angle on a circle rather than the average of
+ * their linear numerical values.
  */
-public class MARotationFilter extends MAFilter {
-    public MARotationFilter(int windowSize, float cut) {
+public class MedAvgRotationFilter extends MedAvgFilter {
+    public MedAvgRotationFilter(int windowSize, float cut) {
         super(windowSize, cut);
     }
 

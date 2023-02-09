@@ -46,6 +46,9 @@ import java.util.Objects;
  */
 @Immutable
 public class SphericalVector {
+    // If true, negative distances will be converted to a positive distance facing the opposite
+    //  direction.
+    private static final boolean NORMALIZE_NEGATIVE_DISTANCE = false;
     public final float distance;
     public final float azimuth;
     public final float elevation;
@@ -67,7 +70,7 @@ public class SphericalVector {
             elevation = (F_PI - ae) * signum(elevation);
             azimuth += F_PI;
         }
-        if (distance < 0) {
+        if (NORMALIZE_NEGATIVE_DISTANCE && distance < 0) {
             // Negative distance is equivalent to a flipped elevation and azimuth.
             azimuth += F_PI; // turn 180deg.
             elevation = -elevation; // Mirror top-to-bottom
@@ -84,8 +87,8 @@ public class SphericalVector {
      * Converts the SphericalVector to an AoA vector.
      * @return An equivalent AoA vector.
      */
-    public AoAVector toAoAVector() {
-        return AoAVector.fromSphericalVector(this);
+    public AoaVector toAoAVector() {
+        return AoaVector.fromSphericalVector(this);
     }
 
     /**
@@ -155,7 +158,7 @@ public class SphericalVector {
      * @param vec The AoAVector to convert.
      * @return An equivalent SphericalVector.
      */
-    public static SphericalVector fromAoAVector(AoAVector vec) {
+    public static SphericalVector fromAoAVector(AoaVector vec) {
         float azimuth = vec.azimuth;
         boolean mirrored = abs(azimuth) > F_HALF_PI;
         if (mirrored) {
