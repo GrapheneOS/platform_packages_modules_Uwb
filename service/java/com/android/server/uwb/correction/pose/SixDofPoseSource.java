@@ -22,7 +22,6 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -44,11 +43,11 @@ import java.util.Objects;
  * Functionally this resembles ARCore's pose tracking, but relieves the difficulty of having to get
  * ARCore pose updates from the user application.
  */
-public class SixDOFPoseSource extends PoseSourceBase implements SensorEventListener {
+public class SixDofPoseSource extends PoseSourceBase implements SensorEventListener {
     private static final String TAG = "SixDOFPoseSource";
     private final SensorManager mSensorManager;
     private final Sensor mSensor;
-    private final int mInterval;
+    private final int mIntervalUs;
 
     // The local system is oriented with Y up. The Android rotation vector has Z up. Pitching down
     // will correct this.
@@ -58,7 +57,7 @@ public class SixDOFPoseSource extends PoseSourceBase implements SensorEventListe
      * Creates a new instance of the FusionPoseSource.
      * @param intervalMs How frequently to update the pose.
      */
-    public SixDOFPoseSource(@NonNull Context context, int intervalMs) {
+    public SixDofPoseSource(@NonNull Context context, int intervalMs) {
         Objects.requireNonNull(context);
         if (intervalMs < MIN_INTERVAL_MS || intervalMs > MAX_INTERVAL_MS) {
             throw new InvalidParameterException("Invalid interval.");
@@ -70,7 +69,7 @@ public class SixDOFPoseSource extends PoseSourceBase implements SensorEventListe
                     "Device does not support the Pose 6DOF sensor."
             );
         }
-        mInterval = intervalMs * 1000;
+        mIntervalUs = intervalMs * 1000;
     }
 
     /**
@@ -78,7 +77,7 @@ public class SixDOFPoseSource extends PoseSourceBase implements SensorEventListe
      */
     @Override
     protected void start() {
-        mSensorManager.registerListener(this, mSensor, mInterval);
+        mSensorManager.registerListener(this, mSensor, mIntervalUs);
     }
 
     /**
@@ -120,7 +119,7 @@ public class SixDOFPoseSource extends PoseSourceBase implements SensorEventListe
      */
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        Log.d(TAG, "onAccuracyChanged() $sensor");
+        // Don't need to know when accuracy changes.
     }
 
     /**

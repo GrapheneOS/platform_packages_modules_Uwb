@@ -21,12 +21,15 @@ import static com.android.server.uwb.correction.math.MathHelper.F_PI;
 
 import static java.lang.Math.toRadians;
 
+import android.platform.test.annotations.Presubmit;
+
 import org.junit.Test;
 
-public class MARotationFilterTest {
+@Presubmit
+public class MedAvgRotationFilterFilterTest {
     @Test
     public void averageTest() {
-        MARotationFilter filter = new MARotationFilter(3, 1);
+        MedAvgRotationFilter filter = new MedAvgRotationFilter(3, 1);
         filter.add((float) toRadians(175));
         filter.add((float) toRadians(-175));
         filter.add((float) toRadians(5));
@@ -37,7 +40,7 @@ public class MARotationFilterTest {
 
     @Test
     public void remapTest() {
-        MARotationFilter filter = new MARotationFilter(3, 1);
+        MedAvgRotationFilter filter = new MedAvgRotationFilter(3, 1);
         filter.add((float) toRadians(175));
         filter.add((float) toRadians(-175));
         filter.add((float) toRadians(5));

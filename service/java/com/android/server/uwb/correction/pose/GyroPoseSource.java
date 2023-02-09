@@ -20,7 +20,6 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -58,7 +57,7 @@ public class GyroPoseSource extends PoseSourceBase implements SensorEventListene
     float mAbsolutePitch = 0;
     float mAbsoluteRoll = 0;
 
-    private long mLastUpdate;
+    private long mLastUpdateMs;
 
     /**
      * Creates a new instance of the GyroPoseSource
@@ -108,9 +107,9 @@ public class GyroPoseSource extends PoseSourceBase implements SensorEventListene
         // be strange gimbal side-effects.
         if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
             long now = Instant.now().toEpochMilli();
-            long timeSpan = now - mLastUpdate;
+            long timeSpan = now - mLastUpdateMs;
 
-            mLastUpdate = now;
+            mLastUpdateMs = now;
             if (timeSpan > mIntervalMs * 2L) {
                 // Keep a limit on how long we'll integrate motion.
                 timeSpan = mIntervalMs;
@@ -137,7 +136,7 @@ public class GyroPoseSource extends PoseSourceBase implements SensorEventListene
      */
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        Log.d(TAG, "onAccuracyChanged() $sensor");
+        // Don't need to know when accuracy changes.
     }
 
     /**

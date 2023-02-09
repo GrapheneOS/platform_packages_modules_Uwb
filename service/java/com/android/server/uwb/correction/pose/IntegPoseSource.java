@@ -26,7 +26,6 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -50,20 +49,27 @@ import java.util.Objects;
  */
 public class IntegPoseSource extends PoseSourceBase implements SensorEventListener {
     private static final String TAG = "IntegPoseSource";
+
+    /** how much drift from origin before position is reset to the origin. */
+    private static final int POS_RESET_DISTANCE_METERS = 20;
+
+    /** Speed damping coefficient. Slowly drifts speed back to 0. 1=no damping */
+    private static final float SPEED_DAMPEN_COEFFICIENT = 0.95F;
+
+    /** Position dampening coefficient. Slowly drifts position back to the origin. 1=no damping */
+    private static final float POS_DAMPED_COEFFICIENT = 0.999F;
+
+    /** How much a single accelerometer reading feeds into the calibration. */
+    private static final float CALIBRATION_COEFFICIENT = 0.002F;
+
     private final SensorManager mSensorManager;
     private final Sensor mRotationSensor;
     private final Sensor mAccelSensor;
-    private final int mInterval;
+    private final int mIntervalUs;
     private Vector3 mAccelCal = new Vector3(0, 0, 0);
     private Vector3 mPosition = new Vector3(0, 0, 0);
     private Vector3 mSpeed = new Vector3(0, 0, 0);
-    private long mLastUpdate;
-
-    /** how much drift from origin before position is reset to the origin. In meters. */
-    final int mPosResetDistance = 20;
-    final float mSpeedDamp = 0.95F; // Speed coefficient (1=no slowing, 0.999F=some slowing)
-    final float mPosDamp = 0.999F; // Position recentering (1=no recentering, 0.999F=some)
-    final float mCalRate = 0.002F; // How quickly calibration adjusts to accel changes.
+    private long mLastUpdateMs;
 
     // The local system is oriented with Y up.  The Android rotation vector has Z up. Pitching down
     // will correct this.
@@ -90,7 +96,7 @@ public class IntegPoseSource extends PoseSourceBase implements SensorEventListen
                     "Device does not support the required linear acceleration sensors."
             );
         }
-        mInterval = intervalMs * 1000;
+        mIntervalUs = intervalMs * 1000;
     }
 
     /**
@@ -98,8 +104,8 @@ public class IntegPoseSource extends PoseSourceBase implements SensorEventListen
      */
     @Override
     protected void start() {
-        mSensorManager.registerListener(this, mRotationSensor, mInterval);
-        mSensorManager.registerListener(this, mAccelSensor, mInterval);
+        mSensorManager.registerListener(this, mRotationSensor, mIntervalUs);
+        mSensorManager.registerListener(this, mAccelSensor, mIntervalUs);
     }
 
     /**
@@ -116,34 +122,34 @@ public class IntegPoseSource extends PoseSourceBase implements SensorEventListen
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
-            if (mLastUpdate == 0) {
-                mLastUpdate = Instant.now().toEpochMilli();
+            if (mLastUpdateMs == 0) {
+                mLastUpdateMs = Instant.now().toEpochMilli();
                 return;
             }
             long now = Instant.now().toEpochMilli();
-            float dur =  (now - mLastUpdate) / 1000.0F;
-            mLastUpdate = now;
+            float dur =  (now - mLastUpdateMs) / 1000.0F;
+            mLastUpdateMs = now;
             Vector3 accel = new Vector3(
                     event.values[0] - mAccelCal.x,
                     event.values[1] - mAccelCal.y,
                     event.values[2] - mAccelCal.z
             );
             mAccelCal = new Vector3(
-                    mAccelCal.x + min(abs(accel.x), mCalRate) * signum(accel.x),
-                    mAccelCal.y + min(abs(accel.y), mCalRate) * signum(accel.y),
-                    mAccelCal.z + min(abs(accel.z), mCalRate) * signum(accel.z)
+                    mAccelCal.x + min(abs(accel.x), CALIBRATION_COEFFICIENT) * signum(accel.x),
+                    mAccelCal.y + min(abs(accel.y), CALIBRATION_COEFFICIENT) * signum(accel.y),
+                    mAccelCal.z + min(abs(accel.z), CALIBRATION_COEFFICIENT) * signum(accel.z)
             );
             mSpeed = new Vector3(
-                    (mSpeed.x + accel.x * dur) * mSpeedDamp,
-                    (mSpeed.y + accel.y * dur) * mSpeedDamp,
-                    (mSpeed.z + accel.z * dur) * mSpeedDamp
+                    (mSpeed.x + accel.x * dur) * SPEED_DAMPEN_COEFFICIENT,
+                    (mSpeed.y + accel.y * dur) * SPEED_DAMPEN_COEFFICIENT,
+                    (mSpeed.z + accel.z * dur) * SPEED_DAMPEN_COEFFICIENT
             );
             mPosition = new Vector3(
-                    (mPosition.x + mSpeed.x * dur) * mPosDamp,
-                    (mPosition.y + mSpeed.y * dur) * mPosDamp,
-                    (mPosition.z + mSpeed.z * dur) * mPosDamp
+                    (mPosition.x + mSpeed.x * dur) * POS_DAMPED_COEFFICIENT,
+                    (mPosition.y + mSpeed.y * dur) * POS_DAMPED_COEFFICIENT,
+                    (mPosition.z + mSpeed.z * dur) * POS_DAMPED_COEFFICIENT
             );
-            if (mPosition.lengthSquared() > mPosResetDistance * mPosResetDistance) {
+            if (mPosition.lengthSquared() > POS_RESET_DISTANCE_METERS * POS_RESET_DISTANCE_METERS) {
                 mPosition = Vector3.ORIGIN;
             }
         } else if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
@@ -162,7 +168,7 @@ public class IntegPoseSource extends PoseSourceBase implements SensorEventListen
      */
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        Log.d(TAG, "onAccuracyChanged() $sensor");
+        // Don't need to know when accuracy changes.
     }
 
     /**
