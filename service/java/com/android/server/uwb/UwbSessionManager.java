@@ -58,6 +58,8 @@ import android.uwb.UwbAddress;
 import androidx.annotation.VisibleForTesting;
 
 import com.android.server.uwb.advertisement.UwbAdvertiseManager;
+import com.android.server.uwb.correction.UwbFilterEngine;
+import com.android.server.uwb.correction.pose.IPoseSource;
 import com.android.server.uwb.data.DtTagUpdateRangingRoundsStatus;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbOwrAoaMeasurement;
@@ -241,6 +243,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         long sessionId = rangingData.getSessionId();
         UwbSession uwbSession = getUwbSession((int) sessionId);
         if (uwbSession != null) {
+            // TODO: b/268065070 Include UWB logs for both filtered and unfiltered data.
             mUwbMetrics.logRangingResult(uwbSession.getProfileType(), rangingData);
             mSessionNotificationManager.onRangingResult(uwbSession, rangingData);
             processRangeData(rangingData, uwbSession);
@@ -1537,6 +1540,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         // TODO(b/246678053): Change the type of SequenceNumber from Long to Integer everywhere.
         private final ConcurrentHashMap<Long, SortedMap<Long, ReceivedDataInfo>>
                 mReceivedDataInfoMap;
+        private IPoseSource mPoseSource;
 
         // Store the UCI sequence number for the next Data packet (to be sent to UWBS).
         private byte mDataSndSequenceNumber;
@@ -1565,7 +1569,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 if (firaParams.getDestAddressList() != null) {
                     // Set up list of all controlees involved.
                     mControleeList = firaParams.getDestAddressList().stream()
-                            .map(UwbControlee::new)
+                            .map(addr -> new UwbControlee(addr, this))
                             .collect(Collectors.toList());
                 }
                 mRangingErrorStreakTimeoutMs = firaParams
@@ -1574,6 +1578,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
             this.mReceivedDataInfoMap = new ConcurrentHashMap<>();
             this.mDataSndSequenceNumber = 0;
+            this.mPoseSource = mUwbInjector.acquirePoseSource();
         }
 
         private boolean isPrivilegedApp(int uid, String packageName) {
@@ -1658,8 +1663,21 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         public void addControlee(UwbAddress address) {
             if (mControleeList != null
                     && !mControleeList.stream().anyMatch(e -> e.getUwbAddress().equals(address))) {
-                mControleeList.add(new UwbControlee(address));
+                mControleeList.add(new UwbControlee(address, this));
             }
+        }
+
+        /**
+         * Fetches a {@link UwbControlee} object by {@link UwbAddress}.
+         * @param address The UWB address of the Controlee to find.
+         * @return The matching {@link UwbControlee}, or null if not found.
+         */
+        public UwbControlee getControlee(UwbAddress address) {
+            return mControleeList
+                    .stream()
+                    .filter(e -> e.getUwbAddress().equals(address))
+                    .findFirst()
+                    .orElse(null);
         }
 
         /**
@@ -1842,7 +1860,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
         /**
          * Starts a timer to detect if the app that started the UWB session is in the background
-         * for longer than {@link UwbSession#mNonPrivilegedBgTimeoutMs }.
+         * for longer than {@link UwbSession#NON_PRIVILEGED_BG_APP_TIMEOUT_MS}.
          */
         private void startNonPrivilegedBgAppTimerIfNotSet() {
             // Start a timer when the non-privileged app goes into the background.
@@ -1908,6 +1926,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             mOperationType = type;
         }
 
+        /** Creates a filter engine based on the device configuration. */
+        public UwbFilterEngine createFilterEngine() {
+            return mUwbInjector.createFilterEngine();
+        }
+
         @Override
         public void binderDied() {
             Log.i(TAG, "binderDied : getSessionId is getSessionId() " + getSessionId());
@@ -1923,7 +1946,17 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                             "binderDied : sessionDeinit Failure because of NativeSessionDeinit "
                                     + "Error");
                 }
+                mUwbInjector.releasePoseSource();
             }
+        }
+
+        /**
+         * Gets the pose source for this session. This may be the default pose source provided
+         * by UwbInjector.java when the session was created, or a specialized pose source later
+         * requested by the application.
+         */
+        public IPoseSource getPoseSource() {
+            return mPoseSource;
         }
 
         @Override

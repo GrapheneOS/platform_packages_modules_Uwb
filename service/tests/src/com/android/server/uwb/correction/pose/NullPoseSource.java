@@ -15,12 +15,15 @@
  */
 package com.android.server.uwb.correction.pose;
 
+import android.platform.test.annotations.Presubmit;
+
 import androidx.annotation.NonNull;
 
 import com.android.server.uwb.correction.math.Pose;
 
 import java.util.EnumSet;
 
+@Presubmit
 public class NullPoseSource extends PoseSourceBase {
 
     private EnumSet<Capabilities> mCapabilities = Capabilities.ALL;
