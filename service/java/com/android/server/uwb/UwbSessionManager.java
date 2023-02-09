@@ -1847,10 +1847,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             // Start a timer on first failure to detect continuous failures.
             if (mRangingResultErrorStreakTimerListener == null) {
                 mRangingResultErrorStreakTimerListener = () -> {
-                    Log.w(TAG, "Continuous errors or no ranging results detected for 30 seconds."
+                    Log.w(TAG, "Continuous errors or no ranging results detected for "
+                            + mRangingErrorStreakTimeoutMs + " ms."
                             + " Stopping session");
                     stopRangingInternal(mSessionHandle, true /* triggeredBySystemPolicy */);
                 };
+                Log.v(TAG, "Starting error timer for "
+                        + mRangingErrorStreakTimeoutMs + " ms.");
                 mAlarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP,
                         mUwbInjector.getElapsedSinceBootMillis()
                                 + mRangingErrorStreakTimeoutMs,
