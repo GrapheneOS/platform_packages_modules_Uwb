@@ -318,6 +318,7 @@ public class UwbTestUtils {
                     .setInitiatorResponderTof(TEST_INITIATOR_RESPONDER_TOF)
                     .setAnchorLocation(TEST_ANCHOR_LOCATION)
                     .setActiveRangingRounds(TEST_ACTIVE_RANGING_ROUNDS)
+                    .setRoundIndex(TEST_ROUND_INDEX)
                     .build();
             rangingMeasurementBuilder.setRangingMeasurementMetadata(dlTDoAMeasurement.toBundle());
         }

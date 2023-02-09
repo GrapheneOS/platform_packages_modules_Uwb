@@ -61,6 +61,7 @@ public class ConfigParam {
     public static final int SFD_ID = 0x15;
     public static final int PSDU_DATA_RATE = 0x16;
     public static final int PREAMBLE_DURATION = 0x17;
+    public static final int LINK_LAYER_MODE = 0x18;
     public static final int RANGING_TIME_STRUCT = 0x1A;
     public static final int SLOTS_PER_RR = 0x1B;
     public static final int TX_ADAPTIVE_PAYLOAD_POWER = 0x1C;
@@ -89,8 +90,11 @@ public class ConfigParam {
     public static final int UL_TDOA_TX_INTERVAL = 0x33;
     public static final int UL_TDOA_RANDOM_WINDOW = 0x34;
     public static final int STS_LENGTH = 0x35;
-    public static final int UL_TDOA_DEVICE_ID = 0x37;
-    public static final int UL_TDOA_TX_TIMESTAMP = 0x38;
+    public static final int UL_TDOA_DEVICE_ID = 0x38;
+    public static final int UL_TDOA_TX_TIMESTAMP = 0x39;
+    public static final int MIN_FRAMES_PER_RR = 0x3A;
+    public static final int MTU_SIZE = 0x3B;
+    public static final int INTER_FRAME_INTERVAL = 0x3C;
     public static final int SESSION_KEY = 0x45;
     public static final int SUBSESSION_KEY = 0x46;
 
