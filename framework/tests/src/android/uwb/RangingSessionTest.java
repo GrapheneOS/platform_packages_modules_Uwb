@@ -18,6 +18,8 @@ package android.uwb;
 
 import static android.uwb.RangingSession.Callback.REASON_BAD_PARAMETERS;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -30,6 +32,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import android.content.AttributionSource;
 import android.os.PersistableBundle;
@@ -65,6 +68,7 @@ public class RangingSessionTest {
             new AttributionSource.Builder(UID).setPackageName(PACKAGE_NAME).build();
     private static final int HANDLE_ID = 12;
     private static final int PID = Process.myPid();
+    private static final int MAX_DATA_SIZE = 100;
 
     @Test
     public void testOnRangingOpened_OnOpenSuccessCalled() {
@@ -410,6 +414,19 @@ public class RangingSessionTest {
         verifyThrowIllegalState(() -> session.reconfigure(PARAMS));
         verifyThrowIllegalState(() -> session.stop());
         verifyNoThrowIllegalState(() -> session.close());
+    }
+
+    @Test
+    public void testQueryDataSize() throws RemoteException {
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
+
+        when(adapter.queryDataSize(handle)).thenReturn(MAX_DATA_SIZE);
+
+        session.onRangingStarted(PARAMS);
+        assertThat(session.queryDataSize()).isEqualTo(MAX_DATA_SIZE);
     }
 
     @Test

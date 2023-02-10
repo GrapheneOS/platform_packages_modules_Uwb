@@ -17,6 +17,8 @@
 package com.android.server.uwb;
 
 
+import static com.android.server.uwb.UwbTestUtils.MAX_DATA_SIZE;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.uwb.support.ccc.CccParams.CHAPS_PER_SLOT_3;
 import static com.google.uwb.support.ccc.CccParams.HOPPING_CONFIG_MODE_NONE;
@@ -131,6 +133,7 @@ public class UwbServiceCoreTest {
     private static final String TEST_PACKAGE_NAME = "com.android.uwb";
     private static final String TEST_DEFAULT_CHIP_ID = "default";
     private static final String TEST_CHIP_ONE_CHIP_ID = "chipIdString1";
+
     private static final AttributionSource TEST_ATTRIBUTION_SOURCE =
             new AttributionSource.Builder(TEST_UID)
                     .setPackageName(TEST_PACKAGE_NAME)
@@ -555,9 +558,7 @@ public class UwbServiceCoreTest {
 
         verify(mNativeUwbManager).doInitialize();
         verify(mUwbCountryCode).setCountryCode(anyBoolean());
-        // TODO(b/244443764): This currently results in two onAdapterStateChanged() calls, due to
-        // both the enableInternal() and onCountryCode() callback enqueuing a notify message.
-        verify(cb, times(2)).onAdapterStateChanged(
+        verify(cb).onAdapterStateChanged(
                 UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
                 StateChangeReason.SYSTEM_POLICY);
 
@@ -963,6 +964,17 @@ public class UwbServiceCoreTest {
         assertThat(mUwbServiceCore.sendVendorUciMessage(MESSAGE_TYPE_TEST_1, 0, 0,
                 new byte[0], TEST_DEFAULT_CHIP_ID))
                 .isEqualTo(UwbUciConstants.STATUS_CODE_FAILED);
+    }
+
+    @Test
+    public void testQueryDataSize() throws Exception {
+        enableUwbWithCountryCode();
+
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+
+        when(mUwbSessionManager.queryDataSize(any())).thenReturn(MAX_DATA_SIZE);
+        mUwbServiceCore.queryDataSize(sessionHandle);
+        verify(mUwbSessionManager).queryDataSize(eq(sessionHandle));
     }
 
     @Test
