@@ -67,6 +67,7 @@ public class UwbTestUtils {
     public static final PersistableBundle PERSISTABLE_BUNDLE = new PersistableBundle();
     public static final byte[] DATA_PAYLOAD = new byte[] {0x13, 0x15, 0x18};
     public static final int RANGING_MEASUREMENT_TYPE_UNDEFINED = 0; // RFU in spec
+    public static final int MAX_DATA_SIZE = 100;
 
     private static final byte[] TEST_RAW_NTF_DATA = {0x10, 0x01, 0x05};
     private static final long TEST_SEQ_COUNTER = 5;
@@ -318,6 +319,7 @@ public class UwbTestUtils {
                     .setInitiatorResponderTof(TEST_INITIATOR_RESPONDER_TOF)
                     .setAnchorLocation(TEST_ANCHOR_LOCATION)
                     .setActiveRangingRounds(TEST_ACTIVE_RANGING_ROUNDS)
+                    .setRoundIndex(TEST_ROUND_INDEX)
                     .build();
             rangingMeasurementBuilder.setRangingMeasurementMetadata(dlTDoAMeasurement.toBundle());
         }
