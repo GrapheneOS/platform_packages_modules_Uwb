@@ -359,10 +359,6 @@ public class CccSpecificationParams extends CccParams {
                 throw new IllegalStateException("No Sync Codes set");
             }
 
-            if (mChannels.size() == 0) {
-                throw new IllegalStateException("No channels set");
-            }
-
             if (mHoppingConfigModes.size() == 0) {
                 throw new IllegalStateException("No hopping config modes set");
             }
