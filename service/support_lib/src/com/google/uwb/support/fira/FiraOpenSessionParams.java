@@ -135,6 +135,7 @@ public class FiraOpenSessionParams extends FiraParams {
     @UlTdoaDeviceIdType private final int mUlTdoaDeviceIdType;
     @Nullable private final byte[] mUlTdoaDeviceId;
     @UlTdoaTxTimestampType private final int mUlTdoaTxTimestampType;
+    @FilterType private final int mFilterType;
 
     private static final int BUNDLE_VERSION_1 = 1;
     private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_1;
@@ -229,6 +230,7 @@ public class FiraOpenSessionParams extends FiraParams {
     private static final String UL_TDOA_DEVICE_ID_TYPE = "ul_tdoa_device_id_type";
     private static final String UL_TDOA_DEVICE_ID = "ul_tdoa_device_id";
     private static final String UL_TDOA_TX_TIMESTAMP_TYPE = "ul_tdoa_tx_timestamp_type";
+    private static final String KEY_FILTER_TYPE = "filter_type";
 
     private FiraOpenSessionParams(
             FiraProtocolVersion protocolVersion,
@@ -302,7 +304,8 @@ public class FiraOpenSessionParams extends FiraParams {
             int ulTdoaRandomWindowMs,
             int ulTdoaDeviceIdType,
             @Nullable byte[] ulTdoaDeviceId,
-            int ulTdoaTxTimestampType) {
+            int ulTdoaTxTimestampType,
+            int filterType) {
         mProtocolVersion = protocolVersion;
         mSessionId = sessionId;
         mSessionType = sessionType;
@@ -375,6 +378,7 @@ public class FiraOpenSessionParams extends FiraParams {
         mUlTdoaDeviceIdType = ulTdoaDeviceIdType;
         mUlTdoaDeviceId = ulTdoaDeviceId;
         mUlTdoaTxTimestampType = ulTdoaTxTimestampType;
+        mFilterType = filterType;
     }
 
     @Override
@@ -695,6 +699,11 @@ public class FiraOpenSessionParams extends FiraParams {
         return mUlTdoaTxTimestampType;
     }
 
+    @FilterType
+    public int getFilterType() {
+        return mFilterType;
+    }
+
     @Nullable
     private static int[] byteArrayToIntArray(@Nullable byte[] bytes) {
         if (bytes == null) {
@@ -815,6 +824,7 @@ public class FiraOpenSessionParams extends FiraParams {
         bundle.putInt(UL_TDOA_DEVICE_ID_TYPE, mUlTdoaDeviceIdType);
         bundle.putIntArray(UL_TDOA_DEVICE_ID, byteArrayToIntArray(mUlTdoaDeviceId));
         bundle.putInt(UL_TDOA_TX_TIMESTAMP_TYPE, mUlTdoaTxTimestampType);
+        bundle.putInt(KEY_FILTER_TYPE, mFilterType);
         return bundle;
     }
 
@@ -847,7 +857,7 @@ public class FiraOpenSessionParams extends FiraParams {
             destAddressList.add(longToUwbAddress(address, addressByteLength));
         }
 
-        return new FiraOpenSessionParams.Builder()
+        FiraOpenSessionParams.Builder builder = new FiraOpenSessionParams.Builder()
                 .setProtocolVersion(
                         FiraProtocolVersion.fromString(
                                 requireNonNull(bundle.getString(KEY_PROTOCOL_VERSION))))
@@ -939,8 +949,11 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setUlTdoaRandomWindowMs(bundle.getInt(UL_TDOA_RANDOM_WINDOW))
                 .setUlTdoaDeviceIdType(bundle.getInt(UL_TDOA_DEVICE_ID_TYPE))
                 .setUlTdoaDeviceId(intArrayToByteArray(bundle.getIntArray(UL_TDOA_DEVICE_ID)))
-                .setUlTdoaTxTimestampType(bundle.getInt(UL_TDOA_TX_TIMESTAMP_TYPE))
-                .build();
+                .setUlTdoaTxTimestampType(bundle.getInt(UL_TDOA_TX_TIMESTAMP_TYPE));
+
+        builder.setFilterType(bundle.getInt(KEY_FILTER_TYPE, FILTER_TYPE_DEFAULT));
+
+        return builder.build();
     }
 
     public FiraProtocolVersion getProtocolVersion() {
@@ -1156,6 +1169,9 @@ public class FiraOpenSessionParams extends FiraParams {
 
         /** Ul-TDoA Tx Timestamp Type */
         @UlTdoaTxTimestampType private int mUlTdoaTxTimestampType = TX_TIMESTAMP_NONE;
+
+        /** AoA/distance filtering type */
+        @FilterType private int mFilterType = FILTER_TYPE_DEFAULT;
 
         public Builder() {}
 
@@ -1849,6 +1865,12 @@ public class FiraOpenSessionParams extends FiraParams {
             }
         }
 
+        /** Sets the type of filtering used by the session. Defaults to FILTER_TYPE_DEFAULT */
+        public FiraOpenSessionParams.Builder setFilterType(@FilterType int filterType) {
+            this.mFilterType = filterType;
+            return this;
+        }
+
         public FiraOpenSessionParams build() {
             checkAddress();
             checkStsConfig();
@@ -1926,7 +1948,8 @@ public class FiraOpenSessionParams extends FiraParams {
                     mUlTdoaRandomWindowMs,
                     mUlTdoaDeviceIdType,
                     mUlTdoaDeviceId,
-                    mUlTdoaTxTimestampType);
+                    mUlTdoaTxTimestampType,
+                    mFilterType);
         }
     }
 }

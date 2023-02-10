@@ -345,6 +345,13 @@ interface IUwbAdapter {
 
   int removeProfileAdf(in PersistableBundle serviceProfileBundle);
 
+  /**
+   * Updates the device pose. This helps the filter engine distinguish position noise from device
+   * motion. The device pose would typically come from ARCore. This requires that an application
+   * pose source was indicated in the call to openSession.
+   */
+  void updatePose(in SessionHandle sessionHandle, in PersistableBundle params);
+
   int sendVendorUciMessage(int mt, int gid, int oid, in byte[] payload);
 
   void updateRangingRoundsDtTag(in SessionHandle sessionHandle, in PersistableBundle parameters);
