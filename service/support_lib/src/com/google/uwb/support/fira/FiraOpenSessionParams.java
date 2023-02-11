@@ -879,7 +879,7 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setRframeConfig(bundle.getInt(KEY_RFRAME_CONFIG))
                 .setPrfMode(bundle.getInt(KEY_PRF_MODE))
                 .setCapSize(intArrayToByteArray(bundle.getIntArray(KEY_CAP_SIZE_RANGE)))
-                .setScheduledMode(bundle.getInt(KEY_SCHEDULED_MODE, 0))
+                .setScheduledMode(bundle.getInt(KEY_SCHEDULED_MODE, TIME_SCHEDULED_RANGING))
                 .setPreambleDuration(bundle.getInt(KEY_PREAMBLE_DURATION))
                 .setSfdId(bundle.getInt(KEY_SFD_ID))
                 .setStsSegmentCount(bundle.getInt(KEY_STS_SEGMENT_COUNT))
