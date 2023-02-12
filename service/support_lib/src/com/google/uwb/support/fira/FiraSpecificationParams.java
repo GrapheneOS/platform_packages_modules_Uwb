@@ -544,7 +544,7 @@ public class FiraSpecificationParams extends FiraParams {
         private FiraProtocolVersion mMinMacVersionSupported = new FiraProtocolVersion(1, 1);
         private FiraProtocolVersion mMaxMacVersionSupported = new FiraProtocolVersion(1, 1);
 
-        private List<Integer> mSupportedChannels;
+        private List<Integer> mSupportedChannels = new ArrayList<>();
 
         private final EnumSet<AoaCapabilityFlag> mAoaCapabilities =
                 EnumSet.noneOf(AoaCapabilityFlag.class);
@@ -845,10 +845,6 @@ public class FiraSpecificationParams extends FiraParams {
         }
 
         public FiraSpecificationParams build() {
-            if (mSupportedChannels == null || mSupportedChannels.size() == 0) {
-                throw new IllegalStateException("Supported channels are not set");
-            }
-
             return new FiraSpecificationParams(
                     mMinPhyVersionSupported,
                     mMaxPhyVersionSupported,
