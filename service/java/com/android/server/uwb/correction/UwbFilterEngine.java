@@ -87,15 +87,21 @@ public class UwbFilterEngine implements AutoCloseable {
                         .append(position);
             }
         }
-        if (!position.isComplete()) {
-            // Primers did not fully prime the position vector.
-            // This is not okay unless the triangulation filter is implemented to produce
-            // these missing values.
+        if (position.isComplete() || prediction == null) {
+            mLastInputState = position.vector;
+        } else {
+            // Primers did not fully prime the position vector. This can happen when elevation is
+            //  missing and there is no primer for an estimate, or if there was a bad UWB reading.
+            // Fill in with predictions.
+            mLastInputState = SphericalVector.fromRadians(
+                    position.hasAzimuth ? position.vector.azimuth : prediction.azimuth,
+                    position.hasElevation ? position.vector.elevation : prediction.elevation,
+                    position.hasDistance ? position.vector.distance : prediction.distance
+            );
         }
-        mLastInputState = position.vector;
         if (mFilter != null) {
             mFilter.updatePose(mPoseSource, instant);
-            mFilter.add(position.vector, instant);
+            mFilter.add(mLastInputState, instant);
             if (bigLog != null) {
                 bigLog.append(" : filtered=")
                         .append(mFilter.compute());

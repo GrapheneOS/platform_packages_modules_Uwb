@@ -43,6 +43,19 @@ import android.util.AtomicFile;
 import android.util.Log;
 
 import com.android.server.uwb.advertisement.UwbAdvertiseManager;
+import com.android.server.uwb.correction.UwbFilterEngine;
+import com.android.server.uwb.correction.filtering.IFilter;
+import com.android.server.uwb.correction.filtering.MedAvgFilter;
+import com.android.server.uwb.correction.filtering.MedAvgRotationFilter;
+import com.android.server.uwb.correction.filtering.PositionFilterImpl;
+import com.android.server.uwb.correction.pose.GyroPoseSource;
+import com.android.server.uwb.correction.pose.IPoseSource;
+import com.android.server.uwb.correction.pose.IntegPoseSource;
+import com.android.server.uwb.correction.pose.RotationPoseSource;
+import com.android.server.uwb.correction.pose.SixDofPoseSource;
+import com.android.server.uwb.correction.primers.AoaPrimer;
+import com.android.server.uwb.correction.primers.ElevationPrimer;
+import com.android.server.uwb.correction.primers.FovPrimer;
 import com.android.server.uwb.data.ServiceProfileData;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.multchip.UwbMultichipData;
@@ -56,6 +69,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * To be used for dependency injection (especially helps mocking static dependencies).
@@ -91,6 +105,9 @@ public class UwbInjector {
     private final UwbMultichipData mUwbMultichipData;
     private final SystemBuildProperties mSystemBuildProperties;
     private final UwbDiagnostics mUwbDiagnostics;
+    private IPoseSource mPoseSource;
+    private final ReentrantLock mPoseLock = new ReentrantLock();
+    private int mPoseSourceRefCount = 0;
 
     private final UwbSessionManager mUwbSessionManager;
 
@@ -117,7 +134,7 @@ public class UwbInjector {
         mUwbCountryCode =
                 new UwbCountryCode(mContext, mNativeUwbManager, new Handler(mLooper), this);
         mUwbMetrics = new UwbMetrics(this);
-        mDeviceConfigFacade = new DeviceConfigFacade(new Handler(mLooper), this);
+        mDeviceConfigFacade = new DeviceConfigFacade(new Handler(mLooper), mContext);
         UwbConfigurationManager uwbConfigurationManager =
                 new UwbConfigurationManager(mNativeUwbManager);
         UwbSessionNotificationManager uwbSessionNotificationManager =
@@ -403,6 +420,130 @@ public class UwbInjector {
         } catch (TimeoutException e) {
             executor.shutdownNow();
             throw e;
+        }
+    }
+
+    /**
+     * Gets the configured pose source, which is reference counted. If there are no references
+     * to the pose source, one will be created based on the device configuration. This may
+     * @return A shared or new pose source, or null if one is not configured or available.
+     */
+    public IPoseSource acquirePoseSource() {
+        mPoseLock.lock();
+        try {
+            // Keep our ref counts accurate because isEnableFilters can change at runtime.
+            mPoseSourceRefCount++;
+
+            if (!getDeviceConfigFacade().isEnableFilters()) {
+                return null;
+            }
+
+            if (mPoseSource != null) {
+                // Already have a pose source.
+                return mPoseSource;
+            }
+
+            switch (mDeviceConfigFacade.getPoseSourceType()) {
+                case NONE:
+                    mPoseSource = null;
+                    break;
+                case ROTATION_VECTOR:
+                    mPoseSource = new RotationPoseSource(mContext, 100);
+                    break;
+                case GYRO:
+                    mPoseSource = new GyroPoseSource(mContext, 100);
+                    break;
+                case SIXDOF:
+                    mPoseSource = new SixDofPoseSource(mContext, 100);
+                    break;
+                case DOUBLE_INTEGRATE:
+                    mPoseSource = new IntegPoseSource(mContext, 100);
+                    break;
+            }
+
+            return mPoseSource;
+        } catch (Exception ex) {
+            Log.e(TAG, "Unable to create the configured UWB pose source: "
+                    + ex.getMessage());
+            mPoseSourceRefCount--;
+            return null;
+        } finally {
+            mPoseLock.unlock();
+        }
+    }
+
+    /**
+     * Decrements the reference counts to the default pose source, and closes the source once the
+     * count reaches zero. This must be called once for each time acquirePoseSource() is called.
+     */
+    public void releasePoseSource() {
+        mPoseLock.lock();
+        try {
+            // Keep our ref counts accurate because isEnableFilters can change at runtime.
+            --mPoseSourceRefCount;
+            if (mPoseSourceRefCount <= 0) {
+                mPoseSource.close();
+                mPoseSource = null;
+            }
+        } finally {
+            mPoseLock.unlock();
+        }
+    }
+
+    /**
+     * Creates a filter engine using the default pose source. A default pose source must first be
+     * acquired with {@link #acquirePoseSource()}.
+     *
+     * @return A fully configured filter engine, or null if filtering is disabled.
+     */
+    public UwbFilterEngine createFilterEngine() {
+        DeviceConfigFacade cfg = getDeviceConfigFacade();
+        if (!cfg.isEnableFilters()) {
+            return null;
+        }
+
+        // This could go wrong if the config flags or overlay have bad values.
+        try {
+            IFilter azimuthFilter = new MedAvgRotationFilter(
+                    cfg.getFilterAngleWindow(),
+                    cfg.getFilterAngleInliersPercent() / 100f);
+            IFilter elevationFilter = new MedAvgRotationFilter(
+                    cfg.getFilterAngleWindow(),
+                    cfg.getFilterAngleInliersPercent() / 100f);
+            IFilter distanceFilter = new MedAvgFilter(
+                    cfg.getFilterDistanceWindow(),
+                    cfg.getFilterDistanceInliersPercent() / 100f);
+
+            PositionFilterImpl posFilter = new PositionFilterImpl(
+                    azimuthFilter,
+                    elevationFilter,
+                    distanceFilter);
+
+            UwbFilterEngine.Builder builder = new UwbFilterEngine.Builder().setFilter(posFilter);
+
+            if (mPoseSource != null) {
+                builder.setPoseSource(mPoseSource);
+            }
+
+            // Order is important.
+            if (cfg.isEnablePrimerEstElevation()) {
+                builder.addPrimer(new ElevationPrimer());
+            }
+
+            // AoAPrimer requires an elevation estimation in order to convert to spherical coords.
+            if (cfg.isEnablePrimerAoA()) {
+                builder.addPrimer(new AoaPrimer());
+            }
+
+            // Fov requires an elevation and a spherical coord.
+            if (cfg.isEnablePrimerFov()) {
+                builder.addPrimer(new FovPrimer(cfg.getPrimerFovDegree()));
+            }
+
+            return builder.build();
+        } catch (Exception ex) {
+            Log.e(TAG, "Unable to create UWB filter engine: " + ex.getMessage());
+            return null;
         }
     }
 }

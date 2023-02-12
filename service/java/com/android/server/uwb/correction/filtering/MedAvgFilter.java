@@ -29,12 +29,9 @@ import java.util.Objects;
  * A Median, Average filter.  The filter has an adjustable median window and
  * the configured percentage of non-outliers are averaged.
  */
-public class MAFilter implements IFilter {
-    /**
-     * The maximum allowed filter size.
-     */
-    public static final int MAX_FILTER = 255;
-    private static final String TAG = "MAEFilter";
+public class MedAvgFilter implements IFilter {
+    private static final int MAX_FILTER = 255;
+    private static final String TAG = "MAFilter";
 
     private int mWindowSize;
     private float mCut;
@@ -44,12 +41,12 @@ public class MAFilter implements IFilter {
     private Sample mResult = new Sample(0F, Instant.now());
 
     /**
-     * Creates a new instance of the MAFilter class.
+     * Creates a new instance of the MedAvgFilter class.
      * @param windowSize The maximum number of samples to store in the moving window.
      * @param cut What percentage of non-outliers are to be averaged, from 0 to 1. See
      *            {@link #setCut(float)} for more information.
      */
-    public MAFilter(int windowSize, float cut) {
+    public MedAvgFilter(int windowSize, float cut) {
         setWindowSize(windowSize);
         setCut(cut);
     }
@@ -164,7 +161,7 @@ public class MAFilter implements IFilter {
         if (mCut == 1F) {
             // 100% of a median cut is just an average.
 
-            // Note that this comes AFTER the sort. MARotationFilter's averaging routine
+            // Note that this comes AFTER the sort. MedAvgRotationFilterFilter's averaging routine
             // requires that samples are sorted, as it sorts in a special way to respect angle
             // rollover.
             return averageSortedSamples(sorted);
@@ -210,7 +207,7 @@ public class MAFilter implements IFilter {
         for (Sample s: samples) {
             if (s == null) {
                 // there should never be a null. It's not worth decrementing size and checking for
-                // size == 0 again.lis
+                // size == 0 again.
                 return null; // Average can't be computed.
             }
             valueSum += s.value;
