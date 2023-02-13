@@ -1842,7 +1842,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 };
                 Log.v(TAG, "Starting error timer for "
                         + mRangingErrorStreakTimeoutMs + " ms.");
-                mAlarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                mAlarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP,
                         mUwbInjector.getElapsedSinceBootMillis()
                                 + mRangingErrorStreakTimeoutMs,
                         RANGING_RESULT_ERROR_STREAK_TIMER_TAG,
