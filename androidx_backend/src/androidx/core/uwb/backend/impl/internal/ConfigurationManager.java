@@ -364,20 +364,23 @@ public final class ConfigurationManager {
         UwbConfiguration configuration = sConfigs.get(rangingParameters.getUwbConfigId());
         int deviceRole;
         switch (deviceType) {
-            case RANGING_DEVICE_TYPE_CONTROLLER :
-                deviceRole = configuration.isControllerTheInitiator()
-                    ? RANGING_DEVICE_ROLE_INITIATOR
-                    : RANGING_DEVICE_ROLE_RESPONDER;
+            case RANGING_DEVICE_TYPE_CONTROLLER:
+                deviceRole =
+                        configuration.isControllerTheInitiator()
+                                ? RANGING_DEVICE_ROLE_INITIATOR
+                                : RANGING_DEVICE_ROLE_RESPONDER;
                 break;
-            case RANGING_DEVICE_TYPE_CONTROLEE :
-                deviceRole = configuration.isControllerTheInitiator()
-                        ? RANGING_DEVICE_ROLE_RESPONDER
-                        : RANGING_DEVICE_ROLE_INITIATOR;
+            case RANGING_DEVICE_TYPE_CONTROLEE:
+                deviceRole =
+                        configuration.isControllerTheInitiator()
+                                ? RANGING_DEVICE_ROLE_RESPONDER
+                                : RANGING_DEVICE_ROLE_INITIATOR;
                 break;
             case RANGING_DEVICE_TYPE_DT_TAG:
                 deviceRole = RANGING_DEVICE_DT_TAG;
                 break;
-            default: deviceRole = RANGING_DEVICE_ROLE_RESPONDER;
+            default:
+                deviceRole = RANGING_DEVICE_ROLE_RESPONDER;
                 break;
         }
 
@@ -449,8 +452,7 @@ public final class ConfigurationManager {
                                         .toArray(new android.uwb.UwbAddress[0]));
         if (configuration.getStsConfig()
                 == FiraParams.STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY) {
-            builder.setSubSessionIdList(subSessionIdList)
-                    .setSubSessionKeyList(subSessionKey);
+            builder.setSubSessionIdList(subSessionIdList).setSubSessionKeyList(subSessionKey);
         }
         return builder.build();
     }

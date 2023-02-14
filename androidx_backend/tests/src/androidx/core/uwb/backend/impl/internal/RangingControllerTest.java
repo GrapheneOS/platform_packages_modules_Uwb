@@ -114,6 +114,14 @@ public class RangingControllerTest {
     }
 
     @Test
+    public void testSetComplexChannel() {
+        UwbComplexChannel complexChannel = new UwbComplexChannel(9, 10);
+        mRangingController.setComplexChannel(complexChannel);
+        assertEquals(complexChannel.getChannel(), 9);
+        assertEquals(complexChannel.getPreambleIndex(), 10);
+    }
+
+    @Test
     public void testGetBestAvailableComplexChannel() {
         UwbComplexChannel channel = mRangingController.getBestAvailableComplexChannel();
         assertEquals(channel.getChannel(), Utils.channelForTesting);
