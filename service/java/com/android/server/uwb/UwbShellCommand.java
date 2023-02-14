@@ -548,6 +548,10 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 int slotDurationRstu = Integer.parseInt(getNextArgRequired());
                 builder.setSlotDurationRstu(slotDurationRstu);
             }
+            if (option.equals("-w")) {
+                boolean hasResultReportPhase = getNextArgRequiredTrueOrFalse("enabled", "disabled");
+                builder.setHasResultReportPhase(hasResultReportPhase);
+            }
             option = getNextOption();
         }
         if (aoaResultReqEnabled && interleavingEnabled) {
@@ -1039,6 +1043,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " [-f <tof,azimuth,elevation,aoa-fom>(result-report-config)"
                 + " [-g <staticStsIV>(staticStsIV 6-bytes)"
                 + " [-v <staticStsVendorId>(staticStsVendorId 2-bytes)"
+                + " [-w enabled|disabled](has-result-report-phase)"
                 + " [-h <slot-duration-rstu>(slot-duration-rstu, default=2400)");
         pw.println("    Starts a FIRA ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
