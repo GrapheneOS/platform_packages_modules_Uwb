@@ -1206,6 +1206,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 int minTimeoutNecessary = uwbSession.getCurrentFiraRangingIntervalMs() * 2;
                 timeoutMs = timeoutMs > minTimeoutNecessary ? timeoutMs : minTimeoutNecessary;
             }
+            Log.v(TAG, "Stop timeout: " + timeoutMs);
             try {
                 status = mUwbInjector.runTaskOnSingleThreadExecutor(stopRangingTask, timeoutMs);
             } catch (TimeoutException e) {
