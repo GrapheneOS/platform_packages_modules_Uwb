@@ -84,7 +84,8 @@ public final class UwbManager {
                 STATE_CHANGED_REASON_ALL_SESSIONS_CLOSED,
                 STATE_CHANGED_REASON_SYSTEM_POLICY,
                 STATE_CHANGED_REASON_SYSTEM_BOOT,
-                STATE_CHANGED_REASON_ERROR_UNKNOWN})
+                STATE_CHANGED_REASON_ERROR_UNKNOWN,
+                STATE_CHANGED_REASON_SYSTEM_REGULATION})
         @interface StateChangedReason {}
 
         /**
@@ -123,6 +124,11 @@ public final class UwbManager {
         int STATE_CHANGED_REASON_ERROR_UNKNOWN = 4;
 
         /**
+         * Indicates that the state change is due to a system regulation.
+         */
+        int STATE_CHANGED_REASON_SYSTEM_REGULATION = 5;
+
+        /**
          * Indicates that UWB is disabled on device
          */
         int STATE_DISABLED = 0;
@@ -148,6 +154,7 @@ public final class UwbManager {
          * {@link #STATE_CHANGED_REASON_SYSTEM_POLICY},
          * {@link #STATE_CHANGED_REASON_SYSTEM_BOOT},
          * {@link #STATE_CHANGED_REASON_ERROR_UNKNOWN}.
+         * {@link #STATE_CHANGED_REASON_SYSTEM_REGULATION}.
          *
          * <p>Possible values for the UWB state are
          * {@link #STATE_ENABLED_INACTIVE},

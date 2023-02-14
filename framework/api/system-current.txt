@@ -221,6 +221,7 @@ package android.uwb {
     field public static final int STATE_CHANGED_REASON_SESSION_STARTED = 0; // 0x0
     field public static final int STATE_CHANGED_REASON_SYSTEM_BOOT = 3; // 0x3
     field public static final int STATE_CHANGED_REASON_SYSTEM_POLICY = 2; // 0x2
+    field public static final int STATE_CHANGED_REASON_SYSTEM_REGULATION = 5; // 0x5
     field public static final int STATE_DISABLED = 0; // 0x0
     field public static final int STATE_ENABLED_ACTIVE = 2; // 0x2
     field public static final int STATE_ENABLED_INACTIVE = 1; // 0x1
