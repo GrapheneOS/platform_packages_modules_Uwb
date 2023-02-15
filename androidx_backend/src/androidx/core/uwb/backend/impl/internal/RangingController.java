@@ -54,8 +54,8 @@ public class RangingController extends RangingDevice {
 
     @Nullable private RangingSessionCallback mRangingSessionCallback;
 
-    RangingController(UwbManager manager, Executor executor,
-            OpAsyncCallbackRunner opAsyncCallbackRunner) {
+    RangingController(
+            UwbManager manager, Executor executor, OpAsyncCallbackRunner opAsyncCallbackRunner) {
         super(manager, executor, opAsyncCallbackRunner);
     }
 
@@ -67,7 +67,7 @@ public class RangingController extends RangingDevice {
     }
 
     /**
-     * get Complex channel. if it's the first time that this function is called, it will check the
+     * gets complex channel. if it's the first time that this function is called, it will check the
      * driver and try to get the best-available settings.
      */
     @SuppressLint("WrongConstant")
@@ -80,6 +80,11 @@ public class RangingController extends RangingDevice {
             mComplexChannel = getBestAvailableComplexChannel();
         }
         return mComplexChannel;
+    }
+
+    /** Sets complex channel. */
+    public void setComplexChannel(UwbComplexChannel complexChannel) {
+        mComplexChannel = complexChannel;
     }
 
     /**
@@ -152,12 +157,16 @@ public class RangingController extends RangingDevice {
             return STATUS_OK;
         }
         // Reconfigure the session.
-        int[] subSessionIdList = mRangingParameters.getUwbConfigId()
-                == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY
-                ? new int[] {mRangingParameters.getSubSessionId()} : null;
-        byte[] subSessionKeyInfo = mRangingParameters.getUwbConfigId()
-                == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY
-                ? mRangingParameters.getSubSessionKeyInfo() : null;
+        int[] subSessionIdList =
+                mRangingParameters.getUwbConfigId()
+                                == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY
+                        ? new int[] {mRangingParameters.getSubSessionId()}
+                        : null;
+        byte[] subSessionKeyInfo =
+                mRangingParameters.getUwbConfigId()
+                                == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY
+                        ? mRangingParameters.getSubSessionKeyInfo()
+                        : null;
         boolean success =
                 reconfigureRanging(
                         ConfigurationManager.createReconfigureParams(
@@ -221,8 +230,8 @@ public class RangingController extends RangingDevice {
                                         mRangingParameters.getUwbConfigId(),
                                         FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE,
                                         new UwbAddress[] {controleeAddress},
-                                        /*subSessionIdList=*/ null,
-                                        /*subSessionKey=*/ null)
+                                        /* subSessionIdList= */ null,
+                                        /* subSessionKey= */ null)
                                 .toBundle());
         if (!success) {
             return UWB_SYSTEM_CALLBACK_FAILURE;
