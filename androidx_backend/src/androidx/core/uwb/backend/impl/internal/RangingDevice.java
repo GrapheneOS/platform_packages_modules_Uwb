@@ -79,8 +79,8 @@ public abstract class RangingDevice {
 
     @Nullable private String mChipId = null;
 
-    RangingDevice(UwbManager manager, Executor executor,
-            OpAsyncCallbackRunner opAsyncCallbackRunner) {
+    RangingDevice(
+            UwbManager manager, Executor executor, OpAsyncCallbackRunner opAsyncCallbackRunner) {
         mUwbManager = manager;
         this.mSystemCallbackExecutor = executor;
         mOpAsyncCallbackRunner = opAsyncCallbackRunner;
@@ -100,12 +100,17 @@ public abstract class RangingDevice {
         mForTesting = forTesting;
     }
 
-    /** Get Local address. The first call will return a randomized short address. */
+    /** Gets local address. The first call will return a randomized short address. */
     public UwbAddress getLocalAddress() {
         if (mLocalAddress == null) {
             mLocalAddress = getRandomizedLocalAddress();
         }
         return mLocalAddress;
+    }
+
+    /** Sets local address. */
+    public void setLocalAddress(UwbAddress localAddress) {
+        mLocalAddress = localAddress;
     }
 
     /** Gets a randomized short address. */
