@@ -1761,7 +1761,7 @@ public class UwbSessionManagerTest {
         verify(mUwbSessionNotificationManager).onRangingResult(uwbSession, uwbRangingData);
         ArgumentCaptor<AlarmManager.OnAlarmListener> alarmListenerCaptor =
                 ArgumentCaptor.forClass(AlarmManager.OnAlarmListener.class);
-        verify(mAlarmManager).set(
+        verify(mAlarmManager).setExact(
                 anyInt(), anyLong(), anyString(), alarmListenerCaptor.capture(), any());
         assertThat(alarmListenerCaptor.getValue()).isNotNull();
 
@@ -1816,7 +1816,7 @@ public class UwbSessionManagerTest {
         verify(mUwbSessionNotificationManager).onRangingResult(uwbSession, uwbRangingData);
         ArgumentCaptor<AlarmManager.OnAlarmListener> alarmListenerCaptor =
                 ArgumentCaptor.forClass(AlarmManager.OnAlarmListener.class);
-        verify(mAlarmManager).set(
+        verify(mAlarmManager).setExact(
                 anyInt(), anyLong(), anyString(), alarmListenerCaptor.capture(), any());
         assertThat(alarmListenerCaptor.getValue()).isNotNull();
 
