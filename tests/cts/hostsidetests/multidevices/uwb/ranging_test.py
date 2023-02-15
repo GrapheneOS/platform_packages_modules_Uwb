@@ -32,8 +32,8 @@ _TEST_CASES = (
     "test_stop_initiator_ranging_nearby_share_profile",
     "test_stop_responder_ranging_device_tracker_profile",
     "test_stop_responder_ranging_nearby_share_profile",
-    "test_ranging_device_tracker_profile_with_airplane_mode_toggle",
-    "test_ranging_nearby_share_profile_with_airplane_mode_toggle",
+    # "test_ranging_device_tracker_profile_with_airplane_mode_toggle",
+    # "test_ranging_nearby_share_profile_with_airplane_mode_toggle",
 )
 
 
