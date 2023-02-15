@@ -552,6 +552,14 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 boolean hasResultReportPhase = getNextArgRequiredTrueOrFalse("enabled", "disabled");
                 builder.setHasResultReportPhase(hasResultReportPhase);
             }
+            if (option.equals("-y")) {
+                boolean hoppingEnabled = getNextArgRequiredTrueOrFalse("enabled", "disabled");
+                builder.setHoppingMode(hoppingEnabled ? 1 : 0);
+            }
+            if (option.equals("-p")) {
+                int preambleCodeIndex = Integer.parseInt(getNextArgRequired());
+                builder.setPreambleCodeIndex(preambleCodeIndex);
+            }
             option = getNextOption();
         }
         if (aoaResultReqEnabled && interleavingEnabled) {
@@ -1057,6 +1065,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " [-g <staticStsIV>(staticStsIV 6-bytes)"
                 + " [-v <staticStsVendorId>(staticStsVendorId 2-bytes)"
                 + " [-w enabled|disabled](has-result-report-phase)"
+                + " [-y enabled|disabled](hopping-mode, default = disabled)"
+                + " [-p <preamble-code-index>](preamble-code-index, default = 10)"
                 + " [-h <slot-duration-rstu>(slot-duration-rstu, default=2400)");
         pw.println("    Starts a FIRA ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
