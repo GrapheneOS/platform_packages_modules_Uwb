@@ -67,15 +67,15 @@ public class UwbServiceImpl {
     /** Gets a Ranging Controller session with given context. */
     public RangingController getController(Context context) {
         UwbManager uwbManagerWithContext = context.getSystemService(UwbManager.class);
-        return new RangingController(uwbManagerWithContext, mSerialExecutor,
-                new OpAsyncCallbackRunner());
+        return new RangingController(
+                uwbManagerWithContext, mSerialExecutor, new OpAsyncCallbackRunner());
     }
 
     /** Gets a Ranging Controlee session with given context. */
     public RangingControlee getControlee(Context context) {
         UwbManager uwbManagerWithContext = context.getSystemService(UwbManager.class);
-        return new RangingControlee(uwbManagerWithContext, mSerialExecutor,
-                new OpAsyncCallbackRunner());
+        return new RangingControlee(
+                uwbManagerWithContext, mSerialExecutor, new OpAsyncCallbackRunner());
     }
 
     /** Returns multi-chip information. */

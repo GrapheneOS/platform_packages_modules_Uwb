@@ -548,6 +548,18 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 int slotDurationRstu = Integer.parseInt(getNextArgRequired());
                 builder.setSlotDurationRstu(slotDurationRstu);
             }
+            if (option.equals("-w")) {
+                boolean hasResultReportPhase = getNextArgRequiredTrueOrFalse("enabled", "disabled");
+                builder.setHasResultReportPhase(hasResultReportPhase);
+            }
+            if (option.equals("-y")) {
+                boolean hoppingEnabled = getNextArgRequiredTrueOrFalse("enabled", "disabled");
+                builder.setHoppingMode(hoppingEnabled ? 1 : 0);
+            }
+            if (option.equals("-p")) {
+                int preambleCodeIndex = Integer.parseInt(getNextArgRequired());
+                builder.setPreambleCodeIndex(preambleCodeIndex);
+            }
             option = getNextOption();
         }
         if (aoaResultReqEnabled && interleavingEnabled) {
@@ -759,9 +771,6 @@ public class UwbShellCommand extends BasicShellCommandHandler {
     private FiraRangingReconfigureParams buildFiraReconfigureParams() {
         FiraRangingReconfigureParams.Builder builder =
                 new FiraRangingReconfigureParams.Builder();
-        // defaults
-        builder.setAction(MULTICAST_LIST_UPDATE_ACTION_ADD);
-
         String option = getNextOption();
         while (option != null) {
             if (option.equals("-a")) {
@@ -793,6 +802,22 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 }
                 builder.setSubSessionIdList(subSessionIds.stream().mapToInt(s -> s).toArray());
             }
+            if (option.equals("-b")) {
+                int blockStrideLength = Integer.parseInt(getNextArgRequired());
+                builder.setBlockStrideLength(blockStrideLength);
+            }
+            if (option.equals("-c")) {
+                int rangeDataNtfConfig = Integer.parseInt(getNextArgRequired());
+                builder.setRangeDataNtfConfig(rangeDataNtfConfig);
+            }
+            if (option.equals("-pn")) {
+                int proximityNear = Integer.parseInt(getNextArgRequired());
+                builder.setRangeDataProximityNear(proximityNear);
+            }
+            if (option.equals("-pf")) {
+                int proximityFar = Integer.parseInt(getNextArgRequired());
+                builder.setRangeDataProximityFar(proximityFar);
+            }
             option = getNextOption();
         }
         // TODO: Add remaining params if needed.
@@ -811,7 +836,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         mUwbService.reconfigureRanging(sessionInfo.sessionHandle, params.toBundle());
         boolean reconfigureCompleted = false;
         try {
-            reconfigureCompleted = sessionInfo.rangingClosedFuture.get(
+            reconfigureCompleted = sessionInfo.rangingReconfiguredFuture.get(
                     RANGE_CTL_TIMEOUT_MILLIS, MILLISECONDS);
         } catch (InterruptedException | CancellationException | TimeoutException
                 | ExecutionException e) {
@@ -1039,6 +1064,9 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " [-f <tof,azimuth,elevation,aoa-fom>(result-report-config)"
                 + " [-g <staticStsIV>(staticStsIV 6-bytes)"
                 + " [-v <staticStsVendorId>(staticStsVendorId 2-bytes)"
+                + " [-w enabled|disabled](has-result-report-phase)"
+                + " [-y enabled|disabled](hopping-mode, default = disabled)"
+                + " [-p <preamble-code-index>](preamble-code-index, default = 10)"
                 + " [-h <slot-duration-rstu>(slot-duration-rstu, default=2400)");
         pw.println("    Starts a FIRA ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
@@ -1064,7 +1092,11 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " <sessionId>"
                 + " [-a add|delete](action)"
                 + " [-d <destAddress-1, destAddress-2,...>](dest-addresses)"
-                + " [-s <subSessionId-1, subSessionId-2,...>](sub-sessionIds)");
+                + " [-s <subSessionId-1, subSessionId-2,...>](sub-sessionIds)"
+                + " [-b <block-striding>](block-striding)"
+                + " [-c <range-data-ntf-cfg>](range-data-ntf-cfg)"
+                + " [-pn <proximity-near>(proximity-near)"
+                + " [-pf <proximity-far>](proximity-far)");
         pw.println("  get-ranging-session-reports <sessionId>");
         pw.println("    Displays latest cached ranging reports for an ongoing ranging session");
         pw.println("  get-all-ranging-session-reports");
