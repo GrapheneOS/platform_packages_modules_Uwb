@@ -510,10 +510,10 @@ impl<'a> TryFrom<SessionRangeDataWithEnv<'a>> for UwbRangingDataJni<'a> {
                     (MacAddressIndicator::ExtendedAddress, m.len())
                 }
                 RangingMeasurements::ShortAddressOwrAoa(ref m) => {
-                    (MacAddressIndicator::ShortAddress, m.len())
+                    (MacAddressIndicator::ShortAddress, 1)
                 }
                 RangingMeasurements::ExtendedAddressOwrAoa(ref m) => {
-                    (MacAddressIndicator::ExtendedAddress, m.len())
+                    (MacAddressIndicator::ExtendedAddress, 1)
                 }
             };
         let measurements_jni = UwbTwoWayMeasurementJni::try_from(RangingMeasurementsWithEnv::new(
