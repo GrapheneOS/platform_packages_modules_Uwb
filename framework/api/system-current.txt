@@ -113,6 +113,7 @@ package android.uwb {
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void sendData(@NonNull android.uwb.UwbAddress, @NonNull android.os.PersistableBundle, @NonNull byte[]);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void start(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void stop();
+    method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void updatePose(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void updateRangingRoundsDtTag(@NonNull android.os.PersistableBundle);
   }
 
