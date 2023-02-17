@@ -32,8 +32,10 @@ import android.os.PersistableBundle;
 import android.os.PowerManager;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
+import android.os.SystemClock;
 import android.util.Log;
 import android.util.Pair;
+import android.uwb.IOnUwbActivityEnergyInfoListener;
 import android.uwb.IUwbAdapterStateCallbacks;
 import android.uwb.IUwbOemExtensionCallback;
 import android.uwb.IUwbRangingCallbacks;
@@ -41,6 +43,7 @@ import android.uwb.IUwbVendorUciCallback;
 import android.uwb.RangingChangeReason;
 import android.uwb.SessionHandle;
 import android.uwb.StateChangeReason;
+import android.uwb.UwbActivityEnergyInfo;
 import android.uwb.UwbAddress;
 import android.uwb.UwbManager.AdapterStateCallback;
 
@@ -49,6 +52,7 @@ import androidx.annotation.Nullable;
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.data.UwbVendorUciResponse;
+import com.android.server.uwb.info.UwbPowerStats;
 import com.android.server.uwb.jni.INativeUwbManager;
 import com.android.server.uwb.jni.NativeUwbManager;
 
@@ -92,6 +96,8 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     public static final int TASK_RESTART = 3;
     @VisibleForTesting
     public static final int TASK_NOTIFY_ADAPTER_STATE = 4;
+    @VisibleForTesting
+    public static final int TASK_GET_POWER_STATS = 5;
 
     @VisibleForTesting
     public static final int WATCHDOG_MS = 10000;
@@ -106,7 +112,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     private final Context mContext;
     private final RemoteCallbackList<IUwbAdapterStateCallbacks>
             mAdapterStateCallbacksList = new RemoteCallbackList<>();
-    private final EnableDisableTask mEnableDisableTask;
+    private final UwbTask mUwbTask;
 
     private final UwbSessionManager mSessionManager;
     private final UwbConfigurationManager mConfigurationManager;
@@ -155,7 +161,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                     }
                 });
 
-        mEnableDisableTask = new EnableDisableTask(serviceLooper);
+        mUwbTask = new UwbTask(serviceLooper);
         mHandler = new Handler(serviceLooper);
     }
 
@@ -231,7 +237,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             Log.e(TAG, "Error device status received. Restarting...");
             mUwbMetrics.incrementDeviceStatusErrorCount();
             takBugReportAfterDeviceError("UWB Bugreport: restarting UWB due to device error");
-            mEnableDisableTask.execute(TASK_RESTART);
+            mUwbTask.execute(TASK_RESTART);
             oemExtensionDeviceStatusUpdate(deviceState, chipId);
             return;
         }
@@ -239,7 +245,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         // TODO(b/244443764): We should use getAdapterState() here, as for multi-chip case
         // the configured state above can be different from the computed adapter state
         // (after the call to updateState()).
-        mEnableDisableTask.enqueueNotifyAdapterState(
+        mUwbTask.enqueueNotifyAdapterState(
                 getAdapterStateFromDeviceState(deviceState),
                 getReasonFromDeviceState(deviceState),
                 mUwbCountryCode.getCountryCode());
@@ -335,7 +341,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         if (mUwbCountryCode.isValid(countryCode)) {
             // Remove any existing messages for notifying UWB stack state, and enqueue a message
             // for immediate delivery.
-            mEnableDisableTask.executeUnique(TASK_NOTIFY_ADAPTER_STATE,
+            mUwbTask.executeUnique(TASK_NOTIFY_ADAPTER_STATE,
                     getAdapterState(), mLastStateChangedReason);
         }
     }
@@ -591,7 +597,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             Log.w(TAG, "Uwb is already disabled");
         }
 
-        mEnableDisableTask.execute(task);
+        mUwbTask.execute(task);
     }
 
     private void sendVendorUciResponse(int gid, int oid, byte[] payload) {
@@ -670,9 +676,17 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         return mSessionManager.queryDataSize(sessionHandle);
     }
 
-    private class EnableDisableTask extends Handler {
+    /**
+     * Update the pose used by the filter engine to distinguish tag position changes from device
+     * position changes.
+     */
+    public void updatePose(SessionHandle sessionHandle, PersistableBundle params) {
+        mSessionManager.updatePose(sessionHandle, params);
+    }
 
-        EnableDisableTask(Looper looper) {
+    private class UwbTask extends Handler {
+
+        UwbTask(Looper looper) {
             super(looper);
         }
 
@@ -699,28 +713,39 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                     handleNotifyAdapterState(msg.arg1, msg.arg2);
                     break;
 
+                case TASK_GET_POWER_STATS:
+                    invokeUwbActivityEnergyInfoListener((IOnUwbActivityEnergyInfoListener) msg.obj);
+                    break;
+
                 default:
-                    Log.d(TAG, "EnableDisableTask : Undefined Task");
+                    Log.d(TAG, "UwbTask : Undefined Task");
                     break;
             }
         }
 
         public void execute(int task) {
-            Message msg = mEnableDisableTask.obtainMessage();
+            Message msg = mUwbTask.obtainMessage();
             msg.what = task;
             this.sendMessage(msg);
         }
         public void execute(int task, int arg1, int arg2) {
-            Message msg = mEnableDisableTask.obtainMessage();
+            Message msg = mUwbTask.obtainMessage();
             msg.what = task;
             msg.arg1 = arg1;
             msg.arg2 = arg2;
             this.sendMessage(msg);
         }
 
+        public void execute(int task, Object obj) {
+            Message msg = mUwbTask.obtainMessage();
+            msg.what = task;
+            msg.obj = obj;
+            this.sendMessage(msg);
+        }
+
         private void executeUnique(int task, int arg1, int arg2) {
-            mEnableDisableTask.removeMessages(task);
-            Message msg = mEnableDisableTask.obtainMessage();
+            mUwbTask.removeMessages(task);
+            Message msg = mUwbTask.obtainMessage();
             msg.what = task;
             msg.arg1 = arg1;
             msg.arg2 = arg2;
@@ -728,7 +753,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         }
 
         private void delayedExecute(int task, int arg1, int arg2, int delayMillis) {
-            Message msg = mEnableDisableTask.obtainMessage();
+            Message msg = mUwbTask.obtainMessage();
             msg.what = task;
             msg.arg1 = arg1;
             msg.arg2 = arg2;
@@ -902,5 +927,50 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         }
         pw.println("mLastStateChangedReason = " + mLastStateChangedReason);
         pw.println("---- Dump of UwbServiceCore ----");
+    }
+
+    /**
+     * Report the UWB power stats to the listener
+     */
+    public synchronized void reportUwbActivityEnergyInfo(
+            IOnUwbActivityEnergyInfoListener listener) {
+        mUwbTask.execute(TASK_GET_POWER_STATS, listener);
+    }
+
+    private void invokeUwbActivityEnergyInfoListener(IOnUwbActivityEnergyInfoListener listener) {
+        try {
+            listener.onUwbActivityEnergyInfo(getUwbActivityEnergyInfo());
+        } catch (RemoteException e) {
+            Log.e(TAG, "onUwbActivityEnergyInfo: RemoteException -- ", e);
+        }
+    }
+
+    private UwbActivityEnergyInfo getUwbActivityEnergyInfo() {
+        try {
+            String chipId = mUwbInjector.getMultichipData().getDefaultChipId();
+            PersistableBundle bundle = getSpecificationInfo(chipId);
+            GenericSpecificationParams params = GenericSpecificationParams.fromBundle(bundle);
+            if (!isUwbEnabled() || params == null || !params.hasPowerStatsSupport()) {
+                return null;
+            }
+            UwbPowerStats stats = mNativeUwbManager.getPowerStats(chipId);
+            if (stats == null) {
+                return null;
+            }
+
+            Log.d(TAG, " getUwbActivityEnergyInfo: "
+                    + " tx_time_millis=" + stats.getTxTimeMs()
+                    + " rx_time_millis=" + stats.getRxTimeMs()
+                    + " rxIdleTimeMillis=" + stats.getIdleTimeMs()
+                    + " wake_count=" + stats.getTotalWakeCount());
+
+            return new UwbActivityEnergyInfo.Builder(SystemClock.elapsedRealtime(),
+                    getAdapterState(), stats.getTxTimeMs(), stats.getRxTimeMs(),
+                    stats.getIdleTimeMs(), stats.getTotalWakeCount())
+                    .build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

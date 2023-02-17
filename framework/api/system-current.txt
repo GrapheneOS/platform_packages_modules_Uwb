@@ -113,6 +113,7 @@ package android.uwb {
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void sendData(@NonNull android.uwb.UwbAddress, @NonNull android.os.PersistableBundle, @NonNull byte[]);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void start(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void stop();
+    method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void updatePose(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void updateRangingRoundsDtTag(@NonNull android.os.PersistableBundle);
   }
 
@@ -160,6 +161,23 @@ package android.uwb {
     field public static final int REASON_UNKNOWN = 0; // 0x0
   }
 
+  public final class UwbActivityEnergyInfo implements android.os.Parcelable {
+    method public int describeContents();
+    method @IntRange(from=0) public long getControllerIdleDurationMillis();
+    method @IntRange(from=0) public long getControllerRxDurationMillis();
+    method @IntRange(from=0) public long getControllerTxDurationMillis();
+    method @IntRange(from=0) public long getControllerWakeCount();
+    method public int getStackState();
+    method public long getTimeSinceBootMillis();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.uwb.UwbActivityEnergyInfo> CREATOR;
+  }
+
+  public static final class UwbActivityEnergyInfo.Builder {
+    ctor public UwbActivityEnergyInfo.Builder(long, int, @IntRange(from=0) long, @IntRange(from=0) long, @IntRange(from=0) long, @IntRange(from=0) long);
+    method @NonNull public android.uwb.UwbActivityEnergyInfo build();
+  }
+
   public final class UwbAddress implements android.os.Parcelable {
     method public int describeContents();
     method @NonNull public static android.uwb.UwbAddress fromBytes(@NonNull byte[]);
@@ -183,6 +201,7 @@ package android.uwb {
     method @NonNull @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public String getDefaultChipId();
     method @NonNull @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public android.os.PersistableBundle getSpecificationInfo();
     method @NonNull @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public android.os.PersistableBundle getSpecificationInfo(@NonNull String);
+    method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void getUwbActivityEnergyInfoAsync(@NonNull java.util.concurrent.Executor, @NonNull android.uwb.UwbManager.OnUwbActivityEnergyInfoListener);
     method public boolean isUwbEnabled();
     method @NonNull @RequiresPermission(allOf={android.Manifest.permission.UWB_PRIVILEGED, android.Manifest.permission.UWB_RANGING}) public android.os.CancellationSignal openRangingSession(@NonNull android.os.PersistableBundle, @NonNull java.util.concurrent.Executor, @NonNull android.uwb.RangingSession.Callback);
     method @NonNull @RequiresPermission(allOf={android.Manifest.permission.UWB_PRIVILEGED, android.Manifest.permission.UWB_RANGING}) public android.os.CancellationSignal openRangingSession(@NonNull android.os.PersistableBundle, @NonNull java.util.concurrent.Executor, @NonNull android.uwb.RangingSession.Callback, @NonNull String);
@@ -234,6 +253,10 @@ package android.uwb {
     field public static final int REASON_INVALID_OID = 1; // 0x1
     field public static final int REASON_SE_FAILURE = 2; // 0x2
     field public static final int REASON_UNKNOWN = 3; // 0x3
+  }
+
+  public static interface UwbManager.OnUwbActivityEnergyInfoListener {
+    method public void onUwbActivityEnergyInfo(@Nullable android.uwb.UwbActivityEnergyInfo);
   }
 
   public static interface UwbManager.UwbOemExtensionCallback {
