@@ -1025,6 +1025,18 @@ public abstract class FiraParams extends Params {
     public static final int SESSION_TYPE_RANGING_WITH_DATA_PHASE = 5;
     public static final int SESSION_TYPE_DEVICE_TEST_MODE = 0xD0;
 
+    /** Which type of filter to use for filtering AoA/distance readings. */
+    @IntDef(
+            value = {
+                    FILTER_TYPE_NONE,
+                    FILTER_TYPE_DEFAULT,
+                    FILTER_TYPE_APPLICATION,
+            })
+    public @interface FilterType {}
+    public static final int FILTER_TYPE_NONE = 0;
+    public static final int FILTER_TYPE_DEFAULT = 1;
+    public static final int FILTER_TYPE_APPLICATION = 2;
+
     // Helper functions
     protected static UwbAddress longToUwbAddress(long value, int length) {
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);

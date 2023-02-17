@@ -48,6 +48,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 import android.uwb.RangingReport;
 import android.uwb.RangingSession;
+import android.uwb.UwbActivityEnergyInfo;
 import android.uwb.UwbAddress;
 import android.uwb.UwbManager;
 
@@ -1425,5 +1426,80 @@ public class UwbManagerTest {
             /* pass */
             fail();
         }
+    }
+
+    private static class OnUwbActivityEnergyInfoListener implements
+            UwbManager.OnUwbActivityEnergyInfoListener {
+        private final CountDownLatch mCountDownLatch;
+        public UwbActivityEnergyInfo mPowerStats;
+        public boolean mIsListenerInvoked = false;
+
+        OnUwbActivityEnergyInfoListener(@NonNull CountDownLatch countDownLatch) {
+            mCountDownLatch = countDownLatch;
+        }
+
+        @Override
+        public void onUwbActivityEnergyInfo(UwbActivityEnergyInfo info) {
+            mIsListenerInvoked = true;
+            mPowerStats = info;
+            mCountDownLatch.countDown();
+        }
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    public void testGetUwbActivityEnergyInfoAsync() throws Exception {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        OnUwbActivityEnergyInfoListener listener =
+                new OnUwbActivityEnergyInfoListener(countDownLatch);
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            mUwbManager.getUwbActivityEnergyInfoAsync(Executors.newSingleThreadExecutor(),
+                    listener);
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(listener.mIsListenerInvoked).isTrue();
+            if (listener.mPowerStats != null) {
+                assertThat(listener.mPowerStats.getControllerIdleDurationMillis() >= 0)
+                        .isTrue();
+                assertThat(listener.mPowerStats.getControllerWakeCount() >= 0).isTrue();
+            }
+        } catch (SecurityException e) {
+            /* pass */
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    public void testGetUwbActivityEnergyInfoAsyncWithoutUwbPrivileged() throws Exception {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        OnUwbActivityEnergyInfoListener listener =
+                new OnUwbActivityEnergyInfoListener(countDownLatch);
+        try {
+            mUwbManager.getUwbActivityEnergyInfoAsync(Executors.newSingleThreadExecutor(),
+                    listener);
+            // should fail if the call was successful without UWB_PRIVILEGED permission.
+            fail();
+        } catch (SecurityException e) {
+            /* pass */
+            Log.i(TAG, "Failed with expected security exception: " + e);
+        }
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    public void testGetUwbActivityEnergyInfoAsyncWithBadParams() throws Exception {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        OnUwbActivityEnergyInfoListener listener =
+                new OnUwbActivityEnergyInfoListener(countDownLatch);
+        // null Executor
+        assertThrows(NullPointerException.class,
+                () -> mUwbManager.getUwbActivityEnergyInfoAsync(null, listener));
+        // null listener
+        assertThrows(NullPointerException.class,
+                () -> mUwbManager.getUwbActivityEnergyInfoAsync(Executors.newSingleThreadExecutor(),
+                        null));
     }
 }

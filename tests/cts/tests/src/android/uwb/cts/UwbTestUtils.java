@@ -25,7 +25,9 @@ import android.uwb.AngleOfArrivalMeasurement;
 import android.uwb.DistanceMeasurement;
 import android.uwb.RangingMeasurement;
 import android.uwb.RangingReport;
+import android.uwb.UwbActivityEnergyInfo;
 import android.uwb.UwbAddress;
+import android.uwb.UwbManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -99,6 +101,13 @@ public class UwbTestUtils {
             builder.addMeasurement(getRangingMeasurement());
         }
         return builder.build();
+    }
+
+    public static UwbActivityEnergyInfo getUwbActivityEnergyInfo() {
+        return new UwbActivityEnergyInfo.Builder(10000,
+                UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
+                10, 20, 300, 50)
+                .build();
     }
 
     private static double getDoubleInRange(double min, double max) {

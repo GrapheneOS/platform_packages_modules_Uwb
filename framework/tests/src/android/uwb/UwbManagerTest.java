@@ -36,6 +36,7 @@ import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.uwb.UwbManager.AdapterStateCallback;
 import android.uwb.UwbManager.AdfProvisionStateCallback;
+import android.uwb.UwbManager.OnUwbActivityEnergyInfoListener;
 import android.uwb.UwbManager.UwbVendorUciCallback;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -268,5 +269,20 @@ public class UwbManagerTest {
         assertThrows(
                 RuntimeException.class, () -> mUwbManager.sendVendorUciMessage(MT, GID, OID,
                         PAYLOAD));
+    }
+
+    @Test
+    public void testGetUwbActivityEnergyInfoAsync() throws Exception {
+        OnUwbActivityEnergyInfoListener listener = mock(OnUwbActivityEnergyInfoListener.class);
+        // null Executor
+        assertThrows(NullPointerException.class,
+                () -> mUwbManager.getUwbActivityEnergyInfoAsync(null, listener));
+        // null listener
+        assertThrows(NullPointerException.class,
+                () -> mUwbManager.getUwbActivityEnergyInfoAsync(EXECUTOR, null));
+
+        mUwbManager.getUwbActivityEnergyInfoAsync(EXECUTOR, listener);
+        verify(mIUwbAdapter).getUwbActivityEnergyInfoAsync(
+                any(IOnUwbActivityEnergyInfoListener.Stub.class));
     }
 }
