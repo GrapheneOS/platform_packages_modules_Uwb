@@ -270,8 +270,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     public void onDataReceived(
             long sessionId, int status, long sequenceNum,
             byte[] address, int sourceEndPoint, int destEndPoint, byte[] data) {
-        Log.d(TAG, "onDataReceived - address: " + UwbUtil.toHexString(address)
-                + ", Data: " + UwbUtil.toHexString(data));
+        Log.d(TAG, "onDataReceived(): Received data packet - "
+                + "Address: " + UwbUtil.toHexString(address)
+                + ", Data: " + UwbUtil.toHexString(data)
+                + ", sessionId: " + sessionId
+                + ", status: " + status
+                + ", sequenceNum: " + sequenceNum);
 
         UwbSession uwbSession = getUwbSession((int) sessionId);
         if (uwbSession == null) {
