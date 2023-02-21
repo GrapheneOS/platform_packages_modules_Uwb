@@ -66,7 +66,7 @@ public class CccEncoderTest {
 
     private static final byte[] TEST_CCC_OPEN_RANGING_TLV_DATA =
             UwbUtil.getByteArray("0001010201010401090501010904800100000E010011010103010"
-                    + "11B01062301012C0100A3020001A4020000A50100A602D0020802B004140101");
+                    + "11B01062C0100A3020001A4020000A50100A602D0020802B004140101");
 
     private final CccEncoder mCccEncoder = new CccEncoder();
 
@@ -75,7 +75,7 @@ public class CccEncoderTest {
         CccOpenRangingParams params = TEST_CCC_OPEN_RANGING_PARAMS.build();
         TlvBuffer tlvs = mCccEncoder.getTlvBuffer(params);
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(17);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(16);
         assertThat(tlvs.getByteArray()).isEqualTo(TEST_CCC_OPEN_RANGING_TLV_DATA);
     }
 
@@ -84,7 +84,7 @@ public class CccEncoderTest {
         CccOpenRangingParams params = TEST_CCC_OPEN_RANGING_PARAMS.build();
         TlvBuffer tlvs = TlvEncoder.getEncoder(CccParams.PROTOCOL_NAME).getTlvBuffer(params);
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(17);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(16);
         assertThat(tlvs.getByteArray()).isEqualTo(TEST_CCC_OPEN_RANGING_TLV_DATA);
     }
 }
