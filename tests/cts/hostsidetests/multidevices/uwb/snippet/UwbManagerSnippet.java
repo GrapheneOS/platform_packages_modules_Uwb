@@ -582,6 +582,16 @@ public class UwbManagerSnippet implements Snippet {
         return rangingMeasurement.getAngleOfArrivalMeasurement().getAltitude().getRadians();
     }
 
+    /** Get RSSI measurement. */
+    @Rpc(description = "Get RSSI measurement.")
+    public int getRssiDbmMeasurement(String key, JSONArray jArray) throws JSONException {
+        RangingMeasurement rangingMeasurement = getRangingMeasurement(key, jArray);
+        if (rangingMeasurement == null) {
+            throw new NullPointerException("Cannot get RSSI dBm measurement on null object.");
+        }
+        return rangingMeasurement.getRssiDbm();
+    }
+
     /** Stop UWB ranging. */
     @Rpc(description = "Stop UWB ranging")
     public void stopRangingSession(String key) {
