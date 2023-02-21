@@ -78,7 +78,6 @@ public class CccEncoder extends TlvEncoder {
                         (byte) FiraParams.MULTI_NODE_MODE_ONE_TO_MANY) // MULTI_NODE_MODE
                 .putByte(ConfigParam.SLOTS_PER_RR,
                         (byte) params.getNumSlotsPerRound()) // SLOTS_PER_RR
-                .putByte(ConfigParam.KEY_ROTATION, (byte) 0X01) // KEY_ROTATION
                 .putByte(ConfigParam.HOPPING_MODE, (byte) hoppingMode) // HOPPING_MODE
                 .putByteArray(ConfigParam.RANGING_PROTOCOL_VER,
                         ConfigParam.RANGING_PROTOCOL_VER_BYTE_COUNT,
