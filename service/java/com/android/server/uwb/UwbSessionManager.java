@@ -2006,6 +2006,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             if (mPoseSource instanceof ApplicationPoseSource) {
                 ApplicationPoseSource aps = (ApplicationPoseSource) mPoseSource;
                 aps.applyPose(updateParams.getPoseInfo());
+            } else {
+                throw new IllegalStateException("Session not configured for application poses.");
             }
         }
 
