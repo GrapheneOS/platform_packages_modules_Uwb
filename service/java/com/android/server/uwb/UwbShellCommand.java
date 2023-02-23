@@ -615,7 +615,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             if (option.equals("-c")) {
                 builder.setChannel(Integer.parseInt(getNextArgRequired()));
             }
-            if (option.equals("-p")) {
+            if (option.equals("-m")) {
                 builder.setNumChapsPerSlot(Integer.parseInt(getNextArgRequired()));
             }
             if (option.equals("-n")) {
@@ -645,7 +645,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 if (hoppingSequence.equals("default")) {
                     builder.setHoppingSequence(HOPPING_SEQUENCE_DEFAULT);
                 } else if (hoppingSequence.equals("aes")) {
-                    builder.setHoppingConfigMode(HOPPING_SEQUENCE_AES);
+                    builder.setHoppingSequence(HOPPING_SEQUENCE_AES);
                 } else {
                     throw new IllegalArgumentException("Unknown hopping sequence: "
                             + hoppingSequence);
@@ -1079,7 +1079,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " [-i <sessionId>](session-id)"
                 + " [-r <ran_multiplier>](ran-multiplier)"
                 + " [-c <channel>](channel)"
-                + " [-p <num-chaps-per-slot>](num-chaps-per-slot)"
+                + " [-m <num-chaps-per-slot>](num-chaps-per-slot)"
                 + " [-n <num-responder-nodes>](num-responder-nodes)"
                 + " [-o <num-slots-per-round>](num-slots-per-round)"
                 + " [-s <sync-code-index>](sync-code-index)"
