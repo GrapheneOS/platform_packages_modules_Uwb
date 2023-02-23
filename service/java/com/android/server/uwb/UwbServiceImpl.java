@@ -331,12 +331,12 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     }
 
     @Override
-    public int queryDataSize(SessionHandle sessionHandle) {
+    public int queryMaxDataSizeBytes(SessionHandle sessionHandle) {
         if (!SdkLevel.isAtLeastU()) {
             throw new UnsupportedOperationException();
         }
         enforceUwbPrivilegedPermission();
-        return mUwbServiceCore.queryDataSize(sessionHandle);
+        return mUwbServiceCore.queryMaxDataSizeBytes(sessionHandle);
     }
 
     @Override
