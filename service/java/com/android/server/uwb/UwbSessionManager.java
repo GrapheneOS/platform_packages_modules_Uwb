@@ -824,7 +824,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     }
 
     /** Query Max Application data size for the given UWB Session */
-    public synchronized int queryDataSize(SessionHandle sessionHandle) {
+    public synchronized int queryMaxDataSizeBytes(SessionHandle sessionHandle) {
         int status = UwbUciConstants.STATUS_CODE_ERROR_SESSION_NOT_EXIST;
         if (!isExistedSession(sessionHandle)) {
             Log.i(TAG, "Not initialized session ID");
@@ -838,7 +838,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
 
         synchronized (uwbSession.getWaitObj()) {
-            return mNativeUwbManager.queryDataSize(uwbSession.getSessionId(),
+            return mNativeUwbManager.queryMaxDataSizeBytes(uwbSession.getSessionId(),
                     uwbSession.getChipId());
         }
     }
