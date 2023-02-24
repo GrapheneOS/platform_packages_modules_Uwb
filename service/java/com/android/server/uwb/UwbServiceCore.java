@@ -668,12 +668,12 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     /**
      * Query max application data size that can be sent by UWBS in one ranging round.
      */
-    public int queryDataSize(SessionHandle sessionHandle) {
+    public int queryMaxDataSizeBytes(SessionHandle sessionHandle) {
         if (!isUwbEnabled()) {
             throw new IllegalStateException("Uwb is not enabled");
         }
 
-        return mSessionManager.queryDataSize(sessionHandle);
+        return mSessionManager.queryMaxDataSizeBytes(sessionHandle);
     }
 
     /**
