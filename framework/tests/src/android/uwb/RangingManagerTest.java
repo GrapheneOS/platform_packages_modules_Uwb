@@ -464,6 +464,10 @@ public class RangingManagerTest {
         runReason(RangingChangeReason.SYSTEM_POLICY, RangingSession.Callback.REASON_SYSTEM_POLICY);
 
         runReason(
+                RangingChangeReason.SYSTEM_REGULATION,
+                RangingSession.Callback.REASON_SYSTEM_REGULATION);
+
+        runReason(
                 RangingChangeReason.BAD_PARAMETERS, RangingSession.Callback.REASON_BAD_PARAMETERS);
 
         runReason(RangingChangeReason.UNKNOWN, RangingSession.Callback.REASON_UNKNOWN);
