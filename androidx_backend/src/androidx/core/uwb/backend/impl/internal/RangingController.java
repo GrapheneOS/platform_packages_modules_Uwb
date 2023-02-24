@@ -18,13 +18,13 @@ package androidx.core.uwb.backend.impl.internal;
 
 import static androidx.core.uwb.backend.impl.internal.RangingSessionCallback.REASON_FAILED_TO_START;
 import static androidx.core.uwb.backend.impl.internal.RangingSessionCallback.REASON_STOP_RANGING_CALLED;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_7;
 import static androidx.core.uwb.backend.impl.internal.Utils.INVALID_API_CALL;
 import static androidx.core.uwb.backend.impl.internal.Utils.STATUS_OK;
 import static androidx.core.uwb.backend.impl.internal.Utils.SUPPORTED_BPRF_PREAMBLE_INDEX;
 import static androidx.core.uwb.backend.impl.internal.Utils.TAG;
 import static androidx.core.uwb.backend.impl.internal.Utils.UWB_SYSTEM_CALLBACK_FAILURE;
 
-import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY;
 import static com.google.uwb.support.fira.FiraParams.UWB_CHANNEL_9;
 
 import static java.util.Objects.requireNonNull;
@@ -158,13 +158,11 @@ public class RangingController extends RangingDevice {
         }
         // Reconfigure the session.
         int[] subSessionIdList =
-                mRangingParameters.getUwbConfigId()
-                                == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY
+                mRangingParameters.getUwbConfigId() == CONFIG_ID_7
                         ? new int[] {mRangingParameters.getSubSessionId()}
                         : null;
         byte[] subSessionKeyInfo =
-                mRangingParameters.getUwbConfigId()
-                                == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY
+                mRangingParameters.getUwbConfigId() == CONFIG_ID_7
                         ? mRangingParameters.getSubSessionKeyInfo()
                         : null;
         boolean success =
