@@ -545,6 +545,7 @@ public class UwbManagerTest {
         public boolean onStartFailedCalled;
         public boolean onReconfiguredCalled;
         public boolean onReconfiguredFailedCalled;
+        public boolean onStoppedCalled;
         public boolean onClosedCalled;
         public RangingSession rangingSession;
         public RangingReport rangingReport;
@@ -596,7 +597,10 @@ public class UwbManagerTest {
             mCtrlCountDownLatch.countDown();
         }
 
-        public void onStopped(int reason, @NonNull PersistableBundle parameters) { }
+        public void onStopped(int reason, @NonNull PersistableBundle parameters) {
+            onStoppedCalled = true;
+            mCtrlCountDownLatch.countDown();
+        }
 
         public void onStopFailed(int reason, @NonNull PersistableBundle params) { }
 
@@ -911,8 +915,14 @@ public class UwbManagerTest {
             // Check the UWB state.
             assertThat(mUwbManager.getAdapterState()).isEqualTo(STATE_ENABLED_ACTIVE);
 
+            countDownLatch = new CountDownLatch(1);
+            rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
             // Stop ongoing session.
             rangingSessionCallback.rangingSession.stop();
+
+            // Wait for on stopped callback.
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.onStoppedCalled).isTrue();
         } finally {
             if (cancellationSignal != null) {
                 countDownLatch = new CountDownLatch(1);
@@ -1012,8 +1022,14 @@ public class UwbManagerTest {
             // Check the UWB state.
             assertThat(mUwbManager.getAdapterState()).isEqualTo(STATE_ENABLED_ACTIVE);
 
+            countDownLatch = new CountDownLatch(1);
+            rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
             // Stop ongoing session.
             rangingSessionCallback.rangingSession.stop();
+
+            // Wait for on stopped callback.
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.onStoppedCalled).isTrue();
         } finally {
             if (cancellationSignal != null) {
                 countDownLatch = new CountDownLatch(1);
