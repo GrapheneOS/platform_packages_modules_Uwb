@@ -158,6 +158,7 @@ package android.uwb {
     field public static final int REASON_SE_INTERACTION_FAILURE = 13; // 0xd
     field public static final int REASON_SE_NOT_SUPPORTED = 12; // 0xc
     field public static final int REASON_SYSTEM_POLICY = 6; // 0x6
+    field public static final int REASON_SYSTEM_REGULATION = 15; // 0xf
     field public static final int REASON_UNKNOWN = 0; // 0x0
   }
 

@@ -107,6 +107,7 @@ public final class RangingSession implements AutoCloseable {
                 REASON_SE_NOT_SUPPORTED,
                 REASON_SE_INTERACTION_FAILURE,
                 REASON_INSUFFICIENT_SLOTS_PER_RR,
+                REASON_SYSTEM_REGULATION,
         })
         @interface Reason {}
 
@@ -184,6 +185,12 @@ public final class RangingSession implements AutoCloseable {
          * Indicate insufficient slots per ranging round.
          */
         int REASON_INSUFFICIENT_SLOTS_PER_RR = 14;
+
+        /**
+         * Indicate that a system regulation caused the change, such as no allowed UWB channels in
+         * the country.
+         */
+        int REASON_SYSTEM_REGULATION = 15;
 
         /**
          * @hide
