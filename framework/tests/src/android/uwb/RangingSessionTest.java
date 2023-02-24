@@ -425,10 +425,10 @@ public class RangingSessionTest {
         IUwbAdapter adapter = mock(IUwbAdapter.class);
         RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
 
-        when(adapter.queryDataSize(handle)).thenReturn(MAX_DATA_SIZE);
+        when(adapter.queryMaxDataSizeBytes(handle)).thenReturn(MAX_DATA_SIZE);
 
         session.onRangingStarted(PARAMS);
-        assertThat(session.queryDataSize()).isEqualTo(MAX_DATA_SIZE);
+        assertThat(session.queryMaxDataSizeBytes()).isEqualTo(MAX_DATA_SIZE);
     }
 
     @Test
