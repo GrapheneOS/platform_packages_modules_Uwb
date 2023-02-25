@@ -1051,4 +1051,76 @@ public final class UwbManager {
             throw e.rethrowFromSystemServer();
         }
     }
+
+    /**
+     * @hide
+     *
+     * Interface for UWB activity energy info listener. Should be implemented by applications and
+     * set when calling {@link UwbManager#getUwbActivityEnergyInfoAsync}.
+     */
+    public interface OnUwbActivityEnergyInfoListener {
+        /**
+         * Called when Uwb activity energy info is available.
+         * Note: this listener is triggered at most once for each call to
+         * {@link #getUwbActivityEnergyInfoAsync}.
+         *
+         * @param info the latest {@link UwbActivityEnergyInfo}, or null if unavailable.
+         */
+        void onUwbActivityEnergyInfo(@Nullable UwbActivityEnergyInfo info);
+    }
+
+    private static class OnUwbActivityEnergyInfoProxy
+            extends IOnUwbActivityEnergyInfoListener.Stub {
+        private final Object mLock = new Object();
+        @Nullable @GuardedBy("mLock") private Executor mExecutor;
+        @Nullable @GuardedBy("mLock") private OnUwbActivityEnergyInfoListener mListener;
+
+        OnUwbActivityEnergyInfoProxy(Executor executor,
+                OnUwbActivityEnergyInfoListener listener) {
+            mExecutor = executor;
+            mListener = listener;
+        }
+
+        @Override
+        public void onUwbActivityEnergyInfo(UwbActivityEnergyInfo info) {
+            Executor executor;
+            OnUwbActivityEnergyInfoListener listener;
+            synchronized (mLock) {
+                if (mExecutor == null || mListener == null) {
+                    return;
+                }
+                executor = mExecutor;
+                listener = mListener;
+                // null out to allow garbage collection, prevent triggering listener more than once
+                mExecutor = null;
+                mListener = null;
+            }
+            Binder.clearCallingIdentity();
+            executor.execute(() -> listener.onUwbActivityEnergyInfo(info));
+        }
+    }
+
+    /**
+     * @hide
+     *
+     * Request to get the current {@link UwbActivityEnergyInfo} asynchronously.
+     *
+     * @param executor the executor that the listener will be invoked on
+     * @param listener the listener that will receive the {@link UwbActivityEnergyInfo} object
+     *                 when it becomes available. The listener will be triggered at most once for
+     *                 each call to this method.
+     */
+    @RequiresPermission(permission.UWB_PRIVILEGED)
+    public void getUwbActivityEnergyInfoAsync(
+            @NonNull @CallbackExecutor Executor executor,
+            @NonNull OnUwbActivityEnergyInfoListener listener) {
+        Objects.requireNonNull(executor, "executor cannot be null");
+        Objects.requireNonNull(listener, "listener cannot be null");
+        try {
+            mUwbAdapter.getUwbActivityEnergyInfoAsync(
+                    new OnUwbActivityEnergyInfoProxy(executor, listener));
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
 }
