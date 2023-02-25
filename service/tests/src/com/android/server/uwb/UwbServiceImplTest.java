@@ -654,10 +654,10 @@ public class UwbServiceImplTest {
         final SessionHandle sessionHandle = mock(SessionHandle.class);
         final PersistableBundle parameters = new PersistableBundle();
 
-        when(mUwbServiceCore.queryDataSize(sessionHandle)).thenReturn(MAX_DATA_SIZE);
-        assertThat(mUwbServiceImpl.queryDataSize(sessionHandle)).isEqualTo(MAX_DATA_SIZE);
+        when(mUwbServiceCore.queryMaxDataSizeBytes(sessionHandle)).thenReturn(MAX_DATA_SIZE);
+        assertThat(mUwbServiceImpl.queryMaxDataSizeBytes(sessionHandle)).isEqualTo(MAX_DATA_SIZE);
 
-        verify(mUwbServiceCore).queryDataSize(sessionHandle);
+        verify(mUwbServiceCore).queryMaxDataSizeBytes(sessionHandle);
     }
 
     @Test
