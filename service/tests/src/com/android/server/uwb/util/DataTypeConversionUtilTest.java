@@ -87,21 +87,21 @@ public class DataTypeConversionUtilTest {
     @Test
     public void i32ToByteArray_success() {
         assertThat(DataTypeConversionUtil.i32ToByteArray(0x01020304))
-                .isEqualTo(new byte[] { (byte) 0x01, (byte) 0x02, (byte) 0x03, (byte) 0x04 });
+                .isEqualTo(new byte[]{(byte) 0x01, (byte) 0x02, (byte) 0x03, (byte) 0x04});
     }
 
     @Test
     public void i32ToLeByteArray_success() {
         assertThat(DataTypeConversionUtil.i32ToLeByteArray(0x01020304))
-                .isEqualTo(new byte[] { (byte) 0x04, (byte) 0x03, (byte) 0x02, (byte) 0x01 });
+                .isEqualTo(new byte[]{(byte) 0x04, (byte) 0x03, (byte) 0x02, (byte) 0x01});
     }
 
     @Test
     public void byteArrayToHexString_byteString_success() {
         String hexString = "010203040A0B0C0D";
         assertThat(DataTypeConversionUtil.byteArrayToHexString(
-                new byte[] { (byte) 0x01, (byte) 0x02, (byte) 0x03, (byte) 0x04,
-                        (byte) 0x0A, (byte) 0x0B, (byte) 0x0C, (byte) 0x0D }))
+                new byte[]{(byte) 0x01, (byte) 0x02, (byte) 0x03, (byte) 0x04,
+                        (byte) 0x0A, (byte) 0x0B, (byte) 0x0C, (byte) 0x0D}))
                 .isEqualTo(hexString);
     }
 
@@ -114,8 +114,8 @@ public class DataTypeConversionUtilTest {
     public void hexStringToByteArray_success() {
         String hexString = "010203040A0B0C0D";
         assertThat(DataTypeConversionUtil.hexStringToByteArray(hexString))
-                .isEqualTo(new byte[] { (byte) 0x01, (byte) 0x02, (byte) 0x03, (byte) 0x04,
-                        (byte) 0x0A, (byte) 0x0B, (byte) 0x0C, (byte) 0x0D });
+                .isEqualTo(new byte[]{(byte) 0x01, (byte) 0x02, (byte) 0x03, (byte) 0x04,
+                        (byte) 0x0A, (byte) 0x0B, (byte) 0x0C, (byte) 0x0D});
     }
 
     @Test
@@ -159,8 +159,8 @@ public class DataTypeConversionUtilTest {
         assertThrows(
                 NumberFormatException.class,
                 () -> DataTypeConversionUtil.arbitraryByteArrayToI32(
-                        new byte[] {
-                                (byte) 0x01, (byte) 0x01, (byte) 0x01, (byte) 0x1A, (byte) 0x01 }));
+                        new byte[]{
+                                (byte) 0x01, (byte) 0x01, (byte) 0x01, (byte) 0x1A, (byte) 0x01}));
 
         assertThrows(
                 NumberFormatException.class,
@@ -172,7 +172,7 @@ public class DataTypeConversionUtilTest {
     @Test
     public void macAddressByteArrayToLong_success_shortMacAddress_LittleEndian() {
         assertThat(
-                DataTypeConversionUtil.macAddressByteArrayToLong(new byte[] {0x35, 0x37}))
+                DataTypeConversionUtil.macAddressByteArrayToLong(new byte[]{0x35, 0x37}))
                 .isEqualTo(0x3735);
     }
 
@@ -180,7 +180,7 @@ public class DataTypeConversionUtilTest {
     public void macAddressByteArrayToLong_success_int_LittleEndian() {
         assertThat(
                 DataTypeConversionUtil.macAddressByteArrayToLong(
-                        new byte[] {0x35, 0x37, 0x38, 0x48}))
+                        new byte[]{0x35, 0x37, 0x38, 0x48}))
                 .isEqualTo(0x48383735);
     }
 
@@ -188,7 +188,7 @@ public class DataTypeConversionUtilTest {
     public void macAddressByteArrayToLong_success_extendedMacAddress_LittleEndian() {
         assertThat(
                 DataTypeConversionUtil.macAddressByteArrayToLong(
-                        new byte[] {0x35, 0x37, 0x38, 0x48, 0x22, 0x24, 0x26, 0x28}))
+                        new byte[]{0x35, 0x37, 0x38, 0x48, 0x22, 0x24, 0x26, 0x28}))
                 .isEqualTo(0x2826242248383735L);
     }
 
@@ -196,7 +196,7 @@ public class DataTypeConversionUtilTest {
     public void macAddressByteArrayToLong_success_shortInExtendedMacAddressFormat_LittleEndian() {
         assertThat(
                 DataTypeConversionUtil.macAddressByteArrayToLong(
-                        new byte[] {0x35, 0x37, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}))
+                        new byte[]{0x35, 0x37, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}))
                 .isEqualTo(0x3735);
     }
 
@@ -216,6 +216,30 @@ public class DataTypeConversionUtilTest {
                 NumberFormatException.class,
                 () -> DataTypeConversionUtil.macAddressByteArrayToLong(
                         new byte[]{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09}));
+    }
 
+    @Test
+    public void convertShortMacAddressBytesToExtended_shortMacAddress() {
+        assertThat(
+                DataTypeConversionUtil.convertShortMacAddressBytesToExtended(
+                        new byte[]{0x35, 0x37}))
+                .isEqualTo(new byte[]{0x35, 0x37, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+    }
+
+    @Test
+    public void convertShortMacAddressBytesToExtended_extendedMacAddress() {
+        assertThat(
+                DataTypeConversionUtil.convertShortMacAddressBytesToExtended(
+                        new byte[]{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}))
+                .isEqualTo(new byte[]{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08});
+    }
+
+    @Test
+    public void convertShortMacAddressBytesToExtended_badLength() {
+        // Unsupported lengths.
+        assertThrows(
+                NumberFormatException.class,
+                () -> DataTypeConversionUtil.convertShortMacAddressBytesToExtended(
+                        new byte[]{0x01}));
     }
 }
