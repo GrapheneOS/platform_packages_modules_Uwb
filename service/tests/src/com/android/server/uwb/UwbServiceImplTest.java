@@ -53,6 +53,7 @@ import android.os.UserManager;
 import android.platform.test.annotations.Presubmit;
 import android.provider.Settings;
 import android.test.suitebuilder.annotation.SmallTest;
+import android.uwb.IOnUwbActivityEnergyInfoListener;
 import android.uwb.IUwbAdapterStateCallbacks;
 import android.uwb.IUwbAdfProvisionStateCallbacks;
 import android.uwb.IUwbRangingCallbacks;
@@ -657,5 +658,25 @@ public class UwbServiceImplTest {
         assertThat(mUwbServiceImpl.queryDataSize(sessionHandle)).isEqualTo(MAX_DATA_SIZE);
 
         verify(mUwbServiceCore).queryDataSize(sessionHandle);
+    }
+
+    @Test
+    public void testGetUwbActivityEnergyInfoAsync() throws Exception {
+        final IOnUwbActivityEnergyInfoListener listener = mock(
+                IOnUwbActivityEnergyInfoListener.class);
+        mUwbServiceImpl.getUwbActivityEnergyInfoAsync(listener);
+        verify(mUwbServiceCore).reportUwbActivityEnergyInfo(listener);
+    }
+
+    @Test
+    public void testGetUwbActivityEnergyInfoAsyncSecurityException() throws Exception {
+        final IOnUwbActivityEnergyInfoListener listener = mock(
+                IOnUwbActivityEnergyInfoListener.class);
+        doThrow(new SecurityException()).when(mContext).enforceCallingOrSelfPermission(
+                eq(UWB_PRIVILEGED), any());
+        try {
+            mUwbServiceImpl.getUwbActivityEnergyInfoAsync(listener);
+            fail();
+        } catch (SecurityException e) { /* pass */ }
     }
 }
