@@ -63,6 +63,7 @@ import android.platform.test.annotations.Presubmit;
 import android.test.suitebuilder.annotation.SmallTest;
 import android.util.Pair;
 import android.uwb.AdapterState;
+import android.uwb.IOnUwbActivityEnergyInfoListener;
 import android.uwb.IUwbAdapterStateCallbacks;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.IUwbVendorUciCallback;
@@ -1122,6 +1123,16 @@ public class UwbServiceCoreTest {
         byte[] payload = new byte[0];
         mUwbServiceCore.onVendorUciNotificationReceived(gid, oid, payload);
         verify(vendorCb).onVendorNotificationReceived(gid, oid, payload);
+    }
+
+    @Test
+    public void testReportUwbActivityEnergyInfo() throws Exception {
+        enableUwbWithCountryCode();
+
+        IOnUwbActivityEnergyInfoListener listener = mock(IOnUwbActivityEnergyInfoListener.class);
+        mUwbServiceCore.reportUwbActivityEnergyInfo(listener);
+        mTestLooper.dispatchAll();
+        verify(listener).onUwbActivityEnergyInfo(any());
     }
 
     public CccSpecificationParams getTestCccSpecificationParams() {
