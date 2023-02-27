@@ -435,7 +435,7 @@ public class NativeUwbManager {
      * @param chipId    : Identifier of UWB chip for multi-HAL devices
      * @return : Max application data size that can be sent by UWBS.
      */
-    public int queryDataSize(int sessionId, String chipId) {
+    public int queryMaxDataSizeBytes(int sessionId, String chipId) {
         synchronized (mNativeLock) {
             return nativeQueryDataSize(sessionId, chipId);
         }

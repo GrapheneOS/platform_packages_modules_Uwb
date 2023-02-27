@@ -2634,18 +2634,19 @@ public class UwbSessionManagerTest {
     public void testQueryDataSize() throws Exception {
         UwbSession uwbSession = prepareExistingUwbSession();
 
-        when(mNativeUwbManager.queryDataSize(eq(uwbSession.getSessionId()), eq(TEST_CHIP_ID)))
+        when(mNativeUwbManager.queryMaxDataSizeBytes(
+                eq(uwbSession.getSessionId()), eq(TEST_CHIP_ID)))
                 .thenReturn(MAX_DATA_SIZE);
-        assertThat(mUwbSessionManager.queryDataSize(uwbSession.getSessionHandle()))
+        assertThat(mUwbSessionManager.queryMaxDataSizeBytes(uwbSession.getSessionHandle()))
                 .isEqualTo(MAX_DATA_SIZE);
     }
 
     @Test
     public void testQueryDataSize_whenUwbSessionDoesNotExist() throws Exception {
         SessionHandle mockSessionHandle = mock(SessionHandle.class);
-        assertThat(mUwbSessionManager.queryDataSize(mockSessionHandle))
+        assertThat(mUwbSessionManager.queryMaxDataSizeBytes(mockSessionHandle))
                 .isEqualTo(UwbUciConstants.STATUS_CODE_ERROR_SESSION_NOT_EXIST);
-        verify(mNativeUwbManager, never()).queryDataSize(anyInt(), anyString());
+        verify(mNativeUwbManager, never()).queryMaxDataSizeBytes(anyInt(), anyString());
     }
 
     @Test
