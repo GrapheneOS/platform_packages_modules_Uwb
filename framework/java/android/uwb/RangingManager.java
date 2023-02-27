@@ -487,6 +487,9 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks.Stub {
             case RangingChangeReason.SYSTEM_POLICY:
                 return RangingSession.Callback.REASON_SYSTEM_POLICY;
 
+            case RangingChangeReason.SYSTEM_REGULATION:
+                return RangingSession.Callback.REASON_SYSTEM_REGULATION;
+
             case RangingChangeReason.REMOTE_REQUEST:
                 return RangingSession.Callback.REASON_REMOTE_REQUEST;
 
