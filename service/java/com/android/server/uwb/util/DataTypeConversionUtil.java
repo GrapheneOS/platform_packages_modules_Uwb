@@ -162,6 +162,21 @@ public class DataTypeConversionUtil {
         }
     }
 
+    /**
+     * Convert the byte array that contains a Short MacAddress format (2 bytes long), into an
+     * Extended MacAddress format (8 bytes long), by padding it with 6 MSB zeroed-out bytes.
+     */
+    public static byte[] convertShortMacAddressBytesToExtended(byte[] bytes) {
+        if (bytes.length == UWB_DEVICE_SHORT_MAC_ADDRESS_LEN) {
+            return ByteBuffer.allocate(UWB_DEVICE_EXT_MAC_ADDRESS_LEN).put(bytes).array();
+        } else if (bytes.length == UWB_DEVICE_EXT_MAC_ADDRESS_LEN) {
+            return bytes;
+        } else {
+            throw new NumberFormatException("Expected length one of (2, 8) but was "
+                    + bytes.length);
+        }
+    }
+
     // Check if the MSB bytes are zeroed out.
     private static boolean isExtendedMSBZeroedOut(byte[] bytes) {
         for (int i = UWB_DEVICE_SHORT_MAC_ADDRESS_LEN; i < UWB_DEVICE_EXT_MAC_ADDRESS_LEN; i++) {
