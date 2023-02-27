@@ -783,14 +783,14 @@ public final class RangingSession implements AutoCloseable {
      */
     @RequiresApi(UPSIDE_DOWN_CAKE)
     @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
-    public int queryDataSize() {
+    public int queryMaxDataSizeBytes() {
         if (mState != State.ACTIVE) {
             throw new IllegalStateException();
         }
 
-        Log.v(mTag, "QueryDataSize - sessionHandle: " + mSessionHandle);
+        Log.v(mTag, "QueryMaxDataSizeBytes - sessionHandle: " + mSessionHandle);
         try {
-            return mAdapter.queryDataSize(mSessionHandle);
+            return mAdapter.queryMaxDataSizeBytes(mSessionHandle);
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();
         }

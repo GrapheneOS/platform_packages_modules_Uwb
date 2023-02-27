@@ -973,9 +973,9 @@ public class UwbServiceCoreTest {
 
         SessionHandle sessionHandle = mock(SessionHandle.class);
 
-        when(mUwbSessionManager.queryDataSize(any())).thenReturn(MAX_DATA_SIZE);
-        mUwbServiceCore.queryDataSize(sessionHandle);
-        verify(mUwbSessionManager).queryDataSize(eq(sessionHandle));
+        when(mUwbSessionManager.queryMaxDataSizeBytes(any())).thenReturn(MAX_DATA_SIZE);
+        mUwbServiceCore.queryMaxDataSizeBytes(sessionHandle);
+        verify(mUwbSessionManager).queryMaxDataSizeBytes(eq(sessionHandle));
     }
 
     @Test
