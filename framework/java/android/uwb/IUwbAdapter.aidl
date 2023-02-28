@@ -361,7 +361,7 @@ interface IUwbAdapter {
    * Returns the max Application Data payload size that can be sent by the UWBS in one ranging
    * round.
    */
-  int queryDataSize(in SessionHandle sessionHandle);
+  int queryMaxDataSizeBytes(in SessionHandle sessionHandle);
 
   /**
    * The maximum allowed time to open a ranging session.
