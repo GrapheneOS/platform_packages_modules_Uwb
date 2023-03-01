@@ -523,7 +523,7 @@ impl<'a> TryFrom<SessionRangeDataWithEnv<'a>> for UwbRangingDataJni<'a> {
         ))?;
         let raw_notification_jbytearray =
             data_obj.env.byte_array_from_slice(&data_obj.session_range_data.raw_ranging_data)?;
-        // TODO(b/246678053): Check on using OwrAoa measurement class here.
+        // TODO(b/270443790): Check on using OwrAoa measurement class here.
 
         // Safety: raw_notification_jbytearray safely instantiated above.
         let raw_notification_jobject = unsafe { JObject::from_raw(raw_notification_jbytearray) };
@@ -653,7 +653,7 @@ impl<'a> TryFrom<RangingMeasurementsWithEnv<'a>> for UwbTwoWayMeasurementJni<'a>
                 EXTENDED_MAC_ADDRESS_LEN,
             ),
             // TODO(b/260495115): Re-work needed to handle DlTDoAShort and DlTDoAExtended.
-            // TODO(b/246678053): Handle OwrAoa (Short and Extended).
+            // TODO(b/270443790): Handle OwrAoa (Short and Extended).
             _ => todo!(),
         };
         let address_jbytearray = measurements_obj.env.new_byte_array(byte_arr_size)?;
