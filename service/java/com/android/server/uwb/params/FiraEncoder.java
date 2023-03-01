@@ -137,6 +137,7 @@ public class FiraEncoder extends TlvEncoder {
             tlvBufferBuilder.putByteArray(ConfigParam.SESSION_KEY, params.getSessionKey());
             if (stsConfig
                     == FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
+                tlvBufferBuilder.putInt(ConfigParam.SUB_SESSION_ID, params.getSubSessionId());
                 tlvBufferBuilder.putByteArray(ConfigParam.SUBSESSION_KEY,
                         params.getSubsessionKey());
             }
