@@ -2790,6 +2790,24 @@ public class UwbSessionManagerTest {
     }
 
     @Test
+    public void onSessionStatusNotification_session_deinit_after_close() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        when(mNativeUwbManager.deInitSession(eq(TEST_SESSION_ID), anyString()))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.deinitAllSession();
+        verify(mUwbSessionNotificationManager).onRangingClosedWithApiReasonCode(
+                eq(uwbSession), eq(RangingChangeReason.SYSTEM_POLICY));
+        verify(mUwbMetrics).logRangingCloseEvent(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
+        assertThat(mUwbSessionManager.getSessionCount()).isEqualTo(0);
+
+        // Ignore the stale deinit
+        mUwbSessionManager.handleOnDeInit(uwbSession);
+        verifyNoMoreInteractions(mUwbSessionNotificationManager);
+    }
+
+    @Test
     public void onSessionStatusNotification_session_deinit_owrAoa() throws Exception {
         UwbSession uwbSession = prepareExistingUwbSession();
         UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
