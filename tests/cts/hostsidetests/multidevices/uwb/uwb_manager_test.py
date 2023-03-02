@@ -174,6 +174,7 @@ class UwbManagerTest(uwb_base_test.UwbBaseTest):
     uwb_test_utils.set_uwb_state_and_verify(self.dut, True)
 
 if __name__ == "__main__":
-  index = sys.argv.index('--')
-  sys.argv = sys.argv[:1] + sys.argv[index + 1:]
+  if '--' in sys.argv:
+    index = sys.argv.index('--')
+    sys.argv = sys.argv[:1] + sys.argv[index + 1:]
   test_runner.main()
