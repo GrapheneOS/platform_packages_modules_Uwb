@@ -452,8 +452,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 return;
             }
         }
-        if (isExistedSession(sessionId)) {
-            Log.i(TAG, "Duplicated sessionId");
+        if (isExistedSession(sessionHandle) || isExistedSession(sessionId)) {
+            Log.i(TAG, "Duplicated session. SessionHandle: " + sessionHandle + ", SessionId: "
+                    + sessionId);
             rangingCallbacks.onRangingOpenFailed(sessionHandle, RangingChangeReason.BAD_PARAMETERS,
                     UwbSessionNotificationHelper.convertUciStatusToParam(protocolName,
                             UwbUciConstants.STATUS_CODE_ERROR_SESSION_DUPLICATE));
@@ -722,7 +723,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     }
 
     public synchronized void handleOnDeInit(UwbSession uwbSession) {
-        if (!isExistedSession(uwbSession.getSessionId())) {
+        if (!isExistedSession(uwbSession.getSessionHandle())) {
             Log.i(TAG, "onDeinit - Ignoring already deleted session "
                     + uwbSession.getSessionId());
             return;
