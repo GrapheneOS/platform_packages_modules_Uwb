@@ -1327,6 +1327,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mUlTdoaDeviceIdType = params.mUlTdoaDeviceIdType;
             mUlTdoaDeviceId = params.mUlTdoaDeviceId;
             mUlTdoaTxTimestampType = params.mUlTdoaTxTimestampType;
+            mFilterType = params.mFilterType;
         }
 
         public FiraOpenSessionParams.Builder setProtocolVersion(FiraProtocolVersion version) {
