@@ -49,6 +49,7 @@ python_test_host {
     data: [
         // Package the snippet with the mobly test
         ":uwb_snippet",
+	"requirements.txt",
     ],
     defaults: ["CtsUwbMultiDevicePythonDefaults"],
 }
@@ -74,6 +75,7 @@ python_test_host {
     data: [
         // Package the snippet with the mobly test
         ":uwb_snippet",
+	"requirements.txt",
     ],
     defaults: ["CtsUwbMultiDevicePythonDefaults"],
 }
