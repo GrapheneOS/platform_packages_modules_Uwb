@@ -105,7 +105,7 @@ import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MAX_MESSAG
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MAX_MESSAGE_SIZE_VER_2_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MAX_RANGING_SESSION_NUMBER;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MIN_RANGING_INTERVAL_MS;
-import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MIN_SLOT_DURATION;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MIN_SLOT_DURATION_RSTU;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MULTI_NODE_MODES_VER_1_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MULTI_NODE_MODES_VER_2_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_RANGE_DATA_NTF_CONFIG;
@@ -741,8 +741,8 @@ public class FiraDecoder extends TlvDecoder {
         }
 
         try {
-            int minSlotDuration = tlvs.getInt(SUPPORTED_MIN_SLOT_DURATION);
-            builder.setMinRangingIntervalSupported(minSlotDuration);
+            int minSlotDurationUs = TlvUtil.rstuToUs(tlvs.getInt(SUPPORTED_MIN_SLOT_DURATION_RSTU));
+            builder.setMinSlotDurationSupportedUs(minSlotDurationUs);
         } catch (IllegalArgumentException e) {
             Log.w(TAG, "SUPPORTED_MIN_SLOT_DURATION not found.");
         }
