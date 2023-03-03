@@ -25,15 +25,15 @@ _TEST_CASES = (
     "test_ranging_device_tracker_profile_reconfigure_ranging_interval",
     "test_ranging_nearby_share_profile_reconfigure_ranging_interval",
     "test_ranging_device_tracker_profile_no_aoa_report",
-    "test_ranging_nearby_share_profile_hopping_mode_enabled",
+    "test_ranging_nearby_share_profile_hopping_mode_disabled",
     "test_ranging_rr_ss_twr_deferred_device_tracker_profile",
     "test_ranging_rr_ss_twr_deferred_nearby_share_profile",
     "test_stop_initiator_ranging_device_tracker_profile",
     "test_stop_initiator_ranging_nearby_share_profile",
     "test_stop_responder_ranging_device_tracker_profile",
     "test_stop_responder_ranging_nearby_share_profile",
-    # "test_ranging_device_tracker_profile_with_airplane_mode_toggle",
-    # "test_ranging_nearby_share_profile_with_airplane_mode_toggle",
+    "test_ranging_device_tracker_profile_with_airplane_mode_toggle",
+    "test_ranging_nearby_share_profile_with_airplane_mode_toggle",
 )
 
 
@@ -216,6 +216,7 @@ class RangingTest(uwb_base_test.UwbBaseTest):
       initiator_params: ranging params for initiator.
       responder_params: ranging params for responder.
       peer_addr: address of uwb device.
+
     """
 
     # Verify ranging before APM toggle
@@ -225,14 +226,19 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     # Enable APM on initiator and verify callbacks
     initiator.clear_ranging_session_callback_events()
     responder.clear_ranging_session_callback_events()
+    callback = "uwb_state_%s" % random.randint(1, 100)
+    handler = initiator.ad.uwb.registerUwbAdapterStateCallback(callback)
     uwb_test_utils.set_airplane_mode(initiator.ad, True)
+    uwb_test_utils.verify_uwb_state_callback(initiator.ad, "Disabled", handler)
     initiator.verify_callback_received("Closed")
     responder.verify_callback_received(
         "Stopped", timeout=RESPONDER_STOP_CALLBACK_TIMEOUT)
 
     # Disable APM, restart and verify ranging
+    handler.getAll("UwbAdapterStateCallback")
     uwb_test_utils.set_airplane_mode(initiator.ad, False)
-    uwb_test_utils.verify_uwb_state_callback(initiator.ad, "Inactive")
+    uwb_test_utils.verify_uwb_state_callback(initiator.ad, "Inactive", handler)
+    initiator.ad.uwb.unregisterUwbAdapterStateCallback(callback)
     initiator.open_fira_ranging(initiator_params)
     initiator.start_fira_ranging()
     responder.start_fira_ranging()
@@ -240,12 +246,17 @@ class RangingTest(uwb_base_test.UwbBaseTest):
 
     # Enable APM on responder and verify callbacks
     responder.clear_ranging_session_callback_events()
+    callback = "uwb_state_%s" % random.randint(1, 100)
+    handler = responder.ad.uwb.registerUwbAdapterStateCallback(callback)
     uwb_test_utils.set_airplane_mode(responder.ad, True)
+    uwb_test_utils.verify_uwb_state_callback(responder.ad, "Disabled", handler)
     responder.verify_callback_received("Closed")
 
     # Disable APM, restart and verify ranging
+    handler.getAll("UwbAdapterStateCallback")
     uwb_test_utils.set_airplane_mode(responder.ad, False)
-    uwb_test_utils.verify_uwb_state_callback(responder.ad, "Inactive")
+    uwb_test_utils.verify_uwb_state_callback(responder.ad, "Inactive", handler)
+    responder.ad.uwb.unregisterUwbAdapterStateCallback(callback)
     responder.open_fira_ranging(responder_params)
     responder.start_fira_ranging()
     uwb_test_utils.verify_peer_found(initiator, peer_addr)
@@ -817,16 +828,15 @@ class RangingTest(uwb_base_test.UwbBaseTest):
       pass
 
   @records.uid("68c6e10c-749f-448b-b650-a1edaa56a833")
-  def test_ranging_nearby_share_profile_hopping_mode_enabled(self):
-    """Verifies ranging with nearby share profile with hopping mode enabled."""
+  def test_ranging_nearby_share_profile_hopping_mode_disabled(self):
+    """Verifies ranging with nearby share profile with hopping mode disabled."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
         device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
         device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
         device_address=self.initiator_addr,
         destination_addresses=[self.responder_addr],
         ranging_interval_ms=200,
-        hopping_mode=uwb_ranging_params.FiraParamEnums
-        .HOPPING_MODE_FIRA_HOPPING_ENABLE,
+        hopping_mode=uwb_ranging_params.FiraParamEnums.HOPPING_MODE_DISABLE,
         slots_per_ranging_round=20,
         initiation_time_ms=100,
         in_band_termination_attempt_count=3,
@@ -837,8 +847,7 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         device_address=self.responder_addr,
         destination_addresses=[self.initiator_addr],
         ranging_interval_ms=200,
-        hopping_mode=uwb_ranging_params.FiraParamEnums
-        .HOPPING_MODE_FIRA_HOPPING_ENABLE,
+        hopping_mode=uwb_ranging_params.FiraParamEnums.HOPPING_MODE_DISABLE,
         slots_per_ranging_round=20,
         initiation_time_ms=100,
         in_band_termination_attempt_count=3,
