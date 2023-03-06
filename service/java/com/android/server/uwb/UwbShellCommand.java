@@ -682,7 +682,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 .setPackageName(SHELL_PACKAGE_NAME)
                 .build();
         SessionHandle sessionHandle =
-                new SessionHandle(sSessionHandleIdNext, attributionSource, Process.myPid());
+                new SessionHandle(sSessionHandleIdNext++, attributionSource, Process.myPid());
         SessionInfo sessionInfo =
                 new SessionInfo(sessionId, sessionHandle, openRangingSessionParams, pw);
         mUwbService.openRanging(
