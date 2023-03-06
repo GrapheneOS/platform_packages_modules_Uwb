@@ -26,6 +26,7 @@ import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilit
 import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_ENABLE;
 
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -278,6 +279,26 @@ public class UwbShellCommandTest {
         triggerAndVerifyRangingStart(
                 new String[]{"start-fira-ranging-session"},
                 DEFAULT_FIRA_OPEN_SESSION_PARAMS.build());
+    }
+
+    @Test
+    public void testStartFiraRangingUsesUniqueSessionHandle() throws Exception {
+        FiraOpenSessionParams.Builder openSessionParamsBuilder =
+                new FiraOpenSessionParams.Builder(DEFAULT_FIRA_OPEN_SESSION_PARAMS);
+
+        openSessionParamsBuilder.setSessionId(1);
+        Pair<IUwbRangingCallbacks, SessionHandle> cbAndSessionHandle1 =
+                triggerAndVerifyRangingStart(
+                        new String[]{"start-fira-ranging-session", "-i", "1"},
+                        openSessionParamsBuilder.build());
+        clearInvocations(mUwbService);
+
+        openSessionParamsBuilder.setSessionId(2);
+        Pair<IUwbRangingCallbacks, SessionHandle> cbAndSessionHandle2 =
+                triggerAndVerifyRangingStart(
+                        new String[]{"start-fira-ranging-session", "-i", "2"},
+                        openSessionParamsBuilder.build());
+        assertThat(cbAndSessionHandle1.second).isNotEqualTo(cbAndSessionHandle2.second);
     }
 
     @Test
