@@ -58,6 +58,7 @@ public class UwbServiceImpl {
         if (mHasUwbFeature) {
             mUwbManager = context.getSystemService(UwbManager.class);
             requireNonNull(mUwbManager);
+            mAdapterState = mUwbManager.getAdapterState();
             mUwbManager.registerAdapterStateCallback(mSerialExecutor, mAdapterStateCallback);
         } else {
             mUwbManager = null;
