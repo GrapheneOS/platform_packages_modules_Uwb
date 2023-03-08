@@ -79,3 +79,29 @@ python_test_host {
     ],
     defaults: ["CtsUwbMultiDevicePythonDefaults"],
 }
+
+python_test_host {
+    name: "CtsUwbMultiDeviceTestCase_ProvisionedStsRangingTests",
+    main: "provisioned_sts_ranging_test.py",
+    srcs: [
+        "provisioned_sts_ranging_test.py",
+        "lib/uwb_base_test.py",
+        "lib/uwb_ranging_decorator.py",
+        "lib/uwb_ranging_params.py",
+        "test_utils/uwb_test_utils.py",
+    ],
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    test_config: "ProvisionedStsRangingTests/AndroidTest.xml",
+    test_options: {
+        unit_test: false,
+    },
+    data: [
+        // Package the snippet with the mobly test
+        ":uwb_snippet",
+        "requirements.txt",
+    ],
+    defaults: ["CtsUwbMultiDevicePythonDefaults"],
+}
