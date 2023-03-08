@@ -3,6 +3,7 @@
 import time
 from typing import List
 
+from mobly import asserts
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 
@@ -52,9 +53,6 @@ class UwbRangingDecorator():
       ranging_event: Expected ranging event.
       session: ranging session.
       timeout: callback timeout.
-
-    Raises:
-      TimeoutError: if the expected callback event is not received.
     """
     handler = self._event_handlers[session]
     start_time = time.time()
@@ -71,7 +69,7 @@ class UwbRangingDecorator():
           return
       except TimeoutError:
         self.log.warn("Failed to receive 'RangingSessionCallback' event")
-    raise TimeoutError("Failed to receive '%s' event" % ranging_event)
+    asserts.fail("Failed to receive '%s' event" % ranging_event)
 
   def open_fira_ranging(self,
                         params: uwb_ranging_params.UwbRangingParams,
