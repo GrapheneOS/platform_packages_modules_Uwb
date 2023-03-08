@@ -481,7 +481,7 @@ public class UwbInjector {
         try {
             // Keep our ref counts accurate because isEnableFilters can change at runtime.
             --mPoseSourceRefCount;
-            if (mPoseSourceRefCount <= 0) {
+            if (mPoseSourceRefCount <= 0 && mDefaultPoseSource != null) {
                 mDefaultPoseSource.close();
                 mDefaultPoseSource = null;
             }
