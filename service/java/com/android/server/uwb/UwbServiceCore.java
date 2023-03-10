@@ -834,7 +834,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                 for (String chipId : mUwbInjector.getMultichipData().getChipIds()) {
                     updateDeviceState(UwbUciConstants.DEVICE_STATE_OFF, chipId);
                 }
-                executeUnique(TASK_NOTIFY_ADAPTER_STATE,
+                notifyAdapterState(
                         getAdapterStateFromDeviceState(UwbUciConstants.DEVICE_STATE_OFF),
                         getReasonFromDeviceState(UwbUciConstants.DEVICE_STATE_OFF));
             } finally {
