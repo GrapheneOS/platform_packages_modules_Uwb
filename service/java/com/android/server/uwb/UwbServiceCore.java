@@ -834,7 +834,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                 for (String chipId : mUwbInjector.getMultichipData().getChipIds()) {
                     updateDeviceState(UwbUciConstants.DEVICE_STATE_OFF, chipId);
                 }
-                executeUnique(TASK_NOTIFY_ADAPTER_STATE,
+                notifyAdapterState(
                         getAdapterStateFromDeviceState(UwbUciConstants.DEVICE_STATE_OFF),
                         getReasonFromDeviceState(UwbUciConstants.DEVICE_STATE_OFF));
             } finally {
@@ -964,9 +964,13 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                     + " rxIdleTimeMillis=" + stats.getIdleTimeMs()
                     + " wake_count=" + stats.getTotalWakeCount());
 
-            return new UwbActivityEnergyInfo.Builder(SystemClock.elapsedRealtime(),
-                    getAdapterState(), stats.getTxTimeMs(), stats.getRxTimeMs(),
-                    stats.getIdleTimeMs(), stats.getTotalWakeCount())
+            return new UwbActivityEnergyInfo.Builder()
+                    .setTimeSinceBootMillis(SystemClock.elapsedRealtime())
+                    .setStackState(getAdapterState())
+                    .setControllerTxDurationMillis(stats.getTxTimeMs())
+                    .setControllerRxDurationMillis(stats.getRxTimeMs())
+                    .setControllerIdleDurationMillis(stats.getIdleTimeMs())
+                    .setControllerWakeCount(stats.getTotalWakeCount())
                     .build();
         } catch (Exception e) {
             e.printStackTrace();

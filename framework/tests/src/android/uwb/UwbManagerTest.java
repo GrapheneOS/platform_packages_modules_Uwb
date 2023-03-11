@@ -36,7 +36,6 @@ import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.uwb.UwbManager.AdapterStateCallback;
 import android.uwb.UwbManager.AdfProvisionStateCallback;
-import android.uwb.UwbManager.OnUwbActivityEnergyInfoListener;
 import android.uwb.UwbManager.UwbVendorUciCallback;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -50,6 +49,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 /**
  * Test of {@link UwbManager}.
@@ -273,7 +273,7 @@ public class UwbManagerTest {
 
     @Test
     public void testGetUwbActivityEnergyInfoAsync() throws Exception {
-        OnUwbActivityEnergyInfoListener listener = mock(OnUwbActivityEnergyInfoListener.class);
+        Consumer<UwbActivityEnergyInfo> listener = mock(Consumer.class);
         // null Executor
         assertThrows(NullPointerException.class,
                 () -> mUwbManager.getUwbActivityEnergyInfoAsync(null, listener));

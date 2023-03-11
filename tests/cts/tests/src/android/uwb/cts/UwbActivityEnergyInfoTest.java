@@ -47,8 +47,25 @@ public class UwbActivityEnergyInfoTest {
 
     @Test
     public void testBuilder() {
-        UwbActivityEnergyInfo.Builder builder = new UwbActivityEnergyInfo.Builder(TIMESTAMP_MS,
-                STACK_STATE, TX_DURATION_MS, RX_DURATION_MS, IDLE_DURATION_MS, WAKE_COUNT);
+        UwbActivityEnergyInfo.Builder builder = new UwbActivityEnergyInfo.Builder();
+        tryBuild(builder, false);
+
+        builder.setTimeSinceBootMillis(TIMESTAMP_MS);
+        tryBuild(builder, false);
+
+        builder.setStackState(STACK_STATE);
+        tryBuild(builder, false);
+
+        builder.setControllerTxDurationMillis(TX_DURATION_MS);
+        tryBuild(builder, false);
+
+        builder.setControllerRxDurationMillis(RX_DURATION_MS);
+        tryBuild(builder, false);
+
+        builder.setControllerIdleDurationMillis(IDLE_DURATION_MS);
+        tryBuild(builder, false);
+
+        builder.setControllerWakeCount(WAKE_COUNT);
         UwbActivityEnergyInfo info = tryBuild(builder, true);
 
         assertEquals(TIMESTAMP_MS, info.getTimeSinceBootMillis());
@@ -77,25 +94,20 @@ public class UwbActivityEnergyInfoTest {
 
     @Test
     public void testInvalidParams() throws Exception {
-        assertThrows(IllegalArgumentException.class,
-                () -> new UwbActivityEnergyInfo.Builder(-1, STACK_STATE, TX_DURATION_MS,
-                        RX_DURATION_MS, IDLE_DURATION_MS, WAKE_COUNT));
-        assertThrows(IllegalArgumentException.class,
-                () -> new UwbActivityEnergyInfo.Builder(TIMESTAMP_MS, -1, TX_DURATION_MS,
-                        RX_DURATION_MS, IDLE_DURATION_MS, WAKE_COUNT));
-        assertThrows(IllegalArgumentException.class,
-                () -> new UwbActivityEnergyInfo.Builder(TIMESTAMP_MS, STACK_STATE, -1,
-                        RX_DURATION_MS, IDLE_DURATION_MS, WAKE_COUNT));
-        assertThrows(IllegalArgumentException.class,
-                () -> new UwbActivityEnergyInfo.Builder(TIMESTAMP_MS, STACK_STATE, TX_DURATION_MS,
-                        -1, IDLE_DURATION_MS, WAKE_COUNT));
-        assertThrows(IllegalArgumentException.class,
-                () -> new UwbActivityEnergyInfo.Builder(TIMESTAMP_MS, STACK_STATE, TX_DURATION_MS,
-                        RX_DURATION_MS, -1, WAKE_COUNT));
-        assertThrows(IllegalArgumentException.class,
-                () -> new UwbActivityEnergyInfo.Builder(TIMESTAMP_MS, STACK_STATE, TX_DURATION_MS,
-                        RX_DURATION_MS, IDLE_DURATION_MS, -1));
+        UwbActivityEnergyInfo.Builder builder = new UwbActivityEnergyInfo.Builder();
 
+        assertThrows(IllegalArgumentException.class,
+                () -> builder.setTimeSinceBootMillis(-1));
+        assertThrows(IllegalArgumentException.class,
+                () -> builder.setStackState(-1));
+        assertThrows(IllegalArgumentException.class,
+                () -> builder.setControllerTxDurationMillis(-1));
+        assertThrows(IllegalArgumentException.class,
+                () -> builder.setControllerRxDurationMillis(-1));
+        assertThrows(IllegalArgumentException.class,
+                () -> builder.setControllerIdleDurationMillis(-1));
+        assertThrows(IllegalArgumentException.class,
+                () -> builder.setControllerWakeCount(-1));
     }
 
     @Test

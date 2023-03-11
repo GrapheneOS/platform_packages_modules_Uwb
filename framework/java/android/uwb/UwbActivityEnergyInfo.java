@@ -103,14 +103,13 @@ public final class UwbActivityEnergyInfo implements Parcelable {
             new Creator<UwbActivityEnergyInfo>() {
                 @Override
                 public UwbActivityEnergyInfo createFromParcel(Parcel in) {
-                    long timestamp = in.readLong();
-                    int stackState = in.readInt();
-                    long txTime = in.readLong();
-                    long rxTime = in.readLong();
-                    long idleTime = in.readLong();
-                    long wakeCount = in.readLong();
-                    Builder builder = new Builder(timestamp, stackState, txTime,
-                            rxTime, idleTime, wakeCount);
+                    Builder builder = new Builder();
+                    builder.setTimeSinceBootMillis(in.readLong());
+                    builder.setStackState(in.readInt());
+                    builder.setControllerTxDurationMillis(in.readLong());
+                    builder.setControllerRxDurationMillis(in.readLong());
+                    builder.setControllerIdleDurationMillis(in.readLong());
+                    builder.setControllerWakeCount(in.readLong());
                     return builder.build();
                 }
                 @Override
@@ -174,62 +173,141 @@ public final class UwbActivityEnergyInfo implements Parcelable {
      * Builder for a {@link UwbActivityEnergyInfo} object.
      */
     public static final class Builder {
-        private final long mTimeSinceBootMillis;
-        private final @State int mStackState;
-        private final long mControllerTxDurationMillis;
-        private final long mControllerRxDurationMillis;
-        private final long mControllerIdleDurationMillis;
-        private final long mControllerWakeCount;
+        private long mTimeSinceBootMillis = -1L;
+        private int mStackState = -1;
+        private long mControllerTxDurationMillis = -1L;
+        private long mControllerRxDurationMillis = -1L;
+        private long mControllerIdleDurationMillis = -1L;
+        private long mControllerWakeCount = -1L;
 
         /**
-         * Construct a new builder for the {@link UwbActivityEnergyInfo} object
+         * Set the timestamp (elapsed real time milliseconds since boot) of record creation.
+         *
          * @param timeSinceBootMillis the elapsed real time since boot, in milliseconds
-         * @param stackState the current state of the Uwb Stack
-         * @param txDurationMillis cumulative milliseconds of active transmission
-         * @param rxDurationMillis cumulative milliseconds of active receive
-         * @param idleDurationMillis cumulative milliseconds when radio is awake but not
-         *                           transmitting or receiving
-         * @param wakeCount cumulative number of wakeup count for the radio
          */
-        public Builder(@ElapsedRealtimeLong long timeSinceBootMillis,
-                @State int stackState,
-                @IntRange(from = 0) long txDurationMillis,
-                @IntRange(from = 0) long rxDurationMillis,
-                @IntRange(from = 0) long idleDurationMillis,
-                @IntRange(from = 0) long wakeCount) {
+        @NonNull
+        public Builder setTimeSinceBootMillis(@ElapsedRealtimeLong long timeSinceBootMillis) {
             if (timeSinceBootMillis < 0) {
                 throw new IllegalArgumentException("timeSinceBootMillis must be >= 0");
             }
+            mTimeSinceBootMillis = timeSinceBootMillis;
+            return this;
+        }
+
+        /**
+         * Set the Uwb stack reported state.
+         *
+         * @param stackState Uwb stack reported state
+         */
+        @NonNull
+        public Builder setStackState(@State int stackState) {
             if (stackState != UwbManager.AdapterStateCallback.STATE_DISABLED
                     && stackState != UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE
                     && stackState != UwbManager.AdapterStateCallback.STATE_ENABLED_ACTIVE) {
                 throw new IllegalArgumentException("invalid UWB stack state");
             }
+            mStackState = stackState;
+            return this;
+        }
+
+        /**
+         * Set the Uwb transmission duration, in milliseconds.
+         *
+         * @param txDurationMillis cumulative milliseconds of active transmission
+         */
+        @NonNull
+        public Builder setControllerTxDurationMillis(@IntRange(from = 0) long txDurationMillis) {
             if (txDurationMillis < 0) {
                 throw new IllegalArgumentException("txDurationMillis must be >= 0");
             }
+            mControllerTxDurationMillis = txDurationMillis;
+            return this;
+        }
+
+        /**
+         * Set the Uwb receive duration, in milliseconds.
+         *
+         * @param rxDurationMillis cumulative milliseconds of active receive
+         */
+        @NonNull
+        public Builder setControllerRxDurationMillis(@IntRange(from = 0) long rxDurationMillis) {
             if (rxDurationMillis < 0) {
                 throw new IllegalArgumentException("rxDurationMillis must be >= 0");
             }
+            mControllerRxDurationMillis = rxDurationMillis;
+            return this;
+        }
+
+        /**
+         * Set the Uwb idle duration, in milliseconds.
+         *
+         * @param idleDurationMillis cumulative milliseconds when radio is awake but not
+         *                           transmitting or receiving
+         */
+        @NonNull
+        public Builder setControllerIdleDurationMillis(
+                @IntRange(from = 0) long idleDurationMillis) {
             if (idleDurationMillis < 0) {
                 throw new IllegalArgumentException("idleDurationMillis must be >= 0");
             }
+            mControllerIdleDurationMillis = idleDurationMillis;
+            return this;
+        }
+
+        /**
+         * Set the Uwb wakeup count.
+         *
+         * @param wakeCount cumulative number of wakeup count for the radio
+         */
+        @NonNull
+        public Builder setControllerWakeCount(@IntRange(from = 0) long wakeCount) {
             if (wakeCount < 0) {
                 throw new IllegalArgumentException("wakeCount must be >= 0");
             }
-            mTimeSinceBootMillis = timeSinceBootMillis;
-            mStackState = stackState;
-            mControllerTxDurationMillis = txDurationMillis;
-            mControllerRxDurationMillis = rxDurationMillis;
-            mControllerIdleDurationMillis = idleDurationMillis;
             mControllerWakeCount = wakeCount;
+            return this;
         }
 
         /**
          * Build the {@link UwbActivityEnergyInfo} object
+         *
+         * @throws IllegalStateException if timeSinceBootMillis, stackState, txDurationMillis,
+         *                               rxDurationMillis, idleDurationMillis or wakeCount
+         *                               is invalid
          */
         @NonNull
         public UwbActivityEnergyInfo build() {
+            if (mTimeSinceBootMillis < 0) {
+                throw new IllegalStateException(
+                        "timeSinceBootMillis must be >= 0: " + mTimeSinceBootMillis);
+            }
+
+            if (mStackState != UwbManager.AdapterStateCallback.STATE_DISABLED
+                    && mStackState != UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE
+                    && mStackState != UwbManager.AdapterStateCallback.STATE_ENABLED_ACTIVE) {
+                throw new IllegalStateException("invalid UWB stack state");
+            }
+
+            if (mControllerTxDurationMillis < 0) {
+                throw new IllegalStateException(
+                        "txDurationMillis must be >= 0: " + mControllerTxDurationMillis);
+            }
+
+            if (mControllerRxDurationMillis < 0) {
+                throw new IllegalStateException(
+                        "rxDurationMillis must be >= 0: " + mControllerRxDurationMillis);
+            }
+
+            if (mControllerIdleDurationMillis < 0) {
+                throw new IllegalStateException(
+                        "idleDurationMillis must be >= 0: " + mControllerIdleDurationMillis);
+            }
+
+            if (mControllerWakeCount < 0) {
+                throw new IllegalStateException(
+                        "wakeCount must be >= 0: " + mControllerWakeCount);
+            }
+
             return new UwbActivityEnergyInfo(mTimeSinceBootMillis, mStackState,
                     mControllerTxDurationMillis, mControllerRxDurationMillis,
                     mControllerIdleDurationMillis, mControllerWakeCount);
