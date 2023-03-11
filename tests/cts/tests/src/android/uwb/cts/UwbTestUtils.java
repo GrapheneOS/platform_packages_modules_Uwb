@@ -104,9 +104,13 @@ public class UwbTestUtils {
     }
 
     public static UwbActivityEnergyInfo getUwbActivityEnergyInfo() {
-        return new UwbActivityEnergyInfo.Builder(10000,
-                UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
-                10, 20, 300, 50)
+        return new UwbActivityEnergyInfo.Builder()
+                .setTimeSinceBootMillis(10000)
+                .setStackState(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE)
+                .setControllerTxDurationMillis(10)
+                .setControllerRxDurationMillis(20)
+                .setControllerIdleDurationMillis(300)
+                .setControllerWakeCount(50)
                 .build();
     }
 
