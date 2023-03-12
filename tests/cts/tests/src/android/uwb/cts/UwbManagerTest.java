@@ -86,6 +86,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * Test of {@link UwbManager}.
@@ -1737,7 +1738,7 @@ public class UwbManagerTest {
     }
 
     private static class OnUwbActivityEnergyInfoListener implements
-            UwbManager.OnUwbActivityEnergyInfoListener {
+            Consumer<UwbActivityEnergyInfo> {
         private final CountDownLatch mCountDownLatch;
         public UwbActivityEnergyInfo mPowerStats;
         public boolean mIsListenerInvoked = false;
@@ -1747,7 +1748,7 @@ public class UwbManagerTest {
         }
 
         @Override
-        public void onUwbActivityEnergyInfo(UwbActivityEnergyInfo info) {
+        public void accept(UwbActivityEnergyInfo info) {
             mIsListenerInvoked = true;
             mPowerStats = info;
             mCountDownLatch.countDown();
