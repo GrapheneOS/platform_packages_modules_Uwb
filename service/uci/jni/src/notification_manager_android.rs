@@ -37,7 +37,7 @@ use uwb_core::uci::{
 use uwb_uci_packets::{
     ControleeStatus, ExtendedAddressDlTdoaRangingMeasurement,
     ExtendedAddressOwrAoaRangingMeasurement, ExtendedAddressTwoWayRangingMeasurement,
-    MacAddressIndicator, OwrAoaStatusCode, RangingMeasurementType, ReasonCode, SessionState,
+    MacAddressIndicator, OwrAoaStatusCode, RangingMeasurementType, SessionState,
     ShortAddressDlTdoaRangingMeasurement, ShortAddressOwrAoaRangingMeasurement,
     ShortAddressTwoWayRangingMeasurement, StatusCode,
 };
@@ -354,7 +354,7 @@ impl NotificationManagerAndroid {
         &mut self,
         session_id: u32,
         session_state: SessionState,
-        reason_code: ReasonCode,
+        reason_code: u8,
     ) -> Result<()> {
         self.cached_jni_call(
             "onSessionStatusNotificationReceived",
