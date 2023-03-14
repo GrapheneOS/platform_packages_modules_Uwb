@@ -81,4 +81,33 @@
     <!-- Sets how long reports with an error code will be replaced with predicted reports, in
      seconds. This is measured from the time of the last non-error report. -->
     <integer name="prediction_timeout_seconds">5</integer>
+
+    <!-- The Advertising Profile AoA Criteria Angle. This is the threshold with which the
+    Azimuth and Elevation values (from received OwrAoa measurements) are compared, to determine if
+    the IoT device is being pointed to by the phone. -->
+    <integer name="advertise_aoa_criteria_angle">10</integer>
+
+    <!-- The Advertising profile time threshold (for the received Owr Aoa Measurements). This
+    parameter controls the time window during which the received OwrAoa measurements are considered
+    to be valid (for determining if the IoT device is being pointed to). -->
+    <integer name="advertise_time_threshold_millis">5000</integer>
+
+    <!-- The Advertising profile array size. This controls the number of received Owr Aoa
+    measurements (or derived values), that will be stored. -->
+    <integer name="advertise_array_size_to_check">10</integer>
+
+    <!-- The Advertising profile array start index, for the stored values from Owr Aoa
+    measurements. Only the stored values at index >= the array start index will be used in the
+    Azimuth/Elevation variance calculation. -->
+    <integer name="advertise_array_start_index_to_cal_variance">2</integer>
+
+    <!-- The Advertising profile array end index, for the stored values from Owr Aoa
+    measurements. Only the stored values at index < the array end index will be used in the
+    Azimuth/Elevation variance calculation. -->
+    <integer name="advertise_array_end_index_to_cal_variance">8</integer>
+
+    <!-- The Advertising profile trusted variance value. This is the threshold within which the
+    computed Azimuth/Elevation variance values (from the received OwrAoa measurements)
+    is acceptable. -->
+    <integer name="advertise_trusted_variance_value">5</integer>
 </resources>
