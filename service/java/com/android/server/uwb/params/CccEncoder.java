@@ -60,7 +60,7 @@ public class CccEncoder extends TlvEncoder {
                 break;
         }
 
-        TlvBuffer tlvBuffer = new TlvBuffer.Builder()
+        TlvBuffer.Builder tlvBufferBuilder = new TlvBuffer.Builder()
                 .putByte(ConfigParam.DEVICE_TYPE,
                         (byte) UwbUciConstants.DEVICE_TYPE_CONTROLLER) // DEVICE_TYPE
                 .putByte(ConfigParam.STS_CONFIG,
@@ -92,9 +92,11 @@ public class CccEncoder extends TlvEncoder {
                 .putShort(ConfigParam.SLOT_DURATION,
                         (short) (params.getNumChapsPerSlot() * 400)) // SLOT_DURATION
                 .putByte(ConfigParam.PREAMBLE_CODE_INDEX,
-                        (byte) params.getSyncCodeIndex()) // PREAMBLE_CODE_INDEX
-                .build();
-
-        return tlvBuffer;
+                        (byte) params.getSyncCodeIndex()); // PREAMBLE_CODE_INDEX
+        if (params.getLastStsIndexUsed() != CccParams.LAST_STS_INDEX_USED_UNSET) {
+            tlvBufferBuilder.putInt(
+                    ConfigParam.LAST_STS_INDEX_USED, params.getLastStsIndexUsed());
+        }
+        return tlvBufferBuilder.build();
     }
 }
