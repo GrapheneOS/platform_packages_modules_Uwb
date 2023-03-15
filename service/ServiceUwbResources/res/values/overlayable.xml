@@ -31,6 +31,7 @@
             <item name="enable_primer_est_elevation" type="bool" />
             <item name="enable_primer_aoa" type="bool" />
             <item name="primer_fov_degrees" type="integer" />
+            <item name="prediction_timeout_seconds" type="integer" />
           <!-- Params from config.xml that can be overlaid -->
 
           <!-- Params from strings.xml that can be overlaid -->
