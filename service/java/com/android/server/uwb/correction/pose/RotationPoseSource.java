@@ -61,6 +61,9 @@ public class RotationPoseSource extends PoseSourceBase implements SensorEventLis
             throw new InvalidParameterException("Invalid interval.");
         }
         mSensorManager = context.getSystemService(SensorManager.class);
+        if (mSensorManager == null) {
+            throw new UnsupportedOperationException("Sensor manager is not available.");
+        }
         mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
         if (mSensor == null) {
             throw new UnsupportedOperationException("Device does not support the rotation vector.");

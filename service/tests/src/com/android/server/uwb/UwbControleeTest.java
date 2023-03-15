@@ -20,9 +20,6 @@ import static android.uwb.RangingMeasurement.RANGING_STATUS_SUCCESS;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import android.uwb.AngleMeasurement;
 import android.uwb.AngleOfArrivalMeasurement;
 import android.uwb.DistanceMeasurement;
@@ -40,19 +37,16 @@ import org.mockito.Mock;
 public class UwbControleeTest {
     public static final UwbAddress UWB_ADDRESS = UwbAddress.fromBytes(new byte[] {1, 2});
     @Mock
-    UwbSessionManager.UwbSession mSession;
-    UwbFilterEngine mEngine;
     UwbControlee mControlee;
 
     @Before
     public void setUp() {
         UwbFilterEngine.Builder builder = new UwbFilterEngine.Builder();
-        mEngine = builder.build();
-        mSession = mock(UwbSessionManager.UwbSession.class);
-        when(mSession.createFilterEngine()).thenReturn(mEngine);
+        UwbFilterEngine engine = builder.build();
         mControlee = new UwbControlee(
                 UWB_ADDRESS,
-                mSession);
+                engine,
+                null);
     }
 
     @After
@@ -63,11 +57,6 @@ public class UwbControleeTest {
     @Test
     public void testGetUwbAddress() {
         assertThat(mControlee.getUwbAddress()).isEqualTo(UWB_ADDRESS);
-    }
-
-    @Test
-    public void testGetSession() {
-        assertThat(mControlee.getSession()).isEqualTo(mSession);
     }
 
     @Test

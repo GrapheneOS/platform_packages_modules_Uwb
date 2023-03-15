@@ -15,6 +15,7 @@
  */
 package com.android.server.uwb.correction;
 
+import android.os.Build;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -24,6 +25,7 @@ import com.android.server.uwb.correction.filtering.IPositionFilter;
 import com.android.server.uwb.correction.math.Pose;
 import com.android.server.uwb.correction.math.SphericalVector;
 import com.android.server.uwb.correction.pose.IPoseSource;
+import com.android.server.uwb.correction.pose.PoseEventListener;
 import com.android.server.uwb.correction.primers.IPrimer;
 
 import java.time.Instant;
@@ -35,11 +37,16 @@ import java.util.Objects;
  * Consumes raw UWB values and outputs filtered UWB values. See the {@link UwbFilterEngine.Builder}
  * for how it is configured.
  */
-public class UwbFilterEngine implements AutoCloseable {
-    public static final boolean ENABLE_BIG_LOG = false;
+public class UwbFilterEngine implements AutoCloseable, PoseEventListener {
+    public static final String BIG_LOG_TAG = "UwbFilterEngine";
     @NonNull private final List<IPrimer> mPrimers;
     @Nullable private final IPositionFilter mFilter;
     @Nullable private final IPoseSource mPoseSource;
+    private static boolean sDebug = false;
+
+    static {
+        sDebug = Build.TYPE.equals("userdebug");
+    }
 
     /**
      * The last UWB reading, after priming or filtering, depending on which facilities
@@ -57,6 +64,10 @@ public class UwbFilterEngine implements AutoCloseable {
         this.mPrimers = primers;
         this.mPoseSource = poseSource;
         this.mFilter = filter;
+        if (poseSource != null) {
+            // A listener must be registered in order for the poseSource to start.
+            poseSource.registerListener(this);
+        }
     }
 
     /**
@@ -73,7 +84,7 @@ public class UwbFilterEngine implements AutoCloseable {
      * @param instant The instant at which the UWB value was received.
      */
     public void add(@NonNull SphericalVector.Sparse position, Instant instant) {
-        StringBuilder bigLog = ENABLE_BIG_LOG ? new StringBuilder(position.toString()) : null;
+        StringBuilder bigLog = sDebug ? new StringBuilder(position.toString()) : null;
         Objects.requireNonNull(position);
         Objects.requireNonNull(instant);
 
@@ -108,7 +119,7 @@ public class UwbFilterEngine implements AutoCloseable {
             }
         }
         if (bigLog != null) {
-            Log.d("RAW", bigLog.toString());
+            Log.d(BIG_LOG_TAG, bigLog.toString());
         }
     }
 
@@ -159,7 +170,23 @@ public class UwbFilterEngine implements AutoCloseable {
     public void close() {
         if (!mClosed) {
             mClosed = true;
+            if (mPoseSource != null) {
+                mPoseSource.unregisterListener(this);
+            }
         }
+    }
+
+    /**
+     * Called when there is an update to the device's pose. The origin is arbitrary, but
+     * position could be relative to the starting position, and rotation could be relative
+     * to magnetic north and the direction of gravity.
+     *
+     * @param pose The new location and orientation of the device.
+     */
+    @Override
+    public void onPoseChanged(@SuppressWarnings("unused") @NonNull Pose pose) {
+        // We don't use pose change as they happen at this point. If you're implementing UWB
+        // oversampling, this might be a good place to call compute() and produce a result.
     }
 
     /**
@@ -194,7 +221,7 @@ public class UwbFilterEngine implements AutoCloseable {
 
         /**
          * Adds a primer to the list of primers the engine will use. The primers will execute
-         * in the order in which {@link #addPrimer(IPrimer)} was called.
+         * in the order in which this is called.
          * @param primer The primer to add.
          * @return This builder.
          */
