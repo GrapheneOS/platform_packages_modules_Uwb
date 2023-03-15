@@ -61,7 +61,7 @@ public class DeviceConfigFacadeTest {
     private MockitoSession mSession;
 
     /**
-     * Setup the mocks and an instance of WifiConfigManager before each test.
+     * Setup the mocks and an instance of DeviceConfig before each test.
      */
     @Before
     public void setUp() throws Exception {
@@ -112,6 +112,8 @@ public class DeviceConfigFacadeTest {
                 .thenReturn(5);
         when(mResources.getString(R.string.pose_source_type))
                 .thenReturn("ROTATION_VECTOR");
+        when(mResources.getInteger(R.integer.prediction_timeout_seconds))
+                .thenReturn(6);
 
         when(mContext.getResources()).thenReturn(mResources);
 
@@ -151,6 +153,7 @@ public class DeviceConfigFacadeTest {
         assertEquals(4, mDeviceConfigFacade.getFilterAngleWindow());
         assertEquals(5, mDeviceConfigFacade.getPrimerFovDegree());
         assertEquals(PoseSourceType.ROTATION_VECTOR, mDeviceConfigFacade.getPoseSourceType());
+        assertEquals(6, mDeviceConfigFacade.getPredictionTimeoutSeconds());
 
         // true because FOV is 5: within limits.
         assertEquals(true, mDeviceConfigFacade.isEnablePrimerFov());
@@ -188,6 +191,8 @@ public class DeviceConfigFacadeTest {
                 anyInt())).thenReturn(0);
         when(DeviceConfig.getString(anyString(), eq("pose_source_type"),
                 anyString())).thenReturn("NONE");
+        when(DeviceConfig.getInt(anyString(), eq("prediction_timeout_seconds"),
+                anyInt())).thenReturn(5);
 
         mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
 
@@ -205,6 +210,7 @@ public class DeviceConfigFacadeTest {
         assertEquals(9, mDeviceConfigFacade.getFilterAngleWindow());
         assertEquals(0, mDeviceConfigFacade.getPrimerFovDegree());
         assertEquals(PoseSourceType.NONE, mDeviceConfigFacade.getPoseSourceType());
+        assertEquals(5, mDeviceConfigFacade.getPredictionTimeoutSeconds());
 
         // false because FOV is 0.
         assertEquals(false, mDeviceConfigFacade.isEnablePrimerFov());
