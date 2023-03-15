@@ -48,6 +48,9 @@ public class UwbSessionNotificationHelper {
             case UwbUciConstants.REASON_ERROR_INVALID_RFRAME_CONFIG:
                 rangingChangeReason = RangingChangeReason.BAD_PARAMETERS;
                 break;
+            case UwbUciConstants.REASON_REGULATION_UWB_OFF:
+                rangingChangeReason = RangingChangeReason.SYSTEM_REGULATION;
+                break;
         }
         return rangingChangeReason;
     }

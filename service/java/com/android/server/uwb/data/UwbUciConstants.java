@@ -18,6 +18,8 @@ package com.android.server.uwb.data;
 import static android.hardware.uwb.fira_android.UwbVendorStatusCodes.STATUS_ERROR_CCC_LIFECYCLE;
 import static android.hardware.uwb.fira_android.UwbVendorStatusCodes.STATUS_ERROR_CCC_SE_BUSY;
 
+import android.hardware.uwb.fira_android.UwbVendorReasonCodes;
+
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.fira.FiraParams;
 
@@ -66,6 +68,9 @@ public class UwbUciConstants {
     public static final int REASON_ERROR_INVALID_RANGING_INTERVAL = 0x23;
     public static final int REASON_ERROR_INVALID_STS_CONFIG = 0x24;
     public static final int REASON_ERROR_INVALID_RFRAME_CONFIG = 0x25;
+    /* Vendor Specific reason codes */
+    public static final int REASON_REGULATION_UWB_OFF =
+            UwbVendorReasonCodes.REASON_REGULATION_UWB_OFF;
 
     /**
      * Table 27: Multicast list update status codes

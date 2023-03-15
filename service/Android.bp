@@ -62,7 +62,7 @@ java_library {
 
     static_libs: [
         "androidx.annotation_annotation",
-        "android.hardware.uwb.fira_android-V2-java",
+        "android.hardware.uwb.fira_android-V3-java",
         "com.uwb.support.ccc",
         "com.uwb.support.fira",
         "com.uwb.support.generic",
