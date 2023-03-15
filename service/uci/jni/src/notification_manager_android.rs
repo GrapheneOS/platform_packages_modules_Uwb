@@ -1059,7 +1059,7 @@ impl NotificationManager for NotificationManagerAndroid {
             SessionNotification::DataCredit { session_id, credit_availability } => {
                 error!(
                     "UCI JNI: Received unexpected DataCredit notification for \
-                       session_id {}, credit_availability {}",
+                       session_id {}, credit_availability {:?}",
                     session_id, credit_availability
                 );
                 Ok(())
@@ -1067,7 +1067,7 @@ impl NotificationManager for NotificationManagerAndroid {
             SessionNotification::DataTransferStatus { session_id, uci_sequence_number, status } => {
                 error!(
                     "UCI JNI: Received unexpected DataTransferStatus notification for \
-                    session_id {}, uci_sequence_number {} with status {}",
+                    session_id {}, uci_sequence_number {} with status {:?}",
                     session_id, uci_sequence_number, status
                 );
                 Ok(())
