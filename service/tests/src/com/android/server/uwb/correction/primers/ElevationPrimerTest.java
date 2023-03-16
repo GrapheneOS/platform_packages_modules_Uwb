@@ -80,4 +80,24 @@ public class ElevationPrimerTest {
         // The phone pose is slightly facing down, so the elevation should be slightly up.
         assertClose(result.vector.elevation, -rads);
     }
+
+    @Test
+    public void replaceElevationTest() {
+        ElevationPrimer primer = new ElevationPrimer();
+        NullPoseSource nps = new NullPoseSource();
+        nps.setCapabilities(EnumSet.of(Capabilities.UPRIGHT));
+        float rads = (float) Math.toRadians(-5);
+        nps.changePose(new Pose(Vector3.ORIGIN, Quaternion.yawPitchRoll(0, rads, 0)));
+
+        // There is an elevation, but it's zero because the hardware doesn't support it. Make sure
+        // the elevation primer replaces this.
+        Sparse input = SphericalVector.fromDegrees(35, 0, 10)
+                .toSparse(true, true, true);
+        SphericalVector prediction = SphericalVector.fromDegrees(5, 6, 7);
+        Sparse result = primer.prime(input, prediction, nps);
+
+        assertThat(result.hasElevation).isTrue();
+        // The phone pose is slightly facing down, so the elevation should be slightly up.
+        assertClose(result.vector.elevation, -rads);
+    }
 }
