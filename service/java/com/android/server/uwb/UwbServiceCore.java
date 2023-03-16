@@ -676,6 +676,14 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         return mSessionManager.queryMaxDataSizeBytes(sessionHandle);
     }
 
+    /**
+     * Update the pose used by the filter engine to distinguish tag position changes from device
+     * position changes.
+     */
+    public void updatePose(SessionHandle sessionHandle, PersistableBundle params) {
+        mSessionManager.updatePose(sessionHandle, params);
+    }
+
     private class UwbTask extends Handler {
 
         UwbTask(Looper looper) {

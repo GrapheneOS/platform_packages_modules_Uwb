@@ -54,7 +54,7 @@ public class SixDofPoseSource extends PoseSourceBase implements SensorEventListe
     private final Quaternion mRotator = Quaternion.yawPitchRoll(0, -F_HALF_PI, 0);
 
     /**
-     * Creates a new instance of the FusionPoseSource.
+     * Creates a new instance of the SixDofPoseSource.
      * @param intervalMs How frequently to update the pose.
      */
     public SixDofPoseSource(@NonNull Context context, int intervalMs) {
