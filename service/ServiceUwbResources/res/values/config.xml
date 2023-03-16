@@ -77,4 +77,8 @@
     elevation is zero.
     If <=0 or >=180, the primer will be disabled, allowing an unlimited field of view. -->
     <integer name="primer_fov_degrees">60</integer>
+
+    <!-- Sets how long reports with an error code will be replaced with predicted reports, in
+     seconds. This is measured from the time of the last non-error report. -->
+    <integer name="prediction_timeout_seconds">5</integer>
 </resources>

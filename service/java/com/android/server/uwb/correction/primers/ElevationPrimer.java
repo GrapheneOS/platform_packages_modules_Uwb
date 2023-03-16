@@ -29,6 +29,8 @@ import com.android.server.uwb.correction.pose.IPoseSource.Capabilities;
  * provide a more understandable UWB location guess to the user.
  * Recommended for hardware that does not support elevation. This should execute before the
  * AoAPrimer in the primer execution order.
+ * This will replace any existing elevation value, as it assumes that the hardware's elevation is
+ * invalid or zero.
  */
 public class ElevationPrimer implements IPrimer {
     /**
@@ -44,11 +46,6 @@ public class ElevationPrimer implements IPrimer {
             @NonNull SphericalVector.Sparse input,
             @Nullable SphericalVector prediction,
             @Nullable IPoseSource poseSource) {
-        // Early exit: If there is already an elevation, we won't try to fill it in.
-        if (input.hasElevation) {
-            return input;
-        }
-
         SphericalVector.Sparse position = input;
         if (poseSource != null
                 && poseSource.getCapabilities().contains(Capabilities.UPRIGHT)

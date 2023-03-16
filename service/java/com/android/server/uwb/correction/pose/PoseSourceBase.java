@@ -61,7 +61,15 @@ public abstract class PoseSourceBase implements IPoseSource {
      */
     @Override
     public void close() {
-
+        mLockObject.lock();
+        try {
+            if (mListeners.size() > 0) {
+                mListeners.clear();
+                stop(); // Run inside the lock to make sure stops and starts are sequential.
+            }
+        } finally {
+            mLockObject.unlock();
+        }
     }
 
     /**
