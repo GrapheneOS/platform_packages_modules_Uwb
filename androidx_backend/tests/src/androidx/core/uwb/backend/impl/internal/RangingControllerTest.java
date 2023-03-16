@@ -19,6 +19,7 @@ package androidx.core.uwb.backend.impl.internal;
 import static androidx.core.uwb.backend.impl.internal.RangingSessionCallback.REASON_STOP_RANGING_CALLED;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_2;
 import static androidx.core.uwb.backend.impl.internal.Utils.INFREQUENT;
+import static androidx.core.uwb.backend.impl.internal.Utils.RANGE_DATA_NTF_ENABLE_PROXIMITY_LEVEL_TRIG;
 import static androidx.core.uwb.backend.impl.internal.Utils.STATUS_OK;
 
 import static org.junit.Assert.assertEquals;
@@ -90,10 +91,15 @@ public class RangingControllerTest {
             t.run();
             return true;
         }).when(mBackendCallbackExecutor).execute(any(Runnable.class));
-
+        UwbRangeDataNtfConfig uwbRangeDataNtfConfig = new UwbRangeDataNtfConfig.Builder()
+                .setRangeDataConfigType(RANGE_DATA_NTF_ENABLE_PROXIMITY_LEVEL_TRIG)
+                .setNtfProximityNear(100)
+                .setNtfProximityFar(300)
+                .build();
         RangingParameters rangingParameters = new RangingParameters(CONFIG_ID_2, 1, 0,
                 new byte[]{1, 2}, new byte[]{1, 2}, mComplexChannel,
-                new ArrayList<>(List.of(UwbAddress.getRandomizedShortAddress())), INFREQUENT);
+                new ArrayList<>(List.of(UwbAddress.getRandomizedShortAddress())), INFREQUENT,
+                uwbRangeDataNtfConfig);
         mRangingController = new RangingController(
                 mUwbManager, getExecutor(), mOpAsyncCallbackRunner);
         mRangingController.setRangingParameters(rangingParameters);
