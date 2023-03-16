@@ -511,7 +511,9 @@ public class UwbSessionNotificationManager {
                 PersistableBundle rangingMeasurementMetadata = new PersistableBundle();
                 rangingMeasurementBuilder.setRangingMeasurementMetadata(rangingMeasurementMetadata);
 
-                UwbAddress addr = UwbAddress.fromBytes(uwbTwoWayMeasurement[i].getMacAddress());
+                // TODO(b/271898436): Possibly part of the larger MAC byte order problem.
+                UwbAddress addr = UwbAddress.fromBytes(
+                        TlvUtil.getReverseBytes(uwbTwoWayMeasurement[i].getMacAddress()));
                 UwbControlee controlee = uwbSession.getControlee(addr);
                 if (controlee != null) {
                     controlee.filterMeasurement(rangingMeasurementBuilder);
@@ -545,7 +547,9 @@ public class UwbSessionNotificationManager {
                 }
             }
 
-            UwbAddress addr = UwbAddress.fromBytes(uwbOwrAoaMeasurement.getMacAddress());
+            // TODO(b/271898436): Possibly part of the larger MAC byte order problem.
+            UwbAddress addr = UwbAddress.fromBytes(
+                    TlvUtil.getReverseBytes(uwbOwrAoaMeasurement.getMacAddress()));
             UwbControlee controlee = uwbSession.getControlee(addr);
             if (controlee != null) {
                 controlee.filterMeasurement(rangingMeasurementBuilder);
@@ -600,7 +604,9 @@ public class UwbSessionNotificationManager {
                 rangingMeasurementBuilder.setRangingMeasurementMetadata(
                         dlTDoAMeasurement.toBundle());
 
-                UwbAddress addr = UwbAddress.fromBytes(uwbDlTDoAMeasurements[i].getMacAddress());
+                // TODO(b/271898436): Possibly part of the larger MAC byte order problem.
+                UwbAddress addr = UwbAddress.fromBytes(
+                        TlvUtil.getReverseBytes(uwbDlTDoAMeasurements[i].getMacAddress()));
                 UwbControlee controlee = uwbSession.getControlee(addr);
                 if (controlee != null) {
                     controlee.filterMeasurement(rangingMeasurementBuilder);
@@ -641,6 +647,7 @@ public class UwbSessionNotificationManager {
 
     private static RangingMeasurement.Builder buildRangingMeasurement(
             byte[] macAddress, int rangingStatus, long elapsedRealtimeNanos, int los) {
+        // TODO(b/271898436): Possibly part of the larger MAC byte order problem.
         return new RangingMeasurement.Builder()
                 .setRemoteDeviceAddress(UwbAddress.fromBytes(TlvUtil.getReverseBytes(macAddress)))
                 .setStatus(rangingStatus)

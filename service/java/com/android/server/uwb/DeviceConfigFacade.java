@@ -62,6 +62,7 @@ public class DeviceConfigFacade {
     private boolean mEnablePrimerAoA;
     private boolean mEnablePrimerFov;
     private int mPrimerFovDegree;
+    private int mPredictionTimeoutSeconds;
 
     public DeviceConfigFacade(Handler handler, Context context) {
         mContext = context;
@@ -129,6 +130,11 @@ public class DeviceConfigFacade {
                 DeviceConfig.NAMESPACE_UWB,
                 "primer_fov_degrees",
                 mContext.getResources().getInteger(R.integer.primer_fov_degrees)
+        );
+        mPredictionTimeoutSeconds = DeviceConfig.getInt(
+                DeviceConfig.NAMESPACE_UWB,
+                "prediction_timeout_seconds",
+                mContext.getResources().getInteger(R.integer.prediction_timeout_seconds)
         );
 
         // A little parsing and cleanup:
@@ -231,5 +237,12 @@ public class DeviceConfigFacade {
      */
     public int getPrimerFovDegree() {
         return mPrimerFovDegree;
+    }
+
+    /**
+     * Gets how long to replace reports with an error status with predicted reports in seconds.
+     */
+    public int getPredictionTimeoutSeconds() {
+        return mPredictionTimeoutSeconds;
     }
 }
