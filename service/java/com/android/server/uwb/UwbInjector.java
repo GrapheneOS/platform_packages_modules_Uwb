@@ -105,7 +105,7 @@ public class UwbInjector {
     private final UwbMultichipData mUwbMultichipData;
     private final SystemBuildProperties mSystemBuildProperties;
     private final UwbDiagnostics mUwbDiagnostics;
-    private IPoseSource mPoseSource;
+    private IPoseSource mDefaultPoseSource;
     private final ReentrantLock mPoseLock = new ReentrantLock();
     private int mPoseSourceRefCount = 0;
 
@@ -438,30 +438,30 @@ public class UwbInjector {
                 return null;
             }
 
-            if (mPoseSource != null) {
+            if (mDefaultPoseSource != null) {
                 // Already have a pose source.
-                return mPoseSource;
+                return mDefaultPoseSource;
             }
 
             switch (mDeviceConfigFacade.getPoseSourceType()) {
                 case NONE:
-                    mPoseSource = null;
+                    mDefaultPoseSource = null;
                     break;
                 case ROTATION_VECTOR:
-                    mPoseSource = new RotationPoseSource(mContext, 100);
+                    mDefaultPoseSource = new RotationPoseSource(mContext, 100);
                     break;
                 case GYRO:
-                    mPoseSource = new GyroPoseSource(mContext, 100);
+                    mDefaultPoseSource = new GyroPoseSource(mContext, 100);
                     break;
                 case SIXDOF:
-                    mPoseSource = new SixDofPoseSource(mContext, 100);
+                    mDefaultPoseSource = new SixDofPoseSource(mContext, 100);
                     break;
                 case DOUBLE_INTEGRATE:
-                    mPoseSource = new IntegPoseSource(mContext, 100);
+                    mDefaultPoseSource = new IntegPoseSource(mContext, 100);
                     break;
             }
 
-            return mPoseSource;
+            return mDefaultPoseSource;
         } catch (Exception ex) {
             Log.e(TAG, "Unable to create the configured UWB pose source: "
                     + ex.getMessage());
@@ -482,8 +482,8 @@ public class UwbInjector {
             // Keep our ref counts accurate because isEnableFilters can change at runtime.
             --mPoseSourceRefCount;
             if (mPoseSourceRefCount <= 0) {
-                mPoseSource.close();
-                mPoseSource = null;
+                mDefaultPoseSource.close();
+                mDefaultPoseSource = null;
             }
         } finally {
             mPoseLock.unlock();
@@ -496,7 +496,7 @@ public class UwbInjector {
      *
      * @return A fully configured filter engine, or null if filtering is disabled.
      */
-    public UwbFilterEngine createFilterEngine() {
+    public UwbFilterEngine createFilterEngine(IPoseSource poseSource) {
         DeviceConfigFacade cfg = getDeviceConfigFacade();
         if (!cfg.isEnableFilters()) {
             return null;
@@ -521,8 +521,8 @@ public class UwbInjector {
 
             UwbFilterEngine.Builder builder = new UwbFilterEngine.Builder().setFilter(posFilter);
 
-            if (mPoseSource != null) {
-                builder.setPoseSource(mPoseSource);
+            if (poseSource != null) {
+                builder.setPoseSource(poseSource);
             }
 
             // Order is important.
