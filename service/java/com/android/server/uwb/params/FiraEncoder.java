@@ -75,8 +75,6 @@ public class FiraEncoder extends TlvEncoder {
                         (byte) params.getDestAddressList().size())
                 .putByteArray(ConfigParam.DEVICE_MAC_ADDRESS, params.getDeviceAddress().size(),
                         TlvUtil.getReverseBytes(params.getDeviceAddress().toBytes()))
-                .putByteArray(ConfigParam.DST_MAC_ADDRESS, dstAddressList.position(),
-                        Arrays.copyOf(dstAddressList.array(), dstAddressList.position()))
                 .putShort(ConfigParam.SLOT_DURATION, (short) params.getSlotDurationRstu())
                 .putInt(ConfigParam.RANGING_INTERVAL, params.getRangingIntervalMs())
                 .putByte(ConfigParam.MAC_FCS_TYPE, (byte) params.getFcsType())
@@ -118,6 +116,11 @@ public class FiraEncoder extends TlvEncoder {
                 .putByte(ConfigParam.BPRF_PHR_DATA_RATE,
                         (byte) params.getBprfPhrDataRate())
                 .putByte(ConfigParam.STS_LENGTH, (byte) params.getStsLength());
+        if (params.getDestAddressList().size() > 0) {
+            tlvBufferBuilder.putByteArray(
+                    ConfigParam.DST_MAC_ADDRESS, dstAddressList.position(),
+                    Arrays.copyOf(dstAddressList.array(), dstAddressList.position()));
+        }
         if (params.getProtocolVersion().getMajor() >= 2) {
             tlvBufferBuilder
                  // Initiation time Changed from 4 byte field to 8 byte field in version 2.
@@ -137,6 +140,7 @@ public class FiraEncoder extends TlvEncoder {
             tlvBufferBuilder.putByteArray(ConfigParam.SESSION_KEY, params.getSessionKey());
             if (stsConfig
                     == FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
+                tlvBufferBuilder.putInt(ConfigParam.SUB_SESSION_ID, params.getSubSessionId());
                 tlvBufferBuilder.putByteArray(ConfigParam.SUBSESSION_KEY,
                         params.getSubsessionKey());
             }
