@@ -459,6 +459,12 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
                 err.getFileDescriptor(), args);
     }
 
+    @Override
+    public void updatePose(SessionHandle sessionHandle, PersistableBundle params) {
+        enforceUwbPrivilegedPermission();
+        mUwbServiceCore.updatePose(sessionHandle, params);
+    }
+
     private void persistUwbToggleState(boolean enabled) {
         mUwbSettingsStore.put(UwbSettingsStore.SETTINGS_TOGGLE_STATE, enabled);
     }

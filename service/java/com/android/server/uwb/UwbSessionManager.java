@@ -27,6 +27,9 @@ import static com.android.server.uwb.data.UwbUciConstants.UWB_DEVICE_SHORT_MAC_A
 import static com.android.server.uwb.data.UwbUciConstants.UWB_SESSION_STATE_ACTIVE;
 import static com.android.server.uwb.util.DataTypeConversionUtil.macAddressByteArrayToLong;
 
+import static com.google.uwb.support.fira.FiraParams.FILTER_TYPE_APPLICATION;
+import static com.google.uwb.support.fira.FiraParams.FILTER_TYPE_DEFAULT;
+import static com.google.uwb.support.fira.FiraParams.FILTER_TYPE_NONE;
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE;
 import static com.google.uwb.support.fira.FiraParams.PROTOCOL_NAME;
@@ -59,6 +62,7 @@ import androidx.annotation.VisibleForTesting;
 
 import com.android.server.uwb.advertisement.UwbAdvertiseManager;
 import com.android.server.uwb.correction.UwbFilterEngine;
+import com.android.server.uwb.correction.pose.ApplicationPoseSource;
 import com.android.server.uwb.correction.pose.IPoseSource;
 import com.android.server.uwb.data.DtTagUpdateRangingRoundsStatus;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
@@ -83,6 +87,7 @@ import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
 import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdateStatus;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.fira.FiraPoseUpdateParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
 import com.google.uwb.support.oemextension.AdvertisePointedTarget;
@@ -298,6 +303,19 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         info.payload = data;
 
         uwbSession.addReceivedDataInfo(info);
+    }
+
+    /** Updates pose information if the session is using an ApplicationPoseSource */
+    public void updatePose(SessionHandle sessionHandle, PersistableBundle params) {
+        int sessionId = getSessionId(sessionHandle);
+        UwbSession uwbSession = getUwbSession(sessionId);
+
+        if (uwbSession == null) {
+            // Session doesn't exist yet/anymore.
+            return;
+        }
+
+        uwbSession.updatePose(FiraPoseUpdateParams.fromBundle(params));
     }
 
     @VisibleForTesting
@@ -1557,6 +1575,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         private final String mProtocolName;
         private final IBinder mIBinder;
         private final WaitObj mWaitObj;
+        private boolean mAcquiredDefaultPose = false;
         private Params mParams;
         private int mSessionState;
         private UwbMulticastListUpdateStatus mMulticastListUpdateStatus;
@@ -1611,11 +1630,19 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 }
                 mRangingErrorStreakTimeoutMs = firaParams
                         .getRangingErrorStreakTimeoutMs();
+                switch (firaParams.getFilterType()) {
+                    case FILTER_TYPE_DEFAULT:
+                        this.mPoseSource = mUwbInjector.acquirePoseSource();
+                        this.mAcquiredDefaultPose = true;
+                        break;
+                    case FILTER_TYPE_APPLICATION:
+                        this.mPoseSource = new ApplicationPoseSource();
+                        break;
+                }
             }
 
             this.mReceivedDataInfoMap = new ConcurrentHashMap<>();
             this.mDataSndSequenceNumber = 0;
-            this.mPoseSource = mUwbInjector.acquirePoseSource();
         }
 
         private boolean isPrivilegedApp(int uid, String packageName) {
@@ -1965,7 +1992,22 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
         /** Creates a filter engine based on the device configuration. */
         public UwbFilterEngine createFilterEngine() {
-            return mUwbInjector.createFilterEngine();
+            if (mParams instanceof FiraOpenSessionParams) {
+                FiraOpenSessionParams firaParams = (FiraOpenSessionParams) mParams;
+                if (firaParams.getFilterType() == FILTER_TYPE_NONE) {
+                    return null; /* Bail early. No engine. */
+                }
+            }
+
+            return mUwbInjector.createFilterEngine(mPoseSource);
+        }
+
+        /** Updates the pose information if an ApplicationPoseSource is being used. */
+        public void updatePose(FiraPoseUpdateParams updateParams) {
+            if (mPoseSource instanceof ApplicationPoseSource) {
+                ApplicationPoseSource aps = (ApplicationPoseSource) mPoseSource;
+                aps.applyPose(updateParams.getPoseInfo());
+            }
         }
 
         @Override
@@ -1983,7 +2025,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                             "binderDied : sessionDeinit Failure because of NativeSessionDeinit "
                                     + "Error");
                 }
-                mUwbInjector.releasePoseSource();
+                if (this.mAcquiredDefaultPose) {
+                    this.mAcquiredDefaultPose = false;
+                    mUwbInjector.releasePoseSource();
+                }
             }
         }
 
