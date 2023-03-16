@@ -40,12 +40,10 @@ filegroup {
 
 filegroup {
     name: "framework-uwb-updatable-sources",
+    defaults: ["framework-sources-module-defaults"],
     srcs: [
         ":framework-uwb-updatable-java-sources",
         ":framework-uwb-updatable-exported-aidl-sources",
-    ],
-    visibility: [
-        "//frameworks/base",
     ],
 }
 
