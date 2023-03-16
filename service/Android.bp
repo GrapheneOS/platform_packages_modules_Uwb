@@ -52,6 +52,7 @@ java_library {
         strict_updatability_linting: true,
     },
     libs: [
+        "androidx.annotation_annotation",
         "framework-annotations-lib",
         "framework-configinfrastructure",
         "framework-uwb-pre-jarjar",
@@ -62,7 +63,6 @@ java_library {
     ],
 
     static_libs: [
-        "androidx.annotation_annotation",
         "android.hardware.uwb.fira_android-V3-java",
         "com.uwb.support.ccc",
         "com.uwb.support.fira",
