@@ -863,16 +863,8 @@ public class UwbManagerTest {
         }
     }
 
-    @Test
-    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
-    public void testFiraRangingSession() throws Exception {
-        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
-        CancellationSignal cancellationSignal = null;
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        CountDownLatch resultCountDownLatch = new CountDownLatch(1);
-        RangingSessionCallback rangingSessionCallback =
-                new RangingSessionCallback(countDownLatch, resultCountDownLatch);
-        FiraOpenSessionParams firaOpenSessionParams = new FiraOpenSessionParams.Builder()
+    private FiraOpenSessionParams.Builder makeOpenSessionBuilder() {
+        return new FiraOpenSessionParams.Builder()
                 .setProtocolVersion(new FiraProtocolVersion(1, 1))
                 .setSessionId(1)
                 .setSessionType(FiraParams.SESSION_TYPE_RANGING)
@@ -883,12 +875,24 @@ public class UwbManagerTest {
                 .setDeviceRole(FiraParams.RANGING_DEVICE_ROLE_INITIATOR)
                 .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_UNICAST)
                 .setDeviceAddress(UwbAddress.fromBytes(new byte[] {0x5, 6}))
-                .setDestAddressList(List.of(UwbAddress.fromBytes(new byte[] {0x5, 6})))
+                .setDestAddressList(List.of(UwbAddress.fromBytes(new byte[] {0x5, 6})));
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
+    public void testFiraRangingSession() throws Exception {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        CancellationSignal cancellationSignal = null;
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        CountDownLatch resultCountDownLatch = new CountDownLatch(1);
+        RangingSessionCallback rangingSessionCallback =
+                new RangingSessionCallback(countDownLatch, resultCountDownLatch);
+        FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder()
                 .build();
         try {
             // Needs UWB_PRIVILEGED & UWB_RANGING permission which is held by shell.
             uiAutomation.adoptShellPermissionIdentity();
-            // Try to start a ranging session with invalid params, should fail.
+            // Start ranging session
             cancellationSignal = mUwbManager.openRangingSession(
                     firaOpenSessionParams.toBundle(),
                     Executors.newSingleThreadExecutor(),
