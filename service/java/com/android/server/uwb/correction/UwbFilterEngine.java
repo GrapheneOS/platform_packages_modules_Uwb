@@ -113,7 +113,7 @@ public class UwbFilterEngine implements AutoCloseable {
     }
 
     /**
-     * Computes the most probably UWB location as of now.
+     * Computes the most probable UWB location as of now.
      *
      * @return A SphericalVector representing the most likely UWB location.
      */
