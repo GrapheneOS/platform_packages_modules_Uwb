@@ -1,6 +1,4 @@
 ## used by service-uwb ##
-# Statically included annotations.
-rule androidx.annotation.** com.android.x.uwb.@0
 # Statically linked cbor library
 rule co.nstant.in.cbor.** com.android.x.uwb.@0
 # Statically included module utils.
