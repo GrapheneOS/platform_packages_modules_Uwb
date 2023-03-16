@@ -487,7 +487,6 @@ public class RangingSessionTest {
         IUwbAdapter adapter = mock(IUwbAdapter.Stub.class);
         doNothing().when(adapter).updatePose(any(), any());
         RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
-        PersistableBundle params = new PersistableBundle();
         assertFalse(session.isOpen());
 
         session.onRangingOpened();
