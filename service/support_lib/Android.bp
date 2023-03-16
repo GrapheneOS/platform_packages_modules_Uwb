@@ -20,8 +20,10 @@ package {
 java_defaults {
     name: "support-lib-uwb-common-defaults",
     sdk_version: "system_31",
-    static_libs: [
+    libs: [
         "androidx.annotation_annotation",
+    ],
+    static_libs: [
         "guava"
     ],
     apex_available: [
