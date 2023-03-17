@@ -54,8 +54,8 @@ public class RangingController extends RangingDevice {
 
     @Nullable private RangingSessionCallback mRangingSessionCallback;
 
-    RangingController(
-            UwbManager manager, Executor executor, OpAsyncCallbackRunner opAsyncCallbackRunner) {
+    RangingController(UwbManager manager, Executor executor,
+            OpAsyncCallbackRunner<Boolean> opAsyncCallbackRunner) {
         super(manager, executor, opAsyncCallbackRunner);
     }
 
@@ -164,12 +164,12 @@ public class RangingController extends RangingDevice {
         // Reconfigure the session.
         int[] subSessionIdList = mRangingParameters.getUwbConfigId()
                 == CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR
-                        ? new int[] {mRangingParameters.getSubSessionId()}
-                        : null;
+                ? new int[] {mRangingParameters.getSubSessionId()}
+                : null;
         byte[] subSessionKeyInfo = mRangingParameters.getUwbConfigId()
                 == CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR
-                        ? mRangingParameters.getSubSessionKeyInfo()
-                        : null;
+                ? mRangingParameters.getSubSessionKeyInfo()
+                : null;
         boolean success =
                 reconfigureRanging(
                         ConfigurationManager.createReconfigureParams(
@@ -180,25 +180,22 @@ public class RangingController extends RangingDevice {
                                         subSessionKeyInfo)
                                 .toBundle());
 
+        RangingSessionCallback callback = mRangingSessionCallback;
         if (success) {
-            if (mRangingSessionCallback != null) {
+            if (callback != null) {
                 runOnBackendCallbackThread(
-                        () -> {
-                            requireNonNull(mRangingSessionCallback);
-                            mRangingSessionCallback.onRangingInitialized(
-                                    UwbDevice.createForAddress(controleeAddress.toBytes()));
-                        });
+                        () ->
+                                callback.onRangingInitialized(
+                                        UwbDevice.createForAddress(controleeAddress.toBytes())));
             }
             mDynamicallyAddedPeers.add(controleeAddress);
         } else {
-            if (mRangingSessionCallback != null) {
+            if (callback != null) {
                 runOnBackendCallbackThread(
-                        () -> {
-                            requireNonNull(mRangingSessionCallback);
-                            mRangingSessionCallback.onRangingSuspended(
-                                    UwbDevice.createForAddress(controleeAddress.toBytes()),
-                                    REASON_FAILED_TO_START);
-                        });
+                        () ->
+                                callback.onRangingSuspended(
+                                        UwbDevice.createForAddress(controleeAddress.toBytes()),
+                                        REASON_FAILED_TO_START));
             }
         }
 
@@ -240,14 +237,13 @@ public class RangingController extends RangingDevice {
             return UWB_SYSTEM_CALLBACK_FAILURE;
         }
 
-        if (mRangingSessionCallback != null) {
+        RangingSessionCallback callback = mRangingSessionCallback;
+        if (callback != null) {
             runOnBackendCallbackThread(
-                    () -> {
-                        requireNonNull(mRangingSessionCallback);
-                        mRangingSessionCallback.onRangingSuspended(
-                                UwbDevice.createForAddress(controleeAddress.toBytes()),
-                                REASON_STOP_RANGING_CALLED);
-                    });
+                    () ->
+                            callback.onRangingSuspended(
+                                    UwbDevice.createForAddress(controleeAddress.toBytes()),
+                                    REASON_STOP_RANGING_CALLED));
         }
         mDynamicallyAddedPeers.remove(controleeAddress);
         return STATUS_OK;

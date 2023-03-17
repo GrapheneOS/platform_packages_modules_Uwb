@@ -84,14 +84,14 @@ public class UwbServiceImpl {
     public RangingController getController(Context context) {
         UwbManager uwbManagerWithContext = context.getSystemService(UwbManager.class);
         return new RangingController(
-                uwbManagerWithContext, mSerialExecutor, new OpAsyncCallbackRunner());
+                uwbManagerWithContext, mSerialExecutor, new OpAsyncCallbackRunner<>());
     }
 
     /** Gets a Ranging Controlee session with given context. */
     public RangingControlee getControlee(Context context) {
         UwbManager uwbManagerWithContext = context.getSystemService(UwbManager.class);
         return new RangingControlee(
-                uwbManagerWithContext, mSerialExecutor, new OpAsyncCallbackRunner());
+                uwbManagerWithContext, mSerialExecutor, new OpAsyncCallbackRunner<>());
     }
 
     /** Returns multi-chip information. */
@@ -193,5 +193,14 @@ public class UwbServiceImpl {
                 supportedChannels,
                 supportedNtfConfigs,
                 supportedConfigIds);
+    }
+
+    /**
+     * Update the callback executor of the given ranging device.
+     *
+     * <p>If previous service is shut down, the ranging device may hold a stale serial executor.
+     */
+    public void updateRangingDevice(RangingDevice device) {
+        device.setSystemCallbackExecutor(mSerialExecutor);
     }
 }
