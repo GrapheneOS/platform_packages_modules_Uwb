@@ -409,6 +409,13 @@ public final class ConfigurationManager {
                         .setRangingIntervalMs(
                                 timingParams.getRangingInterval(
                                         rangingParameters.getRangingUpdateRate()))
+                        .setRangeDataNtfConfig(Utils.convertToFiraNtfConfig(
+                                rangingParameters.getUwbRangeDataNtfConfig()
+                                        .getRangeDataNtfConfigType()))
+                        .setRangeDataNtfProximityNear(
+                                rangingParameters.getUwbRangeDataNtfConfig().getNtfProximityNear())
+                        .setRangeDataNtfProximityFar(
+                                rangingParameters.getUwbRangeDataNtfConfig().getNtfProximityFar())
                         .setInBandTerminationAttemptCount(3);
 
         if (configuration.getStsConfig() == FiraParams.STS_CONFIG_STATIC) {

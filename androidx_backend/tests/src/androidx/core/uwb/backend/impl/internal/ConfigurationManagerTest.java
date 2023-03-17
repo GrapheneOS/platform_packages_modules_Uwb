@@ -19,6 +19,7 @@ package androidx.core.uwb.backend.impl.internal;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_2;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_UNICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.INFREQUENT;
+import static androidx.core.uwb.backend.impl.internal.Utils.RANGE_DATA_NTF_ENABLE_PROXIMITY_EDGE_TRIG;
 
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_INITIATOR;
@@ -60,9 +61,14 @@ public class ConfigurationManagerTest {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
+        UwbRangeDataNtfConfig uwbRangeDataNtfConfig = new UwbRangeDataNtfConfig.Builder()
+                .setRangeDataConfigType(RANGE_DATA_NTF_ENABLE_PROXIMITY_EDGE_TRIG)
+                .setNtfProximityNear(100)
+                .build();
         mRangingParameters = new RangingParameters(CONFIG_UNICAST_DS_TWR, 1, 1,
                 new byte[]{1, 2}, new byte[]{1, 2}, mComplexChannel,
-                new ArrayList<>(List.of(UwbAddress.getRandomizedShortAddress())), INFREQUENT);
+                new ArrayList<>(List.of(UwbAddress.getRandomizedShortAddress())), INFREQUENT,
+                uwbRangeDataNtfConfig);
         when(mComplexChannel.getChannel()).thenReturn(1);
         when(mComplexChannel.getPreambleIndex()).thenReturn(1);
     }
