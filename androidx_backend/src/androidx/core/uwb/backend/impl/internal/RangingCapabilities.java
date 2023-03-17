@@ -16,6 +16,8 @@
 
 package androidx.core.uwb.backend.impl.internal;
 
+import static androidx.core.uwb.backend.impl.internal.Utils.RANGE_DATA_NTF_ENABLE;
+
 import androidx.annotation.IntRange;
 
 import java.util.ArrayList;
@@ -33,6 +35,7 @@ public class RangingCapabilities {
     private final boolean mSupportsElevationAngle;
     private final int mMinRangingInterval;
     private final List<Integer> mSupportedChannels;
+    private final List<Integer> mSupportedNtfConfigs;
 
     public RangingCapabilities(
             boolean supportsDistance,
@@ -43,7 +46,8 @@ public class RangingCapabilities {
                 supportsAzimuthalAngle,
                 supportsElevationAngle,
                 FIRA_DEFAULT_RANGING_INTERVAL_MS,
-                new ArrayList<Integer>(FIRA_DEFAULT_SUPPORTED_CHANNEL));
+                new ArrayList<Integer>(FIRA_DEFAULT_SUPPORTED_CHANNEL),
+                new ArrayList<>(RANGE_DATA_NTF_ENABLE));
     }
 
     public RangingCapabilities(
@@ -51,12 +55,14 @@ public class RangingCapabilities {
             boolean supportsAzimuthalAngle,
             boolean supportsElevationAngle,
             int minRangingInterval,
-            List<Integer> supportedChannels) {
+            List<Integer> supportedChannels,
+            List<Integer> supportedNtfConfigs) {
         this.mSupportsDistance = supportsDistance;
         this.mSupportsAzimuthalAngle = supportsAzimuthalAngle;
         this.mSupportsElevationAngle = supportsElevationAngle;
         this.mMinRangingInterval = minRangingInterval;
         this.mSupportedChannels = supportedChannels;
+        this.mSupportedNtfConfigs = supportedNtfConfigs;
     }
 
     /** Whether distance ranging is supported. */
@@ -91,5 +97,14 @@ public class RangingCapabilities {
      */
     public List<Integer> getSupportedChannels() {
         return mSupportedChannels;
+    }
+
+    /**
+     * Gets the supported range data notification configs.
+     *
+     * @hide
+     */
+    public List<Integer> getSupportedNtfConfigs() {
+        return mSupportedNtfConfigs;
     }
 }
