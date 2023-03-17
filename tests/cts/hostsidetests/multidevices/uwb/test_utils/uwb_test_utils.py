@@ -115,14 +115,7 @@ def set_airplane_mode(ad: android_device.AndroidDevice, state: bool):
     ad: android device object.
     state: bool, True for Airplane mode on, False for off.
   """
-  ad.adb.shell(
-      ["settings", "put", "global", "airplane_mode_on",
-       str(int(state))])
-  ad.adb.shell([
-      "am", "broadcast", "-a", "android.intent.action.AIRPLANE_MODE", "--ez",
-      "state",
-      str(state)
-  ])
+  ad.uwb.setAirplaneMode(state)
   start_time = time.time()
   while get_airplane_mode(ad) != state:
     time.sleep(0.5)
