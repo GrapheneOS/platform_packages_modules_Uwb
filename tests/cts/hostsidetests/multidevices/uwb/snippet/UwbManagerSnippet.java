@@ -18,6 +18,7 @@ package com.google.snippet.uwb;
 
 import android.app.UiAutomation;
 import android.content.Context;
+import android.net.ConnectivityManager;
 import android.os.PersistableBundle;
 import android.uwb.RangingMeasurement;
 import android.uwb.RangingReport;
@@ -68,6 +69,7 @@ public class UwbManagerSnippet implements Snippet {
 
     private static final String TAG = "UwbManagerSnippet: ";
     private final UwbManager mUwbManager;
+    private final ConnectivityManager mConnectivityManager;
     private final Context mContext;
     private final Executor mExecutor = Executors.newSingleThreadExecutor();
     private final EventCache mEventCache = EventCache.getInstance();
@@ -79,6 +81,7 @@ public class UwbManagerSnippet implements Snippet {
     public UwbManagerSnippet() throws Throwable {
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mUwbManager = mContext.getSystemService(UwbManager.class);
+        mConnectivityManager = mContext.getSystemService(ConnectivityManager.class);
         adoptShellPermission();
     }
 
@@ -782,6 +785,12 @@ public class UwbManagerSnippet implements Snippet {
     @Rpc(description = "Get Uwb specification info")
     public JSONObject getSpecificationInfo() throws JSONException {
         return convertPersistableBundleToJson(mUwbManager.getSpecificationInfo());
+    }
+
+    /** Set airplane mode to True or False */
+    @Rpc(description = "Set airplane mode")
+    public void setAirplaneMode(Boolean enabled) {
+        mConnectivityManager.setAirplaneMode(enabled);
     }
 
     @Override
