@@ -21,7 +21,12 @@ class UwbBaseTest(base_test.BaseTestClass):
                                                     min_number=2)
     for ad in self.android_devices:
       ad.load_snippet("uwb", "com.google.snippet.uwb")
-      ad.adb.shell(["cmd", "uwb", "force-country-code", "enabled", "US"])
+
+    if "set_country_code" in self.user_params:
+      for ad in self.android_devices:
+        ad.adb.shell(
+            ["cmd", "uwb", "force-country-code", "enabled", "US"], timeout=3
+        )
 
   def teardown_class(self):
     super().teardown_class()
