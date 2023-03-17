@@ -36,6 +36,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 /** Implements UWB session creation, adaptor state tracking and ranging capability reporting. */
 public class UwbServiceImpl {
@@ -129,12 +130,19 @@ public class UwbServiceImpl {
             supportedChannels =
                     new ArrayList<Integer>(RangingCapabilities.FIRA_DEFAULT_SUPPORTED_CHANNEL);
         }
+        List<Integer> supportedNtfConfigs = specificationParams.getRangeDataNtfConfigCapabilities()
+                .stream()
+                .map(Enum::ordinal)
+                .map(Utils::convertFromFiraNtfConfig)
+                .distinct()
+                .collect(Collectors.toList());
         return new RangingCapabilities(
                 true,
                 aoaCapabilityFlags.contains(FiraParams.AoaCapabilityFlag.HAS_AZIMUTH_SUPPORT),
                 aoaCapabilityFlags.contains(FiraParams.AoaCapabilityFlag.HAS_ELEVATION_SUPPORT),
                 minRangingInterval,
-                supportedChannels);
+                supportedChannels,
+                supportedNtfConfigs);
     }
 
     /**
