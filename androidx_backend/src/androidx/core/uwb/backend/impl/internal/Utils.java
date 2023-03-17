@@ -149,7 +149,7 @@ public final class Utils {
      * Unusual failures happened in UWB system callback, such as stopping ranging or removing a
      * known controlee failed.
      */
-    public static final int UWB_SYSTEM_CALLBACK_FAILURE = 42005;
+    public static final int UWB_SYSTEM_CALLBACK_FAILURE = 5;
 
     static {
         setRangingTimingParams(

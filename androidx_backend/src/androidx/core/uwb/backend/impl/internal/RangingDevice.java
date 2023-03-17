@@ -39,6 +39,7 @@ import androidx.annotation.Nullable;
 
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -60,7 +61,7 @@ public abstract class RangingDevice {
     @Nullable protected RangingParameters mRangingParameters;
 
     /** A serial thread used by System API to handle session callbacks. */
-    private final Executor mSystemCallbackExecutor;
+    private Executor mSystemCallbackExecutor;
 
     /** A serial thread used in system API callbacks to handle Backend callbacks */
     @Nullable private ExecutorService mBackendCallbackExecutor;
@@ -79,8 +80,8 @@ public abstract class RangingDevice {
 
     @Nullable private String mChipId = null;
 
-    RangingDevice(
-            UwbManager manager, Executor executor, OpAsyncCallbackRunner opAsyncCallbackRunner) {
+    RangingDevice(UwbManager manager, Executor executor,
+            OpAsyncCallbackRunner<Boolean> opAsyncCallbackRunner) {
         mUwbManager = manager;
         this.mSystemCallbackExecutor = executor;
         mOpAsyncCallbackRunner = opAsyncCallbackRunner;
@@ -197,15 +198,16 @@ public abstract class RangingDevice {
             @WorkerThread
             @Override
             public void onOpenFailed(int reason, PersistableBundle params) {
+                Log.i(TAG, String.format("Session open failed: reason %s", reason));
                 int suspendedReason = Conversions.convertReason(reason);
                 if (suspendedReason == REASON_UNKNOWN) {
                     suspendedReason = REASON_FAILED_TO_START;
                 }
+                mRangingSession = null;
+                mOpAsyncCallbackRunner.complete(false);
                 int finalSuspendedReason = suspendedReason;
                 runOnBackendCallbackThread(
                         () -> callback.onRangingSuspended(getUwbDevice(), finalSuspendedReason));
-                mRangingSession = null;
-                mOpAsyncCallbackRunner.complete(false);
             }
 
             @WorkerThread
@@ -290,6 +292,33 @@ public abstract class RangingDevice {
 
     protected abstract FiraOpenSessionParams getOpenSessionParams();
 
+    private String getString(@Nullable Object o) {
+        if (o == null) {
+            return "null";
+        }
+        if (o instanceof int[]) {
+            return Arrays.toString((int[]) o);
+        }
+
+        if (o instanceof byte[]) {
+            return Arrays.toString((byte[]) o);
+        }
+
+        if (o instanceof long[]) {
+            return Arrays.toString((long[]) o);
+        }
+
+        return o.toString();
+    }
+
+    private void printStartRangingParameters(PersistableBundle parameters) {
+        Log.i(TAG, "Opens UWB session with bundle parameters:");
+        for (String key : parameters.keySet()) {
+            Log.i(TAG, String.format(
+                    "UWB parameter: %s, value: %s", key, getString(parameters.get(key))));
+        }
+    }
+
     /**
      * Starts ranging. if an active ranging session exists, return {@link
      * RangingSessionCallback#REASON_FAILED_TO_START}
@@ -306,12 +335,7 @@ public abstract class RangingDevice {
         }
 
         PersistableBundle parameters = getOpenSessionParams().toBundle();
-        Log.i(TAG, "Opens UWB session with bundle parameters:");
-        for (String key : parameters.keySet()) {
-            Log.i(
-                    TAG,
-                    String.format("UWB parameter: %s, value: %s", key, parameters.getString(key)));
-        }
+        printStartRangingParameters(parameters);
         mBackendCallbackExecutor = backendCallbackExecutor;
         boolean success =
                 mOpAsyncCallbackRunner.execOperation(
@@ -340,15 +364,13 @@ public abstract class RangingDevice {
         }
 
         success =
-                mOpAsyncCallbackRunner.execOperation(
-                        () -> mRangingSession.start(new PersistableBundle()), "Start ranging");
-
+                mOpAsyncCallbackRunner.execOperation(() -> requireNonNull(mRangingSession)
+                        .start(new PersistableBundle()), "Start ranging");
+        requireNonNull(mBackendCallbackExecutor);
         if (!success) {
-            requireNonNull(mBackendCallbackExecutor);
             mBackendCallbackExecutor.shutdown();
             mBackendCallbackExecutor = null;
         } else {
-            requireNonNull(mBackendCallbackExecutor);
             mRangingReportedAllowed = true;
         }
         return STATUS_OK;
@@ -362,19 +384,20 @@ public abstract class RangingDevice {
         }
         mRangingReportedAllowed = false;
         if (mIsRanging) {
-            mOpAsyncCallbackRunner.execOperation(() -> mRangingSession.stop(), "Stop Ranging");
+            mOpAsyncCallbackRunner.execOperation(
+                    () -> requireNonNull(mRangingSession).stop(), "Stop Ranging");
         } else {
             Log.i(TAG, "UWB stopRanging called but isRanging is false.");
         }
 
         boolean success =
                 mOpAsyncCallbackRunner.execOperation(
-                        () -> mRangingSession.close(), "Close Session");
+                        () -> requireNonNull(mRangingSession).close(), "Close Session");
 
         if (mBackendCallbackExecutor != null) {
             mBackendCallbackExecutor.shutdown();
+            mBackendCallbackExecutor = null;
         }
-        mBackendCallbackExecutor = null;
         mLocalAddress = null;
         mComplexChannel = null;
         if (!success) {
@@ -391,7 +414,7 @@ public abstract class RangingDevice {
      */
     protected synchronized boolean reconfigureRanging(PersistableBundle bundle) {
         return mOpAsyncCallbackRunner.execOperation(
-                () -> mRangingSession.reconfigure(bundle), "Reconfigure Ranging");
+                () -> requireNonNull(mRangingSession).reconfigure(bundle), "Reconfigure Ranging");
     }
 
     /** Notifies that a ranging round failed. We collect this info for Analytics only. */
@@ -404,5 +427,10 @@ public abstract class RangingDevice {
     public void setRangingRoundFailureCallback(
             @Nullable RangingRoundFailureCallback rangingRoundFailureCallback) {
         this.mRangingRoundFailureCallback = rangingRoundFailureCallback;
+    }
+
+    /** Sets the system callback executor. */
+    public void setSystemCallbackExecutor(Executor executor) {
+        this.mSystemCallbackExecutor = executor;
     }
 }
