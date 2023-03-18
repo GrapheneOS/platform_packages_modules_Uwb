@@ -8,7 +8,6 @@ from typing import List
 from mobly import asserts
 from mobly import config_parser
 from mobly import test_runner
-from mobly import records
 from mobly import signals
 import timeout_decorator
 
@@ -280,7 +279,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
 
   ### Test Cases ###
 
-  @records.uid("534e80d7-cfba-47c1-9ae1-62b3630458ac")
   def test_ranging_default_params(self):
     """Verifies ranging with default Fira parameters."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -304,7 +302,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         self.initiator, self.responder, initiator_params, responder_params,
         self.new_responder_addr)
 
-  @records.uid("04ec82db-be17-4aaf-911c-56e702c1ea55")
   def test_ranging_device_tracker_profile_default(self):
     """Verifies ranging with device tracker profile default values."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -335,7 +332,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
                                     initiator_params, responder_params,
                                     self.responder_addr)
 
-  @records.uid("05fa3bc8-b4c8-4bd4-a802-80250aa27a0b")
   def test_ranging_nearby_share_profile_default(self):
     """Verifies ranging for device nearby share with default profile."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -367,7 +363,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         self.initiator, self.responder, initiator_params, responder_params,
         self.new_responder_addr)
 
-  @records.uid("fa9b18c2-a1e1-4bf8-bc76-796700a1c2cb")
   def test_open_ranging_with_same_session_id_nearby_share(self):
     """Verifies ranging for device nearby share with same session id."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -399,7 +394,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
                                     initiator_params, responder_params,
                                     self.responder_addr)
 
-  @records.uid("973a083a-f01a-44cc-a706-3b2953ca8e22")
   def test_open_ranging_with_same_session_id_device_tracker(self):
     """Verifies ranging with device tracker profile with same session id."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -435,7 +429,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
                                     initiator_params, responder_params,
                                     self.responder_addr)
 
-  @records.uid("dff3aaff-c3ed-47fb-b99f-d47f55c06770")
   def test_ranging_default_params_reconfigure_ranging_interval(self):
     """Verifies ranging with default Fira parameters."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -456,7 +449,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self._verify_one_to_one_ranging_reconfigure_ranging_interval(
         self.initiator, self.block_stride_length, self.responder_addr)
 
-  @records.uid("7800a229-af09-48e1-a6f9-bdd159afc460")
   def test_ranging_device_tracker_profile_reconfigure_ranging_interval(self):
     """Verifies ranging with device tracker profile default values."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -489,7 +481,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self._verify_one_to_one_ranging_reconfigure_ranging_interval(
         self.initiator, self.block_stride_length, self.responder_addr)
 
-  @records.uid("c1d98ba2-93bd-4458-abfe-0194307ac2d4")
   def test_ranging_nearby_share_profile_reconfigure_ranging_interval(self):
     """Verifies ranging for device nearby share with default profile."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -518,7 +509,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self._verify_one_to_one_ranging_reconfigure_ranging_interval(
         self.initiator, self.block_stride_length, self.responder_addr)
 
-  @records.uid("19ed274a-5cb2-4210-9592-0843313cb88f")
   def test_ranging_device_tracker_profile_ch9_pr12(self):
     """Verifies ranging with device tracker for channel 9 and preamble 12."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -551,7 +541,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
                                     initiator_params, responder_params,
                                     self.responder_addr)
 
-  @records.uid("810d13ef-678f-4ee5-affc-b0b50efaafc5")
   def test_ranging_device_tracker_profile_ch5_pr11(self):
     """Verifies ranging with device tracker for channel 5 and preamble 11."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -586,7 +575,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
                                     initiator_params, responder_params,
                                     self.responder_addr)
 
-  @records.uid("90d73266-07f2-46d8-bc06-a4a1206d693a")
   def test_ranging_device_tracker_profile_ch9_pr11(self):
     """Verifies device tracking profile with channel 9 and preamble 11."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -619,7 +607,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
                                     initiator_params, responder_params,
                                     self.responder_addr)
 
-  @records.uid("827c969e-15dc-43f9-ad65-c8dbcc91dd56")
   def test_ranging_device_tracker_profile_ch5_pr10(self):
     """Verifies device tracking profile with channel 5 and preamble 10."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -652,7 +639,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
                                     initiator_params, responder_params,
                                     self.responder_addr)
 
-  @records.uid("f7a4fad5-9340-461c-bfb3-e9e530a54a97")
   def test_ranging_device_tracker_profile_ch9_pr9(self):
     """Verifies ranging with device tracker for channel 9 and preamble 9."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -687,7 +673,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
                                     initiator_params, responder_params,
                                     self.responder_addr)
 
-  @records.uid("d75d7443-904c-4ebf-9cb2-5e1df484db7a")
   def test_ranging_device_tracker_profile_ch5_pr9(self):
     """Verifies ranging with device tracker for channel 5 and preamble 9."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -722,7 +707,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
                                     initiator_params, responder_params,
                                     self.responder_addr)
 
-  @records.uid("0413d123-8578-477f-b07e-be2e8e0a8652")
   def test_ranging_device_tracker_profile_ch5_pr12(self):
     """Verifies ranging with device tracker for channel 5 and preamble 12."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -757,37 +741,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
                                     initiator_params, responder_params,
                                     self.responder_addr)
 
-  # disable due to b/212455943
-  @records.uid("73c9e335-c1da-432f-937a-d4bf15f6b338")
-  def _test_ranging_device_nearby_share_profile_block_stride(self):
-    """Verifies nearby share profile with block stride."""
-    initiator_params = uwb_ranging_params.UwbRangingParams(
-        device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
-        device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
-        device_address=self.initiator_addr,
-        destination_addresses=[self.responder_addr],
-        initiation_time_ms=100,
-        ranging_interval_ms=200,
-        slots_per_ranging_round=20,
-        in_band_termination_attempt_count=3,
-        block_stride_length=0xFF,
-    )
-    responder_params = uwb_ranging_params.UwbRangingParams(
-        device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_RESPONDER,
-        device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLEE,
-        device_address=self.responder_addr,
-        destination_addresses=[self.initiator_addr],
-        initiation_time_ms=100,
-        ranging_interval_ms=200,
-        slots_per_ranging_round=20,
-        in_band_termination_attempt_count=3,
-        block_stride_length=0xFF,
-    )
-    self._verify_one_to_one_ranging(self.initiator, self.responder,
-                                    initiator_params, responder_params,
-                                    self.responder_addr)
-
-  @records.uid("cf9d3a96-433e-40d6-a74e-5413c975da78")
   def test_ranging_device_tracker_profile_no_aoa_report(self):
     """Verifies ranging with device tracker profile with no aoa report."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -827,7 +780,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     except ValueError:
       pass
 
-  @records.uid("68c6e10c-749f-448b-b650-a1edaa56a833")
   def test_ranging_nearby_share_profile_hopping_mode_disabled(self):
     """Verifies ranging with nearby share profile with hopping mode disabled."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -856,7 +808,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
                                     initiator_params, responder_params,
                                     self.responder_addr)
 
-  @records.uid("7c63291f-d610-4360-88c9-ae17c46cc0ba")
   def test_ranging_rr_ss_twr_deferred_default_params(self):
     """Verifies ranging with default Fira parameters and Ranging Round 1."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -879,7 +830,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
                                     initiator_params, responder_params,
                                     self.responder_addr)
 
-  @records.uid("cb404b61-626a-4bbe-87b2-a45bf1fa4174")
   def test_ranging_rr_ss_twr_deferred_device_tracker_profile(self):
     """Verifies ranging with device tracker profile and ranging round 1."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -914,7 +864,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
                                     initiator_params, responder_params,
                                     self.responder_addr)
 
-  @records.uid("1990b59c-dd57-4f24-8134-f1ccb2db3062")
   def test_ranging_rr_ss_twr_deferred_nearby_share_profile(self):
     """Verifies ranging for nearby share profile and ranging round 1."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -945,7 +894,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
                                     initiator_params, responder_params,
                                     self.responder_addr)
 
-  @records.uid("ae7a95b3-e8f1-4358-b3cc-ecb10cb6d20c")
   def test_stop_initiator_ranging_device_tracker_profile(self):
     """Verifies initiator stop ranging callbacks with device tracker profile."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -976,7 +924,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         self.initiator, self.responder, initiator_params, responder_params,
         self.responder_addr)
 
-  @records.uid("cd339d74-910a-49e9-9201-b4868adf6db7")
   def test_stop_initiator_ranging_nearby_share_profile(self):
     """Verifies initiator stop ranging callbacks for nearby share profile."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -1003,7 +950,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         self.initiator, self.responder, initiator_params, responder_params,
         self.responder_addr)
 
-  @records.uid("c7757248-362f-4efa-95f4-344360e163ad")
   def test_stop_responder_ranging_device_tracker_profile(self):
     """Verifies responder stop ranging callbacks with device tracker profile."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -1034,7 +980,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         self.initiator, self.responder, initiator_params, responder_params,
         self.responder_addr)
 
-  @records.uid("79f9dff3-6397-495f-9a35-bc1b21b7b500")
   def test_stop_responder_ranging_nearby_share_profile(self):
     """Verifies responder stop ranging callbacks for nearby share profile."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -1061,7 +1006,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         self.initiator, self.responder, initiator_params, responder_params,
         self.responder_addr)
 
-  @records.uid("8109b3b3-bd2d-4d0e-be70-844d98f4d6fb")
   def test_ranging_device_tracker_profile_with_airplane_mode_toggle(self):
     """Verifies ranging with device tracker profile and airplane mode toggle."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -1092,7 +1036,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         self.initiator, self.responder, initiator_params, responder_params,
         self.responder_addr)
 
-  @records.uid("583d3c33-d41a-4d91-93ef-19dc5e064fb7")
   def test_ranging_nearby_share_profile_with_airplane_mode_toggle(self):
     """Verifies ranging for nearby share profile and APM toggle."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
