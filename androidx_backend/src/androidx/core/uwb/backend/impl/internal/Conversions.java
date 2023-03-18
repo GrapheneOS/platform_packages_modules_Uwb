@@ -46,13 +46,24 @@ final class Conversions {
         return new RangingMeasurement(confidenceLevel, (float) value, valid);
     }
 
+    private static boolean isDlTDoAMeasurement(android.uwb.RangingMeasurement measurement) {
+        if (Build.VERSION.SDK_INT <= VERSION_CODES.TIRAMISU) {
+            return false;
+        }
+        try {
+            return com.google.uwb.support.dltdoa.DlTDoAMeasurement.isDlTDoAMeasurement(
+                    measurement.getRangingMeasurementMetadata());
+        } catch (NoSuchMethodError e) {
+            return false;
+        }
+    }
+
     /** Convert system API's {@link android.uwb.RangingMeasurement} to {@link RangingPosition} */
     @Nullable
     static RangingPosition convertToPosition(android.uwb.RangingMeasurement measurement) {
-        RangingMeasurement distance = null;
+        RangingMeasurement distance;
         DlTDoAMeasurement dlTdoaMeasurement = null;
-        if (com.google.uwb.support.dltdoa.DlTDoAMeasurement.isDlTDoAMeasurement(
-                measurement.getRangingMeasurementMetadata())) {
+        if (isDlTDoAMeasurement(measurement)) {
             com.google.uwb.support.dltdoa.DlTDoAMeasurement
                     dlTDoAMeasurement = com.google.uwb.support.dltdoa.DlTDoAMeasurement.fromBundle(
                     measurement.getRangingMeasurementMetadata());

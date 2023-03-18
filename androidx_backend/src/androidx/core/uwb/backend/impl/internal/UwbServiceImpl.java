@@ -36,6 +36,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 /** Implements UWB session creation, adaptor state tracking and ranging capability reporting. */
 public class UwbServiceImpl {
@@ -69,14 +70,14 @@ public class UwbServiceImpl {
     public RangingController getController(Context context) {
         UwbManager uwbManagerWithContext = context.getSystemService(UwbManager.class);
         return new RangingController(
-                uwbManagerWithContext, mSerialExecutor, new OpAsyncCallbackRunner());
+                uwbManagerWithContext, mSerialExecutor, new OpAsyncCallbackRunner<>());
     }
 
     /** Gets a Ranging Controlee session with given context. */
     public RangingControlee getControlee(Context context) {
         UwbManager uwbManagerWithContext = context.getSystemService(UwbManager.class);
         return new RangingControlee(
-                uwbManagerWithContext, mSerialExecutor, new OpAsyncCallbackRunner());
+                uwbManagerWithContext, mSerialExecutor, new OpAsyncCallbackRunner<>());
     }
 
     /** Returns multi-chip information. */
@@ -129,11 +130,27 @@ public class UwbServiceImpl {
             supportedChannels =
                     new ArrayList<Integer>(RangingCapabilities.FIRA_DEFAULT_SUPPORTED_CHANNEL);
         }
+        List<Integer> supportedNtfConfigs = specificationParams.getRangeDataNtfConfigCapabilities()
+                .stream()
+                .map(Enum::ordinal)
+                .map(Utils::convertFromFiraNtfConfig)
+                .distinct()
+                .collect(Collectors.toList());
         return new RangingCapabilities(
                 true,
                 aoaCapabilityFlags.contains(FiraParams.AoaCapabilityFlag.HAS_AZIMUTH_SUPPORT),
                 aoaCapabilityFlags.contains(FiraParams.AoaCapabilityFlag.HAS_ELEVATION_SUPPORT),
                 minRangingInterval,
-                supportedChannels);
+                supportedChannels,
+                supportedNtfConfigs);
+    }
+
+    /**
+     * Update the callback executor of the given ranging device.
+     *
+     * <p>If previous service is shut down, the ranging device may hold a stale serial executor.
+     */
+    public void updateRangingDevice(RangingDevice device) {
+        device.setSystemCallbackExecutor(mSerialExecutor);
     }
 }

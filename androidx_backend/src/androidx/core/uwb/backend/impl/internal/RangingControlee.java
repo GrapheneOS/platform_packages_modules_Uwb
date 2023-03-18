@@ -32,8 +32,8 @@ import java.util.concurrent.Executor;
 @RequiresApi(api = VERSION_CODES.S)
 public class RangingControlee extends RangingDevice {
 
-    RangingControlee(
-            UwbManager manager, Executor executor, OpAsyncCallbackRunner opAsyncCallbackRunner) {
+    RangingControlee(UwbManager manager, Executor executor,
+            OpAsyncCallbackRunner<Boolean> opAsyncCallbackRunner) {
         super(manager, executor, opAsyncCallbackRunner);
     }
 
