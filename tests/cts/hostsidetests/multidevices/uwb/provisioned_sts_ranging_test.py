@@ -5,7 +5,6 @@ from typing import List
 
 from mobly import config_parser
 from mobly import test_runner
-from mobly import records
 import timeout_decorator
 
 from lib import uwb_base_test
@@ -267,7 +266,6 @@ class ProvisionedStsRangingTest(uwb_base_test.UwbBaseTest):
 
   ### Test Cases ###
 
-  @records.uid("5886f410-cfb6-46df-a5c2-3e8f610b6612")
   def test_provisioned_sts_device_tracker_profile(self):
     """Verifies provisioned sts ranging for device tracker profile."""
     self._verify_one_to_one_ranging(
@@ -278,7 +276,6 @@ class ProvisionedStsRangingTest(uwb_base_test.UwbBaseTest):
         self.responder_addr,
     )
 
-  @records.uid("2d14ecab-b7b8-4dcc-bceb-71ac4f63f29f")
   def test_provisioned_sts_device_tracker_stop_initiator(self):
     """Verifies provisioned sts stop initiator for device tracker profile."""
     self._verify_stop_initiator_callback(
@@ -289,7 +286,6 @@ class ProvisionedStsRangingTest(uwb_base_test.UwbBaseTest):
         self.responder_addr,
     )
 
-  @records.uid("a794dea0-8395-4525-ad89-66757662d3d6")
   def test_provisioned_sts_device_tracker_stop_responder(self):
     """Verifies provisioned sts stop responder for device tracker profile."""
     self._verify_stop_responder_callback(
@@ -300,7 +296,6 @@ class ProvisionedStsRangingTest(uwb_base_test.UwbBaseTest):
         self.responder_addr,
     )
 
-  @records.uid("a2836a10-8e31-4c41-ba6f-03a1a049fd47")
   def test_provisioned_sts_device_tracker_airplane_mode_toggle(self):
     """Verifies provisioned sts ranging with airplane mode toggle."""
     self._verify_one_to_one_ranging_airplane_mode_toggle(
@@ -311,7 +306,6 @@ class ProvisionedStsRangingTest(uwb_base_test.UwbBaseTest):
         self.responder_addr,
     )
 
-  @records.uid("58b6094c-4f6b-4555-bac0-0426ce79449e")
   def test_provisioned_sts_nearby_share_profile(self):
     """Verifies provisioned sts ranging for nearby share profile."""
     self._verify_one_to_one_ranging(
@@ -322,7 +316,6 @@ class ProvisionedStsRangingTest(uwb_base_test.UwbBaseTest):
         self.responder_addr,
     )
 
-  @records.uid("c5743eeb-25a7-4609-8ce6-96f2ab9ca8d5")
   def test_provisioned_sts_nearby_share_stop_initiator(self):
     """Verifies provisioned sts stop initiator for nearby share profile."""
     self._verify_stop_initiator_callback(
@@ -333,7 +326,6 @@ class ProvisionedStsRangingTest(uwb_base_test.UwbBaseTest):
         self.responder_addr,
     )
 
-  @records.uid("aa0b790e-d5de-4287-a082-3ac9e896e455")
   def test_provisioned_sts_nearby_share_stop_responder(self):
     """Verifies provisioned sts stop responder for nearby share profile."""
     self._verify_stop_responder_callback(
@@ -344,7 +336,6 @@ class ProvisionedStsRangingTest(uwb_base_test.UwbBaseTest):
         self.responder_addr,
     )
 
-  @records.uid("49f63d26-1ba8-4b16-8840-724dedeecebb")
   def test_provisioned_sts_nearby_share_airplane_mode_toggle(self):
     """Verifies provisioned sts ranging with airplane mode toggle."""
     self._verify_one_to_one_ranging_airplane_mode_toggle(
