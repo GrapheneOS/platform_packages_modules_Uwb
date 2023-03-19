@@ -6,7 +6,6 @@ import sys
 from mobly import asserts
 from mobly import config_parser
 from mobly import test_runner
-from mobly import records
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import callback_handler
 
@@ -83,33 +82,27 @@ class UwbManagerTest(uwb_base_test.UwbBaseTest):
 
   ### Test Cases ###
 
-  @records.uid("2d2aff95-0273-478c-be85-097085db74cd")
   def test_default_uwb_state(self):
     """Verifies default UWB state is On after flashing the device."""
     asserts.assert_true(uwb_test_utils.get_uwb_state(self.dut),
                         "UWB state: Off; Expected: On.")
 
-  @records.uid("a6a69945-39e8-404f-8d15-d87857cdf5af")
   def test_disable_uwb_state(self):
     """Disables and verifies UWB state."""
     uwb_test_utils.set_uwb_state_and_verify(self.dut, False, self.handler)
 
-  @records.uid("a9283694-aa0b-4032-9701-f45bb15cb0fa")
   def test_enable_uwb_state(self):
     """Enables and verifies UWB state."""
     uwb_test_utils.set_uwb_state_and_verify(self.dut, True, self.handler)
 
-  @records.uid("cda92ecc-c04f-46c6-b433-a5fc30fbd822")
   def test_uwb_state_after_reboot_with_uwb_off(self):
     """Sets UWB state to off and verifies it is persistent after reboot."""
     self._test_uwb_state_after_reboot(self.dut, False, self.handler)
 
-  @records.uid("6d8c4e95-57d6-4d97-9838-ab5c492b6f1c")
   def test_uwb_state_after_reboot_with_uwb_on(self):
     """Sets UWB state to on and verifies it is persistent after reboot."""
     self._test_uwb_state_after_reboot(self.dut, True, self.handler)
 
-  @records.uid("a9d2b85a-895f-48ad-87a0-aebd19b45264")
   def test_uwb_state_with_airplane_mode_on(self):
     """Verifies UWB is disabled with airplane mode on."""
     uwb_test_utils.set_airplane_mode(self.dut, True)
@@ -119,7 +112,6 @@ class UwbManagerTest(uwb_base_test.UwbBaseTest):
         ),
         "UWB is not disabled with airplane mode On.")
 
-  @records.uid("29886f5b-5f91-4ffa-99e8-6d90c21d70de")
   def test_toggle_uwb_state_with_airplane_mode_on(self):
     """Verifies UWB cannot be turned on with airplane mode On."""
     uwb_test_utils.set_airplane_mode(self.dut, True)
@@ -135,7 +127,6 @@ class UwbManagerTest(uwb_base_test.UwbBaseTest):
         ),
         "Enabling UWB with airplane mode On should not work.")
 
-  @records.uid("f1008ca6-88d6-4fad-8b88-7dea4f331810")
   def test_uwb_state_with_airplane_mode_off(self):
     """Verifies UWB is disabled with airplane mode off."""
     uwb_test_utils.set_airplane_mode(self.dut, False)
@@ -145,7 +136,6 @@ class UwbManagerTest(uwb_base_test.UwbBaseTest):
         ),
         "UWB is not enabled with airplane mode Off.")
 
-  @records.uid("dd3a7c5c-25b2-4c86-8ed1-2b6ff246b7b6")
   def test_uwb_state_off_with_airplane_mode_toggle(self):
     """Verifies UWB disabled state is persistent with airplane mode toggle."""
 
