@@ -20,6 +20,7 @@ import static com.android.server.uwb.util.DataTypeConversionUtil.macAddressByteA
 import androidx.annotation.Nullable;
 
 import com.android.internal.annotations.VisibleForTesting;
+import com.android.server.uwb.DeviceConfigFacade;
 import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.data.UwbOwrAoaMeasurement;
 
@@ -33,18 +34,12 @@ public class UwbAdvertiseManager {
     private final ConcurrentHashMap<Long, UwbAdvertiseTarget> mAdvertiseTargetMap =
             new ConcurrentHashMap<>();
 
-    // TODO(b/269770342): Use overlays to allow OEMs to modify these values.
-    @VisibleForTesting public static final int CRITERIA_ANGLE = 10;
-    @VisibleForTesting public static final int TIME_THRESHOLD = 5000;
-    @VisibleForTesting public static final int SIZE_OF_ARRAY_TO_CHECK = 10;
-    private static final int START_INDEX_TO_CAL_VARIANCE = 2;
-    private static final int END_INDEX_TO_CAL_VARIANCE = 8;
-    @VisibleForTesting public static final int TRUSTED_VALUE_OF_VARIANCE = 5;
-
     private final UwbInjector mUwbInjector;
+    private final DeviceConfigFacade mDeviceConfigFacade;
 
-    public UwbAdvertiseManager(UwbInjector uwbInjector) {
+    public UwbAdvertiseManager(UwbInjector uwbInjector, DeviceConfigFacade deviceConfigFacade) {
         this.mUwbInjector = uwbInjector;
+        this.mDeviceConfigFacade = deviceConfigFacade;
     }
 
     /**
@@ -94,11 +89,12 @@ public class UwbAdvertiseManager {
             return false;
         }
 
-        if (uwbAdvertiseTarget.getVarianceOfAzimuth() > TRUSTED_VALUE_OF_VARIANCE) {
+        int trustedValueOfVariance = mDeviceConfigFacade.getAdvertiseTrustedVarianceValue();
+        if (uwbAdvertiseTarget.getVarianceOfAzimuth() > trustedValueOfVariance) {
             return false;
         }
 
-        if (uwbAdvertiseTarget.getVarianceOfElevation() > TRUSTED_VALUE_OF_VARIANCE) {
+        if (uwbAdvertiseTarget.getVarianceOfElevation() > trustedValueOfVariance) {
             return false;
         }
         return true;
@@ -118,7 +114,8 @@ public class UwbAdvertiseManager {
 
     private boolean isWithinTimeThreshold(UwbAdvertiseTarget uwbAdvertiseTarget) {
         long currentTime = mUwbInjector.getElapsedSinceBootMillis();
-        if (currentTime - uwbAdvertiseTarget.getLastUpdatedTime() > TIME_THRESHOLD) {
+        if (currentTime - uwbAdvertiseTarget.getLastUpdatedTime()
+                > mDeviceConfigFacade.getAdvertiseTimeThresholdMillis()) {
             return false;
         }
         return true;
@@ -167,7 +164,7 @@ public class UwbAdvertiseManager {
      * UWB session is closed.
      */
     @VisibleForTesting
-    public static class UwbAdvertiseTarget {
+    public class UwbAdvertiseTarget {
         private final long mMacAddress;
         private final ArrayList<Double> mRecentAoaAzimuth = new ArrayList<>();
         private final ArrayList<Double> mRecentAoaElevation = new ArrayList<>();
@@ -188,22 +185,26 @@ public class UwbAdvertiseManager {
             mRecentAoaAzimuth.add(aoaAzimuth);
             mRecentAoaElevation.add(aoaElevation);
 
-            if (mRecentAoaAzimuth.size() > SIZE_OF_ARRAY_TO_CHECK) {
+            int arraySizeToCheck = mDeviceConfigFacade.getAdvertiseArraySizeToCheck();
+            int arrayStartIndex = mDeviceConfigFacade.getAdvertiseArrayStartIndexToCalVariance();
+            int arrayEndIndex = mDeviceConfigFacade.getAdvertiseArrayEndIndexToCalVariance();
+
+            if (mRecentAoaAzimuth.size() > arraySizeToCheck) {
                 mRecentAoaAzimuth.remove(0);
                 mRecentAoaElevation.remove(0);
             }
 
-            if (mRecentAoaAzimuth.size() == SIZE_OF_ARRAY_TO_CHECK) {
+            if (mRecentAoaAzimuth.size() == arraySizeToCheck) {
                 double[] azimuthArr =
                         mRecentAoaAzimuth
-                                .subList(START_INDEX_TO_CAL_VARIANCE, END_INDEX_TO_CAL_VARIANCE)
+                                .subList(arrayStartIndex, arrayEndIndex)
                                 .stream()
                                 .mapToDouble(Double::doubleValue)
                                 .toArray();
                 mVarianceOfAzimuth = getVariance(azimuthArr);
                 double[] elevationArr =
                         mRecentAoaElevation
-                                .subList(START_INDEX_TO_CAL_VARIANCE, END_INDEX_TO_CAL_VARIANCE)
+                                .subList(arrayStartIndex, arrayEndIndex)
                                 .stream()
                                 .mapToDouble(Double::doubleValue)
                                 .toArray();
@@ -215,7 +216,7 @@ public class UwbAdvertiseManager {
         }
 
         private boolean isWithinCriterionAngle(double aoa) {
-            return Math.abs(aoa) <= CRITERIA_ANGLE;
+            return Math.abs(aoa) <= mDeviceConfigFacade.getAdvertiseAoaCriteriaAngle();
         }
 
         private boolean isWithinCriterionAngle() {
