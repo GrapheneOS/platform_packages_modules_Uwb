@@ -64,6 +64,14 @@ public class DeviceConfigFacade {
     private int mPrimerFovDegree;
     private int mPredictionTimeoutSeconds;
 
+    // Config parameters related to Advertising Profile.
+    private int mAdvertiseAoaCriteriaAngle;
+    private int mAdvertiseTimeThresholdMillis;
+    private int mAdvertiseArraySizeToCheck;
+    private int mAdvertiseArrayStartIndexToCalVariance;
+    private int mAdvertiseArrayEndIndexToCalVariance;
+    private int mAdvertiseTrustedVarianceValue;
+
     public DeviceConfigFacade(Handler handler, Context context) {
         mContext = context;
 
@@ -85,7 +93,7 @@ public class DeviceConfigFacade {
         mBugReportMinIntervalMs = DeviceConfig.getInt(DeviceConfig.NAMESPACE_UWB,
                 "bug_report_min_interval_ms", DEFAULT_BUG_REPORT_MIN_INTERVAL_MS);
 
-        // Default values come from the overlay file.
+        // Default values come from the overlay file (config.xml).
         mEnableFilters = DeviceConfig.getBoolean(
                 DeviceConfig.NAMESPACE_UWB,
                 "enable_filters",
@@ -135,6 +143,40 @@ public class DeviceConfigFacade {
                 DeviceConfig.NAMESPACE_UWB,
                 "prediction_timeout_seconds",
                 mContext.getResources().getInteger(R.integer.prediction_timeout_seconds)
+        );
+
+        // Read the Advertising profile config parameters.
+        mAdvertiseAoaCriteriaAngle = DeviceConfig.getInt(
+                DeviceConfig.NAMESPACE_UWB,
+                "advertise_aoa_criteria_angle",
+                mContext.getResources().getInteger(R.integer.advertise_aoa_criteria_angle)
+        );
+        mAdvertiseTimeThresholdMillis = DeviceConfig.getInt(
+                DeviceConfig.NAMESPACE_UWB,
+                "advertise_time_threshold_millis",
+                mContext.getResources().getInteger(R.integer.advertise_time_threshold_millis)
+        );
+        mAdvertiseArraySizeToCheck = DeviceConfig.getInt(
+                DeviceConfig.NAMESPACE_UWB,
+                "advertise_array_size_to_check",
+                mContext.getResources().getInteger(R.integer.advertise_array_size_to_check)
+        );
+        mAdvertiseArrayStartIndexToCalVariance = DeviceConfig.getInt(
+                DeviceConfig.NAMESPACE_UWB,
+                "advertise_array_start_index_to_cal_variance",
+                mContext.getResources().getInteger(
+                        R.integer.advertise_array_start_index_to_cal_variance)
+        );
+        mAdvertiseArrayEndIndexToCalVariance = DeviceConfig.getInt(
+                DeviceConfig.NAMESPACE_UWB,
+                "advertise_array_end_index_to_cal_variance",
+                mContext.getResources().getInteger(
+                        R.integer.advertise_array_end_index_to_cal_variance)
+        );
+        mAdvertiseTrustedVarianceValue = DeviceConfig.getInt(
+                DeviceConfig.NAMESPACE_UWB,
+                "advertise_trusted_variance_value",
+                mContext.getResources().getInteger(R.integer.advertise_trusted_variance_value)
         );
 
         // A little parsing and cleanup:
@@ -244,5 +286,50 @@ public class DeviceConfigFacade {
      */
     public int getPredictionTimeoutSeconds() {
         return mPredictionTimeoutSeconds;
+    }
+
+    /*
+     * Gets the Advertising Profile AoA Criteria Angle.
+     */
+    public int getAdvertiseAoaCriteriaAngle() {
+        return mAdvertiseAoaCriteriaAngle;
+    }
+
+    /**
+     * Gets the Advertising profile time threshold (for the received Owr Aoa Measurements).
+     */
+    public int getAdvertiseTimeThresholdMillis() {
+        return mAdvertiseTimeThresholdMillis;
+    }
+
+    /**
+     * Gets the Advertising profile Array Size (of the stored values from Owr Aoa Measurements).
+     */
+    public int getAdvertiseArraySizeToCheck() {
+        return mAdvertiseArraySizeToCheck;
+    }
+
+    /**
+     * Gets the Advertising profile Array Start Index (of the stored values from Owr Aoa
+     * Measurements), which we will use to calculate Variance.
+     */
+    public int getAdvertiseArrayStartIndexToCalVariance() {
+        return mAdvertiseArrayStartIndexToCalVariance;
+    }
+
+    /**
+     * Gets the Advertising profile Array End Index (of the stored values from Owr Aoa
+     * Measurements), which we will use to calculate Variance.
+     */
+    public int getAdvertiseArrayEndIndexToCalVariance() {
+        return mAdvertiseArrayEndIndexToCalVariance;
+    }
+
+    /**
+     * Gets the Advertising profile Trusted Variance Value (the threshold within which computed
+     * variance from the Owr Aoa Measurements is acceptable).
+     */
+    public int getAdvertiseTrustedVarianceValue() {
+        return mAdvertiseTrustedVarianceValue;
     }
 }
