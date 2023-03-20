@@ -16,9 +16,6 @@
 
 package com.android.server.uwb.advertisement;
 
-import static com.android.server.uwb.advertisement.UwbAdvertiseManager.CRITERIA_ANGLE;
-import static com.android.server.uwb.advertisement.UwbAdvertiseManager.SIZE_OF_ARRAY_TO_CHECK;
-import static com.android.server.uwb.advertisement.UwbAdvertiseManager.TRUSTED_VALUE_OF_VARIANCE;
 import static com.android.server.uwb.util.DataTypeConversionUtil.macAddressByteArrayToLong;
 
 import static org.junit.Assert.assertFalse;
@@ -32,6 +29,7 @@ import android.test.suitebuilder.annotation.SmallTest;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.server.uwb.DeviceConfigFacade;
 import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.data.UwbOwrAoaMeasurement;
 import com.android.server.uwb.util.UwbUtil;
@@ -79,15 +77,23 @@ public class UwbAdvertiseManagerTest {
             UwbUtil.convertFloatToQFormat(TEST_AOA_ELEVATION_FLOAT, 9, 7);
     private static final int TEST_AOA_ELEVATION_FOM = 90;
 
+    // Constants for the values that will be returned by the overlays (via DeviceConfigFacade).
+    private static final int OVERLAY_CRITERIA_ANGLE = 10;
+    private static final int OVERLAY_TIME_THRESHOLD = 5000;
+    private static final int OVERLAY_ARRAY_SIZE_TO_CHECK = 10;
+    private static final int OVERLAY_ARRAY_START_INDEX_TO_CAL_VARIANCE = 2;
+    private static final int OVERLAY_ARRAY_END_INDEX_TO_CAL_VARIANCE = 8;
+    private static final int OVERLAY_TRUSTED_VALUE_OF_VARIANCE = 5;
+
     // Setup the AoA Azimuth and Elevation variances, such that the device will be considered as
     // being pointed or not.
     private static final int TEST_DELTA_AOA_INSIDE_VARIANCE =
-            (int) Math.sqrt(TRUSTED_VALUE_OF_VARIANCE) - 1;
+            (int) Math.sqrt(OVERLAY_TRUSTED_VALUE_OF_VARIANCE) - 1;
     private static final int TEST_DELTA_AOA_OUTSIDE_VARIANCE =
-            (int) Math.sqrt(TRUSTED_VALUE_OF_VARIANCE) + 1;
+            (int) Math.sqrt(OVERLAY_TRUSTED_VALUE_OF_VARIANCE) + 1;
 
     // Required minimum number of OwR AoA Measurements to determine the pointing behavior.
-    private static final int NUM_REQUIRED_OWR_AOA_MEASUREMENTS = SIZE_OF_ARRAY_TO_CHECK;
+    private static final int NUM_REQUIRED_OWR_AOA_MEASUREMENTS = OVERLAY_ARRAY_SIZE_TO_CHECK;
 
     // Setup the starting time instant for the first measurement, a fixed time interval between
     // two measurements, and a delayed time instance which is outside the validity window of the
@@ -98,7 +104,7 @@ public class UwbAdvertiseManagerTest {
             FIRST_OWR_AOA_MEASUREMENT_TIME_MILLIS
                     + (OWR_AOA_MEASUREMENT_INTERVAL_MILLIS * NUM_REQUIRED_OWR_AOA_MEASUREMENTS);
     private static final long OWR_AOA_MEASUREMENT_TIME_OUTSIDE_THRESHOLD_MILLIS =
-            LAST_OWR_AOA_MEASUREMENT_TIME_MILLIS + UwbAdvertiseManager.TIME_THRESHOLD + 1;
+            LAST_OWR_AOA_MEASUREMENT_TIME_MILLIS + OVERLAY_TIME_THRESHOLD + 1;
 
     // Setup multiple devices (with different MacAddress) for testing multi remote device scenario,
     // and validating that the class can handle ranging with multiple devices simultaneously.
@@ -109,6 +115,7 @@ public class UwbAdvertiseManagerTest {
                     TEST_AOA_ELEVATION_Q97_FORMAT, TEST_AOA_ELEVATION_FOM);
 
     @Mock private UwbInjector mUwbInjector;
+    @Mock private DeviceConfigFacade mDeviceConfigFacade;
 
     private UwbAdvertiseManager mUwbAdvertiseManager;
 
@@ -116,9 +123,21 @@ public class UwbAdvertiseManagerTest {
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
 
-        mUwbAdvertiseManager = new UwbAdvertiseManager(mUwbInjector);
+        mUwbAdvertiseManager = new UwbAdvertiseManager(mUwbInjector, mDeviceConfigFacade);
         when(mUwbInjector.getElapsedSinceBootMillis()).thenReturn(
                 FIRST_OWR_AOA_MEASUREMENT_TIME_MILLIS);
+
+        when(mDeviceConfigFacade.getAdvertiseAoaCriteriaAngle()).thenReturn(OVERLAY_CRITERIA_ANGLE);
+        when(mDeviceConfigFacade.getAdvertiseTimeThresholdMillis())
+                .thenReturn(OVERLAY_TIME_THRESHOLD);
+        when(mDeviceConfigFacade.getAdvertiseTrustedVarianceValue())
+                .thenReturn(OVERLAY_TRUSTED_VALUE_OF_VARIANCE);
+        when(mDeviceConfigFacade.getAdvertiseArraySizeToCheck())
+                .thenReturn(OVERLAY_ARRAY_SIZE_TO_CHECK);
+        when(mDeviceConfigFacade.getAdvertiseArrayStartIndexToCalVariance())
+                .thenReturn(OVERLAY_ARRAY_START_INDEX_TO_CAL_VARIANCE);
+        when(mDeviceConfigFacade.getAdvertiseArrayEndIndexToCalVariance())
+                .thenReturn(OVERLAY_ARRAY_END_INDEX_TO_CAL_VARIANCE);
     }
 
     @Test
@@ -194,7 +213,7 @@ public class UwbAdvertiseManagerTest {
             throws Exception {
         UwbOwrAoaMeasurement uwbOwrAoaMeasurement = setupOwrAoaMeasurements(TEST_MAC_ADDRESS_A,
                 NUM_REQUIRED_OWR_AOA_MEASUREMENTS,
-                CRITERIA_ANGLE + 1, TEST_DELTA_AOA_INSIDE_VARIANCE,
+                OVERLAY_CRITERIA_ANGLE + 1, TEST_DELTA_AOA_INSIDE_VARIANCE,
                 TEST_AOA_ELEVATION_Q97_FORMAT, TEST_DELTA_AOA_INSIDE_VARIANCE);
         uwbOwrAoaMeasurement.mAoaAzimuth = TEST_AOA_AZIMUTH_Q97_FORMAT;
         assertFalse(mUwbAdvertiseManager.isPointedTarget(TEST_MAC_ADDRESS_A));
@@ -208,7 +227,7 @@ public class UwbAdvertiseManagerTest {
         UwbOwrAoaMeasurement uwbOwrAoaMeasurement = setupOwrAoaMeasurements(TEST_MAC_ADDRESS_A,
                 NUM_REQUIRED_OWR_AOA_MEASUREMENTS,
                 TEST_AOA_AZIMUTH_Q97_FORMAT, TEST_DELTA_AOA_INSIDE_VARIANCE,
-                CRITERIA_ANGLE + 1, TEST_DELTA_AOA_INSIDE_VARIANCE);
+                OVERLAY_CRITERIA_ANGLE + 1, TEST_DELTA_AOA_INSIDE_VARIANCE);
         uwbOwrAoaMeasurement.mAoaElevation = TEST_AOA_ELEVATION_Q97_FORMAT;
         assertFalse(mUwbAdvertiseManager.isPointedTarget(TEST_MAC_ADDRESS_A));
     }
@@ -225,7 +244,7 @@ public class UwbAdvertiseManagerTest {
 
         // Setup the last OwrAoaMeasurement with an AoaAzimuth outside the valid criteria angle.
         uwbOwrAoaMeasurement.mFrameSequenceNumber++;
-        uwbOwrAoaMeasurement.mAoaAzimuth = CRITERIA_ANGLE + 1;
+        uwbOwrAoaMeasurement.mAoaAzimuth = OVERLAY_CRITERIA_ANGLE + 1;
         when(mUwbInjector.getElapsedSinceBootMillis()).thenReturn(
                 LAST_OWR_AOA_MEASUREMENT_TIME_MILLIS);
         mUwbAdvertiseManager.updateAdvertiseTarget(uwbOwrAoaMeasurement);
@@ -245,7 +264,7 @@ public class UwbAdvertiseManagerTest {
 
         // Setup the last OwrAoaMeasurement with an AoaElevation outside the valid criteria angle.
         uwbOwrAoaMeasurement.mFrameSequenceNumber++;
-        uwbOwrAoaMeasurement.mAoaElevation = CRITERIA_ANGLE + 1;
+        uwbOwrAoaMeasurement.mAoaElevation = OVERLAY_CRITERIA_ANGLE + 1;
         when(mUwbInjector.getElapsedSinceBootMillis()).thenReturn(
                 LAST_OWR_AOA_MEASUREMENT_TIME_MILLIS);
         mUwbAdvertiseManager.updateAdvertiseTarget(uwbOwrAoaMeasurement);
