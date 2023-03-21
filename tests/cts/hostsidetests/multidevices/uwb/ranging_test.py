@@ -65,6 +65,15 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.new_responder_addr = [4, 5]
     self.block_stride_length = random.randint(1, 10)
 
+    # abort class if uwb is disabled
+    for ad in self.android_devices:
+      asserts.abort_class_if(
+          not uwb_test_utils.verify_uwb_state_callback(
+              ad=ad, uwb_event="Inactive", timeout=120
+          ),
+          "Uwb is not enabled",
+      )
+
   def setup_test(self):
     super().setup_test()
     for uwb_device in self.uwb_devices:
