@@ -770,7 +770,10 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                 watchDog.start();
 
                 Log.i(TAG, "Initialization start ...");
-                mUwbWakeLock.acquire();
+                synchronized (mUwbWakeLock) {
+                    mUwbWakeLock.acquire();
+                }
+
                 try {
                     if (!mNativeUwbManager.doInitialize()) {
                         Log.e(TAG, "Error enabling UWB");
@@ -802,8 +805,10 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                                 countryCode);
                     }
                 } finally {
-                    if (mUwbWakeLock.isHeld()) {
-                        mUwbWakeLock.release();
+                    synchronized (mUwbWakeLock) {
+                        if (mUwbWakeLock.isHeld()) {
+                            mUwbWakeLock.release();
+                        }
                     }
                     watchDog.cancel();
                 }
@@ -823,7 +828,9 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
 
             try {
                 Log.i(TAG, "Deinitialization start ...");
-                mUwbWakeLock.acquire();
+                synchronized (mUwbWakeLock) {
+                    mUwbWakeLock.acquire();
+                }
 
                 if (!mNativeUwbManager.doDeinitialize()) {
                     Log.w(TAG, "Error disabling UWB");
@@ -838,8 +845,10 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                         getAdapterStateFromDeviceState(UwbUciConstants.DEVICE_STATE_OFF),
                         getReasonFromDeviceState(UwbUciConstants.DEVICE_STATE_OFF));
             } finally {
-                if (mUwbWakeLock.isHeld()) {
-                    mUwbWakeLock.release();
+                synchronized (mUwbWakeLock) {
+                    if (mUwbWakeLock.isHeld()) {
+                        mUwbWakeLock.release();
+                    }
                 }
                 watchDog.cancel();
             }
@@ -895,9 +904,10 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                     interrupt();
                 }
 
-                if (mUwbWakeLock.isHeld()) {
-                    Log.e(TAG, "Release mUwbWakeLock before aborting.");
-                    mUwbWakeLock.release();
+                synchronized (mUwbWakeLock) {
+                    if (mUwbWakeLock.isHeld()) {
+                        mUwbWakeLock.release();
+                    }
                 }
             }
 
