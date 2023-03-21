@@ -55,6 +55,15 @@ class ProvisionedStsRangingTest(uwb_base_test.UwbBaseTest):
     self.initiator_addr, self.responder_addr = self.device_addresses
     self.new_responder_addr = [4, 5]
 
+    # abort class if uwb is disabled
+    for ad in self.android_devices:
+      asserts.abort_class_if(
+          not uwb_test_utils.verify_uwb_state_callback(
+              ad=ad, uwb_event="Inactive", timeout=120
+          ),
+          "Uwb is not enabled",
+      )
+
     # device tracker initiator params
     self.device_tracker_initiator_params = uwb_ranging_params.UwbRangingParams(
         device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
