@@ -101,10 +101,6 @@ public class FiraEncoder extends TlvEncoder {
                 .putByte(ConfigParam.KEY_ROTATION_RATE, (byte) params.getKeyRotationRate())
                 .putByte(ConfigParam.SESSION_PRIORITY, (byte) params.getSessionPriority())
                 .putByte(ConfigParam.MAC_ADDRESS_MODE, (byte) params.getMacAddressMode())
-                .putByteArray(ConfigParam.VENDOR_ID, params.getVendorId() != null
-                        ? TlvUtil.getReverseBytes(params.getVendorId()) : null)
-                .putByteArray(ConfigParam.STATIC_STS_IV,
-                        params.getStaticStsIV())
                 .putByte(ConfigParam.NUMBER_OF_STS_SEGMENTS, (byte) params.getStsSegmentCount())
                 .putShort(ConfigParam.MAX_RR_RETRY, (short) params.getMaxRangingRoundRetries())
                 .putByte(ConfigParam.HOPPING_MODE,
@@ -134,7 +130,13 @@ public class FiraEncoder extends TlvEncoder {
                 && (deviceType == FiraParams.RANGING_DEVICE_TYPE_CONTROLEE)) {
             tlvBufferBuilder.putInt(ConfigParam.SUB_SESSION_ID, params.getSubSessionId());
         }
-        if ((stsConfig == FiraParams.STS_CONFIG_PROVISIONED)
+        if (stsConfig == FiraParams.STS_CONFIG_STATIC) {
+            tlvBufferBuilder
+                    .putByteArray(ConfigParam.VENDOR_ID, params.getVendorId() != null
+                            ? TlvUtil.getReverseBytes(params.getVendorId())
+                            : null)
+                    .putByteArray(ConfigParam.STATIC_STS_IV, params.getStaticStsIV());
+        } else if ((stsConfig == FiraParams.STS_CONFIG_PROVISIONED)
                 || (stsConfig
                 == FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY)) {
             tlvBufferBuilder.putByteArray(ConfigParam.SESSION_KEY, params.getSessionKey());
