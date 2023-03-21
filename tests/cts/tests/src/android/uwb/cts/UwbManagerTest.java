@@ -615,6 +615,37 @@ public class UwbManagerTest {
                 mResultCountDownLatch.countDown();
             }
         }
+
+        public void onControleeAdded(PersistableBundle params) { }
+
+        public void onControleeAddFailed(int reason, PersistableBundle params) { }
+
+        public void onControleeRemoved(PersistableBundle params) { }
+
+        public void onControleeRemoveFailed(int reason, PersistableBundle params) { }
+
+        public void onPaused(PersistableBundle params) { }
+
+        public void onPauseFailed(int reason, PersistableBundle params) { }
+
+        public void onResumed(PersistableBundle params) { }
+
+        public void onResumeFailed(int reason, PersistableBundle params) { }
+
+        public void onDataSent(UwbAddress remoteDeviceAddress, PersistableBundle params) { }
+
+        public void onDataSendFailed(UwbAddress remoteDeviceAddress,
+                int reason, PersistableBundle params) { }
+
+        public void onDataReceived(UwbAddress remoteDeviceAddress,
+                PersistableBundle params, byte[] data) { }
+
+        public void onDataReceiveFailed(UwbAddress remoteDeviceAddress,
+                int reason, PersistableBundle params) { }
+
+        public void onServiceDiscovered(PersistableBundle params) { }
+
+        public void onServiceConnected(PersistableBundle params) { }
     }
 
     @Test
