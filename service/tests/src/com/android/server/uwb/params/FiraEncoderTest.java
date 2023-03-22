@@ -26,6 +26,8 @@ import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_UT_TAG;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_UL_TDOA;
 import static com.google.uwb.support.fira.FiraParams.SESSION_TYPE_RANGING;
+import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_PROVISIONED;
+import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_STATIC;
 import static com.google.uwb.support.fira.FiraParams.TX_TIMESTAMP_40_BIT;
 import static com.google.uwb.support.fira.FiraParams.UL_TDOA_DEVICE_ID_16_BIT;
 
@@ -66,6 +68,7 @@ public class FiraEncoderTest {
                     .setDestAddressList(Arrays.asList(UwbAddress.fromBytes(new byte[] { 0x4, 0x6})))
                     .setMultiNodeMode(MULTI_NODE_MODE_UNICAST)
                     .setRangingRoundUsage(RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE)
+                    .setStsConfig(STS_CONFIG_STATIC)
                     .setVendorId(new byte[]{0x5, 0x78})
                     .setStaticStsIV(new byte[]{0x1a, 0x55, 0x77, 0x47, 0x7e, 0x7d})
                     .setRangeDataNtfAoaAzimuthLower(-1.5)
@@ -76,9 +79,9 @@ public class FiraEncoderTest {
     private static final byte[] TEST_FIRA_OPEN_SESSION_TLV_DATA =
             UwbUtil.getByteArray("0001010101010201000301000401090501010602060408"
                     + "0260090904C80000000B01000C01030D01010E01040F0200001002204E11010012010314010"
-                    + "A1501021601001701011B01191C01001F01002301002401002501322601002702780528061A"
-                    + "5577477E7D2901012A0200002C01002D01002E01012F01013101"
-                    + "00350101070206042B04000000001D0807D59E4707D56022");
+                    + "A1501021601001701011B01191C01001F0100230100240100250132260100"
+                    + "2901012A0200002C01002D01002E01012F01013101"
+                    + "00350101070206042B04000000002702780528061A5577477E7D1D0807D59E4707D56022");
 
     private static final FiraRangingReconfigureParams.Builder TEST_FIRA_RECONFIGURE_PARAMS =
             new FiraRangingReconfigureParams.Builder()
@@ -104,6 +107,7 @@ public class FiraEncoderTest {
                     .setDeviceAddress(UwbAddress.fromBytes(new byte[] { 0x4, 0x6}))
                     .setDestAddressList(Arrays.asList(UwbAddress.fromBytes(new byte[] { 0x4, 0x6})))
                     .setMultiNodeMode(MULTI_NODE_MODE_UNICAST)
+                    .setStsConfig(STS_CONFIG_STATIC)
                     .setVendorId(new byte[]{0x5, 0x78})
                     .setStaticStsIV(new byte[]{0x1a, 0x55, 0x77, 0x47, 0x7e, 0x7d})
                     .setRangingRoundUsage(RANGING_ROUND_USAGE_UL_TDOA)
@@ -116,9 +120,9 @@ public class FiraEncoderTest {
     private static final byte[] TEST_FIRA_OPEN_SESSION_TLV_DATA_UT_TAG =
             UwbUtil.getByteArray("0001010101000201000301000401090501010602060408"
                     + "0260090904C80000000B01000C01030D01010E01010F0200001002204E11010412010314010"
-                    + "A1501021601001701011B01191C01001F01002301002401002501322601002702780528061A"
-                    + "5577477E7D2901012A0200002C01002D01002E01012F0101310100350101070206042B04000"
-                    + "000003304B004000034041E0000003803010B0A390101");
+                    + "A1501021601001701011B01191C01001F0100230100240100250132260100"
+                    + "2901012A0200002C01002D01002E01012F0101310100350101070206042B04000"
+                    + "000002702780528061A5577477E7D3304B004000034041E0000003803010B0A390101");
 
     private final FiraEncoder mFiraEncoder = new FiraEncoder();
 
@@ -165,5 +169,43 @@ public class FiraEncoderTest {
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(44);
         assertThat(tlvs.getByteArray()).isEqualTo(TEST_FIRA_OPEN_SESSION_TLV_DATA_UT_TAG);
+    }
+
+    @Test
+    public void testFiraOpenSessionParamsProvisionedSts() throws Exception {
+        FiraOpenSessionParams params =
+                new FiraOpenSessionParams.Builder()
+                        .setProtocolVersion(FiraParams.PROTOCOL_VERSION_1_1)
+                        .setSessionId(1)
+                        .setSessionType(SESSION_TYPE_RANGING)
+                        .setRangeDataNtfConfig(
+                                RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_LEVEL_TRIG)
+                        .setDeviceType(RANGING_DEVICE_TYPE_CONTROLLER)
+                        .setDeviceRole(RANGING_DEVICE_ROLE_RESPONDER)
+                        .setDeviceAddress(UwbAddress.fromBytes(new byte[] { 0x4, 0x6}))
+                        .setDestAddressList(Arrays.asList(UwbAddress.fromBytes(
+                                new byte[] { 0x4, 0x6})))
+                        .setMultiNodeMode(MULTI_NODE_MODE_UNICAST)
+                        .setRangingRoundUsage(RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE)
+                        .setStsConfig(STS_CONFIG_PROVISIONED)
+                        .setSessionKey(new byte[]{0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5,
+                                0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78})
+                        .setRangeDataNtfAoaAzimuthLower(-1.5)
+                        .setRangeDataNtfAoaAzimuthUpper(2.5)
+                        .setRangeDataNtfAoaElevationLower(-1.5)
+                        .setRangeDataNtfAoaElevationUpper(1.2)
+                        .build();
+
+        byte[] expected_data =
+                UwbUtil.getByteArray("0001010101010201030301000401090501010602060408"
+                        + "0260090904C80000000B01000C01030D01010E01040F0200001002204E1101001201031"
+                        + "4010A1501021601001701011B01191C01001F0100230100240100250132260100"
+                        + "2901012A0200002C01002D01002E01012F01013101"
+                        + "00350101070206042B0400000000451005780578057805780578057805780578"
+                        + "1D0807D59E4707D56022");
+        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
+
+        assertThat(tlvs.getNoOfParams()).isEqualTo(40);
+        assertThat(tlvs.getByteArray()).isEqualTo(expected_data);
     }
 }
