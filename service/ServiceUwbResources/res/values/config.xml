@@ -78,6 +78,50 @@
     If <=0 or >=180, the primer will be disabled, allowing an unlimited field of view. -->
     <integer name="primer_fov_degrees">60</integer>
 
+    <!-- Enables the back azimuth primer. This is needed on hardware that does not report azimuth
+    values beyond +/-90deg. This primer determines if azimuth values are likely to be coming from
+    behind the phone in three ways:
+    1. The prediction expects the next reading to come from behind the user because the user has
+       rotated away from the signal.
+    2. Predictions based on pose changes inversely correlate with azimuth readings.
+    3. UWB readings show very little relationship to pose changes because of non-line-of-sight
+       conditions.
+    This works best with an FOV primer setting below 90 degrees to ensure that predictions are being
+    used across the 90-degree threshold. -->
+    <bool name="enable_azimuth_mirroring">true</bool>
+
+    <!-- Azimuth values arriving from behind the user are often very unreliable due to interference
+    from the user and hardware design. Setting this to true forces predictions for all rear-azimuth
+    values. When false, the mirrored azimuth reading will be used. -->
+    <bool name="predict_rear_azimuths">true</bool>
+
+    <!-- The number of samples to consider when determining if the azimuth needs mirroring. -->
+    <integer name="mirror_detection_window">5</integer>
+
+    <!-- How much correlation is required to make the assumption that the azimuth is in front of the
+    phone. Correlation is defined as the user's rotation rate in degrees per second, multiplied by
+    how accurately the UWB readings follow that movement. The accuracy is scored on a bell curve
+    defined by mirror_score_std_degrees.
+    The user must rotate at least this many degrees per second before action is taken, and often
+    more if the readings aren't correlating well. -->
+    <integer name="front_mirror_dps">12</integer>
+
+    <!-- How much correlation is required to make the assumption that the azimuth is behind the
+    the phone. See front_mirror_dps setting for more detail. -->
+    <integer name="back_mirror_dps">10</integer>
+
+    <!-- Sets the size of the bell curve on which the correlation of azimuth and pose changes are
+    scored. It should be about one standard deviation of the hardware's azimuth jitter, in degrees.
+    -->
+    <integer name="mirror_score_std_degrees">8</integer>
+
+    <!-- Sets how much noise influences the decision to switch to the back azimuth, in percent. Back
+    values are more likely to be inconsistent with predictions due to non-line-of-sight effects.
+    The radians of typical inconsistency is multiplied by this percentage and added to the degrees
+    of rear azimuth correlation, to increase the odds of deciding rear correlation is the best fit.
+    -->
+    <integer name="back_noise_influence_percent">8</integer>
+
     <!-- Sets how long reports with an error code will be replaced with predicted reports, in
      seconds. This is measured from the time of the last non-error report. -->
     <integer name="prediction_timeout_seconds">5</integer>

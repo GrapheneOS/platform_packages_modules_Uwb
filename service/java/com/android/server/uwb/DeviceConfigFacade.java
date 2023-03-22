@@ -62,6 +62,13 @@ public class DeviceConfigFacade {
     private boolean mEnablePrimerAoA;
     private boolean mEnablePrimerFov;
     private int mPrimerFovDegree;
+    private boolean mEnableBackAzimuth;
+    private boolean mEnableBackAzimuthMasking;
+    private int mBackAzimuthWindow;
+    private float mFrontAzimuthRadiansPerSecond;
+    private float mBackAzimuthRadiansPerSecond;
+    private float mMirrorScoreStdRadians;
+    private float mBackNoiseInfluenceCoeff;
     private int mPredictionTimeoutSeconds;
 
     // Config parameters related to Advertising Profile.
@@ -147,6 +154,41 @@ public class DeviceConfigFacade {
                 "prediction_timeout_seconds",
                 mContext.getResources().getInteger(R.integer.prediction_timeout_seconds)
         );
+        mEnableBackAzimuth = DeviceConfig.getBoolean(
+                DeviceConfig.NAMESPACE_UWB,
+                "enable_azimuth_mirroring",
+                mContext.getResources().getBoolean(R.bool.enable_azimuth_mirroring)
+        );
+        mEnableBackAzimuthMasking = DeviceConfig.getBoolean(
+                DeviceConfig.NAMESPACE_UWB,
+                "predict_rear_azimuths",
+                mContext.getResources().getBoolean(R.bool.predict_rear_azimuths)
+        );
+        mBackAzimuthWindow = DeviceConfig.getInt(
+                DeviceConfig.NAMESPACE_UWB,
+                "mirror_detection_window",
+                mContext.getResources().getInteger(R.integer.mirror_detection_window)
+        );
+        int frontAzimuthDegreesPerSecond = DeviceConfig.getInt(
+                DeviceConfig.NAMESPACE_UWB,
+                "front_mirror_dps",
+                mContext.getResources().getInteger(R.integer.front_mirror_dps)
+        );
+        int backAzimuthDegreesPerSecond = DeviceConfig.getInt(
+                DeviceConfig.NAMESPACE_UWB,
+                "back_mirror_dps",
+                mContext.getResources().getInteger(R.integer.back_mirror_dps)
+        );
+        int mirrorScoreStdDegrees = DeviceConfig.getInt(
+                DeviceConfig.NAMESPACE_UWB,
+                "mirror_score_std_degrees",
+                mContext.getResources().getInteger(R.integer.mirror_score_std_degrees)
+        );
+        int backNoiseInfluencePercent = DeviceConfig.getInt(
+                DeviceConfig.NAMESPACE_UWB,
+                "back_noise_influence_percent",
+                mContext.getResources().getInteger(R.integer.back_noise_influence_percent)
+        );
 
         // Read the Advertising profile config parameters.
         mAdvertiseAoaCriteriaAngle = DeviceConfig.getInt(
@@ -190,6 +232,10 @@ public class DeviceConfigFacade {
         );
 
         // A little parsing and cleanup:
+        mFrontAzimuthRadiansPerSecond = (float) Math.toRadians(frontAzimuthDegreesPerSecond);
+        mBackAzimuthRadiansPerSecond = (float) Math.toRadians(backAzimuthDegreesPerSecond);
+        mMirrorScoreStdRadians = (float) Math.toRadians(mirrorScoreStdDegrees);
+        mBackNoiseInfluenceCoeff = backNoiseInfluencePercent / 100F;
         try {
             mPoseSourceType = PoseSourceType.valueOf(poseSourceName);
         } catch (IllegalArgumentException e) {
@@ -298,7 +344,56 @@ public class DeviceConfigFacade {
         return mPredictionTimeoutSeconds;
     }
 
-    /*
+    /**
+     * Gets the flag that enables back-azimuth detection.
+     */
+    public boolean isEnableBackAzimuth() {
+        return mEnableBackAzimuth;
+    }
+
+    /**
+     * Gets the flag that causes rear azimuth values to be replaced with predictions.
+     */
+    public boolean isEnableBackAzimuthMasking() {
+        return mEnableBackAzimuthMasking;
+    }
+
+    /**
+     * Gets the size of the back-azimuth detection window.
+     */
+    public int getBackAzimuthWindow() {
+        return mBackAzimuthWindow;
+    }
+
+    /**
+     * Gets minimum correlation rate required to assume azimuth readings are coming from the front.
+     */
+    public float getFrontAzimuthRadiansPerSecond() {
+        return mFrontAzimuthRadiansPerSecond;
+    }
+
+    /**
+     * Gets minimum correlation rate required to assume azimuth readings are coming from the back.
+     */
+    public float getBackAzimuthRadiansPerSecond() {
+        return mBackAzimuthRadiansPerSecond;
+    }
+
+    /**
+     * Gets the standard deviation of the mirror detection bell curve.
+     */
+    public float getMirrorScoreStdRadians() {
+        return mMirrorScoreStdRadians;
+    }
+
+    /**
+     * Gets a coefficient of how much noise adds to the back-facing mirroring score.
+     */
+    public float getBackNoiseInfluenceCoeff() {
+        return mBackNoiseInfluenceCoeff;
+    }
+
+    /**
      * Gets the Advertising Profile AoA Criteria Angle.
      */
     public int getAdvertiseAoaCriteriaAngle() {
