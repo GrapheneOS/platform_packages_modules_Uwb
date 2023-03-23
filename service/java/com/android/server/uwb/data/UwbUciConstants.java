@@ -17,6 +17,7 @@ package com.android.server.uwb.data;
 
 import static android.hardware.uwb.fira_android.UwbVendorStatusCodes.STATUS_ERROR_CCC_LIFECYCLE;
 import static android.hardware.uwb.fira_android.UwbVendorStatusCodes.STATUS_ERROR_CCC_SE_BUSY;
+import static android.hardware.uwb.fira_android.UwbVendorStatusCodes.STATUS_REGULATION_UWB_OFF;
 
 import android.hardware.uwb.fira_android.UwbVendorReasonCodes;
 
@@ -218,8 +219,10 @@ public class UwbUciConstants {
                 STATUS_CODE_ERROR_DL_TDOA_DEVICE_ADDRESS_NOT_MATCHING_IN_REPLY_TIME_LIST =
             FiraParams.STATUS_CODE_ERROR_DL_TDOA_DEVICE_ADDRESS_NOT_MATCHING_IN_REPLY_TIME_LIST;
 
+    /* Vendor-dependent UCI status codes */
     public static final int STATUS_CODE_CCC_SE_BUSY = STATUS_ERROR_CCC_SE_BUSY;
     public static final int STATUS_CODE_CCC_LIFECYCLE = STATUS_ERROR_CCC_LIFECYCLE;
+    public static final int STATUS_CODE_ANDROID_REGULATION_UWB_OFF = STATUS_REGULATION_UWB_OFF;
 
     /* UWB Device Extended Mac address length */
     public static final int UWB_DEVICE_SHORT_MAC_ADDRESS_LEN = 2;
