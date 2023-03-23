@@ -102,8 +102,6 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     @VisibleForTesting
     public static final int WATCHDOG_MS = 10000;
     private static final int SEND_VENDOR_CMD_TIMEOUT_MS = 10000;
-    @VisibleForTesting
-    public static final int TASK_NOTIFY_ADAPTER_STATE_MESSAGE_DELAY_MS = 15000;
 
     private boolean mIsDiagnosticsEnabled = false;
     private int mDiagramsFrameReportsFieldsFlags = 0;
@@ -245,7 +243,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         // TODO(b/244443764): We should use getAdapterState() here, as for multi-chip case
         // the configured state above can be different from the computed adapter state
         // (after the call to updateState()).
-        mUwbTask.enqueueNotifyAdapterState(
+        mUwbTask.computeAndNotifyAdapterStateChange(
                 getAdapterStateFromDeviceState(deviceState),
                 getReasonFromDeviceState(deviceState),
                 mUwbCountryCode.getCountryCode());
@@ -282,6 +280,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         if (mLastAdapterStateNotification == adapterState) {
             return;
         }
+        Log.d(TAG, "notifyAdapterState(): adapterState = " + adapterState + ", reason = " + reason);
 
         if (mAdapterStateCallbacksList.getRegisteredCallbackCount() == 0) {
             return;
@@ -339,10 +338,10 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     public void onCountryCodeChanged(@Nullable String countryCode) {
         Log.i(TAG, "Received onCountryCodeChanged() with countryCode = " + countryCode);
         if (mUwbCountryCode.isValid(countryCode)) {
-            // Remove any existing messages for notifying UWB stack state, and enqueue a message
-            // for immediate delivery.
-            mUwbTask.executeUnique(TASK_NOTIFY_ADAPTER_STATE,
-                    getAdapterState(), mLastStateChangedReason);
+            // Notify the current UWB adapter state. For example, if UWB was earlier enabled and at
+            // that time the country code was not valid, will now notify STATE_ENABLED_INACTIVE.
+            mUwbTask.computeAndNotifyAdapterStateChange(
+                    getAdapterState(), mLastStateChangedReason, countryCode);
         }
     }
 
@@ -799,7 +798,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                         // TODO(b/255977441): Check if this succeeds before notifying.
                         mUwbCountryCode.setCountryCode(true);
 
-                        enqueueNotifyAdapterState(
+                        computeAndNotifyAdapterStateChange(
                                 getAdapterStateFromDeviceState(UwbUciConstants.DEVICE_STATE_READY),
                                 getReasonFromDeviceState(UwbUciConstants.DEVICE_STATE_READY),
                                 countryCode);
@@ -866,16 +865,19 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             }
         }
 
-        private void enqueueNotifyAdapterState(int adapterState, int reason, String countryCode) {
+        private void computeAndNotifyAdapterStateChange(
+                int adapterState, int reason, String countryCode) {
             // When there is already a proper country code initialized in the UWB stack,
-            // immediately proceed to notify about the UWB stack state. If not, enqueue
-            // a delayed message for the notification (which will get replaced if we
-            // were to receive an onCountryCodeChanged notification).
+            // proceed to notify about the UWB stack state. If not, notify the UWB stack state as
+            // DISABLED (even though internally the UWB device state may be stored as READY), so
+            // that the applications wait for starting a ranging session.
             if (mUwbCountryCode.isValid(countryCode)) {
-                execute(TASK_NOTIFY_ADAPTER_STATE, adapterState, reason);
+                notifyAdapterState(adapterState, reason);
             } else {
-                delayedExecute(TASK_NOTIFY_ADAPTER_STATE, adapterState, reason,
-                         TASK_NOTIFY_ADAPTER_STATE_MESSAGE_DELAY_MS);
+                // TODO(b/267554906): Should we use the new StateChangeReason SYSTEM_REGULATION for
+                // this scenario also ?
+                notifyAdapterState(
+                        AdapterStateCallback.STATE_DISABLED, StateChangeReason.SYSTEM_POLICY);
             }
         }
 
