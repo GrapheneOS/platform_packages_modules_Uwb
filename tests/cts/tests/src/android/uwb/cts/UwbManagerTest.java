@@ -63,6 +63,7 @@ import com.android.modules.utils.build.SdkLevel;
 
 import com.google.uwb.support.dltdoa.DlTDoAMeasurement;
 import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
+import com.google.uwb.support.fira.FiraControleeParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraPoseUpdateParams;
@@ -559,6 +560,10 @@ public class UwbManagerTest {
         public boolean onReconfiguredFailedCalled;
         public boolean onStoppedCalled;
         public boolean onClosedCalled;
+        public boolean onControleeAddCalled;
+        public boolean onControleeAddFailedCalled;
+        public boolean onControleeRemoveCalled;
+        public boolean onControleeRemoveFailedCalled;
         public boolean onUpdateDtTagStatusCalled;
         public RangingSession rangingSession;
         public RangingReport rangingReport;
@@ -630,13 +635,25 @@ public class UwbManagerTest {
             }
         }
 
-        public void onControleeAdded(PersistableBundle params) { }
+        public void onControleeAdded(PersistableBundle params) {
+            onControleeAddCalled = true;
+            mCtrlCountDownLatch.countDown();
+        }
 
-        public void onControleeAddFailed(int reason, PersistableBundle params) { }
+        public void onControleeAddFailed(int reason, PersistableBundle params) {
+            onControleeAddFailedCalled = true;
+            mCtrlCountDownLatch.countDown();
+        }
 
-        public void onControleeRemoved(PersistableBundle params) { }
+        public void onControleeRemoved(PersistableBundle params) {
+            onControleeRemoveCalled = true;
+            mCtrlCountDownLatch.countDown();
+        }
 
-        public void onControleeRemoveFailed(int reason, PersistableBundle params) { }
+        public void onControleeRemoveFailed(int reason, PersistableBundle params) {
+            onControleeRemoveFailedCalled = true;
+            mCtrlCountDownLatch.countDown();
+        }
 
         public void onPaused(PersistableBundle params) { }
 
@@ -1215,6 +1232,50 @@ public class UwbManagerTest {
                 });
     }
 
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
+    public void testFiraRangingSessionAddRemoveControlee() throws Exception {
+        FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder()
+                .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_ONE_TO_MANY)
+                .build();
+        verifyFiraRangingSession(
+                firaOpenSessionParams,
+                null,
+                (rangingSessionCallback) -> {
+                    // Add new controlee
+                    CountDownLatch countDownLatch = new CountDownLatch(2);
+                    rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+                    UwbAddress uwbAddress = UwbAddress.fromBytes(new byte[]{0x5, 0x5});
+                    rangingSessionCallback.rangingSession.addControlee(
+                            new FiraControleeParams.Builder()
+                                    .setAddressList(new UwbAddress[]{uwbAddress})
+                                    .setSubSessionIdList(new int[]{1})
+                                    .build().toBundle()
+                    );
+                    // Wait for the on reconfigured and controlee added callback.
+                    assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+                    assertThat(rangingSessionCallback.onReconfiguredCalled).isTrue();
+                    assertThat(rangingSessionCallback.onReconfiguredFailedCalled).isFalse();
+                    assertThat(rangingSessionCallback.onControleeAddCalled).isTrue();
+                    assertThat(rangingSessionCallback.onControleeAddFailedCalled).isFalse();
+
+                    // Remove controlee
+                    countDownLatch = new CountDownLatch(2);
+                    rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+                    rangingSessionCallback.rangingSession.removeControlee(
+                            new FiraControleeParams.Builder()
+                                    .setAddressList(new UwbAddress[]{uwbAddress})
+                                    .setSubSessionIdList(new int[]{1})
+                                    .build().toBundle()
+                    );
+                    // Wait for the on reconfigured and controlee added callback.
+                    assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+                    assertThat(rangingSessionCallback.onReconfiguredCalled).isTrue();
+                    assertThat(rangingSessionCallback.onReconfiguredFailedCalled).isFalse();
+                    assertThat(rangingSessionCallback.onControleeRemoveCalled).isTrue();
+                    assertThat(rangingSessionCallback.onControleeRemoveFailedCalled).isFalse();
+                });
+    }
 
     private class AdapterStateCallback implements UwbManager.AdapterStateCallback {
         private final CountDownLatch mCountDownLatch;
