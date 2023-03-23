@@ -1214,6 +1214,95 @@ public class UwbManagerTest {
 
     @Test
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
+    public void testQueryMaxDataSizeBytes() throws Exception {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+
+        // Needs UWB_PRIVILEGED permission which is held by shell.
+        uiAutomation.adoptShellPermissionIdentity();
+
+        CancellationSignal cancellationSignal = null;
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        CountDownLatch resultCountDownLatch = new CountDownLatch(1);
+        RangingSessionCallback rangingSessionCallback =
+                new RangingSessionCallback(countDownLatch, resultCountDownLatch);
+
+        PersistableBundle bundle = mUwbManager.getSpecificationInfo();
+        if (bundle.keySet().contains(FiraParams.PROTOCOL_NAME)) {
+            bundle = requireNonNull(bundle.getPersistableBundle(FiraParams.PROTOCOL_NAME));
+        }
+        FiraSpecificationParams params =
+                FiraSpecificationParams.fromBundle(bundle);
+        FiraProtocolVersion firaProtocolVersion = params.getMaxMacVersionSupported();
+
+        // The "SESSION_QUERY_DATA_SIZE_IN_RANGING_CMD" is added in the UCI v2.0 spec, and so
+        // check if the device supports FiRa 2.0 or above.
+        assumeTrue(firaProtocolVersion.getMajor() >= 2);
+
+        FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder().build();
+
+        try {
+            // Needs UWB_PRIVILEGED & UWB_RANGING permission which is held by shell.
+            uiAutomation.adoptShellPermissionIdentity();
+
+            // Start ranging session
+            cancellationSignal = mUwbManager.openRangingSession(
+                    firaOpenSessionParams.toBundle(),
+                    Executors.newSingleThreadExecutor(),
+                    rangingSessionCallback,
+                    mDefaultChipId);
+
+            // Wait for the on opened callback.
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.onOpenedCalled).isTrue();
+            assertThat(rangingSessionCallback.onOpenFailedCalled).isFalse();
+            assertThat(rangingSessionCallback.rangingSession).isNotNull();
+
+            // Check the UWB state.
+            assertThat(mUwbManager.getAdapterState()).isEqualTo(STATE_ENABLED_INACTIVE);
+
+            countDownLatch = new CountDownLatch(1);
+            rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+            rangingSessionCallback.rangingSession.start(new PersistableBundle());
+
+            // Wait for the on started callback.
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.onStartedCalled).isTrue();
+            assertThat(rangingSessionCallback.onStartFailedCalled).isFalse();
+
+            // Check the UWB state.
+            assertThat(mUwbManager.getAdapterState()).isEqualTo(STATE_ENABLED_ACTIVE);
+
+            // Verify that the command returns a value >= 0.
+            int dataSize = rangingSessionCallback.rangingSession.queryMaxDataSizeBytes();
+            assertThat(dataSize).isGreaterThan(-1);
+
+            countDownLatch = new CountDownLatch(1);
+            rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+
+            // Stop ongoing session.
+            rangingSessionCallback.rangingSession.stop();
+
+            // Wait for on stopped callback.
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.onStoppedCalled).isTrue();
+        } finally {
+            if (cancellationSignal != null) {
+                countDownLatch = new CountDownLatch(1);
+                rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+
+                // Close session.
+                cancellationSignal.cancel();
+
+                // Wait for the on closed callback.
+                assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+                assertThat(rangingSessionCallback.onClosedCalled).isTrue();
+            }
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
     public void testFiraPoseChanges() throws Exception {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         CancellationSignal cancellationSignal = null;
