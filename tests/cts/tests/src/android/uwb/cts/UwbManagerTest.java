@@ -68,6 +68,7 @@ import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraPoseUpdateParams;
 import com.google.uwb.support.fira.FiraProtocolVersion;
+import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.multichip.ChipInfoParams;
 import com.google.uwb.support.oemextension.DeviceStatus;
@@ -582,6 +583,10 @@ public class UwbManagerTest {
 
         public void replaceCtrlCountDownLatch(@NonNull CountDownLatch countDownLatch) {
             mCtrlCountDownLatch = countDownLatch;
+        }
+
+        public void replaceResultCountDownLatch(@NonNull CountDownLatch countDownLatch) {
+            mResultCountDownLatch = countDownLatch;
         }
 
         public void onOpened(@NonNull RangingSession session) {
@@ -1297,6 +1302,36 @@ public class UwbManagerTest {
                             () -> rangingSessionCallback.rangingSession.resume(
                                     new PersistableBundle()
                             ));
+                });
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
+    public void testFiraRangingSessionReconfigure() throws Exception {
+        FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder()
+                .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_ONE_TO_MANY)
+                .build();
+        verifyFiraRangingSession(
+                firaOpenSessionParams,
+                null,
+                (rangingSessionCallback) -> {
+                    // Reconfigure to disable notifications.
+                    CountDownLatch countDownLatch = new CountDownLatch(1);
+                    rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+                    FiraRangingReconfigureParams reconfigureParams =
+                            new FiraRangingReconfigureParams.Builder()
+                                    .setRangeDataNtfConfig(FiraParams.RANGE_DATA_NTF_CONFIG_DISABLE)
+                                    .build();
+                    rangingSessionCallback.rangingSession.reconfigure(reconfigureParams.toBundle());
+                    // Wait for the on reconfigured and controlee added callback.
+                    assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+                    assertThat(rangingSessionCallback.onReconfiguredCalled).isTrue();
+                    assertThat(rangingSessionCallback.onReconfiguredFailedCalled).isFalse();
+
+                    // Ensure no more ranging reports are received.
+                    CountDownLatch resultCountDownLatch = new CountDownLatch(1);
+                    rangingSessionCallback.replaceResultCountDownLatch(resultCountDownLatch);
+                    assertThat(resultCountDownLatch.await(1, TimeUnit.SECONDS)).isFalse();
                 });
     }
 
