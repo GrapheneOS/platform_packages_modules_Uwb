@@ -2602,7 +2602,7 @@ public class UwbSessionManagerTest {
         mTestLooper.dispatchNext();
 
         verify(mUwbInjector).runTaskOnSingleThreadExecutor(
-                any(), eq(TEST_RANGING_INTERVAL_MS * 2 * 11));
+                any(), eq(TEST_RANGING_INTERVAL_MS * 4 * 11));
         verify(mUwbSessionNotificationManager)
                 .onRangingStoppedWithApiReasonCode(eq(uwbSession),
                         eq(RangingChangeReason.LOCAL_API));
