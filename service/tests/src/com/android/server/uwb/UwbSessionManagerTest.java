@@ -156,6 +156,7 @@ public class UwbSessionManagerTest {
     private static final int SOURCE_END_POINT = 100;
     private static final int DEST_END_POINT = 200;
     private static final int HANDLE_ID = 12;
+    private static final int MAX_RX_DATA_PACKETS_TO_STORE = 10;
     private static final int PID = Process.myPid();
 
     @Mock
@@ -178,6 +179,8 @@ public class UwbSessionManagerTest {
     private ActivityManager mActivityManager;
     @Mock
     private UwbServiceCore mUwbServiceCore;
+    @Mock
+    private DeviceConfigFacade mDeviceConfigFacade;
     private TestLooper mTestLooper = new TestLooper();
     private UwbSessionManager mUwbSessionManager;
     @Captor
@@ -191,6 +194,7 @@ public class UwbSessionManagerTest {
         when(mUwbInjector.isSystemApp(UID, PACKAGE_NAME)).thenReturn(true);
         when(mUwbInjector.isForegroundAppOrService(UID, PACKAGE_NAME)).thenReturn(true);
         when(mUwbInjector.getUwbServiceCore()).thenReturn(mUwbServiceCore);
+        when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
         doAnswer(invocation -> {
             FutureTask t = invocation.getArgument(0);
             t.run();
@@ -1863,6 +1867,8 @@ public class UwbSessionManagerTest {
                 PEER_EXTENDED_MAC_ADDRESS_2_LONG, DATA_SEQUENCE_NUM);
         UwbSessionManager.ReceivedDataInfo deviceTwoPacketTwo = buildReceivedDataInfo(
                 PEER_EXTENDED_MAC_ADDRESS_2_LONG, DATA_SEQUENCE_NUM_1);
+        when(mDeviceConfigFacade.getRxDataMaxPacketsToStore())
+                .thenReturn(MAX_RX_DATA_PACKETS_TO_STORE);
 
         uwbSession.addReceivedDataInfo(deviceOnePacketOne);
         uwbSession.addReceivedDataInfo(deviceOnePacketTwo);
@@ -1881,6 +1887,63 @@ public class UwbSessionManagerTest {
         assertThat(uwbSession.getAllReceivedDataInfo(PEER_EXTENDED_MAC_ADDRESS_2_LONG)).isEqualTo(
                 List.of(deviceTwoPacketOne, deviceTwoPacketTwo));
         assertThat(uwbSession.getAllReceivedDataInfo(PEER_EXTENDED_MAC_ADDRESS_2_LONG)).isEqualTo(
+                List.of());
+    }
+
+    @Test
+    public void session_receivedDataInfo_maxCapacity() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+
+        UwbSessionManager.ReceivedDataInfo rxPacketOne = buildReceivedDataInfo(
+                PEER_EXTENDED_MAC_ADDRESS_LONG, DATA_SEQUENCE_NUM + 1);
+        UwbSessionManager.ReceivedDataInfo rxPacketTwo = buildReceivedDataInfo(
+                PEER_EXTENDED_MAC_ADDRESS_LONG, DATA_SEQUENCE_NUM + 2);
+        UwbSessionManager.ReceivedDataInfo rxPacketThree = buildReceivedDataInfo(
+                PEER_EXTENDED_MAC_ADDRESS_LONG, DATA_SEQUENCE_NUM + 3);
+        UwbSessionManager.ReceivedDataInfo rxPacketFour = buildReceivedDataInfo(
+                PEER_EXTENDED_MAC_ADDRESS_LONG, DATA_SEQUENCE_NUM + 4);
+
+        // Setup the UwbSession to have multiple data packets (being received) from one remote
+        // device, such that it's at the capacity. We send the packets out-of-order, but do want
+        // to extract them in order.
+        when(mDeviceConfigFacade.getRxDataMaxPacketsToStore()).thenReturn(3);
+
+        // Case 1 - Setup the UwbSession to have multiple Rx data packets (beyond capacity), such
+        // that the last packet is the smallest one and should be dropped.
+        uwbSession.addReceivedDataInfo(rxPacketTwo);
+        uwbSession.addReceivedDataInfo(rxPacketFour);
+        uwbSession.addReceivedDataInfo(rxPacketThree);
+        uwbSession.addReceivedDataInfo(rxPacketOne);
+
+        // Verify that the first call to getAllReceivedDataInfo() returns the max capacity number of
+        // packets (in-order), and the second call receives an empty list.
+        assertThat(uwbSession.getAllReceivedDataInfo(PEER_EXTENDED_MAC_ADDRESS_LONG)).isEqualTo(
+                List.of(rxPacketTwo, rxPacketThree, rxPacketFour));
+        assertThat(uwbSession.getAllReceivedDataInfo(PEER_EXTENDED_MAC_ADDRESS_LONG)).isEqualTo(
+                List.of());
+
+        // Case 2 - Setup the UwbSession to have multiple Rx data packets (beyond capacity), such
+        // that one of the stored packets is the smallest one and should be dropped.
+        uwbSession.addReceivedDataInfo(rxPacketOne);
+        uwbSession.addReceivedDataInfo(rxPacketTwo);
+        uwbSession.addReceivedDataInfo(rxPacketFour);
+        uwbSession.addReceivedDataInfo(rxPacketThree);
+
+        assertThat(uwbSession.getAllReceivedDataInfo(PEER_EXTENDED_MAC_ADDRESS_LONG)).isEqualTo(
+                List.of(rxPacketTwo, rxPacketThree, rxPacketFour));
+        assertThat(uwbSession.getAllReceivedDataInfo(PEER_EXTENDED_MAC_ADDRESS_LONG)).isEqualTo(
+                List.of());
+
+        // Case 3 - Setup the UwbSession to have multiple Rx data packets (beyond capacity), such
+        // that one of the stored packets is repeated. The repeated packet should be ignored.
+        uwbSession.addReceivedDataInfo(rxPacketTwo);
+        uwbSession.addReceivedDataInfo(rxPacketFour);
+        uwbSession.addReceivedDataInfo(rxPacketThree);
+        uwbSession.addReceivedDataInfo(rxPacketFour);
+
+        assertThat(uwbSession.getAllReceivedDataInfo(PEER_EXTENDED_MAC_ADDRESS_LONG)).isEqualTo(
+                List.of(rxPacketTwo, rxPacketThree, rxPacketFour));
+        assertThat(uwbSession.getAllReceivedDataInfo(PEER_EXTENDED_MAC_ADDRESS_LONG)).isEqualTo(
                 List.of());
     }
 
@@ -2818,6 +2881,8 @@ public class UwbSessionManagerTest {
                 UwbUciConstants.STATUS_CODE_OK);
 
         // First call onDataReceived() to get the application payload data.
+        when(mDeviceConfigFacade.getRxDataMaxPacketsToStore())
+                .thenReturn(MAX_RX_DATA_PACKETS_TO_STORE);
         mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS, SOURCE_END_POINT, DEST_END_POINT,
                 DATA_PAYLOAD);
