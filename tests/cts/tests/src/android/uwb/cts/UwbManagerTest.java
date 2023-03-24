@@ -1277,6 +1277,29 @@ public class UwbManagerTest {
                 });
     }
 
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
+    public void testFiraRangingSessionPauseResume() throws Exception {
+        FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder()
+                .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_ONE_TO_MANY)
+                .build();
+        verifyFiraRangingSession(
+                firaOpenSessionParams,
+                null,
+                (rangingSessionCallback) -> {
+                    // Pause the session - not supported yet.
+                    assertThrows(IllegalStateException.class,
+                            () -> rangingSessionCallback.rangingSession.pause(
+                                    new PersistableBundle()
+                            ));
+                    // Resume the session - not supported yet.
+                    assertThrows(IllegalStateException.class,
+                            () -> rangingSessionCallback.rangingSession.resume(
+                                    new PersistableBundle()
+                            ));
+                });
+    }
+
     private class AdapterStateCallback implements UwbManager.AdapterStateCallback {
         private final CountDownLatch mCountDownLatch;
         private final Integer mWaitForState;
