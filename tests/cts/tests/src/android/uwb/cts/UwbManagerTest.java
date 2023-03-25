@@ -68,6 +68,7 @@ import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraPoseUpdateParams;
 import com.google.uwb.support.fira.FiraProtocolVersion;
+import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.multichip.ChipInfoParams;
 import com.google.uwb.support.oemextension.DeviceStatus;
@@ -565,6 +566,8 @@ public class UwbManagerTest {
         public boolean onControleeRemoveCalled;
         public boolean onControleeRemoveFailedCalled;
         public boolean onUpdateDtTagStatusCalled;
+        public boolean onDataSentCalled;
+        public boolean onDataSendFailedCalled;
         public RangingSession rangingSession;
         public RangingReport rangingReport;
 
@@ -582,6 +585,10 @@ public class UwbManagerTest {
 
         public void replaceCtrlCountDownLatch(@NonNull CountDownLatch countDownLatch) {
             mCtrlCountDownLatch = countDownLatch;
+        }
+
+        public void replaceResultCountDownLatch(@NonNull CountDownLatch countDownLatch) {
+            mResultCountDownLatch = countDownLatch;
         }
 
         public void onOpened(@NonNull RangingSession session) {
@@ -663,10 +670,16 @@ public class UwbManagerTest {
 
         public void onResumeFailed(int reason, PersistableBundle params) { }
 
-        public void onDataSent(UwbAddress remoteDeviceAddress, PersistableBundle params) { }
+        public void onDataSent(UwbAddress remoteDeviceAddress, PersistableBundle params) {
+            onDataSentCalled = true;
+            mCtrlCountDownLatch.countDown();
+        }
 
         public void onDataSendFailed(UwbAddress remoteDeviceAddress,
-                int reason, PersistableBundle params) { }
+                int reason, PersistableBundle params) {
+            onDataSendFailedCalled = true;
+            mCtrlCountDownLatch.countDown();
+        }
 
         public void onDataReceived(UwbAddress remoteDeviceAddress,
                 PersistableBundle params, byte[] data) { }
@@ -1103,6 +1116,61 @@ public class UwbManagerTest {
 
     @Test
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
+    public void testAdvertisingRangingSession() throws Exception {
+        FiraSpecificationParams params = getFiraSpecificationParams();
+        FiraProtocolVersion firaProtocolVersion = params.getMaxMacVersionSupported();
+        // Advertising profile is supported only for devices with FiRa 2.0 support.
+        assumeTrue(firaProtocolVersion.getMajor() >= 2);
+
+        // Setup the Fira Configuration Parameters.
+        FiraOpenSessionParams firaOpenSessionParams = new FiraOpenSessionParams.Builder()
+                .setProtocolVersion(new FiraProtocolVersion(2, 0))
+                .setSessionId(1)
+                .setSessionType(FiraParams.SESSION_TYPE_RANGING)
+                .setStsConfig(FiraParams.STS_CONFIG_STATIC)
+                .setVendorId(new byte[]{0x5, 0x6})
+                .setStaticStsIV(new byte[]{0x5, 0x6, 0x9, 0xa, 0x4, 0x6})
+                // TODO(b/275077682): We likely don't need to set the DeviceType for an OWR_AoA
+                // ranging session, update the test based on the bug.
+                .setDeviceType(FiraParams.RANGING_DEVICE_TYPE_CONTROLLER)
+                .setDeviceRole(FiraParams.RANGING_DEVICE_ROLE_OBSERVER)
+                .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_UNICAST)
+                .setRangingRoundUsage(FiraParams.RANGING_ROUND_USAGE_OWR_AOA_MEASUREMENT)
+                .setDeviceAddress(UwbAddress.fromBytes(new byte[]{0x5, 0x6}))
+                .setDestAddressList(List.of(UwbAddress.fromBytes(new byte[]{0x5, 0x6})))
+                .build();
+        UwbOemExtensionCallback uwbOemExtensionCallback = new UwbOemExtensionCallback();
+
+        verifyFiraRangingSession(
+                firaOpenSessionParams,
+                (rangingReport) -> {
+                    assertThat(rangingReport.getMeasurements()).isNotNull();
+                    // TODO(b/263799939): Consider adding a RangingMeasurementType field to the
+                    //  top-level RangingReportMetadata, and then confirm it's of type OwrAoa.
+                },
+                (rangingSessionCallback) -> {
+                    // Check that onCheckPointedTarget() is called, this should happen when an
+                    // OWR_AOA Ranging report is received (on the observer).
+                    assertThat(uwbOemExtensionCallback.onCheckPointedTargetCalled).isTrue();
+
+                    // Send a Data packet to the remote device (Advertiser)
+                    CountDownLatch countDownLatch = new CountDownLatch(1);
+                    rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+                    rangingSessionCallback.rangingSession.sendData(
+                            UwbAddress.fromBytes(new byte[]{0x1, 0x2}),
+                            new PersistableBundle(),
+                            new byte[]{0x01, 0x02, 0x03, 0x04}
+                    );
+
+                    // Wait for the onDataSent callback.
+                    assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+                    assertThat(rangingSessionCallback.onDataSentCalled).isTrue();
+                    assertThat(rangingSessionCallback.onDataSendFailedCalled).isFalse();
+                });
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
     public void testFiraRangingSessionWithProvisionedSTS() throws Exception {
         FiraSpecificationParams params = getFiraSpecificationParams();
         EnumSet<FiraParams.StsCapabilityFlag> stsCapabilities = EnumSet.of(
@@ -1274,6 +1342,59 @@ public class UwbManagerTest {
                     assertThat(rangingSessionCallback.onReconfiguredFailedCalled).isFalse();
                     assertThat(rangingSessionCallback.onControleeRemoveCalled).isTrue();
                     assertThat(rangingSessionCallback.onControleeRemoveFailedCalled).isFalse();
+                });
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
+    public void testFiraRangingSessionPauseResume() throws Exception {
+        FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder()
+                .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_ONE_TO_MANY)
+                .build();
+        verifyFiraRangingSession(
+                firaOpenSessionParams,
+                null,
+                (rangingSessionCallback) -> {
+                    // Pause the session - not supported yet.
+                    assertThrows(IllegalStateException.class,
+                            () -> rangingSessionCallback.rangingSession.pause(
+                                    new PersistableBundle()
+                            ));
+                    // Resume the session - not supported yet.
+                    assertThrows(IllegalStateException.class,
+                            () -> rangingSessionCallback.rangingSession.resume(
+                                    new PersistableBundle()
+                            ));
+                });
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
+    public void testFiraRangingSessionReconfigure() throws Exception {
+        FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder()
+                .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_ONE_TO_MANY)
+                .build();
+        verifyFiraRangingSession(
+                firaOpenSessionParams,
+                null,
+                (rangingSessionCallback) -> {
+                    // Reconfigure to disable notifications.
+                    CountDownLatch countDownLatch = new CountDownLatch(1);
+                    rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+                    FiraRangingReconfigureParams reconfigureParams =
+                            new FiraRangingReconfigureParams.Builder()
+                                    .setRangeDataNtfConfig(FiraParams.RANGE_DATA_NTF_CONFIG_DISABLE)
+                                    .build();
+                    rangingSessionCallback.rangingSession.reconfigure(reconfigureParams.toBundle());
+                    // Wait for the on reconfigured and controlee added callback.
+                    assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+                    assertThat(rangingSessionCallback.onReconfiguredCalled).isTrue();
+                    assertThat(rangingSessionCallback.onReconfiguredFailedCalled).isFalse();
+
+                    // Ensure no more ranging reports are received.
+                    CountDownLatch resultCountDownLatch = new CountDownLatch(1);
+                    rangingSessionCallback.replaceResultCountDownLatch(resultCountDownLatch);
+                    assertThat(resultCountDownLatch.await(1, TimeUnit.SECONDS)).isFalse();
                 });
     }
 
@@ -1465,6 +1586,7 @@ public class UwbManagerTest {
         public boolean onRangingReportReceivedCalled = false;
         public boolean onSessionChangedCalled = false;
         public boolean onDeviceStatusNtfCalled = false;
+        public boolean onCheckPointedTargetCalled = false;
 
         @Override
         public void onSessionStatusNotificationReceived(
@@ -1499,6 +1621,7 @@ public class UwbManagerTest {
         @Override
         public boolean onCheckPointedTarget(
                 @NonNull PersistableBundle pointedTargetBundle) {
+            onCheckPointedTargetCalled = true;
             return true;
         }
     }
@@ -1586,8 +1709,6 @@ public class UwbManagerTest {
                     .fromBundle(reportMetadataBundle);
             assertEquals(reportMetadata.getSessionId(), sessionId);
             assertThat(reportMetadata.getRawNtfData()).isNotEmpty();
-
-            // TODO(b/263799939) Add test for onCheckPointedTarget
 
             // Check the UWB state.
             assertThat(mUwbManager.getAdapterState()).isEqualTo(STATE_ENABLED_ACTIVE);

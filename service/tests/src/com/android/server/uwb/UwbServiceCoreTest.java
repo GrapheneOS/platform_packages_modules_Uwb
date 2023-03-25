@@ -38,6 +38,8 @@ import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROL
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE;
 import static com.google.uwb.support.fira.FiraParams.SESSION_TYPE_RANGING;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -53,6 +55,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.validateMockitoUsage;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import android.content.AttributionSource;
@@ -61,6 +64,7 @@ import android.content.res.Resources;
 import android.os.IBinder;
 import android.os.PersistableBundle;
 import android.os.PowerManager;
+import android.os.RemoteException;
 import android.os.test.TestLooper;
 import android.platform.test.annotations.Presubmit;
 import android.test.suitebuilder.annotation.SmallTest;
@@ -68,6 +72,7 @@ import android.util.Pair;
 import android.uwb.AdapterState;
 import android.uwb.IOnUwbActivityEnergyInfoListener;
 import android.uwb.IUwbAdapterStateCallbacks;
+import android.uwb.IUwbOemExtensionCallback;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.IUwbVendorUciCallback;
 import android.uwb.SessionHandle;
@@ -1221,6 +1226,10 @@ public class UwbServiceCoreTest {
         byte[] payload = new byte[0];
         mUwbServiceCore.onVendorUciNotificationReceived(gid, oid, payload);
         verify(vendorCb).onVendorNotificationReceived(gid, oid, payload);
+
+        mUwbServiceCore.unregisterVendorExtensionCallback(vendorCb);
+        mUwbServiceCore.onVendorUciNotificationReceived(gid, oid, payload);
+        verifyZeroInteractions(vendorCb);
     }
 
     @Test
@@ -1231,6 +1240,26 @@ public class UwbServiceCoreTest {
         mUwbServiceCore.reportUwbActivityEnergyInfo(listener);
         mTestLooper.dispatchAll();
         verify(listener).onUwbActivityEnergyInfo(any());
+    }
+
+    @Test
+    public void testOemExtensionCallback_registerUnregister() throws RemoteException {
+        IUwbOemExtensionCallback oemExtensionCb = mock(IUwbOemExtensionCallback.class);
+
+        assertFalse(mUwbServiceCore.isOemExtensionCbRegistered());
+        assertThat(mUwbServiceCore.getOemExtensionCallback()).isNull();
+
+        mUwbServiceCore.registerOemExtensionCallback(oemExtensionCb);
+        assertTrue(mUwbServiceCore.isOemExtensionCbRegistered());
+        assertThat(mUwbServiceCore.getOemExtensionCallback()).isNotNull();
+
+        mUwbServiceCore.updateDeviceState(0, "");
+        verify(oemExtensionCb).onDeviceStatusNotificationReceived(any());
+
+        mUwbServiceCore.unregisterOemExtensionCallback(oemExtensionCb);
+
+        assertFalse(mUwbServiceCore.isOemExtensionCbRegistered());
+        assertThat(mUwbServiceCore.getOemExtensionCallback()).isNull();
     }
 
     public CccSpecificationParams getTestCccSpecificationParams() {
