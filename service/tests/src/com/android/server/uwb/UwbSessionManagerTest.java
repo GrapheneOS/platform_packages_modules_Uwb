@@ -96,6 +96,7 @@ import android.uwb.UwbOemExtensionCallbackListener;
 import com.android.server.uwb.UwbSessionManager.UwbSession;
 import com.android.server.uwb.UwbSessionManager.WaitObj;
 import com.android.server.uwb.advertisement.UwbAdvertiseManager;
+import com.android.server.uwb.data.DtTagUpdateRangingRoundsStatus;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbRangingData;
 import com.android.server.uwb.data.UwbUciConstants;
@@ -107,6 +108,7 @@ import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccPulseShapeCombo;
 import com.google.uwb.support.ccc.CccSpecificationParams;
 import com.google.uwb.support.ccc.CccStartRangingParams;
+import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraProtocolVersion;
@@ -2864,6 +2866,30 @@ public class UwbSessionManagerTest {
         verify(mUwbMetrics).logRangingCloseEvent(
                 eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
         assertThat(mUwbSessionManager.getSessionCount()).isEqualTo(0);
+    }
+
+    @Test
+    public void testDtTagRangingRoundsUpdate() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        byte[] indices = {1, 2};
+        DtTagUpdateRangingRoundsStatus status = new DtTagUpdateRangingRoundsStatus(0,
+                indices.length, indices);
+        PersistableBundle bundle = new DlTDoARangingRoundsUpdate.Builder()
+                .setSessionId(uwbSession.getSessionId())
+                .setNoOfActiveRangingRounds(indices.length)
+                .setRangingRoundIndexes(indices)
+                .build()
+                .toBundle();
+
+        when(mNativeUwbManager.sessionUpdateActiveRoundsDtTag(anyInt(), anyInt(), any(),
+                anyString())).thenReturn(status);
+
+        mUwbSessionManager.rangingRoundsUpdateDtTag(uwbSession.getSessionHandle(), bundle);
+        mTestLooper.dispatchAll();
+
+        verify(mNativeUwbManager).sessionUpdateActiveRoundsDtTag(uwbSession.getSessionId(),
+                indices.length, indices, uwbSession.getChipId());
+        verify(mUwbSessionNotificationManager).onRangingRoundsUpdateStatus(any(), any());
     }
 
     private UwbSessionManager.ReceivedDataInfo buildReceivedDataInfo(long macAddress) {

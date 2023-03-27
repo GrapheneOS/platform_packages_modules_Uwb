@@ -38,6 +38,7 @@ import static org.mockito.Mockito.when;
 
 import android.content.AttributionSource;
 import android.os.PersistableBundle;
+import android.os.RemoteException;
 import android.platform.test.annotations.Presubmit;
 import android.test.suitebuilder.annotation.SmallTest;
 import android.util.Pair;
@@ -182,7 +183,7 @@ public class UwbSessionNotificationManagerTest {
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
     }
-  
+
     @Test
     public void testOnRangingResult_forTwoWay_WithAoaAndDestAoa() throws Exception {
         when(mFiraParams.getAoaResultRequest()).thenReturn(
@@ -557,5 +558,14 @@ public class UwbSessionNotificationManagerTest {
         verify(mIUwbRangingCallbacks).onDataSendFailed(eq(mSessionHandle), eq(
                         PEER_EXTENDED_UWB_ADDRESS),
                 eq(STATUS_CODE_FAILED), eq(PERSISTABLE_BUNDLE));
+    }
+
+    @Test
+    public void testOnRangingRoundsUpdateStatus() throws RemoteException {
+        PersistableBundle bundle = new PersistableBundle();
+        mUwbSessionNotificationManager.onRangingRoundsUpdateStatus(mUwbSession, bundle);
+
+        verify(mIUwbRangingCallbacks).onRangingRoundsUpdateDtTagStatus(eq(mSessionHandle),
+                eq(bundle));
     }
 }
