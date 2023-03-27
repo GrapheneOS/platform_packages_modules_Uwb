@@ -36,8 +36,10 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -119,6 +121,10 @@ public class UwbServiceImplTest {
 
     private UwbServiceImpl mUwbServiceImpl;
 
+    private void createUwbServiceImpl() {
+        mUwbServiceImpl = new UwbServiceImpl(mContext, mUwbInjector);
+    }
+
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
@@ -128,13 +134,14 @@ public class UwbServiceImplTest {
         when(mUwbMultichipData.getDefaultChipId()).thenReturn(DEFAULT_CHIP_ID);
         when(mUwbInjector.getUwbServiceCore()).thenReturn(mUwbServiceCore);
         when(mUwbInjector.getMultichipData()).thenReturn(mUwbMultichipData);
-        when(mUwbInjector.getSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0)).thenReturn(0);
+        when(mUwbInjector.getGlobalSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0)).thenReturn(0);
+        when(mUwbInjector.getGlobalSettingsString(Settings.Global.AIRPLANE_MODE_RADIOS))
+                .thenReturn("cell,bluetooth,uwb,wifi,wimax");
         when(mUwbInjector.getNativeUwbManager()).thenReturn(mNativeUwbManager);
         when(mUwbInjector.getUserManager()).thenReturn(mUserManager);
         when(mUserManager.getUserRestrictions().getBoolean(anyString())).thenReturn(false);
 
-        mUwbServiceImpl = new UwbServiceImpl(mContext, mUwbInjector);
-
+        createUwbServiceImpl();
         verify(mContext).registerReceiver(
                 mApmModeBroadcastReceiver.capture(),
                 argThat(i -> i.getAction(0).equals(Intent.ACTION_AIRPLANE_MODE_CHANGED)));
@@ -326,7 +333,7 @@ public class UwbServiceImplTest {
 
     @Test
     public void testToggleStatePersistenceToSharedPrefsWhenApmModeOn() throws Exception {
-        when(mUwbInjector.getSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0)).thenReturn(1);
+        when(mUwbInjector.getGlobalSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0)).thenReturn(1);
 
         mUwbServiceImpl.setEnabled(true);
         verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, true);
@@ -356,16 +363,85 @@ public class UwbServiceImplTest {
         verify(mUwbServiceCore).setEnabled(true);
 
         // Toggle on
-        when(mUwbInjector.getSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0)).thenReturn(1);
+        when(mUwbInjector.getGlobalSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0)).thenReturn(1);
         mApmModeBroadcastReceiver.getValue().onReceive(
                 mContext, new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED));
         verify(mUwbServiceCore).setEnabled(false);
 
         // Toggle off
-        when(mUwbInjector.getSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0)).thenReturn(0);
+        when(mUwbInjector.getGlobalSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0)).thenReturn(0);
         mApmModeBroadcastReceiver.getValue().onReceive(
                 mContext, new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED));
         verify(mUwbServiceCore, times(2)).setEnabled(true);
+    }
+
+    @Test
+    public void testApmModeSetEnabledWhenUwbRadioNotSetInAndroidUAndHigher() throws Exception {
+        assumeTrue(SdkLevel.isAtLeastU()); // Test should only run on U+ devices.
+        when(mUwbInjector.getGlobalSettingsString(Settings.Global.AIRPLANE_MODE_RADIOS))
+                .thenReturn("cell,bluetooth,wifi,wimax");
+
+        // Recreate UwbServiceImpl to ensure we don't register APM broadcast receiver.
+        clearInvocations(mContext);
+        createUwbServiceImpl();
+        // apm radio setting should be honored on android U+ devices.
+
+        // Verify that we did not re-register the APM broadcast listener.
+        verify(mContext, never()).registerReceiver(
+                any(), argThat(i -> i.getAction(0).equals(Intent.ACTION_AIRPLANE_MODE_CHANGED)));
+
+        mUwbServiceImpl.setEnabled(true);
+        verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, true);
+        verify(mUwbServiceCore).setEnabled(true);
+        clearInvocations(mUwbServiceCore, mUwbSettingsStore);
+
+        // Toggle APM on
+        when(mUwbInjector.getGlobalSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0)).thenReturn(1);
+        mUwbServiceImpl.setEnabled(true);
+        verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, true);
+        verify(mUwbServiceCore).setEnabled(true);
+        clearInvocations(mUwbServiceCore, mUwbSettingsStore);
+
+        // Toggle APM off
+        when(mUwbInjector.getGlobalSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0)).thenReturn(0);
+        mUwbServiceImpl.setEnabled(true);
+        verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, true);
+        verify(mUwbServiceCore).setEnabled(true);
+    }
+
+    @Test
+    public void testApmModeSetEnabledWhenUwbRadioNotSetInAndroidT() throws Exception {
+        // Test should only run on T devices.
+        assumeTrue(SdkLevel.isAtLeastT() && !SdkLevel.isAtLeastU());
+        when(mUwbInjector.getGlobalSettingsString(Settings.Global.AIRPLANE_MODE_RADIOS))
+                .thenReturn("cell,bluetooth,wifi,wimax");
+
+        // Recreate UwbServiceImpl to ensure we do register APM broadcast receiver.
+        clearInvocations(mContext);
+        createUwbServiceImpl();
+        // apm radio setting should be ignored on android T devices.
+
+        // Verify that we did re-register the APM broadcast listener.
+        verify(mContext).registerReceiver(
+                mApmModeBroadcastReceiver.capture(),
+                argThat(i -> i.getAction(0).equals(Intent.ACTION_AIRPLANE_MODE_CHANGED)));
+        mUwbServiceImpl.setEnabled(true);
+        verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, true);
+        verify(mUwbServiceCore).setEnabled(true);
+        clearInvocations(mUwbServiceCore, mUwbSettingsStore);
+
+        // Toggle APM on
+        when(mUwbInjector.getGlobalSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0)).thenReturn(1);
+        mUwbServiceImpl.setEnabled(true);
+        verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, false);
+        verify(mUwbServiceCore).setEnabled(false);
+        clearInvocations(mUwbServiceCore, mUwbSettingsStore);
+
+        // Toggle APM off
+        when(mUwbInjector.getGlobalSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0)).thenReturn(0);
+        mUwbServiceImpl.setEnabled(true);
+        verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, true);
+        verify(mUwbServiceCore).setEnabled(true);
     }
 
     @Test
@@ -390,7 +466,7 @@ public class UwbServiceImplTest {
     @Test
     public void testToggleFromRootedShellWhenApmModeOn() throws Exception {
         BinderUtil.setUid(Process.ROOT_UID);
-        when(mUwbInjector.getSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0)).thenReturn(1);
+        when(mUwbInjector.getGlobalSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0)).thenReturn(1);
 
         mUwbServiceImpl.setEnabled(true);
         verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, true);

@@ -267,15 +267,23 @@ public class UwbInjector {
      *
      * @throws Settings.SettingNotFoundException
      */
-    public int getSettingsInt(@NonNull String key) throws Settings.SettingNotFoundException {
+    public int getGlobalSettingsInt(@NonNull String key) throws Settings.SettingNotFoundException {
         return Settings.Global.getInt(mContext.getContentResolver(), key);
     }
 
     /**
      * Get integer value from Settings.
      */
-    public int getSettingsInt(@NonNull String key, int defValue) {
+    public int getGlobalSettingsInt(@NonNull String key, int defValue) {
         return Settings.Global.getInt(mContext.getContentResolver(), key, defValue);
+    }
+
+    /**
+     * Get string value from Settings.
+     */
+    @Nullable
+    public String getGlobalSettingsString(@NonNull String key) {
+        return Settings.Global.getString(mContext.getContentResolver(), key);
     }
 
     /**

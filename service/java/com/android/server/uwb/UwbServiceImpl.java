@@ -64,6 +64,12 @@ import java.util.UUID;
 public class UwbServiceImpl extends IUwbAdapter.Stub {
     private static final String TAG = "UwbServiceImpl";
 
+    /**
+     * @hide constant copied from {@link Settings}
+     * TODO(b/274636414): Migrate to official API in Android V.
+     */
+    private static final String SETTINGS_RADIO_UWB = "uwb";
+
     private final Context mContext;
     private final UwbInjector mUwbInjector;
     private final UwbSettingsStore mUwbSettingsStore;
@@ -473,9 +479,17 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
         return mUwbSettingsStore.get(UwbSettingsStore.SETTINGS_TOGGLE_STATE);
     }
 
+    private boolean isAirplaneModeSensitive() {
+        if (!SdkLevel.isAtLeastU()) return true; // config changed only for Android U.
+        final String apmRadios =
+                mUwbInjector.getGlobalSettingsString(Settings.Global.AIRPLANE_MODE_RADIOS);
+        return apmRadios == null || apmRadios.contains(SETTINGS_RADIO_UWB);
+    }
+
     /** Returns true if airplane mode is turned on. */
     private boolean isAirplaneModeOn() {
-        return mUwbInjector.getSettingsInt(
+        if (!isAirplaneModeSensitive()) return false;
+        return mUwbInjector.getGlobalSettingsInt(
                 Settings.Global.AIRPLANE_MODE_ON, 0) == 1;
     }
 
@@ -501,12 +515,14 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     }
 
     private void registerAirplaneModeReceiver() {
-        mContext.registerReceiver(new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                handleAirplaneModeEvent();
-            }
-        }, new IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED));
+        if (isAirplaneModeSensitive()) {
+            mContext.registerReceiver(new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    handleAirplaneModeEvent();
+                }
+            }, new IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED));
+        }
     }
 
     private void registerUserRestrictionsReceiver() {
