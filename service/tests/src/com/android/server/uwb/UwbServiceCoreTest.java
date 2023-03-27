@@ -1082,6 +1082,9 @@ public class UwbServiceCoreTest {
                 StateChangeReason.SESSION_STARTED);
         verify(cb2).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_ACTIVE,
                 StateChangeReason.SESSION_STARTED);
+
+        mUwbServiceCore.unregisterAdapterStateCallbacks(cb1);
+        mUwbServiceCore.unregisterAdapterStateCallbacks(cb2);
     }
 
     @Test
@@ -1260,6 +1263,17 @@ public class UwbServiceCoreTest {
 
         assertFalse(mUwbServiceCore.isOemExtensionCbRegistered());
         assertThat(mUwbServiceCore.getOemExtensionCallback()).isNull();
+    }
+
+    @Test
+    public void testRangingRoundsUpdateDtTag() throws Exception {
+        enableUwbWithCountryCodeChangedCallback();
+
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+        PersistableBundle bundle = new PersistableBundle();
+        mUwbServiceCore.rangingRoundsUpdateDtTag(sessionHandle, bundle);
+
+        verify(mUwbSessionManager).rangingRoundsUpdateDtTag(sessionHandle, bundle);
     }
 
     public CccSpecificationParams getTestCccSpecificationParams() {
