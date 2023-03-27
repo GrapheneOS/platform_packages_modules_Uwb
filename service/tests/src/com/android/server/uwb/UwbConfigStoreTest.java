@@ -16,16 +16,22 @@
 
 package com.android.server.uwb;
 
+import static com.android.server.uwb.UwbConfigStore.STORE_FILE_SHARED_GENERAL;
 import static com.android.server.uwb.UwbConfigStore.STORE_FILE_USER_GENERAL;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import android.app.AlarmManager;
 import android.content.Context;
 import android.os.Handler;
+import android.os.UserManager;
 import android.platform.test.annotations.Presubmit;
 import android.test.suitebuilder.annotation.SmallTest;
 
@@ -51,8 +57,11 @@ public class UwbConfigStoreTest {
     @Mock private Context mContext;
     @Mock private Handler mHandler;
     @Mock private UwbInjector mUwbInjector;
+    @Mock private AlarmManager mAlarmManager;
+    @Mock private UserManager mUserManager;
+    @Mock private UwbConfigStore.StoreFile  mSharedStoreFile;
     private MockStoreData mStoreData;
-    private MockStoreFile mUserStore;
+    private MockStoreFile mUserStoreFile;
     private final List<UwbConfigStore.StoreFile> mUserStores = new ArrayList<>();
 
     private UwbConfigStore mUwbConfigStore;
@@ -60,16 +69,54 @@ public class UwbConfigStoreTest {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-        mUwbConfigStore = new UwbConfigStore(mContext, mHandler, mUwbInjector, new ArrayList<>());
-        mUserStore = new MockStoreFile(STORE_FILE_USER_GENERAL);
+        when(mContext.getSystemService(AlarmManager.class)).thenReturn(mAlarmManager);
+        when(mUwbInjector.getUserManager()).thenReturn(mUserManager);
+
+        List<UwbConfigStore.StoreFile> mSharedStores = new ArrayList<>();
+        mSharedStores.add(mSharedStoreFile);
+        mUwbConfigStore = new UwbConfigStore(mContext, mHandler, mUwbInjector, mSharedStores);
+        mUserStoreFile = new MockStoreFile(STORE_FILE_USER_GENERAL);
         mStoreData = new MockStoreData(STORE_FILE_USER_GENERAL);
-        mUserStores.add(mUserStore);
+        mUserStores.add(mUserStoreFile);
     }
 
     @Test
     public void testRegisterStoreData() {
         mUwbConfigStore.registerStoreData(mStoreData);
         assertEquals(1, mUwbConfigStore.getStoreDataList().size());
+    }
+
+    @Test
+    public void testLoadFromStore() throws IOException {
+        UwbConfigStore.StoreData userStoreData = mock(UwbConfigStore.StoreData.class);
+
+        when(userStoreData.getStoreFileId()).thenReturn(STORE_FILE_USER_GENERAL);
+        when(userStoreData.hasNewDataToSerialize()).thenReturn(true);
+
+        assertTrue(mUwbConfigStore.registerStoreData(userStoreData));
+
+        mUwbConfigStore.setUserStores(mUserStores);
+        mUwbConfigStore.write(false);
+        mUwbConfigStore.saveToStore(true);
+
+        verify(userStoreData, times(2)).hasNewDataToSerialize();
+        assertTrue(mUserStoreFile.isStoreWritten());
+        assertTrue(mUwbConfigStore.loadFromStore());
+    }
+
+    @Test
+    public void testSharedData() throws IOException {
+        UwbConfigStore.StoreData sharedStoreData = mock(UwbConfigStore.StoreData.class);
+
+        when(sharedStoreData.getStoreFileId()).thenReturn(STORE_FILE_SHARED_GENERAL);
+        when(sharedStoreData.hasNewDataToSerialize()).thenReturn(true);
+
+        assertTrue(mUwbConfigStore.registerStoreData(sharedStoreData));
+
+        mUwbConfigStore.write(true);
+
+        verify(sharedStoreData).hasNewDataToSerialize();
+        assertTrue(mUwbConfigStore.loadFromStore());
     }
 
     @Test
@@ -86,7 +133,26 @@ public class UwbConfigStoreTest {
 
         verify(userStoreData).hasNewDataToSerialize();
 
-        assertTrue(mUserStore.isStoreWritten());
+        assertTrue(mUserStoreFile.isStoreWritten());
+    }
+
+    @Test
+    public void testHandleUserSwitch() throws IOException {
+        UwbConfigStore.StoreData userStoreData = mock(UwbConfigStore.StoreData.class);
+
+        when(userStoreData.getStoreFileId()).thenReturn(STORE_FILE_USER_GENERAL);
+        when(userStoreData.hasNewDataToSerialize()).thenReturn(true);
+        when(mUserManager.isUserUnlockingOrUnlocked(any())).thenReturn(true);
+
+        assertTrue(mUwbConfigStore.registerStoreData(userStoreData));
+
+        mUwbConfigStore.setUserStores(mUserStores);
+        mUwbConfigStore.write(false);
+        // Verify user store is written only after user switch
+        assertFalse(mUserStoreFile.isStoreWritten());
+
+        mUwbConfigStore.handleUserSwitch(2);
+        assertTrue(mUserStoreFile.isStoreWritten());
     }
 
     /**
@@ -176,6 +242,4 @@ public class UwbConfigStoreTest {
         }
 
     }
-
-
 }
