@@ -1117,6 +1117,8 @@ public class UwbManagerTest {
     @Test
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
     public void testAdvertisingRangingSession() throws Exception {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+
         FiraSpecificationParams params = getFiraSpecificationParams();
         FiraProtocolVersion firaProtocolVersion = params.getMaxMacVersionSupported();
         // Advertising profile is supported only for devices with FiRa 2.0 support.
@@ -1139,13 +1141,26 @@ public class UwbManagerTest {
                 .setDeviceAddress(UwbAddress.fromBytes(new byte[]{0x5, 0x6}))
                 .setDestAddressList(List.of(UwbAddress.fromBytes(new byte[]{0x5, 0x6})))
                 .build();
+
+        // Register the UwbOemExtensionCallback with UwbManager, this requires both an API SDK
+        // level of at least U, and UWB_PRIVILEGED permission.
+        assumeTrue(SdkLevel.isAtLeastU());
         UwbOemExtensionCallback uwbOemExtensionCallback = new UwbOemExtensionCallback();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            mUwbManager.registerUwbOemExtensionCallback(
+                    Executors.newSingleThreadExecutor(), uwbOemExtensionCallback);
+            uiAutomation.dropShellPermissionIdentity();
+        } catch (SecurityException e) {
+            Log.i(TAG, "registerUwbOemExtensionCallback() failed with security exception: " + e);
+            fail();
+        }
 
         verifyFiraRangingSession(
                 firaOpenSessionParams,
                 (rangingReport) -> {
                     assertThat(rangingReport.getMeasurements()).isNotNull();
-                    // TODO(b/263799939): Consider adding a RangingMeasurementType field to the
+                    // TODO(b/275137744): Consider adding a RangingMeasurementType field to the
                     //  top-level RangingReportMetadata, and then confirm it's of type OwrAoa.
                 },
                 (rangingSessionCallback) -> {
@@ -1167,6 +1182,15 @@ public class UwbManagerTest {
                     assertThat(rangingSessionCallback.onDataSentCalled).isTrue();
                     assertThat(rangingSessionCallback.onDataSendFailedCalled).isFalse();
                 });
+
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            mUwbManager.unregisterUwbOemExtensionCallback(uwbOemExtensionCallback);
+            uiAutomation.dropShellPermissionIdentity();
+        } catch (SecurityException e) {
+            Log.i(TAG, "unregisterUwbOemExtensionCallback() failed with security exception: " + e);
+            fail();
+        }
     }
 
     @Test
