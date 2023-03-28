@@ -801,8 +801,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                                     StateChangeReason.SYSTEM_POLICY, chipId);
                         }
                     } else {
-                        String countryCode = mUwbCountryCode.getCountryCode();
-                        Log.i(TAG, "Initialization success, current country code = " + countryCode);
+                        Log.i(TAG, "Initialization success");
                         /* TODO : keep it until MW, FW fix b/196943897 */
                         mUwbMetrics.incrementDeviceInitSuccessCount();
 
@@ -816,8 +815,12 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                         //
                         // TODO(b/255977441): Handle the case when the countryCode is valid and
                         // setting the country code returned an error by doing a UWBS reset.
+                        Pair<Integer, String> setCountryCodeResult =
+                                mUwbCountryCode.setCountryCode(true);
                         Optional<Integer> setCountryCodeStatus =
-                                Optional.of(mUwbCountryCode.setCountryCode(true).first);
+                                Optional.of(setCountryCodeResult.first);
+                        String countryCode = setCountryCodeResult.second;
+                        Log.i(TAG, "Current country code = " + countryCode);
                         computeAndNotifyAdapterStateChange(
                                 getAdapterStateFromDeviceState(
                                     UwbUciConstants.DEVICE_STATE_READY, setCountryCodeStatus),
