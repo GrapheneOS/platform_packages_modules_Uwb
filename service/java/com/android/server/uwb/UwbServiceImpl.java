@@ -516,12 +516,16 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
 
     private void registerAirplaneModeReceiver() {
         if (isAirplaneModeSensitive()) {
-            mContext.registerReceiver(new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    handleAirplaneModeEvent();
-                }
-            }, new IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED));
+            mContext.registerReceiver(
+                    new BroadcastReceiver() {
+                        @Override
+                        public void onReceive(Context context, Intent intent) {
+                            handleAirplaneModeEvent();
+                        }
+                    },
+                    new IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED),
+                    null,
+                    mUwbServiceCore.getHandler());
         }
     }
 
@@ -533,8 +537,9 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
                         onUserRestrictionsChanged();
                     }
                 },
-                new IntentFilter(UserManager.ACTION_USER_RESTRICTIONS_CHANGED)
-        );
+                new IntentFilter(UserManager.ACTION_USER_RESTRICTIONS_CHANGED),
+                null,
+                mUwbServiceCore.getHandler());
     }
 
     private void handleAirplaneModeEvent() {

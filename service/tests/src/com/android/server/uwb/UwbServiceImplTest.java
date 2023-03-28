@@ -113,9 +113,6 @@ public class UwbServiceImplTest {
     @Mock private ProfileManager mProfileManager;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS) private UserManager mUserManager;
     @Captor private ArgumentCaptor<IUwbRangingCallbacks> mRangingCbCaptor;
-    @Captor private ArgumentCaptor<IUwbRangingCallbacks> mRangingCbCaptor2;
-    @Captor private ArgumentCaptor<IBinder.DeathRecipient> mClientDeathCaptor;
-    @Captor private ArgumentCaptor<IBinder.DeathRecipient> mUwbServiceCoreDeathCaptor;
     @Captor private ArgumentCaptor<BroadcastReceiver> mApmModeBroadcastReceiver;
     @Captor private ArgumentCaptor<BroadcastReceiver> mUserRestrictionReceiver;
 
@@ -144,10 +141,12 @@ public class UwbServiceImplTest {
         createUwbServiceImpl();
         verify(mContext).registerReceiver(
                 mApmModeBroadcastReceiver.capture(),
-                argThat(i -> i.getAction(0).equals(Intent.ACTION_AIRPLANE_MODE_CHANGED)));
+                argThat(i -> i.getAction(0).equals(Intent.ACTION_AIRPLANE_MODE_CHANGED)),
+                any(), any());
         verify(mContext).registerReceiver(
                 mUserRestrictionReceiver.capture(),
-                argThat(i -> i.getAction(0).equals(UserManager.ACTION_USER_RESTRICTIONS_CHANGED)));
+                argThat(i -> i.getAction(0).equals(UserManager.ACTION_USER_RESTRICTIONS_CHANGED)),
+                any(), any());
     }
 
     @Test
@@ -388,7 +387,8 @@ public class UwbServiceImplTest {
 
         // Verify that we did not re-register the APM broadcast listener.
         verify(mContext, never()).registerReceiver(
-                any(), argThat(i -> i.getAction(0).equals(Intent.ACTION_AIRPLANE_MODE_CHANGED)));
+                any(), argThat(i -> i.getAction(0).equals(Intent.ACTION_AIRPLANE_MODE_CHANGED)),
+                any(), any());
 
         mUwbServiceImpl.setEnabled(true);
         verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, true);
@@ -424,20 +424,21 @@ public class UwbServiceImplTest {
         // Verify that we did re-register the APM broadcast listener.
         verify(mContext).registerReceiver(
                 mApmModeBroadcastReceiver.capture(),
-                argThat(i -> i.getAction(0).equals(Intent.ACTION_AIRPLANE_MODE_CHANGED)));
+                argThat(i -> i.getAction(0).equals(Intent.ACTION_AIRPLANE_MODE_CHANGED)),
+                any(), any());
         mUwbServiceImpl.setEnabled(true);
         verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, true);
         verify(mUwbServiceCore).setEnabled(true);
         clearInvocations(mUwbServiceCore, mUwbSettingsStore);
 
-        // Toggle APM on
+        // Toggle APM on (ignored by uwb stack)
         when(mUwbInjector.getGlobalSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0)).thenReturn(1);
         mUwbServiceImpl.setEnabled(true);
         verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, false);
         verify(mUwbServiceCore).setEnabled(false);
         clearInvocations(mUwbServiceCore, mUwbSettingsStore);
 
-        // Toggle APM off
+        // Toggle APM off (ignored by uwb stack)
         when(mUwbInjector.getGlobalSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0)).thenReturn(0);
         mUwbServiceImpl.setEnabled(true);
         verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, true);
