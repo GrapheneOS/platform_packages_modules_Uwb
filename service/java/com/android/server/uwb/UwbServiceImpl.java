@@ -25,6 +25,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.ContentObserver;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.ParcelFileDescriptor;
 import android.os.PersistableBundle;
@@ -43,6 +45,7 @@ import android.uwb.IUwbVendorUciCallback;
 import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
 
+import com.android.internal.annotations.VisibleForTesting;
 import com.android.modules.utils.build.SdkLevel;
 import com.android.server.uwb.data.UwbUciConstants;
 
@@ -65,10 +68,22 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     private static final String TAG = "UwbServiceImpl";
 
     /**
-     * @hide constant copied from {@link Settings}
+     * @hide constant copied from {@link Settings.Global}
      * TODO(b/274636414): Migrate to official API in Android V.
      */
     private static final String SETTINGS_RADIO_UWB = "uwb";
+    /**
+     * @hide constant copied from {@link Settings.Global}
+     * TODO(b/274636414): Migrate to official API in Android V.
+     */
+    @VisibleForTesting
+    public static final String SETTINGS_SATELLITE_MODE_RADIOS = "satellite_mode_radios";
+    /**
+     * @hide constant copied from {@link Settings.Global}
+     * TODO(b/274636414): Migrate to official API in Android V.
+     */
+    @VisibleForTesting
+    public static final String SETTINGS_SATELLITE_MODE_ENABLED = "satellite_mode_enabled";
 
     private final Context mContext;
     private final UwbInjector mUwbInjector;
@@ -84,6 +99,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
         mUwbSettingsStore = uwbInjector.getUwbSettingsStore();
         mUwbServiceCore = uwbInjector.getUwbServiceCore();
         registerAirplaneModeReceiver();
+        registerSatelliteModeReceiver();
         mUwbUserRestricted = isUwbUserRestricted();
         registerUserRestrictionsReceiver();
     }
@@ -493,6 +509,20 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
                 Settings.Global.AIRPLANE_MODE_ON, 0) == 1;
     }
 
+    private boolean isSatelliteModeSensitive() {
+        if (!SdkLevel.isAtLeastU()) return false; // satellite mode enabled only for Android U.
+        final String satelliteRadios =
+                mUwbInjector.getGlobalSettingsString(SETTINGS_SATELLITE_MODE_RADIOS);
+        return satelliteRadios == null || satelliteRadios.contains(SETTINGS_RADIO_UWB);
+    }
+
+    /** Returns true if satellite mode is turned on. */
+    private boolean isSatelliteModeOn() {
+        if (!isSatelliteModeSensitive()) return false;
+        return mUwbInjector.getGlobalSettingsInt(
+                SETTINGS_SATELLITE_MODE_ENABLED, 0) == 1;
+    }
+
     /** Returns true if UWB has user restriction set. */
     private boolean isUwbUserRestricted() {
         if (!SdkLevel.isAtLeastU()) {
@@ -509,9 +539,13 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
         }
     }
 
-    /** Returns true if UWB is enabled - based on UWB, APM toggle and user restriction */
+    /**
+     * Returns true if UWB is enabled - based on UWB, APM toggle, satellite mode and user
+     * restrictions.
+     */
     private boolean isUwbEnabled() {
-        return isUwbToggleEnabled() && !isAirplaneModeOn() && !isUwbUserRestricted();
+        return isUwbToggleEnabled() && !isAirplaneModeOn() && !isSatelliteModeOn()
+                && !isUwbUserRestricted();
     }
 
     private void registerAirplaneModeReceiver() {
@@ -520,12 +554,33 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
                     new BroadcastReceiver() {
                         @Override
                         public void onReceive(Context context, Intent intent) {
-                            handleAirplaneModeEvent();
+                            Log.i(TAG, "Airplane mode change detected");
+                            handleAirplaneOrSatelliteModeEvent();
                         }
                     },
                     new IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED),
                     null,
                     mUwbServiceCore.getHandler());
+        }
+    }
+
+    private void registerSatelliteModeReceiver() {
+        if (isSatelliteModeSensitive()) {
+            Uri uri = Settings.Global.getUriFor(SETTINGS_SATELLITE_MODE_ENABLED);
+            if (uri == null) {
+                Log.e(TAG, "satellite mode key does not exist in Settings");
+                return;
+            }
+            mUwbInjector.registerContentObserver(
+                    uri,
+                    false,
+                    new ContentObserver(mUwbServiceCore.getHandler()) {
+                        @Override
+                        public void onChange(boolean selfChange) {
+                            Log.i(TAG, "Satellite mode change detected");
+                            handleAirplaneOrSatelliteModeEvent();
+                        }
+                    });
         }
     }
 
@@ -542,7 +597,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
                 mUwbServiceCore.getHandler());
     }
 
-    private void handleAirplaneModeEvent() {
+    private void handleAirplaneOrSatelliteModeEvent() {
         try {
             mUwbServiceCore.setEnabled(isUwbEnabled());
         } catch (Exception e) {

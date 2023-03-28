@@ -28,6 +28,8 @@ import android.content.AttributionSource;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.database.ContentObserver;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -284,6 +286,24 @@ public class UwbInjector {
     @Nullable
     public String getGlobalSettingsString(@NonNull String key) {
         return Settings.Global.getString(mContext.getContentResolver(), key);
+    }
+
+    /**
+     * Helper method for classes to register a ContentObserver
+     * {@see ContentResolver#registerContentObserver(Uri,boolean,ContentObserver)}.
+     */
+    public void registerContentObserver(Uri uri, boolean notifyForDescendants,
+            ContentObserver contentObserver) {
+        mContext.getContentResolver().registerContentObserver(uri, notifyForDescendants,
+                contentObserver);
+    }
+
+    /**
+     * Helper method for classes to unregister a ContentObserver
+     * {@see ContentResolver#unregisterContentObserver(ContentObserver)}.
+     */
+    public void unregisterContentObserver(ContentObserver contentObserver) {
+        mContext.getContentResolver().unregisterContentObserver(contentObserver);
     }
 
     /**
