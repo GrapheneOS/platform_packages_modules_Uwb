@@ -5,6 +5,7 @@ from typing import List
 
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import jsonrpc_client_base
+from mobly.snippet import errors
 
 from lib import uwb_ranging_params
 
@@ -186,6 +187,25 @@ class UwbRangingDecorator():
           self._callback_keys[session], addr)
     except jsonrpc_client_base.ApiError as api_error:
       raise ValueError("Failed to get altitude measurement.") from api_error
+
+  def get_rssi_measurement(self, addr: List[int], session: int = 0) -> int:
+    """Returns RSSI measurement from both devices.
+
+    Args:
+      addr: peer address.
+      session: ranging session.
+
+    Returns:
+      RSSI measurement in int.
+
+    Raises:
+      ValueError: if the RSSI Measurement object is null.
+    """
+    try:
+      return self.ad.uwb.getRssiDbmMeasurement(self._callback_keys[session],
+                                               addr)
+    except errors.ApiError as api_error:
+      raise ValueError("Failed to get RSSI measurement.") from api_error
 
   def stop_ranging(self, session: int = 0):
     """Stops UWB ranging session.
