@@ -287,7 +287,7 @@ public class UwbServiceCoreTest {
     private void enableUwb() throws Exception {
         when(mNativeUwbManager.doInitialize()).thenReturn(true);
         when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(
-                Pair.create(STATUS_CODE_OK, true));
+                Pair.create(STATUS_CODE_OK, null));
 
         mUwbServiceCore.setEnabled(true);
         mTestLooper.dispatchAll();
@@ -377,7 +377,7 @@ public class UwbServiceCoreTest {
         when(mNativeUwbManager.doInitialize()).thenReturn(true);
         when(mUwbCountryCode.getCountryCode()).thenReturn("JP");
         when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(Pair.create(
-                STATUS_CODE_ANDROID_REGULATION_UWB_OFF, true));
+                STATUS_CODE_ANDROID_REGULATION_UWB_OFF, "JP"));
 
         mUwbServiceCore.setEnabled(true);
         mTestLooper.dispatchAll();
@@ -405,7 +405,7 @@ public class UwbServiceCoreTest {
         when(mNativeUwbManager.doInitialize()).thenReturn(true);
         when(mUwbCountryCode.getCountryCode()).thenReturn("US");
         when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(Pair.create(
-                STATUS_CODE_FAILED, true));
+                STATUS_CODE_FAILED, "US"));
 
         mUwbServiceCore.setEnabled(true);
         mTestLooper.dispatchAll();
@@ -459,7 +459,7 @@ public class UwbServiceCoreTest {
         });
         when(mUwbCountryCode.getCountryCode()).thenReturn("US");
         when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(
-                Pair.create(STATUS_CODE_OK, true));
+                Pair.create(STATUS_CODE_OK, "US"));
 
         // Setup the wakelock to be checked twice (once from the watchdog thread after expiry, and
         // second time from handleEnable()).
@@ -576,8 +576,6 @@ public class UwbServiceCoreTest {
     @Test
     public void testToggleMultipleEnableDisable() throws Exception {
         when(mNativeUwbManager.doInitialize()).thenReturn(true);
-        when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(
-                Pair.create(STATUS_CODE_OK, true));
         when(mNativeUwbManager.doDeinitialize()).thenReturn(true);
 
         IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
@@ -588,6 +586,8 @@ public class UwbServiceCoreTest {
 
         // Enable first (with country code initially unknown, like at boot time).
         when(mUwbCountryCode.getCountryCode()).thenReturn(null);
+        when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(
+                Pair.create(STATUS_CODE_OK, null));
         enableUwbWithCountryCodeChangedCallback();
 
         verify(mNativeUwbManager).doInitialize();
@@ -624,8 +624,6 @@ public class UwbServiceCoreTest {
     @Test
     public void testToggleMultipleEnableDisableQuickly() throws Exception {
         when(mNativeUwbManager.doInitialize()).thenReturn(true);
-        when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(
-                Pair.create(STATUS_CODE_OK, true));
         when(mNativeUwbManager.doDeinitialize()).thenReturn(true);
 
         IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
@@ -633,10 +631,11 @@ public class UwbServiceCoreTest {
         mUwbServiceCore.registerAdapterStateCallbacks(cb);
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
                 StateChangeReason.SYSTEM_BOOT);
+        clearInvocations(mNativeUwbManager, mUwbCountryCode, cb);
 
         when(mUwbCountryCode.getCountryCode()).thenReturn("US");
-
-        clearInvocations(mNativeUwbManager, mUwbCountryCode, cb);
+        when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(
+                Pair.create(STATUS_CODE_OK, "US"));
 
         // Quickly enqueue a UWB enable followed by a UWB disable message. Both of these will be
         // processed (in order).
@@ -1175,7 +1174,7 @@ public class UwbServiceCoreTest {
         // UWB Enable is expected to result in setting the country code; but that may fail and the
         // onCountryCode() callback is not invoked, as the country code is not valid.
         when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(
-                Pair.create(STATUS_CODE_FAILED, false));
+                Pair.create(STATUS_CODE_FAILED, null));
         when(mNativeUwbManager.doDeinitialize()).thenReturn(true);
         when(mNativeUwbManager.doInitialize()).thenReturn(true);
 
