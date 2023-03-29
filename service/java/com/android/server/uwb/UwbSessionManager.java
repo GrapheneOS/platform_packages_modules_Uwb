@@ -1693,7 +1693,22 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 innerMap = new TreeMap<>();
                 mReceivedDataInfoMap.put(receivedDataInfo.address, innerMap);
             }
-            innerMap.putIfAbsent(receivedDataInfo.sequenceNum, receivedDataInfo);
+
+            // Check if the sorted InnerMap has reached the max number of Rx packets we want to
+            // store; if so we drop the smallest (sequence number) packet between the new received
+            // packet and the stored packets.
+            int maxRxPacketsToStore =
+                    mUwbInjector.getDeviceConfigFacade().getRxDataMaxPacketsToStore();
+            if (innerMap.size() < maxRxPacketsToStore) {
+                innerMap.putIfAbsent(receivedDataInfo.sequenceNum, receivedDataInfo);
+            } else if (innerMap.size() == maxRxPacketsToStore) {
+                Long smallestStoredSequenceNumber = innerMap.firstKey();
+                if (smallestStoredSequenceNumber < receivedDataInfo.sequenceNum
+                        && !innerMap.containsKey(receivedDataInfo.sequenceNum)) {
+                    innerMap.remove(smallestStoredSequenceNumber);
+                    innerMap.putIfAbsent(receivedDataInfo.sequenceNum, receivedDataInfo);
+                }
+            }
         }
 
         /**
