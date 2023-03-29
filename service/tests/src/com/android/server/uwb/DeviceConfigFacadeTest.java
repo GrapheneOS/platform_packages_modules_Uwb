@@ -115,6 +115,9 @@ public class DeviceConfigFacadeTest {
         when(mResources.getInteger(R.integer.prediction_timeout_seconds))
                 .thenReturn(6);
 
+        when(mResources.getInteger(R.integer.rx_data_max_packets_to_store))
+                .thenReturn(10);
+
         when(mContext.getResources()).thenReturn(mResources);
 
         mDeviceConfigFacade = new DeviceConfigFacade(new Handler(mLooper.getLooper()),
@@ -157,6 +160,8 @@ public class DeviceConfigFacadeTest {
 
         // true because FOV is 5: within limits.
         assertEquals(true, mDeviceConfigFacade.isEnablePrimerFov());
+
+        assertEquals(10, mDeviceConfigFacade.getRxDataMaxPacketsToStore());
     }
 
     /**
@@ -194,6 +199,9 @@ public class DeviceConfigFacadeTest {
         when(DeviceConfig.getInt(anyString(), eq("prediction_timeout_seconds"),
                 anyInt())).thenReturn(5);
 
+        when(DeviceConfig.getInt(anyString(), eq("rx_data_max_packets_to_store"),
+                anyInt())).thenReturn(20);
+
         mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
 
         // Verifying fields are updated to the new values
@@ -214,5 +222,7 @@ public class DeviceConfigFacadeTest {
 
         // false because FOV is 0.
         assertEquals(false, mDeviceConfigFacade.isEnablePrimerFov());
+
+        assertEquals(20, mDeviceConfigFacade.getRxDataMaxPacketsToStore());
     }
 }
