@@ -156,7 +156,8 @@ public class UwbCountryCodeTest {
         mUwbCountryCode.initialize();
         clearInvocations(mNativeUwbManager);
 
-        assertEquals(Pair.create(STATUS_CODE_OK, false), mUwbCountryCode.setCountryCode(false));
+        assertEquals(Pair.create(STATUS_CODE_OK, TEST_COUNTRY_CODE),
+                mUwbCountryCode.setCountryCode(false));
         // already set.
         verify(mNativeUwbManager, never()).setCountryCode(
                 TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
@@ -168,7 +169,8 @@ public class UwbCountryCodeTest {
         mUwbCountryCode.initialize();
         clearInvocations(mNativeUwbManager);
 
-        assertEquals(Pair.create(STATUS_CODE_OK, true), mUwbCountryCode.setCountryCode(true));
+        assertEquals(Pair.create(STATUS_CODE_OK, TEST_COUNTRY_CODE),
+                mUwbCountryCode.setCountryCode(true));
         // set again
         verify(mNativeUwbManager).setCountryCode(
                 TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
@@ -180,7 +182,8 @@ public class UwbCountryCodeTest {
         mUwbCountryCode.initialize();
         clearInvocations(mNativeUwbManager);
 
-        assertEquals(Pair.create(STATUS_CODE_OK, false), mUwbCountryCode.setCountryCode(false));
+        assertEquals(Pair.create(STATUS_CODE_OK, TEST_COUNTRY_CODE),
+                mUwbCountryCode.setCountryCode(false));
         // already set.
         verify(mNativeUwbManager, never()).setCountryCode(
                 TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
@@ -194,7 +197,7 @@ public class UwbCountryCodeTest {
 
         when(mNativeUwbManager.setCountryCode(any())).thenReturn(
                 (byte) UwbUciConstants.STATUS_CODE_FAILED);
-        assertEquals(Pair.create(UwbUciConstants.STATUS_CODE_FAILED, false),
+        assertEquals(Pair.create(UwbUciConstants.STATUS_CODE_FAILED, TEST_COUNTRY_CODE),
                 mUwbCountryCode.setCountryCode(true));
         verify(mNativeUwbManager).setCountryCode(
                 TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
