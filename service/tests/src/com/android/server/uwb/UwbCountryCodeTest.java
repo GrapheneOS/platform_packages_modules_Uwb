@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -127,6 +128,14 @@ public class UwbCountryCodeTest {
         mUwbCountryCode.initialize();
         verify(mNativeUwbManager).setCountryCode(
                 TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void testSkipWhenExceptionThrownInInitializeCountryCodeFromTelephony() {
+        doThrow(new IllegalArgumentException()).when(mTelephonyManager).getNetworkCountryIso(
+                anyInt());
+        mUwbCountryCode.initialize();
+        verify(mNativeUwbManager, never()).setCountryCode(any());
     }
 
     @Test
