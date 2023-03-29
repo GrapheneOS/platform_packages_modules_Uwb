@@ -72,6 +72,9 @@ public class DeviceConfigFacade {
     private int mAdvertiseArrayEndIndexToCalVariance;
     private int mAdvertiseTrustedVarianceValue;
 
+    // Config parameters related to Rx/Tx data packets.
+    private int mRxDataMaxPacketsToStore;
+
     public DeviceConfigFacade(Handler handler, Context context) {
         mContext = context;
 
@@ -177,6 +180,13 @@ public class DeviceConfigFacade {
                 DeviceConfig.NAMESPACE_UWB,
                 "advertise_trusted_variance_value",
                 mContext.getResources().getInteger(R.integer.advertise_trusted_variance_value)
+        );
+
+        // Rx data packets.
+        mRxDataMaxPacketsToStore = DeviceConfig.getInt(
+                DeviceConfig.NAMESPACE_UWB,
+                "rx_data_max_packets_to_store",
+                mContext.getResources().getInteger(R.integer.rx_data_max_packets_to_store)
         );
 
         // A little parsing and cleanup:
@@ -331,5 +341,13 @@ public class DeviceConfigFacade {
      */
     public int getAdvertiseTrustedVarianceValue() {
         return mAdvertiseTrustedVarianceValue;
+    }
+
+    /**
+     * Gets the max number of Rx data packets (received on a UWB session from the remote device),
+     * to be stored in the UWB framework.
+     */
+    public int getRxDataMaxPacketsToStore() {
+        return mRxDataMaxPacketsToStore;
     }
 }
