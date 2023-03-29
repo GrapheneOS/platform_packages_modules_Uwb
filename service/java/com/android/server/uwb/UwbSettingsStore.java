@@ -138,7 +138,7 @@ public class UwbSettingsStore {
         if (isStoreEmpty) {
             try {
                 boolean toggleEnabled =
-                        mUwbInjector.getSettingsInt(SETTINGS_TOGGLE_STATE_KEY_FOR_MIGRATION)
+                        mUwbInjector.getGlobalSettingsInt(SETTINGS_TOGGLE_STATE_KEY_FOR_MIGRATION)
                                 == STATE_ENABLED_ACTIVE;
                 Log.i(TAG, "Migrate settings toggle from older release: " + toggleEnabled);
                 put(SETTINGS_TOGGLE_STATE, toggleEnabled);

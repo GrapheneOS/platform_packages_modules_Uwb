@@ -170,8 +170,14 @@ public class UwbCountryCode {
                 .map(SubscriptionInfo::getSimSlotIndex)
                 .collect(Collectors.toSet());
         for (Integer slotIdx : slotIdxs) {
-            setTelephonyCountryCodeAndLastKnownCountryCode(
-                    slotIdx, mTelephonyManager.getNetworkCountryIso(slotIdx), null);
+            String countryCode;
+            try {
+                countryCode = mTelephonyManager.getNetworkCountryIso(slotIdx);
+            } catch (IllegalArgumentException e) {
+                Log.e(TAG, "Failed to get country code for slot id:" + slotIdx, e);
+                continue;
+            }
+            setTelephonyCountryCodeAndLastKnownCountryCode(slotIdx, countryCode, null);
         }
         // Current Wifi country code update is sent immediately on registration.
     }
