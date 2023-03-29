@@ -110,4 +110,8 @@
     computed Azimuth/Elevation variance values (from the received OwrAoa measurements)
     is acceptable. -->
     <integer name="advertise_trusted_variance_value">5</integer>
+
+    <!-- Max number of Rx data packets (for a UWB session) to be stored. This parameter defines the
+    storage capacity for a UWB session, for incoming packets from a remote UWB device. -->
+    <integer name = "rx_data_max_packets_to_store">10</integer>
 </resources>
