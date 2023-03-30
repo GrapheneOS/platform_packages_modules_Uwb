@@ -497,6 +497,42 @@ public class RangingSessionTest {
     }
 
     @Test
+    public void testQueryMaxDataSizeBytes() throws RemoteException {
+        assumeTrue(SdkLevel.isAtLeastU()); // Test should only run on U+ devices.
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
+
+        when(adapter.queryMaxDataSizeBytes(handle)).thenReturn(MAX_DATA_SIZE);
+
+        // Confirm that queryMaxDataSizeBytes() throws an IllegalStateException when the ranging
+        // session is not open.
+        assertFalse(session.isOpen());
+        verifyThrowIllegalState(() -> session.queryMaxDataSizeBytes());
+
+        // Confirm that queryMaxDataSizeBytes() returns a value when the ranging session has been
+        // opened.
+        session.onRangingOpened();
+        assertEquals(session.queryMaxDataSizeBytes(), MAX_DATA_SIZE);
+
+        // Confirm that queryMaxDataSizeBytes() returns a value when the ranging session has been
+        // started.
+        session.onRangingStarted(PARAMS);
+        assertEquals(session.queryMaxDataSizeBytes(), MAX_DATA_SIZE);
+
+        // Confirm that queryMaxDataSizeBytes() still returns a value, when the ranging session
+        // was stopped.
+        session.onRangingStopped(REASON, PARAMS);
+        assertEquals(session.queryMaxDataSizeBytes(), MAX_DATA_SIZE);
+
+        // Confirm that queryMaxDataSizeBytes() throws an IllegalStateException when the ranging
+        // session has now been closed.
+        session.onRangingClosed(REASON, PARAMS);
+        verifyThrowIllegalState(() -> session.queryMaxDataSizeBytes());
+    }
+
+    @Test
     public void testPoseUpdate() throws RemoteException {
         assumeTrue(SdkLevel.isAtLeastU()); // Test should only run on U+ devices.
         SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
