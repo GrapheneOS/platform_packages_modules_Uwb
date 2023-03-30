@@ -208,4 +208,6 @@ public abstract class CccParams extends Params {
     public @interface SessionType {}
 
     public static final int SESSION_TYPE_CCC = 160;
+
+    public static final int LAST_STS_INDEX_USED_UNSET = 0;
 }
