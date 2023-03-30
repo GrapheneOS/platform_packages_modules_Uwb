@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -130,6 +131,14 @@ public class UwbCountryCodeTest {
     }
 
     @Test
+    public void testSkipWhenExceptionThrownInInitializeCountryCodeFromTelephony() {
+        doThrow(new IllegalArgumentException()).when(mTelephonyManager).getNetworkCountryIso(
+                anyInt());
+        mUwbCountryCode.initialize();
+        verify(mNativeUwbManager, never()).setCountryCode(any());
+    }
+
+    @Test
     public void testInitializeCountryCodeFromTelephonyVerifyListener() {
         UwbCountryCode.CountryCodeChangedListener listener = mock(
                 UwbCountryCode.CountryCodeChangedListener.class);
@@ -147,7 +156,8 @@ public class UwbCountryCodeTest {
         mUwbCountryCode.initialize();
         clearInvocations(mNativeUwbManager);
 
-        assertEquals(Pair.create(STATUS_CODE_OK, false), mUwbCountryCode.setCountryCode(false));
+        assertEquals(Pair.create(STATUS_CODE_OK, TEST_COUNTRY_CODE),
+                mUwbCountryCode.setCountryCode(false));
         // already set.
         verify(mNativeUwbManager, never()).setCountryCode(
                 TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
@@ -159,7 +169,8 @@ public class UwbCountryCodeTest {
         mUwbCountryCode.initialize();
         clearInvocations(mNativeUwbManager);
 
-        assertEquals(Pair.create(STATUS_CODE_OK, true), mUwbCountryCode.setCountryCode(true));
+        assertEquals(Pair.create(STATUS_CODE_OK, TEST_COUNTRY_CODE),
+                mUwbCountryCode.setCountryCode(true));
         // set again
         verify(mNativeUwbManager).setCountryCode(
                 TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
@@ -171,7 +182,8 @@ public class UwbCountryCodeTest {
         mUwbCountryCode.initialize();
         clearInvocations(mNativeUwbManager);
 
-        assertEquals(Pair.create(STATUS_CODE_OK, false), mUwbCountryCode.setCountryCode(false));
+        assertEquals(Pair.create(STATUS_CODE_OK, TEST_COUNTRY_CODE),
+                mUwbCountryCode.setCountryCode(false));
         // already set.
         verify(mNativeUwbManager, never()).setCountryCode(
                 TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
@@ -185,7 +197,7 @@ public class UwbCountryCodeTest {
 
         when(mNativeUwbManager.setCountryCode(any())).thenReturn(
                 (byte) UwbUciConstants.STATUS_CODE_FAILED);
-        assertEquals(Pair.create(UwbUciConstants.STATUS_CODE_FAILED, false),
+        assertEquals(Pair.create(UwbUciConstants.STATUS_CODE_FAILED, TEST_COUNTRY_CODE),
                 mUwbCountryCode.setCountryCode(true));
         verify(mNativeUwbManager).setCountryCode(
                 TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
