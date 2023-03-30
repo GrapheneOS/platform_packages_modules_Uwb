@@ -38,6 +38,7 @@
             <item name="advertise_array_start_index_to_cal_variance" type="integer" />
             <item name="advertise_array_end_index_to_cal_variance" type="integer" />
             <item name="advertise_trusted_variance_value" type="integer" />
+            <item name="rx_data_max_packets_to_store" type="integer" />
           <!-- Params from config.xml that can be overlaid -->
 
           <!-- Params from strings.xml that can be overlaid -->
