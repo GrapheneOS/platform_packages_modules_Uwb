@@ -828,16 +828,14 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
     /** Query Max Application data size for the given UWB Session */
     public synchronized int queryMaxDataSizeBytes(SessionHandle sessionHandle) {
-        int status = UwbUciConstants.STATUS_CODE_ERROR_SESSION_NOT_EXIST;
         if (!isExistedSession(sessionHandle)) {
-            Log.i(TAG, "Not initialized session ID");
-            return status;
+            throw new IllegalStateException("Not initialized session ID");
         }
+
         int sessionId = getSessionId(sessionHandle);
         UwbSession uwbSession = getUwbSession(sessionId);
         if (uwbSession == null) {
-            Log.i(TAG, "UwbSession not found");
-            return status;
+            throw new IllegalStateException("UwbSession not found");
         }
 
         synchronized (uwbSession.getWaitObj()) {
