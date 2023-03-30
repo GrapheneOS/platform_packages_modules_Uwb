@@ -354,7 +354,7 @@ public class UwbServiceCoreTest {
         verify(mNativeUwbManager).doInitialize();
         verify(mUwbCountryCode).setCountryCode(true);
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
-                StateChangeReason.SYSTEM_POLICY);
+                StateChangeReason.SYSTEM_REGULATION);
         verifyNoMoreInteractions(cb);
 
         clearInvocations(cb);
@@ -612,7 +612,7 @@ public class UwbServiceCoreTest {
         verify(mNativeUwbManager).doInitialize();
         verify(mUwbCountryCode).setCountryCode(true);
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
-                StateChangeReason.SYSTEM_POLICY);
+                StateChangeReason.SYSTEM_REGULATION);
         verifyNoMoreInteractions(cb);
 
         clearInvocations(mNativeUwbManager, mUwbCountryCode, cb);
@@ -1194,7 +1194,8 @@ public class UwbServiceCoreTest {
         // with State DISABLED to be sent (as the country code is not valid).
         enableUwb();
         verify(cb).onAdapterStateChanged(
-                UwbManager.AdapterStateCallback.STATE_DISABLED, StateChangeReason.SYSTEM_POLICY);
+                UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.SYSTEM_REGULATION);
         verifyNoMoreInteractions(cb);
         clearInvocations(mNativeUwbManager, mUwbCountryCode, cb);
 
