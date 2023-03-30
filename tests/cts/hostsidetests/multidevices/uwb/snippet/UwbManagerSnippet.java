@@ -170,7 +170,8 @@ public class UwbManagerSnippet implements Snippet {
         @Override
         public void onStateChanged(int state, int reason) {
             Log.d(TAG + "UwbAdapterStateCallback#onStateChanged() called");
-            Log.d(TAG + "Adapter state changed reason " + String.valueOf(reason));
+            Log.d(TAG + "Adapter state " + String.valueOf(state)
+                    + ", state changed reason " + String.valueOf(reason));
             SnippetEvent event = new SnippetEvent(mId, "UwbAdapterStateCallback");
             event.getData().putString("uwbAdapterStateEvent", toString(state));
             mEventCache.postEvent(event);
