@@ -151,9 +151,11 @@ public class UwbServiceImplTest {
                 mApmModeBroadcastReceiver.capture(),
                 argThat(i -> i.getAction(0).equals(Intent.ACTION_AIRPLANE_MODE_CHANGED)),
                 any(), any());
-        verify(mUwbInjector).registerContentObserver(
-                eq(Settings.Global.getUriFor(SETTINGS_SATELLITE_MODE_ENABLED)), anyBoolean(),
-                mSatelliteModeContentObserver.capture());
+        if (SdkLevel.isAtLeastU()) {
+            verify(mUwbInjector).registerContentObserver(
+                    eq(Settings.Global.getUriFor(SETTINGS_SATELLITE_MODE_ENABLED)), anyBoolean(),
+                    mSatelliteModeContentObserver.capture());
+        }
         verify(mContext).registerReceiver(
                 mUserRestrictionReceiver.capture(),
                 argThat(i -> i.getAction(0).equals(UserManager.ACTION_USER_RESTRICTIONS_CHANGED)),
@@ -445,7 +447,7 @@ public class UwbServiceImplTest {
         // Toggle APM on (ignored by uwb stack)
         when(mUwbInjector.getGlobalSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0)).thenReturn(1);
         mUwbServiceImpl.setEnabled(true);
-        verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, false);
+        verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, true);
         verify(mUwbServiceCore).setEnabled(false);
         clearInvocations(mUwbServiceCore, mUwbSettingsStore);
 
