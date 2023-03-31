@@ -51,6 +51,7 @@ public class CccOpenRangingParams extends CccParams {
     private static final String KEY_SYNC_CODE_INDEX = "sync_code_index";
     private static final String KEY_HOPPING_CONFIG_MODE = "hopping_config_mode";
     private static final String KEY_HOPPING_SEQUENCE = "hopping_sequence";
+    private static final String KEY_LAST_STS_INDEX_USED = "last_sts_index_used";
 
     private final CccProtocolVersion mProtocolVersion;
     @UwbConfig private final int mUwbConfig;
@@ -65,6 +66,7 @@ public class CccOpenRangingParams extends CccParams {
     @SyncCodeIndex private final int mSyncCodeIndex;
     @HoppingConfigMode private final int mHoppingConfigMode;
     @HoppingSequence private final int mHoppingSequence;
+    private final int mLastStsIndexUsed;
 
     private CccOpenRangingParams(
             CccProtocolVersion protocolVersion,
@@ -79,7 +81,8 @@ public class CccOpenRangingParams extends CccParams {
             int numSlotsPerRound,
             @SyncCodeIndex int syncCodeIndex,
             @HoppingConfigMode int hoppingConfigMode,
-            @HoppingSequence int hoppingSequence) {
+            @HoppingSequence int hoppingSequence,
+            int lastStsIndexUsed) {
         mProtocolVersion = protocolVersion;
         mUwbConfig = uwbConfig;
         mPulseShapeCombo = pulseShapeCombo;
@@ -93,6 +96,7 @@ public class CccOpenRangingParams extends CccParams {
         mSyncCodeIndex = syncCodeIndex;
         mHoppingConfigMode = hoppingConfigMode;
         mHoppingSequence = hoppingSequence;
+        mLastStsIndexUsed = lastStsIndexUsed;
     }
 
     @Override
@@ -116,6 +120,7 @@ public class CccOpenRangingParams extends CccParams {
         bundle.putInt(KEY_SYNC_CODE_INDEX, mSyncCodeIndex);
         bundle.putInt(KEY_HOPPING_CONFIG_MODE, mHoppingConfigMode);
         bundle.putInt(KEY_HOPPING_SEQUENCE, mHoppingSequence);
+        bundle.putInt(KEY_LAST_STS_INDEX_USED, mLastStsIndexUsed);
         return bundle;
     }
 
@@ -151,6 +156,8 @@ public class CccOpenRangingParams extends CccParams {
                 .setSyncCodeIndex(bundle.getInt(KEY_SYNC_CODE_INDEX))
                 .setHoppingConfigMode(bundle.getInt(KEY_HOPPING_CONFIG_MODE))
                 .setHoppingSequence(bundle.getInt(KEY_HOPPING_SEQUENCE))
+                .setLastStsIndexUsed(bundle.getInt(
+                        KEY_LAST_STS_INDEX_USED, CccParams.LAST_STS_INDEX_USED_UNSET))
                 .build();
     }
 
@@ -213,6 +220,10 @@ public class CccOpenRangingParams extends CccParams {
         return mHoppingSequence;
     }
 
+    public int getLastStsIndexUsed() {
+        return mLastStsIndexUsed;
+    }
+
     /** Builder */
     public static final class Builder {
         private RequiredParam<CccProtocolVersion> mProtocolVersion = new RequiredParam<>();
@@ -232,6 +243,8 @@ public class CccOpenRangingParams extends CccParams {
 
         @HoppingSequence private RequiredParam<Integer> mHoppingSequence = new RequiredParam<>();
 
+        private int mLastStsIndexUsed = CccParams.LAST_STS_INDEX_USED_UNSET;
+
         public Builder() {}
 
         public Builder(@NonNull Builder builder) {
@@ -248,6 +261,7 @@ public class CccOpenRangingParams extends CccParams {
             mSyncCodeIndex.set(builder.mSyncCodeIndex.get());
             mHoppingConfigMode.set(builder.mHoppingConfigMode.get());
             mHoppingSequence.set(builder.mHoppingSequence.get());
+            mLastStsIndexUsed = builder.mLastStsIndexUsed;
         }
 
         public Builder(@NonNull CccOpenRangingParams params) {
@@ -326,6 +340,11 @@ public class CccOpenRangingParams extends CccParams {
             return this;
         }
 
+        public Builder setLastStsIndexUsed(int lastStsIndexUsed) {
+            mLastStsIndexUsed = lastStsIndexUsed;
+            return this;
+        }
+
         public CccOpenRangingParams build() {
             return new CccOpenRangingParams(
                     mProtocolVersion.get(),
@@ -340,7 +359,8 @@ public class CccOpenRangingParams extends CccParams {
                     mNumSlotsPerRound.get(),
                     mSyncCodeIndex.get(),
                     mHoppingConfigMode.get(),
-                    mHoppingSequence.get());
+                    mHoppingSequence.get(),
+                    mLastStsIndexUsed);
         }
     }
 }
