@@ -779,13 +779,15 @@ public final class RangingSession implements AutoCloseable {
     /**
      * Query max application data size which can be sent by UWBS in one ranging round.
      *
+     * @throws IllegalStateException, when the ranging session is not in the appropriate state for
+     * this API to be called.
      * @return max application data size
      */
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
     public int queryMaxDataSizeBytes() {
-        if (mState != State.ACTIVE) {
-            throw new IllegalStateException();
+        if (!isOpen()) {
+            throw new IllegalStateException("Ranging session is not open");
         }
 
         Log.v(mTag, "QueryMaxDataSizeBytes - sessionHandle: " + mSessionHandle);
