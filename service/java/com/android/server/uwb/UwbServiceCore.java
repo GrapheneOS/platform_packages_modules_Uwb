@@ -994,9 +994,13 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                     + " rxIdleTimeMillis=" + stats.getIdleTimeMs()
                     + " wake_count=" + stats.getTotalWakeCount());
 
-            return new UwbActivityEnergyInfo.Builder(SystemClock.elapsedRealtime(),
-                    getAdapterState(), stats.getTxTimeMs(), stats.getRxTimeMs(),
-                    stats.getIdleTimeMs(), stats.getTotalWakeCount())
+            return new UwbActivityEnergyInfo.Builder()
+                    .setTimeSinceBootMillis(SystemClock.elapsedRealtime())
+                    .setStackState(getAdapterState())
+                    .setControllerTxDurationMillis(stats.getTxTimeMs())
+                    .setControllerRxDurationMillis(stats.getRxTimeMs())
+                    .setControllerIdleDurationMillis(stats.getIdleTimeMs())
+                    .setControllerWakeCount(stats.getTotalWakeCount())
                     .build();
         } catch (Exception e) {
             e.printStackTrace();
