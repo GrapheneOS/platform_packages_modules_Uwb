@@ -75,7 +75,7 @@ public class UwbRangeDataNtfConfig {
         }
 
         public Builder setNtfProximityFar(int ntfProximityFar) {
-            mNtfProximityNear = ntfProximityFar;
+            mNtfProximityFar = ntfProximityFar;
             return this;
         }
 
