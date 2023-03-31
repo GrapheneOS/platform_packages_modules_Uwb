@@ -7,7 +7,7 @@ from mobly import asserts
 from mobly import config_parser
 from mobly import test_runner
 from mobly.controllers import android_device
-from mobly.controllers.android_device_lib import callback_handler
+from mobly.controllers.android_device_lib import callback_handler_v2
 
 from lib import uwb_base_test
 from test_utils import uwb_test_utils
@@ -62,7 +62,7 @@ class UwbManagerTest(uwb_base_test.UwbBaseTest):
       self,
       dut: android_device.AndroidDevice,
       state: bool,
-      handler: callback_handler.CallbackHandler,
+      handler: callback_handler_v2.CallbackHandlerV2,
   ):
     """Sets UWB state and verifies it is persistent after reboot.
 
