@@ -142,6 +142,7 @@ public class UwbServiceCoreTest {
     private static final String TEST_PACKAGE_NAME = "com.android.uwb";
     private static final String TEST_DEFAULT_CHIP_ID = "default";
     private static final String TEST_CHIP_ONE_CHIP_ID = "chipIdString1";
+    private static final String VALID_COUNTRY_CODE = "US";
 
     private static final AttributionSource TEST_ATTRIBUTION_SOURCE =
             new AttributionSource.Builder(TEST_UID)
@@ -286,19 +287,32 @@ public class UwbServiceCoreTest {
 
     private void enableUwb() throws Exception {
         when(mNativeUwbManager.doInitialize()).thenReturn(true);
+        when(mUwbCountryCode.getCountryCode()).thenReturn(null);
         when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(
-                Pair.create(STATUS_CODE_OK, null));
+                Pair.create(STATUS_CODE_FAILED, null));
 
         mUwbServiceCore.setEnabled(true);
         mTestLooper.dispatchAll();
     }
 
     private void enableUwbWithCountryCodeChangedCallback() throws Exception {
-        enableUwb();
+        when(mNativeUwbManager.doInitialize()).thenReturn(true);
 
-        // Happy case - we receive the onCountryCodeChanged() notification with a valid country
-        // code, when the message loop is waiting for it.
-        mUwbServiceCore.onCountryCodeChanged("US");
+        // When there is a valid country code, we expect an immediate (inline) invocation of the
+        // mUwbServiceCore.onCountryCodeChanged() callback to happen.
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                mUwbServiceCore.onCountryCodeChanged(VALID_COUNTRY_CODE);
+                return Pair.create(STATUS_CODE_OK, VALID_COUNTRY_CODE);
+            }
+        }).when(mUwbCountryCode).setCountryCode(anyBoolean());
+
+        // UwbCountryCode class will return the VALID_COUNTRY_CODE, once setCountryCode() has been
+        // called on it, and it has picked the country code.
+        when(mUwbCountryCode.getCountryCode()).thenReturn(VALID_COUNTRY_CODE);
+
+        mUwbServiceCore.setEnabled(true);
         mTestLooper.dispatchAll();
     }
 
@@ -335,13 +349,12 @@ public class UwbServiceCoreTest {
         clearInvocations(cb);
 
         // Enable (with country code initially unknown, like at boot time).
-        when(mUwbCountryCode.getCountryCode()).thenReturn(null);
         enableUwb();
 
         verify(mNativeUwbManager).doInitialize();
         verify(mUwbCountryCode).setCountryCode(true);
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
-                StateChangeReason.SYSTEM_POLICY);
+                StateChangeReason.SYSTEM_REGULATION);
         verifyNoMoreInteractions(cb);
 
         clearInvocations(cb);
@@ -375,9 +388,10 @@ public class UwbServiceCoreTest {
 
         // Enable (with country code that results in the Vendor-specific UWB_REGULATION error).
         when(mNativeUwbManager.doInitialize()).thenReturn(true);
+
         when(mUwbCountryCode.getCountryCode()).thenReturn("JP");
-        when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(Pair.create(
-                STATUS_CODE_ANDROID_REGULATION_UWB_OFF, "JP"));
+        when(mUwbCountryCode.setCountryCode(anyBoolean()))
+                .thenReturn(Pair.create(STATUS_CODE_ANDROID_REGULATION_UWB_OFF, "JP"));
 
         mUwbServiceCore.setEnabled(true);
         mTestLooper.dispatchAll();
@@ -403,9 +417,9 @@ public class UwbServiceCoreTest {
 
         // Enable (with a valid country code), but the firmware returns some error.
         when(mNativeUwbManager.doInitialize()).thenReturn(true);
-        when(mUwbCountryCode.getCountryCode()).thenReturn("US");
+        when(mUwbCountryCode.getCountryCode()).thenReturn(VALID_COUNTRY_CODE);
         when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(Pair.create(
-                STATUS_CODE_FAILED, "US"));
+                STATUS_CODE_FAILED, VALID_COUNTRY_CODE));
 
         mUwbServiceCore.setEnabled(true);
         mTestLooper.dispatchAll();
@@ -457,9 +471,15 @@ public class UwbServiceCoreTest {
                 return true;
             }
         });
-        when(mUwbCountryCode.getCountryCode()).thenReturn("US");
-        when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(
-                Pair.create(STATUS_CODE_OK, "US"));
+
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                mUwbServiceCore.onCountryCodeChanged(VALID_COUNTRY_CODE);
+                return Pair.create(STATUS_CODE_OK, VALID_COUNTRY_CODE);
+            }
+        }).when(mUwbCountryCode).setCountryCode(anyBoolean());
+        when(mUwbCountryCode.getCountryCode()).thenReturn(VALID_COUNTRY_CODE);
 
         // Setup the wakelock to be checked twice (once from the watchdog thread after expiry, and
         // second time from handleEnable()).
@@ -483,13 +503,15 @@ public class UwbServiceCoreTest {
         mUwbServiceCore.registerAdapterStateCallbacks(cb);
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
                 StateChangeReason.SYSTEM_BOOT);
+        clearInvocations(cb);
 
         // Enable first.
         enableUwbWithCountryCodeChangedCallback();
-        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
-                StateChangeReason.SYSTEM_POLICY);
+
+        verify(mNativeUwbManager).doInitialize();
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
                 StateChangeReason.SYSTEM_POLICY);
+        verifyNoMoreInteractions(cb);
         clearInvocations(cb);
 
         // Disable UWB.
@@ -503,7 +525,7 @@ public class UwbServiceCoreTest {
     // Test the UWB stack disable when the NativeUwbManager.doDeinitialize() is delayed such that
     // the watchdog timer expiry happens.
     @Test
-    public void testDisableWhenInitializeDelayed() throws Exception {
+    public void testDisableWhenDeinitializeDelayed() throws Exception {
         IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
         when(cb.asBinder()).thenReturn(mock(IBinder.class));
         mUwbServiceCore.registerAdapterStateCallbacks(cb);
@@ -512,8 +534,6 @@ public class UwbServiceCoreTest {
 
         // Enable first
         enableUwbWithCountryCodeChangedCallback();
-        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
-                StateChangeReason.SYSTEM_POLICY);
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
                 StateChangeReason.SYSTEM_POLICY);
 
@@ -551,13 +571,14 @@ public class UwbServiceCoreTest {
         mUwbServiceCore.registerAdapterStateCallbacks(cb);
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
                 StateChangeReason.SYSTEM_BOOT);
+        clearInvocations(cb);
 
         // Enable first
         enableUwbWithCountryCodeChangedCallback();
-        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
-                StateChangeReason.SYSTEM_POLICY);
+        verify(mNativeUwbManager).doInitialize();
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
                 StateChangeReason.SYSTEM_POLICY);
+        verifyNoMoreInteractions(cb);
         clearInvocations(mNativeUwbManager, mUwbCountryCode, cb);
 
         // Disable UWB.
@@ -583,19 +604,25 @@ public class UwbServiceCoreTest {
         mUwbServiceCore.registerAdapterStateCallbacks(cb);
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
                 StateChangeReason.SYSTEM_BOOT);
+        clearInvocations(cb);
 
         // Enable first (with country code initially unknown, like at boot time).
-        when(mUwbCountryCode.getCountryCode()).thenReturn(null);
-        when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(
-                Pair.create(STATUS_CODE_OK, null));
-        enableUwbWithCountryCodeChangedCallback();
+        enableUwb();
 
         verify(mNativeUwbManager).doInitialize();
         verify(mUwbCountryCode).setCountryCode(true);
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
-                StateChangeReason.SYSTEM_POLICY);
+                StateChangeReason.SYSTEM_REGULATION);
+        verifyNoMoreInteractions(cb);
+
+        clearInvocations(mNativeUwbManager, mUwbCountryCode, cb);
+
+        // Later on, the onCountryCodeChanged() callback is invoked, with a valid country code.
+        mUwbServiceCore.onCountryCodeChanged(VALID_COUNTRY_CODE);
+
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
                 StateChangeReason.SYSTEM_POLICY);
+        verifyNoMoreInteractions(cb);
 
         clearInvocations(mNativeUwbManager, mUwbCountryCode, cb);
 
@@ -605,12 +632,12 @@ public class UwbServiceCoreTest {
         verify(mNativeUwbManager).doDeinitialize();
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
                 StateChangeReason.SYSTEM_POLICY);
+        verifyNoMoreInteractions(cb);
 
         clearInvocations(mNativeUwbManager, mUwbCountryCode, cb);
 
         // Enable again (this time we get the onCountryCodeChanged() callback with a valid
         // country code as it's known).
-        when(mUwbCountryCode.getCountryCode()).thenReturn("US");
         enableUwbWithCountryCodeChangedCallback();
 
         verify(mNativeUwbManager).doInitialize();
@@ -633,15 +660,19 @@ public class UwbServiceCoreTest {
                 StateChangeReason.SYSTEM_BOOT);
         clearInvocations(mNativeUwbManager, mUwbCountryCode, cb);
 
-        when(mUwbCountryCode.getCountryCode()).thenReturn("US");
-        when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(
-                Pair.create(STATUS_CODE_OK, "US"));
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                mUwbServiceCore.onCountryCodeChanged(VALID_COUNTRY_CODE);
+                return Pair.create(STATUS_CODE_OK, VALID_COUNTRY_CODE);
+            }
+        }).when(mUwbCountryCode).setCountryCode(anyBoolean());
+        when(mUwbCountryCode.getCountryCode()).thenReturn(VALID_COUNTRY_CODE);
 
         // Quickly enqueue a UWB enable followed by a UWB disable message. Both of these will be
         // processed (in order).
         mUwbServiceCore.setEnabled(true);
         mUwbServiceCore.setEnabled(false);
-        mUwbServiceCore.onCountryCodeChanged("US");
 
         // Now process all the looper messages
         mTestLooper.dispatchAll();
@@ -658,6 +689,7 @@ public class UwbServiceCoreTest {
         verify(cb, times(1)).onAdapterStateChanged(
                 UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
                 StateChangeReason.SYSTEM_POLICY);
+        verifyNoMoreInteractions(cb, mNativeUwbManager);
     }
 
     @Test
@@ -1039,17 +1071,24 @@ public class UwbServiceCoreTest {
         mUwbServiceCore.registerAdapterStateCallbacks(cb);
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
                 StateChangeReason.SYSTEM_BOOT);
+        clearInvocations(cb);
 
+        // Confirm a STATE_ENABLED_INACTIVE AdapterState notification is received when UWB is
+        // enabled with a valid country code.
         enableUwbWithCountryCodeChangedCallback();
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
                 StateChangeReason.SYSTEM_POLICY);
+        verifyNoMoreInteractions(cb);
+        clearInvocations(cb);
 
+        // Confirm a STATE_ENABLED_ACTIVE AdapterState notification is received when a UWB ranging
+        // session is active.
         when(mUwbCountryCode.getCountryCode()).thenReturn("US");
         mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ACTIVE,
                 TEST_DEFAULT_CHIP_ID);
-        mTestLooper.dispatchAll();
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_ACTIVE,
                 StateChangeReason.SESSION_STARTED);
+        verifyNoMoreInteractions(cb);
     }
 
     @Test
@@ -1107,14 +1146,13 @@ public class UwbServiceCoreTest {
     public void testToggleOfOnDeviceStateErrorCallback_whenCountryCodeIsValid() throws Exception {
         IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
         when(cb.asBinder()).thenReturn(mock(IBinder.class));
-
         mUwbServiceCore.registerAdapterStateCallbacks(cb);
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
                 StateChangeReason.SYSTEM_BOOT);
+        clearInvocations(cb);
 
+        // Enable UWB, with a valid country code.
         enableUwbWithCountryCodeChangedCallback();
-        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
-                StateChangeReason.SYSTEM_POLICY);
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
                 StateChangeReason.SYSTEM_POLICY);
 
@@ -1123,18 +1161,8 @@ public class UwbServiceCoreTest {
 
         clearInvocations(mNativeUwbManager, mUwbCountryCode, cb);
 
-        // In the second toggle-on iteration, there should be a valid country code known to
+        // In the second toggle-on iteration, there should again be a valid country code known to
         // UwbCountryCode class (from earlier notifications from the Wifi/Telephony stack).
-        when(mUwbCountryCode.getCountryCode()).thenReturn("US");
-        doAnswer(new Answer() {
-            @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
-                mUwbServiceCore.onCountryCodeChanged("US");
-                mTestLooper.dispatchAll();
-                return Pair.create(STATUS_CODE_OK, true);
-            }
-        }).when(mUwbCountryCode).setCountryCode(anyBoolean());
-
         mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ERROR,
                 TEST_DEFAULT_CHIP_ID);
         mTestLooper.dispatchAll();
@@ -1164,10 +1192,10 @@ public class UwbServiceCoreTest {
 
         // UWB Adapter State will internally be Enabled, but we expect an AdapterState notification
         // with State DISABLED to be sent (as the country code is not valid).
-        when(mUwbCountryCode.getCountryCode()).thenReturn(null);
         enableUwb();
         verify(cb).onAdapterStateChanged(
-                UwbManager.AdapterStateCallback.STATE_DISABLED, StateChangeReason.SYSTEM_POLICY);
+                UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.SYSTEM_REGULATION);
         verifyNoMoreInteractions(cb);
         clearInvocations(mNativeUwbManager, mUwbCountryCode, cb);
 
@@ -1200,8 +1228,6 @@ public class UwbServiceCoreTest {
 
         // Enable UWB to initialize state.
         enableUwbWithCountryCodeChangedCallback();
-        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
-                StateChangeReason.SYSTEM_POLICY);
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
                 StateChangeReason.SYSTEM_POLICY);
         clearInvocations(mNativeUwbManager, mUwbCountryCode, cb);

@@ -568,6 +568,10 @@ public class UwbManagerTest {
         public boolean onUpdateDtTagStatusCalled;
         public boolean onDataSentCalled;
         public boolean onDataSendFailedCalled;
+        public boolean onPauseCalled;
+        public boolean onPauseFailedCalled;
+        public boolean onResumeCalled;
+        public boolean onResumeFailedCalled;
         public RangingSession rangingSession;
         public RangingReport rangingReport;
 
@@ -662,13 +666,25 @@ public class UwbManagerTest {
             mCtrlCountDownLatch.countDown();
         }
 
-        public void onPaused(PersistableBundle params) { }
+        public void onPaused(PersistableBundle params) {
+            onPauseCalled = true;
+            mCtrlCountDownLatch.countDown();
+        }
 
-        public void onPauseFailed(int reason, PersistableBundle params) { }
+        public void onPauseFailed(int reason, PersistableBundle params) {
+            onPauseFailedCalled = true;
+            mCtrlCountDownLatch.countDown();
+        }
 
-        public void onResumed(PersistableBundle params) { }
+        public void onResumed(PersistableBundle params) {
+            onResumeCalled = true;
+            mCtrlCountDownLatch.countDown();
+        }
 
-        public void onResumeFailed(int reason, PersistableBundle params) { }
+        public void onResumeFailed(int reason, PersistableBundle params) {
+            onResumeFailedCalled = true;
+            mCtrlCountDownLatch.countDown();
+        }
 
         public void onDataSent(UwbAddress remoteDeviceAddress, PersistableBundle params) {
             onDataSentCalled = true;
@@ -1384,11 +1400,15 @@ public class UwbManagerTest {
                             () -> rangingSessionCallback.rangingSession.pause(
                                     new PersistableBundle()
                             ));
+                    assertThat(rangingSessionCallback.onPauseCalled).isFalse();
+                    assertThat(rangingSessionCallback.onPauseFailedCalled).isFalse();
                     // Resume the session - not supported yet.
                     assertThrows(IllegalStateException.class,
                             () -> rangingSessionCallback.rangingSession.resume(
                                     new PersistableBundle()
                             ));
+                    assertThat(rangingSessionCallback.onResumeCalled).isFalse();
+                    assertThat(rangingSessionCallback.onResumeFailedCalled).isFalse();
                 });
     }
 

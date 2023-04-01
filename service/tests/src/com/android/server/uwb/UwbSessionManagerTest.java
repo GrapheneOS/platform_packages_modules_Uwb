@@ -55,6 +55,7 @@ import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilit
 import static com.google.uwb.support.fira.FiraParams.SESSION_TYPE_RANGING;
 import static com.google.uwb.support.fira.FiraParams.STATUS_CODE_OK;
 
+import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyByte;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -2712,9 +2713,8 @@ public class UwbSessionManagerTest {
     @Test
     public void testQueryDataSize_whenUwbSessionDoesNotExist() throws Exception {
         SessionHandle mockSessionHandle = mock(SessionHandle.class);
-        assertThat(mUwbSessionManager.queryMaxDataSizeBytes(mockSessionHandle))
-                .isEqualTo(UwbUciConstants.STATUS_CODE_ERROR_SESSION_NOT_EXIST);
-        verify(mNativeUwbManager, never()).queryMaxDataSizeBytes(anyInt(), anyString());
+        assertThrows(IllegalStateException.class,
+                () -> mUwbSessionManager.queryMaxDataSizeBytes(mockSessionHandle));
     }
 
     @Test

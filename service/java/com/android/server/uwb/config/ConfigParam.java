@@ -17,6 +17,7 @@
 package com.android.server.uwb.config;
 
 import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.CCC_HOP_MODE_KEY;
+import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.CCC_LAST_INDEX_USED;
 import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.CCC_PULSESHAPE_COMBO;
 import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.CCC_RANGING_PROTOCOL_VER;
 import static android.hardware.uwb.fira_android.UwbVendorSessionAppConfigTlvTypes.CCC_URSK_TTL;
@@ -116,6 +117,7 @@ public class ConfigParam {
     public static final int UWB_CONFIG_ID = CCC_UWB_CONFIG_ID;
     public static final int PULSESHAPE_COMBO = CCC_PULSESHAPE_COMBO;
     public static final int URSK_TTL = CCC_URSK_TTL;
+    public static final int LAST_STS_INDEX_USED = CCC_LAST_INDEX_USED;
     //StartedParams
     public static final int HOP_MODE_KEY = CCC_HOP_MODE_KEY;
     public static final int HOP_MODE_KEY_BYTE = 16;
