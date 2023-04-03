@@ -3,6 +3,7 @@
 import sys
 from typing import List
 
+from mobly import asserts
 from mobly import config_parser
 from mobly import test_runner
 import timeout_decorator
@@ -356,7 +357,7 @@ class ProvisionedStsRangingTest(uwb_base_test.UwbBaseTest):
     )
 
 if __name__ == "__main__":
-  if '--' in sys.argv:
-    index = sys.argv.index('--')
+  if "--" in sys.argv:
+    index = sys.argv.index("--")
     sys.argv = sys.argv[:1] + sys.argv[index + 1:]
   test_runner.main()
