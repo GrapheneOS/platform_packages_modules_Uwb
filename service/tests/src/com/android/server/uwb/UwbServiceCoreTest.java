@@ -213,6 +213,11 @@ public class UwbServiceCoreTest {
         when(mDeviceConfigFacade.getBugReportMinIntervalMs())
                 .thenReturn(DeviceConfigFacade.DEFAULT_BUG_REPORT_MIN_INTERVAL_MS);
         when(mUwbInjector.getProfileManager()).thenReturn(mProfileManager);
+        doAnswer(invocation -> {
+            FutureTask t = invocation.getArgument(0);
+            t.run();
+            return t.get();
+        }).when(mUwbInjector).runTaskOnSingleThreadExecutor(any(FutureTask.class), anyInt());
         mUwbServiceCore = new UwbServiceCore(mContext, mNativeUwbManager, mUwbMetrics,
                 mUwbCountryCode, mUwbSessionManager, mUwbConfigurationManager,
                 mUwbInjector, mTestLooper.getLooper());
