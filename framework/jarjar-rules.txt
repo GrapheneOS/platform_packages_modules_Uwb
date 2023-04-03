@@ -14,5 +14,7 @@ rule com.android.internal.util.** com.android.x.uwb.@0
 rule com.google.protobuf.** com.android.x.uwb.@0
 # Statically linked bouncy castle library
 rule org.bouncycastle.** com.android.x.uwb.@0
+# Statically linked third party library
+rule com.google.thirdparty.** com.android.x.uwb.@0
 
 ## used by both framework-uwb and service-uwb ##
