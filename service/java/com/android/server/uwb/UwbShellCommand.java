@@ -59,6 +59,7 @@ import android.os.PersistableBundle;
 import android.os.Process;
 import android.os.RemoteException;
 import android.util.ArrayMap;
+import android.util.Log;
 import android.util.Pair;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.RangingReport;
@@ -94,6 +95,7 @@ import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -114,6 +116,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
     private static final int RSSI_FLAG = 1;
     private static final int AOA_FLAG = 1 << 1;
     private static final int CIR_FLAG = 1 << 2;
+    private static final int CMD_TIMEOUT_MS = 10_000;
 
     // These don't require root access.
     // However, these do perform permission checks in the corresponding UwbService methods.
@@ -175,6 +178,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
     private static final Map<Integer, SessionInfo> sSessionIdToInfo = new ArrayMap<>();
     private static int sSessionHandleIdNext = 0;
 
+    private final UwbInjector mUwbInjector;
     private final UwbServiceImpl mUwbService;
     private final UwbServiceCore mUwbServiceCore;
     private final UwbCountryCode mUwbCountryCode;
@@ -186,6 +190,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
     private final Context mContext;
 
     UwbShellCommand(UwbInjector uwbInjector, UwbServiceImpl uwbService, Context context) {
+        mUwbInjector = uwbInjector;
         mUwbService = uwbService;
         mContext = context;
         mUwbCountryCode = uwbInjector.getUwbCountryCode();
@@ -848,6 +853,15 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         pw.println("Ranging session reconfigured");
     }
 
+    private int runTaskOnSingleThreadExecutor(FutureTask<Integer> task) {
+        try {
+            return mUwbInjector.runTaskOnSingleThreadExecutor(task, CMD_TIMEOUT_MS);
+        } catch (TimeoutException | InterruptedException | ExecutionException e) {
+            Log.e(TAG, "Failed to send command", e);
+        }
+        return -1;
+    }
+
     @Override
     public int onCommand(String cmd) {
         // Treat no command as help command.
@@ -869,6 +883,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             switch (cmd) {
                 case "force-country-code": {
                     boolean enabled = getNextArgRequiredTrueOrFalse("enabled", "disabled");
+                    FutureTask<Integer> task;
                     if (enabled) {
                         String countryCode = getNextArgRequired();
                         if (!UwbCountryCode.isValid(countryCode)) {
@@ -877,12 +892,17 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                                     + " instead");
                             return -1;
                         }
-                        mUwbCountryCode.setOverrideCountryCode(countryCode);
-                        return 0;
+                        task = new FutureTask<>(() -> {
+                            mUwbCountryCode.setOverrideCountryCode(countryCode);
+                            return 0;
+                        });
                     } else {
-                        mUwbCountryCode.clearOverrideCountryCode();
-                        return 0;
+                        task = new FutureTask<>(() -> {
+                            mUwbCountryCode.clearOverrideCountryCode();
+                            return 0;
+                        });
                     }
+                    return runTaskOnSingleThreadExecutor(task);
                 }
                 case "get-country-code":
                     pw.println("Uwb Country Code = " + mUwbCountryCode.getCountryCode());
