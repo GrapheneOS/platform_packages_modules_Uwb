@@ -43,4 +43,10 @@ public class RangingControlee extends RangingDevice {
         return ConfigurationManager.createOpenSessionParams(
                 FiraParams.RANGING_DEVICE_TYPE_CONTROLEE, getLocalAddress(), mRangingParameters);
     }
+
+    @Override
+    protected int hashSessionId(RangingParameters rangingParameters) {
+        UwbAddress controllerAddress = rangingParameters.getPeerAddresses().get(0);
+        return calculateHashedSessionId(controllerAddress, rangingParameters.getComplexChannel());
+    }
 }
