@@ -21,7 +21,6 @@ use jni::signature::ReturnType;
 use jni::sys::{jboolean, jbyte, jbyteArray, jint, jlong, jobject, jvalue};
 use jni::JNIEnv;
 use log::{debug, error};
-use num_traits::FromPrimitive;
 use tokio::runtime::Runtime;
 
 use uci_hal_android::uci_hal_android::UciHalAndroid;
@@ -322,10 +321,8 @@ fn init_session(
 
     let session_id = session_id as u32;
     let session_type = session_type as u8;
-    let session_type = match SessionType::from_u8(session_type) {
-        Some(val) => val,
-        _ => return Err(Error::Parse(format!("Invalid session type. Received {}", session_type))),
-    };
+    let session_type = SessionType::try_from(session_type)
+        .map_err(|_| Error::Parse(format!("Invalid session type. Received {}", session_type)))?;
     let params = match session_type {
         SessionType::Ccc => {
             AppConfigParams::try_from(CccOpenRangingParamsJni::new(ctx.env, app_config_params))
@@ -367,15 +364,9 @@ fn update_controller_multicast_list(
 
     let session_id = session_id as u32;
     let action = update_multicast_list_action as u8;
-    let action = match UpdateMulticastListAction::from_u8(action) {
-        Some(val) => val,
-        _ => {
-            return Err(Error::Parse(format!(
-                "Invalid value for UpdateMulticastListAction. Received {}",
-                action
-            )));
-        }
-    };
+    let action = UpdateMulticastListAction::try_from(action).map_err(|_| {
+        Error::Parse(format!("Invalid value for UpdateMulticastListAction. Received {}", action))
+    })?;
     let controlees = match FiraControleeParamsJni::new(ctx.env, controlees).as_vec() {
         Ok(val) => val,
         Err(err) => {
