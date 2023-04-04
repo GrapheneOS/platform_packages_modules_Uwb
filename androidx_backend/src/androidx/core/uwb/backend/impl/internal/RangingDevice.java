@@ -37,6 +37,9 @@ import android.uwb.UwbManager;
 
 import androidx.annotation.Nullable;
 
+import com.android.internal.annotations.VisibleForTesting;
+
+import com.google.common.hash.Hashing;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 
 import java.util.Arrays;
@@ -47,6 +50,8 @@ import java.util.concurrent.ExecutorService;
 /** Implements start/stop ranging operations. */
 public abstract class RangingDevice {
 
+    private static final int SESSION_ID_UNSET = 0;
+
     /** Timeout value after ranging start call */
     private static final int RANGING_START_TIMEOUT_MILLIS = 3000;
 
@@ -54,31 +59,38 @@ public abstract class RangingDevice {
 
     private final OpAsyncCallbackRunner<Boolean> mOpAsyncCallbackRunner;
 
-    @Nullable private UwbAddress mLocalAddress;
+    @Nullable
+    private UwbAddress mLocalAddress;
 
-    @Nullable protected UwbComplexChannel mComplexChannel;
+    @Nullable
+    protected UwbComplexChannel mComplexChannel;
 
-    @Nullable protected RangingParameters mRangingParameters;
+    @Nullable
+    protected RangingParameters mRangingParameters;
 
     /** A serial thread used by System API to handle session callbacks. */
     private Executor mSystemCallbackExecutor;
 
     /** A serial thread used in system API callbacks to handle Backend callbacks */
-    @Nullable private ExecutorService mBackendCallbackExecutor;
+    @Nullable
+    private ExecutorService mBackendCallbackExecutor;
 
     /** NotNull when session opening is successful. Set to Null when session is closed. */
-    @Nullable private RangingSession mRangingSession;
+    @Nullable
+    private RangingSession mRangingSession;
 
     private boolean mIsRanging = false;
 
     /** If true, local address and complex channel will be hardcoded */
     private Boolean mForTesting = false;
 
-    @Nullable private RangingRoundFailureCallback mRangingRoundFailureCallback = null;
+    @Nullable
+    private RangingRoundFailureCallback mRangingRoundFailureCallback = null;
 
     private boolean mRangingReportedAllowed = false;
 
-    @Nullable private String mChipId = null;
+    @Nullable
+    private String mChipId = null;
 
     RangingDevice(UwbManager manager, Executor executor,
             OpAsyncCallbackRunner<Boolean> opAsyncCallbackRunner) {
@@ -119,9 +131,37 @@ public abstract class RangingDevice {
         return UwbAddress.getRandomizedShortAddress();
     }
 
+    protected abstract int hashSessionId(RangingParameters rangingParameters);
+
+    @VisibleForTesting
+    static int calculateHashedSessionId(
+            UwbAddress controllerAddress, UwbComplexChannel complexChannel) {
+        return Hashing.sha256()
+                .newHasher()
+                .putBytes(controllerAddress.toBytes())
+                .putInt(complexChannel.encode())
+                .hash()
+                .asInt();
+    }
+
     /** Sets the ranging parameter for this session. */
     public synchronized void setRangingParameters(RangingParameters rangingParameters) {
-        mRangingParameters = rangingParameters;
+        if (rangingParameters.getSessionId() == SESSION_ID_UNSET) {
+            int sessionId = hashSessionId(rangingParameters);
+            mRangingParameters =
+                    new RangingParameters(
+                            rangingParameters.getUwbConfigId(),
+                            sessionId,
+                            rangingParameters.getSubSessionId(),
+                            rangingParameters.getSessionKeyInfo(),
+                            rangingParameters.getSubSessionKeyInfo(),
+                            rangingParameters.getComplexChannel(),
+                            rangingParameters.getPeerAddresses(),
+                            rangingParameters.getRangingUpdateRate(),
+                            rangingParameters.getUwbRangeDataNtfConfig());
+        } else {
+            mRangingParameters = rangingParameters;
+        }
     }
 
     /** Alive means the session is open. */
@@ -355,7 +395,8 @@ public abstract class RangingDevice {
                         },
                         "Open session");
 
-        if (!success) {
+        Boolean result = mOpAsyncCallbackRunner.getResult();
+        if (!success || result == null || !result) {
             requireNonNull(mBackendCallbackExecutor);
             mBackendCallbackExecutor.shutdown();
             mBackendCallbackExecutor = null;
@@ -364,10 +405,12 @@ public abstract class RangingDevice {
         }
 
         success =
-                mOpAsyncCallbackRunner.execOperation(() -> requireNonNull(mRangingSession)
-                        .start(new PersistableBundle()), "Start ranging");
+                mOpAsyncCallbackRunner.execOperation(
+                        () -> mRangingSession.start(new PersistableBundle()), "Start ranging");
+
+        result = mOpAsyncCallbackRunner.getResult();
         requireNonNull(mBackendCallbackExecutor);
-        if (!success) {
+        if (!success || result == null || !result) {
             mBackendCallbackExecutor.shutdown();
             mBackendCallbackExecutor = null;
         } else {
@@ -400,7 +443,8 @@ public abstract class RangingDevice {
         }
         mLocalAddress = null;
         mComplexChannel = null;
-        if (!success) {
+        Boolean result = mOpAsyncCallbackRunner.getResult();
+        if (!success || result == null || !result) {
             return UWB_SYSTEM_CALLBACK_FAILURE;
         }
         return STATUS_OK;
@@ -413,8 +457,11 @@ public abstract class RangingDevice {
      * @return returns true if the session is not active or reconfiguration is successful.
      */
     protected synchronized boolean reconfigureRanging(PersistableBundle bundle) {
-        return mOpAsyncCallbackRunner.execOperation(
-                () -> requireNonNull(mRangingSession).reconfigure(bundle), "Reconfigure Ranging");
+        boolean success =
+                mOpAsyncCallbackRunner.execOperation(
+                        () -> mRangingSession.reconfigure(bundle), "Reconfigure Ranging");
+        Boolean result = mOpAsyncCallbackRunner.getResult();
+        return success && result != null && result;
     }
 
     /** Notifies that a ranging round failed. We collect this info for Analytics only. */
