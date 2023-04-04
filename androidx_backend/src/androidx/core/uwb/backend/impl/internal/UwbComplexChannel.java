@@ -21,8 +21,10 @@ import static androidx.core.uwb.backend.impl.internal.Utils.SUPPORTED_CHANNELS;
 
 import static com.android.internal.util.Preconditions.checkArgument;
 
+import com.google.common.primitives.Ints;
 import com.google.uwb.support.fira.FiraParams;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 /** Complex channel used by UWB ranging. */
@@ -49,6 +51,17 @@ public class UwbComplexChannel {
     @FiraParams.UwbPreambleCodeIndex
     public int getPreambleIndex() {
         return mPreambleIndex;
+    }
+
+    /**
+     * Pack channel/Preamble Index to a 5-bit integer.
+     *
+     * @return packed 5-bit integer. [2:4] is the channel index [0:1] is the index of the preamble
+     *     index
+     */
+    public int encode() {
+        return (Arrays.binarySearch(Ints.toArray(SUPPORTED_CHANNELS), mChannel << 2)
+                | Arrays.binarySearch(Ints.toArray(SUPPORTED_BPRF_PREAMBLE_INDEX), mPreambleIndex));
     }
 
     @Override
