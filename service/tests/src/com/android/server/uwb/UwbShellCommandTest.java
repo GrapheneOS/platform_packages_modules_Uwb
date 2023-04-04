@@ -25,6 +25,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_DISABLE;
 import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_ENABLE;
 
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
@@ -72,6 +73,7 @@ import org.mockito.MockitoAnnotations;
 import java.io.FileDescriptor;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.FutureTask;
 
 /**
  * Unit tests for {@link com.android.server.uwb.UwbShellCommand}.
@@ -95,6 +97,11 @@ public class UwbShellCommandTest {
 
         when(mUwbInjector.getUwbCountryCode()).thenReturn(mUwbCountryCode);
         when(mUwbInjector.getUwbServiceCore()).thenReturn(mUwbServiceCore);
+        doAnswer(invocation -> {
+            FutureTask t = invocation.getArgument(0);
+            t.run();
+            return t.get();
+        }).when(mUwbInjector).runTaskOnSingleThreadExecutor(any(FutureTask.class), anyInt());
         GenericSpecificationParams params = new GenericSpecificationParams.Builder()
                 .setCccSpecificationParams(mock(CccSpecificationParams.class))
                 .setFiraSpecificationParams(
