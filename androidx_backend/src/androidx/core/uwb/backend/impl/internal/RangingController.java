@@ -104,6 +104,11 @@ public class RangingController extends RangingDevice {
     }
 
     @Override
+    protected int hashSessionId(RangingParameters rangingParameters) {
+        return calculateHashedSessionId(getLocalAddress(), getComplexChannel());
+    }
+
+    @Override
     public synchronized int startRanging(
             RangingSessionCallback callback, ExecutorService backendCallbackExecutor) {
         requireNonNull(mRangingParameters);
