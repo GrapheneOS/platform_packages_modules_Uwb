@@ -7,7 +7,7 @@ from typing import List
 
 from mobly import asserts
 from mobly import config_parser
-from mobly import test_runner
+from mobly import suite_runner
 from mobly import signals
 import timeout_decorator
 
@@ -1075,4 +1075,4 @@ if __name__ == "__main__":
   if '--' in sys.argv:
     index = sys.argv.index('--')
     sys.argv = sys.argv[:1] + sys.argv[index + 1:]
-  test_runner.main()
+  suite_runner.run_suite([RangingTest])
