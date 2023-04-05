@@ -34,7 +34,6 @@ use jni::sys::{
 };
 use jni::JNIEnv;
 use log::{debug, error};
-use num_traits::cast::FromPrimitive;
 use uwb_core::error::{Error, Result};
 use uwb_core::params::{
     AppConfigTlv, CountryCode, RawAppConfigTlv, RawUciMessage,
@@ -182,7 +181,8 @@ fn native_session_init(
     session_type: jbyte,
     chip_id: JString,
 ) -> Result<()> {
-    let session_type = SessionType::from_u8(session_type as u8).ok_or(Error::BadParameters)?;
+    let session_type =
+        SessionType::try_from(session_type as u8).map_err(|_| Error::BadParameters)?;
     let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
     uci_manager.session_init(session_id as u32, session_type)
 }
@@ -467,7 +467,8 @@ fn native_get_app_configurations(
         session_id as u32,
         app_config_bytearray
             .into_iter()
-            .map(AppConfigTlvType::from_u8)
+            .map(AppConfigTlvType::try_from)
+            .map(std::result::Result::ok)
             .collect::<Option<Vec<_>>>()
             .ok_or(Error::BadParameters)?,
     )
@@ -592,8 +593,8 @@ fn native_controller_multicast_list_update(
     {
         return Err(Error::BadParameters);
     }
-    let controlee_list = match UpdateMulticastListAction::from_u8(action as u8)
-        .ok_or(Error::BadParameters)?
+    let controlee_list = match UpdateMulticastListAction::try_from(action as u8)
+        .map_err(|_| Error::BadParameters)?
     {
         UpdateMulticastListAction::AddControlee | UpdateMulticastListAction::RemoveControlee => {
             Controlees::NoSessionKey(
@@ -639,7 +640,7 @@ fn native_controller_multicast_list_update(
     };
     uci_manager.session_update_controller_multicast_list(
         session_id as u32,
-        UpdateMulticastListAction::from_u8(action as u8).ok_or(Error::BadParameters)?,
+        UpdateMulticastListAction::try_from(action as u8).map_err(|_| Error::BadParameters)?,
         controlee_list,
     )
 }
@@ -955,7 +956,7 @@ fn native_send_data(
     let app_payload_data_bytearray =
         env.convert_byte_array(app_payload_data).map_err(|_| Error::ForeignFunctionInterface)?;
     let destination_fira_component =
-        FiraComponent::from_u8(dest_fira_component as u8).ok_or(Error::BadParameters)?;
+        FiraComponent::try_from(dest_fira_component as u8).map_err(|_| Error::BadParameters)?;
     uci_manager.send_data_packet(
         session_id as u32,
         address_bytearray,

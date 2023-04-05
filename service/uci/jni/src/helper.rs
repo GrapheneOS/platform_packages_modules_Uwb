@@ -16,7 +16,6 @@
 
 use jni::sys::{jboolean, jbyte};
 use log::error;
-use num_traits::ToPrimitive;
 use uwb_core::error::{Error, Result};
 use uwb_uci_packets::StatusCode;
 
@@ -33,7 +32,7 @@ pub(crate) fn boolean_result_helper<T>(result: Result<T>, error_msg: &str) -> jb
 
 pub(crate) fn byte_result_helper<T>(result: Result<T>, error_msg: &str) -> jbyte {
     // StatusCode do not overflow i8
-    result_to_status_code(result, error_msg).to_i8().unwrap()
+    u8::from(result_to_status_code(result, error_msg)) as i8
 }
 
 /// helper function to convert Result to StatusCode
