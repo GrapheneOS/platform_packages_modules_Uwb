@@ -5,7 +5,7 @@ import sys
 
 from mobly import asserts
 from mobly import config_parser
-from mobly import test_runner
+from mobly import suite_runner
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import callback_handler_v2
 
@@ -205,4 +205,4 @@ if __name__ == "__main__":
   if "--" in sys.argv:
     index = sys.argv.index("--")
     sys.argv = sys.argv[:1] + sys.argv[index + 1:]
-  test_runner.main()
+  suite_runner.run_suite([UwbManagerTest])
