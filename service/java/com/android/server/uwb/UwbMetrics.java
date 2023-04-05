@@ -80,12 +80,16 @@ public class UwbMetrics {
         private boolean mIsController;
         private boolean mIsDiscoveredByFramework = false;
         private boolean mIsOutOfBand = true;
+        private int mRangingIntervalMs;
+        private int mParallelSessionCount;
         private AttributionSource mAttributionSource;
 
-        RangingSessionStats(int sessionId, AttributionSource attributionSource) {
+        RangingSessionStats(int sessionId, AttributionSource attributionSource,
+                int parallelSessionCount) {
             mSessionId = sessionId;
             mInitTimeWallClockMs = mUwbInjector.getWallClockMillis();
             mAttributionSource = attributionSource;
+            mParallelSessionCount = parallelSessionCount;
         }
 
         /**
@@ -111,6 +115,7 @@ public class UwbMetrics {
             mIsInitiator = params.getDeviceRole() == FiraParams.RANGING_DEVICE_ROLE_INITIATOR;
             mIsController = params.getDeviceType() == FiraParams.RANGING_DEVICE_TYPE_CONTROLLER;
             mChannel = params.getChannelNumber();
+            mRangingIntervalMs = params.getRangingIntervalMs();
         }
 
         private void parseCccParams(CccOpenRangingParams params) {
@@ -197,6 +202,8 @@ public class UwbMetrics {
                 sb.append(", discoveredByFramework=").append(mIsDiscoveredByFramework);
                 sb.append(", uid=").append(mAttributionSource.getUid());
                 sb.append(", packageName=").append(mAttributionSource.getPackageName());
+                sb.append(", rangingIntervalMs=").append(mRangingIntervalMs);
+                sb.append(", parallelSessionCount=").append(mParallelSessionCount);
                 return sb.toString();
             }
         }
@@ -263,7 +270,7 @@ public class UwbMetrics {
                 mRangingSessionList.removeFirst();
             }
             RangingSessionStats session = new RangingSessionStats(uwbSession.getSessionId(),
-                    uwbSession.getAttributionSource());
+                    uwbSession.getAttributionSource(), uwbSession.getParallelSessionCount());
             session.parseParams(uwbSession.getParams());
             session.convertInitStatus(status);
             mRangingSessionList.add(session);
@@ -273,7 +280,9 @@ public class UwbMetrics {
                     session.mIsController, session.mIsDiscoveredByFramework, session.mIsOutOfBand,
                     session.mChannel, session.mInitStatus,
                     session.mInitLatencyMs, session.mInitLatencyMs / 20,
-                    uwbSession.getAttributionSource().getUid());
+                    uwbSession.getAttributionSource().getUid(), session.mRangingIntervalMs,
+                    session.mParallelSessionCount
+            );
         }
     }
 
