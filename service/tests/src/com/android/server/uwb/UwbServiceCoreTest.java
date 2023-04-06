@@ -290,6 +290,24 @@ public class UwbServiceCoreTest {
                 genericSpecificationParams);
     }
 
+    private void verifyGetCachedSpecificationInfoSuccess() throws Exception {
+        GenericSpecificationParams genericSpecificationParams =
+                mock(GenericSpecificationParams.class);
+        PersistableBundle genericSpecificationBundle = mock(PersistableBundle.class);
+        when(genericSpecificationParams.toBundle()).thenReturn(genericSpecificationBundle);
+
+        when(mUwbConfigurationManager
+                .getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any(), anyString()))
+                .thenReturn(Pair.create(
+                        UwbUciConstants.STATUS_CODE_OK, genericSpecificationParams));
+
+        GenericSpecificationParams specifications = mUwbServiceCore.getCachedSpecificationParams(
+                TEST_DEFAULT_CHIP_ID);
+        assertThat(specifications.toBundle()).isEqualTo(genericSpecificationBundle);
+        verify(mUwbConfigurationManager)
+                .getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any(), eq(TEST_DEFAULT_CHIP_ID));
+    }
+
     private void enableUwb(String countryCode) throws Exception {
         when(mNativeUwbManager.doInitialize()).thenReturn(true);
         when(mUwbCountryCode.getCountryCode()).thenReturn(countryCode);
@@ -343,6 +361,22 @@ public class UwbServiceCoreTest {
             // pass
         }
     }
+
+    @Test
+    public void testCachedSpecificationResetOnCountryCodeChange() throws Exception {
+        enableUwbWithCountryCodeChangedCallback();
+        verifyGetCachedSpecificationInfoSuccess();
+
+        clearInvocations(mUwbConfigurationManager);
+
+        // Later on, the onCountryCodeChanged() callback is invoked, with a valid country code.
+        when(mUwbCountryCode.getCountryCode()).thenReturn(VALID_COUNTRY_CODE);
+        mUwbServiceCore.onCountryCodeChanged(VALID_COUNTRY_CODE);
+
+        // Verify that invoking cached specification info updates the cached value.
+        verifyGetCachedSpecificationInfoSuccess();
+    }
+
 
     @Test
     public void testEnableWithCountryCode_success() throws Exception {
