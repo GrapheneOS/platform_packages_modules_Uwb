@@ -46,6 +46,8 @@ import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DS_TWR_
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DS_TWR_NON_DEFERRED_MODE;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_NON_DEFERRED_MODE;
+import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_PROVISIONED;
+import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_STATIC;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -564,6 +566,32 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             if (option.equals("-p")) {
                 int preambleCodeIndex = Integer.parseInt(getNextArgRequired());
                 builder.setPreambleCodeIndex(preambleCodeIndex);
+            }
+            if (option.equals("-o")) {
+                String stsConfigType = getNextArgRequired();
+                if (stsConfigType.equals("static")) {
+                    builder.setStsConfig(STS_CONFIG_STATIC);
+                } else if (stsConfigType.equals("provisioned")) {
+                    builder.setStsConfig(STS_CONFIG_PROVISIONED);
+                } else {
+                    throw new IllegalArgumentException("unknown sts config type");
+                }
+            }
+            if (option.equals("-n")) {
+                String sessionKey = getNextArgRequired();
+                if (sessionKey.length() == 32 || sessionKey.length() == 64) {
+                    builder.setSessionKey(BaseEncoding.base16().decode(sessionKey));
+                } else {
+                    throw new IllegalArgumentException("sessionKey expecting 16 or 32 bytes");
+                }
+            }
+            if (option.equals("-u")) {
+                String subSessionKey = getNextArgRequired();
+                if (subSessionKey.length() == 32 || subSessionKey.length() == 64) {
+                    builder.setSubsessionKey(BaseEncoding.base16().decode(subSessionKey));
+                } else {
+                    throw new IllegalArgumentException(("subSessionKey expecting 16 or 32 bytes"));
+                }
             }
             option = getNextOption();
         }
@@ -1087,7 +1115,10 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " [-w enabled|disabled](has-result-report-phase)"
                 + " [-y enabled|disabled](hopping-mode, default = disabled)"
                 + " [-p <preamble-code-index>](preamble-code-index, default = 10)"
-                + " [-h <slot-duration-rstu>(slot-duration-rstu, default=2400)");
+                + " [-h <slot-duration-rstu>(slot-duration-rstu, default=2400)"
+                + " [-o static|provisioned](sts-config-type)"
+                + " [-n <sessionKey>](sessionKey 16 or 32 bytes)"
+                + " [-u <subSessionKey>](subSessionKey 16 or 32 bytes)");
         pw.println("    Starts a FIRA ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
                 + " retrieved using |get-ranging-session-reports|");
