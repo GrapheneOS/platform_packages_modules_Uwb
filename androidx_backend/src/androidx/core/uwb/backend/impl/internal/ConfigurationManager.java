@@ -409,14 +409,17 @@ public final class ConfigurationManager {
                         .setRangingIntervalMs(
                                 timingParams.getRangingInterval(
                                         rangingParameters.getRangingUpdateRate()))
-                        .setRangeDataNtfConfig(Utils.convertToFiraNtfConfig(
-                                rangingParameters.getUwbRangeDataNtfConfig()
-                                        .getRangeDataNtfConfigType()))
+                        .setRangeDataNtfConfig(
+                                Utils.convertToFiraNtfConfig(
+                                        rangingParameters
+                                                .getUwbRangeDataNtfConfig()
+                                                .getRangeDataNtfConfigType()))
                         .setRangeDataNtfProximityNear(
                                 rangingParameters.getUwbRangeDataNtfConfig().getNtfProximityNear())
                         .setRangeDataNtfProximityFar(
                                 rangingParameters.getUwbRangeDataNtfConfig().getNtfProximityFar())
-                        .setInBandTerminationAttemptCount(3);
+                        .setInBandTerminationAttemptCount(3)
+                        .setStsConfig(configuration.getStsConfig());
 
         if (configuration.getStsConfig() == FiraParams.STS_CONFIG_STATIC) {
             byte[] staticStsIv =
@@ -427,11 +430,10 @@ public final class ConfigurationManager {
             builder.setVendorId(
                             Arrays.copyOf(rangingParameters.getSessionKeyInfo(), VENDOR_ID_SIZE))
                     .setStaticStsIV(staticStsIv);
-        }
-        if (configuration.getStsConfig() == STS_CONFIG_PROVISIONED) {
+        } else if (configuration.getStsConfig() == STS_CONFIG_PROVISIONED) {
             builder.setSessionKey(rangingParameters.getSessionKeyInfo());
-        }
-        if (configuration.getStsConfig() == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
+        } else if (configuration.getStsConfig()
+                == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
             builder.setSessionKey(rangingParameters.getSessionKeyInfo())
                     .setSubSessionId(rangingParameters.getSubSessionId())
                     .setSubsessionKey(rangingParameters.getSubSessionKeyInfo());
