@@ -187,7 +187,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
         if (restricted) {
             SecurityLog.writeEvent(SecurityLog.TAG_USER_RESTRICTION_ADDED);
         } else {
-            SecurityLog.writeEvent(SecurityLog.TAG_USER_RESTRICTION_ADDED);
+            SecurityLog.writeEvent(SecurityLog.TAG_USER_RESTRICTION_REMOVED);
         }
     }
 
