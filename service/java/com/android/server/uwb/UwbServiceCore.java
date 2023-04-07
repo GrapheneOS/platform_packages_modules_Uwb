@@ -340,6 +340,8 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             // that time the country code was not valid, will now notify STATE_ENABLED_INACTIVE.
             mUwbTask.computeAndNotifyAdapterStateChange(
                     mLastStateChangedReason, countryCode, Optional.empty());
+            Log.d(TAG, "Resetting cached specifications");
+            mCachedSpecificationParams = null;
         }
     }
 
