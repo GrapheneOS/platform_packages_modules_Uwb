@@ -158,7 +158,7 @@ impl UwbServiceCallback for UwbServiceCallbackImpl {
             &[
                 jvalue::from(JValue::Long(session_id as i64)),
                 jvalue::from(JValue::Int(session_state as i32)),
-                jvalue::from(JValue::Int(reason_code as i32)),
+                jvalue::from(JValue::Int(i32::from(reason_code))),
             ],
         );
         result_helper("on_session_state_changed", result);
