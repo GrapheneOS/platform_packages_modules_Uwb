@@ -152,6 +152,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     private final UwbAdvertiseManager mAdvertiseManager;
     private final UwbInjector mUwbInjector;
     private final AlarmManager mAlarmManager;
+    private final int mMaxSessionNumber;
     private final Looper mLooper;
     private final EventTask mEventTask;
 
@@ -173,6 +174,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         mUwbInjector = uwbInjector;
         mAlarmManager = alarmManager;
         mActivityManager = activityManager;
+        mMaxSessionNumber = mNativeUwbManager.getMaxSessionNumber();
         mLooper = serviceLooper;
         mEventTask = new EventTask(serviceLooper);
         registerUidImportanceTransitions();
@@ -462,18 +464,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             return;
         }
 
-        boolean maxSessionsExceeded = false;
-        if (protocolName.equals(CccParams.PROTOCOL_NAME)
-                && getCccSessionCount() >= getMaxCccSessionsNumber()) {
-            Log.i(TAG, "Max CCC Sessions Exceeded");
-            maxSessionsExceeded = true;
-        } else if (protocolName.equals(FiraParams.PROTOCOL_NAME)
-                && getFiraSessionCount() >= getMaxFiraSessionsNumber()) {
-            Log.i(TAG, "Max Fira Sessions Exceeded");
-            maxSessionsExceeded = true;
-        }
-
-        if (maxSessionsExceeded) {
+        if (getSessionCount() >= mMaxSessionNumber) {
+            Log.i(TAG, "Max Sessions Exceeded");
             rangingCallbacks.onRangingOpenFailed(sessionHandle,
                     RangingChangeReason.MAX_SESSIONS_REACHED,
                     UwbSessionNotificationHelper.convertUciStatusToParam(protocolName,
@@ -762,24 +754,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         return UwbUciConstants.UWB_SESSION_STATE_ERROR;
     }
 
-    public long getMaxCccSessionsNumber() {
-        return mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(
-                null).getCccSpecificationParams().getMaxRangingSessionNumber();
-    }
-
-    public long getMaxFiraSessionsNumber() {
-        return mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(
-                null).getFiraSpecificationParams().getMaxRangingSessionNumber();
-    }
-
-    public long getCccSessionCount() {
-        return mSessionTable.values().stream().filter(
-                s -> s.mProtocolName.equals(CccParams.PROTOCOL_NAME)).count();
-    }
-
-    public long getFiraSessionCount() {
-        return mSessionTable.values().stream().filter(
-                s -> s.mProtocolName.equals(FiraParams.PROTOCOL_NAME)).count();
+    public int getSessionCount() {
+        return mSessionTable.size();
     }
 
     public Set<Integer> getSessionIdSet() {
@@ -2083,10 +2059,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 mUwbMetrics.logRangingCloseEvent(this, status);
                 if (status == UwbUciConstants.STATUS_CODE_OK) {
                     removeSession(this);
-                    Log.i(TAG,
-                            "binderDied : Fira/CCC Session counts currently are "
-                                    + getFiraSessionCount()
-                                    + "/" + getCccSessionCount());
+                    Log.i(TAG, "binderDied : Session count currently is " + getSessionCount());
                 } else {
                     Log.e(TAG,
                             "binderDied : sessionDeinit Failure because of NativeSessionDeinit "
