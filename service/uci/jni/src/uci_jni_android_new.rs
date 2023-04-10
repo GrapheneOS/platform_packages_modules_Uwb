@@ -985,13 +985,14 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeQu
 }
 
 fn native_query_data_size(
-    _env: JNIEnv,
-    _obj: JObject,
-    _session_id: jint,
-    _chip_id: JString,
+    env: JNIEnv,
+    obj: JObject,
+    session_id: jint,
+    chip_id: JString,
 ) -> Result<u16> {
-    // TODO(b/251477752): Implement the Rust command (in UciManager) to support this.
-    Ok(0)
+    let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)
+        .map_err(|_| Error::ForeignFunctionInterface)?;
+    uci_manager.session_query_max_data_size(session_id as u32)
 }
 
 /// Get the class loader object. Has to be called from a JNIEnv where the local java classes are
