@@ -577,7 +577,7 @@ public class FiraSpecificationParams extends FiraParams {
 
         private int mMinSlotDuration = -1;
 
-        private int mMaxRangingSessionNumber = 5;
+        private int mMaxRangingSessionNumber = -1;
 
         // Unicast support is mandatory
         private final EnumSet<MultiNodeCapabilityFlag> mMultiNodeCapabilities =
