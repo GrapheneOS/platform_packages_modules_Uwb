@@ -1906,6 +1906,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
             return mProfileType;
         }
 
+        public int getParallelSessionCount() {
+            if (mSessionTable.containsKey(mSessionHandle)) {
+                return getSessionCount() - 1;
+            }
+            return getSessionCount();
+        }
+
         public IBinder getBinder() {
             return mIBinder;
         }
