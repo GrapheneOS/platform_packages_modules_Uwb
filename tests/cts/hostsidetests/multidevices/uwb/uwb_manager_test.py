@@ -53,9 +53,6 @@ class UwbManagerTest(uwb_base_test.UwbBaseTest):
     super().teardown_test()
     self.dut.uwb.unregisterUwbAdapterStateCallback(self.callback)
 
-  def on_fail(self, record):
-    self.dut.take_bug_report(destination=self.current_test_info.output_path)
-
   ### Helper methods ###
 
   def _test_uwb_state_after_reboot(
