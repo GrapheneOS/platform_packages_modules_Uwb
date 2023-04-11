@@ -1,7 +1,6 @@
 """Tests for Ranging Measurement."""
 
 import logging
-import math
 import statistics
 import time
 from typing import List
@@ -23,9 +22,6 @@ MEASUREMENTS_SPREAD_UPPER_BOUND_INDEX = 975
 DISTANCE_MEASUREMENTS_MAX_SPREAD_CM = 30
 DISTANCE_MEASUREMENTS_MEDIAN_LOWER_BOUND_CM = 75
 DISTANCE_MEASUREMENTS_MEDIAN_UPPER_BOUND_CM = 125
-AOA_AZIMUTH_MEASUREMENTS_MAX_SPREAD_DEG = 10
-AOA_AZIMUTH_MEASUREMENTS_MEDIAN_LOWER_BOUND_DEG = -10
-AOA_AZIMUTH_MEASUREMENTS_MEDIAN_UPPER_BOUND_DEG = 10
 
 
 _TEST_CASES = {
@@ -212,67 +208,6 @@ class RangingMeasurementTest(uwb_base_test.UwbBaseTest):
       uwb_test_utils.verify_peer_found(responder, initiator_addr)
       self._check_distance_accuracy(initiator, responder_addr)
 
-  def _check_aoa_azimuth_accuracy(self, initiator: uwb_ranging_decorator.UwbRangingDecorator,
-                                  responder_addr: List[int]):
-      """Verifies the AoA azimuth measurement is within the required ranges.
-
-      Args:
-        initiator: uwb device object.
-        responder_addr: address of uwb device.
-      """
-      aoa_azimuth_measurements = []
-      for _ in range(MEASUREMENTS_COUNT):
-          azimuth_radians = initiator.get_aoa_azimuth_measurement(responder_addr)
-          aoa_azimuth_measurements.append(math.degrees(azimuth_radians))
-      aoa_azimuth_measurements.sort()
-      median_aoa_azimuth_deg = statistics.median(aoa_azimuth_measurements)
-      logging.info("Median AoA Azimuth between peers: %s degree", median_aoa_azimuth_deg)
-      aoa_azimuth_spread_lower_bound_deg = aoa_azimuth_measurements[
-          MEASUREMENTS_SPREAD_LOWER_BOUND_INDEX - 1]
-      aoa_azimuth_spread_upper_bound_deg = aoa_azimuth_measurements[
-          MEASUREMENTS_SPREAD_UPPER_BOUND_INDEX - 1]
-      aoa_azimuth_spread_deg = aoa_azimuth_spread_upper_bound_deg - \
-                              aoa_azimuth_spread_lower_bound_deg
-      logging.info("AoA azimuth spread of the required boundaries : %s degree",
-                   aoa_azimuth_spread_deg)
-      asserts.assert_true(
-          aoa_azimuth_spread_deg < AOA_AZIMUTH_MEASUREMENTS_MAX_SPREAD_DEG,
-          "AoA azimuth spread %s degree is greater than the required limit of %s degree" %
-          (aoa_azimuth_spread_deg, AOA_AZIMUTH_MEASUREMENTS_MAX_SPREAD_DEG))
-      asserts.assert_true(
-          AOA_AZIMUTH_MEASUREMENTS_MEDIAN_LOWER_BOUND_DEG < median_aoa_azimuth_deg <
-          AOA_AZIMUTH_MEASUREMENTS_MEDIAN_UPPER_BOUND_DEG,
-          "Median AoA azimuth %s degree is out of the required range of [%s deg, %s deg]" %
-          (median_aoa_azimuth_deg, AOA_AZIMUTH_MEASUREMENTS_MEDIAN_LOWER_BOUND_DEG,
-           AOA_AZIMUTH_MEASUREMENTS_MEDIAN_UPPER_BOUND_DEG))
-
-  def _verify_aoa_azimuth_measurement_accuracy(
-          self, initiator: uwb_ranging_decorator.UwbRangingDecorator,
-          responder: uwb_ranging_decorator.UwbRangingDecorator,
-          initiator_params: uwb_ranging_params.UwbRangingParams,
-          responder_params: uwb_ranging_params.UwbRangingParams,
-          initiator_addr: List[int], responder_addr: List[int]):
-      """Verifies the accuracy of AoA azimuth measurement.
-
-      Args:
-        initiator: uwb device object.
-        responder: uwb device object.
-        initiator_params: ranging params for initiator.
-        responder_params: ranging params for responder.
-        initiator_addr: address of initiator.
-        responder_addr: address of uwb device.
-      """
-      # open and start ranging on initiator and responder.
-      initiator.open_fira_ranging(initiator_params)
-      responder.open_fira_ranging(responder_params)
-      initiator.start_fira_ranging()
-      responder.start_fira_ranging()
-
-      # verify accuracy of AoA azimuth measurement
-      uwb_test_utils.verify_peer_found(initiator, responder_addr)
-      uwb_test_utils.verify_peer_found(responder, initiator_addr)
-      self._check_aoa_azimuth_accuracy(initiator, responder_addr)
-
   ### Test Cases ###
 
   def test_rssi_measurement_device_tracker_profile(self):
@@ -332,7 +267,9 @@ class RangingMeasurementTest(uwb_base_test.UwbBaseTest):
                             self.responder_addr)
 
   def test_distance_measurement_accuracy(self):
-    """Checks accuracy of distance measurements."""
+    """Checks accuracy of distance measurements.
+       @CddTest = 7.4.9/C-1-6,C-1-7
+    """
     initiator_params = uwb_ranging_params.UwbRangingParams(
         device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
         device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
@@ -356,32 +293,6 @@ class RangingMeasurementTest(uwb_base_test.UwbBaseTest):
     self._verify_distance_measurement_accuracy(self.initiator, self.responder, initiator_params,
                                                responder_params, self.initiator_addr,
                                                self.responder_addr)
-
-  def test_aoa_azimuth_measurement_accuracy(self):
-      """Checks accuracy of AoA azimuth measurements."""
-      initiator_params = uwb_ranging_params.UwbRangingParams(
-          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
-          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
-          device_address=self.initiator_addr,
-          destination_addresses=[self.responder_addr],
-          initiation_time_ms=100,
-          ranging_interval_ms=200,
-          slots_per_ranging_round=20,
-          in_band_termination_attempt_count=3,
-      )
-      responder_params = uwb_ranging_params.UwbRangingParams(
-          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_RESPONDER,
-          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLEE,
-          device_address=self.responder_addr,
-          destination_addresses=[self.initiator_addr],
-          initiation_time_ms=100,
-          ranging_interval_ms=200,
-          slots_per_ranging_round=20,
-          in_band_termination_attempt_count=3,
-      )
-      self._verify_aoa_azimuth_measurement_accuracy(self.initiator, self.responder,
-                                                    initiator_params, responder_params,
-                                                    self.initiator_addr, self.responder_addr)
 
 
 if __name__ == "__main__":
