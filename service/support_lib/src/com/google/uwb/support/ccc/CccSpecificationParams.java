@@ -273,7 +273,7 @@ public class CccSpecificationParams extends CccParams {
         @UwbConfig private List<Integer> mUwbConfigs = new ArrayList<>();
         private List<CccPulseShapeCombo> mPulseShapeCombos = new ArrayList<>();
         private RequiredParam<Integer> mRanMultiplier = new RequiredParam<>();
-        private int mMaxRangingSessionNumber = -1;
+        private int mMaxRangingSessionNumber = 1;
         @ChapsPerSlot private List<Integer> mChapsPerSlot = new ArrayList<>();
         @SyncCodeIndex private List<Integer> mSyncCodes = new ArrayList<>();
         @Channel private List<Integer> mChannels = new ArrayList<>();
