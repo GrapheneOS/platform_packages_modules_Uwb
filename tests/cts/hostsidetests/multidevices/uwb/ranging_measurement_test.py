@@ -70,12 +70,6 @@ class RangingMeasurementTest(uwb_base_test.UwbBaseTest):
     self.responder.close_ranging()
     self.initiator.close_ranging()
 
-  def on_fail(self, record):
-    for count, ad in enumerate(self.android_devices):
-      test_name = "initiator" if not count else "responder"
-      ad.take_bug_report(
-          test_name=test_name, destination=self.current_test_info.output_path)
-
   ### Helper Methods ###
 
   def _get_rssi(self, initiator: uwb_ranging_decorator.UwbRangingDecorator,
