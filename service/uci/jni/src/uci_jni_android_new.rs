@@ -88,16 +88,6 @@ fn native_init(env: JNIEnv) -> Result<()> {
     unique_jvm::set_once(jvm)
 }
 
-/// Get max session number
-#[no_mangle]
-pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetMaxSessionNumber(
-    _env: JNIEnv,
-    _obj: JObject,
-) -> jint {
-    debug!("{}: enter", function_name!());
-    5
-}
-
 /// Turn on Single UWB chip.
 #[no_mangle]
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDoInitialize(
