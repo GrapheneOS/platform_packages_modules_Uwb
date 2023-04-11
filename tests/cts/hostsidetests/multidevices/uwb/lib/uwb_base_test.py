@@ -8,6 +8,8 @@ from mobly import test_runner
 from mobly import records
 from mobly.controllers import android_device
 
+from test_utils import uwb_test_utils
+
 RELEASE_ID_REGEX = re.compile(r"\w+\.\d+\.\d+")
 
 
@@ -22,11 +24,9 @@ class UwbBaseTest(base_test.BaseTestClass):
     for ad in self.android_devices:
       ad.load_snippet("uwb", "com.google.snippet.uwb")
 
-    if "set_country_code" in self.user_params:
-      for ad in self.android_devices:
-        ad.adb.shell(
-            ["cmd", "uwb", "force-country-code", "enabled", "US"], timeout=3
-        )
+    for ad in self.android_devices:
+      uwb_test_utils.initialize_uwb_country_code_if_not_set(ad)
+
 
   def teardown_class(self):
     super().teardown_class()
