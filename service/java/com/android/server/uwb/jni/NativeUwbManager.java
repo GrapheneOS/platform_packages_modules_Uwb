@@ -162,17 +162,6 @@ public class NativeUwbManager {
     }
 
     /**
-     * Retrieves maximum number of UWB sessions concurrently
-     *
-     * @return : Retrieves maximum number of UWB sessions concurrently
-     */
-    public int getMaxSessionNumber() {
-        synchronized (mNativeLock) {
-            return nativeGetMaxSessionNumber();
-        }
-    }
-
-    /**
      * Retrieves power related stats
      */
     public UwbPowerStats getPowerStats(String chipId) {
@@ -457,8 +446,6 @@ public class NativeUwbManager {
     private native long nativeGetTimestampResolutionNanos();
 
     private native UwbPowerStats nativeGetPowerStats(String chipId);
-
-    private native int nativeGetMaxSessionNumber();
 
     private native byte nativeDeviceReset(byte resetConfig, String chipId);
 
