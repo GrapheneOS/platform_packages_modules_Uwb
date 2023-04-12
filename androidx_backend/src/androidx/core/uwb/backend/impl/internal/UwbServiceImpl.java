@@ -19,6 +19,13 @@ package androidx.core.uwb.backend.impl.internal;
 import static android.content.pm.PackageManager.FEATURE_UWB;
 import static android.uwb.UwbManager.AdapterStateCallback.STATE_DISABLED;
 
+import static androidx.core.uwb.backend.impl.internal.RangingCapabilities.FIRA_DEFAULT_SUPPORTED_CONFIG_IDS;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_DL_TDOA_DT_TAG;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_MULTICAST_DS_TWR;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_AOA;
+
 import static java.util.Objects.requireNonNull;
 
 import android.content.Context;
@@ -139,13 +146,33 @@ public class UwbServiceImpl {
         }
         List<Integer> supportedNtfConfigs = new ArrayList<>(supportedNtfConfigsSet);
 
+        List<Integer> supportedConfigIds = new ArrayList<>(FIRA_DEFAULT_SUPPORTED_CONFIG_IDS);
+        EnumSet<FiraParams.StsCapabilityFlag> stsCapabilityFlags =
+                specificationParams.getStsCapabilities();
+        if (stsCapabilityFlags.contains(FiraParams.StsCapabilityFlag.HAS_PROVISIONED_STS_SUPPORT)) {
+            supportedConfigIds.add(CONFIG_PROVISIONED_UNICAST_DS_TWR);
+            supportedConfigIds.add(CONFIG_PROVISIONED_MULTICAST_DS_TWR);
+            supportedConfigIds.add(CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_AOA);
+        }
+        if (stsCapabilityFlags.contains(FiraParams.StsCapabilityFlag
+                        .HAS_PROVISIONED_STS_INDIVIDUAL_CONTROLEE_KEY_SUPPORT)) {
+            supportedConfigIds.add(CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR);
+        }
+        EnumSet<FiraParams.RangingRoundCapabilityFlag> rangingRoundCapabilityFlags =
+                specificationParams.getRangingRoundCapabilities();
+        if (rangingRoundCapabilityFlags.contains(FiraParams.RangingRoundCapabilityFlag
+                .HAS_OWR_DL_TDOA_SUPPORT)) {
+            supportedConfigIds.add(CONFIG_DL_TDOA_DT_TAG);
+        }
+
         return new RangingCapabilities(
                 true,
                 aoaCapabilityFlags.contains(FiraParams.AoaCapabilityFlag.HAS_AZIMUTH_SUPPORT),
                 aoaCapabilityFlags.contains(FiraParams.AoaCapabilityFlag.HAS_ELEVATION_SUPPORT),
                 minRangingInterval,
                 supportedChannels,
-                supportedNtfConfigs);
+                supportedNtfConfigs,
+                supportedConfigIds);
     }
 
     /**

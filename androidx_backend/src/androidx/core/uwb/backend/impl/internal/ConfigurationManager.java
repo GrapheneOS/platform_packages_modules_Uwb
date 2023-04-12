@@ -16,14 +16,14 @@
 
 package androidx.core.uwb.backend.impl.internal;
 
-import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_2;
-import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_3;
-import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_4;
-import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_5;
-import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_6;
-import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_7;
-import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_8;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_DL_TDOA_DT_TAG;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_MULTICAST_DS_TWR;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_MULTICAST_DS_TWR;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_AOA;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_UNICAST_DS_TWR;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_UNICAST_DS_TWR_NO_AOA;
 import static androidx.core.uwb.backend.impl.internal.Utils.STATIC_STS_SESSION_KEY_INFO_SIZE;
 import static androidx.core.uwb.backend.impl.internal.Utils.VENDOR_ID_SIZE;
 import static androidx.core.uwb.backend.impl.internal.Utils.getRangingTimingParams;
@@ -102,12 +102,12 @@ public final class ConfigurationManager {
 
         // ID_2 properties.
         sConfigs.put(
-                CONFIG_ID_2,
+                CONFIG_MULTICAST_DS_TWR,
                 new UwbConfiguration() {
 
                     @Override
                     public int getConfigId() {
-                        return CONFIG_ID_2;
+                        return CONFIG_MULTICAST_DS_TWR;
                     }
 
                     @Override
@@ -138,12 +138,12 @@ public final class ConfigurationManager {
 
         // ID_3 properties.
         sConfigs.put(
-                CONFIG_ID_3,
+                CONFIG_UNICAST_DS_TWR_NO_AOA,
                 new UwbConfiguration() {
 
                     @Override
                     public int getConfigId() {
-                        return CONFIG_ID_3;
+                        return CONFIG_UNICAST_DS_TWR_NO_AOA;
                     }
 
                     @Override
@@ -174,12 +174,12 @@ public final class ConfigurationManager {
 
         // ID_4 properties.
         sConfigs.put(
-                CONFIG_ID_4,
+                CONFIG_PROVISIONED_UNICAST_DS_TWR,
                 new UwbConfiguration() {
 
                     @Override
                     public int getConfigId() {
-                        return CONFIG_ID_4;
+                        return CONFIG_PROVISIONED_UNICAST_DS_TWR;
                     }
 
                     @Override
@@ -210,12 +210,12 @@ public final class ConfigurationManager {
 
         // ID_5 properties.
         sConfigs.put(
-                CONFIG_ID_5,
+                CONFIG_PROVISIONED_MULTICAST_DS_TWR,
                 new UwbConfiguration() {
 
                     @Override
                     public int getConfigId() {
-                        return CONFIG_ID_5;
+                        return CONFIG_PROVISIONED_MULTICAST_DS_TWR;
                     }
 
                     @Override
@@ -246,11 +246,11 @@ public final class ConfigurationManager {
 
         // ID_6 properties.
         sConfigs.put(
-                CONFIG_ID_6,
+                CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_AOA,
                 new UwbConfiguration() {
                     @Override
                     public int getConfigId() {
-                        return CONFIG_ID_6;
+                        return CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_AOA;
                     }
 
                     @Override
@@ -281,12 +281,12 @@ public final class ConfigurationManager {
 
         // ID_7 properties.
         sConfigs.put(
-                CONFIG_ID_7,
+                CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR,
                 new UwbConfiguration() {
 
                     @Override
                     public int getConfigId() {
-                        return CONFIG_ID_7;
+                        return CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR;
                     }
 
                     @Override
@@ -317,12 +317,12 @@ public final class ConfigurationManager {
 
         // ID_8 properties.
         sConfigs.put(
-                CONFIG_ID_8,
+                CONFIG_DL_TDOA_DT_TAG,
                 new UwbConfiguration() {
 
                     @Override
                     public int getConfigId() {
-                        return CONFIG_ID_8;
+                        return CONFIG_DL_TDOA_DT_TAG;
                     }
 
                     @Override
