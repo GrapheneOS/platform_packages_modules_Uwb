@@ -763,7 +763,9 @@ public class UwbManagerSnippet implements Snippet {
     @Rpc(description = "Close UWB ranging session")
     public void closeRangingSession(String key) {
         RangingSessionCallback rangingSessionCallback = sRangingSessionCallbackMap.get(key);
-        rangingSessionCallback.rangingSession.close();
+        if (rangingSessionCallback.rangingSession != null) {
+            rangingSessionCallback.rangingSession.close();
+        }
         sRangingSessionCallbackMap.remove(key);
     }
 
