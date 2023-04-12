@@ -25,13 +25,17 @@ import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_I
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_MULTICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_AOA;
+import static androidx.core.uwb.backend.impl.internal.Utils.RANGE_DATA_NTF_ENABLE;
 
 import static java.util.Objects.requireNonNull;
 
 import android.content.Context;
+import android.os.Build.VERSION;
+import android.os.Build.VERSION_CODES;
 import android.os.PersistableBundle;
 import android.uwb.UwbManager;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.uwb.support.fira.FiraParams;
@@ -54,6 +58,7 @@ public class UwbServiceImpl {
     private int mAdapterState = STATE_DISABLED;
     private final boolean mHasUwbFeature;
     @Nullable private final UwbManager mUwbManager;
+    @NonNull private final UwbFeatureFlags mUwbFeatureFlags;
 
     /** Adapter State callback used to update adapterState field */
     private final UwbManager.AdapterStateCallback mAdapterStateCallback =
@@ -62,8 +67,9 @@ public class UwbServiceImpl {
     /** A serial thread used to handle session callback */
     private final ExecutorService mSerialExecutor = Executors.newSingleThreadExecutor();
 
-    public UwbServiceImpl(Context context) {
+    public UwbServiceImpl(Context context, @NonNull UwbFeatureFlags uwbFeatureFlags) {
         mHasUwbFeature = context.getPackageManager().hasSystemFeature(FEATURE_UWB);
+        mUwbFeatureFlags = uwbFeatureFlags;
         if (mHasUwbFeature) {
             mUwbManager = context.getSystemService(UwbManager.class);
             requireNonNull(mUwbManager);
@@ -122,6 +128,20 @@ public class UwbServiceImpl {
     /** Gets ranging capabilities of the device. */
     public RangingCapabilities getRangingCapabilities() {
         requireNonNull(mUwbManager);
+        requireNonNull(mUwbFeatureFlags);
+
+        if (mUwbFeatureFlags.skipRangingCapabilitiesCheck()
+                && VERSION.SDK_INT <= VERSION_CODES.S_V2) {
+            return new RangingCapabilities(
+                    /* supportsDistance= */ true,
+                    mUwbFeatureFlags.hasAzimuthSupport(),
+                    mUwbFeatureFlags.hasElevationSupport(),
+                    /* minRangingInterval= */ RangingCapabilities.FIRA_DEFAULT_RANGING_INTERVAL_MS,
+                    new ArrayList<Integer>(RangingCapabilities.FIRA_DEFAULT_SUPPORTED_CHANNEL),
+                    new ArrayList<>(RANGE_DATA_NTF_ENABLE),
+                    FIRA_DEFAULT_SUPPORTED_CONFIG_IDS);
+        }
+
         PersistableBundle bundle = mUwbManager.getSpecificationInfo();
         if (bundle.keySet().contains(FIRA_SPECIFICATION_BUNDLE_KEY)) {
             bundle = requireNonNull(bundle.getPersistableBundle(FIRA_SPECIFICATION_BUNDLE_KEY));
