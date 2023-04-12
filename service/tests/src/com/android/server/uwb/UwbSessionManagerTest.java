@@ -1562,7 +1562,7 @@ public class UwbSessionManagerTest {
                 (FiraRangingReconfigureParams) paramsArgumentCaptor.getValue();
         assertThat(firaParams.getRangeDataNtfConfig()).isEqualTo(
                 FiraParams.RANGE_DATA_NTF_CONFIG_DISABLE);
-        verify(mUwbSessionNotificationManager).onRangingReconfigured(eq(uwbSession));
+        verify(mUwbSessionNotificationManager, never()).onRangingReconfigured(eq(uwbSession));
 
         // Verify the appropriate timer is setup.
         ArgumentCaptor<AlarmManager.OnAlarmListener> alarmListenerCaptor =
@@ -1602,6 +1602,7 @@ public class UwbSessionManagerTest {
                 (FiraRangingReconfigureParams) paramsArgumentCaptor.getValue();
         assertThat(firaParams.getRangeDataNtfConfig()).isEqualTo(
                 FiraParams.RANGE_DATA_NTF_CONFIG_DISABLE);
+        verify(mUwbSessionNotificationManager, never()).onRangingReconfigured(eq(uwbSession));
 
         // Move to foreground.
         mOnUidImportanceListenerArgumentCaptor.getValue().onUidImportance(
@@ -1613,6 +1614,7 @@ public class UwbSessionManagerTest {
         firaParams = (FiraRangingReconfigureParams) paramsArgumentCaptor.getValue();
         assertThat(firaParams.getRangeDataNtfConfig()).isEqualTo(
                 FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE);
+        verify(mUwbSessionNotificationManager, never()).onRangingReconfigured(eq(uwbSession));
     }
 
     @Test
