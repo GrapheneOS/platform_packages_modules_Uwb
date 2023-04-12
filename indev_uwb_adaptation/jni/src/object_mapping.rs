@@ -704,7 +704,7 @@ impl<'a> TryFrom<RangingMeasurementsWithEnv<'a>> for UwbTwoWayMeasurementJni<'a>
                 "([BIIIIIIIIIIIII)V",
                 &[
                     JValue::Object(mac_address_bytes_jobject),
-                    JValue::Int(measurement.status as i32),
+                    JValue::Int(i32::from(measurement.status)),
                     JValue::Int(measurement.nlos as i32),
                     JValue::Int(measurement.distance as i32),
                     JValue::Int(measurement.aoa_azimuth as i32),
