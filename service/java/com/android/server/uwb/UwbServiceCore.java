@@ -119,7 +119,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     private final UwbInjector mUwbInjector;
     private final Map<String, /* @UwbManager.AdapterStateCallback.State */ Integer>
             mChipIdToStateMap;
-    private @StateChangeReason int mLastStateChangedReason;
+    private @StateChangeReason int mLastAdapterStateChangedReason = StateChangeReason.UNKNOWN;
     private @AdapterStateCallback.State int mLastAdapterStateNotification = -1;
     private  IUwbVendorUciCallback mCallBack = null;
     private IUwbOemExtensionCallback mOemExtensionCallback = null;
@@ -152,9 +152,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         mUwbInjector.getMultichipData().setOnInitializedListener(
                 () -> {
                     for (String chipId : mUwbInjector.getMultichipData().getChipIds()) {
-                        updateState(AdapterStateCallback.STATE_DISABLED,
-                                StateChangeReason.SYSTEM_BOOT,
-                                chipId);
+                        updateState(AdapterStateCallback.STATE_DISABLED, chipId);
                     }
                 });
 
@@ -174,11 +172,10 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         return mOemExtensionCallback;
     }
 
-    private void updateState(int state, int reason, String chipId) {
-        Log.d(TAG, "updateState(): state=" + state + ", reason=" + reason + ", chipId=" + chipId);
+    private void updateState(int state, String chipId) {
+        Log.d(TAG, "updateState(): state=" + state + ", chipId=" + chipId);
         synchronized (UwbServiceCore.this) {
             mChipIdToStateMap.put(chipId, state);
-            mLastStateChangedReason = reason;
             Log.d(TAG, "chipIdToStateMap = " + mChipIdToStateMap);
         }
     }
@@ -222,6 +219,9 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
 
     @Override
     public void onDeviceStatusNotificationReceived(int deviceState, String chipId) {
+        Log.d(TAG, "onDeviceStatusNotificationReceived(): deviceState = " + deviceState
+                + ", current country code = " + mUwbCountryCode.getCountryCode());
+
         // If error status is received, toggle UWB off to reset stack state.
         // TODO(b/227488208): Should we try to restart (like wifi) instead?
         if (!mUwbInjector.getMultichipData().getChipIds().contains(chipId)) {
@@ -238,7 +238,9 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             oemExtensionDeviceStatusUpdate(deviceState, chipId);
             return;
         }
+
         updateDeviceState(deviceState, chipId);
+
         mUwbTask.computeAndNotifyAdapterStateChange(
                 getReasonFromDeviceState(deviceState),
                 mUwbCountryCode.getCountryCode(),
@@ -246,14 +248,11 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     }
 
     void updateDeviceState(int deviceState, String chipId) {
-        Log.i(TAG, "updateState(): deviceState = " + getDeviceStateString(deviceState)
+        Log.i(TAG, "updateDeviceState(): deviceState = " + getDeviceStateString(deviceState)
                 + ", current internal adapter state = " + getInternalAdapterState());
 
         oemExtensionDeviceStatusUpdate(deviceState, chipId);
-        updateState(
-                getAdapterStateFromDeviceState(deviceState),
-                getReasonFromDeviceState(deviceState),
-                chipId);
+        updateState(getAdapterStateFromDeviceState(deviceState), chipId);
     }
 
     void oemExtensionDeviceStatusUpdate(int deviceState, String chipId) {
@@ -275,26 +274,27 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         // Check if the current adapter state is same as the state in the last adapter state
         // notification, to avoid sending extra onAdapterStateChanged() notifications. For example,
         // this can happen when UWB is toggled on and a valid country code is already set.
-        if (mLastAdapterStateNotification == adapterState) {
+        if (mLastAdapterStateNotification == adapterState
+                && mLastAdapterStateChangedReason == reason) {
             return;
         }
         Log.d(TAG, "notifyAdapterState(): adapterState = " + adapterState + ", reason = " + reason);
 
-        if (mAdapterStateCallbacksList.getRegisteredCallbackCount() == 0) {
-            return;
-        }
-        final int count = mAdapterStateCallbacksList.beginBroadcast();
-        for (int i = 0; i < count; i++) {
-            try {
-                mAdapterStateCallbacksList.getBroadcastItem(i)
-                       .onAdapterStateChanged(adapterState, reason);
-            } catch (RemoteException e) {
-                Log.e(TAG, "onAdapterStateChanged is failed");
+        if (mAdapterStateCallbacksList.getRegisteredCallbackCount() > 0) {
+            final int count = mAdapterStateCallbacksList.beginBroadcast();
+            for (int i = 0; i < count; i++) {
+                try {
+                    mAdapterStateCallbacksList.getBroadcastItem(i)
+                            .onAdapterStateChanged(adapterState, reason);
+                } catch (RemoteException e) {
+                    Log.e(TAG, "onAdapterStateChanged is failed");
+                }
             }
+            mAdapterStateCallbacksList.finishBroadcast();
         }
-        mAdapterStateCallbacksList.finishBroadcast();
 
         mLastAdapterStateNotification = adapterState;
+        mLastAdapterStateChangedReason = reason;
     }
 
     int getAdapterStateFromDeviceState(int deviceState) {
@@ -339,7 +339,9 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             // Notify the current UWB adapter state. For example, if UWB was earlier enabled and at
             // that time the country code was not valid, will now notify STATE_ENABLED_INACTIVE.
             mUwbTask.computeAndNotifyAdapterStateChange(
-                    mLastStateChangedReason, countryCode, Optional.empty());
+                    getReasonFromDeviceState(getInternalAdapterState()),
+                    countryCode,
+                    Optional.empty());
             Log.d(TAG, "Resetting cached specifications");
             mCachedSpecificationParams = null;
         }
@@ -348,7 +350,13 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     public void registerAdapterStateCallbacks(IUwbAdapterStateCallbacks adapterStateCallbacks)
             throws RemoteException {
         mAdapterStateCallbacksList.register(adapterStateCallbacks);
-        adapterStateCallbacks.onAdapterStateChanged(getAdapterState(), mLastStateChangedReason);
+
+        int adapterState = getAdapterState();
+        Log.d(TAG, "registerAdapterStateCallbacks(): notify adapterState = " + adapterState
+                + ", reason = " + mLastAdapterStateChangedReason);
+        // We have a new listener being registered (there is no UWB event), so we send the current
+        // adapter state with the last known StateChangeReason.
+        adapterStateCallbacks.onAdapterStateChanged(adapterState, mLastAdapterStateChangedReason);
     }
 
     public void unregisterAdapterStateCallbacks(IUwbAdapterStateCallbacks callbacks) {
@@ -795,8 +803,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                         mUwbMetrics.incrementDeviceInitFailureCount();
                         takBugReportAfterDeviceError("UWB Bugreport: error enabling UWB");
                         for (String chipId : mUwbInjector.getMultichipData().getChipIds()) {
-                            updateState(AdapterStateCallback.STATE_DISABLED,
-                                    StateChangeReason.SYSTEM_POLICY, chipId);
+                            updateState(AdapterStateCallback.STATE_DISABLED, chipId);
                         }
                     } else {
                         Log.i(TAG, "Initialization success");
@@ -956,7 +963,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             pw.println("Device state = " + getDeviceStateString(mChipIdToStateMap.get(chipId))
                     + " for chip id = " + chipId);
         }
-        pw.println("mLastStateChangedReason = " + mLastStateChangedReason);
+        pw.println("mLastAdapterStateChangedReason = " + mLastAdapterStateChangedReason);
         pw.println("mLastAdapterStateNotification = " + mLastAdapterStateNotification);
         pw.println("---- Dump of UwbServiceCore ----");
     }
