@@ -145,3 +145,35 @@ def set_screen_rotation(ad: android_device.AndroidDevice, val: int):
   """
   ad.adb.shell(["settings", "put", "system", "accelerometer_rotation", "0"])
   ad.adb.shell(["settings", "put", "system", "user_rotation", str(val)])
+
+
+def initialize_uwb_country_code_if_not_set(
+        ad: android_device.AndroidDevice,
+        handler: Optional[callback_handler_v2.CallbackHandlerV2] = None):
+  """Sets UWB country code to US if the device does not have a valid country code set.
+
+  Note: This intentionally relies on an unstable API (shell command) since we don't want to expose\
+  an API that allows users to circumvent the UWB regulatory requirements.
+
+  Args:
+    ad: android device object.
+    handler: callback handler.
+  """
+  # Wait to see if UWB state is reported as enabled. If not, this could be because the country
+  # code is not set. Try forcing the country code in that case.
+  state = verify_uwb_state_callback(
+    ad=ad, uwb_event="Inactive", handler=handler, timeout=120)
+  # Country code already available, nothing to do.
+  if state:
+    return
+  try:
+    ad.adb.shell(["cmd", "uwb", "force-country-code", "enabled", "US"])
+  except adb.AdbError:
+    logging.warning("Unable to force country code")
+  # Unable to get UWB enabled even after setting country code, abort!
+  asserts.abort_all(
+      not verify_uwb_state_callback(
+          ad=ad, uwb_event="Inactive", handler=handler, timeout=120
+      ),
+      "Uwb is not enabled",
+  )
