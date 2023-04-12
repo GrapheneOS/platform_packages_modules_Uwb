@@ -16,8 +16,8 @@
 
 package androidx.core.uwb.backend.impl.internal;
 
-import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_2;
-import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_4;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_MULTICAST_DS_TWR;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_UNICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.INFREQUENT;
 import static androidx.core.uwb.backend.impl.internal.Utils.RANGE_DATA_NTF_ENABLE_PROXIMITY_EDGE_TRIG;
@@ -98,7 +98,7 @@ public class ConfigurationManagerTest {
         byte[] sessionKey = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8};
         RangingParameters rangingParameters =
                 new RangingParameters(
-                        CONFIG_ID_4,
+                        CONFIG_PROVISIONED_UNICAST_DS_TWR,
                         2,
                         2,
                         sessionKey,
@@ -131,6 +131,6 @@ public class ConfigurationManagerTest {
     @Test
     public void testIsUnicast() {
         assertTrue(ConfigurationManager.isUnicast(CONFIG_UNICAST_DS_TWR));
-        assertFalse(ConfigurationManager.isUnicast(CONFIG_ID_2));
+        assertFalse(ConfigurationManager.isUnicast(CONFIG_MULTICAST_DS_TWR));
     }
 }
