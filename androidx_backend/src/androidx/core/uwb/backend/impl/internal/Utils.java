@@ -37,13 +37,13 @@ public final class Utils {
     /** Supported Ranging configurations. */
     @IntDef({
         CONFIG_UNICAST_DS_TWR,
-        CONFIG_ID_2,
-        CONFIG_ID_3,
-        CONFIG_ID_4,
-        CONFIG_ID_5,
-        CONFIG_ID_6,
-        CONFIG_ID_7,
-        CONFIG_ID_8,
+        CONFIG_MULTICAST_DS_TWR,
+        CONFIG_UNICAST_DS_TWR_NO_AOA,
+        CONFIG_PROVISIONED_UNICAST_DS_TWR,
+        CONFIG_PROVISIONED_MULTICAST_DS_TWR,
+        CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_AOA,
+        CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR,
+        CONFIG_DL_TDOA_DT_TAG,
     })
     public @interface UwbConfigId {}
 
@@ -55,25 +55,25 @@ public final class Utils {
      */
     public static final int CONFIG_UNICAST_DS_TWR = 1;
 
-    public static final int CONFIG_ID_2 = 2;
+    public static final int CONFIG_MULTICAST_DS_TWR = 2;
 
     /** Same as {@code CONFIG_ID_1}, except Angle-of-arrival (AoA) data is not reported. */
-    public static final int CONFIG_ID_3 = 3;
+    public static final int CONFIG_UNICAST_DS_TWR_NO_AOA = 3;
 
     /** Same as {@code CONFIG_ID_1}, except P-STS security mode is enabled. */
-    public static final int CONFIG_ID_4 = 4;
+    public static final int CONFIG_PROVISIONED_UNICAST_DS_TWR = 4;
 
     /** Same as {@code CONFIG_ID_2}, except P-STS security mode is enabled. */
-    public static final int CONFIG_ID_5 = 5;
+    public static final int CONFIG_PROVISIONED_MULTICAST_DS_TWR = 5;
 
     /** Same as {@code CONFIG_ID_3}, except P-STS security mode is enabled. */
-    public static final int CONFIG_ID_6 = 6;
+    public static final int CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_AOA = 6;
 
     /** Same as {@code CONFIG_ID_2}, except P-STS individual controlee key mode is enabled. */
-    public static final int CONFIG_ID_7 = 7;
+    public static final int CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR = 7;
 
     /** FiRa- defined Downlink-TDoA for DT-Tag ranging */
-    public static final int CONFIG_ID_8 = 8;
+    public static final int CONFIG_DL_TDOA_DT_TAG = 8;
 
     @IntDef({
         INFREQUENT,
@@ -221,7 +221,7 @@ public final class Utils {
                         /* hoppingEnabled= */ true));
 
         setRangingTimingParams(
-                CONFIG_ID_2,
+                CONFIG_MULTICAST_DS_TWR,
                 new RangingTimingParams(
                         /* rangingIntervalNormal= */ 200,
                         /* rangingIntervalFast= */ 200,
@@ -232,7 +232,7 @@ public final class Utils {
                         /* hoppingEnabled= */ true));
 
         setRangingTimingParams(
-                CONFIG_ID_3,
+                CONFIG_UNICAST_DS_TWR_NO_AOA,
                 new RangingTimingParams(
                         /* rangingIntervalNormal= */ 200,
                         /* rangingIntervalFast= */ 200,
@@ -243,7 +243,7 @@ public final class Utils {
                         /* hoppingEnabled= */ true));
 
         setRangingTimingParams(
-                CONFIG_ID_4,
+                CONFIG_PROVISIONED_UNICAST_DS_TWR,
                 new RangingTimingParams(
                         /* rangingIntervalNormal= */ 240,
                         /* rangingIntervalFast= */ 240,
@@ -254,7 +254,7 @@ public final class Utils {
                         /* hoppingEnabled= */ true));
 
         setRangingTimingParams(
-                CONFIG_ID_5,
+                CONFIG_PROVISIONED_MULTICAST_DS_TWR,
                 new RangingTimingParams(
                         /* rangingIntervalNormal= */ 200,
                         /* rangingIntervalFast= */ 200,
@@ -265,7 +265,7 @@ public final class Utils {
                         /* hoppingEnabled= */ true));
 
         setRangingTimingParams(
-                CONFIG_ID_6,
+                CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_AOA,
                 new RangingTimingParams(
                         /* rangingIntervalNormal= */ 200,
                         /* rangingIntervalFast= */ 200,
@@ -276,7 +276,7 @@ public final class Utils {
                         /* hoppingEnabled= */ true));
 
         setRangingTimingParams(
-                CONFIG_ID_7,
+                CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR,
                 new RangingTimingParams(
                         /* rangingIntervalNormal= */ 200,
                         /* rangingIntervalFast= */ 200,
@@ -287,7 +287,7 @@ public final class Utils {
                         /* hoppingEnabled= */ true));
 
         setRangingTimingParams(
-                CONFIG_ID_8,
+                CONFIG_DL_TDOA_DT_TAG,
                 new RangingTimingParams(
                         /* rangingIntervalNormal= */ 200,
                         /* rangingIntervalFast= */ 200,
