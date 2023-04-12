@@ -18,7 +18,7 @@ package androidx.core.uwb.backend.impl.internal;
 
 import static androidx.core.uwb.backend.impl.internal.RangingSessionCallback.REASON_FAILED_TO_START;
 import static androidx.core.uwb.backend.impl.internal.RangingSessionCallback.REASON_STOP_RANGING_CALLED;
-import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_7;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.INVALID_API_CALL;
 import static androidx.core.uwb.backend.impl.internal.Utils.STATUS_OK;
 import static androidx.core.uwb.backend.impl.internal.Utils.SUPPORTED_BPRF_PREAMBLE_INDEX;
@@ -162,12 +162,12 @@ public class RangingController extends RangingDevice {
             return STATUS_OK;
         }
         // Reconfigure the session.
-        int[] subSessionIdList =
-                mRangingParameters.getUwbConfigId() == CONFIG_ID_7
+        int[] subSessionIdList = mRangingParameters.getUwbConfigId()
+                == CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR
                         ? new int[] {mRangingParameters.getSubSessionId()}
                         : null;
-        byte[] subSessionKeyInfo =
-                mRangingParameters.getUwbConfigId() == CONFIG_ID_7
+        byte[] subSessionKeyInfo = mRangingParameters.getUwbConfigId()
+                == CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR
                         ? mRangingParameters.getSubSessionKeyInfo()
                         : null;
         boolean success =
