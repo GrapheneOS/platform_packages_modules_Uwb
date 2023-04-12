@@ -20,7 +20,7 @@ import static androidx.core.uwb.backend.impl.internal.RangingSessionCallback.REA
 import static androidx.core.uwb.backend.impl.internal.RangingSessionCallback.REASON_STOP_RANGING_CALLED;
 import static androidx.core.uwb.backend.impl.internal.RangingSessionCallback.REASON_UNKNOWN;
 import static androidx.core.uwb.backend.impl.internal.RangingSessionCallback.REASON_WRONG_PARAMETERS;
-import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_ID_2;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_MULTICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_UNICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.INFREQUENT;
 import static androidx.core.uwb.backend.impl.internal.Utils.RANGE_DATA_NTF_DISABLE;
@@ -128,7 +128,7 @@ public class RangingControleeTest {
                         .build();
         RangingParameters rangingParameters =
                 new RangingParameters(
-                        CONFIG_ID_2,
+                        CONFIG_MULTICAST_DS_TWR,
                         0,
                         0,
                         new byte[]{1, 2},
