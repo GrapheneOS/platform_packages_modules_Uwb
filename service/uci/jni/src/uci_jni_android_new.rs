@@ -88,16 +88,6 @@ fn native_init(env: JNIEnv) -> Result<()> {
     unique_jvm::set_once(jvm)
 }
 
-/// Get max session number
-#[no_mangle]
-pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetMaxSessionNumber(
-    _env: JNIEnv,
-    _obj: JObject,
-) -> jint {
-    debug!("{}: enter", function_name!());
-    5
-}
-
 /// Turn on Single UWB chip.
 #[no_mangle]
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDoInitialize(
@@ -326,8 +316,8 @@ fn create_set_config_response(response: SetAppConfigResponse, env: JNIEnv) -> Re
         env.find_class(CONFIG_STATUS_DATA_CLASS).map_err(|_| Error::ForeignFunctionInterface)?;
     let mut buf = Vec::<u8>::new();
     for config_status in &response.config_status {
-        buf.push(config_status.cfg_id as u8);
-        buf.push(config_status.status as u8);
+        buf.push(u8::from(config_status.cfg_id));
+        buf.push(u8::from(config_status.status));
     }
     let config_status_jbytearray =
         env.byte_array_from_slice(&buf).map_err(|_| Error::ForeignFunctionInterface)?;
@@ -339,7 +329,7 @@ fn create_set_config_response(response: SetAppConfigResponse, env: JNIEnv) -> Re
             uwb_config_status_class,
             "(II[B)V",
             &[
-                JValue::Int(response.status as i32),
+                JValue::Int(i32::from(response.status)),
                 JValue::Int(response.config_status.len() as i32),
                 JValue::Object(config_status_jobject),
             ],
@@ -403,7 +393,7 @@ fn create_get_config_response(tlvs: Vec<AppConfigTlv>, env: JNIEnv) -> Result<jb
     let mut buf = Vec::<u8>::new();
     for tlv in tlvs.into_iter() {
         let tlv = tlv.into_inner();
-        buf.push(tlv.cfg_id as u8);
+        buf.push(u8::from(tlv.cfg_id));
         buf.push(tlv.v.len() as u8);
         buf.extend(&tlv.v);
     }
@@ -417,7 +407,7 @@ fn create_get_config_response(tlvs: Vec<AppConfigTlv>, env: JNIEnv) -> Result<jb
             tlv_data_class,
             "(II[B)V",
             &[
-                JValue::Int(StatusCode::UciStatusOk as i32),
+                JValue::Int(i32::from(StatusCode::UciStatusOk)),
                 JValue::Int(tlvs_len as i32),
                 JValue::Object(tlvs_jobject),
             ],
@@ -479,7 +469,7 @@ fn create_cap_response(tlvs: Vec<CapTlv>, env: JNIEnv) -> Result<jbyteArray> {
         env.find_class(TLV_DATA_CLASS).map_err(|_| Error::ForeignFunctionInterface)?;
     let mut buf = Vec::<u8>::new();
     for tlv in &tlvs {
-        buf.push(tlv.t as u8);
+        buf.push(u8::from(tlv.t));
         buf.push(tlv.v.len() as u8);
         buf.extend(&tlv.v);
     }
@@ -493,7 +483,7 @@ fn create_cap_response(tlvs: Vec<CapTlv>, env: JNIEnv) -> Result<jbyteArray> {
             tlv_data_class,
             "(II[B)V",
             &[
-                JValue::Int(StatusCode::UciStatusOk as i32),
+                JValue::Int(i32::from(StatusCode::UciStatusOk)),
                 JValue::Int(tlvs.len() as i32),
                 JValue::Object(tlvs_jobject),
             ],
@@ -712,7 +702,7 @@ unsafe fn create_vendor_response(msg: RawUciMessage, env: JNIEnv) -> Result<jobj
         vendor_response_class,
         "(BII[B)V",
         &[
-            JValue::Byte(StatusCode::UciStatusOk as i8),
+            JValue::Byte(u8::from(StatusCode::UciStatusOk) as i8),
             JValue::Int(msg.gid as i32),
             JValue::Int(msg.oid as i32),
             JValue::Object(payload_jobject),
@@ -730,7 +720,7 @@ fn create_invalid_vendor_response(env: JNIEnv) -> Result<jobject> {
         vendor_response_class,
         "(BII[B)V",
         &[
-            JValue::Byte(StatusCode::UciStatusFailed as i8),
+            JValue::Byte(u8::from(StatusCode::UciStatusFailed) as i8),
             JValue::Int(-1),
             JValue::Int(-1),
             JValue::Object(JObject::null()),
@@ -762,7 +752,7 @@ unsafe fn create_ranging_round_status(
         dt_ranging_rounds_update_status_class,
         "(II[B)V",
         &[
-            JValue::Int(response.status as i32),
+            JValue::Int(i32::from(response.status)),
             JValue::Int(indexes.len() as i32),
             JValue::Object(indexes_jobject),
         ],
