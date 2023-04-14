@@ -67,11 +67,12 @@ public class CccDecoderTest {
                     + "a50100"
                     + "a60112"
                     + "a7040a000000"
-                    + "a80401000000";
+                    + "a80401000000"
+                    + "a90401000000";
 
     private static final byte[] TEST_CCC_SPECIFICATION_TLV_DATA =
             UwbUtil.getByteArray(TEST_CCC_SPECIFICATION_TLV_DATA_STRING);
-    public static final int TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS = 9;
+    public static final int TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS = 10;
     private final CccDecoder mCccDecoder = new CccDecoder();
 
     private void verifyCccRangingOpend(CccRangingStartedParams cccRangingStartedParams) {
@@ -103,6 +104,7 @@ public class CccDecoderTest {
         assertThat(cccSpecificationParams.getHoppingSequences()).isEqualTo(
                 List.of(HOPPING_SEQUENCE_AES));
         assertThat(cccSpecificationParams.getMaxRangingSessionNumber()).isEqualTo(1);
+        assertThat(cccSpecificationParams.getMinUwbInitiationTimeMs()).isEqualTo(1);
     }
 
     @Test
