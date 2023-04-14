@@ -34,6 +34,7 @@ import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_CHANNE
 import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_CHAPS_PER_SLOT;
 import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_HOPPING_CONFIG_MODES_AND_SEQUENCES;
 import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_MAX_RANGING_SESSION_NUMBER;
+import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_MIN_UWB_INITIATION_TIME_MS;
 import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_PULSE_SHAPE_COMBOS;
 import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_RAN_MULTIPLIER;
 import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_SYNC_CODES;
@@ -183,6 +184,13 @@ public class CccDecoder extends TlvDecoder {
             builder.setMaxRangingSessionNumber(maxRangingSessionNumber);
         } catch (IllegalArgumentException e) {
             Log.w(TAG, "SUPPORTED_MAX_RANGING_SESSION_NUMBER not found");
+        }
+
+        try {
+            int minUwbInitiationTimeMs = tlvs.getInt(CCC_SUPPORTED_MIN_UWB_INITIATION_TIME_MS);
+            builder.setMinUwbInitiationTimeMs(minUwbInitiationTimeMs);
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "SUPPORTED_MIN_UWB_INITIATION_TIME_MS not found");
         }
         return builder.build();
     }
