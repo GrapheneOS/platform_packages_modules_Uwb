@@ -593,6 +593,10 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     throw new IllegalArgumentException(("subSessionKey expecting 16 or 32 bytes"));
                 }
             }
+            if (option.equals("-j")) {
+                int errorStreakTimeoutMs = Integer.parseInt(getNextArgRequired());
+                builder.setRangingErrorStreakTimeoutMs(errorStreakTimeoutMs);
+            }
             option = getNextOption();
         }
         if (aoaResultReqEnabled && interleavingEnabled) {
@@ -1118,7 +1122,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " [-h <slot-duration-rstu>(slot-duration-rstu, default=2400)"
                 + " [-o static|provisioned](sts-config-type)"
                 + " [-n <sessionKey>](sessionKey 16 or 32 bytes)"
-                + " [-u <subSessionKey>](subSessionKey 16 or 32 bytes)");
+                + " [-u <subSessionKey>](subSessionKey 16 or 32 bytes)"
+                + " [-j <errorStreakTimeoutMs>](error streak timeout in millis, default=30000)");
         pw.println("    Starts a FIRA ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
                 + " retrieved using |get-ranging-session-reports|");
