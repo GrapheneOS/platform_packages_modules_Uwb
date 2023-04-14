@@ -57,6 +57,13 @@ public abstract class UwbClient extends IUwbClient.Stub {
         rangingCapabilities.supportsAzimuthalAngle = cap.supportsAzimuthalAngle();
         rangingCapabilities.supportsDistance = cap.supportsDistance();
         rangingCapabilities.supportsElevationAngle = cap.supportsElevationAngle();
+        rangingCapabilities.minRangingInterval = cap.getMinRangingInterval();
+        rangingCapabilities.supportedChannels = cap.getSupportedChannels()
+                .stream().mapToInt(Integer::intValue).toArray();
+        rangingCapabilities.supportedNtfConfigs = cap.getSupportedNtfConfigs()
+                .stream().mapToInt(Integer::intValue).toArray();
+        rangingCapabilities.supportedConfigIds = cap.getSupportedConfigIds()
+                .stream().mapToInt(Integer::intValue).toArray();
         return rangingCapabilities;
     }
 
