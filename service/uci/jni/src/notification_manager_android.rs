@@ -271,7 +271,6 @@ impl NotificationManagerAndroid {
         env: &'a AttachGuard<'static>,
         class_name: &'a str,
     ) -> Result<JClass<'a>> {
-        debug!("UCI JNI: find local class {}", class_name);
         // Look for cached class
         if jclass_map.get(class_name).is_none() {
             // Find class using the class loader object, needed as this call is initiated from a
