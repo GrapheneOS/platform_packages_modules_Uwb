@@ -82,6 +82,7 @@ import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccRangingStartedParams;
+import com.google.uwb.support.ccc.CccSpecificationParams;
 import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
 import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdateStatus;
@@ -89,6 +90,7 @@ import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraPoseUpdateParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
+import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
 import com.google.uwb.support.oemextension.AdvertisePointedTarget;
 import com.google.uwb.support.oemextension.SessionStatus;
@@ -777,13 +779,27 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
     }
 
     public long getMaxCccSessionsNumber() {
-        return mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(
-                null).getCccSpecificationParams().getMaxRangingSessionNumber();
+        GenericSpecificationParams params =
+                mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(
+                        null);
+        if (params != null && params.getCccSpecificationParams() != null) {
+            return params.getCccSpecificationParams().getMaxRangingSessionNumber();
+        } else {
+            // specification params are empty, return the default CCC max sessions value
+            return CccSpecificationParams.DEFAULT_MAX_RANGING_SESSIONS_NUMBER;
+        }
     }
 
     public long getMaxFiraSessionsNumber() {
-        return mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(
-                null).getFiraSpecificationParams().getMaxRangingSessionNumber();
+        GenericSpecificationParams params =
+                mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(
+                        null);
+        if (params != null && params.getFiraSpecificationParams() != null) {
+            return params.getFiraSpecificationParams().getMaxRangingSessionNumber();
+        } else {
+            // specification params are empty, return the default Fira max sessions value
+            return FiraSpecificationParams.DEFAULT_MAX_RANGING_SESSIONS_NUMBER;
+        }
     }
 
     public Set<Integer> getSessionIdSet() {
