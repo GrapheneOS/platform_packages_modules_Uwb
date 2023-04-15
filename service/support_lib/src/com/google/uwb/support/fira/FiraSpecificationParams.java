@@ -148,6 +148,8 @@ public class FiraSpecificationParams extends FiraParams {
     private static final String KEY_SESSION_KEY_LENGTH =
             "session_key_length";
 
+    public static final int DEFAULT_MAX_RANGING_SESSIONS_NUMBER = 5;
+
     private FiraSpecificationParams(
             FiraProtocolVersion minPhyVersionSupported,
             FiraProtocolVersion maxPhyVersionSupported,
@@ -577,7 +579,7 @@ public class FiraSpecificationParams extends FiraParams {
 
         private int mMinSlotDuration = -1;
 
-        private int mMaxRangingSessionNumber = 5;
+        private int mMaxRangingSessionNumber = DEFAULT_MAX_RANGING_SESSIONS_NUMBER;
 
         // Unicast support is mandatory
         private final EnumSet<MultiNodeCapabilityFlag> mMultiNodeCapabilities =
