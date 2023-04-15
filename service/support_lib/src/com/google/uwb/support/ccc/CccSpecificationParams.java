@@ -67,6 +67,8 @@ public class CccSpecificationParams extends CccParams {
     private static final String KEY_HOPPING_CONFIGS = "hopping_config_modes";
     private static final String KEY_HOPPING_SEQUENCES = "hopping_sequences";
 
+    public static final int DEFAULT_MAX_RANGING_SESSIONS_NUMBER = 1;
+
     private CccSpecificationParams(
             List<CccProtocolVersion> protocolVersions,
             @UwbConfig List<Integer> uwbConfigs,
@@ -288,8 +290,8 @@ public class CccSpecificationParams extends CccParams {
         @UwbConfig private List<Integer> mUwbConfigs = new ArrayList<>();
         private List<CccPulseShapeCombo> mPulseShapeCombos = new ArrayList<>();
         private RequiredParam<Integer> mRanMultiplier = new RequiredParam<>();
-        private int mMaxRangingSessionNumber = -1;
         private int mMinUwbInitiationTimeMs = -1;
+        private int mMaxRangingSessionNumber = DEFAULT_MAX_RANGING_SESSIONS_NUMBER;
         @ChapsPerSlot private List<Integer> mChapsPerSlot = new ArrayList<>();
         @SyncCodeIndex private List<Integer> mSyncCodes = new ArrayList<>();
         @Channel private List<Integer> mChannels = new ArrayList<>();
