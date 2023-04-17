@@ -989,6 +989,23 @@ impl NotificationManagerAndroid {
             &[jvalue::from(JValue::Object(range_data_jobject))],
         )
     }
+
+    fn on_data_transfer_status_notification(
+        &mut self,
+        session_id: u32,
+        uci_sequence_number: u8,
+        status_code: u8,
+    ) -> Result<()> {
+        self.cached_jni_call(
+            "onDataSendStatus",
+            "(JII)V",
+            &[
+                jvalue::from(JValue::Long(session_id as i64)),
+                jvalue::from(JValue::Int(uci_sequence_number as i32)),
+                jvalue::from(JValue::Int(status_code as i32)),
+            ],
+        )
+    }
 }
 
 impl NotificationManager for NotificationManagerAndroid {
@@ -1053,7 +1070,14 @@ impl NotificationManager for NotificationManagerAndroid {
                     self.on_session_dl_tdoa_range_data_notification(range_data)
                 }
             },
-            // These session notifications should not come here, as they are handled within
+            SessionNotification::DataTransferStatus { session_id, uci_sequence_number, status } => {
+                self.on_data_transfer_status_notification(
+                    session_id,
+                    uci_sequence_number,
+                    u8::from(status),
+                )
+            }
+            // This session notification should not come here, as it's handled within
             // UciManager, for internal state management related to sending data packet(s).
             SessionNotification::DataCredit { session_id, credit_availability } => {
                 error!(
@@ -1061,15 +1085,7 @@ impl NotificationManager for NotificationManagerAndroid {
                        session_id {}, credit_availability {:?}",
                     session_id, credit_availability
                 );
-                Ok(())
-            }
-            SessionNotification::DataTransferStatus { session_id, uci_sequence_number, status } => {
-                error!(
-                    "UCI JNI: Received unexpected DataTransferStatus notification for \
-                    session_id {}, uci_sequence_number {} with status {:?}",
-                    session_id, uci_sequence_number, status
-                );
-                Ok(())
+                Err(Error::Unknown)
             }
         }
     }

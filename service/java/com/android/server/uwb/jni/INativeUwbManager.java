@@ -68,6 +68,16 @@ public interface INativeUwbManager {
         // their 4-octet size in the UCI spec).
         void onDataReceived(long sessionID, int status, long sequenceNum, byte[] address,
                 int sourceEndPoint, int destEndPoint, byte[] data);
+
+        /**
+         * Interface for receiving the data transfer status, corresponding to a Data packet
+         * earlier sent from the host to UWBS.
+         *
+         * @param sessionId          : Session ID
+         * @param dataTransferStatus : Status codes in the DATA_TRANSFER_STATUS_NTF packet
+         * @param sequenceNum        : Sequence Number
+         */
+        void onDataSendStatus(long sessionId, int dataTransferStatus, long sequenceNum);
     }
 
     interface DeviceNotification {
