@@ -171,7 +171,7 @@ def initialize_uwb_country_code_if_not_set(
   except adb.AdbError:
     logging.warning("Unable to force country code")
   # Unable to get UWB enabled even after setting country code, abort!
-  asserts.abort_all(
+  asserts.fail(
       not verify_uwb_state_callback(
           ad=ad, uwb_event="Inactive", handler=handler, timeout=120
       ),
