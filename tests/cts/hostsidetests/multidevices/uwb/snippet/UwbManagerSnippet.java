@@ -796,6 +796,11 @@ public class UwbManagerSnippet implements Snippet {
         mConnectivityManager.setAirplaneMode(enabled);
     }
 
+    @Rpc(description = "Log info level message to device logcat")
+    public void logInfo(String message) throws JSONException {
+        Log.i(TAG + message);
+    }
+
     @Override
     public void shutdown() {}
 
