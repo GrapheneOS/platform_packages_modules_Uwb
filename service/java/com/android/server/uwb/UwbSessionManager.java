@@ -182,8 +182,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
     private boolean isRangeDataNtfConfigEnableDisableSupported() {
         if (mIsRangeDataNtfConfigEnableDisableSupported == null) {
+            String defaultChipId = mUwbInjector.getMultichipData().getDefaultChipId();
             GenericSpecificationParams specificationParams =
-                    mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(null);
+                    mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(defaultChipId);
             if (specificationParams == null) return false;
             EnumSet<FiraParams.RangeDataNtfConfigCapabilityFlag> supportedRangeDataNtfConfigs =
                     specificationParams.getFiraSpecificationParams()
@@ -465,12 +466,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
 
         boolean maxSessionsExceeded = false;
+        // TODO: getCccSessionCount and getFiraSessionCount should be chip specific
         if (protocolName.equals(CccParams.PROTOCOL_NAME)
-                && getCccSessionCount() >= getMaxCccSessionsNumber()) {
+                && getCccSessionCount() >= getMaxCccSessionsNumber(chipId)) {
             Log.i(TAG, "Max CCC Sessions Exceeded");
             maxSessionsExceeded = true;
         } else if (protocolName.equals(FiraParams.PROTOCOL_NAME)
-                && getFiraSessionCount() >= getMaxFiraSessionsNumber()) {
+                && getFiraSessionCount() >= getMaxFiraSessionsNumber(chipId)) {
             Log.i(TAG, "Max Fira Sessions Exceeded");
             maxSessionsExceeded = true;
         }
@@ -778,10 +780,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 s -> s.mProtocolName.equals(FiraParams.PROTOCOL_NAME)).count();
     }
 
-    public long getMaxCccSessionsNumber() {
+    /** Returns max number of CCC sessions possible on given chip  */
+    public long getMaxCccSessionsNumber(String chipId) {
         GenericSpecificationParams params =
-                mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(
-                        null);
+                mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(chipId);
         if (params != null && params.getCccSpecificationParams() != null) {
             return params.getCccSpecificationParams().getMaxRangingSessionNumber();
         } else {
@@ -790,10 +792,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
     }
 
-    public long getMaxFiraSessionsNumber() {
+    /** Returns max number of Fira sessions possible on given chip  */
+    public long getMaxFiraSessionsNumber(String chipId) {
         GenericSpecificationParams params =
-                mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(
-                        null);
+                mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(chipId);
         if (params != null && params.getFiraSpecificationParams() != null) {
             return params.getFiraSpecificationParams().getMaxRangingSessionNumber();
         } else {
