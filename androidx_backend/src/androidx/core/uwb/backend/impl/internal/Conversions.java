@@ -110,6 +110,10 @@ final class Conversions {
             return RangingSessionCallback.REASON_MAX_RANGING_ROUND_RETRY_REACHED;
         }
 
+        if (reason == RangingSession.Callback.REASON_SYSTEM_POLICY) {
+            return RangingSessionCallback.REASON_SYSTEM_POLICY;
+        }
+
         return RangingSessionCallback.REASON_UNKNOWN;
     }
 
