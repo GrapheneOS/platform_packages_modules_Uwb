@@ -32,14 +32,16 @@ public interface RangingSessionCallback {
 
     /** Reason why ranging was stopped. */
     @IntDef({
-        REASON_UNKNOWN,
-        REASON_WRONG_PARAMETERS,
-        REASON_FAILED_TO_START,
-        REASON_STOPPED_BY_PEER,
-        REASON_STOP_RANGING_CALLED,
-        REASON_MAX_RANGING_ROUND_RETRY_REACHED,
+            REASON_UNKNOWN,
+            REASON_WRONG_PARAMETERS,
+            REASON_FAILED_TO_START,
+            REASON_STOPPED_BY_PEER,
+            REASON_STOP_RANGING_CALLED,
+            REASON_MAX_RANGING_ROUND_RETRY_REACHED,
+            REASON_SYSTEM_POLICY,
     })
-    @interface RangingSuspendedReason {}
+    @interface RangingSuspendedReason {
+    }
 
     int REASON_UNKNOWN = 0;
     int REASON_WRONG_PARAMETERS = 1;
@@ -47,4 +49,5 @@ public interface RangingSessionCallback {
     int REASON_STOPPED_BY_PEER = 3;
     int REASON_STOP_RANGING_CALLED = 4;
     int REASON_MAX_RANGING_ROUND_RETRY_REACHED = 5;
+    int REASON_SYSTEM_POLICY = 6;
 }
