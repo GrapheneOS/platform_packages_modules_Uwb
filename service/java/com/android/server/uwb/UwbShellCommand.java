@@ -16,6 +16,8 @@
 
 package com.android.server.uwb;
 
+import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_BACKGROUND;
+import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND;
 import static android.uwb.UwbAddress.SHORT_ADDRESS_BYTE_LENGTH;
 
 import static com.google.uwb.support.ccc.CccParams.CHAPS_PER_SLOT_3;
@@ -54,6 +56,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import android.annotation.NonNull;
 import android.content.AttributionSource;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.Looper;
@@ -939,6 +942,21 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 case "get-country-code":
                     pw.println("Uwb Country Code = " + mUwbCountryCode.getCountryCode());
                     return 0;
+                case "simulate-app-state-change": {
+                    String appPackageName = getNextArgRequired();
+                    boolean isFg = getNextArgRequiredTrueOrFalse("foreground", "background");
+                    int uid = 0;
+                    try {
+                        uid = mContext.getPackageManager().getApplicationInfo(
+                                appPackageName, 0).uid;
+                    } catch (PackageManager.NameNotFoundException e) {
+                        pw.println("Unable to find package name: " + appPackageName);
+                        return -1;
+                    }
+                    mUwbInjector.getUwbSessionManager().onUidImportance(
+                            uid, isFg ? IMPORTANCE_FOREGROUND : IMPORTANCE_BACKGROUND);
+                    return 0;
+                }
                 case "set-log-mode": {
                     String logMode = getNextArgRequired();
                     if (!UciLogModeStore.isValid(logMode)) {
@@ -1172,6 +1190,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         pw.println("    Disable vendor diagnostics notification");
         pw.println("  take-bugreport");
         pw.println("    take bugreport through betterBug or alternatively bugreport manager");
+        pw.println("  simulate-app-state-change <package-name> foreground|background");
+        pw.println("    Simulate app moving to foreground/background to test stack handling");
     }
 
     private void onHelpPrivileged(PrintWriter pw) {

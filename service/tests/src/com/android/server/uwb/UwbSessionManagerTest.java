@@ -102,6 +102,7 @@ import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbRangingData;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.jni.NativeUwbManager;
+import com.android.server.uwb.multchip.UwbMultichipData;
 
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
@@ -187,6 +188,8 @@ public class UwbSessionManagerTest {
     private DeviceConfigFacade mDeviceConfigFacade;
     @Mock
     private CccSpecificationParams mCccSpecificationParams;
+    @Mock
+    private UwbMultichipData mUwbMultichipData;
     private TestLooper mTestLooper = new TestLooper();
     private UwbSessionManager mUwbSessionManager;
     @Captor
@@ -200,6 +203,7 @@ public class UwbSessionManagerTest {
         when(mUwbInjector.isForegroundAppOrService(UID, PACKAGE_NAME)).thenReturn(true);
         when(mUwbInjector.getUwbServiceCore()).thenReturn(mUwbServiceCore);
         when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
+        when(mUwbInjector.getMultichipData()).thenReturn(mUwbMultichipData);
         doAnswer(invocation -> {
             FutureTask t = invocation.getArgument(0);
             t.run();
@@ -219,6 +223,7 @@ public class UwbSessionManagerTest {
                 mSpecificationParamsBuilder.build());
         when(mCccSpecificationParams.getMaxRangingSessionNumber()).thenReturn(
                 (int) MAX_CCC_SESSION_NUM);
+        when(mUwbMultichipData.getDefaultChipId()).thenReturn("default");
 
         // TODO: Don't use spy.
         mUwbSessionManager = spy(new UwbSessionManager(
@@ -1570,7 +1575,7 @@ public class UwbSessionManagerTest {
         // Verify the appropriate timer is setup.
         ArgumentCaptor<AlarmManager.OnAlarmListener> alarmListenerCaptor =
                 ArgumentCaptor.forClass(AlarmManager.OnAlarmListener.class);
-        verify(mAlarmManager).set(
+        verify(mAlarmManager).setExact(
                 anyInt(), anyLong(), eq(UwbSession.NON_PRIVILEGED_BG_APP_TIMER_TAG),
                 alarmListenerCaptor.capture(), any());
         assertThat(alarmListenerCaptor.getValue()).isNotNull();

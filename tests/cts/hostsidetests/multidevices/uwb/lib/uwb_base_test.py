@@ -32,6 +32,19 @@ class UwbBaseTest(base_test.BaseTestClass):
     super().teardown_class()
     self._record_all()
 
+
+  def setup_test(self):
+    super().setup_test()
+    for ad in self.android_devices:
+      ad.uwb.logInfo("===== TEST START: " + self.current_test_info.name + " ===========")
+
+
+  def teardown_test(self):
+    super().teardown_test()
+    for ad in self.android_devices:
+      ad.uwb.logInfo("===== TEST END: " + self.current_test_info.name + " ===========")
+
+
   def on_fail(self, record):
     test_name = record.test_name
     # Single device test

@@ -117,7 +117,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-public class UwbSessionManager implements INativeUwbManager.SessionNotification {
+public class UwbSessionManager implements INativeUwbManager.SessionNotification,
+        ActivityManager.OnUidImportanceListener {
 
     private static final String TAG = "UwbSessionManager";
     private static final byte OPERATION_TYPE_INIT_SESSION = 0;
@@ -182,8 +183,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
 
     private boolean isRangeDataNtfConfigEnableDisableSupported() {
         if (mIsRangeDataNtfConfigEnableDisableSupported == null) {
+            String defaultChipId = mUwbInjector.getMultichipData().getDefaultChipId();
             GenericSpecificationParams specificationParams =
-                    mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(null);
+                    mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(defaultChipId);
             if (specificationParams == null) return false;
             EnumSet<FiraParams.RangeDataNtfConfigCapabilityFlag> supportedRangeDataNtfConfigs =
                     specificationParams.getFiraSpecificationParams()
@@ -196,34 +198,35 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         return mIsRangeDataNtfConfigEnableDisableSupported;
     }
 
+    @Override
+    public void onUidImportance(final int uid, final int importance) {
+        Handler handler = new Handler(mLooper);
+        handler.post(() -> {
+            List<UwbSession> uwbSessions = mNonPrivilegedUidToFiraSessionsTable.get(uid);
+            // Not a uid in the watch list
+            if (uwbSessions == null) return;
+            // Feature not supported on device.
+            if (!isRangeDataNtfConfigEnableDisableSupported()) return;
+            boolean newModeHasNonPrivilegedFgApp =
+                    UwbInjector.isForegroundAppOrServiceImportance(importance);
+            for (UwbSession uwbSession : uwbSessions) {
+                // already at correct state.
+                if (newModeHasNonPrivilegedFgApp == uwbSession.hasNonPrivilegedFgApp()) {
+                    continue;
+                }
+                uwbSession.setHasNonPrivilegedFgApp(newModeHasNonPrivilegedFgApp);
+                // Reconfigure the session based on the new fg/bg state.
+                Log.i(TAG, "App state change. IsFg: " + newModeHasNonPrivilegedFgApp
+                        + ". Reconfiguring session ntf control");
+                uwbSession.reconfigureFiraSessionOnFgStateChange();
+            }
+        });
+    }
+
     // Detect UIDs going foreground/background
     private void registerUidImportanceTransitions() {
-        Handler handler = new Handler(mLooper);
-        mActivityManager.addOnUidImportanceListener(new ActivityManager.OnUidImportanceListener() {
-            @Override
-            public void onUidImportance(final int uid, final int importance) {
-                handler.post(() -> {
-                    List<UwbSession> uwbSessions = mNonPrivilegedUidToFiraSessionsTable.get(uid);
-                    // Not a uid in the watch list
-                    if (uwbSessions == null) return;
-                    // Feature not supported on device.
-                    if (!isRangeDataNtfConfigEnableDisableSupported()) return;
-                    boolean newModeHasNonPrivilegedFgApp =
-                            UwbInjector.isForegroundAppOrServiceImportance(importance);
-                    for (UwbSession uwbSession : uwbSessions) {
-                        // already at correct state.
-                        if (newModeHasNonPrivilegedFgApp == uwbSession.hasNonPrivilegedFgApp()) {
-                            continue;
-                        }
-                        uwbSession.setHasNonPrivilegedFgApp(newModeHasNonPrivilegedFgApp);
-                        // Reconfigure the session based on the new fg/bg state.
-                        Log.i(TAG, "App state change. IsFg: " + newModeHasNonPrivilegedFgApp
-                                + ". Reconfiguring session ntf control");
-                        uwbSession.reconfigureFiraSessionOnFgStateChange();
-                    }
-                });
-            }
-        }, IMPORTANCE_FOREGROUND_SERVICE);
+        mActivityManager.addOnUidImportanceListener(
+                UwbSessionManager.this, IMPORTANCE_FOREGROUND_SERVICE);
     }
 
     private static boolean hasAllRangingResultError(@NonNull UwbRangingData rangingData) {
@@ -437,7 +440,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         AttributionSource nonPrivilegedAppAttrSource =
                 uwbSession.getAnyNonPrivilegedAppInAttributionSource();
         if (nonPrivilegedAppAttrSource != null) {
-            Log.d(TAG, "Found a non fg 3p app/service in the attribution source of request: "
+            Log.d(TAG, "Found a 3p app/service in the attribution source of request: "
                     + nonPrivilegedAppAttrSource);
             // TODO(b/211445008): Move this operation to uwb thread.
             long identity = Binder.clearCallingIdentity();
@@ -465,12 +468,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
 
         boolean maxSessionsExceeded = false;
+        // TODO: getCccSessionCount and getFiraSessionCount should be chip specific
         if (protocolName.equals(CccParams.PROTOCOL_NAME)
-                && getCccSessionCount() >= getMaxCccSessionsNumber()) {
+                && getCccSessionCount() >= getMaxCccSessionsNumber(chipId)) {
             Log.i(TAG, "Max CCC Sessions Exceeded");
             maxSessionsExceeded = true;
         } else if (protocolName.equals(FiraParams.PROTOCOL_NAME)
-                && getFiraSessionCount() >= getMaxFiraSessionsNumber()) {
+                && getFiraSessionCount() >= getMaxFiraSessionsNumber(chipId)) {
             Log.i(TAG, "Max Fira Sessions Exceeded");
             maxSessionsExceeded = true;
         }
@@ -778,10 +782,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                 s -> s.mProtocolName.equals(FiraParams.PROTOCOL_NAME)).count();
     }
 
-    public long getMaxCccSessionsNumber() {
+    /** Returns max number of CCC sessions possible on given chip  */
+    public long getMaxCccSessionsNumber(String chipId) {
         GenericSpecificationParams params =
-                mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(
-                        null);
+                mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(chipId);
         if (params != null && params.getCccSpecificationParams() != null) {
             return params.getCccSpecificationParams().getMaxRangingSessionNumber();
         } else {
@@ -790,10 +794,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
         }
     }
 
-    public long getMaxFiraSessionsNumber() {
+    /** Returns max number of Fira sessions possible on given chip  */
+    public long getMaxFiraSessionsNumber(String chipId) {
         GenericSpecificationParams params =
-                mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(
-                        null);
+                mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(chipId);
         if (params != null && params.getFiraSpecificationParams() != null) {
             return params.getFiraSpecificationParams().getMaxRangingSessionNumber();
         } else {
@@ -2018,7 +2022,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification 
                             + " Stopping session");
                     stopRangingInternal(mSessionHandle, true /* triggeredBySystemPolicy */);
                 };
-                mAlarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                mAlarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP,
                         mUwbInjector.getElapsedSinceBootMillis()
                                 + NON_PRIVILEGED_BG_APP_TIMEOUT_MS,
                         NON_PRIVILEGED_BG_APP_TIMER_TAG,
