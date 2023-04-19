@@ -91,6 +91,8 @@ public class ConfigurationManagerTest {
                 ConfigurationManager.createOpenSessionParams(
                         TEST_DEVICE_TYPE, TEST_LOCAL_ADDRESS, mRangingParameters);
         assertEquals(params.getDeviceRole(), RANGING_DEVICE_ROLE_INITIATOR);
+        assertFalse(params.isKeyRotationEnabled());
+        assertEquals(params.getKeyRotationRate(), 0);
     }
 
     @Test
@@ -112,6 +114,8 @@ public class ConfigurationManagerTest {
                         TEST_DEVICE_TYPE, TEST_LOCAL_ADDRESS, rangingParameters);
         assertEquals(params.getStsConfig(), STS_CONFIG_PROVISIONED);
         assertArrayEquals(params.getSessionKey(), sessionKey);
+        assertTrue(params.isKeyRotationEnabled());
+        assertEquals(params.getKeyRotationRate(), 0);
     }
 
     @Test
