@@ -38,6 +38,7 @@ import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccPulseShapeCombo;
 import com.google.uwb.support.ccc.CccRangingStartedParams;
+import com.google.uwb.support.fira.FiraControleeParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
@@ -469,6 +470,31 @@ public class UwbManagerSnippet implements Snippet {
         return builder.build();
     }
 
+    private FiraControleeParams generateFiraControleeParams(JSONObject j) throws JSONException {
+        if (j == null) {
+            return null;
+        }
+        FiraControleeParams.Builder builder = new FiraControleeParams.Builder();
+        if (j.has("addressList")) {
+            JSONArray jArray = j.getJSONArray("addressList");
+            UwbAddress[] addressList = new UwbAddress[jArray.length()];
+            for (int i = 0; i < jArray.length(); i++) {
+                addressList[i] = UwbAddress.fromBytes(
+                        convertJSONArrayToByteArray(jArray.getJSONArray(i)));
+            }
+            builder.setAddressList(addressList);
+        }
+        if (j.has("subSessionIdList")) {
+            JSONArray jArray = j.getJSONArray("subSessionIdList");
+            int[] subSessionIdList = new int[jArray.length()];
+            for (int i = 0; i < jArray.length(); i++) {
+                subSessionIdList[i] = jArray.getInt(i);
+            }
+            builder.setSubSessionIdList(subSessionIdList);
+        }
+        return builder.build();
+    }
+
     private CccRangingStartedParams generateCccRangingStartedParams(JSONObject j)
             throws JSONException {
         if (j == null) {
@@ -698,6 +724,23 @@ public class UwbManagerSnippet implements Snippet {
         RangingSessionCallback rangingSessionCallback = sRangingSessionCallbackMap.get(key);
         FiraRangingReconfigureParams params = generateFiraRangingReconfigureParams(config);
         rangingSessionCallback.rangingSession.reconfigure(params.toBundle());
+    }
+
+    /** Reconfigures FIRA UWB ranging session to add controlee. */
+    @Rpc(description = "Reconfigure FIRA UWB ranging session to add controlee")
+    public void addControleeFiraRangingSession(String key, JSONObject config) throws JSONException {
+        RangingSessionCallback rangingSessionCallback = sRangingSessionCallbackMap.get(key);
+        FiraControleeParams params = generateFiraControleeParams(config);
+        rangingSessionCallback.rangingSession.addControlee(params.toBundle());
+    }
+
+    /** Reconfigures FIRA UWB ranging session to remove controlee. */
+    @Rpc(description = "Reconfigure FIRA UWB ranging session to remove controlee")
+    public void removeControleeFiraRangingSession(String key, JSONObject config)
+            throws JSONException {
+        RangingSessionCallback rangingSessionCallback = sRangingSessionCallbackMap.get(key);
+        FiraControleeParams params = generateFiraControleeParams(config);
+        rangingSessionCallback.rangingSession.removeControlee(params.toBundle());
     }
 
     /**
