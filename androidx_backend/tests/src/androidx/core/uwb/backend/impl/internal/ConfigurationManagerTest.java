@@ -64,7 +64,8 @@ public class ConfigurationManagerTest {
                     .setNtfProximityNear(100)
                     .build();
     private RangingParameters mRangingParameters;
-    @Mock private UwbComplexChannel mComplexChannel;
+    @Mock
+    private UwbComplexChannel mComplexChannel;
 
     @Before
     public void setUp() throws Exception {
@@ -75,8 +76,8 @@ public class ConfigurationManagerTest {
                         CONFIG_UNICAST_DS_TWR,
                         1,
                         1,
-                        new byte[] {1, 2},
-                        new byte[] {1, 2},
+                        new byte[]{1, 2},
+                        new byte[]{1, 2},
                         mComplexChannel,
                         new ArrayList<>(List.of(UwbAddress.getRandomizedShortAddress())),
                         INFREQUENT,
@@ -89,7 +90,8 @@ public class ConfigurationManagerTest {
     public void testCreateOpenSessionParams() {
         FiraOpenSessionParams params =
                 ConfigurationManager.createOpenSessionParams(
-                        TEST_DEVICE_TYPE, TEST_LOCAL_ADDRESS, mRangingParameters);
+                        TEST_DEVICE_TYPE, TEST_LOCAL_ADDRESS, mRangingParameters,
+                        new UwbFeatureFlags.Builder().build());
         assertEquals(params.getDeviceRole(), RANGING_DEVICE_ROLE_INITIATOR);
         assertFalse(params.isKeyRotationEnabled());
         assertEquals(params.getKeyRotationRate(), 0);
@@ -97,21 +99,22 @@ public class ConfigurationManagerTest {
 
     @Test
     public void testCreateOpenSessionParams_ProvisionedSts() {
-        byte[] sessionKey = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8};
+        byte[] sessionKey = new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8};
         RangingParameters rangingParameters =
                 new RangingParameters(
                         CONFIG_PROVISIONED_UNICAST_DS_TWR,
                         2,
                         2,
                         sessionKey,
-                        new byte[] {3, 4},
+                        new byte[]{3, 4},
                         mComplexChannel,
                         new ArrayList<>(List.of(UwbAddress.getRandomizedShortAddress())),
                         INFREQUENT,
                         mUwbRangeDataNtfConfig);
         FiraOpenSessionParams params =
                 ConfigurationManager.createOpenSessionParams(
-                        TEST_DEVICE_TYPE, TEST_LOCAL_ADDRESS, rangingParameters);
+                        TEST_DEVICE_TYPE, TEST_LOCAL_ADDRESS, rangingParameters,
+                        new UwbFeatureFlags.Builder().build());
         assertEquals(params.getStsConfig(), STS_CONFIG_PROVISIONED);
         assertArrayEquals(params.getSessionKey(), sessionKey);
         assertTrue(params.isKeyRotationEnabled());
@@ -124,9 +127,10 @@ public class ConfigurationManagerTest {
                 ConfigurationManager.createReconfigureParams(
                         CONFIG_UNICAST_DS_TWR,
                         MULTICAST_LIST_UPDATE_ACTION_ADD,
-                        new UwbAddress[] {UwbAddress.getRandomizedShortAddress()},
-                        new int[] {0, 1},
-                        new byte[] {0, 1});
+                        new UwbAddress[]{UwbAddress.getRandomizedShortAddress()},
+                        new int[]{0, 1},
+                        new byte[]{0, 1},
+                        new UwbFeatureFlags.Builder().build());
         assertNotNull(params.getAction());
         assertEquals(params.getAction().intValue(), MULTICAST_LIST_UPDATE_ACTION_ADD);
         assertNull(params.getSubSessionIdList());
