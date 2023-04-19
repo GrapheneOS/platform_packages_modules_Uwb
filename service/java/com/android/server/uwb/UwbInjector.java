@@ -29,6 +29,7 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.database.ContentObserver;
+import android.location.Geocoder;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Handler;
@@ -223,6 +224,21 @@ public class UwbInjector {
      */
     public UwbShellCommand makeUwbShellCommand(UwbServiceImpl uwbService) {
         return new UwbShellCommand(this, uwbService, mContext);
+    }
+
+    /**
+     * Creates a Geocoder.
+     */
+    @Nullable
+    public Geocoder makeGeocoder() {
+        return new Geocoder(mContext);
+    }
+
+    /**
+     * Returns whether geocoder is supported on this device or not.
+     */
+    public boolean isGeocoderPresent() {
+        return Geocoder.isPresent();
     }
 
     /**
