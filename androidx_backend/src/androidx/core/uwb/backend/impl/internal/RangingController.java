@@ -109,6 +109,11 @@ public class RangingController extends RangingDevice {
     }
 
     @Override
+    protected boolean isKnownPeer(UwbAddress address) {
+        return super.isKnownPeer(address) || mDynamicallyAddedPeers.contains(address);
+    }
+
+    @Override
     public synchronized int startRanging(
             RangingSessionCallback callback, ExecutorService backendCallbackExecutor) {
         requireNonNull(mRangingParameters);
@@ -218,7 +223,7 @@ public class RangingController extends RangingDevice {
             Log.w(TAG, "Attempt to remove controlee while session is not active.");
             return INVALID_API_CALL;
         }
-        if (!mDynamicallyAddedPeers.contains(controleeAddress)) {
+        if (!isKnownPeer(controleeAddress)) {
             Log.w(TAG, "Attempt to remove non-existing controlee.");
             return INVALID_API_CALL;
         }
