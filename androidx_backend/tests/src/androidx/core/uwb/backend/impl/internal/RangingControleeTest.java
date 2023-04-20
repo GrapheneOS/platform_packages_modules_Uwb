@@ -100,7 +100,8 @@ public class RangingControleeTest {
                 .execute(any(Runnable.class));
 
         mRangingControlee =
-                new RangingControlee(mUwbManager, getExecutor(), mOpAsyncCallbackRunner);
+                new RangingControlee(mUwbManager, getExecutor(), mOpAsyncCallbackRunner,
+                        new UwbFeatureFlags.Builder().build());
         UwbRangeDataNtfConfig uwbRangeDataNtfConfig =
                 new UwbRangeDataNtfConfig.Builder()
                         .setRangeDataConfigType(RANGE_DATA_NTF_DISABLE)
