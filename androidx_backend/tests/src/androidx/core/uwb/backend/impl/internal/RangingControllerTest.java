@@ -22,6 +22,7 @@ import static androidx.core.uwb.backend.impl.internal.RangingSessionCallback.REA
 import static androidx.core.uwb.backend.impl.internal.RangingSessionCallback.REASON_WRONG_PARAMETERS;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_MULTICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.INFREQUENT;
+import static androidx.core.uwb.backend.impl.internal.Utils.INVALID_API_CALL;
 import static androidx.core.uwb.backend.impl.internal.Utils.RANGE_DATA_NTF_DISABLE;
 import static androidx.core.uwb.backend.impl.internal.Utils.RANGE_DATA_NTF_ENABLE_PROXIMITY_LEVEL_TRIG;
 import static androidx.core.uwb.backend.impl.internal.Utils.STATUS_OK;
@@ -77,6 +78,7 @@ public class RangingControllerTest {
     private ArgumentCaptor<PersistableBundle> mBundleArgumentCaptor;
 
     private RangingController mRangingController;
+    private UwbAddress mRangingParamsKnownPeerAddress;
 
     private static Executor getExecutor() {
         return new Executor() {
@@ -108,6 +110,7 @@ public class RangingControllerTest {
                         .setNtfProximityNear(100)
                         .setNtfProximityFar(300)
                         .build();
+        mRangingParamsKnownPeerAddress = UwbAddress.getRandomizedShortAddress();
         RangingParameters rangingParameters =
                 new RangingParameters(
                         CONFIG_MULTICAST_DS_TWR,
@@ -116,7 +119,7 @@ public class RangingControllerTest {
                         new byte[]{1, 2},
                         new byte[]{1, 2},
                         mComplexChannel,
-                        new ArrayList<>(List.of(UwbAddress.getRandomizedShortAddress())),
+                        new ArrayList<>(List.of(mRangingParamsKnownPeerAddress)),
                         INFREQUENT,
                         uwbRangeDataNtfConfig);
         mRangingController =
@@ -436,7 +439,10 @@ public class RangingControllerTest {
         mRangingController.startRanging(rangingSessionCallback, mBackendCallbackExecutor);
         mRangingController.addControlee(peerAddress);
         assertEquals(mRangingController.removeControlee(peerAddress), STATUS_OK);
-        verify(pfRangingSession, times(2)).reconfigure(any(PersistableBundle.class));
+        assertEquals(mRangingController.removeControlee(mRangingParamsKnownPeerAddress), STATUS_OK);
+        assertEquals(mRangingController.removeControlee(UwbAddress.getRandomizedShortAddress()),
+                INVALID_API_CALL);
+        verify(pfRangingSession, times(3)).reconfigure(any(PersistableBundle.class));
         verify(rangingSessionCallback)
                 .onRangingSuspended(
                         UwbDevice.createForAddress(peerAddress.toBytes()),
