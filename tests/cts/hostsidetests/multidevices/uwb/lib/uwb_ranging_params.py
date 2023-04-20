@@ -107,6 +107,32 @@ class UwbRangingReconfigureParams():
 
 
 @dataclasses.dataclass
+class UwbRangingControleeParams():
+    """Class for UWB ranging controlee parameters.
+
+    Attributes:
+      address_list: new address list.
+      sub_session_id_list: new subsession id list.
+    """
+    address_list: Optional[List[List[int]]] = None
+    sub_session_id_list: Optional[List[int]] = None
+
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Returns UWB ranging controlee parameters in dictionary for sl4a.
+
+        Returns:
+          UWB ranging controlee parameters in dictionary.
+        """
+        controlee_params = {}
+        if self.address_list is not None:
+            controlee_params["addressList"] = self.address_list
+        if self.sub_session_id_list is not None:
+            controlee_params["subSessionIdList"] = self.sub_session_id_list
+        return controlee_params
+
+
+@dataclasses.dataclass
 class UwbRangingParams():
   """Class for Uwb ranging parameters.
 
