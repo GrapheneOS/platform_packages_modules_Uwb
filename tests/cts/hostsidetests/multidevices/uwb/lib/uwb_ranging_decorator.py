@@ -112,6 +112,35 @@ class UwbRangingDecorator():
                                               params.to_dict())
     self.verify_callback_received("Reconfigured", session)
 
+
+  def add_controlee_fira_ranging(
+          self,
+          params: uwb_ranging_params.UwbRangingControleeParams,
+          session: int = 0):
+    """Reconfigures Fira ranging to add controlee.
+
+    Args:
+      params: UWB controlee params.
+      session: ranging session.
+    """
+    self.ad.uwb.addControleeFiraRangingSession(self._callback_keys[session], params.to_dict())
+    self.verify_callback_received("ControleeAdded", session)
+
+
+  def remove_controlee_fira_ranging(
+          self,
+          params: uwb_ranging_params.UwbRangingControleeParams,
+          session: int = 0):
+    """Reconfigures Fira ranging to add controlee.
+
+    Args:
+      params: UWB controlee params.
+      session: ranging session.
+    """
+    self.ad.uwb.removeControleeFiraRangingSession(self._callback_keys[session], params.to_dict())
+    self.verify_callback_received("ControleeRemoved", session)
+
+
   def is_uwb_peer_found(self, addr: List[int], session: int = 0) -> bool:
     """Verifies if the UWB peer is found.
 
