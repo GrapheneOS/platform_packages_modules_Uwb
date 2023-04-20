@@ -953,8 +953,9 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                         pw.println("Unable to find package name: " + appPackageName);
                         return -1;
                     }
-                    mUwbInjector.getUwbSessionManager().onUidImportance(
-                            uid, isFg ? IMPORTANCE_FOREGROUND : IMPORTANCE_BACKGROUND);
+                    int importance = isFg ? IMPORTANCE_FOREGROUND : IMPORTANCE_BACKGROUND;
+                    mUwbInjector.setOverridePackageImportance(appPackageName, importance);
+                    mUwbInjector.getUwbSessionManager().onUidImportance(uid, importance);
                     return 0;
                 }
                 case "set-log-mode": {
