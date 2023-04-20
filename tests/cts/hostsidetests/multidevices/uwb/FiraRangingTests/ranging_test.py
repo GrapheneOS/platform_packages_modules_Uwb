@@ -22,7 +22,9 @@ RESPONDER_STOP_CALLBACK_TIMEOUT = 60
 
 _TEST_CASES = (
     "test_ranging_device_tracker_profile_default",
+    "test_ranging_device_tracker_profile_provisioned_sts_default",
     "test_ranging_nearby_share_profile_default",
+    "test_ranging_nearby_share_profile_provisioned_sts_default",
     "test_ranging_nearby_share_profile_reconfigure_controlee",
     "test_ranging_nearby_share_profile_add_remove_controlee",
     "test_ranging_device_tracker_profile_reconfigure_ranging_interval",
@@ -394,6 +396,40 @@ class RangingTest(uwb_base_test.UwbBaseTest):
                                     initiator_params, responder_params,
                                     self.responder_addr)
 
+
+  def test_ranging_device_tracker_profile_provisioned_sts_default(self):
+      """Verifies ranging with device tracker profile default values."""
+      initiator_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
+          device_address=self.initiator_addr,
+          destination_addresses=[self.responder_addr],
+          multi_node_mode=uwb_ranging_params.FiraParamEnums
+          .MULTI_NODE_MODE_UNICAST,
+          initiation_time_ms=100,
+          ranging_interval_ms=240,
+          slots_per_ranging_round=6,
+          in_band_termination_attempt_count=3,
+          sts_config=uwb_ranging_params.FiraParamEnums.STS_CONFIG_PROVISIONED
+          )
+      responder_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_RESPONDER,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLEE,
+          device_address=self.responder_addr,
+          destination_addresses=[self.initiator_addr],
+          multi_node_mode=uwb_ranging_params.FiraParamEnums
+          .MULTI_NODE_MODE_UNICAST,
+          initiation_time_ms=100,
+          ranging_interval_ms=240,
+          slots_per_ranging_round=6,
+          in_band_termination_attempt_count=3,
+          sts_config=uwb_ranging_params.FiraParamEnums.STS_CONFIG_PROVISIONED
+          )
+      self._verify_one_to_one_ranging(self.initiator, self.responder,
+                                      initiator_params, responder_params,
+                                      self.responder_addr)
+
+
   def test_ranging_nearby_share_profile_default(self):
       """Verifies ranging for device nearby share with default profile."""
       initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -415,6 +451,35 @@ class RangingTest(uwb_base_test.UwbBaseTest):
           ranging_interval_ms=200,
           slots_per_ranging_round=20,
           in_band_termination_attempt_count=3,
+      )
+      self._verify_one_to_one_ranging(self.initiator, self.responder,
+                                      initiator_params, responder_params,
+                                      self.responder_addr)
+
+
+  def test_ranging_nearby_share_profile_provisioned_sts_default(self):
+      """Verifies ranging for device nearby share with default profile."""
+      initiator_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
+          device_address=self.initiator_addr,
+          destination_addresses=[self.responder_addr],
+          initiation_time_ms=100,
+          ranging_interval_ms=200,
+          slots_per_ranging_round=20,
+          in_band_termination_attempt_count=3,
+          sts_config=uwb_ranging_params.FiraParamEnums.STS_CONFIG_PROVISIONED
+      )
+      responder_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_RESPONDER,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLEE,
+          device_address=self.responder_addr,
+          destination_addresses=[self.initiator_addr],
+          initiation_time_ms=100,
+          ranging_interval_ms=200,
+          slots_per_ranging_round=20,
+          in_band_termination_attempt_count=3,
+          sts_config=uwb_ranging_params.FiraParamEnums.STS_CONFIG_PROVISIONED
       )
       self._verify_one_to_one_ranging(self.initiator, self.responder,
                                       initiator_params, responder_params,
