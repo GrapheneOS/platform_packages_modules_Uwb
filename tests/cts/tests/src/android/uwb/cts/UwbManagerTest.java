@@ -1357,7 +1357,6 @@ public class UwbManagerTest {
                     rangingSessionCallback.rangingSession.addControlee(
                             new FiraControleeParams.Builder()
                                     .setAddressList(new UwbAddress[]{uwbAddress})
-                                    .setSubSessionIdList(new int[]{1})
                                     .build().toBundle()
                     );
                     // Wait for the on reconfigured and controlee added callback.
@@ -1373,7 +1372,6 @@ public class UwbManagerTest {
                     rangingSessionCallback.rangingSession.removeControlee(
                             new FiraControleeParams.Builder()
                                     .setAddressList(new UwbAddress[]{uwbAddress})
-                                    .setSubSessionIdList(new int[]{1})
                                     .build().toBundle()
                     );
                     // Wait for the on reconfigured and controlee added callback.
