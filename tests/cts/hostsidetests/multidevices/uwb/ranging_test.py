@@ -3,6 +3,8 @@
 import logging
 import random
 import sys
+import time
+from threading import Thread
 from typing import List
 
 from mobly import asserts
@@ -33,6 +35,9 @@ _TEST_CASES = (
     "test_stop_responder_ranging_nearby_share_profile",
     "test_ranging_device_tracker_profile_with_airplane_mode_toggle",
     "test_ranging_nearby_share_profile_with_airplane_mode_toggle",
+    "test_ranging_default_params_move_to_bg_and_fg",
+    "test_ranging_default_params_move_to_bg_and_stay_there_stops_session",
+    "test_ranging_default_params_no_valid_reports_stops_session",
 )
 
 
@@ -86,10 +91,17 @@ class RangingTest(uwb_base_test.UwbBaseTest):
 
   def teardown_test(self):
     super().teardown_test()
-    self.responder.stop_ranging()
-    self.initiator.stop_ranging()
-    self.responder.close_ranging()
-    self.initiator.close_ranging()
+    try:
+      self.initiator.stop_ranging()
+      self.initiator.close_ranging()
+    except:
+      pass
+    try:
+      self.responder.stop_ranging()
+      self.responder.close_ranging()
+    except:
+      pass
+
 
   ### Helper Methods ###
 
@@ -279,6 +291,29 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         block_stride_length=block_stride_length)
     initiator.reconfigure_fira_ranging(reconfigure_params)
     uwb_test_utils.verify_peer_found(initiator, peer_addr)
+
+
+  @staticmethod
+  def _move_snippet_to_bg(device: uwb_ranging_decorator.UwbRangingDecorator):
+      """Simulate moving snippet app to background
+
+      Args:
+        device: The uwb device object.
+      """
+      device.ad.adb.shell(
+          ["cmd", "uwb", "simulate-app-state-change", "com.google.snippet.uwb", "background"])
+
+
+  @staticmethod
+  def _move_snippet_to_fg(device: uwb_ranging_decorator.UwbRangingDecorator):
+      """Simulate moving snippet app to foreground
+
+      Args:
+        device: The uwb device object.
+      """
+      device.ad.adb.shell(
+          ["cmd", "uwb", "simulate-app-state-change", "com.google.snippet.uwb", "foreground"])
+
 
   ### Test Cases ###
 
@@ -1064,6 +1099,142 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self._verify_one_to_one_ranging_airplane_mode_toggle(
         self.initiator, self.responder, initiator_params, responder_params,
         self.responder_addr)
+
+  def test_ranging_default_params_move_to_bg_and_fg(self):
+      """
+      1. Verifies ranging with default Fira parameters.
+      2. Move app to background (turn screen off).
+      3. Ensures the app does not receive range data notifications
+      4. Move app to foreground (turn screen on).
+      5. Ensures the app starts receiving range data notifications
+      """
+      initiator_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
+          device_address=self.initiator_addr,
+          destination_addresses=[self.responder_addr],
+      )
+      responder_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_RESPONDER,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLEE,
+          device_address=self.responder_addr,
+          destination_addresses=[self.initiator_addr],
+      )
+      self._verify_one_to_one_ranging(self.initiator, self.responder,
+                                      initiator_params, responder_params,
+                                      self.responder_addr)
+
+      # Turn screen off to simulate app moving to background.
+      RangingTest._move_snippet_to_bg(self.initiator)
+      time.sleep(0.75)
+      self.initiator.clear_ranging_session_callback_events()
+      try:
+          self.initiator.verify_callback_received("ReportReceived")
+      except TimeoutError:
+          # Expect to get a timeout error
+          logging.info("Did not get any ranging reports as expected")
+      else:
+          asserts.fail("Should not receive ranging reports when the app is in background")
+
+      # Turn screen on to simulate app moving to foreground.
+      RangingTest._move_snippet_to_fg(self.initiator)
+      self.initiator.clear_ranging_session_callback_events()
+      try:
+          self.initiator.verify_callback_received("ReportReceived")
+      except TimeoutError:
+          asserts.fail("Should receive ranging reports when the app is in foreground")
+
+
+  def test_ranging_default_params_move_to_bg_and_stay_there_stops_session(self):
+      """
+      1. Verifies ranging with default Fira parameters.
+      2. Move app to background (turn screen off).
+      3. Ensures the app does not receive range data notifications
+      4. Remain in background.
+      5. Ensures the session is stopped within 4 mins.
+      """
+      initiator_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
+          device_address=self.initiator_addr,
+          destination_addresses=[self.responder_addr],
+      )
+      responder_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_RESPONDER,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLEE,
+          device_address=self.responder_addr,
+          destination_addresses=[self.initiator_addr],
+      )
+      self._verify_one_to_one_ranging(self.initiator, self.responder,
+                                      initiator_params, responder_params,
+                                      self.responder_addr)
+
+      # Turn screen off to simulate app moving to background.
+      RangingTest._move_snippet_to_bg(self.initiator)
+      time.sleep(0.75)
+      self.initiator.clear_ranging_session_callback_events()
+      try:
+          self.initiator.verify_callback_received("ReportReceived")
+      except TimeoutError:
+          # Expect to get a timeout error
+          logging.info("Did not get any ranging reports as expected")
+      else:
+          asserts.fail("Should not receive ranging reports when the app is in background")
+
+      # Wait for 4 mins
+      try:
+          self.initiator.verify_callback_received("Stopped", timeout=60*4)
+      except TimeoutError:
+          asserts.fail("Should receive ranging reports when the app is in foreground")
+
+
+  def test_ranging_default_params_no_valid_reports_stops_session(self):
+      """
+      1. Verifies ranging with default Fira parameters.
+      2. Reboot the initiator to abruptly terminate session and cause ranging report errors.
+      3. Ensures the session is stopped within 2 mins.
+      """
+      initiator_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
+          device_address=self.initiator_addr,
+          destination_addresses=[self.responder_addr],
+      )
+      responder_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_RESPONDER,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLEE,
+          device_address=self.responder_addr,
+          destination_addresses=[self.initiator_addr],
+      )
+      self._verify_one_to_one_ranging(self.initiator, self.responder,
+                                      initiator_params, responder_params,
+                                      self.responder_addr)
+
+      # Reboot responder and ensure peer is no longer seen in ranging reports
+      def reboot_responder():
+          self.responder.ad.reboot()
+          uwb_test_utils.initialize_uwb_country_code_if_not_set(self.responder.ad.adb)
+
+     # create a thread to reboot the responder and not block the main test.
+      thread = Thread(target=reboot_responder)
+      thread.start()
+
+      time.sleep(0.75)
+      self.initiator.clear_ranging_session_callback_events()
+      try:
+        uwb_test_utils.verify_peer_found(self.initiator, self.responder_addr)
+        asserts.fail("Peer found even though it was rebooted.")
+      except signals.TestFailure:
+        logging.info("Peer %s not found as expected", self.responder_addr)
+
+      # Wait for 2 mins to stop the session.
+      try:
+          self.initiator.verify_callback_received("Stopped", timeout=60*2)
+      except TimeoutError:
+         asserts.fail("Should receive ranging reports when the app is in foreground")
+      # Ensure the responder is back after reboot.
+      thread.join()
+
 
 if __name__ == "__main__":
   if "--" in sys.argv:

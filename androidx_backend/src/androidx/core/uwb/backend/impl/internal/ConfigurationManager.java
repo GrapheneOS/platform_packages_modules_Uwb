@@ -431,12 +431,16 @@ public final class ConfigurationManager {
                             Arrays.copyOf(rangingParameters.getSessionKeyInfo(), VENDOR_ID_SIZE))
                     .setStaticStsIV(staticStsIv);
         } else if (configuration.getStsConfig() == STS_CONFIG_PROVISIONED) {
-            builder.setSessionKey(rangingParameters.getSessionKeyInfo());
+            builder.setSessionKey(rangingParameters.getSessionKeyInfo())
+                    .setIsKeyRotationEnabled(true)
+                    .setKeyRotationRate(0);
         } else if (configuration.getStsConfig()
                 == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
             builder.setSessionKey(rangingParameters.getSessionKeyInfo())
                     .setSubSessionId(rangingParameters.getSubSessionId())
-                    .setSubsessionKey(rangingParameters.getSubSessionKeyInfo());
+                    .setSubsessionKey(rangingParameters.getSubSessionKeyInfo())
+                    .setIsKeyRotationEnabled(true)
+                    .setKeyRotationRate(0);
         }
 
         if (timingParams.isHoppingEnabled()) {

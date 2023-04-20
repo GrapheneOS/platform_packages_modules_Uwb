@@ -20,7 +20,11 @@ import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_OK;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyDouble;
+import static org.mockito.Mockito.anyFloat;
 import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -32,6 +36,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiManager.ActiveCountryCodeChangedCallback;
 import android.os.Handler;
@@ -71,10 +80,13 @@ public class UwbCountryCodeTest {
     @Mock Context mContext;
     @Mock TelephonyManager mTelephonyManager;
     @Mock SubscriptionManager mSubscriptionManager;
+    @Mock LocationManager mLocationManager;
+    @Mock Geocoder mGeocoder;
     @Mock WifiManager mWifiManager;
     @Mock NativeUwbManager mNativeUwbManager;
     @Mock UwbInjector mUwbInjector;
     @Mock PackageManager mPackageManager;
+    @Mock Location mLocation;
     private TestLooper mTestLooper;
     private UwbCountryCode mUwbCountryCode;
 
@@ -82,6 +94,10 @@ public class UwbCountryCodeTest {
     private ArgumentCaptor<BroadcastReceiver> mTelephonyCountryCodeReceiverCaptor;
     @Captor
     private ArgumentCaptor<ActiveCountryCodeChangedCallback> mWifiCountryCodeReceiverCaptor;
+    @Captor
+    private ArgumentCaptor<LocationListener> mLocationListenerCaptor;
+    @Captor
+    private ArgumentCaptor<Geocoder.GeocodeListener> mGeocodeListenerCaptor;
 
     /**
      * Setup test.
@@ -91,12 +107,15 @@ public class UwbCountryCodeTest {
         MockitoAnnotations.initMocks(this);
         mTestLooper = new TestLooper();
 
+        when(mContext.createContext(any())).thenReturn(mContext);
         when(mContext.getSystemService(TelephonyManager.class))
                 .thenReturn(mTelephonyManager);
         when(mContext.getSystemService(SubscriptionManager.class))
                 .thenReturn(mSubscriptionManager);
         when(mContext.getSystemService(WifiManager.class))
                 .thenReturn(mWifiManager);
+        when(mContext.getSystemService(LocationManager.class))
+                .thenReturn(mLocationManager);
         when(mSubscriptionManager.getActiveSubscriptionInfoList()).thenReturn(List.of(
                 new SubscriptionInfo(
                 TEST_SUBSCRIPTION_ID, "", TEST_SLOT_IDX, "", "", 0, 0, "", 0, null, "", "", "",
@@ -108,6 +127,10 @@ public class UwbCountryCodeTest {
                         0, 0, 0, null, null, true, 0)
         ));
         when(mContext.getPackageManager()).thenReturn(mPackageManager);
+        when(mLocation.getLatitude()).thenReturn(0.0);
+        when(mLocation.getLongitude()).thenReturn(0.0);
+        when(mUwbInjector.makeGeocoder()).thenReturn(mGeocoder);
+        when(mUwbInjector.isGeocoderPresent()).thenReturn(true);
         when(mPackageManager.hasSystemFeature(PackageManager.FEATURE_WIFI)).thenReturn(true);
         when(mNativeUwbManager.setCountryCode(any())).thenReturn(
                 (byte) STATUS_CODE_OK);
@@ -154,6 +177,31 @@ public class UwbCountryCodeTest {
     public void testSetCountryCodeFromTelephony() {
         when(mTelephonyManager.getNetworkCountryIso(anyInt())).thenReturn(TEST_COUNTRY_CODE);
         mUwbCountryCode.initialize();
+        verify(mNativeUwbManager).setCountryCode(
+                TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
+        clearInvocations(mNativeUwbManager);
+
+        assertEquals(Pair.create(STATUS_CODE_OK, TEST_COUNTRY_CODE),
+                mUwbCountryCode.setCountryCode(false));
+        // already set.
+        verify(mNativeUwbManager, never()).setCountryCode(
+                TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void testSetCountryCodeFromLocation() {
+        when(mLocationManager.getLastKnownLocation(LocationManager.FUSED_PROVIDER))
+                .thenReturn(mLocation);
+        mUwbCountryCode.initialize();
+        verify(mGeocoder).getFromLocation(
+                anyDouble(), anyDouble(), anyInt(), mGeocodeListenerCaptor.capture());
+        Address mockAddress = mock(Address.class);
+        when(mockAddress.getCountryCode()).thenReturn(TEST_COUNTRY_CODE);
+        List<Address> addresses = List.of(mockAddress);
+        mGeocodeListenerCaptor.getValue().onGeocode(addresses);
+        mTestLooper.dispatchAll();
+        verify(mNativeUwbManager).setCountryCode(
+                TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
         clearInvocations(mNativeUwbManager);
 
         assertEquals(Pair.create(STATUS_CODE_OK, TEST_COUNTRY_CODE),
@@ -227,7 +275,24 @@ public class UwbCountryCodeTest {
     }
 
     @Test
-    public void testChangeInTelephonyCountryCodeWhenWifiCountryCodeAvailable() {
+    public void testChangeInLocationCountryCode() {
+        mUwbCountryCode.initialize();
+        verify(mLocationManager).requestLocationUpdates(
+                anyString(), anyLong(), anyFloat(), mLocationListenerCaptor.capture());
+        mLocationListenerCaptor.getValue().onLocationChanged(mLocation);
+        verify(mGeocoder).getFromLocation(
+                anyDouble(), anyDouble(), anyInt(), mGeocodeListenerCaptor.capture());
+        Address mockAddress = mock(Address.class);
+        when(mockAddress.getCountryCode()).thenReturn(TEST_COUNTRY_CODE);
+        List<Address> addresses = List.of(mockAddress);
+        mGeocodeListenerCaptor.getValue().onGeocode(addresses);
+        mTestLooper.dispatchAll();
+        verify(mNativeUwbManager).setCountryCode(
+                TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void testChangeInTelephonyCountryCodeWhenWifiAndLocationCountryCodeAvailable() {
         mUwbCountryCode.initialize();
         verify(mWifiManager).registerActiveCountryCodeChangedCallback(
                 any(), mWifiCountryCodeReceiverCaptor.capture());
@@ -236,6 +301,16 @@ public class UwbCountryCodeTest {
                 mTelephonyCountryCodeReceiverCaptor.capture(), any(), any(), any());
         verify(mNativeUwbManager).setCountryCode(
                 TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
+        verify(mLocationManager).requestLocationUpdates(
+                anyString(), anyLong(), anyFloat(), mLocationListenerCaptor.capture());
+        mLocationListenerCaptor.getValue().onLocationChanged(mLocation);
+        verify(mGeocoder).getFromLocation(
+                anyDouble(), anyDouble(), anyInt(), mGeocodeListenerCaptor.capture());
+        Address mockAddress = mock(Address.class);
+        when(mockAddress.getCountryCode()).thenReturn(TEST_COUNTRY_CODE);
+        List<Address> addresses = List.of(mockAddress);
+        mGeocodeListenerCaptor.getValue().onGeocode(addresses);
+        mTestLooper.dispatchAll();
 
         Intent intent = new Intent(TelephonyManager.ACTION_NETWORK_COUNTRY_CHANGED)
                 .putExtra(TelephonyManager.EXTRA_NETWORK_COUNTRY, TEST_COUNTRY_CODE_OTHER)
