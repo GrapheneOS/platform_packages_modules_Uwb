@@ -76,18 +76,25 @@ class UwbRangingDecorator():
 
   def open_fira_ranging(self,
                         params: uwb_ranging_params.UwbRangingParams,
-                        session: int = 0):
+                        session: int = 0,
+                        expect_to_succeed: bool = True):
     """Opens fira ranging session.
 
     Args:
       params: UWB ranging parameters.
       session: ranging session.
+      expect_to_succeed: Whether the session open is expected to succeed.
     """
     callback_key = "fira_session_%s" % session
     handler = self.ad.uwb.openFiraRangingSession(callback_key, params.to_dict())
     self._event_handlers[session] = handler
-    self.verify_callback_received("Opened", session)
-    self._callback_keys[session] = callback_key
+    if expect_to_succeed:
+      self.verify_callback_received("Opened", session)
+      self._callback_keys[session] = callback_key
+    else:
+      self.verify_callback_received("OpenFailed", session)
+
+
 
   def start_fira_ranging(self, session: int = 0):
     """Starts Fira ranging session.
