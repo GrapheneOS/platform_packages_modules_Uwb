@@ -123,7 +123,8 @@ public class RangingControllerTest {
                         INFREQUENT,
                         uwbRangeDataNtfConfig);
         mRangingController =
-                new RangingController(mUwbManager, getExecutor(), mOpAsyncCallbackRunner);
+                new RangingController(mUwbManager, getExecutor(), mOpAsyncCallbackRunner,
+                        new UwbFeatureFlags.Builder().build());
         mRangingController.setRangingParameters(rangingParameters);
         mRangingController.setForTesting(true);
     }
