@@ -35,6 +35,7 @@ import android.uwb.RangingReport;
 import android.uwb.RangingSession;
 import android.uwb.UwbManager;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.android.internal.annotations.VisibleForTesting;
@@ -92,12 +93,16 @@ public abstract class RangingDevice {
     @Nullable
     private String mChipId = null;
 
+    @NonNull
+    protected final UwbFeatureFlags mUwbFeatureFlags;
+
     RangingDevice(UwbManager manager, Executor executor,
-            OpAsyncCallbackRunner<Boolean> opAsyncCallbackRunner) {
+            OpAsyncCallbackRunner<Boolean> opAsyncCallbackRunner, UwbFeatureFlags uwbFeatureFlags) {
         mUwbManager = manager;
         this.mSystemCallbackExecutor = executor;
         mOpAsyncCallbackRunner = opAsyncCallbackRunner;
         mOpAsyncCallbackRunner.setOperationTimeoutMillis(RANGING_START_TIMEOUT_MILLIS);
+        mUwbFeatureFlags = uwbFeatureFlags;
     }
 
     /** Sets the chip ID. By default, the default chip is used. */

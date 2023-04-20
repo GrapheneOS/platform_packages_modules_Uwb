@@ -352,13 +352,15 @@ public final class ConfigurationManager {
                 });
     }
 
-    private ConfigurationManager() {}
+    private ConfigurationManager() {
+    }
 
     /** Creates a {@link FiraOpenSessionParams}. */
     public static FiraOpenSessionParams createOpenSessionParams(
             @FiraParams.RangingDeviceType int deviceType,
             UwbAddress localAddress,
-            RangingParameters rangingParameters) {
+            RangingParameters rangingParameters,
+            UwbFeatureFlags featureFlags) {
         RangingTimingParams timingParams =
                 getRangingTimingParams(rangingParameters.getUwbConfigId());
         UwbConfiguration configuration = sConfigs.get(rangingParameters.getUwbConfigId());
@@ -393,12 +395,14 @@ public final class ConfigurationManager {
                         .setDeviceType(deviceType)
                         .setDeviceRole(deviceRole)
                         .setSessionId(rangingParameters.getSessionId())
-                        .setDeviceAddress(Conversions.convertUwbAddress(localAddress))
+                        .setDeviceAddress(Conversions.convertUwbAddress(localAddress,
+                                featureFlags.isReversedMacAddress()))
                         .setDestAddressList(
                                 Conversions.convertUwbAddressList(
                                         rangingParameters
                                                 .getPeerAddresses()
-                                                .toArray(new UwbAddress[0])))
+                                                .toArray(new UwbAddress[0]),
+                                        featureFlags.isReversedMacAddress()))
                         .setAoaResultRequest(configuration.getAoaResultRequestMode())
                         .setChannelNumber(rangingParameters.getComplexChannel().getChannel())
                         .setPreambleCodeIndex(
@@ -455,13 +459,15 @@ public final class ConfigurationManager {
             @FiraParams.MulticastListUpdateAction int action,
             UwbAddress[] peerAddresses,
             @Nullable int[] subSessionIdList,
-            @Nullable byte[] subSessionKey) {
+            @Nullable byte[] subSessionKey,
+            UwbFeatureFlags uwbFeatureFlags) {
         UwbConfiguration configuration = sConfigs.get(configId);
         FiraRangingReconfigureParams.Builder builder =
                 new FiraRangingReconfigureParams.Builder()
                         .setAction(action)
                         .setAddressList(
-                                Conversions.convertUwbAddressList(peerAddresses)
+                                Conversions.convertUwbAddressList(peerAddresses,
+                                                uwbFeatureFlags.isReversedMacAddress())
                                         .toArray(new android.uwb.UwbAddress[0]));
         if (configuration.getStsConfig()
                 == FiraParams.STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY) {
