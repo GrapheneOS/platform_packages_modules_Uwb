@@ -224,6 +224,16 @@ public class UwbUciConstants {
     public static final int STATUS_CODE_CCC_LIFECYCLE = STATUS_ERROR_CCC_LIFECYCLE;
     public static final int STATUS_CODE_ANDROID_REGULATION_UWB_OFF = STATUS_REGULATION_UWB_OFF;
 
+    /**
+     * Table 28: Status codes in the DATA_TRANSFER_STATUS_NTF.
+     */
+    public static final int STATUS_CODE_DATA_TRANSFER_REPETITION_OK =
+            FiraParams.STATUS_CODE_DATA_TRANSFER_NTF_REPETITION_OK;
+    public static final int STATUS_CODE_DATA_TRANSFER_OK =
+            FiraParams.STATUS_CODE_DATA_TRANSFER_NTF_OK;
+    public static final int STATUS_CODE_DATA_TRANSFER_ERROR_DATA_TRANSFER =
+            FiraParams.STATUS_CODE_DATA_TRANSFER_NTF_ERROR_DATA_TRANSFER;
+
     /* UWB Device Extended Mac address length */
     public static final int UWB_DEVICE_SHORT_MAC_ADDRESS_LEN = 2;
     public static final int UWB_DEVICE_EXT_MAC_ADDRESS_LEN = 8;
