@@ -21,9 +21,6 @@ import static android.uwb.UwbManager.MESSAGE_TYPE_COMMAND;
 import static com.android.server.uwb.data.UwbUciConstants.FIRA_VERSION_MAJOR_2;
 import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_OK;
 
-import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
-import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE;
-
 import android.content.AttributionSource;
 import android.content.Context;
 import android.os.Handler;
@@ -541,9 +538,10 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         if (FiraParams.isCorrectProtocol(params)) {
             FiraControleeParams controleeParams = FiraControleeParams.fromBundle(params);
             reconfigureRangingParams = new FiraRangingReconfigureParams.Builder()
-                    .setAction(MULTICAST_LIST_UPDATE_ACTION_ADD)
+                    .setAction(controleeParams.getAction())
                     .setAddressList(controleeParams.getAddressList())
                     .setSubSessionIdList(controleeParams.getSubSessionIdList())
+                    .setSubSessionKeyList(controleeParams.getSubSessionKeyList())
                     .build();
         }
         mSessionManager.reconfigure(sessionHandle, reconfigureRangingParams);
@@ -557,9 +555,10 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         if (FiraParams.isCorrectProtocol(params)) {
             FiraControleeParams controleeParams = FiraControleeParams.fromBundle(params);
             reconfigureRangingParams = new FiraRangingReconfigureParams.Builder()
-                    .setAction(MULTICAST_LIST_UPDATE_ACTION_DELETE)
+                    .setAction(controleeParams.getAction())
                     .setAddressList(controleeParams.getAddressList())
                     .setSubSessionIdList(controleeParams.getSubSessionIdList())
+                    .setSubSessionKeyList(controleeParams.getSubSessionKeyList())
                     .build();
         }
         mSessionManager.reconfigure(sessionHandle, reconfigureRangingParams);
