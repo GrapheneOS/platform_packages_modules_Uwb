@@ -192,9 +192,14 @@ class RangingTest(uwb_base_test.UwbBaseTest):
           logging.info("Peer %s not found as expected", peer_addr)
 
       # reconfigure initiator with new peer addr and verify peer found
-      controlee_params = uwb_ranging_params.UwbRangingControleeParams(address_list=[peer_addr])
+      controlee_params = uwb_ranging_params.UwbRangingControleeParams(
+          action=uwb_ranging_params.FiraParamEnums.MULTICAST_LIST_UPDATE_ACTION_ADD,
+          address_list=[peer_addr])
       initiator.add_controlee_fira_ranging(controlee_params)
       uwb_test_utils.verify_peer_found(initiator, peer_addr)
+      controlee_params = uwb_ranging_params.UwbRangingControleeParams(
+          action=uwb_ranging_params.FiraParamEnums.MULTICAST_LIST_UPDATE_ACTION_DELETE,
+          address_list=[peer_addr])
       initiator.remove_controlee_fira_ranging(controlee_params)
       try:
           uwb_test_utils.verify_peer_found(initiator, peer_addr)
