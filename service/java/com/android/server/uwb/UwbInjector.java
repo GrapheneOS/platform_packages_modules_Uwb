@@ -434,6 +434,9 @@ public class UwbInjector {
     public void setOverridePackageImportance(String packageName, int importance) {
         sOverridePackageImportance.put(packageName, importance);
     }
+    public void resetOverridePackageImportance(String packageName) {
+        sOverridePackageImportance.remove(packageName);
+    }
 
     /** Helper method to retrieve app importance. */
     private int getPackageImportance(int uid, @NonNull String packageName) {
