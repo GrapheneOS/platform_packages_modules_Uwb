@@ -93,6 +93,7 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         uwb_device.log.warn("Failed to cleanup ranging sessions")
     for uwb_device in self.uwb_devices:
       uwb_test_utils.set_airplane_mode(uwb_device.ad, False)
+      RangingTest._reset_snippet_fg_bg_state(uwb_device)
 
   def teardown_test(self):
     super().teardown_test()
@@ -342,6 +343,16 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     initiator.reconfigure_fira_ranging(reconfigure_params)
     uwb_test_utils.verify_peer_found(initiator, peer_addr)
 
+
+  @staticmethod
+  def _reset_snippet_fg_bg_state(device: uwb_ranging_decorator.UwbRangingDecorator):
+      """Reset snippet app foreground/background state
+
+      Args:
+        device: The uwb device object.
+      """
+      device.ad.adb.shell(
+          ["cmd", "uwb", "simulate-app-state-change", "com.google.snippet.uwb"])
 
   @staticmethod
   def _move_snippet_to_bg(device: uwb_ranging_decorator.UwbRangingDecorator):
