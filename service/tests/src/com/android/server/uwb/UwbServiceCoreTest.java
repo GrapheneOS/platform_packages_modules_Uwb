@@ -927,6 +927,7 @@ public class UwbServiceCoreTest {
         int[] subSessionIdList = new int[] {3, 4};
         FiraControleeParams params =
                 new FiraControleeParams.Builder()
+                        .setAction(MULTICAST_LIST_UPDATE_ACTION_ADD)
                         .setAddressList(addressList)
                         .setSubSessionIdList(subSessionIdList)
                         .build();
@@ -956,6 +957,7 @@ public class UwbServiceCoreTest {
         int[] subSessionIdList = new int[] {3, 4};
         FiraControleeParams params =
                 new FiraControleeParams.Builder()
+                        .setAction(MULTICAST_LIST_UPDATE_ACTION_DELETE)
                         .setAddressList(addressList)
                         .setSubSessionIdList(subSessionIdList)
                         .build();
