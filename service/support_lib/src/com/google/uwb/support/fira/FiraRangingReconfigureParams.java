@@ -119,7 +119,6 @@ public class FiraRangingReconfigureParams extends FiraParams {
         return mSubSessionIdList;
     }
 
-
     @Nullable
     public byte[] getSubSessionKeyList() {
         return mSubSessionKeyList;
@@ -359,7 +358,7 @@ public class FiraRangingReconfigureParams extends FiraParams {
             return this;
         }
 
-        /** Sub Session Key List setter */
+        /** Sub Session Key List setter. This is a 2D array of keys represented as 1D array */
         public FiraRangingReconfigureParams.Builder setSubSessionKeyList(byte[] subSessionKeyList) {
             mSubSessionKeyList = subSessionKeyList;
             return this;

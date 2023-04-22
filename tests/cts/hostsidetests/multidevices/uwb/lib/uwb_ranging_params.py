@@ -71,6 +71,8 @@ class FiraParamEnums:
   # list update actions
   MULTICAST_LIST_UPDATE_ACTION_ADD = 0
   MULTICAST_LIST_UPDATE_ACTION_DELETE = 1
+  P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_16_BYTE = 2
+  P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_32_BYTE = 3
 
   # sts config
   STS_CONFIG_STATIC = 0
@@ -104,6 +106,36 @@ class UwbRangingReconfigureParams():
     elif self.block_stride_length is not None:
       reconfigure_params["blockStrideLength"] = self.block_stride_length
     return reconfigure_params
+
+
+@dataclasses.dataclass
+class UwbRangingControleeParams():
+    """Class for UWB ranging controlee parameters.
+
+    Attributes:
+      action: Type of reconfigure action.
+      address_list: new address list.
+      sub_session_id_list: new subsession id list.
+    """
+    action: Optional[int] = None
+    address_list: Optional[List[List[int]]] = None
+    sub_session_id_list: Optional[List[int]] = None
+
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Returns UWB ranging controlee parameters in dictionary for sl4a.
+
+        Returns:
+          UWB ranging controlee parameters in dictionary.
+        """
+        controlee_params = {}
+        if self.action is not None:
+            controlee_params["action"] = self.action
+        if self.address_list is not None:
+            controlee_params["addressList"] = self.address_list
+        if self.sub_session_id_list is not None:
+            controlee_params["subSessionIdList"] = self.sub_session_id_list
+        return controlee_params
 
 
 @dataclasses.dataclass
