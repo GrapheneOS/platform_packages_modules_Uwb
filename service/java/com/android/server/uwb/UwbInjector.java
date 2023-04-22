@@ -65,7 +65,9 @@ import com.android.server.uwb.multchip.UwbMultichipData;
 import com.android.server.uwb.pm.ProfileManager;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -428,8 +430,20 @@ public class UwbInjector {
                 == PackageManager.SIGNATURE_MATCH;
     }
 
+    private static Map<String, Integer> sOverridePackageImportance = new HashMap();
+    public void setOverridePackageImportance(String packageName, int importance) {
+        sOverridePackageImportance.put(packageName, importance);
+    }
+    public void resetOverridePackageImportance(String packageName) {
+        sOverridePackageImportance.remove(packageName);
+    }
+
     /** Helper method to retrieve app importance. */
     private int getPackageImportance(int uid, @NonNull String packageName) {
+        if (sOverridePackageImportance.containsKey(packageName)) {
+            Log.w(TAG, "Overriding package importance for testing");
+            return sOverridePackageImportance.get(packageName);
+        }
         try {
             return createPackageContextAsUser(uid)
                     .getSystemService(ActivityManager.class)

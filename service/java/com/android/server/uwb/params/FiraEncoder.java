@@ -76,7 +76,6 @@ public class FiraEncoder extends TlvEncoder {
                 .putByteArray(ConfigParam.DEVICE_MAC_ADDRESS, params.getDeviceAddress().size(),
                         TlvUtil.getReverseBytes(params.getDeviceAddress().toBytes()))
                 .putShort(ConfigParam.SLOT_DURATION, (short) params.getSlotDurationRstu())
-                .putInt(ConfigParam.RANGING_INTERVAL, params.getRangingIntervalMs())
                 .putByte(ConfigParam.MAC_FCS_TYPE, (byte) params.getFcsType())
                 .putByte(ConfigParam.RANGING_ROUND_CONTROL,
                         (byte) rangingRoundControl/* params.getMeasurementReportType()*/)
@@ -112,6 +111,9 @@ public class FiraEncoder extends TlvEncoder {
                 .putByte(ConfigParam.BPRF_PHR_DATA_RATE,
                         (byte) params.getBprfPhrDataRate())
                 .putByte(ConfigParam.STS_LENGTH, (byte) params.getStsLength());
+        if (params.getDeviceRole() != FiraParams.RANGING_DEVICE_UT_TAG) {
+            tlvBufferBuilder.putInt(ConfigParam.RANGING_INTERVAL, params.getRangingIntervalMs());
+        }
         if (params.getDestAddressList().size() > 0) {
             tlvBufferBuilder.putByteArray(
                     ConfigParam.DST_MAC_ADDRESS, dstAddressList.position(),
@@ -141,7 +143,8 @@ public class FiraEncoder extends TlvEncoder {
                 == FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY)) {
             tlvBufferBuilder.putByteArray(ConfigParam.SESSION_KEY, params.getSessionKey());
             if (stsConfig
-                    == FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
+                    == FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY
+                    && (deviceType == FiraParams.RANGING_DEVICE_TYPE_CONTROLEE)) {
                 tlvBufferBuilder.putInt(ConfigParam.SUB_SESSION_ID, params.getSubSessionId());
                 tlvBufferBuilder.putByteArray(ConfigParam.SUBSESSION_KEY,
                         params.getSubsessionKey());
