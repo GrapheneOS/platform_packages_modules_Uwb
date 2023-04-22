@@ -301,20 +301,24 @@ public class FiraEncoder extends TlvEncoder {
     }
 
     private int getRangingRoundControl(FiraOpenSessionParams params) {
-        //RANGING_ROUND_CONTROL
-        int rangingRoundControl = 0x02;
+        // RANGING_ROUND_CONTROL
+        byte rangingRoundControl = 0x00;
 
         // b0 : Ranging Result Report Message
-        rangingRoundControl |= params.hasResultReportPhase() ? 0x01 : 0x00;
+        rangingRoundControl |= (byte) (params.hasRangingResultReportMessage() ? 0x01 : 0x00);
+
+        // b1 : Control Message
+        rangingRoundControl |= (byte) (params.hasControlMessage() ? 0x02 : 0x00);
+
+        // b2 : Ranging Control Phase
+        rangingRoundControl |= (byte) (params.hasRangingControlPhase() ? 0x04 : 0x00);
 
         // b7 : Measurement Report Message
         if (params.getMeasurementReportType()
                 == FiraParams.MEASUREMENT_REPORT_TYPE_RESPONDER_TO_INITIATOR) {
             rangingRoundControl |= 0x80;
         }
-        if (params.getScheduledMode() == FiraParams.CONTENTION_BASED_RANGING) {
-            rangingRoundControl = 0x00;
-        }
+
         return rangingRoundControl;
     }
 }
