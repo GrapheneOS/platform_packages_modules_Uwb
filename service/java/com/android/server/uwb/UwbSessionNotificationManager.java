@@ -440,7 +440,7 @@ public class UwbSessionNotificationManager {
                 default:
                     throw new IllegalArgumentException("Invalid AOA result req");
             }
-            if (openSessionParams.hasResultReportPhase()) {
+            if (openSessionParams.hasRangingResultReportMessage()) {
                 if (openSessionParams.hasAngleOfArrivalAzimuthReport()) {
                     isDestAoaAzimuthEnabled = true;
                 }
