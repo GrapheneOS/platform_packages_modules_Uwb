@@ -164,7 +164,9 @@ public class UwbConfigurationManagerTest {
         int blockStrideLength = 2;
         int maxRangingRoundRetries = 3;
         int sessionPriority = 100;
-        boolean hasResultReportPhase = true;
+        boolean hasRangingResultReportMessage = true;
+        boolean hasControlMessage = true;
+        boolean hasRangingControlPhase = false;
         int measurementReportType = MEASUREMENT_REPORT_TYPE_INITIATOR_TO_RESPONDER;
         int inBandTerminationAttemptCount = 8;
         int channelNumber = 10;
@@ -221,7 +223,9 @@ public class UwbConfigurationManagerTest {
                         .setMaxRangingRoundRetries(maxRangingRoundRetries)
                         .setSessionPriority(sessionPriority)
                         .setMacAddressMode(addressMode)
-                        .setHasResultReportPhase(hasResultReportPhase)
+                        .setHasRangingResultReportMessage(hasRangingResultReportMessage)
+                        .setHasControlMessage(hasControlMessage)
+                        .setHasRangingControlPhase(hasRangingControlPhase)
                         .setMeasurementReportType(measurementReportType)
                         .setInBandTerminationAttemptCount(inBandTerminationAttemptCount)
                         .setChannelNumber(channelNumber)
