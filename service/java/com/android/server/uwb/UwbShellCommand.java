@@ -559,8 +559,9 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 builder.setSlotDurationRstu(slotDurationRstu);
             }
             if (option.equals("-w")) {
-                boolean hasResultReportPhase = getNextArgRequiredTrueOrFalse("enabled", "disabled");
-                builder.setHasResultReportPhase(hasResultReportPhase);
+                boolean hasRangingResultReportMessage =
+                        getNextArgRequiredTrueOrFalse("enabled", "disabled");
+                builder.setHasRangingResultReportMessage(hasRangingResultReportMessage);
             }
             if (option.equals("-y")) {
                 boolean hoppingEnabled = getNextArgRequiredTrueOrFalse("enabled", "disabled");
