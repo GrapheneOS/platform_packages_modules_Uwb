@@ -1789,7 +1789,7 @@ jobject uwbNativeManager_GetDeviceCapebilityParams(JNIEnv* env, jobject o) {
 ** UWB service layer has to invoke these APIs to get required functionality
 **
 *****************************************************************************/
-static JNINativeMethod gMethods[] = {
+static const JNINativeMethod gMethods[] = {
     {"nativeInit", "()Z", (void *)uwbNativeManager_init},
     {"nativeDoInitialize", "()Z", (void *)uwbNativeManager_doInitialize},
     {"nativeDoDeinitialize", "()Z", (void *)uwbNativeManager_doDeinitialize},
