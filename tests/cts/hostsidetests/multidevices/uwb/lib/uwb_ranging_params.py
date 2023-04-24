@@ -88,10 +88,14 @@ class UwbRangingReconfigureParams():
     action: Type of reconfigure action.
     address_list: new address list.
     block_stride_length: block stride length
+    sub_session_id_list: new p-sts subsession id list (for p-sts with individual controlee keys).
+    sub_session_key_list: new p-sts subsession key list (for p-sts with individual controlee keys).
   """
   action: Optional[int] = None
   address_list: Optional[List[List[int]]] = None
   block_stride_length: Optional[int] = None
+  sub_session_id_list: Optional[List[int]] = None
+  sub_session_key_list: Optional[List[int]] = None
 
   def to_dict(self) -> Dict[str, Any]:
     """Returns UWB ranging reconfigure parameters in dictionary for sl4a.
@@ -103,6 +107,10 @@ class UwbRangingReconfigureParams():
     if self.address_list is not None:
       reconfigure_params["action"] = self.action
       reconfigure_params["addressList"] = self.address_list
+      if self.sub_session_id_list is not None:
+        reconfigure_params["subSessionIdList"] = self.sub_session_id_list
+      if self.sub_session_key_list is not None:
+        reconfigure_params["subSessionKeyList"] = self.sub_session_key_list
     elif self.block_stride_length is not None:
       reconfigure_params["blockStrideLength"] = self.block_stride_length
     return reconfigure_params
@@ -110,32 +118,36 @@ class UwbRangingReconfigureParams():
 
 @dataclasses.dataclass
 class UwbRangingControleeParams():
-    """Class for UWB ranging controlee parameters.
+  """Class for UWB ranging controlee parameters.
 
-    Attributes:
-      action: Type of reconfigure action.
-      address_list: new address list.
-      sub_session_id_list: new subsession id list.
+  Attributes:
+    action: Type of reconfigure action.
+    address_list: new address list.
+    sub_session_id_list: new p-sts subsession id list (for p-sts with individual controlee keys).
+    sub_session_key_list: new p-sts subsession key list (for p-sts with individual controlee keys).
+  """
+  action: Optional[int] = None
+  address_list: Optional[List[List[int]]] = None
+  sub_session_id_list: Optional[List[int]] = None
+  sub_session_key_list: Optional[List[int]] = None
+
+
+  def to_dict(self) -> Dict[str, Any]:
+    """Returns UWB ranging controlee parameters in dictionary for sl4a.
+
+    Returns:
+      UWB ranging controlee parameters in dictionary.
     """
-    action: Optional[int] = None
-    address_list: Optional[List[List[int]]] = None
-    sub_session_id_list: Optional[List[int]] = None
-
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Returns UWB ranging controlee parameters in dictionary for sl4a.
-
-        Returns:
-          UWB ranging controlee parameters in dictionary.
-        """
-        controlee_params = {}
-        if self.action is not None:
-            controlee_params["action"] = self.action
-        if self.address_list is not None:
-            controlee_params["addressList"] = self.address_list
-        if self.sub_session_id_list is not None:
-            controlee_params["subSessionIdList"] = self.sub_session_id_list
-        return controlee_params
+    controlee_params = {}
+    if self.action is not None:
+      controlee_params["action"] = self.action
+    if self.address_list is not None:
+      controlee_params["addressList"] = self.address_list
+    if self.sub_session_id_list is not None:
+      controlee_params["subSessionIdList"] = self.sub_session_id_list
+    if self.sub_session_key_list is not None:
+      controlee_params["subSessionKeyList"] = self.sub_session_key_list
+    return controlee_params
 
 
 @dataclasses.dataclass
@@ -166,6 +178,7 @@ class UwbRangingParams():
     static_sts_iv: Static STS value.
     sts_config: STS config.
     session_key: Provisioned sts session key.
+    sub_session_id: Ranging sub session ID.
 
   Example:
       An example of UWB ranging parameters passed to sl4a is below.
@@ -225,6 +238,8 @@ class UwbRangingParams():
   session_key: List[int] = dataclasses.field(
       default_factory=lambda: [1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1]
   )
+  sub_session_id: Optional[int] = None
+  sub_session_key: Optional[List[int]] = None
 
   def to_dict(self) -> Dict[str, Any]:
     """Returns UWB ranging parameters in dictionary for sl4a.
@@ -232,7 +247,7 @@ class UwbRangingParams():
     Returns:
       UWB ranging parameters in dictionary.
     """
-    return {
+    dict = {
         "deviceType": self.device_type,
         "deviceRole": self.device_role,
         "deviceAddress": self.device_address,
@@ -257,6 +272,11 @@ class UwbRangingParams():
         "stsConfig": self.sts_config,
         "sessionKey": self.session_key,
     }
+    if self.sub_session_id is not None:
+      dict["subSessionId"] = self.sub_session_id
+    if self.sub_session_key is not None:
+      dict["subSessionKey"] = self.sub_session_key
+    return dict
 
   def update(self, **kwargs: Any):
     """Updates the UWB parameters with the new values.
