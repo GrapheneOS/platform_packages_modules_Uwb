@@ -83,7 +83,7 @@ public class UwbSettingsStore {
      * Store the UWB settings toggle state.
      */
     public static final Key<Boolean> SETTINGS_TOGGLE_STATE =
-            new Key<>("settings_toggle", true);
+            new Key<>("settings_toggle", false);
     public static final Key<String> SETTINGS_LOG_MODE =
             new Key<>("settings_log_mode", UciLogModeStore.Mode.FILTERED.getMode());
 
@@ -135,22 +135,6 @@ public class UwbSettingsStore {
     public void initialize() {
         Log.i(TAG, "Reading from store file: " + mAtomicFile.getBaseFile());
         readFromStoreFile();
-        // Migrate toggle settings from Android 12 to Android 13.
-        boolean isStoreEmpty;
-        synchronized (mLock) {
-            isStoreEmpty = mSettings.isEmpty();
-        }
-        if (isStoreEmpty) {
-            try {
-                boolean toggleEnabled =
-                        mUwbInjector.getGlobalSettingsInt(SETTINGS_TOGGLE_STATE_KEY_FOR_MIGRATION)
-                                == STATE_ENABLED_ACTIVE;
-                Log.i(TAG, "Migrate settings toggle from older release: " + toggleEnabled);
-                put(SETTINGS_TOGGLE_STATE, toggleEnabled);
-            } catch (Settings.SettingNotFoundException e) {
-                /* ignore */
-            }
-        }
         invokeAllListeners();
     }
 
