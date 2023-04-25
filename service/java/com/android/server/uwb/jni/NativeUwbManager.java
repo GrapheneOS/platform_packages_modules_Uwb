@@ -360,12 +360,8 @@ public class NativeUwbManager {
      * @return true if the log mode is set successfully, false otherwise.
      */
     public boolean setLogMode(String logModeStr) {
-        if (mUciLogModeStore.storeMode(logModeStr)) {
-            synchronized (mNativeLock) {
-                return nativeSetLogMode(mUciLogModeStore.getMode());
-            }
-        } else {
-            return false;
+        synchronized (mNativeLock) {
+            return nativeSetLogMode(mUciLogModeStore.getMode());
         }
     }
 
