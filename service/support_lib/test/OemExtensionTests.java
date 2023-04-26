@@ -57,22 +57,26 @@ public class OemExtensionTests {
         long sessionId = 1;
         int state = 0;
         int reasonCode = 0;
+        String appPackageName = "test_app";
 
         SessionStatus sessionStatus = new SessionStatus.Builder()
                 .setSessionId(sessionId)
                 .setState(state)
                 .setReasonCode(reasonCode)
+                .setAppPackageName(appPackageName)
                 .build();
 
         assertEquals(sessionStatus.getSessionId(), sessionId);
         assertEquals(sessionStatus.getState(), state);
         assertEquals(sessionStatus.getReasonCode(), reasonCode);
+        assertEquals(sessionStatus.getAppPackageName(), appPackageName);
 
         SessionStatus fromBundle = SessionStatus.fromBundle(sessionStatus.toBundle());
 
         assertEquals(fromBundle.getSessionId(), sessionId);
         assertEquals(fromBundle.getState(), state);
         assertEquals(fromBundle.getReasonCode(), reasonCode);
+        assertEquals(fromBundle.getAppPackageName(), appPackageName);
     }
 
     @Test
