@@ -973,6 +973,11 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                         return -1;
                     }
                     mUciLogModeStore.storeMode(logMode);
+                    if (!mNativeUwbManager.setLogMode(logMode)) {
+                        pw.println("Failed to set log mode. " + logMode
+                                + " log mode will be set on next UWB restart");
+                        return -1;
+                    }
                     return 0;
                 }
                 case "get-log-mode":
