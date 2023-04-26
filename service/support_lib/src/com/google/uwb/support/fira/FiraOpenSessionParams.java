@@ -138,6 +138,7 @@ public class FiraOpenSessionParams extends FiraParams {
     @Nullable private final byte[] mUlTdoaDeviceId;
     @UlTdoaTxTimestampType private final int mUlTdoaTxTimestampType;
     @FilterType private final int mFilterType;
+    private final int mMaxNumberOfMeasurements;
 
     private static final int BUNDLE_VERSION_1 = 1;
     private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_1;
@@ -236,6 +237,7 @@ public class FiraOpenSessionParams extends FiraParams {
     private static final String UL_TDOA_DEVICE_ID = "ul_tdoa_device_id";
     private static final String UL_TDOA_TX_TIMESTAMP_TYPE = "ul_tdoa_tx_timestamp_type";
     private static final String KEY_FILTER_TYPE = "filter_type";
+    private static final String KEY_MAX_NUMBER_OF_MEASUREMENTS = "max_number_of_measurements";
 
     private FiraOpenSessionParams(
             FiraProtocolVersion protocolVersion,
@@ -312,7 +314,8 @@ public class FiraOpenSessionParams extends FiraParams {
             int ulTdoaDeviceIdType,
             @Nullable byte[] ulTdoaDeviceId,
             int ulTdoaTxTimestampType,
-            int filterType) {
+            int filterType,
+            int maxNumberOfMeasurements) {
         mProtocolVersion = protocolVersion;
         mSessionId = sessionId;
         mSessionType = sessionType;
@@ -388,6 +391,7 @@ public class FiraOpenSessionParams extends FiraParams {
         mUlTdoaDeviceId = ulTdoaDeviceId;
         mUlTdoaTxTimestampType = ulTdoaTxTimestampType;
         mFilterType = filterType;
+        mMaxNumberOfMeasurements = maxNumberOfMeasurements;
     }
 
     @Override
@@ -721,6 +725,8 @@ public class FiraOpenSessionParams extends FiraParams {
         return mFilterType;
     }
 
+    public int getMaxNumberOfMeasurements() { return mMaxNumberOfMeasurements; }
+
     @Nullable
     private static int[] byteArrayToIntArray(@Nullable byte[] bytes) {
         if (bytes == null) {
@@ -844,6 +850,7 @@ public class FiraOpenSessionParams extends FiraParams {
         bundle.putIntArray(UL_TDOA_DEVICE_ID, byteArrayToIntArray(mUlTdoaDeviceId));
         bundle.putInt(UL_TDOA_TX_TIMESTAMP_TYPE, mUlTdoaTxTimestampType);
         bundle.putInt(KEY_FILTER_TYPE, mFilterType);
+        bundle.putInt(KEY_MAX_NUMBER_OF_MEASUREMENTS, mMaxNumberOfMeasurements);
         return bundle;
     }
 
@@ -973,10 +980,10 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setUlTdoaRandomWindowMs(bundle.getInt(UL_TDOA_RANDOM_WINDOW))
                 .setUlTdoaDeviceIdType(bundle.getInt(UL_TDOA_DEVICE_ID_TYPE))
                 .setUlTdoaDeviceId(intArrayToByteArray(bundle.getIntArray(UL_TDOA_DEVICE_ID)))
-                .setUlTdoaTxTimestampType(bundle.getInt(UL_TDOA_TX_TIMESTAMP_TYPE));
-
-        builder.setFilterType(bundle.getInt(KEY_FILTER_TYPE, FILTER_TYPE_DEFAULT));
-
+                .setUlTdoaTxTimestampType(bundle.getInt(UL_TDOA_TX_TIMESTAMP_TYPE))
+                .setFilterType(bundle.getInt(KEY_FILTER_TYPE, FILTER_TYPE_DEFAULT))
+                .setMaxNumberOfMeasurements(bundle.getInt(
+                        KEY_MAX_NUMBER_OF_MEASUREMENTS, MAX_NUMBER_OF_MEASUREMENTS_DEFAULT));
         return builder.build();
     }
 
@@ -1203,6 +1210,8 @@ public class FiraOpenSessionParams extends FiraParams {
         /** AoA/distance filtering type */
         @FilterType private int mFilterType = FILTER_TYPE_DEFAULT;
 
+        private int mMaxNumberOfMeasurements = MAX_NUMBER_OF_MEASUREMENTS_DEFAULT;
+
         public Builder() {}
 
         public Builder(@NonNull Builder builder) {
@@ -1282,6 +1291,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mUlTdoaDeviceIdType = builder.mUlTdoaDeviceIdType;
             mUlTdoaDeviceId = builder.mUlTdoaDeviceId;
             mUlTdoaTxTimestampType = builder.mUlTdoaTxTimestampType;
+            mMaxNumberOfMeasurements = builder.mMaxNumberOfMeasurements;
         }
 
         public Builder(@NonNull FiraOpenSessionParams params) {
@@ -1362,6 +1372,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mUlTdoaDeviceId = params.mUlTdoaDeviceId;
             mUlTdoaTxTimestampType = params.mUlTdoaTxTimestampType;
             mFilterType = params.mFilterType;
+            mMaxNumberOfMeasurements = params.mMaxNumberOfMeasurements;
         }
 
         public FiraOpenSessionParams.Builder setProtocolVersion(FiraProtocolVersion version) {
@@ -1794,6 +1805,12 @@ public class FiraOpenSessionParams extends FiraParams {
             return this;
         }
 
+        public FiraOpenSessionParams.Builder setMaxNumberOfMeasurements(
+                int maxNumberOfMeasurements) {
+            mMaxNumberOfMeasurements = maxNumberOfMeasurements;
+            return this;
+        }
+
         private void checkAddress() {
             checkArgument(
                     mMacAddressMode == MAC_ADDRESS_MODE_2_BYTES
@@ -2000,7 +2017,8 @@ public class FiraOpenSessionParams extends FiraParams {
                     mUlTdoaDeviceIdType,
                     mUlTdoaDeviceId,
                     mUlTdoaTxTimestampType,
-                    mFilterType);
+                    mFilterType,
+                    mMaxNumberOfMeasurements);
         }
     }
 }
