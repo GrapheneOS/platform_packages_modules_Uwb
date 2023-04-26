@@ -984,6 +984,11 @@ public class FiraOpenSessionParams extends FiraParams {
         return mProtocolVersion;
     }
 
+    /** Returns a builder from the params. */
+    public Builder toBuilder() {
+        return new Builder(this);
+    }
+
     /** Builder */
     public static final class Builder {
         private final RequiredParam<FiraProtocolVersion> mProtocolVersion = new RequiredParam<>();
