@@ -405,6 +405,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     .setSessionId(sessionId)
                     .setState(state)
                     .setReasonCode(reasonCode)
+                    .setAppPackageName(uwbSession.getAttributionSource().getPackageName())
                     .build()
                     .toBundle();
             try {
