@@ -823,11 +823,10 @@ public class UwbManagerSnippet implements Snippet {
     /** Close UWB ranging session. */
     @Rpc(description = "Close UWB ranging session")
     public void closeRangingSession(String key) {
-        RangingSessionCallback rangingSessionCallback = sRangingSessionCallbackMap.get(key);
-        if (rangingSessionCallback.rangingSession != null) {
+        RangingSessionCallback rangingSessionCallback = sRangingSessionCallbackMap.remove(key);
+        if (rangingSessionCallback != null && rangingSessionCallback.rangingSession != null) {
             rangingSessionCallback.rangingSession.close();
         }
-        sRangingSessionCallbackMap.remove(key);
     }
 
     private JSONObject convertPersistableBundleToJson(PersistableBundle bundle)
