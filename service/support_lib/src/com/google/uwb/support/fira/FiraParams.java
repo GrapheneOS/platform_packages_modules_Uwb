@@ -1060,6 +1060,9 @@ public abstract class FiraParams extends Params {
     public static final int FILTER_TYPE_DEFAULT = 1;
     public static final int FILTER_TYPE_APPLICATION = 2;
 
+    // Default value (Unlimited)
+    public static final int MAX_NUMBER_OF_MEASUREMENTS_DEFAULT = 0;
+
     // Helper functions
     protected static UwbAddress longToUwbAddress(long value, int length) {
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);

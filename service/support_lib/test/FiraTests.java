@@ -148,6 +148,7 @@ public class FiraTests {
         int ulTdoaDeviceIdType = UL_TDOA_DEVICE_ID_16_BIT;
         byte[] ulTdoaDeviceId = new byte[] {(byte) 0x0C, (byte) 0x0B};
         int ulTdoaTxTimestampType = TX_TIMESTAMP_40_BIT;
+        int maxNumberOfMeasurements = 1;
 
         FiraOpenSessionParams params =
                 new FiraOpenSessionParams.Builder()
@@ -216,6 +217,7 @@ public class FiraTests {
                         .setUlTdoaDeviceIdType(ulTdoaDeviceIdType)
                         .setUlTdoaDeviceId(ulTdoaDeviceId)
                         .setUlTdoaTxTimestampType(ulTdoaTxTimestampType)
+                        .setMaxNumberOfMeasurements(maxNumberOfMeasurements)
                         .build();
 
         assertEquals(params.getProtocolVersion(), protocolVersion);
@@ -289,6 +291,7 @@ public class FiraTests {
         assertEquals(params.getUlTdoaDeviceIdType(), ulTdoaDeviceIdType);
         assertArrayEquals(params.getUlTdoaDeviceId(), ulTdoaDeviceId);
         assertEquals(params.getUlTdoaTxTimestampType(), ulTdoaTxTimestampType);
+        assertEquals(params.getMaxNumberOfMeasurements(), maxNumberOfMeasurements);
 
         FiraOpenSessionParams fromBundle = FiraOpenSessionParams.fromBundle(params.toBundle());
 
@@ -362,6 +365,7 @@ public class FiraTests {
         assertEquals(fromBundle.getUlTdoaDeviceIdType(), ulTdoaDeviceIdType);
         assertArrayEquals(fromBundle.getUlTdoaDeviceId(), ulTdoaDeviceId);
         assertEquals(fromBundle.getUlTdoaTxTimestampType(), ulTdoaTxTimestampType);
+        assertEquals(fromBundle.getMaxNumberOfMeasurements(), maxNumberOfMeasurements);
 
         verifyProtocolPresent(fromBundle);
         verifyBundlesEqual(params, fromBundle);
@@ -438,6 +442,7 @@ public class FiraTests {
         assertEquals(fromCopy.getUlTdoaDeviceIdType(), ulTdoaDeviceIdType);
         assertArrayEquals(fromCopy.getUlTdoaDeviceId(), ulTdoaDeviceId);
         assertEquals(fromCopy.getUlTdoaTxTimestampType(), ulTdoaTxTimestampType);
+        assertEquals(fromCopy.getMaxNumberOfMeasurements(), maxNumberOfMeasurements);
 
         verifyProtocolPresent(fromCopy);
         verifyBundlesEqual(params, fromCopy);
