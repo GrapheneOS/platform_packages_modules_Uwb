@@ -3105,18 +3105,18 @@ public class UwbSessionManagerTest {
                 indices.length, indices);
         PersistableBundle bundle = new DlTDoARangingRoundsUpdate.Builder()
                 .setSessionId(uwbSession.getSessionId())
-                .setNoOfActiveRangingRounds(indices.length)
+                .setNoOfRangingRounds(indices.length)
                 .setRangingRoundIndexes(indices)
                 .build()
                 .toBundle();
 
-        when(mNativeUwbManager.sessionUpdateActiveRoundsDtTag(anyInt(), anyInt(), any(),
+        when(mNativeUwbManager.sessionUpdateDtTagRangingRounds(anyInt(), anyInt(), any(),
                 anyString())).thenReturn(status);
 
         mUwbSessionManager.rangingRoundsUpdateDtTag(uwbSession.getSessionHandle(), bundle);
         mTestLooper.dispatchAll();
 
-        verify(mNativeUwbManager).sessionUpdateActiveRoundsDtTag(uwbSession.getSessionId(),
+        verify(mNativeUwbManager).sessionUpdateDtTagRangingRounds(uwbSession.getSessionId(),
                 indices.length, indices, uwbSession.getChipId());
         verify(mUwbSessionNotificationManager).onRangingRoundsUpdateStatus(any(), any());
     }
