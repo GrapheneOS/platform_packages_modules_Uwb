@@ -651,7 +651,8 @@ impl NotificationManagerAndroid {
                 &method_sig,
                 &[
                     JValue::Long(range_data.sequence_number as i64),
-                    JValue::Long(range_data.session_id as i64),
+                    // session_token below has already been mapped to session_id by uci layer.
+                    JValue::Long(range_data.session_token as i64),
                     JValue::Int(range_data.rcr_indicator as i32),
                     JValue::Long(range_data.current_ranging_interval_ms as i64),
                     JValue::Int(range_data.ranging_measurement_type as i32),
@@ -874,7 +875,8 @@ impl NotificationManagerAndroid {
                 &method_sig,
                 &[
                     JValue::Long(range_data.sequence_number as i64),
-                    JValue::Long(range_data.session_id as i64),
+                    // session_token below has already been mapped to session_id by uci layer.
+                    JValue::Long(range_data.session_token as i64),
                     JValue::Int(range_data.rcr_indicator as i32),
                     JValue::Long(range_data.current_ranging_interval_ms as i64),
                     JValue::Int(range_data.ranging_measurement_type as i32),
@@ -968,7 +970,8 @@ impl NotificationManagerAndroid {
                 &method_sig,
                 &[
                     JValue::Long(range_data.sequence_number as i64),
-                    JValue::Long(range_data.session_id as i64),
+                    // session_token below has already been mapped to session_id by uci layer.
+                    JValue::Long(range_data.session_token as i64),
                     JValue::Int(range_data.rcr_indicator as i32),
                     JValue::Long(range_data.current_ranging_interval_ms as i64),
                     JValue::Int(range_data.ranging_measurement_type as i32),
@@ -1037,15 +1040,16 @@ impl NotificationManager for NotificationManagerAndroid {
     fn on_session_notification(&mut self, session_notification: SessionNotification) -> Result<()> {
         debug!("UCI JNI: session notification callback.");
         match session_notification {
-            SessionNotification::Status { session_id, session_state, reason_code } => {
-                self.on_session_status_notification(session_id, session_state, reason_code)
+            // session_token below has already been mapped to session_id by uci layer.
+            SessionNotification::Status { session_token, session_state, reason_code } => {
+                self.on_session_status_notification(session_token, session_state, reason_code)
             }
             SessionNotification::UpdateControllerMulticastList {
-                session_id,
+                session_token,
                 remaining_multicast_list_size,
                 status_list,
             } => self.on_session_update_multicast_notification(
-                session_id,
+                session_token,
                 remaining_multicast_list_size,
                 status_list,
             ),
@@ -1070,20 +1074,22 @@ impl NotificationManager for NotificationManagerAndroid {
                     self.on_session_dl_tdoa_range_data_notification(range_data)
                 }
             },
-            SessionNotification::DataTransferStatus { session_id, uci_sequence_number, status } => {
-                self.on_data_transfer_status_notification(
-                    session_id,
-                    uci_sequence_number,
-                    u8::from(status),
-                )
-            }
+            SessionNotification::DataTransferStatus {
+                session_token,
+                uci_sequence_number,
+                status,
+            } => self.on_data_transfer_status_notification(
+                session_token,
+                uci_sequence_number,
+                u8::from(status),
+            ),
             // This session notification should not come here, as it's handled within
             // UciManager, for internal state management related to sending data packet(s).
-            SessionNotification::DataCredit { session_id, credit_availability } => {
+            SessionNotification::DataCredit { session_token, credit_availability } => {
                 error!(
                     "UCI JNI: Received unexpected DataCredit notification for \
                        session_id {}, credit_availability {:?}",
-                    session_id, credit_availability
+                    session_token, credit_availability
                 );
                 Err(Error::Unknown)
             }
@@ -1145,7 +1151,8 @@ impl NotificationManager for NotificationManagerAndroid {
             "onDataReceived",
             "(JIJ[BII[B)V",
             &[
-                jvalue::from(JValue::Long(data_rcv_notification.session_id as i64)),
+                // session_token below has already been mapped to session_id by uci layer.
+                jvalue::from(JValue::Long(data_rcv_notification.session_token as i64)),
                 jvalue::from(JValue::Int(data_rcv_notification.status as i32)),
                 jvalue::from(JValue::Long(data_rcv_notification.uci_sequence_num as i64)),
                 jvalue::from(JValue::Object(source_address_jobject)),
