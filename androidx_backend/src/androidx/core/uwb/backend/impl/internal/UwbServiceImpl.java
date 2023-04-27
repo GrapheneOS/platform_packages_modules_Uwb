@@ -75,7 +75,10 @@ public class UwbServiceImpl {
         if (mHasUwbFeature) {
             mUwbManager = context.getSystemService(UwbManager.class);
             requireNonNull(mUwbManager);
-            mAdapterState = mUwbManager.getAdapterState();
+            // getAdapterState was added in Android T.
+            if (VERSION.SDK_INT >= VERSION_CODES.TIRAMISU) {
+                mAdapterState = mUwbManager.getAdapterState();
+            }
             mUwbManager.registerAdapterStateCallback(mSerialExecutor, mAdapterStateCallback);
         } else {
             mUwbManager = null;
