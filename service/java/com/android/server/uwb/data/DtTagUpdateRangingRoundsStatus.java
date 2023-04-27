@@ -20,13 +20,13 @@ import java.util.Arrays;
 
 public class DtTagUpdateRangingRoundsStatus {
     private final int mStatus;
-    private final int mNoOfActiveRangingRounds;
+    private final int mNoOfRangingRounds;
     private final byte[] mRangingRoundIndexes;
 
-    public DtTagUpdateRangingRoundsStatus(int status, int noOfActiveRangingRounds,
+    public DtTagUpdateRangingRoundsStatus(int status, int noOfRangingRounds,
             byte[] rangingRoundIndexes) {
         mStatus = status;
-        mNoOfActiveRangingRounds = noOfActiveRangingRounds;
+        mNoOfRangingRounds = noOfRangingRounds;
         mRangingRoundIndexes = rangingRoundIndexes;
     }
 
@@ -34,8 +34,8 @@ public class DtTagUpdateRangingRoundsStatus {
         return mStatus;
     }
 
-    public int getNoOfActiveRangingRounds() {
-        return mNoOfActiveRangingRounds;
+    public int getNoOfRangingRounds() {
+        return mNoOfRangingRounds;
     }
 
     public byte[] getRangingRoundIndexes() {
@@ -46,7 +46,7 @@ public class DtTagUpdateRangingRoundsStatus {
     public String toString() {
         return "DtTagActiveRoundsStatus { "
                 + "Status = " + mStatus
-                + ", NoOfActiveRangingRounds =" + mNoOfActiveRangingRounds
+                + ", NoOfRangingRounds =" + mNoOfRangingRounds
                 + ", RangingRoundIndexes = " + Arrays.toString(mRangingRoundIndexes)
                 + '}';
     }

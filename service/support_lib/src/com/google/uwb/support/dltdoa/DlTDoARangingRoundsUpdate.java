@@ -27,7 +27,7 @@ import androidx.annotation.Nullable;
  */
 public class DlTDoARangingRoundsUpdate {
     private final long mSessionId;
-    private final int mNoOfActiveRangingRounds;
+    private final int mNoOfRangingRounds;
     private final byte[] mRangingRoundIndexes;
 
     private static final int BUNDLE_VERSION_1 = 1;
@@ -35,14 +35,14 @@ public class DlTDoARangingRoundsUpdate {
 
     public static final String KEY_BUNDLE_VERSION = "bundle_version";
     public static final String SESSION_ID = "session_id";
-    public static final String NO_OF_ACTIVE_RANGING_ROUNDS = "no_active_ranging_rounds";
+    public static final String NO_OF_RANGING_ROUNDS = "no_of_ranging_rounds";
     public static final String RANGING_ROUND_INDEXES = "ranging_round_indexes";
 
 
-    private DlTDoARangingRoundsUpdate(long sessionId, int noOfActiveRangingRounds,
+    private DlTDoARangingRoundsUpdate(long sessionId, int noOfRangingRounds,
             byte[] rangingRoundIndexes) {
         mSessionId = sessionId;
-        mNoOfActiveRangingRounds = noOfActiveRangingRounds;
+        mNoOfRangingRounds = noOfRangingRounds;
         mRangingRoundIndexes = rangingRoundIndexes;
     }
 
@@ -54,8 +54,8 @@ public class DlTDoARangingRoundsUpdate {
         return mSessionId;
     }
 
-    public int getNoOfActiveRangingRounds() {
-        return mNoOfActiveRangingRounds;
+    public int getNoOfRangingRounds() {
+        return mNoOfRangingRounds;
     }
 
     public byte[] getRangingRoundIndexes() {
@@ -90,7 +90,7 @@ public class DlTDoARangingRoundsUpdate {
         PersistableBundle bundle = new PersistableBundle();
         bundle.putInt(KEY_BUNDLE_VERSION, BUNDLE_VERSION_CURRENT);
         bundle.putLong(SESSION_ID, mSessionId);
-        bundle.putInt(NO_OF_ACTIVE_RANGING_ROUNDS, mNoOfActiveRangingRounds);
+        bundle.putInt(NO_OF_RANGING_ROUNDS, mNoOfRangingRounds);
         bundle.putIntArray(RANGING_ROUND_INDEXES, byteArrayToIntArray(mRangingRoundIndexes));
         return bundle;
     }
@@ -107,7 +107,7 @@ public class DlTDoARangingRoundsUpdate {
     private static DlTDoARangingRoundsUpdate parseVersion1(PersistableBundle bundle) {
         return new DlTDoARangingRoundsUpdate.Builder()
                 .setSessionId(bundle.getLong(SESSION_ID))
-                .setNoOfActiveRangingRounds(bundle.getInt(NO_OF_ACTIVE_RANGING_ROUNDS))
+                .setNoOfRangingRounds(bundle.getInt(NO_OF_RANGING_ROUNDS))
                 .setRangingRoundIndexes(
                         intArrayToByteArray(bundle.getIntArray(RANGING_ROUND_INDEXES)))
                 .build();
@@ -116,7 +116,7 @@ public class DlTDoARangingRoundsUpdate {
     /** Builder */
     public static class Builder {
         private long mSessionId = 0;
-        private int mNoOfActiveRangingRounds = 0;
+        private int mNoOfRangingRounds = 0;
         private byte[] mRangingRoundIndexes = new byte[]{};
 
         public DlTDoARangingRoundsUpdate.Builder setSessionId(long sessionId) {
@@ -124,9 +124,9 @@ public class DlTDoARangingRoundsUpdate {
             return this;
         }
 
-        public DlTDoARangingRoundsUpdate.Builder setNoOfActiveRangingRounds(
-                int activeRangingRounds) {
-            mNoOfActiveRangingRounds = activeRangingRounds;
+        public DlTDoARangingRoundsUpdate.Builder setNoOfRangingRounds(
+                int rangingRounds) {
+            mNoOfRangingRounds = rangingRounds;
             return this;
         }
 
@@ -139,7 +139,7 @@ public class DlTDoARangingRoundsUpdate {
         public DlTDoARangingRoundsUpdate build() {
             return new DlTDoARangingRoundsUpdate(
                     mSessionId,
-                    mNoOfActiveRangingRounds,
+                    mNoOfRangingRounds,
                     mRangingRoundIndexes);
         }
     }
