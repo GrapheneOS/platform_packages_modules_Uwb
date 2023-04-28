@@ -55,15 +55,16 @@ public class RangingController extends RangingDevice {
     @Nullable private RangingSessionCallback mRangingSessionCallback;
 
     RangingController(UwbManager manager, Executor executor,
-            OpAsyncCallbackRunner<Boolean> opAsyncCallbackRunner) {
-        super(manager, executor, opAsyncCallbackRunner);
+            OpAsyncCallbackRunner<Boolean> opAsyncCallbackRunner, UwbFeatureFlags uwbFeatureFlags) {
+        super(manager, executor, opAsyncCallbackRunner, uwbFeatureFlags);
     }
 
     @Override
     protected FiraOpenSessionParams getOpenSessionParams() {
         requireNonNull(mRangingParameters);
         return ConfigurationManager.createOpenSessionParams(
-                FiraParams.RANGING_DEVICE_TYPE_CONTROLLER, getLocalAddress(), mRangingParameters);
+                FiraParams.RANGING_DEVICE_TYPE_CONTROLLER, getLocalAddress(), mRangingParameters,
+                mUwbFeatureFlags);
     }
 
     /**
@@ -109,6 +110,11 @@ public class RangingController extends RangingDevice {
     }
 
     @Override
+    protected boolean isKnownPeer(UwbAddress address) {
+        return super.isKnownPeer(address) || mDynamicallyAddedPeers.contains(address);
+    }
+
+    @Override
     public synchronized int startRanging(
             RangingSessionCallback callback, ExecutorService backendCallbackExecutor) {
         requireNonNull(mRangingParameters);
@@ -148,7 +154,7 @@ public class RangingController extends RangingDevice {
      * called.
      *
      * @return {@link Utils#INVALID_API_CALL} if this is a unicast session but multiple peers are
-     *     configured.
+     * configured.
      */
     public synchronized int addControlee(UwbAddress controleeAddress) {
         Log.i(TAG, String.format("Add UWB peer: %s", controleeAddress));
@@ -177,7 +183,8 @@ public class RangingController extends RangingDevice {
                                         FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD,
                                         new UwbAddress[] {controleeAddress},
                                         subSessionIdList,
-                                        subSessionKeyInfo)
+                                        subSessionKeyInfo,
+                                        mUwbFeatureFlags)
                                 .toBundle());
 
         RangingSessionCallback callback = mRangingSessionCallback;
@@ -206,11 +213,11 @@ public class RangingController extends RangingDevice {
      * Remove a controlee from current session.
      *
      * @return returns {@link Utils#STATUS_OK} if the controlee is removed successfully. returns
-     *     {@link Utils#INVALID_API_CALL} if:
-     *     <ul>
-     *       <li>Provided address is not in the controller's peer list
-     *       <li>The active profile is unicast
-     *     </ul>
+     * {@link Utils#INVALID_API_CALL} if:
+     * <ul>
+     *   <li>Provided address is not in the controller's peer list
+     *   <li>The active profile is unicast
+     * </ul>
      */
     public synchronized int removeControlee(UwbAddress controleeAddress) {
         Log.i(TAG, String.format("Remove UWB peer: %s", controleeAddress));
@@ -218,7 +225,7 @@ public class RangingController extends RangingDevice {
             Log.w(TAG, "Attempt to remove controlee while session is not active.");
             return INVALID_API_CALL;
         }
-        if (!mDynamicallyAddedPeers.contains(controleeAddress)) {
+        if (!isKnownPeer(controleeAddress)) {
             Log.w(TAG, "Attempt to remove non-existing controlee.");
             return INVALID_API_CALL;
         }
@@ -229,9 +236,10 @@ public class RangingController extends RangingDevice {
                         ConfigurationManager.createReconfigureParams(
                                         mRangingParameters.getUwbConfigId(),
                                         FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE,
-                                        new UwbAddress[] {controleeAddress},
+                                        new UwbAddress[]{controleeAddress},
                                         /* subSessionIdList= */ null,
-                                        /* subSessionKey= */ null)
+                                        /* subSessionKey= */ null,
+                                        mUwbFeatureFlags)
                                 .toBundle());
         if (!success) {
             return UWB_SYSTEM_CALLBACK_FAILURE;

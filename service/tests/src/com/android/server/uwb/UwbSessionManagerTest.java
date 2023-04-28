@@ -47,6 +47,8 @@ import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TY
 import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TYPE_TWO_WAY;
 import static com.android.server.uwb.data.UwbUciConstants.ROUND_USAGE_DS_TWR_DEFERRED_MODE;
 import static com.android.server.uwb.data.UwbUciConstants.ROUND_USAGE_OWR_AOA_MEASUREMENT;
+import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_DATA_TRANSFER_ERROR_DATA_TRANSFER;
+import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_DATA_TRANSFER_REPETITION_OK;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.uwb.support.fira.FiraParams.PROTOCOL_NAME;
@@ -55,6 +57,8 @@ import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilit
 import static com.google.uwb.support.fira.FiraParams.SESSION_TYPE_RANGING;
 import static com.google.uwb.support.fira.FiraParams.STATUS_CODE_OK;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyByte;
@@ -102,6 +106,7 @@ import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbRangingData;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.jni.NativeUwbManager;
+import com.android.server.uwb.multchip.UwbMultichipData;
 
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
@@ -187,6 +192,8 @@ public class UwbSessionManagerTest {
     private DeviceConfigFacade mDeviceConfigFacade;
     @Mock
     private CccSpecificationParams mCccSpecificationParams;
+    @Mock
+    private UwbMultichipData mUwbMultichipData;
     private TestLooper mTestLooper = new TestLooper();
     private UwbSessionManager mUwbSessionManager;
     @Captor
@@ -200,6 +207,7 @@ public class UwbSessionManagerTest {
         when(mUwbInjector.isForegroundAppOrService(UID, PACKAGE_NAME)).thenReturn(true);
         when(mUwbInjector.getUwbServiceCore()).thenReturn(mUwbServiceCore);
         when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
+        when(mUwbInjector.getMultichipData()).thenReturn(mUwbMultichipData);
         doAnswer(invocation -> {
             FutureTask t = invocation.getArgument(0);
             t.run();
@@ -219,6 +227,7 @@ public class UwbSessionManagerTest {
                 mSpecificationParamsBuilder.build());
         when(mCccSpecificationParams.getMaxRangingSessionNumber()).thenReturn(
                 (int) MAX_CCC_SESSION_NUM);
+        when(mUwbMultichipData.getDefaultChipId()).thenReturn("default");
 
         // TODO: Don't use spy.
         mUwbSessionManager = spy(new UwbSessionManager(
@@ -1570,7 +1579,7 @@ public class UwbSessionManagerTest {
         // Verify the appropriate timer is setup.
         ArgumentCaptor<AlarmManager.OnAlarmListener> alarmListenerCaptor =
                 ArgumentCaptor.forClass(AlarmManager.OnAlarmListener.class);
-        verify(mAlarmManager).set(
+        verify(mAlarmManager).setExact(
                 anyInt(), anyLong(), eq(UwbSession.NON_PRIVILEGED_BG_APP_TIMER_TAG),
                 alarmListenerCaptor.capture(), any());
         assertThat(alarmListenerCaptor.getValue()).isNotNull();
@@ -1652,6 +1661,21 @@ public class UwbSessionManagerTest {
         mTestLooper.nextMessage(); // remove the OPEN_RANGING msg;
 
         assertThat(mTestLooper.isIdle()).isFalse();
+
+        return uwbSession;
+    }
+
+    private UwbSession prepareExistingUwbSessionActive() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+
+        // Setup the UwbSession to start ranging (and move it to active state).
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE).when(uwbSession).getSessionState();
+        when(mNativeUwbManager.startRanging(eq(TEST_SESSION_ID), anyString()))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.startRanging(uwbSession.getSessionHandle(), uwbSession.getParams());
+        mTestLooper.dispatchAll();
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE).when(uwbSession).getSessionState();
 
         return uwbSession;
     }
@@ -2073,8 +2097,9 @@ public class UwbSessionManagerTest {
                 eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
     }
 
-    @Test
-    public void sendData_success_validUwbSession_extendedMacAddress() throws Exception {
+    private void doTest_sendData_success_validUwbSession(byte[] macAddress, int dataTransferStatus)
+            throws Exception {
+        UwbAddress uwbAddress = UwbAddress.fromBytes(macAddress);
         UwbSession uwbSession = prepareExistingUwbSession();
 
         // Setup the UwbSession to start ranging (and move it to active state).
@@ -2082,77 +2107,72 @@ public class UwbSessionManagerTest {
         when(mNativeUwbManager.startRanging(eq(TEST_SESSION_ID), anyString()))
                 .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
 
-        mUwbSessionManager.startRanging(
-                uwbSession.getSessionHandle(), uwbSession.getParams());
+        mUwbSessionManager.startRanging(uwbSession.getSessionHandle(), uwbSession.getParams());
         mTestLooper.dispatchAll();
         doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE).when(uwbSession).getSessionState();
 
         // Send data on the UWB session.
-        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID),
-                eq(PEER_EXTENDED_MAC_ADDRESS),
+        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID), eq(macAddress),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
                 eq(DATA_PAYLOAD), eq(TEST_CHIP_ID)))
                 .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
 
-        mUwbSessionManager.sendData(uwbSession.getSessionHandle(), PEER_EXTENDED_UWB_ADDRESS,
-                PERSISTABLE_BUNDLE, DATA_PAYLOAD);
+        mUwbSessionManager.sendData(
+                uwbSession.getSessionHandle(), uwbAddress, PERSISTABLE_BUNDLE, DATA_PAYLOAD);
         mTestLooper.dispatchNext();
 
-        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID),
-                eq(PEER_EXTENDED_MAC_ADDRESS),
+        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID), eq(macAddress),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
                 eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
+
+        // A DataTransferStatusNtf is received indicating success.
+        mUwbSessionManager.onDataSendStatus(
+                uwbSession.getSessionId(), dataTransferStatus, DATA_SEQUENCE_NUM);
         verify(mUwbSessionNotificationManager).onDataSent(
-                eq(uwbSession), eq(PEER_EXTENDED_UWB_ADDRESS), eq(PERSISTABLE_BUNDLE));
+                eq(uwbSession), eq(uwbAddress), eq(PERSISTABLE_BUNDLE));
     }
 
+    // Test case for scenario when a Data packet is successfully sent to a remote device (in
+    // extended MacAddress format). The DataTransferStatus notification returns a success status
+    // code (STATUS_CODE_DATA_TRANSFER_REPETITION_OK).
     @Test
-    public void sendData_success_validUwbSession_shortMacAddress() throws Exception {
-        UwbSession uwbSession = prepareExistingUwbSession();
+    public void sendData_success_validUwbSession_extendedMacAddress_statusRepetitionOk()
+            throws Exception {
+        doTest_sendData_success_validUwbSession(
+                PEER_EXTENDED_MAC_ADDRESS, STATUS_CODE_DATA_TRANSFER_REPETITION_OK);
+    }
 
-        // Setup the UwbSession to start ranging (and move it to active state).
-        doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE).when(uwbSession).getSessionState();
-        when(mNativeUwbManager.startRanging(eq(TEST_SESSION_ID), anyString()))
-                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+    // Test case for scenario when a Data packet is successfully sent to a remote device (in
+    // extended MacAddress format). The DataTransferStatus notification returns a success status
+    // code (STATUS_CODE_OK).
+    @Test
+    public void sendData_success_validUwbSession_extendedMacAddress_statusOk()
+            throws Exception {
+        doTest_sendData_success_validUwbSession(PEER_EXTENDED_MAC_ADDRESS, STATUS_CODE_OK);
+    }
 
-        mUwbSessionManager.startRanging(
-                uwbSession.getSessionHandle(), uwbSession.getParams());
-        mTestLooper.dispatchAll();
-        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE).when(uwbSession).getSessionState();
+    // Test case for scenario when a Data packet is successfully sent to a remote device (in
+    // short MacAddress format). The DataTransferStatus notification returns a success status
+    // code (STATUS_CODE_DATA_TRANSFER_REPETITION_OK).
+    @Test
+    public void sendData_success_validUwbSession_shortMacAddress_statusRepetitionOk()
+            throws Exception {
+        doTest_sendData_success_validUwbSession(
+                PEER_EXTENDED_SHORT_MAC_ADDRESS, STATUS_CODE_DATA_TRANSFER_REPETITION_OK);
+    }
 
-        // Send data on the UWB session.
-        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID),
-                eq(PEER_EXTENDED_SHORT_MAC_ADDRESS),
-                eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
-                eq(DATA_PAYLOAD), eq(TEST_CHIP_ID)))
-                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
-
-        mUwbSessionManager.sendData(uwbSession.getSessionHandle(), PEER_SHORT_UWB_ADDRESS,
-                PERSISTABLE_BUNDLE, DATA_PAYLOAD);
-        mTestLooper.dispatchNext();
-
-        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID),
-                eq(PEER_EXTENDED_SHORT_MAC_ADDRESS),
-                eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
-                eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
-        verify(mUwbSessionNotificationManager).onDataSent(
-                eq(uwbSession), eq(PEER_SHORT_UWB_ADDRESS), eq(PERSISTABLE_BUNDLE));
+    // Test case for scenario when a Data packet is successfully sent to a remote device (in
+    // short MacAddress format). The DataTransferStatus notification returns a success status
+    // code (STATUS_CODE_OK).
+    @Test
+    public void sendData_success_validUwbSession_shortMacAddress_statusOk() throws Exception {
+        doTest_sendData_success_validUwbSession(PEER_EXTENDED_SHORT_MAC_ADDRESS, STATUS_CODE_OK);
     }
 
     @Test
     public void sendData_success_sequenceNumberRollover() throws Exception {
-        UwbSession uwbSession = prepareExistingUwbSession();
-
-        // Setup the UwbSession to start ranging (and move it to active state).
-        doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE).when(uwbSession).getSessionState();
-        when(mNativeUwbManager.startRanging(eq(TEST_SESSION_ID), anyString()))
-                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
-
-        mUwbSessionManager.startRanging(
-                uwbSession.getSessionHandle(), uwbSession.getParams());
-        mTestLooper.dispatchAll();
-        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE).when(uwbSession).getSessionState();
-
+        // Setup a UwbSession to start ranging (and move it to active state).
+        UwbSession uwbSession = prepareExistingUwbSessionActive();
         clearInvocations(mNativeUwbManager);
 
         // Send 257 data packets on the UWB session, so that the UCI sequence number rolls over,
@@ -2181,6 +2201,10 @@ public class UwbSessionManagerTest {
 
     @Test
     public void sendData_missingSessionHandle() throws Exception {
+        // Setup a UwbSession to start ranging (and move it to active state).
+        prepareExistingUwbSessionActive();
+
+        // Send a Data packet with null SessionHandle, it should result in an error.
         mUwbSessionManager.sendData(
                 null /* sessionHandle */, PEER_EXTENDED_UWB_ADDRESS, PERSISTABLE_BUNDLE,
                 DATA_PAYLOAD);
@@ -2197,10 +2221,12 @@ public class UwbSessionManagerTest {
 
     @Test
     public void sendData_invalidUwbSessionHandle() throws Exception {
-        // Setup a uwbSession and a different sessionHandle that doesn't map to the uwbSession.
-        prepareExistingUwbSession();
+        // Setup a uwbSession UwbSession to start ranging (and move it to active state), and a
+        // different sessionHandle that doesn't map to the uwbSession.
+        prepareExistingUwbSessionActive();
         SessionHandle sessionHandle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
 
+        // Send a Data packet on the non-active UWB Session.
         mUwbSessionManager.sendData(
                 sessionHandle, PEER_EXTENDED_UWB_ADDRESS, PERSISTABLE_BUNDLE, DATA_PAYLOAD);
         mTestLooper.dispatchNext();
@@ -2236,17 +2262,8 @@ public class UwbSessionManagerTest {
 
     @Test
     public void sendData_missingDataPayload() throws Exception {
-        UwbSession uwbSession = prepareExistingUwbSession();
-
-        // Setup the UwbSession to start ranging (and move it to active state).
-        doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE).when(uwbSession).getSessionState();
-        when(mNativeUwbManager.startRanging(eq(TEST_SESSION_ID), anyString()))
-                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
-
-        mUwbSessionManager.startRanging(
-                uwbSession.getSessionHandle(), uwbSession.getParams());
-        mTestLooper.dispatchAll();
-        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE).when(uwbSession).getSessionState();
+        // Setup a uwbSession UwbSession to start ranging (and move it to active state).
+        UwbSession uwbSession = prepareExistingUwbSessionActive();
 
         // Attempt to send data on the UWB session.
         mUwbSessionManager.sendData(
@@ -2264,17 +2281,8 @@ public class UwbSessionManagerTest {
 
     @Test
     public void sendData_missingRemoteDevice() throws Exception {
-        UwbSession uwbSession = prepareExistingUwbSession();
-
-        // Setup the UwbSession to start ranging (and move it to active state).
-        doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE).when(uwbSession).getSessionState();
-        when(mNativeUwbManager.startRanging(eq(TEST_SESSION_ID), anyString()))
-                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
-
-        mUwbSessionManager.startRanging(
-                uwbSession.getSessionHandle(), uwbSession.getParams());
-        mTestLooper.dispatchAll();
-        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE).when(uwbSession).getSessionState();
+        // Setup a uwbSession UwbSession to start ranging (and move it to active state).
+        UwbSession uwbSession = prepareExistingUwbSessionActive();
 
         // Attempt to send data on the UWB session.
         mUwbSessionManager.sendData(
@@ -2292,17 +2300,8 @@ public class UwbSessionManagerTest {
 
     @Test
     public void sendData_dataSendFailure() throws Exception {
-        UwbSession uwbSession = prepareExistingUwbSession();
-
-        // Setup the UwbSession to start ranging (and move it to active state).
-        doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE).when(uwbSession).getSessionState();
-        when(mNativeUwbManager.startRanging(eq(TEST_SESSION_ID), anyString()))
-                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
-
-        mUwbSessionManager.startRanging(
-                uwbSession.getSessionHandle(), uwbSession.getParams());
-        mTestLooper.dispatchAll();
-        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE).when(uwbSession).getSessionState();
+        // Setup a uwbSession UwbSession to start ranging (and move it to active state).
+        UwbSession uwbSession = prepareExistingUwbSessionActive();
 
         // Attempt to send data on the UWB session.
         when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID),
@@ -2322,6 +2321,126 @@ public class UwbSessionManagerTest {
         verify(mUwbSessionNotificationManager).onDataSendFailed(
                 eq(uwbSession), eq(PEER_EXTENDED_UWB_ADDRESS),
                 eq(UwbUciConstants.STATUS_CODE_FAILED), eq(PERSISTABLE_BUNDLE));
+    }
+
+    @Test
+    public void onDataSendStatus_sessionNotFound() throws Exception {
+        // Setup a uwbSession UwbSession to start ranging (and move it to active state).
+        UwbSession uwbSession = prepareExistingUwbSessionActive();
+        clearInvocations(mUwbSessionNotificationManager);
+
+        // Send data on the UWB session.
+        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID),
+                eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
+                eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
+                eq(DATA_PAYLOAD), eq(TEST_CHIP_ID)))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.sendData(uwbSession.getSessionHandle(), PEER_EXTENDED_UWB_ADDRESS,
+                PERSISTABLE_BUNDLE, DATA_PAYLOAD);
+        mTestLooper.dispatchNext();
+
+        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID),
+                eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
+                eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
+                eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
+
+        // We receive a DataTransferStatusNtf with a sessionId for a different UwbSession, so it
+        // should be dropped (no onDataSend()/onDataSendFailure() notifications sent).
+        mUwbSessionManager.onDataSendStatus(TEST_SESSION_ID_2, STATUS_CODE_OK, DATA_SEQUENCE_NUM);
+        verifyNoMoreInteractions(mUwbSessionNotificationManager);
+    }
+
+    @Test
+    public void onDataSendStatus_dataSndPacketNotFound() throws Exception {
+        // Setup a uwbSession UwbSession to start ranging (and move it to active state).
+        UwbSession uwbSession = prepareExistingUwbSessionActive();
+        clearInvocations(mUwbSessionNotificationManager);
+
+        // Send data on the UWB session.
+        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID),
+                eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
+                eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
+                eq(DATA_PAYLOAD), eq(TEST_CHIP_ID)))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.sendData(uwbSession.getSessionHandle(), PEER_EXTENDED_UWB_ADDRESS,
+                PERSISTABLE_BUNDLE, DATA_PAYLOAD);
+        mTestLooper.dispatchNext();
+
+        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID),
+                eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
+                eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
+                eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
+
+        // We receive a DataTransferStatusNtf with an incorrect UCI sequence number (for which a
+        // packet was never sent), so it should be dropped (no onDataSend()/onDataSendFailure()
+        // notifications sent).
+        mUwbSessionManager.onDataSendStatus(TEST_SESSION_ID, STATUS_CODE_OK, DATA_SEQUENCE_NUM_1);
+        verifyNoMoreInteractions(mUwbSessionNotificationManager);
+    }
+
+    @Test
+    public void onDataSendStatus_errorStatus() throws Exception {
+        // Setup a uwbSession UwbSession to start ranging (and move it to active state).
+        UwbSession uwbSession = prepareExistingUwbSessionActive();
+        clearInvocations(mUwbSessionNotificationManager);
+
+        // Send data on the UWB session.
+        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID),
+                eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
+                eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
+                eq(DATA_PAYLOAD), eq(TEST_CHIP_ID)))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.sendData(uwbSession.getSessionHandle(), PEER_EXTENDED_UWB_ADDRESS,
+                PERSISTABLE_BUNDLE, DATA_PAYLOAD);
+        mTestLooper.dispatchNext();
+
+        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID),
+                eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
+                eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
+                eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
+
+        // We receive a DataTransferStatusNtf with an error status code.
+        mUwbSessionManager.onDataSendStatus(TEST_SESSION_ID,
+                STATUS_CODE_DATA_TRANSFER_ERROR_DATA_TRANSFER, DATA_SEQUENCE_NUM);
+        verify(mUwbSessionNotificationManager).onDataSendFailed(
+                eq(uwbSession), eq(PEER_EXTENDED_UWB_ADDRESS),
+                eq(STATUS_CODE_DATA_TRANSFER_ERROR_DATA_TRANSFER), eq(PERSISTABLE_BUNDLE));
+    }
+
+    @Test
+    public void onDataSendStatus_neverReceived() throws Exception {
+        // Setup a uwbSession UwbSession to start ranging (and move it to active state).
+        UwbSession uwbSession = prepareExistingUwbSessionActive();
+        clearInvocations(mUwbSessionNotificationManager);
+
+        // Send data on the UWB session.
+        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID),
+                eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
+                eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
+                eq(DATA_PAYLOAD), eq(TEST_CHIP_ID)))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.sendData(uwbSession.getSessionHandle(), PEER_EXTENDED_UWB_ADDRESS,
+                PERSISTABLE_BUNDLE, DATA_PAYLOAD);
+        mTestLooper.dispatchNext();
+
+        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID),
+                eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
+                eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
+                eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
+
+        // We never receive a DataTransferStatusNtf, so no onDataSend()/onDataSendFailure()
+        // notifications are sent.
+        verifyNoMoreInteractions(mUwbSessionNotificationManager);
+        assertNotNull(uwbSession.getSendDataInfo(DATA_SEQUENCE_NUM));
+
+        // Eventually Session DeInit is called, and the stored SendDataInfo(s) should be deleted.
+        mUwbSessionManager.deInitSession(uwbSession.getSessionHandle());
+        mTestLooper.dispatchNext();
+        assertNull(uwbSession.getSendDataInfo(DATA_SEQUENCE_NUM));
     }
 
     @Test

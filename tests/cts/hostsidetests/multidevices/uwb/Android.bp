@@ -34,9 +34,9 @@ python_defaults {
 
 python_test_host {
     name: "CtsUwbMultiDeviceTestCase_UwbManagerTests",
-    main: "uwb_manager_test.py",
+    main: "UwbManagerTests/uwb_manager_test.py",
     srcs: [
-        "uwb_manager_test.py",
+        "UwbManagerTests/uwb_manager_test.py",
         "lib/uwb_base_test.py",
         "lib/uwb_ranging_decorator.py",
         "lib/uwb_ranging_params.py",
@@ -49,16 +49,16 @@ python_test_host {
     data: [
         // Package the snippet with the mobly test
         ":uwb_snippet",
-	"requirements.txt",
+	"README.md",
     ],
     defaults: ["CtsUwbMultiDevicePythonDefaults"],
 }
 
 python_test_host {
     name: "CtsUwbMultiDeviceTestCase_FiraRangingTests",
-    main: "ranging_test.py",
+    main: "FiraRangingTests/ranging_test.py",
     srcs: [
-        "ranging_test.py",
+        "FiraRangingTests/ranging_test.py",
         "lib/uwb_base_test.py",
         "lib/uwb_ranging_decorator.py",
         "lib/uwb_ranging_params.py",
@@ -71,42 +71,16 @@ python_test_host {
     data: [
         // Package the snippet with the mobly test
         ":uwb_snippet",
-	"requirements.txt",
-    ],
-    defaults: ["CtsUwbMultiDevicePythonDefaults"],
-}
-
-python_test_host {
-    name: "CtsUwbMultiDeviceTestCase_ProvisionedStsRangingTests",
-    main: "provisioned_sts_ranging_test.py",
-    srcs: [
-        "provisioned_sts_ranging_test.py",
-        "lib/uwb_base_test.py",
-        "lib/uwb_ranging_decorator.py",
-        "lib/uwb_ranging_params.py",
-        "test_utils/uwb_test_utils.py",
-    ],
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
-    test_config: "ProvisionedStsRangingTests/AndroidTest.xml",
-    test_options: {
-        unit_test: false,
-    },
-    data: [
-        // Package the snippet with the mobly test
-        ":uwb_snippet",
-        "requirements.txt",
+	"README.md",
     ],
     defaults: ["CtsUwbMultiDevicePythonDefaults"],
 }
 
 python_test_host {
     name: "CtsUwbMultiDeviceTestCase_RangingMeasurementTests",
-    main: "ranging_measurement_test.py",
+    main: "RangingMeasurementTests/ranging_measurement_test.py",
     srcs: [
-        "ranging_measurement_test.py",
+        "RangingMeasurementTests/ranging_measurement_test.py",
         "lib/uwb_base_test.py",
         "lib/uwb_ranging_decorator.py",
         "lib/uwb_ranging_params.py",
@@ -123,7 +97,7 @@ python_test_host {
     data: [
         // Package the snippet with the mobly test
         ":uwb_snippet",
-        "requirements.txt",
+        "README.md",
     ],
     defaults: ["CtsUwbMultiDevicePythonDefaults"],
 }

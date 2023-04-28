@@ -29,6 +29,7 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.database.ContentObserver;
+import android.location.Geocoder;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Handler;
@@ -64,7 +65,9 @@ import com.android.server.uwb.multchip.UwbMultichipData;
 import com.android.server.uwb.pm.ProfileManager;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -223,6 +226,21 @@ public class UwbInjector {
      */
     public UwbShellCommand makeUwbShellCommand(UwbServiceImpl uwbService) {
         return new UwbShellCommand(this, uwbService, mContext);
+    }
+
+    /**
+     * Creates a Geocoder.
+     */
+    @Nullable
+    public Geocoder makeGeocoder() {
+        return new Geocoder(mContext);
+    }
+
+    /**
+     * Returns whether geocoder is supported on this device or not.
+     */
+    public boolean isGeocoderPresent() {
+        return Geocoder.isPresent();
     }
 
     /**
@@ -412,8 +430,20 @@ public class UwbInjector {
                 == PackageManager.SIGNATURE_MATCH;
     }
 
+    private static Map<String, Integer> sOverridePackageImportance = new HashMap();
+    public void setOverridePackageImportance(String packageName, int importance) {
+        sOverridePackageImportance.put(packageName, importance);
+    }
+    public void resetOverridePackageImportance(String packageName) {
+        sOverridePackageImportance.remove(packageName);
+    }
+
     /** Helper method to retrieve app importance. */
     private int getPackageImportance(int uid, @NonNull String packageName) {
+        if (sOverridePackageImportance.containsKey(packageName)) {
+            Log.w(TAG, "Overriding package importance for testing");
+            return sOverridePackageImportance.get(packageName);
+        }
         try {
             return createPackageContextAsUser(uid)
                     .getSystemService(ActivityManager.class)

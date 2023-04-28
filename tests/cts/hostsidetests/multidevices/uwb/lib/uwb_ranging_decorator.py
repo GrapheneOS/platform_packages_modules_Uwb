@@ -70,24 +70,31 @@ class UwbRangingDecorator():
                             (ranging_event, round(time.time() - start_time, 2)))
           self.clear_ranging_session_callback_events(session)
           return
-      except TimeoutError:
+      except errors.CallbackHandlerTimeoutError:
         self.log.warn("Failed to receive 'RangingSessionCallback' event")
-    raise TimeoutError("Failed to receive '%s' event" % ranging_event)
+        raise TimeoutError("Failed to receive '%s' event" % ranging_event)
 
   def open_fira_ranging(self,
                         params: uwb_ranging_params.UwbRangingParams,
-                        session: int = 0):
+                        session: int = 0,
+                        expect_to_succeed: bool = True):
     """Opens fira ranging session.
 
     Args:
       params: UWB ranging parameters.
       session: ranging session.
+      expect_to_succeed: Whether the session open is expected to succeed.
     """
     callback_key = "fira_session_%s" % session
     handler = self.ad.uwb.openFiraRangingSession(callback_key, params.to_dict())
     self._event_handlers[session] = handler
-    self.verify_callback_received("Opened", session)
-    self._callback_keys[session] = callback_key
+    if expect_to_succeed:
+      self.verify_callback_received("Opened", session)
+      self._callback_keys[session] = callback_key
+    else:
+      self.verify_callback_received("OpenFailed", session)
+
+
 
   def start_fira_ranging(self, session: int = 0):
     """Starts Fira ranging session.
@@ -111,6 +118,35 @@ class UwbRangingDecorator():
     self.ad.uwb.reconfigureFiraRangingSession(self._callback_keys[session],
                                               params.to_dict())
     self.verify_callback_received("Reconfigured", session)
+
+
+  def add_controlee_fira_ranging(
+          self,
+          params: uwb_ranging_params.UwbRangingControleeParams,
+          session: int = 0):
+    """Reconfigures Fira ranging to add controlee.
+
+    Args:
+      params: UWB controlee params.
+      session: ranging session.
+    """
+    self.ad.uwb.addControleeFiraRangingSession(self._callback_keys[session], params.to_dict())
+    self.verify_callback_received("ControleeAdded", session)
+
+
+  def remove_controlee_fira_ranging(
+          self,
+          params: uwb_ranging_params.UwbRangingControleeParams,
+          session: int = 0):
+    """Reconfigures Fira ranging to add controlee.
+
+    Args:
+      params: UWB controlee params.
+      session: ranging session.
+    """
+    self.ad.uwb.removeControleeFiraRangingSession(self._callback_keys[session], params.to_dict())
+    self.verify_callback_received("ControleeRemoved", session)
+
 
   def is_uwb_peer_found(self, addr: List[int], session: int = 0) -> bool:
     """Verifies if the UWB peer is found.

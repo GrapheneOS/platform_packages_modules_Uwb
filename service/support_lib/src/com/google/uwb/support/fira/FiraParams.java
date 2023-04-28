@@ -576,6 +576,29 @@ public abstract class FiraParams extends Params {
     public static final int
             STATUS_CODE_ERROR_DL_TDOA_DEVICE_ADDRESS_NOT_MATCHING_IN_REPLY_TIME_LIST = 0X2B;
 
+    /**
+     * Table 28: Status codes in the DATA_TRANSFER_STATUS_NTF.
+     */
+    @IntDef(
+            value = {
+                    STATUS_CODE_DATA_TRANSFER_NTF_REPETITION_OK,
+                    STATUS_CODE_DATA_TRANSFER_NTF_OK,
+                    STATUS_CODE_DATA_TRANSFER_NTF_ERROR_DATA_TRANSFER,
+                    STATUS_CODE_DATA_TRANSFER_NTF_ERROR_NO_CREDIT_AVAILABLE,
+                    STATUS_CODE_DATA_TRANSFER_NTF_ERROR_REJECTED,
+                    STATUS_CODE_DATA_TRANSFER_NTF_SESSION_TYPE_NOT_SUPPORTED,
+                    STATUS_CODE_DATA_TRANSFER_NTF_ERROR_DATA_TRANSFER_IS_ONGOING
+            })
+    public @interface DataTransferStatusNtfCode {}
+
+    public static final int STATUS_CODE_DATA_TRANSFER_NTF_REPETITION_OK = 0;
+    public static final int STATUS_CODE_DATA_TRANSFER_NTF_OK = 1;
+    public static final int STATUS_CODE_DATA_TRANSFER_NTF_ERROR_DATA_TRANSFER = 2;
+    public static final int STATUS_CODE_DATA_TRANSFER_NTF_ERROR_NO_CREDIT_AVAILABLE = 3;
+    public static final int STATUS_CODE_DATA_TRANSFER_NTF_ERROR_REJECTED = 4;
+    public static final int STATUS_CODE_DATA_TRANSFER_NTF_SESSION_TYPE_NOT_SUPPORTED = 5;
+    public static final int STATUS_CODE_DATA_TRANSFER_NTF_ERROR_DATA_TRANSFER_IS_ONGOING = 6;
+
     /** State change reason codes defined in UCI table-15 */
     @IntDef(
             value = {

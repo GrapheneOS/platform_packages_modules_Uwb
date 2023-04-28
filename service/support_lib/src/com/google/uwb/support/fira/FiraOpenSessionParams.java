@@ -68,7 +68,9 @@ public class FiraOpenSessionParams extends FiraParams {
 
     private final int mSessionPriority;
     @MacAddressMode final int mMacAddressMode;
-    private final boolean mHasResultReportPhase;
+    private final boolean mHasRangingResultReportMessage;
+    private final boolean mHasControlMessage;
+    private final boolean mHasRangingControlPhase;
     @MeasurementReportType private final int mMeasurementReportType;
 
     @IntRange(from = 1, to = 10)
@@ -206,7 +208,10 @@ public class FiraOpenSessionParams extends FiraParams {
             "has_angle_of_arrival_elevation_report";
     private static final String KEY_HAS_ANGLE_OF_ARRIVAL_FIGURE_OF_MERIT_REPORT =
             "has_angle_of_arrival_figure_of_merit_report";
-    private static final String KEY_HAS_RESULT_REPORT_PHASE = "has_result_report_phase";
+    // key value not the same as constant name to maintain backwards compatibility.
+    private static final String KEY_HAS_RANGING_RESULT_REPORT_MESSAGE = "has_result_report_phase";
+    private static final String KEY_HAS_CONTROL_MESSAGE = "has_control_message";
+    private static final String KEY_HAS_RANGING_CONTROL_PHASE = "has_ranging_control_phase";
     private static final String KEY_MEASUREMENT_REPORT_TYPE = "measurement_report_type";
     private static final String KEY_AOA_TYPE = "aoa_type";
     private static final String KEY_NUM_OF_MSRMT_FOCUS_ON_RANGE =
@@ -251,7 +256,9 @@ public class FiraOpenSessionParams extends FiraParams {
             @IntRange(from = 0, to = 65535) int maxRangingRoundRetries,
             int sessionPriority,
             @MacAddressMode int macAddressMode,
-            boolean hasResultReportPhase,
+            boolean hasRangingResultReportMessage,
+            boolean hasControlMessage,
+            boolean hasRangingControlPhase,
             @MeasurementReportType int measurementReportType,
             @IntRange(from = 1, to = 10) int inBandTerminationAttemptCount,
             @UwbChannel int channelNumber,
@@ -324,7 +331,9 @@ public class FiraOpenSessionParams extends FiraParams {
         mMaxRangingRoundRetries = maxRangingRoundRetries;
         mSessionPriority = sessionPriority;
         mMacAddressMode = macAddressMode;
-        mHasResultReportPhase = hasResultReportPhase;
+        mHasRangingResultReportMessage = hasRangingResultReportMessage;
+        mHasControlMessage = hasControlMessage;
+        mHasRangingControlPhase = hasRangingControlPhase;
         mMeasurementReportType = measurementReportType;
         mInBandTerminationAttemptCount = inBandTerminationAttemptCount;
         mChannelNumber = channelNumber;
@@ -461,8 +470,16 @@ public class FiraOpenSessionParams extends FiraParams {
         return mMacAddressMode;
     }
 
-    public boolean hasResultReportPhase() {
-        return mHasResultReportPhase;
+    public boolean hasRangingResultReportMessage() {
+        return mHasRangingResultReportMessage;
+    }
+
+    public boolean hasControlMessage() {
+        return mHasControlMessage;
+    }
+
+    public boolean hasRangingControlPhase() {
+        return mHasRangingControlPhase;
     }
 
     @MeasurementReportType
@@ -759,7 +776,9 @@ public class FiraOpenSessionParams extends FiraParams {
         bundle.putInt(KEY_MAX_RANGING_ROUND_RETRIES, mMaxRangingRoundRetries);
         bundle.putInt(KEY_SESSION_PRIORITY, mSessionPriority);
         bundle.putInt(KEY_MAC_ADDRESS_MODE, mMacAddressMode);
-        bundle.putBoolean(KEY_HAS_RESULT_REPORT_PHASE, mHasResultReportPhase);
+        bundle.putBoolean(KEY_HAS_RANGING_RESULT_REPORT_MESSAGE, mHasRangingResultReportMessage);
+        bundle.putBoolean(KEY_HAS_CONTROL_MESSAGE, mHasControlMessage);
+        bundle.putBoolean(KEY_HAS_RANGING_CONTROL_PHASE, mHasRangingControlPhase);
         bundle.putInt(KEY_MEASUREMENT_REPORT_TYPE, mMeasurementReportType);
         bundle.putInt(KEY_IN_BAND_TERMINATION_ATTEMPT_COUNT, mInBandTerminationAttemptCount);
         bundle.putInt(KEY_CHANNEL_NUMBER, mChannelNumber);
@@ -880,7 +899,12 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setMaxRangingRoundRetries(bundle.getInt(KEY_MAX_RANGING_ROUND_RETRIES))
                 .setSessionPriority(bundle.getInt(KEY_SESSION_PRIORITY))
                 .setMacAddressMode(bundle.getInt(KEY_MAC_ADDRESS_MODE))
-                .setHasResultReportPhase(bundle.getBoolean(KEY_HAS_RESULT_REPORT_PHASE))
+                .setHasRangingResultReportMessage(
+                        bundle.getBoolean(KEY_HAS_RANGING_RESULT_REPORT_MESSAGE))
+                .setHasControlMessage(
+                        bundle.getBoolean(KEY_HAS_CONTROL_MESSAGE, true))
+                .setHasRangingControlPhase(
+                        bundle.getBoolean(KEY_HAS_RANGING_CONTROL_PHASE, false))
                 .setMeasurementReportType(bundle.getInt(KEY_MEASUREMENT_REPORT_TYPE))
                 .setInBandTerminationAttemptCount(
                         bundle.getInt(KEY_IN_BAND_TERMINATION_ATTEMPT_COUNT))
@@ -1007,7 +1031,13 @@ public class FiraOpenSessionParams extends FiraParams {
         @MacAddressMode private int mMacAddressMode = MAC_ADDRESS_MODE_2_BYTES;
 
         /** UCI spec default: RANGING_ROUND_CONTROL bit 0 default 1 */
-        private boolean mHasResultReportPhase = true;
+        private boolean mHasRangingResultReportMessage = true;
+
+        /** UCI spec default: RANGING_ROUND_CONTROL bit 1 default 1 */
+        private boolean mHasControlMessage = true;
+
+        /** UCI spec default: RANGING_ROUND_CONTROL bit 2 default 0 */
+        private boolean mHasRangingControlPhase = false;
 
         /** UCI spec default: RANGING_ROUND_CONTROL bit 7 default 0 */
         @MeasurementReportType
@@ -1194,7 +1224,9 @@ public class FiraOpenSessionParams extends FiraParams {
             mMaxRangingRoundRetries = builder.mMaxRangingRoundRetries;
             mSessionPriority = builder.mSessionPriority;
             mMacAddressMode = builder.mMacAddressMode;
-            mHasResultReportPhase = builder.mHasResultReportPhase;
+            mHasRangingResultReportMessage = builder.mHasRangingResultReportMessage;
+            mHasControlMessage = builder.mHasControlMessage;
+            mHasRangingControlPhase = builder.mHasRangingControlPhase;
             mMeasurementReportType = builder.mMeasurementReportType;
             mInBandTerminationAttemptCount = builder.mInBandTerminationAttemptCount;
             mChannelNumber = builder.mChannelNumber;
@@ -1271,7 +1303,9 @@ public class FiraOpenSessionParams extends FiraParams {
             mMaxRangingRoundRetries = params.mMaxRangingRoundRetries;
             mSessionPriority = params.mSessionPriority;
             mMacAddressMode = params.mMacAddressMode;
-            mHasResultReportPhase = params.mHasResultReportPhase;
+            mHasRangingResultReportMessage = params.mHasRangingResultReportMessage;
+            mHasControlMessage = params.mHasControlMessage;
+            mHasRangingControlPhase = params.mHasRangingControlPhase;
             mMeasurementReportType = params.mMeasurementReportType;
             mInBandTerminationAttemptCount = params.mInBandTerminationAttemptCount;
             mChannelNumber = params.mChannelNumber;
@@ -1422,8 +1456,20 @@ public class FiraOpenSessionParams extends FiraParams {
             return this;
         }
 
-        public FiraOpenSessionParams.Builder setHasResultReportPhase(boolean hasResultReportPhase) {
-            mHasResultReportPhase = hasResultReportPhase;
+        public FiraOpenSessionParams.Builder setHasRangingResultReportMessage(
+                boolean hasRangingResultReportMessage) {
+            mHasRangingResultReportMessage = hasRangingResultReportMessage;
+            return this;
+        }
+
+        public FiraOpenSessionParams.Builder setHasControlMessage(boolean hasControlMessage) {
+            mHasControlMessage = hasControlMessage;
+            return this;
+        }
+
+        public FiraOpenSessionParams.Builder setHasRangingControlPhase(
+                boolean hasRangingControlPhase) {
+            mHasRangingControlPhase = hasRangingControlPhase;
             return this;
         }
 
@@ -1785,13 +1831,15 @@ public class FiraOpenSessionParams extends FiraParams {
             }
 
             if (mStsConfig == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
-                if (!mSubSessionId.isSet()) {
-                    mSubSessionId.set(0);
-                }
                 checkArgument(mSessionKey != null
                         && (mSessionKey.length == 16 || mSessionKey.length == 32));
-                checkArgument(mSubsessionKey != null
-                        && (mSubsessionKey.length == 16 || mSubsessionKey.length == 32));
+                if (mDeviceType.get() == RANGING_DEVICE_TYPE_CONTROLEE) {
+                    if (!mSubSessionId.isSet()) {
+                        mSubSessionId.set(0);
+                    }
+                    checkArgument(mSubsessionKey != null
+                            && (mSubsessionKey.length == 16 || mSubsessionKey.length == 32));
+                }
             }
         }
 
@@ -1896,7 +1944,9 @@ public class FiraOpenSessionParams extends FiraParams {
                     mMaxRangingRoundRetries,
                     mSessionPriority,
                     mMacAddressMode,
-                    mHasResultReportPhase,
+                    mHasRangingResultReportMessage,
+                    mHasControlMessage,
+                    mHasRangingControlPhase,
                     mMeasurementReportType,
                     mInBandTerminationAttemptCount,
                     mChannelNumber,

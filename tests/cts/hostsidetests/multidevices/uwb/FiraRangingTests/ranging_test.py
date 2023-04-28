@@ -1,9 +1,12 @@
 """Tests for Uwb Ranging APIs."""
 
+import dataclasses
 import logging
 import random
 import sys
-from typing import List
+import time
+from threading import Thread
+from typing import List, Optional
 
 from mobly import asserts
 from mobly import config_parser
@@ -20,7 +23,15 @@ RESPONDER_STOP_CALLBACK_TIMEOUT = 60
 
 _TEST_CASES = (
     "test_ranging_device_tracker_profile_default",
+    "test_ranging_device_tracker_profile_provisioned_sts_default",
     "test_ranging_nearby_share_profile_default",
+    "test_ranging_nearby_share_profile_provisioned_sts_default",
+    "test_ranging_nearby_share_profile_reconfigure_controlee",
+    # TODO(b/274930346): Enable once vendor support is ready.
+    # "test_ranging_nearby_share_profile_provisioned_sts_reconfigure_controlee",
+    "test_ranging_nearby_share_profile_add_remove_controlee",
+    # TODO(b/274930346): Enable once vendor support is ready.
+    # "test_ranging_nearby_share_profile_provisioned_sts_add_remove_controlee",
     "test_ranging_device_tracker_profile_reconfigure_ranging_interval",
     "test_ranging_nearby_share_profile_reconfigure_ranging_interval",
     "test_ranging_device_tracker_profile_no_aoa_report",
@@ -33,6 +44,10 @@ _TEST_CASES = (
     "test_stop_responder_ranging_nearby_share_profile",
     "test_ranging_device_tracker_profile_with_airplane_mode_toggle",
     "test_ranging_nearby_share_profile_with_airplane_mode_toggle",
+    "test_ranging_nearby_share_profile_move_to_bg_and_fg",
+    "test_ranging_nearby_share_profile_move_to_bg_and_stay_there_stops_session",
+    "test_ranging_nearby_share_profile_bg_fails",
+    "test_ranging_nearby_share_profile_no_valid_reports_stops_session",
 )
 
 
@@ -63,6 +78,10 @@ class RangingTest(uwb_base_test.UwbBaseTest):
                                                  [[1, 2], [3, 4]])
     self.initiator_addr, self.responder_addr = self.device_addresses
     self.new_responder_addr = [4, 5]
+    self.p_sts_sub_session_id = 11
+    self.p_sts_sub_session_key = dataclasses.field(
+      default_factory=lambda: [8, 7, 6, 5, 4, 3, 2, 1, 1, 2, 3, 4, 5, 6, 7, 8]
+    )
     self.block_stride_length = random.randint(1, 10)
 
     # abort class if uwb is disabled
@@ -83,13 +102,21 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         uwb_device.log.warn("Failed to cleanup ranging sessions")
     for uwb_device in self.uwb_devices:
       uwb_test_utils.set_airplane_mode(uwb_device.ad, False)
+      RangingTest._reset_snippet_fg_bg_state(uwb_device)
 
   def teardown_test(self):
     super().teardown_test()
-    self.responder.stop_ranging()
-    self.initiator.stop_ranging()
-    self.responder.close_ranging()
-    self.initiator.close_ranging()
+    try:
+      self.initiator.stop_ranging()
+      self.initiator.close_ranging()
+    except:
+      pass
+    try:
+      self.responder.stop_ranging()
+      self.responder.close_ranging()
+    except:
+      pass
+
 
   ### Helper Methods ###
 
@@ -114,12 +141,14 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     responder.start_fira_ranging()
     uwb_test_utils.verify_peer_found(initiator, peer_addr)
 
-  def _verify_one_to_one_ranging_reconfigured_params(
+  def _verify_one_to_one_ranging_reconfigured_controlee_params(
       self, initiator: uwb_ranging_decorator.UwbRangingDecorator,
       responder: uwb_ranging_decorator.UwbRangingDecorator,
       initiator_params: uwb_ranging_params.UwbRangingParams,
       responder_params: uwb_ranging_params.UwbRangingParams,
-      peer_addr: List[int]):
+      peer_addr: List[int],
+      sub_session_id: Optional[int] = None,
+      sub_session_key: Optional[List[int]] = None):
     """Verifies ranging between two uwb devices with reconfigured params.
 
     Args:
@@ -128,9 +157,17 @@ class RangingTest(uwb_base_test.UwbBaseTest):
       initiator_params: The ranging params for initiator.
       responder_params: The ranging params for responder.
       peer_addr: The new address of uwb device.
+      sub_session_id: Sub session id (for p-sts with individual controlee keys)
+      sub_session_key: Sub session ket (for p-sts with individual controlee keys)
     """
+    initiator.open_fira_ranging(initiator_params)
+    initiator.start_fira_ranging()
     # change responder addr and verify peer cannot be found
     responder_params.update(device_address=peer_addr)
+    if sub_session_id is not None:
+        responder_params.update(sub_session_id=sub_session_id)
+    if sub_session_key is not None:
+        responder_params.update(sub_session_key=sub_session_key)
     responder.open_fira_ranging(responder_params)
     responder.start_fira_ranging()
     try:
@@ -140,12 +177,77 @@ class RangingTest(uwb_base_test.UwbBaseTest):
       logging.info("Peer %s not found as expected", peer_addr)
 
     # reconfigure initiator with new peer addr and verify peer found
+      sub_session_id_list = None
+      sub_session_key_list = None
+      if sub_session_id is not None:
+          sub_session_id_list = [sub_session_id]
+      if sub_session_key is not None:
+          sub_session_key_list = sub_session_key
     reconfigure_params = uwb_ranging_params.UwbRangingReconfigureParams(
         action=uwb_ranging_params.FiraParamEnums
         .MULTICAST_LIST_UPDATE_ACTION_ADD,
-        address_list=[peer_addr])
+        address_list=[peer_addr], sub_session_id_list=sub_session_id_list,
+        sub_session_key_list=sub_session_key_list)
     initiator.reconfigure_fira_ranging(reconfigure_params)
     uwb_test_utils.verify_peer_found(initiator, peer_addr)
+
+  def _verify_one_to_one_ranging_add_remove_controlee(
+          self, initiator: uwb_ranging_decorator.UwbRangingDecorator,
+          responder: uwb_ranging_decorator.UwbRangingDecorator,
+          initiator_params: uwb_ranging_params.UwbRangingParams,
+          responder_params: uwb_ranging_params.UwbRangingParams,
+          peer_addr: List[int],
+          sub_session_id: Optional[int] = None,
+          sub_session_key: Optional[List[int]] = None):
+      """Verifies ranging between two uwb devices with dynamically added controlee.
+
+      Args:
+        initiator: The uwb device object.
+        responder: The uwb device object.
+        initiator_params: The ranging params for initiator.
+        responder_params: The ranging params for responder.
+        peer_addr: The new address of uwb device.
+        sub_session_id: Sub session id (for p-sts with individual controlee keys)
+        sub_session_key: Sub session ket (for p-sts with individual controlee keys)
+      """
+      initiator.open_fira_ranging(initiator_params)
+      initiator.start_fira_ranging()
+      # change responder addr and verify peer cannot be found
+      responder_params.update(device_address=peer_addr)
+      if sub_session_id is not None:
+          responder_params.update(sub_session_id=sub_session_id)
+      if sub_session_key is not None:
+          responder_params.update(sub_session_key=sub_session_key)
+      responder.open_fira_ranging(responder_params)
+      responder.start_fira_ranging()
+      try:
+          uwb_test_utils.verify_peer_found(initiator, peer_addr)
+          asserts.fail("Peer found without reconfiguring initiator.")
+      except signals.TestFailure:
+          logging.info("Peer %s not found as expected", peer_addr)
+
+      # reconfigure initiator with new peer addr and verify peer found
+      sub_session_id_list = None
+      sub_session_key_list = None
+      if sub_session_id is not None:
+        sub_session_id_list = [sub_session_id]
+      if sub_session_key is not None:
+        sub_session_key_list = sub_session_key
+      controlee_params = uwb_ranging_params.UwbRangingControleeParams(
+          action=uwb_ranging_params.FiraParamEnums.MULTICAST_LIST_UPDATE_ACTION_ADD,
+          address_list=[peer_addr], sub_session_id_list=sub_session_id_list,
+          sub_session_key_list=sub_session_key_list)
+      initiator.add_controlee_fira_ranging(controlee_params)
+      uwb_test_utils.verify_peer_found(initiator, peer_addr)
+      controlee_params = uwb_ranging_params.UwbRangingControleeParams(
+          action=uwb_ranging_params.FiraParamEnums.MULTICAST_LIST_UPDATE_ACTION_DELETE,
+          address_list=[peer_addr])
+      initiator.remove_controlee_fira_ranging(controlee_params)
+      try:
+          uwb_test_utils.verify_peer_found(initiator, peer_addr)
+          asserts.fail("Peer found after removing responder.")
+      except signals.TestFailure:
+          logging.info("Peer %s not found as expected", peer_addr)
 
   def _verify_stop_initiator_callback(
       self, initiator: uwb_ranging_decorator.UwbRangingDecorator,
@@ -280,31 +382,40 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     initiator.reconfigure_fira_ranging(reconfigure_params)
     uwb_test_utils.verify_peer_found(initiator, peer_addr)
 
+
+  @staticmethod
+  def _reset_snippet_fg_bg_state(device: uwb_ranging_decorator.UwbRangingDecorator):
+      """Reset snippet app foreground/background state
+
+      Args:
+        device: The uwb device object.
+      """
+      device.ad.adb.shell(
+          ["cmd", "uwb", "simulate-app-state-change", "com.google.snippet.uwb"])
+
+  @staticmethod
+  def _move_snippet_to_bg(device: uwb_ranging_decorator.UwbRangingDecorator):
+      """Simulate moving snippet app to background
+
+      Args:
+        device: The uwb device object.
+      """
+      device.ad.adb.shell(
+          ["cmd", "uwb", "simulate-app-state-change", "com.google.snippet.uwb", "background"])
+
+
+  @staticmethod
+  def _move_snippet_to_fg(device: uwb_ranging_decorator.UwbRangingDecorator):
+      """Simulate moving snippet app to foreground
+
+      Args:
+        device: The uwb device object.
+      """
+      device.ad.adb.shell(
+          ["cmd", "uwb", "simulate-app-state-change", "com.google.snippet.uwb", "foreground"])
+
+
   ### Test Cases ###
-
-  def test_ranging_default_params(self):
-    """Verifies ranging with default Fira parameters."""
-    initiator_params = uwb_ranging_params.UwbRangingParams(
-        device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
-        device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
-        device_address=self.initiator_addr,
-        destination_addresses=[self.responder_addr],
-    )
-    responder_params = uwb_ranging_params.UwbRangingParams(
-        device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_RESPONDER,
-        device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLEE,
-        device_address=self.responder_addr,
-        destination_addresses=[self.initiator_addr],
-    )
-    self._verify_one_to_one_ranging(self.initiator, self.responder,
-                                    initiator_params, responder_params,
-                                    self.responder_addr)
-    self.responder.stop_ranging()
-    self.responder.close_ranging()
-    self._verify_one_to_one_ranging_reconfigured_params(
-        self.initiator, self.responder, initiator_params, responder_params,
-        self.new_responder_addr)
-
   def test_ranging_device_tracker_profile_default(self):
     """Verifies ranging with device tracker profile default values."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -335,7 +446,97 @@ class RangingTest(uwb_base_test.UwbBaseTest):
                                     initiator_params, responder_params,
                                     self.responder_addr)
 
+
+  def test_ranging_device_tracker_profile_provisioned_sts_default(self):
+      """Verifies ranging with device tracker profile default values."""
+      initiator_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
+          device_address=self.initiator_addr,
+          destination_addresses=[self.responder_addr],
+          multi_node_mode=uwb_ranging_params.FiraParamEnums
+          .MULTI_NODE_MODE_UNICAST,
+          initiation_time_ms=100,
+          ranging_interval_ms=240,
+          slots_per_ranging_round=6,
+          in_band_termination_attempt_count=3,
+          sts_config=uwb_ranging_params.FiraParamEnums.STS_CONFIG_PROVISIONED
+          )
+      responder_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_RESPONDER,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLEE,
+          device_address=self.responder_addr,
+          destination_addresses=[self.initiator_addr],
+          multi_node_mode=uwb_ranging_params.FiraParamEnums
+          .MULTI_NODE_MODE_UNICAST,
+          initiation_time_ms=100,
+          ranging_interval_ms=240,
+          slots_per_ranging_round=6,
+          in_band_termination_attempt_count=3,
+          sts_config=uwb_ranging_params.FiraParamEnums.STS_CONFIG_PROVISIONED
+          )
+      self._verify_one_to_one_ranging(self.initiator, self.responder,
+                                      initiator_params, responder_params,
+                                      self.responder_addr)
+
+
   def test_ranging_nearby_share_profile_default(self):
+      """Verifies ranging for device nearby share with default profile."""
+      initiator_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
+          device_address=self.initiator_addr,
+          destination_addresses=[self.responder_addr],
+          initiation_time_ms=100,
+          ranging_interval_ms=200,
+          slots_per_ranging_round=20,
+          in_band_termination_attempt_count=3,
+      )
+      responder_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_RESPONDER,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLEE,
+          device_address=self.responder_addr,
+          destination_addresses=[self.initiator_addr],
+          initiation_time_ms=100,
+          ranging_interval_ms=200,
+          slots_per_ranging_round=20,
+          in_band_termination_attempt_count=3,
+      )
+      self._verify_one_to_one_ranging(self.initiator, self.responder,
+                                      initiator_params, responder_params,
+                                      self.responder_addr)
+
+
+  def test_ranging_nearby_share_profile_provisioned_sts_default(self):
+      """Verifies ranging for device nearby share with default profile."""
+      initiator_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
+          device_address=self.initiator_addr,
+          destination_addresses=[self.responder_addr],
+          initiation_time_ms=100,
+          ranging_interval_ms=200,
+          slots_per_ranging_round=20,
+          in_band_termination_attempt_count=3,
+          sts_config=uwb_ranging_params.FiraParamEnums.STS_CONFIG_PROVISIONED
+      )
+      responder_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_RESPONDER,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLEE,
+          device_address=self.responder_addr,
+          destination_addresses=[self.initiator_addr],
+          initiation_time_ms=100,
+          ranging_interval_ms=200,
+          slots_per_ranging_round=20,
+          in_band_termination_attempt_count=3,
+          sts_config=uwb_ranging_params.FiraParamEnums.STS_CONFIG_PROVISIONED
+      )
+      self._verify_one_to_one_ranging(self.initiator, self.responder,
+                                      initiator_params, responder_params,
+                                      self.responder_addr)
+
+
+  def test_ranging_nearby_share_profile_reconfigure_controlee(self):
     """Verifies ranging for device nearby share with default profile."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
         device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
@@ -357,14 +558,99 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         slots_per_ranging_round=20,
         in_band_termination_attempt_count=3,
     )
-    self._verify_one_to_one_ranging(self.initiator, self.responder,
-                                    initiator_params, responder_params,
-                                    self.responder_addr)
-    self.responder.stop_ranging()
-    self.responder.close_ranging()
-    self._verify_one_to_one_ranging_reconfigured_params(
+    self._verify_one_to_one_ranging_reconfigured_controlee_params(
         self.initiator, self.responder, initiator_params, responder_params,
         self.new_responder_addr)
+
+
+  def test_ranging_nearby_share_profile_provisioned_sts_reconfigure_controlee(self):
+      """Verifies ranging for device nearby share with default profile."""
+      initiator_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
+          device_address=self.initiator_addr,
+          destination_addresses=[self.responder_addr],
+          initiation_time_ms=100,
+          ranging_interval_ms=200,
+          slots_per_ranging_round=20,
+          in_band_termination_attempt_count=3,
+          sts_config=uwb_ranging_params.FiraParamEnums
+          .STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY
+      )
+      responder_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_RESPONDER,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLEE,
+          device_address=self.responder_addr,
+          destination_addresses=[self.initiator_addr],
+          initiation_time_ms=100,
+          ranging_interval_ms=200,
+          slots_per_ranging_round=20,
+          in_band_termination_attempt_count=3,
+          sts_config=uwb_ranging_params.FiraParamEnums
+          .STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY
+      )
+      self._verify_one_to_one_ranging_reconfigured_controlee_params(
+          self.initiator, self.responder, initiator_params, responder_params,
+          self.new_responder_addr, self.p_sts_sub_session_id, self.p_sts_sub_session_key)
+
+
+  def test_ranging_nearby_share_profile_add_remove_controlee(self):
+      """Verifies ranging for device nearby share with default profile."""
+      initiator_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
+          device_address=self.initiator_addr,
+          destination_addresses=[self.responder_addr],
+          initiation_time_ms=100,
+          ranging_interval_ms=200,
+          slots_per_ranging_round=20,
+          in_band_termination_attempt_count=3,
+      )
+      responder_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_RESPONDER,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLEE,
+          device_address=self.responder_addr,
+          destination_addresses=[self.initiator_addr],
+          initiation_time_ms=100,
+          ranging_interval_ms=200,
+          slots_per_ranging_round=20,
+          in_band_termination_attempt_count=3,
+      )
+      self._verify_one_to_one_ranging_add_remove_controlee(
+          self.initiator, self.responder, initiator_params, responder_params,
+          self.new_responder_addr)
+
+
+  def test_ranging_nearby_share_profile_provisioned_sts_add_remove_controlee(self):
+      """Verifies ranging for device nearby share with default profile."""
+      initiator_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
+          device_address=self.initiator_addr,
+          destination_addresses=[self.responder_addr],
+          initiation_time_ms=100,
+          ranging_interval_ms=200,
+          slots_per_ranging_round=20,
+          in_band_termination_attempt_count=3,
+          sts_config=uwb_ranging_params.FiraParamEnums
+          .STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY
+      )
+      responder_params = uwb_ranging_params.UwbRangingParams(
+          device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_RESPONDER,
+          device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLEE,
+          device_address=self.responder_addr,
+          destination_addresses=[self.initiator_addr],
+          initiation_time_ms=100,
+          ranging_interval_ms=200,
+          slots_per_ranging_round=20,
+          in_band_termination_attempt_count=3,
+          sts_config=uwb_ranging_params.FiraParamEnums
+          .STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY
+      )
+      self._verify_one_to_one_ranging_add_remove_controlee(
+          self.initiator, self.responder, initiator_params, responder_params,
+          self.new_responder_addr, self.p_sts_sub_session_id, self.p_sts_sub_session_key)
+
 
   def test_open_ranging_with_same_session_id_nearby_share(self):
     """Verifies ranging for device nearby share with same session id."""
@@ -432,7 +718,7 @@ class RangingTest(uwb_base_test.UwbBaseTest):
                                     initiator_params, responder_params,
                                     self.responder_addr)
 
-  def test_ranging_default_params_reconfigure_ranging_interval(self):
+  def test_ranging_nearby_share_reconfigure_ranging_interval(self):
     """Verifies ranging with default Fira parameters."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
         device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
@@ -1064,6 +1350,179 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self._verify_one_to_one_ranging_airplane_mode_toggle(
         self.initiator, self.responder, initiator_params, responder_params,
         self.responder_addr)
+
+  def test_ranging_nearby_share_profile_move_to_bg_and_fg(self):
+    """
+    1. Verifies ranging with default Fira parameters.
+    2. Move app to background.
+    3. Ensures the app does not receive range data notifications
+    4. Move app to foreground.
+    5. Ensures the app starts receiving range data notifications
+    """
+    initiator_params = uwb_ranging_params.UwbRangingParams(
+        device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
+        device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
+        device_address=self.initiator_addr,
+        destination_addresses=[self.responder_addr],
+        initiation_time_ms=100,
+        ranging_interval_ms=200,
+        slots_per_ranging_round=20,
+        in_band_termination_attempt_count=3,
+    )
+    responder_params = uwb_ranging_params.UwbRangingParams(
+        device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_RESPONDER,
+        device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLEE,
+        device_address=self.responder_addr,
+        destination_addresses=[self.initiator_addr],
+        initiation_time_ms=100,
+        ranging_interval_ms=200,
+        slots_per_ranging_round=20,
+        in_band_termination_attempt_count=3,
+    )
+    self._verify_one_to_one_ranging(self.initiator, self.responder,
+                                    initiator_params, responder_params, self.responder_addr)
+
+    RangingTest._move_snippet_to_bg(self.initiator)
+    time.sleep(0.75)
+    self.initiator.clear_ranging_session_callback_events()
+    try:
+        self.initiator.verify_callback_received("ReportReceived")
+    except TimeoutError:
+        # Expect to get a timeout error
+        logging.info("Did not get any ranging reports as expected")
+    else:
+        asserts.fail("Should not receive ranging reports when the app is in background")
+
+    RangingTest._move_snippet_to_fg(self.initiator)
+    self.initiator.clear_ranging_session_callback_events()
+    try:
+        self.initiator.verify_callback_received("ReportReceived")
+    except TimeoutError:
+        asserts.fail("Should receive ranging reports when the app is in foreground")
+
+
+  def test_ranging_nearby_share_profile_move_to_bg_and_stay_there_stops_session(self):
+    """
+    1. Verifies ranging with default Fira parameters.
+    2. Move app to background.
+    3. Ensures the app does not receive range data notifications
+    4. Remain in background.
+    5. Ensures the session is stopped within 4 mins.
+    """
+    initiator_params = uwb_ranging_params.UwbRangingParams(
+        device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
+        device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
+        device_address=self.initiator_addr,
+        destination_addresses=[self.responder_addr],
+        initiation_time_ms=100,
+        ranging_interval_ms=200,
+        slots_per_ranging_round=20,
+        in_band_termination_attempt_count=3,
+    )
+    responder_params = uwb_ranging_params.UwbRangingParams(
+        device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_RESPONDER,
+        device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLEE,
+        device_address=self.responder_addr,
+        destination_addresses=[self.initiator_addr],
+        initiation_time_ms=100,
+        ranging_interval_ms=200,
+        slots_per_ranging_round=20,
+        in_band_termination_attempt_count=3,
+    )
+    self._verify_one_to_one_ranging(self.initiator, self.responder,
+                                    initiator_params, responder_params, self.responder_addr)
+
+    RangingTest._move_snippet_to_bg(self.initiator)
+    time.sleep(0.75)
+    self.initiator.clear_ranging_session_callback_events()
+    try:
+        self.initiator.verify_callback_received("ReportReceived")
+    except TimeoutError:
+        # Expect to get a timeout error
+        logging.info("Did not get any ranging reports as expected")
+    else:
+        asserts.fail("Should not receive ranging reports when the app is in background")
+
+    # Wait for 4 mins
+    try:
+        self.initiator.verify_callback_received("Stopped", timeout=60*4)
+    except TimeoutError:
+        asserts.fail("Should receive ranging reports when the app is in foreground")
+
+
+  def test_ranging_nearby_share_profile_bg_fails(self):
+    """
+    1. Move app to background.
+    2. Ensures the app cannot open session.
+    """
+    initiator_params = uwb_ranging_params.UwbRangingParams(
+        device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
+        device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
+        device_address=self.initiator_addr,
+        destination_addresses=[self.responder_addr],
+        initiation_time_ms=100,
+        ranging_interval_ms=200,
+        slots_per_ranging_round=20,
+        in_band_termination_attempt_count=3,
+    )
+    RangingTest._move_snippet_to_bg(self.initiator)
+    self.initiator.open_fira_ranging(initiator_params, expect_to_succeed=False)
+
+
+  def test_ranging_nearby_share_profile_no_valid_reports_stops_session(self):
+    """
+    1. Verifies ranging with default Fira parameters.
+    2. Reboot the initiator to abruptly terminate session and cause ranging report errors.
+    3. Ensures the session is stopped within 2 mins.
+    """
+    initiator_params = uwb_ranging_params.UwbRangingParams(
+        device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
+        device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
+        device_address=self.initiator_addr,
+        destination_addresses=[self.responder_addr],
+        initiation_time_ms=100,
+        ranging_interval_ms=200,
+        slots_per_ranging_round=20,
+        in_band_termination_attempt_count=3,
+    )
+    responder_params = uwb_ranging_params.UwbRangingParams(
+        device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_RESPONDER,
+        device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLEE,
+        device_address=self.responder_addr,
+        destination_addresses=[self.initiator_addr],
+        initiation_time_ms=100,
+        ranging_interval_ms=200,
+        slots_per_ranging_round=20,
+        in_band_termination_attempt_count=3,
+    )
+    self._verify_one_to_one_ranging(self.initiator, self.responder,
+                                    initiator_params, responder_params, self.responder_addr)
+
+    # Reboot responder and ensure peer is no longer seen in ranging reports
+    def reboot_responder():
+        self.responder.ad.reboot()
+        uwb_test_utils.initialize_uwb_country_code_if_not_set(self.responder.ad.adb)
+
+    # create a thread to reboot the responder and not block the main test.
+    thread = Thread(target=reboot_responder)
+    thread.start()
+
+    time.sleep(0.75)
+    self.initiator.clear_ranging_session_callback_events()
+    try:
+      uwb_test_utils.verify_peer_found(self.initiator, self.responder_addr)
+      asserts.fail("Peer found even though it was rebooted.")
+    except signals.TestFailure:
+      logging.info("Peer %s not found as expected", self.responder_addr)
+
+    # Wait for 2 mins to stop the session.
+    try:
+        self.initiator.verify_callback_received("Stopped", timeout=60*2)
+    except TimeoutError:
+       asserts.fail("Should receive ranging reports when the app is in foreground")
+    # Ensure the responder is back after reboot.
+    thread.join()
+
 
 if __name__ == "__main__":
   if "--" in sys.argv:

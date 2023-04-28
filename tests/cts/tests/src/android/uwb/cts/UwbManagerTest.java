@@ -1356,8 +1356,8 @@ public class UwbManagerTest {
                     UwbAddress uwbAddress = UwbAddress.fromBytes(new byte[]{0x5, 0x5});
                     rangingSessionCallback.rangingSession.addControlee(
                             new FiraControleeParams.Builder()
+                                    .setAction(FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD)
                                     .setAddressList(new UwbAddress[]{uwbAddress})
-                                    .setSubSessionIdList(new int[]{1})
                                     .build().toBundle()
                     );
                     // Wait for the on reconfigured and controlee added callback.
@@ -1372,8 +1372,8 @@ public class UwbManagerTest {
                     rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
                     rangingSessionCallback.rangingSession.removeControlee(
                             new FiraControleeParams.Builder()
+                                    .setAction(FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE)
                                     .setAddressList(new UwbAddress[]{uwbAddress})
-                                    .setSubSessionIdList(new int[]{1})
                                     .build().toBundle()
                     );
                     // Wait for the on reconfigured and controlee added callback.

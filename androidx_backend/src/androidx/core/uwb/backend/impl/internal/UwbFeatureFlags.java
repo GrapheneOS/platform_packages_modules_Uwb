@@ -21,12 +21,14 @@ public class UwbFeatureFlags {
     private final boolean mSkipRangingCapabilitiesCheck;
     private final boolean mAzimuthSupport;
     private final boolean mElevationSupport;
+    private final boolean mReversedMacAddress;
 
     private UwbFeatureFlags(boolean skipRangingCapabilitiesCheck, boolean azimuthSupport,
-            boolean elevationSupport) {
+            boolean elevationSupport, boolean reversedMacAddress) {
         mSkipRangingCapabilitiesCheck = skipRangingCapabilitiesCheck;
         mAzimuthSupport = azimuthSupport;
         mElevationSupport = elevationSupport;
+        mReversedMacAddress = reversedMacAddress;
     }
 
     public boolean skipRangingCapabilitiesCheck() {
@@ -41,11 +43,16 @@ public class UwbFeatureFlags {
         return mElevationSupport;
     }
 
+    public boolean isReversedMacAddress() {
+        return mReversedMacAddress;
+    }
+
     /** Builder */
     public static class Builder {
         private boolean mSkipRangingCapabilitiesCheck = false;
         private boolean mAzimuthSupport = false;
         private boolean mElevationSupport = false;
+        private boolean mReversedMacAddress = false;
 
         public UwbFeatureFlags.Builder setSkipRangingCapabilitiesCheck(
                 boolean skipRangingCapabilitiesCheck) {
@@ -63,11 +70,17 @@ public class UwbFeatureFlags {
             return this;
         }
 
+        public UwbFeatureFlags.Builder setReversedMacAddress(boolean reversedMacAddress) {
+            mReversedMacAddress = reversedMacAddress;
+            return this;
+        }
+
         public UwbFeatureFlags build() {
             return new UwbFeatureFlags(
                     mSkipRangingCapabilitiesCheck,
                     mAzimuthSupport,
-                    mElevationSupport);
+                    mElevationSupport,
+                    mReversedMacAddress);
         }
     }
 }
