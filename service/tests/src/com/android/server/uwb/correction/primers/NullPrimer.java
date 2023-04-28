@@ -30,11 +30,13 @@ public class NullPrimer implements IPrimer {
      * @param input The original UWB reading.
      * @param prediction A prediction of where the signal probably came from.
      * @param poseSource A pose source that may indicate phone orientation.
+     * @param timeMs When the input occurred. This is in milliseconds, relative to any consistent
+     * epoch.
      * @return A replacement value for the UWB input that has been corrected for  the situation.
      */
     @Override
     public Sparse prime(@NonNull Sparse input, @Nullable SphericalVector prediction,
-            @Nullable IPoseSource poseSource) {
+            @Nullable IPoseSource poseSource, long timeMs) {
         // This test primer will just turn any negative azimuth values to positive ones,
         // and use the prediction for any missing values.
         float azimuth = input.vector.azimuth;
