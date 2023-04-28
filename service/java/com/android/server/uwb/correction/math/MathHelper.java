@@ -26,6 +26,7 @@ import static java.lang.Math.sqrt;
 public final class MathHelper {
     public static final float F_PI = (float) PI;
     public static final float F_HALF_PI = (float) (PI / 2);
+    public static final long MS_PER_SEC = 1000;
     private static final float RSQRT_THRESHOLD = 0.0002821f;
 
     /** Clamps a value between a minimum and maximum range. */

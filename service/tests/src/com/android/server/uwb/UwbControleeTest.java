@@ -20,6 +20,9 @@ import static android.uwb.RangingMeasurement.RANGING_STATUS_SUCCESS;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import android.uwb.AngleMeasurement;
 import android.uwb.AngleOfArrivalMeasurement;
 import android.uwb.DistanceMeasurement;
@@ -36,17 +39,20 @@ import org.mockito.Mock;
 
 public class UwbControleeTest {
     public static final UwbAddress UWB_ADDRESS = UwbAddress.fromBytes(new byte[] {1, 2});
-    @Mock
     UwbControlee mControlee;
+    @Mock
+    UwbInjector mUwbInjector;
 
     @Before
     public void setUp() {
         UwbFilterEngine.Builder builder = new UwbFilterEngine.Builder();
         UwbFilterEngine engine = builder.build();
+        mUwbInjector = mock(UwbInjector.class);
+        when(mUwbInjector.getElapsedSinceBootMillis()).thenReturn(10L);
         mControlee = new UwbControlee(
                 UWB_ADDRESS,
                 engine,
-                null);
+                mUwbInjector);
     }
 
     @After
