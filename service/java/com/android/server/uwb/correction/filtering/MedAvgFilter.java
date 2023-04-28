@@ -17,13 +17,11 @@ package com.android.server.uwb.correction.filtering;
 
 import androidx.annotation.NonNull;
 
-import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * A Median, Average filter.  The filter has an adjustable median window and
@@ -31,14 +29,13 @@ import java.util.Objects;
  */
 public class MedAvgFilter implements IFilter {
     private static final int MAX_FILTER = 255;
-    private static final String TAG = "MAFilter";
 
     private int mWindowSize;
     private float mCut;
     @NonNull
     private final ArrayDeque<Sample> mWindow = new ArrayDeque<>();
     @NonNull
-    private Sample mResult = new Sample(0F, Instant.now());
+    private Sample mResult = new Sample(0F, 0);
 
     /**
      * Creates a new instance of the MedAvgFilter class.
@@ -109,14 +106,13 @@ public class MedAvgFilter implements IFilter {
     /**
      * Adds a value to the filter.
      * @param value The value to add to the filter.
-     * @param instant When the value occurred, used to determine the latency introduced by
-     * the filter. Note that this has no effect on the order in which the filter operates
-     * on values. Defaults to now.
+     * @param timeMs When the value occurred, in ms since boot. Used to determine the latency
+     * introduced by the filter. Note that this has no effect on the order in which the filter
+     * operates on values.
      */
     @Override
-    public void add(float value, @NonNull Instant instant) {
-        Objects.requireNonNull(instant);
-        mWindow.addLast(new Sample(value, instant));
+    public void add(float value, long timeMs) {
+        mWindow.addLast(new Sample(value, timeMs));
         while (mWindow.size() > mWindowSize) {
             mWindow.removeFirst();
         }
@@ -129,7 +125,7 @@ public class MedAvgFilter implements IFilter {
      */
     protected void remap(RemapFunction selector) {
         mWindow.forEach(s -> s.value = selector.run(s.value));
-        mResult = new Sample(selector.run(mResult.value), mResult.instant);
+        mResult = new Sample(selector.run(mResult.value), mResult.timeMs);
     }
 
     /**
@@ -202,7 +198,7 @@ public class MedAvgFilter implements IFilter {
 
         // Using a relevant epoch keeps the values small and therefore decreases the risk of
         //  overflow.
-        long instantEpoch = samples.stream().findFirst().get().instant.toEpochMilli();
+        long instantEpoch = samples.stream().findFirst().get().timeMs;
         long instantSum = 0;
         for (Sample s: samples) {
             if (s == null) {
@@ -211,12 +207,10 @@ public class MedAvgFilter implements IFilter {
                 return null; // Average can't be computed.
             }
             valueSum += s.value;
-            instantSum += s.instant.toEpochMilli() - instantEpoch;
+            instantSum += s.timeMs - instantEpoch;
         }
         float avg = valueSum / size;
-        return new Sample(
-                avg,
-                Instant.ofEpochMilli(instantEpoch + instantSum / size));
+        return new Sample(avg, instantEpoch + instantSum / size);
     }
 
     /**

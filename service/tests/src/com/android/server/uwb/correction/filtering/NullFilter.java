@@ -19,25 +19,23 @@ import android.platform.test.annotations.Presubmit;
 
 import androidx.annotation.NonNull;
 
-import java.time.Instant;
-
 @Presubmit
 public class NullFilter implements IFilter {
 
-    @NonNull
-    Instant mWhen = Instant.now();
+    long mWhen = 0;
     float mValue;
 
     /**
      * Adds a value to the filter.
      *
      * @param value The value to add to the filter.
-     * @param instant When the value occurred, used to determine the latency introduced by the
-     *                filter. Note that this has no effect on the order in which the filter operates
+     * @param timeMs When the value occurred, used to determine the latency introduced by the
+     *                filter. Note that this has no effect on the order in which the filter
+     *                operates. This is in milliseconds, relative to any consistent epoch.
      */
     @Override
-    public void add(float value, @NonNull Instant instant) {
-        mWhen = instant;
+    public void add(float value, long timeMs) {
+        mWhen = timeMs;
         this.mValue = value;
     }
 
