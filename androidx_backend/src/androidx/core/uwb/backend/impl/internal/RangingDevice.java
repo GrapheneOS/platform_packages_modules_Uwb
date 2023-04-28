@@ -38,8 +38,6 @@ import android.uwb.UwbManager;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.android.internal.annotations.VisibleForTesting;
-
 import com.google.common.hash.Hashing;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 
@@ -138,7 +136,6 @@ public abstract class RangingDevice {
 
     protected abstract int hashSessionId(RangingParameters rangingParameters);
 
-    @VisibleForTesting
     static int calculateHashedSessionId(
             UwbAddress controllerAddress, UwbComplexChannel complexChannel) {
         return Hashing.sha256()
