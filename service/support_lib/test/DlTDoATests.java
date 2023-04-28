@@ -92,7 +92,7 @@ public class DlTDoATests {
         DlTDoARangingRoundsUpdate dlTDoARangingRoundsUpdate = new DlTDoARangingRoundsUpdate
                 .Builder()
                 .setSessionId(sessionId)
-                .setNoOfActiveRangingRounds(noOfActiveRangingRounds)
+                .setNoOfRangingRounds(noOfActiveRangingRounds)
                 .setRangingRoundIndexes(rangingRoundIndexes)
                 .build();
 
@@ -100,7 +100,7 @@ public class DlTDoATests {
                 dlTDoARangingRoundsUpdate.toBundle());
 
         assertEquals(fromBundle.getSessionId(), sessionId);
-        assertEquals(fromBundle.getNoOfActiveRangingRounds(), noOfActiveRangingRounds);
+        assertEquals(fromBundle.getNoOfRangingRounds(), noOfActiveRangingRounds);
         assertArrayEquals(fromBundle.getRangingRoundIndexes(), rangingRoundIndexes);
     }
 
@@ -113,7 +113,7 @@ public class DlTDoATests {
         DlTDoARangingRoundsUpdateStatus dlTDoARangingRoundsUpdateStatus =
                 new DlTDoARangingRoundsUpdateStatus.Builder()
                         .setStatus(status)
-                        .setNoOfActiveRangingRounds(noOfActiveRangingRounds)
+                        .setNoOfRangingRounds(noOfActiveRangingRounds)
                         .setRangingRoundIndexes(rangingRoundIndexes)
                         .build();
 
@@ -121,7 +121,7 @@ public class DlTDoATests {
                 dlTDoARangingRoundsUpdateStatus.toBundle());
 
         assertEquals(fromBundle.getStatus(), status);
-        assertEquals(fromBundle.getNoOfActiveRangingRounds(), noOfActiveRangingRounds);
+        assertEquals(fromBundle.getNoOfRangingRounds(), noOfActiveRangingRounds);
         assertArrayEquals(fromBundle.getRangingRoundIndexes(), rangingRoundIndexes);
     }
 }
