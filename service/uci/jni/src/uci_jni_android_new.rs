@@ -37,7 +37,7 @@ use log::{debug, error};
 use uwb_core::error::{Error, Result};
 use uwb_core::params::{
     AppConfigTlv, CountryCode, RawAppConfigTlv, RawUciMessage,
-    SessionUpdateActiveRoundsDtTagResponse, SetAppConfigResponse,
+    SessionUpdateDtTagRangingRoundsResponse, SetAppConfigResponse,
 };
 use uwb_uci_packets::{
     AppConfigTlvType, CapTlv, Controlee, Controlee_V2_0_16_Byte_Version,
@@ -735,7 +735,7 @@ fn create_invalid_vendor_response(env: JNIEnv) -> Result<jobject> {
 ///
 /// response should be checked before calling to ensure safety.
 unsafe fn create_ranging_round_status(
-    response: SessionUpdateActiveRoundsDtTagResponse,
+    response: SessionUpdateDtTagRangingRoundsResponse,
     env: JNIEnv,
 ) -> Result<jobject> {
     let dt_ranging_rounds_update_status_class = env
@@ -852,9 +852,9 @@ fn native_get_power_stats(env: JNIEnv, obj: JObject, chip_id: JString) -> Result
     uci_manager.android_get_power_stats()
 }
 
-/// Update active ranging rounds for DT-TAG
+/// Update ranging rounds for DT-TAG
 #[no_mangle]
-pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSessionUpdateActiveRoundsDtTag(
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSessionUpdateDtTagRangingRounds(
     env: JNIEnv,
     obj: JObject,
     session_id: jint,
@@ -892,12 +892,12 @@ fn native_set_ranging_rounds_dt_tag(
     session_id: u32,
     ranging_round_indexes: jbyteArray,
     chip_id: JString,
-) -> Result<SessionUpdateActiveRoundsDtTagResponse> {
+) -> Result<SessionUpdateDtTagRangingRoundsResponse> {
     let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
     let indexes = env
         .convert_byte_array(ranging_round_indexes)
         .map_err(|_| Error::ForeignFunctionInterface)?;
-    uci_manager.session_update_active_rounds_dt_tag(session_id, indexes)
+    uci_manager.session_update_dt_tag_ranging_rounds(session_id, indexes)
 }
 
 /// Send a data packet to the remote device.
