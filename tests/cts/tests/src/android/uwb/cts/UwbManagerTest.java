@@ -1118,7 +1118,7 @@ public class UwbManagerTest {
                     DlTDoARangingRoundsUpdate rangingRoundsUpdate =
                             new DlTDoARangingRoundsUpdate.Builder()
                                     .setSessionId(1)
-                                    .setNoOfActiveRangingRounds(1)
+                                    .setNoOfRangingRounds(1)
                                     .setRangingRoundIndexes(new byte[]{1})
                                     .build();
 
