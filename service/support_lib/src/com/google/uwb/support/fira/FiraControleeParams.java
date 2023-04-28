@@ -36,7 +36,7 @@ public class FiraControleeParams extends FiraParams {
     private static final int BUNDLE_VERSION_1 = 1;
     private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_1;
 
-    @Nullable @MulticastListUpdateAction private final int mAction;
+    @MulticastListUpdateAction private final int mAction;
     @Nullable private final UwbAddress[] mAddressList;
     @Nullable private final int[] mSubSessionIdList;
     @Nullable private final byte[] mSubSessionKeyList;
@@ -47,7 +47,7 @@ public class FiraControleeParams extends FiraParams {
     private static final String KEY_SUB_SESSION_KEY_LIST = "sub_session_key_list";
 
     private FiraControleeParams(
-            @Nullable @MulticastListUpdateAction int action,
+            @MulticastListUpdateAction int action,
             @Nullable UwbAddress[] addressList,
             @Nullable int[] subSessionIdList,
             @Nullable byte[] subSessionKeyList) {
@@ -169,7 +169,7 @@ public class FiraControleeParams extends FiraParams {
 
     /** Builder */
     public static class Builder {
-        @Nullable private int mAction = MULTICAST_LIST_UPDATE_ACTION_ADD;
+        private int mAction = MULTICAST_LIST_UPDATE_ACTION_ADD;
         @Nullable private UwbAddress[] mAddressList = null;
         @Nullable private int[] mSubSessionIdList = null;
         @Nullable private byte[] mSubSessionKeyList = null;
