@@ -87,14 +87,19 @@ public class FiraEncoder extends TlvEncoder {
                         (short) params.getRangeDataNtfProximityFar())
                 .putByte(ConfigParam.DEVICE_ROLE, (byte) params.getDeviceRole())
                 .putByte(ConfigParam.RFRAME_CONFIG, (byte) params.getRframeConfig())
+                .putByte(ConfigParam.RSSI_REPORTING,
+                        (byte) (params.isRssiReportingEnabled() ? 1 : 0))
                 .putByte(ConfigParam.PREAMBLE_CODE_INDEX, (byte) params.getPreambleCodeIndex())
                 .putByte(ConfigParam.SFD_ID, (byte) params.getSfdId())
                 .putByte(ConfigParam.PSDU_DATA_RATE, (byte) params.getPsduDataRate())
                 .putByte(ConfigParam.PREAMBLE_DURATION, (byte) params.getPreambleDuration())
+                // n.a. for OWR UL-TDoA and 0x01 for all other RangingRoundUsage values.
+                .putByte(ConfigParam.RANGING_TIME_STRUCT, (byte) 0x01)
                 .putByte(ConfigParam.SLOTS_PER_RR, (byte) params.getSlotsPerRangingRound())
                 .putByte(ConfigParam.TX_ADAPTIVE_PAYLOAD_POWER,
                         params.isTxAdaptivePayloadPowerEnabled() ? (byte) 1 : (byte) 0)
                 .putByte(ConfigParam.PRF_MODE, (byte) params.getPrfMode())
+                .putByte(ConfigParam.SCHEDULED_MODE, (byte) params.getScheduledMode())
                 .putByte(ConfigParam.KEY_ROTATION,
                         params.isKeyRotationEnabled() ? (byte) 1 : (byte) 0)
                 .putByte(ConfigParam.KEY_ROTATION_RATE, (byte) params.getKeyRotationRate())
@@ -110,6 +115,8 @@ public class FiraEncoder extends TlvEncoder {
                         (byte) params.getInBandTerminationAttemptCount())
                 .putByte(ConfigParam.BPRF_PHR_DATA_RATE,
                         (byte) params.getBprfPhrDataRate())
+                .putByte(ConfigParam.MAX_NUMBER_OF_MEASUREMENTS,
+                        (byte) params.getMaxNumberOfMeasurements())
                 .putByte(ConfigParam.STS_LENGTH, (byte) params.getStsLength());
         if (params.getDeviceRole() != FiraParams.RANGING_DEVICE_UT_TAG) {
             tlvBufferBuilder.putInt(ConfigParam.RANGING_INTERVAL, params.getRangingIntervalMs());
@@ -178,16 +185,12 @@ public class FiraEncoder extends TlvEncoder {
                                     params.getRangeDataNtfAoaElevationUpper()), 9, 7), 16),
             });
         }
-        if (params.isRssiReportingEnabled()) {
-            tlvBufferBuilder.putByte(ConfigParam.RSSI_REPORTING, (byte) 1);
-        }
         if (params.isDiagnosticsEnabled()) {
             tlvBufferBuilder.putByte(ConfigParam.ENABLE_DIAGNOSTICS_RSSI, (byte) 1);
             tlvBufferBuilder.putInt(ConfigParam.ENABLE_DIAGRAMS_FRAME_REPORTS_FIELDS,
                     params.getDiagramsFrameReportsFieldsFlags());
         }
         if (params.getScheduledMode() == FiraParams.CONTENTION_BASED_RANGING) {
-            tlvBufferBuilder.putByte(ConfigParam.SCHEDULED_MODE, (byte) params.getScheduledMode());
             tlvBufferBuilder.putByteArray(ConfigParam.CAP_SIZE_RANGE, params.getCapSize());
         }
         if (params.getDeviceRole() == FiraParams.RANGING_DEVICE_UT_TAG) {

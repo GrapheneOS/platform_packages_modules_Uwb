@@ -78,9 +78,9 @@ public class FiraEncoderTest {
 
     private static final byte[] TEST_FIRA_OPEN_SESSION_TLV_DATA =
             UwbUtil.getByteArray("0001010101010201000301000401090501010602060408"
-                    + "0260090B01000C01030D01010E01040F0200001002204E11010012010314010"
-                    + "A1501021601001701011B01191C01001F0100230100240100250132260100"
-                    + "2901012A0200002C01002D01002E01012F0101310100350101090"
+                    + "0260090B01000C01030D01010E01040F0200001002204E11010012010313010014010A"
+                    + "1501021601001701011A01011B01191C01001F0100220101230100240100250132260100"
+                    + "2901012A0200002C01002D01002E01012F0101310100320100350101090"
                     + "4C8000000070206042B04000000002702780528061A5577477E7D1D0807D59E4707D56022");
 
     private static final FiraRangingReconfigureParams.Builder TEST_FIRA_RECONFIGURE_PARAMS =
@@ -119,9 +119,9 @@ public class FiraEncoderTest {
 
     private static final byte[] TEST_FIRA_OPEN_SESSION_TLV_DATA_UT_TAG =
             UwbUtil.getByteArray("0001010101000201000301000401090501010602060408"
-                    + "0260090B01000C01030D01010E01010F0200001002204E11010412010314010"
-                    + "A1501021601001701011B01191C01001F0100230100240100250132260100"
-                    + "2901012A0200002C01002D01002E01012F0101310100350101070206042B04000"
+                    + "0260090B01000C01030D01010E01010F0200001002204E11010412010313010014010A"
+                    + "1501021601001701011A01011B01191C01001F0100220101230100240100250132260100"
+                    + "2901012A0200002C01002D01002E01012F0101310100320100350101070206042B04000"
                     + "000002702780528061A5577477E7D3304B004000034041E0000003803010B0A390101");
 
     private final FiraEncoder mFiraEncoder = new FiraEncoder();
@@ -131,7 +131,7 @@ public class FiraEncoderTest {
         FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS.build();
         TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(41);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(45);
         assertThat(tlvs.getByteArray()).isEqualTo(TEST_FIRA_OPEN_SESSION_TLV_DATA);
     }
 
@@ -149,7 +149,7 @@ public class FiraEncoderTest {
         FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS.build();
         TlvBuffer tlvs = TlvEncoder.getEncoder(FiraParams.PROTOCOL_NAME).getTlvBuffer(params);
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(41);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(45);
         assertThat(tlvs.getByteArray()).isEqualTo(TEST_FIRA_OPEN_SESSION_TLV_DATA);
     }
 
@@ -167,7 +167,7 @@ public class FiraEncoderTest {
         FiraOpenSessionParams params = TEST_FIRA_UT_TAG_OPEN_SESSION_PARAM.build();
         TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(43);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(47);
         assertThat(tlvs.getByteArray()).isEqualTo(TEST_FIRA_OPEN_SESSION_TLV_DATA_UT_TAG);
     }
 
@@ -198,14 +198,14 @@ public class FiraEncoderTest {
 
         byte[] expected_data =
                 UwbUtil.getByteArray("0001010101010201030301000401090501010602060408"
-                        + "0260090B01000C01030D01010E01040F0200001002204E1101001201031"
-                        + "4010A1501021601001701011B01191C01001F0100230100240100250132260100"
-                        + "2901012A0200002C01002D01002E01012F0101310100350101090"
+                        + "0260090B01000C01030D01010E01040F0200001002204E110100120103130100"
+                        + "14010A1501021601001701011A01011B01191C01001F0100220101230100240100250132"
+                        + "2601002901012A0200002C01002D01002E01012F0101310100320100350101090"
                         + "4C8000000070206042B0400000000451005780578057805780578057805780578"
                         + "1D0807D59E4707D56022");
         TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(40);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(44);
         assertThat(tlvs.getByteArray()).isEqualTo(expected_data);
     }
 }
