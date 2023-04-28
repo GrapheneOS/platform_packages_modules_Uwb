@@ -38,8 +38,8 @@ public class UwbFilterEngineTest {
     @Test
     public void basic() {
         UwbFilterEngine engine = new UwbFilterEngine.Builder().build();
-        engine.add(SphericalVector.fromRadians(1, 1.2f, 1.3f).toSparse());
-        SphericalVector currentVector = engine.compute();
+        engine.add(SphericalVector.fromRadians(1, 1.2f, 1.3f).toSparse(), 0);
+        SphericalVector currentVector = engine.compute(0);
         assertThat(currentVector.azimuth).isEqualTo(1);
         assertThat(currentVector.elevation).isEqualTo(1.2f);
         assertThat(currentVector.distance).isEqualTo(1.3f);
@@ -56,10 +56,10 @@ public class UwbFilterEngineTest {
                 .build();
 
         poseSource.changePose(Pose.IDENTITY);
-        engine.add(SphericalVector.fromRadians(0.7f, 1.2f, 1.3f).toSparse());
+        engine.add(SphericalVector.fromRadians(0.7f, 1.2f, 1.3f).toSparse(), 0);
 
         // Check initial state.
-        SphericalVector currentVector = engine.compute();
+        SphericalVector currentVector = engine.compute(0);
         assertThat(currentVector.azimuth).isEqualTo(0.7f);
         assertThat(currentVector.elevation).isEqualTo(1.2f);
         assertThat(currentVector.distance).isEqualTo(1.3f);
@@ -68,7 +68,7 @@ public class UwbFilterEngineTest {
         poseSource.changePose(
                 new Pose(Vector3.ORIGIN, Quaternion.yawPitchRoll(-0.5f, 0, 0))
         );
-        currentVector = engine.compute();
+        currentVector = engine.compute(0);
 
         // See if the azimuth is to our right now that we turned left.
         assertClose(currentVector.azimuth, 0.7f - 0.5f);
@@ -94,15 +94,15 @@ public class UwbFilterEngineTest {
                 .build();
 
         poseSource.changePose(Pose.IDENTITY);
-        engine.add(SphericalVector.fromRadians(-0.7f, 0, 1.3f).toSparse());
+        engine.add(SphericalVector.fromRadians(-0.7f, 0, 1.3f).toSparse(), 0);
 
         // Check initial state.
-        SphericalVector currentVector = engine.compute();
+        SphericalVector currentVector = engine.compute(0);
         assertThat(currentVector.azimuth).isEqualTo(0.7f); // Primer would make this positive.
         assertThat(currentVector.elevation).isEqualTo(0f);
         assertThat(currentVector.distance).isEqualTo(1.3f);
 
-        engine.add(SphericalVector.fromRadians(0f, 0, 1.3f).toSparse());
+        engine.add(SphericalVector.fromRadians(0f, 0, 1.3f).toSparse(), 0);
 
         // Look down.
         poseSource.changePose(
@@ -112,11 +112,11 @@ public class UwbFilterEngineTest {
         // Generate a new measurement that doesn't have elevation or distance.
         engine.add(
                 SphericalVector.fromRadians(0f, 0f, 0f)
-                .toSparse(true, false, false)
-        );
+                .toSparse(true, false, false),
+                0);
 
         // Expect the predicted elevation based on the pose change.  Distance should be unaffected.
-        currentVector = engine.compute();
+        currentVector = engine.compute(0);
         assertClose(currentVector.azimuth, 0.0f);
         assertClose(currentVector.elevation, -1f);
         assertClose(currentVector.distance, 1.3f);
