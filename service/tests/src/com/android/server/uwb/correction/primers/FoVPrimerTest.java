@@ -42,14 +42,14 @@ public class FoVPrimerTest {
         for (int x = 0; x < 36; x++) {
             // Test within
             input = SphericalVector.fromCartesian(within).toSparse();
-            result = primer.prime(input, prediction, null);
+            result = primer.prime(input, prediction, null, 0);
             assertThat(result.vector.azimuth).isEqualTo(input.vector.azimuth);
             assertThat(result.vector.elevation).isEqualTo(input.vector.elevation);
             within = roll10.rotateVector(within);
 
             // Test outside
             input = SphericalVector.fromCartesian(outside).toSparse();
-            result = primer.prime(input, prediction, null);
+            result = primer.prime(input, prediction, null, 0);
             assertThat(result.vector.azimuth).isEqualTo(0);
             assertThat(result.vector.elevation).isEqualTo(0);
             outside = roll10.rotateVector(outside);
@@ -64,27 +64,27 @@ public class FoVPrimerTest {
 
         // FOV is actually permitted behind "behind" the device too, test that.
         input = SphericalVector.fromDegrees(35 + 180, 1, 10).toSparse();
-        result = primer.prime(input, prediction, null);
+        result = primer.prime(input, prediction, null, 0);
         // This is within FOV.
         assertThat(result.vector.azimuth).isEqualTo(input.vector.azimuth);
         assertThat(result.vector.elevation).isEqualTo(input.vector.elevation);
 
         input = SphericalVector.fromDegrees(45 + 180, 1, 10).toSparse();
-        result = primer.prime(input, prediction, null);
+        result = primer.prime(input, prediction, null, 0);
         // This is not within FOV.
         assertThat(result.vector.azimuth).isEqualTo(0);
         assertThat(result.vector.elevation).isEqualTo(0);
 
         // Also test point at 0,0.
         input = SphericalVector.fromDegrees(0, 0, 10).toSparse();
-        result = primer.prime(input, prediction, null);
+        result = primer.prime(input, prediction, null, 0);
         // This is within FOV.
         assertThat(result.vector.azimuth).isEqualTo(input.vector.azimuth);
         assertThat(result.vector.elevation).isEqualTo(input.vector.elevation);
 
         // Point at 90deg.
         input = SphericalVector.fromDegrees(0, 90, 10).toSparse();
-        result = primer.prime(input, prediction, null);
+        result = primer.prime(input, prediction, null, 0);
         // This is not within FOV.
         assertThat(result.vector.azimuth).isEqualTo(0);
         assertThat(result.vector.elevation).isEqualTo(0);
@@ -93,7 +93,7 @@ public class FoVPrimerTest {
         primer = new FovPrimer((float) toRadians(200));
         // FOV is actually permitted behind "behind" the device too, test that.
         input = SphericalVector.fromDegrees(35 + 180, 1, 10).toSparse();
-        result = primer.prime(input, prediction, null);
+        result = primer.prime(input, prediction, null, 0);
         // This is within FOV.
         assertThat(result.vector.azimuth).isEqualTo(input.vector.azimuth);
         assertThat(result.vector.elevation).isEqualTo(input.vector.elevation);
@@ -102,7 +102,7 @@ public class FoVPrimerTest {
         primer = new FovPrimer((float) toRadians(10));
         // Beyond the FOV, but no prediction data so it should go unchanged.
         input = SphericalVector.fromDegrees(35, 1, 10).toSparse();
-        result = primer.prime(input, null, null);
+        result = primer.prime(input, null, null, 0);
         // This is within FOV.
         assertThat(result.vector.azimuth).isEqualTo(input.vector.azimuth);
         assertThat(result.vector.elevation).isEqualTo(input.vector.elevation);

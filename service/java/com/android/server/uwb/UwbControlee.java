@@ -112,6 +112,7 @@ public class UwbControlee implements AutoCloseable {
         float azimuth = 0;
         float elevation = 0;
         float distance = 0;
+        long nowMs = mUwbInjector.getElapsedSinceBootMillis();
         if (aoaMeasurement != null) {
             if (aoaMeasurement.getAzimuth() != null
                     && aoaMeasurement.getAzimuth().getConfidenceLevel() > 0) {
@@ -132,9 +133,9 @@ public class UwbControlee implements AutoCloseable {
                 .toSparse(hasAzimuth, hasElevation, hasDistance);
 
         // Give to the engine.
-        mEngine.add(sv);
+        mEngine.add(sv, nowMs);
 
-        SphericalVector engineResult = mEngine.compute();
+        SphericalVector engineResult = mEngine.compute(nowMs);
         if (engineResult == null) {
             // Bail early - the engine didn't compute a result, so just leave the builder alone.
             return;
