@@ -37,15 +37,17 @@ public class ElevationPrimer implements IPrimer {
      * Applies a default pose-based elevation to a UWB reading that doesn't have one.
      *
      * @param input     The original UWB reading.
-     * @param prediction A prediction of where the signal probably came from.
+     * @param prediction The previous filtered UWB result adjusted by the pose change since then.
      * @param poseSource A pose source that may indicate phone orientation.
+     * @param timeMs When the input occurred, in ms since boot.
      * @return A replacement value for the UWB vector that has been corrected for the situation.
      */
     @Override
     public SphericalVector.Sparse prime(
             @NonNull SphericalVector.Sparse input,
             @Nullable SphericalVector prediction,
-            @Nullable IPoseSource poseSource) {
+            @Nullable IPoseSource poseSource,
+            long timeMs) {
         SphericalVector.Sparse position = input;
         if (poseSource != null
                 && poseSource.getCapabilities().contains(Capabilities.UPRIGHT)
