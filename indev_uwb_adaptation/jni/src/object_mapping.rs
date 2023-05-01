@@ -532,7 +532,7 @@ impl<'a> TryFrom<SessionRangeDataWithEnv<'a>> for UwbRangingDataJni<'a> {
             "(JJIJIII[Lcom/android/server/uwb/data/UwbTwoWayMeasurement;[B)V",
             &[
                 JValue::Long(data_obj.session_range_data.sequence_number as i64),
-                JValue::Long(data_obj.session_range_data.session_id as i64),
+                JValue::Long(data_obj.session_range_data.session_token as i64),
                 JValue::Int(data_obj.session_range_data.rcr_indicator as i32),
                 JValue::Long(data_obj.session_range_data.current_ranging_interval_ms as i64),
                 JValue::Int(data_obj.session_range_data.ranging_measurement_type as i32),
