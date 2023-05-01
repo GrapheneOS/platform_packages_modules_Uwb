@@ -113,6 +113,18 @@ public class DeviceConfigFacadeTest {
                 .thenReturn("ROTATION_VECTOR");
         when(mResources.getInteger(R.integer.prediction_timeout_seconds))
                 .thenReturn(6);
+        when(mResources.getBoolean(R.bool.enable_azimuth_mirroring)).thenReturn(true);
+        when(mResources.getBoolean(R.bool.predict_rear_azimuths)).thenReturn(true);
+        when(mResources.getInteger(R.integer.mirror_detection_window))
+                .thenReturn(7);
+        when(mResources.getInteger(R.integer.front_mirror_dps))
+                .thenReturn(8);
+        when(mResources.getInteger(R.integer.back_mirror_dps))
+                .thenReturn(9);
+        when(mResources.getInteger(R.integer.mirror_score_std_degrees))
+                .thenReturn(10);
+        when(mResources.getInteger(R.integer.back_noise_influence_percent))
+                .thenReturn(11);
 
         // Setup the default values for the Advertising profile and Rx data packet parameters.
         when(mResources.getInteger(R.integer.advertise_aoa_criteria_angle))
@@ -161,6 +173,8 @@ public class DeviceConfigFacadeTest {
         assertEquals(true, mDeviceConfigFacade.isEnableFilters());
         assertEquals(true, mDeviceConfigFacade.isEnablePrimerEstElevation());
         assertEquals(true, mDeviceConfigFacade.isEnablePrimerAoA());
+        assertEquals(true, mDeviceConfigFacade.isEnableBackAzimuth());
+        assertEquals(true, mDeviceConfigFacade.isEnableBackAzimuthMasking());
 
         assertEquals(1, mDeviceConfigFacade.getFilterDistanceInliersPercent());
         assertEquals(2, mDeviceConfigFacade.getFilterDistanceWindow());
@@ -169,6 +183,23 @@ public class DeviceConfigFacadeTest {
         assertEquals(5, mDeviceConfigFacade.getPrimerFovDegree());
         assertEquals(PoseSourceType.ROTATION_VECTOR, mDeviceConfigFacade.getPoseSourceType());
         assertEquals(6, mDeviceConfigFacade.getPredictionTimeoutSeconds());
+        assertEquals(7, mDeviceConfigFacade.getBackAzimuthWindow());
+        assertEquals(
+                Math.toRadians(8),
+                mDeviceConfigFacade.getFrontAzimuthRadiansPerSecond(),
+                0.001);
+        assertEquals(
+                Math.toRadians(9),
+                mDeviceConfigFacade.getBackAzimuthRadiansPerSecond(),
+                0.001);
+        assertEquals(
+                Math.toRadians(10),
+                mDeviceConfigFacade.getMirrorScoreStdRadians(),
+                0.001);
+        assertEquals(
+                11 / 100F,
+                mDeviceConfigFacade.getBackNoiseInfluenceCoeff(),
+                0.001);
 
         // true because FOV is 5: within limits.
         assertEquals(true, mDeviceConfigFacade.isEnablePrimerFov());
@@ -188,29 +219,70 @@ public class DeviceConfigFacadeTest {
      */
     @Test
     public void testFieldUpdates() throws Exception {
-        // Simulate updating the fields
+        // These are interwoven (change then check, repeated) to make sure that copypasta
+        //  errors didn't cause two values to get flipped.
+
+        // Simulate updating the fields, make sure the corresponding call is updated.
         when(DeviceConfig.getInt(anyString(), eq("ranging_result_log_interval_ms"),
                 anyInt())).thenReturn(4000);
+        mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
+        assertEquals(4000, mDeviceConfigFacade.getRangingResultLogIntervalMs());
+
         when(DeviceConfig.getBoolean(anyString(), eq("device_error_bugreport_enabled"),
                 anyBoolean())).thenReturn(true);
+        mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
+        assertEquals(true, mDeviceConfigFacade.isDeviceErrorBugreportEnabled());
+
         when(DeviceConfig.getInt(anyString(), eq("bug_report_min_interval_ms"),
                 anyInt())).thenReturn(10 * 3600_000);
+        mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
+        assertEquals(10 * 3600_000, mDeviceConfigFacade.getBugReportMinIntervalMs());
 
         when(DeviceConfig.getBoolean(anyString(), eq("enable_filters"),
                 anyBoolean())).thenReturn(false);
+        mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
+        assertEquals(false, mDeviceConfigFacade.isEnableFilters());
+
         when(DeviceConfig.getBoolean(anyString(), eq("enable_primer_est_elevation"),
                 anyBoolean())).thenReturn(false);
+        mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
+        assertEquals(false, mDeviceConfigFacade.isEnablePrimerEstElevation());
+
         when(DeviceConfig.getBoolean(anyString(), eq("enable_primer_aoa"),
                 anyBoolean())).thenReturn(false);
+        mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
+        assertEquals(false, mDeviceConfigFacade.isEnablePrimerAoA());
+
+        when(DeviceConfig.getBoolean(anyString(), eq("enable_azimuth_mirroring"),
+                anyBoolean())).thenReturn(false);
+        mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
+        assertEquals(false, mDeviceConfigFacade.isEnableBackAzimuth());
+
+        when(DeviceConfig.getBoolean(anyString(), eq("predict_rear_azimuths"),
+                anyBoolean())).thenReturn(false);
+        mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
+        assertEquals(false, mDeviceConfigFacade.isEnableBackAzimuthMasking());
 
         when(DeviceConfig.getInt(anyString(), eq("filter_distance_inliers_percent"),
                 anyInt())).thenReturn(6);
+        mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
+        assertEquals(6, mDeviceConfigFacade.getFilterDistanceInliersPercent());
+
         when(DeviceConfig.getInt(anyString(), eq("filter_distance_window"),
                 anyInt())).thenReturn(7);
+        mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
+        assertEquals(7, mDeviceConfigFacade.getFilterDistanceWindow());
+
         when(DeviceConfig.getInt(anyString(), eq("filter_angle_inliers_percent"),
                 anyInt())).thenReturn(8);
+        mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
+        assertEquals(8, mDeviceConfigFacade.getFilterAngleInliersPercent());
+
         when(DeviceConfig.getInt(anyString(), eq("filter_angle_window"),
                 anyInt())).thenReturn(9);
+        mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
+        assertEquals(9, mDeviceConfigFacade.getFilterAngleWindow());
+
         when(DeviceConfig.getInt(anyString(), eq("primer_fov_degrees"),
                 anyInt())).thenReturn(0);
         when(DeviceConfig.getString(anyString(), eq("pose_source_type"),
@@ -234,23 +306,7 @@ public class DeviceConfigFacadeTest {
                 anyInt())).thenReturn(20);
 
         mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
-
-        // Verifying fields are updated to the new values
-        assertEquals(4000, mDeviceConfigFacade.getRangingResultLogIntervalMs());
-        assertEquals(true, mDeviceConfigFacade.isDeviceErrorBugreportEnabled());
-        assertEquals(10 * 3600_000, mDeviceConfigFacade.getBugReportMinIntervalMs());
-
-        assertEquals(false, mDeviceConfigFacade.isEnableFilters());
-        assertEquals(false, mDeviceConfigFacade.isEnablePrimerEstElevation());
-        assertEquals(false, mDeviceConfigFacade.isEnablePrimerAoA());
-        assertEquals(6, mDeviceConfigFacade.getFilterDistanceInliersPercent());
-        assertEquals(7, mDeviceConfigFacade.getFilterDistanceWindow());
-        assertEquals(8, mDeviceConfigFacade.getFilterAngleInliersPercent());
-        assertEquals(9, mDeviceConfigFacade.getFilterAngleWindow());
         assertEquals(0, mDeviceConfigFacade.getPrimerFovDegree());
-        assertEquals(PoseSourceType.NONE, mDeviceConfigFacade.getPoseSourceType());
-        assertEquals(5, mDeviceConfigFacade.getPredictionTimeoutSeconds());
-
         // false because FOV is 0.
         assertEquals(false, mDeviceConfigFacade.isEnablePrimerFov());
 
@@ -261,5 +317,46 @@ public class DeviceConfigFacadeTest {
         assertEquals(7 , mDeviceConfigFacade.getAdvertiseArrayEndIndexToCalVariance());
         assertEquals(12, mDeviceConfigFacade.getAdvertiseTrustedVarianceValue());
         assertEquals(20, mDeviceConfigFacade.getRxDataMaxPacketsToStore());
+        when(DeviceConfig.getString(anyString(), eq("pose_source_type"),
+                anyString())).thenReturn("NONE");
+        mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
+        assertEquals(PoseSourceType.NONE, mDeviceConfigFacade.getPoseSourceType());
+
+        when(DeviceConfig.getInt(anyString(), eq("prediction_timeout_seconds"),
+                anyInt())).thenReturn(5);
+        mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
+        assertEquals(5, mDeviceConfigFacade.getPredictionTimeoutSeconds());
+
+        when(DeviceConfig.getInt(anyString(), eq("mirror_detection_window"),
+                anyInt())).thenReturn(11);
+        mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
+        assertEquals(11, mDeviceConfigFacade.getBackAzimuthWindow());
+
+        when(DeviceConfig.getInt(anyString(), eq("front_mirror_dps"),
+                anyInt())).thenReturn(12);
+        when(DeviceConfig.getInt(anyString(), eq("back_mirror_dps"),
+                anyInt())).thenReturn(13);
+        when(DeviceConfig.getInt(anyString(), eq("mirror_score_std_degrees"),
+                anyInt())).thenReturn(14);
+        when(DeviceConfig.getInt(anyString(), eq("back_noise_influence_percent"),
+                anyInt())).thenReturn(15);
+
+        mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
+        assertEquals(
+                Math.toRadians(12),
+                mDeviceConfigFacade.getFrontAzimuthRadiansPerSecond(),
+                0.001);
+        assertEquals(
+                Math.toRadians(13),
+                mDeviceConfigFacade.getBackAzimuthRadiansPerSecond(),
+                0.001);
+        assertEquals(
+                Math.toRadians(14),
+                mDeviceConfigFacade.getMirrorScoreStdRadians(),
+                0.001);
+        assertEquals(
+                15 / 100F,
+                mDeviceConfigFacade.getBackNoiseInfluenceCoeff(),
+                0.001);
     }
 }
