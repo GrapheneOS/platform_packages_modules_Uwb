@@ -17,8 +17,6 @@ package com.android.server.uwb.correction.filtering;
 
 import androidx.annotation.NonNull;
 
-import java.time.Instant;
-
 /**
  * Interface for a filter.
  */
@@ -26,20 +24,11 @@ public interface IFilter {
     /**
      * Adds a value to the filter.
      * @param value The value to add to the filter.
-     * The timestamp defaults to now.
+     * @param timeMs When the value occurred, in ms since boot. Used to determine the latency
+     * introduced by the filter. Note that this has no effect on the order in which the filter
+     * operates on values.
      */
-    default void add(float value) {
-        add(value, Instant.now());
-    }
-
-    /**
-     * Adds a value to the filter.
-     * @param value The value to add to the filter.
-     * @param instant When the value occurred, used to determine the latency introduced by
-     * the filter. Note that this has no effect on the order in which the filter operates
-     * on values.
-     */
-    void add(float value, @NonNull Instant instant);
+    void add(float value, long timeMs);
 
     /**
      * Alters the state of the filter such that it anticipates a change by the given amount.
@@ -65,11 +54,11 @@ public interface IFilter {
      * older than the requested time (see {@link #getResult()}).
      * This must be overridden in order to support predicting filters like a Kalman filter or an
      * extrapolating median/average filter.
-     * @param when The preferred time of the predicted sample.
+     * @param timeMs The preferred time of the predicted sample, in ms since boot.
      * @return The result from the computation.
      */
     @NonNull
-    default Sample getResult(Instant when) {
+    default Sample getResult(long timeMs) {
         return getResult();
     }
 }
