@@ -157,7 +157,7 @@ public class UwbConfigurationManagerTest {
         List<UwbAddress> destAddressList = new ArrayList<>();
         destAddressList.add(destAddress1);
         destAddressList.add(destAddress2);
-        int initiationTimeMs = 100;
+        int initiationTime = 100;
         int slotDurationRstu = 2400;
         int slotsPerRangingRound = 10;
         int rangingIntervalMs = 100;
@@ -215,7 +215,7 @@ public class UwbConfigurationManagerTest {
                         .setMultiNodeMode(multiNodeMode)
                         .setDeviceAddress(deviceAddress)
                         .setDestAddressList(destAddressList)
-                        .setInitiationTimeMs(initiationTimeMs)
+                        .setInitiationTime(initiationTime)
                         .setSlotDurationRstu(slotDurationRstu)
                         .setSlotsPerRangingRound(slotsPerRangingRound)
                         .setRangingIntervalMs(rangingIntervalMs)
