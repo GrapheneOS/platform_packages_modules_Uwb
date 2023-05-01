@@ -27,9 +27,9 @@ public class MedAvgFilterTest {
     @Test
     public void averageTest() {
         MedAvgFilter filter = new MedAvgFilter(3, 1);
-        filter.add(1);
-        filter.add(2);
-        filter.add(3);
+        filter.add(1, 0);
+        filter.add(2, 0);
+        filter.add(3, 0);
         assertThat(filter.getResult().value).isEqualTo((1 + 2 + 3) / 3f);
     }
 
@@ -37,19 +37,19 @@ public class MedAvgFilterTest {
     @Test
     public void slideTest() {
         MedAvgFilter filter = new MedAvgFilter(3, 1);
-        filter.add(1);
-        filter.add(2);
-        filter.add(3);
-        filter.add(4);
+        filter.add(1, 0);
+        filter.add(2, 0);
+        filter.add(3, 0);
+        filter.add(4, 0);
         assertThat(filter.getResult().value).isEqualTo((2 + 3 + 4) / 3f);
     }
 
     @Test
     public void remapTest() {
         MedAvgFilter filter = new MedAvgFilter(3, 1);
-        filter.add(1);
-        filter.add(2);
-        filter.add(3);
+        filter.add(1, 0);
+        filter.add(2, 0);
+        filter.add(3, 0);
         filter.compensate(66);
         assertThat(filter.getResult().value).isEqualTo((1 + 2 + 3) / 3f + 66);
     }
@@ -58,10 +58,10 @@ public class MedAvgFilterTest {
     @Test
     public void evenMedianTest() {
         MedAvgFilter filter = new MedAvgFilter(4, 0);
-        filter.add(1);
-        filter.add(3);
-        filter.add(4);
-        filter.add(2);
+        filter.add(1, 0);
+        filter.add(3, 0);
+        filter.add(4, 0);
+        filter.add(2, 0);
         assertThat(filter.getResult().value).isEqualTo((2f + 3f) / 2f);
     }
 
@@ -69,22 +69,22 @@ public class MedAvgFilterTest {
     @Test
     public void shortFilterTest() {
         MedAvgFilter filter = new MedAvgFilter(4, 0); // median
-        filter.add(5);
+        filter.add(5, 0);
         assertThat(filter.getResult().value).isEqualTo(5);
-        filter.add(6);
+        filter.add(6, 0);
         assertThat(filter.getResult().value).isEqualTo((5f + 6f) / 2);
-        filter.add(7);
+        filter.add(7, 0);
         assertThat(filter.getResult().value).isEqualTo(6);
     }
 
     @Test
     public void mixCutTest() {
         MedAvgFilter filter = new MedAvgFilter(5, 0.5f); // Average half
-        filter.add(3);
-        filter.add(13);
-        filter.add(7);
-        filter.add(11);
-        filter.add(2);
+        filter.add(3, 0);
+        filter.add(13, 0);
+        filter.add(7, 0);
+        filter.add(11, 0);
+        filter.add(2, 0);
         assertThat(filter.getResult().value).isEqualTo((3 + 7 + 11) / 3f);
     }
 

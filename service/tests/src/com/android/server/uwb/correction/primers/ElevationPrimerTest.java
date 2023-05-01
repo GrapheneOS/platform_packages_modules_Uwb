@@ -39,7 +39,7 @@ public class ElevationPrimerTest {
         nps.setCapabilities(EnumSet.of(Capabilities.UPRIGHT));
 
         Sparse input = SphericalVector.fromDegrees(35, 0, 10).toSparse();
-        Sparse result = primer.prime(input, null, nps);
+        Sparse result = primer.prime(input, null, nps, 0);
 
         assertThat(result.hasElevation).isTrue();
         // Verify that, since elevation was already available, it was unchanged.
@@ -54,11 +54,11 @@ public class ElevationPrimerTest {
         Sparse input = SphericalVector.fromDegrees(35, 0, 10)
                 .toSparse(true, false, true);
 
-        Sparse result = primer.prime(input, null, nps);
+        Sparse result = primer.prime(input, null, nps, 0);
         // Pose is not capable of guessing elevation.
         assertThat(result.hasElevation).isFalse();
 
-        result = primer.prime(input, null, null);
+        result = primer.prime(input, null, null, 0);
         // Pose source does not exist.
         assertThat(result.hasElevation).isFalse();
     }
@@ -74,7 +74,7 @@ public class ElevationPrimerTest {
         Sparse input = SphericalVector.fromDegrees(35, 0, 10)
                 .toSparse(true, false, true);
         SphericalVector prediction = SphericalVector.fromDegrees(5, 6, 7);
-        Sparse result = primer.prime(input, prediction, nps);
+        Sparse result = primer.prime(input, prediction, nps, 0);
 
         assertThat(result.hasElevation).isTrue();
         // The phone pose is slightly facing down, so the elevation should be slightly up.
@@ -94,7 +94,7 @@ public class ElevationPrimerTest {
         Sparse input = SphericalVector.fromDegrees(35, 0, 10)
                 .toSparse(true, true, true);
         SphericalVector prediction = SphericalVector.fromDegrees(5, 6, 7);
-        Sparse result = primer.prime(input, prediction, nps);
+        Sparse result = primer.prime(input, prediction, nps, 0);
 
         assertThat(result.hasElevation).isTrue();
         // The phone pose is slightly facing down, so the elevation should be slightly up.
