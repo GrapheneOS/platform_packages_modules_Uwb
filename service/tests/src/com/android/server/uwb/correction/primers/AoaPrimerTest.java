@@ -31,7 +31,7 @@ public class AoaPrimerTest {
         AoaPrimer primer = new AoaPrimer();
         Sparse sv = SphericalVector.fromDegrees(35, 0, 10)
                 .toSparse();
-        Sparse result = primer.prime(sv, null, null);
+        Sparse result = primer.prime(sv, null, null, 0);
 
         // With zero elevation, the conversion should do nothing.
         TestHelpers.assertClose(result.vector.azimuth, toRadians(35));
@@ -41,7 +41,7 @@ public class AoaPrimerTest {
         sv = SphericalVector.fromDegrees(45, 45, 10)
             .toSparse();
 
-        result = primer.prime(sv, null, null);
+        result = primer.prime(sv, null, null, 0);
         TestHelpers.assertClose(result.vector.azimuth, toRadians(90));
         TestHelpers.assertClose(result.vector.elevation, toRadians(45));
     }
@@ -52,13 +52,13 @@ public class AoaPrimerTest {
         AoaPrimer primer = new AoaPrimer();
         SphericalVector sv = SphericalVector.fromDegrees(2, 3, 4);
 
-        Sparse result = primer.prime(sv.toSparse(false, true, true), null, null);
+        Sparse result = primer.prime(sv.toSparse(false, true, true), null, null, 0);
         Truth.assertThat(result.hasAzimuth).isFalse();
         Truth.assertThat(result.hasElevation).isTrue();
         Truth.assertThat(result.hasDistance).isTrue();
         Truth.assertThat(result.vector.elevation).isEqualTo(sv.elevation);
 
-        result = primer.prime(sv.toSparse(true, false, true), null, null);
+        result = primer.prime(sv.toSparse(true, false, true), null, null, 0);
         Truth.assertThat(result.hasAzimuth).isTrue();
         Truth.assertThat(result.hasElevation).isFalse();
         Truth.assertThat(result.hasDistance).isTrue();
