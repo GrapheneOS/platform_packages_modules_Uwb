@@ -115,8 +115,6 @@ public class FiraEncoder extends TlvEncoder {
                         (byte) params.getInBandTerminationAttemptCount())
                 .putByte(ConfigParam.BPRF_PHR_DATA_RATE,
                         (byte) params.getBprfPhrDataRate())
-                .putByte(ConfigParam.MAX_NUMBER_OF_MEASUREMENTS,
-                        (byte) params.getMaxNumberOfMeasurements())
                 .putByte(ConfigParam.STS_LENGTH, (byte) params.getStsLength());
         if (params.getDeviceRole() != FiraParams.RANGING_DEVICE_UT_TAG) {
             tlvBufferBuilder.putInt(ConfigParam.RANGING_INTERVAL, params.getRangingIntervalMs());
