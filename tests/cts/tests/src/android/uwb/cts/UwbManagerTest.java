@@ -41,6 +41,7 @@ import android.content.ContextParams;
 import android.os.CancellationSignal;
 import android.os.PersistableBundle;
 import android.os.Process;
+import android.os.UserHandle;
 import android.permission.PermissionManager;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
@@ -815,8 +816,11 @@ public class UwbManagerTest {
     private AttributionSource getShellAttributionSourceWithRenouncedPermissions(
             @Nullable Set<String> renouncedPermissions) {
         try {
+            // Calculate the shellUid to account for running this from a secondary user.
+            int shellUid = UserHandle.getUid(
+                    Process.myUserHandle().getIdentifier(), UserHandle.getAppId(Process.SHELL_UID));
             AttributionSource shellAttributionSource =
-                    new AttributionSource.Builder(Process.SHELL_UID)
+                    new AttributionSource.Builder(shellUid)
                             .setPackageName("com.android.shell")
                             .setRenouncedPermissions(renouncedPermissions)
                             .build();
