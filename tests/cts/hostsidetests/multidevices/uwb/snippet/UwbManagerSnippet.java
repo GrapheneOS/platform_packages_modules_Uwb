@@ -619,7 +619,7 @@ public class UwbManagerSnippet implements Snippet {
             builder.setDestAddressList(Arrays.asList(destinationUwbAddresses));
         }
         if (j.has("initiationTimeMs")) {
-            builder.setInitiationTimeMs(j.getInt("initiationTimeMs"));
+            builder.setInitiationTime(j.getInt("initiationTimeMs"));
         }
         if (j.has("slotDurationRstu")) {
             builder.setSlotDurationRstu(j.getInt("slotDurationRstu"));
