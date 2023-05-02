@@ -62,14 +62,14 @@ final class Conversions {
         RangingMeasurement altitude = null;
         if (aoaMeasurement != null) {
             AngleMeasurement azimuthMeasurement = aoaMeasurement.getAzimuth();
-            if (azimuthMeasurement != null) {
+            if (azimuthMeasurement != null && isMeasurementAllZero(azimuthMeasurement)) {
                 azimuth =
                         createMeasurement(
                                 Math.toDegrees(azimuthMeasurement.getRadians()),
                                 azimuthMeasurement.getConfidenceLevel());
             }
             AngleMeasurement altitudeMeasurement = aoaMeasurement.getAltitude();
-            if (altitudeMeasurement != null) {
+            if (altitudeMeasurement != null && isMeasurementAllZero(altitudeMeasurement)) {
                 altitude =
                         createMeasurement(
                                 Math.toDegrees(altitudeMeasurement.getRadians()),
@@ -86,6 +86,12 @@ final class Conversions {
         }
         return new RangingPosition(
                 distance, azimuth, altitude, measurement.getElapsedRealtimeNanos());
+    }
+
+    private static boolean isMeasurementAllZero(AngleMeasurement measurement) {
+        return measurement.getRadians() == 0
+                && measurement.getErrorRadians() == 0
+                && measurement.getConfidenceLevel() == 0;
     }
 
     @RangingSessionCallback.RangingSuspendedReason
