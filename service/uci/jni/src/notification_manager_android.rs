@@ -22,12 +22,13 @@ use crate::jclass_name::{
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use jni::errors::Error as JNIError;
 use jni::objects::{GlobalRef, JClass, JMethodID, JObject, JValue};
 use jni::signature::TypeSignature;
 use jni::sys::jvalue;
 use jni::{AttachGuard, JavaVM};
 use log::{debug, error};
-use uwb_core::error::{Error, Result};
+use uwb_core::error::{Error as UwbError, Result as UwbResult};
 use uwb_core::params::UwbAddress;
 use uwb_core::uci::uci_manager_sync::{NotificationManager, NotificationManagerBuilder};
 use uwb_core::uci::{
@@ -47,6 +48,9 @@ const SHORT_MAC_ADDRESS_LEN: i32 = 2;
 const EXTENDED_MAC_ADDRESS_LEN: i32 = 8;
 const MAX_ANCHOR_LOCATION_LEN: i32 = 12;
 const MAX_RANGING_ROUNDS_LEN: i32 = 16;
+
+// Maximum allowed number of Java Object to be allocated inside with_local_frame
+const MAX_JAVA_OBJECTS_CAPACITY: i32 = 50;
 
 enum MacAddress {
     Short(u16),
@@ -270,7 +274,7 @@ impl NotificationManagerAndroid {
         class_loader_obj: &'a GlobalRef,
         env: &'a AttachGuard<'static>,
         class_name: &'a str,
-    ) -> Result<JClass<'a>> {
+    ) -> Result<JClass<'a>, JNIError> {
         // Look for cached class
         if jclass_map.get(class_name).is_none() {
             // Find class using the class loader object, needed as this call is initiated from a
@@ -278,7 +282,7 @@ impl NotificationManagerAndroid {
 
             let env_class_name = *env.new_string(class_name).map_err(|e| {
                 error!("UCI JNI: failed to create Java String: {e:?}");
-                Error::ForeignFunctionInterface
+                e
             })?;
             let class_value = env
                 .call_method(
@@ -289,13 +293,13 @@ impl NotificationManagerAndroid {
                 )
                 .map_err(|e| {
                     error!("UCI JNI: failed to find java class {}: {:?}", class_name, e);
-                    Error::ForeignFunctionInterface
+                    e
                 })?;
             let jclass = match class_value.l() {
                 Ok(obj) => Ok(JClass::from(obj)),
                 Err(e) => {
                     error!("UCI JNI: failed to find java class {}: {:?}", class_name, e);
-                    Err(Error::ForeignFunctionInterface)
+                    Err(e)
                 }
             }?;
             // Cache JClass as a global reference.
@@ -303,7 +307,7 @@ impl NotificationManagerAndroid {
                 class_name.to_owned(),
                 env.new_global_ref(jclass).map_err(|e| {
                     error!("UCI JNI: global reference conversion failed: {:?}", e);
-                    Error::ForeignFunctionInterface
+                    e
                 })?,
             );
         }
@@ -311,11 +315,16 @@ impl NotificationManagerAndroid {
         Ok(jclass_map.get(class_name).unwrap().as_obj().into())
     }
 
-    fn cached_jni_call(&mut self, name: &str, sig: &str, args: &[jvalue]) -> Result<()> {
+    fn cached_jni_call(
+        &mut self,
+        name: &str,
+        sig: &str,
+        args: &[jvalue],
+    ) -> Result<JObject, JNIError> {
         debug!("UCI JNI: callback {}", name);
         let type_signature = TypeSignature::from_str(sig).map_err(|e| {
             error!("UCI JNI: Invalid type signature: {:?}", e);
-            Error::BadParameters
+            e
         })?;
         if type_signature.args.len() != args.len() {
             error!(
@@ -323,7 +332,7 @@ impl NotificationManagerAndroid {
                 type_signature.args.len(),
                 args.len()
             );
-            return Err(Error::BadParameters);
+            return Err(jni::errors::Error::InvalidArgList(type_signature));
         }
         let name_signature = name.to_owned() + sig;
         if self.jmethod_id_map.get(&name_signature).is_none() {
@@ -331,7 +340,7 @@ impl NotificationManagerAndroid {
                 name_signature.clone(),
                 self.env.get_method_id(self.callback_obj.as_obj(), name, sig).map_err(|e| {
                     error!("UCI JNI: failed to get method: {:?}", e);
-                    Error::ForeignFunctionInterface
+                    e
                 })?,
             );
         }
@@ -341,10 +350,10 @@ impl NotificationManagerAndroid {
             type_signature.ret,
             args,
         ) {
-            Ok(_) => Ok(()),
-            Err(_) => {
+            Ok(_) => Ok(JObject::null()),
+            Err(e) => {
                 error!("UCI JNI: callback {} failed!", name);
-                Err(Error::ForeignFunctionInterface)
+                Err(e)
             }
         }
     }
@@ -354,7 +363,7 @@ impl NotificationManagerAndroid {
         session_id: u32,
         session_state: SessionState,
         reason_code: u8,
-    ) -> Result<()> {
+    ) -> Result<JObject, JNIError> {
         self.cached_jni_call(
             "onSessionStatusNotificationReceived",
             "(JII)V",
@@ -371,30 +380,21 @@ impl NotificationManagerAndroid {
         session_id: u32,
         remaining_multicast_list_size: usize,
         status_list: Vec<ControleeStatus>,
-    ) -> Result<()> {
+    ) -> Result<JObject, JNIError> {
         let remaining_multicast_list_size: i32 =
-            remaining_multicast_list_size.try_into().map_err(|_| Error::BadParameters)?;
-        let count: i32 = status_list.len().try_into().map_err(|_| Error::BadParameters)?;
-        let mac_address_jintarray =
-            self.env.new_int_array(count).map_err(|_| Error::ForeignFunctionInterface)?;
-        let subsession_id_jlongarray =
-            self.env.new_long_array(count).map_err(|_| Error::ForeignFunctionInterface)?;
-        let status_jintarray =
-            self.env.new_int_array(count).map_err(|_| Error::ForeignFunctionInterface)?;
+            remaining_multicast_list_size.try_into().map_err(|_| JNIError::InvalidCtorReturn)?;
+        let count: i32 = status_list.len().try_into().map_err(|_| JNIError::InvalidCtorReturn)?;
+        let mac_address_jintarray = self.env.new_int_array(count)?;
+        let subsession_id_jlongarray = self.env.new_long_array(count)?;
+        let status_jintarray = self.env.new_int_array(count)?;
         let (mac_address_vec, (subsession_id_vec, status_vec)): (Vec<_>, (Vec<_>, Vec<_>)) =
             status_list
                 .into_iter()
                 .map(|cs| (cs.mac_address as i32, (cs.subsession_id as i64, cs.status as i32)))
                 .unzip();
-        self.env
-            .set_int_array_region(mac_address_jintarray, 0, &mac_address_vec)
-            .map_err(|_| Error::ForeignFunctionInterface)?;
-        self.env
-            .set_long_array_region(subsession_id_jlongarray, 0, &subsession_id_vec)
-            .map_err(|_| Error::ForeignFunctionInterface)?;
-        self.env
-            .set_int_array_region(status_jintarray, 0, &status_vec)
-            .map_err(|_| Error::ForeignFunctionInterface)?;
+        self.env.set_int_array_region(mac_address_jintarray, 0, &mac_address_vec)?;
+        self.env.set_long_array_region(subsession_id_jlongarray, 0, &subsession_id_vec)?;
+        self.env.set_int_array_region(status_jintarray, 0, &status_vec)?;
         let multicast_update_jclass = NotificationManagerAndroid::find_local_class(
             &mut self.jclass_map,
             &self.class_loader_obj,
@@ -412,21 +412,18 @@ impl NotificationManagerAndroid {
         // Safety: status_jintarray is safely instantiated above.
         let status_jobject = unsafe { JObject::from_raw(status_jintarray) };
 
-        let multicast_update_jobject = self
-            .env
-            .new_object(
-                multicast_update_jclass,
-                "(JII[I[J[I)V",
-                &[
-                    JValue::Long(session_id as i64),
-                    JValue::Int(remaining_multicast_list_size),
-                    JValue::Int(count),
-                    JValue::Object(mac_address_jobject),
-                    JValue::Object(subsession_id_jobject),
-                    JValue::Object(status_jobject),
-                ],
-            )
-            .map_err(|_| Error::ForeignFunctionInterface)?;
+        let multicast_update_jobject = self.env.new_object(
+            multicast_update_jclass,
+            "(JII[I[J[I)V",
+            &[
+                JValue::Long(session_id as i64),
+                JValue::Int(remaining_multicast_list_size),
+                JValue::Int(count),
+                JValue::Object(mac_address_jobject),
+                JValue::Object(subsession_id_jobject),
+                JValue::Object(status_jobject),
+            ],
+        )?;
         self.cached_jni_call(
             "onMulticastListUpdateNotificationReceived",
             &method_sig,
@@ -439,11 +436,9 @@ impl NotificationManagerAndroid {
     fn on_session_dl_tdoa_range_data_notification(
         &mut self,
         range_data: SessionRangeData,
-    ) -> Result<()> {
-        let raw_notification_jbytearray = self
-            .env
-            .byte_array_from_slice(&range_data.raw_ranging_data)
-            .map_err(|_| Error::ForeignFunctionInterface)?;
+    ) -> Result<JObject, JNIError> {
+        let raw_notification_jbytearray =
+            self.env.byte_array_from_slice(&range_data.raw_ranging_data)?;
         let measurement_jclass = NotificationManagerAndroid::find_local_class(
             &mut self.jclass_map,
             &self.class_loader_obj,
@@ -460,19 +455,12 @@ impl NotificationManagerAndroid {
                 EXTENDED_MAC_ADDRESS_LEN
             }
             _ => {
-                return Err(Error::ForeignFunctionInterface);
+                return Err(JNIError::InvalidCtorReturn);
             }
         };
-        let address_jbytearray =
-            self.env.new_byte_array(bytearray_len).map_err(|_| Error::ForeignFunctionInterface)?;
-        let anchor_location = self
-            .env
-            .new_byte_array(MAX_ANCHOR_LOCATION_LEN)
-            .map_err(|_| Error::ForeignFunctionInterface)?;
-        let active_ranging_rounds = self
-            .env
-            .new_byte_array(MAX_RANGING_ROUNDS_LEN)
-            .map_err(|_| Error::ForeignFunctionInterface)?;
+        let address_jbytearray = self.env.new_byte_array(bytearray_len)?;
+        let anchor_location = self.env.new_byte_array(MAX_ANCHOR_LOCATION_LEN)?;
+        let active_ranging_rounds = self.env.new_byte_array(MAX_RANGING_ROUNDS_LEN)?;
 
         // Safety: address_jbytearray is safely instantiated above.
         let address_jobject = unsafe { JObject::from_raw(address_jbytearray) };
@@ -512,7 +500,7 @@ impl NotificationManagerAndroid {
             )
             .map_err(|e| {
                 error!("UCI JNI: measurement object creation failed: {:?}", e);
-                Error::ForeignFunctionInterface
+                e
             })?;
         let measurement_count: i32 = match &range_data.ranging_measurements {
             RangingMeasurements::ShortAddressTwoWay(v) => v.len(),
@@ -520,29 +508,26 @@ impl NotificationManagerAndroid {
             RangingMeasurements::ShortAddressDltdoa(v) => v.len(),
             RangingMeasurements::ExtendedAddressDltdoa(v) => v.len(),
             _ => {
-                return Err(Error::BadParameters);
+                return Err(JNIError::InvalidCtorReturn);
             }
         }
         .try_into()
-        .map_err(|_| Error::BadParameters)?;
+        .map_err(|_| JNIError::InvalidCtorReturn)?;
         let mac_indicator = match &range_data.ranging_measurements {
             RangingMeasurements::ShortAddressTwoWay(_) => MacAddressIndicator::ShortAddress,
             RangingMeasurements::ExtendedAddressTwoWay(_) => MacAddressIndicator::ExtendedAddress,
             RangingMeasurements::ShortAddressDltdoa(_) => MacAddressIndicator::ShortAddress,
             RangingMeasurements::ExtendedAddressDltdoa(_) => MacAddressIndicator::ExtendedAddress,
             _ => {
-                return Err(Error::BadParameters);
+                return Err(JNIError::InvalidCtorReturn);
             }
         };
 
-        let measurements_jobjectarray = self
-            .env
-            .new_object_array(
-                measurement_count,
-                measurement_jclass,
-                zero_initiated_measurement_jobject,
-            )
-            .map_err(|_| Error::ForeignFunctionInterface)?;
+        let measurements_jobjectarray = self.env.new_object_array(
+            measurement_count,
+            measurement_jclass,
+            zero_initiated_measurement_jobject,
+        )?;
 
         for (i, measurement) in match range_data.ranging_measurements {
             RangingMeasurements::ShortAddressDltdoa(v) => {
@@ -563,23 +548,14 @@ impl NotificationManagerAndroid {
                 .iter()
                 .map(|b| b.to_owned() as i8)
                 .collect::<Vec<_>>();
-            let mac_address_jbytearray = self
-                .env
-                .new_byte_array(mac_address_i8.len() as i32)
-                .map_err(|_| Error::ForeignFunctionInterface)?;
-            self.env
-                .set_byte_array_region(mac_address_jbytearray, 0, &mac_address_i8)
-                .map_err(|_| Error::ForeignFunctionInterface)?;
+            let mac_address_jbytearray = self.env.new_byte_array(mac_address_i8.len() as i32)?;
+            self.env.set_byte_array_region(mac_address_jbytearray, 0, &mac_address_i8)?;
 
-            let dt_anchor_location_jbytearray = self
-                .env
-                .byte_array_from_slice(&measurement.dt_anchor_location)
-                .map_err(|_| Error::ForeignFunctionInterface)?;
+            let dt_anchor_location_jbytearray =
+                self.env.byte_array_from_slice(&measurement.dt_anchor_location)?;
 
-            let ranging_rounds_jbytearray = self
-                .env
-                .byte_array_from_slice(&measurement.ranging_rounds)
-                .map_err(|_| Error::ForeignFunctionInterface)?;
+            let ranging_rounds_jbytearray =
+                self.env.byte_array_from_slice(&measurement.ranging_rounds)?;
 
             // Safety: mac_address_jbytearray is safely instantiated above.
             let mac_address_jobject = unsafe { JObject::from_raw(mac_address_jbytearray) };
@@ -620,13 +596,13 @@ impl NotificationManagerAndroid {
                 )
                 .map_err(|e| {
                     error!("UCI JNI: measurement object creation failed: {:?}", e);
-                    Error::ForeignFunctionInterface
+                    e
                 })?;
             self.env
                 .set_object_array_element(measurements_jobjectarray, i as i32, measurement_jobject)
                 .map_err(|e| {
                     error!("UCI JNI: measurement object copy failed: {:?}", e);
-                    Error::ForeignFunctionInterface
+                    e
                 })?;
         }
         // Create UwbRangingData
@@ -664,7 +640,7 @@ impl NotificationManagerAndroid {
             )
             .map_err(|e| {
                 error!("UCI JNI: Ranging Data object creation failed: {:?}", e);
-                Error::ForeignFunctionInterface
+                e
             })?;
 
         let method_sig = "(L".to_owned() + UWB_RANGING_DATA_CLASS + ";)V";
@@ -680,15 +656,14 @@ impl NotificationManagerAndroid {
         bytearray_len: i32,
         measurement_count: i32,
         measurements: Vec<TwoWayRangingMeasurement>,
-    ) -> Result<jni::sys::jobjectArray> {
+    ) -> Result<jni::sys::jobjectArray, JNIError> {
         let measurement_jclass = NotificationManagerAndroid::find_local_class(
             &mut self.jclass_map,
             &self.class_loader_obj,
             &self.env,
             UWB_TWO_WAY_MEASUREMENT_CLASS,
         )?;
-        let address_jbytearray =
-            self.env.new_byte_array(bytearray_len).map_err(|_| Error::ForeignFunctionInterface)?;
+        let address_jbytearray = self.env.new_byte_array(bytearray_len)?;
 
         // Safety: address_jbytearray is safely instantiated above.
         let address_jobject = unsafe { JObject::from_raw(address_jbytearray) };
@@ -717,17 +692,14 @@ impl NotificationManagerAndroid {
             )
             .map_err(|e| {
                 error!("UCI JNI: measurement object creation failed: {:?}", e);
-                Error::ForeignFunctionInterface
+                e
             })?;
 
-        let measurements_jobjectarray = self
-            .env
-            .new_object_array(
-                measurement_count,
-                measurement_jclass,
-                zero_initiated_measurement_jobject,
-            )
-            .map_err(|_| Error::ForeignFunctionInterface)?;
+        let measurements_jobjectarray = self.env.new_object_array(
+            measurement_count,
+            measurement_jclass,
+            zero_initiated_measurement_jobject,
+        )?;
         for (i, measurement) in measurements.into_iter().enumerate() {
             // cast to i8 as java do not support unsigned:
             let mac_address_i8 = measurement
@@ -736,13 +708,8 @@ impl NotificationManagerAndroid {
                 .iter()
                 .map(|b| b.to_owned() as i8)
                 .collect::<Vec<_>>();
-            let mac_address_jbytearray = self
-                .env
-                .new_byte_array(mac_address_i8.len() as i32)
-                .map_err(|_| Error::ForeignFunctionInterface)?;
-            self.env
-                .set_byte_array_region(mac_address_jbytearray, 0, &mac_address_i8)
-                .map_err(|_| Error::ForeignFunctionInterface)?;
+            let mac_address_jbytearray = self.env.new_byte_array(mac_address_i8.len() as i32)?;
+            self.env.set_byte_array_region(mac_address_jbytearray, 0, &mac_address_i8)?;
             // casting as i32 is fine since it is wider than actual integer type.
 
             // Safety: mac_address_jbytearray is safely instantiated above.
@@ -771,13 +738,13 @@ impl NotificationManagerAndroid {
                 )
                 .map_err(|e| {
                     error!("UCI JNI: measurement object creation failed: {:?}", e);
-                    Error::ForeignFunctionInterface
+                    e
                 })?;
             self.env
                 .set_object_array_element(measurements_jobjectarray, i as i32, measurement_jobject)
                 .map_err(|e| {
                     error!("UCI JNI: measurement object copy failed: {:?}", e);
-                    Error::ForeignFunctionInterface
+                    e
                 })?;
         }
 
@@ -787,15 +754,13 @@ impl NotificationManagerAndroid {
     fn on_session_owr_aoa_range_data_notification(
         &mut self,
         range_data: SessionRangeData,
-    ) -> Result<()> {
+    ) -> Result<JObject, JNIError> {
         if range_data.ranging_measurement_type != RangingMeasurementType::OwrAoa {
-            return Err(Error::ForeignFunctionInterface);
+            return Err(JNIError::InvalidCtorReturn);
         }
 
-        let raw_notification_jbytearray = self
-            .env
-            .byte_array_from_slice(&range_data.raw_ranging_data)
-            .map_err(|_| Error::ForeignFunctionInterface)?;
+        let raw_notification_jbytearray =
+            self.env.byte_array_from_slice(&range_data.raw_ranging_data)?;
 
         let (mac_indicator, measurement): (MacAddressIndicator, OwrAoaRangingMeasurement) =
             match range_data.ranging_measurements {
@@ -806,7 +771,7 @@ impl NotificationManagerAndroid {
                     (MacAddressIndicator::ShortAddress, m.into())
                 }
                 _ => {
-                    return Err(Error::ForeignFunctionInterface);
+                    return Err(JNIError::InvalidCtorReturn);
                 }
             };
 
@@ -818,13 +783,8 @@ impl NotificationManagerAndroid {
             .map(|b| b.to_owned() as i8)
             .collect::<Vec<_>>();
         // casting as i32 is fine since it is wider than actual integer type.
-        let mac_address_jbytearray = self
-            .env
-            .new_byte_array(mac_address_i8.len() as i32)
-            .map_err(|_| Error::ForeignFunctionInterface)?;
-        self.env
-            .set_byte_array_region(mac_address_jbytearray, 0, &mac_address_i8)
-            .map_err(|_| Error::ForeignFunctionInterface)?;
+        let mac_address_jbytearray = self.env.new_byte_array(mac_address_i8.len() as i32)?;
+        self.env.set_byte_array_region(mac_address_jbytearray, 0, &mac_address_i8)?;
         // Safety: mac_address_jbytearray is safely instantiated above.
         let mac_address_jobject = unsafe { JObject::from_raw(mac_address_jbytearray) };
 
@@ -853,7 +813,7 @@ impl NotificationManagerAndroid {
             )
             .map_err(|e| {
                 error!("UCI JNI: OwrAoA measurement jobject creation failed: {:?}", e);
-                Error::ForeignFunctionInterface
+                e
             })?;
 
         // Create UwbRangingData
@@ -888,7 +848,7 @@ impl NotificationManagerAndroid {
             )
             .map_err(|e| {
                 error!("UCI JNI: Ranging Data object creation failed: {:?}", e);
-                Error::ForeignFunctionInterface
+                e
             })?;
         let method_sig = "(L".to_owned() + UWB_RANGING_DATA_CLASS + ";)V";
         self.cached_jni_call(
@@ -901,11 +861,9 @@ impl NotificationManagerAndroid {
     fn on_session_two_way_range_data_notification(
         &mut self,
         range_data: SessionRangeData,
-    ) -> Result<()> {
-        let raw_notification_jbytearray = self
-            .env
-            .byte_array_from_slice(&range_data.raw_ranging_data)
-            .map_err(|_| Error::ForeignFunctionInterface)?;
+    ) -> Result<JObject, JNIError> {
+        let raw_notification_jbytearray =
+            self.env.byte_array_from_slice(&range_data.raw_ranging_data)?;
 
         let (bytearray_len, mac_indicator) = match &range_data.ranging_measurements {
             RangingMeasurements::ExtendedAddressTwoWay(_) => {
@@ -915,7 +873,7 @@ impl NotificationManagerAndroid {
                 (SHORT_MAC_ADDRESS_LEN, MacAddressIndicator::ShortAddress)
             }
             _ => {
-                return Err(Error::ForeignFunctionInterface);
+                return Err(JNIError::InvalidCtorReturn);
             }
         };
 
@@ -923,10 +881,10 @@ impl NotificationManagerAndroid {
             RangingMeasurements::ShortAddressTwoWay(v) => v.len().try_into(),
             RangingMeasurements::ExtendedAddressTwoWay(v) => v.len().try_into(),
             _ => {
-                return Err(Error::ForeignFunctionInterface);
+                return Err(JNIError::InvalidCtorReturn);
             }
         }
-        .map_err(|_| Error::ForeignFunctionInterface)?;
+        .map_err(|_| JNIError::InvalidCtorReturn)?;
 
         let measurements_jobjectarray = match range_data.ranging_measurement_type {
             RangingMeasurementType::TwoWay => {
@@ -937,7 +895,7 @@ impl NotificationManagerAndroid {
                     RangingMeasurements::ShortAddressTwoWay(v) => {
                         v.into_iter().map(TwoWayRangingMeasurement::from).collect::<Vec<_>>()
                     }
-                    _ => return Err(Error::BadParameters),
+                    _ => return Err(JNIError::InvalidCtorReturn),
                 };
                 self.on_two_way_range_data_notification(
                     bytearray_len,
@@ -946,7 +904,7 @@ impl NotificationManagerAndroid {
                 )?
             }
             _ => {
-                return Err(Error::ForeignFunctionInterface);
+                return Err(JNIError::InvalidCtorReturn);
             }
         };
 
@@ -983,7 +941,7 @@ impl NotificationManagerAndroid {
             )
             .map_err(|e| {
                 error!("UCI JNI: Ranging Data object creation failed: {:?}", e);
-                Error::ForeignFunctionInterface
+                e
             })?;
         let method_sig = "(L".to_owned() + UWB_RANGING_DATA_CLASS + ";)V";
         self.cached_jni_call(
@@ -998,7 +956,7 @@ impl NotificationManagerAndroid {
         session_id: u32,
         uci_sequence_number: u8,
         status_code: u8,
-    ) -> Result<()> {
+    ) -> Result<JObject, JNIError> {
         self.cached_jni_call(
             "onDataSendStatus",
             "(JII)V",
@@ -1012,155 +970,176 @@ impl NotificationManagerAndroid {
 }
 
 impl NotificationManager for NotificationManagerAndroid {
-    fn on_core_notification(&mut self, core_notification: CoreNotification) -> Result<()> {
+    fn on_core_notification(&mut self, core_notification: CoreNotification) -> UwbResult<()> {
         debug!("UCI JNI: core notification callback.");
+        let env = *self.env;
+        env.with_local_frame(MAX_JAVA_OBJECTS_CAPACITY, || {
+            let env_chip_id_jobject = *self.env.new_string(&self.chip_id).unwrap();
 
-        let env_chip_id_jobject = *self.env.new_string(&self.chip_id).unwrap();
+            match core_notification {
+                CoreNotification::DeviceStatus(device_state) => self.cached_jni_call(
+                    "onDeviceStatusNotificationReceived",
+                    "(ILjava/lang/String;)V",
+                    &[
+                        jvalue::from(JValue::Int(device_state as i32)),
+                        jvalue::from(JValue::Object(env_chip_id_jobject)),
+                    ],
+                ),
+                CoreNotification::GenericError(generic_error) => self.cached_jni_call(
+                    "onCoreGenericErrorNotificationReceived",
+                    "(ILjava/lang/String;)V",
+                    &[
+                        jvalue::from(JValue::Int(i32::from(generic_error))),
+                        jvalue::from(JValue::Object(env_chip_id_jobject)),
+                    ],
+                ),
+            }
+        })
+        .map_err(|_| UwbError::ForeignFunctionInterface)?;
 
-        match core_notification {
-            CoreNotification::DeviceStatus(device_state) => self.cached_jni_call(
-                "onDeviceStatusNotificationReceived",
-                "(ILjava/lang/String;)V",
-                &[
-                    jvalue::from(JValue::Int(device_state as i32)),
-                    jvalue::from(JValue::Object(env_chip_id_jobject)),
-                ],
-            ),
-            CoreNotification::GenericError(generic_error) => self.cached_jni_call(
-                "onCoreGenericErrorNotificationReceived",
-                "(ILjava/lang/String;)V",
-                &[
-                    jvalue::from(JValue::Int(i32::from(generic_error))),
-                    jvalue::from(JValue::Object(env_chip_id_jobject)),
-                ],
-            ),
-        }
+        Ok(())
     }
 
-    fn on_session_notification(&mut self, session_notification: SessionNotification) -> Result<()> {
+    fn on_session_notification(
+        &mut self,
+        session_notification: SessionNotification,
+    ) -> UwbResult<()> {
         debug!("UCI JNI: session notification callback.");
-        match session_notification {
-            // session_token below has already been mapped to session_id by uci layer.
-            SessionNotification::Status { session_token, session_state, reason_code } => {
-                self.on_session_status_notification(session_token, session_state, reason_code)
+        let env = *self.env;
+        env.with_local_frame(MAX_JAVA_OBJECTS_CAPACITY, || {
+            match session_notification {
+                // session_token below has already been mapped to session_id by uci layer.
+                SessionNotification::Status { session_token, session_state, reason_code } => {
+                    self.on_session_status_notification(session_token, session_state, reason_code)
+                }
+                SessionNotification::UpdateControllerMulticastList {
+                    session_token,
+                    remaining_multicast_list_size,
+                    status_list,
+                } => self.on_session_update_multicast_notification(
+                    session_token,
+                    remaining_multicast_list_size,
+                    status_list,
+                ),
+                // TODO(b/246678053): Match here on range_data.ranging_measurement_type instead.
+                SessionNotification::SessionInfo(range_data) => {
+                    match range_data.ranging_measurements {
+                        uwb_core::uci::RangingMeasurements::ShortAddressTwoWay(_) => {
+                            self.on_session_two_way_range_data_notification(range_data)
+                        }
+                        uwb_core::uci::RangingMeasurements::ExtendedAddressTwoWay(_) => {
+                            self.on_session_two_way_range_data_notification(range_data)
+                        }
+                        uwb_core::uci::RangingMeasurements::ShortAddressOwrAoa(_) => {
+                            self.on_session_owr_aoa_range_data_notification(range_data)
+                        }
+                        uwb_core::uci::RangingMeasurements::ExtendedAddressOwrAoa(_) => {
+                            self.on_session_owr_aoa_range_data_notification(range_data)
+                        }
+                        uwb_core::uci::RangingMeasurements::ShortAddressDltdoa(_) => {
+                            self.on_session_dl_tdoa_range_data_notification(range_data)
+                        }
+                        uwb_core::uci::RangingMeasurements::ExtendedAddressDltdoa(_) => {
+                            self.on_session_dl_tdoa_range_data_notification(range_data)
+                        }
+                    }
+                }
+                SessionNotification::DataTransferStatus {
+                    session_token,
+                    uci_sequence_number,
+                    status,
+                } => self.on_data_transfer_status_notification(
+                    session_token,
+                    uci_sequence_number,
+                    u8::from(status),
+                ),
+                // This session notification should not come here, as it's handled within
+                // UciManager, for internal state management related to sending data packet(s).
+                SessionNotification::DataCredit { session_token, credit_availability } => {
+                    error!(
+                        "UCI JNI: Received unexpected DataCredit notification for \
+                            session_token {}, credit_availability {:?}",
+                        session_token, credit_availability
+                    );
+                    Err(JNIError::InvalidCtorReturn)
+                }
             }
-            SessionNotification::UpdateControllerMulticastList {
-                session_token,
-                remaining_multicast_list_size,
-                status_list,
-            } => self.on_session_update_multicast_notification(
-                session_token,
-                remaining_multicast_list_size,
-                status_list,
-            ),
-            // TODO(b/246678053): Match here on range_data.ranging_measurement_type instead.
-            SessionNotification::SessionInfo(range_data) => match range_data.ranging_measurements {
-                uwb_core::uci::RangingMeasurements::ShortAddressTwoWay(_) => {
-                    self.on_session_two_way_range_data_notification(range_data)
-                }
-                uwb_core::uci::RangingMeasurements::ExtendedAddressTwoWay(_) => {
-                    self.on_session_two_way_range_data_notification(range_data)
-                }
-                uwb_core::uci::RangingMeasurements::ShortAddressOwrAoa(_) => {
-                    self.on_session_owr_aoa_range_data_notification(range_data)
-                }
-                uwb_core::uci::RangingMeasurements::ExtendedAddressOwrAoa(_) => {
-                    self.on_session_owr_aoa_range_data_notification(range_data)
-                }
-                uwb_core::uci::RangingMeasurements::ShortAddressDltdoa(_) => {
-                    self.on_session_dl_tdoa_range_data_notification(range_data)
-                }
-                uwb_core::uci::RangingMeasurements::ExtendedAddressDltdoa(_) => {
-                    self.on_session_dl_tdoa_range_data_notification(range_data)
-                }
-            },
-            SessionNotification::DataTransferStatus {
-                session_token,
-                uci_sequence_number,
-                status,
-            } => self.on_data_transfer_status_notification(
-                session_token,
-                uci_sequence_number,
-                u8::from(status),
-            ),
-            // This session notification should not come here, as it's handled within
-            // UciManager, for internal state management related to sending data packet(s).
-            SessionNotification::DataCredit { session_token, credit_availability } => {
-                error!(
-                    "UCI JNI: Received unexpected DataCredit notification for \
-                       session_id {}, credit_availability {:?}",
-                    session_token, credit_availability
-                );
-                Err(Error::Unknown)
-            }
-        }
+        })
+        .map_err(|_| UwbError::ForeignFunctionInterface)?;
+        Ok(())
     }
 
     fn on_vendor_notification(
         &mut self,
         vendor_notification: uwb_core::params::RawUciMessage,
-    ) -> Result<()> {
+    ) -> UwbResult<()> {
         debug!("UCI JNI: vendor notification callback.");
-        let payload_jbytearray = self
-            .env
-            .byte_array_from_slice(&vendor_notification.payload)
-            .map_err(|_| Error::ForeignFunctionInterface)?;
+        let env = *self.env;
+        env.with_local_frame(MAX_JAVA_OBJECTS_CAPACITY, || {
+            let payload_jbytearray =
+                self.env.byte_array_from_slice(&vendor_notification.payload)?;
 
-        // Safety: payload_jbytearray safely instantiated above.
-        let payload_jobject = unsafe { JObject::from_raw(payload_jbytearray) };
-        self.cached_jni_call(
-            "onVendorUciNotificationReceived",
-            "(II[B)V",
-            &[
-                // Java only has signed integer. The range for signed int32 should be sufficient.
-                jvalue::from(JValue::Int(
-                    vendor_notification.gid.try_into().map_err(|_| Error::BadParameters)?,
-                )),
-                jvalue::from(JValue::Int(
-                    vendor_notification.oid.try_into().map_err(|_| Error::BadParameters)?,
-                )),
-                jvalue::from(JValue::Object(payload_jobject)),
-            ],
-        )
+            // Safety: payload_jbytearray safely instantiated above.
+            let payload_jobject = unsafe { JObject::from_raw(payload_jbytearray) };
+            self.cached_jni_call(
+                "onVendorUciNotificationReceived",
+                "(II[B)V",
+                &[
+                    // Java only has signed integer. The range for signed int32 should be sufficient.
+                    jvalue::from(JValue::Int(
+                        vendor_notification
+                            .gid
+                            .try_into()
+                            .map_err(|_| JNIError::InvalidCtorReturn)?,
+                    )),
+                    jvalue::from(JValue::Int(
+                        vendor_notification
+                            .oid
+                            .try_into()
+                            .map_err(|_| JNIError::InvalidCtorReturn)?,
+                    )),
+                    jvalue::from(JValue::Object(payload_jobject)),
+                ],
+            )
+        })
+        .map_err(|_| UwbError::ForeignFunctionInterface)?;
+        Ok(())
     }
 
     fn on_data_rcv_notification(
         &mut self,
         data_rcv_notification: DataRcvNotification,
-    ) -> Result<()> {
+    ) -> UwbResult<()> {
         debug!("UCI JNI: Data Rcv notification callback.");
-
-        let source_address_jbytearray = match &data_rcv_notification.source_address {
-            UwbAddress::Short(a) => {
-                self.env.byte_array_from_slice(a).map_err(|_| Error::ForeignFunctionInterface)?
-            }
-            UwbAddress::Extended(a) => {
-                self.env.byte_array_from_slice(a).map_err(|_| Error::ForeignFunctionInterface)?
-            }
-        };
-        let payload_jbytearray = self
-            .env
-            .byte_array_from_slice(&data_rcv_notification.payload)
-            .map_err(|_| Error::ForeignFunctionInterface)?;
-
-        // Safety: source_address_jbytearray safely instantiated above.
-        let source_address_jobject = unsafe { JObject::from_raw(source_address_jbytearray) };
-        // Safety: payload_jbytearray safely instantiated above.
-        let payload_jobject = unsafe { JObject::from_raw(payload_jbytearray) };
-        self.cached_jni_call(
-            "onDataReceived",
-            "(JIJ[BII[B)V",
-            &[
-                // session_token below has already been mapped to session_id by uci layer.
-                jvalue::from(JValue::Long(data_rcv_notification.session_token as i64)),
-                jvalue::from(JValue::Int(data_rcv_notification.status as i32)),
-                jvalue::from(JValue::Long(data_rcv_notification.uci_sequence_num as i64)),
-                jvalue::from(JValue::Object(source_address_jobject)),
-                jvalue::from(JValue::Int(data_rcv_notification.source_fira_component as i32)),
-                jvalue::from(JValue::Int(data_rcv_notification.dest_fira_component as i32)),
-                jvalue::from(JValue::Object(payload_jobject)),
-            ],
-        )
+        let env = *self.env;
+        env.with_local_frame(MAX_JAVA_OBJECTS_CAPACITY, || {
+            let source_address_jbytearray = match &data_rcv_notification.source_address {
+                UwbAddress::Short(a) => self.env.byte_array_from_slice(a)?,
+                UwbAddress::Extended(a) => self.env.byte_array_from_slice(a)?,
+            };
+            let payload_jbytearray =
+                self.env.byte_array_from_slice(&data_rcv_notification.payload)?;
+            // Safety: source_address_jbytearray safely instantiated above.
+            let source_address_jobject = unsafe { JObject::from_raw(source_address_jbytearray) };
+            // Safety: payload_jbytearray safely instantiated above.
+            let payload_jobject = unsafe { JObject::from_raw(payload_jbytearray) };
+            self.cached_jni_call(
+                "onDataReceived",
+                "(JIJ[BII[B)V",
+                &[
+                    // session_token below has already been mapped to session_id by uci layer.
+                    jvalue::from(JValue::Long(data_rcv_notification.session_token as i64)),
+                    jvalue::from(JValue::Int(data_rcv_notification.status as i32)),
+                    jvalue::from(JValue::Long(data_rcv_notification.uci_sequence_num as i64)),
+                    jvalue::from(JValue::Object(source_address_jobject)),
+                    jvalue::from(JValue::Int(data_rcv_notification.source_fira_component as i32)),
+                    jvalue::from(JValue::Int(data_rcv_notification.dest_fira_component as i32)),
+                    jvalue::from(JValue::Object(payload_jobject)),
+                ],
+            )
+        })
+        .map_err(|_| UwbError::ForeignFunctionInterface)?;
+        Ok(())
     }
 }
 pub(crate) struct NotificationManagerAndroidBuilder {
