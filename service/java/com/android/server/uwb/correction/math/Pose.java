@@ -107,26 +107,6 @@ public class Pose {
         return rotation.rotateVector(point).add(translation);
     }
 
-    /**
-     * Transforms a point relative to the world frame of reference to the pose's reference.
-     *
-     * @param point The point to transform.
-     * @return A transformed point.
-     */
-    public Vector3 toLocal(Vector3 point) {
-        return inverted().transformPoint(point);
-    }
-
-    /**
-     * Transforms a point relative to the Pose's frame of reference to the world reference.
-     *
-     * @param point The point to transform.
-     * @return A transformed point.
-     */
-    public Vector3 fromLocal(Vector3 point) {
-        return transformPoint(point);
-    }
-
     @NonNull
     @Override
     public String toString() {
