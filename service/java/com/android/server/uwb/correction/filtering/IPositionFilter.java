@@ -21,46 +21,28 @@ import androidx.annotation.Nullable;
 import com.android.server.uwb.correction.math.SphericalVector;
 import com.android.server.uwb.correction.pose.IPoseSource;
 
-import java.time.Instant;
-
 /**
  * Interface for a filter that operates on a UwbPosition.
  */
 public interface IPositionFilter {
     /**
      * Adds a value to the filter.
-     * @param position The value to add to the filter.
-     * The timestamp defaults to now.
-     */
-    default void add(@NonNull SphericalVector position) {
-        add(position, Instant.now());
-    }
-
-    /**
-     * Adds a value to the filter.
      * @param value The value to add to the filter.
-     * @param instant When the value occurred, used to determine the latency introduced by
-     * the filter. Note that this has no effect on the order in which the filter operates
-     * on values.
+     * @param timeMs The time at which the UWB value was received, in ms since boot. This is
+     * used to determine the latency introduced by the filter. Note that this has no effect on the
+     * order in which the filter operates on values.
      */
-    void add(@NonNull SphericalVector value, @NonNull Instant instant);
+    void add(@NonNull SphericalVector value, long timeMs);
 
     /**
      * Computes a predicted UWB position based on the new pose.
+     * @param timeMs The time for which the position should be computed, in ms since boot.
      */
-    default SphericalVector compute() {
-        return compute(Instant.now());
-    }
-
-    /**
-     * Computes a predicted UWB position based on the new pose.
-     * @param instant The instant for which the UWB prediction should be computed.
-     */
-    SphericalVector compute(@NonNull Instant instant);
+    SphericalVector compute(long timeMs);
 
     /**
      * Updates the filter history to account for changes to the pose.
       * @param poseSource The pose source from which to get the latest pose.
      */
-    void updatePose(@Nullable IPoseSource poseSource, @NonNull Instant instant);
+    void updatePose(@Nullable IPoseSource poseSource, long timeMs);
 }

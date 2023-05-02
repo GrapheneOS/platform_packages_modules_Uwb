@@ -16,9 +16,15 @@
 package com.android.server.uwb.correction.filtering;
 
 import static com.android.server.uwb.correction.math.MathHelper.F_PI;
+import static com.android.server.uwb.correction.math.MathHelper.normalizeRadians;
+
+import static java.lang.Math.atan2;
+import static java.lang.Math.cos;
+import static java.lang.Math.sin;
 
 import com.android.server.uwb.correction.math.MathHelper;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -30,26 +36,29 @@ import java.util.List;
  * their linear numerical values.
  */
 public class MedAvgRotationFilter extends MedAvgFilter {
+
     public MedAvgRotationFilter(int windowSize, float cut) {
         super(windowSize, cut);
     }
 
     /**
      * Creates a naive average of the given samples. Both the value and instant of the samples are
-     * averaged. This will probably not produce a desired result if the samples are normalized
-     * to roll over at +/-PI rad. Use {@link #sortSamples(Collection)} to shift the roll over
-     * to a more desired location.
+     * averaged. This will probably not produce a desired result if the samples are normalized to
+     * roll over at +/-PI rad. Use {@link #sortSamples(Collection)} to shift the roll over to a more
+     * desired location.
+     *
      * @param samples The list of samples.
      * @return The average of the samples, normalized within +/-PI.
      */
     @Override
     protected Sample averageSortedSamples(Collection<Sample> samples) {
         Sample result = super.averageSortedSamples(samples);
-        return new Sample(MathHelper.normalizeRadians(result.value), result.instant);
+        return new Sample(MathHelper.normalizeRadians(result.value), result.timeMs);
     }
 
     /**
      * Rewrites all sample values based on the selector.
+     *
      * @param selector The interface containing the remapping function.
      */
     public void remap(RemapFunction selector) {
@@ -57,43 +66,38 @@ public class MedAvgRotationFilter extends MedAvgFilter {
     }
 
     /**
-     * Changes the input list so that angles can be sorted, averaged and compared, even if
-     * they are on either side of the +/-180 divide. Note that this will return angles
-     * higher than 180 degrees.
-     * The input values must be between -180 and +180.
-     * Creating a sorted list, this finds the largest "gap" between angles and assumes that
-     * angles on either side of that gap represent the upper and lower bounds of what needs to
-     * be averaged. It then adds 360 to the values to the left of the gap and rearranges
-     * to make the list is sorted again.
-     * (Degrees are used for the explanation - this function actually operates on radians)
+     * Creates a new sorted list of angles based on the input list. 2pi is added to some angles to
+     * ensure that the sorted result is also in a clockwise order, and the numerical average
+     * will equal the directional average.
+     * The input angles must be between ±pi, but some output angles will exceed pi.
      */
-    @Override
     protected List<Sample> sortSamples(Collection<Sample> list) {
-        List<Sample> sorted = super.sortSamples(list);
-        int size = sorted.size();
+        List<Sample> result = new ArrayList<>(list);
+        int size = result.size();
         if (size < 2) {
-            return sorted;
+            return result;
         }
 
-        // The initial gap to check, maybe not the biggest, is the gap on either side of +/-180,
-        // which is at the index 0.
-        int largestGapIndex = 0;
-        float largestGapSize =
-                (sorted.get(size - 1).value - sorted.get(0).value + 2 * F_PI) % F_PI;
-        for (int i = 1; i < size; i++) {
-            float diff = sorted.get(i).value - sorted.get(i - 1).value;
-            if (diff > largestGapSize) {
-                largestGapSize = diff;
-                largestGapIndex = i;
+        // Get the direction of all the positions on the unit circles; the directional average.
+        float avgAngle = (float) atan2(
+                result.stream().mapToDouble(sample -> sin(sample.value)).sum(),
+                result.stream().mapToDouble(sample -> cos(sample.value)).sum()
+        );
+
+        // All output values must be between avgAngle ± π. Compute the lowest allowed angle:
+        float lowestAngle = normalizeRadians(avgAngle - F_PI);
+
+        // Wrap around any angles that are below our allowed angle by adding 2π.
+        int index;
+        for (index = 0; index < size; index++) {
+            Sample sample = result.get(index);
+            if (sample.value < lowestAngle) {
+                result.set(index, new Sample(sample.value + 2 * F_PI, sample.timeMs));
             }
         }
-        for (int i = 0; i < largestGapIndex; i++) {
-            sorted.set(
-                    i,
-                    new Sample(sorted.get(i).value + 2 * F_PI, sorted.get(i).instant)
-            );
-        }
-        Collections.rotate(sorted, -largestGapIndex);
-        return sorted;
+
+        // Sort the result.
+        Collections.sort(result);
+        return result;
     }
 }
