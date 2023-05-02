@@ -93,7 +93,7 @@ public class FiraTests {
         List<UwbAddress> destAddressList = new ArrayList<>();
         destAddressList.add(destAddress1);
         destAddressList.add(destAddress2);
-        int initiationTimeMs = 100;
+        int initiationTime = 100;
         int slotDurationRstu = 2400;
         int slotsPerRangingRound = 10;
         int rangingIntervalMs = 100;
@@ -161,7 +161,7 @@ public class FiraTests {
                         .setMultiNodeMode(multiNodeMode)
                         .setDeviceAddress(deviceAddress)
                         .setDestAddressList(destAddressList)
-                        .setInitiationTimeMs(initiationTimeMs)
+                        .setInitiationTime(initiationTime)
                         .setSlotDurationRstu(slotDurationRstu)
                         .setSlotsPerRangingRound(slotsPerRangingRound)
                         .setRangingIntervalMs(rangingIntervalMs)
@@ -233,7 +233,7 @@ public class FiraTests {
             assertEquals(params.getDestAddressList().get(i), destAddressList.get(i));
         }
 
-        assertEquals(params.getInitiationTimeMs(), initiationTimeMs);
+        assertEquals(params.getInitiationTime(), initiationTime);
         assertEquals(params.getSlotDurationRstu(), slotDurationRstu);
         assertEquals(params.getSlotsPerRangingRound(), slotsPerRangingRound);
         assertEquals(params.getRangingIntervalMs(), rangingIntervalMs);
@@ -304,7 +304,7 @@ public class FiraTests {
             assertEquals(fromBundle.getDestAddressList().get(i), destAddressList.get(i));
         }
 
-        assertEquals(fromBundle.getInitiationTimeMs(), initiationTimeMs);
+        assertEquals(fromBundle.getInitiationTime(), initiationTime);
         assertEquals(fromBundle.getSlotDurationRstu(), slotDurationRstu);
         assertEquals(fromBundle.getSlotsPerRangingRound(), slotsPerRangingRound);
         assertEquals(fromBundle.getRangingIntervalMs(), rangingIntervalMs);
@@ -381,7 +381,7 @@ public class FiraTests {
             assertEquals(fromCopy.getDestAddressList().get(i), destAddressList.get(i));
         }
 
-        assertEquals(fromCopy.getInitiationTimeMs(), initiationTimeMs);
+        assertEquals(fromCopy.getInitiationTime(), initiationTime);
         assertEquals(fromCopy.getSlotDurationRstu(), slotDurationRstu);
         assertEquals(fromCopy.getSlotsPerRangingRound(), slotsPerRangingRound);
         assertEquals(fromCopy.getRangingIntervalMs(), rangingIntervalMs);
