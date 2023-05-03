@@ -275,6 +275,9 @@ public class UwbMetrics {
             session.convertInitStatus(status);
             mRangingSessionList.add(session);
             mOpenedSessionMap.put(uwbSession.getSessionId(), session);
+            if (status != UwbUciConstants.STATUS_CODE_OK) {
+                takBugReportSessionInitError("UWB Bugreport: session init failed reason " + status);
+            }
             UwbStatsLog.write(UwbStatsLog.UWB_SESSION_INITED, uwbSession.getProfileType(),
                     session.mStsType, session.mIsInitiator,
                     session.mIsController, session.mIsDiscoveredByFramework, session.mIsOutOfBand,
@@ -308,6 +311,12 @@ public class UwbMetrics {
                 return;
             }
             session.mStartTimeSinceBootMs = mUwbInjector.getElapsedSinceBootMillis();
+        }
+    }
+
+    private void takBugReportSessionInitError(String bugTitle) {
+        if (mUwbInjector.getDeviceConfigFacade().isSessionInitErrorBugreportEnabled()) {
+            mUwbInjector.getUwbDiagnostics().takeBugReport(bugTitle);
         }
     }
 
