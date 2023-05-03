@@ -564,23 +564,23 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     }
 
     private void registerSatelliteModeReceiver() {
-        if (isSatelliteModeSensitive()) {
-            Uri uri = Settings.Global.getUriFor(SETTINGS_SATELLITE_MODE_ENABLED);
-            if (uri == null) {
-                Log.e(TAG, "satellite mode key does not exist in Settings");
-                return;
-            }
-            mUwbInjector.registerContentObserver(
-                    uri,
-                    false,
-                    new ContentObserver(mUwbServiceCore.getHandler()) {
-                        @Override
-                        public void onChange(boolean selfChange) {
+        Uri uri = Settings.Global.getUriFor(SETTINGS_SATELLITE_MODE_ENABLED);
+        if (uri == null) {
+            Log.e(TAG, "satellite mode key does not exist in Settings");
+            return;
+        }
+        mUwbInjector.registerContentObserver(
+                uri,
+                false,
+                new ContentObserver(mUwbServiceCore.getHandler()) {
+                    @Override
+                    public void onChange(boolean selfChange) {
+                        if (isSatelliteModeSensitive()) {
                             Log.i(TAG, "Satellite mode change detected");
                             handleAirplaneOrSatelliteModeEvent();
                         }
-                    });
-        }
+                    }
+                });
     }
 
     private void registerUserRestrictionsReceiver() {
