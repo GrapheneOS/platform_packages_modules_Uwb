@@ -264,3 +264,18 @@ class UwbRangingDecorator():
     self.verify_callback_received("Closed", session)
     self._callback_keys.pop(session, None)
     self._event_handlers.pop(session, None)
+
+
+  def close_all_ranging_sessions(self):
+    """Closes all ranging sessions.
+
+    Args:
+    """
+    for session in self._callback_keys:
+      try:
+        self.ad.uwb.closeRangingSession(self._callback_keys[session])
+        self.verify_callback_received("Closed", session)
+      except:
+        self.ad.log.warn("Failed to close session: " % session)
+    self._callback_keys.clear()
+    self._event_handlers.clear()
