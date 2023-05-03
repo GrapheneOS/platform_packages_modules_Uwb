@@ -99,10 +99,9 @@ public final class Quaternion {
     /**
      * Get a new Quaternion using euler angles, applied in YXZ (yaw, pitch, roll) order, to define
      * the rotation.
-     *
+     * <p>
      * This is consistent with other graphics engines. Note, however, that Unity uses ZXY order
-     * like {@link #rollPitchYaw(float, float, float)}, so the same angles used here will produce
-     * a different orientation than Unity.
+     * so the same angles used here will produce a different orientation than Unity.
      *
      * @param yaw The yaw in radians (rotation about the Y axis).
      * @param pitch The pitch in radians (rotation about the X axis).
@@ -115,25 +114,6 @@ public final class Quaternion {
         Quaternion qZ = axisAngle(new Vector3(0, 0, 1), roll);
         return multiply(multiply(qX, qY), qZ);
         // return multiply(multiply(qY, qX), qZ);
-    }
-
-    /**
-     * Get a new Quaternion using euler angles, applied in ZXY (roll, pitch, yaw) order, to define
-     * the rotation.
-     *
-     * <p>This is consistent with the rotation order used by Unity. Other graphics engines may use
-     * YXZ order like {@link #yawPitchRoll(float, float, float)}.
-     *
-     * @param yaw The yaw in radians.
-     * @param pitch The pitch in radians.
-     * @param roll The roll in radians.
-     */
-    @NonNull
-    public static Quaternion rollPitchYaw(float roll, float pitch, float yaw) {
-        Quaternion qX = axisAngle(new Vector3(0, 1, 0), yaw);
-        Quaternion qY = axisAngle(new Vector3(1, 0, 0), pitch);
-        Quaternion qZ = axisAngle(new Vector3(0, 0, 1), roll);
-        return multiply(multiply(qZ, qY), qX);
     }
 
     /** Creates a quaternion from the supplied matrix. */
@@ -455,35 +435,6 @@ public final class Quaternion {
         double pitch = asin(2 * test);
         double yaw = atan2(2 * (w * y + x * z), 1.0 - 2 * (x * x + y * y));
         double roll = atan2(2 * (w * z + x * y), 1.0 - 2 * (x * x + z * z));
-        return new Vector3(
-                (float) yaw,
-                (float) pitch,
-                (float) roll
-        );
-    }
-
-    /**
-     * Get a Vector3 containing the pitch, yaw and roll in degrees, extracted in ZXY (roll, pitch,
-     * yaw) order.
-     *
-     * <p>See: {@link #rollPitchYaw}.
-     */
-    @NonNull
-    public Vector3 toRollPitchYaw() {
-        float test = w * x + y * z;
-        if (test > +EULER_THRESHOLD) {
-            // There is a singularity when the pitch is directly up, so calculate the
-            // angles another way.
-            return new Vector3(+F_HALF_PI, (float) (+2 * atan2(z, w)), 0);
-        }
-        if (test < -EULER_THRESHOLD) {
-            // There is a singularity when the pitch is directly down, so calculate the
-            // angles another way.
-            return new Vector3(-F_HALF_PI, (float) (-2 * atan2(z, w)), 0);
-        }
-        double pitch = asin(2 * test);
-        double yaw = atan2(2 * (w * y - x * z), 1.0 - 2 * (x * x + y * y));
-        double roll = atan2(2 * (w * z - x * y), 1.0 - 2 * (x * x + z * z));
         return new Vector3(
                 (float) yaw,
                 (float) pitch,
