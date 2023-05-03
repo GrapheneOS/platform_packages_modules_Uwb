@@ -51,6 +51,7 @@ public class DeviceConfigFacade {
     // Cached values of fields updated via updateDeviceConfigFlags()
     private int mRangingResultLogIntervalMs;
     private boolean mDeviceErrorBugreportEnabled;
+    private boolean mSessionInitErrorBugreportEnabled;
     private int mBugReportMinIntervalMs;
     private boolean mEnableFilters;
     private int mFilterDistanceInliersPercent;
@@ -93,6 +94,8 @@ public class DeviceConfigFacade {
                 "ranging_result_log_interval_ms", DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
         mDeviceErrorBugreportEnabled = DeviceConfig.getBoolean(DeviceConfig.NAMESPACE_UWB,
                 "device_error_bugreport_enabled", false);
+        mSessionInitErrorBugreportEnabled = DeviceConfig.getBoolean(DeviceConfig.NAMESPACE_UWB,
+                "session_init_error_bugreport_enabled", false);
         mBugReportMinIntervalMs = DeviceConfig.getInt(DeviceConfig.NAMESPACE_UWB,
                 "bug_report_min_interval_ms", DEFAULT_BUG_REPORT_MIN_INTERVAL_MS);
 
@@ -212,6 +215,13 @@ public class DeviceConfigFacade {
      */
     public boolean isDeviceErrorBugreportEnabled() {
         return mDeviceErrorBugreportEnabled;
+    }
+
+    /**
+     * Gets the feature flag for reporting session init error
+     */
+    public boolean isSessionInitErrorBugreportEnabled() {
+        return mSessionInitErrorBugreportEnabled;
     }
 
     /**
