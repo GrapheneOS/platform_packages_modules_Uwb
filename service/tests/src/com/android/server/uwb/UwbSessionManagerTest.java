@@ -152,6 +152,12 @@ public class UwbSessionManagerTest {
     private static final String PACKAGE_NAME_2 = "com.android.uwb.2";
     private static final AttributionSource ATTRIBUTION_SOURCE =
             new AttributionSource.Builder(UID).setPackageName(PACKAGE_NAME).build();
+    private static final AttributionSource ATTRIBUTION_SOURCE_2 =
+            new AttributionSource.Builder(UID_2).setPackageName(PACKAGE_NAME_2).build();
+    private static final SessionHandle SESSION_HANDLE =
+            new SessionHandle(TEST_SESSION_ID, ATTRIBUTION_SOURCE, 1);
+    private static final SessionHandle SESSION_HANDLE_2 =
+            new SessionHandle(TEST_SESSION_ID_2, ATTRIBUTION_SOURCE_2, 2);
     private static final UwbAddress UWB_DEST_ADDRESS =
             UwbAddress.fromBytes(new byte[] {(byte) 0x03, (byte) 0x04 });
     private static final UwbAddress UWB_DEST_ADDRESS_2 =
@@ -912,6 +918,160 @@ public class UwbSessionManagerTest {
     }
 
     @Test
+    public void initSessionMaxSessions_lowestPrioritySessionReplaced() throws RemoteException {
+        doReturn(false).when(mUwbInjector).isSystemApp(UID, PACKAGE_NAME);
+        doReturn(true).when(mUwbInjector).isSystemApp(UID_2, PACKAGE_NAME_2);
+        doReturn(1L).when(mUwbSessionManager).getMaxFiraSessionsNumber(TEST_CHIP_ID);
+        IUwbRangingCallbacks mockRangingCallbacks = mock(IUwbRangingCallbacks.class);
+        Params mockParams = mock(FiraParams.class);
+        IBinder mockBinder = mock(IBinder.class);
+
+        when(mNativeUwbManager.initSession(anyInt(), anyByte(), anyString()))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+        when(mNativeUwbManager.deInitSession(anyInt(), anyString()))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+        when(mUwbConfigurationManager.setAppConfigurations(anyInt(), any(), anyString()))
+                .thenReturn(UwbUciConstants.STATUS_CODE_OK);
+
+        // Init session for 3rd party FG app
+        UwbSession lowPrioUwbSession = spy(
+                mUwbSessionManager.new UwbSession(ATTRIBUTION_SOURCE, SESSION_HANDLE,
+                        TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME, mockParams,
+                        mockRangingCallbacks, TEST_CHIP_ID));
+        doReturn(lowPrioUwbSession).when(mUwbSessionManager).createUwbSession(any(), any(),
+                anyInt(),
+                anyByte(), anyString(), any(), any(), anyString());
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_INIT,
+                UwbUciConstants.UWB_SESSION_STATE_IDLE).when(lowPrioUwbSession).getSessionState();
+        doReturn(mock(WaitObj.class)).when(lowPrioUwbSession).getWaitObj();
+        doReturn(mockBinder).when(lowPrioUwbSession).getBinder();
+
+        mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, SESSION_HANDLE, TEST_SESSION_ID,
+                TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME, mockParams, mockRangingCallbacks,
+                TEST_CHIP_ID);
+
+        assertThat(mUwbSessionManager.getUwbSession(TEST_SESSION_ID)).isEqualTo(lowPrioUwbSession);
+        mTestLooper.dispatchNext();
+
+        // Init session for system app
+        UwbSession highPrioUwbSession = spy(
+                mUwbSessionManager.new UwbSession(ATTRIBUTION_SOURCE_2, SESSION_HANDLE_2,
+                        TEST_SESSION_ID_2, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME, mockParams,
+                        mockRangingCallbacks, TEST_CHIP_ID));
+        doReturn(mockBinder).when(highPrioUwbSession).getBinder();
+        doReturn(mock(WaitObj.class)).when(highPrioUwbSession).getWaitObj();
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_INIT,
+                UwbUciConstants.UWB_SESSION_STATE_IDLE).when(highPrioUwbSession).getSessionState();
+        doReturn(highPrioUwbSession).when(mUwbSessionManager).createUwbSession(any(), any(),
+                anyInt(),
+                anyByte(), anyString(), any(), any(), anyString());
+        mUwbSessionManager.initSession(ATTRIBUTION_SOURCE_2, SESSION_HANDLE_2, TEST_SESSION_ID_2,
+                TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME, mockParams, mockRangingCallbacks,
+                TEST_CHIP_ID);
+        mTestLooper.dispatchAll();
+
+        verify(mNativeUwbManager).initSession(TEST_SESSION_ID, TEST_SESSION_TYPE, TEST_CHIP_ID);
+        verify(mNativeUwbManager).deInitSession(TEST_SESSION_ID, TEST_CHIP_ID);
+        verify(mNativeUwbManager).initSession(TEST_SESSION_ID_2, TEST_SESSION_TYPE, TEST_CHIP_ID);
+        verify(mockRangingCallbacks, never()).onRangingOpenFailed(any(), anyInt(), any());
+        verify(mUwbSessionNotificationManager).onRangingOpened(lowPrioUwbSession);
+        verify(mUwbSessionNotificationManager).onRangingClosed(lowPrioUwbSession,
+                UwbUciConstants.STATUS_CODE_ERROR_MAX_SESSIONS_EXCEEDED);
+        verify(mUwbSessionNotificationManager).onRangingOpened(highPrioUwbSession);
+        assertThat(mUwbSessionManager.getUwbSession(TEST_SESSION_ID)).isNull();
+        assertThat(mUwbSessionManager.getUwbSession(TEST_SESSION_ID_2)).isEqualTo(
+                highPrioUwbSession);
+    }
+
+    @Test
+    public void testNeedsAppConfigUpdate_setAppConfigCalledOnStartRanging() throws RemoteException {
+        UwbSession mockUwbSession = mock(UwbSession.class);
+
+        doReturn(true).when(mUwbSessionManager).isExistedSession(any());
+        doReturn(TEST_SESSION_ID).when(mUwbSessionManager).getSessionId(any());
+        doReturn(mockUwbSession).when(mUwbSessionManager).getUwbSession(anyInt());
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE)
+                .when(mUwbSessionManager).getCurrentSessionState(anyInt());
+        doReturn(PROTOCOL_NAME).when(mockUwbSession).getProtocolName();
+        doReturn(mock(WaitObj.class)).when(mockUwbSession).getWaitObj();
+        when(mockUwbSession.getNeedsAppConfigUpdate()).thenReturn(true);
+
+        mUwbSessionManager.startRanging(mock(SessionHandle.class), mock(Params.class));
+        mTestLooper.dispatchAll();
+
+        verify(mUwbConfigurationManager).setAppConfigurations(anyInt(), any(),
+                any());
+    }
+
+    @Test
+    public void testCreateUwbSession_correctSessionPrioritiesSet() throws RemoteException {
+        IUwbRangingCallbacks mockRangingCallbacks = mock(IUwbRangingCallbacks.class);
+        SessionHandle mockSessionHandle = mock(SessionHandle.class);
+        FiraOpenSessionParams mockFiraOpenSessionParams = mock(FiraOpenSessionParams.class);
+        Params mockCccParams = mock(CccParams.class);
+        FiraOpenSessionParams.Builder mockFiraBuilder = mock(FiraOpenSessionParams.Builder.class);
+
+        when(mockFiraOpenSessionParams.toBuilder()).thenReturn(mockFiraBuilder);
+        when(mockFiraBuilder.setSessionPriority(anyInt())).thenReturn(mockFiraBuilder);
+        when(mockFiraBuilder.build()).thenReturn(mockFiraOpenSessionParams);
+
+        // System session
+        String systemPackageName = "com.google.uwb";
+        when(mUwbInjector.isSystemApp(UID, systemPackageName)).thenReturn(true);
+        AttributionSource attributionSourceSystemApp =
+                new AttributionSource.Builder(UID).setPackageName(systemPackageName).build();
+        UwbSession systemUwbSession =
+                mUwbSessionManager.new UwbSession(attributionSourceSystemApp, mockSessionHandle,
+                        TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME,
+                        mockFiraOpenSessionParams,
+                        mockRangingCallbacks, TEST_CHIP_ID);
+
+        assertThat(systemUwbSession.getStackSessionPriority()).isEqualTo(
+                UwbSession.SYSTEM_APP_SESSION_PRIORITY);
+        verify(mockFiraBuilder).setSessionPriority(UwbSession.SYSTEM_APP_SESSION_PRIORITY);
+
+        // CCC session
+        UwbSession cccUwbSession =
+                mUwbSessionManager.new UwbSession(attributionSourceSystemApp, mockSessionHandle,
+                        TEST_SESSION_ID, TEST_SESSION_TYPE, CccParams.PROTOCOL_NAME, mockCccParams,
+                        mockRangingCallbacks, TEST_CHIP_ID);
+
+        assertThat(cccUwbSession.getStackSessionPriority()).isEqualTo(
+                UwbSession.CCC_SESSION_PRIORITY);
+
+        // 3rd party foreground session
+        String nonSystemPackageName = "com.something.app";
+        when(mUwbInjector.isForegroundAppOrService(UID, nonSystemPackageName))
+                .thenReturn(true);
+        AttributionSource attributionSourceNonSystemApp =
+                new AttributionSource.Builder(UID).setPackageName(nonSystemPackageName).build();
+        UwbSession nonSystemFgUwbSession =
+                mUwbSessionManager.new UwbSession(attributionSourceNonSystemApp, mockSessionHandle,
+                        TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME,
+                        mockFiraOpenSessionParams,
+                        mockRangingCallbacks, TEST_CHIP_ID);
+
+        assertThat(nonSystemFgUwbSession.getStackSessionPriority()).isEqualTo(
+                UwbSession.FG_SESSION_PRIORITY);
+        verify(mockFiraBuilder).setSessionPriority(UwbSession.FG_SESSION_PRIORITY);
+
+
+        // 3rd party background session
+        when(mUwbInjector.isForegroundAppOrService(UID, nonSystemPackageName))
+                .thenReturn(false);
+        UwbSession nonSystemBgUwbSession =
+                mUwbSessionManager.new UwbSession(attributionSourceNonSystemApp, mockSessionHandle,
+                        TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME,
+                        mockFiraOpenSessionParams,
+                        mockRangingCallbacks, TEST_CHIP_ID);
+
+        assertThat(nonSystemBgUwbSession.getStackSessionPriority()).isEqualTo(
+                UwbSession.BG_SESSION_PRIORITY);
+        verify(mockFiraBuilder).setSessionPriority(UwbSession.BG_SESSION_PRIORITY);
+
+    }
+
+    @Test
     public void initSession_controleeList() throws RemoteException {
         doReturn(0).when(mUwbSessionManager).getSessionCount();
         doReturn(0L).when(mUwbSessionManager).getCccSessionCount();
@@ -920,10 +1080,14 @@ public class UwbSessionManagerTest {
         IUwbRangingCallbacks mockRangingCallbacks = mock(IUwbRangingCallbacks.class);
         SessionHandle mockSessionHandle = mock(SessionHandle.class);
         FiraOpenSessionParams mockParams = mock(FiraOpenSessionParams.class);
+        FiraOpenSessionParams.Builder mockBuilder = mock(FiraOpenSessionParams.Builder.class);
         IBinder mockBinder = mock(IBinder.class);
 
         when(mockParams.getDestAddressList())
                 .thenReturn(Collections.singletonList(UWB_DEST_ADDRESS));
+        when(mockParams.toBuilder()).thenReturn(mockBuilder);
+        when(mockBuilder.setSessionPriority(anyInt())).thenReturn(mockBuilder);
+        when(mockBuilder.build()).thenReturn(mockParams);
 
         UwbSession uwbSession = spy(
                 mUwbSessionManager.new UwbSession(ATTRIBUTION_SOURCE, mockSessionHandle,
@@ -1627,6 +1791,25 @@ public class UwbSessionManagerTest {
         assertThat(firaParams.getRangeDataNtfConfig()).isEqualTo(
                 FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE);
         verify(mUwbSessionNotificationManager, never()).onRangingReconfigured(eq(uwbSession));
+    }
+
+    @Test
+    public void testOpenRangingWithNonSystemAppInFgInChain_MoveToBgTriggersSessionPriorityChange()
+            throws Exception {
+        UwbSession uwbSession = initUwbSessionForNonSystemAppInFgInChain();
+
+        assertThat(uwbSession.getStackSessionPriority()).isEqualTo(UwbSession.FG_SESSION_PRIORITY);
+        assertThat(mTestLooper.nextMessage().what).isEqualTo(SESSION_OPEN_RANGING);
+        mTestLooper.dispatchAll();
+
+        // Move to background.
+        when(mUwbInjector.isForegroundAppOrService(UID_2, PACKAGE_NAME_2))
+                .thenReturn(false);
+        mOnUidImportanceListenerArgumentCaptor.getValue().onUidImportance(
+                UID_2, ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED);
+        mTestLooper.dispatchAll();
+
+        assertThat(uwbSession.getStackSessionPriority()).isEqualTo(UwbSession.BG_SESSION_PRIORITY);
     }
 
     @Test
