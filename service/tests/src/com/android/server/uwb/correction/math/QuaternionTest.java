@@ -17,8 +17,11 @@
 package com.android.server.uwb.correction.math;
 
 import static com.android.server.uwb.correction.TestHelpers.assertClose;
+import static com.android.server.uwb.correction.math.MathHelper.F_HALF_PI;
 
 import static org.junit.Assert.assertTrue;
+
+import static java.lang.Math.abs;
 
 import android.platform.test.annotations.Presubmit;
 
@@ -32,20 +35,20 @@ public class QuaternionTest {
         Quaternion quaternion = Quaternion.yawPitchRoll(0.5f, 1f, 1.5f);
         Vector3 ypr = quaternion.toYawPitchRoll();
 
-        assertTrue(Math.abs(ypr.x - 0.5) < 0.001);
-        assertTrue(Math.abs(ypr.y - 1) < 0.001);
-        assertTrue(Math.abs(ypr.z - 1.5) < 0.001);
+        assertTrue(abs(ypr.x - 0.5) < 0.001);
+        assertTrue(abs(ypr.y - 1) < 0.001);
+        assertTrue(abs(ypr.z - 1.5) < 0.001);
 
         // See the Javadoc for the 'Quaternion' class for an explanation of how these
         // results are determined.
 
-        quaternion = Quaternion.yawPitchRoll((float) Math.PI / 2, 0, 0);
+        quaternion = Quaternion.yawPitchRoll(F_HALF_PI, 0, 0);
         assertClose(quaternion.rotateVector(new Vector3(1, 2, 3)), new Vector3(3, 2, -1));
 
-        quaternion = Quaternion.yawPitchRoll(0, (float) Math.PI / 2, 0);
+        quaternion = Quaternion.yawPitchRoll(0, F_HALF_PI, 0);
         assertClose(quaternion.rotateVector(new Vector3(1, 2, 3)), new Vector3(1, -3, 2));
 
-        quaternion = Quaternion.yawPitchRoll(0, 0, (float) Math.PI / 2);
+        quaternion = Quaternion.yawPitchRoll(0, 0, F_HALF_PI);
         assertClose(quaternion.rotateVector(new Vector3(1, 2, 3)), new Vector3(-2, 1, 3));
     }
 }
