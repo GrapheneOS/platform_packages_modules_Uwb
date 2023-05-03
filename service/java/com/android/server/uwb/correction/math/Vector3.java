@@ -105,7 +105,7 @@ public class Vector3 {
      */
     @NonNull
     public Vector3 multiply(@NonNull Vector3 rhs) {
-        return new Vector3(x * rhs.x, y * rhs.y, y * rhs.z);
+        return new Vector3(x * rhs.x, y * rhs.y, z * rhs.z);
     }
 
     /** Get dot product of two Vector3s. */
