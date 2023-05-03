@@ -62,14 +62,14 @@ final class Conversions {
         RangingMeasurement altitude = null;
         if (aoaMeasurement != null) {
             AngleMeasurement azimuthMeasurement = aoaMeasurement.getAzimuth();
-            if (azimuthMeasurement != null && isMeasurementAllZero(azimuthMeasurement)) {
+            if (azimuthMeasurement != null && !isMeasurementAllZero(azimuthMeasurement)) {
                 azimuth =
                         createMeasurement(
                                 Math.toDegrees(azimuthMeasurement.getRadians()),
                                 azimuthMeasurement.getConfidenceLevel());
             }
             AngleMeasurement altitudeMeasurement = aoaMeasurement.getAltitude();
-            if (altitudeMeasurement != null && isMeasurementAllZero(altitudeMeasurement)) {
+            if (altitudeMeasurement != null && !isMeasurementAllZero(altitudeMeasurement)) {
                 altitude =
                         createMeasurement(
                                 Math.toDegrees(altitudeMeasurement.getRadians()),
