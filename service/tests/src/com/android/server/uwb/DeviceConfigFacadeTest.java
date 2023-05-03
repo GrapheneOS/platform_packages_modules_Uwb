@@ -167,6 +167,7 @@ public class DeviceConfigFacadeTest {
         assertEquals(DeviceConfigFacade.DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS,
                 mDeviceConfigFacade.getRangingResultLogIntervalMs());
         assertEquals(false, mDeviceConfigFacade.isDeviceErrorBugreportEnabled());
+        assertEquals(false, mDeviceConfigFacade.isSessionInitErrorBugreportEnabled());
         assertEquals(DeviceConfigFacade.DEFAULT_BUG_REPORT_MIN_INTERVAL_MS,
                 mDeviceConfigFacade.getBugReportMinIntervalMs());
 
@@ -232,6 +233,11 @@ public class DeviceConfigFacadeTest {
                 anyBoolean())).thenReturn(true);
         mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
         assertEquals(true, mDeviceConfigFacade.isDeviceErrorBugreportEnabled());
+
+        when(DeviceConfig.getBoolean(anyString(), eq("session_init_error_bugreport_enabled"),
+                anyBoolean())).thenReturn(true);
+        mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
+        assertEquals(true, mDeviceConfigFacade.isSessionInitErrorBugreportEnabled());
 
         when(DeviceConfig.getInt(anyString(), eq("bug_report_min_interval_ms"),
                 anyInt())).thenReturn(10 * 3600_000);
