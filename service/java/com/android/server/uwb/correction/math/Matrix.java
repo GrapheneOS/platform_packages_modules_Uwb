@@ -15,10 +15,9 @@
  */
 package com.android.server.uwb.correction.math;
 
-import static java.lang.Math.tan;
-import static java.lang.Math.toRadians;
-
 import androidx.annotation.NonNull;
+
+import java.util.Locale;
 
 /**
  * 4x4 Matrix representing translation, scale, and rotation. Column major, right handed:
@@ -93,13 +92,66 @@ public class Matrix {
     }
 
     /** Multiply two Matrices together and store the result in a third Matrix. */
-    public static void multiply(Matrix lhs, Matrix rhs, Matrix dest) {
-        android.opengl.Matrix.multiplyMM(dest.data, 0, lhs.data, 0, rhs.data, 0);
+    public static Matrix multiply(Matrix lhs, Matrix rhs) {
+        float[] result = new float[16];
+
+        for (int row = 0; row < 4; row++) {
+            for (int col = 0; col < 4; col++) {
+                float sum = 0;
+                for (int k = 0; k < 4; k++) {
+                    sum += lhs.data[row * 4 + k] * rhs.data[k * 4 + col];
+                }
+                result[row * 4 + col] = sum;
+            }
+        }
+        return new Matrix(result);
     }
 
-    /** Invert a Matrix and store the result in another Matrix. */
-    public static boolean invert(Matrix matrix, Matrix dest) {
-        return android.opengl.Matrix.invertM(dest.data, 0, matrix.data, 0);
+    /** Returns a matrix that is an inversion of this one. */
+    public Matrix invert() {
+        float a00 = data[0], a01 = data[1], a02 = data[2], a03 = data[3];
+        float a10 = data[4], a11 = data[5], a12 = data[6], a13 = data[7];
+        float a20 = data[8], a21 = data[9], a22 = data[10], a23 = data[11];
+        float a30 = data[12], a31 = data[13], a32 = data[14], a33 = data[15];
+
+        float b00 = a00 * a11 - a01 * a10;
+        float b01 = a00 * a12 - a02 * a10;
+        float b02 = a00 * a13 - a03 * a10;
+        float b03 = a01 * a12 - a02 * a11;
+        float b04 = a01 * a13 - a03 * a11;
+        float b05 = a02 * a13 - a03 * a12;
+        float b06 = a20 * a31 - a21 * a30;
+        float b07 = a20 * a32 - a22 * a30;
+        float b08 = a20 * a33 - a23 * a30;
+        float b09 = a21 * a32 - a22 * a31;
+        float b10 = a21 * a33 - a23 * a31;
+        float b11 = a22 * a33 - a23 * a32;
+
+        float det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
+        if (det == 0) {
+            return null;
+        }
+
+        float[] m = new float[16];
+
+        float invDet = 1.0f / det;
+        m[0] = (a11 * b11 - a12 * b10 + a13 * b09) * invDet;
+        m[1] = (-a01 * b11 + a02 * b10 - a03 * b09) * invDet;
+        m[2] = (a31 * b05 - a32 * b04 + a33 * b03) * invDet;
+        m[3] = (-a21 * b05 + a22 * b04 - a23 * b03) * invDet;
+        m[4] = (-a10 * b11 + a12 * b08 - a13 * b07) * invDet;
+        m[5] = (a00 * b11 - a02 * b08 + a03 * b07) * invDet;
+        m[6] = (-a30 * b05 + a32 * b02 - a33 * b01) * invDet;
+        m[7] = (a20 * b05 - a22 * b02 + a23 * b01) * invDet;
+        m[8] = (a10 * b10 - a11 * b08 + a13 * b06) * invDet;
+        m[9] = (-a00 * b10 + a01 * b08 - a03 * b06) * invDet;
+        m[10] = (a30 * b04 - a31 * b02 + a33 * b00) * invDet;
+        m[11] = (-a20 * b04 + a21 * b02 - a23 * b00) * invDet;
+        m[12] = (-a10 * b09 + a11 * b07 - a12 * b06) * invDet;
+        m[13] = (a00 * b09 - a01 * b07 + a02 * b06) * invDet;
+        m[14] = (-a30 * b03 + a31 * b01 - a32 * b00) * invDet;
+        m[15] = (a20 * b03 - a21 * b01 + a22 * b00) * invDet;
+        return new Matrix(m);
     }
 
     /** Set the translation component of this Matrix. */
@@ -211,43 +263,6 @@ public class Matrix {
         data[15] = 1.0f;
     }
 
-    /** Make this an orthographic projection Matrix in terms of the six clip planes. */
-    public void makeOrtho(float left, float right, float bottom, float top, float near, float far) {
-        android.opengl.Matrix.orthoM(data, 0, left, right, bottom, top, near, far);
-    }
-
-    /** Make this a projection Matrix in terms of the six clip planes. */
-    public void makeFrustum(float left,
-            float right,
-            float bottom,
-            float top,
-            float near,
-            float far) {
-        android.opengl.Matrix.frustumM(data, 0, left, right, bottom, top, near, far);
-    }
-
-    /**
-     * Make this a projection Matrix in terms of a field of view angle, an aspect ratio, and z clip
-     * planes.
-     */
-    public void makePerspective(float fovy, float aspect, float near, float far) {
-        android.opengl.Matrix.perspectiveM(data, 0, fovy, aspect, near, far);
-    }
-
-    /**
-     * Make this a projection Matrix in terms of a field of view angle, an aspect ratio, z clip
-     * planes, and an offset.
-     */
-    public void makePerspective(
-            float fovy, float aspect, float near, float far, float offsetx, float offsety) {
-        float size = near * (float) tan(toRadians(fovy) / 2.0);
-        float bottom = -size * (1 + offsety);
-        float top = size * (1 - offsety);
-        float left = -size * aspect * (1 + offsetx);
-        float right = size * aspect * (1 - offsetx);
-        android.opengl.Matrix.frustumM(data, 0, left, right, bottom, top, near, far);
-    }
-
     /** Create a new translation Matrix. */
     public static Matrix newTranslation(Vector3 translation) {
         Matrix m = new Matrix();
@@ -296,78 +311,18 @@ public class Matrix {
         return m;
     }
 
-    /** Creates a new orthographic projection Matrix in terms of the six clip planes. */
-    public static Matrix newOrtho(
-            float left, float right, float bottom, float top, float near, float far) {
-        Matrix m = new Matrix();
-        m.makeOrtho(left, right, bottom, top, near, far);
-        return m;
-    }
-
-    /** Creates a new projection Matrix in terms of the six clip planes. */
-    public static Matrix newFrustum(
-            float left, float right, float bottom, float top, float near, float far) {
-        Matrix m = new Matrix();
-        m.makeFrustum(left, right, bottom, top, near, far);
-        return m;
-    }
-
-    /**
-     * Creates a new projection Matrix in terms of a field of view angle, an aspect ratio, and z
-     * clip planes.
-     */
-    public static Matrix newPerspective(float fovy, float aspect, float near, float far) {
-        Matrix m = new Matrix();
-        m.makePerspective(fovy, aspect, near, far);
-        return m;
-    }
-
-    /**
-     * Make this a projection Matrix in terms of a field of view angle, an aspect ratio, z clip
-     * planes, and an offset.
-     */
-    public static Matrix newPerspective(
-            float fovy, float aspect, float near, float far, float offsetx, float offsety) {
-        Matrix m = new Matrix();
-        m.makePerspective(fovy, aspect, near, far, offsetx, offsety);
-        return m;
-    }
-
     @NonNull
     @Override
     public String toString() {
-        return "Matrix:\n[ "
-                + data[0]
-                + "\t"
-                + data[4]
-                + "\t"
-                + data[8]
-                + "\t"
-                + data[12]
-                + "\n  "
-                + data[1]
-                + "\t"
-                + data[5]
-                + "\t"
-                + data[9]
-                + "\t"
-                + data[13]
-                + "\n  "
-                + data[2]
-                + "\t"
-                + data[6]
-                + "\t"
-                + data[10]
-                + "\t"
-                + data[14]
-                + "\n  "
-                + data[3]
-                + "\t"
-                + data[7]
-                + "\t"
-                + data[11]
-                + "\t"
-                + data[15]
-                + " ]";
+        return String.format(Locale.getDefault(),
+            "% 5.1f, % 5.1f, % 5.1f, % 5.1f / "
+                + "% 5.1f, % 5.1f, % 5.1f, % 5.1f / "
+                + "% 5.1f, % 5.1f, % 5.1f, % 5.1f / "
+                + "% 5.1f, % 5.1f, % 5.1f, % 5.1f",
+            data[0], data[1], data[2], data[3],
+            data[4], data[5], data[6], data[7],
+            data[8], data[9], data[10], data[11],
+            data[12], data[13], data[14], data[15]
+            );
     }
 }
