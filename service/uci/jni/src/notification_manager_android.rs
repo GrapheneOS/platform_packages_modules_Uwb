@@ -959,11 +959,11 @@ impl NotificationManagerAndroid {
     ) -> Result<JObject, JNIError> {
         self.cached_jni_call(
             "onDataSendStatus",
-            "(JII)V",
+            "(JIJ)V",
             &[
                 jvalue::from(JValue::Long(session_id as i64)),
-                jvalue::from(JValue::Int(uci_sequence_number as i32)),
                 jvalue::from(JValue::Int(status_code as i32)),
+                jvalue::from(JValue::Long(uci_sequence_number as i64)),
             ],
         )
     }
