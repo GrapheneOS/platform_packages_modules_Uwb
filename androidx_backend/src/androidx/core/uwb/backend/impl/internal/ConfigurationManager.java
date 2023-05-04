@@ -407,7 +407,7 @@ public final class ConfigurationManager {
                         .setChannelNumber(rangingParameters.getComplexChannel().getChannel())
                         .setPreambleCodeIndex(
                                 rangingParameters.getComplexChannel().getPreambleIndex())
-                        .setInitiationTimeMs(timingParams.getInitiationTimeMs())
+                        .setInitiationTime(timingParams.getInitiationTimeMs())
                         .setSlotDurationRstu(timingParams.getSlotDurationRstu())
                         .setSlotsPerRangingRound(timingParams.getSlotPerRangingRound())
                         .setRangingIntervalMs(
