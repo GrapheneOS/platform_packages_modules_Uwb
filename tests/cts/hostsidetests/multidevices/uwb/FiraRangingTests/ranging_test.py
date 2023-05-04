@@ -1502,7 +1502,7 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     # Reboot responder and ensure peer is no longer seen in ranging reports
     def reboot_responder():
         self.responder.ad.reboot()
-        uwb_test_utils.initialize_uwb_country_code_if_not_set(self.responder.ad.adb)
+        uwb_test_utils.initialize_uwb_country_code_if_not_set(self.responder.ad)
 
     # create a thread to reboot the responder and not block the main test.
     thread = Thread(target=reboot_responder)
@@ -1520,7 +1520,7 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     try:
         self.initiator.verify_callback_received("Stopped", timeout=60*2)
     except TimeoutError:
-       asserts.fail("Should receive ranging reports when the app is in foreground")
+       asserts.fail("Should receive ranging stop when peer is no longer present")
     # Ensure the responder is back after reboot.
     thread.join()
 
