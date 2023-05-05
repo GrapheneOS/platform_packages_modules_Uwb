@@ -70,6 +70,7 @@ public class CapabilityParam {
     public static final int SUPPORTED_EXTENDED_MAC_ADDRESS_VER_2_0  = 0x14;
     public static final int SUPPORTED_SUSPEND_RANGING_VER_2_0  = 0x15;
     public static final int SUPPORTED_SESSION_KEY_LENGTH_VER_2_0  = 0x16;
+    public static final int SUPPORTED_DT_TAG_MAX_ACTIVE_RR_2_0 = 0x18;
 
     /**
      * CR 287 params common across versions
