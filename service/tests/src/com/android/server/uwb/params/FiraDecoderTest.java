@@ -133,6 +133,7 @@ public class FiraDecoderTest {
                     + "140101" // Extended mac
                     + "150100" // Suspend ranging
                     + "160101" // Session key length
+                    + "180110" // Dt tag max active ranging rounds
                     + "E30101"
                     + "E40401010101"
                     + "E50403000000"
@@ -142,7 +143,7 @@ public class FiraDecoderTest {
                     + "E90401000000";
     private static final byte[] TEST_FIRA_SPECIFICATION_TLV_DATA_VER_2 =
             UwbUtil.getByteArray(TEST_FIRA_SPECIFICATION_TLV_STRING_VER_2);
-    public static final int TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_2 = 30;
+    public static final int TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_2 = 31;
 
     private final FiraDecoder mFiraDecoder = new FiraDecoder();
 
@@ -212,6 +213,7 @@ public class FiraDecoderTest {
         assertEquals(firaSpecificationParams.getDeviceType(), RANGING_DEVICE_TYPE_CONTROLLER);
         assertFalse(firaSpecificationParams.hasSuspendRangingSupport());
         assertEquals(firaSpecificationParams.getSessionKeyLength(), KEY_LENGTH_256_BITS_SUPPORTED);
+        assertEquals(firaSpecificationParams.getDtTagMaxActiveRr(), 16);
 
     }
 
