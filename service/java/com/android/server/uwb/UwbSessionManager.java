@@ -504,10 +504,14 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             Binder.restoreCallingIdentity(identity);
             uwbSession.setHasNonPrivilegedFgApp(hasNonPrivilegedFgApp);
             if (!hasNonPrivilegedFgApp) {
-                Log.e(TAG, "openRanging - System policy disallows for non fg 3p apps");
-                rangingCallbacks.onRangingOpenFailed(sessionHandle,
-                        RangingChangeReason.SYSTEM_POLICY, new PersistableBundle());
-                return;
+                if (!mUwbInjector.getDeviceConfigFacade().isBackgroundRangingEnabled()) {
+                    Log.e(TAG, "openRanging - System policy disallows for non fg 3p apps");
+                    rangingCallbacks.onRangingOpenFailed(sessionHandle,
+                            RangingChangeReason.SYSTEM_POLICY, new PersistableBundle());
+                    return;
+                } else {
+                    Log.d(TAG, "openRanging - System policy allows for non fg 3p apps");
+                }
             }
         }
         if (isExistedSession(sessionHandle) || isExistedSession(sessionId)) {
@@ -2272,13 +2276,20 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             reconfigureInternal(
                     mSessionHandle, reconfigureParams, true /* triggeredByFgStateChange */);
 
-            // When a non-privileged app goes into the background, start a timer (that will stop the
-            // ranging session). If the app goes back into the foreground, the timer will get reset
-            // (but any stopped UWB session will not be auto-resumed).
-            if (!mHasNonPrivilegedFgApp) {
-                startNonPrivilegedBgAppTimerIfNotSet();
+            if (!mUwbInjector.getDeviceConfigFacade().isBackgroundRangingEnabled()) {
+                Log.d(TAG, "reconfigureFiraSessionOnFgStateChange - System policy disallows for "
+                        + "non fg 3p apps");
+                // When a non-privileged app goes into the background, start a timer (that will stop
+                // the ranging session). If the app goes back into the foreground, the timer will
+                // get reset (but any stopped UWB session will not be auto-resumed).
+                if (!mHasNonPrivilegedFgApp) {
+                    startNonPrivilegedBgAppTimerIfNotSet();
+                } else {
+                    stopNonPrivilegedBgAppTimerIfSet();
+                }
             } else {
-                stopNonPrivilegedBgAppTimerIfSet();
+                Log.d(TAG, "reconfigureFiraSessionOnFgStateChange - System policy allows for "
+                        + "non fg 3p apps");
             }
         }
 
