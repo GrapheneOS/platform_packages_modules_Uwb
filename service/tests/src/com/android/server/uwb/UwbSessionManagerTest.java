@@ -234,6 +234,7 @@ public class UwbSessionManagerTest {
         when(mCccSpecificationParams.getMaxRangingSessionNumber()).thenReturn(
                 (int) MAX_CCC_SESSION_NUM);
         when(mUwbMultichipData.getDefaultChipId()).thenReturn("default");
+        when(mDeviceConfigFacade.isBackgroundRangingEnabled()).thenReturn(false);
 
         // TODO: Don't use spy.
         mUwbSessionManager = spy(new UwbSessionManager(
@@ -1677,6 +1678,22 @@ public class UwbSessionManagerTest {
         assertThat(mTestLooper.isIdle()).isFalse();
     }
 
+    @Test
+    public void testInitSessionWithNonSystemAppNotInFg_WhenBgRangingEnabled() throws Exception {
+        when(mDeviceConfigFacade.isBackgroundRangingEnabled()).thenReturn(true);
+        when(mUwbInjector.isSystemApp(UID, PACKAGE_NAME)).thenReturn(false);
+        when(mUwbInjector.isForegroundAppOrService(UID, PACKAGE_NAME)).thenReturn(false);
+
+        UwbSession uwbSession = setUpUwbSessionForExecution(ATTRIBUTION_SOURCE);
+        mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
+                TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME,
+                uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks(), TEST_CHIP_ID);
+
+        // OPEN_RANGING message scheduled.
+        assertThat(mTestLooper.nextMessage().what).isEqualTo(SESSION_OPEN_RANGING);
+        assertThat(mTestLooper.isIdle()).isFalse();
+    }
+
     private UwbSession initUwbSessionForNonSystemAppInFgInChain() throws Exception {
         when(mUwbInjector.isSystemApp(UID_2, PACKAGE_NAME_2)).thenReturn(false);
         when(mUwbInjector.isForegroundAppOrService(UID_2, PACKAGE_NAME_2))
@@ -1758,6 +1775,49 @@ public class UwbSessionManagerTest {
         verify(mUwbSessionNotificationManager).onRangingStoppedWithApiReasonCode(
                 eq(uwbSession), eq(RangingChangeReason.SYSTEM_POLICY));
         verify(mUwbMetrics).longRangingStopEvent(eq(uwbSession));
+    }
+
+    @Test
+    public void
+            testOpenRangingWithNonSystemAppInFgInChain_MoveToBgAndStayThere_WhenBgRangingEnabled()
+            throws Exception {
+        when(mDeviceConfigFacade.isBackgroundRangingEnabled()).thenReturn(true);
+        UwbSession uwbSession = initUwbSessionForNonSystemAppInFgInChain();
+
+        // Verify that an OPEN_RANGING message was scheduled.
+        assertThat(mTestLooper.nextMessage().what).isEqualTo(SESSION_OPEN_RANGING);
+
+        // Start Ranging
+        when(mNativeUwbManager.startRanging(eq(TEST_SESSION_ID), anyString()))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE,
+                UwbUciConstants.UWB_SESSION_STATE_ACTIVE).when(uwbSession).getSessionState();
+        mUwbSessionManager.startRanging(
+                uwbSession.getSessionHandle(), uwbSession.getParams());
+        mTestLooper.dispatchAll();
+
+        verify(mUwbSessionNotificationManager).onRangingStarted(eq(uwbSession), any());
+        verify(mUwbMetrics).longRangingStartEvent(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
+
+        // Move the non-privileged app to background, this should result in the session getting
+        // reconfigured (to disable the ranging data notifications).
+        mOnUidImportanceListenerArgumentCaptor.getValue().onUidImportance(
+                UID_2, IMPORTANCE_BACKGROUND);
+        mTestLooper.dispatchAll();
+        ArgumentCaptor<Params> paramsArgumentCaptor = ArgumentCaptor.forClass(Params.class);
+        verify(mUwbConfigurationManager).setAppConfigurations(
+                eq(TEST_SESSION_ID), paramsArgumentCaptor.capture(), eq(TEST_CHIP_ID));
+        FiraRangingReconfigureParams firaParams =
+                (FiraRangingReconfigureParams) paramsArgumentCaptor.getValue();
+        assertThat(firaParams.getRangeDataNtfConfig()).isEqualTo(
+                FiraParams.RANGE_DATA_NTF_CONFIG_DISABLE);
+        verify(mUwbSessionNotificationManager, never()).onRangingReconfigured(eq(uwbSession));
+
+        // Verify the timer is not setup.
+        verify(mAlarmManager, never()).setExact(
+                anyInt(), anyLong(), eq(UwbSession.NON_PRIVILEGED_BG_APP_TIMER_TAG),
+                any(), any());
     }
 
     @Test
