@@ -82,6 +82,8 @@ public class DeviceConfigFacade {
 
     // Config parameters related to Rx/Tx data packets.
     private int mRxDataMaxPacketsToStore;
+    // Flag to enable unlimited background ranging.
+    private boolean mBackgroundRangingEnabled;
 
     public DeviceConfigFacade(Handler handler, Context context) {
         mContext = context;
@@ -232,6 +234,12 @@ public class DeviceConfigFacade {
                 DeviceConfig.NAMESPACE_UWB,
                 "rx_data_max_packets_to_store",
                 mContext.getResources().getInteger(R.integer.rx_data_max_packets_to_store)
+        );
+
+        mBackgroundRangingEnabled = DeviceConfig.getBoolean(
+                DeviceConfig.NAMESPACE_UWB,
+                "background_ranging_enabled",
+                mContext.getResources().getBoolean(R.bool.background_ranging_enabled)
         );
 
         // A little parsing and cleanup:
@@ -454,5 +462,15 @@ public class DeviceConfigFacade {
      */
     public int getRxDataMaxPacketsToStore() {
         return mRxDataMaxPacketsToStore;
+    }
+
+    /**
+     * Returns whether background ranging is enabled or not.
+     * If enabled:
+     *  * Background 3p apps are allowed to open new ranging sessions
+     *  * When previously foreground 3p apps moves to background, sessions are not terminated
+     */
+    public boolean isBackgroundRangingEnabled() {
+        return mBackgroundRangingEnabled;
     }
 }
