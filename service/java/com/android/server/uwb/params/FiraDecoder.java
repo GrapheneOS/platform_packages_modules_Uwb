@@ -89,6 +89,7 @@ import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_DEVICE_ROL
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_DEVICE_ROLES_VER_2_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_DEVICE_TYPE_VER_2_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_DIAGNOSTICS;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_DT_TAG_MAX_ACTIVE_RR_2_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_EXTENDED_MAC_ADDRESS_VER_1_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_EXTENDED_MAC_ADDRESS_VER_2_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_FIRA_MAC_VERSION_RANGE_VER_1_0;
@@ -729,6 +730,13 @@ public class FiraDecoder extends TlvDecoder {
 
             int sessionKeyLength = tlvs.getByte(SUPPORTED_SESSION_KEY_LENGTH_VER_2_0);
             builder.setSessionKeyLength(sessionKeyLength);
+
+            try {
+                int dtTagMaxActiveRr = tlvs.getByte(SUPPORTED_DT_TAG_MAX_ACTIVE_RR_2_0);
+                builder.setDtTagMaxActiveRr(dtTagMaxActiveRr);
+            } catch (IllegalArgumentException e) {
+                Log.w(TAG, "SUPPORTED_DT_TAG_MAX_ACTIVE_RR not found.");
+            }
         } else {
             // This FiRa version is not supported yet.
             return null;
