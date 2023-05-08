@@ -235,6 +235,7 @@ public class UwbSessionManagerTest {
                 (int) MAX_CCC_SESSION_NUM);
         when(mUwbMultichipData.getDefaultChipId()).thenReturn("default");
         when(mDeviceConfigFacade.isBackgroundRangingEnabled()).thenReturn(false);
+        when(mDeviceConfigFacade.isRangingErrorStreakTimerEnabled()).thenReturn(true);
 
         // TODO: Don't use spy.
         mUwbSessionManager = spy(new UwbSessionManager(
@@ -2112,6 +2113,38 @@ public class UwbSessionManagerTest {
                 .onRangingStoppedWithApiReasonCode(eq(uwbSession),
                         eq(RangingChangeReason.SYSTEM_POLICY));
         verify(mUwbMetrics).longRangingStopEvent(eq(uwbSession));
+    }
+
+    @Test
+    public void
+            execStartRanging_onRangeDataNotificationContinuousErrors_WhenErrorStreakTimerDisabled()
+            throws Exception {
+        when(mDeviceConfigFacade.isRangingErrorStreakTimerEnabled()).thenReturn(false);
+
+        UwbSession uwbSession = prepareExistingUwbSession();
+        // set up for start ranging
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE, UwbUciConstants.UWB_SESSION_STATE_ACTIVE)
+                .when(uwbSession).getSessionState();
+        when(mNativeUwbManager.startRanging(eq(TEST_SESSION_ID), anyString()))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.startRanging(
+                uwbSession.getSessionHandle(), uwbSession.getParams());
+        mTestLooper.dispatchAll();
+
+        verify(mUwbSessionNotificationManager).onRangingStarted(eq(uwbSession), any());
+        verify(mUwbMetrics).longRangingStartEvent(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
+
+        // Now send a range data notification with an error.
+        UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
+                RANGING_MEASUREMENT_TYPE_TWO_WAY, MAC_ADDRESSING_MODE_EXTENDED,
+                UwbUciConstants.STATUS_CODE_RANGING_RX_TIMEOUT);
+        mUwbSessionManager.onRangeDataNotificationReceived(uwbRangingData);
+        verify(mUwbSessionNotificationManager).onRangingResult(uwbSession, uwbRangingData);
+        // Ensure error streak timer is not started.
+        verify(mAlarmManager, never()).setExact(
+                anyInt(), anyLong(), anyString(), any(), any());
     }
 
     @Test
