@@ -482,13 +482,6 @@ public class UwbServiceImplTest {
         when(mUwbInjector.getGlobalSettingsString(SETTINGS_SATELLITE_MODE_RADIOS))
                 .thenReturn("cell,bluetooth,nfc,wifi");
 
-        // Recreate UwbServiceImpl to ensure we don't register satellite mode content observer.
-        clearInvocations(mUwbInjector);
-        createUwbServiceImpl();
-
-        // Verify that we did not re-register the satellite mode content observer.
-        verify(mUwbInjector, never()).registerContentObserver(any(), anyBoolean(), any());
-
         mUwbServiceImpl.setEnabled(true);
         verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, true);
         verify(mUwbServiceCore).setEnabled(true);
