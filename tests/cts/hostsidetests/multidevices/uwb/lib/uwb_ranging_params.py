@@ -88,8 +88,8 @@ class UwbRangingReconfigureParams():
     action: Type of reconfigure action.
     address_list: new address list.
     block_stride_length: block stride length
-    sub_session_id_list: new p-sts subsession id list (for p-sts with individual controlee keys).
-    sub_session_key_list: new p-sts subsession key list (for p-sts with individual controlee keys).
+    sub_session_id_list: provisioned sts sub session id list.
+    sub_session_key_list: provisioned sts sub session key list.
   """
   action: Optional[int] = None
   address_list: Optional[List[List[int]]] = None
@@ -123,14 +123,13 @@ class UwbRangingControleeParams():
   Attributes:
     action: Type of reconfigure action.
     address_list: new address list.
-    sub_session_id_list: new p-sts subsession id list (for p-sts with individual controlee keys).
-    sub_session_key_list: new p-sts subsession key list (for p-sts with individual controlee keys).
+    sub_session_id_list: provisioned sts sub session id list.
+    sub_session_key_list: provisioned sts sub session key list.
   """
   action: Optional[int] = None
   address_list: Optional[List[List[int]]] = None
   sub_session_id_list: Optional[List[int]] = None
   sub_session_key_list: Optional[List[int]] = None
-
 
   def to_dict(self) -> Dict[str, Any]:
     """Returns UWB ranging controlee parameters in dictionary for sl4a.
@@ -179,6 +178,7 @@ class UwbRangingParams():
     sts_config: STS config.
     session_key: Provisioned sts session key.
     sub_session_id: Ranging sub session ID.
+    sub_session_key: Ranging sub session key.
 
   Example:
       An example of UWB ranging parameters passed to sl4a is below.
