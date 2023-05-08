@@ -84,6 +84,8 @@ public class DeviceConfigFacade {
     private int mRxDataMaxPacketsToStore;
     // Flag to enable unlimited background ranging.
     private boolean mBackgroundRangingEnabled;
+    // Flag to disable error streak timer when a session is ongoing.
+    private boolean mRangingErrorStreakTimerEnabled;
 
     public DeviceConfigFacade(Handler handler, Context context) {
         mContext = context;
@@ -240,6 +242,12 @@ public class DeviceConfigFacade {
                 DeviceConfig.NAMESPACE_UWB,
                 "background_ranging_enabled",
                 mContext.getResources().getBoolean(R.bool.background_ranging_enabled)
+        );
+
+        mRangingErrorStreakTimerEnabled = DeviceConfig.getBoolean(
+                DeviceConfig.NAMESPACE_UWB,
+                "ranging_error_streak_timer_enabled",
+                mContext.getResources().getBoolean(R.bool.ranging_error_streak_timer_enabled)
         );
 
         // A little parsing and cleanup:
@@ -472,5 +480,13 @@ public class DeviceConfigFacade {
      */
     public boolean isBackgroundRangingEnabled() {
         return mBackgroundRangingEnabled;
+    }
+
+    /**
+     * Returns whether ranging error streak timer is enabled or not.
+     * If disabled, session would not be automatically stopped if there is no peer available.
+     */
+    public boolean isRangingErrorStreakTimerEnabled() {
+        return mRangingErrorStreakTimerEnabled;
     }
 }
