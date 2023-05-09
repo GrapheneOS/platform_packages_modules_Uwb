@@ -273,5 +273,12 @@ class UwbRangingDecorator():
     for session in self._callback_keys:
       self.ad.uwb.closeRangingSession(self._callback_keys[session])
       self.verify_callback_received("Closed", session)
+    self.clear_all_ranging_sessions()
+
+  def clear_all_ranging_sessions(self):
+    """Clear all ranging sessions from internal map (for ex: after reboot).
+
+    Args:
+    """
     self._callback_keys.clear()
     self._event_handlers.clear()
