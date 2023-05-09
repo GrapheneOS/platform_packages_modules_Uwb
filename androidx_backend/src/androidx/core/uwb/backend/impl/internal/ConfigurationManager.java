@@ -396,13 +396,13 @@ public final class ConfigurationManager {
                         .setDeviceRole(deviceRole)
                         .setSessionId(rangingParameters.getSessionId())
                         .setDeviceAddress(Conversions.convertUwbAddress(localAddress,
-                                featureFlags.isReversedMacAddress()))
+                                featureFlags.isReversedByteOrderFiraParams()))
                         .setDestAddressList(
                                 Conversions.convertUwbAddressList(
                                         rangingParameters
                                                 .getPeerAddresses()
                                                 .toArray(new UwbAddress[0]),
-                                        featureFlags.isReversedMacAddress()))
+                                        featureFlags.isReversedByteOrderFiraParams()))
                         .setAoaResultRequest(configuration.getAoaResultRequestMode())
                         .setChannelNumber(rangingParameters.getComplexChannel().getChannel())
                         .setPreambleCodeIndex(
@@ -432,7 +432,12 @@ public final class ConfigurationManager {
                             VENDOR_ID_SIZE,
                             STATIC_STS_SESSION_KEY_INFO_SIZE);
             builder.setVendorId(
-                            Arrays.copyOf(rangingParameters.getSessionKeyInfo(), VENDOR_ID_SIZE))
+                            featureFlags.isReversedByteOrderFiraParams()
+                                    ? Conversions.getReverseBytes(
+                                    Arrays.copyOf(rangingParameters.getSessionKeyInfo(),
+                                            VENDOR_ID_SIZE)) :
+                                    Arrays.copyOf(rangingParameters.getSessionKeyInfo(),
+                                            VENDOR_ID_SIZE))
                     .setStaticStsIV(staticStsIv);
         } else if (configuration.getStsConfig() == STS_CONFIG_PROVISIONED) {
             builder.setSessionKey(rangingParameters.getSessionKeyInfo())
@@ -467,7 +472,7 @@ public final class ConfigurationManager {
                         .setAction(action)
                         .setAddressList(
                                 Conversions.convertUwbAddressList(peerAddresses,
-                                                uwbFeatureFlags.isReversedMacAddress())
+                                                uwbFeatureFlags.isReversedByteOrderFiraParams())
                                         .toArray(new android.uwb.UwbAddress[0]));
         if (configuration.getStsConfig()
                 == FiraParams.STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY) {
