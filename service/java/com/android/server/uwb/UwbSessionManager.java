@@ -269,7 +269,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             mUwbMetrics.logRangingResult(uwbSession.getProfileType(), rangingData);
             mSessionNotificationManager.onRangingResult(uwbSession, rangingData);
             processRangeData(rangingData, uwbSession);
-            if (uwbSession.mRangingErrorStreakTimeoutMs
+            if (mUwbInjector.getDeviceConfigFacade().isRangingErrorStreakTimerEnabled()
+                    && uwbSession.mRangingErrorStreakTimeoutMs
                     != UwbSession.RANGING_RESULT_ERROR_NO_TIMEOUT) {
                 if (hasAllRangingResultError(rangingData)) {
                     uwbSession.startRangingResultErrorStreakTimerIfNotSet();
