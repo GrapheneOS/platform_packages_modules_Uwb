@@ -2,16 +2,13 @@
 
 import random
 import sys
-
+from lib import uwb_base_test
 from mobly import asserts
 from mobly import config_parser
 from mobly import suite_runner
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import callback_handler_v2
-
-from lib import uwb_base_test
 from test_utils import uwb_test_utils
-
 
 _TEST_CASES = (
     "test_default_uwb_state",
@@ -70,7 +67,7 @@ class UwbManagerTest(uwb_base_test.UwbBaseTest):
     """
     uwb_test_utils.set_uwb_state_and_verify(dut, state)
     dut.reboot()
-    uwb_test_utils.initialize_uwb_country_code_if_not_set(dut.adb)
+    uwb_test_utils.initialize_uwb_country_code_if_not_set(dut)
     state_after_reboot = uwb_test_utils.get_uwb_state(dut)
     asserts.assert_equal(
         state, state_after_reboot,

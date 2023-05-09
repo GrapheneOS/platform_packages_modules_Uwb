@@ -2,12 +2,10 @@
 
 import time
 from typing import List
-
+from lib import uwb_ranging_params
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 from mobly.snippet import errors
-
-from lib import uwb_ranging_params
 
 CALLBACK_WAIT_TIME_SEC = 3
 
@@ -61,8 +59,7 @@ class UwbRangingDecorator():
     start_time = time.time()
     while time.time() - start_time < timeout:
       try:
-        event = handler.waitAndGet(
-            "RangingSessionCallback", timeout=timeout)
+        event = handler.waitAndGet("RangingSessionCallback", timeout=timeout)
         event_received = event.data["rangingSessionEvent"]
         self.ad.log.debug("Received event - %s" % event_received)
         if event_received == ranging_event:
@@ -70,9 +67,11 @@ class UwbRangingDecorator():
                             (ranging_event, round(time.time() - start_time, 2)))
           self.clear_ranging_session_callback_events(session)
           return
-      except errors.CallbackHandlerTimeoutError:
+      except errors.CallbackHandlerTimeoutError as e:
         self.log.warn("Failed to receive 'RangingSessionCallback' event")
-        raise TimeoutError("Failed to receive '%s' event" % ranging_event)
+        raise TimeoutError(
+            "Failed to receive '%s' event" % ranging_event
+        ) from e
 
   def open_fira_ranging(self,
                         params: uwb_ranging_params.UwbRangingParams,
@@ -93,8 +92,6 @@ class UwbRangingDecorator():
       self._callback_keys[session] = callback_key
     else:
       self.verify_callback_received("OpenFailed", session)
-
-
 
   def start_fira_ranging(self, session: int = 0):
     """Starts Fira ranging session.
@@ -119,34 +116,37 @@ class UwbRangingDecorator():
                                               params.to_dict())
     self.verify_callback_received("Reconfigured", session)
 
-
   def add_controlee_fira_ranging(
-          self,
-          params: uwb_ranging_params.UwbRangingControleeParams,
-          session: int = 0):
+      self,
+      params: uwb_ranging_params.UwbRangingControleeParams,
+      session: int = 0,
+  ):
     """Reconfigures Fira ranging to add controlee.
 
     Args:
       params: UWB controlee params.
       session: ranging session.
     """
-    self.ad.uwb.addControleeFiraRangingSession(self._callback_keys[session], params.to_dict())
+    self.ad.uwb.addControleeFiraRangingSession(
+        self._callback_keys[session], params.to_dict()
+    )
     self.verify_callback_received("ControleeAdded", session)
 
-
   def remove_controlee_fira_ranging(
-          self,
-          params: uwb_ranging_params.UwbRangingControleeParams,
-          session: int = 0):
+      self,
+      params: uwb_ranging_params.UwbRangingControleeParams,
+      session: int = 0,
+  ):
     """Reconfigures Fira ranging to add controlee.
 
     Args:
       params: UWB controlee params.
       session: ranging session.
     """
-    self.ad.uwb.removeControleeFiraRangingSession(self._callback_keys[session], params.to_dict())
+    self.ad.uwb.removeControleeFiraRangingSession(
+        self._callback_keys[session], params.to_dict()
+    )
     self.verify_callback_received("ControleeRemoved", session)
-
 
   def is_uwb_peer_found(self, addr: List[int], session: int = 0) -> bool:
     """Verifies if the UWB peer is found.
@@ -265,17 +265,20 @@ class UwbRangingDecorator():
     self._callback_keys.pop(session, None)
     self._event_handlers.pop(session, None)
 
-
   def close_all_ranging_sessions(self):
     """Closes all ranging sessions.
 
     Args:
     """
     for session in self._callback_keys:
-      try:
-        self.ad.uwb.closeRangingSession(self._callback_keys[session])
-        self.verify_callback_received("Closed", session)
-      except:
-        self.ad.log.warn("Failed to close session: " % session)
+      self.ad.uwb.closeRangingSession(self._callback_keys[session])
+      self.verify_callback_received("Closed", session)
+    self.clear_all_ranging_sessions()
+
+  def clear_all_ranging_sessions(self):
+    """Clear all ranging sessions from internal map (for ex: after reboot).
+
+    Args:
+    """
     self._callback_keys.clear()
     self._event_handlers.clear()
