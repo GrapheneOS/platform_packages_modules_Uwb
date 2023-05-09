@@ -1519,9 +1519,8 @@ class RangingTest(uwb_base_test.UwbBaseTest):
       self.initiator.verify_callback_received("Stopped", timeout=60 * 4)
     except TimeoutError:
       asserts.fail(
-          "Should receive ranging reports when the app is in foreground"
+          "Should receive ranging stop when the app is in background"
       )
-    self.responder.stop_ranging()
 
   def test_ranging_nearby_share_profile_bg_fails(self):
     """Verifies opening a ranging session fails if app is in background.
@@ -1578,6 +1577,7 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     # Reboot responder and ensure peer is no longer seen in ranging reports
     def reboot_responder():
       self.responder.ad.reboot()
+      self.responder.clear_all_ranging_sessions()
       uwb_test_utils.initialize_uwb_country_code_if_not_set(self.responder.ad)
 
     # create a thread to reboot the responder and not block the main test.
@@ -1597,8 +1597,8 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     try:
       self.initiator.verify_callback_received("Stopped", timeout=60*2)
     except TimeoutError:
-      asserts.fail(
-          "Should receive ranging reports when the app is in foreground")
+       asserts.fail(
+           "Should receive ranging stop when peer is no longer present")
 
     # Ensure the responder is back after reboot.
     thread.join()
@@ -1643,7 +1643,7 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         slots_per_ranging_round=6,
         in_band_termination_attempt_count=3,
     )
-    for i in [0, max_fira_ranging_sessions]:
+    for i in range(max_fira_ranging_sessions):
       initiator_params.update(session_id=10+i)
       responder_params.update(session_id=10+i)
       self._verify_one_to_one_ranging(self.initiator, self.responder,
@@ -1653,13 +1653,15 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     if max_fira_ranging_sessions == initiator_max_fira_ranging_sessions:
       initiator_params.update(session_id=10+max_fira_ranging_sessions)
       self.initiator.open_fira_ranging(initiator_params,
+                                       session=max_fira_ranging_sessions,
                                        expect_to_succeed=False)
     if max_fira_ranging_sessions == responder_max_fira_ranging_sessions:
       responder_params.update(session_id=10+max_fira_ranging_sessions)
-      self.responder.open_fira_ranging(initiator_params,
+      self.responder.open_fira_ranging(responder_params,
+                                       session=max_fira_ranging_sessions,
                                        expect_to_succeed=False)
 
-    for i in [0, max_fira_ranging_sessions]:
+    for i in range(max_fira_ranging_sessions):
       self.responder.stop_ranging(session=i)
       self.initiator.stop_ranging(session=i)
 
