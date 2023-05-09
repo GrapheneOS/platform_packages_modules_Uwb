@@ -23,11 +23,9 @@ _TEST_CASES = (
     "test_ranging_nearby_share_profile_default",
     "test_ranging_nearby_share_profile_p_sts_default",
     "test_ranging_nearby_share_profile_reconfigure_controlee",
-    # TODO(b/274930346): Enable once vendor support is ready.
-    # "test_ranging_nearby_share_profile_p_sts_reconfigure_controlee",
+    "test_ranging_nearby_share_profile_p_sts_reconfigure_controlee",
     "test_ranging_nearby_share_profile_add_remove_controlee",
-    # TODO(b/274930346): Enable once vendor support is ready.
-    # "test_ranging_nearby_share_profile_p_sts_add_remove_controlee",
+    "test_ranging_nearby_share_profile_p_sts_add_remove_controlee",
     "test_ranging_device_tracker_profile_reconfigure_ranging_interval",
     "test_ranging_nearby_share_profile_reconfigure_ranging_interval",
     "test_ranging_device_tracker_profile_no_aoa_report",
@@ -164,9 +162,11 @@ class RangingTest(uwb_base_test.UwbBaseTest):
       sub_session_id_list = [sub_session_id]
     if sub_session_key is not None:
       sub_session_key_list = sub_session_key
+    action = uwb_ranging_params.FiraParamEnums.MULTICAST_LIST_UPDATE_ACTION_ADD
+    if sub_session_id is not None and sub_session_key is not None:
+        action = uwb_ranging_params.FiraParamEnums.P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_16_BYTE
     reconfigure_params = uwb_ranging_params.UwbRangingReconfigureParams(
-        action=uwb_ranging_params.FiraParamEnums
-        .MULTICAST_LIST_UPDATE_ACTION_ADD,
+        action=action,
         address_list=[peer_addr], sub_session_id_list=sub_session_id_list,
         sub_session_key_list=sub_session_key_list)
     initiator.reconfigure_fira_ranging(reconfigure_params)
@@ -215,9 +215,11 @@ class RangingTest(uwb_base_test.UwbBaseTest):
       sub_session_id_list = [sub_session_id]
     if sub_session_key is not None:
       sub_session_key_list = sub_session_key
+    action = uwb_ranging_params.FiraParamEnums.MULTICAST_LIST_UPDATE_ACTION_ADD
+    if sub_session_id is not None and sub_session_key is not None:
+        action = uwb_ranging_params.FiraParamEnums.P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_16_BYTE
     controlee_params = uwb_ranging_params.UwbRangingControleeParams(
-        action=uwb_ranging_params.FiraParamEnums
-        .MULTICAST_LIST_UPDATE_ACTION_ADD,
+        action=action,
         address_list=[peer_addr],
         sub_session_id_list=sub_session_id_list,
         sub_session_key_list=sub_session_key_list)
