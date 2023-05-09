@@ -2,16 +2,13 @@
 
 import random
 import sys
-
+from lib import uwb_base_test
 from mobly import asserts
 from mobly import config_parser
 from mobly import suite_runner
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import callback_handler_v2
-
-from lib import uwb_base_test
 from test_utils import uwb_test_utils
-
 
 _TEST_CASES = (
     "test_default_uwb_state",
