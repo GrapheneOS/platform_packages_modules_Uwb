@@ -21,14 +21,14 @@ public class UwbFeatureFlags {
     private final boolean mSkipRangingCapabilitiesCheck;
     private final boolean mAzimuthSupport;
     private final boolean mElevationSupport;
-    private final boolean mReversedMacAddress;
+    private final boolean mReversedByteOrderFiraParams;
 
     private UwbFeatureFlags(boolean skipRangingCapabilitiesCheck, boolean azimuthSupport,
-            boolean elevationSupport, boolean reversedMacAddress) {
+            boolean elevationSupport, boolean reversedByteOrderFiraParams) {
         mSkipRangingCapabilitiesCheck = skipRangingCapabilitiesCheck;
         mAzimuthSupport = azimuthSupport;
         mElevationSupport = elevationSupport;
-        mReversedMacAddress = reversedMacAddress;
+        mReversedByteOrderFiraParams = reversedByteOrderFiraParams;
     }
 
     public boolean skipRangingCapabilitiesCheck() {
@@ -43,8 +43,8 @@ public class UwbFeatureFlags {
         return mElevationSupport;
     }
 
-    public boolean isReversedMacAddress() {
-        return mReversedMacAddress;
+    public boolean isReversedByteOrderFiraParams() {
+        return mReversedByteOrderFiraParams;
     }
 
     /** Builder */
@@ -52,7 +52,7 @@ public class UwbFeatureFlags {
         private boolean mSkipRangingCapabilitiesCheck = false;
         private boolean mAzimuthSupport = false;
         private boolean mElevationSupport = false;
-        private boolean mReversedMacAddress = false;
+        private boolean mReversedByteOrderFiraParams = false;
 
         public UwbFeatureFlags.Builder setSkipRangingCapabilitiesCheck(
                 boolean skipRangingCapabilitiesCheck) {
@@ -70,8 +70,9 @@ public class UwbFeatureFlags {
             return this;
         }
 
-        public UwbFeatureFlags.Builder setReversedMacAddress(boolean reversedMacAddress) {
-            mReversedMacAddress = reversedMacAddress;
+        public UwbFeatureFlags.Builder setReversedByteOrderFiraParams(
+                boolean reversedByteOrderFiraParams) {
+            mReversedByteOrderFiraParams = reversedByteOrderFiraParams;
             return this;
         }
 
@@ -80,7 +81,7 @@ public class UwbFeatureFlags {
                     mSkipRangingCapabilitiesCheck,
                     mAzimuthSupport,
                     mElevationSupport,
-                    mReversedMacAddress);
+                    mReversedByteOrderFiraParams);
         }
     }
 }
