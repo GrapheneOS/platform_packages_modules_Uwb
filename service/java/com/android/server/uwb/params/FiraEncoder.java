@@ -23,6 +23,7 @@ import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABL
 
 import android.uwb.UwbAddress;
 
+import com.android.modules.utils.build.SdkLevel;
 import com.android.server.uwb.config.ConfigParam;
 import com.android.server.uwb.util.UwbUtil;
 
@@ -58,7 +59,7 @@ public class FiraEncoder extends TlvEncoder {
         FiraOpenSessionParams params = (FiraOpenSessionParams) baseParam;
         ByteBuffer dstAddressList = ByteBuffer.allocate(1024);
         for (UwbAddress address : params.getDestAddressList()) {
-            dstAddressList.put(TlvUtil.getReverseBytes(address.toBytes()));
+            dstAddressList.put(getComputedMacAddress(address));
         }
         int stsConfig = params.getStsConfig();
         int deviceType = params.getDeviceType();
@@ -74,7 +75,7 @@ public class FiraEncoder extends TlvEncoder {
                 .putByte(ConfigParam.NUMBER_OF_CONTROLEES,
                         (byte) params.getDestAddressList().size())
                 .putByteArray(ConfigParam.DEVICE_MAC_ADDRESS, params.getDeviceAddress().size(),
-                        TlvUtil.getReverseBytes(params.getDeviceAddress().toBytes()))
+                        getComputedMacAddress(params.getDeviceAddress()))
                 .putShort(ConfigParam.SLOT_DURATION, (short) params.getSlotDurationRstu())
                 .putByte(ConfigParam.MAC_FCS_TYPE, (byte) params.getFcsType())
                 .putByte(ConfigParam.RANGING_ROUND_CONTROL,
@@ -115,6 +116,8 @@ public class FiraEncoder extends TlvEncoder {
                         (byte) params.getInBandTerminationAttemptCount())
                 .putByte(ConfigParam.BPRF_PHR_DATA_RATE,
                         (byte) params.getBprfPhrDataRate())
+                .putShort(ConfigParam.MAX_NUMBER_OF_MEASUREMENTS,
+                         (short) params.getMaxNumberOfMeasurements())
                 .putByte(ConfigParam.STS_LENGTH, (byte) params.getStsLength());
         if (params.getDeviceRole() != FiraParams.RANGING_DEVICE_UT_TAG) {
             tlvBufferBuilder.putInt(ConfigParam.RANGING_INTERVAL, params.getRangingIntervalMs());
@@ -140,7 +143,7 @@ public class FiraEncoder extends TlvEncoder {
         if (stsConfig == FiraParams.STS_CONFIG_STATIC) {
             tlvBufferBuilder
                     .putByteArray(ConfigParam.VENDOR_ID, params.getVendorId() != null
-                            ? TlvUtil.getReverseBytes(params.getVendorId())
+                            ? getComputedVendorId(params.getVendorId())
                             : null)
                     .putByteArray(ConfigParam.STATIC_STS_IV, params.getStaticStsIV());
         } else if ((stsConfig == FiraParams.STS_CONFIG_PROVISIONED)
@@ -287,7 +290,6 @@ public class FiraEncoder extends TlvEncoder {
                 });
             }
         }
-
         return tlvBuilder.build();
     }
 
@@ -321,5 +323,19 @@ public class FiraEncoder extends TlvEncoder {
         }
 
         return rangingRoundControl;
+    }
+
+    private byte[] getComputedMacAddress(UwbAddress address) {
+        if (!SdkLevel.isAtLeastU()) {
+            return TlvUtil.getReverseBytes(address.toBytes());
+        }
+        return address.toBytes();
+    }
+
+    private byte[] getComputedVendorId(byte[] data) {
+        if (!SdkLevel.isAtLeastU()) {
+            return TlvUtil.getReverseBytes(data);
+        }
+        return data;
     }
 }
