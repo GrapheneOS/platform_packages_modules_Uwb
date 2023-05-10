@@ -143,6 +143,8 @@ public class DeviceConfigFacadeTest {
                 .thenReturn(10);
         when(mResources.getBoolean(R.bool.background_ranging_enabled))
                 .thenReturn(false);
+        when(mResources.getBoolean(R.bool.ranging_error_streak_timer_enabled))
+                .thenReturn(true);
 
         when(mContext.getResources()).thenReturn(mResources);
 
@@ -216,6 +218,7 @@ public class DeviceConfigFacadeTest {
         assertEquals(12, mDeviceConfigFacade.getAdvertiseTrustedVarianceValue());
         assertEquals(10, mDeviceConfigFacade.getRxDataMaxPacketsToStore());
         assertEquals(false, mDeviceConfigFacade.isBackgroundRangingEnabled());
+        assertEquals(true, mDeviceConfigFacade.isRangingErrorStreakTimerEnabled());
     }
 
     /**
@@ -310,6 +313,8 @@ public class DeviceConfigFacadeTest {
                 anyInt())).thenReturn(20);
         when(DeviceConfig.getBoolean(anyString(), eq("background_ranging_enabled"),
                 anyBoolean())).thenReturn(true);
+        when(DeviceConfig.getBoolean(anyString(), eq("ranging_error_streak_timer_enabled"),
+                anyBoolean())).thenReturn(false);
 
         mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
         assertEquals(0, mDeviceConfigFacade.getPrimerFovDegree());
@@ -324,6 +329,7 @@ public class DeviceConfigFacadeTest {
         assertEquals(12, mDeviceConfigFacade.getAdvertiseTrustedVarianceValue());
         assertEquals(20, mDeviceConfigFacade.getRxDataMaxPacketsToStore());
         assertEquals(true, mDeviceConfigFacade.isBackgroundRangingEnabled());
+        assertEquals(false, mDeviceConfigFacade.isRangingErrorStreakTimerEnabled());
         when(DeviceConfig.getString(anyString(), eq("pose_source_type"),
                 anyString())).thenReturn("NONE");
         mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
