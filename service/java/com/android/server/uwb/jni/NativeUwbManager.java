@@ -433,6 +433,17 @@ public class NativeUwbManager {
         }
     }
 
+    /**
+     * query device timestamp
+     *
+     * @return :  uwb device timestamp
+     */
+    public long queryUwbsTimestamp(String chipId) {
+        synchronized (mNativeLock) {
+            return nativeQueryUwbTimestamp(chipId);
+        }
+    }
+
     private native byte nativeSendData(int sessionId, byte[] address, byte destEndPoint,
             byte sequenceNum, byte[] appData, String chipId);
 
@@ -487,4 +498,6 @@ public class NativeUwbManager {
             int sessionId, int noOfActiveRangingRounds, byte[] rangingRoundIndexes, String chipId);
 
     private native short nativeQueryDataSize(int sessionId, String chipId);
+
+    private native long nativeQueryUwbTimestamp(String chipId);
 }
