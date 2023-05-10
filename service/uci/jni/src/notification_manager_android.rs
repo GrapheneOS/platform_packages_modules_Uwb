@@ -38,7 +38,7 @@ use uwb_core::uci::{
 use uwb_uci_packets::{
     ControleeStatus, ExtendedAddressDlTdoaRangingMeasurement,
     ExtendedAddressOwrAoaRangingMeasurement, ExtendedAddressTwoWayRangingMeasurement,
-    MacAddressIndicator, OwrAoaStatusCode, RangingMeasurementType, SessionState,
+    MacAddressIndicator, RangingMeasurementType, SessionState,
     ShortAddressDlTdoaRangingMeasurement, ShortAddressOwrAoaRangingMeasurement,
     ShortAddressTwoWayRangingMeasurement, StatusCode,
 };
@@ -84,7 +84,7 @@ struct TwoWayRangingMeasurement {
 
 struct OwrAoaRangingMeasurement {
     mac_address: MacAddress,
-    status: OwrAoaStatusCode, // Not using type StatusCode as values are different.
+    status: StatusCode,
     nlos: u8,
     frame_sequence_number: u8,
     block_index: u16,
@@ -801,7 +801,7 @@ impl NotificationManagerAndroid {
                 "([BIIIIIIII)V",
                 &[
                     JValue::Object(mac_address_jobject),
-                    JValue::Int(measurement.status as i32),
+                    JValue::Int(i32::from(measurement.status)),
                     JValue::Int(measurement.nlos as i32),
                     JValue::Int(measurement.frame_sequence_number as i32),
                     JValue::Int(measurement.block_index as i32),
