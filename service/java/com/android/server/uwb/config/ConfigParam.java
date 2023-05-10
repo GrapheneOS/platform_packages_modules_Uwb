@@ -97,6 +97,7 @@ public class ConfigParam {
     public static final int INTER_FRAME_INTERVAL = 0x3C;
     public static final int SESSION_KEY = 0x45;
     public static final int SUBSESSION_KEY = 0x46;
+    public static final int APPLICATION_DATA_ENDPOINT = 0x4C;
 
     // Android specific params.
     public static final int NUM_RANGE_MEASUREMENTS = NB_OF_RANGE_MEASUREMENTS;
