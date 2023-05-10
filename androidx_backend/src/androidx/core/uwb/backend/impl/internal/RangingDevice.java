@@ -124,6 +124,11 @@ public abstract class RangingDevice {
         return mLocalAddress;
     }
 
+    /** Check whether local address was previously set. */
+    public boolean isLocalAddressSet() {
+        return mLocalAddress != null;
+    }
+
     /** Sets local address. */
     public void setLocalAddress(UwbAddress localAddress) {
         mLocalAddress = localAddress;
