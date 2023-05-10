@@ -487,6 +487,9 @@ public class UwbManagerSnippet implements Snippet {
             return null;
         }
         FiraControleeParams.Builder builder = new FiraControleeParams.Builder();
+        if (j.has("action")) {
+            builder.setAction(j.getInt("action"));
+        }
         if (j.has("addressList")) {
             JSONArray jArray = j.getJSONArray("addressList");
             UwbAddress[] addressList = new UwbAddress[jArray.length()];
