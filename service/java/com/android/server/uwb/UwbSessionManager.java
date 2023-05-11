@@ -2121,6 +2121,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             this.mParams = newParamsBuilder.build();
         }
 
+        // Return the Ranging Interval (Fira 2.0: Ranging Duration) in milliseconds.
         public int getCurrentFiraRangingIntervalMs() {
             FiraOpenSessionParams firaOpenSessionParams = (FiraOpenSessionParams) mParams;
             return firaOpenSessionParams.getRangingIntervalMs()
