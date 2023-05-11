@@ -260,6 +260,16 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
         return mUwbServiceCore.getSpecificationInfo(chipId);
     }
 
+
+    @Override
+    public long queryUwbsTimestampMicros() throws RemoteException {
+        if (!SdkLevel.isAtLeastV()) {
+            throw new UnsupportedOperationException();
+        }
+        enforceUwbPrivilegedPermission();
+        return mUwbServiceCore.queryUwbsTimestampMicros();
+    }
+
     @Override
     public void openRanging(AttributionSource attributionSource,
             SessionHandle sessionHandle,

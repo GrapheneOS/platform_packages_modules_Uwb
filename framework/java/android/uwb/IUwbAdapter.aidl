@@ -366,6 +366,13 @@ interface IUwbAdapter {
   int queryMaxDataSizeBytes(in SessionHandle sessionHandle);
 
   /**
+   * @hide
+   *
+   * @return timestamp in microseconds
+   */
+   long queryUwbsTimestampMicros();
+
+  /**
    * The maximum allowed time to open a ranging session.
    */
   const int RANGING_SESSION_OPEN_THRESHOLD_MS = 3000; // Value TBD
