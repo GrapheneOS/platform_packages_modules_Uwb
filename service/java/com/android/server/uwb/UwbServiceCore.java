@@ -413,6 +413,14 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         return specificationParams.second.toBundle();
     }
 
+    /**
+     * Get the UWBS time
+     */
+    public long queryUwbsTimestampMicros() {
+        String chipId = mUwbInjector.getMultichipData().getDefaultChipId();
+        return mNativeUwbManager.queryUwbsTimestamp(chipId);
+    }
+
     public long getTimestampResolutionNanos() {
         return mNativeUwbManager.getTimestampResolutionNanos();
     }
