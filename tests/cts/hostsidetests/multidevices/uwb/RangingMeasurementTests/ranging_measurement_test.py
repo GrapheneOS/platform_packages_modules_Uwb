@@ -87,6 +87,7 @@ class RangingMeasurementTest(uwb_base_test.UwbBaseTest):
     start_time = time.time()
     while time.time() - start_time < MEASUREMENT_WAIT_TIME:
       try:
+        initiator.verify_callback_received("ReportReceived")
         rssi = initiator.get_rssi_measurement(peer_addr)
         initiator_rssi_measurements.append(rssi)
         rssi = responder.get_rssi_measurement(initiator_addr)
@@ -158,9 +159,15 @@ class RangingMeasurementTest(uwb_base_test.UwbBaseTest):
         responder_addr: address of uwb device.
       """
       distance_measurements = []
-      for _ in range(MEASUREMENTS_COUNT):
-        distance = initiator.get_distance_measurement(responder_addr)
-        distance_measurements.append(distance * 100)
+      valid_measurement_count = 0
+      while valid_measurement_count < MEASUREMENTS_COUNT:
+        try:
+          initiator.verify_callback_received("ReportReceived")
+          distance = initiator.get_distance_measurement(responder_addr)
+          distance_measurements.append(distance * 100)
+          valid_measurement_count += 1
+        except ValueError:
+          logging.warning("Failed to get distance measurement.")
       distance_measurements.sort()
       median_distance_cm = statistics.median(distance_measurements)
       logging.info("Median distance between peers: %s cm", median_distance_cm)
@@ -172,12 +179,14 @@ class RangingMeasurementTest(uwb_base_test.UwbBaseTest):
       logging.info("Distance spread of the required boundaries : %s cm", distance_spread_cm)
       asserts.assert_true(
           distance_spread_cm < DISTANCE_MEASUREMENTS_MAX_SPREAD_CM,
-          "Distance spread %s cm is greater than the required limit of %s cm" %
+          "Distance spread %s cm is greater than the required limit of %s cm, "
+          "check tests/cts/hostsidetests/multidevices/uwb/README.md for calibration requirements" %
           (distance_spread_cm, DISTANCE_MEASUREMENTS_MAX_SPREAD_CM))
       asserts.assert_true(
           DISTANCE_MEASUREMENTS_MEDIAN_LOWER_BOUND_CM < median_distance_cm <
           DISTANCE_MEASUREMENTS_MEDIAN_UPPER_BOUND_CM,
-          "Median distance %s cm is out of the required range of [%s cm, %s cm]" %
+          "Median distance %s cm is out of the required range of [%s cm, %s cm], "
+          "check tests/cts/hostsidetests/multidevices/uwb/README.md for calibration requirements" %
           (median_distance_cm, DISTANCE_MEASUREMENTS_MEDIAN_LOWER_BOUND_CM,
            DISTANCE_MEASUREMENTS_MEDIAN_UPPER_BOUND_CM))
 
