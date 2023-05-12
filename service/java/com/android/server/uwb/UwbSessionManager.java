@@ -321,6 +321,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         info.payload = data;
 
         uwbSession.addReceivedDataInfo(info);
+        mUwbMetrics.logDataRx(uwbSession, status);
     }
 
     /* Notification of data send status */
@@ -787,6 +788,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             receivedDataInfoList.stream().forEach(r ->
                     mSessionNotificationManager.onDataReceived(
                             uwbSession, uwbAddress, new PersistableBundle(), r.payload));
+            mUwbMetrics.logDataToUpperLayer(uwbSession, receivedDataInfoList.size());
             mAdvertiseManager.removeAdvertiseTarget(macAddress);
         }
     }
@@ -1644,6 +1646,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                     sendDataInfo.remoteDeviceAddress.toBytes()),
                             UwbUciConstants.UWB_DESTINATION_END_POINT_HOST, sequenceNum,
                             sendDataInfo.data, uwbSession.getChipId());
+                    mUwbMetrics.logDataTx(uwbSession, sendDataStatus);
                     if (sendDataStatus != STATUS_CODE_OK) {
                         Log.e(TAG, "MSG_SESSION_SEND_DATA error status: " + sendDataStatus
                                 + " for data packet sessionId: " + sessionId
