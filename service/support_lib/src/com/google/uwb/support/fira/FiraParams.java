@@ -183,6 +183,7 @@ public abstract class FiraParams extends Params {
                 RANGING_ROUND_USAGE_DS_TWR_NON_DEFERRED_MODE,
                 RANGING_ROUND_USAGE_OWR_AOA_MEASUREMENT,
                 RANGING_ROUND_USAGE_DL_TDOA,
+                RANGING_ROUND_USAGE_DATA_TRANSFER_MODE,
             })
     public @interface RangingRoundUsage {}
 
@@ -206,6 +207,9 @@ public abstract class FiraParams extends Params {
 
     /** OWR for AoA measurement */
     public static final int RANGING_ROUND_USAGE_OWR_AOA_MEASUREMENT = 6;
+
+    /** Data transfer mode */
+    public static final int RANGING_ROUND_USAGE_DATA_TRANSFER_MODE = 9;
 
     /** Multi-Node mode */
     @IntDef(
