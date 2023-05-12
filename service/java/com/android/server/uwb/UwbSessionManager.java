@@ -99,7 +99,6 @@ import com.google.uwb.support.oemextension.SessionStatus;
 import java.io.Closeable;
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -1430,10 +1429,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                     return status;
                                 }
                                 int dstAddressListSize = addrList.length;
-                                List<Short> dstAddressList = new ArrayList<>();
+                                List<byte[]> dstAddressList = new ArrayList<>();
                                 for (UwbAddress address : addrList) {
-                                    dstAddressList.add(
-                                            ByteBuffer.wrap(address.toBytes()).getShort(0));
+                                    dstAddressList.add(address.toBytes());
                                 }
                                 int[] subSessionIdList;
                                 if (!ArrayUtils.isEmpty(

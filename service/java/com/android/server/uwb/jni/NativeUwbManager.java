@@ -326,7 +326,7 @@ public class NativeUwbManager {
      * in the Table 16: Control messages to set Application configurations
      */
     public byte controllerMulticastListUpdate(int sessionId, int action, int noOfControlee,
-            short[] addresses, int[] subSessionIds, byte[] subSessionKeyList,
+            byte[] addresses, int[] subSessionIds, byte[] subSessionKeyList,
             String chipId) {
         synchronized (mNativeLock) {
             return nativeControllerMulticastListUpdate(sessionId, (byte) action,
@@ -484,7 +484,7 @@ public class NativeUwbManager {
     private native UwbTlvData nativeGetCapsInfo(String chipId);
 
     private native byte nativeControllerMulticastListUpdate(int sessionId, byte action,
-            byte noOfControlee, short[] address, int[] subSessionId, byte[] subSessionKeyList,
+            byte noOfControlee, byte[] address, int[] subSessionId, byte[] subSessionKeyList,
             String chipId);
 
     private native byte nativeSetCountryCode(byte[] countryCode, String chipId);
