@@ -985,6 +985,35 @@ fn native_query_data_size(
     uci_manager.session_query_max_data_size(session_id as u32)
 }
 
+/// Get session token for the UWB session.
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetSessionToken(
+    env: JNIEnv,
+    obj: JObject,
+    session_id: jint,
+    chip_id: JString,
+) -> jlong {
+    debug!("{}: enter", function_name!());
+    match option_result_helper(
+        native_get_session_token(env, obj, session_id, chip_id),
+        function_name!(),
+    ) {
+        Some(s) => s.try_into().unwrap(),
+        None => 0,
+    }
+}
+
+fn native_get_session_token(
+    env: JNIEnv,
+    obj: JObject,
+    session_id: jint,
+    chip_id: JString,
+) -> Result<u32> {
+    let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)
+        .map_err(|_| Error::ForeignFunctionInterface)?;
+    uci_manager.get_session_token(session_id as u32)
+}
+
 /// Get the class loader object. Has to be called from a JNIEnv where the local java classes are
 /// loaded. Results in a global reference to the class loader object that can be used to look for
 /// classes in other native thread.
