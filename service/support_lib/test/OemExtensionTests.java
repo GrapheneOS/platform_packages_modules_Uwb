@@ -58,18 +58,21 @@ public class OemExtensionTests {
         int state = 0;
         int reasonCode = 0;
         String appPackageName = "test_app";
+        int sessionToken = 1000;
 
         SessionStatus sessionStatus = new SessionStatus.Builder()
                 .setSessionId(sessionId)
                 .setState(state)
                 .setReasonCode(reasonCode)
                 .setAppPackageName(appPackageName)
+                .setSessiontoken(sessionToken)
                 .build();
 
         assertEquals(sessionStatus.getSessionId(), sessionId);
         assertEquals(sessionStatus.getState(), state);
         assertEquals(sessionStatus.getReasonCode(), reasonCode);
         assertEquals(sessionStatus.getAppPackageName(), appPackageName);
+        assertEquals(sessionStatus.getSessionToken(), sessionToken);
 
         SessionStatus fromBundle = SessionStatus.fromBundle(sessionStatus.toBundle());
 
@@ -77,6 +80,7 @@ public class OemExtensionTests {
         assertEquals(fromBundle.getState(), state);
         assertEquals(fromBundle.getReasonCode(), reasonCode);
         assertEquals(fromBundle.getAppPackageName(), appPackageName);
+        assertEquals(fromBundle.getSessionToken(), sessionToken);
     }
 
     @Test
