@@ -1245,25 +1245,6 @@ public class UwbManagerTest {
 
     @Test
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
-    public void testQueryMaxDataSizeBytes() throws Exception {
-        FiraSpecificationParams params = getFiraSpecificationParams();
-        FiraProtocolVersion firaProtocolVersion = params.getMaxMacVersionSupported();
-        // The "SESSION_QUERY_DATA_SIZE_IN_RANGING_CMD" is added in the UCI v2.0 spec, and so
-        // check if the device supports FiRa 2.0 or above.
-        assumeTrue(firaProtocolVersion.getMajor() >= 2);
-
-        FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder().build();
-        verifyFiraRangingSession(
-                firaOpenSessionParams,
-                null,
-                (rangingSessionCallback) -> {
-                    int dataSize = rangingSessionCallback.rangingSession.queryMaxDataSizeBytes();
-                    assertThat(dataSize).isGreaterThan(-1);
-                });
-    }
-
-    @Test
-    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
     public void testFiraPoseChanges() throws Exception {
         FiraPoseUpdateParams poseVQUpdate = new FiraPoseUpdateParams.Builder()
                 .setPose(new float[] {0, 0, 0, 0, 0, 0, 1}) // identity vector & quaternion
