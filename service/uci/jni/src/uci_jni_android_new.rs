@@ -29,8 +29,7 @@ use jni::errors::Error as JNIError;
 use jni::objects::{GlobalRef, JObject, JString, JValue};
 use jni::signature::ReturnType;
 use jni::sys::{
-    jboolean, jbyte, jbyteArray, jint, jintArray, jlong, jobject, jobjectArray, jshort,
-    jshortArray, jvalue,
+    jboolean, jbyte, jbyteArray, jint, jintArray, jlong, jobject, jobjectArray, jshort, jvalue,
 };
 use jni::JNIEnv;
 use log::{debug, error};
@@ -524,7 +523,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeCo
     session_id: jint,
     action: jbyte,
     no_of_controlee: jbyte,
-    addresses: jshortArray,
+    addresses: jbyteArray,
     sub_session_ids: jintArray,
     sub_session_keys: jbyteArray,
     chip_id: JString,
@@ -554,21 +553,19 @@ fn native_controller_multicast_list_update(
     session_id: jint,
     action: jbyte,
     no_of_controlee: jbyte,
-    addresses: jshortArray,
+    addresses: jbyteArray,
     sub_session_ids: jintArray,
     sub_session_keys: jbyteArray,
     chip_id: JString,
 ) -> Result<()> {
     let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
-    let mut address_list = vec![
-        0i16;
-        env.get_array_length(addresses)
-            .map_err(|_| Error::ForeignFunctionInterface)?
-            .try_into()
-            .map_err(|_| { Error::BadParameters })?
-    ];
-    env.get_short_array_region(addresses, 0, &mut address_list)
-        .map_err(|_| Error::ForeignFunctionInterface)?;
+
+    let addresses_bytes =
+        env.convert_byte_array(addresses).map_err(|_| Error::ForeignFunctionInterface)?;
+
+    let address_list: Vec<[u8; 2]> =
+        addresses_bytes.chunks_exact(2).map(|chunk| [chunk[0], chunk[1]]).collect();
+
     let mut sub_session_id_list = vec![
         0i32;
         env.get_array_length(sub_session_ids)
@@ -589,7 +586,7 @@ fn native_controller_multicast_list_update(
         UpdateMulticastListAction::AddControlee | UpdateMulticastListAction::RemoveControlee => {
             Controlees::NoSessionKey(
                 zip(address_list, sub_session_id_list)
-                    .map(|(a, s)| Controlee { short_address: a as u16, subsession_id: s as u32 })
+                    .map(|(a, s)| Controlee { short_address: a, subsession_id: s as u32 })
                     .collect::<Vec<Controlee>>(),
             )
         }
@@ -603,7 +600,7 @@ fn native_controller_multicast_list_update(
                 )
                 .map(|((address, id), key)| {
                     Ok(Controlee_V2_0_16_Byte_Version {
-                        short_address: address as u16,
+                        short_address: address,
                         subsession_id: id as u32,
                         subsession_key: key.try_into().map_err(|_| Error::BadParameters)?,
                     })
@@ -620,7 +617,7 @@ fn native_controller_multicast_list_update(
             )
             .map(|((address, id), key)| {
                 Ok(Controlee_V2_0_32_Byte_Version {
-                    short_address: address as u16,
+                    short_address: address,
                     subsession_id: id as u32,
                     subsession_key: key.try_into().map_err(|_| Error::BadParameters)?,
                 })
@@ -983,6 +980,35 @@ fn native_query_data_size(
     let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)
         .map_err(|_| Error::ForeignFunctionInterface)?;
     uci_manager.session_query_max_data_size(session_id as u32)
+}
+
+/// Get session token for the UWB session.
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetSessionToken(
+    env: JNIEnv,
+    obj: JObject,
+    session_id: jint,
+    chip_id: JString,
+) -> jlong {
+    debug!("{}: enter", function_name!());
+    match option_result_helper(
+        native_get_session_token(env, obj, session_id, chip_id),
+        function_name!(),
+    ) {
+        Some(s) => s.try_into().unwrap(),
+        None => 0,
+    }
+}
+
+fn native_get_session_token(
+    env: JNIEnv,
+    obj: JObject,
+    session_id: jint,
+    chip_id: JString,
+) -> Result<u32> {
+    let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)
+        .map_err(|_| Error::ForeignFunctionInterface)?;
+    uci_manager.get_session_token(session_id as u32)
 }
 
 /// Get the class loader object. Has to be called from a JNIEnv where the local java classes are
