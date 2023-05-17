@@ -16,6 +16,12 @@
 
 package com.android.server.uwb.params;
 
+import static com.android.server.uwb.params.CccDecoderTest.TEST_CCC_SPECIFICATION_TLV_DATA_STRING;
+import static com.android.server.uwb.params.CccDecoderTest.TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS;
+import static com.android.server.uwb.params.FiraDecoderTest.TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_1;
+import static com.android.server.uwb.params.FiraDecoderTest.TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_2;
+import static com.android.server.uwb.params.FiraDecoderTest.TEST_FIRA_SPECIFICATION_TLV_STRING_VER_1;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import android.platform.test.annotations.Presubmit;
@@ -39,19 +45,19 @@ import org.junit.runner.RunWith;
 public class GenericDecoderTest {
     private static final byte[] TEST_GENERIC_SPECIFICATION_TLV_DATA_VER_1 =
             UwbUtil.getByteArray("C00101"
-                    + FiraDecoderTest.TEST_FIRA_SPECIFICATION_TLV_STRING_VER_1
-                    + CccDecoderTest.TEST_CCC_SPECIFICATION_TLV_DATA_STRING);
+                    + TEST_FIRA_SPECIFICATION_TLV_STRING_VER_1
+                    + TEST_CCC_SPECIFICATION_TLV_DATA_STRING);
     private static final int TEST_GENERIC_SPECIFICATION_TLV_NUM_PARAMS_VER_1 = 1
-            + FiraDecoderTest.TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_1
-            + CccDecoderTest.TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS;
+            + TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_1
+            + TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS;
 
     private static final byte[] TEST_GENERIC_SPECIFICATION_TLV_DATA_VER_2 =
             UwbUtil.getByteArray("C00101"
                     + FiraDecoderTest.TEST_FIRA_SPECIFICATION_TLV_STRING_VER_2
-                    + CccDecoderTest.TEST_CCC_SPECIFICATION_TLV_DATA_STRING);
+                    + TEST_CCC_SPECIFICATION_TLV_DATA_STRING);
     private static final int TEST_GENERIC_SPECIFICATION_TLV_NUM_PARAMS_VER_2 = 1
-            + FiraDecoderTest.TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_2
-            + CccDecoderTest.TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS;
+            + TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_2
+            + TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS;
 
     private final GenericDecoder mGenericDecoder = new GenericDecoder();
 
@@ -121,5 +127,37 @@ public class GenericDecoderTest {
                 genericSpecificationParams.getFiraSpecificationParams());
         CccDecoderTest.verifyCccSpecification(
                 genericSpecificationParams.getCccSpecificationParams());
+    }
+
+    @Test
+    public void testGetGenericSpecificationViaTlvDecoderVersion1_WithoutCCC() throws Exception {
+        TlvDecoderBuffer tlvDecoderBuffer =
+                new TlvDecoderBuffer(
+                        UwbUtil.getByteArray(TEST_FIRA_SPECIFICATION_TLV_STRING_VER_1),
+                        TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_1);
+        assertThat(tlvDecoderBuffer.parse()).isTrue();
+
+        GenericSpecificationParams genericSpecificationParams = mGenericDecoder.getParams(
+                tlvDecoderBuffer, GenericSpecificationParams.class);
+        assertThat(genericSpecificationParams.hasPowerStatsSupport()).isFalse();
+        FiraDecoderTest.verifyFiraSpecificationVersion1(
+                genericSpecificationParams.getFiraSpecificationParams());
+        assertThat(genericSpecificationParams.getCccSpecificationParams()).isNull();
+    }
+
+    @Test
+    public void testGetGenericSpecificationViaTlvDecoderVersion1_WithoutFira() throws Exception {
+        TlvDecoderBuffer tlvDecoderBuffer =
+                new TlvDecoderBuffer(
+                        UwbUtil.getByteArray(TEST_CCC_SPECIFICATION_TLV_DATA_STRING),
+                        TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS);
+        assertThat(tlvDecoderBuffer.parse()).isTrue();
+
+        GenericSpecificationParams genericSpecificationParams = mGenericDecoder.getParams(
+                tlvDecoderBuffer, GenericSpecificationParams.class);
+        assertThat(genericSpecificationParams.hasPowerStatsSupport()).isFalse();
+        CccDecoderTest.verifyCccSpecification(
+                genericSpecificationParams.getCccSpecificationParams());
+        assertThat(genericSpecificationParams.getFiraSpecificationParams()).isNull();
     }
 }
