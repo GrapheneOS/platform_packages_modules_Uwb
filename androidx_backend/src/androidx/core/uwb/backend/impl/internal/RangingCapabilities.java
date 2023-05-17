@@ -17,6 +17,7 @@
 package androidx.core.uwb.backend.impl.internal;
 
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_MULTICAST_DS_TWR;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_MULTICAST_DS_TWR_NO_AOA;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_UNICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_UNICAST_DS_TWR_NO_AOA;
 import static androidx.core.uwb.backend.impl.internal.Utils.RANGE_DATA_NTF_ENABLE;
@@ -36,8 +37,11 @@ public class RangingCapabilities {
     public static final int FIRA_DEFAULT_SUPPORTED_CHANNEL = 9;
     /** Default supported config id if the system API doesn't provide it. */
     public static final ImmutableList<Integer> FIRA_DEFAULT_SUPPORTED_CONFIG_IDS =
-            ImmutableList.of(CONFIG_UNICAST_DS_TWR, CONFIG_MULTICAST_DS_TWR,
-                    CONFIG_UNICAST_DS_TWR_NO_AOA);
+            ImmutableList.of(
+                    CONFIG_UNICAST_DS_TWR,
+                    CONFIG_MULTICAST_DS_TWR,
+                    CONFIG_UNICAST_DS_TWR_NO_AOA,
+                    CONFIG_MULTICAST_DS_TWR_NO_AOA);
 
     private final boolean mSupportsDistance;
     private final boolean mSupportsAzimuthalAngle;
@@ -56,7 +60,7 @@ public class RangingCapabilities {
                 supportsAzimuthalAngle,
                 supportsElevationAngle,
                 FIRA_DEFAULT_RANGING_INTERVAL_MS,
-                new ArrayList<Integer>(FIRA_DEFAULT_SUPPORTED_CHANNEL),
+                new ArrayList<>(FIRA_DEFAULT_SUPPORTED_CHANNEL),
                 new ArrayList<>(RANGE_DATA_NTF_ENABLE),
                 FIRA_DEFAULT_SUPPORTED_CONFIG_IDS);
     }
