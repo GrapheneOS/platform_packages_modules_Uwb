@@ -266,7 +266,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         UwbSession uwbSession = getUwbSession((int) sessionId);
         if (uwbSession != null) {
             // TODO: b/268065070 Include UWB logs for both filtered and unfiltered data.
-            mUwbMetrics.logRangingResult(uwbSession.getProfileType(), rangingData);
             mSessionNotificationManager.onRangingResult(uwbSession, rangingData);
             processRangeData(rangingData, uwbSession);
             if (mUwbInjector.getDeviceConfigFacade().isRangingErrorStreakTimerEnabled()

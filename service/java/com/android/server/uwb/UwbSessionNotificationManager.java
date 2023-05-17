@@ -77,6 +77,16 @@ public class UwbSessionNotificationManager {
             e.printStackTrace();
         }
 
+        try {
+            RangingMeasurement filteredRangingMeasurement = rangingReport != null
+                    ? rangingReport.getMeasurements().get(0) : null;
+            mUwbInjector.getUwbMetrics().logRangingResult(uwbSession.getProfileType(), rangingData,
+                    filteredRangingMeasurement);
+        } catch (Exception e) {
+            Log.e(TAG, "logRangingResult Failed.");
+            e.printStackTrace();
+        }
+
         if (mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
             try {
                 rangingReport = mUwbInjector.getUwbServiceCore().getOemExtensionCallback()
