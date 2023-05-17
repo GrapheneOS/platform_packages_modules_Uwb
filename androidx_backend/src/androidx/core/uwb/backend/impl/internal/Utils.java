@@ -44,6 +44,7 @@ public final class Utils {
         CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_AOA,
         CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR,
         CONFIG_DL_TDOA_DT_TAG,
+        CONFIG_MULTICAST_DS_TWR_NO_AOA,
     })
     public @interface UwbConfigId {}
 
@@ -74,6 +75,9 @@ public final class Utils {
 
     /** FiRa- defined Downlink-TDoA for DT-Tag ranging */
     public static final int CONFIG_DL_TDOA_DT_TAG = 8;
+
+    /** Same as {@code CONFIG_ID_3}, except not unicast @Hide */
+    public static final int CONFIG_MULTICAST_DS_TWR_NO_AOA = 1000;
 
     @IntDef({
         INFREQUENT,
@@ -109,13 +113,13 @@ public final class Utils {
     private static final Map<Integer, RangingTimingParams> CONFIG_RANGING_INTERVAL_MAP =
             new ArrayMap<>();
 
-    /** Sets the dafault {@link RangingTimingParams} for given config ID. */
+    /** Sets the default {@link RangingTimingParams} for given config ID. */
     public static void setRangingTimingParams(
             @UwbConfigId int configId, RangingTimingParams params) {
         CONFIG_RANGING_INTERVAL_MAP.put(configId, params);
     }
 
-    /** Gets the dafault {@link RangingTimingParams} of given config ID. */
+    /** Gets the default {@link RangingTimingParams} of given config ID. */
     public static RangingTimingParams getRangingTimingParams(@UwbConfigId int configId) {
         return CONFIG_RANGING_INTERVAL_MAP.get(configId);
     }
@@ -288,6 +292,17 @@ public final class Utils {
 
         setRangingTimingParams(
                 CONFIG_DL_TDOA_DT_TAG,
+                new RangingTimingParams(
+                        /* rangingIntervalNormal= */ 200,
+                        /* rangingIntervalFast= */ 200,
+                        /* rangingIntervalInfrequent= */ 4000,
+                        /* slotPerRangingRound= */ 20,
+                        /* slotDurationRstu= */ 2400,
+                        /* initiationTimeMs= */ 0,
+                        /* hoppingEnabled= */ true));
+
+        setRangingTimingParams(
+                CONFIG_MULTICAST_DS_TWR_NO_AOA,
                 new RangingTimingParams(
                         /* rangingIntervalNormal= */ 200,
                         /* rangingIntervalFast= */ 200,
