@@ -99,7 +99,6 @@ import com.google.uwb.support.oemextension.SessionStatus;
 import java.io.Closeable;
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -150,6 +149,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     final LruList<UwbSession> mDbgRecentlyClosedSessions = new LruList<>(5);
     final ConcurrentHashMap<Integer, List<UwbSession>> mNonPrivilegedUidToFiraSessionsTable =
             new ConcurrentHashMap();
+    final ConcurrentHashMap<Integer, Integer> mSessionTokenMap = new ConcurrentHashMap<>();
     private final ActivityManager mActivityManager;
     private final NativeUwbManager mNativeUwbManager;
     private final UwbMetrics mUwbMetrics;
@@ -420,6 +420,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     .setState(state)
                     .setReasonCode(reasonCode)
                     .setAppPackageName(uwbSession.getAttributionSource().getPackageName())
+                    .setSessiontoken(mSessionTokenMap.getOrDefault(uwbSession.getSessionId(), 0))
                     .build()
                     .toBundle();
             try {
@@ -1067,6 +1068,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             removeAdvertiserData(uwbSession);
             uwbSession.close();
             removeFromNonPrivilegedUidToFiraSessionTableIfNecessary(uwbSession);
+            mSessionTokenMap.remove(uwbSession.getSessionId());
             mSessionTable.remove(uwbSession.getSessionHandle());
             mDbgRecentlyClosedSessions.add(uwbSession);
         }
@@ -1228,7 +1230,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                             if (status != UwbUciConstants.STATUS_CODE_OK) {
                                 return status;
                             }
-
+                            mSessionTokenMap.put(uwbSession.getSessionId(), mNativeUwbManager
+                                    .getSessionToken(uwbSession.getSessionId(),
+                                            uwbSession.getChipId()));
                             uwbSession.getWaitObj().blockingWait();
                             status = UwbUciConstants.STATUS_CODE_FAILED;
                             if (uwbSession.getSessionState()
@@ -1432,10 +1436,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                     return status;
                                 }
                                 int dstAddressListSize = addrList.length;
-                                List<Short> dstAddressList = new ArrayList<>();
+                                List<byte[]> dstAddressList = new ArrayList<>();
                                 for (UwbAddress address : addrList) {
-                                    dstAddressList.add(
-                                            ByteBuffer.wrap(address.toBytes()).getShort(0));
+                                    dstAddressList.add(address.toBytes());
                                 }
                                 int[] subSessionIdList;
                                 if (!ArrayUtils.isEmpty(

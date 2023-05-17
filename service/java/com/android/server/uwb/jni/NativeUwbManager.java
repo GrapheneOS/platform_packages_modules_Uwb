@@ -326,7 +326,7 @@ public class NativeUwbManager {
      * in the Table 16: Control messages to set Application configurations
      */
     public byte controllerMulticastListUpdate(int sessionId, int action, int noOfControlee,
-            short[] addresses, int[] subSessionIds, byte[] subSessionKeyList,
+            byte[] addresses, int[] subSessionIds, byte[] subSessionKeyList,
             String chipId) {
         synchronized (mNativeLock) {
             return nativeControllerMulticastListUpdate(sessionId, (byte) action,
@@ -433,6 +433,19 @@ public class NativeUwbManager {
         }
     }
 
+    /**
+     * Get session token from session id.
+     *
+     * @param sessionId : session id of uwb session
+     * @param chipId : Identifier of UWB chip for multi-HAL devices
+     * @return : session token generated for the session.
+     */
+    public int getSessionToken(int sessionId, String chipId) {
+        synchronized (mNativeLock) {
+            return nativeGetSessionToken(sessionId, chipId);
+        }
+    }
+
     private native byte nativeSendData(int sessionId, byte[] address, byte destEndPoint,
             byte sequenceNum, byte[] appData, String chipId);
 
@@ -473,7 +486,7 @@ public class NativeUwbManager {
     private native UwbTlvData nativeGetCapsInfo(String chipId);
 
     private native byte nativeControllerMulticastListUpdate(int sessionId, byte action,
-            byte noOfControlee, short[] address, int[] subSessionId, byte[] subSessionKeyList,
+            byte noOfControlee, byte[] address, int[] subSessionId, byte[] subSessionKeyList,
             String chipId);
 
     private native byte nativeSetCountryCode(byte[] countryCode, String chipId);
@@ -487,4 +500,6 @@ public class NativeUwbManager {
             int sessionId, int noOfActiveRangingRounds, byte[] rangingRoundIndexes, String chipId);
 
     private native short nativeQueryDataSize(int sessionId, String chipId);
+
+    private native int nativeGetSessionToken(int sessionId, String chipId);
 }
