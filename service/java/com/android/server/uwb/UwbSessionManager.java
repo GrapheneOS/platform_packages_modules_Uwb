@@ -227,11 +227,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     uwbSession.reconfigureFiraSessionOnFgStateChange();
                 }
                 // Recalculate session priority based on the new fg/bg state.
-                int newSessionPriority = uwbSession.calculateSessionPriority();
-                Log.i(TAG, "Session " + sessionId
-                        + " recalculating session priority, new priority: "
-                        + newSessionPriority);
-                uwbSession.setStackSessionPriority(newSessionPriority);
+                if (!uwbSession.mSessionPriorityOverride) {
+                    int newSessionPriority = uwbSession.calculateSessionPriority();
+                    Log.i(TAG, "Session " + sessionId
+                            + " recalculating session priority, new priority: "
+                            + newSessionPriority);
+                    uwbSession.setStackSessionPriority(newSessionPriority);
+                }
             }
         });
     }
@@ -1731,8 +1733,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         static final int SYSTEM_APP_SESSION_PRIORITY = 70;
         @VisibleForTesting
         static final int FG_SESSION_PRIORITY = 60;
+        // Default session priority value needs to be different from other session priority buckets,
+        // so we can detect overrides from the shell or System API.
         @VisibleForTesting
-        static final int BG_SESSION_PRIORITY = 50;
+        static final int DEFAULT_SESSION_PRIORITY = 50;
+        @VisibleForTesting
+        static final int BG_SESSION_PRIORITY = 40;
 
         private final AttributionSource mAttributionSource;
         private final SessionHandle mSessionHandle;
@@ -1749,6 +1755,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         // app/service bg/fg state changes. Note, it will differ from the Fira SESSION_PRIORITY
         // param given to UWBS if the state changed after the session became active.
         private int mStackSessionPriority;
+        private boolean mSessionPriorityOverride = false;
         private boolean mNeedsAppConfigUpdate = false;
         private UwbMulticastListUpdateStatus mMulticastListUpdateStatus;
         private final int mProfileType;
@@ -1825,7 +1832,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 // UWBS doesn't support reconfiguring session priority while the session is active.
                 // In case the session stops being active, session priority will update on next
                 // start ranging call.
-                mParams = firaParams.toBuilder().setSessionPriority(mStackSessionPriority).build();
+                if (firaParams.getSessionPriority() != DEFAULT_SESSION_PRIORITY) {
+                    mSessionPriorityOverride = true;
+                    mStackSessionPriority = firaParams.getSessionPriority();
+                } else {
+                    mParams = firaParams.toBuilder().setSessionPriority(
+                            mStackSessionPriority).build();
+                }
             }
 
             this.mReceivedDataInfoMap = new ConcurrentHashMap<>();
