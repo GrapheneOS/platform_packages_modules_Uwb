@@ -163,7 +163,7 @@ public class UwbServiceImpl {
         }
         if (supportedChannels == null || supportedChannels.isEmpty()) {
             supportedChannels =
-                    new ArrayList<Integer>(RangingCapabilities.FIRA_DEFAULT_SUPPORTED_CHANNEL);
+                    new ArrayList<>(RangingCapabilities.FIRA_DEFAULT_SUPPORTED_CHANNEL);
         }
 
         Set<Integer> supportedNtfConfigsSet = new TreeSet<>();
