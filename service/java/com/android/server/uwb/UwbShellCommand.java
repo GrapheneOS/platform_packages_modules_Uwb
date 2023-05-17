@@ -132,6 +132,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             "get-log-mode",
             "enable-uwb",
             "disable-uwb",
+            "simulate-app-state-change",
             "start-fira-ranging-session",
             "start-ccc-ranging-session",
             "reconfigure-fira-ranging-session",
