@@ -1015,6 +1015,8 @@ public class UwbSessionManagerTest {
         when(mockFiraOpenSessionParams.toBuilder()).thenReturn(mockFiraBuilder);
         when(mockFiraBuilder.setSessionPriority(anyInt())).thenReturn(mockFiraBuilder);
         when(mockFiraBuilder.build()).thenReturn(mockFiraOpenSessionParams);
+        when(mockFiraOpenSessionParams.getSessionPriority()).thenReturn(
+                UwbSession.DEFAULT_SESSION_PRIORITY);
 
         // System session
         String systemPackageName = "com.google.uwb";
