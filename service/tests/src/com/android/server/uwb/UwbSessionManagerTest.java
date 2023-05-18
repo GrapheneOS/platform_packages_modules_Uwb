@@ -269,6 +269,7 @@ public class UwbSessionManagerTest {
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS, SOURCE_END_POINT, DEST_END_POINT,
                 DATA_PAYLOAD);
         verify(mockUwbSession).addReceivedDataInfo(isA(UwbSessionManager.ReceivedDataInfo.class));
+        verify(mUwbMetrics).logDataRx(eq(mockUwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
     }
 
     @Test
@@ -283,6 +284,8 @@ public class UwbSessionManagerTest {
                 DATA_PAYLOAD);
         verify(mockUwbSession, never()).addReceivedDataInfo(
                 isA(UwbSessionManager.ReceivedDataInfo.class));
+        verify(mUwbMetrics, never()).logDataRx(eq(mockUwbSession),
+                eq(UwbUciConstants.STATUS_CODE_OK));
     }
 
     @Test
@@ -296,6 +299,7 @@ public class UwbSessionManagerTest {
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_SHORT_MAC_ADDRESS, SOURCE_END_POINT,
                 DEST_END_POINT, DATA_PAYLOAD);
         verify(mockUwbSession).addReceivedDataInfo(isA(UwbSessionManager.ReceivedDataInfo.class));
+        verify(mUwbMetrics).logDataRx(eq(mockUwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
     }
 
     @Test
@@ -351,6 +355,7 @@ public class UwbSessionManagerTest {
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS, SOURCE_END_POINT, DEST_END_POINT,
                 DATA_PAYLOAD);
         verify(mockUwbSession).addReceivedDataInfo(isA(UwbSessionManager.ReceivedDataInfo.class));
+        verify(mUwbMetrics).logDataRx(eq(mockUwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
 
         // Next call onRangeDataNotificationReceived() to process the RANGE_DATA_NTF.
         UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
@@ -372,6 +377,7 @@ public class UwbSessionManagerTest {
                         isA(PersistableBundle.class), eq(DATA_PAYLOAD));
         verify(mUwbAdvertiseManager).removeAdvertiseTarget(PEER_EXTENDED_MAC_ADDRESS_LONG);
         verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
+        verify(mUwbMetrics).logDataToUpperLayer(eq(mockUwbSession), eq(1));
     }
 
     // Test scenario for receiving Application payload data followed by a RANGE_DATA_NTF with an
@@ -396,6 +402,7 @@ public class UwbSessionManagerTest {
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_SHORT_MAC_ADDRESS,
                 SOURCE_END_POINT, DEST_END_POINT, DATA_PAYLOAD);
         verify(mockUwbSession).addReceivedDataInfo(isA(UwbSessionManager.ReceivedDataInfo.class));
+        verify(mUwbMetrics).logDataRx(eq(mockUwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
 
         // Next call onRangeDataNotificationReceived() to process the RANGE_DATA_NTF.
         UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
@@ -417,6 +424,7 @@ public class UwbSessionManagerTest {
                         isA(PersistableBundle.class), eq(DATA_PAYLOAD));
         verify(mUwbAdvertiseManager).removeAdvertiseTarget(PEER_SHORT_MAC_ADDRESS_LONG);
         verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
+        verify(mUwbMetrics).logDataToUpperLayer(eq(mockUwbSession), eq(1));
     }
 
     // Test scenario for receiving Application payload data followed by a RANGE_DATA_NTF with an
@@ -445,6 +453,8 @@ public class UwbSessionManagerTest {
 
         verify(mockUwbSession, times(4)).addReceivedDataInfo(
                 isA(UwbSessionManager.ReceivedDataInfo.class));
+        verify(mUwbMetrics, times(4)).logDataRx(
+                eq(mockUwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
 
         // Next call onRangeDataNotificationReceived() to process the RANGE_DATA_NTF.
         UwbRangingData uwbRangingData1 = UwbTestUtils.generateRangingData(
@@ -487,6 +497,7 @@ public class UwbSessionManagerTest {
         verify(mUwbAdvertiseManager).removeAdvertiseTarget(PEER_EXTENDED_MAC_ADDRESS_2_LONG);
         verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData1));
         verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData2));
+        verify(mUwbMetrics, times(2)).logDataToUpperLayer(eq(mockUwbSession), eq(2));
     }
 
     @Test
@@ -565,6 +576,7 @@ public class UwbSessionManagerTest {
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS, SOURCE_END_POINT, DEST_END_POINT,
                 DATA_PAYLOAD);
         verify(mockUwbSession).addReceivedDataInfo(isA(UwbSessionManager.ReceivedDataInfo.class));
+        verify(mUwbMetrics).logDataRx(eq(mockUwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
 
         // Next call onRangeDataNotificationReceived() to process the RANGE_DATA_NTF.
         mUwbSessionManager.onRangeDataNotificationReceived(uwbRangingData);
@@ -590,6 +602,7 @@ public class UwbSessionManagerTest {
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS, SOURCE_END_POINT, DEST_END_POINT,
                 DATA_PAYLOAD);
         verify(mockUwbSession).addReceivedDataInfo(isA(UwbSessionManager.ReceivedDataInfo.class));
+        verify(mUwbMetrics).logDataRx(eq(mockUwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
 
         // Next call onRangeDataNotificationReceived() to process the RANGE_DATA_NTF (with an
         // incorrect RangingRoundUsage value).
@@ -619,6 +632,7 @@ public class UwbSessionManagerTest {
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS, SOURCE_END_POINT, DEST_END_POINT,
                 DATA_PAYLOAD);
         verify(mockUwbSession).addReceivedDataInfo(isA(UwbSessionManager.ReceivedDataInfo.class));
+        verify(mUwbMetrics).logDataRx(eq(mockUwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
 
         // Next call onRangeDataNotificationReceived() to process the RANGE_DATA_NTF.
         Params firaParams = setupFiraParams(
@@ -657,6 +671,7 @@ public class UwbSessionManagerTest {
         verify(mUwbAdvertiseManager).updateAdvertiseTarget(uwbRangingData.mRangingOwrAoaMeasure);
         verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
         verifyZeroInteractions(mUwbSessionNotificationManager);
+        verify(mUwbMetrics, never()).logDataToUpperLayer(eq(mockUwbSession), anyInt());
     }
 
     @Test
@@ -675,6 +690,7 @@ public class UwbSessionManagerTest {
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS_2, SOURCE_END_POINT, DEST_END_POINT,
                 DATA_PAYLOAD);
         verify(mockUwbSession).addReceivedDataInfo(isA(UwbSessionManager.ReceivedDataInfo.class));
+        verify(mUwbMetrics).logDataRx(eq(mockUwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
 
         // Next call onRangeDataNotificationReceived() to process the RANGE_DATA_NTF.
         Params firaParams = setupFiraParams(
@@ -690,6 +706,7 @@ public class UwbSessionManagerTest {
         verify(mUwbAdvertiseManager).updateAdvertiseTarget(uwbRangingData.mRangingOwrAoaMeasure);
         verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
         verifyZeroInteractions(mUwbSessionNotificationManager);
+        verify(mUwbMetrics, never()).logDataToUpperLayer(eq(mockUwbSession), anyInt());
     }
 
     @Test
@@ -712,6 +729,7 @@ public class UwbSessionManagerTest {
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS, SOURCE_END_POINT, DEST_END_POINT,
                 DATA_PAYLOAD);
         verify(mockUwbSession2).addReceivedDataInfo(isA(UwbSessionManager.ReceivedDataInfo.class));
+        verify(mUwbMetrics).logDataRx(eq(mockUwbSession2), eq(UwbUciConstants.STATUS_CODE_OK));
 
         // Next call onRangeDataNotificationReceived() to process the RANGE_DATA_NTF. Setup such
         // that there is no ReceivedDataInfo returned for the UwbSession (to simulate the test
@@ -729,6 +747,7 @@ public class UwbSessionManagerTest {
         verify(mUwbAdvertiseManager).updateAdvertiseTarget(uwbRangingData.mRangingOwrAoaMeasure);
         verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
         verifyZeroInteractions(mUwbSessionNotificationManager);
+        verify(mUwbMetrics, never()).logDataToUpperLayer(eq(mockUwbSession), anyInt());
     }
 
     @Test
@@ -745,6 +764,7 @@ public class UwbSessionManagerTest {
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS, SOURCE_END_POINT, DEST_END_POINT,
                 DATA_PAYLOAD);
         verify(mockUwbSession).addReceivedDataInfo(isA(UwbSessionManager.ReceivedDataInfo.class));
+        verify(mUwbMetrics).logDataRx(eq(mockUwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
 
         // Setup isPointedTarget() to return false.
         when(mUwbAdvertiseManager.isPointedTarget(PEER_EXTENDED_MAC_ADDRESS)).thenReturn(false);
@@ -2407,6 +2427,7 @@ public class UwbSessionManagerTest {
                 uwbSession.getSessionId(), dataTransferStatus, DATA_SEQUENCE_NUM);
         verify(mUwbSessionNotificationManager).onDataSent(
                 eq(uwbSession), eq(uwbAddress), eq(PERSISTABLE_BUNDLE));
+        verify(mUwbMetrics).logDataTx(eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
     }
 
     // Test case for scenario when a Data packet is successfully sent to a remote device (in
@@ -2474,6 +2495,8 @@ public class UwbSessionManagerTest {
                     eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
         }
         verifyNoMoreInteractions(mNativeUwbManager);
+        verify(mUwbMetrics, times(257)).logDataTx(eq(uwbSession),
+                eq(UwbUciConstants.STATUS_CODE_OK));
     }
 
     @Test
@@ -2598,6 +2621,7 @@ public class UwbSessionManagerTest {
         verify(mUwbSessionNotificationManager).onDataSendFailed(
                 eq(uwbSession), eq(PEER_EXTENDED_UWB_ADDRESS),
                 eq(UwbUciConstants.STATUS_CODE_FAILED), eq(PERSISTABLE_BUNDLE));
+        verify(mUwbMetrics).logDataTx(eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
     }
 
     @Test
@@ -2621,6 +2645,7 @@ public class UwbSessionManagerTest {
                 eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
                 eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
+        verify(mUwbMetrics).logDataTx(eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
 
         // We receive a DataTransferStatusNtf with a sessionId for a different UwbSession, so it
         // should be dropped (no onDataSend()/onDataSendFailure() notifications sent).
@@ -2649,6 +2674,7 @@ public class UwbSessionManagerTest {
                 eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
                 eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
+        verify(mUwbMetrics).logDataTx(eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
 
         // We receive a DataTransferStatusNtf with an incorrect UCI sequence number (for which a
         // packet was never sent), so it should be dropped (no onDataSend()/onDataSendFailure()
@@ -2678,6 +2704,7 @@ public class UwbSessionManagerTest {
                 eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
                 eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
+        verify(mUwbMetrics).logDataTx(eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
 
         // We receive a DataTransferStatusNtf with an error status code.
         mUwbSessionManager.onDataSendStatus(TEST_SESSION_ID,
@@ -2708,6 +2735,7 @@ public class UwbSessionManagerTest {
                 eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(UwbUciConstants.UWB_DESTINATION_END_POINT_HOST), eq(DATA_SEQUENCE_NUM),
                 eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
+        verify(mUwbMetrics).logDataTx(eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
 
         // We never receive a DataTransferStatusNtf, so no onDataSend()/onDataSendFailure()
         // notifications are sent.
