@@ -55,7 +55,17 @@ public class AoaPrimer implements IPrimer {
                             input.vector.distance)
                     .toSphericalVector()
                     .toSparse(true, true, input.hasDistance);
+        } else if (input.hasAzimuth && prediction != null) {
+            // Elevation isn't known, but azimuth still needs conversion.
+            // Use the predicted elevation to compute, but keep it omitted from the result.
+            return AoaVector.fromRadians(
+                            input.vector.azimuth,
+                            prediction.elevation,
+                            input.vector.distance)
+                    .toSphericalVector()
+                    .toSparse(true, false, input.hasDistance);
         }
+        // Elevation is the same in both units. If only elevation is known, no conversion needed.
         return input;
     }
 }
