@@ -18,6 +18,7 @@ package androidx.core.uwb.backend.impl.internal;
 
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_DL_TDOA_DT_TAG;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_MULTICAST_DS_TWR;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_MULTICAST_DS_TWR_NO_AOA;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_MULTICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR;
@@ -348,6 +349,42 @@ public final class ConfigurationManager {
                     @Override
                     public int getRangingRoundUsage() {
                         return RANGING_ROUND_USAGE_DL_TDOA;
+                    }
+                });
+
+        // ID_1000 properties.
+        sConfigs.put(
+                CONFIG_MULTICAST_DS_TWR_NO_AOA,
+                new UwbConfiguration() {
+
+                    @Override
+                    public int getConfigId() {
+                        return CONFIG_UNICAST_DS_TWR_NO_AOA;
+                    }
+
+                    @Override
+                    public int getMultiNodeMode() {
+                        return MULTI_NODE_MODE_ONE_TO_MANY;
+                    }
+
+                    @Override
+                    public int getStsConfig() {
+                        return FiraParams.STS_CONFIG_STATIC;
+                    }
+
+                    @Override
+                    public int getAoaResultRequestMode() {
+                        return FiraParams.AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT;
+                    }
+
+                    @Override
+                    public boolean isControllerTheInitiator() {
+                        return true;
+                    }
+
+                    @Override
+                    public int getRangingRoundUsage() {
+                        return RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
                     }
                 });
     }

@@ -199,9 +199,15 @@ public abstract class RangingDevice {
         List<RangingMeasurement> measurements = rangingReport.getMeasurements();
         for (RangingMeasurement measurement : measurements) {
             byte[] remoteAddressBytes = measurement.getRemoteDeviceAddress().toBytes();
+            if (mUwbFeatureFlags.isReversedByteOrderFiraParams()) {
+                remoteAddressBytes = Conversions.getReverseBytes(remoteAddressBytes);
+            }
+
 
             UwbAddress peerAddress = UwbAddress.fromBytes(remoteAddressBytes);
             if (!isKnownPeer(peerAddress)) {
+                Log.w(TAG,
+                        String.format("Received ranging data from unknown peer %s.", peerAddress));
                 continue;
             }
 
@@ -250,11 +256,11 @@ public abstract class RangingDevice {
                 if (suspendedReason == REASON_UNKNOWN) {
                     suspendedReason = REASON_FAILED_TO_START;
                 }
-                mRangingSession = null;
-                mOpAsyncCallbackRunner.complete(false);
                 int finalSuspendedReason = suspendedReason;
                 runOnBackendCallbackThread(
                         () -> callback.onRangingSuspended(getUwbDevice(), finalSuspendedReason));
+                mRangingSession = null;
+                mOpAsyncCallbackRunner.complete(false);
             }
 
             @WorkerThread
