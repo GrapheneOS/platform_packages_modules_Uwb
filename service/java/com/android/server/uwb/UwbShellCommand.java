@@ -602,6 +602,15 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 int errorStreakTimeoutMs = Integer.parseInt(getNextArgRequired());
                 builder.setRangingErrorStreakTimeoutMs(errorStreakTimeoutMs);
             }
+            if (option.equals("-q")) {
+                int sessionPriority = Integer.parseInt(getNextArgRequired());
+                if (sessionPriority < 1 || sessionPriority > 100 || sessionPriority == 50) {
+                    throw new IllegalArgumentException(
+                            "sessionPriority expecting value between 1-49 or 51-100. 50 is "
+                                    + "reserved for default and has no effect.");
+                }
+                builder.setSessionPriority(sessionPriority);
+            }
             option = getNextOption();
         }
         if (aoaResultReqEnabled && interleavingEnabled) {
@@ -1159,7 +1168,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " [-o static|provisioned](sts-config-type)"
                 + " [-n <sessionKey>](sessionKey 16 or 32 bytes)"
                 + " [-k <subSessionKey>](subSessionKey 16 or 32 bytes)"
-                + " [-j <errorStreakTimeoutMs>](error streak timeout in millis, default=30000)");
+                + " [-j <errorStreakTimeoutMs>](error streak timeout in millis, default=30000)"
+                + " [-q <sessionPriority>](sessionPriority 1-49 or 51-100)");
         pw.println("    Starts a FIRA ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
                 + " retrieved using |get-ranging-session-reports|");
