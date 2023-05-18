@@ -433,6 +433,19 @@ public class NativeUwbManager {
         }
     }
 
+    /**
+     * Get session token from session id.
+     *
+     * @param sessionId : session id of uwb session
+     * @param chipId : Identifier of UWB chip for multi-HAL devices
+     * @return : session token generated for the session.
+     */
+    public int getSessionToken(int sessionId, String chipId) {
+        synchronized (mNativeLock) {
+            return nativeGetSessionToken(sessionId, chipId);
+        }
+    }
+
     private native byte nativeSendData(int sessionId, byte[] address, byte destEndPoint,
             byte sequenceNum, byte[] appData, String chipId);
 
@@ -487,4 +500,6 @@ public class NativeUwbManager {
             int sessionId, int noOfActiveRangingRounds, byte[] rangingRoundIndexes, String chipId);
 
     private native short nativeQueryDataSize(int sessionId, String chipId);
+
+    private native int nativeGetSessionToken(int sessionId, String chipId);
 }
