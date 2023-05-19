@@ -18,8 +18,7 @@ package com.android.server.uwb.data;
 import android.util.Log;
 import android.uwb.UwbAddress;
 
-import com.google.common.primitives.Shorts;
-
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class UwbMulticastListUpdateStatus {
@@ -27,13 +26,13 @@ public class UwbMulticastListUpdateStatus {
     private long mSessionId;
     private int mRemainingSize;
     private int mNumOfControlees;
-    private int [] mControleeMacAddresses;
+    private byte[] mControleeMacAddresses;
     private long[] mSubSessionId;
     private int[] mStatus;
     private UwbAddress[] mControleeUwbAddresses;
 
     public UwbMulticastListUpdateStatus(long sessionID, int remainingSize, int numOfControlees,
-            int[] controleeMacAddresses, long[] subSessionId, int[] status) {
+            byte[] controleeMacAddresses, long[] subSessionId, int[] status) {
         this.mSessionId = sessionID;
         this.mRemainingSize = remainingSize;
         this.mNumOfControlees = numOfControlees;
@@ -41,21 +40,30 @@ public class UwbMulticastListUpdateStatus {
         this.mSubSessionId = subSessionId;
         this.mStatus = status;
 
-        // controleeMacAddresses is currently 4-byte integers. UWB addresses
-        //  are 4-byte or 8-byte.  When 8-byte support is needed, controleeMacAddress
-        //  will need to be updated.
-
         Log.d(TAG, "Controlee count: " + numOfControlees + " mac addresses: "
                 + Arrays.toString(controleeMacAddresses));
-
         if (controleeMacAddresses != null) {
             // Precache mac addresses in a more usable and universal form.
-            mControleeUwbAddresses = new UwbAddress[controleeMacAddresses.length];
-            for (int i = 0; i < controleeMacAddresses.length; i++) {
-                mControleeUwbAddresses[i] = UwbAddress.fromBytes(
-                        Shorts.toByteArray((short) controleeMacAddresses[i]));
+            mControleeUwbAddresses = getUwbAddresses(mControleeMacAddresses, mNumOfControlees,
+                    mControleeMacAddresses.length / mNumOfControlees);
+        }
+    }
+
+    // Convert controlee addresses in byte array to array of UwbAddress.
+    public UwbAddress[] getUwbAddresses(byte[] macAddresses, int numOfAddresses,
+            int addressLength) {
+        UwbAddress[] uwbAddresses = new UwbAddress[numOfAddresses];
+        ByteBuffer buffer = ByteBuffer.allocate(macAddresses.length);
+        buffer.put(macAddresses);
+        buffer.flip();
+        for (int i = 0; i < numOfAddresses; i++) {
+            if (buffer.remaining() >= addressLength) {
+                byte[] macAddress = new byte[addressLength];
+                buffer.get(macAddress, 0, macAddress.length);
+                uwbAddresses[i] = UwbAddress.fromBytes(macAddress);
             }
         }
+        return uwbAddresses;
     }
 
     public long getSessionId() {
@@ -71,7 +79,7 @@ public class UwbMulticastListUpdateStatus {
     }
 
     // This should go obsolete as we shift to UwbAddresses.
-    public int[] getControleeMacAddresses() {
+    public byte[] getControleeMacAddresses() {
         return mControleeMacAddresses;
     }
 
