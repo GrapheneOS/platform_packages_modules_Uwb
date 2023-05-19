@@ -26,6 +26,7 @@ import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TY
 import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TYPE_TWO_WAY;
 import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_FAILED;
 
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
@@ -83,6 +84,7 @@ public class UwbSessionNotificationManagerTest {
     @Mock private IUwbRangingCallbacks mIUwbRangingCallbacks;
     @Mock private FiraOpenSessionParams mFiraParams;
     @Mock private UwbServiceCore mUwbServiceCore;
+    @Mock private UwbMetrics mUwbMetrics;
 
     private UwbSessionNotificationManager mUwbSessionNotificationManager;
 
@@ -102,6 +104,7 @@ public class UwbSessionNotificationManagerTest {
         when(mUwbInjector.checkUwbRangingPermissionForDataDelivery(any(), any())).thenReturn(true);
         when(mUwbInjector.getElapsedSinceBootNanos()).thenReturn(TEST_ELAPSED_NANOS);
         when(mUwbInjector.getUwbServiceCore()).thenReturn(mUwbServiceCore);
+        when(mUwbInjector.getUwbMetrics()).thenReturn(mUwbMetrics);
         mUwbSessionNotificationManager = new UwbSessionNotificationManager(mUwbInjector);
     }
 
@@ -126,6 +129,7 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
 
         verify(mIUwbRangingCallbacks, never()).onRangingResult(any(), any());
+        verify(mUwbMetrics, never()).logRangingResult(anyInt(), any(), any());
     }
 
     @Test
@@ -139,6 +143,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
+        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+                eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
     @Test
@@ -154,6 +160,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
+        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+                eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
     @Test
@@ -169,6 +177,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
+        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+                eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
     @Test
@@ -184,6 +194,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
+        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+                eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
     @Test
@@ -204,6 +216,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
+        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+                eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
     @Test
@@ -224,6 +238,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
+        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+                eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
     @Test
@@ -244,6 +260,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
+        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+                eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
     @Test
@@ -264,6 +282,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
+        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+                eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
     @Test
@@ -284,6 +304,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
+        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+                eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
     @Test
@@ -304,6 +326,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
+        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+                eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
     @Test
@@ -317,6 +341,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
+        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+                eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
     @Test
@@ -330,6 +356,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
+        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+                eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
     @Test
@@ -338,6 +366,7 @@ public class UwbSessionNotificationManagerTest {
                 MAC_ADDRESSING_MODE_SHORT, PEER_SHORT_MAC_ADDRESS);
         mUwbSessionNotificationManager.onRangingResult(mUwbSession, testRangingData);
         verify(mIUwbRangingCallbacks).onRangingResult(mSessionHandle, null);
+        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingData), eq(null));
     }
 
     @Test
