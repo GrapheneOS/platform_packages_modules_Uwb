@@ -319,7 +319,6 @@ public class UwbSessionManagerTest {
 
         verify(mUwbSessionNotificationManager)
                 .onRangingResult(eq(mockUwbSession), eq(uwbRangingData));
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
     }
 
     @Test
@@ -334,7 +333,6 @@ public class UwbSessionManagerTest {
 
         verify(mUwbSessionNotificationManager, never())
                 .onRangingResult(any(), eq(uwbRangingData));
-        verify(mUwbMetrics, never()).logRangingResult(anyInt(), eq(uwbRangingData));
     }
 
     // Test scenario for receiving Application payload data followed by a RANGE_DATA_NTF with an
@@ -379,7 +377,6 @@ public class UwbSessionManagerTest {
                 .onDataReceived(eq(mockUwbSession), eq(PEER_EXTENDED_UWB_ADDRESS),
                         isA(PersistableBundle.class), eq(DATA_PAYLOAD));
         verify(mUwbAdvertiseManager).removeAdvertiseTarget(PEER_EXTENDED_MAC_ADDRESS_LONG);
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
         verify(mUwbMetrics).logDataToUpperLayer(eq(mockUwbSession), eq(1));
     }
 
@@ -426,7 +423,6 @@ public class UwbSessionManagerTest {
                 .onDataReceived(eq(mockUwbSession), eq(PEER_SHORT_UWB_ADDRESS),
                         isA(PersistableBundle.class), eq(DATA_PAYLOAD));
         verify(mUwbAdvertiseManager).removeAdvertiseTarget(PEER_SHORT_MAC_ADDRESS_LONG);
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
         verify(mUwbMetrics).logDataToUpperLayer(eq(mockUwbSession), eq(1));
     }
 
@@ -498,8 +494,6 @@ public class UwbSessionManagerTest {
                         isA(PersistableBundle.class), eq(DATA_PAYLOAD));
         verify(mUwbAdvertiseManager).removeAdvertiseTarget(PEER_EXTENDED_MAC_ADDRESS_LONG);
         verify(mUwbAdvertiseManager).removeAdvertiseTarget(PEER_EXTENDED_MAC_ADDRESS_2_LONG);
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData1));
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData2));
         verify(mUwbMetrics, times(2)).logDataToUpperLayer(eq(mockUwbSession), eq(2));
     }
 
@@ -540,7 +534,6 @@ public class UwbSessionManagerTest {
                 .onDataReceived(eq(mockUwbSession), eq(PEER_SHORT_UWB_ADDRESS),
                         isA(PersistableBundle.class), eq(DATA_PAYLOAD));
         verify(mUwbAdvertiseManager, never()).removeAdvertiseTarget(PEER_SHORT_MAC_ADDRESS_LONG);
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
     }
 
     @Test
@@ -586,7 +579,6 @@ public class UwbSessionManagerTest {
 
         verify(mUwbSessionNotificationManager)
                 .onRangingResult(eq(mockUwbSession), eq(uwbRangingData));
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
         verifyZeroInteractions(mUwbAdvertiseManager);
     }
 
@@ -616,7 +608,6 @@ public class UwbSessionManagerTest {
 
         verify(mUwbSessionNotificationManager)
                 .onRangingResult(eq(mockUwbSession), eq(uwbRangingData));
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
         verifyZeroInteractions(mUwbAdvertiseManager);
     }
 
@@ -645,7 +636,6 @@ public class UwbSessionManagerTest {
 
         verify(mUwbSessionNotificationManager)
                 .onRangingResult(eq(mockUwbSession), eq(uwbRangingData));
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
         verifyZeroInteractions(mUwbAdvertiseManager);
     }
 
@@ -672,7 +662,6 @@ public class UwbSessionManagerTest {
         verify(mUwbSessionNotificationManager)
                 .onRangingResult(eq(mockUwbSession), eq(uwbRangingData));
         verify(mUwbAdvertiseManager).updateAdvertiseTarget(uwbRangingData.mRangingOwrAoaMeasure);
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
         verifyZeroInteractions(mUwbSessionNotificationManager);
         verify(mUwbMetrics, never()).logDataToUpperLayer(eq(mockUwbSession), anyInt());
     }
@@ -707,7 +696,6 @@ public class UwbSessionManagerTest {
         verify(mUwbSessionNotificationManager)
                 .onRangingResult(eq(mockUwbSession), eq(uwbRangingData));
         verify(mUwbAdvertiseManager).updateAdvertiseTarget(uwbRangingData.mRangingOwrAoaMeasure);
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
         verifyZeroInteractions(mUwbSessionNotificationManager);
         verify(mUwbMetrics, never()).logDataToUpperLayer(eq(mockUwbSession), anyInt());
     }
@@ -748,7 +736,6 @@ public class UwbSessionManagerTest {
         verify(mUwbSessionNotificationManager)
                 .onRangingResult(eq(mockUwbSession), eq(uwbRangingData));
         verify(mUwbAdvertiseManager).updateAdvertiseTarget(uwbRangingData.mRangingOwrAoaMeasure);
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
         verifyZeroInteractions(mUwbSessionNotificationManager);
         verify(mUwbMetrics, never()).logDataToUpperLayer(eq(mockUwbSession), anyInt());
     }
@@ -775,7 +762,6 @@ public class UwbSessionManagerTest {
 
         verify(mUwbSessionNotificationManager)
                 .onRangingResult(eq(mockUwbSession), eq(uwbRangingData));
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(uwbRangingData));
         verify(mUwbAdvertiseManager, never()).removeAdvertiseTarget(isA(Long.class));
         verifyZeroInteractions(mUwbSessionNotificationManager);
     }
