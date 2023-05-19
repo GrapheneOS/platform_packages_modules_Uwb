@@ -98,6 +98,8 @@ public class UwbMetricsTest {
     @Mock
     private UwbRangingData mRangingData;
     @Mock
+    private RangingMeasurement mFilteredRangingMeasurement;
+    @Mock
     private UwbSession mUwbSession;
     @Mock
     private FiraOpenSessionParams mFiraParams;
@@ -207,11 +209,11 @@ public class UwbMetricsTest {
         for (int i = 0; i < VALID_RANGING_COUNT; i++) {
             addElapsedTimeMs(DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
             mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
-                    mRangingData);
+                    mRangingData, mFilteredRangingMeasurement);
         }
         when(mTwoWayMeasurement.isStatusCodeOk()).thenReturn(!IS_STATUS_CODE_OK_DEFAULT);
         mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
-                mRangingData);
+                mRangingData, mFilteredRangingMeasurement);
 
         for (int i = 0; i < RX_PACKET_COUNT; i++) {
             mUwbMetrics.logDataRx(mUwbSession, UwbUciConstants.STATUS_CODE_OK);
@@ -282,7 +284,7 @@ public class UwbMetricsTest {
         mUwbMetrics.logRangingInitEvent(mUwbSession, UwbUciConstants.STATUS_CODE_OK);
         addElapsedTimeMs(DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
         mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
-                mRangingData);
+                mRangingData, mFilteredRangingMeasurement);
 
         ExtendedMockito.verify(() -> UwbStatsLog.write(
                 UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED,
@@ -302,7 +304,7 @@ public class UwbMetricsTest {
     public void testLoggingRangingResultSmallLoggingInterval() throws Exception {
         mUwbMetrics.logRangingInitEvent(mUwbSession, UwbUciConstants.STATUS_CODE_OK);
         mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
-                mRangingData);
+                mRangingData, mFilteredRangingMeasurement);
 
         ExtendedMockito.verify(() -> UwbStatsLog.write(
                 UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED,
@@ -330,7 +332,7 @@ public class UwbMetricsTest {
         when(mTwoWayMeasurement.getNLoS()).thenReturn(0);
 
         mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__CCC,
-                mRangingData);
+                mRangingData, mFilteredRangingMeasurement);
 
         ExtendedMockito.verify(() -> UwbStatsLog.write(
                 UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED,
@@ -352,7 +354,7 @@ public class UwbMetricsTest {
         mUwbMetrics.logRangingInitEvent(mUwbSession, UwbUciConstants.STATUS_CODE_OK);
         addElapsedTimeMs(DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
         mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
-                mRangingData);
+                mRangingData, mFilteredRangingMeasurement);
 
         ExtendedMockito.verify(() -> UwbStatsLog.write(
                 UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED,
@@ -376,7 +378,7 @@ public class UwbMetricsTest {
         mUwbMetrics.logRangingInitEvent(mUwbSession, UwbUciConstants.STATUS_CODE_OK);
         addElapsedTimeMs(DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
         mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
-                mRangingData);
+                mRangingData, mFilteredRangingMeasurement);
 
         ExtendedMockito.verify(() -> UwbStatsLog.write(
                 UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED,
@@ -413,10 +415,11 @@ public class UwbMetricsTest {
                 UwbUciConstants.STATUS_CODE_INVALID_PARAM);
 
         addElapsedTimeMs(DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
-        mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__CCC, mRangingData);
+        mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__CCC, mRangingData,
+                mFilteredRangingMeasurement);
         addElapsedTimeMs(DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
         mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
-                mRangingData);
+                mRangingData, mFilteredRangingMeasurement);
 
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         PrintWriter writer = new PrintWriter(stream);
