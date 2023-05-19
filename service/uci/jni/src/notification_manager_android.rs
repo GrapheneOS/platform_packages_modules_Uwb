@@ -384,15 +384,20 @@ impl NotificationManagerAndroid {
         let remaining_multicast_list_size: i32 =
             remaining_multicast_list_size.try_into().map_err(|_| JNIError::InvalidCtorReturn)?;
         let count: i32 = status_list.len().try_into().map_err(|_| JNIError::InvalidCtorReturn)?;
-        let mac_address_jintarray = self.env.new_int_array(count)?;
         let subsession_id_jlongarray = self.env.new_long_array(count)?;
         let status_jintarray = self.env.new_int_array(count)?;
-        let (mac_address_vec, (subsession_id_vec, status_vec)): (Vec<_>, (Vec<_>, Vec<_>)) =
+        let (mac_address_vec, (subsession_id_vec, status_vec)): (Vec<[u8; 2]>, (Vec<_>, Vec<_>)) =
             status_list
                 .into_iter()
-                .map(|cs| (cs.mac_address as i32, (cs.subsession_id as i64, cs.status as i32)))
+                .map(|cs| (cs.mac_address, (cs.subsession_id as i64, cs.status as i32)))
                 .unzip();
-        self.env.set_int_array_region(mac_address_jintarray, 0, &mac_address_vec)?;
+
+        let mac_address_vec_i8 =
+            mac_address_vec.iter().flat_map(|&[a, b]| vec![a as i8, b as i8]).collect::<Vec<i8>>();
+        let mac_address_slice: &[i8] = &mac_address_vec_i8;
+        let mac_address_jbytearray = self.env.new_byte_array(mac_address_slice.len() as i32)?;
+
+        self.env.set_byte_array_region(mac_address_jbytearray, 0, mac_address_slice)?;
         self.env.set_long_array_region(subsession_id_jlongarray, 0, &subsession_id_vec)?;
         self.env.set_int_array_region(status_jintarray, 0, &status_vec)?;
         let multicast_update_jclass = NotificationManagerAndroid::find_local_class(
@@ -404,7 +409,7 @@ impl NotificationManagerAndroid {
         let method_sig = "(L".to_owned() + MULTICAST_LIST_UPDATE_STATUS_CLASS + ";)V";
 
         // Safety: mac_address_jintarray is safely instantiated above.
-        let mac_address_jobject = unsafe { JObject::from_raw(mac_address_jintarray) };
+        let mac_address_jobject = unsafe { JObject::from_raw(mac_address_jbytearray) };
 
         // Safety: subsession_id_jlongarray is safely instantiated above.
         let subsession_id_jobject = unsafe { JObject::from_raw(subsession_id_jlongarray) };
@@ -414,7 +419,7 @@ impl NotificationManagerAndroid {
 
         let multicast_update_jobject = self.env.new_object(
             multicast_update_jclass,
-            "(JII[I[J[I)V",
+            "(JII[B[J[I)V",
             &[
                 JValue::Long(session_id as i64),
                 JValue::Int(remaining_multicast_list_size),
