@@ -8,6 +8,7 @@ from mobly.controllers.android_device_lib import jsonrpc_client_base
 from mobly.snippet import errors
 
 CALLBACK_WAIT_TIME_SEC = 3
+STOP_CALLBACK_WAIT_TIME_SEC = 6
 
 
 class UwbRangingDecorator():
@@ -250,7 +251,7 @@ class UwbRangingDecorator():
       session: ranging session.
     """
     self.ad.uwb.stopRangingSession(self._callback_keys[session])
-    self.verify_callback_received("Stopped", session)
+    self.verify_callback_received("Stopped", session, STOP_CALLBACK_WAIT_TIME_SEC)
 
   def close_ranging(self, session: int = 0):
     """Closes ranging session.
