@@ -240,6 +240,11 @@ public class UwbMetrics {
         private int mElevationFom;
         private int mRssiDbm = RangingMeasurement.RSSI_UNKNOWN;
         private int mRangingType;
+        private int mFilteredDistanceCm = INVALID_DISTANCE;
+        private int mFilteredAzimuthDegree;
+        private int mFilteredAzimuthFom;
+        private int mFilteredElevationDegree;
+        private int mFilteredElevationFom;
         private long mWallClockMillis = mUwbInjector.getWallClockMillis();;
         private boolean mIsStatusOk;
 
@@ -276,6 +281,28 @@ public class UwbMetrics {
             mIsStatusOk = measurement.getRangingStatus() == UwbUciConstants.STATUS_CODE_OK;
         }
 
+        private void addFilteredResults(RangingMeasurement filteredRangingMeasurement) {
+            if (filteredRangingMeasurement == null) {
+                return;
+            }
+            if (filteredRangingMeasurement.getDistanceMeasurement() != null) {
+                mFilteredDistanceCm = (int) (filteredRangingMeasurement
+                        .getDistanceMeasurement().getMeters() * 100);
+            }
+            if (filteredRangingMeasurement.getAngleOfArrivalMeasurement() != null) {
+                mFilteredAzimuthDegree = (int) Math.toDegrees(filteredRangingMeasurement
+                        .getAngleOfArrivalMeasurement().getAzimuth().getRadians());
+                mFilteredAzimuthFom = (int) (filteredRangingMeasurement
+                        .getAngleOfArrivalMeasurement().getAzimuth()
+                        .getConfidenceLevel() * 100);
+                mFilteredElevationDegree = (int) Math.toDegrees(filteredRangingMeasurement
+                        .getAngleOfArrivalMeasurement().getAltitude().getRadians());
+                mFilteredElevationFom = (int) (filteredRangingMeasurement
+                        .getAngleOfArrivalMeasurement().getAltitude()
+                        .getConfidenceLevel() * 100);
+            }
+        }
+
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
@@ -293,6 +320,11 @@ public class UwbMetrics {
                 sb.append(", ElevationDegree=").append(mElevationDegree);
                 sb.append(", ElevationFom=").append(mElevationFom);
                 sb.append(", RssiDbm=").append(mRssiDbm);
+                sb.append(", FilteredDistanceCm=").append(mFilteredDistanceCm);
+                sb.append(", FilteredAzimuthDegree=").append(mFilteredAzimuthDegree);
+                sb.append(", FilteredAzimuthFom=").append(mFilteredAzimuthFom);
+                sb.append(", FilteredElevationDegree=").append(mFilteredElevationDegree);
+                sb.append(", FilteredElevationFom=").append(mFilteredElevationFom);
                 sb.append(", RangingType=").append(mRangingType);
                 return sb.toString();
             }
@@ -469,22 +501,23 @@ public class UwbMetrics {
     /**
      * Log the ranging measurement result
      */
-    public void logRangingResult(int profileType, UwbRangingData rangingData) {
+    public void logRangingResult(int profileType, UwbRangingData rawRangingData,
+            RangingMeasurement filteredRangingMeasurement) {
         synchronized (mLock) {
-            int rangingMeasuresType = rangingData.getRangingMeasuresType();
+            int rangingMeasuresType = rawRangingData.getRangingMeasuresType();
             if (!SUPPORTED_RANGING_MEASUREMENT_TYPES.contains(rangingMeasuresType)
-                    || rangingData.getNoOfRangingMeasures() < 1) {
+                    || rawRangingData.getNoOfRangingMeasures() < 1) {
                 return;
             }
 
-            int sessionId = (int) rangingData.getSessionId();
+            int sessionId = (int) rawRangingData.getSessionId();
             RangingSessionStats session = mOpenedSessionMap.get(sessionId);
             if (session == null) {
                 return;
             }
             session.mRangingCount++;
 
-            RangingReportEvent report = getRangingReport(rangingMeasuresType, rangingData);
+            RangingReportEvent report = getRangingReport(rangingMeasuresType, rawRangingData);
             if (report == null) {
                 return;
             }
@@ -494,6 +527,7 @@ public class UwbMetrics {
             if (!report.mIsStatusOk) {
                 return;
             }
+            report.addFilteredResults(filteredRangingMeasurement);
 
             session.mValidRangingCount++;
             if (!session.mHasValidRangingSinceStart) {
