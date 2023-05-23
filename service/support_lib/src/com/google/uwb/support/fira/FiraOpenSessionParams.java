@@ -1943,6 +1943,13 @@ public class FiraOpenSessionParams extends FiraParams {
                             != RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT);
             }
         }
+        private void checkDlTdoaParameters() {
+            if (mDeviceRole.get() == RANGING_DEVICE_DT_TAG) {
+                checkArgument(mStsConfig == STS_CONFIG_STATIC
+                            && mMultiNodeMode.get() == MULTI_NODE_MODE_ONE_TO_MANY
+                            && mRframeConfig == RFRAME_CONFIG_SP1);
+            }
+        }
 
         /** Sets the type of filtering used by the session. Defaults to FILTER_TYPE_DEFAULT */
         public FiraOpenSessionParams.Builder setFilterType(@FilterType int filterType) {
@@ -1955,6 +1962,7 @@ public class FiraOpenSessionParams extends FiraParams {
             checkStsConfig();
             checkInterleavingRatio();
             checkRangeDataNtfConfig();
+            checkDlTdoaParameters();
             return new FiraOpenSessionParams(
                     mProtocolVersion.get(),
                     mSessionId.get(),
