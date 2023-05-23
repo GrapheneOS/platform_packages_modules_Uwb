@@ -76,6 +76,7 @@ impl Dispatcher {
                     callback_obj: callback_obj.clone(),
                 },
                 logger,
+                UciLoggerMode::Filtered,
                 runtime.handle().to_owned(),
             )?;
             manager_map.insert(chip_id.as_ref().to_string(), manager);
