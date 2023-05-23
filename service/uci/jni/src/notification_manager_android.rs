@@ -1137,8 +1137,6 @@ impl NotificationManager for NotificationManagerAndroid {
                     jvalue::from(JValue::Int(data_rcv_notification.status as i32)),
                     jvalue::from(JValue::Long(data_rcv_notification.uci_sequence_num as i64)),
                     jvalue::from(JValue::Object(source_address_jobject)),
-                    jvalue::from(JValue::Int(data_rcv_notification.source_fira_component as i32)),
-                    jvalue::from(JValue::Int(data_rcv_notification.dest_fira_component as i32)),
                     jvalue::from(JValue::Object(payload_jobject)),
                 ],
             )
