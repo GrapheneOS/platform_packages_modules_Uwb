@@ -68,7 +68,7 @@ public class UciLogModeStore {
 
     public UciLogModeStore(UwbSettingsStore uwbSettingsStore) {
         mUwbSettingsStore = uwbSettingsStore;
-        mLogMode = Mode.DISABLED;
+        mLogMode = Mode.FILTERED;
     }
 
     /**
