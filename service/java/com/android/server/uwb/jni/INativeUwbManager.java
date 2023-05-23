@@ -60,14 +60,12 @@ public interface INativeUwbManager {
          * @param status      : Status
          * @param sequenceNum : Sequence Number
          * @param address     : Address of remote address
-         * @param sourceEndPoint   : SourceEndPoint
-         * @param destEndPoint   : DestEndPoint
          * @param data        : Data received from remote address
          */
         // TODO(b/261762781): Change the type of sessionID & sequenceNum parameters to int (to match
         // their 4-octet size in the UCI spec).
-        void onDataReceived(long sessionID, int status, long sequenceNum, byte[] address,
-                int sourceEndPoint, int destEndPoint, byte[] data);
+        void onDataReceived(
+                long sessionID, int status, long sequenceNum, byte[] address, byte[] data);
 
         /**
          * Interface for receiving the data transfer status, corresponding to a Data packet
