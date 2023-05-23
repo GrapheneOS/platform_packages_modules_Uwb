@@ -247,13 +247,6 @@ public class UwbUciConstants {
     public static final int STS_MODE_DYNAMIC = 0x01;
 
     /**
-     * UWB LL Spec Table 3: Endpoints field
-     */
-    public static final byte UWB_DESTINATION_END_POINT_UWBS = 0x00;
-    public static final byte UWB_DESTINATION_END_POINT_HOST = 0x01;
-    public static final byte UWB_DESTINATION_END_POINT_SECURE_ELEMENT = 0x02;
-
-    /**
      * FiRa Major versions
      */
     public static final int FIRA_VERSION_MAJOR_1 = 1;
