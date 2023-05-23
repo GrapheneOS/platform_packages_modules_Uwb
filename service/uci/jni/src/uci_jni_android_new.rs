@@ -40,8 +40,8 @@ use uwb_core::params::{
 };
 use uwb_uci_packets::{
     AppConfigTlvType, CapTlv, Controlee, Controlee_V2_0_16_Byte_Version,
-    Controlee_V2_0_32_Byte_Version, Controlees, FiraComponent, PowerStats, ResetConfig,
-    SessionState, SessionType, StatusCode, UpdateMulticastListAction,
+    Controlee_V2_0_32_Byte_Version, Controlees, PowerStats, ResetConfig, SessionState, SessionType,
+    StatusCode, UpdateMulticastListAction,
 };
 
 /// Macro capturing the name of the function calling this macro.
@@ -904,8 +904,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
     obj: JObject,
     session_id: jint,
     address: jbyteArray,
-    dest_fira_component: jbyte,
-    uci_sequence_number: jbyte,
+    uci_sequence_number: jshort,
     app_payload_data: jbyteArray,
     chip_id: JString,
 ) -> jbyte {
@@ -916,7 +915,6 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
             obj,
             session_id,
             address,
-            dest_fira_component,
             uci_sequence_number,
             app_payload_data,
             chip_id,
@@ -931,8 +929,7 @@ fn native_send_data(
     obj: JObject,
     session_id: jint,
     address: jbyteArray,
-    dest_fira_component: jbyte,
-    uci_sequence_number: jbyte,
+    uci_sequence_number: jshort,
     app_payload_data: jbyteArray,
     chip_id: JString,
 ) -> Result<()> {
@@ -942,13 +939,10 @@ fn native_send_data(
         env.convert_byte_array(address).map_err(|_| Error::ForeignFunctionInterface)?;
     let app_payload_data_bytearray =
         env.convert_byte_array(app_payload_data).map_err(|_| Error::ForeignFunctionInterface)?;
-    let destination_fira_component =
-        FiraComponent::try_from(dest_fira_component as u8).map_err(|_| Error::BadParameters)?;
     uci_manager.send_data_packet(
         session_id as u32,
         address_bytearray,
-        destination_fira_component,
-        uci_sequence_number as u8,
+        uci_sequence_number as u16,
         app_payload_data_bytearray,
     )
 }
