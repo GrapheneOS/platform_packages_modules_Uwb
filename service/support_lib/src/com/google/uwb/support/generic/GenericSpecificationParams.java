@@ -82,8 +82,10 @@ public class GenericSpecificationParams extends GenericParams {
         PersistableBundle bundle = super.toBundle();
         bundle.putPersistableBundle(KEY_FIRA_SPECIFICATION_PARAMS,
                 mFiraSpecificationParams.toBundle());
-        bundle.putPersistableBundle(KEY_CCC_SPECIFICATION_PARAMS,
-                mCccSpecificationParams.toBundle());
+        if (mCccSpecificationParams != null) {
+            bundle.putPersistableBundle(KEY_CCC_SPECIFICATION_PARAMS,
+                    mCccSpecificationParams.toBundle());
+        }
         bundle.putBoolean(KEY_POWER_STATS_QUERY_SUPPORT, mHasPowerStatsSupport);
         return bundle;
     }
@@ -100,14 +102,17 @@ public class GenericSpecificationParams extends GenericParams {
 
     private static GenericSpecificationParams parseVersion1(PersistableBundle bundle) {
         GenericSpecificationParams.Builder builder = new GenericSpecificationParams.Builder();
-        return builder.setFiraSpecificationParams(
-                        FiraSpecificationParams.fromBundle(
-                                bundle.getPersistableBundle(KEY_FIRA_SPECIFICATION_PARAMS)))
-                .setCccSpecificationParams(
-                        CccSpecificationParams.fromBundle(
-                                bundle.getPersistableBundle(KEY_CCC_SPECIFICATION_PARAMS)))
-                .hasPowerStatsSupport(bundle.getBoolean(KEY_POWER_STATS_QUERY_SUPPORT))
-                .build();
+        builder = builder.setFiraSpecificationParams(
+                FiraSpecificationParams.fromBundle(
+                        bundle.getPersistableBundle(KEY_FIRA_SPECIFICATION_PARAMS)))
+                .hasPowerStatsSupport(bundle.getBoolean(KEY_POWER_STATS_QUERY_SUPPORT));
+        PersistableBundle cccBundle = bundle.getPersistableBundle(KEY_CCC_SPECIFICATION_PARAMS);
+        if (cccBundle != null) {
+            builder = builder.setCccSpecificationParams(
+                    CccSpecificationParams.fromBundle(
+                            cccBundle));
+        }
+        return builder.build();
     }
 
     /** Builder */
