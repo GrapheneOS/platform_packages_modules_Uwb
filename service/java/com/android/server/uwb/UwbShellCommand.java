@@ -715,6 +715,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         CccStartRangingParams cccStartRangingParams = new CccStartRangingParams.Builder()
                 .setSessionId(cccOpenRangingParams.getSessionId())
                 .setRanMultiplier(cccOpenRangingParams.getRanMultiplier())
+                .setInitiationTimeMs(cccOpenRangingParams.getInitiationTimeMs())
                 .build();
         startRangingSession(
                 cccOpenRangingParams, cccStartRangingParams, cccOpenRangingParams.getSessionId(),
