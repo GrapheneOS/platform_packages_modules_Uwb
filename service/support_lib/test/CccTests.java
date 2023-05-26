@@ -178,20 +178,24 @@ public class CccTests {
     public void testStartRangingParams() {
         int sessionId = 10;
         int ranMultiplier = 128;
+        long initiationTimeMs = 10;
 
         CccStartRangingParams params =
                 new CccStartRangingParams.Builder()
                         .setSessionId(sessionId)
                         .setRanMultiplier(ranMultiplier)
+                        .setInitiationTimeMs(initiationTimeMs)
                         .build();
 
         assertEquals(params.getSessionId(), sessionId);
         assertEquals(params.getRanMultiplier(), ranMultiplier);
+        assertEquals(params.getInitiationTimeMs(), initiationTimeMs);
 
         CccStartRangingParams fromBundle = CccStartRangingParams.fromBundle(params.toBundle());
 
         assertEquals(fromBundle.getSessionId(), sessionId);
         assertEquals(fromBundle.getRanMultiplier(), ranMultiplier);
+        assertEquals(fromBundle.getInitiationTimeMs(), initiationTimeMs);
 
         verifyProtocolPresent(params);
         verifyBundlesEqual(params, fromBundle);
