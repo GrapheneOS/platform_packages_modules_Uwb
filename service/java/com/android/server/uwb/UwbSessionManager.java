@@ -2064,10 +2064,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         }
 
         public void updateCccParamsOnStart(CccStartRangingParams rangingStartParams) {
-            // Need to update the RAN multiplier from the CccStartRangingParams for CCC session.
+            // Need to update the RAN multiplier and initiation time
+            // from the CccStartRangingParams for CCC session.
             CccOpenRangingParams newParams =
                     new CccOpenRangingParams.Builder((CccOpenRangingParams) mParams)
                             .setRanMultiplier(rangingStartParams.getRanMultiplier())
+                            .setInitiationTimeMs(rangingStartParams.getInitiationTimeMs())
                             .build();
             this.mParams = newParams;
             this.mNeedsAppConfigUpdate = true;
