@@ -423,7 +423,8 @@ public final class ConfigurationManager {
                         .setRangeDataNtfProximityFar(
                                 rangingParameters.getUwbRangeDataNtfConfig().getNtfProximityFar())
                         .setInBandTerminationAttemptCount(3)
-                        .setStsConfig(configuration.getStsConfig());
+                        .setStsConfig(configuration.getStsConfig())
+                        .setRangingErrorStreakTimeoutMs(10_000L);
 
         if (configuration.getStsConfig() == FiraParams.STS_CONFIG_STATIC) {
             byte[] staticStsIv =
