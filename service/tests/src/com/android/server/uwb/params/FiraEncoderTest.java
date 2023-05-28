@@ -58,9 +58,9 @@ import java.util.Arrays;
 @SmallTest
 @Presubmit
 public class FiraEncoderTest {
-    private static final FiraOpenSessionParams.Builder TEST_FIRA_OPEN_SESSION_PARAMS =
+    private static final FiraOpenSessionParams.Builder TEST_FIRA_OPEN_SESSION_COMMON_PARAMS =
             new FiraOpenSessionParams.Builder()
-                    .setProtocolVersion(FiraParams.PROTOCOL_VERSION_1_1)
+                    .setProtocolVersion(FiraParams.PROTOCOL_VERSION_1_1) // Required Parameter
                     .setSessionId(1)
                     .setSessionType(SESSION_TYPE_RANGING)
                     .setRangeDataNtfConfig(RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_LEVEL_TRIG)
@@ -77,6 +77,16 @@ public class FiraEncoderTest {
                     .setRangeDataNtfAoaAzimuthUpper(2.5)
                     .setRangeDataNtfAoaElevationLower(-1.5)
                     .setRangeDataNtfAoaElevationUpper(1.2);
+
+    private static final FiraOpenSessionParams.Builder TEST_FIRA_OPEN_SESSION_PARAMS_V_1_1 =
+            new FiraOpenSessionParams.Builder(TEST_FIRA_OPEN_SESSION_COMMON_PARAMS);
+
+    private static final FiraOpenSessionParams.Builder TEST_FIRA_OPEN_SESSION_PARAMS_V_2_0 =
+            new FiraOpenSessionParams.Builder(TEST_FIRA_OPEN_SESSION_COMMON_PARAMS)
+                    .setProtocolVersion(FiraParams.PROTOCOL_VERSION_2_0)
+                    .setInitiationTime(1000)
+                    .setLinkLayerMode(1)
+                    .setApplicationDataEndpoint(1);
 
     private static final FiraRangingReconfigureParams.Builder TEST_FIRA_RECONFIGURE_PARAMS =
             new FiraRangingReconfigureParams.Builder()
@@ -114,12 +124,13 @@ public class FiraEncoderTest {
 
     private final FiraEncoder mFiraEncoder = new FiraEncoder();
     private byte[] mFiraOpenSessionTlvUtTag;
-    private byte[] mFiraSessionTlvData;
+    private byte[] mFiraSessionv11TlvData;
+    private byte[] mFiraSessionv20TlvData;
 
     @Before
     public void setUp() {
         if (!SdkLevel.isAtLeastU()) {
-            mFiraSessionTlvData = UwbUtil.getByteArray(
+            mFiraSessionv11TlvData = UwbUtil.getByteArray(
                     "00010101010102010003010004010905010106020604080260090B01000C01030D"
                             + "01010E01040F0200001002204E11010012010313010014010A1501021601001701"
                             + "011A01011B01191C01001F01002201012301002401002501322601002901012A02"
@@ -133,12 +144,19 @@ public class FiraEncoderTest {
                             + "00002C01002D01002E01012F010131010032020000350101070206042B04000000"
                             + "002702780528061A5577477E7D3304B004000034041E0000003803010B0A390101");
         } else {
-            mFiraSessionTlvData = UwbUtil.getByteArray(
+            mFiraSessionv11TlvData = UwbUtil.getByteArray(
                     "00010101010102010003010004010905010106020406080260090B01000C01030D"
                             + "01010E01040F0200001002204E11010012010313010014010A1501021601001701"
                             + "011A01011B01191C01001F01002201012301002401002501322601002901012A02"
                             + "00002C01002D01002E01012F0101310100320200003501010904C8000000070204"
                             + "062B04000000002702057828061A5577477E7D1D0807D59E4707D56022");
+            mFiraSessionv20TlvData = UwbUtil.getByteArray(
+                    "00010101010102010003010004010905010106020406080260090B01000C01030D"
+                            + "01010E01040F0200001002204E11010012010313010014010A1501021601001701"
+                            + "011A01011B01191C01001F01002201012301002401002501322601002901012A02"
+                            + "00002C01002D01002E01012F0101310100320200003501010904C8000000070204"
+                            + "062B08E8030000000000001801014C01012702057828061A5577477E7D"
+                            + "1D0807D59E4707D56022");
             mFiraOpenSessionTlvUtTag = UwbUtil.getByteArray(
                     "00010101010002010003010004010905010106020406080260090B01000C01030D0"
                             + "1010E01010F0200001002204E11010412010313010014010A150102160100170101"
@@ -151,11 +169,19 @@ public class FiraEncoderTest {
 
     @Test
     public void testFiraOpenSessionParams() throws Exception {
-        FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS.build();
+        // Test FiRa v1.1 Params
+        FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS_V_1_1.build();
         TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(45);
-        assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionTlvData);
+        assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionv11TlvData);
+
+        // Test FiRa v2.0 Params
+        params = TEST_FIRA_OPEN_SESSION_PARAMS_V_2_0.build();
+        tlvs = mFiraEncoder.getTlvBuffer(params);
+
+        assertThat(tlvs.getNoOfParams()).isEqualTo(47);
+        assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionv20TlvData);
     }
 
     @Test
@@ -167,13 +193,15 @@ public class FiraEncoderTest {
         assertThat(tlvs.getByteArray()).isEqualTo(TEST_FIRA_RECONFIGURE_TLV_DATA);
     }
 
+    // This test could be changed to just check that TlvEncoder returns a FiraEncoder, as
+    // above testFiraOpenSessionParams() already checks the encoding done by FiraEncoder.
     @Test
-    public void testFiraOpenSesisonParamsViaTlvEncoder() throws Exception {
-        FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS.build();
+    public void testFiraOpenSessionParamsViaTlvEncoder() throws Exception {
+        FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS_V_1_1.build();
         TlvBuffer tlvs = TlvEncoder.getEncoder(FiraParams.PROTOCOL_NAME).getTlvBuffer(params);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(45);
-        assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionTlvData);
+        assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionv11TlvData);
     }
 
     @Test

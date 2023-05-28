@@ -129,9 +129,12 @@ public class FiraEncoder extends TlvEncoder {
         }
         if (params.getProtocolVersion().getMajor() >= 2) {
             tlvBufferBuilder
-                 // Initiation time Changed from 4 byte field to 8 byte field in version 2.
-                .putLong(ConfigParam.UWB_INITIATION_TIME, params.getInitiationTime())
-                .putByte(ConfigParam.LINK_LAYER_MODE,  (byte) params.getLinkLayerMode());
+                    // Initiation time Changed from 4 byte field to 8 byte field in version 2.
+                    .putLong(ConfigParam.UWB_INITIATION_TIME, params.getInitiationTime())
+                    .putByte(ConfigParam.LINK_LAYER_MODE, (byte) params.getLinkLayerMode())
+                    .putByte(
+                            ConfigParam.APPLICATION_DATA_ENDPOINT,
+                            (byte) params.getApplicationDataEndpoint());
         } else {
             tlvBufferBuilder.putInt(ConfigParam.UWB_INITIATION_TIME,
                     Math.toIntExact(params.getInitiationTime()));
