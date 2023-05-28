@@ -46,6 +46,7 @@ public abstract class FiraParams extends Params {
     }
 
     public static final FiraProtocolVersion PROTOCOL_VERSION_1_1 = new FiraProtocolVersion(1, 1);
+    public static final FiraProtocolVersion PROTOCOL_VERSION_2_0 = new FiraProtocolVersion(2, 0);
 
     /** Service ID for FiRa profile */
     @IntDef(
@@ -1066,6 +1067,9 @@ public abstract class FiraParams extends Params {
 
     // Default value (Unlimited)
     public static final int MAX_NUMBER_OF_MEASUREMENTS_DEFAULT = 0;
+
+    // Default value (Host as the both secure & non-secure endpoint).
+    public static final int APPLICATION_DATA_ENDPOINT_DEFAULT = 0;
 
     // Helper functions
     protected static UwbAddress longToUwbAddress(long value, int length) {
