@@ -395,9 +395,10 @@ public class NativeUwbManager {
     /**
      * Receive the data transfer status for a UCI data packet earlier sent from Host to UWBS.
      */
-    public void onDataSendStatus(long sessionId, int dataTransferStatus, long sequenceNum) {
+    public void onDataSendStatus(long sessionId, int dataTransferStatus, long sequenceNum,
+            int txCount) {
         Log.d(TAG, "onDataSendStatus ");
-        mSessionListener.onDataSendStatus(sessionId, dataTransferStatus, sequenceNum);
+        mSessionListener.onDataSendStatus(sessionId, dataTransferStatus, sequenceNum, txCount);
     }
 
     /**

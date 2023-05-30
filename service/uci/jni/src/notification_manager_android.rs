@@ -961,14 +961,16 @@ impl NotificationManagerAndroid {
         session_id: u32,
         uci_sequence_number: u8,
         status_code: u8,
+        tx_count: u8,
     ) -> Result<JObject, JNIError> {
         self.cached_jni_call(
             "onDataSendStatus",
-            "(JIJ)V",
+            "(JIJI)V",
             &[
                 jvalue::from(JValue::Long(session_id as i64)),
                 jvalue::from(JValue::Int(status_code as i32)),
                 jvalue::from(JValue::Long(uci_sequence_number as i64)),
+                jvalue::from(JValue::Int(tx_count as i32)),
             ],
         )
     }
@@ -1053,10 +1055,12 @@ impl NotificationManager for NotificationManagerAndroid {
                     session_token,
                     uci_sequence_number,
                     status,
+                    tx_count,
                 } => self.on_data_transfer_status_notification(
                     session_token,
                     uci_sequence_number,
                     u8::from(status),
+                    tx_count,
                 ),
                 // This session notification should not come here, as it's handled within
                 // UciManager, for internal state management related to sending data packet(s).
