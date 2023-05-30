@@ -1019,6 +1019,7 @@ public final class UwbManager {
     @RequiresPermission(permission.UWB_PRIVILEGED)
     public @SendVendorUciStatus int sendVendorUciMessage(
             @IntRange(from = 0, to = 15) int gid, int oid, @NonNull byte[] payload) {
+        Objects.requireNonNull(payload, "Payload must not be null");
         try {
             return mUwbAdapter.sendVendorUciMessage(MESSAGE_TYPE_COMMAND, gid, oid, payload);
         } catch (RemoteException e) {
