@@ -30,16 +30,16 @@
     <string translatable="false" name="config_multichipConfigPath"></string>
 
     <!-- When true, the filter engine will alter UWB values to improve accuracy. -->
-    <bool name="enable_filters">false</bool>
+    <bool name="enable_filters">true</bool>
 
-    <!-- Used to filter distance measurements. Determines percentage (1-100) of inliers within the
+    <!-- Used to filter distance measurements. Determines percentage (0-100) of inliers within the
     sliding window will be used to perform the average. At least one inlier will be used.
     Therefore, a value of 0 is a true median, and a value  of 100 is a true average. -->
-    <integer name="filter_distance_inliers_percent">50</integer>
+    <integer name="filter_distance_inliers_percent">0</integer>
 
     <!-- The size in samples of the sliding window for the distance filter. Note that this increases
     latency to about half the window size. -->
-    <integer name="filter_distance_window">5</integer>
+    <integer name="filter_distance_window">3</integer>
 
     <!-- Used to filter AoA angle measurements. Determines percentage (1-100) of inliers within the
     sliding window will be used to perform the average. At least one inlier will be used.
@@ -63,8 +63,8 @@
 
     <!-- Enables elevation estimation. Strongly recommended for hardware that doesn't support
     elevation. This helps produce better predictions from pose changes, and improves the quality
-    of the AoA primer. -->
-    <bool name="enable_primer_est_elevation">true</bool>
+    of the AoA primer. This will override elevation readings from hardware that supports it! -->
+    <bool name="enable_primer_est_elevation">false</bool>
 
     <!-- Enables the AoA conversion primer. This is needed on hardware that does not convert AoA
     to spherical coordinates, including hardware that does not support elevation.-->
