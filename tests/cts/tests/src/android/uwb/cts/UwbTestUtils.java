@@ -25,7 +25,9 @@ import android.uwb.AngleOfArrivalMeasurement;
 import android.uwb.DistanceMeasurement;
 import android.uwb.RangingMeasurement;
 import android.uwb.RangingReport;
+import android.uwb.UwbActivityEnergyInfo;
 import android.uwb.UwbAddress;
+import android.uwb.UwbManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -81,6 +83,7 @@ public class UwbTestUtils {
                 .setLineOfSight(RangingMeasurement.NLOS)
                 .setMeasurementFocus(RangingMeasurement.MEASUREMENT_FOCUS_RANGE)
                 .setRssiDbm(-85)
+                .setRangingMeasurementMetadata(getTestRangingMetadata())
                 .build();
     }
 
@@ -98,6 +101,17 @@ public class UwbTestUtils {
             builder.addMeasurement(getRangingMeasurement());
         }
         return builder.build();
+    }
+
+    public static UwbActivityEnergyInfo getUwbActivityEnergyInfo() {
+        return new UwbActivityEnergyInfo.Builder()
+                .setTimeSinceBootMillis(10000)
+                .setStackState(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE)
+                .setControllerTxDurationMillis(10)
+                .setControllerRxDurationMillis(20)
+                .setControllerIdleDurationMillis(300)
+                .setControllerWakeCount(50)
+                .build();
     }
 
     private static double getDoubleInRange(double min, double max) {

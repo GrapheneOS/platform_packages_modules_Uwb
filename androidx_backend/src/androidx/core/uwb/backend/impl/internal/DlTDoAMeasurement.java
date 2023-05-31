@@ -25,8 +25,8 @@ public class DlTDoAMeasurement {
     private final int mNLoS;
     private final long mTxTimestamp;
     private final long mRxTimestamp;
-    private final int mAnchorCfo;
-    private final int mCfo;
+    private final float mAnchorCfo;
+    private final float mCfo;
     private final long mInitiatorReplyTime;
     private final long mResponderReplyTime;
     private final int mInitiatorResponderTof;
@@ -34,7 +34,7 @@ public class DlTDoAMeasurement {
     private final byte[] mActiveRangingRounds;
 
     public DlTDoAMeasurement(int messageType, int messageControl, int blockIndex, int roundIndex,
-            int nLoS, long txTimestamp, long rxTimestamp, int anchorCfo, int cfo,
+            int nLoS, long txTimestamp, long rxTimestamp, float anchorCfo, float cfo,
             long initiatorReplyTime, long responderReplyTime, int initiatorResponderTof,
             byte[] anchorLocation, byte[] activeRangingRounds) {
         mMessageType = messageType;
@@ -81,11 +81,11 @@ public class DlTDoAMeasurement {
         return mRxTimestamp;
     }
 
-    public int getAnchorCfo() {
+    public float getAnchorCfo() {
         return mAnchorCfo;
     }
 
-    public int getCfo() {
+    public float getCfo() {
         return mCfo;
     }
 
