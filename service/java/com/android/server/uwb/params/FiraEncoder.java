@@ -64,7 +64,7 @@ public class FiraEncoder extends TlvEncoder {
         int deviceRole = params.getDeviceRole();
 
         TlvBuffer.Builder tlvBufferBuilder = new TlvBuffer.Builder();
-        if (deviceRole != FiraParams.RANGING_DEVICE_TYPE_DT_TAG) {
+        if (deviceRole != FiraParams.RANGING_DEVICE_DT_TAG) {
             ByteBuffer dstAddressList = ByteBuffer.allocate(1024);
             for (UwbAddress address : params.getDestAddressList()) {
                 dstAddressList.put(getComputedMacAddress(address));
@@ -133,13 +133,13 @@ public class FiraEncoder extends TlvEncoder {
         }
         if (params.getProtocolVersion().getMajor() >= 2) {
             // Initiation time Changed from 4 byte field to 8 byte field in version 2.
-            if (deviceRole != FiraParams.RANGING_DEVICE_TYPE_DT_TAG) {
+            if (deviceRole != FiraParams.RANGING_DEVICE_DT_TAG) {
                 tlvBufferBuilder.putLong(ConfigParam.UWB_INITIATION_TIME,
                         params.getInitiationTime());
             }
             tlvBufferBuilder.putByte(ConfigParam.LINK_LAYER_MODE, (byte) params.getLinkLayerMode());
         } else {
-            if (deviceRole != FiraParams.RANGING_DEVICE_TYPE_DT_TAG) {
+            if (deviceRole != FiraParams.RANGING_DEVICE_DT_TAG) {
                 tlvBufferBuilder.putInt(ConfigParam.UWB_INITIATION_TIME,
                         Math.toIntExact(params.getInitiationTime()));
             }
