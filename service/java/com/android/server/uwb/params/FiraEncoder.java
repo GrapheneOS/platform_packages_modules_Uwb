@@ -63,23 +63,8 @@ public class FiraEncoder extends TlvEncoder {
         int rangingRoundControl = getRangingRoundControl(params);
         int deviceRole = params.getDeviceRole();
 
-        TlvBuffer.Builder tlvBufferBuilder = new TlvBuffer.Builder();
-        if (deviceRole != FiraParams.RANGING_DEVICE_DT_TAG) {
-            ByteBuffer dstAddressList = ByteBuffer.allocate(1024);
-            for (UwbAddress address : params.getDestAddressList()) {
-                dstAddressList.put(getComputedMacAddress(address));
-            }
-            tlvBufferBuilder.putByte(ConfigParam.DEVICE_TYPE, (byte) params.getDeviceType())
-                    .putByte(ConfigParam.NUMBER_OF_CONTROLEES,
-                            (byte) params.getDestAddressList().size());
-            if (params.getDestAddressList().size() > 0) {
-                tlvBufferBuilder.putByteArray(
-                        ConfigParam.DST_MAC_ADDRESS, dstAddressList.position(),
-                        Arrays.copyOf(dstAddressList.array(), dstAddressList.position()));
-            }
-        }
-        tlvBufferBuilder.putByte(ConfigParam.RANGING_ROUND_USAGE,
-                        (byte) params.getRangingRoundUsage())
+        TlvBuffer.Builder tlvBufferBuilder = new TlvBuffer.Builder()
+                .putByte(ConfigParam.RANGING_ROUND_USAGE, (byte) params.getRangingRoundUsage())
                 .putByte(ConfigParam.STS_CONFIG, (byte) params.getStsConfig())
                 .putByte(ConfigParam.MULTI_NODE_MODE, (byte) params.getMultiNodeMode())
                 .putByte(ConfigParam.CHANNEL_NUMBER, (byte) params.getChannelNumber())
@@ -130,6 +115,20 @@ public class FiraEncoder extends TlvEncoder {
                 .putByte(ConfigParam.STS_LENGTH, (byte) params.getStsLength());
         if (params.getDeviceRole() != FiraParams.RANGING_DEVICE_UT_TAG) {
             tlvBufferBuilder.putInt(ConfigParam.RANGING_INTERVAL, params.getRangingIntervalMs());
+        }
+        if (deviceRole != FiraParams.RANGING_DEVICE_DT_TAG) {
+            tlvBufferBuilder.putByte(ConfigParam.DEVICE_TYPE, (byte) params.getDeviceType())
+                    .putByte(ConfigParam.NUMBER_OF_CONTROLEES,
+                            (byte) params.getDestAddressList().size());
+            if (params.getDestAddressList().size() > 0) {
+                ByteBuffer dstAddressList = ByteBuffer.allocate(1024);
+                for (UwbAddress address : params.getDestAddressList()) {
+                    dstAddressList.put(getComputedMacAddress(address));
+                }
+                tlvBufferBuilder.putByteArray(
+                        ConfigParam.DST_MAC_ADDRESS, dstAddressList.position(),
+                        Arrays.copyOf(dstAddressList.array(), dstAddressList.position()));
+            }
         }
         if (params.getProtocolVersion().getMajor() >= 2) {
             // Initiation time Changed from 4 byte field to 8 byte field in version 2.

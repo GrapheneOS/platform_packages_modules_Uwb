@@ -18,18 +18,25 @@ package com.android.server.uwb.params;
 
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_UNICAST;
 import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_LEVEL_TRIG;
+import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_DT_TAG;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_RESPONDER;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLLER;
+import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_DT_TAG;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_UT_TAG;
+import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DL_TDOA;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_UL_TDOA;
+import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP1;
 import static com.google.uwb.support.fira.FiraParams.SESSION_TYPE_RANGING;
 import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_PROVISIONED;
 import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_STATIC;
 import static com.google.uwb.support.fira.FiraParams.TX_TIMESTAMP_40_BIT;
 import static com.google.uwb.support.fira.FiraParams.UL_TDOA_DEVICE_ID_16_BIT;
+
+import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.Presubmit;
 import android.test.suitebuilder.annotation.SmallTest;
@@ -122,6 +129,66 @@ public class FiraEncoderTest {
                     .setUlTdoaDeviceId(new byte[]{0x0B, 0x0A})
                     .setUlTdoaTxTimestampType(TX_TIMESTAMP_40_BIT);
 
+    private static final String DEVICE_TYPE_CONTROLLER_TLV = "000101";
+    private static final String RANGING_ROUND_USAGE_SS_TWR_TLV = "010101";
+    private static final String RANGING_ROUND_USAGE_UL_TDOA_TLV = "010100";
+    private static final String RANGING_ROUND_USAGE_Dl_TDOA_TLV = "010105";
+    private static final String STS_CONFIG_STATIC_TLV = "020100";
+    private static final String STS_CONFIG_PROVISIONED_TLV = "020103";
+    private static final String MULTI_NODE_MODE_UNICAST_TLV = "030100";
+    private static final String MULTI_NODE_MODE_ONE_TO_MANY_TLV = "030101";
+    private static final String CHANNEL_NUMBER_TLV = "040109";
+    private static final String NUMBER_OF_CONTROLEES_TLV = "050101";
+    private static final String DEVICE_MAC_ADDRESS_TLV = "06020406";
+    private static final String SLOT_DURATION_TLV = "08026009";
+    private static final String MAC_FCS_TYPE_TLV = "0B0100";
+    private static final String RANGING_ROUND_CONTROL_TLV = "0C0103";
+    private static final String AOA_RESULT_REQ_TLV = "0D0101";
+    private static final String RANGE_DATA_NTF_CONFIG_AOA_LEVEL_TLV = "0E0104";
+    private static final String RANGE_DATA_NTF_CONFIG_ENABLE_TLV = "0E0101";
+    private static final String RANGE_DATA_NTF_PROXIMITY_NEAR_TLV = "0F020000";
+    private static final String RANGE_DATA_NTF_PROXIMITY_FAR_TLV = "1002204E";
+    private static final String DEVICE_ROLE_TLV = "110100";
+    private static final String DEVICE_ROLE_UT_TAG_TLV = "110104";
+    private static final String DEVICE_ROLE_DT_TAG_TLV = "110108";
+    private static final String RFRAME_CONFIG_TLV = "120103";
+    private static final String RFRAME_CONFIG_DL_TDOA_TLV = "120101";
+    private static final String RSSI_REPORTING_TLV = "130100";
+    private static final String PREAMBLE_CODE_INDEX_TLV = "14010A";
+    private static final String SFD_ID_TLV = "150102";
+    private static final String PSDU_DATA_RATE_TLV = "160100";
+    private static final String PREAMBLE_DURATION_TLV = "170101";
+    private static final String LINK_LAYER_MODE_TLV = "180101";
+    private static final String RANGING_TIME_STRUCT_TLV = "1A0101";
+    private static final String SLOTS_PER_RR_TLV = "1B0119";
+    private static final String TX_ADAPTIVE_PAYLOAD_POWER_TLV = "1C0100";
+    private static final String PRF_MODE_TLV = "1F0100";
+    private static final String SCHEDULED_MODE_TLV = "220101";
+    private static final String KEY_ROTATION_TLV = "230100";
+    private static final String KEY_ROTATION_RATE_TLV = "240100";
+    private static final String SESSION_PRIORITY_TLV = "250132";
+    private static final String MAC_ADDRESS_MODE_TLV = "260100";
+    private static final String NUMBER_OF_STS_SEGMENTS_TLV = "290101";
+    private static final String MAX_RR_RETRY_TLV = "2A020000";
+    private static final String HOPPING_MODE_TLV = "2C0100";
+    private static final String BLOCK_STRIDE_LENGTH_TLV = "2D0100";
+    private static final String RESULT_REPORT_CONFIG_TLV = "2E0101";
+    private static final String IN_BAND_TERMINATION_ATTEMPT_COUNT_TLV = "2F0101";
+    private static final String BPRF_PHR_DATA_RATE_TLV = "310100";
+    private static final String MAX_NUMBER_OF_MEASUREMENTS_TLV = "32020000";
+    private static final String STS_LENGTH_TLV = "350101";
+    private static final String RANGING_INTERVAL_TLV = "0904C8000000";
+    private static final String DST_MAC_ADDRESS_TLV = "07020406";
+    private static final String UWB_INITIATION_TIME_TLV = "2B0400000000";
+    private static final String UWB_INITIATION_TIME_2_0_TLV = "2B08E803000000000000";
+    private static final String VENDOR_ID_TLV = "27020578";
+    private static final String STATIC_STS_IV_TLV = "28061A5577477E7D";
+    private static final String RANGE_DATA_NTF_AOA_BOUND_TLV = "1D0807D59E4707D56022";
+    private static final String APPLICATION_DATA_ENDPOINT_TLV = "4C0101";
+    private static final String UL_TDOA_TX_INTERVAL_TLV = "3304B0040000";
+    private static final String UL_TDOA_RANDOM_WINDOW_TLV = "34041E000000";
+    private static final String UL_TDOA_DEVICE_ID_TLV = "3803010B0A";
+    private static final String UL_TDOA_TX_TIMESTAMP_TLV = "390101";
     private final FiraEncoder mFiraEncoder = new FiraEncoder();
     private byte[] mFiraOpenSessionTlvUtTag;
     private byte[] mFiraSessionv11TlvData;
@@ -131,38 +198,75 @@ public class FiraEncoderTest {
     public void setUp() {
         if (!SdkLevel.isAtLeastU()) {
             mFiraSessionv11TlvData = UwbUtil.getByteArray(
-                    "0001010501010702060401010102010003010004010906020604080260090B01000C"
-                            + "01030D01010E01040F0200001002204E11010012010313010014010A15010216010"
-                            + "01701011A01011B01191C01001F0100220101230100240100250132260100290101"
-                            + "2A0200002C01002D01002E01012F0101310100320200003501010904C8000000"
-                            + "2B04000000002702780528061A5577477E7D1D0807D59E4707D56022");
+                    "01010102010003010004010906020604080260090B01000C01030D01010E01040F02"
+                            + "00001002204E11010012010313010014010A1501021601001701011A01011B01191C"
+                            + "01001F01002201012301002401002501322601002901012A0200002C01002D01002E"
+                            + "01012F0101310100320200003501010904C8000000000101050101070206042B0400"
+                            + "0000002702780528061A5577477E7D1D0807D59E4707D56022");
 
             mFiraOpenSessionTlvUtTag = UwbUtil.getByteArray(
-                    "0001010501010702060401010002010003010004010906020604080260090B01000C"
-                            + "01030D01010E01010F0200001002204E11010412010313010014010A150102160100"
-                            + "1701011A01011B01191C01001F01002201012301002401002501322601002901012A"
-                            + "0200002C01002D01002E01012F0101310100320200003501012B04000000"
-                            + "002702780528061A5577477E7D3304B004000034041E0000003803010B0A390101");
+                    "01010002010003010004010906020604080260090B01000C01030D01010E01010F02"
+                            + "00001002204E11010412010313010014010A1501021601001701011A01011B01191C"
+                            + "01001F01002201012301002401002501322601002901012A0200002C01002D01002E"
+                            + "01012F010131010032020000350101000101050101070206042B0400000000270278"
+                            + "0528061A5577477E7D3304B004000034041E0000003803010B0A390101");
         } else {
-            mFiraSessionv11TlvData = UwbUtil.getByteArray(
-                    "0001010501010702040601010102010003010004010906020406080260090B01000C"
-                            + "01030D01010E01040F0200001002204E11010012010313010014010A150102160100"
-                            + "1701011A01011B01191C01001F01002201012301002401002501322601002901012A"
-                            + "0200002C01002D01002E01012F0101310100320200003501010904C8000000"
-                            + "2B04000000002702057828061A5577477E7D1D0807D59E4707D56022");
-            mFiraSessionv20TlvData = UwbUtil.getByteArray(
-                    "0001010501010702040601010102010003010004010906020406080260090B01000C"
-                            + "01030D01010E01040F0200001002204E11010012010313010014010A150102160100"
-                            + "1701011A01011B01191C01001F01002201012301002401002501322601002901012A"
-                            + "0200002C01002D01002E01012F0101310100320200003501010904C8000000"
-                            + "2B08E8030000000000001801014C01012702057828061A5577477E7D"
-                            + "1D0807D59E4707D56022");
+            mFiraSessionv11TlvData = UwbUtil.getByteArray(RANGING_ROUND_USAGE_SS_TWR_TLV
+                    + STS_CONFIG_STATIC_TLV + MULTI_NODE_MODE_UNICAST_TLV + CHANNEL_NUMBER_TLV
+                    + DEVICE_MAC_ADDRESS_TLV + SLOT_DURATION_TLV + MAC_FCS_TYPE_TLV
+                    + RANGING_ROUND_CONTROL_TLV + AOA_RESULT_REQ_TLV
+                    + RANGE_DATA_NTF_CONFIG_AOA_LEVEL_TLV + RANGE_DATA_NTF_PROXIMITY_NEAR_TLV
+                    + RANGE_DATA_NTF_PROXIMITY_FAR_TLV + DEVICE_ROLE_TLV + RFRAME_CONFIG_TLV
+                    + RSSI_REPORTING_TLV + PREAMBLE_CODE_INDEX_TLV + SFD_ID_TLV + PSDU_DATA_RATE_TLV
+                    + PREAMBLE_DURATION_TLV + RANGING_TIME_STRUCT_TLV + SLOTS_PER_RR_TLV
+                    + TX_ADAPTIVE_PAYLOAD_POWER_TLV + PRF_MODE_TLV + SCHEDULED_MODE_TLV
+                    + KEY_ROTATION_TLV + KEY_ROTATION_RATE_TLV + SESSION_PRIORITY_TLV
+                    + MAC_ADDRESS_MODE_TLV + NUMBER_OF_STS_SEGMENTS_TLV + MAX_RR_RETRY_TLV
+                    + HOPPING_MODE_TLV + BLOCK_STRIDE_LENGTH_TLV + RESULT_REPORT_CONFIG_TLV
+                    + IN_BAND_TERMINATION_ATTEMPT_COUNT_TLV + BPRF_PHR_DATA_RATE_TLV
+                    + MAX_NUMBER_OF_MEASUREMENTS_TLV + STS_LENGTH_TLV + RANGING_INTERVAL_TLV
+                    + DEVICE_TYPE_CONTROLLER_TLV + NUMBER_OF_CONTROLEES_TLV + DST_MAC_ADDRESS_TLV
+                    + UWB_INITIATION_TIME_TLV + VENDOR_ID_TLV + STATIC_STS_IV_TLV
+                    + RANGE_DATA_NTF_AOA_BOUND_TLV);
+
+            mFiraSessionv20TlvData = UwbUtil.getByteArray(RANGING_ROUND_USAGE_SS_TWR_TLV
+                    + STS_CONFIG_STATIC_TLV + MULTI_NODE_MODE_UNICAST_TLV + CHANNEL_NUMBER_TLV
+                    + DEVICE_MAC_ADDRESS_TLV + SLOT_DURATION_TLV + MAC_FCS_TYPE_TLV
+                    + RANGING_ROUND_CONTROL_TLV + AOA_RESULT_REQ_TLV
+                    + RANGE_DATA_NTF_CONFIG_AOA_LEVEL_TLV + RANGE_DATA_NTF_PROXIMITY_NEAR_TLV
+                    + RANGE_DATA_NTF_PROXIMITY_FAR_TLV + DEVICE_ROLE_TLV + RFRAME_CONFIG_TLV
+                    + RSSI_REPORTING_TLV + PREAMBLE_CODE_INDEX_TLV + SFD_ID_TLV
+                    + PSDU_DATA_RATE_TLV + PREAMBLE_DURATION_TLV + RANGING_TIME_STRUCT_TLV
+                    + SLOTS_PER_RR_TLV + TX_ADAPTIVE_PAYLOAD_POWER_TLV
+                    + PRF_MODE_TLV + SCHEDULED_MODE_TLV + KEY_ROTATION_TLV + KEY_ROTATION_RATE_TLV
+                    + SESSION_PRIORITY_TLV + MAC_ADDRESS_MODE_TLV + NUMBER_OF_STS_SEGMENTS_TLV
+                    + MAX_RR_RETRY_TLV + HOPPING_MODE_TLV + BLOCK_STRIDE_LENGTH_TLV
+                    + RESULT_REPORT_CONFIG_TLV + IN_BAND_TERMINATION_ATTEMPT_COUNT_TLV
+                    + BPRF_PHR_DATA_RATE_TLV + MAX_NUMBER_OF_MEASUREMENTS_TLV + STS_LENGTH_TLV
+                    + RANGING_INTERVAL_TLV + DEVICE_TYPE_CONTROLLER_TLV + NUMBER_OF_CONTROLEES_TLV
+                    + DST_MAC_ADDRESS_TLV + UWB_INITIATION_TIME_2_0_TLV + LINK_LAYER_MODE_TLV
+                    + APPLICATION_DATA_ENDPOINT_TLV + VENDOR_ID_TLV + STATIC_STS_IV_TLV
+                    + RANGE_DATA_NTF_AOA_BOUND_TLV);
+
             mFiraOpenSessionTlvUtTag = UwbUtil.getByteArray(
-                    "0001010501010702040601010002010003010004010906020406080260090B01000C"
-                            + "01030D01010E01010F0200001002204E11010412010313010014010A150102160100"
-                            + "1701011A01011B01191C01001F01002201012301002401002501322601002901012A"
-                            + "0200002C01002D01002E01012F0101310100320200003501012B040000000027"
-                            + "02057828061A5577477E7D3304B004000034041E0000003803010B0A390101");
+                    RANGING_ROUND_USAGE_UL_TDOA_TLV
+                    + STS_CONFIG_STATIC_TLV + MULTI_NODE_MODE_UNICAST_TLV + CHANNEL_NUMBER_TLV
+                    + DEVICE_MAC_ADDRESS_TLV + SLOT_DURATION_TLV + MAC_FCS_TYPE_TLV
+                    + RANGING_ROUND_CONTROL_TLV + AOA_RESULT_REQ_TLV
+                    + RANGE_DATA_NTF_CONFIG_ENABLE_TLV + RANGE_DATA_NTF_PROXIMITY_NEAR_TLV
+                    + RANGE_DATA_NTF_PROXIMITY_FAR_TLV + DEVICE_ROLE_UT_TAG_TLV
+                    + RFRAME_CONFIG_TLV + RSSI_REPORTING_TLV + PREAMBLE_CODE_INDEX_TLV
+                    + SFD_ID_TLV + PSDU_DATA_RATE_TLV + PREAMBLE_DURATION_TLV
+                    + RANGING_TIME_STRUCT_TLV + SLOTS_PER_RR_TLV + TX_ADAPTIVE_PAYLOAD_POWER_TLV
+                    + PRF_MODE_TLV + SCHEDULED_MODE_TLV + KEY_ROTATION_TLV + KEY_ROTATION_RATE_TLV
+                    + SESSION_PRIORITY_TLV + MAC_ADDRESS_MODE_TLV + NUMBER_OF_STS_SEGMENTS_TLV
+                    + MAX_RR_RETRY_TLV + HOPPING_MODE_TLV + BLOCK_STRIDE_LENGTH_TLV
+                    + RESULT_REPORT_CONFIG_TLV + IN_BAND_TERMINATION_ATTEMPT_COUNT_TLV
+                    + BPRF_PHR_DATA_RATE_TLV + MAX_NUMBER_OF_MEASUREMENTS_TLV + STS_LENGTH_TLV
+                    + DEVICE_TYPE_CONTROLLER_TLV + NUMBER_OF_CONTROLEES_TLV + DST_MAC_ADDRESS_TLV
+                    + UWB_INITIATION_TIME_TLV + VENDOR_ID_TLV + STATIC_STS_IV_TLV
+                    + UL_TDOA_TX_INTERVAL_TLV + UL_TDOA_RANDOM_WINDOW_TLV + UL_TDOA_DEVICE_ID_TLV
+                    + UL_TDOA_TX_TIMESTAMP_TLV);
         }
     }
 
@@ -251,24 +355,78 @@ public class FiraEncoderTest {
                         .build();
 
         byte[] expected_data;
+        String session_key = "451005780578057805780578057805780578";
         if (!SdkLevel.isAtLeastU()) {
             expected_data = UwbUtil.getByteArray(
-                    "0001010501010702060401010102010303010004010906020604080260090B01000C01030D01"
-                            + "010E01040F0200001002204E11010012010313010014010A1501021601001701011A"
-                            + "01011B01191C01001F01002201012301002401002501322601002901012A0200002C"
-                            + "01002D01002E01012F0101310100320200003501010904C80000002B0400"
+                    "01010102010303010004010906020604080260090B01000C01030D01010E01040F02"
+                            + "00001002204E11010012010313010014010A1501021601001701011A01011B01191C"
+                            + "01001F01002201012301002401002501322601002901012A0200002C01002D01002E"
+                            + "01012F0101310100320200003501010904C8000000000101050101070206042B0400"
                             + "0000004510057805780578057805780578057805781D0807D59E4707D56022");
         } else {
-            expected_data = UwbUtil.getByteArray(
-                    "0001010501010702040601010102010303010004010906020406080260090B01000C01030D01"
-                            + "010E01040F0200001002204E11010012010313010014010A1501021601001701011A"
-                            + "01011B01191C01001F01002201012301002401002501322601002901012A0200002C"
-                            + "01002D01002E01012F0101310100320200003501010904C80000002B0400"
-                            + "0000004510057805780578057805780578057805781D0807D59E4707D56022");
+            expected_data = UwbUtil.getByteArray(RANGING_ROUND_USAGE_SS_TWR_TLV
+                    + STS_CONFIG_PROVISIONED_TLV + MULTI_NODE_MODE_UNICAST_TLV + CHANNEL_NUMBER_TLV
+                    + DEVICE_MAC_ADDRESS_TLV + SLOT_DURATION_TLV + MAC_FCS_TYPE_TLV
+                    + RANGING_ROUND_CONTROL_TLV + AOA_RESULT_REQ_TLV
+                    + RANGE_DATA_NTF_CONFIG_AOA_LEVEL_TLV + RANGE_DATA_NTF_PROXIMITY_NEAR_TLV
+                    + RANGE_DATA_NTF_PROXIMITY_FAR_TLV + DEVICE_ROLE_TLV + RFRAME_CONFIG_TLV
+                    + RSSI_REPORTING_TLV + PREAMBLE_CODE_INDEX_TLV + SFD_ID_TLV
+                    + PSDU_DATA_RATE_TLV + PREAMBLE_DURATION_TLV + RANGING_TIME_STRUCT_TLV
+                    + SLOTS_PER_RR_TLV + TX_ADAPTIVE_PAYLOAD_POWER_TLV + PRF_MODE_TLV
+                    + SCHEDULED_MODE_TLV + KEY_ROTATION_TLV + KEY_ROTATION_RATE_TLV
+                    + SESSION_PRIORITY_TLV + MAC_ADDRESS_MODE_TLV + NUMBER_OF_STS_SEGMENTS_TLV
+                    + MAX_RR_RETRY_TLV + HOPPING_MODE_TLV + BLOCK_STRIDE_LENGTH_TLV
+                    + RESULT_REPORT_CONFIG_TLV + IN_BAND_TERMINATION_ATTEMPT_COUNT_TLV
+                    + BPRF_PHR_DATA_RATE_TLV + MAX_NUMBER_OF_MEASUREMENTS_TLV + STS_LENGTH_TLV
+                    + RANGING_INTERVAL_TLV + DEVICE_TYPE_CONTROLLER_TLV + NUMBER_OF_CONTROLEES_TLV
+                    + DST_MAC_ADDRESS_TLV + UWB_INITIATION_TIME_TLV + session_key
+                    + RANGE_DATA_NTF_AOA_BOUND_TLV);
         }
         TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(44);
+        assertThat(tlvs.getByteArray()).isEqualTo(expected_data);
+    }
+
+    @Test
+    public void testFiraDlTdoaDtTagSession() throws Exception  {
+        assumeTrue(SdkLevel.isAtLeastU());
+        FiraOpenSessionParams params =
+                new FiraOpenSessionParams.Builder()
+                        .setProtocolVersion(FiraParams.PROTOCOL_VERSION_1_1)
+                        .setSessionId(1)
+                        .setSessionType(SESSION_TYPE_RANGING)
+                        .setDeviceType(RANGING_DEVICE_TYPE_DT_TAG)
+                        .setDeviceRole(RANGING_DEVICE_DT_TAG)
+                        .setDeviceAddress(UwbAddress.fromBytes(new byte[]{0x4, 0x6}))
+                        .setDestAddressList(Arrays.asList(UwbAddress.fromBytes(
+                                new byte[]{0x4, 0x6})))
+                        .setMultiNodeMode(MULTI_NODE_MODE_ONE_TO_MANY)
+                        .setRangingRoundUsage(RANGING_ROUND_USAGE_DL_TDOA)
+                        .setRframeConfig(RFRAME_CONFIG_SP1)
+                        .setVendorId(new byte[]{0x5, 0x78})
+                        .setStaticStsIV(new byte[]{0x1a, 0x55, 0x77, 0x47, 0x7e, 0x7d})
+                        .build();
+
+        byte[] expected_data = UwbUtil.getByteArray(RANGING_ROUND_USAGE_Dl_TDOA_TLV
+                + STS_CONFIG_STATIC_TLV + MULTI_NODE_MODE_ONE_TO_MANY_TLV + CHANNEL_NUMBER_TLV
+                + DEVICE_MAC_ADDRESS_TLV + SLOT_DURATION_TLV + MAC_FCS_TYPE_TLV
+                + RANGING_ROUND_CONTROL_TLV + AOA_RESULT_REQ_TLV
+                + RANGE_DATA_NTF_CONFIG_ENABLE_TLV + RANGE_DATA_NTF_PROXIMITY_NEAR_TLV
+                + RANGE_DATA_NTF_PROXIMITY_FAR_TLV + DEVICE_ROLE_DT_TAG_TLV
+                + RFRAME_CONFIG_DL_TDOA_TLV + RSSI_REPORTING_TLV + PREAMBLE_CODE_INDEX_TLV
+                + SFD_ID_TLV + PSDU_DATA_RATE_TLV + PREAMBLE_DURATION_TLV + RANGING_TIME_STRUCT_TLV
+                + SLOTS_PER_RR_TLV + TX_ADAPTIVE_PAYLOAD_POWER_TLV + PRF_MODE_TLV
+                + SCHEDULED_MODE_TLV + KEY_ROTATION_TLV + KEY_ROTATION_RATE_TLV
+                + SESSION_PRIORITY_TLV + MAC_ADDRESS_MODE_TLV + NUMBER_OF_STS_SEGMENTS_TLV
+                + MAX_RR_RETRY_TLV + HOPPING_MODE_TLV + BLOCK_STRIDE_LENGTH_TLV
+                + RESULT_REPORT_CONFIG_TLV + IN_BAND_TERMINATION_ATTEMPT_COUNT_TLV
+                + BPRF_PHR_DATA_RATE_TLV + MAX_NUMBER_OF_MEASUREMENTS_TLV + STS_LENGTH_TLV
+                + RANGING_INTERVAL_TLV + VENDOR_ID_TLV + STATIC_STS_IV_TLV);
+
+        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
+
+        assertThat(tlvs.getNoOfParams()).isEqualTo(40);
         assertThat(tlvs.getByteArray()).isEqualTo(expected_data);
     }
 }
