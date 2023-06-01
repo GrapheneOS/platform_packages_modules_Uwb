@@ -177,11 +177,13 @@ public class FiraEncoderTest {
         assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionv11TlvData);
 
         // Test FiRa v2.0 Params
-        params = TEST_FIRA_OPEN_SESSION_PARAMS_V_2_0.build();
-        tlvs = mFiraEncoder.getTlvBuffer(params);
+        if (SdkLevel.isAtLeastU()) {
+            params = TEST_FIRA_OPEN_SESSION_PARAMS_V_2_0.build();
+            tlvs = mFiraEncoder.getTlvBuffer(params);
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(47);
-        assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionv20TlvData);
+            assertThat(tlvs.getNoOfParams()).isEqualTo(47);
+            assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionv20TlvData);
+        }
     }
 
     @Test
