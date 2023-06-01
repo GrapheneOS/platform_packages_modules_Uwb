@@ -40,14 +40,19 @@ import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_MANY_TO_MAN
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_UNICAST;
 import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG;
+import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_DT_TAG;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_INITIATOR;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_RESPONDER;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLEE;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLLER;
+import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_DT_TAG;
+import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DL_TDOA;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DS_TWR_NON_DEFERRED_MODE;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_NON_DEFERRED_MODE;
+import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP1;
+import static com.google.uwb.support.fira.FiraParams.SFD_ID_VALUE_2;
 import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_PROVISIONED;
 import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_STATIC;
 
@@ -85,6 +90,7 @@ import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccPulseShapeCombo;
 import com.google.uwb.support.ccc.CccStartRangingParams;
+import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
@@ -159,7 +165,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     .setDestAddressList(Arrays.asList(UwbAddress.fromBytes(new byte[] { 0x4, 0x6})))
                     .setMultiNodeMode(MULTI_NODE_MODE_UNICAST)
                     .setRangingRoundUsage(RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE)
-                    .setVendorId(new byte[]{0x7, 0x8})
+                    .setVendorId(new byte[]{0x8, 0x7})
                     .setStaticStsIV(new byte[]{0x1, 0x2, 0x3, 0x4, 0x5, 0x6});
 
     @VisibleForTesting
@@ -635,6 +641,37 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 firaOpenSessionParams.second, pw);
     }
 
+    private void startDlTDoaRangingSession(PrintWriter pw) throws Exception {
+        FiraOpenSessionParams.Builder builder = new FiraOpenSessionParams.Builder()
+                .setProtocolVersion(FiraParams.PROTOCOL_VERSION_1_1)
+                .setSessionId(1)
+                .setSessionType(FiraParams.SESSION_TYPE_RANGING)
+                .setSfdId(SFD_ID_VALUE_2)
+                .setDeviceType(RANGING_DEVICE_TYPE_DT_TAG)
+                .setDeviceRole(RANGING_DEVICE_DT_TAG)
+                .setDeviceAddress(UwbAddress.fromBytes(new byte[] { 0x4, 0x6}))
+                // Dest address is not needed, remove after FiraOpenSessionParams cleanup, this
+                // is excluded in fira encoder for Dt_tag.
+                .setDestAddressList(Arrays.asList(UwbAddress.fromBytes(new byte[] { 0x4, 0x6})))
+                .setMultiNodeMode(MULTI_NODE_MODE_ONE_TO_MANY)
+                .setRangingRoundUsage(RANGING_ROUND_USAGE_DL_TDOA)
+                .setVendorId(new byte[]{0x8, 0x7})
+                .setRframeConfig(RFRAME_CONFIG_SP1)
+                .setStaticStsIV(new byte[]{0x1, 0x2, 0x3, 0x4, 0x5, 0x6});
+
+        String option = getNextOption();
+        while (option != null) {
+            if (option.equals("-i")) {
+                builder.setSessionId(Integer.parseInt(getNextArgRequired()));
+            }
+            option = getNextOption();
+        }
+        FiraOpenSessionParams firaOpenSessionParams = builder.build();
+        startRangingSession(
+                firaOpenSessionParams, null, firaOpenSessionParams.getSessionId(),
+                true, pw);
+    }
+
     private Pair<CccOpenRangingParams, Boolean> buildCccOpenRangingParams() {
         CccOpenRangingParams.Builder builder =
                 new CccOpenRangingParams.Builder(DEFAULT_CCC_OPEN_RANGING_PARAMS);
@@ -757,6 +794,28 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         pw.println("Ranging session opened with params: "
                 + bundleToString(openRangingSessionParams.toBundle()));
 
+        if (openRangingSessionParams instanceof  FiraOpenSessionParams
+                && ((FiraOpenSessionParams) openRangingSessionParams).getDeviceRole()
+                == RANGING_DEVICE_DT_TAG) {
+            DlTDoARangingRoundsUpdate rangingRounds = new DlTDoARangingRoundsUpdate.Builder()
+                    .setSessionId(sessionId)
+                    .setNoOfRangingRounds(1)
+                    .setRangingRoundIndexes(new byte[]{0})
+                    .build();
+            mUwbService.updateRangingRoundsDtTag(sessionInfo.sessionHandle,
+                    rangingRounds.toBundle());
+            boolean setRangingRounds = false;
+            try {
+                setRangingRounds = sessionInfo.rangingOpenedFuture.get(
+                        RANGE_CTL_TIMEOUT_MILLIS, MILLISECONDS);
+            } catch (InterruptedException | CancellationException | TimeoutException
+                     | ExecutionException e) {
+            }
+            if (!setRangingRounds) {
+                pw.println("Failed to set ranging rounds for DT tag");
+                return;
+            }
+        }
         mUwbService.startRanging(
                 sessionInfo.sessionHandle,
                 startRangingSessionParams != null
@@ -1003,6 +1062,9 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 case "disable-uwb":
                     mUwbService.setEnabled(false);
                     return 0;
+                case "start-dl-tdoa-ranging-session":
+                    startDlTDoaRangingSession(pw);
+                    return 0;
                 case "start-fira-ranging-session":
                     startFiraRangingSession(pw);
                     return 0;
@@ -1174,6 +1236,9 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         pw.println("    Starts a FIRA ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
                 + " retrieved using |get-ranging-session-reports|");
+        pw.println("  start-dl-tdoa-ranging-session"
+                        + " [-i <sessionId>](session-id)");
+        pw.println("    Starts a FIRA Dl-TDoA ranging session for DT-Tag");
         pw.println("  start-ccc-ranging-session"
                 + " [-b](blocking call)"
                 + " Ranging reports will be displayed on screen)"
