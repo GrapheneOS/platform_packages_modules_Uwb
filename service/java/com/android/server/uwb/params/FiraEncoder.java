@@ -57,23 +57,32 @@ public class FiraEncoder extends TlvEncoder {
 
     private TlvBuffer getTlvBufferFromFiraOpenSessionParams(Params baseParam) {
         FiraOpenSessionParams params = (FiraOpenSessionParams) baseParam;
-        ByteBuffer dstAddressList = ByteBuffer.allocate(1024);
-        for (UwbAddress address : params.getDestAddressList()) {
-            dstAddressList.put(getComputedMacAddress(address));
-        }
         int stsConfig = params.getStsConfig();
         int deviceType = params.getDeviceType();
         int resultReportConfig = getResultReportConfig(params);
         int rangingRoundControl = getRangingRoundControl(params);
+        int deviceRole = params.getDeviceRole();
 
-        TlvBuffer.Builder tlvBufferBuilder = new TlvBuffer.Builder()
-                .putByte(ConfigParam.DEVICE_TYPE, (byte) params.getDeviceType())
-                .putByte(ConfigParam.RANGING_ROUND_USAGE, (byte) params.getRangingRoundUsage())
+        TlvBuffer.Builder tlvBufferBuilder = new TlvBuffer.Builder();
+        if (deviceRole != FiraParams.RANGING_DEVICE_DT_TAG) {
+            ByteBuffer dstAddressList = ByteBuffer.allocate(1024);
+            for (UwbAddress address : params.getDestAddressList()) {
+                dstAddressList.put(getComputedMacAddress(address));
+            }
+            tlvBufferBuilder.putByte(ConfigParam.DEVICE_TYPE, (byte) params.getDeviceType())
+                    .putByte(ConfigParam.NUMBER_OF_CONTROLEES,
+                            (byte) params.getDestAddressList().size());
+            if (params.getDestAddressList().size() > 0) {
+                tlvBufferBuilder.putByteArray(
+                        ConfigParam.DST_MAC_ADDRESS, dstAddressList.position(),
+                        Arrays.copyOf(dstAddressList.array(), dstAddressList.position()));
+            }
+        }
+        tlvBufferBuilder.putByte(ConfigParam.RANGING_ROUND_USAGE,
+                        (byte) params.getRangingRoundUsage())
                 .putByte(ConfigParam.STS_CONFIG, (byte) params.getStsConfig())
                 .putByte(ConfigParam.MULTI_NODE_MODE, (byte) params.getMultiNodeMode())
                 .putByte(ConfigParam.CHANNEL_NUMBER, (byte) params.getChannelNumber())
-                .putByte(ConfigParam.NUMBER_OF_CONTROLEES,
-                        (byte) params.getDestAddressList().size())
                 .putByteArray(ConfigParam.DEVICE_MAC_ADDRESS, params.getDeviceAddress().size(),
                         getComputedMacAddress(params.getDeviceAddress()))
                 .putShort(ConfigParam.SLOT_DURATION, (short) params.getSlotDurationRstu())
@@ -117,24 +126,23 @@ public class FiraEncoder extends TlvEncoder {
                 .putByte(ConfigParam.BPRF_PHR_DATA_RATE,
                         (byte) params.getBprfPhrDataRate())
                 .putShort(ConfigParam.MAX_NUMBER_OF_MEASUREMENTS,
-                         (short) params.getMaxNumberOfMeasurements())
+                        (short) params.getMaxNumberOfMeasurements())
                 .putByte(ConfigParam.STS_LENGTH, (byte) params.getStsLength());
         if (params.getDeviceRole() != FiraParams.RANGING_DEVICE_UT_TAG) {
             tlvBufferBuilder.putInt(ConfigParam.RANGING_INTERVAL, params.getRangingIntervalMs());
         }
-        if (params.getDestAddressList().size() > 0) {
-            tlvBufferBuilder.putByteArray(
-                    ConfigParam.DST_MAC_ADDRESS, dstAddressList.position(),
-                    Arrays.copyOf(dstAddressList.array(), dstAddressList.position()));
-        }
         if (params.getProtocolVersion().getMajor() >= 2) {
-            tlvBufferBuilder
-                 // Initiation time Changed from 4 byte field to 8 byte field in version 2.
-                .putLong(ConfigParam.UWB_INITIATION_TIME, params.getInitiationTime())
-                .putByte(ConfigParam.LINK_LAYER_MODE,  (byte) params.getLinkLayerMode());
+            // Initiation time Changed from 4 byte field to 8 byte field in version 2.
+            if (deviceRole != FiraParams.RANGING_DEVICE_DT_TAG) {
+                tlvBufferBuilder.putLong(ConfigParam.UWB_INITIATION_TIME,
+                        params.getInitiationTime());
+            }
+            tlvBufferBuilder.putByte(ConfigParam.LINK_LAYER_MODE, (byte) params.getLinkLayerMode());
         } else {
-            tlvBufferBuilder.putInt(ConfigParam.UWB_INITIATION_TIME,
-                    Math.toIntExact(params.getInitiationTime()));
+            if (deviceRole != FiraParams.RANGING_DEVICE_DT_TAG) {
+                tlvBufferBuilder.putInt(ConfigParam.UWB_INITIATION_TIME,
+                        Math.toIntExact(params.getInitiationTime()));
+            }
         }
         if ((stsConfig == FiraParams.STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY)
                 && (deviceType == FiraParams.RANGING_DEVICE_TYPE_CONTROLEE)) {
@@ -205,14 +213,16 @@ public class FiraEncoder extends TlvEncoder {
                     (byte) params.getUlTdoaTxTimestampType());
         }
         if (params.getDeviceRole() == FiraParams.RANGING_DEVICE_ROLE_ADVERTISER ||
-            params.getDeviceRole() == FiraParams.RANGING_DEVICE_ROLE_OBSERVER) {
+                params.getDeviceRole() == FiraParams.RANGING_DEVICE_ROLE_OBSERVER) {
             tlvBufferBuilder
-                .putByte(ConfigParam.MIN_FRAMES_PER_RR, (byte) params.getMinFramesPerRr())
-                .putShort(ConfigParam.MTU_SIZE, (short) params.getMtuSize())
-                .putByte(ConfigParam.INTER_FRAME_INTERVAL, (byte) params.getInterFrameInterval());
+                    .putByte(ConfigParam.MIN_FRAMES_PER_RR, (byte) params.getMinFramesPerRr())
+                    .putShort(ConfigParam.MTU_SIZE, (short) params.getMtuSize())
+                    .putByte(ConfigParam.INTER_FRAME_INTERVAL,
+                            (byte) params.getInterFrameInterval());
         }
         return tlvBufferBuilder.build();
     }
+
     private byte[] getUlTdoaDeviceId(int ulTdoaDeviceIdType, byte[] ulTdoaDeviceId) {
         if (ulTdoaDeviceIdType == FiraParams.UL_TDOA_DEVICE_ID_NONE) {
             // Device ID not included
