@@ -628,6 +628,108 @@ public class UwbServiceCoreTest {
     }
 
     @Test
+    public void testOnCountryCodeChanged_valid_whenAdapterStateDisabled() throws Exception {
+        IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
+        when(cb.asBinder()).thenReturn(mock(IBinder.class));
+        mUwbServiceCore.registerAdapterStateCallbacks(cb);
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.UNKNOWN);
+        clearInvocations(cb);
+
+        // Invoke onCountryCodeChanged() callback, with a valid country code.
+        mUwbServiceCore.onCountryCodeChanged(VALID_COUNTRY_CODE);
+
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.SYSTEM_POLICY);
+        clearInvocations(cb);
+
+        // Invoke onCountryCodeChanged() callback again, with a valid country code.
+        // AdapterStateChange notification not expected as it's already in STATE_DISABLED.
+        mUwbServiceCore.onCountryCodeChanged(VALID_COUNTRY_CODE);
+        verifyNoMoreInteractions(cb);
+    }
+
+    @Test
+    public void testOnCountryCodeChanged_valid_whenAdapterStateEnabledInactive() throws Exception {
+        IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
+        when(cb.asBinder()).thenReturn(mock(IBinder.class));
+        mUwbServiceCore.registerAdapterStateCallbacks(cb);
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.UNKNOWN);
+        clearInvocations(cb);
+
+        // Enable UWB (with country code unknown).
+        when(mNativeUwbManager.doInitialize()).thenReturn(true);
+        enableUwb(null);
+
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.SYSTEM_REGULATION);
+        clearInvocations(cb);
+
+        // Invoke onCountryCodeChanged() callback, with a valid country code.
+        mUwbServiceCore.onCountryCodeChanged(VALID_COUNTRY_CODE);
+
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
+                StateChangeReason.SYSTEM_POLICY);
+        clearInvocations(cb);
+
+        // Invoke onCountryCodeChanged() callback again, with a valid country code.
+        // AdapterStateChange notification not expected as it's already in STATE_ENABLED_INACTIVE
+        mUwbServiceCore.onCountryCodeChanged(VALID_COUNTRY_CODE);
+        verifyNoMoreInteractions(cb);
+    }
+
+    @Test
+    public void testOnCountryCodeChanged_invalid_whenAdapterStateDisabled() throws Exception {
+        IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
+        when(cb.asBinder()).thenReturn(mock(IBinder.class));
+        mUwbServiceCore.registerAdapterStateCallbacks(cb);
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.UNKNOWN);
+        clearInvocations(cb);
+
+        // Invoke onCountryCodeChanged() callback, with an invalid country code.
+        mUwbServiceCore.onCountryCodeChanged("00");
+
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.SYSTEM_REGULATION);
+        clearInvocations(cb);
+
+        // Invoke onCountryCodeChanged() callback again, with an invalid country code.
+        // AdapterStateChange notification not expected as it was already in DISABLED state.
+        mUwbServiceCore.onCountryCodeChanged("00");
+        verifyNoMoreInteractions(cb);
+    }
+
+    @Test
+    public void testOnCountryCodeChanged_invalid_whenAdapterStateEnabledInactive()
+            throws Exception {
+        IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
+        when(cb.asBinder()).thenReturn(mock(IBinder.class));
+        mUwbServiceCore.registerAdapterStateCallbacks(cb);
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.UNKNOWN);
+        clearInvocations(cb);
+
+        // Enable UWB (with a valid country code known and received in onCountryCodeChanged()).
+        enableUwbWithCountryCodeChangedCallback();
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE,
+                StateChangeReason.SYSTEM_POLICY);
+        clearInvocations(cb);
+
+        // Now we receive onCountryCodeChanged() with an invalid country code.
+        mUwbServiceCore.onCountryCodeChanged("00");
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.SYSTEM_REGULATION);
+        clearInvocations(cb);
+
+        // Invoke onCountryCodeChanged() callback again, with an invalid country code.
+        // AdapterStateChange notification not expected as it's already in STATE_DISABLED.
+        mUwbServiceCore.onCountryCodeChanged("00");
+        verifyNoMoreInteractions(cb);
+    }
+
+    @Test
     public void testDisableWhenAlreadyDisabled() throws Exception {
         IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
         when(cb.asBinder()).thenReturn(mock(IBinder.class));
