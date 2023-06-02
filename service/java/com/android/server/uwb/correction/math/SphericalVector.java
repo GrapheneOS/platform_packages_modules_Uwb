@@ -166,8 +166,8 @@ public class SphericalVector {
         }
         double ca = cos(azimuth);
         double se = sin(vec.elevation);
-        double az = acos(sqrt(max(ca * ca - se * se, 0)) / cos(vec.elevation))
-                * signum(vec.azimuth);
+        double azz = sqrt(max(ca * ca - se * se, 0)) / cos(vec.elevation);
+        double az = acos(min(max(azz, -1), 1)) * signum(vec.azimuth);
         if (mirrored) {
             return new SphericalVector(F_PI - (float) az, vec.elevation, vec.distance);
         } else {
