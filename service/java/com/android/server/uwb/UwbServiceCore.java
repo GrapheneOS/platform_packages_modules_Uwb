@@ -98,7 +98,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     private static final int SEND_VENDOR_CMD_TIMEOUT_MS = 10000;
 
     private boolean mIsDiagnosticsEnabled = false;
-    private int mDiagramsFrameReportsFieldsFlags = 0;
+    private byte mDiagramsFrameReportsFieldsFlags = 0;
 
     private final PowerManager.WakeLock mUwbWakeLock;
     private final Context mContext;
@@ -332,16 +332,18 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     @Override
     public void onCountryCodeChanged(@Nullable String countryCode) {
         Log.i(TAG, "Received onCountryCodeChanged() with countryCode = " + countryCode);
-        if (mUwbCountryCode.isValid(countryCode)) {
-            // Notify the current UWB adapter state. For example, if UWB was earlier enabled and at
-            // that time the country code was not valid, will now notify STATE_ENABLED_INACTIVE.
-            mUwbTask.computeAndNotifyAdapterStateChange(
-                    getReasonFromDeviceState(getInternalAdapterState()),
-                    countryCode,
-                    Optional.empty());
-            Log.d(TAG, "Resetting cached specifications");
-            mCachedSpecificationParams = null;
-        }
+
+        // Notify the current UWB adapter state. For example:
+        // - If UWB was earlier enabled and at that time the country code was not valid (so
+        //   STATE_DISABLED was notified), can now notify STATE_ENABLED_INACTIVE.
+        // - If UWB is in STATE_ENABLED_INACTIVE and country code is no longer valid, should
+        //   notify STATE_DISABLED.
+        mUwbTask.computeAndNotifyAdapterStateChange(
+                getReasonFromDeviceState(getInternalAdapterState()),
+                countryCode,
+                Optional.empty());
+        Log.d(TAG, "Resetting cached specifications");
+        mCachedSpecificationParams = null;
     }
 
     public void registerAdapterStateCallbacks(IUwbAdapterStateCallbacks adapterStateCallbacks)
@@ -422,7 +424,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     }
 
     /** Set whether diagnostics is enabled and set enabled fields */
-    public void enableDiagnostics(boolean enabled, int flags) {
+    public void enableDiagnostics(boolean enabled, byte flags) {
         this.mIsDiagnosticsEnabled = enabled;
         this.mDiagramsFrameReportsFieldsFlags = flags;
     }

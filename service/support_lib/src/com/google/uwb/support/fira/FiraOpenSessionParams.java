@@ -111,7 +111,7 @@ public class FiraOpenSessionParams extends FiraParams {
 
     private final boolean mIsRssiReportingEnabled;
     private final boolean mIsDiagnosticsEnabled;
-    private final int mDiagramsFrameReportsFieldsFlags;
+    private final byte mDiagramsFrameReportsFieldsFlags;
     private final boolean mIsKeyRotationEnabled;
     private final int mKeyRotationRate;
     @AoaResultRequestMode private final int mAoaResultRequest;
@@ -287,7 +287,7 @@ public class FiraOpenSessionParams extends FiraParams {
             @Nullable byte[] staticStsIV,
             boolean isRssiReportingEnabled,
             boolean isDiagnosticsEnabled,
-            int diagramsFrameReportsFieldsFlags,
+            byte diagramsFrameReportsFieldsFlags,
             boolean isKeyRotationEnabled,
             int keyRotationRate,
             @AoaResultRequestMode int aoaResultRequest,
@@ -602,7 +602,7 @@ public class FiraOpenSessionParams extends FiraParams {
         return mIsDiagnosticsEnabled;
     }
 
-    public int getDiagramsFrameReportsFieldsFlags() {
+    public byte getDiagramsFrameReportsFieldsFlags() {
         return mDiagramsFrameReportsFieldsFlags;
     }
 
@@ -940,7 +940,7 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setStaticStsIV(intArrayToByteArray(bundle.getIntArray(KEY_STATIC_STS_IV)))
                 .setIsRssiReportingEnabled(bundle.getBoolean(KEY_IS_RSSI_REPORTING_ENABLED))
                 .setIsDiagnosticsEnabled(bundle.getBoolean(KEY_IS_DIAGNOSTICS_ENABLED, false))
-                .setDiagramsFrameReportsFieldsFlags(
+                .setDiagramsFrameReportsFieldsFlags((byte)
                         bundle.getInt(KEY_DIAGRAMS_FRAME_REPORTS_FIELDS_FLAGS, 0))
                 .setIsKeyRotationEnabled(bundle.getBoolean(KEY_IS_KEY_ROTATION_ENABLED))
                 .setKeyRotationRate(bundle.getInt(KEY_KEY_ROTATION_RATE))
@@ -1131,7 +1131,7 @@ public class FiraOpenSessionParams extends FiraParams {
         private boolean mIsDiagnosticsEnabled = false;
 
         /** All fields are set to 0 by default */
-        private int mDiagramsFrameReportsFieldsFlags = 0;
+        private byte mDiagramsFrameReportsFieldsFlags = 0;
 
         /** UCI spec default: no key rotation */
         private boolean mIsKeyRotationEnabled = false;
@@ -1636,7 +1636,7 @@ public class FiraOpenSessionParams extends FiraParams {
          *  b3 - b7: RFU
          */
         public FiraOpenSessionParams.Builder
-                setDiagramsFrameReportsFieldsFlags(int diagramsFrameReportsFieldsFlags) {
+                setDiagramsFrameReportsFieldsFlags(byte diagramsFrameReportsFieldsFlags) {
             mDiagramsFrameReportsFieldsFlags = diagramsFrameReportsFieldsFlags;
             return this;
         }
