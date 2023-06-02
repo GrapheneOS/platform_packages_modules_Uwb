@@ -554,12 +554,6 @@ public class UwbSessionNotificationManager {
                 }
             }
 
-            UwbAddress addr = UwbAddress.fromBytes(uwbOwrAoaMeasurement.getMacAddress());
-            UwbControlee controlee = uwbSession.getControlee(addr);
-            if (controlee != null) {
-                controlee.filterMeasurement(rangingMeasurementBuilder);
-            }
-
             rangingReportBuilder.addMeasurement(rangingMeasurementBuilder.build());
         } else if (rangingData.getRangingMeasuresType()
                 == UwbUciConstants.RANGING_MEASUREMENT_TYPE_DL_TDOA) {
@@ -608,12 +602,6 @@ public class UwbSessionNotificationManager {
 
                 rangingMeasurementBuilder.setRangingMeasurementMetadata(
                         dlTDoAMeasurement.toBundle());
-
-                UwbAddress addr = UwbAddress.fromBytes(uwbDlTDoAMeasurements[i].getMacAddress());
-                UwbControlee controlee = uwbSession.getControlee(addr);
-                if (controlee != null) {
-                    controlee.filterMeasurement(rangingMeasurementBuilder);
-                }
 
                 rangingMeasurements.add(rangingMeasurementBuilder.build());
             }
