@@ -332,16 +332,18 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     @Override
     public void onCountryCodeChanged(@Nullable String countryCode) {
         Log.i(TAG, "Received onCountryCodeChanged() with countryCode = " + countryCode);
-        if (mUwbCountryCode.isValid(countryCode)) {
-            // Notify the current UWB adapter state. For example, if UWB was earlier enabled and at
-            // that time the country code was not valid, will now notify STATE_ENABLED_INACTIVE.
-            mUwbTask.computeAndNotifyAdapterStateChange(
-                    getReasonFromDeviceState(getInternalAdapterState()),
-                    countryCode,
-                    Optional.empty());
-            Log.d(TAG, "Resetting cached specifications");
-            mCachedSpecificationParams = null;
-        }
+
+        // Notify the current UWB adapter state. For example:
+        // - If UWB was earlier enabled and at that time the country code was not valid (so
+        //   STATE_DISABLED was notified), can now notify STATE_ENABLED_INACTIVE.
+        // - If UWB is in STATE_ENABLED_INACTIVE and country code is no longer valid, should
+        //   notify STATE_DISABLED.
+        mUwbTask.computeAndNotifyAdapterStateChange(
+                getReasonFromDeviceState(getInternalAdapterState()),
+                countryCode,
+                Optional.empty());
+        Log.d(TAG, "Resetting cached specifications");
+        mCachedSpecificationParams = null;
     }
 
     public void registerAdapterStateCallbacks(IUwbAdapterStateCallbacks adapterStateCallbacks)
