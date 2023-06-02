@@ -97,6 +97,7 @@ public class UwbMetrics {
         private int mRxToUpperLayerCount;
         private int mRangingType = UwbStatsLog
                 .UWB_RANGING_MEASUREMENT_RECEIVED__RANGING_TYPE__TYPE_UNKNOWN;
+        private int mFilterConfigValue = composeFilterConfigValue();
         private AttributionSource mAttributionSource;
 
         RangingSessionStats(int sessionId, AttributionSource attributionSource,
@@ -105,6 +106,18 @@ public class UwbMetrics {
             mInitTimeWallClockMs = mUwbInjector.getWallClockMillis();
             mAttributionSource = attributionSource;
             mParallelSessionCount = parallelSessionCount;
+        }
+
+        private int composeFilterConfigValue() {
+            DeviceConfigFacade cfg = mUwbInjector.getDeviceConfigFacade();
+            int filter_enabled = cfg.isEnableFilters() ? 1 : 0;
+            int enable_azimuth_mirroring = (cfg.isEnableBackAzimuth() ? 1 : 0) << 1;
+            int enable_primer_aoa = (cfg.isEnablePrimerAoA() ? 1 : 0) << 2;
+            int enable_primer_est_elevation = (cfg.isEnablePrimerEstElevation() ? 1 : 0) << 3;
+            int enable_primer_fov = (cfg.isEnablePrimerFov() ? 1 : 0) << 4;
+            int predict_rear_azimuths = (cfg.isEnableBackAzimuthMasking() ? 1 : 0) << 5;
+            return filter_enabled + enable_azimuth_mirroring + enable_primer_aoa
+                    + enable_primer_est_elevation + enable_primer_fov + predict_rear_azimuths;
         }
 
         /**
@@ -359,7 +372,7 @@ public class UwbMetrics {
                     session.mChannel, session.mInitStatus,
                     session.mInitLatencyMs, session.mInitLatencyMs / 20,
                     uwbSession.getAttributionSource().getUid(), session.mRangingIntervalMs,
-                    session.mParallelSessionCount
+                    session.mParallelSessionCount, session.mFilterConfigValue
             );
         }
     }
@@ -558,7 +571,9 @@ public class UwbMetrics {
                     isDistanceValid, report.mDistanceCm, distance50Cm, report.mRssiDbm,
                     isAzimuthValid, report.mAzimuthDegree, azimuth10Degree, report.mAzimuthFom,
                     isElevationValid, report.mElevationDegree, elevation10Degree,
-                    report.mElevationFom, session.mRangingType);
+                    report.mElevationFom, session.mRangingType, report.mFilteredDistanceCm,
+                    report.mFilteredAzimuthDegree, report.mFilteredAzimuthFom,
+                    report.mFilteredElevationDegree, report.mFilteredElevationFom);
         }
     }
 
