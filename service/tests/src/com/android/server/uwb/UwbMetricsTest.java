@@ -27,6 +27,9 @@ import static org.mockito.Mockito.when;
 import android.content.AttributionSource;
 import android.platform.test.annotations.Presubmit;
 import android.test.suitebuilder.annotation.SmallTest;
+import android.uwb.AngleMeasurement;
+import android.uwb.AngleOfArrivalMeasurement;
+import android.uwb.DistanceMeasurement;
 import android.uwb.RangingMeasurement;
 
 import androidx.test.runner.AndroidJUnit4;
@@ -68,6 +71,11 @@ public class UwbMetricsTest {
     private static final int AZIMUTH_DEFAULT_DEGREE = 56;
     private static final int ELEVATION_FOM_DEFAULT = 90;
     private static final int AZIMUTH_FOM_DEFAULT = 60;
+    private static final int DISTANCE_FILTERED_CM = 105;
+    private static final int ELEVATION_FILTERED_DEGREE = 45;
+    private static final int AZIMUTH_FILTERED_DEGREE = 156;
+    private static final int ELEVATION_FOM_FILTERED = 60;
+    private static final int AZIMUTH_FOM_FILTERED = 95;
     private static final int NLOS_DEFAULT = 1;
     private static final int VALID_RANGING_COUNT = 5;
     private static final int RSSI_DEFAULT_DBM = -75;
@@ -81,6 +89,7 @@ public class UwbMetricsTest {
     private static final int RX_PACKET_COUNT = 10;
     private static final int TX_PACKET_COUNT = 20;
     private static final int RX_TO_UPPER_LEVEL_COUNT = 5;
+    private static final int FILTER_CONFIG_VALUE = 63;
     @Mock
     private UwbInjector mUwbInjector;
     @Mock
@@ -99,6 +108,14 @@ public class UwbMetricsTest {
     private UwbRangingData mRangingData;
     @Mock
     private RangingMeasurement mFilteredRangingMeasurement;
+    @Mock
+    private DistanceMeasurement mFilteredDistanceMeasurement;
+    @Mock
+    private AngleOfArrivalMeasurement mFilteredAngleOfArrivalMeasurement;
+    @Mock
+    private AngleMeasurement mFilteredAzimuthMeasurement;
+    @Mock
+    private AngleMeasurement mFilteredElevationMeasurement;
     @Mock
     private UwbSession mUwbSession;
     @Mock
@@ -124,6 +141,25 @@ public class UwbMetricsTest {
         when(mRangingData.getRangingTwoWayMeasures()).thenReturn(mTwoWayMeasurements);
         when(mRangingData.getUwbDlTDoAMeasurements()).thenReturn(mDlTDoAMeasurements);
         when(mRangingData.getRangingOwrAoaMeasure()).thenReturn(mOwrAoaMeasurement);
+
+        when(mFilteredRangingMeasurement.getDistanceMeasurement())
+                .thenReturn(mFilteredDistanceMeasurement);
+        when(mFilteredRangingMeasurement.getAngleOfArrivalMeasurement())
+                .thenReturn(mFilteredAngleOfArrivalMeasurement);
+        when(mFilteredAngleOfArrivalMeasurement.getAzimuth())
+                .thenReturn(mFilteredAzimuthMeasurement);
+        when(mFilteredAngleOfArrivalMeasurement.getAltitude())
+                .thenReturn(mFilteredElevationMeasurement);
+        when(mFilteredDistanceMeasurement.getMeters())
+                .thenReturn((double) DISTANCE_FILTERED_CM / 100);
+        when(mFilteredAzimuthMeasurement.getRadians())
+                .thenReturn(Math.toRadians(AZIMUTH_FILTERED_DEGREE));
+        when(mFilteredAzimuthMeasurement.getConfidenceLevel())
+                .thenReturn((double) AZIMUTH_FOM_FILTERED / 100);
+        when(mFilteredElevationMeasurement.getRadians())
+                .thenReturn(Math.toRadians(ELEVATION_FILTERED_DEGREE));
+        when(mFilteredElevationMeasurement.getConfidenceLevel())
+                .thenReturn((double) ELEVATION_FOM_FILTERED / 100);
 
         when(mUwbSession.getSessionId()).thenReturn(1);
         when(mUwbSession.getProtocolName()).thenReturn(FiraParams.PROTOCOL_NAME);
@@ -159,6 +195,12 @@ public class UwbMetricsTest {
         when(mDeviceConfigFacade.getRangingResultLogIntervalMs())
                 .thenReturn(DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
         when(mDeviceConfigFacade.isSessionInitErrorBugreportEnabled()).thenReturn(true);
+        when(mDeviceConfigFacade.isEnableFilters()).thenReturn(true);
+        when(mDeviceConfigFacade.isEnableBackAzimuth()).thenReturn(true);
+        when(mDeviceConfigFacade.isEnablePrimerAoA()).thenReturn(true);
+        when(mDeviceConfigFacade.isEnablePrimerEstElevation()).thenReturn(true);
+        when(mDeviceConfigFacade.isEnablePrimerFov()).thenReturn(true);
+        when(mDeviceConfigFacade.isEnableBackAzimuthMasking()).thenReturn(true);
         when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
         when(mUwbInjector.getUwbDiagnostics()).thenReturn(mUwbDiagnostics);
 
@@ -197,7 +239,7 @@ public class UwbMetricsTest {
                 UwbStatsLog.UWB_SESSION_INITIATED__STS__STATIC, true,
                 true, false, true,
                 CHANNEL_DEFAULT, UwbStatsLog.UWB_SESSION_INITIATED__STATUS__SUCCESS,
-                0, 0, UID, RANGING_INTERVAL_MS, PARALLEL_SESSION_COUNT
+                0, 0, UID, RANGING_INTERVAL_MS, PARALLEL_SESSION_COUNT , FILTER_CONFIG_VALUE
         ));
 
         mUwbMetrics.longRangingStartEvent(mUwbSession,
@@ -274,7 +316,7 @@ public class UwbMetricsTest {
                 UwbStatsLog.UWB_SESSION_INITIATED__STS__DYNAMIC, false,
                 false, false, true,
                 CHANNEL_DEFAULT, UwbStatsLog.UWB_SESSION_INITIATED__STATUS__BAD_PARAMS,
-                0, 0, UID, RANGING_INTERVAL_MS, PARALLEL_SESSION_COUNT
+                0, 0, UID, RANGING_INTERVAL_MS, PARALLEL_SESSION_COUNT, FILTER_CONFIG_VALUE
         ));
         verify(mUwbDiagnostics).takeBugReport(anyString());
     }
@@ -296,7 +338,9 @@ public class UwbMetricsTest {
                 AZIMUTH_DEFAULT_DEGREE / 10, AZIMUTH_FOM_DEFAULT,
                 true, ELEVATION_DEFAULT_DEGREE,
                 ELEVATION_DEFAULT_DEGREE / 10, ELEVATION_FOM_DEFAULT,
-                UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__RANGING_TYPE__TWO_WAY
+                UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__RANGING_TYPE__TWO_WAY,
+                DISTANCE_FILTERED_CM, AZIMUTH_FILTERED_DEGREE, AZIMUTH_FOM_FILTERED,
+                ELEVATION_FILTERED_DEGREE, ELEVATION_FOM_FILTERED
         ));
     }
 
@@ -316,7 +360,9 @@ public class UwbMetricsTest {
                 AZIMUTH_DEFAULT_DEGREE / 10, AZIMUTH_FOM_DEFAULT,
                 true, ELEVATION_DEFAULT_DEGREE,
                 ELEVATION_DEFAULT_DEGREE / 10, ELEVATION_FOM_DEFAULT,
-                UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__RANGING_TYPE__TWO_WAY
+                UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__RANGING_TYPE__TWO_WAY,
+                DISTANCE_FILTERED_CM, AZIMUTH_FILTERED_DEGREE, AZIMUTH_FOM_FILTERED,
+                ELEVATION_FILTERED_DEGREE, ELEVATION_FOM_FILTERED
         ), times(0));
     }
 
@@ -330,6 +376,7 @@ public class UwbMetricsTest {
         when(mTwoWayMeasurement.getAoaElevation()).thenReturn((float) -20.0);
         when(mTwoWayMeasurement.getAoaElevationFom()).thenReturn(0);
         when(mTwoWayMeasurement.getNLoS()).thenReturn(0);
+        when(mFilteredRangingMeasurement.getDistanceMeasurement()).thenReturn(null);
 
         mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__CCC,
                 mRangingData, mFilteredRangingMeasurement);
@@ -342,7 +389,9 @@ public class UwbMetricsTest {
                 RSSI_DEFAULT_DBM,
                 false, -10, 0, 0,
                 false, -20, 0, 0,
-                UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__RANGING_TYPE__TWO_WAY
+                UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__RANGING_TYPE__TWO_WAY,
+                UwbMetrics.INVALID_DISTANCE, AZIMUTH_FILTERED_DEGREE, AZIMUTH_FOM_FILTERED,
+                ELEVATION_FILTERED_DEGREE, ELEVATION_FOM_FILTERED
         ));
     }
 
@@ -350,6 +399,7 @@ public class UwbMetricsTest {
     public void testLoggingRangingResultDlTDoAMeasurement() throws Exception {
         when(mRangingData.getRangingMeasuresType()).thenReturn(
                 (int) UwbUciConstants.RANGING_MEASUREMENT_TYPE_DL_TDOA);
+        when(mFilteredRangingMeasurement.getDistanceMeasurement()).thenReturn(null);
 
         mUwbMetrics.logRangingInitEvent(mUwbSession, UwbUciConstants.STATUS_CODE_OK);
         addElapsedTimeMs(DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
@@ -366,7 +416,9 @@ public class UwbMetricsTest {
                 AZIMUTH_DEFAULT_DEGREE / 10, AZIMUTH_FOM_DEFAULT,
                 true, ELEVATION_DEFAULT_DEGREE,
                 ELEVATION_DEFAULT_DEGREE / 10, ELEVATION_FOM_DEFAULT,
-                UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__RANGING_TYPE__DL_TDOA
+                UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__RANGING_TYPE__DL_TDOA,
+                UwbMetrics.INVALID_DISTANCE, AZIMUTH_FILTERED_DEGREE, AZIMUTH_FOM_FILTERED,
+                ELEVATION_FILTERED_DEGREE, ELEVATION_FOM_FILTERED
         ));
     }
 
@@ -374,6 +426,7 @@ public class UwbMetricsTest {
     public void testLoggingRangingResultOwrAoaMeasurement() throws Exception {
         when(mRangingData.getRangingMeasuresType()).thenReturn(
                 (int) UwbUciConstants.RANGING_MEASUREMENT_TYPE_OWR_AOA);
+        when(mFilteredRangingMeasurement.getDistanceMeasurement()).thenReturn(null);
 
         mUwbMetrics.logRangingInitEvent(mUwbSession, UwbUciConstants.STATUS_CODE_OK);
         addElapsedTimeMs(DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
@@ -390,7 +443,9 @@ public class UwbMetricsTest {
                 AZIMUTH_DEFAULT_DEGREE / 10, AZIMUTH_FOM_DEFAULT,
                 true, ELEVATION_DEFAULT_DEGREE,
                 ELEVATION_DEFAULT_DEGREE / 10, ELEVATION_FOM_DEFAULT,
-                UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__RANGING_TYPE__OWR_AOA
+                UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__RANGING_TYPE__OWR_AOA,
+                UwbMetrics.INVALID_DISTANCE, AZIMUTH_FILTERED_DEGREE, AZIMUTH_FOM_FILTERED,
+                ELEVATION_FILTERED_DEGREE, ELEVATION_FOM_FILTERED
         ));
     }
 
