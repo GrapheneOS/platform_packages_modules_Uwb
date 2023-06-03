@@ -196,8 +196,14 @@ public class FiraEncoder extends TlvEncoder {
         }
         if (params.isDiagnosticsEnabled()) {
             tlvBufferBuilder.putByte(ConfigParam.ENABLE_DIAGNOSTICS_RSSI, (byte) 1);
-            tlvBufferBuilder.putInt(ConfigParam.ENABLE_DIAGRAMS_FRAME_REPORTS_FIELDS,
-                    params.getDiagramsFrameReportsFieldsFlags());
+            if (SdkLevel.isAtLeastU()) {
+                // Fixed bug to be compliant with HAL interface.
+                tlvBufferBuilder.putByte(ConfigParam.ENABLE_DIAGRAMS_FRAME_REPORTS_FIELDS,
+                        params.getDiagramsFrameReportsFieldsFlags());
+            } else {
+                tlvBufferBuilder.putInt(ConfigParam.ENABLE_DIAGRAMS_FRAME_REPORTS_FIELDS,
+                        params.getDiagramsFrameReportsFieldsFlags());
+            }
         }
         if (params.getScheduledMode() == FiraParams.CONTENTION_BASED_RANGING) {
             tlvBufferBuilder.putByteArray(ConfigParam.CAP_SIZE_RANGE, params.getCapSize());
