@@ -27,6 +27,7 @@ import android.platform.test.annotations.Presubmit;
 import android.test.suitebuilder.annotation.SmallTest;
 
 import androidx.core.uwb.backend.IRangingSessionCallback;
+import androidx.core.uwb.backend.RangingControleeParameters;
 import androidx.core.uwb.backend.RangingParameters;
 import androidx.core.uwb.backend.UwbAddress;
 import androidx.core.uwb.backend.impl.internal.RangingController;
@@ -56,6 +57,9 @@ public class UwbControllerClientTest {
     @Mock private IRangingSessionCallback mRangingSessionCallback;
     @Captor
     ArgumentCaptor<androidx.core.uwb.backend.impl.internal.UwbAddress> mAddressCaptor;
+    @Captor
+    ArgumentCaptor<androidx.core.uwb.backend.impl.internal.RangingControleeParameters>
+            mControleeParamCaptor;
     private UwbControllerClient mUwbControllerClient;
 
     @Before
@@ -98,9 +102,11 @@ public class UwbControllerClientTest {
     public void testAddControlee() throws RemoteException {
         UwbAddress address = new UwbAddress();
         address.address = new byte[] {0x1, 0x2};
-        mUwbControllerClient.addControlee(address);
-        verify(mRangingController).addControlee(mAddressCaptor.capture());
-        assertArrayEquals(address.address, mAddressCaptor.getValue().toBytes());
+        RangingControleeParameters params = new RangingControleeParameters();
+        params.address = address;
+        mUwbControllerClient.addControleeWithSessionParams(params);
+        verify(mRangingController).addControlee(mControleeParamCaptor.capture());
+        assertArrayEquals(address.address, mControleeParamCaptor.getValue().getAddress().toBytes());
     }
 
     @Test
