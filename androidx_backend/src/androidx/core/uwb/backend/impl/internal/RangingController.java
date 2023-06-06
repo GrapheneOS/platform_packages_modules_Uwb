@@ -210,6 +210,69 @@ public class RangingController extends RangingDevice {
     }
 
     /**
+     * Add a new controlee to the controller. If the controlee is added successfully, {@link
+     * RangingSessionCallback#onRangingInitialized(UwbDevice)} will be called. If the adding
+     * operation failed, {@link RangingSessionCallback#onRangingSuspended(UwbDevice, int)} will be
+     * called.
+     *
+     * @return {@link Utils#INVALID_API_CALL} if this is a unicast session but multiple peers are
+     * configured.
+     */
+    public synchronized int addControlee(RangingControleeParameters params) {
+        UwbAddress controleeAddress = params.getAddress();
+        Log.i(TAG, String.format("Add UWB peer: %s", controleeAddress));
+        if (!isAlive()) {
+            return INVALID_API_CALL;
+        }
+        if (ConfigurationManager.isUnicast(mRangingParameters.getUwbConfigId())) {
+            return INVALID_API_CALL;
+        }
+        if (isKnownPeer(controleeAddress) || mDynamicallyAddedPeers.contains(controleeAddress)) {
+            return STATUS_OK;
+        }
+        // Reconfigure the session.
+        int[] subSessionIdList = mRangingParameters.getUwbConfigId()
+                == CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR
+                ? new int[] {params.getSubSessionId()}
+                : null;
+        byte[] subSessionKeyInfo = mRangingParameters.getUwbConfigId()
+                == CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR
+                ? params.getSubSessionKey()
+                : null;
+        boolean success =
+                reconfigureRanging(
+                        ConfigurationManager.createReconfigureParams(
+                                        mRangingParameters.getUwbConfigId(),
+                                        FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD,
+                                        new UwbAddress[] {controleeAddress},
+                                        subSessionIdList,
+                                        subSessionKeyInfo,
+                                        mUwbFeatureFlags)
+                                .toBundle());
+
+        RangingSessionCallback callback = mRangingSessionCallback;
+        if (success) {
+            if (callback != null) {
+                runOnBackendCallbackThread(
+                        () ->
+                                callback.onRangingInitialized(
+                                        UwbDevice.createForAddress(controleeAddress.toBytes())));
+            }
+            mDynamicallyAddedPeers.add(controleeAddress);
+        } else {
+            if (callback != null) {
+                runOnBackendCallbackThread(
+                        () ->
+                                callback.onRangingSuspended(
+                                        UwbDevice.createForAddress(controleeAddress.toBytes()),
+                                        REASON_FAILED_TO_START));
+            }
+        }
+
+        return STATUS_OK;
+    }
+
+    /**
      * Remove a controlee from current session.
      *
      * @return returns {@link Utils#STATUS_OK} if the controlee is removed successfully. returns
