@@ -439,7 +439,7 @@ public class FiraOpenSessionParams extends FiraParams {
     }
 
     public List<UwbAddress> getDestAddressList() {
-        return Collections.unmodifiableList(mDestAddressList);
+        return mDestAddressList != null ? Collections.unmodifiableList(mDestAddressList) : null;
     }
 
     public long getInitiationTime() {
@@ -775,13 +775,15 @@ public class FiraOpenSessionParams extends FiraParams {
         // Always store address as long in bundle.
         bundle.putLong(KEY_DEVICE_ADDRESS, uwbAddressToLong(mDeviceAddress));
 
-        // Dest Address list needs to be converted to long array.
-        long[] destAddressList = new long[mDestAddressList.size()];
-        int i = 0;
-        for (UwbAddress destAddress : mDestAddressList) {
-            destAddressList[i++] = uwbAddressToLong(destAddress);
+        if (mDeviceRole != RANGING_DEVICE_DT_TAG) {
+            // Dest Address list needs to be converted to long array.
+            long[] destAddressList = new long[mDestAddressList.size()];
+            int i = 0;
+            for (UwbAddress destAddress : mDestAddressList) {
+                destAddressList[i++] = uwbAddressToLong(destAddress);
+            }
+            bundle.putLongArray(KEY_DEST_ADDRESS_LIST, destAddressList);
         }
-        bundle.putLongArray(KEY_DEST_ADDRESS_LIST, destAddressList);
 
         bundle.putLong(KEY_INITIATION_TIME_MS, mInitiationTime);
         bundle.putInt(KEY_SLOT_DURATION_RSTU, mSlotDurationRstu);
@@ -888,12 +890,6 @@ public class FiraOpenSessionParams extends FiraParams {
         UwbAddress deviceAddress =
                 longToUwbAddress(bundle.getLong(KEY_DEVICE_ADDRESS), addressByteLength);
 
-        long[] destAddresses = bundle.getLongArray(KEY_DEST_ADDRESS_LIST);
-        List<UwbAddress> destAddressList = new ArrayList<>();
-        for (long address : destAddresses) {
-            destAddressList.add(longToUwbAddress(address, addressByteLength));
-        }
-
         FiraOpenSessionParams.Builder builder = new FiraOpenSessionParams.Builder()
                 .setProtocolVersion(
                         FiraProtocolVersion.fromString(
@@ -905,7 +901,6 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setRangingRoundUsage(bundle.getInt(KEY_RANGING_ROUND_USAGE))
                 .setMultiNodeMode(bundle.getInt(KEY_MULTI_NODE_MODE))
                 .setDeviceAddress(deviceAddress)
-                .setDestAddressList(destAddressList)
                 // Changed from int to long. Look for int value, if long value not found to
                 // maintain backwards compatibility.
                 .setInitiationTime(bundle.getLong(KEY_INITIATION_TIME_MS))
@@ -997,6 +992,15 @@ public class FiraOpenSessionParams extends FiraParams {
                         KEY_MAX_NUMBER_OF_MEASUREMENTS, MAX_NUMBER_OF_MEASUREMENTS_DEFAULT))
                 .setApplicationDataEndpoint(bundle.getInt(
                         KEY_APPLICATION_DATA_ENDPOINT, APPLICATION_DATA_ENDPOINT_DEFAULT));
+
+        if (builder.mDeviceRole.get() != RANGING_DEVICE_DT_TAG) {
+            long[] destAddresses = bundle.getLongArray(KEY_DEST_ADDRESS_LIST);
+            List<UwbAddress> destAddressList = new ArrayList<>();
+            for (long address : destAddresses) {
+                destAddressList.add(longToUwbAddress(address, addressByteLength));
+            }
+            builder.setDestAddressList(destAddressList);
+        }
         return builder.build();
     }
 
@@ -1856,9 +1860,12 @@ public class FiraOpenSessionParams extends FiraParams {
 
             // Make sure address length matches the address mode
             checkArgument(mDeviceAddress != null && mDeviceAddress.size() == addressByteLength);
-            checkNotNull(mDestAddressList);
-            for (UwbAddress destAddress : mDestAddressList) {
-                checkArgument(destAddress != null && destAddress.size() == addressByteLength);
+            if (mDeviceRole.get() != RANGING_DEVICE_DT_TAG) {
+                checkNotNull(mDestAddressList);
+                for (UwbAddress destAddress : mDestAddressList) {
+                    checkArgument(destAddress != null
+                            && destAddress.size() == addressByteLength);
+                }
             }
         }
 
