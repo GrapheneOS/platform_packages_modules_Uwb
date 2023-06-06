@@ -30,9 +30,9 @@ public class MedAvgRotationFilterFilterTest {
     @Test
     public void averageTest() {
         MedAvgRotationFilter filter = new MedAvgRotationFilter(3, 1);
-        filter.add((float) toRadians(175), 0);
-        filter.add((float) toRadians(-175), 0);
-        filter.add((float) toRadians(5), 0);
+        filter.add((float) toRadians(175), 0, 1);
+        filter.add((float) toRadians(-175), 0, 1);
+        filter.add((float) toRadians(5), 0, 1);
 
         // See if this average of values on either side of 180 averages out correctly.
         assertClose(filter.getResult().value, toRadians((175 + (360 - 175) + 5) / 3f));
@@ -41,9 +41,9 @@ public class MedAvgRotationFilterFilterTest {
     @Test
     public void remapTest() {
         MedAvgRotationFilter filter = new MedAvgRotationFilter(3, 1);
-        filter.add((float) toRadians(175), 0);
-        filter.add((float) toRadians(-175), 0);
-        filter.add((float) toRadians(5), 0);
+        filter.add((float) toRadians(175), 0, 1);
+        filter.add((float) toRadians(-175), 0, 1);
+        filter.add((float) toRadians(5), 0, 1);
         // Just like the averageTest, but now we're going to add 90 degrees, which
         // should make the answer roll-over across the +/-180 boundary
         filter.remap(b -> b + F_HALF_PI);

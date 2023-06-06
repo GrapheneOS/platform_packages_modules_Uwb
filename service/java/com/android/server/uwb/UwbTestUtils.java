@@ -295,7 +295,7 @@ public class UwbTestUtils {
                             new DistanceMeasurement.Builder()
                                     .setMeters(TEST_DISTANCE / (double) 100)
                                     .setErrorMeters(0)
-                                    .setConfidenceLevel(0)
+                                    .setConfidenceLevel(1.0)
                                     .build())
                     .setDestinationAngleOfArrivalMeasurement(aoaDestMeasurement)
                     .setRssiDbm(-TEST_RSSI / 2)

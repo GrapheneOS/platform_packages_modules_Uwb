@@ -32,9 +32,10 @@ public class NullFilter implements IFilter {
      * @param timeMs When the value occurred, used to determine the latency introduced by the
      *                filter. Note that this has no effect on the order in which the filter
      *                operates. This is in milliseconds, relative to any consistent epoch.
+     * @param fom The figure of merit for the reading.
      */
     @Override
-    public void add(float value, long timeMs) {
+    public void add(float value, long timeMs, double fom) {
         mWhen = timeMs;
         this.mValue = value;
     }
@@ -61,6 +62,6 @@ public class NullFilter implements IFilter {
     @NonNull
     @Override
     public Sample getResult() {
-        return new Sample(mValue, mWhen);
+        return new Sample(mValue, mWhen, 1);
     }
 }
