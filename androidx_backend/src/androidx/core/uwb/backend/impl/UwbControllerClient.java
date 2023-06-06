@@ -23,6 +23,7 @@ import android.os.RemoteException;
 import android.util.Log;
 
 import androidx.core.uwb.backend.IRangingSessionCallback;
+import androidx.core.uwb.backend.RangingControleeParameters;
 import androidx.core.uwb.backend.RangingParameters;
 import androidx.core.uwb.backend.UwbAddress;
 import androidx.core.uwb.backend.UwbComplexChannel;
@@ -73,6 +74,22 @@ public class UwbControllerClient extends UwbClient {
         androidx.core.uwb.backend.impl.internal.UwbAddress uwbAddress =
                 androidx.core.uwb.backend.impl.internal.UwbAddress.fromBytes(address.address);
         int status = ((RangingController) mDevice).addControlee(uwbAddress);
+        if (status != STATUS_OK) {
+            Log.w(TAG, String.format("Adding controlee failed with status %d", status));
+        }
+    }
+
+
+    @Override
+    public void addControleeWithSessionParams(RangingControleeParameters params)
+            throws RemoteException {
+        androidx.core.uwb.backend.impl.internal.UwbAddress uwbAddress =
+                androidx.core.uwb.backend.impl.internal.UwbAddress
+                        .fromBytes(params.address.address);
+        androidx.core.uwb.backend.impl.internal.RangingControleeParameters controleeParameters =
+                new androidx.core.uwb.backend.impl.internal.RangingControleeParameters(
+                        uwbAddress, params.subSessionId, params.subSessionKey);
+        int status = ((RangingController) mDevice).addControlee(controleeParameters);
         if (status != STATUS_OK) {
             Log.w(TAG, String.format("Adding controlee failed with status %d", status));
         }
