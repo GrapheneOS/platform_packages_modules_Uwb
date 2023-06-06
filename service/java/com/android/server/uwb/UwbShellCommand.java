@@ -650,9 +650,6 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 .setDeviceType(RANGING_DEVICE_TYPE_DT_TAG)
                 .setDeviceRole(RANGING_DEVICE_DT_TAG)
                 .setDeviceAddress(UwbAddress.fromBytes(new byte[] { 0x4, 0x6}))
-                // Dest address is not needed, remove after FiraOpenSessionParams cleanup, this
-                // is excluded in fira encoder for Dt_tag.
-                .setDestAddressList(Arrays.asList(UwbAddress.fromBytes(new byte[] { 0x4, 0x6})))
                 .setMultiNodeMode(MULTI_NODE_MODE_ONE_TO_MANY)
                 .setRangingRoundUsage(RANGING_ROUND_USAGE_DL_TDOA)
                 .setVendorId(new byte[]{0x8, 0x7})
