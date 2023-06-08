@@ -10,14 +10,13 @@ from lib import uwb_base_test
 from lib import uwb_ranging_decorator
 from lib import uwb_ranging_params
 from mobly import asserts
-from mobly import base_test
 from mobly import config_parser
 from mobly import signals
 from mobly import suite_runner
 from test_utils import uwb_test_utils
 
 RESPONDER_STOP_CALLBACK_TIMEOUT = 60
-_TEST_RETRY = 2
+
 _TEST_CASES = (
     "test_ranging_device_tracker_profile_default",
     "test_ranging_device_tracker_profile_p_sts_default",
@@ -415,7 +414,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
 
   ### Test Cases ###
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_device_tracker_profile_default(self):
     """Verifies ranging with device tracker profile default values."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -448,7 +446,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_device_tracker_profile_p_sts_default(self):
     """Verifies ranging with device tracker profile default values."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -483,7 +480,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_nearby_share_profile_default(self):
     """Verifies ranging for device nearby share with default profile."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -512,7 +508,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_nearby_share_profile_p_sts_default(self):
     """Verifies ranging for device nearby share with default profile."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -543,7 +538,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_nearby_share_profile_reconfigure_controlee(self):
     """Verifies ranging for device nearby share with default profile."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -572,7 +566,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_nearby_share_profile_p_sts_reconfigure_controlee(self):
     """Verifies ranging for device nearby share with default profile."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -606,7 +599,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_nearby_share_profile_add_remove_controlee(self):
     """Verifies ranging for device nearby share with default profile."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -642,7 +634,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         )
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_nearby_share_profile_p_sts_add_remove_controlee(self):
     """Verifies ranging for device nearby share with default profile."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -681,7 +672,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         )
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_open_ranging_with_same_session_id_nearby_share(self):
     """Verifies ranging for device nearby share with same session id."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -715,7 +705,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_open_ranging_with_same_session_id_device_tracker(self):
     """Verifies ranging with device tracker profile with same session id."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -753,7 +742,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_nearby_share_reconfigure_ranging_interval(self):
     """Verifies ranging with default Fira parameters."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -776,7 +764,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_device_tracker_profile_reconfigure_ranging_interval(self):
     """Verifies ranging with device tracker profile default values."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -811,7 +798,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_nearby_share_profile_reconfigure_ranging_interval(self):
     """Verifies ranging for device nearby share with default profile."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -842,7 +828,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_device_tracker_profile_ch9_pr12(self):
     """Verifies ranging with device tracker for channel 9 and preamble 12."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -877,7 +862,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_device_tracker_profile_ch5_pr11(self):
     """Verifies ranging with device tracker for channel 5 and preamble 11."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -914,7 +898,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_device_tracker_profile_ch9_pr11(self):
     """Verifies device tracking profile with channel 9 and preamble 11."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -949,7 +932,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_device_tracker_profile_ch5_pr10(self):
     """Verifies device tracking profile with channel 5 and preamble 10."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -984,7 +966,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_device_tracker_profile_ch9_pr9(self):
     """Verifies ranging with device tracker for channel 9 and preamble 9."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -1021,7 +1002,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_device_tracker_profile_ch5_pr9(self):
     """Verifies ranging with device tracker for channel 5 and preamble 9."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -1058,7 +1038,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_device_tracker_profile_ch5_pr12(self):
     """Verifies ranging with device tracker for channel 5 and preamble 12."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -1095,7 +1074,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_device_tracker_profile_no_aoa_report(self):
     """Verifies ranging with device tracker profile with no aoa report."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -1137,7 +1115,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_nearby_share_profile_hopping_mode_disabled(self):
     """Verifies ranging with nearby share profile with hopping mode disabled."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -1168,7 +1145,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_rr_ss_twr_deferred_default_params(self):
     """Verifies ranging with default Fira parameters and Ranging Round 1."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -1193,7 +1169,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_rr_ss_twr_deferred_device_tracker_profile(self):
     """Verifies ranging with device tracker profile and ranging round 1."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -1230,7 +1205,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_rr_ss_twr_deferred_nearby_share_profile(self):
     """Verifies ranging for nearby share profile and ranging round 1."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -1263,7 +1237,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_stop_initiator_ranging_device_tracker_profile(self):
     """Verifies initiator stop ranging callbacks with device tracker profile."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -1296,7 +1269,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_stop_initiator_ranging_nearby_share_profile(self):
     """Verifies initiator stop ranging callbacks for nearby share profile."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -1325,7 +1297,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_stop_responder_ranging_device_tracker_profile(self):
     """Verifies responder stop ranging callbacks with device tracker profile."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -1358,7 +1329,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_stop_responder_ranging_nearby_share_profile(self):
     """Verifies responder stop ranging callbacks for nearby share profile."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -1387,7 +1357,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_device_tracker_profile_with_airplane_mode_toggle(self):
     """Verifies ranging with device tracker profile and airplane mode toggle."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -1420,7 +1389,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_nearby_share_profile_with_airplane_mode_toggle(self):
     """Verifies ranging for nearby share profile and APM toggle."""
     initiator_params = uwb_ranging_params.UwbRangingParams(
@@ -1449,7 +1417,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_nearby_share_profile_move_to_bg_and_fg(self):
     """Verifies ranging with app moving background and foreground.
 
@@ -1511,7 +1478,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_nearby_share_profile_verify_app_in_bg_stops_session(self):
     """Verifies stop session callback with app staying in the background.
 
@@ -1570,7 +1536,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
           "Should receive ranging stop when the app is in background"
       )
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_nearby_share_profile_bg_fails(self):
     """Verifies opening a ranging session fails if app is in background.
 
@@ -1591,7 +1556,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self._move_snippet_to_bg(self.initiator)
     self.initiator.open_fira_ranging(initiator_params, expect_to_succeed=False)
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_nearby_share_profile_no_valid_reports_stops_session(self):
     """Verifies ranging reports not received if peer not available.
 
@@ -1653,7 +1617,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     # Ensure the responder is back after reboot.
     thread.join()
 
-  @base_test.retry(_TEST_RETRY)
   def test_ranging_device_tracker_profile_max_sessions_reject(self):
     """Verifies opening session fails after max sessions opened.
 
