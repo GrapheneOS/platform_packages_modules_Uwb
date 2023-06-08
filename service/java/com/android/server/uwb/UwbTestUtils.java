@@ -63,6 +63,9 @@ public class UwbTestUtils {
             PEER_EXTENDED_MAC_ADDRESS_2);
     public static final UwbAddress PEER_SHORT_UWB_ADDRESS = UwbAddress.fromBytes(
             PEER_SHORT_MAC_ADDRESS);
+    public static final UwbAddress PEER_EXTENDED_SHORT_UWB_ADDRESS = UwbAddress.fromBytes(
+            PEER_EXTENDED_SHORT_MAC_ADDRESS);
+
     public static final PersistableBundle PERSISTABLE_BUNDLE = new PersistableBundle();
     public static final byte[] DATA_PAYLOAD = new byte[] {0x13, 0x15, 0x18};
     public static final int RANGING_MEASUREMENT_TYPE_UNDEFINED = 0; // RFU in spec
