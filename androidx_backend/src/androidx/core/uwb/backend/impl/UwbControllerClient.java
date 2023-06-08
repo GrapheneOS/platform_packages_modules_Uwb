@@ -89,7 +89,8 @@ public class UwbControllerClient extends UwbClient {
         androidx.core.uwb.backend.impl.internal.RangingControleeParameters controleeParameters =
                 new androidx.core.uwb.backend.impl.internal.RangingControleeParameters(
                         uwbAddress, params.subSessionId, params.subSessionKey);
-        int status = ((RangingController) mDevice).addControlee(controleeParameters);
+        int status = ((RangingController) mDevice)
+                .addControleeWithSessionParams(controleeParameters);
         if (status != STATUS_OK) {
             Log.w(TAG, String.format("Adding controlee failed with status %d", status));
         }
