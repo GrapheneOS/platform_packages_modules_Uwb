@@ -59,6 +59,19 @@ public class AoaVectorTest {
     }
 
     @Test
+    public void testRoundingRegression() {
+        // This particular value caused acos(1.000000000000004) during conversion to a
+        // SphericalVector, due to rounding errors. Make sure it isn't producing NaN.
+        SphericalVector sv = AoaVector.fromRadians(0, 1.4373895f, 1)
+                .toSphericalVector();
+        assertThat(Float.isNaN(sv.azimuth)).isFalse();
+
+        sv = AoaVector.fromRadians(0, -1.4373895f, 1)
+                .toSphericalVector();
+        assertThat(Float.isNaN(sv.azimuth)).isFalse();
+    }
+
+    @Test
     public void testToSphericalVector() {
         AoaVector aoav = AoaVector.fromDegrees(0, 18, 10);
         SphericalVector sv = aoav.toSphericalVector();
