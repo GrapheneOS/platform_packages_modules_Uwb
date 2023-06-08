@@ -105,7 +105,7 @@ public class UwbControllerClientTest {
         RangingControleeParameters params = new RangingControleeParameters();
         params.address = address;
         mUwbControllerClient.addControleeWithSessionParams(params);
-        verify(mRangingController).addControlee(mControleeParamCaptor.capture());
+        verify(mRangingController).addControleeWithSessionParams(mControleeParamCaptor.capture());
         assertArrayEquals(address.address, mControleeParamCaptor.getValue().getAddress().toBytes());
     }
 
