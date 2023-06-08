@@ -393,8 +393,9 @@ public class RangingControllerTest {
                 .reconfigure(any(PersistableBundle.class));
 
         mRangingController.startRanging(rangingSessionCallback, mBackendCallbackExecutor);
-        assertEquals(mRangingController.addControlee(new RangingControleeParameters(
-                peerAddress, 0, null)), STATUS_OK);
+        assertEquals(mRangingController.addControleeWithSessionParams(
+                new RangingControleeParameters(
+                        peerAddress, 0, null)), STATUS_OK);
         verify(pfRangingSession).reconfigure(any(PersistableBundle.class));
         verify(rangingSessionCallback)
                 .onRangingInitialized(UwbDevice.createForAddress(peerAddress.toBytes()));
@@ -439,7 +440,8 @@ public class RangingControllerTest {
                 .reconfigure(any(PersistableBundle.class));
 
         mRangingController.startRanging(rangingSessionCallback, mBackendCallbackExecutor);
-        mRangingController.addControlee(new RangingControleeParameters(peerAddress, 0, null));
+        mRangingController.addControleeWithSessionParams(
+                new RangingControleeParameters(peerAddress, 0, null));
         assertEquals(mRangingController.removeControlee(peerAddress), STATUS_OK);
         assertEquals(mRangingController.removeControlee(mRangingParamsKnownPeerAddress), STATUS_OK);
         assertEquals(mRangingController.removeControlee(UwbAddress.getRandomizedShortAddress()),

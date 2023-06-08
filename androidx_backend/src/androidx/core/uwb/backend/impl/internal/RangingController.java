@@ -218,7 +218,7 @@ public class RangingController extends RangingDevice {
      * @return {@link Utils#INVALID_API_CALL} if this is a unicast session but multiple peers are
      * configured.
      */
-    public synchronized int addControlee(RangingControleeParameters params) {
+    public synchronized int addControleeWithSessionParams(RangingControleeParameters params) {
         UwbAddress controleeAddress = params.getAddress();
         Log.i(TAG, String.format("Add UWB peer: %s", controleeAddress));
         if (!isAlive()) {
