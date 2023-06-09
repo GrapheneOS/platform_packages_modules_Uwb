@@ -94,12 +94,21 @@ public class CccDecoder extends TlvDecoder {
     private CccRangingStartedParams getCccRangingStartedParamsFromTlvBuffer(TlvDecoderBuffer tlvs) {
         byte[] hopModeKey = tlvs.getByteArray(ConfigParam.HOP_MODE_KEY);
         int hopModeKeyInt = ByteBuffer.wrap(hopModeKey).order(ByteOrder.LITTLE_ENDIAN).getInt();
+        long uwbTime0;
+        // Backwards compatibility with vendors who were using Google defined
+        // UWB_TIME0 TLV param.
+        try {
+            uwbTime0 = tlvs.getLong(ConfigParam.UWB_TIME0);
+        } catch (IllegalArgumentException e) {
+            uwbTime0 = tlvs.getLong(ConfigParam.UWB_INITIATION_TIME);
+        }
+
         return new CccRangingStartedParams.Builder()
                 // STS_Index0  0 - 0x3FFFFFFFF
                 .setStartingStsIndex(tlvs.getInt(ConfigParam.STS_INDEX))
                 .setHopModeKey(hopModeKeyInt)
                 //  UWB_Time0 0 - 0xFFFFFFFFFFFFFFFF  UWB_INITIATION_TIME
-                .setUwbTime0(tlvs.getLong(ConfigParam.UWB_TIME0))
+                .setUwbTime0(uwbTime0)
                 // RANGING_INTERVAL = RAN_Multiplier * 96
                 .setRanMultiplier(tlvs.getInt(ConfigParam.RANGING_INTERVAL) / 96)
                 .setSyncCodeIndex(tlvs.getByte(ConfigParam.PREAMBLE_CODE_INDEX))
