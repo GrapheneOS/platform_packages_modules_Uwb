@@ -309,7 +309,19 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     + ", with unexpected MacAddress length = " + address.length);
             return;
         }
+        mUwbMetrics.logDataRx(uwbSession, status);
+
         Long longAddress = macAddressByteArrayToLong(address);
+        UwbAddress uwbAddress = UwbAddress.fromBytes(address);
+
+        // When the data packet is received on a non OWR-for-AoA ranging session, send it to the
+        // higher layer. For the OWR-for-AoA ranging session, the data packet is only sent when the
+        // received SESSION_INFO_NTF indicate this Observer device is pointing to an Advertiser.
+        if (uwbSession.getRangingRoundUsage() != ROUND_USAGE_OWR_AOA_MEASUREMENT) {
+            mSessionNotificationManager.onDataReceived(
+                    uwbSession, uwbAddress, new PersistableBundle(), data);
+            return;
+        }
 
         ReceivedDataInfo info = new ReceivedDataInfo();
         info.sessionId = sessionId;
@@ -319,7 +331,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         info.payload = data;
 
         uwbSession.addReceivedDataInfo(info);
-        mUwbMetrics.logDataRx(uwbSession, status);
     }
 
     /* Notification of data send status */
@@ -1740,6 +1751,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         private final SessionHandle mSessionHandle;
         private final int mSessionId;
         private final byte mSessionType;
+        private final int mRangingRoundUsage;
         private final IUwbRangingCallbacks mIUwbRangingCallbacks;
         private final String mProtocolName;
         private final IBinder mIBinder;
@@ -1802,6 +1814,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             if (params instanceof FiraOpenSessionParams) {
                 FiraOpenSessionParams firaParams = (FiraOpenSessionParams) params;
 
+                this.mRangingRoundUsage = firaParams.getRangingRoundUsage();
+
                 // Set up pose sources before we start creating UwbControlees.
                 switch (firaParams.getFilterType()) {
                     case FILTER_TYPE_DEFAULT:
@@ -1835,6 +1849,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     mParams = firaParams.toBuilder().setSessionPriority(
                             mStackSessionPriority).build();
                 }
+            } else {
+                this.mRangingRoundUsage = -1;
             }
 
             this.mReceivedDataInfoMap = new ConcurrentHashMap<>();
@@ -2043,6 +2059,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
         public byte getSessionType() {
             return this.mSessionType;
+        }
+
+        public int getRangingRoundUsage() {
+            return this.mRangingRoundUsage;
         }
 
         public String getChipId() {
