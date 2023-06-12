@@ -540,7 +540,7 @@ public class FiraSpecificationParams extends FiraParams {
             builder.hasRssiReportingSupport(bundle.getBoolean(KEY_RSSI_REPORTING_SUPPORT));
         }
         if (bundle.containsKey(KEY_DIAGNOSTICS_SUPPORT)) {
-            builder.hasBlockStridingSupport(bundle.getBoolean(KEY_DIAGNOSTICS_SUPPORT));
+            builder.hasDiagnosticsSupport(bundle.getBoolean(KEY_DIAGNOSTICS_SUPPORT));
         }
         if (bundle.containsKey(KEY_MAX_RANGING_SESSION_NUMBER)) {
             builder.setMaxRangingSessionNumberSupported(
