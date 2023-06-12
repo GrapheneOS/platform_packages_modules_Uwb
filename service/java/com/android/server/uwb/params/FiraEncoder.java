@@ -341,14 +341,14 @@ public class FiraEncoder extends TlvEncoder {
         return rangingRoundControl;
     }
 
-    private byte[] getComputedMacAddress(UwbAddress address) {
+    private static byte[] getComputedMacAddress(UwbAddress address) {
         if (!SdkLevel.isAtLeastU()) {
             return TlvUtil.getReverseBytes(address.toBytes());
         }
         return address.toBytes();
     }
 
-    private byte[] getComputedVendorId(byte[] data) {
+    private static byte[] getComputedVendorId(byte[] data) {
         if (!SdkLevel.isAtLeastU()) {
             return TlvUtil.getReverseBytes(data);
         }
