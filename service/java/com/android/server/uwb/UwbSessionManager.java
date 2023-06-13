@@ -61,6 +61,7 @@ import android.uwb.UwbAddress;
 
 import androidx.annotation.VisibleForTesting;
 
+import com.android.modules.utils.build.SdkLevel;
 import com.android.server.uwb.advertisement.UwbAdvertiseManager;
 import com.android.server.uwb.correction.UwbFilterEngine;
 import com.android.server.uwb.correction.pose.ApplicationPoseSource;
@@ -73,6 +74,7 @@ import com.android.server.uwb.data.UwbTwoWayMeasurement;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.jni.INativeUwbManager;
 import com.android.server.uwb.jni.NativeUwbManager;
+import com.android.server.uwb.params.TlvUtil;
 import com.android.server.uwb.proto.UwbStatsLog;
 import com.android.server.uwb.util.ArrayUtils;
 import com.android.server.uwb.util.DataTypeConversionUtil;
@@ -1445,7 +1447,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                 int dstAddressListSize = addrList.length;
                                 List<byte[]> dstAddressList = new ArrayList<>();
                                 for (UwbAddress address : addrList) {
-                                    dstAddressList.add(address.toBytes());
+                                    dstAddressList.add(getComputedMacAddress(address));
                                 }
                                 int[] subSessionIdList;
                                 if (!ArrayUtils.isEmpty(
@@ -2461,5 +2463,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                         .collect(Collectors.toList());
         pw.println("Non Privileged Fira Session Ids: " + nonPrivilegedSessionIds);
         pw.println("---- Dump of UwbSessionManager ----");
+    }
+
+    private static byte[] getComputedMacAddress(UwbAddress address) {
+        if (!SdkLevel.isAtLeastU()) {
+            return TlvUtil.getReverseBytes(address.toBytes());
+        }
+        return address.toBytes();
     }
 }
