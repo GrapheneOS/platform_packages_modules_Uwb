@@ -32,10 +32,12 @@ import android.uwb.RangingMeasurement;
 import android.uwb.RangingReport;
 import android.uwb.UwbAddress;
 
+import com.android.modules.utils.build.SdkLevel;
 import com.android.server.uwb.data.UwbDlTDoAMeasurement;
 import com.android.server.uwb.data.UwbOwrAoaMeasurement;
 import com.android.server.uwb.data.UwbRangingData;
 import com.android.server.uwb.data.UwbTwoWayMeasurement;
+import com.android.server.uwb.params.TlvUtil;
 
 import com.google.uwb.support.dltdoa.DlTDoAMeasurement;
 import com.google.uwb.support.fira.FiraParams;
@@ -279,6 +281,13 @@ public class UwbTestUtils {
         return Pair.create(uwbRangingData, rangingReport);
     }
 
+    private static UwbAddress getComputedMacAddress(byte[] address) {
+        if (!SdkLevel.isAtLeastU()) {
+            return UwbAddress.fromBytes(TlvUtil.getReverseBytes(address));
+        }
+        return UwbAddress.fromBytes(address);
+    }
+
     private static RangingReport buildRangingReport(byte[] macAddress, int rangingMeasurementType,
             AngleOfArrivalMeasurement aoaMeasurement, AngleOfArrivalMeasurement aoaDestMeasurement,
             long elapsedRealtimeNanos, PersistableBundle rangingReportMetadata) {
@@ -286,7 +295,7 @@ public class UwbTestUtils {
         PersistableBundle rangingMeasurementMetadata = new PersistableBundle();
 
         RangingMeasurement.Builder rangingMeasurementBuilder = new RangingMeasurement.Builder()
-                .setRemoteDeviceAddress(UwbAddress.fromBytes(macAddress))
+                .setRemoteDeviceAddress(getComputedMacAddress(macAddress))
                 .setStatus(TEST_STATUS)
                 .setElapsedRealtimeNanos(elapsedRealtimeNanos)
                 .setAngleOfArrivalMeasurement(aoaMeasurement)
