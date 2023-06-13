@@ -100,6 +100,7 @@ import android.uwb.StateChangeReason;
 import android.uwb.UwbAddress;
 import android.uwb.UwbOemExtensionCallbackListener;
 
+import com.android.modules.utils.build.SdkLevel;
 import com.android.server.uwb.UwbSessionManager.UwbSession;
 import com.android.server.uwb.UwbSessionManager.WaitObj;
 import com.android.server.uwb.advertisement.UwbAdvertiseManager;
@@ -109,6 +110,7 @@ import com.android.server.uwb.data.UwbRangingData;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.multchip.UwbMultichipData;
+import com.android.server.uwb.params.TlvUtil;
 
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
@@ -2956,7 +2958,7 @@ public class UwbSessionManagerTest {
                 .isTrue();
 
         byte[] dstAddress =
-                reconfigureParams.getAddressList()[0].toBytes();
+                getComputedMacAddress(reconfigureParams.getAddressList()[0].toBytes());
         verify(mNativeUwbManager).controllerMulticastListUpdate(
                 uwbSession.getSessionId(), reconfigureParams.getAction(), 1,
                 dstAddress, reconfigureParams.getSubSessionIdList(), null,
@@ -2999,7 +3001,7 @@ public class UwbSessionManagerTest {
                 .anyMatch(e -> e.getUwbAddress().equals(UWB_DEST_ADDRESS)))
                 .isFalse();
 
-        byte[] dstAddress = reconfigureParams.getAddressList()[0].toBytes();
+        byte[] dstAddress = getComputedMacAddress(reconfigureParams.getAddressList()[0].toBytes());
         verify(mNativeUwbManager).controllerMulticastListUpdate(
                 uwbSession.getSessionId(), reconfigureParams.getAction(), 1,
                 dstAddress, reconfigureParams.getSubSessionIdList(), null,
@@ -3041,7 +3043,7 @@ public class UwbSessionManagerTest {
                 .anyMatch(e -> e.getUwbAddress().equals(UWB_DEST_ADDRESS_2)))
                 .isTrue();
 
-        byte[] dstAddress = reconfigureParams.getAddressList()[0].toBytes();
+        byte[] dstAddress = getComputedMacAddress(reconfigureParams.getAddressList()[0].toBytes());
         verify(mNativeUwbManager).controllerMulticastListUpdate(
                 uwbSession.getSessionId(), reconfigureParams.getAction(), 1,
                 dstAddress, reconfigureParams.getSubSessionIdList(),
@@ -3474,5 +3476,12 @@ public class UwbSessionManagerTest {
         info.destEndPoint = DEST_END_POINT;
         info.payload = DATA_PAYLOAD;
         return info;
+    }
+
+    private static byte[] getComputedMacAddress(byte[] address) {
+        if (!SdkLevel.isAtLeastU()) {
+            return TlvUtil.getReverseBytes(address);
+        }
+        return address;
     }
 }
