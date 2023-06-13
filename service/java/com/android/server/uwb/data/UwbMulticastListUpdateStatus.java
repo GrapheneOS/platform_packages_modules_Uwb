@@ -18,6 +18,9 @@ package com.android.server.uwb.data;
 import android.util.Log;
 import android.uwb.UwbAddress;
 
+import com.android.modules.utils.build.SdkLevel;
+import com.android.server.uwb.params.TlvUtil;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -60,7 +63,7 @@ public class UwbMulticastListUpdateStatus {
             if (buffer.remaining() >= addressLength) {
                 byte[] macAddress = new byte[addressLength];
                 buffer.get(macAddress, 0, macAddress.length);
-                uwbAddresses[i] = UwbAddress.fromBytes(macAddress);
+                uwbAddresses[i] = getComputedMacAddress(macAddress);
             }
         }
         return uwbAddresses;
@@ -105,5 +108,12 @@ public class UwbMulticastListUpdateStatus {
                 + ", SubSessionId =" + Arrays.toString(mSubSessionId)
                 + ", Status =" + Arrays.toString(mStatus)
                 + '}';
+    }
+
+    private static UwbAddress getComputedMacAddress(byte[] address) {
+        if (!SdkLevel.isAtLeastU()) {
+            return UwbAddress.fromBytes(TlvUtil.getReverseBytes(address));
+        }
+        return UwbAddress.fromBytes(address);
     }
 }
