@@ -29,12 +29,14 @@ import android.uwb.RangingReport;
 import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
 
+import com.android.modules.utils.build.SdkLevel;
 import com.android.server.uwb.UwbSessionManager.UwbSession;
 import com.android.server.uwb.data.UwbDlTDoAMeasurement;
 import com.android.server.uwb.data.UwbOwrAoaMeasurement;
 import com.android.server.uwb.data.UwbRangingData;
 import com.android.server.uwb.data.UwbTwoWayMeasurement;
 import com.android.server.uwb.data.UwbUciConstants;
+import com.android.server.uwb.params.TlvUtil;
 import com.android.server.uwb.util.UwbUtil;
 
 import com.google.uwb.support.base.Params;
@@ -520,7 +522,7 @@ public class UwbSessionNotificationManager {
                 PersistableBundle rangingMeasurementMetadata = new PersistableBundle();
                 rangingMeasurementBuilder.setRangingMeasurementMetadata(rangingMeasurementMetadata);
 
-                UwbAddress addr = UwbAddress.fromBytes(uwbTwoWayMeasurement[i].getMacAddress());
+                UwbAddress addr = getComputedMacAddress(uwbTwoWayMeasurement[i].getMacAddress());
                 UwbControlee controlee = uwbSession.getControlee(addr);
                 if (controlee != null) {
                     controlee.filterMeasurement(rangingMeasurementBuilder);
@@ -552,12 +554,6 @@ public class UwbSessionNotificationManager {
                     rangingMeasurementBuilder.setAngleOfArrivalMeasurement(
                             angleOfArrivalMeasurement);
                 }
-            }
-
-            UwbAddress addr = UwbAddress.fromBytes(uwbOwrAoaMeasurement.getMacAddress());
-            UwbControlee controlee = uwbSession.getControlee(addr);
-            if (controlee != null) {
-                controlee.filterMeasurement(rangingMeasurementBuilder);
             }
 
             rangingReportBuilder.addMeasurement(rangingMeasurementBuilder.build());
@@ -609,12 +605,6 @@ public class UwbSessionNotificationManager {
                 rangingMeasurementBuilder.setRangingMeasurementMetadata(
                         dlTDoAMeasurement.toBundle());
 
-                UwbAddress addr = UwbAddress.fromBytes(uwbDlTDoAMeasurements[i].getMacAddress());
-                UwbControlee controlee = uwbSession.getControlee(addr);
-                if (controlee != null) {
-                    controlee.filterMeasurement(rangingMeasurementBuilder);
-                }
-
                 rangingMeasurements.add(rangingMeasurementBuilder.build());
             }
 
@@ -651,7 +641,7 @@ public class UwbSessionNotificationManager {
     private static RangingMeasurement.Builder buildRangingMeasurement(
             byte[] macAddress, int rangingStatus, long elapsedRealtimeNanos, int los) {
         return new RangingMeasurement.Builder()
-                .setRemoteDeviceAddress(UwbAddress.fromBytes(macAddress))
+                .setRemoteDeviceAddress(getComputedMacAddress(macAddress))
                 .setStatus(rangingStatus)
                 .setElapsedRealtimeNanos(elapsedRealtimeNanos)
                 .setLineOfSight(los);
@@ -664,5 +654,12 @@ public class UwbSessionNotificationManager {
                 // TODO: Need to fetch distance FOM once it is added to UCI spec.
                 .setConfidenceLevel(0)
                 .build();
+    }
+
+    private static UwbAddress getComputedMacAddress(byte[] address) {
+        if (!SdkLevel.isAtLeastU()) {
+            return UwbAddress.fromBytes(TlvUtil.getReverseBytes(address));
+        }
+        return UwbAddress.fromBytes(address);
     }
 }
