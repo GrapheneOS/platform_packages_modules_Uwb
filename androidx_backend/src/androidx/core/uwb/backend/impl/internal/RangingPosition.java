@@ -30,6 +30,7 @@ public class RangingPosition {
     private final RangingMeasurement mDistance;
     @Nullable private final RangingMeasurement mAzimuth;
     @Nullable private final RangingMeasurement mElevation;
+    @Nullable private final DlTDoAMeasurement mDlTDoAMeasurement;
     private final long mElapsedRealtimeNanos;
     private final int mRssi;
 
@@ -38,18 +39,25 @@ public class RangingPosition {
             @Nullable RangingMeasurement azimuth,
             @Nullable RangingMeasurement elevation,
             long elapsedRealtimeNanos) {
-        this(distance, azimuth, elevation, elapsedRealtimeNanos, RSSI_UNKNOWN);
+        this(distance,
+                azimuth,
+                elevation,
+                null, // DlTDoAMeasurement
+                elapsedRealtimeNanos,
+                RSSI_UNKNOWN);
     }
 
     public RangingPosition(
             RangingMeasurement distance,
             @Nullable RangingMeasurement azimuth,
             @Nullable RangingMeasurement elevation,
+            @Nullable DlTDoAMeasurement dlTDoAMeasurement,
             long elapsedRealtimeNanos,
             int rssi) {
         this.mDistance = distance;
         this.mAzimuth = azimuth;
         this.mElevation = elevation;
+        this.mDlTDoAMeasurement = dlTDoAMeasurement;
         this.mElapsedRealtimeNanos = elapsedRealtimeNanos;
         this.mRssi = rssi;
     }
@@ -86,6 +94,14 @@ public class RangingPosition {
     @IntRange(from = RSSI_UNKNOWN, to = RSSI_MAX)
     public int getRssiDbm() {
         return mRssi;
+    }
+
+    /**
+     * Gets {@link DlTDoAMeasurement} related to Dl-TDoA, or null if not available
+     */
+    @Nullable
+    public DlTDoAMeasurement getDlTdoaMeasurement() {
+        return mDlTDoAMeasurement;
     }
 
     @Override

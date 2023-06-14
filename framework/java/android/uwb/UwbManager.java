@@ -30,6 +30,7 @@ import android.annotation.SystemApi;
 import android.annotation.SystemService;
 import android.content.Context;
 import android.os.Binder;
+import android.os.Build;
 import android.os.CancellationSignal;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
@@ -63,8 +64,6 @@ import java.util.function.Consumer;
 @SystemService(Context.UWB_SERVICE)
 public final class UwbManager {
     private static final String TAG = "UwbManager";
-    // TODO: Refer to Build.VERSION_CODES when it's available in every branch.
-    private static final int UPSIDE_DOWN_CAKE = 34;
 
     private final Context mContext;
     private final IUwbAdapter mUwbAdapter;
@@ -126,7 +125,6 @@ public final class UwbManager {
         int STATE_CHANGED_REASON_ERROR_UNKNOWN = 4;
 
         /**
-         * @hide
          * Indicates that the state change is due to a system regulation.
          */
         int STATE_CHANGED_REASON_SYSTEM_REGULATION = 5;
@@ -314,7 +312,7 @@ public final class UwbManager {
          * @param payload containing vendor Uci message payload.
          */
         void onVendorUciResponse(
-                @IntRange(from = 9, to = 15) int gid, int oid, @NonNull byte[] payload);
+                @IntRange(from = 0, to = 15) int gid, int oid, @NonNull byte[] payload);
 
         /**
          * Invoked when a vendor specific UCI notification is received.
@@ -354,9 +352,8 @@ public final class UwbManager {
 
     /**
      * Interface for Oem extensions on ongoing session
-     * @hide
      */
-    @RequiresApi(UPSIDE_DOWN_CAKE)
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public interface UwbOemExtensionCallback {
         /**
          * Invoked when session status changes.
@@ -396,8 +393,7 @@ public final class UwbManager {
          * @param pointedTargetBundle pointed target params
          * @return Oem pointed status
          */
-        boolean onCheckPointedTarget(
-                @NonNull PersistableBundle pointedTargetBundle);
+        boolean onCheckPointedTarget(@NonNull PersistableBundle pointedTargetBundle);
     }
 
     /**
@@ -480,14 +476,13 @@ public final class UwbManager {
     }
 
     /**
-     * @hide
      * Register an {@link UwbOemExtensionCallback} to listen for UWB oem extension callbacks
      * <p>The provided callback will be invoked by the given {@link Executor}.
      *
      * @param executor an {@link Executor} to execute given callback
      * @param callback oem implementation of {@link UwbOemExtensionCallback}
      */
-    @RequiresApi(UPSIDE_DOWN_CAKE)
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @RequiresPermission(permission.UWB_PRIVILEGED)
     public void registerUwbOemExtensionCallback(@NonNull @CallbackExecutor Executor executor,
             @NonNull UwbOemExtensionCallback callback) {
@@ -495,7 +490,6 @@ public final class UwbManager {
     }
 
     /**
-     * @hide
      * Unregister the specified {@link UwbOemExtensionCallback}
      *
      * <p>The same {@link UwbOemExtensionCallback} object used when calling
@@ -505,7 +499,7 @@ public final class UwbManager {
      *
      * @param callback oem implementation of {@link UwbOemExtensionCallback}
      */
-    @RequiresApi(UPSIDE_DOWN_CAKE)
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @RequiresPermission(permission.UWB_PRIVILEGED)
     public void unregisterUwbOemExtensionCallback(@NonNull UwbOemExtensionCallback callback) {
         mUwbOemExtensionCallbackListener.unregister(callback);
@@ -1000,19 +994,16 @@ public final class UwbManager {
     @interface SendVendorUciStatus {}
 
     /**
-     * @hide
      * Message Type for UCI Command.
      */
     public static final int MESSAGE_TYPE_COMMAND = 1;
     /**
-     * @hide
      * Message Type for C-APDU (Command - Application Protocol Data Unit),
      * used for communication with secure component.
      */
     public static final int MESSAGE_TYPE_TEST_1 = 4;
 
     /**
-     * @hide
      * Message Type for R-APDU (Response - Application Protocol Data Unit),
      * used for communication with secure component.
      */
@@ -1043,7 +1034,8 @@ public final class UwbManager {
     @NonNull
     @RequiresPermission(permission.UWB_PRIVILEGED)
     public @SendVendorUciStatus int sendVendorUciMessage(
-            @IntRange(from = 9, to = 15) int gid, int oid, @NonNull byte[] payload) {
+            @IntRange(from = 0, to = 15) int gid, int oid, @NonNull byte[] payload) {
+        Objects.requireNonNull(payload, "Payload must not be null");
         try {
             return mUwbAdapter.sendVendorUciMessage(MESSAGE_TYPE_COMMAND, gid, oid, payload);
         } catch (RemoteException e) {
@@ -1052,12 +1044,13 @@ public final class UwbManager {
     }
 
     /**
-     * @hide
-     *
      * Send Vendor specific Uci Messages with custom message type.
      *
      * The format of the UCI messages are defined in the UCI specification. The platform is
      * responsible for fragmenting the payload if necessary.
+     *
+     * Note that mt (message type) is added at the beginning of method parameters as it is more
+     * distinctive than other parameters and was requested from vendor.
      *
      * @param mt Message Type of the command
      * @param gid Group ID of the command. This needs to be one of the vendor reserved GIDs from
@@ -1066,9 +1059,10 @@ public final class UwbManager {
      * @param payload containing vendor Uci message payload
      */
     @NonNull
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @RequiresPermission(permission.UWB_PRIVILEGED)
     public @SendVendorUciStatus int sendVendorUciMessage(@MessageType int mt,
-            @IntRange(from = 9, to = 15) int gid, int oid, @NonNull byte[] payload) {
+            @IntRange(from = 0, to = 15) int gid, int oid, @NonNull byte[] payload) {
         Objects.requireNonNull(payload, "Payload must not be null");
         try {
             return mUwbAdapter.sendVendorUciMessage(mt, gid, oid, payload);
@@ -1109,8 +1103,6 @@ public final class UwbManager {
     }
 
     /**
-     * @hide
-     *
      * Request to get the current {@link UwbActivityEnergyInfo} asynchronously.
      *
      * @param executor the executor that the listener will be invoked on

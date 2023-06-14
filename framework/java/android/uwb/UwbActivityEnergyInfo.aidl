@@ -16,7 +16,4 @@
 
 package android.uwb;
 
-/**
- * @hide
- */
 parcelable UwbActivityEnergyInfo;

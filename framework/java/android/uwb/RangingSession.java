@@ -22,6 +22,7 @@ import android.annotation.NonNull;
 import android.annotation.RequiresPermission;
 import android.annotation.SystemApi;
 import android.os.Binder;
+import android.os.Build;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.util.Log;
@@ -51,9 +52,6 @@ import java.util.concurrent.Executor;
  */
 @SystemApi
 public final class RangingSession implements AutoCloseable {
-    // TODO: Refer to Build.VERSION_CODES when it's available in every branch.
-    private static final int UPSIDE_DOWN_CAKE = 34;
-
     private final String mTag = "Uwb.RangingSession[" + this + "]";
     private final SessionHandle mSessionHandle;
     private final IUwbAdapter mAdapter;
@@ -185,13 +183,10 @@ public final class RangingSession implements AutoCloseable {
 
         /**
          * Indicate insufficient slots per ranging round.
-         * @hide
          */
         int REASON_INSUFFICIENT_SLOTS_PER_RR = 14;
 
         /**
-         * @hide
-         *
          * Indicate that a system regulation caused the change, such as no allowed UWB channels in
          * the country.
          */
@@ -442,12 +437,11 @@ public final class RangingSession implements AutoCloseable {
         default void onServiceConnected(@NonNull PersistableBundle parameters) {}
 
         /**
-         * @hide
-         * Invoked when a response/status is received for active ranging rounds update
+         * Invoked when a response/status is received for active ranging rounds update.
          *
          * @param parameters bundle of ranging rounds update status
          */
-        @RequiresApi(UPSIDE_DOWN_CAKE)
+        @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
         default void onRangingRoundsUpdateDtTagStatus(@NonNull PersistableBundle parameters) {}
     }
 
@@ -760,15 +754,14 @@ public final class RangingSession implements AutoCloseable {
     }
 
     /**
-     * @hide
-     * Update active ranging rounds for DT Tag
+     * Update active ranging rounds for DT Tag.
      *
      * <p> On successfully sending the command,
      * {@link RangingSession.Callback#onRangingRoundsUpdateDtTagStatus(PersistableBundle)}
-     * is invoked
+     * is invoked.
      * @param params Parameters to configure active ranging rounds
      */
-    @RequiresApi(UPSIDE_DOWN_CAKE)
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
     public void updateRangingRoundsDtTag(@NonNull PersistableBundle params) {
         if (mState != State.ACTIVE && mState != State.IDLE) {
@@ -784,15 +777,13 @@ public final class RangingSession implements AutoCloseable {
     }
 
     /**
-     * @hide
-     *
      * Query max application data size which can be sent by UWBS in one ranging round.
      *
      * @throws IllegalStateException, when the ranging session is not in the appropriate state for
      * this API to be called.
      * @return max application data size
      */
-    @RequiresApi(UPSIDE_DOWN_CAKE)
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
     public int queryMaxDataSizeBytes() {
         if (!isOpen()) {
@@ -1161,8 +1152,6 @@ public final class RangingSession implements AutoCloseable {
     }
 
     /**
-     * @hide
-     *
      * Updates the UWB filter engine's pose information. This requires that the call to
      * {@link UwbManager#openRangingSession} indicated an application pose source.
      *

@@ -357,14 +357,9 @@ interface IUwbAdapter {
 
   void updateRangingRoundsDtTag(in SessionHandle sessionHandle, in PersistableBundle parameters);
 
-  /**
-   * @hide
-   */
   void getUwbActivityEnergyInfoAsync(in IOnUwbActivityEnergyInfoListener listener);
 
   /**
-   * @hide
-   *
    * Returns the max Application Data payload size that can be sent by the UWBS in one ranging
    * round.
    */

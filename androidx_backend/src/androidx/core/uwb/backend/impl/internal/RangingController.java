@@ -170,12 +170,12 @@ public class RangingController extends RangingDevice {
         // Reconfigure the session.
         int[] subSessionIdList = mRangingParameters.getUwbConfigId()
                 == CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR
-                ? new int[] {mRangingParameters.getSubSessionId()}
-                : null;
+                        ? new int[] {mRangingParameters.getSubSessionId()}
+                        : null;
         byte[] subSessionKeyInfo = mRangingParameters.getUwbConfigId()
                 == CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR
-                ? mRangingParameters.getSubSessionKeyInfo()
-                : null;
+                        ? mRangingParameters.getSubSessionKeyInfo()
+                        : null;
         boolean success =
                 reconfigureRanging(
                         ConfigurationManager.createReconfigureParams(
@@ -192,17 +192,17 @@ public class RangingController extends RangingDevice {
             if (callback != null) {
                 runOnBackendCallbackThread(
                         () ->
-                                callback.onRangingInitialized(
-                                        UwbDevice.createForAddress(controleeAddress.toBytes())));
+                            callback.onRangingInitialized(
+                                    UwbDevice.createForAddress(controleeAddress.toBytes())));
             }
             mDynamicallyAddedPeers.add(controleeAddress);
         } else {
             if (callback != null) {
                 runOnBackendCallbackThread(
                         () ->
-                                callback.onRangingSuspended(
-                                        UwbDevice.createForAddress(controleeAddress.toBytes()),
-                                        REASON_FAILED_TO_START));
+                            callback.onRangingSuspended(
+                                    UwbDevice.createForAddress(controleeAddress.toBytes()),
+                                    REASON_FAILED_TO_START));
             }
         }
 
@@ -312,9 +312,9 @@ public class RangingController extends RangingDevice {
         if (callback != null) {
             runOnBackendCallbackThread(
                     () ->
-                            callback.onRangingSuspended(
-                                    UwbDevice.createForAddress(controleeAddress.toBytes()),
-                                    REASON_STOP_RANGING_CALLED));
+                        callback.onRangingSuspended(
+                                UwbDevice.createForAddress(controleeAddress.toBytes()),
+                                REASON_STOP_RANGING_CALLED));
         }
         mDynamicallyAddedPeers.remove(controleeAddress);
         return STATUS_OK;

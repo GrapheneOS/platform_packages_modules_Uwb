@@ -624,7 +624,14 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     self._verify_one_to_one_ranging_add_remove_controlee(
         self.initiator, self.responder, initiator_params, responder_params,
         self.new_responder_addr)
-    self.responder.stop_ranging()
+    # Verify session is stopped on the responder because removal of controlee from controller
+    # should result in the controlee automatically stopping.
+    try:
+        self.responder.verify_callback_received("Stopped", timeout=60 * 1)
+    except TimeoutError:
+        asserts.fail(
+            "Should receive ranging stop when the controlee is removed from session"
+        )
     self.initiator.stop_ranging()
 
   def test_ranging_nearby_share_profile_p_sts_add_remove_controlee(self):
@@ -657,7 +664,12 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         self.initiator, self.responder, initiator_params, responder_params,
         self.new_responder_addr, self.p_sts_sub_session_id,
         self.p_sts_sub_session_key)
-    self.responder.stop_ranging()
+    try:
+        self.responder.verify_callback_received("Stopped", timeout=60 * 1)
+    except TimeoutError:
+        asserts.fail(
+            "Should receive ranging stop when the controlee is removed from session"
+        )
     self.initiator.stop_ranging()
 
   def test_open_ranging_with_same_session_id_nearby_share(self):

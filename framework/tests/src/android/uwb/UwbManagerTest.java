@@ -49,6 +49,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 /**
  * Test of {@link UwbManager}.
@@ -268,5 +269,20 @@ public class UwbManagerTest {
         assertThrows(
                 RuntimeException.class, () -> mUwbManager.sendVendorUciMessage(MT, GID, OID,
                         PAYLOAD));
+    }
+
+    @Test
+    public void testGetUwbActivityEnergyInfoAsync() throws Exception {
+        Consumer<UwbActivityEnergyInfo> listener = mock(Consumer.class);
+        // null Executor
+        assertThrows(NullPointerException.class,
+                () -> mUwbManager.getUwbActivityEnergyInfoAsync(null, listener));
+        // null listener
+        assertThrows(NullPointerException.class,
+                () -> mUwbManager.getUwbActivityEnergyInfoAsync(EXECUTOR, null));
+
+        mUwbManager.getUwbActivityEnergyInfoAsync(EXECUTOR, listener);
+        verify(mIUwbAdapter).getUwbActivityEnergyInfoAsync(
+                any(IOnUwbActivityEnergyInfoListener.Stub.class));
     }
 }

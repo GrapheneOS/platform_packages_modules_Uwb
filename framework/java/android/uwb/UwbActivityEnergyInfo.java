@@ -20,6 +20,7 @@ import android.annotation.ElapsedRealtimeLong;
 import android.annotation.IntRange;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
+import android.annotation.SystemApi;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.uwb.UwbManager.AdapterStateCallback.State;
@@ -32,6 +33,7 @@ import java.util.Objects;
  * real-time.
  * @hide
  */
+@SystemApi
 public final class UwbActivityEnergyInfo implements Parcelable {
     private final long mTimeSinceBootMillis;
     private final @State int mStackState;
