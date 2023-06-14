@@ -46,7 +46,7 @@ final class Conversions {
         return new RangingMeasurement(confidenceLevel, (float) value, valid);
     }
 
-    private static boolean isDlTDoAMeasurement(android.uwb.RangingMeasurement measurement) {
+    public static boolean isDlTdoaMeasurement(android.uwb.RangingMeasurement measurement) {
         if (Build.VERSION.SDK_INT <= VERSION_CODES.TIRAMISU) {
             return false;
         }
@@ -62,12 +62,12 @@ final class Conversions {
     @Nullable
     static RangingPosition convertToPosition(android.uwb.RangingMeasurement measurement) {
         RangingMeasurement distance;
-        DlTDoAMeasurement dlTdoaMeasurement = null;
-        if (isDlTDoAMeasurement(measurement)) {
+        DlTdoaMeasurement dlTdoaMeasurement = null;
+        if (isDlTdoaMeasurement(measurement)) {
             com.google.uwb.support.dltdoa.DlTDoAMeasurement
                     dlTDoAMeasurement = com.google.uwb.support.dltdoa.DlTDoAMeasurement.fromBundle(
                     measurement.getRangingMeasurementMetadata());
-            dlTdoaMeasurement = new DlTDoAMeasurement(
+            dlTdoaMeasurement = new DlTdoaMeasurement(
                     dlTDoAMeasurement.getMessageType(),
                     dlTDoAMeasurement.getMessageControl(),
                     dlTDoAMeasurement.getBlockIndex(),
