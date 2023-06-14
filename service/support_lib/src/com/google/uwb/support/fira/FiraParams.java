@@ -409,6 +409,7 @@ public abstract class FiraParams extends Params {
     /** SFD ID */
     @IntDef(
             value = {
+                SFD_ID_VALUE_0,
                 SFD_ID_VALUE_1,
                 SFD_ID_VALUE_2,
                 SFD_ID_VALUE_3,
@@ -416,6 +417,7 @@ public abstract class FiraParams extends Params {
             })
     public @interface SfdIdValue {}
 
+    public static final int SFD_ID_VALUE_0 = 0;
     public static final int SFD_ID_VALUE_1 = 1;
     public static final int SFD_ID_VALUE_2 = 2;
     public static final int SFD_ID_VALUE_3 = 3;
