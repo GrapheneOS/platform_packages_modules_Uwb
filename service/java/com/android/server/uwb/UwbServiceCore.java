@@ -31,6 +31,7 @@ import android.os.PowerManager;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
 import android.os.SystemClock;
+import android.os.Trace;
 import android.util.Log;
 import android.util.Pair;
 import android.uwb.IOnUwbActivityEnergyInfoListener;
@@ -406,10 +407,12 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         if (!isUwbEnabled()) {
             throw new IllegalStateException("Uwb is not enabled");
         }
+        Trace.beginSection("UWB#getSpecificationInfo");
         // TODO(b/211445008): Consolidate to a single uwb thread.
         Pair<Integer, GenericSpecificationParams> specificationParams =
                 mConfigurationManager.getCapsInfo(
                         GenericParams.PROTOCOL_NAME, GenericSpecificationParams.class, chipId);
+        Trace.endSection();
         if (specificationParams.first != UwbUciConstants.STATUS_CODE_OK
                 || specificationParams.second == null)  {
             Log.e(TAG, "Failed to retrieve specification params");
