@@ -47,7 +47,7 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks.Stub {
      * Open a new ranging session
      *
      * @param attributionSource Attribution source to use for the enforcement of
-     *                          {@link android.Manifest.permission#ULTRAWIDEBAND_RANGING} runtime
+     *                          {@link android.Manifest.permission#UWB_RANGING} runtime
      *                          permission.
      * @param params the parameters that define the ranging session
      * @param executor {@link Executor} to run callbacks
