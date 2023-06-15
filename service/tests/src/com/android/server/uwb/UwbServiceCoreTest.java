@@ -377,6 +377,28 @@ public class UwbServiceCoreTest {
         verifyGetCachedSpecificationInfoSuccess();
     }
 
+    @Test
+    public void testEnable_failure() throws Exception {
+        IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
+        when(cb.asBinder()).thenReturn(mock(IBinder.class));
+        mUwbServiceCore.registerAdapterStateCallbacks(cb);
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.UNKNOWN);
+        UwbServiceCore.InitializationFailureListener initFailCb =
+                mock(UwbServiceCore.InitializationFailureListener.class);
+        mUwbServiceCore.addInitializationFailureListener(initFailCb);
+        clearInvocations(cb, initFailCb);
+
+        when(mNativeUwbManager.doInitialize()).thenReturn(false);
+
+        mUwbServiceCore.setEnabled(true);
+        mTestLooper.dispatchAll();
+
+        verify(mNativeUwbManager).doInitialize();
+        assertThat(mUwbServiceCore.getAdapterState()).isEqualTo(AdapterState.STATE_DISABLED);
+        verify(initFailCb).onFailure();
+        verifyNoMoreInteractions(cb, initFailCb);
+    }
 
     @Test
     public void testEnableWithCountryCode_success() throws Exception {
