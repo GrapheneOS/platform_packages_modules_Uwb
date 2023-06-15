@@ -21,6 +21,7 @@ import static android.uwb.UwbManager.MESSAGE_TYPE_COMMAND;
 import static com.android.server.uwb.data.UwbUciConstants.FIRA_VERSION_MAJOR_2;
 import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_OK;
 
+import android.annotation.NonNull;
 import android.content.AttributionSource;
 import android.content.Context;
 import android.os.Handler;
@@ -32,6 +33,7 @@ import android.os.RemoteCallbackList;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.os.Trace;
+import android.util.ArraySet;
 import android.util.Log;
 import android.util.Pair;
 import android.uwb.IOnUwbActivityEnergyInfoListener;
@@ -74,6 +76,7 @@ import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeoutException;
@@ -121,6 +124,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     private IUwbOemExtensionCallback mOemExtensionCallback = null;
     private final Handler mHandler;
     private GenericSpecificationParams mCachedSpecificationParams;
+    private final Set<InitializationFailureListener> mListeners = new ArraySet<>();
 
     public UwbServiceCore(Context uwbApplicationContext, NativeUwbManager nativeUwbManager,
             UwbMetrics uwbMetrics, UwbCountryCode uwbCountryCode,
@@ -154,6 +158,22 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
 
         mUwbTask = new UwbTask(serviceLooper);
         mHandler = new Handler(serviceLooper);
+    }
+
+    /**
+     * Interface for external classes to listen for any initialization failures.
+     * Added to avoid introducing circular dependency between UwbServiceCore & UwbServiceImpl.
+     */
+    public interface InitializationFailureListener {
+        void onFailure();
+    }
+
+    public void addInitializationFailureListener(@NonNull InitializationFailureListener listener) {
+        mListeners.add(listener);
+    }
+    public void removeInitializationFailureListener(
+            @NonNull InitializationFailureListener listener) {
+        mListeners.remove(listener);
     }
 
     public Handler getHandler() {
@@ -808,6 +828,9 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                         takBugReportAfterDeviceError("UWB Bugreport: error enabling UWB");
                         for (String chipId : mUwbInjector.getMultichipData().getChipIds()) {
                             updateState(AdapterStateCallback.STATE_DISABLED, chipId);
+                        }
+                        for (InitializationFailureListener listener : mListeners) {
+                            listener.onFailure();
                         }
                     } else {
                         Log.i(TAG, "Initialization success");
