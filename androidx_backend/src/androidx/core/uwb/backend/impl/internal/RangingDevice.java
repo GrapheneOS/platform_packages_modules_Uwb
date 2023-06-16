@@ -25,6 +25,8 @@ import static androidx.core.uwb.backend.impl.internal.Utils.STATUS_OK;
 import static androidx.core.uwb.backend.impl.internal.Utils.TAG;
 import static androidx.core.uwb.backend.impl.internal.Utils.UWB_SYSTEM_CALLBACK_FAILURE;
 
+import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_DT_TAG;
+
 import static java.util.Objects.requireNonNull;
 
 import android.annotation.WorkerThread;
@@ -39,6 +41,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.common.hash.Hashing;
+import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 
 import java.util.Arrays;
@@ -205,7 +208,7 @@ public abstract class RangingDevice {
 
 
             UwbAddress peerAddress = UwbAddress.fromBytes(remoteAddressBytes);
-            if (!isKnownPeer(peerAddress)) {
+            if (!isKnownPeer(peerAddress) && !Conversions.isDlTdoaMeasurement(measurement)) {
                 Log.w(TAG,
                         String.format("Received ranging data from unknown peer %s.", peerAddress));
                 continue;
@@ -340,6 +343,12 @@ public abstract class RangingDevice {
                             () -> onRangingDataReceived(rangingReport, callback));
                 }
             }
+            @WorkerThread
+            @Override
+            public void onRangingRoundsUpdateDtTagStatus(PersistableBundle params) {
+                // Failure to set ranging rounds is not handled.
+                mOpAsyncCallbackRunner.complete(true);
+            }
         };
     }
 
@@ -387,21 +396,21 @@ public abstract class RangingDevice {
             return INVALID_API_CALL;
         }
 
-        PersistableBundle parameters = getOpenSessionParams().toBundle();
-        printStartRangingParameters(parameters);
+        FiraOpenSessionParams openSessionParams = getOpenSessionParams();
+        printStartRangingParameters(openSessionParams.toBundle());
         mBackendCallbackExecutor = backendCallbackExecutor;
         boolean success =
                 mOpAsyncCallbackRunner.execOperation(
                         () -> {
                             if (mChipId != null) {
                                 mUwbManager.openRangingSession(
-                                        parameters,
+                                        openSessionParams.toBundle(),
                                         mSystemCallbackExecutor,
                                         convertCallback(callback),
                                         mChipId);
                             } else {
                                 mUwbManager.openRangingSession(
-                                        parameters,
+                                        openSessionParams.toBundle(),
                                         mSystemCallbackExecutor,
                                         convertCallback(callback));
                             }
@@ -417,9 +426,23 @@ public abstract class RangingDevice {
             return STATUS_OK;
         }
 
-        success =
+        if (openSessionParams.getDeviceRole() == RANGING_DEVICE_DT_TAG) {
+            // Setting default ranging rounds value.
+            DlTDoARangingRoundsUpdate rangingRounds =
+                    new DlTDoARangingRoundsUpdate.Builder()
+                            .setSessionId(openSessionParams.getSessionId())
+                            .setNoOfRangingRounds(1)
+                            .setRangingRoundIndexes(new byte[] {0})
+                            .build();
+            success =
                 mOpAsyncCallbackRunner.execOperation(
-                        () -> mRangingSession.start(new PersistableBundle()), "Start ranging");
+                    () -> mRangingSession.updateRangingRoundsDtTag(rangingRounds.toBundle()),
+                            "Update ranging rounds for Dt Tag");
+        }
+
+        success =
+            mOpAsyncCallbackRunner.execOperation(
+                () -> mRangingSession.start(new PersistableBundle()), "Start ranging");
 
         result = mOpAsyncCallbackRunner.getResult();
         requireNonNull(mBackendCallbackExecutor);
