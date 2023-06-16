@@ -16,8 +16,11 @@
 
 package androidx.core.uwb.backend.impl.internal;
 
+import java.util.Arrays;
+import java.util.Locale;
+
 /** Downlink-TDoA measurements */
-public class DlTDoAMeasurement {
+public class DlTdoaMeasurement {
     private final int mMessageType;
     private final int mMessageControl;
     private final int mBlockIndex;
@@ -33,7 +36,7 @@ public class DlTDoAMeasurement {
     private final byte[] mAnchorLocation;
     private final byte[] mActiveRangingRounds;
 
-    public DlTDoAMeasurement(int messageType, int messageControl, int blockIndex, int roundIndex,
+    public DlTdoaMeasurement(int messageType, int messageControl, int blockIndex, int roundIndex,
             int nLoS, long txTimestamp, long rxTimestamp, float anchorCfo, float cfo,
             long initiatorReplyTime, long responderReplyTime, int initiatorResponderTof,
             byte[] anchorLocation, byte[] activeRangingRounds) {
@@ -107,5 +110,28 @@ public class DlTDoAMeasurement {
 
     public byte[] getActiveRangingRounds() {
         return mActiveRangingRounds;
+    }
+
+
+    @Override
+    public String toString() {
+        return String.format(Locale.US, " | messageType : %d", mMessageType)
+                + String.format(Locale.US, " | messageControl : %d", mMessageControl)
+                + String.format(Locale.US, " | blockIndex : %d", mBlockIndex)
+                + String.format(Locale.US, " | roundIndex : %d", mRoundIndex)
+                + String.format(Locale.US, " | nLoS : %d", mNLoS)
+                + String.format(Locale.US, " | txTimestamp : %d", mTxTimestamp)
+                + String.format(Locale.US, " | rxTimestamp : %d", mRxTimestamp)
+                + String.format(Locale.US, " | anchorCfo : %f", mAnchorCfo)
+                + String.format(Locale.US, " | cfo : %f", mCfo)
+                + String.format(Locale.US, " | initiatorReplyTime : %d", mInitiatorReplyTime)
+                + String.format(Locale.US, " | responderReplyTime : %d", mResponderReplyTime)
+                + String.format(Locale.US, " | initiatorResponderTof : %d",
+                                mInitiatorResponderTof)
+                + String.format(Locale.US, " | anchorLocation : %s",
+                Arrays.toString(mAnchorLocation))
+                + String.format(
+                Locale.US, " | activeRangingRounds : %s",
+                                Arrays.toString(mActiveRangingRounds));
     }
 }
