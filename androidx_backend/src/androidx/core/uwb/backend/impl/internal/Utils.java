@@ -43,8 +43,8 @@ public final class Utils {
         CONFIG_PROVISIONED_MULTICAST_DS_TWR,
         CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_AOA,
         CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR,
-        CONFIG_DL_TDOA_DT_TAG,
         CONFIG_MULTICAST_DS_TWR_NO_AOA,
+        CONFIG_DL_TDOA_DT_TAG,
     })
     public @interface UwbConfigId {}
 
@@ -73,11 +73,11 @@ public final class Utils {
     /** Same as {@code CONFIG_ID_2}, except P-STS individual controlee key mode is enabled. */
     public static final int CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR = 7;
 
-    /** FiRa- defined Downlink-TDoA for DT-Tag ranging */
-    public static final int CONFIG_DL_TDOA_DT_TAG = 8;
-
     /** Same as {@code CONFIG_ID_3}, except not unicast @Hide */
     public static final int CONFIG_MULTICAST_DS_TWR_NO_AOA = 1000;
+
+    /** FiRa- defined Downlink-TDoA for DT-Tag ranging */
+    public static final int CONFIG_DL_TDOA_DT_TAG = 1001;
 
     @IntDef({
         INFREQUENT,

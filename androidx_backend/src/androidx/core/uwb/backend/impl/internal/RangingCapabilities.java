@@ -16,6 +16,7 @@
 
 package androidx.core.uwb.backend.impl.internal;
 
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_DL_TDOA_DT_TAG;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_MULTICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_MULTICAST_DS_TWR_NO_AOA;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_UNICAST_DS_TWR;
@@ -41,7 +42,8 @@ public class RangingCapabilities {
                     CONFIG_UNICAST_DS_TWR,
                     CONFIG_MULTICAST_DS_TWR,
                     CONFIG_UNICAST_DS_TWR_NO_AOA,
-                    CONFIG_MULTICAST_DS_TWR_NO_AOA);
+                    CONFIG_MULTICAST_DS_TWR_NO_AOA,
+                    CONFIG_DL_TDOA_DT_TAG);
 
     private final boolean mSupportsDistance;
     private final boolean mSupportsAzimuthalAngle;

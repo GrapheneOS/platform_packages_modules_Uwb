@@ -30,7 +30,7 @@ public class RangingPosition {
     private final RangingMeasurement mDistance;
     @Nullable private final RangingMeasurement mAzimuth;
     @Nullable private final RangingMeasurement mElevation;
-    @Nullable private final DlTDoAMeasurement mDlTDoAMeasurement;
+    @Nullable private final DlTdoaMeasurement mDlTdoaMeasurement;
     private final long mElapsedRealtimeNanos;
     private final int mRssi;
 
@@ -42,7 +42,7 @@ public class RangingPosition {
         this(distance,
                 azimuth,
                 elevation,
-                null, // DlTDoAMeasurement
+                null, // DlTdoaMeasurement
                 elapsedRealtimeNanos,
                 RSSI_UNKNOWN);
     }
@@ -51,13 +51,13 @@ public class RangingPosition {
             RangingMeasurement distance,
             @Nullable RangingMeasurement azimuth,
             @Nullable RangingMeasurement elevation,
-            @Nullable DlTDoAMeasurement dlTDoAMeasurement,
+            @Nullable DlTdoaMeasurement dlTdoaMeasurement,
             long elapsedRealtimeNanos,
             int rssi) {
         this.mDistance = distance;
         this.mAzimuth = azimuth;
         this.mElevation = elevation;
-        this.mDlTDoAMeasurement = dlTDoAMeasurement;
+        this.mDlTdoaMeasurement = dlTdoaMeasurement;
         this.mElapsedRealtimeNanos = elapsedRealtimeNanos;
         this.mRssi = rssi;
     }
@@ -97,11 +97,11 @@ public class RangingPosition {
     }
 
     /**
-     * Gets {@link DlTDoAMeasurement} related to Dl-TDoA, or null if not available
+     * Gets {@link DlTdoaMeasurement} related to Dl-TDoA, or null if not available
      */
     @Nullable
-    public DlTDoAMeasurement getDlTdoaMeasurement() {
-        return mDlTDoAMeasurement;
+    public DlTdoaMeasurement getDlTdoaMeasurement() {
+        return mDlTdoaMeasurement;
     }
 
     @Override
@@ -119,6 +119,9 @@ public class RangingPosition {
             formatted += String.format(Locale.US, " | elevation: %f", mElevation.getValue());
         }
         formatted += String.format(Locale.US, " | rssi: %d", mRssi);
+        if (mDlTdoaMeasurement != null) {
+            formatted += String.format(Locale.US, " | dlTdoa: %s", mDlTdoaMeasurement);
+        }
         return formatted;
     }
 }
