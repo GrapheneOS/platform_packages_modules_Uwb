@@ -265,7 +265,7 @@ public class UwbConfig {
         /** UCI spec default: 30 slots per ranging round. */
         private int mSlotsPerRangingRound = 30;
 
-        /** UCI spec default: RANGING_INTERVAL 200 ms */
+        /** UCI spec default: RANGING_INTERVAL(Fira 2.0: RANGING_DURATION) 200 ms */
         private int mRangingIntervalMs = 200;
 
         /** UCI spec default: Channel 9, which is the only mandatory channel. */
