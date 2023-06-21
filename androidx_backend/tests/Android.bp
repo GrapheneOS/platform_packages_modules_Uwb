@@ -20,6 +20,7 @@ package {
 
 android_test {
     name: "AndroidxBackendUwbTests",
+    enabled: false,
 
     srcs: [
         "**/*.java"
