@@ -23,6 +23,7 @@ import static androidx.core.uwb.backend.impl.internal.Utils.INFREQUENT;
 import static androidx.core.uwb.backend.impl.internal.Utils.RANGE_DATA_NTF_ENABLE_PROXIMITY_EDGE_TRIG;
 
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
+import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_EDGE_TRIG;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_INITIATOR;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLLER;
 import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_PROVISIONED;
@@ -140,5 +141,39 @@ public class ConfigurationManagerTest {
     public void testIsUnicast() {
         assertTrue(ConfigurationManager.isUnicast(CONFIG_UNICAST_DS_TWR));
         assertFalse(ConfigurationManager.isUnicast(CONFIG_MULTICAST_DS_TWR));
+    }
+
+    @Test
+    public void testCreateReconfigureParamsBlockStriding() {
+        int blockStrideLength = 5;
+        FiraRangingReconfigureParams params =
+                ConfigurationManager.createReconfigureParamsBlockStriding(blockStrideLength);
+        assertNull(params.getAction());
+        assertEquals((int) params.getBlockStrideLength(), blockStrideLength);
+        assertNull(params.getAddressList());
+        assertNull(params.getRangeDataNtfConfig());
+        assertNull(params.getSubSessionIdList());
+    }
+
+    @Test
+    public void testCreateReconfigureParamsRangeDataNtf() {
+        int proximityNear = 50;
+        int proximityFar = 100;
+        FiraRangingReconfigureParams params =
+                ConfigurationManager.createReconfigureParamsRangeDataNtf(
+                        new UwbRangeDataNtfConfig.Builder()
+                                .setRangeDataConfigType(RANGE_DATA_NTF_ENABLE_PROXIMITY_EDGE_TRIG)
+                                .setNtfProximityNear(proximityNear)
+                                .setNtfProximityFar(proximityFar)
+                                .build());
+
+        assertNull(params.getAction());
+        assertEquals((int) params.getRangeDataNtfConfig(),
+                RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_EDGE_TRIG);
+        assertEquals((int) params.getRangeDataProximityNear(), proximityNear);
+        assertEquals((int) params.getRangeDataProximityFar(), proximityFar);
+        assertNull(params.getBlockStrideLength());
+        assertNull(params.getAddressList());
+        assertNull(params.getSubSessionIdList());
     }
 }

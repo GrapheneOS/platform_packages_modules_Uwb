@@ -212,6 +212,9 @@ public final class Utils {
      */
     public static final int UWB_SYSTEM_CALLBACK_FAILURE = 5;
 
+    /** Failed to reconfigure an existing ranging session. */
+    public static final int UWB_RECONFIGURATION_FAILURE = 6;
+
     static {
         setRangingTimingParams(
                 CONFIG_UNICAST_DS_TWR,
