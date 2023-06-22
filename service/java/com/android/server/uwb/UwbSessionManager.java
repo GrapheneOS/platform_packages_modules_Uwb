@@ -956,7 +956,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     (FiraRangingReconfigureParams) params;
             Log.i(TAG, "reconfigure() - update reconfigure params: "
                     + rangingReconfigureParams);
-            uwbSession.updateFiraParamsOnReconfigure(rangingReconfigureParams);
+            // Do not update mParams if this was triggered by framework.
+            if (!triggeredByFgStateChange) {
+                uwbSession.updateFiraParamsOnReconfigure(rangingReconfigureParams);
+            }
         }
         mEventTask.execute(SESSION_RECONFIG_RANGING,
                 new ReconfigureEventParams(uwbSession, params, triggeredByFgStateChange));
@@ -1793,7 +1796,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         private int mOperationType = OPERATION_TYPE_INIT_SESSION;
         private final String mChipId;
         private boolean mHasNonPrivilegedFgApp = false;
-        private @FiraParams.RangeDataNtfConfig Integer mOrigRangeDataNtfConfig;
         private long mRangingErrorStreakTimeoutMs = RANGING_RESULT_ERROR_NO_TIMEOUT;
         // Use a Map<RemoteMacAddress, SortedMap<SequenceNumber, ReceivedDataInfo>> to store all
         // the Application payload data packets received in this (active) UWB Session.
@@ -2317,18 +2319,20 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         }
 
         public void reconfigureFiraSessionOnFgStateChange() {
-            if (mOrigRangeDataNtfConfig == null) {
-                mOrigRangeDataNtfConfig = ((FiraOpenSessionParams) mParams).getRangeDataNtfConfig();
-            }
             // Reconfigure the session to change notification control when the app transitions
             // from fg to bg and vice versa.
-            FiraRangingReconfigureParams reconfigureParams =
-                    new FiraRangingReconfigureParams.Builder()
-                    // If app is in fg, use the configured ntf control, else disable.
-                    .setRangeDataNtfConfig(mHasNonPrivilegedFgApp
-                            // use to retrieve the latest configured ntf control.
-                            ? mOrigRangeDataNtfConfig : FiraParams.RANGE_DATA_NTF_CONFIG_DISABLE)
-                    .build();
+            FiraRangingReconfigureParams.Builder builder =
+                    new FiraRangingReconfigureParams.Builder();
+            // If app is in fg, use the configured ntf control, else disable.
+            if (mHasNonPrivilegedFgApp) {
+                FiraOpenSessionParams params = (FiraOpenSessionParams) mParams;
+                builder.setRangeDataNtfConfig(params.getRangeDataNtfConfig())
+                        .setRangeDataProximityNear(params.getRangeDataNtfProximityNear())
+                        .setRangeDataProximityFar(params.getRangeDataNtfProximityFar());
+            } else {
+                builder.setRangeDataNtfConfig(FiraParams.RANGE_DATA_NTF_CONFIG_DISABLE);
+            }
+            FiraRangingReconfigureParams reconfigureParams = builder.build();
             reconfigureInternal(
                     mSessionHandle, reconfigureParams, true /* triggeredByFgStateChange */);
 
