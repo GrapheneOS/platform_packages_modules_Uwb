@@ -30,7 +30,7 @@ import java.util.Objects;
  */
 public class NullPositionFilter implements IPositionFilter {
     private Pose mLastPose;
-    private SphericalVector mValue;
+    private SphericalVector.Annotated mValue;
 
     /**
      * Adds a value to the filter.
@@ -41,7 +41,7 @@ public class NullPositionFilter implements IPositionFilter {
      *                operates. This is in milliseconds, relative to any consistent epoch.
      */
     @Override
-    public void add(@NonNull SphericalVector value, long timeMs) {
+    public void add(@NonNull SphericalVector.Annotated value, long timeMs) {
         Objects.requireNonNull(value);
         mValue = value;
     }
@@ -54,7 +54,7 @@ public class NullPositionFilter implements IPositionFilter {
      * @return A vector representing the last added value, compensated by any pose changes.
      */
     @Override
-    public SphericalVector compute(long timeMs) {
+    public SphericalVector.Annotated compute(long timeMs) {
         return mValue;
     }
 
@@ -82,7 +82,8 @@ public class NullPositionFilter implements IPositionFilter {
             Vector3 vecFromNewCam = deltaPose.transformPoint(vecFromOldCam);
 
             // New azimuth, elevation and distance based on this new tag position.
-            mValue = SphericalVector.fromCartesian(vecFromNewCam);
+            mValue = SphericalVector.fromCartesian(vecFromNewCam).toAnnotated()
+                .copyFomFrom(mValue);
         }
         mLastPose = newPose;
     }

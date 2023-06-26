@@ -22,7 +22,7 @@ import static com.google.common.truth.Truth.assertThat;
 import com.android.server.uwb.correction.math.Pose;
 import com.android.server.uwb.correction.math.Quaternion;
 import com.android.server.uwb.correction.math.SphericalVector;
-import com.android.server.uwb.correction.math.SphericalVector.Sparse;
+import com.android.server.uwb.correction.math.SphericalVector.Annotated;
 import com.android.server.uwb.correction.math.Vector3;
 import com.android.server.uwb.correction.pose.IPoseSource.Capabilities;
 import com.android.server.uwb.correction.pose.NullPoseSource;
@@ -38,12 +38,12 @@ public class ElevationPrimerTest {
         NullPoseSource nps = new NullPoseSource();
         nps.setCapabilities(EnumSet.of(Capabilities.UPRIGHT));
 
-        Sparse input = SphericalVector.fromDegrees(35, 0, 10).toSparse();
-        Sparse result = primer.prime(input, null, nps, 0);
+        Annotated input = SphericalVector.fromDegrees(35, 0, 10).toAnnotated();
+        Annotated result = primer.prime(input, null, nps, 0);
 
         assertThat(result.hasElevation).isTrue();
         // Verify that, since elevation was already available, it was unchanged.
-        assertThat(result.vector.elevation).isEqualTo(input.vector.elevation);
+        assertThat(result.elevation).isEqualTo(input.elevation);
     }
 
     @Test
@@ -51,10 +51,10 @@ public class ElevationPrimerTest {
         ElevationPrimer primer = new ElevationPrimer();
         NullPoseSource nps = new NullPoseSource(); // Note: no upright capability.
 
-        Sparse input = SphericalVector.fromDegrees(35, 0, 10)
-                .toSparse(true, false, true);
+        Annotated input = SphericalVector.fromDegrees(35, 0, 10)
+                .toAnnotated(true, false, true);
 
-        Sparse result = primer.prime(input, null, nps, 0);
+        Annotated result = primer.prime(input, null, nps, 0);
         // Pose is not capable of guessing elevation.
         assertThat(result.hasElevation).isFalse();
 
@@ -71,14 +71,14 @@ public class ElevationPrimerTest {
         float rads = (float) Math.toRadians(-5);
         nps.changePose(new Pose(Vector3.ORIGIN, Quaternion.yawPitchRoll(0, rads, 0)));
 
-        Sparse input = SphericalVector.fromDegrees(35, 0, 10)
-                .toSparse(true, false, true);
+        Annotated input = SphericalVector.fromDegrees(35, 0, 10)
+                .toAnnotated(true, false, true);
         SphericalVector prediction = SphericalVector.fromDegrees(5, 6, 7);
-        Sparse result = primer.prime(input, prediction, nps, 0);
+        Annotated result = primer.prime(input, prediction, nps, 0);
 
         assertThat(result.hasElevation).isTrue();
         // The phone pose is slightly facing down, so the elevation should be slightly up.
-        assertClose(result.vector.elevation, -rads);
+        assertClose(result.elevation, -rads);
     }
 
     @Test
@@ -91,13 +91,13 @@ public class ElevationPrimerTest {
 
         // There is an elevation, but it's zero because the hardware doesn't support it. Make sure
         // the elevation primer replaces this.
-        Sparse input = SphericalVector.fromDegrees(35, 0, 10)
-                .toSparse(true, true, true);
+        Annotated input = SphericalVector.fromDegrees(35, 0, 10)
+                .toAnnotated(true, true, true);
         SphericalVector prediction = SphericalVector.fromDegrees(5, 6, 7);
-        Sparse result = primer.prime(input, prediction, nps, 0);
+        Annotated result = primer.prime(input, prediction, nps, 0);
 
         assertThat(result.hasElevation).isTrue();
         // The phone pose is slightly facing down, so the elevation should be slightly up.
-        assertClose(result.vector.elevation, -rads);
+        assertClose(result.elevation, -rads);
     }
 }

@@ -91,4 +91,26 @@ public class UwbControleeTest {
         TestHelpers.assertClose(newMeasure.getAngleOfArrivalMeasurement().getAzimuth()
                 .getRadians(), testRads);
     }
+
+    @Test
+    public void testNonAoaMeasurement() {
+        final double testDist = 2;
+        DistanceMeasurement dm = new DistanceMeasurement.Builder()
+                .setMeters(testDist)
+                .setErrorMeters(0.0)
+                .setConfidenceLevel(1.0)
+                .build();
+
+        RangingMeasurement.Builder rm = new RangingMeasurement.Builder()
+                .setDistanceMeasurement(dm)
+                .setStatus(RANGING_STATUS_SUCCESS)
+                .setRemoteDeviceAddress(UWB_ADDRESS)
+                .setElapsedRealtimeNanos(100);
+
+        // Filtering a single measurement value should just yield that same value.
+        mControlee.filterMeasurement(rm);
+
+        RangingMeasurement newMeasure = rm.build();
+        assertThat(newMeasure.getAngleOfArrivalMeasurement()).isNull();
+    }
 }
