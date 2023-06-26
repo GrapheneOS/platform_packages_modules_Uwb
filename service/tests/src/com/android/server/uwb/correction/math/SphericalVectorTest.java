@@ -122,31 +122,31 @@ public class SphericalVectorTest {
     }
 
     @Test
-    public void sparse() {
+    public void annotated() {
         SphericalVector vec = SphericalVector.fromDegrees(10, 15, 20);
-        SphericalVector.Sparse sparse = vec.toSparse();
+        SphericalVector.Annotated sparse = vec.toAnnotated();
 
-        assertClose(sparse.vector, vec);
+        assertClose(sparse, vec);
         assertThat(sparse.isComplete()).isTrue();
-        assertThat(sparse.toString().compareTo(vec.toString())).isEqualTo(0);
+        assertEquals("[⦡  10.0 100%,⦨ 15.0 100%,⤠20.00 100%]", sparse.toString());
 
-        sparse = vec.toSparse(true, false, false);
+        sparse = vec.toAnnotated(true, false, false);
         assertThat(sparse.hasAzimuth).isTrue();
         assertThat(sparse.hasElevation).isFalse();
         assertThat(sparse.hasDistance).isFalse();
-        assertEquals("[⦡  10.0,⦨  x  ,⤠  x  ]", sparse.toString());
+        assertEquals("[⦡  10.0 100%,⦨  x  ,⤠  x  ]", sparse.toString());
 
-        sparse = vec.toSparse(false, true, false);
+        sparse = vec.toAnnotated(false, true, false);
         assertThat(sparse.hasAzimuth).isFalse();
         assertThat(sparse.hasElevation).isTrue();
         assertThat(sparse.hasDistance).isFalse();
-        assertEquals("[⦡   x  ,⦨ 15.0,⤠  x  ]", sparse.toString());
+        assertEquals("[⦡   x  ,⦨ 15.0 100%,⤠  x  ]", sparse.toString());
 
-        sparse = vec.toSparse(false, false, true);
+        sparse = vec.toAnnotated(false, false, true);
         assertThat(sparse.hasAzimuth).isFalse();
         assertThat(sparse.hasElevation).isFalse();
         assertThat(sparse.hasDistance).isTrue();
-        assertEquals("[⦡   x  ,⦨  x  ,⤠20.00]", sparse.toString());
+        assertEquals("[⦡   x  ,⦨  x  ,⤠20.00 100%]", sparse.toString());
     }
 
     @Test

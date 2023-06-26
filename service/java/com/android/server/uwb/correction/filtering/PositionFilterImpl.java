@@ -20,6 +20,7 @@ import androidx.annotation.Nullable;
 
 import com.android.server.uwb.correction.math.Pose;
 import com.android.server.uwb.correction.math.SphericalVector;
+import com.android.server.uwb.correction.math.SphericalVector.Annotated;
 import com.android.server.uwb.correction.math.Vector3;
 import com.android.server.uwb.correction.pose.IPoseSource;
 
@@ -58,11 +59,17 @@ public class PositionFilterImpl implements IPositionFilter {
      * order in which the filter operates on values.
      */
     @Override
-    public void add(@NonNull SphericalVector value, long timeMs) {
+    public void add(@NonNull SphericalVector.Annotated value, long timeMs) {
         Objects.requireNonNull(value);
-        mAzimuthFilter.add(value.azimuth, timeMs);
-        mElevationFilter.add(value.elevation, timeMs);
-        mDistanceFilter.add(value.distance, timeMs);
+        if (value.hasAzimuth && value.azimuthFom != 0.0) {
+            mAzimuthFilter.add(value.azimuth, timeMs, value.azimuthFom);
+        }
+        if (value.hasElevation && value.elevationFom != 0.0) {
+            mElevationFilter.add(value.elevation, timeMs, value.elevationFom);
+        }
+        if (value.hasDistance && value.distanceFom != 0.0) {
+            mDistanceFilter.add(value.distance, timeMs, value.distanceFom);
+        }
     }
 
     /**
@@ -71,16 +78,23 @@ public class PositionFilterImpl implements IPositionFilter {
      * @param timeMs The time for which the UWB prediction should be computed, in ms since boot.
      */
     @Override
-    public SphericalVector compute(long timeMs) {
+    public SphericalVector.Annotated compute(long timeMs) {
         // Cartesian extrapolation would happen here, such as target movement.
         // Spherical extrapolation can happen in the filter because it operates on
         // spherical values.
 
-        return SphericalVector.fromRadians(
-                mAzimuthFilter.getResult(timeMs).value,
-                mElevationFilter.getResult(timeMs).value,
-                mDistanceFilter.getResult(timeMs).value
-        );
+        Sample azimuth = mAzimuthFilter.getResult(timeMs);
+        Sample elevation = mElevationFilter.getResult(timeMs);
+        Sample distance = mDistanceFilter.getResult(timeMs);
+        Annotated result = SphericalVector.fromRadians(
+                azimuth.value,
+                elevation.value,
+                distance.value
+        ).toAnnotated();
+        result.azimuthFom = azimuth.fom;
+        result.elevationFom = elevation.fom;
+        result.distanceFom = distance.fom;
+        return result;
     }
 
     /**
