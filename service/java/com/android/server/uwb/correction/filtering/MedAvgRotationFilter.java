@@ -51,9 +51,10 @@ public class MedAvgRotationFilter extends MedAvgFilter {
      * @return The average of the samples, normalized within +/-PI.
      */
     @Override
-    protected Sample averageSortedSamples(Collection<Sample> samples) {
-        Sample result = super.averageSortedSamples(samples);
-        return new Sample(MathHelper.normalizeRadians(result.value), result.timeMs);
+    protected Sample averageSamples(Collection<Sample> samples) {
+        Sample result = super.averageSamples(samples);
+        result.value = MathHelper.normalizeRadians(result.value);
+        return result;
     }
 
     /**
@@ -92,7 +93,7 @@ public class MedAvgRotationFilter extends MedAvgFilter {
         for (index = 0; index < size; index++) {
             Sample sample = result.get(index);
             if (sample.value < lowestAngle) {
-                result.set(index, new Sample(sample.value + 2 * F_PI, sample.timeMs));
+                result.set(index, new Sample(sample.value + 2 * F_PI, sample.timeMs, sample.fom));
             }
         }
 

@@ -27,8 +27,9 @@ public interface IFilter {
      * @param timeMs When the value occurred, in ms since boot. Used to determine the latency
      * introduced by the filter. Note that this has no effect on the order in which the filter
      * operates on values.
+     * @param fom The figure of merit for the reading.
      */
-    void add(float value, long timeMs);
+    void add(float value, long timeMs, double fom);
 
     /**
      * Alters the state of the filter such that it anticipates a change by the given amount.

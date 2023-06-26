@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A Median, Average filter.  The filter has an adjustable median window and
@@ -35,7 +36,7 @@ public class MedAvgFilter implements IFilter {
     @NonNull
     private final ArrayDeque<Sample> mWindow = new ArrayDeque<>();
     @NonNull
-    private Sample mResult = new Sample(0F, 0);
+    private Sample mResult = new Sample(0F, 0, 0);
 
     /**
      * Creates a new instance of the MedAvgFilter class.
@@ -111,8 +112,8 @@ public class MedAvgFilter implements IFilter {
      * operates on values.
      */
     @Override
-    public void add(float value, long timeMs) {
-        mWindow.addLast(new Sample(value, timeMs));
+    public void add(float value, long timeMs, double fom) {
+        mWindow.addLast(new Sample(value, timeMs, fom));
         while (mWindow.size() > mWindowSize) {
             mWindow.removeFirst();
         }
@@ -125,7 +126,7 @@ public class MedAvgFilter implements IFilter {
      */
     protected void remap(RemapFunction selector) {
         mWindow.forEach(s -> s.value = selector.run(s.value));
-        mResult = new Sample(selector.run(mResult.value), mResult.timeMs);
+        mResult = new Sample(selector.run(mResult.value), mResult.timeMs, mResult.fom);
     }
 
     /**
@@ -160,7 +161,7 @@ public class MedAvgFilter implements IFilter {
             // Note that this comes AFTER the sort. MedAvgRotationFilterFilter's averaging routine
             // requires that samples are sorted, as it sorts in a special way to respect angle
             // rollover.
-            return averageSortedSamples(sorted);
+            return averageSamples(sorted);
         }
 
         int throwAway = Math.round(count * (1 - mCut) / 2);
@@ -169,7 +170,7 @@ public class MedAvgFilter implements IFilter {
             throwAway--;
         }
 
-        return averageSortedSamples(sorted.subList(throwAway, count - throwAway));
+        return averageSamples(sorted.subList(throwAway, count - throwAway));
     }
 
     /**
@@ -189,28 +190,37 @@ public class MedAvgFilter implements IFilter {
      * @param samples The list of samples.
      * @return A sample containing the average value and time of the samples in the list.
      */
-    protected Sample averageSortedSamples(Collection<Sample> samples) {
-        int size = samples.size();
-        if (size == 0) {
+    protected Sample averageSamples(Collection<Sample> samples) {
+        if (samples.size() == 0 || samples.stream().anyMatch(Objects::isNull)) {
             return null; // Average can't be computed.
         }
         float valueSum = 0F;
+        double fomSum = 0.0;
+        long instantSum = 0;
 
         // Using a relevant epoch keeps the values small and therefore decreases the risk of
         //  overflow.
         long instantEpoch = samples.stream().findFirst().get().timeMs;
-        long instantSum = 0;
-        for (Sample s: samples) {
-            if (s == null) {
-                // there should never be a null. It's not worth decrementing size and checking for
-                // size == 0 again.
-                return null; // Average can't be computed.
-            }
-            valueSum += s.value;
-            instantSum += s.timeMs - instantEpoch;
+
+        // If the FOM of all values is 1, fomWeight will be the size of the array.
+        float fomWeight = (float) samples.stream().mapToDouble(s -> s.fom).sum();
+
+        if (fomWeight == 0) {
+            // Every reading has 0 confidence. Can't produce an average. Also, this shouldn't
+            // happen because FOM = 0 readings should be ignored by the engine.
+            return null;
         }
-        float avg = valueSum / size;
-        return new Sample(avg, instantEpoch + instantSum / size);
+        for (Sample s: samples) {
+            // Sum up all samples to be averaged, multiplied by their confidence weight.
+            valueSum += s.value * (float) s.fom;
+            instantSum += (long) ((s.timeMs - instantEpoch) * s.fom);
+            fomSum += s.fom * s.fom;
+        }
+        return new Sample(
+            valueSum / fomWeight,
+            instantEpoch + (long) (instantSum / fomWeight),
+            fomSum / fomWeight
+        );
     }
 
     /**

@@ -19,7 +19,7 @@ import static java.lang.Math.toRadians;
 
 import com.android.server.uwb.correction.TestHelpers;
 import com.android.server.uwb.correction.math.SphericalVector;
-import com.android.server.uwb.correction.math.SphericalVector.Sparse;
+import com.android.server.uwb.correction.math.SphericalVector.Annotated;
 
 import com.google.common.truth.Truth;
 
@@ -29,21 +29,21 @@ public class AoaPrimerTest {
     @Test
     public void conversionTest() {
         AoaPrimer primer = new AoaPrimer();
-        Sparse sv = SphericalVector.fromDegrees(35, 0, 10)
-                .toSparse();
-        Sparse result = primer.prime(sv, null, null, 0);
+        Annotated sv = SphericalVector.fromDegrees(35, 0, 10)
+                .toAnnotated();
+        Annotated result = primer.prime(sv, null, null, 0);
 
         // With zero elevation, the conversion should do nothing.
-        TestHelpers.assertClose(result.vector.azimuth, toRadians(35));
+        TestHelpers.assertClose(result.azimuth, toRadians(35));
 
         // This signal hit the azimuth antennas at an angle of 45 degrees because it came in
         // at a downward angle - meaning the true spherical azimuth is 90deg.
         sv = SphericalVector.fromDegrees(45, 45, 10)
-            .toSparse();
+            .toAnnotated();
 
         result = primer.prime(sv, null, null, 0);
-        TestHelpers.assertClose(result.vector.azimuth, toRadians(90));
-        TestHelpers.assertClose(result.vector.elevation, toRadians(45));
+        TestHelpers.assertClose(result.azimuth, toRadians(90));
+        TestHelpers.assertClose(result.elevation, toRadians(45));
     }
 
     @Test
@@ -52,16 +52,16 @@ public class AoaPrimerTest {
         AoaPrimer primer = new AoaPrimer();
         SphericalVector sv = SphericalVector.fromDegrees(2, 3, 4);
 
-        Sparse result = primer.prime(sv.toSparse(false, true, true), null, null, 0);
+        Annotated result = primer.prime(sv.toAnnotated(false, true, true), null, null, 0);
         Truth.assertThat(result.hasAzimuth).isFalse();
         Truth.assertThat(result.hasElevation).isTrue();
         Truth.assertThat(result.hasDistance).isTrue();
-        Truth.assertThat(result.vector.elevation).isEqualTo(sv.elevation);
+        Truth.assertThat(result.elevation).isEqualTo(sv.elevation);
 
-        result = primer.prime(sv.toSparse(true, false, true), null, null, 0);
+        result = primer.prime(sv.toAnnotated(true, false, true), null, null, 0);
         Truth.assertThat(result.hasAzimuth).isTrue();
         Truth.assertThat(result.hasElevation).isFalse();
         Truth.assertThat(result.hasDistance).isTrue();
-        Truth.assertThat(result.vector.azimuth).isEqualTo(sv.azimuth);
+        Truth.assertThat(result.azimuth).isEqualTo(sv.azimuth);
     }
 }
