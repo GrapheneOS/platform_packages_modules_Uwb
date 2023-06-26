@@ -21,17 +21,28 @@ import androidx.annotation.NonNull;
  * Represents a data sample and when it was acquired.
  */
 public class Sample implements Comparable<Sample> {
+    /** The value of the sample. */
     public float value;
+
+    /** The time of the sample. */
     public long timeMs;
+
+    /**
+     * A value between 0 and 1 indicating how likely the measurement is to be based on good
+     * information.
+     */
+    public double fom;
 
     /**
      * Creates a new instance of the Sample class.
      * @param value The value of the sample.
      * @param timeMs The time at which the value was relevant, in ms since boot.
+     * @param fom The confidence (figure of merit) of the reading.
      */
-    Sample(float value, long timeMs) {
+    Sample(float value, long timeMs, double fom) {
         this.value = value;
         this.timeMs = timeMs;
+        this.fom = fom;
     }
 
     /**
