@@ -652,7 +652,7 @@ public class UwbSessionNotificationManager {
                 .setMeters(distance / (double) 100)
                 .setErrorMeters(0)
                 // TODO: Need to fetch distance FOM once it is added to UCI spec.
-                .setConfidenceLevel(0)
+                .setConfidenceLevel(1)
                 .build();
     }
 

@@ -15,10 +15,11 @@
  */
 package com.android.server.uwb.correction.filtering;
 
+import static com.android.server.uwb.correction.math.SphericalVector.Annotated;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.android.server.uwb.correction.math.SphericalVector;
 import com.android.server.uwb.correction.pose.IPoseSource;
 
 /**
@@ -32,13 +33,13 @@ public interface IPositionFilter {
      * used to determine the latency introduced by the filter. Note that this has no effect on the
      * order in which the filter operates on values.
      */
-    void add(@NonNull SphericalVector value, long timeMs);
+    void add(@NonNull Annotated value, long timeMs);
 
     /**
      * Computes a predicted UWB position based on the new pose.
      * @param timeMs The time for which the position should be computed, in ms since boot.
      */
-    SphericalVector compute(long timeMs);
+    Annotated compute(long timeMs);
 
     /**
      * Updates the filter history to account for changes to the pose.

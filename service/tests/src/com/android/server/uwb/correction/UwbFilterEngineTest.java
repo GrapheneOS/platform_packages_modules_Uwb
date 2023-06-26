@@ -26,6 +26,7 @@ import com.android.server.uwb.correction.filtering.PositionFilterImpl;
 import com.android.server.uwb.correction.math.Pose;
 import com.android.server.uwb.correction.math.Quaternion;
 import com.android.server.uwb.correction.math.SphericalVector;
+import com.android.server.uwb.correction.math.SphericalVector.Annotated;
 import com.android.server.uwb.correction.math.Vector3;
 import com.android.server.uwb.correction.pose.NullPoseSource;
 import com.android.server.uwb.correction.primers.NullPrimer;
@@ -38,11 +39,48 @@ public class UwbFilterEngineTest {
     @Test
     public void basic() {
         UwbFilterEngine engine = new UwbFilterEngine.Builder().build();
-        engine.add(SphericalVector.fromRadians(1, 1.2f, 1.3f).toSparse(), 0);
+        engine.add(SphericalVector.fromRadians(1, 1.2f, 1.3f).toAnnotated(), 0);
         SphericalVector currentVector = engine.compute(0);
         assertThat(currentVector.azimuth).isEqualTo(1);
         assertThat(currentVector.elevation).isEqualTo(1.2f);
         assertThat(currentVector.distance).isEqualTo(1.3f);
+        engine.close();
+    }
+
+    @Test
+    public void testBadReading() {
+        UwbFilterEngine engine = new UwbFilterEngine.Builder().build();
+        Annotated annotated = SphericalVector.fromRadians(0, 0, 0)
+                .toAnnotated(false, false, false);
+        engine.add(annotated, 0);
+        Annotated currentVector = engine.compute(0);
+        assertThat(currentVector.hasAzimuth).isFalse();
+        assertThat(currentVector.hasElevation).isFalse();
+        assertThat(currentVector.hasDistance).isFalse();
+        engine.close();
+    }
+
+    @Test
+    public void testIntermittentReading() {
+        UwbFilterEngine engine = new UwbFilterEngine.Builder().build();
+        engine.add(SphericalVector.fromRadians(1, 1.2f, 1.3f).toAnnotated(), 0);
+
+        Annotated annotated = SphericalVector.fromRadians(0, 0, 0)
+                .toAnnotated(false, false, false);
+        engine.add(annotated, 0);
+
+        Annotated currentVector = engine.compute(0);
+        assertThat(currentVector.azimuth).isEqualTo(1);
+        assertThat(currentVector.elevation).isEqualTo(1.2f);
+        assertThat(currentVector.distance).isEqualTo(1.3f);
+        engine.close();
+    }
+
+    @Test
+    public void testDefaultPose() {
+        UwbFilterEngine engine = new UwbFilterEngine.Builder().build();
+        // Make sure that an engine without a pose engine always assumes a valid identity pose.
+        assertThat(engine.getPose()).isSameInstanceAs(Pose.IDENTITY);
         engine.close();
     }
 
@@ -56,7 +94,7 @@ public class UwbFilterEngineTest {
                 .build();
 
         poseSource.changePose(Pose.IDENTITY);
-        engine.add(SphericalVector.fromRadians(0.7f, 1.2f, 1.3f).toSparse(), 0);
+        engine.add(SphericalVector.fromRadians(0.7f, 1.2f, 1.3f).toAnnotated(), 0);
 
         // Check initial state.
         SphericalVector currentVector = engine.compute(0);
@@ -94,7 +132,7 @@ public class UwbFilterEngineTest {
                 .build();
 
         poseSource.changePose(Pose.IDENTITY);
-        engine.add(SphericalVector.fromRadians(-0.7f, 0, 1.3f).toSparse(), 0);
+        engine.add(SphericalVector.fromRadians(-0.7f, 0, 1.3f).toAnnotated(), 0);
 
         // Check initial state.
         SphericalVector currentVector = engine.compute(0);
@@ -102,7 +140,7 @@ public class UwbFilterEngineTest {
         assertThat(currentVector.elevation).isEqualTo(0f);
         assertThat(currentVector.distance).isEqualTo(1.3f);
 
-        engine.add(SphericalVector.fromRadians(0f, 0, 1.3f).toSparse(), 0);
+        engine.add(SphericalVector.fromRadians(0f, 0, 1.3f).toAnnotated(), 0);
 
         // Look down.
         poseSource.changePose(
@@ -112,7 +150,7 @@ public class UwbFilterEngineTest {
         // Generate a new measurement that doesn't have elevation or distance.
         engine.add(
                 SphericalVector.fromRadians(0f, 0f, 0f)
-                .toSparse(true, false, false),
+                .toAnnotated(true, false, false),
                 0);
 
         // Expect the predicted elevation based on the pose change.  Distance should be unaffected.

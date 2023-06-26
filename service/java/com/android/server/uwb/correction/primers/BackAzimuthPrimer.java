@@ -17,9 +17,11 @@ package com.android.server.uwb.correction.primers;
 
 import static com.android.server.uwb.correction.math.MathHelper.F_HALF_PI;
 import static com.android.server.uwb.correction.math.MathHelper.F_PI;
+import static com.android.server.uwb.correction.math.MathHelper.MS_PER_SEC;
 import static com.android.server.uwb.correction.math.MathHelper.normalizeRadians;
 
 import static java.lang.Math.abs;
+import static java.lang.Math.exp;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Math.signum;
@@ -34,7 +36,7 @@ import androidx.annotation.Nullable;
 import com.android.server.uwb.correction.math.MathHelper;
 import com.android.server.uwb.correction.math.Pose;
 import com.android.server.uwb.correction.math.SphericalVector;
-import com.android.server.uwb.correction.math.SphericalVector.Sparse;
+import com.android.server.uwb.correction.math.SphericalVector.Annotated;
 import com.android.server.uwb.correction.pose.IPoseSource;
 
 import java.util.ArrayDeque;
@@ -48,49 +50,61 @@ import java.util.Queue;
  */
 public class BackAzimuthPrimer implements IPrimer {
     static final String TAG = "BackAzimuthPrimer";
+    /** The decay rate of the low pass filter. (0-1, decay per sample) */
+    private static final double FOM_DECAY = 0.1;
+    /** How quickly the FOM falls when using mirrored predictions. */
+    private static final int MINIMUM_DETERMINATIONS = 4;
+
     private static final boolean sDebug;
-
-    static {
-        sDebug = Build.TYPE != null && Build.TYPE.equals("userdebug");
-    }
-
     // Keep sample time measurements reasonable to prevent div/0 or overflows.
     private static final long MIN_TIME_MS = 5; // Shortest allowed time between ranging samples
     private static final long MAX_TIME_MS = 5000; // Longest allowed time between ranging samples
+
+    static {
+        sDebug = (Build.TYPE != null && Build.TYPE.equals("userdebug"))
+                || System.getProperty("DEBUG") != null;
+    }
 
     private final boolean mMaskRawAzimuthWhenBackfacing;
     private final float mDiscrepancyCoefficient;
     private final int mWindowSize;
     private final float mStdDev;
-    private boolean mMirrored = false;
-    private float mLastAzimuthPrediction;
     private final float mNormalThresholdRadPerSec;
     private final float mMirrorThresholdRadPerSec;
     private final Queue<Float> mScoreHistory;
     private final Queue<Float> mDiscrepancyHistory = new ArrayDeque<>();
-
+    private boolean mMirrored = false;
+    private float mLastAzimuthPrediction;
     // This initial value causes the first sample to have the least effect.
     private long mLastSampleTimeMs = Long.MIN_VALUE;
     private Pose mLastPose;
     private SphericalVector mLastInput;
-
+    private int mDeterminationCount = 0;
+    private double mFomFilterValue = MINIMUM_FOM;
+    private double mLastGoodReferenceTimeMs;
 
     /**
      * Creates a new instance of the BackAzimuthPrimer class.
      *
-     * @param normalThresholdRadPerSec How many radians per second of correlated rotation are
-     * necessary to force a non-mirrored azimuth.
-     * @param mirrorThresholdRadPerSec How many radians per second of correlated rotation are
-     * necessary to force a mirrored azimuth.
-     * @param windowSize The size of the moving window filter for determining correlation.
+     * @param normalThresholdRadPerSec     How many radians per second of correlated rotation are
+     *                                     necessary to force a non-mirrored azimuth.
+     * @param mirrorThresholdRadPerSec     How many radians per second of correlated rotation are
+     *                                     necessary to force a mirrored azimuth.
+     * @param windowSize                   The size of the moving window filter for determining
+     *                                     correlation.
      * @param maskRawAzimuthWhenBackfacing If true, readings from the back will be replaced with
-     * predictions. If false, azimuth readings will be mirrored front-to-back.
-     * @param stdDev Controls the width of the curve used to judge if the readings are acting like
-     * unmirrored or mirrored readings.
-     * @param discrepancyCoefficient The coefficient of how much the typical forward prediction
-     * error (rads per sample) should count against the forward score (rads per second). For
-     * example, a value of 0.5 will cause the score to be 5 degrees lower if the typical front
-     * prediction error is 10.
+     *                                     predictions. If false, azimuth readings will be mirrored
+     *                                     front-to-back.
+     * @param stdDev                       Controls the width of the curve used to judge if the
+     *                                     readings are acting like
+     *                                     unmirrored or mirrored readings.
+     * @param discrepancyCoefficient       The coefficient of how much the typical forward
+     *                                     prediction
+     *                                     error (rads per sample) should count against the forward
+     *                                     score (rads per second). For
+     *                                     example, a value of 0.5 will cause the score to be 5
+     *                                     degrees lower if the typical front
+     *                                     prediction error is 10.
      */
     public BackAzimuthPrimer(float normalThresholdRadPerSec,
             float mirrorThresholdRadPerSec,
@@ -111,16 +125,16 @@ public class BackAzimuthPrimer implements IPrimer {
     /**
      * Uses pose information to disambiguate the input azimuth.
      *
-     * @param input     The original UWB reading.
+     * @param input      The original UWB reading.
      * @param prediction The previous filtered UWB result adjusted by the pose change since then.
      * @param poseSource A pose source that may indicate phone orientation.
-     * @param timeMs When the input occurred, in ms since boot.
+     * @param timeMs     When the input occurred, in ms since boot.
      * @return A replacement value for the UWB vector that has been corrected for the situation.
      */
     @SuppressWarnings("ConstantConditions") /* Unboxing longs in mCaptureTimes */
     @Override
-    public SphericalVector.Sparse prime(
-            @NonNull SphericalVector.Sparse input,
+    public SphericalVector.Annotated prime(
+            @NonNull SphericalVector.Annotated input,
             @Nullable SphericalVector prediction,
             @Nullable IPoseSource poseSource,
             long timeMs) {
@@ -152,8 +166,8 @@ public class BackAzimuthPrimer implements IPrimer {
 
         // Get coordinates for normal and mirrored azimuth versions of the input.
         // input.vector may be >90deg due to previous primers, so front/back is forced here.
-        SphericalVector normalInput = forceAzimuth(input.vector, false);
-        SphericalVector mirrorInput = forceAzimuth(input.vector, true);
+        SphericalVector normalInput = forceAzimuth(input, false);
+        SphericalVector mirrorInput = forceAzimuth(input, true);
 
         Pose newPose = poseSource.getPose();
         if (mLastPose == null || newPose == null || mLastPose == newPose || mLastInput == null) {
@@ -210,45 +224,91 @@ public class BackAzimuthPrimer implements IPrimer {
             // Finally, the mirroring decision.
             if (typScore > mNormalThresholdRadPerSec) {
                 mMirrored = false;
+                if (mDeterminationCount < MINIMUM_DETERMINATIONS) {
+                    mDeterminationCount++;
+                }
             } else if (typScore < -mMirrorThresholdRadPerSec) {
                 mMirrored = true;
+                if (mDeterminationCount < MINIMUM_DETERMINATIONS) {
+                    mDeterminationCount++;
+                }
             }
         }
 
         if (sDebug) {
             Log.d(TAG,
                     String.format(
-                        "time %4d, pose % 6.1f, nd % 6.1f (%3d%%), md % 6.1f (%3d%%), "
-                            + "rawSco % 5.1f, sco % 5.1f, aggSco % 5.1f, %s",
-                        timeDeltaMs,
-                        toDegrees(azimuthDeltaFromPoseRad),
-                        toDegrees(normalDifference), (int) (normalAccuracy * 100),
-                        toDegrees(mirrorDifference), (int) (mirrorAccuracy * 100),
-                        toDegrees(scoreRadPerSec),
-                        toDegrees(scoreRadPerSecBiased),
-                        toDegrees(typScore),
-                        mMirrored ? "mirr" : "norm"
-                ));
+                            "time %4d, pose % 6.1f, nd % 6.1f (%3d%%), md % 6.1f (%3d%%), "
+                                    + "rawSco % 5.1f, sco % 5.1f, aggSco % 5.1f, %s",
+                            timeDeltaMs,
+                            toDegrees(azimuthDeltaFromPoseRad),
+                            toDegrees(normalDifference), (int) (normalAccuracy * 100),
+                            toDegrees(mirrorDifference), (int) (mirrorAccuracy * 100),
+                            toDegrees(scoreRadPerSec),
+                            toDegrees(scoreRadPerSecBiased),
+                            toDegrees(typScore),
+                            mMirrored ? "mirr" : "norm"
+                    ));
         }
 
-        SphericalVector result = input.vector;
+        SphericalVector result = input;
 
         if (mMirrored && mMaskRawAzimuthWhenBackfacing) {
             // Replace angles with prediction. The mMaskRawAzimuthWhenBackfacing setting will be set
             // when through-device readings are poor or not predictably mirrored.
             result = SphericalVector.fromRadians(
-                prediction.azimuth,
-                prediction.elevation,
-                input.vector.distance);
+                    prediction.azimuth,
+                    prediction.elevation,
+                    input.distance);
         }
 
         result = forceAzimuth(result, mMirrored);
 
-        return new Sparse(
-            result,
-            true,
-            input.hasElevation,
-            input.hasDistance);
+        Annotated annotatedResult = new Annotated(
+                result,
+                true,
+                input.hasElevation,
+                input.hasDistance).copyFomFrom(input);
+
+        updateFom(annotatedResult, normalAccuracy, mirrorAccuracy);
+
+        return annotatedResult;
+    }
+
+    /**
+     * Changes the azimuthFom of the annotated result to reflect 3 conditions:
+     * 1. How long the filter has been using predicted values
+     * 2. How well-correlated yaw and azimuth are (normal or mirror Accuracy)
+     * 3. Whether or not a number of initial good determinations have been made.
+     * @param annotatedResult The reading whose azimuthFom will be updated.
+     * @param normalAccuracy The computed accuracy of correlation for the normal case.
+     * @param mirrorAccuracy The computed accuracy of correlation for the mirrored case.
+     */
+    private void updateFom(Annotated annotatedResult, float normalAccuracy, float mirrorAccuracy) {
+        double newFom;
+        if (mMirrored) {
+            newFom = mirrorAccuracy;
+            if (mMaskRawAzimuthWhenBackfacing) {
+                // We've gone totally to predictions. Tweak the FOM based on how fresh our data is.
+                double elapsedMs = mLastSampleTimeMs - mLastGoodReferenceTimeMs;
+                double fom = max(1 - elapsedMs / MS_PER_SEC * FALLOFF_FOM_PER_SEC, MINIMUM_FOM);
+                annotatedResult.azimuthFom *= fom;
+            }
+        } else {
+            newFom = normalAccuracy;
+
+            // This brings the FOM back up for subsequent estimations
+            mLastGoodReferenceTimeMs = mLastSampleTimeMs;
+        }
+        mFomFilterValue = mFomFilterValue * (1 - FOM_DECAY) + (newFom * FOM_DECAY);
+        annotatedResult.azimuthFom *= mFomFilterValue;
+
+        if (mDeterminationCount < MINIMUM_DETERMINATIONS) {
+            // If we haven't actually seen good evidence of front or back, our certainty is up to
+            // 50% less, depending on how many determinations have been made.
+            annotatedResult.azimuthFom *=
+                    0.5 + ((double) mDeterminationCount) / MINIMUM_DETERMINATIONS / 2;
+        }
     }
 
     /** Flips the score history, for when azimuth goes from front to behind or vice-versa. */
@@ -261,11 +321,12 @@ public class BackAzimuthPrimer implements IPrimer {
 
     /**
      * Biases a score toward the back based on the accuracy of front-facing predictions.
-     * @param scoreRadPerSec The score to bias.
+     *
+     * @param scoreRadPerSec   The score to bias.
      * @param normalDifference The difference between the front-based prediction and front-based
-     * reading.
+     *                         reading.
      * @param mirrorDifference The difference between the back-based prediction and back-based
-     * reading.
+     *                         reading.
      * @return A new, adjusted version of the input score.
      */
     private float biasScore(float scoreRadPerSec, float normalDifference, float mirrorDifference) {
@@ -289,7 +350,8 @@ public class BackAzimuthPrimer implements IPrimer {
 
     /**
      * Applies a pose delta (a transform) to a spherical coordinate.
-     * @param input The spherical vector to transform.
+     *
+     * @param input     The spherical vector to transform.
      * @param deltaPose The pose object representing how to transform the input.
      * @return A new SphericalVector representing the input transformed by the delta pose.
      */
@@ -306,16 +368,16 @@ public class BackAzimuthPrimer implements IPrimer {
     @NonNull
     private SphericalVector mirrorAzimuth(SphericalVector vector) {
         return SphericalVector.fromRadians(
-            signum(vector.azimuth) * (F_PI - abs(vector.azimuth)),
-            vector.elevation,
-            vector.distance);
+                signum(vector.azimuth) * (F_PI - abs(vector.azimuth)),
+                vector.elevation,
+                vector.distance);
     }
 
     /**
      * Forces the azimuth to be front or back, mirroring it as necessary.
      *
      * @param vector The SphericalVector to force to a direction.
-     * @param back If true, forces the SphericalVector's azimuth to be back, otherwise forward.
+     * @param back   If true, forces the SphericalVector's azimuth to be back, otherwise forward.
      * @return A version of the SphericalVector that is facing the specified direction.
      */
     @NonNull
@@ -330,12 +392,12 @@ public class BackAzimuthPrimer implements IPrimer {
      * Plots x on a bell curve with a magnitude of 1. This is a gaussian curve(φ) multiplied by
      * 1/φ(0) so that bell(0, n) = 1.
      *
-     * @param x The x value of the normal curve.
+     * @param x      The x value of the normal curve.
      * @param stdDev The standard deviation to use for the initial normal curve.
      * @return A value along a gaussian curve scaled by 1/φ(0).
      */
     private float bell(float x, float stdDev) {
         float variance = stdDev * stdDev;
-        return (float) Math.exp(-(x * x / (2 * variance)));
+        return (float) exp(-(x * x / (2 * variance)));
     }
 }

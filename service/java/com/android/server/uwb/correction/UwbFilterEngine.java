@@ -44,7 +44,8 @@ public class UwbFilterEngine implements AutoCloseable, PoseEventListener {
     private static final boolean sDebug;
 
     static {
-        sDebug = Build.TYPE != null && Build.TYPE.equals("userdebug");
+        sDebug = (Build.TYPE != null && Build.TYPE.equals("userdebug"))
+                || System.getProperty("DEBUG") != null;
     }
 
     /**
@@ -52,7 +53,7 @@ public class UwbFilterEngine implements AutoCloseable, PoseEventListener {
      * are available.  If computation fails or is not possible (ie - filter or primer is not
      * configured), the computation function will return this.
      */
-    @Nullable private SphericalVector mLastInputState;
+    @Nullable private SphericalVector.Annotated mLastInputState;
 
     private boolean mClosed;
 
@@ -74,7 +75,7 @@ public class UwbFilterEngine implements AutoCloseable, PoseEventListener {
      * @param position The raw position produced by the UWB hardware.
      * @param timeMs The time at which the UWB value was received, in ms since boot.
      */
-    public void add(@NonNull SphericalVector.Sparse position, long timeMs) {
+    public void add(@NonNull SphericalVector.Annotated position, long timeMs) {
         StringBuilder bigLog = sDebug ? new StringBuilder(position.toString()) : null;
         Objects.requireNonNull(position);
 
@@ -95,16 +96,16 @@ public class UwbFilterEngine implements AutoCloseable, PoseEventListener {
             }
         }
         if (position.isComplete() || prediction == null) {
-            mLastInputState = position.vector;
+            mLastInputState = position;
         } else {
             // Primers did not fully prime the position vector. This can happen when elevation is
             //  missing and there is no primer for an estimate, or if there was a bad UWB reading.
             // Fill in with predictions.
             mLastInputState = SphericalVector.fromRadians(
-                    position.hasAzimuth ? position.vector.azimuth : prediction.azimuth,
-                    position.hasElevation ? position.vector.elevation : prediction.elevation,
-                    position.hasDistance ? position.vector.distance : prediction.distance
-            );
+                    position.hasAzimuth ? position.azimuth : prediction.azimuth,
+                    position.hasElevation ? position.elevation : prediction.elevation,
+                    position.hasDistance ? position.distance : prediction.distance
+            ).toAnnotated().copyFomFrom(position);
         }
         if (mFilter != null) {
             mFilter.updatePose(mPoseSource, timeMs);
@@ -125,7 +126,7 @@ public class UwbFilterEngine implements AutoCloseable, PoseEventListener {
      * @return A SphericalVector representing the most likely UWB location.
      */
     @Nullable
-    public SphericalVector compute(long timeMs) {
+    public SphericalVector.Annotated compute(long timeMs) {
         if (mFilter != null) {
             mFilter.updatePose(mPoseSource, timeMs);
             return mFilter.compute(timeMs);
