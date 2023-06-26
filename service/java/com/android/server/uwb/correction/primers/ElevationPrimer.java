@@ -34,6 +34,11 @@ import com.android.server.uwb.correction.pose.IPoseSource.Capabilities;
  */
 public class ElevationPrimer implements IPrimer {
     /**
+     * The FOM to apply to estimated elevations. This should not be 0 because that is equivalent to
+     * a reading that should be discarded. */
+    public static double ELEVATION_FOM = 0.3;
+
+    /**
      * Applies a default pose-based elevation to a UWB reading that doesn't have one.
      *
      * @param input     The original UWB reading.
@@ -43,12 +48,12 @@ public class ElevationPrimer implements IPrimer {
      * @return A replacement value for the UWB vector that has been corrected for the situation.
      */
     @Override
-    public SphericalVector.Sparse prime(
-            @NonNull SphericalVector.Sparse input,
+    public SphericalVector.Annotated prime(
+            @NonNull SphericalVector.Annotated input,
             @Nullable SphericalVector prediction,
             @Nullable IPoseSource poseSource,
             long timeMs) {
-        SphericalVector.Sparse position = input;
+        SphericalVector.Annotated position = input;
         if (poseSource != null
                 && poseSource.getCapabilities().contains(Capabilities.UPRIGHT)
         ) {
@@ -58,16 +63,18 @@ public class ElevationPrimer implements IPrimer {
                 // an AoA elevation, we'll assume that elevation is level with the phone.
                 // i.e. If the phone pitches down, the elevation would appear up.
 
-                position = new SphericalVector.Sparse(
+                position = new SphericalVector.Annotated(
                     SphericalVector.fromRadians(
-                        input.vector.azimuth,
+                        input.azimuth,
                         -pose.rotation.toYawPitchRoll().y, // -Pitch becomes our assumed elevation
-                        input.vector.distance
+                        input.distance
                     ),
                     input.hasAzimuth,
                     true,
                     input.hasDistance
-                );
+                ).copyFomFrom(input);
+
+                position.elevationFom *= ELEVATION_FOM;
             }
         }
         return position;

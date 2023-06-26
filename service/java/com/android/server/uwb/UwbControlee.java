@@ -35,10 +35,6 @@ public class UwbControlee implements AutoCloseable {
     private final UwbAddress mUwbAddress;
     private final UwbInjector mUwbInjector;
     private final UwbFilterEngine mEngine;
-    /** Confidence to use when the engine produces a result that wasn't in the original reading. */
-    private static final double DEFAULT_CONFIDENCE = 0.0;
-    /** Error value to use when the engine produces a result that wasn't in the original reading. */
-    private static final double DEFAULT_ERROR_RADIANS = 0.0;
     /** Error value to use when the engine produces a result that wasn't in the original reading. */
     private static final double DEFAULT_ERROR_DISTANCE = 0.0;
     private long mLastMeasurementInstant;
@@ -112,30 +108,40 @@ public class UwbControlee implements AutoCloseable {
         float azimuth = 0;
         float elevation = 0;
         float distance = 0;
+        double azimuthFom = 1;
+        double elevationFom = 1;
+        double distanceFom = 1;
         long nowMs = mUwbInjector.getElapsedSinceBootMillis();
         if (aoaMeasurement != null) {
             if (aoaMeasurement.getAzimuth() != null
                     && aoaMeasurement.getAzimuth().getConfidenceLevel() > 0) {
                 hasAzimuth = true;
                 azimuth = (float) aoaMeasurement.getAzimuth().getRadians();
+                azimuthFom = aoaMeasurement.getAzimuth().getConfidenceLevel();
             }
             if (aoaMeasurement.getAltitude() != null
                     && aoaMeasurement.getAltitude().getConfidenceLevel() > 0) {
                 hasElevation = true;
                 elevation = (float) aoaMeasurement.getAltitude().getRadians();
+                elevationFom = aoaMeasurement.getAltitude().getConfidenceLevel();
             }
         }
         if (distMeasurement != null) {
             hasDistance = true;
             distance = (float) distMeasurement.getMeters();
+            distanceFom = distMeasurement.getConfidenceLevel();
         }
-        SphericalVector.Sparse sv = SphericalVector.fromRadians(azimuth, elevation, distance)
-                .toSparse(hasAzimuth, hasElevation, hasDistance);
+        SphericalVector.Annotated sv = SphericalVector.fromRadians(azimuth, elevation, distance)
+                .toAnnotated(hasAzimuth, hasElevation, hasDistance);
+
+        sv.azimuthFom = azimuthFom;
+        sv.elevationFom = elevationFom;
+        sv.distanceFom = distanceFom;
 
         // Give to the engine.
         mEngine.add(sv, nowMs);
 
-        SphericalVector engineResult = mEngine.compute(nowMs);
+        SphericalVector.Annotated engineResult = mEngine.compute(nowMs);
         if (engineResult == null) {
             // Bail early - the engine didn't compute a result, so just leave the builder alone.
             return;
@@ -160,7 +166,7 @@ public class UwbControlee implements AutoCloseable {
      */
     private static void updateBuilder(RangingMeasurement.Builder rmBuilder,
             RangingMeasurement rawMeasurement,
-            SphericalVector replacement) {
+            SphericalVector.Annotated replacement) {
         // This is fairly verbose because of how nested data is, the risk of nulls, and the
         // fact that that azimuth is required up-front, even in the builder. Refactoring so the
         // RangingMeasurement can be cloned and changed would be nice, but it would change
@@ -183,7 +189,7 @@ public class UwbControlee implements AutoCloseable {
                 azimuthMeasurement = new AngleMeasurement(
                         replacement.azimuth,
                         aoaMeasurement.getAzimuth().getErrorRadians(),
-                        aoaMeasurement.getAzimuth().getConfidenceLevel()
+                        replacement.azimuthFom
                 );
             }
             // Any elevation in the original measurement?
@@ -192,7 +198,7 @@ public class UwbControlee implements AutoCloseable {
                 elevationMeasurement = new AngleMeasurement(
                         replacement.elevation,
                         aoaMeasurement.getAltitude().getErrorRadians(),
-                        aoaMeasurement.getAltitude().getConfidenceLevel()
+                        replacement.elevationFom
                 );
             }
         }
@@ -213,11 +219,10 @@ public class UwbControlee implements AutoCloseable {
             // RangingMeasurement.Build requires that any non-error status has a valid
             //  DistanceMeasurement, so we will create one.
             distanceBuilder.setErrorMeters(DEFAULT_ERROR_DISTANCE);
-            distanceBuilder.setConfidenceLevel(DEFAULT_CONFIDENCE);
         } else {
             distanceBuilder.setErrorMeters(distMeasurement.getErrorMeters());
-            distanceBuilder.setConfidenceLevel(distMeasurement.getConfidenceLevel());
         }
+        distanceBuilder.setConfidenceLevel(replacement.distanceFom);
         distanceBuilder.setMeters(replacement.distance);
 
         rmBuilder.setDistanceMeasurement(distanceBuilder.build());
