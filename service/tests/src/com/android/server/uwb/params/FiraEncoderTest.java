@@ -159,6 +159,7 @@ public class FiraEncoderTest {
     private static final String PSDU_DATA_RATE_TLV = "160100";
     private static final String PREAMBLE_DURATION_TLV = "170101";
     private static final String LINK_LAYER_MODE_TLV = "180101";
+    private static final String DATA_TRANSFER_STATUS_NTF_CONFIG = "190100";
     private static final String RANGING_TIME_STRUCT_TLV = "1A0101";
     private static final String SLOTS_PER_RR_TLV = "1B0119";
     private static final String TX_ADAPTIVE_PAYLOAD_POWER_TLV = "1C0100";
@@ -189,6 +190,7 @@ public class FiraEncoderTest {
     private static final String UL_TDOA_RANDOM_WINDOW_TLV = "34041E000000";
     private static final String UL_TDOA_DEVICE_ID_TLV = "3803010B0A";
     private static final String UL_TDOA_TX_TIMESTAMP_TLV = "390101";
+    private static final String SESSION_DATA_TRANSFER_STATUS_NTF_CONFIG = "470100";
     private final FiraEncoder mFiraEncoder = new FiraEncoder();
     private byte[] mFiraOpenSessionTlvUtTag;
     private byte[] mFiraSessionv11TlvData;
@@ -245,6 +247,7 @@ public class FiraEncoderTest {
                     + BPRF_PHR_DATA_RATE_TLV + MAX_NUMBER_OF_MEASUREMENTS_TLV + STS_LENGTH_TLV
                     + RANGING_INTERVAL_TLV + DEVICE_TYPE_CONTROLLER_TLV + NUMBER_OF_CONTROLEES_TLV
                     + DST_MAC_ADDRESS_TLV + UWB_INITIATION_TIME_2_0_TLV + LINK_LAYER_MODE_TLV
+                    + DATA_TRANSFER_STATUS_NTF_CONFIG + SESSION_DATA_TRANSFER_STATUS_NTF_CONFIG
                     + APPLICATION_DATA_ENDPOINT_TLV + VENDOR_ID_TLV + STATIC_STS_IV_TLV
                     + RANGE_DATA_NTF_AOA_BOUND_TLV);
 
@@ -285,7 +288,7 @@ public class FiraEncoderTest {
             params = TEST_FIRA_OPEN_SESSION_PARAMS_V_2_0.build();
             tlvs = mFiraEncoder.getTlvBuffer(params);
 
-            assertThat(tlvs.getNoOfParams()).isEqualTo(47);
+            assertThat(tlvs.getNoOfParams()).isEqualTo(49);
             assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionv20TlvData);
         }
     }
