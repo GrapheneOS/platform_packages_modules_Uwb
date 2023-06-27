@@ -19,7 +19,7 @@ package androidx.core.uwb.backend.impl.internal;
 import static androidx.core.uwb.backend.impl.internal.Utils.SUPPORTED_BPRF_PREAMBLE_INDEX;
 import static androidx.core.uwb.backend.impl.internal.Utils.SUPPORTED_CHANNELS;
 
-import static com.android.internal.util.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.primitives.Ints;
 import com.google.uwb.support.fira.FiraParams;
