@@ -681,6 +681,9 @@ public class UwbManagerSnippet implements Snippet {
         if (j.has("aoaResultRequest")) {
             builder.setAoaResultRequest(j.getInt("aoaResultRequest"));
         }
+        if (j.has("filterType")) {
+            builder.setFilterType(j.getInt("filterType"));
+        }
 
         return builder.build();
     }
