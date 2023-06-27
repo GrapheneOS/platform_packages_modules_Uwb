@@ -74,8 +74,10 @@ public interface INativeUwbManager {
          * @param sessionId          : Session ID
          * @param dataTransferStatus : Status codes in the DATA_TRANSFER_STATUS_NTF packet
          * @param sequenceNum        : Sequence Number
+         * @param txCount            : Transmission count
          */
-        void onDataSendStatus(long sessionId, int dataTransferStatus, long sequenceNum);
+        void onDataSendStatus(long sessionId, int dataTransferStatus, long sequenceNum,
+                int txCount);
     }
 
     interface DeviceNotification {
