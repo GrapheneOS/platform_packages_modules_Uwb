@@ -96,7 +96,7 @@ public class BackAzimuthPrimerTest {
 
             mNps.changePose(new Pose(Vector3.ORIGIN, Quaternion.yawPitchRoll(poseAngle, 0, 0)));
 
-            engine.add(reading.toSparse(), mNow);
+            engine.add(reading.toAnnotated(), mNow);
             SphericalVector result = engine.compute(mNow);
 
             assertThat(result).isNotNull();

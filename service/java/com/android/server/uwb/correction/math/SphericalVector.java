@@ -43,6 +43,7 @@ import java.util.Objects;
  * This uses OpenGL's right-handed coordinate system, where the origin is facing in the
  * -Z direction. Increasing azimuth rotates around Y and increases X.  Increasing
  * elevation rotates around X and increases Y.
+ * This class is invariant.
  */
 @Immutable
 public class SphericalVector {
@@ -57,9 +58,9 @@ public class SphericalVector {
      * Creates a SphericalVector from the azimuth, elevation and distance of a viewpoint that is
      * facing into the -Z axis.
      *
-     * @param azimuth The angle along the X axis, around the Y axis.
+     * @param azimuth   The angle along the X axis, around the Y axis.
      * @param elevation The angle along the Y axis, around the X axis.
-     * @param distance The distance to the origin.
+     * @param distance  The distance to the origin.
      */
     private SphericalVector(float azimuth, float elevation, float distance) {
         elevation = MathHelper.normalizeRadians(elevation);
@@ -84,19 +85,11 @@ public class SphericalVector {
     }
 
     /**
-     * Converts the SphericalVector to an AoA vector.
-     * @return An equivalent AoA vector.
-     */
-    public AoaVector toAoAVector() {
-        return AoaVector.fromSphericalVector(this);
-    }
-
-    /**
      * Creates an SphericalVector from azimuth and elevation in radians.
      *
-     * @param azimuth The azimuth in degrees.
+     * @param azimuth   The azimuth in degrees.
      * @param elevation The elevation in degrees.
-     * @param distance The distance in meters.
+     * @param distance  The distance in meters.
      * @return A new SphericalVector.
      */
     @NonNull
@@ -107,9 +100,9 @@ public class SphericalVector {
     /**
      * Creates an SphericalVector from azimuth and elevation in radians.
      *
-     * @param azimuth The azimuth in radians.
+     * @param azimuth   The azimuth in radians.
      * @param elevation The elevation in radians.
-     * @param distance The distance in meters.
+     * @param distance  The distance in meters.
      * @return A new SphericalVector.
      */
     @NonNull
@@ -155,6 +148,7 @@ public class SphericalVector {
 
     /**
      * Converts an AoAVector to a SphericalVector.
+     *
      * @param vec The AoAVector to convert.
      * @return An equivalent SphericalVector.
      */
@@ -173,6 +167,15 @@ public class SphericalVector {
         } else {
             return new SphericalVector((float) az, vec.elevation, vec.distance);
         }
+    }
+
+    /**
+     * Converts the SphericalVector to an AoA vector.
+     *
+     * @return An equivalent AoA vector.
+     */
+    public AoaVector toAoAVector() {
+        return AoaVector.fromSphericalVector(this);
     }
 
     /**
@@ -210,26 +213,26 @@ public class SphericalVector {
     }
 
     /**
-     * Converts this SphericalVector to an equivalent sparse Spherical Vector that has all 3
-     * components.
+     * Converts this SphericalVector to an equivalent annotated Spherical Vector that has all 3
+     * components and null annotations.
      *
-     * @return An equivalent {@link Sparse}.
+     * @return An equivalent {@link Annotated}.
      */
-    public Sparse toSparse() {
-        return new Sparse(this, true, true, true);
+    public Annotated toAnnotated() {
+        return new Annotated(this, true, true, true);
     }
 
     /**
-     * Converts this SphericalVector to an equivalent sparse Spherical Vector, with the specified
+     * Converts this SphericalVector to an equivalent annotated Spherical Vector, with the specified
      * presence or absence of values.
      *
-     * @param hasAzimuth True if the vector includes azimuth.
+     * @param hasAzimuth   True if the vector includes azimuth.
      * @param hasElevation True if the vector includes elevation.
-     * @param hasDistance True if the vector includes distance.
-     * @return An equivalent {@link Sparse}.
+     * @param hasDistance  True if the vector includes distance.
+     * @return An equivalent {@link Annotated}.
      */
-    public Sparse toSparse(boolean hasAzimuth, boolean hasElevation, boolean hasDistance) {
-        return new Sparse(
+    public Annotated toAnnotated(boolean hasAzimuth, boolean hasElevation, boolean hasDistance) {
+        return new Annotated(
                 this,
                 hasAzimuth,
                 hasElevation,
@@ -238,29 +241,48 @@ public class SphericalVector {
     }
 
     /**
-     * Represents a {@link SphericalVector} that may not have all values populated.
+     * Represents a {@link SphericalVector} with annotations about the presence and quality of
+     * each of its values. While SphericalVector is invariant, the annotations on this class are not
+     * invariant.
      */
-    public static class Sparse {
-        @NonNull
-        public final SphericalVector vector;
+    public static class Annotated extends SphericalVector {
         public final boolean hasAzimuth;
         public final boolean hasElevation;
         public final boolean hasDistance;
+        public double azimuthFom = 1;
+        public double elevationFom = 1;
+        public double distanceFom = 1;
 
         /**
-         * Creates a new instance of the {@link SphericalVector}
+         * Creates a new instance of the {@link SphericalVector.Annotated}
+         *
          * @param vector The source SphericalVector.
-         * @param hasAzimuth True if the vector includes azimuth.
-         * @param hasElevation True if the vector includes elevation.
-         * @param hasDistance True if the vector includes distance.
          */
-        public Sparse(
+        public Annotated(
+                @NonNull SphericalVector vector
+        ) {
+            super(vector.azimuth, vector.elevation, vector.distance);
+
+            this.hasAzimuth = true;
+            this.hasElevation = true;
+            this.hasDistance = true;
+        }
+
+        /**
+         * Creates a new instance of the {@link SphericalVector.Annotated}
+         *
+         * @param vector       The source SphericalVector.
+         * @param hasAzimuth   True if the vector includes azimuth.
+         * @param hasElevation True if the vector includes elevation.
+         * @param hasDistance  True if the vector includes distance.
+         */
+        public Annotated(
                 @NonNull SphericalVector vector,
                 boolean hasAzimuth,
                 boolean hasElevation,
                 boolean hasDistance
         ) {
-            this.vector = vector;
+            super(vector.azimuth, vector.elevation, vector.distance);
             this.hasAzimuth = hasAzimuth;
             this.hasElevation = hasElevation;
             this.hasDistance = hasDistance;
@@ -273,6 +295,20 @@ public class SphericalVector {
          */
         public boolean isComplete() {
             return hasAzimuth && hasElevation && hasDistance;
+        }
+
+        /**
+         * Copies the annotations from another {@link Annotated}. This updates the current class.
+         *
+         * @param basis The {@link Annotated} from which to copy the annotations.
+         * @return This object.
+         */
+        @NonNull
+        public Annotated copyFomFrom(Annotated basis) {
+            azimuthFom = basis.azimuthFom;
+            elevationFom = basis.elevationFom;
+            distanceFom = basis.distanceFom;
+            return this;
         }
 
         /**
@@ -302,13 +338,17 @@ public class SphericalVector {
             String az = "   x  ", el = "  x  ", dist = "  x  ";
             Locale dl = Locale.getDefault();
             if (hasAzimuth) {
-                az = String.format(dl, "% 6.1f", toDegrees(vector.azimuth));
+                az = String.format(dl, "% 6.1f %d%%", toDegrees(azimuth),
+                        (int) (azimuthFom * 100));
             }
             if (hasElevation) {
-                el = String.format(dl, "% 5.1f", toDegrees(vector.elevation));
+                el = String.format(dl, "% 5.1f %d%%", toDegrees(elevation),
+                        (int) (elevationFom * 100));
             }
             if (hasDistance) {
-                dist = String.format(dl, "%5.2f", vector.distance);
+                dist = String.format(dl, "%5.2f %d%%", distance,
+                        (int) (distanceFom * 100));
+
             }
             return String.format(dl, "[⦡%s,⦨%s,⤠%s]", az, el, dist);
         }
