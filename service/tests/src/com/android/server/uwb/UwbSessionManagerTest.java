@@ -51,6 +51,7 @@ import static com.android.server.uwb.data.UwbUciConstants.ROUND_USAGE_DS_TWR_DEF
 import static com.android.server.uwb.data.UwbUciConstants.ROUND_USAGE_DS_TWR_NON_DEFERRED_MODE;
 import static com.android.server.uwb.data.UwbUciConstants.ROUND_USAGE_OWR_AOA_MEASUREMENT;
 import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_DATA_TRANSFER_ERROR_DATA_TRANSFER;
+import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_DATA_TRANSFER_OK;
 import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_DATA_TRANSFER_REPETITION_OK;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -173,6 +174,8 @@ public class UwbSessionManagerTest {
     private static final int TEST_RANGING_INTERVAL_MS = 200;
     private static final short DATA_SEQUENCE_NUM = 0;
     private static final short DATA_SEQUENCE_NUM_1 = 2;
+    private static final int DATA_TRANSMISSION_COUNT = 1;
+    private static final int DATA_TRANSMISSION_COUNT_3 = 3;
 
     private static final int HANDLE_ID = 12;
     private static final int MAX_RX_DATA_PACKETS_TO_STORE = 10;
@@ -1960,9 +1963,20 @@ public class UwbSessionManagerTest {
         return prepareExistingUwbSessionCommon(uwbSession);
     }
 
-    private UwbSession prepareExistingUwbSessionActive() throws Exception {
-        UwbSession uwbSession = prepareExistingUwbSession();
+    private UwbSession prepareExistingUwbSessionActive(Params params) throws Exception {
+        UwbSession uwbSession = setUpUwbSessionForExecution(ATTRIBUTION_SOURCE, params);
+        uwbSession = prepareExistingUwbSessionCommon(uwbSession);
+        return prepareExistingUwbSessionActiveCommon(uwbSession);
+    }
 
+    private UwbSession prepareExistingUwbSessionActive() throws Exception {
+        UwbSession uwbSession = setUpUwbSessionForExecution(ATTRIBUTION_SOURCE);
+        uwbSession = prepareExistingUwbSessionCommon(uwbSession);
+        return prepareExistingUwbSessionActiveCommon(uwbSession);
+    }
+
+    private UwbSession prepareExistingUwbSessionActiveCommon(UwbSession uwbSession)
+            throws Exception {
         // Setup the UwbSession to start ranging (and move it to active state).
         doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE).when(uwbSession).getSessionState();
         when(mNativeUwbManager.startRanging(eq(TEST_SESSION_ID), anyString()))
@@ -2452,7 +2466,8 @@ public class UwbSessionManagerTest {
 
         // A DataTransferStatusNtf is received indicating success.
         mUwbSessionManager.onDataSendStatus(
-                uwbSession.getSessionId(), dataTransferStatus, DATA_SEQUENCE_NUM);
+                uwbSession.getSessionId(), dataTransferStatus, DATA_SEQUENCE_NUM,
+                DATA_TRANSMISSION_COUNT);
         verify(mUwbSessionNotificationManager).onDataSent(
                 eq(uwbSession), eq(uwbAddress), eq(PERSISTABLE_BUNDLE));
         verify(mUwbMetrics).logDataTx(eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
@@ -2636,7 +2651,8 @@ public class UwbSessionManagerTest {
 
         // We receive a DataTransferStatusNtf with a sessionId for a different UwbSession, so it
         // should be dropped (no onDataSend()/onDataSendFailure() notifications sent).
-        mUwbSessionManager.onDataSendStatus(TEST_SESSION_ID_2, STATUS_CODE_OK, DATA_SEQUENCE_NUM);
+        mUwbSessionManager.onDataSendStatus(TEST_SESSION_ID_2, STATUS_CODE_OK, DATA_SEQUENCE_NUM,
+                DATA_TRANSMISSION_COUNT);
         verifyNoMoreInteractions(mUwbSessionNotificationManager);
     }
 
@@ -2664,7 +2680,8 @@ public class UwbSessionManagerTest {
         // We receive a DataTransferStatusNtf with an incorrect UCI sequence number (for which a
         // packet was never sent), so it should be dropped (no onDataSend()/onDataSendFailure()
         // notifications sent).
-        mUwbSessionManager.onDataSendStatus(TEST_SESSION_ID, STATUS_CODE_OK, DATA_SEQUENCE_NUM_1);
+        mUwbSessionManager.onDataSendStatus(TEST_SESSION_ID, STATUS_CODE_OK, DATA_SEQUENCE_NUM_1,
+                DATA_TRANSMISSION_COUNT);
         verifyNoMoreInteractions(mUwbSessionNotificationManager);
     }
 
@@ -2691,7 +2708,8 @@ public class UwbSessionManagerTest {
 
         // We receive a DataTransferStatusNtf with an error status code.
         mUwbSessionManager.onDataSendStatus(TEST_SESSION_ID,
-                STATUS_CODE_DATA_TRANSFER_ERROR_DATA_TRANSFER, DATA_SEQUENCE_NUM);
+                STATUS_CODE_DATA_TRANSFER_ERROR_DATA_TRANSFER, DATA_SEQUENCE_NUM,
+                DATA_TRANSMISSION_COUNT);
         verify(mUwbSessionNotificationManager).onDataSendFailed(
                 eq(uwbSession), eq(PEER_EXTENDED_UWB_ADDRESS),
                 eq(STATUS_CODE_DATA_TRANSFER_ERROR_DATA_TRANSFER), eq(PERSISTABLE_BUNDLE));
@@ -2726,6 +2744,94 @@ public class UwbSessionManagerTest {
         // Eventually Session DeInit is called, and the stored SendDataInfo(s) should be deleted.
         mUwbSessionManager.deInitSession(uwbSession.getSessionHandle());
         mTestLooper.dispatchNext();
+        assertNull(uwbSession.getSendDataInfo(DATA_SEQUENCE_NUM));
+    }
+
+    // Test case for scenario when a Data packet is successfully sent to a remote device (in
+    // short MacAddress format). Verifies the deletion of stored data depending upon the status
+    // code (STATUS_CODE_DATA_TRANSFER_REPETITION_OK) when data repetition count = 0.
+    @Test
+    public void sendData_withZeroDataRepetitionCount() throws Exception {
+        FiraOpenSessionParams params = new FiraOpenSessionParams.Builder()
+                .setDeviceAddress(UwbAddress.fromBytes(new byte[] {(byte) 0x01, (byte) 0x02 }))
+                .setVendorId(new byte[] { (byte) 0x00, (byte) 0x01 })
+                .setStaticStsIV(new byte[] { (byte) 0x01, (byte) 0x02, (byte) 0x03,
+                        (byte) 0x04, (byte) 0x05, (byte) 0x06 })
+                .setDestAddressList(Arrays.asList(
+                        UWB_DEST_ADDRESS))
+                .setProtocolVersion(new FiraProtocolVersion(1, 0))
+                .setSessionId(10)
+                .setSessionType(FiraParams.SESSION_TYPE_RANGING_AND_IN_BAND_DATA)
+                .setDeviceType(FiraParams.RANGING_DEVICE_TYPE_CONTROLLER)
+                .setDeviceRole(FiraParams.RANGING_DEVICE_ROLE_INITIATOR)
+                .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_UNICAST)
+                .setRangingIntervalMs(TEST_RANGING_INTERVAL_MS)
+                .setDataRepetitionCount(0)
+                .build();
+        UwbSession uwbSession = prepareExistingUwbSessionActive(params);
+        assertThat(uwbSession.getDataRepetitionCount()).isEqualTo(0);
+
+        // Send the Data packet and simulate the onDataSendStatus() callback being received.
+        mUwbSessionManager.sendData(
+                uwbSession.getSessionHandle(), PEER_EXTENDED_SHORT_UWB_ADDRESS, PERSISTABLE_BUNDLE,
+                DATA_PAYLOAD);
+        mTestLooper.dispatchNext();
+
+        // Since txCount is 0, stored data should not be deleted
+        mUwbSessionManager.onDataSendStatus(TEST_SESSION_ID,
+                STATUS_CODE_DATA_TRANSFER_REPETITION_OK, DATA_SEQUENCE_NUM, 0);
+        assertNotNull(uwbSession.getSendDataInfo(DATA_SEQUENCE_NUM));
+
+        // Since txCount = DataRepetitionCount, stored data should removed
+        mUwbSessionManager.onDataSendStatus(TEST_SESSION_ID,
+                STATUS_CODE_DATA_TRANSFER_OK, DATA_SEQUENCE_NUM, 1);
+        assertNull(uwbSession.getSendDataInfo(DATA_SEQUENCE_NUM));
+    }
+
+    // Test case for scenario when a Data packet is successfully sent to a remote device (in
+    // short MacAddress format). Verifies the deletion of stored data depending upon the status
+    // code (STATUS_CODE_DATA_TRANSFER_REPETITION_OK) and data repetition count of the
+    // DataTransferStatus notification.
+    @Test
+    public void sendData_withNonZeroDataRepetitionCount() throws Exception {
+        FiraOpenSessionParams params = new FiraOpenSessionParams.Builder()
+                .setDeviceAddress(UwbAddress.fromBytes(new byte[] {(byte) 0x01, (byte) 0x02 }))
+                .setVendorId(new byte[] { (byte) 0x00, (byte) 0x01 })
+                .setStaticStsIV(new byte[] { (byte) 0x01, (byte) 0x02, (byte) 0x03,
+                        (byte) 0x04, (byte) 0x05, (byte) 0x06 })
+                .setDestAddressList(Arrays.asList(
+                        UWB_DEST_ADDRESS))
+                .setProtocolVersion(new FiraProtocolVersion(1, 0))
+                .setSessionId(10)
+                .setSessionType(FiraParams.SESSION_TYPE_RANGING_AND_IN_BAND_DATA)
+                .setDeviceType(FiraParams.RANGING_DEVICE_TYPE_CONTROLLER)
+                .setDeviceRole(FiraParams.RANGING_DEVICE_ROLE_INITIATOR)
+                .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_UNICAST)
+                .setRangingIntervalMs(TEST_RANGING_INTERVAL_MS)
+                .setDataRepetitionCount(DATA_TRANSMISSION_COUNT_3)
+                .build();
+        UwbSession uwbSession = prepareExistingUwbSessionActive(params);
+        assertThat(uwbSession.getDataRepetitionCount()).isEqualTo(DATA_TRANSMISSION_COUNT_3);
+
+        // Send the Data packet and simulate the onDataSendStatus() callback being received.
+        mUwbSessionManager.sendData(
+                uwbSession.getSessionHandle(), PEER_EXTENDED_SHORT_UWB_ADDRESS, PERSISTABLE_BUNDLE,
+                DATA_PAYLOAD);
+        mTestLooper.dispatchNext();
+
+        mUwbSessionManager.onDataSendStatus(TEST_SESSION_ID,
+                STATUS_CODE_DATA_TRANSFER_REPETITION_OK, DATA_SEQUENCE_NUM,
+                DATA_TRANSMISSION_COUNT);
+
+        // Since txCount < DataRepetitionCount, stored data should not be deleted
+        assertNotNull(uwbSession.getSendDataInfo(DATA_SEQUENCE_NUM));
+
+        // Now simulate the onDataSendStatus() callback being received with a higher TxCount value.
+        mUwbSessionManager.onDataSendStatus(TEST_SESSION_ID,
+                STATUS_CODE_DATA_TRANSFER_OK, DATA_SEQUENCE_NUM,
+                DATA_TRANSMISSION_COUNT_3 + 1);
+
+        // Since txCount = DataRepetitionCount, stored data should removed
         assertNull(uwbSession.getSendDataInfo(DATA_SEQUENCE_NUM));
     }
 
