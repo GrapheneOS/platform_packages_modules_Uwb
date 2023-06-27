@@ -131,6 +131,7 @@ public class FiraOpenSessionParams extends FiraParams {
     private final int mNumOfMsrmtFocusOnAoaElevation;
     private final Long mRangingErrorStreakTimeoutMs;
     private final int mLinkLayerMode;
+    private final int mDataRepetitionCount;
     private final int mMinFramesPerRr;
     private final int mMtuSize;
     private final int mInterFrameInterval;
@@ -141,6 +142,7 @@ public class FiraOpenSessionParams extends FiraParams {
     @UlTdoaTxTimestampType private final int mUlTdoaTxTimestampType;
     @FilterType private final int mFilterType;
     private final int mMaxNumberOfMeasurements;
+    private final boolean mSessionDataTransferStatusNtfConfig;
     private final int mApplicationDataEndpoint;
 
     private static final int BUNDLE_VERSION_1 = 1;
@@ -228,6 +230,7 @@ public class FiraOpenSessionParams extends FiraParams {
             "ranging_error_streak_timeout_ms";
     private static final String KEY_LINK_LAYER_MODE =
             "link_layer_mode";
+    private static final String KEY_DATA_REPETITION_COUNT = "data_repetition_count";
     private static final String KEY_MIN_FRAMES_PER_RR =
             "min_frames_per_rr";
     private static final String KEY_MTU_SIZE =
@@ -241,6 +244,8 @@ public class FiraOpenSessionParams extends FiraParams {
     private static final String UL_TDOA_TX_TIMESTAMP_TYPE = "ul_tdoa_tx_timestamp_type";
     private static final String KEY_FILTER_TYPE = "filter_type";
     private static final String KEY_MAX_NUMBER_OF_MEASUREMENTS = "max_number_of_measurements";
+    private static final String KEY_SESSION_DATA_TRANSFER_STATUS_NTF_CONFIG =
+            "session_data_transfer_status_ntf_config";
     private static final String KEY_APPLICATION_DATA_ENDPOINT = "application_data_endpoint";
 
     private FiraOpenSessionParams(
@@ -310,6 +315,7 @@ public class FiraOpenSessionParams extends FiraParams {
             int numOfMsrmtFocusOnAoaElevation,
             Long rangingErrorStreakTimeoutMs,
             int linkLayerMode,
+            int dataRepetitionCount,
             int minFramePerRr,
             int mtuSize,
             int interFrameInterval,
@@ -320,6 +326,7 @@ public class FiraOpenSessionParams extends FiraParams {
             int ulTdoaTxTimestampType,
             int filterType,
             int maxNumberOfMeasurements,
+            boolean sessionDataTransferStatusNtfConfig,
             int applicationDataEndpoint) {
         mProtocolVersion = protocolVersion;
         mSessionId = sessionId;
@@ -387,6 +394,7 @@ public class FiraOpenSessionParams extends FiraParams {
         mNumOfMsrmtFocusOnAoaElevation = numOfMsrmtFocusOnAoaElevation;
         mRangingErrorStreakTimeoutMs = rangingErrorStreakTimeoutMs;
         mLinkLayerMode = linkLayerMode;
+        mDataRepetitionCount = dataRepetitionCount;
         mMinFramesPerRr = minFramePerRr;
         mMtuSize = mtuSize;
         mInterFrameInterval = interFrameInterval;
@@ -397,6 +405,7 @@ public class FiraOpenSessionParams extends FiraParams {
         mUlTdoaTxTimestampType = ulTdoaTxTimestampType;
         mFilterType = filterType;
         mMaxNumberOfMeasurements = maxNumberOfMeasurements;
+        mSessionDataTransferStatusNtfConfig = sessionDataTransferStatusNtfConfig;
         mApplicationDataEndpoint = applicationDataEndpoint;
     }
 
@@ -693,6 +702,10 @@ public class FiraOpenSessionParams extends FiraParams {
         return mLinkLayerMode;
     }
 
+    public int getDataRepetitionCount() {
+        return mDataRepetitionCount;
+    }
+
     public int getMinFramesPerRr() {
         return mMinFramesPerRr;
     }
@@ -732,6 +745,10 @@ public class FiraOpenSessionParams extends FiraParams {
     }
 
     public int getMaxNumberOfMeasurements() { return mMaxNumberOfMeasurements; }
+
+    public boolean getSessionDataTransferStatusNtfConfig() {
+        return mSessionDataTransferStatusNtfConfig;
+    }
 
     public int getApplicationDataEndpoint() {
         return mApplicationDataEndpoint;
@@ -853,6 +870,7 @@ public class FiraOpenSessionParams extends FiraParams {
         bundle.putInt(KEY_NUM_OF_MSRMT_FOCUS_ON_AOA_ELEVATION, mNumOfMsrmtFocusOnAoaElevation);
         bundle.putLong(RANGING_ERROR_STREAK_TIMEOUT_MS, mRangingErrorStreakTimeoutMs);
         bundle.putInt(KEY_LINK_LAYER_MODE, mLinkLayerMode);
+        bundle.putInt(KEY_DATA_REPETITION_COUNT, mDataRepetitionCount);
         bundle.putInt(KEY_MIN_FRAMES_PER_RR, mMinFramesPerRr);
         bundle.putInt(KEY_MTU_SIZE, mMtuSize);
         bundle.putInt(KEY_INTER_FRAME_INTERVAL, mInterFrameInterval);
@@ -863,6 +881,8 @@ public class FiraOpenSessionParams extends FiraParams {
         bundle.putInt(UL_TDOA_TX_TIMESTAMP_TYPE, mUlTdoaTxTimestampType);
         bundle.putInt(KEY_FILTER_TYPE, mFilterType);
         bundle.putInt(KEY_MAX_NUMBER_OF_MEASUREMENTS, mMaxNumberOfMeasurements);
+        bundle.putBoolean(
+                KEY_SESSION_DATA_TRANSFER_STATUS_NTF_CONFIG, mSessionDataTransferStatusNtfConfig);
         bundle.putInt(KEY_APPLICATION_DATA_ENDPOINT, mApplicationDataEndpoint);
         return bundle;
     }
@@ -979,6 +999,7 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setRangingErrorStreakTimeoutMs(bundle
                         .getLong(RANGING_ERROR_STREAK_TIMEOUT_MS, 10_000L))
                 .setLinkLayerMode(bundle.getInt(KEY_LINK_LAYER_MODE, 0))
+                .setDataRepetitionCount(bundle.getInt(KEY_DATA_REPETITION_COUNT, 0))
                 .setMinFramePerRr(bundle.getInt(KEY_MIN_FRAMES_PER_RR, 1))
                 .setMtuSize(bundle.getInt(KEY_MTU_SIZE, 1048))
                 .setInterFrameInterval(bundle.getInt(KEY_INTER_FRAME_INTERVAL, 1))
@@ -990,6 +1011,8 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setFilterType(bundle.getInt(KEY_FILTER_TYPE, FILTER_TYPE_DEFAULT))
                 .setMaxNumberOfMeasurements(bundle.getInt(
                         KEY_MAX_NUMBER_OF_MEASUREMENTS, MAX_NUMBER_OF_MEASUREMENTS_DEFAULT))
+                .setSessionDataTransferStatusNtfConfig(bundle.getBoolean(
+                        KEY_SESSION_DATA_TRANSFER_STATUS_NTF_CONFIG))
                 .setApplicationDataEndpoint(bundle.getInt(
                         KEY_APPLICATION_DATA_ENDPOINT, APPLICATION_DATA_ENDPOINT_DEFAULT));
 
@@ -1205,6 +1228,9 @@ public class FiraOpenSessionParams extends FiraParams {
         /** UCI spec default: 0 */
         private int mLinkLayerMode = 0;
 
+        /** UCI spec default: 0x00(No repetition) */
+        private int mDataRepetitionCount = 0;
+
         /** UCI spec default: 1 */
         public int mMinFramesPerRr = 1;
 
@@ -1233,6 +1259,9 @@ public class FiraOpenSessionParams extends FiraParams {
         @FilterType private int mFilterType = FILTER_TYPE_DEFAULT;
 
         private int mMaxNumberOfMeasurements = MAX_NUMBER_OF_MEASUREMENTS_DEFAULT;
+
+        /** UCI spec default: 0x00(Disable) */
+        private boolean mSessionDataTransferStatusNtfConfig = false;
 
         private int mApplicationDataEndpoint = APPLICATION_DATA_ENDPOINT_DEFAULT;
 
@@ -1307,6 +1336,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mNumOfMsrmtFocusOnAoaElevation = builder.mNumOfMsrmtFocusOnAoaElevation;
             mRangingErrorStreakTimeoutMs = builder.mRangingErrorStreakTimeoutMs;
             mLinkLayerMode = builder.mLinkLayerMode;
+            mDataRepetitionCount = builder.mDataRepetitionCount;
             mMinFramesPerRr = builder.mMinFramesPerRr;
             mMtuSize = builder.mMtuSize;
             mInterFrameInterval = builder.mInterFrameInterval;
@@ -1316,6 +1346,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mUlTdoaDeviceId = builder.mUlTdoaDeviceId;
             mUlTdoaTxTimestampType = builder.mUlTdoaTxTimestampType;
             mMaxNumberOfMeasurements = builder.mMaxNumberOfMeasurements;
+            mSessionDataTransferStatusNtfConfig = builder.mSessionDataTransferStatusNtfConfig;
             mApplicationDataEndpoint = builder.mApplicationDataEndpoint;
         }
 
@@ -1388,6 +1419,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mNumOfMsrmtFocusOnAoaElevation = params.mNumOfMsrmtFocusOnAoaElevation;
             mRangingErrorStreakTimeoutMs = params.mRangingErrorStreakTimeoutMs;
             mLinkLayerMode = params.mLinkLayerMode;
+            mDataRepetitionCount = params.mDataRepetitionCount;
             mMinFramesPerRr = params.mMinFramesPerRr;
             mMtuSize = params.mMtuSize;
             mInterFrameInterval = params.mInterFrameInterval;
@@ -1398,6 +1430,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mUlTdoaTxTimestampType = params.mUlTdoaTxTimestampType;
             mFilterType = params.mFilterType;
             mMaxNumberOfMeasurements = params.mMaxNumberOfMeasurements;
+            mSessionDataTransferStatusNtfConfig = params.mSessionDataTransferStatusNtfConfig;
             mApplicationDataEndpoint = params.mApplicationDataEndpoint;
         }
 
@@ -1770,6 +1803,11 @@ public class FiraOpenSessionParams extends FiraParams {
             return this;
         }
 
+        public FiraOpenSessionParams.Builder setDataRepetitionCount(int dataRepetitionCount) {
+            mDataRepetitionCount = dataRepetitionCount;
+            return this;
+        }
+
         public FiraOpenSessionParams.Builder setMinFramePerRr(int minFramePerRr) {
             mMinFramesPerRr = minFramePerRr;
             return this;
@@ -1840,6 +1878,12 @@ public class FiraOpenSessionParams extends FiraParams {
         public FiraOpenSessionParams.Builder setMaxNumberOfMeasurements(
                 int maxNumberOfMeasurements) {
             mMaxNumberOfMeasurements = maxNumberOfMeasurements;
+            return this;
+        }
+
+        public FiraOpenSessionParams.Builder setSessionDataTransferStatusNtfConfig(
+                boolean sessionDataTransferStatusNtfConfig) {
+            mSessionDataTransferStatusNtfConfig = sessionDataTransferStatusNtfConfig;
             return this;
         }
 
@@ -2058,6 +2102,7 @@ public class FiraOpenSessionParams extends FiraParams {
                     mNumOfMsrmtFocusOnAoaElevation,
                     mRangingErrorStreakTimeoutMs,
                     mLinkLayerMode,
+                    mDataRepetitionCount,
                     mMinFramesPerRr,
                     mMtuSize,
                     mInterFrameInterval,
@@ -2068,6 +2113,7 @@ public class FiraOpenSessionParams extends FiraParams {
                     mUlTdoaTxTimestampType,
                     mFilterType,
                     mMaxNumberOfMeasurements,
+                    mSessionDataTransferStatusNtfConfig,
                     mApplicationDataEndpoint);
         }
     }
