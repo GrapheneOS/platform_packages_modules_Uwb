@@ -1130,7 +1130,7 @@ impl NotificationManager for NotificationManagerAndroid {
             let payload_jobject = unsafe { JObject::from_raw(payload_jbytearray) };
             self.cached_jni_call(
                 "onDataReceived",
-                "(JIJ[BII[B)V",
+                "(JIJ[B[B)V",
                 &[
                     // session_token below has already been mapped to session_id by uci layer.
                     jvalue::from(JValue::Long(data_rcv_notification.session_token as i64)),
