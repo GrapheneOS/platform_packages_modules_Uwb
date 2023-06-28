@@ -23,6 +23,9 @@ import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TY
 import static com.android.server.uwb.util.UwbUtil.convertFloatToQFormat;
 import static com.android.server.uwb.util.UwbUtil.degreeToRadian;
 
+import static com.google.uwb.support.radar.RadarParams.BITS_PER_SAMPLES_48;
+import static com.google.uwb.support.radar.RadarParams.RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES;
+
 import android.os.PersistableBundle;
 import android.util.Pair;
 import android.uwb.AngleMeasurement;
@@ -35,6 +38,8 @@ import android.uwb.UwbAddress;
 import com.android.modules.utils.build.SdkLevel;
 import com.android.server.uwb.data.UwbDlTDoAMeasurement;
 import com.android.server.uwb.data.UwbOwrAoaMeasurement;
+import com.android.server.uwb.data.UwbRadarData;
+import com.android.server.uwb.data.UwbRadarSweepData;
 import com.android.server.uwb.data.UwbRangingData;
 import com.android.server.uwb.data.UwbTwoWayMeasurement;
 import com.android.server.uwb.params.TlvUtil;
@@ -42,6 +47,9 @@ import com.android.server.uwb.params.TlvUtil;
 import com.google.uwb.support.dltdoa.DlTDoAMeasurement;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.oemextension.RangingReportMetadata;
+import com.google.uwb.support.radar.RadarData;
+import com.google.uwb.support.radar.RadarParams;
+import com.google.uwb.support.radar.RadarSweepData;
 
 public class UwbTestUtils {
     public static final int TEST_SESSION_ID = 7;
@@ -75,6 +83,7 @@ public class UwbTestUtils {
 
     private static final byte[] TEST_RAW_NTF_DATA = {0x10, 0x01, 0x05};
     private static final long TEST_SEQ_COUNTER = 5;
+    private static final long TEST_SEQ_COUNTER2 = 6;
     private static final int TEST_RCR_INDICATION = 7;
     private static final long TEST_CURR_RANGING_INTERVAL = 100;
     private static final int TEST_RANGING_MEASURES_TYPE = RANGING_MEASUREMENT_TYPE_TWO_WAY;
@@ -99,6 +108,7 @@ public class UwbTestUtils {
     private static final int TEST_BLOCK_INDEX = 5;
     private static final int TEST_ROUND_INDEX = 1;
     private static final long TEST_TIMESTAMP = 500_000L;
+    private static final long TEST_TIMESTAMP2 = 600_000L;
     private static final float TEST_ANCHOR_CFO = 12.50f;
     private static final float TEST_CFO = 15.50f;
     private static final long TEST_INTIATOR_REPLY_TIME = 500_000L;
@@ -108,6 +118,12 @@ public class UwbTestUtils {
             0x05, 0x06, 0x07, 0x08, 0x09, 0x10};
     private static final byte[] TEST_ACTIVE_RANGING_ROUNDS = {0x02, 0x08};
     private static final int TEST_RSSI = 150;
+
+    private static final int TEST_SAMPLES_PER_SWEEP = 64;
+    private static final int TEST_BITS_PER_SAMPLE = BITS_PER_SAMPLES_48;
+    private static final int TEST_SWEEP_OFFSET = -10;
+    private static final byte[] TEST_VENDOR_SPECIFIC_DATA = {0x04, 0x07};
+    private static final byte[] TEST_SAMPLE_DATA = {0x06, 0x08, (byte) 0Xff};
 
     private UwbTestUtils() {}
 
@@ -338,5 +354,93 @@ public class UwbTestUtils {
                 .addMeasurement(rangingMeasurementBuilder.build())
                 .addRangingReportMetadata(rangingReportMetadata)
                 .build();
+    }
+
+    /** Build UwbRadarData for all Radar Data Type(s). */
+    public static UwbRadarData generateUwbRadarData(int radarDataType, int rangingStatus) {
+        switch (radarDataType) {
+            case RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES:
+                return generateRadarSweepSamplesUwbRadarData(rangingStatus);
+            default:
+                return generateDefaultUwbRadarData();
+        }
+    }
+
+    /** Build UwbRadarData for Radar Sweep Samples Radar Data Type. */
+    public static UwbRadarData generateRadarSweepSamplesUwbRadarData(int rangingStatus) {
+        final int noOfRadarSweeps = 2;
+        final UwbRadarSweepData[] uwbRadarSweepData = new UwbRadarSweepData[noOfRadarSweeps];
+        uwbRadarSweepData[0] =
+                new UwbRadarSweepData(
+                        TEST_SEQ_COUNTER,
+                        TEST_TIMESTAMP,
+                        TEST_VENDOR_SPECIFIC_DATA,
+                        TEST_SAMPLE_DATA);
+        uwbRadarSweepData[1] =
+                new UwbRadarSweepData(
+                        TEST_SEQ_COUNTER2,
+                        TEST_TIMESTAMP2,
+                        TEST_VENDOR_SPECIFIC_DATA,
+                        TEST_SAMPLE_DATA);
+        return new UwbRadarData(
+                TEST_SESSION_ID,
+                rangingStatus,
+                RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES,
+                TEST_SAMPLES_PER_SWEEP,
+                TEST_BITS_PER_SAMPLE,
+                TEST_SWEEP_OFFSET,
+                uwbRadarSweepData);
+    }
+
+    /* Create a UwbRadarData with no measurements */
+    private static UwbRadarData generateDefaultUwbRadarData() {
+        final int noOfRadarSweeps = 0;
+        final UwbRadarSweepData[] uwbEmptyRadarSweepData = new UwbRadarSweepData[noOfRadarSweeps];
+        return new UwbRadarData(
+                TEST_SESSION_ID,
+                TEST_STATUS,
+                RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES,
+                TEST_SAMPLES_PER_SWEEP,
+                TEST_BITS_PER_SAMPLE,
+                TEST_SWEEP_OFFSET,
+                uwbEmptyRadarSweepData);
+    }
+
+    /** Build RadarData for all Radar Data Type(s). */
+    public static RadarData generateRadarData(UwbRadarData uwbRadarData) {
+        RadarData.Builder radarDataBuilder =
+                new RadarData.Builder()
+                        .setStatusCode(uwbRadarData.statusCode)
+                        .setRadarDataType(uwbRadarData.radarDataType)
+                        .setSamplesPerSweep(uwbRadarData.samplesPerSweep)
+                        .setBitsPerSample(uwbRadarData.bitsPerSample)
+                        .setSweepOffset(uwbRadarData.sweepOffset);
+        if (uwbRadarData.radarDataType == RadarParams.RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES) {
+            for (UwbRadarSweepData sweepData : uwbRadarData.radarSweepData) {
+                radarDataBuilder.addSweepData(
+                        new RadarSweepData.Builder()
+                                .setSequenceNumber(sweepData.sequenceNumber)
+                                .setTimestamp(sweepData.timestamp)
+                                .setVendorSpecificData(sweepData.vendorSpecificData)
+                                .setSampleData(sweepData.sampleData)
+                                .build());
+            }
+        }
+        return radarDataBuilder.build();
+    }
+
+    /**
+     * Helper method to generate a {@link UwbRadarData} instance and a corresponding
+     * {@link RangingReport}.
+     */
+    public static Pair<UwbRadarData, RangingReport> generateRadarDataAndRangingReport(
+            int radarDataType) {
+        UwbRadarData uwbRadarData = generateUwbRadarData(radarDataType, TEST_STATUS);
+
+        RangingReport rangingReport =
+                new RangingReport.Builder()
+                        .addRangingReportMetadata(generateRadarData(uwbRadarData).toBundle())
+                        .build();
+        return Pair.create(uwbRadarData, rangingReport);
     }
 }
