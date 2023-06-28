@@ -118,7 +118,10 @@ public class RangingControleeTest {
                         mComplexChannel,
                         new ArrayList<>(List.of(UwbAddress.getRandomizedShortAddress())),
                         INFREQUENT,
-                        uwbRangeDataNtfConfig);
+                        uwbRangeDataNtfConfig,
+                        Utils.DURATION_2_MS,
+                        Utils.AUTOMATIC,
+                        false);
         mRangingControlee.setRangingParameters(rangingParameters);
     }
 
@@ -139,7 +142,10 @@ public class RangingControleeTest {
                         mComplexChannel,
                         List.of(UwbAddress.fromBytes(new byte[]{3, 4})),
                         INFREQUENT,
-                        uwbRangeDataNtfConfig);
+                        uwbRangeDataNtfConfig,
+                        Utils.DURATION_2_MS,
+                        Utils.AUTOMATIC,
+                        false);
 
         mRangingControlee.setRangingParameters(rangingParameters);
 
