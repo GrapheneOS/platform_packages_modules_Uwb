@@ -337,12 +337,18 @@ public class FiraEncoder extends TlvEncoder {
         // b2 : Ranging Control Phase
         rangingRoundControl |= (byte) (params.hasRangingControlPhase() ? 0x04 : 0x00);
 
+        // b6 : Measurement Report Message
+        if (params.getScheduledMode() == FiraParams.CONTENTION_BASED_RANGING) {
+            if (params.getMeasurementReportPhase() == FiraParams.MEASUREMENT_REPORT_PHASE_SET) {
+                rangingRoundControl |= (byte) 0x40;
+            }
+        }
+
         // b7 : Measurement Report Message
         if (params.getMeasurementReportType()
                 == FiraParams.MEASUREMENT_REPORT_TYPE_RESPONDER_TO_INITIATOR) {
-            rangingRoundControl |= 0x80;
+            rangingRoundControl |= (byte) 0x80;
         }
-
         return rangingRoundControl;
     }
 
