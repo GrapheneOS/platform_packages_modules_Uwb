@@ -19,7 +19,7 @@ package androidx.core.uwb.backend.impl.internal;
 import static androidx.core.uwb.backend.impl.internal.Utils.RANGE_DATA_NTF_ENABLE;
 import static androidx.core.uwb.backend.impl.internal.Utils.SUPPORTED_NTF_CONFIG;
 
-import static com.android.internal.util.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.Objects;
 

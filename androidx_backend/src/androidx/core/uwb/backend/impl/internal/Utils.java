@@ -21,8 +21,9 @@ import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABL
 import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_EDGE_TRIG;
 import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG;
 
-import android.annotation.IntDef;
 import android.util.ArrayMap;
+
+import androidx.annotation.IntDef;
 
 import com.google.common.collect.ImmutableList;
 import com.google.uwb.support.fira.FiraParams;
