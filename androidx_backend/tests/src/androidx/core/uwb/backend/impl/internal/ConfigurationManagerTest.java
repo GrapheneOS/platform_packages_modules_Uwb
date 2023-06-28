@@ -21,7 +21,9 @@ import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_U
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_UNICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.INFREQUENT;
 import static androidx.core.uwb.backend.impl.internal.Utils.RANGE_DATA_NTF_ENABLE_PROXIMITY_EDGE_TRIG;
+import static androidx.core.uwb.backend.impl.internal.Utils.convertMsToRstu;
 
+import static com.google.uwb.support.fira.FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS;
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
 import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_EDGE_TRIG;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_INITIATOR;
@@ -82,7 +84,10 @@ public class ConfigurationManagerTest {
                         mComplexChannel,
                         new ArrayList<>(List.of(UwbAddress.getRandomizedShortAddress())),
                         INFREQUENT,
-                        mUwbRangeDataNtfConfig);
+                        mUwbRangeDataNtfConfig,
+                        Utils.DURATION_2_MS,
+                        Utils.AUTOMATIC,
+                        false);
         when(mComplexChannel.getChannel()).thenReturn(1);
         when(mComplexChannel.getPreambleIndex()).thenReturn(1);
     }
@@ -111,7 +116,10 @@ public class ConfigurationManagerTest {
                         mComplexChannel,
                         new ArrayList<>(List.of(UwbAddress.getRandomizedShortAddress())),
                         INFREQUENT,
-                        mUwbRangeDataNtfConfig);
+                        mUwbRangeDataNtfConfig,
+                        Utils.DURATION_2_MS,
+                        Utils.AUTOMATIC,
+                        false);
         FiraOpenSessionParams params =
                 ConfigurationManager.createOpenSessionParams(
                         TEST_DEVICE_TYPE, TEST_LOCAL_ADDRESS, rangingParameters,
@@ -120,6 +128,9 @@ public class ConfigurationManagerTest {
         assertArrayEquals(params.getSessionKey(), sessionKey);
         assertTrue(params.isKeyRotationEnabled());
         assertEquals(params.getKeyRotationRate(), 0);
+        assertEquals(params.getRangingIntervalMs(), Utils.AUTOMATIC);
+        assertEquals(params.getSlotDurationRstu(), convertMsToRstu(Utils.DURATION_2_MS));
+        assertEquals(params.getAoaResultRequest(), AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS);
     }
 
     @Test
