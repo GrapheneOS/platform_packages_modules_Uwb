@@ -87,14 +87,14 @@ public final class Utils {
     })
     public @interface RangingUpdateRate {}
 
-    /** Reports ranging data in a couple of seconds (default to 4 seconds). */
-    public static final int INFREQUENT = 1;
-
     /**
      * Reports ranging data in hundreds of milliseconds (depending on the ranging interval setting
      * of the config)
      */
-    public static final int NORMAL = 2;
+    public static final int NORMAL = 1;
+
+    /** Reports ranging data in a couple of seconds (default to 4 seconds). */
+    public static final int INFREQUENT = 2;
 
     /** Reports ranging data as fast as possible (depending on the device's capability). */
     public static final int FAST = 3;
