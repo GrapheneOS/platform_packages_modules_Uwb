@@ -264,7 +264,7 @@ public abstract class FiraParams extends Params {
 
     public static final int CONSTRAINT_LENGTH_7 = 7;
 
-    /** Measurement Report */
+    /** Measurement Report Type */
     @IntDef(
             value = {
                 MEASUREMENT_REPORT_TYPE_INITIATOR_TO_RESPONDER,
@@ -275,6 +275,18 @@ public abstract class FiraParams extends Params {
     public static final int MEASUREMENT_REPORT_TYPE_INITIATOR_TO_RESPONDER = 0;
 
     public static final int MEASUREMENT_REPORT_TYPE_RESPONDER_TO_INITIATOR = 1;
+
+    /** Measurement Report Phase */
+    @IntDef(
+            value = {
+                MEASUREMENT_REPORT_PHASE_NOTSET,
+                MEASUREMENT_REPORT_PHASE_SET,
+            })
+    public @interface MeasurementReportPhase {}
+
+    public static final int MEASUREMENT_REPORT_PHASE_NOTSET = 0;
+
+    public static final int MEASUREMENT_REPORT_PHASE_SET = 1;
 
     /** PRF Mode */
     @IntDef(
