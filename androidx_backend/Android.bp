@@ -18,6 +18,7 @@ package {
 
 aidl_interface {
     name: "androidx.core.uwb.backend.aidl_interface",
+    enabled: false,
     owner: "Google",
     local_include_dir: "interface",
     srcs: [
@@ -34,15 +35,14 @@ aidl_interface {
 
 java_library {
     name: "uwb_androidx_backend",
-    sdk_version: "system_UpsideDownCake",
-    min_sdk_version: "32",
+    enabled: false,
     installable: false,
+    platform_apis: true,
     srcs: [
         "src/**/*.java",
     ],
     libs: ["android-support-annotations"],
     static_libs: [
-        "androidx.annotation_annotation",
         "androidx.concurrent_concurrent-futures",
         "androidx.core.uwb.backend.aidl_interface-V1-java",
         "com.uwb.support.fira",
@@ -54,13 +54,12 @@ java_library {
 
 android_app {
     name: "uwb_androidx_backend_app",
-    sdk_version: "system_UpsideDownCake",
-    min_sdk_version: "32",
+    enabled: false,
+    platform_apis: true,
     certificate: "platform",
     manifest: "AndroidManifest.xml",
     libs: ["android-support-annotations"],
     static_libs: [
-        "androidx.annotation_annotation",
         "androidx.concurrent_concurrent-futures",
         "androidx.core.uwb.backend.aidl_interface-V1-java",
         "com.uwb.support.fira",
