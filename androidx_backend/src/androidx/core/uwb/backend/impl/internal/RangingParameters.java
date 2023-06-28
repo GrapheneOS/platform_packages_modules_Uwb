@@ -16,7 +16,7 @@
 
 package androidx.core.uwb.backend.impl.internal;
 
-import androidx.annotation.NonNull;
+import android.annotation.NonNull;
 
 import com.google.common.collect.ImmutableList;
 
