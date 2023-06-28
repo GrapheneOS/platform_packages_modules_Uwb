@@ -16,7 +16,7 @@
 
 package androidx.core.uwb.backend.impl.internal;
 
-import android.annotation.IntDef;
+import androidx.annotation.IntDef;
 
 /** Measurement providing the value and confidence of the ranging. */
 public class RangingMeasurement {
