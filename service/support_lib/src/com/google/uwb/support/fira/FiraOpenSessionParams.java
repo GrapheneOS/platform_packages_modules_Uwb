@@ -74,6 +74,7 @@ public class FiraOpenSessionParams extends FiraParams {
     private final boolean mHasControlMessage;
     private final boolean mHasRangingControlPhase;
     @MeasurementReportType private final int mMeasurementReportType;
+    @MeasurementReportPhase private final int mMeasurementReportPhase;
 
     @IntRange(from = 1, to = 10)
     private final int mInBandTerminationAttemptCount;
@@ -219,6 +220,7 @@ public class FiraOpenSessionParams extends FiraParams {
     private static final String KEY_HAS_CONTROL_MESSAGE = "has_control_message";
     private static final String KEY_HAS_RANGING_CONTROL_PHASE = "has_ranging_control_phase";
     private static final String KEY_MEASUREMENT_REPORT_TYPE = "measurement_report_type";
+    private static final String KEY_MEASUREMENT_REPORT_PHASE = "measurement_report_phase";
     private static final String KEY_AOA_TYPE = "aoa_type";
     private static final String KEY_NUM_OF_MSRMT_FOCUS_ON_RANGE =
             "num_of_msrmt_focus_on_range";
@@ -271,6 +273,7 @@ public class FiraOpenSessionParams extends FiraParams {
             boolean hasControlMessage,
             boolean hasRangingControlPhase,
             @MeasurementReportType int measurementReportType,
+            @MeasurementReportPhase int measurementReportPhase,
             @IntRange(from = 1, to = 10) int inBandTerminationAttemptCount,
             @UwbChannel int channelNumber,
             int preambleCodeIndex,
@@ -350,6 +353,7 @@ public class FiraOpenSessionParams extends FiraParams {
         mHasControlMessage = hasControlMessage;
         mHasRangingControlPhase = hasRangingControlPhase;
         mMeasurementReportType = measurementReportType;
+        mMeasurementReportPhase = measurementReportPhase;
         mInBandTerminationAttemptCount = inBandTerminationAttemptCount;
         mChannelNumber = channelNumber;
         mPreambleCodeIndex = preambleCodeIndex;
@@ -504,6 +508,11 @@ public class FiraOpenSessionParams extends FiraParams {
     @MeasurementReportType
     public int getMeasurementReportType() {
         return mMeasurementReportType;
+    }
+
+    @MeasurementReportType
+    public int getMeasurementReportPhase() {
+        return mMeasurementReportPhase;
     }
 
     @IntRange(from = 1, to = 10)
@@ -815,6 +824,7 @@ public class FiraOpenSessionParams extends FiraParams {
         bundle.putBoolean(KEY_HAS_CONTROL_MESSAGE, mHasControlMessage);
         bundle.putBoolean(KEY_HAS_RANGING_CONTROL_PHASE, mHasRangingControlPhase);
         bundle.putInt(KEY_MEASUREMENT_REPORT_TYPE, mMeasurementReportType);
+        bundle.putInt(KEY_MEASUREMENT_REPORT_PHASE, mMeasurementReportPhase);
         bundle.putInt(KEY_IN_BAND_TERMINATION_ATTEMPT_COUNT, mInBandTerminationAttemptCount);
         bundle.putInt(KEY_CHANNEL_NUMBER, mChannelNumber);
         bundle.putInt(KEY_PREAMBLE_CODE_INDEX, mPreambleCodeIndex);
@@ -939,6 +949,7 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setHasRangingControlPhase(
                         bundle.getBoolean(KEY_HAS_RANGING_CONTROL_PHASE, false))
                 .setMeasurementReportType(bundle.getInt(KEY_MEASUREMENT_REPORT_TYPE))
+                .setMeasurementReportPhase(bundle.getInt(KEY_MEASUREMENT_REPORT_PHASE))
                 .setInBandTerminationAttemptCount(
                         bundle.getInt(KEY_IN_BAND_TERMINATION_ATTEMPT_COUNT))
                 .setChannelNumber(bundle.getInt(KEY_CHANNEL_NUMBER))
@@ -1094,6 +1105,10 @@ public class FiraOpenSessionParams extends FiraParams {
         /** UCI spec default: RANGING_ROUND_CONTROL bit 7 default 0 */
         @MeasurementReportType
         private int mMeasurementReportType = MEASUREMENT_REPORT_TYPE_INITIATOR_TO_RESPONDER;
+
+        /** UCI spec default: RANGING_ROUND_CONTROL bit 6 default 0 */
+        @MeasurementReportType
+        private int mMeasurementReportPhase = MEASUREMENT_REPORT_PHASE_NOTSET;
 
         /** UCI spec default: in-band termination signal will be sent once. */
         @IntRange(from = 1, to = 10)
@@ -1290,6 +1305,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mHasControlMessage = builder.mHasControlMessage;
             mHasRangingControlPhase = builder.mHasRangingControlPhase;
             mMeasurementReportType = builder.mMeasurementReportType;
+            mMeasurementReportPhase = builder.mMeasurementReportPhase;
             mInBandTerminationAttemptCount = builder.mInBandTerminationAttemptCount;
             mChannelNumber = builder.mChannelNumber;
             mPreambleCodeIndex = builder.mPreambleCodeIndex;
@@ -1373,6 +1389,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mHasControlMessage = params.mHasControlMessage;
             mHasRangingControlPhase = params.mHasRangingControlPhase;
             mMeasurementReportType = params.mMeasurementReportType;
+            mMeasurementReportPhase = params.mMeasurementReportPhase;
             mInBandTerminationAttemptCount = params.mInBandTerminationAttemptCount;
             mChannelNumber = params.mChannelNumber;
             mPreambleCodeIndex = params.mPreambleCodeIndex;
@@ -1552,6 +1569,12 @@ public class FiraOpenSessionParams extends FiraParams {
         public FiraOpenSessionParams.Builder setMeasurementReportType(
                 @MeasurementReportType int measurementReportType) {
             mMeasurementReportType = measurementReportType;
+            return this;
+        }
+
+        public FiraOpenSessionParams.Builder setMeasurementReportPhase(
+                @MeasurementReportPhase int measurementReportPhase) {
+            mMeasurementReportPhase = measurementReportPhase;
             return this;
         }
 
@@ -2058,6 +2081,7 @@ public class FiraOpenSessionParams extends FiraParams {
                     mHasControlMessage,
                     mHasRangingControlPhase,
                     mMeasurementReportType,
+                    mMeasurementReportPhase,
                     mInBandTerminationAttemptCount,
                     mChannelNumber,
                     mPreambleCodeIndex,

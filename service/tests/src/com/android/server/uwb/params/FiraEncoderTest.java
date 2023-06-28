@@ -18,10 +18,12 @@ package com.android.server.uwb.params;
 
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.uwb.support.fira.FiraParams.CONTENTION_BASED_RANGING;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_UNICAST;
 import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_LEVEL_TRIG;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_DT_TAG;
+import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_INITIATOR;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_RESPONDER;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLLER;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_DT_TAG;
@@ -143,12 +145,14 @@ public class FiraEncoderTest {
     private static final String SLOT_DURATION_TLV = "08026009";
     private static final String MAC_FCS_TYPE_TLV = "0B0100";
     private static final String RANGING_ROUND_CONTROL_TLV = "0C0103";
+    private static final String RANGING_ROUND_CONTROL_CONTENTION_MRP_RCP_CM_RRRM_TLV = "0C0147";
     private static final String AOA_RESULT_REQ_TLV = "0D0101";
     private static final String RANGE_DATA_NTF_CONFIG_AOA_LEVEL_TLV = "0E0104";
     private static final String RANGE_DATA_NTF_CONFIG_ENABLE_TLV = "0E0101";
     private static final String RANGE_DATA_NTF_PROXIMITY_NEAR_TLV = "0F020000";
     private static final String RANGE_DATA_NTF_PROXIMITY_FAR_TLV = "1002204E";
-    private static final String DEVICE_ROLE_TLV = "110100";
+    private static final String DEVICE_ROLE_RESPONDER_TLV = "110100";
+    private static final String DEVICE_ROLE_INITIATOR_TLV = "110101";
     private static final String DEVICE_ROLE_UT_TAG_TLV = "110104";
     private static final String DEVICE_ROLE_DT_TAG_TLV = "110108";
     private static final String RFRAME_CONFIG_TLV = "120103";
@@ -158,13 +162,16 @@ public class FiraEncoderTest {
     private static final String SFD_ID_TLV = "150102";
     private static final String PSDU_DATA_RATE_TLV = "160100";
     private static final String PREAMBLE_DURATION_TLV = "170101";
-    private static final String LINK_LAYER_MODE_TLV = "180101";
+    private static final String LINK_LAYER_MODE_BYPASS_TLV = "180100";
+    private static final String LINK_LAYER_MODE_CONNECTIONLESS_DATA_TLV = "180101";
     private static final String DATA_TRANSFER_STATUS_NTF_CONFIG = "190100";
     private static final String RANGING_TIME_STRUCT_TLV = "1A0101";
     private static final String SLOTS_PER_RR_TLV = "1B0119";
     private static final String TX_ADAPTIVE_PAYLOAD_POWER_TLV = "1C0100";
     private static final String PRF_MODE_TLV = "1F0100";
-    private static final String SCHEDULED_MODE_TLV = "220101";
+    private static final String CAP_SIZE_RANGE_DEFAULT_TLV = "20021805";
+    private static final String SCHEDULED_MODE_TIME_SCHEDULED_TLV = "220101";
+    private static final String SCHEDULED_MODE_CONTENTION_TLV = "220100";
     private static final String KEY_ROTATION_TLV = "230100";
     private static final String KEY_ROTATION_RATE_TLV = "240100";
     private static final String SESSION_PRIORITY_TLV = "250132";
@@ -185,7 +192,8 @@ public class FiraEncoderTest {
     private static final String VENDOR_ID_TLV = "27020578";
     private static final String STATIC_STS_IV_TLV = "28061A5577477E7D";
     private static final String RANGE_DATA_NTF_AOA_BOUND_TLV = "1D0807D59E4707D56022";
-    private static final String APPLICATION_DATA_ENDPOINT_TLV = "4C0101";
+    private static final String APPLICATION_DATA_ENDPOINT_HOST_TLV = "4C0100";
+    private static final String APPLICATION_DATA_ENDPOINT_SECURE_COMPONENT_TLV = "4C0101";
     private static final String UL_TDOA_TX_INTERVAL_TLV = "3304B0040000";
     private static final String UL_TDOA_RANDOM_WINDOW_TLV = "34041E000000";
     private static final String UL_TDOA_DEVICE_ID_TLV = "3803010B0A";
@@ -218,10 +226,12 @@ public class FiraEncoderTest {
                     + DEVICE_MAC_ADDRESS_TLV + SLOT_DURATION_TLV + MAC_FCS_TYPE_TLV
                     + RANGING_ROUND_CONTROL_TLV + AOA_RESULT_REQ_TLV
                     + RANGE_DATA_NTF_CONFIG_AOA_LEVEL_TLV + RANGE_DATA_NTF_PROXIMITY_NEAR_TLV
-                    + RANGE_DATA_NTF_PROXIMITY_FAR_TLV + DEVICE_ROLE_TLV + RFRAME_CONFIG_TLV
+                    + RANGE_DATA_NTF_PROXIMITY_FAR_TLV + DEVICE_ROLE_RESPONDER_TLV
+                    + RFRAME_CONFIG_TLV
                     + RSSI_REPORTING_TLV + PREAMBLE_CODE_INDEX_TLV + SFD_ID_TLV + PSDU_DATA_RATE_TLV
                     + PREAMBLE_DURATION_TLV + RANGING_TIME_STRUCT_TLV + SLOTS_PER_RR_TLV
-                    + TX_ADAPTIVE_PAYLOAD_POWER_TLV + PRF_MODE_TLV + SCHEDULED_MODE_TLV
+                    + TX_ADAPTIVE_PAYLOAD_POWER_TLV + PRF_MODE_TLV
+                    + SCHEDULED_MODE_TIME_SCHEDULED_TLV
                     + KEY_ROTATION_TLV + KEY_ROTATION_RATE_TLV + SESSION_PRIORITY_TLV
                     + MAC_ADDRESS_MODE_TLV + NUMBER_OF_STS_SEGMENTS_TLV + MAX_RR_RETRY_TLV
                     + HOPPING_MODE_TLV + BLOCK_STRIDE_LENGTH_TLV + RESULT_REPORT_CONFIG_TLV
@@ -236,19 +246,24 @@ public class FiraEncoderTest {
                     + DEVICE_MAC_ADDRESS_TLV + SLOT_DURATION_TLV + MAC_FCS_TYPE_TLV
                     + RANGING_ROUND_CONTROL_TLV + AOA_RESULT_REQ_TLV
                     + RANGE_DATA_NTF_CONFIG_AOA_LEVEL_TLV + RANGE_DATA_NTF_PROXIMITY_NEAR_TLV
-                    + RANGE_DATA_NTF_PROXIMITY_FAR_TLV + DEVICE_ROLE_TLV + RFRAME_CONFIG_TLV
+                    + RANGE_DATA_NTF_PROXIMITY_FAR_TLV + DEVICE_ROLE_RESPONDER_TLV
+                    + RFRAME_CONFIG_TLV
                     + RSSI_REPORTING_TLV + PREAMBLE_CODE_INDEX_TLV + SFD_ID_TLV
                     + PSDU_DATA_RATE_TLV + PREAMBLE_DURATION_TLV + RANGING_TIME_STRUCT_TLV
                     + SLOTS_PER_RR_TLV + TX_ADAPTIVE_PAYLOAD_POWER_TLV
-                    + PRF_MODE_TLV + SCHEDULED_MODE_TLV + KEY_ROTATION_TLV + KEY_ROTATION_RATE_TLV
+                    + PRF_MODE_TLV + SCHEDULED_MODE_TIME_SCHEDULED_TLV + KEY_ROTATION_TLV
+                    + KEY_ROTATION_RATE_TLV
                     + SESSION_PRIORITY_TLV + MAC_ADDRESS_MODE_TLV + NUMBER_OF_STS_SEGMENTS_TLV
                     + MAX_RR_RETRY_TLV + HOPPING_MODE_TLV + BLOCK_STRIDE_LENGTH_TLV
                     + RESULT_REPORT_CONFIG_TLV + IN_BAND_TERMINATION_ATTEMPT_COUNT_TLV
                     + BPRF_PHR_DATA_RATE_TLV + MAX_NUMBER_OF_MEASUREMENTS_TLV + STS_LENGTH_TLV
                     + RANGING_INTERVAL_TLV + DEVICE_TYPE_CONTROLLER_TLV + NUMBER_OF_CONTROLEES_TLV
-                    + DST_MAC_ADDRESS_TLV + UWB_INITIATION_TIME_2_0_TLV + LINK_LAYER_MODE_TLV
-                    + DATA_TRANSFER_STATUS_NTF_CONFIG + SESSION_DATA_TRANSFER_STATUS_NTF_CONFIG
-                    + APPLICATION_DATA_ENDPOINT_TLV + VENDOR_ID_TLV + STATIC_STS_IV_TLV
+                    + DST_MAC_ADDRESS_TLV + UWB_INITIATION_TIME_2_0_TLV
+                    + LINK_LAYER_MODE_CONNECTIONLESS_DATA_TLV
+                    + DATA_TRANSFER_STATUS_NTF_CONFIG
+                    + SESSION_DATA_TRANSFER_STATUS_NTF_CONFIG
+                    + APPLICATION_DATA_ENDPOINT_SECURE_COMPONENT_TLV
+                    + VENDOR_ID_TLV + STATIC_STS_IV_TLV
                     + RANGE_DATA_NTF_AOA_BOUND_TLV);
 
             mFiraOpenSessionTlvUtTag = UwbUtil.getByteArray(
@@ -260,8 +275,10 @@ public class FiraEncoderTest {
                     + RANGE_DATA_NTF_PROXIMITY_FAR_TLV + DEVICE_ROLE_UT_TAG_TLV
                     + RFRAME_CONFIG_TLV + RSSI_REPORTING_TLV + PREAMBLE_CODE_INDEX_TLV
                     + SFD_ID_TLV + PSDU_DATA_RATE_TLV + PREAMBLE_DURATION_TLV
-                    + RANGING_TIME_STRUCT_TLV + SLOTS_PER_RR_TLV + TX_ADAPTIVE_PAYLOAD_POWER_TLV
-                    + PRF_MODE_TLV + SCHEDULED_MODE_TLV + KEY_ROTATION_TLV + KEY_ROTATION_RATE_TLV
+                    + RANGING_TIME_STRUCT_TLV + SLOTS_PER_RR_TLV
+                    + TX_ADAPTIVE_PAYLOAD_POWER_TLV
+                    + PRF_MODE_TLV + SCHEDULED_MODE_TIME_SCHEDULED_TLV
+                    + KEY_ROTATION_TLV + KEY_ROTATION_RATE_TLV
                     + SESSION_PRIORITY_TLV + MAC_ADDRESS_MODE_TLV + NUMBER_OF_STS_SEGMENTS_TLV
                     + MAX_RR_RETRY_TLV + HOPPING_MODE_TLV + BLOCK_STRIDE_LENGTH_TLV
                     + RESULT_REPORT_CONFIG_TLV + IN_BAND_TERMINATION_ATTEMPT_COUNT_TLV
@@ -372,11 +389,12 @@ public class FiraEncoderTest {
                     + DEVICE_MAC_ADDRESS_TLV + SLOT_DURATION_TLV + MAC_FCS_TYPE_TLV
                     + RANGING_ROUND_CONTROL_TLV + AOA_RESULT_REQ_TLV
                     + RANGE_DATA_NTF_CONFIG_AOA_LEVEL_TLV + RANGE_DATA_NTF_PROXIMITY_NEAR_TLV
-                    + RANGE_DATA_NTF_PROXIMITY_FAR_TLV + DEVICE_ROLE_TLV + RFRAME_CONFIG_TLV
+                    + RANGE_DATA_NTF_PROXIMITY_FAR_TLV + DEVICE_ROLE_RESPONDER_TLV
+                    + RFRAME_CONFIG_TLV
                     + RSSI_REPORTING_TLV + PREAMBLE_CODE_INDEX_TLV + SFD_ID_TLV
                     + PSDU_DATA_RATE_TLV + PREAMBLE_DURATION_TLV + RANGING_TIME_STRUCT_TLV
                     + SLOTS_PER_RR_TLV + TX_ADAPTIVE_PAYLOAD_POWER_TLV + PRF_MODE_TLV
-                    + SCHEDULED_MODE_TLV + KEY_ROTATION_TLV + KEY_ROTATION_RATE_TLV
+                    + SCHEDULED_MODE_TIME_SCHEDULED_TLV + KEY_ROTATION_TLV + KEY_ROTATION_RATE_TLV
                     + SESSION_PRIORITY_TLV + MAC_ADDRESS_MODE_TLV + NUMBER_OF_STS_SEGMENTS_TLV
                     + MAX_RR_RETRY_TLV + HOPPING_MODE_TLV + BLOCK_STRIDE_LENGTH_TLV
                     + RESULT_REPORT_CONFIG_TLV + IN_BAND_TERMINATION_ATTEMPT_COUNT_TLV
@@ -420,7 +438,7 @@ public class FiraEncoderTest {
                 + RFRAME_CONFIG_DL_TDOA_TLV + RSSI_REPORTING_TLV + PREAMBLE_CODE_INDEX_TLV
                 + SFD_ID_TLV + PSDU_DATA_RATE_TLV + PREAMBLE_DURATION_TLV + RANGING_TIME_STRUCT_TLV
                 + SLOTS_PER_RR_TLV + TX_ADAPTIVE_PAYLOAD_POWER_TLV + PRF_MODE_TLV
-                + SCHEDULED_MODE_TLV + KEY_ROTATION_TLV + KEY_ROTATION_RATE_TLV
+                + SCHEDULED_MODE_TIME_SCHEDULED_TLV + KEY_ROTATION_TLV + KEY_ROTATION_RATE_TLV
                 + SESSION_PRIORITY_TLV + MAC_ADDRESS_MODE_TLV + NUMBER_OF_STS_SEGMENTS_TLV
                 + MAX_RR_RETRY_TLV + HOPPING_MODE_TLV + BLOCK_STRIDE_LENGTH_TLV
                 + RESULT_REPORT_CONFIG_TLV + IN_BAND_TERMINATION_ATTEMPT_COUNT_TLV
@@ -430,6 +448,91 @@ public class FiraEncoderTest {
         TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(40);
+        assertThat(tlvs.getByteArray()).isEqualTo(expected_data);
+    }
+
+    @Test
+    public void testFiraContentionbasedOpenSessionParams() throws Exception {
+        assumeTrue(SdkLevel.isAtLeastU());
+        FiraOpenSessionParams params =
+                new FiraOpenSessionParams.Builder()
+                    .setProtocolVersion(FiraParams.PROTOCOL_VERSION_2_0)
+                    .setSessionId(1)
+                    .setSessionType(SESSION_TYPE_RANGING)
+                    .setRangeDataNtfConfig(RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_LEVEL_TRIG)
+                    .setDeviceType(RANGING_DEVICE_TYPE_CONTROLLER)
+                    .setDeviceRole(RANGING_DEVICE_ROLE_INITIATOR)
+                    .setDeviceAddress(UwbAddress.fromBytes(new byte[]{0x4, 0x6}))
+                    .setDestAddressList(Arrays.asList(UwbAddress.fromBytes(new byte[]{0x4, 0x6})))
+                    .setMultiNodeMode(MULTI_NODE_MODE_ONE_TO_MANY)
+                    .setRangingRoundUsage(RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE)
+                    .setStsConfig(STS_CONFIG_STATIC)
+                    .setVendorId(new byte[]{0x5, 0x78})
+                    .setStaticStsIV(new byte[]{0x1a, 0x55, 0x77, 0x47, 0x7e, 0x7d})
+                    .setRangeDataNtfAoaAzimuthLower(-1.5)
+                    .setRangeDataNtfAoaAzimuthUpper(2.5)
+                    .setRangeDataNtfAoaElevationLower(-1.5)
+                    .setRangeDataNtfAoaElevationUpper(1.2)
+                    .setInitiationTime(1000)
+                    .setScheduledMode(CONTENTION_BASED_RANGING)
+                    .setHasControlMessage(true)
+                    .setHasRangingControlPhase(true)
+                    .setMeasurementReportPhase(FiraParams.MEASUREMENT_REPORT_PHASE_SET)
+                    .build();
+        byte[] expected_data = UwbUtil.getByteArray(
+                RANGING_ROUND_USAGE_SS_TWR_TLV
+                    + STS_CONFIG_STATIC_TLV
+                    + MULTI_NODE_MODE_ONE_TO_MANY_TLV
+                    + CHANNEL_NUMBER_TLV
+                    + DEVICE_MAC_ADDRESS_TLV
+                    + SLOT_DURATION_TLV
+                    + MAC_FCS_TYPE_TLV
+                    + RANGING_ROUND_CONTROL_CONTENTION_MRP_RCP_CM_RRRM_TLV
+                    + AOA_RESULT_REQ_TLV
+                    + RANGE_DATA_NTF_CONFIG_AOA_LEVEL_TLV
+                    + RANGE_DATA_NTF_PROXIMITY_NEAR_TLV
+                    + RANGE_DATA_NTF_PROXIMITY_FAR_TLV
+                    + DEVICE_ROLE_INITIATOR_TLV
+                    + RFRAME_CONFIG_TLV
+                    + RSSI_REPORTING_TLV
+                    + PREAMBLE_CODE_INDEX_TLV
+                    + SFD_ID_TLV
+                    + PSDU_DATA_RATE_TLV
+                    + PREAMBLE_DURATION_TLV
+                    + RANGING_TIME_STRUCT_TLV
+                    + SLOTS_PER_RR_TLV
+                    + TX_ADAPTIVE_PAYLOAD_POWER_TLV
+                    + PRF_MODE_TLV
+                    + SCHEDULED_MODE_CONTENTION_TLV
+                    + KEY_ROTATION_TLV
+                    + KEY_ROTATION_RATE_TLV
+                    + SESSION_PRIORITY_TLV
+                    + MAC_ADDRESS_MODE_TLV
+                    + NUMBER_OF_STS_SEGMENTS_TLV
+                    + MAX_RR_RETRY_TLV
+                    + HOPPING_MODE_TLV
+                    + BLOCK_STRIDE_LENGTH_TLV
+                    + RESULT_REPORT_CONFIG_TLV
+                    + IN_BAND_TERMINATION_ATTEMPT_COUNT_TLV
+                    + BPRF_PHR_DATA_RATE_TLV
+                    + MAX_NUMBER_OF_MEASUREMENTS_TLV
+                    + STS_LENGTH_TLV
+                    + RANGING_INTERVAL_TLV
+                    + DEVICE_TYPE_CONTROLLER_TLV
+                    + NUMBER_OF_CONTROLEES_TLV
+                    + DST_MAC_ADDRESS_TLV
+                    + UWB_INITIATION_TIME_2_0_TLV
+                    + LINK_LAYER_MODE_BYPASS_TLV
+                    + DATA_TRANSFER_STATUS_NTF_CONFIG
+                    + SESSION_DATA_TRANSFER_STATUS_NTF_CONFIG
+                    + APPLICATION_DATA_ENDPOINT_HOST_TLV
+                    + VENDOR_ID_TLV
+                    + STATIC_STS_IV_TLV
+                    + RANGE_DATA_NTF_AOA_BOUND_TLV
+                    + CAP_SIZE_RANGE_DEFAULT_TLV);
+        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
+
+        assertThat(tlvs.getNoOfParams()).isEqualTo(50);
         assertThat(tlvs.getByteArray()).isEqualTo(expected_data);
     }
 }
