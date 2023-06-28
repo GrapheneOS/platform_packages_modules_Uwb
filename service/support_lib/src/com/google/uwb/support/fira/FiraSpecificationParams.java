@@ -65,7 +65,7 @@ public class FiraSpecificationParams extends FiraParams {
 
     private final int mMinRangingInterval;
 
-    private final int mMinSlotDuration;
+    private final int mMinSlotDurationUs;
 
     private final int mMaxRangingSessionNumber;
 
@@ -169,7 +169,7 @@ public class FiraSpecificationParams extends FiraParams {
             boolean hasRssiReportingSupport,
             boolean hasDiagnosticsSupport,
             int minRangingInterval,
-            int minSlotDuration,
+            int minSlotDurationUs,
             int maxRangingSessionNumber,
             EnumSet<MultiNodeCapabilityFlag> multiNodeCapabilities,
             EnumSet<RangingTimeStructCapabilitiesFlag> rangingTimeStructCapabilities,
@@ -202,7 +202,7 @@ public class FiraSpecificationParams extends FiraParams {
         mHasRssiReportingSupport = hasRssiReportingSupport;
         mHasDiagnosticsSupport = hasDiagnosticsSupport;
         mMinRangingInterval = minRangingInterval;
-        mMinSlotDuration = minSlotDuration;
+        mMinSlotDurationUs = minSlotDurationUs;
         mMaxRangingSessionNumber = maxRangingSessionNumber;
         mMultiNodeCapabilities = multiNodeCapabilities;
         mRangingTimeStructCapabilities = rangingTimeStructCapabilities;
@@ -291,8 +291,8 @@ public class FiraSpecificationParams extends FiraParams {
         return mMinRangingInterval;
     }
 
-    public int getMinSlotDuration() {
-        return mMinSlotDuration;
+    public int getMinSlotDurationUs() {
+        return mMinSlotDurationUs;
     }
 
     public int getMaxRangingSessionNumber() {
@@ -397,7 +397,7 @@ public class FiraSpecificationParams extends FiraParams {
         bundle.putBoolean(KEY_RSSI_REPORTING_SUPPORT, mHasRssiReportingSupport);
         bundle.putBoolean(KEY_DIAGNOSTICS_SUPPORT, mHasDiagnosticsSupport);
         bundle.putInt(KEY_MIN_RANGING_INTERVAL, mMinRangingInterval);
-        bundle.putInt(KEY_MIN_SLOT_DURATION, mMinSlotDuration);
+        bundle.putInt(KEY_MIN_SLOT_DURATION, mMinSlotDurationUs);
         bundle.putInt(KEY_MAX_RANGING_SESSION_NUMBER, mMaxRangingSessionNumber);
         bundle.putInt(KEY_MULTI_NODE_CAPABILITIES, FlagEnum.toInt(mMultiNodeCapabilities));
         bundle.putInt(KEY_RANGING_TIME_STRUCT_CAPABILITIES,
@@ -588,7 +588,7 @@ public class FiraSpecificationParams extends FiraParams {
 
         private int mMinRangingInterval = -1;
 
-        private int mMinSlotDuration = -1;
+        private int mMinSlotDurationUs = -1;
 
         private int mMaxRangingSessionNumber = DEFAULT_MAX_RANGING_SESSIONS_NUMBER;
 
@@ -748,7 +748,7 @@ public class FiraSpecificationParams extends FiraParams {
          * @return FiraSpecificationParams builder
          */
         public FiraSpecificationParams.Builder setMinSlotDurationSupportedUs(int value) {
-            mMinSlotDuration = value;
+            mMinSlotDurationUs = value;
             return this;
         }
 
@@ -882,7 +882,7 @@ public class FiraSpecificationParams extends FiraParams {
                     mHasRssiReportingSupport,
                     mHasDiagnosticsSupport,
                     mMinRangingInterval,
-                    mMinSlotDuration,
+                    mMinSlotDurationUs,
                     mMaxRangingSessionNumber,
                     mMultiNodeCapabilities,
                     mRangingTimeStructCapabilities,

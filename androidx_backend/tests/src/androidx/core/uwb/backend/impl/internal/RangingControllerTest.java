@@ -122,7 +122,10 @@ public class RangingControllerTest {
                         mComplexChannel,
                         new ArrayList<>(List.of(mRangingParamsKnownPeerAddress)),
                         INFREQUENT,
-                        uwbRangeDataNtfConfig);
+                        uwbRangeDataNtfConfig,
+                        Utils.DURATION_2_MS,
+                        Utils.AUTOMATIC,
+                        false);
         mRangingController =
                 new RangingController(mUwbManager, getExecutor(), mOpAsyncCallbackRunner,
                         new UwbFeatureFlags.Builder().build());
@@ -169,7 +172,10 @@ public class RangingControllerTest {
                         mComplexChannel,
                         List.of(UwbAddress.fromBytes(new byte[]{3, 4})),
                         INFREQUENT,
-                        uwbRangeDataNtfConfig);
+                        uwbRangeDataNtfConfig,
+                        Utils.DURATION_2_MS,
+                        Utils.AUTOMATIC,
+                        false);
 
         mRangingController.setRangingParameters(rangingParameters);
 
