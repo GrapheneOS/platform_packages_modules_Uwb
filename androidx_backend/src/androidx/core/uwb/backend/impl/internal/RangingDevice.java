@@ -169,7 +169,10 @@ public abstract class RangingDevice {
                             rangingParameters.getComplexChannel(),
                             rangingParameters.getPeerAddresses(),
                             rangingParameters.getRangingUpdateRate(),
-                            rangingParameters.getUwbRangeDataNtfConfig());
+                            rangingParameters.getUwbRangeDataNtfConfig(),
+                            rangingParameters.getSlotDuration(),
+                            rangingParameters.getRangingInterval(),
+                            rangingParameters.isAoaDisabled());
         } else {
             mRangingParameters = rangingParameters;
         }
