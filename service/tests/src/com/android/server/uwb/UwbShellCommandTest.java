@@ -20,6 +20,7 @@ import static android.uwb.RangingSession.Callback.REASON_LOCAL_REQUEST;
 
 import static com.android.server.uwb.UwbShellCommand.DEFAULT_CCC_OPEN_RANGING_PARAMS;
 import static com.android.server.uwb.UwbShellCommand.DEFAULT_FIRA_OPEN_SESSION_PARAMS;
+import static com.android.server.uwb.UwbShellCommand.DEFAULT_RADAR_OPEN_SESSION_PARAMS;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_DISABLE;
@@ -61,6 +62,7 @@ import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
+import com.google.uwb.support.radar.RadarOpenSessionParams;
 
 import org.junit.After;
 import org.junit.Before;
@@ -204,14 +206,14 @@ public class UwbShellCommandTest {
         @Nullable public IUwbRangingCallbacks cb;
     }
 
-    private Pair<IUwbRangingCallbacks, SessionHandle> triggerAndVerifyRangingStart(
-            String[] rangingStartCmd, @NonNull Params openRangingParams) throws Exception {
-        return triggerAndVerifyRangingStart(rangingStartCmd, openRangingParams, null);
+    private Pair<IUwbRangingCallbacks, SessionHandle> triggerAndVerifySessionStart(
+            String[] sessionStartCmd, @NonNull Params openSessionParams) throws Exception {
+        return triggerAndVerifySessionStart(sessionStartCmd, openSessionParams, null);
     }
 
-    private Pair<IUwbRangingCallbacks, SessionHandle> triggerAndVerifyRangingStart(
-            String[] rangingStartCmd, @NonNull Params openRangingParams, @Nullable Params
-            startRangingParams) throws Exception {
+    private Pair<IUwbRangingCallbacks, SessionHandle> triggerAndVerifySessionStart(
+            String[] sessionStartCmd, @NonNull Params openSessionParams, @Nullable Params
+            startSessionParams) throws Exception {
         final MutableCb cbCaptor = new MutableCb();
         doAnswer(invocation -> {
             cbCaptor.cb = invocation.getArgument(2);
@@ -225,7 +227,7 @@ public class UwbShellCommandTest {
 
         mUwbShellCommand.exec(
                 new Binder(), new FileDescriptor(), new FileDescriptor(), new FileDescriptor(),
-                rangingStartCmd);
+                sessionStartCmd);
 
         ArgumentCaptor<SessionHandle> sessionHandleCaptor =
                 ArgumentCaptor.forClass(SessionHandle.class);
@@ -239,20 +241,20 @@ public class UwbShellCommandTest {
                 sessionHandleCaptor.capture(), any(), paramsCaptor.capture(), any());
         // PersistableBundle does not implement equals, so use toString equals.
         assertThat(paramsCaptor.getValue().toString())
-                .isEqualTo(openRangingParams.toBundle().toString());
+                .isEqualTo(openSessionParams.toBundle().toString());
 
         verify(mUwbService).startRanging(
                 eq(sessionHandleCaptor.getValue()), paramsCaptor.capture());
         assertThat(paramsCaptor.getValue().toString())
-                .isEqualTo(startRangingParams != null
-                        ? startRangingParams.toBundle().toString()
+                .isEqualTo(startSessionParams != null
+                        ? startSessionParams.toBundle().toString()
                         : new PersistableBundle().toString());
 
         return Pair.create(cbCaptor.cb, sessionHandleCaptor.getValue());
     }
 
-    private void triggerAndVerifyRangingStop(
-            String[] rangingStopCmd, IUwbRangingCallbacks cb, SessionHandle sessionHandle)
+    private void triggerAndVerifySessionStop(
+            String[] sessionStopCmd, IUwbRangingCallbacks cb, SessionHandle sessionHandle)
             throws Exception {
         doAnswer(invocation -> {
             cb.onRangingStopped(sessionHandle, REASON_LOCAL_REQUEST, new PersistableBundle());
@@ -267,23 +269,23 @@ public class UwbShellCommandTest {
 
         mUwbShellCommand.exec(
                 new Binder(), new FileDescriptor(), new FileDescriptor(), new FileDescriptor(),
-                rangingStopCmd);
+                sessionStopCmd);
 
         verify(mUwbService).stopRanging(sessionHandle);
         verify(mUwbService).closeRanging(sessionHandle);
     }
 
     private CccStartRangingParams getCccStartRangingParamsFromOpenRangingParams(
-            @NonNull CccOpenRangingParams openRangingParams) {
+            @NonNull CccOpenRangingParams openSessionParams) {
         return new CccStartRangingParams.Builder()
-                .setSessionId(openRangingParams.getSessionId())
-                .setRanMultiplier(openRangingParams.getRanMultiplier())
+                .setSessionId(openSessionParams.getSessionId())
+                .setRanMultiplier(openSessionParams.getRanMultiplier())
                 .build();
     }
 
     @Test
     public void testStartFiraRanging() throws Exception {
-        triggerAndVerifyRangingStart(
+        triggerAndVerifySessionStart(
                 new String[]{"start-fira-ranging-session"},
                 DEFAULT_FIRA_OPEN_SESSION_PARAMS.build());
     }
@@ -295,14 +297,14 @@ public class UwbShellCommandTest {
 
         openSessionParamsBuilder.setSessionId(1);
         Pair<IUwbRangingCallbacks, SessionHandle> cbAndSessionHandle1 =
-                triggerAndVerifyRangingStart(
+                triggerAndVerifySessionStart(
                         new String[]{"start-fira-ranging-session", "-i", "1"},
                         openSessionParamsBuilder.build());
         clearInvocations(mUwbService);
 
         openSessionParamsBuilder.setSessionId(2);
         Pair<IUwbRangingCallbacks, SessionHandle> cbAndSessionHandle2 =
-                triggerAndVerifyRangingStart(
+                triggerAndVerifySessionStart(
                         new String[]{"start-fira-ranging-session", "-i", "2"},
                         openSessionParamsBuilder.build());
         assertThat(cbAndSessionHandle1.second).isNotEqualTo(cbAndSessionHandle2.second);
@@ -313,7 +315,7 @@ public class UwbShellCommandTest {
         FiraOpenSessionParams.Builder openSessionParamsBuilder =
                 new FiraOpenSessionParams.Builder(DEFAULT_FIRA_OPEN_SESSION_PARAMS);
         openSessionParamsBuilder.setSessionId(5);
-        triggerAndVerifyRangingStart(
+        triggerAndVerifySessionStart(
                 new String[]{"start-fira-ranging-session", "-i", "5"},
                 openSessionParamsBuilder.build());
     }
@@ -340,7 +342,7 @@ public class UwbShellCommandTest {
     @Test
     public void testRangingReportFiraRanging() throws Exception {
         Pair<IUwbRangingCallbacks, SessionHandle> cbAndSessionHandle =
-                triggerAndVerifyRangingStart(
+                triggerAndVerifySessionStart(
                         new String[]{"start-fira-ranging-session"},
                         DEFAULT_FIRA_OPEN_SESSION_PARAMS.build());
         int sessionId = DEFAULT_FIRA_OPEN_SESSION_PARAMS.build().getSessionId();
@@ -355,7 +357,7 @@ public class UwbShellCommandTest {
     @Test
     public void testRangingReportAllFiraRanging() throws Exception {
         Pair<IUwbRangingCallbacks, SessionHandle> cbAndSessionHandle =
-                triggerAndVerifyRangingStart(
+                triggerAndVerifySessionStart(
                         new String[]{"start-fira-ranging-session"},
                         DEFAULT_FIRA_OPEN_SESSION_PARAMS.build());
         cbAndSessionHandle.first.onRangingResult(
@@ -369,11 +371,11 @@ public class UwbShellCommandTest {
     @Test
     public void testStopFiraRanging() throws Exception {
         Pair<IUwbRangingCallbacks, SessionHandle> cbAndSessionHandle =
-                triggerAndVerifyRangingStart(
+                triggerAndVerifySessionStart(
                         new String[]{"start-fira-ranging-session"},
                         DEFAULT_FIRA_OPEN_SESSION_PARAMS.build());
         int sessionId = DEFAULT_FIRA_OPEN_SESSION_PARAMS.build().getSessionId();
-        triggerAndVerifyRangingStop(
+        triggerAndVerifySessionStop(
                 new String[]{"stop-ranging-session", String.valueOf(sessionId)},
                 cbAndSessionHandle.first, cbAndSessionHandle.second);
     }
@@ -381,7 +383,7 @@ public class UwbShellCommandTest {
     @Test
     public void testStartCccRanging() throws Exception {
         CccOpenRangingParams openSessionParams = DEFAULT_CCC_OPEN_RANGING_PARAMS.build();
-        triggerAndVerifyRangingStart(
+        triggerAndVerifySessionStart(
                 new String[]{"start-ccc-ranging-session"},
                 openSessionParams,
                 getCccStartRangingParamsFromOpenRangingParams(openSessionParams));
@@ -393,7 +395,7 @@ public class UwbShellCommandTest {
                 new CccOpenRangingParams.Builder(DEFAULT_CCC_OPEN_RANGING_PARAMS);
         openSessionParamsBuilder.setSessionId(5);
         CccOpenRangingParams openSessionParams = openSessionParamsBuilder.build();
-        triggerAndVerifyRangingStart(
+        triggerAndVerifySessionStart(
                 new String[]{"start-ccc-ranging-session", "-i", "5"},
                 openSessionParams,
                 getCccStartRangingParamsFromOpenRangingParams(openSessionParams));
@@ -403,12 +405,12 @@ public class UwbShellCommandTest {
     public void testStopCccRanging() throws Exception {
         CccOpenRangingParams openSessionParams = DEFAULT_CCC_OPEN_RANGING_PARAMS.build();
         Pair<IUwbRangingCallbacks, SessionHandle> cbAndSessionHandle =
-                triggerAndVerifyRangingStart(
+                triggerAndVerifySessionStart(
                         new String[]{"start-ccc-ranging-session"},
                         openSessionParams,
                         getCccStartRangingParamsFromOpenRangingParams(openSessionParams));
         int sessionId = openSessionParams.getSessionId();
-        triggerAndVerifyRangingStop(
+        triggerAndVerifySessionStop(
                 new String[]{"stop-ranging-session", String.valueOf(sessionId)},
                 cbAndSessionHandle.first, cbAndSessionHandle.second);
     }
@@ -417,12 +419,45 @@ public class UwbShellCommandTest {
     public void testStopAllRanging() throws Exception {
         CccOpenRangingParams openSessionParams = DEFAULT_CCC_OPEN_RANGING_PARAMS.build();
         Pair<IUwbRangingCallbacks, SessionHandle> cbAndSessionHandle =
-                triggerAndVerifyRangingStart(
+                triggerAndVerifySessionStart(
                         new String[]{"start-ccc-ranging-session"},
                         openSessionParams,
                         getCccStartRangingParamsFromOpenRangingParams(openSessionParams));
-        triggerAndVerifyRangingStop(
+        triggerAndVerifySessionStop(
                 new String[]{"stop-all-ranging-sessions"},
+                cbAndSessionHandle.first, cbAndSessionHandle.second);
+    }
+
+    @Test
+    public void testStartRadarSession() throws Exception {
+        RadarOpenSessionParams openSessionParams = DEFAULT_RADAR_OPEN_SESSION_PARAMS.build();
+        triggerAndVerifySessionStart(
+                new String[]{"start-radar-session"},
+                openSessionParams);
+    }
+
+    @Test
+    public void testStopRadarSession() throws Exception {
+        RadarOpenSessionParams openSessionParams = DEFAULT_RADAR_OPEN_SESSION_PARAMS.build();
+        Pair<IUwbRangingCallbacks, SessionHandle> cbAndSessionHandle =
+                triggerAndVerifySessionStart(
+                        new String[]{"start-radar-session"},
+                        openSessionParams);
+        int sessionId = openSessionParams.getSessionId();
+        triggerAndVerifySessionStop(
+                new String[]{"stop-radar-session", String.valueOf(sessionId)},
+                cbAndSessionHandle.first, cbAndSessionHandle.second);
+    }
+
+    @Test
+    public void testStopAllRadarSessions() throws Exception {
+        RadarOpenSessionParams openSessionParams = DEFAULT_RADAR_OPEN_SESSION_PARAMS.build();
+        Pair<IUwbRangingCallbacks, SessionHandle> cbAndSessionHandle =
+                triggerAndVerifySessionStart(
+                        new String[]{"start-radar-session"},
+                        openSessionParams);
+        triggerAndVerifySessionStop(
+                new String[]{"stop-all-radar-sessions"},
                 cbAndSessionHandle.first, cbAndSessionHandle.second);
     }
 }
