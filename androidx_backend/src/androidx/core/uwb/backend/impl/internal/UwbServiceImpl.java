@@ -19,6 +19,8 @@ package androidx.core.uwb.backend.impl.internal;
 import static android.content.pm.PackageManager.FEATURE_UWB;
 import static android.uwb.UwbManager.AdapterStateCallback.STATE_DISABLED;
 
+import static androidx.core.uwb.backend.impl.internal.RangingCapabilities.DEFAULT_SUPPORTED_RANGING_INTERVALS;
+import static androidx.core.uwb.backend.impl.internal.RangingCapabilities.DEFAULT_SUPPORTED_SLOT_DURATIONS;
 import static androidx.core.uwb.backend.impl.internal.RangingCapabilities.FIRA_DEFAULT_SUPPORTED_CONFIG_IDS;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_DL_TDOA_DT_TAG;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR;
@@ -38,6 +40,7 @@ import android.uwb.UwbManager;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.google.common.collect.ImmutableList;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.multichip.ChipInfoParams;
@@ -143,10 +146,13 @@ public class UwbServiceImpl {
                     /* supportsDistance= */ true,
                     mUwbFeatureFlags.hasAzimuthSupport(),
                     mUwbFeatureFlags.hasElevationSupport(),
+                    /* supportsRangingIntervalReconfigure */ false,
                     /* minRangingInterval= */ RangingCapabilities.FIRA_DEFAULT_RANGING_INTERVAL_MS,
                     new ArrayList<Integer>(RangingCapabilities.FIRA_DEFAULT_SUPPORTED_CHANNEL),
                     new ArrayList<>(RANGE_DATA_NTF_ENABLE),
-                    FIRA_DEFAULT_SUPPORTED_CONFIG_IDS);
+                    FIRA_DEFAULT_SUPPORTED_CONFIG_IDS,
+                    DEFAULT_SUPPORTED_SLOT_DURATIONS,
+                    DEFAULT_SUPPORTED_RANGING_INTERVALS);
         }
 
         PersistableBundle bundle = mUwbManager.getSpecificationInfo();
@@ -160,6 +166,11 @@ public class UwbServiceImpl {
         List<Integer> supportedChannels = specificationParams.getSupportedChannels();
         if (minRangingInterval <= 0) {
             minRangingInterval = RangingCapabilities.FIRA_DEFAULT_RANGING_INTERVAL_MS;
+        }
+        List<Integer> supportedRangingIntervals = new ArrayList<>(
+                DEFAULT_SUPPORTED_RANGING_INTERVALS);
+        if (minRangingInterval <= 100) {
+            supportedRangingIntervals.add(Utils.FREQUENT_RANGING_INTERVAL);
         }
         if (supportedChannels == null || supportedChannels.isEmpty()) {
             supportedChannels =
@@ -191,15 +202,24 @@ public class UwbServiceImpl {
                 .HAS_OWR_DL_TDOA_SUPPORT)) {
             supportedConfigIds.add(CONFIG_DL_TDOA_DT_TAG);
         }
+        int minSlotDurationUs = specificationParams.getMinSlotDurationUs();
+        List<Integer> supportedSlotDurations = new ArrayList<>(Utils.DURATION_2_MS);
+        if (minSlotDurationUs <= 1000) {
+            supportedSlotDurations.add(Utils.DURATION_1_MS);
+        }
 
         return new RangingCapabilities(
                 true,
                 aoaCapabilityFlags.contains(FiraParams.AoaCapabilityFlag.HAS_AZIMUTH_SUPPORT),
                 aoaCapabilityFlags.contains(FiraParams.AoaCapabilityFlag.HAS_ELEVATION_SUPPORT),
+                specificationParams.hasBlockStridingSupport(),
                 minRangingInterval,
-                supportedChannels,
-                supportedNtfConfigs,
-                supportedConfigIds);
+                ImmutableList.copyOf(supportedChannels),
+                ImmutableList.copyOf(supportedNtfConfigs),
+                ImmutableList.copyOf(supportedConfigIds),
+                ImmutableList.copyOf(supportedSlotDurations),
+                ImmutableList.copyOf(supportedRangingIntervals)
+                );
     }
 
     /**

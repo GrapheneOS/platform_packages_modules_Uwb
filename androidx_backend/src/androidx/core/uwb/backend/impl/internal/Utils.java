@@ -207,6 +207,30 @@ public final class Utils {
         }
     }
 
+    @IntDef(
+            value = {
+                    FREQUENT_RANGING_INTERVAL,
+                    AUTOMATIC,
+                    INFREQUENT_RANGING_INTERVAL,
+            }
+    )
+    public @interface RangingInterval {}
+
+    public static final int FREQUENT_RANGING_INTERVAL = 100;
+    public static final int AUTOMATIC = 200;
+    public static final int INFREQUENT_RANGING_INTERVAL = 600;
+
+    @IntDef(
+            value = {
+                    DURATION_1_MS,
+                    DURATION_2_MS,
+            }
+    )
+    public @interface SlotDuration {}
+
+    public static final int DURATION_1_MS = 1;
+    public static final int DURATION_2_MS = 2;
+
     /**
      * Unusual failures happened in UWB system callback, such as stopping ranging or removing a
      * known controlee failed.
@@ -329,6 +353,11 @@ public final class Utils {
     // frequency) support will be added.
     public static final ImmutableList<Integer> SUPPORTED_BPRF_PREAMBLE_INDEX =
             ImmutableList.of(9, 10, 11, 12);
+
+    /** Converts millisecond to RSTU. */
+    public static int convertMsToRstu(int value) {
+        return (int) (value * 499.2 * 1000 / 416);
+    }
 
     private Utils() {}
 }

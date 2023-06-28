@@ -44,14 +44,26 @@ public class RangingCapabilities {
                     CONFIG_UNICAST_DS_TWR_NO_AOA,
                     CONFIG_MULTICAST_DS_TWR_NO_AOA,
                     CONFIG_DL_TDOA_DT_TAG);
+    /** Ranging interval reconfigure is not supported if the system API doesn't provide. */
+    public static final boolean DEFAULT_SUPPORTS_RANGING_INTERVAL_RECONFIGURE = false;
+    /** Default supported slot duration if the system API doesn't provide it. */
+    public static final ImmutableList<Integer> DEFAULT_SUPPORTED_SLOT_DURATIONS =
+            ImmutableList.of(Utils.DURATION_2_MS);
+    /** Default supported ranging interval if the system API doesn't provide it. */
+    public static final ImmutableList<Integer> DEFAULT_SUPPORTED_RANGING_INTERVALS =
+            ImmutableList.of(Utils.AUTOMATIC, Utils.INFREQUENT_RANGING_INTERVAL);
+
 
     private final boolean mSupportsDistance;
     private final boolean mSupportsAzimuthalAngle;
     private final boolean mSupportsElevationAngle;
+    private final boolean mSupportsRangingIntervalReconfigure;
     private final int mMinRangingInterval;
     private final List<Integer> mSupportedChannels;
     private final List<Integer> mSupportedNtfConfigs;
     private final List<Integer> mSupportedConfigIds;
+    private final List<Integer> mSupportedSlotDurations;
+    private final List<Integer> mSupportedRangingIntervals;
 
     public RangingCapabilities(
             boolean supportsDistance,
@@ -61,27 +73,36 @@ public class RangingCapabilities {
                 supportsDistance,
                 supportsAzimuthalAngle,
                 supportsElevationAngle,
+                DEFAULT_SUPPORTS_RANGING_INTERVAL_RECONFIGURE,
                 FIRA_DEFAULT_RANGING_INTERVAL_MS,
                 new ArrayList<>(FIRA_DEFAULT_SUPPORTED_CHANNEL),
                 new ArrayList<>(RANGE_DATA_NTF_ENABLE),
-                FIRA_DEFAULT_SUPPORTED_CONFIG_IDS);
+                FIRA_DEFAULT_SUPPORTED_CONFIG_IDS,
+                DEFAULT_SUPPORTED_SLOT_DURATIONS,
+                DEFAULT_SUPPORTED_RANGING_INTERVALS);
     }
 
     public RangingCapabilities(
             boolean supportsDistance,
             boolean supportsAzimuthalAngle,
             boolean supportsElevationAngle,
+            boolean supportsRangingIntervalReconfigure,
             int minRangingInterval,
             List<Integer> supportedChannels,
             List<Integer> supportedNtfConfigs,
-            List<Integer> supportedConfigIds) {
+            List<Integer> supportedConfigIds,
+            ImmutableList<Integer> supportedSlotDurations,
+            ImmutableList<Integer> supportedRangingIntervals) {
         this.mSupportsDistance = supportsDistance;
         this.mSupportsAzimuthalAngle = supportsAzimuthalAngle;
         this.mSupportsElevationAngle = supportsElevationAngle;
+        this.mSupportsRangingIntervalReconfigure = supportsRangingIntervalReconfigure;
         this.mMinRangingInterval = minRangingInterval;
         this.mSupportedChannels = supportedChannels;
         this.mSupportedNtfConfigs = supportedNtfConfigs;
         this.mSupportedConfigIds = supportedConfigIds;
+        this.mSupportedSlotDurations = supportedSlotDurations;
+        this.mSupportedRangingIntervals = supportedRangingIntervals;
     }
 
     /** Whether distance ranging is supported. */
@@ -97,6 +118,11 @@ public class RangingCapabilities {
     /** Whether elevation angle of arrival is supported. */
     public boolean supportsElevationAngle() {
         return mSupportsElevationAngle;
+    }
+
+    /** Whether ranging interval reconfigure is supported. */
+    public boolean supportsRangingIntervalReconfigure() {
+        return mSupportsRangingIntervalReconfigure;
     }
 
     /** Gets the minimum supported ranging interval in milliseconds. */
@@ -122,5 +148,15 @@ public class RangingCapabilities {
     /** Gets the supported config ids. */
     public List<Integer> getSupportedConfigIds() {
         return mSupportedConfigIds;
+    }
+
+    /** Gets the supported slot durations. */
+    public List<Integer> getSupportedSlotDurations() {
+        return mSupportedSlotDurations;
+    }
+
+    /** Gets the supported ranging intervals. */
+    public List<Integer> getSupportedRangingIntervals() {
+        return mSupportedRangingIntervals;
     }
 }
