@@ -68,6 +68,7 @@ import com.android.server.uwb.correction.UwbFilterEngine;
 import com.android.server.uwb.correction.pose.ApplicationPoseSource;
 import com.android.server.uwb.correction.pose.IPoseSource;
 import com.android.server.uwb.data.DtTagUpdateRangingRoundsStatus;
+import com.android.server.uwb.data.UwbDlTDoAMeasurement;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbOwrAoaMeasurement;
 import com.android.server.uwb.data.UwbRangingData;
@@ -260,6 +261,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             UwbOwrAoaMeasurement measure = rangingData.getRangingOwrAoaMeasure();
             if (measure.getRangingStatus() == UwbUciConstants.STATUS_CODE_OK) {
                 return false;
+            }
+        } else if (rangingData.getRangingMeasuresType()
+                == UwbUciConstants.RANGING_MEASUREMENT_TYPE_DL_TDOA) {
+            for (UwbDlTDoAMeasurement measure : rangingData.getUwbDlTDoAMeasurements()) {
+                if (measure.getStatus() == STATUS_CODE_OK) {
+                    return false;
+                }
             }
         }
         return true;
