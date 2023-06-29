@@ -1107,7 +1107,7 @@ public class FiraOpenSessionParams extends FiraParams {
         private int mMeasurementReportType = MEASUREMENT_REPORT_TYPE_INITIATOR_TO_RESPONDER;
 
         /** UCI spec default: RANGING_ROUND_CONTROL bit 6 default 0 */
-        @MeasurementReportType
+        @MeasurementReportPhase
         private int mMeasurementReportPhase = MEASUREMENT_REPORT_PHASE_NOTSET;
 
         /** UCI spec default: in-band termination signal will be sent once. */
