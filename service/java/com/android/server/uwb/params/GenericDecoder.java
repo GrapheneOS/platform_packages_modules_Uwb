@@ -26,6 +26,8 @@ import com.google.uwb.support.ccc.CccSpecificationParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
+import com.google.uwb.support.radar.RadarParams;
+import com.google.uwb.support.radar.RadarSpecificationParams;
 
 public class GenericDecoder extends TlvDecoder {
     private static final String TAG = "GenericDecoder";
@@ -55,6 +57,14 @@ public class GenericDecoder extends TlvDecoder {
             builder.setCccSpecificationParams(cccSpecificationParams);
         } catch (IllegalArgumentException e) {
             Log.e(TAG, "Failed to decode CCC capabilities", e);
+        }
+        try {
+            RadarSpecificationParams radarSpecificationParams =
+                    TlvDecoder.getDecoder(RadarParams.PROTOCOL_NAME)
+                            .getParams(tlvs, RadarSpecificationParams.class);
+            builder.setRadarSpecificationParams(radarSpecificationParams);
+        } catch (IllegalArgumentException e) {
+            Log.v(TAG, "Failed to decode Radar capabilities", e);
         }
         try {
             byte supported_power_stats_query = tlvs.getByte(SUPPORTED_POWER_STATS_QUERY);
