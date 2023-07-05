@@ -106,6 +106,8 @@ import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.generic.GenericParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
+import com.google.uwb.support.radar.RadarOpenSessionParams;
+import com.google.uwb.support.radar.RadarParams;
 
 import org.junit.After;
 import org.junit.Before;
@@ -180,6 +182,23 @@ public class UwbServiceCoreTest {
                     .setSyncCodeIndex(1)
                     .setHoppingConfigMode(HOPPING_CONFIG_MODE_NONE)
                     .setHoppingSequence(HOPPING_SEQUENCE_DEFAULT);
+    private static final RadarOpenSessionParams.Builder TEST_RADAR_OPEN_SESSION_PARAMS =
+            new RadarOpenSessionParams.Builder()
+                    .setSessionId(22)
+                        .setBurstPeriod(100)
+                        .setSweepPeriod(40)
+                        .setSweepsPerBurst(16)
+                        .setSamplesPerSweep(128)
+                        .setChannelNumber(FiraParams.UWB_CHANNEL_5)
+                        .setSweepOffset(-1)
+                        .setRframeConfig(FiraParams.RFRAME_CONFIG_SP3)
+                        .setPreambleDuration(RadarParams.PREAMBLE_DURATION_T16384_SYMBOLS)
+                        .setPreambleCodeIndex(90)
+                        .setSessionPriority(99)
+                        .setBitsPerSample(RadarParams.BITS_PER_SAMPLES_32)
+                        .setPrfMode(FiraParams.PRF_MODE_HPRF)
+                        .setNumberOfBursts(1000)
+                        .setRadarDataType(RadarParams.RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES);
     @Mock private Context mContext;
     @Mock private NativeUwbManager mNativeUwbManager;
     @Mock private UwbMetrics mUwbMetrics;
@@ -921,6 +940,25 @@ public class UwbServiceCoreTest {
                 eq(sessionHandle), eq(params.getSessionId()), eq((byte) params.getSessionType()),
                 eq(CccParams.PROTOCOL_NAME),
                 argThat(p -> ((CccOpenRangingParams) p).getSessionId() == params.getSessionId()),
+                eq(cb), eq(TEST_DEFAULT_CHIP_ID));
+    }
+
+    @Test
+    public void testOpenRadarSession() throws Exception {
+        enableUwbWithCountryCodeChangedCallback();
+
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+        IUwbRangingCallbacks cb = mock(IUwbRangingCallbacks.class);
+        RadarOpenSessionParams params = TEST_RADAR_OPEN_SESSION_PARAMS.build();
+        AttributionSource attributionSource = TEST_ATTRIBUTION_SOURCE;
+        mUwbServiceCore.openRanging(
+                attributionSource, sessionHandle, cb, params.toBundle(), TEST_DEFAULT_CHIP_ID);
+
+        verify(mUwbSessionManager).initSession(
+                eq(attributionSource),
+                eq(sessionHandle), eq(params.getSessionId()), eq((byte) params.getSessionType()),
+                eq(RadarParams.PROTOCOL_NAME),
+                argThat(p -> ((RadarOpenSessionParams) p).getSessionId() == params.getSessionId()),
                 eq(cb), eq(TEST_DEFAULT_CHIP_ID));
     }
 

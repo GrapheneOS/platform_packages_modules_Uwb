@@ -26,6 +26,8 @@ import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TY
 import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TYPE_TWO_WAY;
 import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_FAILED;
 
+import static com.google.uwb.support.radar.RadarParams.RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES;
+
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -43,6 +45,7 @@ import android.os.RemoteException;
 import android.platform.test.annotations.Presubmit;
 import android.test.suitebuilder.annotation.SmallTest;
 import android.util.Pair;
+import android.uwb.IUwbOemExtensionCallback;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.RangingChangeReason;
 import android.uwb.RangingReport;
@@ -50,11 +53,14 @@ import android.uwb.SessionHandle;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.server.uwb.data.UwbRadarData;
 import com.android.server.uwb.data.UwbRangingData;
 import com.android.server.uwb.data.UwbUciConstants;
 
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.radar.RadarOpenSessionParams;
+import com.google.uwb.support.radar.RadarParams;
 
 import org.junit.After;
 import org.junit.Before;
@@ -80,11 +86,14 @@ public class UwbSessionNotificationManagerTest {
 
     @Mock private UwbInjector mUwbInjector;
     @Mock private UwbSessionManager.UwbSession mUwbSession;
+    @Mock private UwbSessionManager.UwbSession mUwbRadarSession;
     @Mock private SessionHandle mSessionHandle;
     @Mock private IUwbRangingCallbacks mIUwbRangingCallbacks;
     @Mock private FiraOpenSessionParams mFiraParams;
+    @Mock private RadarOpenSessionParams mRadarParams;
     @Mock private UwbServiceCore mUwbServiceCore;
     @Mock private UwbMetrics mUwbMetrics;
+    @Mock private IUwbOemExtensionCallback mIOemExtensionCallback;
 
     private UwbSessionNotificationManager mUwbSessionNotificationManager;
 
@@ -96,6 +105,11 @@ public class UwbSessionNotificationManagerTest {
         when(mUwbSession.getProtocolName()).thenReturn(FiraParams.PROTOCOL_NAME);
         when(mUwbSession.getParams()).thenReturn(mFiraParams);
         when(mUwbSession.getAttributionSource()).thenReturn(ATTRIBUTION_SOURCE);
+        when(mUwbRadarSession.getSessionHandle()).thenReturn(mSessionHandle);
+        when(mUwbRadarSession.getIUwbRangingCallbacks()).thenReturn(mIUwbRangingCallbacks);
+        when(mUwbRadarSession.getProtocolName()).thenReturn(RadarParams.PROTOCOL_NAME);
+        when(mUwbRadarSession.getParams()).thenReturn(mRadarParams);
+        when(mUwbRadarSession.getAttributionSource()).thenReturn(ATTRIBUTION_SOURCE);
         when(mFiraParams.getAoaResultRequest()).thenReturn(
                 FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS);
         when(mFiraParams.hasRangingResultReportMessage()).thenReturn(false);
@@ -104,6 +118,10 @@ public class UwbSessionNotificationManagerTest {
         when(mUwbInjector.checkUwbRangingPermissionForDataDelivery(any(), any())).thenReturn(true);
         when(mUwbInjector.getElapsedSinceBootNanos()).thenReturn(TEST_ELAPSED_NANOS);
         when(mUwbInjector.getUwbServiceCore()).thenReturn(mUwbServiceCore);
+        when(mUwbServiceCore.isOemExtensionCbRegistered()).thenReturn(true);
+        when(mUwbServiceCore.getOemExtensionCallback()).thenReturn(mIOemExtensionCallback);
+        when(mIOemExtensionCallback.onRangingReportReceived(any())).thenAnswer(
+                invocation -> invocation.getArgument(0));
         when(mUwbInjector.getUwbMetrics()).thenReturn(mUwbMetrics);
         mUwbSessionNotificationManager = new UwbSessionNotificationManager(mUwbInjector);
     }
@@ -610,5 +628,32 @@ public class UwbSessionNotificationManagerTest {
 
         verify(mIUwbRangingCallbacks).onRangingRoundsUpdateDtTagStatus(eq(mSessionHandle),
                 eq(bundle));
+    }
+
+    @Test
+    public void testOnRadarDataWithoutUwbRangingPermission() throws Exception {
+        Pair<UwbRadarData, RangingReport> testRadarDataAndRangingReport =
+                UwbTestUtils.generateRadarDataAndRangingReport(
+                        RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES);
+        when(mUwbInjector.checkUwbRangingPermissionForDataDelivery(eq(ATTRIBUTION_SOURCE), any()))
+                .thenReturn(false);
+        mUwbSessionNotificationManager.onRadarData(
+                mUwbRadarSession, testRadarDataAndRangingReport.first);
+
+        verify(mIOemExtensionCallback, never()).onRangingReportReceived(any());
+        verify(mIUwbRangingCallbacks, never()).onRangingResult(any(), any());
+    }
+
+    @Test
+    public void testOnRadarData_forRadarSweepData() throws Exception {
+        Pair<UwbRadarData, RangingReport> testRadarDataAndRangingReport =
+                UwbTestUtils.generateRadarDataAndRangingReport(
+                        RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES);
+        mUwbSessionNotificationManager.onRadarData(
+                mUwbRadarSession, testRadarDataAndRangingReport.first);
+        verify(mIOemExtensionCallback).onRangingReportReceived(
+                testRadarDataAndRangingReport.second);
+        verify(mIUwbRangingCallbacks).onRangingResult(
+                mSessionHandle, testRadarDataAndRangingReport.second);
     }
 }
