@@ -19,6 +19,7 @@ package com.android.server.uwb.params;
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.radar.RadarParams;
 
 public abstract class TlvEncoder {
     public static TlvEncoder getEncoder(String protocolName) {
@@ -27,6 +28,9 @@ public abstract class TlvEncoder {
         }
         if (protocolName.equals(CccParams.PROTOCOL_NAME)) {
             return new CccEncoder();
+        }
+        if (protocolName.equals(RadarParams.PROTOCOL_NAME)) {
+            return new RadarEncoder();
         }
         return null;
     }

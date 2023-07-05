@@ -20,6 +20,7 @@ import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.generic.GenericParams;
+import com.google.uwb.support.radar.RadarParams;
 
 public abstract class TlvDecoder {
     public static TlvDecoder getDecoder(String protocolName) {
@@ -28,6 +29,9 @@ public abstract class TlvDecoder {
         }
         if (protocolName.equals(CccParams.PROTOCOL_NAME)) {
             return new CccDecoder();
+        }
+        if (protocolName.equals(RadarParams.PROTOCOL_NAME)) {
+            return new RadarDecoder();
         }
         if (protocolName.equals(GenericParams.PROTOCOL_NAME)) {
             return new GenericDecoder();
