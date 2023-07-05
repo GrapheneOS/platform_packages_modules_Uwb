@@ -33,6 +33,8 @@ import com.android.modules.utils.build.SdkLevel;
 import com.android.server.uwb.UwbSessionManager.UwbSession;
 import com.android.server.uwb.data.UwbDlTDoAMeasurement;
 import com.android.server.uwb.data.UwbOwrAoaMeasurement;
+import com.android.server.uwb.data.UwbRadarData;
+import com.android.server.uwb.data.UwbRadarSweepData;
 import com.android.server.uwb.data.UwbRangingData;
 import com.android.server.uwb.data.UwbTwoWayMeasurement;
 import com.android.server.uwb.data.UwbUciConstants;
@@ -46,6 +48,9 @@ import com.google.uwb.support.dltdoa.DlTDoAMeasurement;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.oemextension.RangingReportMetadata;
+import com.google.uwb.support.radar.RadarData;
+import com.google.uwb.support.radar.RadarParams;
+import com.google.uwb.support.radar.RadarSweepData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -408,6 +413,67 @@ public class UwbSessionNotificationManager {
             Log.e(TAG, "IUwbRangingCallbacks - onRangingRoundsUpdateDtTagStatus : Failed");
             e.printStackTrace();
         }
+    }
+
+    /** Notify about new radar data. */
+    public void onRadarData(UwbSession uwbSession, UwbRadarData radarData) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        boolean permissionGranted =
+                mUwbInjector.checkUwbRangingPermissionForDataDelivery(
+                        uwbSession.getAttributionSource(), "uwb radar data");
+        if (!permissionGranted) {
+            Log.e(
+                    TAG,
+                    "Not delivering uwb radar data because of permission denial" + sessionHandle);
+            return;
+        }
+        RangingReport rangingReport =
+                new RangingReport.Builder()
+                        .addRangingReportMetadata(getRadarData(radarData).toBundle())
+                        .build();
+        if (mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
+            try {
+                rangingReport =
+                        mUwbInjector
+                                .getUwbServiceCore()
+                                .getOemExtensionCallback()
+                                .onRangingReportReceived(rangingReport);
+            } catch (RemoteException e) {
+                Log.e(TAG, "UwbInjector - onRangingReportReceived with radar data: Failed.");
+                e.printStackTrace();
+            }
+        }
+        try {
+            uwbRangingCallbacks.onRangingResult(sessionHandle, rangingReport);
+            Log.i(TAG, "IUwbRangingCallbacks - onRangingResult with radar data");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onRangingResult with radar data: Failed");
+            e.printStackTrace();
+        }
+    }
+
+    /** Helper function to convert UwbRadarData to RadarData. */
+    private static RadarData getRadarData(@NonNull UwbRadarData radarData) {
+        RadarData.Builder radarDataBuilder =
+                new RadarData.Builder()
+                        .setStatusCode(radarData.statusCode)
+                        .setRadarDataType(radarData.radarDataType)
+                        .setSamplesPerSweep(radarData.samplesPerSweep)
+                        .setBitsPerSample(radarData.bitsPerSample)
+                        .setSweepOffset(radarData.sweepOffset);
+        if (radarData.radarDataType == RadarParams.RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES) {
+            for (UwbRadarSweepData sweepData : radarData.radarSweepData) {
+                radarDataBuilder.addSweepData(
+                        new RadarSweepData.Builder()
+                                .setSequenceNumber(sweepData.sequenceNumber)
+                                .setTimestamp(sweepData.timestamp)
+                                .setVendorSpecificData(sweepData.vendorSpecificData)
+                                .setSampleData(sweepData.sampleData)
+                                .build());
+            }
+        }
+        return radarDataBuilder.build();
     }
 
     private static RangingReport getRangingReport(

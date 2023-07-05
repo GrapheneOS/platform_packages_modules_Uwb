@@ -24,6 +24,7 @@ import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.data.DtTagUpdateRangingRoundsStatus;
 import com.android.server.uwb.data.UwbConfigStatusData;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
+import com.android.server.uwb.data.UwbRadarData;
 import com.android.server.uwb.data.UwbRangingData;
 import com.android.server.uwb.data.UwbTlvData;
 import com.android.server.uwb.data.UwbUciConstants;
@@ -104,6 +105,14 @@ public class NativeUwbManager {
             UwbMulticastListUpdateStatus multicastListUpdateData) {
         Log.d(TAG, "onMulticastListUpdateNotificationReceived : " + multicastListUpdateData);
         mSessionListener.onMulticastListUpdateNotificationReceived(multicastListUpdateData);
+    }
+
+    /**
+     * Radar data callback invoked via the JNI
+     */
+    public void onRadarDataNotificationReceived(UwbRadarData radarData) {
+        Log.d(TAG, "onRadarDataNotificationReceived : " + radarData);
+        mSessionListener.onRadarDataNotificationReceived(radarData);
     }
 
     /**
