@@ -238,4 +238,9 @@ public class CapabilityParam {
     public static final int RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_EDGE_TRIG = 1 << 5;
     public static final int RANGE_DATA_NTF_CONFIG_ENABLE_AOA_EDGE_TRIG = 1 << 6;
     public static final int RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_EDGE_TRIG = 1 << 7;
+
+    // Radar specific
+    public static final int RADAR_SUPPORT = (int) UwbVendorCapabilityTlvTypes.RADAR_SUPPORT;
+    public static final int RADAR_SWEEP_SAMPLES_SUPPORTED =
+            (int) UwbVendorCapabilityTlvValues.RADAR_SWEEP_SAMPLES_SUPPORTED;
 }

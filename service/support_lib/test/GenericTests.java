@@ -18,6 +18,7 @@ package com.google.uwb.support;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
@@ -30,6 +31,8 @@ import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
+import com.google.uwb.support.radar.RadarParams;
+import com.google.uwb.support.radar.RadarSpecificationParams;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -96,34 +99,32 @@ public class GenericTests {
 
         CccProtocolVersion[] protocolVersions =
                 new CccProtocolVersion[] {
-                        new CccProtocolVersion(1, 0),
-                        new CccProtocolVersion(2, 0),
-                        new CccProtocolVersion(2, 1)
+                    new CccProtocolVersion(1, 0),
+                    new CccProtocolVersion(2, 0),
+                    new CccProtocolVersion(2, 1)
                 };
 
         Integer[] uwbConfigs = new Integer[] {CccParams.UWB_CONFIG_0, CccParams.UWB_CONFIG_1};
         CccPulseShapeCombo[] pulseShapeCombos =
                 new CccPulseShapeCombo[] {
-                        new CccPulseShapeCombo(
-                                CccParams.PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE,
-                                CccParams.PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE),
-                        new CccPulseShapeCombo(
-                                CccParams.PULSE_SHAPE_PRECURSOR_FREE,
-                                CccParams.PULSE_SHAPE_PRECURSOR_FREE),
-                        new CccPulseShapeCombo(
-                                CccParams.PULSE_SHAPE_PRECURSOR_FREE_SPECIAL,
-                                CccParams.PULSE_SHAPE_PRECURSOR_FREE_SPECIAL)
+                    new CccPulseShapeCombo(
+                            CccParams.PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE,
+                            CccParams.PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE),
+                    new CccPulseShapeCombo(
+                            CccParams.PULSE_SHAPE_PRECURSOR_FREE,
+                            CccParams.PULSE_SHAPE_PRECURSOR_FREE),
+                    new CccPulseShapeCombo(
+                            CccParams.PULSE_SHAPE_PRECURSOR_FREE_SPECIAL,
+                            CccParams.PULSE_SHAPE_PRECURSOR_FREE_SPECIAL)
                 };
         int ranMultiplier = 200;
         Integer[] chapsPerSlots =
                 new Integer[] {CccParams.CHAPS_PER_SLOT_4, CccParams.CHAPS_PER_SLOT_12};
-        Integer[] syncCodes =
-                new Integer[] {10, 23};
+        Integer[] syncCodes = new Integer[] {10, 23};
         Integer[] channels = new Integer[] {CccParams.UWB_CHANNEL_5, CccParams.UWB_CHANNEL_9};
         Integer[] hoppingConfigModes =
                 new Integer[] {
-                        CccParams.HOPPING_CONFIG_MODE_ADAPTIVE,
-                        CccParams.HOPPING_CONFIG_MODE_CONTINUOUS
+                    CccParams.HOPPING_CONFIG_MODE_ADAPTIVE, CccParams.HOPPING_CONFIG_MODE_CONTINUOUS
                 };
         Integer[] hoppingSequences =
                 new Integer[] {CccParams.HOPPING_SEQUENCE_AES, CccParams.HOPPING_SEQUENCE_DEFAULT};
@@ -155,15 +156,23 @@ public class GenericTests {
         }
         CccSpecificationParams cccSpecificationParams = paramsBuilder.build();
 
+        RadarSpecificationParams radarSpecificationParams =
+                new RadarSpecificationParams.Builder()
+                        .addRadarCapability(
+                                RadarParams.RadarCapabilityFlag.HAS_RADAR_SWEEP_SAMPLES_SUPPORT)
+                        .build();
+
         boolean hasPowerStatsSupport = true;
         GenericSpecificationParams genericSpecificationParams =
                 new GenericSpecificationParams.Builder()
                         .setFiraSpecificationParams(firaSpecificationParams)
                         .setCccSpecificationParams(cccSpecificationParams)
+                        .setRadarSpecificationParams(radarSpecificationParams)
                         .hasPowerStatsSupport(hasPowerStatsSupport)
                         .build();
         firaSpecificationParams = genericSpecificationParams.getFiraSpecificationParams();
         cccSpecificationParams = genericSpecificationParams.getCccSpecificationParams();
+        radarSpecificationParams = genericSpecificationParams.getRadarSpecificationParams();
 
         assertEquals(minPhyVersionSupported, firaSpecificationParams.getMinPhyVersionSupported());
         assertEquals(maxPhyVersionSupported, firaSpecificationParams.getMaxPhyVersionSupported());
@@ -173,18 +182,17 @@ public class GenericTests {
         assertEquals(aoaCapabilities, firaSpecificationParams.getAoaCapabilities());
         assertEquals(deviceRoleCapabilities, firaSpecificationParams.getDeviceRoleCapabilities());
         assertEquals(hasBlockStridingSupport, firaSpecificationParams.hasBlockStridingSupport());
-        assertEquals(hasNonDeferredModeSupport,
-                firaSpecificationParams.hasNonDeferredModeSupport());
-        assertEquals(hasInitiationTimeSupport,
-                firaSpecificationParams.hasInitiationTimeSupport());
+        assertEquals(
+                hasNonDeferredModeSupport, firaSpecificationParams.hasNonDeferredModeSupport());
+        assertEquals(hasInitiationTimeSupport, firaSpecificationParams.hasInitiationTimeSupport());
         assertEquals(multiNodeCapabilities, firaSpecificationParams.getMultiNodeCapabilities());
         assertEquals(prfCapabilities, firaSpecificationParams.getPrfCapabilities());
-        assertEquals(rangingRoundCapabilities,
-                firaSpecificationParams.getRangingRoundCapabilities());
+        assertEquals(
+                rangingRoundCapabilities, firaSpecificationParams.getRangingRoundCapabilities());
         assertEquals(rframeCapabilities, firaSpecificationParams.getRframeCapabilities());
         assertEquals(stsCapabilities, firaSpecificationParams.getStsCapabilities());
-        assertEquals(psduDataRateCapabilities,
-                firaSpecificationParams.getPsduDataRateCapabilities());
+        assertEquals(
+                psduDataRateCapabilities, firaSpecificationParams.getPsduDataRateCapabilities());
         assertEquals(bprfCapabilities, firaSpecificationParams.getBprfParameterSetCapabilities());
         assertEquals(hprfCapabilities, firaSpecificationParams.getHprfParameterSetCapabilities());
 
@@ -195,11 +203,15 @@ public class GenericTests {
         assertArrayEquals(cccSpecificationParams.getChapsPerSlot().toArray(), chapsPerSlots);
         assertArrayEquals(cccSpecificationParams.getSyncCodes().toArray(), syncCodes);
         assertArrayEquals(cccSpecificationParams.getChannels().toArray(), channels);
-        assertArrayEquals(cccSpecificationParams.getHoppingConfigModes().toArray(),
-                hoppingConfigModes);
-        assertArrayEquals(cccSpecificationParams.getHoppingSequences().toArray(),
-                hoppingSequences);
+        assertArrayEquals(
+                cccSpecificationParams.getHoppingConfigModes().toArray(), hoppingConfigModes);
+        assertArrayEquals(cccSpecificationParams.getHoppingSequences().toArray(), hoppingSequences);
 
         assertEquals(hasPowerStatsSupport, genericSpecificationParams.hasPowerStatsSupport());
+        assertEquals(radarSpecificationParams.getRadarCapabilities().size(), 1);
+        assertTrue(
+                radarSpecificationParams
+                        .getRadarCapabilities()
+                        .contains(RadarParams.RadarCapabilityFlag.HAS_RADAR_SWEEP_SAMPLES_SUPPORT));
     }
 }
