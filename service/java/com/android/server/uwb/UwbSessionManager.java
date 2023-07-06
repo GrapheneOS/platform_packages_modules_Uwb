@@ -71,6 +71,7 @@ import com.android.server.uwb.data.DtTagUpdateRangingRoundsStatus;
 import com.android.server.uwb.data.UwbDlTDoAMeasurement;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbOwrAoaMeasurement;
+import com.android.server.uwb.data.UwbRadarData;
 import com.android.server.uwb.data.UwbRangingData;
 import com.android.server.uwb.data.UwbTwoWayMeasurement;
 import com.android.server.uwb.data.UwbUciConstants;
@@ -388,6 +389,19 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 && dataTransferStatus == UwbUciConstants.STATUS_CODE_DATA_TRANSFER_OK) {
             uwbSession.removeSendDataInfo(sequenceNum);
         }
+    }
+
+    @Override
+    public void onRadarDataNotificationReceived(UwbRadarData radarData) {
+        Trace.beginSection("UWB#onRadarDataNotificationReceived");
+        long sessionId = radarData.sessionId;
+        UwbSession uwbSession = getUwbSession((int) sessionId);
+        if (uwbSession != null) {
+            mSessionNotificationManager.onRadarData(uwbSession, radarData);
+        } else {
+            Log.i(TAG, "Session is not initialized or Radar Data is Null");
+        }
+        Trace.endSection();
     }
 
     /** Updates pose information if the session is using an ApplicationPoseSource */

@@ -105,7 +105,6 @@ public class TlvBuffer {
         public TlvBuffer.Builder putLong(int tagType, long data) {
             addHeader(tagType, Long.BYTES);
             this.mBuffer.put(TlvUtil.getLeBytes(data));
-
             this.mNoOfParams++;
             return this;
         }
