@@ -336,7 +336,9 @@ public abstract class RangingDevice {
             @Override
             public void onClosed(int reason, PersistableBundle parameters) {
                 mRangingSession = null;
-                mOpAsyncCallbackRunner.complete(true);
+                if (mOpAsyncCallbackRunner.isActive()) {
+                    mOpAsyncCallbackRunner.complete(true);
+                }
             }
 
             @WorkerThread
