@@ -482,11 +482,33 @@ public class UwbServiceCoreTest {
         mUwbServiceCore.setEnabled(true);
         mTestLooper.dispatchAll();
 
+        // Verify that UWB adapter state is notified as DISABLED, and future calls to
+        // getAdapterState() also return the state as DISABLED.
         verify(mNativeUwbManager).doInitialize();
         verify(mUwbCountryCode).setCountryCode(true);
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
                 StateChangeReason.SYSTEM_REGULATION);
         assertThat(mUwbServiceCore.getAdapterState()).isEqualTo(AdapterState.STATE_DISABLED);
+
+        // Verify that a UWB ranging session cannot be opened or started.
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+        IUwbRangingCallbacks rangingCallbacks = mock(IUwbRangingCallbacks.class);
+
+        try {
+            mUwbServiceCore.openRanging(
+                    TEST_ATTRIBUTION_SOURCE, sessionHandle, rangingCallbacks,
+                    TEST_FIRA_OPEN_SESSION_PARAMS.build().toBundle(), TEST_DEFAULT_CHIP_ID);
+            fail();
+        } catch (IllegalStateException e) {
+            // pass
+        }
+
+        try {
+            mUwbServiceCore.startRanging(sessionHandle, new PersistableBundle());
+            fail();
+        } catch (IllegalStateException e) {
+           // pass
+        }
     }
 
     // Unit test for scenario when setting the country code (during UWB Enable) fails with a generic
@@ -512,11 +534,33 @@ public class UwbServiceCoreTest {
         mUwbServiceCore.setEnabled(true);
         mTestLooper.dispatchAll();
 
+        // Verify that UWB adapter state is notified as DISABLED, and future calls to
+        // getAdapterState() also return the state as DISABLED.
         verify(mNativeUwbManager).doInitialize();
         verify(mUwbCountryCode).setCountryCode(true);
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
                 StateChangeReason.SYSTEM_POLICY);
         assertThat(mUwbServiceCore.getAdapterState()).isEqualTo(AdapterState.STATE_DISABLED);
+
+        // Verify that a UWB ranging session cannot be opened or started.
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+        IUwbRangingCallbacks rangingCallbacks = mock(IUwbRangingCallbacks.class);
+
+        try {
+            mUwbServiceCore.openRanging(
+                    TEST_ATTRIBUTION_SOURCE, sessionHandle, rangingCallbacks,
+                    TEST_FIRA_OPEN_SESSION_PARAMS.build().toBundle(), TEST_DEFAULT_CHIP_ID);
+            fail();
+        } catch (IllegalStateException e) {
+            // pass
+        }
+
+        try {
+            mUwbServiceCore.startRanging(sessionHandle, new PersistableBundle());
+            fail();
+        } catch (IllegalStateException e) {
+           // pass
+        }
     }
 
     @Test
@@ -542,7 +586,7 @@ public class UwbServiceCoreTest {
 
         // Enable again. should be ignored.
         enableUwb(VALID_COUNTRY_CODE);
-        verifyNoMoreInteractions(mNativeUwbManager, mUwbCountryCode, cb);
+        verifyNoMoreInteractions(mNativeUwbManager, cb);
         assertThat(mUwbServiceCore.getAdapterState())
                 .isEqualTo(AdapterState.STATE_ENABLED_INACTIVE);
     }
@@ -805,7 +849,7 @@ public class UwbServiceCoreTest {
         // Disable again. should be ignored.
         disableUwb();
 
-        verifyNoMoreInteractions(mNativeUwbManager, mUwbCountryCode, cb);
+        verifyNoMoreInteractions(mNativeUwbManager, cb);
         assertThat(mUwbServiceCore.getAdapterState()).isEqualTo(AdapterState.STATE_DISABLED);
     }
 
