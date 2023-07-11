@@ -218,7 +218,7 @@ public class FiraEncoderTest {
                     "01010002010003010004010906020604080260090B01000C01030D01010E01010F02"
                             + "00001002204E11010412010313010014010A1501021601001701011A01011B01191C"
                             + "01001F01002201012301002401002501322601002901012A0200002C01002D01002E"
-                            + "01012F010131010032020000350101000101050101070206042B0400000000270278"
+                            + "01012F0101310100320200003501010001012B0400000000270278"
                             + "0528061A5577477E7D3304B004000034041E0000003803010B0A390101");
         } else {
             mFiraSessionv11TlvData = UwbUtil.getByteArray(RANGING_ROUND_USAGE_SS_TWR_TLV
@@ -283,7 +283,7 @@ public class FiraEncoderTest {
                     + MAX_RR_RETRY_TLV + HOPPING_MODE_TLV + BLOCK_STRIDE_LENGTH_TLV
                     + RESULT_REPORT_CONFIG_TLV + IN_BAND_TERMINATION_ATTEMPT_COUNT_TLV
                     + BPRF_PHR_DATA_RATE_TLV + MAX_NUMBER_OF_MEASUREMENTS_TLV + STS_LENGTH_TLV
-                    + DEVICE_TYPE_CONTROLLER_TLV + NUMBER_OF_CONTROLEES_TLV + DST_MAC_ADDRESS_TLV
+                    + DEVICE_TYPE_CONTROLLER_TLV
                     + UWB_INITIATION_TIME_TLV + VENDOR_ID_TLV + STATIC_STS_IV_TLV
                     + UL_TDOA_TX_INTERVAL_TLV + UL_TDOA_RANDOM_WINDOW_TLV + UL_TDOA_DEVICE_ID_TLV
                     + UL_TDOA_TX_TIMESTAMP_TLV);
@@ -344,7 +344,7 @@ public class FiraEncoderTest {
         FiraOpenSessionParams params = TEST_FIRA_UT_TAG_OPEN_SESSION_PARAM.build();
         TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(47);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(45);
         assertThat(tlvs.getByteArray()).isEqualTo(mFiraOpenSessionTlvUtTag);
 
     }
@@ -421,7 +421,7 @@ public class FiraEncoderTest {
                         .setDeviceRole(RANGING_DEVICE_DT_TAG)
                         .setDeviceAddress(UwbAddress.fromBytes(new byte[]{0x4, 0x6}))
                         .setDestAddressList(Arrays.asList(UwbAddress.fromBytes(
-                                new byte[]{0x4, 0x6})))
+                                new byte[]{0x4, 0x6}))) // Should be ignored
                         .setMultiNodeMode(MULTI_NODE_MODE_ONE_TO_MANY)
                         .setRangingRoundUsage(RANGING_ROUND_USAGE_DL_TDOA)
                         .setRframeConfig(RFRAME_CONFIG_SP1)
@@ -463,6 +463,7 @@ public class FiraEncoderTest {
                     .setDeviceType(RANGING_DEVICE_TYPE_CONTROLLER)
                     .setDeviceRole(RANGING_DEVICE_ROLE_INITIATOR)
                     .setDeviceAddress(UwbAddress.fromBytes(new byte[]{0x4, 0x6}))
+                    // DestAddressList should be ignored and not set in the TLV params.
                     .setDestAddressList(Arrays.asList(UwbAddress.fromBytes(new byte[]{0x4, 0x6})))
                     .setMultiNodeMode(MULTI_NODE_MODE_ONE_TO_MANY)
                     .setRangingRoundUsage(RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE)
@@ -519,8 +520,6 @@ public class FiraEncoderTest {
                     + STS_LENGTH_TLV
                     + RANGING_INTERVAL_TLV
                     + DEVICE_TYPE_CONTROLLER_TLV
-                    + NUMBER_OF_CONTROLEES_TLV
-                    + DST_MAC_ADDRESS_TLV
                     + UWB_INITIATION_TIME_2_0_TLV
                     + LINK_LAYER_MODE_BYPASS_TLV
                     + DATA_TRANSFER_STATUS_NTF_CONFIG
@@ -532,7 +531,7 @@ public class FiraEncoderTest {
                     + CAP_SIZE_RANGE_DEFAULT_TLV);
         TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(50);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(48);
         assertThat(tlvs.getByteArray()).isEqualTo(expected_data);
     }
 }

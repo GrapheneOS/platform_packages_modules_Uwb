@@ -1027,13 +1027,15 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setApplicationDataEndpoint(bundle.getInt(
                         KEY_APPLICATION_DATA_ENDPOINT, APPLICATION_DATA_ENDPOINT_DEFAULT));
 
-        if (builder.mDeviceRole.get() != RANGING_DEVICE_DT_TAG) {
+        if (builder.isTimeScheduledTwrSession()) {
             long[] destAddresses = bundle.getLongArray(KEY_DEST_ADDRESS_LIST);
-            List<UwbAddress> destAddressList = new ArrayList<>();
-            for (long address : destAddresses) {
-                destAddressList.add(longToUwbAddress(address, addressByteLength));
+            if (destAddresses != null) {
+                List<UwbAddress> destAddressList = new ArrayList<>();
+                for (long address : destAddresses) {
+                    destAddressList.add(longToUwbAddress(address, addressByteLength));
+                }
+                builder.setDestAddressList(destAddressList);
             }
-            builder.setDestAddressList(destAddressList);
         }
         return builder.build();
     }
@@ -1927,7 +1929,7 @@ public class FiraOpenSessionParams extends FiraParams {
 
             // Make sure address length matches the address mode
             checkArgument(mDeviceAddress != null && mDeviceAddress.size() == addressByteLength);
-            if (mDeviceRole.get() != RANGING_DEVICE_DT_TAG) {
+            if (isTimeScheduledTwrSession()) {
                 checkNotNull(mDestAddressList);
                 for (UwbAddress destAddress : mDestAddressList) {
                     checkArgument(destAddress != null
@@ -2050,6 +2052,22 @@ public class FiraOpenSessionParams extends FiraParams {
         public FiraOpenSessionParams.Builder setFilterType(@FilterType int filterType) {
             this.mFilterType = filterType;
             return this;
+        }
+
+        /**
+         * Returns true when (RangingRoundUsage = 1, 2, 3, 4) and
+         * SCHEDULED_MODE == 0x01 (TIME_SCHEDULED_RANGING)
+         **/
+        public boolean isTimeScheduledTwrSession() {
+            if (mScheduledMode == FiraParams.TIME_SCHEDULED_RANGING) {
+                if (mRangingRoundUsage == RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE
+                        || mRangingRoundUsage == RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE
+                        || mRangingRoundUsage == RANGING_ROUND_USAGE_SS_TWR_NON_DEFERRED_MODE
+                        || mRangingRoundUsage == RANGING_ROUND_USAGE_DS_TWR_NON_DEFERRED_MODE) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public FiraOpenSessionParams build() {
