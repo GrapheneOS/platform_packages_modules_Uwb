@@ -1330,11 +1330,21 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     () -> {
                         int status = UwbUciConstants.STATUS_CODE_FAILED;
                         synchronized (uwbSession.getWaitObj()) {
+                            if (uwbSession.getNeedsQueryUwbsTimestamp()) {
+                                // Query the UWBS timestamp and add the relative initiation time
+                                // stored in the FiraOpenSessionParams, to get the absolute
+                                // initiation time to be configured.
+                                long uwbsTimestamp =
+                                        mUwbInjector.getUwbServiceCore().queryUwbsTimestampMicros();
+                                uwbSession.computeAbsoluteInitiationTime(uwbsTimestamp);
+                            }
+
                             if (uwbSession.getNeedsAppConfigUpdate()) {
                                 uwbSession.resetNeedsAppConfigUpdate();
                                 status = mConfigurationManager.setAppConfigurations(
                                         uwbSession.getSessionId(),
                                         uwbSession.getParams(), uwbSession.getChipId());
+                                uwbSession.resetAbsoluteInitiationTime();
                                 if (status != UwbUciConstants.STATUS_CODE_OK) {
                                     mSessionNotificationManager.onRangingStartFailed(
                                             uwbSession, status);
@@ -1809,6 +1819,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         private int mStackSessionPriority;
         private boolean mSessionPriorityOverride = false;
         private boolean mNeedsAppConfigUpdate = false;
+        private boolean mNeedsQueryUwbsTimestamp = false;
         private UwbMulticastListUpdateStatus mMulticastListUpdateStatus;
         private final int mProfileType;
         private AlarmManager.OnAlarmListener mRangingResultErrorStreakTimerListener;
@@ -2151,6 +2162,51 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                         mStackSessionPriority).build();
                 this.mNeedsAppConfigUpdate = true;
             }
+
+            // When the UWBS supports Fira 2.0+ and the application has not configured an absolute
+            // UWB initiation time, we must fetch the UWBS timestamp (to compute the absolute time).
+            GenericSpecificationParams specificationParams =
+                    mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(mChipId);
+            if (specificationParams != null
+                    && specificationParams.getFiraSpecificationParams()
+                            .getMinPhyVersionSupported().getMajor() >= 2
+                    && firaOpenSessionParams.getAbsoluteInitiationTime() == 0) {
+                this.mNeedsQueryUwbsTimestamp = true;
+            }
+        }
+
+        /**
+         * Compute {@code FiraOpenSessionParams.absolute_initiation_time}, by doing a sum of the
+         * UWBS Timestamp (in micro-seconds) and the relative
+         * {@code FiraOpenSessionParams.initiation_time} (in milli-seconds). This method should be
+         * called only for FiRa UCI ProtocolVersion >= 2.0 devices.
+         */
+        public void computeAbsoluteInitiationTime(long uwbsTimestamp) {
+            if (this.mNeedsQueryUwbsTimestamp) {
+                FiraOpenSessionParams firaOpenSessionParams = (FiraOpenSessionParams) mParams;
+                this.mParams = ((FiraOpenSessionParams) mParams).toBuilder()
+                        .setAbsoluteInitiationTime(
+                                uwbsTimestamp + firaOpenSessionParams.getInitiationTime() * 1000)
+                        .build();
+                this.mNeedsAppConfigUpdate = true;
+            }
+        }
+
+        /**
+         * Reset the computed {@code FiraOpenSessionParams.absolute_initiation_time}, only when it
+         * was computed and set by this class (it should not be reset when it was provided by the
+         * application}.
+         */
+        public void resetAbsoluteInitiationTime() {
+            if (this.mNeedsQueryUwbsTimestamp) {
+                FiraOpenSessionParams firaOpenSessionParams = (FiraOpenSessionParams) mParams;
+                // Reset the absolute Initiation time, so that it's re-computed if start ranging is
+                // called in the future for this UWB session.
+                this.mParams = ((FiraOpenSessionParams) mParams).toBuilder()
+                        .setAbsoluteInitiationTime(0)
+                        .build();
+                this.mNeedsQueryUwbsTimestamp = false;
+            }
         }
 
         public void updateFiraParamsOnReconfigure(FiraRangingReconfigureParams reconfigureParams) {
@@ -2229,6 +2285,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         /** Reset the needsAppConfigUpdate flag to false. */
         public void resetNeedsAppConfigUpdate() {
             this.mNeedsAppConfigUpdate = false;
+        }
+
+        public boolean getNeedsQueryUwbsTimestamp() {
+            return this.mNeedsQueryUwbsTimestamp;
         }
 
         public Set<Long> getRemoteMacAddressList() {
