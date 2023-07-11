@@ -57,8 +57,10 @@ public class FiraOpenSessionParams extends FiraParams {
     private final List<UwbAddress> mDestAddressList;
 
     // FiRa 1.0: Relative time (in milli-seconds).
-    // FiRa 2.0: Absolute time in UWB time domain, as specified in CR-272 (in micro-seconds).
+    // FiRa 2.0: Relative time (in milli-seconds).
     private final long mInitiationTime;
+    // FiRa 2.0: Absolute time in UWB time domain, as specified in CR-272 (in micro-seconds).
+    private final long mAbsoluteInitiationTime;
     private final int mSlotDurationRstu;
     private final int mSlotsPerRangingRound;
     private final int mRangingIntervalMs;
@@ -159,6 +161,7 @@ public class FiraOpenSessionParams extends FiraParams {
     private static final String KEY_DEVICE_ADDRESS = "device_address";
     private static final String KEY_DEST_ADDRESS_LIST = "dest_address_list";
     private static final String KEY_INITIATION_TIME_MS = "initiation_time_ms";
+    private static final String KEY_ABSOLUTE_INITIATION_TIME_US = "absolute_initiation_time_us";
     private static final String KEY_SLOT_DURATION_RSTU = "slot_duration_rstu";
     private static final String KEY_SLOTS_PER_RANGING_ROUND = "slots_per_ranging_round";
     private static final String KEY_RANGING_INTERVAL_MS = "ranging_interval_ms";
@@ -261,6 +264,7 @@ public class FiraOpenSessionParams extends FiraParams {
             UwbAddress deviceAddress,
             List<UwbAddress> destAddressList,
             long initiationTime,
+            long absoluteInitiationTime,
             int slotDurationRstu,
             int slotsPerRangingRound,
             int rangingIntervalMs,
@@ -341,6 +345,7 @@ public class FiraOpenSessionParams extends FiraParams {
         mDeviceAddress = deviceAddress;
         mDestAddressList = destAddressList;
         mInitiationTime = initiationTime;
+        mAbsoluteInitiationTime = absoluteInitiationTime;
         mSlotDurationRstu = slotDurationRstu;
         mSlotsPerRangingRound = slotsPerRangingRound;
         mRangingIntervalMs = rangingIntervalMs;
@@ -457,6 +462,10 @@ public class FiraOpenSessionParams extends FiraParams {
 
     public long getInitiationTime() {
         return mInitiationTime;
+    }
+
+    public long getAbsoluteInitiationTime() {
+        return mAbsoluteInitiationTime;
     }
 
     public int getSlotDurationRstu() {
@@ -812,6 +821,7 @@ public class FiraOpenSessionParams extends FiraParams {
         }
 
         bundle.putLong(KEY_INITIATION_TIME_MS, mInitiationTime);
+        bundle.putLong(KEY_ABSOLUTE_INITIATION_TIME_US, mAbsoluteInitiationTime);
         bundle.putInt(KEY_SLOT_DURATION_RSTU, mSlotDurationRstu);
         bundle.putInt(KEY_SLOTS_PER_RANGING_ROUND, mSlotsPerRangingRound);
         bundle.putInt(KEY_RANGING_INTERVAL_MS, mRangingIntervalMs);
@@ -934,6 +944,7 @@ public class FiraOpenSessionParams extends FiraParams {
                 // Changed from int to long. Look for int value, if long value not found to
                 // maintain backwards compatibility.
                 .setInitiationTime(bundle.getLong(KEY_INITIATION_TIME_MS))
+                .setAbsoluteInitiationTime(bundle.getLong(KEY_ABSOLUTE_INITIATION_TIME_US))
                 .setSlotDurationRstu(bundle.getInt(KEY_SLOT_DURATION_RSTU))
                 .setSlotsPerRangingRound(bundle.getInt(KEY_SLOTS_PER_RANGING_ROUND))
                 .setRangingIntervalMs(bundle.getInt(KEY_RANGING_INTERVAL_MS))
@@ -1069,6 +1080,7 @@ public class FiraOpenSessionParams extends FiraParams {
 
         /** UCI spec default: 0ms */
         private long mInitiationTime = 0;
+        private long mAbsoluteInitiationTime = 0;
 
         /** UCI spec default: 2400 RSTU (2 ms). */
         private int mSlotDurationRstu = 2400;
@@ -1295,6 +1307,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mDeviceAddress = builder.mDeviceAddress;
             mDestAddressList = builder.mDestAddressList;
             mInitiationTime = builder.mInitiationTime;
+            mAbsoluteInitiationTime = builder.mAbsoluteInitiationTime;
             mSlotDurationRstu = builder.mSlotDurationRstu;
             mSlotsPerRangingRound = builder.mSlotsPerRangingRound;
             mRangingIntervalMs = builder.mRangingIntervalMs;
@@ -1379,6 +1392,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mDeviceAddress = params.mDeviceAddress;
             mDestAddressList = params.mDestAddressList;
             mInitiationTime = params.mInitiationTime;
+            mAbsoluteInitiationTime = params.mAbsoluteInitiationTime;
             mSlotDurationRstu = params.mSlotDurationRstu;
             mSlotsPerRangingRound = params.mSlotsPerRangingRound;
             mRangingIntervalMs = params.mRangingIntervalMs;
@@ -1502,11 +1516,23 @@ public class FiraOpenSessionParams extends FiraParams {
         /**
          * @param initiationTime UWB initiation time:
          *        FiRa 1.0: Relative time (in milli-seconds).
-         *        FiRa 2.0: Absolute time in UWB time domain, as specified in CR-272
-         *                      (in micro-seconds).
+         *        FiRa 2.0: Relative time (in milli-seconds).
+         *            For a FiRa 2.0 device, the UWB Service will query the absolute UWBS timestamp
+         *            and add the relative time (in milli-seconds) configured here, to compute the
+         *            absolute time that will be configured in the UWB_INITIATION_TIME parameter.
          */
         public FiraOpenSessionParams.Builder setInitiationTime(long initiationTime) {
             mInitiationTime = initiationTime;
+            return this;
+        }
+
+        /**
+         * @param absoluteInitiationTime Absolute UWB initiation time (in micro-seconds). This is
+         *        applicable only for FiRa 2.0+ devices, as specified in CR-272.
+         */
+        public FiraOpenSessionParams.Builder setAbsoluteInitiationTime(
+                long absoluteInitiationTime) {
+            mAbsoluteInitiationTime = absoluteInitiationTime;
             return this;
         }
 
@@ -2087,6 +2113,7 @@ public class FiraOpenSessionParams extends FiraParams {
                     mDeviceAddress,
                     mDestAddressList,
                     mInitiationTime,
+                    mAbsoluteInitiationTime,
                     mSlotDurationRstu,
                     mSlotsPerRangingRound,
                     mRangingIntervalMs,
