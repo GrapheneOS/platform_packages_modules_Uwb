@@ -667,39 +667,57 @@ fn native_controller_multicast_list_update(
             )
         }
         UpdateMulticastListAction::AddControleeWithShortSubSessionKey => {
-            Controlees::ShortSessionKey(
-                zip(
-                    zip(address_list, sub_session_id_list),
-                    env.convert_byte_array(sub_session_keys)
-                        .map_err(|_| Error::ForeignFunctionInterface)?
-                        .chunks(16),
+            if sub_session_keys.is_null() {
+                Controlees::NoSessionKey(
+                    zip(address_list, sub_session_id_list)
+                        .map(|(a, s)| Controlee { short_address: a, subsession_id: s as u32 })
+                        .collect::<Vec<Controlee>>(),
                 )
-                .map(|((address, id), key)| {
-                    Ok(Controlee_V2_0_16_Byte_Version {
-                        short_address: address,
-                        subsession_id: id as u32,
-                        subsession_key: key.try_into().map_err(|_| Error::BadParameters)?,
+            } else {
+                Controlees::ShortSessionKey(
+                    zip(
+                        zip(address_list, sub_session_id_list),
+                        env.convert_byte_array(sub_session_keys)
+                            .map_err(|_| Error::ForeignFunctionInterface)?
+                            .chunks(16),
+                    )
+                    .map(|((address, id), key)| {
+                        Ok(Controlee_V2_0_16_Byte_Version {
+                            short_address: address,
+                            subsession_id: id as u32,
+                            subsession_key: key.try_into().map_err(|_| Error::BadParameters)?,
+                        })
                     })
-                })
-                .collect::<Result<Vec<Controlee_V2_0_16_Byte_Version>>>()?,
-            )
+                    .collect::<Result<Vec<Controlee_V2_0_16_Byte_Version>>>()?,
+                )
+            }
         }
-        UpdateMulticastListAction::AddControleeWithLongSubSessionKey => Controlees::LongSessionKey(
-            zip(
-                zip(address_list, sub_session_id_list),
-                env.convert_byte_array(sub_session_keys)
-                    .map_err(|_| Error::ForeignFunctionInterface)?
-                    .chunks(32),
-            )
-            .map(|((address, id), key)| {
-                Ok(Controlee_V2_0_32_Byte_Version {
-                    short_address: address,
-                    subsession_id: id as u32,
-                    subsession_key: key.try_into().map_err(|_| Error::BadParameters)?,
-                })
-            })
-            .collect::<Result<Vec<Controlee_V2_0_32_Byte_Version>>>()?,
-        ),
+        UpdateMulticastListAction::AddControleeWithLongSubSessionKey => {
+            if sub_session_keys.is_null() {
+                Controlees::NoSessionKey(
+                    zip(address_list, sub_session_id_list)
+                        .map(|(a, s)| Controlee { short_address: a, subsession_id: s as u32 })
+                        .collect::<Vec<Controlee>>(),
+                )
+            } else {
+                Controlees::LongSessionKey(
+                    zip(
+                        zip(address_list, sub_session_id_list),
+                        env.convert_byte_array(sub_session_keys)
+                            .map_err(|_| Error::ForeignFunctionInterface)?
+                            .chunks(32),
+                    )
+                    .map(|((address, id), key)| {
+                        Ok(Controlee_V2_0_32_Byte_Version {
+                            short_address: address,
+                            subsession_id: id as u32,
+                            subsession_key: key.try_into().map_err(|_| Error::BadParameters)?,
+                        })
+                    })
+                    .collect::<Result<Vec<Controlee_V2_0_32_Byte_Version>>>()?,
+                )
+            }
+        }
     };
     uci_manager.session_update_controller_multicast_list(
         session_id as u32,
