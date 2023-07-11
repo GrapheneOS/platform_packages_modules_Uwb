@@ -177,7 +177,20 @@ public class UwbSessionManagerTest {
     private static final short DATA_SEQUENCE_NUM_1 = 2;
     private static final int DATA_TRANSMISSION_COUNT = 1;
     private static final int DATA_TRANSMISSION_COUNT_3 = 3;
-
+    private static final FiraProtocolVersion FIRA_VERSION_1_0 = new FiraProtocolVersion(1, 0);
+    private static final FiraProtocolVersion FIRA_VERSION_1_1 = new FiraProtocolVersion(1, 1);
+    private static final FiraProtocolVersion FIRA_VERSION_2_0 = new FiraProtocolVersion(2, 0);
+    private static final FiraSpecificationParams FIRA_SPECIFICATION_PARAMS =
+            new FiraSpecificationParams.Builder()
+                    .setMinPhyVersionSupported(FIRA_VERSION_1_0)
+                    .setMaxPhyVersionSupported(FIRA_VERSION_1_1)
+                    .setSupportedChannels(List.of(9))
+                    .setRangeDataNtfConfigCapabilities(
+                            EnumSet.of(
+                                        HAS_RANGE_DATA_NTF_CONFIG_DISABLE,
+                                        HAS_RANGE_DATA_NTF_CONFIG_ENABLE))
+                    .build();
+    private static final long UWBS_TIMESTAMP = 2000000L;
     private static final int HANDLE_ID = 12;
     private static final int MAX_RX_DATA_PACKETS_TO_STORE = 10;
     private static final int PID = Process.myPid();
@@ -229,14 +242,7 @@ public class UwbSessionManagerTest {
         }).when(mUwbInjector).runTaskOnSingleThreadExecutor(any(FutureTask.class), anyInt());
         mSpecificationParamsBuilder = new GenericSpecificationParams.Builder()
                 .setCccSpecificationParams(mCccSpecificationParams)
-                .setFiraSpecificationParams(
-                        new FiraSpecificationParams.Builder()
-                                .setSupportedChannels(List.of(9))
-                                .setRangeDataNtfConfigCapabilities(
-                                        EnumSet.of(
-                                                HAS_RANGE_DATA_NTF_CONFIG_DISABLE,
-                                                HAS_RANGE_DATA_NTF_CONFIG_ENABLE))
-                                .build());
+                .setFiraSpecificationParams(FIRA_SPECIFICATION_PARAMS);
         when(mUwbServiceCore.getCachedSpecificationParams(any())).thenReturn(
                 mSpecificationParamsBuilder.build());
         when(mCccSpecificationParams.getMaxRangingSessionNumber()).thenReturn(
@@ -1482,10 +1488,26 @@ public class UwbSessionManagerTest {
     }
 
     private Params setupFiraParams() {
-        return setupFiraParams(FiraParams.RANGING_DEVICE_ROLE_INITIATOR, Optional.empty());
+        return setupFiraParams(FIRA_VERSION_2_0);
     }
 
-    private Params setupFiraParams(int deviceRole, Optional<Integer> rangingRoundUsageOptional) {
+    private Params setupFiraParams(FiraProtocolVersion firaProtocolVersion) {
+        return setupFiraParams(
+            FiraParams.RANGING_DEVICE_ROLE_INITIATOR,
+            /* rangingRoundusageOptional = */ Optional.empty(),
+            firaProtocolVersion);
+    }
+
+    private Params setupFiraParams(
+            int deviceRole,
+            Optional<Integer> rangingRoundUsageOptional) {
+        return setupFiraParams(deviceRole, rangingRoundUsageOptional, FIRA_VERSION_1_0);
+    }
+
+    private Params setupFiraParams(
+            int deviceRole,
+            Optional<Integer> rangingRoundUsageOptional,
+            FiraProtocolVersion firaProtocolVersion) {
         FiraOpenSessionParams.Builder paramsBuilder = new FiraOpenSessionParams.Builder()
                 .setDeviceAddress(UwbAddress.fromBytes(new byte[] {(byte) 0x01, (byte) 0x02 }))
                 .setVendorId(new byte[] { (byte) 0x00, (byte) 0x01 })
@@ -1493,7 +1515,7 @@ public class UwbSessionManagerTest {
                         (byte) 0x04, (byte) 0x05, (byte) 0x06 })
                 .setDestAddressList(Arrays.asList(
                         UWB_DEST_ADDRESS))
-                .setProtocolVersion(new FiraProtocolVersion(1, 0))
+                .setProtocolVersion(firaProtocolVersion)
                 .setSessionId(10)
                 .setSessionType(SESSION_TYPE_RANGING)
                 .setDeviceType(FiraParams.RANGING_DEVICE_TYPE_CONTROLLER)
@@ -2102,6 +2124,47 @@ public class UwbSessionManagerTest {
                 uwbSession.getSessionHandle(), uwbSession.getParams());
         mTestLooper.dispatchAll();
 
+        verify(mUwbSessionNotificationManager).onRangingStarted(eq(uwbSession), any());
+        verify(mUwbMetrics).longRangingStartEvent(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
+    }
+
+    @Test
+    public void execStartRanging_absoluteInitiationTime() throws Exception {
+        // Setup the UWBS to return Fira version as 2.0.
+        FiraSpecificationParams firaSpecificationParams20 = new FiraSpecificationParams.Builder()
+                .setMinPhyVersionSupported(FIRA_VERSION_2_0)
+                .setMaxPhyVersionSupported(FIRA_VERSION_2_0)
+                .setSupportedChannels(FIRA_SPECIFICATION_PARAMS.getSupportedChannels())
+                .setRangeDataNtfConfigCapabilities(
+                        FIRA_SPECIFICATION_PARAMS.getRangeDataNtfConfigCapabilities())
+                .build();
+        GenericSpecificationParams specificationParams = new GenericSpecificationParams.Builder()
+                .setCccSpecificationParams(mCccSpecificationParams)
+                .setFiraSpecificationParams(firaSpecificationParams20)
+                .build();
+        when(mUwbServiceCore.getCachedSpecificationParams(any())).thenReturn(specificationParams);
+
+        Params params = setupFiraParams(new FiraProtocolVersion(2, 0));
+        UwbSession uwbSession = prepareExistingUwbSession(params);
+
+        // Setup for start ranging.
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE, UwbUciConstants.UWB_SESSION_STATE_ACTIVE)
+                .when(uwbSession).getSessionState();
+        when(mNativeUwbManager.startRanging(eq(TEST_SESSION_ID), anyString()))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+        when(mUwbServiceCore.queryUwbsTimestampMicros()).thenReturn(UWBS_TIMESTAMP);
+        when(mUwbConfigurationManager.setAppConfigurations(anyInt(), any(), anyString()))
+                .thenReturn(UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.startRanging(uwbSession.getSessionHandle(), params);
+        mTestLooper.dispatchAll();
+
+        // Verify that queryUwbsTimestampMicros() is called. Currently unable to verify that the
+        // FiraOpenSessionParams is changed and the absoluteInitiationTime field set in it, as
+        // equals() is not implemented.
+        verify(mUwbServiceCore).queryUwbsTimestampMicros();
+        verify(mUwbConfigurationManager).setAppConfigurations(anyInt(), any(), any());
         verify(mUwbSessionNotificationManager).onRangingStarted(eq(uwbSession), any());
         verify(mUwbMetrics).longRangingStartEvent(
                 eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));

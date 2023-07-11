@@ -139,8 +139,14 @@ public class FiraEncoder extends TlvEncoder {
         if (params.getProtocolVersion().getMajor() >= 2) {
             // Initiation time Changed from 4 byte field to 8 byte field in version 2.
             if (deviceRole != FiraParams.RANGING_DEVICE_DT_TAG) {
-                tlvBufferBuilder
-                    .putLong(ConfigParam.UWB_INITIATION_TIME, params.getInitiationTime());
+                // For FiRa 2.0+ device, prefer to set the Absolute UWB Initiation time.
+                if (params.getAbsoluteInitiationTime() > 0) {
+                    tlvBufferBuilder.putLong(ConfigParam.UWB_INITIATION_TIME,
+                            params.getAbsoluteInitiationTime());
+                } else {
+                    tlvBufferBuilder.putLong(ConfigParam.UWB_INITIATION_TIME,
+                            params.getInitiationTime());
+                }
             }
             tlvBufferBuilder.putByte(ConfigParam.LINK_LAYER_MODE, (byte) params.getLinkLayerMode())
                     .putByte(ConfigParam.DATA_REPETITION_COUNT,
