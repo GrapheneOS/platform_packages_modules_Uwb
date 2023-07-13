@@ -29,7 +29,7 @@ CR326,YES,
 CR327,NA,Marked as N/A (MAC)
 CR328,NO,
 CR329,NO,
-CR330,NO,
+CR330,YES,
 CR337,NA,CR-337 seems to have been withdrawn
 CR338,NA,Marked as N/A (MAC)
 CR340,NA,Marked as N/A (MAC)
@@ -85,7 +85,7 @@ CR432,NA,Marked as N/A (MAC)
 CR433,YES,
 CR435,YES,
 CR436,NA,
-CR437,NO,
+CR437,YES,
 CR438,YES,
 CR441,NO,
 CR442,YES,

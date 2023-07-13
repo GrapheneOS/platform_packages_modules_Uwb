@@ -1597,6 +1597,17 @@ public class UwbServiceCoreTest {
         verify(mUwbSessionManager).rangingRoundsUpdateDtTag(sessionHandle, bundle);
     }
 
+    @Test
+    public void testHybridSessionConfiguration() throws Exception {
+        enableUwbWithCountryCodeChangedCallback();
+
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+        PersistableBundle bundle = new PersistableBundle();
+        mUwbServiceCore.setHybridSessionConfiguration(sessionHandle, bundle);
+
+        verify(mUwbSessionManager).setHybridSessionConfiguration(sessionHandle, bundle);
+    }
+
     public CccSpecificationParams getTestCccSpecificationParams() {
         CccProtocolVersion[] protocolVersions =
                 new CccProtocolVersion[] {
