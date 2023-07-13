@@ -56,7 +56,7 @@ public abstract class RangingDevice {
     private static final int SESSION_ID_UNSET = 0;
 
     /** Timeout value after ranging start call */
-    private static final int RANGING_START_TIMEOUT_MILLIS = 3000;
+    private static final int RANGING_START_TIMEOUT_MILLIS = 3100;
 
     protected final UwbManager mUwbManager;
 
