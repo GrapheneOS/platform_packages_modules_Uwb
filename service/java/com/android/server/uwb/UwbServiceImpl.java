@@ -396,6 +396,16 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     }
 
     @Override
+    public int setHybridSessionConfiguration(SessionHandle sessionHandle,
+            PersistableBundle params) {
+        if (!SdkLevel.isAtLeastV()) {
+            throw new UnsupportedOperationException();
+        }
+        enforceUwbPrivilegedPermission();
+        return mUwbServiceCore.setHybridSessionConfiguration(sessionHandle, params);
+    }
+
+    @Override
     public synchronized void setEnabled(boolean enabled) throws RemoteException {
         enforceUwbPrivilegedPermission();
         persistUwbToggleState(enabled);

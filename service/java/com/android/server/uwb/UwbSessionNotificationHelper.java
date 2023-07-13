@@ -46,6 +46,10 @@ public class UwbSessionNotificationHelper {
             case UwbUciConstants.REASON_ERROR_INVALID_RANGING_INTERVAL:
             case UwbUciConstants.REASON_ERROR_INVALID_STS_CONFIG:
             case UwbUciConstants.REASON_ERROR_INVALID_RFRAME_CONFIG:
+            case UwbUciConstants.REASON_ERROR_HUS_NOT_ENOUGH_SLOTS:
+            case UwbUciConstants.REASON_ERROR_HUS_CFP_PHASE_TOO_SHORT:
+            case UwbUciConstants.REASON_ERROR_HUS_CAP_PHASE_TOO_SHORT:
+            case UwbUciConstants.REASON_ERROR_HUS_OTHERS:
                 rangingChangeReason = RangingChangeReason.BAD_PARAMETERS;
                 break;
             case UwbUciConstants.REASON_REGULATION_UWB_OFF:

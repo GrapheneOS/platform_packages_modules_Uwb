@@ -69,6 +69,10 @@ public class UwbUciConstants {
     public static final int REASON_ERROR_INVALID_RANGING_INTERVAL = 0x23;
     public static final int REASON_ERROR_INVALID_STS_CONFIG = 0x24;
     public static final int REASON_ERROR_INVALID_RFRAME_CONFIG = 0x25;
+    public static final int REASON_ERROR_HUS_NOT_ENOUGH_SLOTS = 0x26;
+    public static final int REASON_ERROR_HUS_CFP_PHASE_TOO_SHORT = 0x27;
+    public static final int REASON_ERROR_HUS_CAP_PHASE_TOO_SHORT = 0x28;
+    public static final int REASON_ERROR_HUS_OTHERS = 0x29;
     /* Vendor Specific reason codes */
     public static final int REASON_REGULATION_UWB_OFF =
             UwbVendorReasonCodes.REASON_REGULATION_UWB_OFF;
