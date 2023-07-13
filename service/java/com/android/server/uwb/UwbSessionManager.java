@@ -92,6 +92,7 @@ import com.google.uwb.support.ccc.CccSpecificationParams;
 import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
 import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdateStatus;
+import com.google.uwb.support.fira.FiraHybridSessionConfig;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraPoseUpdateParams;
@@ -104,6 +105,8 @@ import com.google.uwb.support.oemextension.SessionStatus;
 import java.io.Closeable;
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -129,6 +132,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
     private static final String TAG = "UwbSessionManager";
     private static final byte OPERATION_TYPE_INIT_SESSION = 0;
+    private static final int UWB_HUS_PHASE_SIZE = 8;
 
     @VisibleForTesting
     public static final int SESSION_OPEN_RANGING = 1;
@@ -1001,6 +1005,44 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         info.data = data;
 
         mEventTask.execute(SESSION_SEND_DATA, info);
+    }
+
+    /**
+     * Sets the hybrid UWB configuration
+     *
+     * @param sessionHandle : Primary session handle
+     * @param params        : protocol specific parameters to initiate the hybrid
+     *                      session
+     * @return the status code of the operation
+     * @throws RemoteException if an error occurs during the remote call.
+     */
+    public int setHybridSessionConfiguration(SessionHandle sessionHandle, PersistableBundle params)
+            throws RemoteException {
+        if (!isExistedSession(sessionHandle)) {
+            throw new IllegalStateException("Not initialized session ID");
+        }
+
+        FiraHybridSessionConfig husConfig = FiraHybridSessionConfig.fromBundle(params);
+        int numberOfPhases = husConfig.getNumberOfPhases();
+        int sessionId = getSessionId(sessionHandle);
+
+        Log.i(TAG, "setHybridSessionConfiguration() - sessionId: " + sessionId
+                + ", sessionHandle: " + sessionHandle
+                + ", numberOfPhases: " + numberOfPhases);
+
+        ByteBuffer buffer = ByteBuffer.allocate(numberOfPhases * UWB_HUS_PHASE_SIZE);
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+
+        for (FiraHybridSessionConfig.FiraHybridSessionPhaseList phaseList :
+                husConfig.getPhaseList()) {
+            buffer.putInt(mNativeUwbManager.getSessionToken(phaseList.getSessionHandle(),
+                    getUwbSession(sessionId).getChipId()));
+            buffer.putShort(phaseList.getStartSlotIndex());
+            buffer.putShort(phaseList.getEndSlotIndex());
+        }
+
+        return mNativeUwbManager.setHybridSessionConfiguration(sessionId, numberOfPhases,
+                husConfig.getUpdateTime(), buffer.array(), getUwbSession(sessionId).getChipId());
     }
 
     private static final class SendDataInfo {
