@@ -355,6 +355,29 @@ interface IUwbAdapter {
 
   int sendVendorUciMessage(int mt, int gid, int oid, in byte[] payload);
 
+  /**
+   * @hide
+   * Sets the Hybrid UWB Session Configuration
+   *
+   * @param SessionHandle Primary session handle
+   * @param params protocol specific parameters to initiate the hybrid session
+   * @return HUS configuration status code
+   * <p>{@link UwbUciConstants#STATUS_CODE_OK} UWBS successfully processes the command
+   *
+   * <p>{@link UwbUciConstants#STATUS_CODE_FAILED} Intended operation is failed to complete
+   *
+   * <p>{@link UwbUciConstants#STATUS_CODE_ERROR_SESSION_NOT_EXIST} Primary session or
+   * secondary session is not existing or not created
+   *
+   * <p>{@link UwbUciConstants#STATUS_CODE_ERROR_SESSION_NOT_CONFIGURED} Primary session or
+   * secondary session has not been configured (i.e. SESSION_STATE_IDLE)
+   *
+   * <p>{@link UwbUciConstants#STATUS_CODE_ERROR_SESSION_DUPLICATE} Session Handle in phase
+   * list is repeated
+   */
+  int setHybridSessionConfiguration(in SessionHandle sessionHandle,
+        in PersistableBundle params);
+
   void updateRangingRoundsDtTag(in SessionHandle sessionHandle, in PersistableBundle parameters);
 
   void getUwbActivityEnergyInfoAsync(in IOnUwbActivityEnergyInfoListener listener);
