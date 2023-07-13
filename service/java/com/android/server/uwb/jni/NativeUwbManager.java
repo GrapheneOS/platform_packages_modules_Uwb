@@ -464,6 +464,25 @@ public class NativeUwbManager {
         }
     }
 
+    /**
+     * Sets the Hybrid UWB Session Configuration
+     *
+     * @param sessionId : Primary session ID
+     * @param numberOfPhases : Number of secondary sessions
+     * @param updateTime : Absolute time in UWBS Time domain
+     * @param phaseList : list of secondary sessions which have been previously initialized and
+     *                  configured
+     * @param chipId : Identifier of UWB chip for multi-HAL devices
+     * @return Byte representing the status of the operation
+     */
+    public byte setHybridSessionConfiguration(int sessionId, int numberOfPhases, byte[] updateTime,
+            byte[] phaseList, String chipId) {
+        synchronized (mNativeLock) {
+            return nativeSetHybridSessionConfigurations(sessionId, numberOfPhases, updateTime,
+                phaseList, chipId);
+        }
+    }
+
     private native byte nativeSendData(int sessionId, byte[] address,
             short sequenceNum, byte[] appData, String chipId);
 
@@ -522,4 +541,7 @@ public class NativeUwbManager {
     private native long nativeQueryUwbTimestamp(String chipId);
 
     private native int nativeGetSessionToken(int sessionId, String chipId);
+
+    private native byte nativeSetHybridSessionConfigurations(int sessionId, int noOfPhases,
+            byte[] updateTime, byte[] phaseList, String chipId);
 }
