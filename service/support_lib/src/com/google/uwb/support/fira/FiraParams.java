@@ -233,12 +233,15 @@ public abstract class FiraParams extends Params {
             value = {
                 CONTENTION_BASED_RANGING,
                 TIME_SCHEDULED_RANGING,
+                HYBRID_SCHEDULED_RANGING,
             })
     public @interface SchedulingMode {}
 
     public static final int CONTENTION_BASED_RANGING = 0;
 
     public static final int TIME_SCHEDULED_RANGING = 1;
+
+    public static final int HYBRID_SCHEDULED_RANGING = 2;
 
     /** Ranging Time Struct */
     @IntDef(
@@ -629,6 +632,10 @@ public abstract class FiraParams extends Params {
                 STATE_CHANGE_REASON_CODE_ERROR_INVALID_RANGING_INTERVAL,
                 STATE_CHANGE_REASON_CODE_ERROR_INVALID_STS_CONFIG,
                 STATE_CHANGE_REASON_CODE_ERROR_INVALID_RFRAME_CONFIG,
+                STATE_CHANGE_REASON_CODE_ERROR_HUS_NOT_ENOUGH_SLOTS,
+                STATE_CHANGE_REASON_CODE_ERROR_HUS_CFP_PHASE_TOO_SHORT,
+                STATE_CHANGE_REASON_CODE_ERROR_HUS_CAP_PHASE_TOO_SHORT,
+                STATE_CHANGE_REASON_CODE_ERROR_HUS_OTHERS,
             })
     public @interface StateChangeReasonCode {}
 
@@ -640,6 +647,10 @@ public abstract class FiraParams extends Params {
     public static final int STATE_CHANGE_REASON_CODE_ERROR_INVALID_RANGING_INTERVAL = 0x23;
     public static final int STATE_CHANGE_REASON_CODE_ERROR_INVALID_STS_CONFIG = 0x24;
     public static final int STATE_CHANGE_REASON_CODE_ERROR_INVALID_RFRAME_CONFIG = 0x25;
+    public static final int STATE_CHANGE_REASON_CODE_ERROR_HUS_NOT_ENOUGH_SLOTS = 0x26;
+    public static final int STATE_CHANGE_REASON_CODE_ERROR_HUS_CFP_PHASE_TOO_SHORT = 0x27;
+    public static final int STATE_CHANGE_REASON_CODE_ERROR_HUS_CAP_PHASE_TOO_SHORT = 0x28;
+    public static final int STATE_CHANGE_REASON_CODE_ERROR_HUS_OTHERS = 0x29;
 
     /** Multicast controlee add/delete actions defined in UCI */
     @IntDef(
