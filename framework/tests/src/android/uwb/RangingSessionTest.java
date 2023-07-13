@@ -71,6 +71,7 @@ public class RangingSessionTest {
     private static final int HANDLE_ID = 12;
     private static final int PID = Process.myPid();
     private static final int MAX_DATA_SIZE = 100;
+    public static final int STATUS_OK = 0;
 
     @Test
     public void testOnRangingOpened_OnOpenSuccessCalled() {
@@ -530,6 +531,40 @@ public class RangingSessionTest {
         // session has now been closed.
         session.onRangingClosed(REASON, PARAMS);
         verifyThrowIllegalState(() -> session.queryMaxDataSizeBytes());
+    }
+
+    @Test
+    public void testSetHybridSessionConfiguration() throws RemoteException {
+        assumeTrue(SdkLevel.isAtLeastV()); // Test should only run on V+ devices.
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
+
+        // Confirm that setHybridSessionConfiguration() throws an IllegalStateException
+        // when the ranging session is not open.
+        assertFalse(session.isOpen());
+        verifyThrowIllegalState(() -> session.setHybridSessionConfiguration(PARAMS));
+
+        // Confirm that setHybridSessionConfiguration() returns a value when the ranging
+        // session has been opened.
+        session.onRangingOpened();
+        assertEquals(session.setHybridSessionConfiguration(PARAMS), STATUS_OK);
+
+        // Confirm that setHybridSessionConfiguration() returns a value when the ranging
+        // session has been started.
+        session.onRangingStarted(PARAMS);
+        assertEquals(session.setHybridSessionConfiguration(PARAMS), STATUS_OK);
+
+        // Confirm that setHybridSessionConfiguration() still returns a value, when the ranging
+        // session was stopped.
+        session.onRangingStopped(REASON, PARAMS);
+        assertEquals(session.setHybridSessionConfiguration(PARAMS), STATUS_OK);
+
+        // Confirm that setHybridSessionConfiguration() throws an IllegalStateException when the
+        // ranging session has now been closed.
+        session.onRangingClosed(REASON, PARAMS);
+        verifyThrowIllegalState(() -> session.setHybridSessionConfiguration(PARAMS));
     }
 
     @Test

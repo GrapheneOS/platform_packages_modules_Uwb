@@ -460,7 +460,11 @@ public class UwbSessionNotificationManagerTest {
                 UwbUciConstants.REASON_ERROR_MAC_ADDRESS_MODE_NOT_SUPPORTED,
                 UwbUciConstants.REASON_ERROR_INVALID_RANGING_INTERVAL,
                 UwbUciConstants.REASON_ERROR_INVALID_STS_CONFIG,
-                UwbUciConstants.REASON_ERROR_INVALID_RFRAME_CONFIG);
+                UwbUciConstants.REASON_ERROR_INVALID_RFRAME_CONFIG,
+                UwbUciConstants.REASON_ERROR_HUS_NOT_ENOUGH_SLOTS,
+                UwbUciConstants.REASON_ERROR_HUS_CFP_PHASE_TOO_SHORT,
+                UwbUciConstants.REASON_ERROR_HUS_CAP_PHASE_TOO_SHORT,
+                UwbUciConstants.REASON_ERROR_HUS_OTHERS);
         for (int reasonCode : reasonCodes) {
             clearInvocations(mIUwbRangingCallbacks);
             mUwbSessionNotificationManager.onRangingStoppedWithUciReasonCode(mUwbSession,

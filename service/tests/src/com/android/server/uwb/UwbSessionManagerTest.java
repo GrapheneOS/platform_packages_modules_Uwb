@@ -122,6 +122,7 @@ import com.google.uwb.support.ccc.CccPulseShapeCombo;
 import com.google.uwb.support.ccc.CccSpecificationParams;
 import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
+import com.google.uwb.support.fira.FiraHybridSessionConfig;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraProtocolVersion;
@@ -139,6 +140,8 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -3335,6 +3338,56 @@ public class UwbSessionManagerTest {
         SessionHandle mockSessionHandle = mock(SessionHandle.class);
         assertThrows(IllegalStateException.class,
                 () -> mUwbSessionManager.queryMaxDataSizeBytes(mockSessionHandle));
+    }
+
+    @Test
+    public void testSetHybridSessionConfiguration() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        FiraHybridSessionConfig.Builder mockFiraBuilder =
+                mock(FiraHybridSessionConfig.Builder.class);
+
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+        SessionHandle sessionHandle1 = mock(SessionHandle.class);
+        SessionHandle sessionHandle2 = mock(SessionHandle.class);
+        byte[] updateTime = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+        int noOfPhases = 2;
+        short startSlotIndex1 = 0x01, endSlotIndex1 = 0x34;
+        short startSlotIndex2 = 0x37, endSlotIndex2 = 0x64;
+        FiraHybridSessionConfig params = new FiraHybridSessionConfig.Builder()
+                .setNumberOfPhases(noOfPhases)
+                .setUpdateTime(updateTime)
+                .addPhaseList(new FiraHybridSessionConfig.FiraHybridSessionPhaseList(
+                        sessionHandle1.getId(), startSlotIndex1, endSlotIndex1))
+                .addPhaseList(new FiraHybridSessionConfig.FiraHybridSessionPhaseList(
+                        sessionHandle2.getId(), startSlotIndex2, endSlotIndex2))
+                .build();
+
+        // Setup the expected byte-array for the Hybrid configuration.
+        ByteBuffer expectedHybridConfigBytes = ByteBuffer.allocate(noOfPhases * 8);
+        expectedHybridConfigBytes.order(ByteOrder.LITTLE_ENDIAN);
+
+        expectedHybridConfigBytes.putInt(sessionHandle1.getId());
+        expectedHybridConfigBytes.putShort(startSlotIndex1);
+        expectedHybridConfigBytes.putShort(endSlotIndex1);
+        expectedHybridConfigBytes.putInt(sessionHandle2.getId());
+        expectedHybridConfigBytes.putShort(startSlotIndex2);
+        expectedHybridConfigBytes.putShort(endSlotIndex2);
+
+        when(mNativeUwbManager.setHybridSessionConfiguration(
+                eq(uwbSession.getSessionId()), eq(noOfPhases), eq(updateTime),
+                eq(expectedHybridConfigBytes.array()), anyString()))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+        assertThat(mUwbSessionManager.setHybridSessionConfiguration(uwbSession.getSessionHandle(),
+                params.toBundle()))
+                .isEqualTo(UwbUciConstants.STATUS_CODE_OK);
+    }
+
+    @Test
+    public void testSetHybridSessionConfiguration_whenUwbSessionDoesNotExist() throws Exception {
+        SessionHandle mockSessionHandle = mock(SessionHandle.class);
+        assertThrows(IllegalStateException.class,
+                () -> mUwbSessionManager.setHybridSessionConfiguration(mockSessionHandle,
+                        mock(PersistableBundle.class)));
     }
 
     @Test

@@ -88,7 +88,7 @@ public class UwbTestUtils {
     private static final long TEST_CURR_RANGING_INTERVAL = 100;
     private static final int TEST_RANGING_MEASURES_TYPE = RANGING_MEASUREMENT_TYPE_TWO_WAY;
     private static final int TEST_MAC_ADDRESS_MODE = 1;
-    private static final int TEST_STATUS = FiraParams.STATUS_CODE_OK;
+    public static final int TEST_STATUS = FiraParams.STATUS_CODE_OK;
     private static final int TEST_LOS = 0;
     private static final int TEST_DISTANCE = 101;
     private static final float TEST_AOA_AZIMUTH = 67;
