@@ -17,6 +17,7 @@ package androidx.core.uwb.backend.impl;
 
 import android.app.Service;
 import android.content.Intent;
+import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -32,7 +33,11 @@ public class UwbService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        UwbFeatureFlags uwbFeatureFlags = new UwbFeatureFlags.Builder().build();
+        UwbFeatureFlags uwbFeatureFlags = new UwbFeatureFlags.Builder()
+                .setSkipRangingCapabilitiesCheck(Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2)
+                .setReversedByteOrderFiraParams(
+                        Build.VERSION.SDK_INT <= Build.VERSION_CODES.TIRAMISU)
+                .build();
         mUwbServiceImpl = new UwbServiceImpl(this, uwbFeatureFlags);
     }
 
