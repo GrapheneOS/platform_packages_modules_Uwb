@@ -79,7 +79,9 @@ import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.multchip.UwbMultichipData;
 import com.android.server.uwb.pm.ProfileManager;
 
+import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
+import com.google.uwb.support.fira.FiraSuspendRangingParams;
 import com.google.uwb.support.multichip.ChipInfoParams;
 import com.google.uwb.support.profile.ServiceProfile;
 import com.google.uwb.support.profile.UuidBundleWrapper;
@@ -741,23 +743,17 @@ public class UwbServiceImplTest {
     @Test
     public void testResume() throws Exception {
         final SessionHandle sessionHandle = mock(SessionHandle.class);
-        final PersistableBundle parameters = new PersistableBundle();
-
-        try {
-            mUwbServiceImpl.resume(sessionHandle, parameters);
-            fail();
-        } catch (IllegalStateException e) { /* pass */ }
+        PersistableBundle bundle = new PersistableBundle();
+        mUwbServiceImpl.resume(sessionHandle, bundle);
+        verify(mUwbServiceCore).resume(sessionHandle, bundle);
     }
 
     @Test
     public void testPause() throws Exception {
         final SessionHandle sessionHandle = mock(SessionHandle.class);
-        final PersistableBundle parameters = new PersistableBundle();
-
-        try {
-            mUwbServiceImpl.pause(sessionHandle, parameters);
-            fail();
-        } catch (IllegalStateException e) { /* pass */ }
+        PersistableBundle bundle = new PersistableBundle();
+        mUwbServiceImpl.pause(sessionHandle, bundle);
+        verify(mUwbServiceCore).pause(sessionHandle, bundle);
     }
 
     @Test
