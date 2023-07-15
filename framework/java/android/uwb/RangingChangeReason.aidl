@@ -76,4 +76,16 @@ enum RangingChangeReason {
    * used).
    */
   SYSTEM_REGULATION,
+
+  /**
+   * When ranging is suspended due to Suspend Ranging bit is set to 1 in the received RCM at
+   * responder, UWBS will report this reason code with Session State set to SESSION_STATE_ACTIVE.
+   */
+  SESSION_SUSPENDED,
+
+  /**
+   * When ranging is resumed due to Suspend Ranging bit is set to 0 in the received RCM at
+   * responder, UWBS will report this reason code with Session State set to SESSION_STATE_ACTIVE.
+   */
+  SESSION_RESUMED,
 }
