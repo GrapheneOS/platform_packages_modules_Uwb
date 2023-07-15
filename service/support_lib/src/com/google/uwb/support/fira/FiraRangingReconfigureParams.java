@@ -28,7 +28,8 @@ import androidx.annotation.FloatRange;
 import androidx.annotation.Nullable;
 
 /**
- * UWB parameters used to reconfigure a FiRa session. Supports peer adding/removing.
+ * UWB parameters used to reconfigure a FiRa session. Supports peer adding/removing, pause and
+ * resume ranging session.
  *
  * <p>This is passed as a bundle to the service API {@link RangingSession#reconfigure}.
  */
@@ -50,6 +51,7 @@ public class FiraRangingReconfigureParams extends FiraParams {
     @Nullable private final Double mRangeDataAoaAzimuthUpper;
     @Nullable private final Double mRangeDataAoaElevationLower;
     @Nullable private final Double mRangeDataAoaElevationUpper;
+    @Nullable @SuspendRanging private final Integer mSuspendRangingRounds;
 
     private static final String KEY_ACTION = "action";
     private static final String KEY_MAC_ADDRESS_MODE = "mac_address_mode";
@@ -70,6 +72,7 @@ public class FiraRangingReconfigureParams extends FiraParams {
             "range_data_aoa_elevation_lower";
     private static final String KEY_UPDATE_RANGE_DATA_NTF_AOA_ELEVATION_UPPER =
             "range_data_aoa_elevation_upper";
+    private static final String KEY_SUSPEND_RANGING_ROUNDS = "suspend_ranging_rounds";
 
     private FiraRangingReconfigureParams(
             @Nullable @MulticastListUpdateAction Integer action,
@@ -83,7 +86,8 @@ public class FiraRangingReconfigureParams extends FiraParams {
             @Nullable Double rangeDataAoaAzimuthLower,
             @Nullable Double rangeDataAoaAzimuthUpper,
             @Nullable Double rangeDataAoaElevationLower,
-            @Nullable Double rangeDataAoaElevationUpper) {
+            @Nullable Double rangeDataAoaElevationUpper,
+            @Nullable Integer suspendRanginRounds) {
         mAction = action;
         mAddressList = addressList;
         mSubSessionIdList = subSessionIdList;
@@ -96,6 +100,7 @@ public class FiraRangingReconfigureParams extends FiraParams {
         mRangeDataAoaAzimuthUpper = rangeDataAoaAzimuthUpper;
         mRangeDataAoaElevationLower = rangeDataAoaElevationLower;
         mRangeDataAoaElevationUpper = rangeDataAoaElevationUpper;
+        mSuspendRangingRounds = suspendRanginRounds;
     }
 
     @Override
@@ -162,6 +167,12 @@ public class FiraRangingReconfigureParams extends FiraParams {
     @Nullable
     public Double getRangeDataAoaElevationUpper() {
         return mRangeDataAoaElevationUpper;
+    }
+
+    @Nullable
+    @SuspendRanging
+    public Integer getSuspendRangingRounds() {
+        return mSuspendRangingRounds;
     }
 
     @Nullable
@@ -247,6 +258,10 @@ public class FiraRangingReconfigureParams extends FiraParams {
                     mRangeDataAoaElevationUpper);
         }
 
+        if (mSuspendRangingRounds != null) {
+            bundle.putInt(KEY_SUSPEND_RANGING_ROUNDS, mSuspendRangingRounds);
+        }
+
         return bundle;
     }
 
@@ -322,6 +337,10 @@ public class FiraRangingReconfigureParams extends FiraParams {
             builder.setRangeDataAoaElevationUpper(
                     bundle.getDouble(KEY_UPDATE_RANGE_DATA_NTF_AOA_ELEVATION_UPPER));
         }
+
+        if (bundle.containsKey(KEY_SUSPEND_RANGING_ROUNDS)) {
+            builder.setSuspendRangingRounds(bundle.getInt(KEY_SUSPEND_RANGING_ROUNDS));
+        }
         return builder.build();
     }
 
@@ -341,6 +360,7 @@ public class FiraRangingReconfigureParams extends FiraParams {
         @Nullable private Double mRangeDataAoaAzimuthUpper = null;
         @Nullable private Double mRangeDataAoaElevationLower = null;
         @Nullable private Double mRangeDataAoaElevationUpper = null;
+        @Nullable private Integer mSuspendRangingRounds = null;
 
         public FiraRangingReconfigureParams.Builder setAction(
                 @MulticastListUpdateAction int action) {
@@ -415,6 +435,11 @@ public class FiraRangingReconfigureParams extends FiraParams {
                         to = RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT)
                         double rangeDataAoaElevationUpper) {
             mRangeDataAoaElevationUpper = rangeDataAoaElevationUpper;
+            return this;
+        }
+
+        public Builder setSuspendRangingRounds(@SuspendRanging Integer suspendRangingRounds) {
+            mSuspendRangingRounds = suspendRangingRounds;
             return this;
         }
 
@@ -512,7 +537,8 @@ public class FiraRangingReconfigureParams extends FiraParams {
                     mRangeDataAoaAzimuthLower,
                     mRangeDataAoaAzimuthUpper,
                     mRangeDataAoaElevationLower,
-                    mRangeDataAoaElevationUpper);
+                    mRangeDataAoaElevationUpper,
+                    mSuspendRangingRounds);
         }
     }
 }

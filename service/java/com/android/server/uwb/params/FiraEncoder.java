@@ -282,6 +282,7 @@ public class FiraEncoder extends TlvEncoder {
         Double rangeDataAoaAzimuthUpper = params.getRangeDataAoaAzimuthUpper();
         Double rangeDataAoaElevationLower = params.getRangeDataAoaElevationLower();
         Double rangeDataAoaElevationUpper = params.getRangeDataAoaElevationUpper();
+        Integer suspendRangingRounds = params.getSuspendRangingRounds();
 
         if (blockStrideLength != null) {
             tlvBuilder.putByte(ConfigParam.BLOCK_STRIDE_LENGTH,
@@ -336,6 +337,10 @@ public class FiraEncoder extends TlvEncoder {
                                         rangeDataAoaElevationUpper.floatValue()), 9, 7), 16),
                 });
             }
+        }
+        if (suspendRangingRounds != null) {
+                tlvBuilder.putByte(ConfigParam.SUSPEND_RANGING_ROUNDS,
+                        (byte) suspendRangingRounds.intValue());
         }
         return tlvBuilder.build();
     }
