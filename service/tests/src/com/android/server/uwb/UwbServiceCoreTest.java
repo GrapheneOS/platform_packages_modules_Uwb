@@ -104,6 +104,7 @@ import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
+import com.google.uwb.support.fira.FiraSuspendRangingParams;
 import com.google.uwb.support.generic.GenericParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
 import com.google.uwb.support.radar.RadarOpenSessionParams;
@@ -1091,6 +1092,36 @@ public class UwbServiceCoreTest {
         verify(mUwbSessionManager).reconfigure(eq(sessionHandle),
                 argThat((x) ->
                         ((FiraRangingReconfigureParams) x).getBlockStrideLength().equals(6)));
+    }
+
+    @Test
+    public void testPauseRanging() throws Exception {
+        enableUwbWithCountryCodeChangedCallback();
+
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+        final FiraSuspendRangingParams parameters =
+                new FiraSuspendRangingParams.Builder()
+                        .setSuspendRangingRounds(FiraParams.SUSPEND_RANGING_ENABLED)
+                        .build();
+        mUwbServiceCore.pause(sessionHandle, parameters.toBundle());
+        verify(mUwbSessionManager).reconfigure(eq(sessionHandle),
+                argThat((x) ->
+                        ((FiraRangingReconfigureParams) x).getSuspendRangingRounds().equals(1)));
+    }
+
+    @Test
+    public void testResumeRanging() throws Exception {
+        enableUwbWithCountryCodeChangedCallback();
+
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+        final FiraSuspendRangingParams parameters =
+                new FiraSuspendRangingParams.Builder()
+                        .setSuspendRangingRounds(FiraParams.SUSPEND_RANGING_DISABLED)
+                        .build();
+        mUwbServiceCore.resume(sessionHandle, parameters.toBundle());
+        verify(mUwbSessionManager).reconfigure(eq(sessionHandle),
+                argThat((x) ->
+                        ((FiraRangingReconfigureParams) x).getSuspendRangingRounds().equals(0)));
     }
 
     @Test

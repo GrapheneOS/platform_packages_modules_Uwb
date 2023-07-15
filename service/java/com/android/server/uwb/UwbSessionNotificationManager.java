@@ -308,6 +308,62 @@ public class UwbSessionNotificationManager {
         }
     }
 
+    public void onRangingPaused(UwbSession uwbSession) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            uwbRangingCallbacks.onRangingPaused(sessionHandle, new PersistableBundle());
+            Log.i(TAG, "IUwbRangingCallbacks - onRangingPaused");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onRangingPaused: Failed");
+            e.printStackTrace();
+        }
+    }
+
+    public void onRangingPauseFailed(UwbSession uwbSession, int status) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            uwbRangingCallbacks.onRangingPauseFailed(sessionHandle,
+                    UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(
+                            status),
+                    UwbSessionNotificationHelper.convertUciStatusToParam(
+                            uwbSession.getProtocolName(), status));
+            Log.i(TAG, "IUwbRangingCallbacks - onRangingPauseFailed");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onRangingPauseFailed : Failed");
+            e.printStackTrace();
+        }
+    }
+
+    public void onRangingResumed(UwbSession uwbSession) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            uwbRangingCallbacks.onRangingResumed(sessionHandle, new PersistableBundle());
+            Log.i(TAG, "IUwbRangingCallbacks - onRangingResumed");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onRangingResumed: Failed");
+            e.printStackTrace();
+        }
+    }
+
+    public void onRangingResumeFailed(UwbSession uwbSession, int status) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            uwbRangingCallbacks.onRangingResumeFailed(sessionHandle,
+                    UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(
+                            status),
+                    UwbSessionNotificationHelper.convertUciStatusToParam(
+                            uwbSession.getProtocolName(), status));
+            Log.i(TAG, "IUwbRangingCallbacks - onRangingResumeFailed");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onRangingResumeFailed : Failed");
+            e.printStackTrace();
+        }
+    }
+
     public void onRangingClosed(UwbSession uwbSession, int status) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();

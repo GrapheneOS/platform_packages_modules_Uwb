@@ -353,15 +353,13 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     @Override
     public void pause(SessionHandle sessionHandle, PersistableBundle params) {
         enforceUwbPrivilegedPermission();
-        // TODO(b/200678461): Implement this.
-        throw new IllegalStateException("Not implemented");
+        mUwbServiceCore.pause(sessionHandle, params);
     }
 
     @Override
     public void resume(SessionHandle sessionHandle, PersistableBundle params) {
         enforceUwbPrivilegedPermission();
-        // TODO(b/200678461): Implement this.
-        throw new IllegalStateException("Not implemented");
+        mUwbServiceCore.resume(sessionHandle, params);
     }
 
     @Override
