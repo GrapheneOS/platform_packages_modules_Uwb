@@ -1380,19 +1380,18 @@ public class UwbManagerTest {
                 firaOpenSessionParams,
                 null,
                 (rangingSessionCallback) -> {
-                    // Pause the session - not supported yet.
-                    assertThrows(IllegalStateException.class,
-                            () -> rangingSessionCallback.rangingSession.pause(
-                                    new PersistableBundle()
-                            ));
-                    assertThat(rangingSessionCallback.onPauseCalled).isFalse();
+                    CountDownLatch countDownLatch = new CountDownLatch(1);
+                    rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+                    //Pause Session
+                    rangingSessionCallback.rangingSession.pause(new PersistableBundle());
+                    assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+                    assertThat(rangingSessionCallback.onPauseCalled).isTrue();
                     assertThat(rangingSessionCallback.onPauseFailedCalled).isFalse();
-                    // Resume the session - not supported yet.
-                    assertThrows(IllegalStateException.class,
-                            () -> rangingSessionCallback.rangingSession.resume(
-                                    new PersistableBundle()
-                            ));
-                    assertThat(rangingSessionCallback.onResumeCalled).isFalse();
+                    //Resume session
+                    countDownLatch = new CountDownLatch(1);
+                    rangingSessionCallback.rangingSession.resume(new PersistableBundle());
+                    assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+                    assertThat(rangingSessionCallback.onResumeCalled).isTrue();
                     assertThat(rangingSessionCallback.onResumeFailedCalled).isFalse();
                 });
     }
