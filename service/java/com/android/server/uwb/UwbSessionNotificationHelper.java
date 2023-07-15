@@ -55,6 +55,12 @@ public class UwbSessionNotificationHelper {
             case UwbUciConstants.REASON_REGULATION_UWB_OFF:
                 rangingChangeReason = RangingChangeReason.SYSTEM_REGULATION;
                 break;
+            case UwbUciConstants.REASON_SESSION_RESUMED_DUE_TO_INBAND_SIGNAL:
+                rangingChangeReason = RangingChangeReason.SESSION_RESUMED;
+                break;
+            case UwbUciConstants.REASON_SESSION_SUSPENDED_DUE_TO_INBAND_SIGNAL:
+                rangingChangeReason = RangingChangeReason.SESSION_SUSPENDED;
+                break;
         }
         return rangingChangeReason;
     }
