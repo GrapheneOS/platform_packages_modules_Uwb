@@ -108,6 +108,7 @@ public final class RangingSession implements AutoCloseable {
                 REASON_SE_INTERACTION_FAILURE,
                 REASON_INSUFFICIENT_SLOTS_PER_RR,
                 REASON_SYSTEM_REGULATION,
+                REASON_INBAND_SESSION_STOP,
         })
         @interface Reason {}
 
@@ -191,6 +192,13 @@ public final class RangingSession implements AutoCloseable {
          * the country.
          */
         int REASON_SYSTEM_REGULATION = 15;
+
+        /**
+         * Indicates session was stopped due to inband signal.
+         *
+         * @hide
+         */
+        int REASON_INBAND_SESSION_STOP = 16;
 
         /**
          * @hide

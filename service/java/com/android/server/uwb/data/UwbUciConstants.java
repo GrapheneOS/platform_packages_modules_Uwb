@@ -64,6 +64,7 @@ public class UwbUciConstants {
     public static final int REASON_MAX_NUMBER_OF_MEASUREMENTS_REACHED = 0x02;
     public static final int REASON_SESSION_SUSPENDED_DUE_TO_INBAND_SIGNAL = 0x03;
     public static final int REASON_SESSION_RESUMED_DUE_TO_INBAND_SIGNAL = 0x04;
+    public static final int REASON_SESSION_STOPPED_DUE_TO_INBAND_SIGNAL = 0X05;
     public static final int REASON_ERROR_INVALID_UL_TDOA_RANDOM_WINDOW = 0x1D;
     public static final int REASON_ERROR_SLOT_LENGTH_NOT_SUPPORTED = 0x20;
     public static final int REASON_ERROR_INSUFFICIENT_SLOTS_PER_RR = 0x21;

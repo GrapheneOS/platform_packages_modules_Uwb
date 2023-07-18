@@ -88,4 +88,9 @@ enum RangingChangeReason {
    * responder, UWBS will report this reason code with Session State set to SESSION_STATE_ACTIVE.
    */
   SESSION_RESUMED,
+
+  /**
+  *  Session was stopped due to inband signal.
+  */
+  INBAND_SESSION_STOP,
 }
