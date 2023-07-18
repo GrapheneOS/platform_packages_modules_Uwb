@@ -245,7 +245,7 @@ public final class Utils {
                 new RangingTimingParams(
                         /* rangingIntervalNormal= */ 240,
                         /* rangingIntervalFast= */ 240,
-                        /* rangingIntervalInfrequent= */ 4000,
+                        /* rangingIntervalInfrequent= */ 4800,
                         /* slotPerRangingRound= */ 6,
                         /* slotDurationRstu= */ 2400,
                         /* initiationTimeMs= */ 0,
@@ -278,7 +278,7 @@ public final class Utils {
                 new RangingTimingParams(
                         /* rangingIntervalNormal= */ 240,
                         /* rangingIntervalFast= */ 240,
-                        /* rangingIntervalInfrequent= */ 4000,
+                        /* rangingIntervalInfrequent= */ 4800,
                         /* slotPerRangingRound= */ 6,
                         /* slotDurationRstu= */ 2400,
                         /* initiationTimeMs= */ 0,
