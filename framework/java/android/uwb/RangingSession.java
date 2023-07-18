@@ -195,8 +195,6 @@ public final class RangingSession implements AutoCloseable {
 
         /**
          * Indicates session was stopped due to inband signal.
-         *
-         * @hide
          */
         int REASON_INBAND_SESSION_STOP = 16;
 
