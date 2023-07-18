@@ -506,6 +506,16 @@ public class UwbSessionNotificationManagerTest {
     }
 
     @Test
+    public void testRangingStoppedDuetoInbandSignal() throws Exception {
+        mUwbSessionNotificationManager.onRangingStoppedWithApiReasonCode(mUwbSession,
+                RangingChangeReason.INBAND_SESSION_STOP);
+
+        verify(mIUwbRangingCallbacks).onRangingStopped(
+                eq(mSessionHandle), eq(RangingChangeReason.INBAND_SESSION_STOP),
+                isA(PersistableBundle.class));
+    }
+
+    @Test
     public void testOnRangingStopFailed() throws Exception {
         int status = UwbUciConstants.STATUS_CODE_INVALID_RANGE;
         mUwbSessionNotificationManager.onRangingStopFailed(mUwbSession, status);
