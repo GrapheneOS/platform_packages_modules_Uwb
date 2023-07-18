@@ -505,6 +505,9 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks.Stub {
             case RangingChangeReason.INSUFFICIENT_SLOTS_PER_RR:
                 return RangingSession.Callback.REASON_INSUFFICIENT_SLOTS_PER_RR;
 
+            case RangingChangeReason.INBAND_SESSION_STOP:
+                return RangingSession.Callback.REASON_INBAND_SESSION_STOP;
+
             case RangingChangeReason.UNKNOWN:
             default:
                 return RangingSession.Callback.REASON_UNKNOWN;
