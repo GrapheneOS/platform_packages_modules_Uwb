@@ -108,11 +108,11 @@ public class NativeUwbManager {
     }
 
     /**
-     * Radar data callback invoked via the JNI
+     * Radar data message callback invoked via the JNI
      */
-    public void onRadarDataNotificationReceived(UwbRadarData radarData) {
-        Log.d(TAG, "onRadarDataNotificationReceived : " + radarData);
-        mSessionListener.onRadarDataNotificationReceived(radarData);
+    public void onRadarDataMessageReceived(UwbRadarData radarData) {
+        Log.d(TAG, "onRadarDataMessageReceived : " + radarData);
+        mSessionListener.onRadarDataMessageReceived(radarData);
     }
 
     /**

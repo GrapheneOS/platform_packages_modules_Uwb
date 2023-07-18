@@ -431,16 +431,12 @@ public class UwbTestUtils {
 
     /**
      * Helper method to generate a {@link UwbRadarData} instance and a corresponding
-     * {@link RangingReport}.
+     * {@link RadarData}.
      */
-    public static Pair<UwbRadarData, RangingReport> generateRadarDataAndRangingReport(
+    public static Pair<UwbRadarData, RadarData> generateUwbRadarDataAndRadarData(
             int radarDataType) {
         UwbRadarData uwbRadarData = generateUwbRadarData(radarDataType, TEST_STATUS);
-
-        RangingReport rangingReport =
-                new RangingReport.Builder()
-                        .addRangingReportMetadata(generateRadarData(uwbRadarData).toBundle())
-                        .build();
-        return Pair.create(uwbRadarData, rangingReport);
+        RadarData radarData = generateRadarData(uwbRadarData);
+        return Pair.create(uwbRadarData, radarData);
     }
 }
