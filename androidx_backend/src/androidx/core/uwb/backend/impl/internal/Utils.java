@@ -215,7 +215,7 @@ public final class Utils {
     )
     public @interface RangingInterval {}
 
-    public static final int FREQUENT_RANGING_INTERVAL = 100;
+    public static final int FREQUENT_RANGING_INTERVAL = 120;
     public static final int AUTOMATIC = 200;
     public static final int INFREQUENT_RANGING_INTERVAL = 600;
 
