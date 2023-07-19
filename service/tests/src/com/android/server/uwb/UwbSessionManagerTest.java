@@ -3644,7 +3644,7 @@ public class UwbSessionManagerTest {
     }
 
     @Test
-    public void onRadarDataNotificationReceivedWithValidUwbSession() {
+    public void onRadarDataMessageReceivedWithValidUwbSession() {
         UwbRadarData uwbRadarData = UwbTestUtils.generateUwbRadarData(
                 RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES,
                 UwbUciConstants.STATUS_CODE_OK);
@@ -3653,28 +3653,28 @@ public class UwbSessionManagerTest {
         doReturn(mockUwbSession)
                 .when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
 
-        mUwbSessionManager.onRadarDataNotificationReceived(uwbRadarData);
+        mUwbSessionManager.onRadarDataMessageReceived(uwbRadarData);
 
         verify(mUwbSessionNotificationManager)
-                .onRadarData(eq(mockUwbSession), eq(uwbRadarData));
+                .onRadarDataMessageReceived(eq(mockUwbSession), eq(uwbRadarData));
     }
 
     @Test
-    public void onRadarDataNotificationReceivedWithInvalidSession() {
+    public void onRadarDataMessageReceivedWithInvalidSession() {
         UwbRadarData uwbRadarData = UwbTestUtils.generateUwbRadarData(
                 RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES,
                 UwbUciConstants.STATUS_CODE_OK);
         doReturn(null)
                 .when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
 
-        mUwbSessionManager.onRadarDataNotificationReceived(uwbRadarData);
+        mUwbSessionManager.onRadarDataMessageReceived(uwbRadarData);
 
         verify(mUwbSessionNotificationManager, never())
-                .onRadarData(any(), eq(uwbRadarData));
+                .onRadarDataMessageReceived(any(), eq(uwbRadarData));
     }
 
     @Test
-    public void execStartRanging_onRadarDataNotification() throws Exception {
+    public void execStartRanging_onRadarDataMessage() throws Exception {
         UwbSession uwbSession = prepareExistingUwbSession(setupRadarParams());
         // set up for start ranging
         doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE, UwbUciConstants.UWB_SESSION_STATE_ACTIVE)
@@ -3694,8 +3694,9 @@ public class UwbSessionManagerTest {
         UwbRadarData uwbRadarData = UwbTestUtils.generateUwbRadarData(
                 RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES,
                 UwbUciConstants.STATUS_CODE_OK);
-        mUwbSessionManager.onRadarDataNotificationReceived(uwbRadarData);
-        verify(mUwbSessionNotificationManager).onRadarData(uwbSession, uwbRadarData);
+        mUwbSessionManager.onRadarDataMessageReceived(uwbRadarData);
+        verify(mUwbSessionNotificationManager)
+                .onRadarDataMessageReceived(uwbSession, uwbRadarData);
     }
 
     private UwbSessionManager.ReceivedDataInfo buildReceivedDataInfo(long macAddress) {
