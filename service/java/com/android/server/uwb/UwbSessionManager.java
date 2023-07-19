@@ -396,12 +396,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     }
 
     @Override
-    public void onRadarDataNotificationReceived(UwbRadarData radarData) {
-        Trace.beginSection("UWB#onRadarDataNotificationReceived");
+    public void onRadarDataMessageReceived(UwbRadarData radarData) {
+        Trace.beginSection("UWB#onRadarDataMessageReceived");
         long sessionId = radarData.sessionId;
         UwbSession uwbSession = getUwbSession((int) sessionId);
         if (uwbSession != null) {
-            mSessionNotificationManager.onRadarData(uwbSession, radarData);
+            mSessionNotificationManager.onRadarDataMessageReceived(uwbSession, radarData);
         } else {
             Log.i(TAG, "Session is not initialized or Radar Data is Null");
         }
