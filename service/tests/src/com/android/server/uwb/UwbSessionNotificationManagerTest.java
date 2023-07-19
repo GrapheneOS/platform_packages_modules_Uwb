@@ -59,6 +59,7 @@ import com.android.server.uwb.data.UwbUciConstants;
 
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.radar.RadarData;
 import com.google.uwb.support.radar.RadarOpenSessionParams;
 import com.google.uwb.support.radar.RadarParams;
 
@@ -645,29 +646,31 @@ public class UwbSessionNotificationManagerTest {
     }
 
     @Test
-    public void testOnRadarDataWithoutUwbRangingPermission() throws Exception {
-        Pair<UwbRadarData, RangingReport> testRadarDataAndRangingReport =
-                UwbTestUtils.generateRadarDataAndRangingReport(
+    public void testonRadarDataMessageReceivedWithoutUwbRangingPermission() throws Exception {
+        Pair<UwbRadarData, RadarData> testUwbRadarDataAndRadarData =
+                UwbTestUtils.generateUwbRadarDataAndRadarData(
                         RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES);
         when(mUwbInjector.checkUwbRangingPermissionForDataDelivery(eq(ATTRIBUTION_SOURCE), any()))
                 .thenReturn(false);
-        mUwbSessionNotificationManager.onRadarData(
-                mUwbRadarSession, testRadarDataAndRangingReport.first);
+        mUwbSessionNotificationManager.onRadarDataMessageReceived(
+                mUwbRadarSession, testUwbRadarDataAndRadarData.first);
 
-        verify(mIOemExtensionCallback, never()).onRangingReportReceived(any());
-        verify(mIUwbRangingCallbacks, never()).onRangingResult(any(), any());
+        verify(mIUwbRangingCallbacks, never()).onDataReceived(any(), any(), any(), any());
     }
 
     @Test
-    public void testOnRadarData_forRadarSweepData() throws Exception {
-        Pair<UwbRadarData, RangingReport> testRadarDataAndRangingReport =
-                UwbTestUtils.generateRadarDataAndRangingReport(
+    public void testonRadarDataMessageReceived_forRadarSweepData() throws Exception {
+        Pair<UwbRadarData, RadarData> testUwbRadarDataAndRadarData =
+                UwbTestUtils.generateUwbRadarDataAndRadarData(
                         RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES);
-        mUwbSessionNotificationManager.onRadarData(
-                mUwbRadarSession, testRadarDataAndRangingReport.first);
-        verify(mIOemExtensionCallback).onRangingReportReceived(
-                testRadarDataAndRangingReport.second);
-        verify(mIUwbRangingCallbacks).onRangingResult(
-                mSessionHandle, testRadarDataAndRangingReport.second);
+        mUwbSessionNotificationManager.onRadarDataMessageReceived(
+                mUwbRadarSession, testUwbRadarDataAndRadarData.first);
+
+        verify(mIUwbRangingCallbacks).onDataReceived(
+                eq(mSessionHandle),
+                eq(null),
+                argThat(p -> p.getInt("sweep_offset")
+                        == testUwbRadarDataAndRadarData.second.getSweepOffset()),
+                eq(new byte[] {}));
     }
 }

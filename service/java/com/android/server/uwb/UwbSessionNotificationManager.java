@@ -471,8 +471,8 @@ public class UwbSessionNotificationManager {
         }
     }
 
-    /** Notify about new radar data. */
-    public void onRadarData(UwbSession uwbSession, UwbRadarData radarData) {
+    /** Notify about new radar data message. */
+    public void onRadarDataMessageReceived(UwbSession uwbSession, UwbRadarData radarData) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
         boolean permissionGranted =
@@ -484,27 +484,15 @@ public class UwbSessionNotificationManager {
                     "Not delivering uwb radar data because of permission denial" + sessionHandle);
             return;
         }
-        RangingReport rangingReport =
-                new RangingReport.Builder()
-                        .addRangingReportMetadata(getRadarData(radarData).toBundle())
-                        .build();
-        if (mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
-            try {
-                rangingReport =
-                        mUwbInjector
-                                .getUwbServiceCore()
-                                .getOemExtensionCallback()
-                                .onRangingReportReceived(rangingReport);
-            } catch (RemoteException e) {
-                Log.e(TAG, "UwbInjector - onRangingReportReceived with radar data: Failed.");
-                e.printStackTrace();
-            }
-        }
+        PersistableBundle radarDataBundle = getRadarData(radarData).toBundle();
         try {
-            uwbRangingCallbacks.onRangingResult(sessionHandle, rangingReport);
-            Log.i(TAG, "IUwbRangingCallbacks - onRangingResult with radar data");
+            // TODO: Add radar specific @SystemApi
+            // Temporary workaround to avoid adding a new @SystemApi for the short-term.
+            uwbRangingCallbacks.onDataReceived(
+                    sessionHandle, null, radarDataBundle, new byte[] {});
+            Log.i(TAG, "IUwbRangingCallbacks - onDataReceived with radar data");
         } catch (Exception e) {
-            Log.e(TAG, "IUwbRangingCallbacks - onRangingResult with radar data: Failed");
+            Log.e(TAG, "IUwbRangingCallbacks - onDataReceived with radar data: Failed");
             e.printStackTrace();
         }
     }
