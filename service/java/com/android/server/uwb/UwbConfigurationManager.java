@@ -28,6 +28,7 @@ import com.android.server.uwb.params.TlvDecoderBuffer;
 import com.android.server.uwb.params.TlvEncoder;
 
 import com.google.uwb.support.base.Params;
+import com.google.uwb.support.radar.RadarParams;
 
 public class UwbConfigurationManager {
     private static final String TAG = "UwbConfManager";
@@ -56,9 +57,16 @@ public class UwbConfigurationManager {
 
         if (tlvBuffer.getNoOfParams() != 0) {
             byte[] tlvByteArray = tlvBuffer.getByteArray();
-            UwbConfigStatusData appConfig = mNativeUwbManager.setAppConfigurations(sessionId,
+            UwbConfigStatusData appConfig;
+            if (params.getProtocolName().equals(RadarParams.PROTOCOL_NAME)) {
+                appConfig = mNativeUwbManager.setRadarAppConfigurations(sessionId,
                     tlvBuffer.getNoOfParams(),
                     tlvByteArray.length, tlvByteArray, chipId);
+            } else {
+                appConfig = mNativeUwbManager.setAppConfigurations(sessionId,
+                    tlvBuffer.getNoOfParams(),
+                    tlvByteArray.length, tlvByteArray, chipId);
+            }
             if (appConfig != null) {
                 Log.i(TAG, "setAppConfigurations respData: " + appConfig);
                 status = appConfig.getStatus();
