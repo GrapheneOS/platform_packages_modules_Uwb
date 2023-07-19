@@ -82,11 +82,11 @@ public interface INativeUwbManager {
                 int txCount);
 
         /**
-         * Interface for receiving Radar Data Notification
+         * Interface for receiving Radar Data Message
          *
-         * @param radarData : refer to Android UWB Radar UCI Specification: radar Data Notification
+         * @param radarData : refer to Android UWB Radar UCI Specification: radar Data Message
          */
-        void onRadarDataNotificationReceived(UwbRadarData radarData);
+        void onRadarDataMessageReceived(UwbRadarData radarData);
     }
 
     interface DeviceNotification {
