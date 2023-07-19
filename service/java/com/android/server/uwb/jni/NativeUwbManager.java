@@ -108,11 +108,11 @@ public class NativeUwbManager {
     }
 
     /**
-     * Radar data callback invoked via the JNI
+     * Radar data message callback invoked via the JNI
      */
-    public void onRadarDataNotificationReceived(UwbRadarData radarData) {
-        Log.d(TAG, "onRadarDataNotificationReceived : " + radarData);
-        mSessionListener.onRadarDataNotificationReceived(radarData);
+    public void onRadarDataMessageReceived(UwbRadarData radarData) {
+        Log.d(TAG, "onRadarDataMessageReceived : " + radarData);
+        mSessionListener.onRadarDataMessageReceived(radarData);
     }
 
     /**
@@ -273,7 +273,7 @@ public class NativeUwbManager {
     }
 
     /**
-     * set APP Configuration Parameters for the requested UWB session
+     * Set APP Configuration Parameters for the requested UWB session
      *
      * @param noOfParams        : The number (n) of APP Configuration Parameters
      * @param appConfigParamLen : The length of APP Configuration Parameters
@@ -285,6 +285,23 @@ public class NativeUwbManager {
             int appConfigParamLen, byte[] appConfigParams, String chipId) {
         synchronized (mNativeLock) {
             return nativeSetAppConfigurations(sessionId, noOfParams, appConfigParamLen,
+                    appConfigParams, chipId);
+        }
+    }
+
+    /**
+     * Set radar APP Configuration Parameters for the requested UWB radar session
+     *
+     * @param noOfParams        : The number (n) of APP Configuration Parameters
+     * @param appConfigParamLen : The length of APP Configuration Parameters
+     * @param appConfigParams   : APP Configuration Parameter
+     * @param chipId            : Identifier of UWB chip for multi-HAL devices
+     * @return : {@link UwbConfigStatusData} : Contains statuses for all cfg_id
+     */
+    public UwbConfigStatusData setRadarAppConfigurations(int sessionId, int noOfParams,
+            int appConfigParamLen, byte[] appConfigParams, String chipId) {
+        synchronized (mNativeLock) {
+            return nativeSetRadarAppConfigurations(sessionId, noOfParams, appConfigParamLen,
                     appConfigParams, chipId);
         }
     }
@@ -519,6 +536,9 @@ public class NativeUwbManager {
 
     private native UwbTlvData nativeGetAppConfigurations(int sessionId, int noOfParams,
             int appConfigParamLen, byte[] appConfigParams, String chipId);
+
+    private native UwbConfigStatusData nativeSetRadarAppConfigurations(int sessionId,
+            int noOfParams, int appConfigParamLen, byte[] appConfigParams, String chipId);
 
     private native UwbTlvData nativeGetCapsInfo(String chipId);
 
