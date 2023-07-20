@@ -91,6 +91,7 @@ public class FiraHybridSessionConfig extends FiraParams {
         return bytes;
     }
 
+    @Override
     public PersistableBundle toBundle() {
         PersistableBundle bundle = super.toBundle();
         bundle.putInt(KEY_BUNDLE_VERSION, getBundleVersion());
