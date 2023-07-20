@@ -2226,12 +2226,23 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             return mDataRepetitionCount;
         }
         public void updateCccParamsOnStart(CccStartRangingParams rangingStartParams) {
+            GenericSpecificationParams specificationParams = mUwbInjector.getUwbServiceCore()
+                    .getCachedSpecificationParams(mChipId);
+            if (specificationParams != null && specificationParams
+                    .getFiraSpecificationParams()
+                    .getMinPhyVersionSupported().getMajor() >= 2
+                    && ((CccOpenRangingParams) mParams).getAbsoluteInitiationTimeUs() == 0
+                    && rangingStartParams.getAbsoluteInitiationTimeUs() == 0) {
+                this.mNeedsQueryUwbsTimestamp = true;
+            }
             // Need to update the RAN multiplier and initiation time
             // from the CccStartRangingParams for CCC session.
             CccOpenRangingParams newParams =
                     new CccOpenRangingParams.Builder((CccOpenRangingParams) mParams)
                             .setRanMultiplier(rangingStartParams.getRanMultiplier())
                             .setInitiationTimeMs(rangingStartParams.getInitiationTimeMs())
+                            .setAbsoluteInitiationTimeUs(rangingStartParams
+                                    .getAbsoluteInitiationTimeUs())
                             .build();
             this.mParams = newParams;
             this.mNeedsAppConfigUpdate = true;
@@ -2263,35 +2274,46 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         }
 
         /**
-         * Compute {@code FiraOpenSessionParams.absolute_initiation_time}, by doing a sum of the
-         * UWBS Timestamp (in micro-seconds) and the relative
-         * {@code FiraOpenSessionParams.initiation_time} (in milli-seconds). This method should be
+         * Compute absolute initiation time, by doing a sum of the UWBS Timestamp (in micro-seconds)
+         * and the relative initiation time (in milli-seconds). This method should be
          * called only for FiRa UCI ProtocolVersion >= 2.0 devices.
          */
         public void computeAbsoluteInitiationTime(long uwbsTimestamp) {
             if (this.mNeedsQueryUwbsTimestamp) {
-                FiraOpenSessionParams firaOpenSessionParams = (FiraOpenSessionParams) mParams;
-                this.mParams = ((FiraOpenSessionParams) mParams).toBuilder()
-                        .setAbsoluteInitiationTime(
-                                uwbsTimestamp + firaOpenSessionParams.getInitiationTime() * 1000)
-                        .build();
+                if (mParams instanceof FiraOpenSessionParams) {
+                    FiraOpenSessionParams firaOpenSessionParams = (FiraOpenSessionParams) mParams;
+                    this.mParams = ((FiraOpenSessionParams) mParams).toBuilder()
+                            .setAbsoluteInitiationTime(uwbsTimestamp
+                                    + (firaOpenSessionParams.getInitiationTime() * 1000))
+                            .build();
+                } else if (mParams instanceof CccOpenRangingParams) {
+                    CccOpenRangingParams cccOpenRangingParams = (CccOpenRangingParams) mParams;
+                    this.mParams = ((CccOpenRangingParams) mParams).toBuilder()
+                            .setAbsoluteInitiationTimeUs(uwbsTimestamp
+                                    + (cccOpenRangingParams.getInitiationTimeMs() * 1000))
+                            .build();
+                }
                 this.mNeedsAppConfigUpdate = true;
             }
         }
 
         /**
-         * Reset the computed {@code FiraOpenSessionParams.absolute_initiation_time}, only when it
-         * was computed and set by this class (it should not be reset when it was provided by the
-         * application}.
+         * Reset the computed absolute initiation time, only when it was computed and set by this
+         * class (it should not be reset when it was provided by the application).
          */
         public void resetAbsoluteInitiationTime() {
             if (this.mNeedsQueryUwbsTimestamp) {
-                FiraOpenSessionParams firaOpenSessionParams = (FiraOpenSessionParams) mParams;
-                // Reset the absolute Initiation time, so that it's re-computed if start ranging is
-                // called in the future for this UWB session.
-                this.mParams = ((FiraOpenSessionParams) mParams).toBuilder()
-                        .setAbsoluteInitiationTime(0)
-                        .build();
+                if (mParams instanceof FiraOpenSessionParams) {
+                    // Reset the absolute Initiation time, so that it's re-computed if start
+                    // ranging is called in the future for this UWB session.
+                    this.mParams = ((FiraOpenSessionParams) mParams).toBuilder()
+                            .setAbsoluteInitiationTime(0)
+                            .build();
+                } else if (mParams instanceof CccOpenRangingParams) {
+                    this.mParams = ((CccOpenRangingParams) mParams).toBuilder()
+                            .setAbsoluteInitiationTimeUs(0)
+                            .build();
+                }
                 this.mNeedsQueryUwbsTimestamp = false;
             }
         }
