@@ -81,7 +81,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -1217,10 +1216,11 @@ public class UwbManagerTest {
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
     public void testFiraRangingSessionWithProvisionedSTS() throws Exception {
         FiraSpecificationParams params = getFiraSpecificationParams();
-        EnumSet<FiraParams.StsCapabilityFlag> stsCapabilities = EnumSet.of(
-                FiraParams.StsCapabilityFlag.HAS_STATIC_STS_SUPPORT,
-                FiraParams.StsCapabilityFlag.HAS_PROVISIONED_STS_SUPPORT);
-        assumeTrue(params.getStsCapabilities() == stsCapabilities);
+        assumeTrue(params.getStsCapabilities()
+                .contains(FiraParams.StsCapabilityFlag.HAS_PROVISIONED_STS_SUPPORT)
+                && params.getStsCapabilities()
+                .contains(FiraParams.StsCapabilityFlag
+                        .HAS_PROVISIONED_STS_INDIVIDUAL_CONTROLEE_KEY_SUPPORT));
 
         FiraOpenSessionParams firaOpenSessionParams = new FiraOpenSessionParams.Builder()
                 .setProtocolVersion(new FiraProtocolVersion(1, 1))
