@@ -1514,6 +1514,8 @@ public class FiraOpenSessionParams extends FiraParams {
         }
 
         /**
+         * Sets the UWB initiation time.
+         *
          * @param initiationTime UWB initiation time:
          *        FiRa 1.0: Relative time (in milli-seconds).
          *        FiRa 2.0: Relative time (in milli-seconds).
@@ -1527,6 +1529,8 @@ public class FiraOpenSessionParams extends FiraParams {
         }
 
         /**
+         * Sets the Absolute UWB initiation time.
+         *
          * @param absoluteInitiationTime Absolute UWB initiation time (in micro-seconds). This is
          *        applicable only for FiRa 2.0+ devices, as specified in CR-272.
          */
