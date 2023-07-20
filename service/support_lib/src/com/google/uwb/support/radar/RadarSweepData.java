@@ -61,7 +61,7 @@ public class RadarSweepData extends RadarParams {
         }
         int[] values = new int[bytes.length];
         for (int i = 0; i < values.length; i++) {
-            values[i] = (bytes[i]);
+            values[i] = bytes[i];
         }
         return values;
     }
