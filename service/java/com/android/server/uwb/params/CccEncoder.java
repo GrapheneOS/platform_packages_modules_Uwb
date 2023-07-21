@@ -97,7 +97,10 @@ public class CccEncoder extends TlvEncoder {
             tlvBufferBuilder.putInt(
                     ConfigParam.LAST_STS_INDEX_USED, params.getLastStsIndexUsed());
         }
-        if (params.getInitiationTimeMs() != CccParams.UWB_INITIATION_TIME_MS_UNSET) {
+        if (params.getAbsoluteInitiationTimeUs() > 0) {
+            tlvBufferBuilder.putLong(ConfigParam.UWB_INITIATION_TIME,
+                    params.getAbsoluteInitiationTimeUs());
+        } else if (params.getInitiationTimeMs() != CccParams.UWB_INITIATION_TIME_MS_UNSET) {
             tlvBufferBuilder.putLong(
                     ConfigParam.UWB_INITIATION_TIME, params.getInitiationTimeMs());
         }
