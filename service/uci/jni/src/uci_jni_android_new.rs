@@ -766,10 +766,12 @@ unsafe fn create_vendor_response(msg: RawUciMessage, env: JNIEnv) -> Result<jobj
     let vendor_response_class =
         env.find_class(VENDOR_RESPONSE_CLASS).map_err(|_| Error::ForeignFunctionInterface)?;
 
-    // Unsafe from_raw call
-    let payload_jobject = JObject::from_raw(
-        env.byte_array_from_slice(&msg.payload).map_err(|_| Error::ForeignFunctionInterface)?,
-    );
+    // Safety: the byte array jobject is just constructed so it must be valid.
+    let payload_jobject = unsafe {
+        JObject::from_raw(
+            env.byte_array_from_slice(&msg.payload).map_err(|_| Error::ForeignFunctionInterface)?,
+        )
+    };
 
     match env.new_object(
         vendor_response_class,
@@ -804,9 +806,9 @@ fn create_invalid_vendor_response(env: JNIEnv) -> Result<jobject> {
     }
 }
 
-/// Safety:
+/// # Safety
 ///
-/// response should be checked before calling to ensure safety.
+/// `response` should be checked before calling to ensure safety.
 unsafe fn create_ranging_round_status(
     response: SessionUpdateDtTagRangingRoundsResponse,
     env: JNIEnv,
@@ -816,10 +818,13 @@ unsafe fn create_ranging_round_status(
         .map_err(|_| Error::ForeignFunctionInterface)?;
     let indexes = response.ranging_round_indexes;
 
-    // Unsafe from_raw call
-    let indexes_jobject = JObject::from_raw(
-        env.byte_array_from_slice(indexes.as_ref()).map_err(|_| Error::ForeignFunctionInterface)?,
-    );
+    // Safety: the byte array jobject is just constructed so it must be valid.
+    let indexes_jobject = unsafe {
+        JObject::from_raw(
+            env.byte_array_from_slice(indexes.as_ref())
+                .map_err(|_| Error::ForeignFunctionInterface)?,
+        )
+    };
 
     match env.new_object(
         dt_ranging_rounds_update_status_class,
