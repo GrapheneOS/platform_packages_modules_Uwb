@@ -53,6 +53,7 @@ public class CccOpenRangingParams extends CccParams {
     private static final String KEY_HOPPING_SEQUENCE = "hopping_sequence";
     private static final String KEY_LAST_STS_INDEX_USED = "last_sts_index_used";
     private static final String KEY_INITIATION_TIME_MS = "initiation_time_ms";
+    private static final String KEY_ABSOLUTE_INITIATION_TIME_US = "absolute_initiation_time_us";
 
     private final CccProtocolVersion mProtocolVersion;
     @UwbConfig private final int mUwbConfig;
@@ -68,7 +69,14 @@ public class CccOpenRangingParams extends CccParams {
     @HoppingConfigMode private final int mHoppingConfigMode;
     @HoppingSequence private final int mHoppingSequence;
     private final int mLastStsIndexUsed;
+
+    // FiRa 1.0: Relative time (in milli-seconds).
+    // FiRa 2.0: Relative time (in milli-seconds).
     private final long mInitiationTimeMs;
+
+    // FiRa 2.0: Absolute time in UWB time domain, as specified in CR-272 (in micro-seconds).
+    private final long mAbsoluteInitiationTimeUs;
+
 
     private CccOpenRangingParams(
             CccProtocolVersion protocolVersion,
@@ -85,7 +93,8 @@ public class CccOpenRangingParams extends CccParams {
             @HoppingConfigMode int hoppingConfigMode,
             @HoppingSequence int hoppingSequence,
             int lastStsIndexUsed,
-            long initiationTimeMs) {
+            long initiationTimeMs,
+            long absoluteInitiationTimeUs) {
         mProtocolVersion = protocolVersion;
         mUwbConfig = uwbConfig;
         mPulseShapeCombo = pulseShapeCombo;
@@ -101,6 +110,7 @@ public class CccOpenRangingParams extends CccParams {
         mHoppingSequence = hoppingSequence;
         mLastStsIndexUsed = lastStsIndexUsed;
         mInitiationTimeMs = initiationTimeMs;
+        mAbsoluteInitiationTimeUs = absoluteInitiationTimeUs;
     }
 
     @Override
@@ -126,6 +136,7 @@ public class CccOpenRangingParams extends CccParams {
         bundle.putInt(KEY_HOPPING_SEQUENCE, mHoppingSequence);
         bundle.putInt(KEY_LAST_STS_INDEX_USED, mLastStsIndexUsed);
         bundle.putLong(KEY_INITIATION_TIME_MS, mInitiationTimeMs);
+        bundle.putLong(KEY_ABSOLUTE_INITIATION_TIME_US, mAbsoluteInitiationTimeUs);
         return bundle;
     }
 
@@ -164,6 +175,7 @@ public class CccOpenRangingParams extends CccParams {
                 .setLastStsIndexUsed(bundle.getInt(
                         KEY_LAST_STS_INDEX_USED, CccParams.LAST_STS_INDEX_USED_UNSET))
                 .setInitiationTimeMs(bundle.getLong(KEY_INITIATION_TIME_MS))
+                .setAbsoluteInitiationTimeUs(bundle.getLong(KEY_ABSOLUTE_INITIATION_TIME_US))
                 .build();
     }
 
@@ -234,6 +246,15 @@ public class CccOpenRangingParams extends CccParams {
         return mInitiationTimeMs;
     }
 
+    public long getAbsoluteInitiationTimeUs() {
+        return mAbsoluteInitiationTimeUs;
+    }
+
+    /** Returns a builder from the params. */
+    public CccOpenRangingParams.Builder toBuilder() {
+        return new CccOpenRangingParams.Builder(this);
+    }
+
     /** Builder */
     public static final class Builder {
         private RequiredParam<CccProtocolVersion> mProtocolVersion = new RequiredParam<>();
@@ -256,6 +277,7 @@ public class CccOpenRangingParams extends CccParams {
         private int mLastStsIndexUsed = CccParams.LAST_STS_INDEX_USED_UNSET;
 
         private long mInitiationTimeMs = 0;
+        private long mAbsoluteInitiationTimeUs = 0;
 
         public Builder() {}
 
@@ -275,6 +297,7 @@ public class CccOpenRangingParams extends CccParams {
             mHoppingSequence.set(builder.mHoppingSequence.get());
             mLastStsIndexUsed = builder.mLastStsIndexUsed;
             mInitiationTimeMs = builder.mInitiationTimeMs;
+            mAbsoluteInitiationTimeUs = builder.mAbsoluteInitiationTimeUs;
         }
 
         public Builder(@NonNull CccOpenRangingParams params) {
@@ -364,6 +387,17 @@ public class CccOpenRangingParams extends CccParams {
             return this;
         }
 
+        /**
+         * Sets the UWB absolute initiation time.
+         *
+         * @param absoluteInitiationTimeUs Absolute UWB initiation time (in micro-seconds). This is
+         *        applicable only for FiRa 2.0+ devices, as specified in CR-272.
+         */
+        public Builder setAbsoluteInitiationTimeUs(long absoluteInitiationTimeUs) {
+            mAbsoluteInitiationTimeUs = absoluteInitiationTimeUs;
+            return this;
+        }
+
         public CccOpenRangingParams build() {
             return new CccOpenRangingParams(
                     mProtocolVersion.get(),
@@ -380,7 +414,8 @@ public class CccOpenRangingParams extends CccParams {
                     mHoppingConfigMode.get(),
                     mHoppingSequence.get(),
                     mLastStsIndexUsed,
-                    mInitiationTimeMs);
+                    mInitiationTimeMs,
+                    mAbsoluteInitiationTimeUs);
         }
     }
 }

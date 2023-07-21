@@ -89,4 +89,23 @@ public class CccEncoderTest {
         assertThat(tlvs.getNoOfParams()).isEqualTo(17);
         assertThat(tlvs.getByteArray()).isEqualTo(TEST_CCC_OPEN_RANGING_TLV_DATA);
     }
+
+    @Test
+    public void testCccOpenRangingParamsWithAbsoluteInitiationTime() throws Exception {
+        long absoluteInitiationTimeUs = 10_000L;
+        CccOpenRangingParams.Builder builder = new CccOpenRangingParams
+                .Builder(TEST_CCC_OPEN_RANGING_PARAMS);
+        CccOpenRangingParams params = builder.setAbsoluteInitiationTimeUs(absoluteInitiationTimeUs)
+                .build();
+        TlvBuffer tlvs = mCccEncoder.getTlvBuffer(params);
+
+        byte[] testCccOpenRangingAbsoluteInitiationTimeTlvData =
+                UwbUtil.getByteArray("0001010201010401090501010904800100000E010011010103010"
+                        + "11B01062C0100A3020001A4020000A50100A602D0020802B004140101"
+                        + "2B081027000000000000");
+
+        assertThat(tlvs.getNoOfParams()).isEqualTo(17);
+        assertThat(tlvs.getByteArray()).isEqualTo(
+                testCccOpenRangingAbsoluteInitiationTimeTlvData);
+    }
 }
