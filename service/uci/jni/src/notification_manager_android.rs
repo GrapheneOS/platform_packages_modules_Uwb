@@ -564,8 +564,8 @@ impl NotificationManagerAndroid {
 
             // Safety: mac_address_jbytearray is safely instantiated above.
             let mac_address_jobject = unsafe { JObject::from_raw(mac_address_jbytearray) };
-            // Safety: dt_anchor_location_jbytearray is safely instantiated above.
             let dt_anchor_location_jobject =
+            // Safety: dt_anchor_location_jbytearray is safely instantiated above.
                 unsafe { JObject::from_raw(dt_anchor_location_jbytearray) };
             // Safety: ranging_rounds_jbytearray is safely instantiated above.
             let ranging_rounds_jobject = unsafe { JObject::from_raw(ranging_rounds_jbytearray) };
