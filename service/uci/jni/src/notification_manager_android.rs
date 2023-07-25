@@ -959,7 +959,7 @@ impl NotificationManagerAndroid {
     fn on_data_transfer_status_notification(
         &mut self,
         session_id: u32,
-        uci_sequence_number: u8,
+        uci_sequence_number: u16,
         status_code: u8,
         tx_count: u8,
     ) -> Result<JObject, JNIError> {
