@@ -73,6 +73,7 @@ import com.google.uwb.support.fira.FiraPoseUpdateParams;
 import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
+import com.google.uwb.support.fira.FiraSuspendRangingParams;
 import com.google.uwb.support.multichip.ChipInfoParams;
 import com.google.uwb.support.oemextension.DeviceStatus;
 import com.google.uwb.support.oemextension.RangingReportMetadata;
@@ -1380,6 +1381,12 @@ public class UwbManagerTest {
     @Test
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
     public void testFiraRangingSessionPauseResume() throws Exception {
+        // The AppConfig Parameter SUSPEND_RANGING_ROUNDS (defined in CR-328) is supported
+        // only for devices with FiRa 2.0 support.
+        FiraSpecificationParams params = getFiraSpecificationParams();
+        FiraProtocolVersion firaProtocolVersion = params.getMaxMacVersionSupported();
+        assumeTrue(firaProtocolVersion.getMajor() >= 2);
+
         FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder()
                 .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_ONE_TO_MANY)
                 .build();
@@ -1387,16 +1394,28 @@ public class UwbManagerTest {
                 firaOpenSessionParams,
                 null,
                 (rangingSessionCallback) -> {
+                    // Pause Session
                     CountDownLatch countDownLatch = new CountDownLatch(1);
                     rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
-                    //Pause Session
-                    rangingSessionCallback.rangingSession.pause(new PersistableBundle());
+
+                    FiraSuspendRangingParams pauseParams =
+                            new FiraSuspendRangingParams.Builder()
+                                    .setSuspendRangingRounds(FiraParams.SUSPEND_RANGING_ENABLED)
+                                    .build();
+                    rangingSessionCallback.rangingSession.pause(pauseParams.toBundle());
                     assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
                     assertThat(rangingSessionCallback.onPauseCalled).isTrue();
                     assertThat(rangingSessionCallback.onPauseFailedCalled).isFalse();
-                    //Resume session
+
+                    // Resume session
                     countDownLatch = new CountDownLatch(1);
-                    rangingSessionCallback.rangingSession.resume(new PersistableBundle());
+                    rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+
+                    FiraSuspendRangingParams resumeParams =
+                            new FiraSuspendRangingParams.Builder()
+                                    .setSuspendRangingRounds(FiraParams.SUSPEND_RANGING_DISABLED)
+                                    .build();
+                    rangingSessionCallback.rangingSession.resume(resumeParams.toBundle());
                     assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
                     assertThat(rangingSessionCallback.onResumeCalled).isTrue();
                     assertThat(rangingSessionCallback.onResumeFailedCalled).isFalse();
