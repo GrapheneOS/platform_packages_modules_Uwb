@@ -64,6 +64,7 @@ import com.android.server.uwb.data.ServiceProfileData;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.multchip.UwbMultichipData;
 import com.android.server.uwb.pm.ProfileManager;
+import com.android.uwb.flags.FeatureFlags;
 
 import java.io.File;
 import java.util.HashMap;
@@ -116,6 +117,7 @@ public class UwbInjector {
     private int mPoseSourceRefCount = 0;
 
     private final UwbSessionManager mUwbSessionManager;
+    private final FeatureFlags mFeatureFlags;
 
     public UwbInjector(@NonNull UwbContext context) {
         // Create UWB service thread.
@@ -157,6 +159,11 @@ public class UwbInjector {
                 mUwbCountryCode, mUwbSessionManager, uwbConfigurationManager, this, mLooper);
         mSystemBuildProperties = new SystemBuildProperties();
         mUwbDiagnostics = new UwbDiagnostics(mContext, this, mSystemBuildProperties);
+        mFeatureFlags = new com.android.uwb.flags.FeatureFlagsImpl();
+    }
+
+    public FeatureFlags getFeatureFlags() {
+        return mFeatureFlags;
     }
 
     public Looper getUwbServiceLooper() {
