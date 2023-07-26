@@ -53,6 +53,7 @@ import android.util.ArrayMap;
 
 import androidx.annotation.Nullable;
 
+import com.google.uwb.support.fira.FiraControleeParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
@@ -525,6 +526,28 @@ public final class ConfigurationManager {
                                 Conversions.convertUwbAddressList(peerAddresses,
                                                 uwbFeatureFlags.isReversedByteOrderFiraParams())
                                         .toArray(new android.uwb.UwbAddress[0]));
+        if (configuration.getStsConfig()
+                == FiraParams.STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY) {
+            builder.setSubSessionIdList(subSessionIdList).setSubSessionKeyList(subSessionKey);
+        }
+        return builder.build();
+    }
+
+    /** Creates a {@link FiraControleeParams}. */
+    public static FiraControleeParams createControleeParams(
+            @Utils.UwbConfigId int configId,
+            @FiraParams.MulticastListUpdateAction int action,
+            UwbAddress[] peerAddresses,
+            @Nullable int[] subSessionIdList,
+            @Nullable byte[] subSessionKey,
+            UwbFeatureFlags uwbFeatureFlags) {
+        UwbConfiguration configuration = sConfigs.get(configId);
+        FiraControleeParams.Builder builder = new FiraControleeParams.Builder();
+        builder.setAction(action);
+        builder.setAddressList(
+                Conversions.convertUwbAddressList(
+                                peerAddresses, uwbFeatureFlags.isReversedByteOrderFiraParams())
+                        .toArray(new android.uwb.UwbAddress[0]));
         if (configuration.getStsConfig()
                 == FiraParams.STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY) {
             builder.setSubSessionIdList(subSessionIdList).setSubSessionKeyList(subSessionKey);
