@@ -1708,13 +1708,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                             status = mNativeUwbManager.deInitSession(uwbSession.getSessionId(),
                                     uwbSession.getChipId());
                             if (status != UwbUciConstants.STATUS_CODE_OK) {
-                                mSessionNotificationManager.onRangingClosed(uwbSession, status);
                                 return status;
                             }
                             uwbSession.getWaitObj().blockingWait();
-                            Log.i(TAG, "onRangingClosed - status : " + status);
-                            mSessionNotificationManager.onRangingClosed(uwbSession,
-                                    reason);
                         }
                         return status;
                     });
@@ -1725,7 +1721,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                         IUwbAdapter.RANGING_SESSION_CLOSE_THRESHOLD_MS);
             } catch (TimeoutException e) {
                 Log.i(TAG, "Failed to Stop Ranging - status : TIMEOUT");
-                mSessionNotificationManager.onRangingClosed(uwbSession, status);
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
@@ -1734,6 +1729,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             // Reset all UWB session timers when the session is de-initialized (ie, closed).
             uwbSession.stopTimers();
             removeSession(uwbSession);
+
+            // Notify about Session closure after removing it from the SessionTable.
+            Log.i(TAG, "onRangingClosed - status : " + status);
+            mSessionNotificationManager.onRangingClosed(uwbSession,
+                    status == STATUS_CODE_OK ? reason : status);
+
             Log.i(TAG, "deinit finish : status :" + status);
             Trace.endSection();
         }
