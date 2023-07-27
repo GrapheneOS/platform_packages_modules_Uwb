@@ -603,7 +603,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         if (!isUwbEnabled()) {
             throw new IllegalStateException("Uwb is not enabled");
         }
-        Params  reconfigureRangingParams = null;
+        Params reconfigureRangingParams = null;
         if (FiraParams.isCorrectProtocol(params)) {
             FiraControleeParams controleeParams = FiraControleeParams.fromBundle(params);
             reconfigureRangingParams = new FiraRangingReconfigureParams.Builder()
@@ -616,11 +616,28 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         mSessionManager.reconfigure(sessionHandle, reconfigureRangingParams);
     }
 
+    private void checkPauseOrResumeParams(
+            PersistableBundle params, int expectedSuspendRangingRoundsValue) {
+        if (!FiraParams.isCorrectProtocol(params)) {
+            throw new IllegalStateException("Incorrect protocol type in given params");
+        }
+        FiraSuspendRangingParams suspendRangingParams =
+                FiraSuspendRangingParams.fromBundle(params);
+        if (suspendRangingParams.getSuspendRangingRounds() != expectedSuspendRangingRoundsValue) {
+            throw new IllegalStateException(
+                    "Incorrect SuspendRangingRound value "
+                    + suspendRangingParams.getSuspendRangingRounds()
+                    + ", expected value = " + expectedSuspendRangingRoundsValue);
+        }
+    }
+
     public void pause(SessionHandle sessionHandle, PersistableBundle params) {
-       pauseOrResumeSession(sessionHandle, params);
+        checkPauseOrResumeParams(params, FiraParams.SUSPEND_RANGING_ENABLED);
+        pauseOrResumeSession(sessionHandle, params);
     }
 
     public void resume(SessionHandle sessionHandle, PersistableBundle params) {
+        checkPauseOrResumeParams(params, FiraParams.SUSPEND_RANGING_DISABLED);
         pauseOrResumeSession(sessionHandle, params);
     }
 
