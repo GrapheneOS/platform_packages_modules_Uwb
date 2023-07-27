@@ -31,6 +31,7 @@ import static com.google.uwb.support.fira.FiraParams.UWB_CHANNEL_9;
 import static java.util.Objects.requireNonNull;
 
 import android.annotation.SuppressLint;
+import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.util.Log;
 import android.uwb.UwbManager;
@@ -179,15 +180,8 @@ public class RangingController extends RangingDevice {
                 ? mRangingParameters.getSubSessionKeyInfo()
                 : null;
         boolean success =
-                reconfigureRanging(
-                        ConfigurationManager.createReconfigureParams(
-                                        mRangingParameters.getUwbConfigId(),
-                                        FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD,
-                                        new UwbAddress[]{controleeAddress},
-                                        subSessionIdList,
-                                        subSessionKeyInfo,
-                                        mUwbFeatureFlags)
-                                .toBundle());
+                addControleeAdapter(
+                        new UwbAddress[] {controleeAddress}, subSessionIdList, subSessionKeyInfo);
 
         RangingSessionCallback callback = mRangingSessionCallback;
         if (success) {
@@ -242,15 +236,8 @@ public class RangingController extends RangingDevice {
                 ? params.getSubSessionKey()
                 : null;
         boolean success =
-                reconfigureRanging(
-                        ConfigurationManager.createReconfigureParams(
-                                        mRangingParameters.getUwbConfigId(),
-                                        FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD,
-                                        new UwbAddress[]{controleeAddress},
-                                        subSessionIdList,
-                                        subSessionKeyInfo,
-                                        mUwbFeatureFlags)
-                                .toBundle());
+                addControleeAdapter(
+                        new UwbAddress[] {controleeAddress}, subSessionIdList, subSessionKeyInfo);
 
         RangingSessionCallback callback = mRangingSessionCallback;
         if (success) {
@@ -275,6 +262,37 @@ public class RangingController extends RangingDevice {
     }
 
     /**
+     * Adapter method for to add controlee, via addControlee() api call for versions T an above.
+     *
+     * @return true if addControlee() was successful.
+     */
+    private synchronized boolean addControleeAdapter(
+            UwbAddress[] controleeAddress,
+            @Nullable int[] subSessionIdList,
+            @Nullable byte[] subSessionKeyInfo) {
+        if (VERSION.SDK_INT <= VERSION_CODES.S) {
+            return reconfigureRanging(
+                    ConfigurationManager.createReconfigureParams(
+                                    mRangingParameters.getUwbConfigId(),
+                                    FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD,
+                                    controleeAddress,
+                                    subSessionIdList,
+                                    subSessionKeyInfo,
+                                    mUwbFeatureFlags)
+                            .toBundle());
+        }
+        return addControlee(
+                ConfigurationManager.createControleeParams(
+                                mRangingParameters.getUwbConfigId(),
+                                FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD,
+                                controleeAddress,
+                                subSessionIdList,
+                                subSessionKeyInfo,
+                                mUwbFeatureFlags)
+                        .toBundle());
+    }
+
+    /**
      * Remove a controlee from current session.
      *
      * @return returns {@link Utils#STATUS_OK} if the controlee is removed successfully. returns
@@ -296,16 +314,7 @@ public class RangingController extends RangingDevice {
         }
 
         // Reconfigure the session.
-        boolean success =
-                reconfigureRanging(
-                        ConfigurationManager.createReconfigureParams(
-                                        mRangingParameters.getUwbConfigId(),
-                                        FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE,
-                                        new UwbAddress[]{controleeAddress},
-                                        /* subSessionIdList= */ null,
-                                        /* subSessionKey= */ null,
-                                        mUwbFeatureFlags)
-                                .toBundle());
+        boolean success = removeControleeAdapter(new UwbAddress[] {controleeAddress});
         if (!success) {
             return UWB_SYSTEM_CALLBACK_FAILURE;
         }
@@ -320,6 +329,34 @@ public class RangingController extends RangingDevice {
         }
         mDynamicallyAddedPeers.remove(controleeAddress);
         return STATUS_OK;
+    }
+
+    /**
+     * Adapter method to remove controlee, via removeControlee() api call for versions T and above.
+     *
+     * @return true if removeControlee() was successful.
+     */
+    private synchronized boolean removeControleeAdapter(UwbAddress[] controleeAddress) {
+        if (VERSION.SDK_INT <= VERSION_CODES.S) {
+            return reconfigureRanging(
+                    ConfigurationManager.createReconfigureParams(
+                                    mRangingParameters.getUwbConfigId(),
+                                    FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE,
+                                    controleeAddress,
+                                    /* subSessionIdList= */ null,
+                                    /* subSessionKey= */ null,
+                                    mUwbFeatureFlags)
+                            .toBundle());
+        }
+        return removeControlee(
+                ConfigurationManager.createControleeParams(
+                                mRangingParameters.getUwbConfigId(),
+                                FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE,
+                                controleeAddress,
+                                /* subSessionIdList= */ null,
+                                /* subSessionKey= */ null,
+                                mUwbFeatureFlags)
+                        .toBundle());
     }
 
     /**
