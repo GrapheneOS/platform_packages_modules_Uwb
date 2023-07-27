@@ -393,17 +393,17 @@ public class RangingControllerTest {
 
         doAnswer(
                 invocation -> {
-                    pfRangingSessionCallback.value.onReconfigured(new PersistableBundle());
+                    pfRangingSessionCallback.value.onControleeAdded(new PersistableBundle());
                     return true;
                 })
                 .when(pfRangingSession)
-                .reconfigure(any(PersistableBundle.class));
+                .addControlee(any(PersistableBundle.class));
 
         mRangingController.startRanging(rangingSessionCallback, mBackendCallbackExecutor);
         assertEquals(mRangingController.addControleeWithSessionParams(
                 new RangingControleeParameters(
                         peerAddress, 0, null)), STATUS_OK);
-        verify(pfRangingSession).reconfigure(any(PersistableBundle.class));
+        verify(pfRangingSession).addControlee(any(PersistableBundle.class));
         verify(rangingSessionCallback)
                 .onRangingInitialized(UwbDevice.createForAddress(peerAddress.toBytes()));
     }
@@ -440,11 +440,19 @@ public class RangingControllerTest {
 
         doAnswer(
                 invocation -> {
-                    pfRangingSessionCallback.value.onReconfigured(new PersistableBundle());
+                    pfRangingSessionCallback.value.onControleeAdded(new PersistableBundle());
                     return true;
                 })
                 .when(pfRangingSession)
-                .reconfigure(any(PersistableBundle.class));
+                .addControlee(any(PersistableBundle.class));
+
+        doAnswer(
+                invocation -> {
+                    pfRangingSessionCallback.value.onControleeRemoved(new PersistableBundle());
+                    return true;
+                })
+                .when(pfRangingSession)
+                .removeControlee(any(PersistableBundle.class));
 
         mRangingController.startRanging(rangingSessionCallback, mBackendCallbackExecutor);
         mRangingController.addControleeWithSessionParams(
@@ -453,7 +461,8 @@ public class RangingControllerTest {
         assertEquals(mRangingController.removeControlee(mRangingParamsKnownPeerAddress), STATUS_OK);
         assertEquals(mRangingController.removeControlee(UwbAddress.getRandomizedShortAddress()),
                 INVALID_API_CALL);
-        verify(pfRangingSession, times(3)).reconfigure(any(PersistableBundle.class));
+        verify(pfRangingSession, times(1)).addControlee(any(PersistableBundle.class));
+        verify(pfRangingSession, times(2)).removeControlee(any(PersistableBundle.class));
         verify(rangingSessionCallback)
                 .onRangingSuspended(
                         UwbDevice.createForAddress(peerAddress.toBytes()),
