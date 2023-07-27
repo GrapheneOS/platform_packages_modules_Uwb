@@ -299,13 +299,17 @@ public abstract class RangingDevice {
             @WorkerThread
             @Override
             public void onReconfigured(PersistableBundle params) {
-                mOpAsyncCallbackRunner.complete(true);
+                if (mOpAsyncCallbackRunner.isActive()) {
+                    mOpAsyncCallbackRunner.complete(true);
+                }
             }
 
             @WorkerThread
             @Override
             public void onReconfigureFailed(int reason, PersistableBundle params) {
-                mOpAsyncCallbackRunner.complete(false);
+                if (mOpAsyncCallbackRunner.isActive()) {
+                    mOpAsyncCallbackRunner.complete(false);
+                }
             }
 
             @WorkerThread
@@ -355,6 +359,30 @@ public abstract class RangingDevice {
             public void onRangingRoundsUpdateDtTagStatus(PersistableBundle params) {
                 // Failure to set ranging rounds is not handled.
                 mOpAsyncCallbackRunner.complete(true);
+            }
+
+            @WorkerThread
+            @Override
+            public void onControleeAdded(PersistableBundle params) {
+                mOpAsyncCallbackRunner.complete(true);
+            }
+
+            @WorkerThread
+            @Override
+            public void onControleeAddFailed(int reason, PersistableBundle params) {
+                mOpAsyncCallbackRunner.complete(false);
+            }
+
+            @WorkerThread
+            @Override
+            public void onControleeRemoved(PersistableBundle params) {
+                mOpAsyncCallbackRunner.complete(true);
+            }
+
+            @WorkerThread
+            @Override
+            public void onControleeRemoveFailed(int reason, PersistableBundle params) {
+                mOpAsyncCallbackRunner.complete(false);
             }
         };
     }
@@ -504,6 +532,32 @@ public abstract class RangingDevice {
         boolean success =
                 mOpAsyncCallbackRunner.execOperation(
                         () -> mRangingSession.reconfigure(bundle), "Reconfigure Ranging");
+        Boolean result = mOpAsyncCallbackRunner.getResult();
+        return success && result != null && result;
+    }
+
+    /**
+     * Adds a controlee to the active UWB ranging session.
+     *
+     * @return true if controlee was successfully added.
+     */
+    protected synchronized boolean addControlee(PersistableBundle bundle) {
+        boolean success =
+                mOpAsyncCallbackRunner.execOperation(
+                        () -> mRangingSession.addControlee(bundle), "Add controlee");
+        Boolean result = mOpAsyncCallbackRunner.getResult();
+        return success && result != null && result;
+    }
+
+    /**
+     * Removes a controlee from active UWB ranging session.
+     *
+     * @return true if controlee was successfully removed.
+     */
+    protected synchronized boolean removeControlee(PersistableBundle bundle) {
+        boolean success =
+                mOpAsyncCallbackRunner.execOperation(
+                        () -> mRangingSession.removeControlee(bundle), "Remove controlee");
         Boolean result = mOpAsyncCallbackRunner.getResult();
         return success && result != null && result;
     }
