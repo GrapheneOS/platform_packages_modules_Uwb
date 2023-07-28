@@ -1097,8 +1097,15 @@ public abstract class FiraParams extends Params {
     // Default value (Unlimited)
     public static final int MAX_NUMBER_OF_MEASUREMENTS_DEFAULT = 0;
 
+    public static final int SESSION_TIME_BASE_PARAM_LEN = 9;
+    public static final int SESSION_HANDLE_LEN = 4;
+    public static final int SESSION_OFFSET_TIME_LEN = 4;
+
     // Default value (Host as the both secure & non-secure endpoint).
     public static final int APPLICATION_DATA_ENDPOINT_DEFAULT = 0;
+
+    //Reference time base feature mask.
+    public static final int SESSION_TIME_BASE_REFERENCE_FEATURE_ENABLED = 1;
 
     // Helper functions
     protected static UwbAddress longToUwbAddress(long value, int length) {
