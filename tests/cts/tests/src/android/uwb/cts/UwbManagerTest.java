@@ -78,6 +78,7 @@ import com.google.uwb.support.oemextension.SessionStatus;
 
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -1084,6 +1085,7 @@ public class UwbManagerTest {
         verifyFiraRangingSession(firaOpenSessionParams, null, null);
     }
 
+    @Ignore // Disabled in U as FiRa 2.0 is not fully formalized.
     @Test
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
     public void testDlTdoaRangingSession() throws Exception {
@@ -1134,6 +1136,7 @@ public class UwbManagerTest {
                 });
     }
 
+    @Ignore // Disabled in U as FiRa 2.0 is not fully formalized.
     @Test
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
     public void testAdvertisingRangingSession() throws Exception {
