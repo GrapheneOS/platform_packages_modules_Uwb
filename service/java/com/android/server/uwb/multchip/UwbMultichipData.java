@@ -131,8 +131,9 @@ public class UwbMultichipData {
     }
 
     private void readConfigurationFile(String filePath) {
+        InputStream stream = null;
         try {
-            InputStream stream = new BufferedInputStream(new FileInputStream(filePath));
+            stream = new BufferedInputStream(new FileInputStream(filePath));
             UwbChipConfig uwbChipConfig = XmlParser.read(stream);
             mDefaultChipId = uwbChipConfig.getDefaultChipId();
             Log.d(TAG, "Default chip id is " + mDefaultChipId);
@@ -169,6 +170,13 @@ public class UwbMultichipData {
                     Collectors.toUnmodifiableList());
         } catch (XmlPullParserException | IOException | DatatypeConfigurationException e) {
             Log.e(TAG, "Cannot read file " + filePath, e);
+        } finally {
+            try {
+                if (stream != null)
+                    stream.close();
+            } catch (IOException e) {
+                Log.e(TAG, "Cannot close file " + filePath, e);
+            }
         }
     }
 
