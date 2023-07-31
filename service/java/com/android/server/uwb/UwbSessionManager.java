@@ -2166,13 +2166,18 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
          * @return The matching {@link UwbControlee}, or null if not found.
          */
         public UwbControlee getControlee(UwbAddress address) {
-            UwbControlee result = mControleeList
+            UwbControlee result = null;
+            if (mControleeList != null) {
+               result = mControleeList
                     .stream()
                     .filter(e -> e.getUwbAddress().equals(address))
                     .findFirst()
                     .orElse(null);
-            if (result == null) {
-                Log.d(TAG, "Failure to find controlee " + address);
+               if (result == null) {
+                    Log.d(TAG, "Failure to find controlee " + address);
+               }
+            } else {
+               Log.d(TAG, "Controlee list is empty");
             }
             return result;
         }
