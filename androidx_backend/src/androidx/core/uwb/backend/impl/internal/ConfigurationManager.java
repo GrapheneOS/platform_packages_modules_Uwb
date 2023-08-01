@@ -454,7 +454,9 @@ public final class ConfigurationManager {
                         .setSlotDurationRstu(
                                 Utils.convertMsToRstu(rangingParameters.getSlotDuration()))
                         .setSlotsPerRangingRound(timingParams.getSlotPerRangingRound())
-                        .setRangingIntervalMs(rangingParameters.getRangingInterval())
+                        .setRangingIntervalMs(
+                                timingParams.getRangingInterval(
+                                        rangingParameters.getRangingUpdateRate()))
                         .setRangeDataNtfConfig(
                                 Utils.convertToFiraNtfConfig(
                                         rangingParameters
