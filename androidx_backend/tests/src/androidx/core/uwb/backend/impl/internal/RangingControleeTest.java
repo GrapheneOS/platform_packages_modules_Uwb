@@ -120,7 +120,6 @@ public class RangingControleeTest {
                         INFREQUENT,
                         uwbRangeDataNtfConfig,
                         Utils.DURATION_2_MS,
-                        Utils.AUTOMATIC,
                         false);
         mRangingControlee.setRangingParameters(rangingParameters);
     }
@@ -144,7 +143,6 @@ public class RangingControleeTest {
                         INFREQUENT,
                         uwbRangeDataNtfConfig,
                         Utils.DURATION_2_MS,
-                        Utils.AUTOMATIC,
                         false);
 
         mRangingControlee.setRangingParameters(rangingParameters);

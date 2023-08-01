@@ -19,7 +19,7 @@ package androidx.core.uwb.backend.impl.internal;
 import static android.content.pm.PackageManager.FEATURE_UWB;
 import static android.uwb.UwbManager.AdapterStateCallback.STATE_DISABLED;
 
-import static androidx.core.uwb.backend.impl.internal.RangingCapabilities.DEFAULT_SUPPORTED_RANGING_INTERVALS;
+import static androidx.core.uwb.backend.impl.internal.RangingCapabilities.DEFAULT_SUPPORTED_RANGING_UPDATE_RATE;
 import static androidx.core.uwb.backend.impl.internal.RangingCapabilities.DEFAULT_SUPPORTED_SLOT_DURATIONS;
 import static androidx.core.uwb.backend.impl.internal.RangingCapabilities.FIRA_DEFAULT_SUPPORTED_CONFIG_IDS;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_DL_TDOA_DT_TAG;
@@ -152,7 +152,7 @@ public class UwbServiceImpl {
                     new ArrayList<>(RANGE_DATA_NTF_ENABLE),
                     FIRA_DEFAULT_SUPPORTED_CONFIG_IDS,
                     DEFAULT_SUPPORTED_SLOT_DURATIONS,
-                    DEFAULT_SUPPORTED_RANGING_INTERVALS);
+                    DEFAULT_SUPPORTED_RANGING_UPDATE_RATE);
         }
 
         PersistableBundle bundle = mUwbManager.getSpecificationInfo();
@@ -167,10 +167,10 @@ public class UwbServiceImpl {
         if (minRangingInterval <= 0) {
             minRangingInterval = RangingCapabilities.FIRA_DEFAULT_RANGING_INTERVAL_MS;
         }
-        List<Integer> supportedRangingIntervals = new ArrayList<>(
-                DEFAULT_SUPPORTED_RANGING_INTERVALS);
-        if (minRangingInterval <= 100) {
-            supportedRangingIntervals.add(Utils.FREQUENT_RANGING_INTERVAL);
+        List<Integer> supportedRangingUpdateRates = new ArrayList<>(
+                DEFAULT_SUPPORTED_RANGING_UPDATE_RATE);
+        if (minRangingInterval <= 120) {
+            supportedRangingUpdateRates.add(Utils.FAST);
         }
         if (supportedChannels == null || supportedChannels.isEmpty()) {
             supportedChannels =
@@ -218,7 +218,7 @@ public class UwbServiceImpl {
                 ImmutableList.copyOf(supportedNtfConfigs),
                 ImmutableList.copyOf(supportedConfigIds),
                 ImmutableList.copyOf(supportedSlotDurations),
-                ImmutableList.copyOf(supportedRangingIntervals)
+                ImmutableList.copyOf(supportedRangingUpdateRates)
                 );
     }
 

@@ -93,7 +93,7 @@ public abstract class UwbClient extends IUwbClient.Stub {
                         parameters.uwbConfigId, parameters.sessionId, parameters.subSessionId,
                         parameters.sessionKeyInfo, parameters.subSessionKeyInfo,
                         channel, addresses, parameters.rangingUpdateRate, uwbRangeDataNtfConfig,
-                        Utils.DURATION_2_MS, Utils.AUTOMATIC, false));
+                        Utils.DURATION_2_MS, false));
     }
 
     protected androidx.core.uwb.backend.impl.internal.RangingSessionCallback convertCallback(
