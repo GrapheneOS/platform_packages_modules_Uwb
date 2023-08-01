@@ -50,8 +50,8 @@ public class RangingCapabilities {
     public static final ImmutableList<Integer> DEFAULT_SUPPORTED_SLOT_DURATIONS =
             ImmutableList.of(Utils.DURATION_2_MS);
     /** Default supported ranging interval if the system API doesn't provide it. */
-    public static final ImmutableList<Integer> DEFAULT_SUPPORTED_RANGING_INTERVALS =
-            ImmutableList.of(Utils.AUTOMATIC, Utils.INFREQUENT_RANGING_INTERVAL);
+    public static final ImmutableList<Integer> DEFAULT_SUPPORTED_RANGING_UPDATE_RATE =
+            ImmutableList.of(Utils.NORMAL, Utils.INFREQUENT);
 
 
     private final boolean mSupportsDistance;
@@ -63,7 +63,7 @@ public class RangingCapabilities {
     private final List<Integer> mSupportedNtfConfigs;
     private final List<Integer> mSupportedConfigIds;
     private final List<Integer> mSupportedSlotDurations;
-    private final List<Integer> mSupportedRangingIntervals;
+    private final List<Integer> mSupportedRangingUpdateRates;
 
     public RangingCapabilities(
             boolean supportsDistance,
@@ -79,7 +79,7 @@ public class RangingCapabilities {
                 new ArrayList<>(RANGE_DATA_NTF_ENABLE),
                 FIRA_DEFAULT_SUPPORTED_CONFIG_IDS,
                 DEFAULT_SUPPORTED_SLOT_DURATIONS,
-                DEFAULT_SUPPORTED_RANGING_INTERVALS);
+                DEFAULT_SUPPORTED_RANGING_UPDATE_RATE);
     }
 
     public RangingCapabilities(
@@ -92,7 +92,7 @@ public class RangingCapabilities {
             List<Integer> supportedNtfConfigs,
             List<Integer> supportedConfigIds,
             ImmutableList<Integer> supportedSlotDurations,
-            ImmutableList<Integer> supportedRangingIntervals) {
+            ImmutableList<Integer> supportedRangingUpdateRates) {
         this.mSupportsDistance = supportsDistance;
         this.mSupportsAzimuthalAngle = supportsAzimuthalAngle;
         this.mSupportsElevationAngle = supportsElevationAngle;
@@ -102,7 +102,7 @@ public class RangingCapabilities {
         this.mSupportedNtfConfigs = supportedNtfConfigs;
         this.mSupportedConfigIds = supportedConfigIds;
         this.mSupportedSlotDurations = supportedSlotDurations;
-        this.mSupportedRangingIntervals = supportedRangingIntervals;
+        this.mSupportedRangingUpdateRates = supportedRangingUpdateRates;
     }
 
     /** Whether distance ranging is supported. */
@@ -156,7 +156,7 @@ public class RangingCapabilities {
     }
 
     /** Gets the supported ranging intervals. */
-    public List<Integer> getSupportedRangingIntervals() {
-        return mSupportedRangingIntervals;
+    public List<Integer> getSupportedRangingUpdateRates() {
+        return mSupportedRangingUpdateRates;
     }
 }

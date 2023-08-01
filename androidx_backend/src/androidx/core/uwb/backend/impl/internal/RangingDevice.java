@@ -171,7 +171,6 @@ public abstract class RangingDevice {
                             rangingParameters.getRangingUpdateRate(),
                             rangingParameters.getUwbRangeDataNtfConfig(),
                             rangingParameters.getSlotDuration(),
-                            rangingParameters.getRangingInterval(),
                             rangingParameters.isAoaDisabled());
         } else {
             mRangingParameters = rangingParameters;

@@ -124,7 +124,6 @@ public class RangingControllerTest {
                         INFREQUENT,
                         uwbRangeDataNtfConfig,
                         Utils.DURATION_2_MS,
-                        Utils.AUTOMATIC,
                         false);
         mRangingController =
                 new RangingController(mUwbManager, getExecutor(), mOpAsyncCallbackRunner,
@@ -174,7 +173,6 @@ public class RangingControllerTest {
                         INFREQUENT,
                         uwbRangeDataNtfConfig,
                         Utils.DURATION_2_MS,
-                        Utils.AUTOMATIC,
                         false);
 
         mRangingController.setRangingParameters(rangingParameters);

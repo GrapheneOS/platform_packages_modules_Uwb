@@ -86,7 +86,6 @@ public class ConfigurationManagerTest {
                         INFREQUENT,
                         mUwbRangeDataNtfConfig,
                         Utils.DURATION_2_MS,
-                        Utils.AUTOMATIC,
                         false);
         when(mComplexChannel.getChannel()).thenReturn(1);
         when(mComplexChannel.getPreambleIndex()).thenReturn(1);
@@ -118,7 +117,6 @@ public class ConfigurationManagerTest {
                         INFREQUENT,
                         mUwbRangeDataNtfConfig,
                         Utils.DURATION_2_MS,
-                        Utils.AUTOMATIC,
                         false);
         FiraOpenSessionParams params =
                 ConfigurationManager.createOpenSessionParams(
@@ -128,7 +126,6 @@ public class ConfigurationManagerTest {
         assertArrayEquals(params.getSessionKey(), sessionKey);
         assertTrue(params.isKeyRotationEnabled());
         assertEquals(params.getKeyRotationRate(), 0);
-        assertEquals(params.getRangingIntervalMs(), Utils.AUTOMATIC);
         assertEquals(params.getSlotDurationRstu(), convertMsToRstu(Utils.DURATION_2_MS));
         assertEquals(params.getAoaResultRequest(), AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS);
     }
