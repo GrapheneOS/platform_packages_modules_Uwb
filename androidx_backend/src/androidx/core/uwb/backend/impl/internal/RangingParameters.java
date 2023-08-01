@@ -38,8 +38,6 @@ public class RangingParameters {
     private final UwbRangeDataNtfConfig mUwbRangeDataNtfConfig;
     @Utils.SlotDuration
     private final int mSlotDuration;
-    @Utils.RangingInterval
-    private final int mRangingInterval;
     private final boolean mIsAoaDisabled;
 
     public RangingParameters(
@@ -53,7 +51,6 @@ public class RangingParameters {
             @Utils.RangingUpdateRate int rangingUpdateRate,
             @NonNull UwbRangeDataNtfConfig uwbRangeDataNtfConfig,
             @Utils.SlotDuration int slotDuration,
-            @Utils.RangingInterval int rangingInterval,
             boolean isAoaDisabled) {
         mUwbConfigId = uwbConfigId;
         mSessionId = sessionId;
@@ -65,7 +62,6 @@ public class RangingParameters {
         mRangingUpdateRate = rangingUpdateRate;
         mUwbRangeDataNtfConfig = uwbRangeDataNtfConfig;
         mSlotDuration = slotDuration;
-        mRangingInterval = rangingInterval;
         mIsAoaDisabled = isAoaDisabled;
     }
 
@@ -109,11 +105,6 @@ public class RangingParameters {
     @Utils.SlotDuration
     public int getSlotDuration() {
         return mSlotDuration;
-    }
-
-    @Utils.RangingInterval
-    public int getRangingInterval() {
-        return mRangingInterval;
     }
 
     public boolean isAoaDisabled() {
