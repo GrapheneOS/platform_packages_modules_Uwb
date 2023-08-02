@@ -3539,9 +3539,12 @@ public class UwbSessionManagerTest {
         doReturn(true).when(mUwbSessionManager).isExistedSession(any());
         doReturn(TEST_SESSION_ID).when(mUwbSessionManager).getSessionId(any());
 
-        mUwbSessionManager.deInitSession(mock(SessionHandle.class));
+        UwbSession mockUwbSession = mock(UwbSession.class);
+        SessionHandle mockSessionHandle = mock(SessionHandle.class);
+        mUwbSessionManager.mSessionTable.put(mockSessionHandle, mockUwbSession);
 
-        verify(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
+        mUwbSessionManager.deInitSession(mockSessionHandle);
+
         assertThat(mTestLooper.nextMessage().what).isEqualTo(5); // SESSION_DEINIT
 
         verifyZeroInteractions(mUwbAdvertiseManager);
@@ -3550,8 +3553,11 @@ public class UwbSessionManagerTest {
     @Test
     public void deInitSession_success_afterOwrAoaMeasurement() {
         UwbSession mockUwbSession = mock(UwbSession.class);
+        SessionHandle mockSessionHandle = mock(SessionHandle.class);
+        mUwbSessionManager.mSessionTable.put(mockSessionHandle, mockUwbSession);
+
         when(mockUwbSession.getWaitObj()).thenReturn(mock(WaitObj.class));
-        when(mockUwbSession.getSessionHandle()).thenReturn(mock(SessionHandle.class));
+        when(mockUwbSession.getSessionHandle()).thenReturn(mockSessionHandle);
         doReturn(mockUwbSession).when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
 
         // Setup the UwbSession to have the peer device's MacAddress stored (which happens when
@@ -3566,8 +3572,9 @@ public class UwbSessionManagerTest {
         doReturn(null).when(mockUwbSession).getAnyNonPrivilegedAppInAttributionSource();
         doReturn(true).when(mUwbSessionManager).isExistedSession(any());
         doReturn(TEST_SESSION_ID).when(mUwbSessionManager).getSessionId(any());
-        mUwbSessionManager.deInitSession(mock(SessionHandle.class));
+        doReturn(TEST_SESSION_ID).when(mockUwbSession).getSessionId();
 
+        mUwbSessionManager.deInitSession(mockSessionHandle);
         mTestLooper.dispatchNext();
 
         verify(mUwbAdvertiseManager).removeAdvertiseTarget(PEER_EXTENDED_MAC_ADDRESS_LONG);
@@ -3615,6 +3622,31 @@ public class UwbSessionManagerTest {
         verify(mUwbAdvertiseManager, never()).removeAdvertiseTarget(isA(Long.class));
         verify(mUwbMetrics).logRangingCloseEvent(
                 eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
+        assertThat(mUwbSessionManager.getSessionCount()).isEqualTo(0);
+        assertThat(mUwbSessionManager.getCccSessionCount()).isEqualTo(0L);
+        assertThat(mUwbSessionManager.getFiraSessionCount()).isEqualTo(0L);
+        verifyZeroInteractions(mUwbAdvertiseManager);
+    }
+
+    @Test
+    public void execDeInitSession_multipleTimes() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        when(mNativeUwbManager.deInitSession(eq(TEST_SESSION_ID), anyString()))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+
+        // Call deInitSession() twice on the same UWB Session, and then proceed to dispatch the two
+        // messages for both the calls. The second message should not have any effect, and silently
+        // stop processing.
+        mUwbSessionManager.deInitSession(uwbSession.getSessionHandle());
+        mUwbSessionManager.deInitSession(uwbSession.getSessionHandle());
+        mTestLooper.dispatchNext();
+        mTestLooper.dispatchNext();
+
+        // Verify the DeInit steps.
+        verify(mUwbSessionNotificationManager, times(1)).onRangingClosed(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
+        verify(mUwbMetrics).logRangingCloseEvent(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
         assertThat(mUwbSessionManager.getSessionCount()).isEqualTo(0);
         assertThat(mUwbSessionManager.getCccSessionCount()).isEqualTo(0L);
         assertThat(mUwbSessionManager.getFiraSessionCount()).isEqualTo(0L);
