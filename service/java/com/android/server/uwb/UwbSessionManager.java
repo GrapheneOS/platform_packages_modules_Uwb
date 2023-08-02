@@ -113,6 +113,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
@@ -647,8 +648,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         int sessionId = getSessionId(sessionHandle);
         Log.i(TAG, "deinitSession() - sessionId: " + sessionId
                 + ", sessionHandle: " + sessionHandle);
-        UwbSession uwbSession = getUwbSession(sessionId);
-        mEventTask.execute(SESSION_DEINIT, uwbSession, STATUS_CODE_OK);
+        mEventTask.execute(SESSION_DEINIT, sessionHandle, STATUS_CODE_OK);
         return;
     }
 
@@ -666,8 +666,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
         Log.i(TAG, "deInitDueToLowPriority() - sessionId: " + sessionId
                 + ", sessionHandle: " + sessionHandle);
-        UwbSession uwbSession = getUwbSession(sessionId);
-        mEventTask.execute(SESSION_DEINIT, uwbSession,
+        mEventTask.execute(SESSION_DEINIT, sessionHandle,
                 UwbUciConstants.STATUS_CODE_ERROR_MAX_SESSIONS_EXCEEDED);
         return true;
     }
@@ -753,6 +752,15 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 .filter(v -> v.getSessionId() == sessionId)
                 .findAny()
                 .orElse(null);
+    }
+
+    /**
+     * Get the UwbSession corresponding to the given UWB SessionHandle. This API returns
+     * {@code null} when the UWB session is not found.
+     */
+    @Nullable
+    private UwbSession getUwbSession(SessionHandle sessionHandle) {
+        return mSessionTable.get(sessionHandle);
     }
 
     /**
@@ -1168,7 +1176,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
     void removeSession(UwbSession uwbSession) {
         if (uwbSession != null) {
-            uwbSession.getBinder().unlinkToDeath(uwbSession, 0);
+            try {
+                uwbSession.getBinder().unlinkToDeath(uwbSession, 0);
+            } catch (NoSuchElementException e) {
+                Log.e(TAG, "unlinkToDeath fail - sessionID : " + uwbSession.getSessionId());
+            }
             removeAdvertiserData(uwbSession);
             uwbSession.close();
             removeFromNonPrivilegedUidToFiraSessionTableIfNecessary(uwbSession);
@@ -1272,9 +1284,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 }
 
                 case SESSION_DEINIT: {
-                    UwbSession uwbSession = (UwbSession) msg.obj;
+                    SessionHandle sessionHandle = (SessionHandle) msg.obj;
                     int reason = msg.arg1;
-                    handleDeInitWithReason(uwbSession, reason);
+                    handleDeInitWithReason(sessionHandle, reason);
                     break;
                 }
 
@@ -1698,8 +1710,15 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     || action == P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_32_BYTE;
         }
 
-        private void handleDeInitWithReason(UwbSession uwbSession, int reason) {
+        private void handleDeInitWithReason(SessionHandle sessionHandle, int reason) {
             Trace.beginSection("UWB#handleDeInitWithReason");
+            UwbSession uwbSession = getUwbSession(sessionHandle);
+            if (uwbSession == null) {
+                Log.w(TAG, "handleDeInitWithReason(): UWB session not found for sessionHandle: "
+                        + sessionHandle);
+                return;
+            }
+
             // TODO(b/211445008): Consolidate to a single uwb thread.
             FutureTask<Integer> deInitTask = new FutureTask<>(
                     (Callable<Integer>) () -> {
