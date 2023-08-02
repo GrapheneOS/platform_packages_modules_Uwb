@@ -389,7 +389,7 @@ impl NotificationManagerAndroid {
         let (mac_address_vec, (subsession_id_vec, status_vec)): (Vec<[u8; 2]>, (Vec<_>, Vec<_>)) =
             status_list
                 .into_iter()
-                .map(|cs| (cs.mac_address, (cs.subsession_id as i64, cs.status as i32)))
+                .map(|cs| (cs.mac_address, (cs.subsession_id as i64, i32::from(cs.status))))
                 .unzip();
 
         let mac_address_vec_i8 =
