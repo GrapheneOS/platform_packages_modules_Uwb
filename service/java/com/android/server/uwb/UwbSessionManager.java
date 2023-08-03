@@ -458,11 +458,14 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             return;
         }
         if (mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
+            String appPackageName = uwbSession.getAnyNonPrivilegedAppInAttributionSource() != null
+                    ? uwbSession.getAnyNonPrivilegedAppInAttributionSource().getPackageName()
+                    : uwbSession.getAttributionSource().getPackageName();
             PersistableBundle sessionStatusBundle = new SessionStatus.Builder()
                     .setSessionId(sessionId)
                     .setState(state)
                     .setReasonCode(reasonCode)
-                    .setAppPackageName(uwbSession.getAttributionSource().getPackageName())
+                    .setAppPackageName(appPackageName)
                     .setSessiontoken(mSessionTokenMap.getOrDefault(uwbSession.getSessionId(), 0))
                     .build()
                     .toBundle();
