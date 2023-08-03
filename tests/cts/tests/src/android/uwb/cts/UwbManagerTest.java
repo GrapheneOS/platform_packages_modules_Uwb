@@ -77,6 +77,7 @@ import com.google.uwb.support.fira.FiraSuspendRangingParams;
 import com.google.uwb.support.multichip.ChipInfoParams;
 import com.google.uwb.support.oemextension.DeviceStatus;
 import com.google.uwb.support.oemextension.RangingReportMetadata;
+import com.google.uwb.support.oemextension.SessionConfigParams;
 import com.google.uwb.support.oemextension.SessionStatus;
 
 import org.junit.Assume;
@@ -1721,8 +1722,11 @@ public class UwbManagerTest {
             assertThat(uwbOemExtensionCallback.onSessionConfigCompleteCalled).isTrue();
             assertThat(uwbOemExtensionCallback.mSessionConfig).isNotNull();
 
-            FiraOpenSessionParams openSessionParamsBundle = FiraOpenSessionParams
+            SessionConfigParams sessionConfigParams = SessionConfigParams
                     .fromBundle(uwbOemExtensionCallback.mSessionConfig);
+            assertEquals(sessionConfigParams.getSessionId(), sessionId);
+            FiraOpenSessionParams openSessionParamsBundle = FiraOpenSessionParams
+                    .fromBundle(sessionConfigParams.getFiraOpenSessionParamsBundle());
             assertEquals(openSessionParamsBundle.getSessionId(), sessionId);
             assertEquals(openSessionParamsBundle.getStsConfig(), FiraParams.STS_CONFIG_STATIC);
             assertEquals(openSessionParamsBundle.getDeviceType(),
