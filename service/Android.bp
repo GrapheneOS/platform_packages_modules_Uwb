@@ -23,11 +23,6 @@ java_defaults {
     errorprone: {
         javacflags: ["-Xep:CheckReturnValue:ERROR"],
     },
-    product_variables: {
-        pdk: {
-            enabled: false,
-        },
-    },
 }
 
 filegroup {
