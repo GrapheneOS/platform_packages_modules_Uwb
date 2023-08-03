@@ -45,6 +45,7 @@ fn result_to_status_code<T>(result: Result<T>, error_msg: &str) -> StatusCode {
         Err(Error::BadParameters) => StatusCode::UciStatusInvalidParam,
         Err(Error::MaxSessionsExceeded) => StatusCode::UciStatusMaxSessionsExceeded,
         Err(Error::CommandRetry) => StatusCode::UciStatusCommandRetry,
+        Err(Error::RegulationUwbOff) => StatusCode::UciStatusRegulationUwbOff,
         // For other Error, only generic fail can be given.
         Err(_) => StatusCode::UciStatusFailed,
     }
