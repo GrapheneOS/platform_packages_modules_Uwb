@@ -90,6 +90,7 @@ import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccRangingStartedParams;
 import com.google.uwb.support.ccc.CccSpecificationParams;
 import com.google.uwb.support.ccc.CccStartRangingParams;
+import com.google.uwb.support.ccc.CccRangingStoppedParams;
 import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
 import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdateStatus;
 import com.google.uwb.support.fira.FiraHybridSessionConfig;
@@ -699,7 +700,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     && params instanceof CccStartRangingParams) {
                 CccStartRangingParams rangingStartParams = (CccStartRangingParams) params;
                 Log.i(TAG, "startRanging() - update RAN multiplier: "
-                        + rangingStartParams.getRanMultiplier());
+                        + rangingStartParams.getRanMultiplier()
+                        + ", stsIndex: " + rangingStartParams.getStsIndex());
                 // Need to update the RAN multiplier from the CccStartRangingParams for CCC session.
                 uwbSession.updateCccParamsOnStart(rangingStartParams);
             }
@@ -1509,11 +1511,26 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                             uwbSession.getWaitObj().blockingWait();
                             if (uwbSession.getSessionState()
                                     == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
+                                 Params rangingStoppedParams = uwbSession.getParams();
+                                // For CCC sessions, retrieve the app configs
+                                if (uwbSession.getProtocolName().equals(CccParams.PROTOCOL_NAME)) {
+                                    Pair<Integer, CccRangingStoppedParams> statusAndParams  =
+                                            mConfigurationManager.getAppConfigurations(
+                                                    uwbSession.getSessionId(),
+                                                    CccParams.PROTOCOL_NAME,
+                                                    new byte[0],
+                                                    CccRangingStoppedParams.class,
+                                                    uwbSession.getChipId());
+                                    if (statusAndParams.first != UwbUciConstants.STATUS_CODE_OK) {
+                                        Log.e(TAG, "Failed to get CCC ranging stopped params");
+                                    }
+                                    rangingStoppedParams = statusAndParams.second;
+                                }
                                 int apiReasonCode = triggeredBySystemPolicy
                                         ? RangingChangeReason.SYSTEM_POLICY
                                         : RangingChangeReason.LOCAL_API;
                                 mSessionNotificationManager.onRangingStoppedWithApiReasonCode(
-                                        uwbSession, apiReasonCode);
+                                        uwbSession, apiReasonCode, rangingStoppedParams.toBundle());
                             } else {
                                 status = UwbUciConstants.STATUS_CODE_FAILED;
                                 mSessionNotificationManager.onRangingStopFailed(uwbSession,
@@ -2278,6 +2295,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                             .setInitiationTimeMs(rangingStartParams.getInitiationTimeMs())
                             .setAbsoluteInitiationTimeUs(rangingStartParams
                                     .getAbsoluteInitiationTimeUs())
+                            .setStsIndex(rangingStartParams.getStsIndex())
                             .build();
             this.mParams = newParams;
             this.mNeedsAppConfigUpdate = true;
