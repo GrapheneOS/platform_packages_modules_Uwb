@@ -14,14 +14,24 @@
  * limitations under the License.
  */
 
+import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_UNICAST;
+import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_INITIATOR;
+import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLLER;
+import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
+
 import static org.junit.Assert.assertEquals;
+
+import android.uwb.UwbAddress;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import com.google.uwb.support.fira.FiraOpenSessionParams;
+import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.oemextension.AdvertisePointedTarget;
 import com.google.uwb.support.oemextension.DeviceStatus;
 import com.google.uwb.support.oemextension.RangingReportMetadata;
+import com.google.uwb.support.oemextension.SessionConfigParams;
 import com.google.uwb.support.oemextension.SessionStatus;
 
 import org.junit.Test;
@@ -119,5 +129,45 @@ public class OemExtensionTests {
         assertEquals(Arrays.toString(fromBundle.getMacAddress().toBytes()),
                 Arrays.toString(macAddress));
         assertEquals(fromBundle.isAdvertisePointingResult(), advertisePointingResult);
+    }
+
+    @Test
+    public void testSessionConfigParams() {
+        long sessionId = 100;
+        int sessionToken = 50;
+        FiraOpenSessionParams firaOpenSessionParams = new FiraOpenSessionParams.Builder()
+                .setProtocolVersion(FiraParams.PROTOCOL_VERSION_1_1)
+                .setSessionId((int) sessionId)
+                .setSessionType(FiraParams.SESSION_TYPE_RANGING)
+                .setChannelNumber(FiraParams.UWB_CHANNEL_9)
+                .setDeviceType(RANGING_DEVICE_TYPE_CONTROLLER)
+                .setDeviceRole(RANGING_DEVICE_ROLE_INITIATOR)
+                .setDeviceAddress(UwbAddress.fromBytes(new byte[]{0x4, 0x6}))
+                .setDestAddressList(Arrays.asList(UwbAddress.fromBytes(new byte[]{0x4, 0x6})))
+                .setMultiNodeMode(MULTI_NODE_MODE_UNICAST)
+                .setRangingRoundUsage(RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE)
+                .setVendorId(new byte[]{0x8, 0x7})
+                .setStaticStsIV(new byte[]{0x1, 0x2, 0x3, 0x4, 0x5, 0x6})
+                .build();
+
+        SessionConfigParams sessionConfigParams = new SessionConfigParams.Builder()
+                .setSessionId(sessionId)
+                .setSessiontoken(sessionToken)
+                .setOpenSessionParamsBundle(firaOpenSessionParams.toBundle())
+                .build();
+
+        assertEquals(sessionConfigParams.getSessionId(), sessionId);
+        assertEquals(sessionConfigParams.getSessionToken(), sessionToken);
+
+        SessionConfigParams fromBundle = SessionConfigParams.fromBundle(
+                sessionConfigParams.toBundle());
+
+        assertEquals(fromBundle.getSessionId(), sessionId);
+        assertEquals(fromBundle.getSessionToken(), sessionToken);
+        FiraOpenSessionParams params = FiraOpenSessionParams.fromBundle(
+                fromBundle.getFiraOpenSessionParamsBundle());
+        assertEquals(params.getSessionId(), (int) sessionId);
+        assertEquals(params.getDeviceRole(), RANGING_DEVICE_ROLE_INITIATOR);
+        assertEquals(params.getRangingRoundUsage(), RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE);
     }
 }
