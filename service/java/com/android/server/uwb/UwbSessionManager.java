@@ -100,6 +100,7 @@ import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
 import com.google.uwb.support.oemextension.AdvertisePointedTarget;
+import com.google.uwb.support.oemextension.SessionConfigParams;
 import com.google.uwb.support.oemextension.SessionStatus;
 
 import java.io.Closeable;
@@ -521,8 +522,14 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         if (status == UwbUciConstants.STATUS_CODE_OK
                 && mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
             try {
+                SessionConfigParams sessionConfigParams = new SessionConfigParams.Builder()
+                        .setSessionId(uwbSession.getSessionId())
+                        .setSessiontoken(
+                                mSessionTokenMap.getOrDefault(uwbSession.getSessionId(), 0))
+                        .setOpenSessionParamsBundle(uwbSession.getParams().toBundle())
+                        .build();
                 status = mUwbInjector.getUwbServiceCore().getOemExtensionCallback()
-                        .onSessionConfigurationReceived(uwbSession.getParams().toBundle());
+                        .onSessionConfigurationReceived(sessionConfigParams.toBundle());
             } catch (RemoteException e) {
                 Log.e(TAG, "Failed to send vendor notification", e);
             }
