@@ -53,7 +53,7 @@ import java.util.concurrent.ExecutorService;
 /** Implements start/stop ranging operations. */
 public abstract class RangingDevice {
 
-    private static final int SESSION_ID_UNSET = 0;
+    public static final int SESSION_ID_UNSET = 0;
 
     /** Timeout value after ranging start call */
     private static final int RANGING_START_TIMEOUT_MILLIS = 3100;
