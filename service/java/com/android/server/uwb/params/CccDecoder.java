@@ -30,6 +30,7 @@ import static com.android.server.uwb.config.CapabilityParam.CCC_HOPPING_CONFIG_M
 import static com.android.server.uwb.config.CapabilityParam.CCC_HOPPING_CONFIG_MODE_NONE;
 import static com.android.server.uwb.config.CapabilityParam.CCC_HOPPING_SEQUENCE_AES;
 import static com.android.server.uwb.config.CapabilityParam.CCC_HOPPING_SEQUENCE_DEFAULT;
+import static com.android.server.uwb.config.CapabilityParam.CCC_PRIORITIZED_CHANNEL_LIST;
 import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_CHANNELS;
 import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_CHAPS_PER_SLOT;
 import static com.android.server.uwb.config.CapabilityParam.CCC_SUPPORTED_HOPPING_CONFIG_MODES_AND_SEQUENCES;
@@ -163,12 +164,21 @@ public class CccDecoder extends TlvDecoder {
                 builder.addSyncCode(i + 1);
             }
         }
-        byte channels = tlvs.getByte(CCC_SUPPORTED_CHANNELS);
-        if (isBitSet(channels, CCC_CHANNEL_5)) {
-            builder.addChannel(UWB_CHANNEL_5);
-        }
-        if (isBitSet(channels, CCC_CHANNEL_9)) {
-            builder.addChannel(UWB_CHANNEL_9);
+
+        try {
+            byte[] prioritizedChannels = tlvs.getByteArray(CCC_PRIORITIZED_CHANNEL_LIST);
+            for (byte prioritizedChannel : prioritizedChannels) {
+                builder.addChannel(prioritizedChannel);
+            }
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "CCC_PRIORITIZED_CHANNEL_LIST not found");
+            byte channels = tlvs.getByte(CCC_SUPPORTED_CHANNELS);
+            if (isBitSet(channels, CCC_CHANNEL_5)) {
+                builder.addChannel(UWB_CHANNEL_5);
+            }
+            if (isBitSet(channels, CCC_CHANNEL_9)) {
+                builder.addChannel(UWB_CHANNEL_9);
+            }
         }
         byte hoppingConfigModesAndSequences =
                 tlvs.getByte(CCC_SUPPORTED_HOPPING_CONFIG_MODES_AND_SEQUENCES);
