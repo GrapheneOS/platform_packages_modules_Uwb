@@ -51,6 +51,7 @@ import android.uwb.UwbManager.AdapterStateCallback;
 import androidx.annotation.Nullable;
 
 import com.android.internal.annotations.VisibleForTesting;
+import com.android.server.uwb.data.UwbDeviceInfoResponse;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.data.UwbVendorUciResponse;
 import com.android.server.uwb.info.UwbPowerStats;
@@ -908,7 +909,11 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                 }
 
                 try {
-                    if (!mNativeUwbManager.doInitialize()) {
+                    UwbDeviceInfoResponse deviceInfoResponse = mNativeUwbManager.doInitialize();
+                    // TODO(b/276825370): Store the deviceInfoResponse for future lookup of UCI
+                    // version.
+                    if (deviceInfoResponse == null
+                            || deviceInfoResponse.mStatusCode != UwbUciConstants.STATUS_CODE_OK) {
                         Log.e(TAG, "Error enabling UWB");
                         mUwbMetrics.incrementDeviceInitFailureCount();
 
