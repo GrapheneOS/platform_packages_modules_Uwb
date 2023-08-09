@@ -70,8 +70,23 @@ public class CccDecoderTest {
                     + "a80401000000"
                     + "a90401000000";
 
+    public static final String TEST_CCC_SPECIFICATION_TLV_DATA_STRING_PRIORITIZED_CHANNELS =
+            "a00111"
+                    + "a10400000082"
+                    + "a20168"
+                    + "a4020102"
+                    + "a50100"
+                    + "a60112"
+                    + "a7040a000000"
+                    + "a80401000000"
+                    + "a90401000000"
+                    + "aa020509";
+
     private static final byte[] TEST_CCC_SPECIFICATION_TLV_DATA =
             UwbUtil.getByteArray(TEST_CCC_SPECIFICATION_TLV_DATA_STRING);
+
+    private static final byte[] TEST_CCC_SPECIFICATION_TLV_DATA_PRIORITIZED_CHANNELS =
+            UwbUtil.getByteArray(TEST_CCC_SPECIFICATION_TLV_DATA_STRING_PRIORITIZED_CHANNELS);
     public static final int TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS = 10;
     private final CccDecoder mCccDecoder = new CccDecoder();
 
@@ -154,6 +169,19 @@ public class CccDecoderTest {
         CccSpecificationParams cccSpecificationParams = TlvDecoder
                 .getDecoder(CccParams.PROTOCOL_NAME)
                 .getParams(tlvDecoderBuffer, CccSpecificationParams.class);
+        verifyCccSpecification(cccSpecificationParams);
+    }
+
+    @Test
+    public void testGetCccSpecificationWithPrioritizedChannel() throws Exception {
+        TlvDecoderBuffer tlvDecoderBuffer =
+                new TlvDecoderBuffer(
+                        TEST_CCC_SPECIFICATION_TLV_DATA_PRIORITIZED_CHANNELS,
+                        TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS);
+        assertThat(tlvDecoderBuffer.parse()).isTrue();
+
+        CccSpecificationParams cccSpecificationParams = mCccDecoder.getParams(
+                tlvDecoderBuffer, CccSpecificationParams.class);
         verifyCccSpecification(cccSpecificationParams);
     }
 }
