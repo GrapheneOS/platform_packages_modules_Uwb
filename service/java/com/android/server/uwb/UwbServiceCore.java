@@ -127,6 +127,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     private IUwbOemExtensionCallback mOemExtensionCallback = null;
     private final Handler mHandler;
     private GenericSpecificationParams mCachedSpecificationParams;
+    private boolean mNeedCachedSpecParamsUpdate = true;
     private final Set<InitializationFailureListener> mListeners = new ArraySet<>();
 
     public UwbServiceCore(Context uwbApplicationContext, NativeUwbManager nativeUwbManager,
@@ -371,7 +372,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                 countryCode,
                 Optional.empty());
         Log.d(TAG, "Resetting cached specifications");
-        mCachedSpecificationParams = null;
+        mNeedCachedSpecParamsUpdate = true;
     }
 
     public void registerAdapterStateCallbacks(IUwbAdapterStateCallbacks adapterStateCallbacks)
@@ -421,9 +422,12 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
      * Get cached specification params
      */
     public GenericSpecificationParams getCachedSpecificationParams(String chipId) {
-        if (mCachedSpecificationParams != null) return mCachedSpecificationParams;
+        if (mCachedSpecificationParams != null && !mNeedCachedSpecParamsUpdate) {
+            return mCachedSpecificationParams;
+        }
         // If nothing in cache, populate it.
         getSpecificationInfo(chipId);
+        mNeedCachedSpecParamsUpdate = false;
         return mCachedSpecificationParams;
     }
 
