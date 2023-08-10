@@ -20,6 +20,7 @@ package {
 java_defaults {
     name: "support-lib-uwb-common-defaults",
     sdk_version: "system_31",
+    min_sdk_version: "30",
     libs: [
         "androidx.annotation_annotation",
     ],
@@ -28,10 +29,12 @@ java_defaults {
     ],
     apex_available: [
         "com.android.uwb",
+        "com.android.tethering",
     ],
     visibility : [
         "//external/sl4a/Common",
         "//packages/modules/Uwb:__subpackages__",
+        "//packages/modules/Connectivity/remoteauth:__subpackages__",
     ]
 }
 
