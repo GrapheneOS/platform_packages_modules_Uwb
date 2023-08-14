@@ -26,7 +26,7 @@ aidl_interface {
     backend: {
         java: {
             enabled: true,
-            min_sdk_version: "31",
+            min_sdk_version: "30",
         },
     },
     visibility: ["//visibility:public"],
@@ -34,8 +34,8 @@ aidl_interface {
 
 java_library {
     name: "uwb_androidx_backend",
-    sdk_version: "system_34",
-    min_sdk_version: "32",
+    sdk_version: "system_UpsideDownCake",
+    min_sdk_version: "30",
     installable: false,
     srcs: [
         "src/**/*.java",
@@ -50,11 +50,18 @@ java_library {
         "com.uwb.support.dltdoa",
         "guava",
     ],
+    apex_available: [
+        "com.android.tethering",
+    ],
+    visibility: [
+        ":__subpackages__",
+        "//packages/modules/Connectivity/remoteauth:__subpackages__",
+    ],
 }
 
 android_app {
     name: "uwb_androidx_backend_app",
-    sdk_version: "system_34",
+    sdk_version: "system_UpsideDownCake",
     min_sdk_version: "32",
     certificate: "platform",
     manifest: "AndroidManifest.xml",
@@ -65,6 +72,6 @@ android_app {
         "androidx.core.uwb.backend.aidl_interface-V1-java",
         "com.uwb.support.fira",
         "guava",
-	"uwb_androidx_backend"
+        "uwb_androidx_backend",
     ],
 }
