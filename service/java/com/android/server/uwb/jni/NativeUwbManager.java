@@ -16,6 +16,7 @@
 package com.android.server.uwb.jni;
 
 import android.annotation.NonNull;
+import android.annotation.Nullable;
 import android.util.Log;
 
 import com.android.internal.annotations.Keep;
@@ -23,6 +24,7 @@ import com.android.server.uwb.UciLogModeStore;
 import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.data.DtTagUpdateRangingRoundsStatus;
 import com.android.server.uwb.data.UwbConfigStatusData;
+import com.android.server.uwb.data.UwbDeviceInfoResponse;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbRadarData;
 import com.android.server.uwb.data.UwbRangingData;
@@ -127,19 +129,24 @@ public class NativeUwbManager {
     /**
      * Enable UWB hardware.
      *
-     * @return : If this returns true, UWB is on
+     * @return : The UwbDeviceInfoResponse, error is indicated by it being null or
+     *           the status code inside it.
      */
-    public boolean doInitialize() {
+    @Nullable
+    public UwbDeviceInfoResponse doInitialize() {
+        UwbDeviceInfoResponse deviceInfoResponse = null;
         synchronized (mNativeLock) {
             mDispatcherPointer = nativeDispatcherNew(mUwbMultichipData.getChipIds().toArray());
             for (String chipId : mUwbMultichipData.getChipIds()) {
-                if (!nativeDoInitialize(chipId)) {
-                    return false;
+                deviceInfoResponse = nativeDoInitialize(chipId);
+                if (deviceInfoResponse == null
+                            || deviceInfoResponse.mStatusCode != UwbUciConstants.STATUS_CODE_OK) {
+                    return deviceInfoResponse;
                 }
             }
             nativeSetLogMode(mUciLogModeStore.getMode());
         }
-        return true;
+        return deviceInfoResponse;
     }
 
     /**
@@ -509,7 +516,7 @@ public class NativeUwbManager {
 
     private native boolean nativeInit();
 
-    private native boolean nativeDoInitialize(String chipIds);
+    private native UwbDeviceInfoResponse nativeDoInitialize(String chipIds);
 
     private native boolean nativeDoDeinitialize(String chipId);
 
