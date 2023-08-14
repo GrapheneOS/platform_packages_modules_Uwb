@@ -207,6 +207,7 @@ public class UwbServiceCoreTest {
     @Mock private UwbCountryCode mUwbCountryCode;
     @Mock private UwbSessionManager mUwbSessionManager;
     @Mock private UwbConfigurationManager mUwbConfigurationManager;
+    @Mock private UwbDiagnostics mUwbDiagnostics;
     @Mock private UwbInjector mUwbInjector;
     @Mock DeviceConfigFacade mDeviceConfigFacade;
     @Mock private ProfileManager mProfileManager;
@@ -228,6 +229,7 @@ public class UwbServiceCoreTest {
         when(powerManager.newWakeLock(anyInt(), anyString()))
                 .thenReturn(mUwbWakeLock);
         when(mContext.getSystemService(PowerManager.class)).thenReturn(powerManager);
+        when(mUwbInjector.getUwbDiagnostics()).thenReturn(mUwbDiagnostics);
         when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
         UwbMultichipData uwbMultichipData = setUpMultichipDataForOneChip();
         when(mUwbInjector.getMultichipData()).thenReturn(uwbMultichipData);
@@ -418,7 +420,31 @@ public class UwbServiceCoreTest {
         verify(mNativeUwbManager).doInitialize();
         assertThat(mUwbServiceCore.getAdapterState()).isEqualTo(AdapterState.STATE_DISABLED);
         verify(initFailCb).onFailure();
+        verify(mDeviceConfigFacade, never()).isDeviceErrorBugreportEnabled();
+        verify(mUwbDiagnostics, never()).takeBugReport(anyString());
         verifyNoMoreInteractions(cb, initFailCb);
+    }
+
+    @Test
+    public void testEnable_failure_noInitializationFailureListener() throws Exception {
+        IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
+        when(cb.asBinder()).thenReturn(mock(IBinder.class));
+        mUwbServiceCore.registerAdapterStateCallbacks(cb);
+        verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
+                StateChangeReason.UNKNOWN);
+        clearInvocations(cb);
+
+        when(mDeviceConfigFacade.isDeviceErrorBugreportEnabled()).thenReturn(true);
+        when(mNativeUwbManager.doInitialize()).thenReturn(false);
+
+        mUwbServiceCore.setEnabled(true);
+        mTestLooper.dispatchAll();
+
+        verify(mNativeUwbManager).doInitialize();
+        assertThat(mUwbServiceCore.getAdapterState()).isEqualTo(AdapterState.STATE_DISABLED);
+        verify(mDeviceConfigFacade).isDeviceErrorBugreportEnabled();
+        verify(mUwbDiagnostics).takeBugReport(anyString());
+        verifyNoMoreInteractions(cb);
     }
 
     @Test
