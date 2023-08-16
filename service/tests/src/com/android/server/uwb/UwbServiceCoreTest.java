@@ -85,6 +85,7 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.dx.mockito.inline.extended.ExtendedMockito;
 import com.android.internal.annotations.VisibleForTesting;
+import com.android.server.uwb.data.UwbDeviceInfoResponse;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.data.UwbVendorUciResponse;
 import com.android.server.uwb.jni.NativeUwbManager;
@@ -165,7 +166,6 @@ public class UwbServiceCoreTest {
                     .setRangingRoundUsage(RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE)
                     .setVendorId(new byte[]{0x5, 0x78})
                     .setStaticStsIV(new byte[]{0x1a, 0x55, 0x77, 0x47, 0x7e, 0x7d});
-
     @VisibleForTesting
     private static final CccOpenRangingParams.Builder TEST_CCC_OPEN_RANGING_PARAMS =
             new CccOpenRangingParams.Builder()
@@ -201,6 +201,15 @@ public class UwbServiceCoreTest {
                         .setPrfMode(FiraParams.PRF_MODE_HPRF)
                         .setNumberOfBursts(1000)
                         .setRadarDataType(RadarParams.RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES);
+    private static final UwbDeviceInfoResponse UWB_DEVICE_INFO_RESPONSE =
+            new UwbDeviceInfoResponse(
+                    UwbUciConstants.STATUS_CODE_OK,
+                    /* UciVersion 1.1 = */ 0x1001,
+                    /* MacVersion 1.1 = */ 0x1001,
+                    /* PhyVersion 1.1 = */ 0x1001,
+                    /* UciTestVersion 1.1 = */ 0x1001,
+                    /* vendor_spec_info = */ new byte[]{0x0a, 0x0b, 0x0c, 0x0d});
+
     @Mock private Context mContext;
     @Mock private NativeUwbManager mNativeUwbManager;
     @Mock private UwbMetrics mUwbMetrics;
@@ -332,7 +341,7 @@ public class UwbServiceCoreTest {
     }
 
     private void enableUwb(String countryCode) throws Exception {
-        when(mNativeUwbManager.doInitialize()).thenReturn(true);
+        when(mNativeUwbManager.doInitialize()).thenReturn(UWB_DEVICE_INFO_RESPONSE);
         when(mUwbCountryCode.getCountryCode()).thenReturn(countryCode);
         when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(
                 Pair.create(STATUS_CODE_FAILED, null));
@@ -342,7 +351,7 @@ public class UwbServiceCoreTest {
     }
 
     private void enableUwbWithCountryCodeChangedCallback() throws Exception {
-        when(mNativeUwbManager.doInitialize()).thenReturn(true);
+        when(mNativeUwbManager.doInitialize()).thenReturn(UWB_DEVICE_INFO_RESPONSE);
 
         // When there is a valid country code, we expect an immediate (inline) invocation of the
         // mUwbServiceCore.onCountryCodeChanged() callback to happen.
@@ -412,7 +421,8 @@ public class UwbServiceCoreTest {
         mUwbServiceCore.addInitializationFailureListener(initFailCb);
         clearInvocations(cb, initFailCb);
 
-        when(mNativeUwbManager.doInitialize()).thenReturn(false);
+        // Setup doInitialize() to return null when the UWB firmware init failed.
+        when(mNativeUwbManager.doInitialize()).thenReturn(null);
 
         mUwbServiceCore.setEnabled(true);
         mTestLooper.dispatchAll();
@@ -434,8 +444,10 @@ public class UwbServiceCoreTest {
                 StateChangeReason.UNKNOWN);
         clearInvocations(cb);
 
+        // Setup doInitialize() to return null when the UWB firmware init failed, and
+        // the DeviceConfigFacade to capture bug reports.
         when(mDeviceConfigFacade.isDeviceErrorBugreportEnabled()).thenReturn(true);
-        when(mNativeUwbManager.doInitialize()).thenReturn(false);
+        when(mNativeUwbManager.doInitialize()).thenReturn(null);
 
         mUwbServiceCore.setEnabled(true);
         mTestLooper.dispatchAll();
@@ -501,7 +513,7 @@ public class UwbServiceCoreTest {
         clearInvocations(mNativeUwbManager, mUwbCountryCode, cb);
 
         // Enable (with country code that results in the Vendor-specific UWB_REGULATION error).
-        when(mNativeUwbManager.doInitialize()).thenReturn(true);
+        when(mNativeUwbManager.doInitialize()).thenReturn(UWB_DEVICE_INFO_RESPONSE);
 
         when(mUwbCountryCode.getCountryCode()).thenReturn(null);
         when(mUwbCountryCode.setCountryCode(anyBoolean()))
@@ -554,7 +566,7 @@ public class UwbServiceCoreTest {
 
         // Enable (with a valid country code), but the firmware returns some error. Hence,
         // UwbCountryCode.getCountryCode() will return null.
-        when(mNativeUwbManager.doInitialize()).thenReturn(true);
+        when(mNativeUwbManager.doInitialize()).thenReturn(UWB_DEVICE_INFO_RESPONSE);
         when(mUwbCountryCode.getCountryCode()).thenReturn(null);
         when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(Pair.create(
                 STATUS_CODE_FAILED, VALID_COUNTRY_CODE));
@@ -630,11 +642,11 @@ public class UwbServiceCoreTest {
                 StateChangeReason.UNKNOWN);
 
         // Setup doInitialize() to take long time, such that the WatchDog thread times out.
-        when(mNativeUwbManager.doInitialize()).thenAnswer(new Answer<Boolean>() {
-            public Boolean answer(InvocationOnMock invocation) throws Throwable {
+        when(mNativeUwbManager.doInitialize()).thenAnswer(new Answer<UwbDeviceInfoResponse>() {
+            public UwbDeviceInfoResponse answer(InvocationOnMock invocation) throws Throwable {
                 // Return success but too late, so this result shouldn't matter.
                 Thread.sleep(UwbServiceCore.WATCHDOG_MS + 1000);
-                return true;
+                return UWB_DEVICE_INFO_RESPONSE;
             }
         });
 
@@ -772,7 +784,7 @@ public class UwbServiceCoreTest {
         clearInvocations(cb);
 
         // Enable UWB (with country code unknown).
-        when(mNativeUwbManager.doInitialize()).thenReturn(true);
+        when(mNativeUwbManager.doInitialize()).thenReturn(UWB_DEVICE_INFO_RESPONSE);
         enableUwb(null);
 
         verify(cb).onAdapterStateChanged(UwbManager.AdapterStateCallback.STATE_DISABLED,
@@ -883,7 +895,7 @@ public class UwbServiceCoreTest {
 
     @Test
     public void testToggleMultipleEnableDisable() throws Exception {
-        when(mNativeUwbManager.doInitialize()).thenReturn(true);
+        when(mNativeUwbManager.doInitialize()).thenReturn(UWB_DEVICE_INFO_RESPONSE);
         when(mNativeUwbManager.doDeinitialize()).thenReturn(true);
 
         IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
@@ -944,7 +956,7 @@ public class UwbServiceCoreTest {
 
     @Test
     public void testToggleMultipleEnableDisableQuickly() throws Exception {
-        when(mNativeUwbManager.doInitialize()).thenReturn(true);
+        when(mNativeUwbManager.doInitialize()).thenReturn(UWB_DEVICE_INFO_RESPONSE);
         when(mNativeUwbManager.doDeinitialize()).thenReturn(true);
 
         IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
@@ -1554,7 +1566,7 @@ public class UwbServiceCoreTest {
                 StateChangeReason.SYSTEM_POLICY);
 
         when(mNativeUwbManager.doDeinitialize()).thenReturn(true);
-        when(mNativeUwbManager.doInitialize()).thenReturn(true);
+        when(mNativeUwbManager.doInitialize()).thenReturn(UWB_DEVICE_INFO_RESPONSE);
 
         clearInvocations(mNativeUwbManager, mUwbCountryCode, cb);
 
@@ -1604,7 +1616,7 @@ public class UwbServiceCoreTest {
         when(mUwbCountryCode.setCountryCode(anyBoolean())).thenReturn(
                 Pair.create(STATUS_CODE_FAILED, null));
         when(mNativeUwbManager.doDeinitialize()).thenReturn(true);
-        when(mNativeUwbManager.doInitialize()).thenReturn(true);
+        when(mNativeUwbManager.doInitialize()).thenReturn(UWB_DEVICE_INFO_RESPONSE);
 
         mUwbServiceCore.onDeviceStatusNotificationReceived(UwbUciConstants.DEVICE_STATE_ERROR,
                 TEST_DEFAULT_CHIP_ID);
