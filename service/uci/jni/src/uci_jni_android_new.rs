@@ -18,7 +18,7 @@ use crate::dispatcher::Dispatcher;
 use crate::helper::{boolean_result_helper, byte_result_helper, option_result_helper};
 use crate::jclass_name::{
     CONFIG_STATUS_DATA_CLASS, DT_RANGING_ROUNDS_STATUS_CLASS, POWER_STATS_CLASS, TLV_DATA_CLASS,
-    UWB_RANGING_DATA_CLASS, VENDOR_RESPONSE_CLASS,
+    UWB_DEVICE_INFO_RESPONSE_CLASS, UWB_RANGING_DATA_CLASS, VENDOR_RESPONSE_CLASS,
 };
 use crate::unique_jvm;
 
@@ -35,7 +35,7 @@ use jni::JNIEnv;
 use log::{debug, error};
 use uwb_core::error::{Error, Result};
 use uwb_core::params::{
-    AppConfigTlv, CountryCode, PhaseList, RawAppConfigTlv, RawUciMessage,
+    AppConfigTlv, CountryCode, GetDeviceInfoResponse, PhaseList, RawAppConfigTlv, RawUciMessage,
     SessionUpdateDtTagRangingRoundsResponse, SetAppConfigResponse, UpdateTime,
 };
 use uwb_uci_packets::{
@@ -87,18 +87,58 @@ fn native_init(env: JNIEnv) -> Result<()> {
     unique_jvm::set_once(jvm)
 }
 
+fn create_device_info_response(rsp: GetDeviceInfoResponse, env: JNIEnv) -> Result<jobject> {
+    let device_info_response_class = env
+        .find_class(UWB_DEVICE_INFO_RESPONSE_CLASS)
+        .map_err(|_| Error::ForeignFunctionInterface)?;
+
+    let vendor_spec_info_jbytearray = env
+        .byte_array_from_slice(rsp.vendor_spec_info.as_ref())
+        .map_err(|_| Error::ForeignFunctionInterface)?;
+    // Safety: vendor_spec_info_jbytearray is safely instantiated above.
+    let vendor_spec_info_jobject = unsafe { JObject::from_raw(vendor_spec_info_jbytearray) };
+
+    match env.new_object(
+        device_info_response_class,
+        "(IIIII[B)V",
+        &[
+            JValue::Int(i32::from(rsp.status)),
+            JValue::Int(rsp.uci_version as i32),
+            JValue::Int(rsp.mac_version as i32),
+            JValue::Int(rsp.phy_version as i32),
+            JValue::Int(rsp.uci_test_version as i32),
+            JValue::Object(vendor_spec_info_jobject),
+        ],
+    ) {
+        Ok(o) => Ok(*o),
+        Err(_) => Err(Error::ForeignFunctionInterface),
+    }
+}
+
 /// Turn on Single UWB chip.
 #[no_mangle]
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDoInitialize(
     env: JNIEnv,
     obj: JObject,
     chip_id: JString,
-) -> jboolean {
+) -> jobject {
     debug!("{}: enter", function_name!());
-    boolean_result_helper(native_do_initialize(env, obj, chip_id), function_name!())
+    match option_result_helper(native_do_initialize(env, obj, chip_id), function_name!()) {
+        Some(rsp) => create_device_info_response(rsp, env)
+            .map_err(|e| {
+                error!("{} failed with {:?}", function_name!(), &e);
+                e
+            })
+            .unwrap_or(*JObject::null()),
+        None => *JObject::null(),
+    }
 }
 
-fn native_do_initialize(env: JNIEnv, obj: JObject, chip_id: JString) -> Result<()> {
+fn native_do_initialize(
+    env: JNIEnv,
+    obj: JObject,
+    chip_id: JString,
+) -> Result<GetDeviceInfoResponse> {
     let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
     uci_manager.open_hal()
 }
