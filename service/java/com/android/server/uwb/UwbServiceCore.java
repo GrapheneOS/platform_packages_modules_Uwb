@@ -275,8 +275,8 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         Log.i(TAG, "updateDeviceState(): deviceState = " + getDeviceStateString(deviceState)
                 + ", current internal adapter state = " + getInternalAdapterState());
 
-        oemExtensionDeviceStatusUpdate(deviceState, chipId);
         updateState(getAdapterStateFromDeviceState(deviceState), chipId);
+        oemExtensionDeviceStatusUpdate(deviceState, chipId);
     }
 
     void oemExtensionDeviceStatusUpdate(int deviceState, String chipId) {
