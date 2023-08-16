@@ -458,25 +458,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             Log.d(TAG, "onSessionStatusNotificationReceived - invalid session");
             return;
         }
-        if (mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
-            String appPackageName = uwbSession.getAnyNonPrivilegedAppInAttributionSource() != null
-                    ? uwbSession.getAnyNonPrivilegedAppInAttributionSource().getPackageName()
-                    : uwbSession.getAttributionSource().getPackageName();
-            PersistableBundle sessionStatusBundle = new SessionStatus.Builder()
-                    .setSessionId(sessionId)
-                    .setState(state)
-                    .setReasonCode(reasonCode)
-                    .setAppPackageName(appPackageName)
-                    .setSessiontoken(mSessionTokenMap.getOrDefault(uwbSession.getSessionId(), 0))
-                    .build()
-                    .toBundle();
-            try {
-                mUwbInjector.getUwbServiceCore().getOemExtensionCallback()
-                        .onSessionStatusNotificationReceived(sessionStatusBundle);
-            } catch (RemoteException e) {
-                Log.e(TAG, "Failed to send vendor notification", e);
-            }
-        }
+
         int prevState = uwbSession.getSessionState();
         setCurrentSessionState((int) sessionId, state);
 
@@ -513,6 +495,25 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 break;
             default:
                 break;
+        }
+        if (mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
+            String appPackageName = uwbSession.getAnyNonPrivilegedAppInAttributionSource() != null
+                    ? uwbSession.getAnyNonPrivilegedAppInAttributionSource().getPackageName()
+                    : uwbSession.getAttributionSource().getPackageName();
+            PersistableBundle sessionStatusBundle = new SessionStatus.Builder()
+                    .setSessionId(sessionId)
+                    .setState(state)
+                    .setReasonCode(reasonCode)
+                    .setAppPackageName(appPackageName)
+                    .setSessiontoken(mSessionTokenMap.getOrDefault(uwbSession.getSessionId(), 0))
+                    .build()
+                    .toBundle();
+            try {
+                mUwbInjector.getUwbServiceCore().getOemExtensionCallback()
+                        .onSessionStatusNotificationReceived(sessionStatusBundle);
+            } catch (RemoteException e) {
+                Log.e(TAG, "Failed to send vendor notification", e);
+            }
         }
     }
 
