@@ -462,11 +462,14 @@ public class UwbInjector {
 
     /** Helper method to check if the app is from foreground app/service. */
     public boolean isForegroundAppOrService(int uid, @NonNull String packageName) {
+        long identity = Binder.clearCallingIdentity();
         try {
             return isForegroundAppOrServiceImportance(getPackageImportance(uid, packageName));
         } catch (SecurityException e) {
             Log.e(TAG, "Failed to retrieve the app importance", e);
             return false;
+        } finally {
+            Binder.restoreCallingIdentity(identity);
         }
     }
 
