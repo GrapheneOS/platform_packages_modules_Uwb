@@ -1441,6 +1441,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                 }
                                 mSessionNotificationManager.onRangingStarted(
                                         uwbSession, rangingStartedParams);
+                                if (uwbSession.hasNonPrivilegedApp()
+                                        && !uwbSession.hasNonPrivilegedFgAppOrService()) {
+                                    Log.i(TAG, "Session " + uwbSession.getSessionId()
+                                            + " reconfiguring ntf control due to app state change");
+                                    uwbSession.reconfigureFiraSessionOnFgStateChange();
+                                }
                             } else {
                                 status = UwbUciConstants.STATUS_CODE_FAILED;
                                 mSessionNotificationManager.onRangingStartFailed(uwbSession,
