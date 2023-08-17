@@ -62,9 +62,11 @@ import android.util.Log;
 import com.android.server.uwb.config.ConfigParam;
 
 import com.google.uwb.support.base.Params;
+import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccProtocolVersion;
 import com.google.uwb.support.ccc.CccPulseShapeCombo;
 import com.google.uwb.support.ccc.CccRangingStartedParams;
+import com.google.uwb.support.ccc.CccRangingStoppedParams;
 import com.google.uwb.support.ccc.CccSpecificationParams;
 
 import java.nio.ByteBuffer;
@@ -84,6 +86,9 @@ public class CccDecoder extends TlvDecoder {
         }
         if (CccSpecificationParams.class.equals(paramsType)) {
             return (T) getCccSpecificationParamsFromTlvBuffer(tlvs);
+        }
+        if (CccRangingStoppedParams.class.equals(paramsType)) {
+            return (T) getCccRangingStoppedParamsFromTlvBuffer(tlvs);
         }
         return null;
     }
@@ -212,5 +217,12 @@ public class CccDecoder extends TlvDecoder {
             Log.w(TAG, "SUPPORTED_MIN_UWB_INITIATION_TIME_MS not found");
         }
         return builder.build();
+    }
+
+    private CccRangingStoppedParams getCccRangingStoppedParamsFromTlvBuffer(TlvDecoderBuffer tlvs) {
+        int lastStsIndexUsed = tlvs.getInt(ConfigParam.LAST_STS_INDEX_USED);
+        return new CccRangingStoppedParams.Builder()
+                .setLastStsIndexUsed(lastStsIndexUsed)
+                .build();
     }
 }
