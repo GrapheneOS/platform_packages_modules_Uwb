@@ -188,8 +188,8 @@ public class UwbSessionNotificationManager {
     }
 
     public void onRangingStoppedWithApiReasonCode(
-            UwbSession uwbSession, @RangingChangeReason int reasonCode) {
-        onRangingStoppedInternal(uwbSession, reasonCode, new PersistableBundle());
+            UwbSession uwbSession, @RangingChangeReason int reasonCode, PersistableBundle params) {
+        onRangingStoppedInternal(uwbSession, reasonCode, params);
     }
 
     public void onRangingStopped(UwbSession uwbSession, int status)  {
