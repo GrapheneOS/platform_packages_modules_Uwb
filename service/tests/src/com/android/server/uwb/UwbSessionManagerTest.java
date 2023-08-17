@@ -1864,7 +1864,7 @@ public class UwbSessionManagerTest {
         // Expect session stop.
         mTestLooper.dispatchAll();
         verify(mUwbSessionNotificationManager).onRangingStoppedWithApiReasonCode(
-                eq(uwbSession), eq(RangingChangeReason.SYSTEM_POLICY));
+                eq(uwbSession), eq(RangingChangeReason.SYSTEM_POLICY), any());
         verify(mUwbMetrics).longRangingStopEvent(eq(uwbSession));
     }
 
@@ -2393,7 +2393,7 @@ public class UwbSessionManagerTest {
         mTestLooper.dispatchNext();
         verify(mUwbSessionNotificationManager)
                 .onRangingStoppedWithApiReasonCode(eq(uwbSession),
-                        eq(RangingChangeReason.SYSTEM_POLICY));
+                        eq(RangingChangeReason.SYSTEM_POLICY), any());
         verify(mUwbMetrics).longRangingStopEvent(eq(uwbSession));
     }
 
@@ -3104,7 +3104,7 @@ public class UwbSessionManagerTest {
                 any(), eq(IUwbAdapter.RANGING_SESSION_START_THRESHOLD_MS));
         verify(mUwbSessionNotificationManager)
                 .onRangingStoppedWithApiReasonCode(eq(uwbSession),
-                        eq(RangingChangeReason.LOCAL_API));
+                        eq(RangingChangeReason.LOCAL_API), any());
         verify(mUwbMetrics).longRangingStopEvent(eq(uwbSession));
     }
 
@@ -3428,7 +3428,7 @@ public class UwbSessionManagerTest {
                 any(), eq(TEST_RANGING_INTERVAL_MS * 4 * 11));
         verify(mUwbSessionNotificationManager)
                 .onRangingStoppedWithApiReasonCode(eq(uwbSession),
-                        eq(RangingChangeReason.LOCAL_API));
+                        eq(RangingChangeReason.LOCAL_API), any());
         verify(mUwbMetrics).longRangingStopEvent(eq(uwbSession));
     }
 
