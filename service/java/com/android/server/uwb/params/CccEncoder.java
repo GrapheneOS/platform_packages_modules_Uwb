@@ -93,9 +93,8 @@ public class CccEncoder extends TlvEncoder {
                         (short) (params.getNumChapsPerSlot() * 400)) // SLOT_DURATION
                 .putByte(ConfigParam.PREAMBLE_CODE_INDEX,
                         (byte) params.getSyncCodeIndex()); // PREAMBLE_CODE_INDEX
-        if (params.getLastStsIndexUsed() != CccParams.LAST_STS_INDEX_USED_UNSET) {
-            tlvBufferBuilder.putInt(
-                    ConfigParam.LAST_STS_INDEX_USED, params.getLastStsIndexUsed());
+        if (params.getStsIndex() != CccParams.STS_INDEX_UNSET) {
+              tlvBufferBuilder.putInt(ConfigParam.STS_INDEX, params.getStsIndex());
         }
         if (params.getAbsoluteInitiationTimeUs() > 0) {
             tlvBufferBuilder.putLong(ConfigParam.UWB_INITIATION_TIME,

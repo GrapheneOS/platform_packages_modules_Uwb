@@ -489,7 +489,7 @@ public class UwbSessionNotificationManagerTest {
     @Test
     public void  testOnRangingStoppedWithApiReasonCode() throws Exception {
         mUwbSessionNotificationManager.onRangingStoppedWithApiReasonCode(
-                mUwbSession, RangingChangeReason.SYSTEM_POLICY);
+                mUwbSession, RangingChangeReason.SYSTEM_POLICY, new PersistableBundle());
 
         verify(mIUwbRangingCallbacks).onRangingStopped(
                 eq(mSessionHandle), eq(RangingChangeReason.SYSTEM_POLICY),
@@ -509,7 +509,7 @@ public class UwbSessionNotificationManagerTest {
     @Test
     public void testRangingStoppedDuetoInbandSignal() throws Exception {
         mUwbSessionNotificationManager.onRangingStoppedWithApiReasonCode(mUwbSession,
-                RangingChangeReason.INBAND_SESSION_STOP);
+                RangingChangeReason.INBAND_SESSION_STOP, new PersistableBundle());
 
         verify(mIUwbRangingCallbacks).onRangingStopped(
                 eq(mSessionHandle), eq(RangingChangeReason.INBAND_SESSION_STOP),

@@ -209,7 +209,7 @@ public abstract class CccParams extends Params {
 
     public static final int SESSION_TYPE_CCC = 160;
 
-    public static final int LAST_STS_INDEX_USED_UNSET = 0;
-
     public static final long UWB_INITIATION_TIME_MS_UNSET = 0;
+
+    public static final int STS_INDEX_UNSET = 0;
 }
