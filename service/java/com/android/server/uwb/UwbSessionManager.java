@@ -36,15 +36,12 @@ import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTIO
 import static com.google.uwb.support.fira.FiraParams.PROTOCOL_NAME;
 import static com.google.uwb.support.fira.FiraParams.P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_16_BYTE;
 import static com.google.uwb.support.fira.FiraParams.P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_32_BYTE;
-import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_DISABLE;
-import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_ENABLE;
 
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.app.ActivityManager;
 import android.app.AlarmManager;
 import android.content.AttributionSource;
-import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -113,7 +110,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -173,8 +169,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     private final Looper mLooper;
     private final EventTask mEventTask;
 
-    private Boolean mIsRangeDataNtfConfigEnableDisableSupported;
-
     public UwbSessionManager(
             UwbConfigurationManager uwbConfigurationManager,
             NativeUwbManager nativeUwbManager, UwbMetrics uwbMetrics,
@@ -196,23 +190,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         registerUidImportanceTransitions();
     }
 
-    private boolean isRangeDataNtfConfigEnableDisableSupported() {
-        if (mIsRangeDataNtfConfigEnableDisableSupported == null) {
-            String defaultChipId = mUwbInjector.getMultichipData().getDefaultChipId();
-            GenericSpecificationParams specificationParams =
-                    mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(defaultChipId);
-            if (specificationParams == null) return false;
-            EnumSet<FiraParams.RangeDataNtfConfigCapabilityFlag> supportedRangeDataNtfConfigs =
-                    specificationParams.getFiraSpecificationParams()
-                            .getRangeDataNtfConfigCapabilities();
-            mIsRangeDataNtfConfigEnableDisableSupported =
-                    supportedRangeDataNtfConfigs.containsAll(EnumSet.of(
-                            HAS_RANGE_DATA_NTF_CONFIG_DISABLE,
-                            HAS_RANGE_DATA_NTF_CONFIG_ENABLE));
-        }
-        return mIsRangeDataNtfConfigEnableDisableSupported;
-    }
-
     @Override
     public void onUidImportance(final int uid, final int importance) {
         Handler handler = new Handler(mLooper);
@@ -220,24 +197,22 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             List<UwbSession> uwbSessions = mNonPrivilegedUidToFiraSessionsTable.get(uid);
             // Not a uid in the watch list
             if (uwbSessions == null) return;
-            boolean newModeHasNonPrivilegedFgApp =
+            boolean newModeHasNonPrivilegedFgAppOrService =
                     UwbInjector.isForegroundAppOrServiceImportance(importance);
             for (UwbSession uwbSession : uwbSessions) {
                 // already at correct state.
-                if (newModeHasNonPrivilegedFgApp == uwbSession.hasNonPrivilegedFgApp()) {
+                if (newModeHasNonPrivilegedFgAppOrService
+                        == uwbSession.hasNonPrivilegedFgAppOrService()) {
                     continue;
                 }
-                uwbSession.setHasNonPrivilegedFgApp(newModeHasNonPrivilegedFgApp);
+                uwbSession.setHasNonPrivilegedFgAppOrService(newModeHasNonPrivilegedFgAppOrService);
                 int sessionId = uwbSession.getSessionId();
                 Log.i(TAG, "App state change for session " + sessionId + ". IsFg: "
-                        + newModeHasNonPrivilegedFgApp);
-                // Reconfigure the session based on the new fg/bg state if
-                // NtfConfigEnableDisable is supported.
-                if (isRangeDataNtfConfigEnableDisableSupported()) {
-                    Log.i(TAG, "Session " + sessionId
-                            + " reconfiguring ntf control due to app state change");
-                    uwbSession.reconfigureFiraSessionOnFgStateChange();
-                }
+                        + newModeHasNonPrivilegedFgAppOrService);
+                // Reconfigure the session based on the new fg/bg state
+                Log.i(TAG, "Session " + sessionId
+                        + " reconfiguring ntf control due to app state change");
+                uwbSession.reconfigureFiraSessionOnFgStateChange();
                 // Recalculate session priority based on the new fg/bg state.
                 if (!uwbSession.mSessionPriorityOverride) {
                     int newSessionPriority = uwbSession.calculateSessionPriority();
@@ -555,13 +530,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             Log.d(TAG, "Found a 3p app/service in the attribution source of request: "
                     + nonPrivilegedAppAttrSource);
             // TODO(b/211445008): Move this operation to uwb thread.
-            long identity = Binder.clearCallingIdentity();
-            boolean hasNonPrivilegedFgApp = mUwbInjector.isForegroundAppOrService(
+            boolean hasNonPrivilegedFgAppOrService = mUwbInjector.isForegroundAppOrService(
                     nonPrivilegedAppAttrSource.getUid(),
                     nonPrivilegedAppAttrSource.getPackageName());
-            Binder.restoreCallingIdentity(identity);
-            uwbSession.setHasNonPrivilegedFgApp(hasNonPrivilegedFgApp);
-            if (!hasNonPrivilegedFgApp) {
+            uwbSession.setHasNonPrivilegedFgAppOrService(hasNonPrivilegedFgAppOrService);
+            if (!hasNonPrivilegedFgAppOrService) {
                 if (!mUwbInjector.getDeviceConfigFacade().isBackgroundRangingEnabled()) {
                     Log.e(TAG, "openRanging - System policy disallows for non fg 3p apps");
                     rangingCallbacks.onRangingOpenFailed(sessionHandle,
@@ -1470,6 +1443,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                 }
                                 mSessionNotificationManager.onRangingStarted(
                                         uwbSession, rangingStartedParams);
+                                if (uwbSession.hasNonPrivilegedApp()
+                                        && !uwbSession.hasNonPrivilegedFgAppOrService()) {
+                                    Log.i(TAG, "Session " + uwbSession.getSessionId()
+                                            + " reconfiguring ntf control due to app state change");
+                                    uwbSession.reconfigureFiraSessionOnFgStateChange();
+                                }
                             } else {
                                 status = UwbUciConstants.STATUS_CODE_FAILED;
                                 mSessionNotificationManager.onRangingStartFailed(uwbSession,
@@ -1945,6 +1924,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         private final String mProtocolName;
         private final IBinder mIBinder;
         private final WaitObj mWaitObj;
+        private final AttributionSource mNonPrivilegedAppInAttributionSource;
         private boolean mAcquiredDefaultPose = false;
         private Params mParams;
         private int mSessionState;
@@ -1961,7 +1941,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         private AlarmManager.OnAlarmListener mNonPrivilegedBgAppTimerListener;
         private int mOperationType = OPERATION_TYPE_INIT_SESSION;
         private final String mChipId;
-        private boolean mHasNonPrivilegedFgApp = false;
+        private boolean mHasNonPrivilegedFgAppOrService = false;
         private long mRangingErrorStreakTimeoutMs = RANGING_RESULT_ERROR_NO_TIMEOUT;
         // Use a Map<RemoteMacAddress, SortedMap<SequenceNumber, ReceivedDataInfo>> to store all
         // the Application payload data packets received in this (active) UWB Session.
@@ -1996,11 +1976,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             this.mIUwbRangingCallbacks = iUwbRangingCallbacks;
             this.mIBinder = iUwbRangingCallbacks.asBinder();
             this.mSessionState = UwbUciConstants.UWB_SESSION_STATE_DEINIT;
-            this.mStackSessionPriority = calculateSessionPriority();
             this.mParams = params;
             this.mWaitObj = new WaitObj();
             this.mProfileType = convertProtolNameToProfileType(protocolName);
             this.mChipId = chipId;
+            this.mNonPrivilegedAppInAttributionSource =
+                    getAnyNonPrivilegedAppInAttributionSourceInternal();
+            this.mStackSessionPriority = calculateSessionPriority();
 
             if (params instanceof FiraOpenSessionParams) {
                 FiraOpenSessionParams firaParams = (FiraOpenSessionParams) params;
@@ -2065,16 +2047,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             if (mProtocolName.equals(CccParams.PROTOCOL_NAME)) {
                 return CCC_SESSION_PRIORITY;
             }
-            AttributionSource nonPrivilegedAppAttrSource =
-                    this.getAnyNonPrivilegedAppInAttributionSource();
-            if (nonPrivilegedAppAttrSource == null) {
+            if (mNonPrivilegedAppInAttributionSource == null) {
                 return SYSTEM_APP_SESSION_PRIORITY;
             }
-            long identity = Binder.clearCallingIdentity();
             boolean isFgAppOrService = mUwbInjector.isForegroundAppOrService(
-                    nonPrivilegedAppAttrSource.getUid(),
-                    nonPrivilegedAppAttrSource.getPackageName());
-            Binder.restoreCallingIdentity(identity);
+                    mNonPrivilegedAppInAttributionSource.getUid(),
+                    mNonPrivilegedAppInAttributionSource.getPackageName());
             if (isFgAppOrService) {
                 return FG_SESSION_PRIORITY;
             }
@@ -2091,7 +2069,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
          * @return AttributionSource of first non-system app found in the chain, null otherwise.
          */
         @Nullable
-        public AttributionSource getAnyNonPrivilegedAppInAttributionSource() {
+        private AttributionSource getAnyNonPrivilegedAppInAttributionSourceInternal() {
             // Iterate attribution source chain to ensure that there is no non-fg 3p app in the
             // request.
             AttributionSource attributionSource = mAttributionSource;
@@ -2104,6 +2082,23 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 attributionSource = attributionSource.getNext();
             }
             return null;
+        }
+
+        /**
+         * Check the attribution source chain to check if there are any 3p apps.
+         * @return AttributionSource of first non-system app found in the chain, null otherwise.
+         */
+        @Nullable
+        public AttributionSource getAnyNonPrivilegedAppInAttributionSource() {
+            return mNonPrivilegedAppInAttributionSource;
+        }
+
+        /**
+         * Check the attribution source chain to check if there are any 3p apps.
+         * @return true if 3p app found in attribution source chain.
+         */
+        public boolean hasNonPrivilegedApp() {
+            return mNonPrivilegedAppInAttributionSource != null;
         }
 
         /**
@@ -2496,12 +2491,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             return mWaitObj;
         }
 
-        public boolean hasNonPrivilegedFgApp() {
-            return mHasNonPrivilegedFgApp;
+        public boolean hasNonPrivilegedFgAppOrService() {
+            return mHasNonPrivilegedFgAppOrService;
         }
 
-        public void setHasNonPrivilegedFgApp(boolean hasNonPrivilegedFgApp) {
-            mHasNonPrivilegedFgApp = hasNonPrivilegedFgApp;
+        public void setHasNonPrivilegedFgAppOrService(boolean hasNonPrivilegedFgAppOrService) {
+            mHasNonPrivilegedFgAppOrService = hasNonPrivilegedFgAppOrService;
         }
 
         /**
@@ -2575,7 +2570,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             FiraRangingReconfigureParams.Builder builder =
                     new FiraRangingReconfigureParams.Builder();
             // If app is in fg, use the configured ntf control, else disable.
-            if (mHasNonPrivilegedFgApp) {
+            if (mHasNonPrivilegedFgAppOrService) {
                 FiraOpenSessionParams params = (FiraOpenSessionParams) mParams;
                 builder.setRangeDataNtfConfig(params.getRangeDataNtfConfig())
                         .setRangeDataProximityNear(params.getRangeDataNtfProximityNear())
@@ -2593,7 +2588,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 // When a non-privileged app goes into the background, start a timer (that will stop
                 // the ranging session). If the app goes back into the foreground, the timer will
                 // get reset (but any stopped UWB session will not be auto-resumed).
-                if (!mHasNonPrivilegedFgApp) {
+                if (!mHasNonPrivilegedFgAppOrService) {
                     startNonPrivilegedBgAppTimerIfNotSet();
                 } else {
                     stopNonPrivilegedBgAppTimerIfSet();
