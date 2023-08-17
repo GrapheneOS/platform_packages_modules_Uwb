@@ -138,6 +138,7 @@ public class FiraOpenSessionParams extends FiraParams {
     private final int mMinFramesPerRr;
     private final int mMtuSize;
     private final int mInterFrameInterval;
+    private final int mDlTdoaBlockStriding;
     private final int mUlTdoaTxIntervalMs;
     private final int mUlTdoaRandomWindowMs;
     @UlTdoaDeviceIdType private final int mUlTdoaDeviceIdType;
@@ -242,6 +243,7 @@ public class FiraOpenSessionParams extends FiraParams {
             "mtu_size";
     private static final String KEY_INTER_FRAME_INTERVAL =
             "inter_frame_interval";
+    private static final String KEY_DLTDOA_BLOCK_STRIDING = "dltdoa_block_striding";
     private static final String UL_TDOA_TX_INTERVAL = "ul_tdoa_tx_interval";
     private static final String UL_TDOA_RANDOM_WINDOW = "ul_tdoa_random_window";
     private static final String UL_TDOA_DEVICE_ID_TYPE = "ul_tdoa_device_id_type";
@@ -326,6 +328,7 @@ public class FiraOpenSessionParams extends FiraParams {
             int minFramePerRr,
             int mtuSize,
             int interFrameInterval,
+            int dlTdoaBlockStriding,
             int ulTdoaTxIntervalMs,
             int ulTdoaRandomWindowMs,
             int ulTdoaDeviceIdType,
@@ -407,6 +410,7 @@ public class FiraOpenSessionParams extends FiraParams {
         mMinFramesPerRr = minFramePerRr;
         mMtuSize = mtuSize;
         mInterFrameInterval = interFrameInterval;
+        mDlTdoaBlockStriding = dlTdoaBlockStriding;
         mUlTdoaTxIntervalMs = ulTdoaTxIntervalMs;
         mUlTdoaRandomWindowMs = ulTdoaRandomWindowMs;
         mUlTdoaDeviceIdType = ulTdoaDeviceIdType;
@@ -736,6 +740,10 @@ public class FiraOpenSessionParams extends FiraParams {
         return mInterFrameInterval;
     }
 
+    public int getDlTdoaBlockStriding() {
+        return mDlTdoaBlockStriding;
+    }
+
     public int getUlTdoaTxIntervalMs() {
         return mUlTdoaTxIntervalMs;
     }
@@ -818,6 +826,8 @@ public class FiraOpenSessionParams extends FiraParams {
                 destAddressList[i++] = uwbAddressToLong(destAddress);
             }
             bundle.putLongArray(KEY_DEST_ADDRESS_LIST, destAddressList);
+        } else {
+            bundle.putInt(KEY_DLTDOA_BLOCK_STRIDING, mDlTdoaBlockStriding);
         }
 
         bundle.putLong(KEY_INITIATION_TIME_MS, mInitiationTime);
@@ -1027,6 +1037,7 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setMinFramePerRr(bundle.getInt(KEY_MIN_FRAMES_PER_RR, 1))
                 .setMtuSize(bundle.getInt(KEY_MTU_SIZE, 1048))
                 .setInterFrameInterval(bundle.getInt(KEY_INTER_FRAME_INTERVAL, 1))
+                .setDlTdoaBlockStriding(bundle.getInt(KEY_DLTDOA_BLOCK_STRIDING))
                 .setUlTdoaTxIntervalMs(bundle.getInt(UL_TDOA_TX_INTERVAL))
                 .setUlTdoaRandomWindowMs(bundle.getInt(UL_TDOA_RANDOM_WINDOW))
                 .setUlTdoaDeviceIdType(bundle.getInt(UL_TDOA_DEVICE_ID_TYPE))
@@ -1271,6 +1282,9 @@ public class FiraOpenSessionParams extends FiraParams {
         /** UCI spec default: 1 */
         public int mInterFrameInterval = 1;
 
+        /** UCI spec default: no dltdoa block striding. */
+        private int mDlTdoaBlockStriding = 0;
+
         /** Ul-TDoA Tx Interval in Milliseconds */
         private int mUlTdoaTxIntervalMs = 2000;
 
@@ -1373,6 +1387,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mMinFramesPerRr = builder.mMinFramesPerRr;
             mMtuSize = builder.mMtuSize;
             mInterFrameInterval = builder.mInterFrameInterval;
+            mDlTdoaBlockStriding = builder.mDlTdoaBlockStriding;
             mUlTdoaTxIntervalMs = builder.mUlTdoaTxIntervalMs;
             mUlTdoaRandomWindowMs = builder.mUlTdoaRandomWindowMs;
             mUlTdoaDeviceIdType = builder.mUlTdoaDeviceIdType;
@@ -1458,6 +1473,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mMinFramesPerRr = params.mMinFramesPerRr;
             mMtuSize = params.mMtuSize;
             mInterFrameInterval = params.mInterFrameInterval;
+            mDlTdoaBlockStriding = params.mDlTdoaBlockStriding;
             mUlTdoaTxIntervalMs = params.mUlTdoaTxIntervalMs;
             mUlTdoaRandomWindowMs = params.mUlTdoaRandomWindowMs;
             mUlTdoaDeviceIdType = params.mUlTdoaDeviceIdType;
@@ -1880,6 +1896,11 @@ public class FiraOpenSessionParams extends FiraParams {
             return this;
         }
 
+        public FiraOpenSessionParams.Builder setDlTdoaBlockStriding(int dlTdoaBlockStriding) {
+            mDlTdoaBlockStriding = dlTdoaBlockStriding;
+            return this;
+        }
+
         public FiraOpenSessionParams.Builder setUlTdoaTxIntervalMs(
                 int ulTdoaTxIntervalMs) {
             mUlTdoaTxIntervalMs = ulTdoaTxIntervalMs;
@@ -2178,6 +2199,7 @@ public class FiraOpenSessionParams extends FiraParams {
                     mMinFramesPerRr,
                     mMtuSize,
                     mInterFrameInterval,
+                    mDlTdoaBlockStriding,
                     mUlTdoaTxIntervalMs,
                     mUlTdoaRandomWindowMs,
                     mUlTdoaDeviceIdType,
