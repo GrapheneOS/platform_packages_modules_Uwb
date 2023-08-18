@@ -35,6 +35,8 @@ import com.android.server.uwb.info.UwbPowerStats;
 import com.android.server.uwb.multchip.UwbMultichipData;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 @Keep
 public class NativeUwbManager {
@@ -129,24 +131,26 @@ public class NativeUwbManager {
     /**
      * Enable UWB hardware.
      *
-     * @return : The UwbDeviceInfoResponse, error is indicated by it being null or
-     *           the status code inside it.
+     * @return : {@code Map<String,UwbDeviceInfoResponse>}, error is indicated by it being null.
+     *           The key for the map is the ChipId (string).
      */
     @Nullable
-    public UwbDeviceInfoResponse doInitialize() {
+    public Map<String, UwbDeviceInfoResponse> doInitialize() {
         UwbDeviceInfoResponse deviceInfoResponse = null;
+        Map<String, UwbDeviceInfoResponse> chipIdToDeviceInfoResponseMap = new HashMap<>();
         synchronized (mNativeLock) {
             mDispatcherPointer = nativeDispatcherNew(mUwbMultichipData.getChipIds().toArray());
             for (String chipId : mUwbMultichipData.getChipIds()) {
                 deviceInfoResponse = nativeDoInitialize(chipId);
                 if (deviceInfoResponse == null
                             || deviceInfoResponse.mStatusCode != UwbUciConstants.STATUS_CODE_OK) {
-                    return deviceInfoResponse;
+                    return null;
                 }
+                chipIdToDeviceInfoResponseMap.put(chipId, deviceInfoResponse);
             }
             nativeSetLogMode(mUciLogModeStore.getMode());
         }
-        return deviceInfoResponse;
+        return chipIdToDeviceInfoResponseMap;
     }
 
     /**
