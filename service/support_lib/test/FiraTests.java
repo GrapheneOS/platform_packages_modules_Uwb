@@ -728,4 +728,23 @@ public class FiraTests {
         FiraSpecificationParams fromBundle = FiraSpecificationParams.fromBundle(params.toBundle());
         assertEquals(List.of(), fromBundle.getSupportedChannels());
     }
+
+    @Test
+    public void testFiraProtocolVersion() {
+        FiraProtocolVersion firaVersion = new FiraProtocolVersion(1, 2);
+        assertEquals(1, firaVersion.getMajor());
+        assertEquals(2, firaVersion.getMinor());
+
+        firaVersion = FiraProtocolVersion.fromString("1.3");
+        assertEquals(1, firaVersion.getMajor());
+        assertEquals(3, firaVersion.getMinor());
+
+        firaVersion = FiraProtocolVersion.fromBytes(new byte[]{0x1, 0x4}, 0);
+        assertEquals(1, firaVersion.getMajor());
+        assertEquals(4, firaVersion.getMinor());
+
+        firaVersion = FiraProtocolVersion.fromLEShort((short) 0x1002);
+        assertEquals(2, firaVersion.getMajor());
+        assertEquals(1, firaVersion.getMinor());
+    }
 }
