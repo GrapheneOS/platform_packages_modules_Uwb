@@ -122,6 +122,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     private final UwbInjector mUwbInjector;
     private final Map<String, /* @UwbManager.AdapterStateCallback.State */ Integer>
             mChipIdToStateMap;
+    private Map<String, UwbDeviceInfoResponse> mChipIdToDeviceInfoResponseMap = new HashMap<>();
     private @StateChangeReason int mLastAdapterStateChangedReason = StateChangeReason.UNKNOWN;
     private @AdapterStateCallback.State int mLastAdapterStateNotification = -1;
     private  IUwbVendorUciCallback mCallBack = null;
@@ -430,6 +431,14 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         getSpecificationInfo(chipId);
         mNeedCachedSpecParamsUpdate = false;
         return mCachedSpecificationParams;
+    }
+
+    /**
+     * Get cached CORE_GET_DEVICE_INFO response, for the given Uwb ChipId.
+     */
+    @Nullable
+    public UwbDeviceInfoResponse getCachedDeviceInfoResponse(String chipId) {
+        return mChipIdToDeviceInfoResponseMap.get(chipId);
     }
 
     /**
@@ -909,11 +918,8 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                 }
 
                 try {
-                    UwbDeviceInfoResponse deviceInfoResponse = mNativeUwbManager.doInitialize();
-                    // TODO(b/276825370): Store the deviceInfoResponse for future lookup of UCI
-                    // version.
-                    if (deviceInfoResponse == null
-                            || deviceInfoResponse.mStatusCode != UwbUciConstants.STATUS_CODE_OK) {
+                    Map<String, UwbDeviceInfoResponse> result = mNativeUwbManager.doInitialize();
+                    if (result == null) {
                         Log.e(TAG, "Error enabling UWB");
                         mUwbMetrics.incrementDeviceInitFailureCount();
 
@@ -931,6 +937,8 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                             listener.onFailure();
                         }
                     } else {
+                        mChipIdToDeviceInfoResponseMap = result;
+
                         Log.i(TAG, "Initialization success");
                         /* TODO : keep it until MW, FW fix b/196943897 */
                         mUwbMetrics.incrementDeviceInitSuccessCount();
