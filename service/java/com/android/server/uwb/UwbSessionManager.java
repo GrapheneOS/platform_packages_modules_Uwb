@@ -65,6 +65,7 @@ import com.android.server.uwb.correction.UwbFilterEngine;
 import com.android.server.uwb.correction.pose.ApplicationPoseSource;
 import com.android.server.uwb.correction.pose.IPoseSource;
 import com.android.server.uwb.data.DtTagUpdateRangingRoundsStatus;
+import com.android.server.uwb.data.UwbDeviceInfoResponse;
 import com.android.server.uwb.data.UwbDlTDoAMeasurement;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbOwrAoaMeasurement;
@@ -94,6 +95,7 @@ import com.google.uwb.support.fira.FiraHybridSessionConfig;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraPoseUpdateParams;
+import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
@@ -2274,11 +2276,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             return mDataRepetitionCount;
         }
         public void updateCccParamsOnStart(CccStartRangingParams rangingStartParams) {
-            GenericSpecificationParams specificationParams = mUwbInjector.getUwbServiceCore()
-                    .getCachedSpecificationParams(mChipId);
-            if (specificationParams != null && specificationParams
-                    .getFiraSpecificationParams()
-                    .getMinPhyVersionSupported().getMajor() >= 2
+            UwbDeviceInfoResponse deviceInfo =
+                    mUwbInjector.getUwbServiceCore().getCachedDeviceInfoResponse(mChipId);
+            if (deviceInfo != null
+                    && FiraProtocolVersion.fromLEShort((short) deviceInfo.mUciVersion).getMajor()
+                            >= 2
                     && ((CccOpenRangingParams) mParams).getAbsoluteInitiationTimeUs() == 0
                     && rangingStartParams.getAbsoluteInitiationTimeUs() == 0) {
                 this.mNeedsQueryUwbsTimestamp = true;
@@ -2312,11 +2314,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
             // When the UWBS supports Fira 2.0+ and the application has not configured an absolute
             // UWB initiation time, we must fetch the UWBS timestamp (to compute the absolute time).
-            GenericSpecificationParams specificationParams =
-                    mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(mChipId);
-            if (specificationParams != null
-                    && specificationParams.getFiraSpecificationParams()
-                            .getMinPhyVersionSupported().getMajor() >= 2
+            UwbDeviceInfoResponse deviceInfo =
+                    mUwbInjector.getUwbServiceCore().getCachedDeviceInfoResponse(mChipId);
+            if (deviceInfo != null
+                    && FiraProtocolVersion.fromLEShort((short) deviceInfo.mUciVersion).getMajor()
+                            >= 2
                     && firaOpenSessionParams.getAbsoluteInitiationTime() == 0) {
                 this.mNeedsQueryUwbsTimestamp = true;
             }
