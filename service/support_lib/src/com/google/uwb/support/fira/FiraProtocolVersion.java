@@ -50,6 +50,20 @@ public class FiraProtocolVersion extends ProtocolVersion {
         return new FiraProtocolVersion(major, minor);
     }
 
+    /**
+     * Construct the FiraProtocolVersion from a 2-octet value (received as a Little-Endian short),
+     * that contains the major, minor and maintenance version numbers.
+     * - Octet[0], Bits 0-7: Major version.
+     * - Octet[1], Bits 4-7: Minor version.
+     * - Octet[1], Bits 0-3: Maintenance version.
+     */
+    public static FiraProtocolVersion fromLEShort(short version) {
+        int major = version & 0xFF;
+        int minor = (version >> 12) & 0x0F;
+        // We don't currently store or use the maintenance version number.
+        return new FiraProtocolVersion(major, minor);
+    }
+
     public static int bytesUsed() {
         return FIRA_PACKED_BYTE_COUNT;
     }
