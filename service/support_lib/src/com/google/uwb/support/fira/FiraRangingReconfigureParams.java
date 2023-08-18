@@ -450,13 +450,17 @@ public class FiraRangingReconfigureParams extends FiraParams {
                 checkArgument(uwbAddress.size() == UwbAddress.SHORT_ADDRESS_BYTE_LENGTH);
             }
 
-            if (mAction == P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_16_BYTE) {
-                checkArgument(mSubSessionKeyList != null
-                        && mSubSessionKeyList.length == 16 * mSubSessionIdList.length);
-            }
-            if (mAction == P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_32_BYTE) {
-                checkArgument(mSubSessionKeyList != null
-                        && mSubSessionKeyList.length == 32 * mSubSessionIdList.length);
+            checkArgument(
+                    mSubSessionIdList == null || mSubSessionIdList.length == mAddressList.length);
+
+            if (mSubSessionKeyList != null) {
+                if (mAction == P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_16_BYTE) {
+                    checkArgument(
+                         mSubSessionKeyList.length == 16 * mSubSessionIdList.length);
+                } else if (mAction == P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_32_BYTE) {
+                    checkArgument(
+                         mSubSessionKeyList.length == 32 * mSubSessionIdList.length);
+                }
             }
         }
 

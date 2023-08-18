@@ -57,7 +57,6 @@ public class FiraEncoder extends TlvEncoder {
 
     private TlvBuffer getTlvBufferFromFiraOpenSessionParams(Params baseParam) {
         FiraOpenSessionParams params = (FiraOpenSessionParams) baseParam;
-        int stsConfig = params.getStsConfig();
         int deviceType = params.getDeviceType();
         int resultReportConfig = getResultReportConfig(params);
         int rangingRoundControl = getRangingRoundControl(params);
@@ -163,28 +162,8 @@ public class FiraEncoder extends TlvEncoder {
             }
         }
 
-        if ((stsConfig == FiraParams.STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY)
-                && (deviceType == FiraParams.RANGING_DEVICE_TYPE_CONTROLEE)) {
-            tlvBufferBuilder.putInt(ConfigParam.SUB_SESSION_ID, params.getSubSessionId());
-        }
-        if (stsConfig == FiraParams.STS_CONFIG_STATIC) {
-            tlvBufferBuilder
-                    .putByteArray(ConfigParam.VENDOR_ID, params.getVendorId() != null
-                            ? getComputedVendorId(params.getVendorId())
-                            : null)
-                    .putByteArray(ConfigParam.STATIC_STS_IV, params.getStaticStsIV());
-        } else if ((stsConfig == FiraParams.STS_CONFIG_PROVISIONED)
-                || (stsConfig
-                == FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY)) {
-            tlvBufferBuilder.putByteArray(ConfigParam.SESSION_KEY, params.getSessionKey());
-            if (stsConfig
-                    == FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY
-                    && (deviceType == FiraParams.RANGING_DEVICE_TYPE_CONTROLEE)) {
-                tlvBufferBuilder.putInt(ConfigParam.SUB_SESSION_ID, params.getSubSessionId());
-                tlvBufferBuilder.putByteArray(ConfigParam.SUBSESSION_KEY,
-                        params.getSubsessionKey());
-            }
-        }
+        configureStsParameters(tlvBufferBuilder, params);
+
         if (params.getAoaResultRequest()
                 == FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_INTERLEAVED) {
             tlvBufferBuilder.putByte(ConfigParam.NUM_RANGE_MEASUREMENTS,
@@ -258,6 +237,37 @@ public class FiraEncoder extends TlvEncoder {
             }
         }
         return false;
+    }
+
+    private void configureStsParameters(TlvBuffer.Builder tlvBufferBuilder,
+        FiraOpenSessionParams params) {
+        int stsConfig = params.getStsConfig();
+
+        if (stsConfig == FiraParams.STS_CONFIG_STATIC) {
+             tlvBufferBuilder
+                    .putByteArray(ConfigParam.VENDOR_ID, params.getVendorId() != null
+                            ? getComputedVendorId(params.getVendorId()): null)
+                    .putByteArray(ConfigParam.STATIC_STS_IV, params.getStaticStsIV());
+        } else if (stsConfig == FiraParams.STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY) {
+            if (params.getDeviceType() == FiraParams.RANGING_DEVICE_TYPE_CONTROLEE) {
+                tlvBufferBuilder.putInt(ConfigParam.SUB_SESSION_ID, params.getSubSessionId());
+            }
+        } else if (stsConfig == FiraParams.STS_CONFIG_PROVISIONED) {
+            if (params.getSessionKey() != null ) {
+                tlvBufferBuilder.putByteArray(ConfigParam.SESSION_KEY, params.getSessionKey());
+            }
+        } else if (stsConfig == FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
+            if (params.getDeviceType() == FiraParams.RANGING_DEVICE_TYPE_CONTROLEE) {
+                tlvBufferBuilder.putInt(ConfigParam.SUB_SESSION_ID, params.getSubSessionId());
+                if (params.getSubsessionKey() != null ) {
+                    tlvBufferBuilder.
+                          putByteArray(ConfigParam.SUBSESSION_KEY, params.getSubsessionKey());
+                }
+            }
+            if (params.getSessionKey() != null ) {
+                tlvBufferBuilder.putByteArray(ConfigParam.SESSION_KEY, params.getSessionKey());
+            }
+        }
     }
 
     private byte[] getUlTdoaDeviceId(int ulTdoaDeviceIdType, byte[] ulTdoaDeviceId) {

@@ -23,8 +23,12 @@ import static com.android.server.uwb.data.UwbConfig.OOB_TYPE_BLE;
 import static com.android.server.uwb.data.UwbConfig.PERIPHERAL;
 
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
+import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP1;
 import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP3;
 import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_DYNAMIC;
+import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY;
+import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY;
+
 
 import com.android.server.uwb.data.UwbConfig;
 
@@ -35,6 +39,10 @@ public class PacsProfile {
 
     /** PACS controller config */
     private static UwbConfig sController;
+
+    private static UwbConfig sControleeForDynamicSts;
+
+    private static UwbConfig sControleeForProvisionedSts;
 
     public static UwbConfig getPacsControleeProfile() {
         if (sControlee == null) {
@@ -67,5 +75,45 @@ public class PacsProfile {
                     .build();
         }
         return sController;
+    }
+
+    /**
+      * Used for testing, PACS controlee profile for
+      * STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY.
+      */
+    public static UwbConfig getPacsControlleeProfileForDynamicStsInd() {
+        if (sControleeForDynamicSts == null) {
+            UwbConfig.Builder builder = new UwbConfig.Builder();
+            sControleeForDynamicSts = builder
+                    .setUwbRole(CONTROLEE_AND_RESPONDER)
+                    .setStsConfig(STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY)
+                    .setMultiNodeMode(MULTI_NODE_MODE_ONE_TO_MANY)
+                    .setRframeConfig(RFRAME_CONFIG_SP1)
+                    .setTofReport(true)
+                    .setOobType(OOB_TYPE_BLE)
+                    .setOobBleRole(CENTRAL)
+                    .build();
+        }
+        return sControleeForDynamicSts;
+    }
+
+    /**
+      * Used for testing, PACS controlee profile for
+      * STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY.
+      */
+    public static UwbConfig getPacsControlleeProfileForProvSTSInd() {
+        if (sControleeForProvisionedSts == null) {
+            UwbConfig.Builder builder = new UwbConfig.Builder();
+            sControleeForProvisionedSts = builder
+                    .setUwbRole(CONTROLEE_AND_RESPONDER)
+                    .setStsConfig(STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY)
+                    .setMultiNodeMode(MULTI_NODE_MODE_ONE_TO_MANY)
+                    .setRframeConfig(RFRAME_CONFIG_SP1)
+                    .setTofReport(true)
+                    .setOobType(OOB_TYPE_BLE)
+                    .setOobBleRole(CENTRAL)
+                    .build();
+        }
+        return sControleeForProvisionedSts;
     }
 }
