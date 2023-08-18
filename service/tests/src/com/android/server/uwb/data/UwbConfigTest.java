@@ -29,8 +29,11 @@ import static com.google.uwb.support.fira.FiraParams.PRF_MODE_BPRF;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_RESPONDER;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLEE;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
+import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP1;
 import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP3;
 import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_DYNAMIC;
+import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY;
+import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY;
 import static com.google.uwb.support.fira.FiraParams.TIME_SCHEDULED_RANGING;
 import static com.google.uwb.support.fira.FiraParams.UWB_CHANNEL_9;
 import static com.google.uwb.support.fira.FiraParams.UWB_PREAMBLE_CODE_INDEX_10;
@@ -233,7 +236,6 @@ public class UwbConfigTest {
                 mIUwbRangingCallbacks, mHandler, TEST_CHIP_ID);
 
         pacsControleeSession.mSessionInfo.setSessionId(10);
-        pacsControleeSession.mSessionInfo.setSubSessionId(24);
         pacsControleeSession.mSessionInfo
                 .setUwbAddress(UwbAddress.fromBytes(new byte[]{0x0A, 0x01}));
         pacsControleeSession.mSessionInfo.mDestAddressList
@@ -243,7 +245,6 @@ public class UwbConfigTest {
                 UwbConfig.getOpenSessionParams(pacsControleeSession.mSessionInfo, controleeConfig);
 
         assertEquals(controleeParams.getSessionId(), 10);
-        assertEquals(controleeParams.getSubSessionId(), 24);
         assertEquals(controleeParams.getDeviceRole(), RANGING_DEVICE_ROLE_RESPONDER);
         assertEquals(controleeParams.getDeviceType(), RANGING_DEVICE_TYPE_CONTROLEE);
 
@@ -269,6 +270,65 @@ public class UwbConfigTest {
         assertEquals(controllerParams.getSubSessionId(), 0);
         assertEquals(controllerParams.getDeviceRole(), RANGING_DEVICE_ROLE_RESPONDER);
         assertEquals(controllerParams.getDeviceType(), RANGING_DEVICE_TYPE_CONTROLEE);
+    }
 
+    @Test
+    public void testGetOpenSessionParamsForDynamicStsIndKey() {
+        UwbConfig controleeConfig = PacsProfile.getPacsControlleeProfileForDynamicStsInd();
+        SessionHandle sessionHandleControlee = mock(SessionHandle.class);
+
+        PacsControleeSession pacsControleeSession = new PacsControleeSession(
+                sessionHandleControlee, mAttributionSource, mContext, mUwbInjector,
+                mServiceProfileInfo,
+                mIUwbRangingCallbacks, mHandler, TEST_CHIP_ID);
+
+        pacsControleeSession.mSessionInfo.setSessionId(10);
+        pacsControleeSession.mSessionInfo.setSubSessionId(24);
+        pacsControleeSession.mSessionInfo
+                .setUwbAddress(UwbAddress.fromBytes(new byte[]{0x0A, 0x01}));
+        pacsControleeSession.mSessionInfo.mDestAddressList
+                .add(UwbAddress.fromBytes(new byte[]{0x0B, 0x01}));
+
+        FiraOpenSessionParams controleeParams =
+                UwbConfig.getOpenSessionParams(pacsControleeSession.mSessionInfo, controleeConfig);
+
+        assertEquals(controleeParams.getSessionId(), 10);
+        assertEquals(controleeParams.getSubSessionId(), 24);
+        assertEquals(controleeParams.getDeviceRole(), RANGING_DEVICE_ROLE_RESPONDER);
+        assertEquals(controleeParams.getDeviceType(), RANGING_DEVICE_TYPE_CONTROLEE);
+    }
+
+    @Test
+    public void testPacsControllerProfileForProvSTSIndKey() {
+        byte[] subSessionKey = new byte[]{0x6, 0x79, 0x6, 0x79, 0x6, 0x79, 0x6,
+                                 0x79, 0x6, 0x79, 0x6, 0x79, 0x6, 0x79, 0x6, 0x79};
+        byte[] sessionKey = new byte[]{0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5,
+                                 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78};
+        UwbConfig uwbConfig = PacsProfile.getPacsControlleeProfileForProvSTSInd();
+        SessionHandle sessionHandleControlee = mock(SessionHandle.class);
+
+        PacsControleeSession pacsControleeSession = new PacsControleeSession(
+                sessionHandleControlee, mAttributionSource, mContext, mUwbInjector,
+                mServiceProfileInfo,
+                mIUwbRangingCallbacks, mHandler, TEST_CHIP_ID);
+
+        pacsControleeSession.mSessionInfo.setSessionId(10);
+        pacsControleeSession.mSessionInfo.setSubSessionId(24);
+        pacsControleeSession.mSessionInfo.setSubSessionKey(subSessionKey);
+        pacsControleeSession.mSessionInfo.setSessionKey(sessionKey);
+        pacsControleeSession.mSessionInfo
+                .setUwbAddress(UwbAddress.fromBytes(new byte[]{0x0A, 0x01}));
+        pacsControleeSession.mSessionInfo.mDestAddressList
+                .add(UwbAddress.fromBytes(new byte[]{0x0B, 0x01}));
+
+        FiraOpenSessionParams controleeParams =
+                UwbConfig.getOpenSessionParams(pacsControleeSession.mSessionInfo, uwbConfig);
+
+        assertEquals(controleeParams.getSessionId(), 10);
+        assertEquals(controleeParams.getSubSessionId(), 24);
+        assertEquals(controleeParams.getSubsessionKey(), subSessionKey);
+        assertEquals(controleeParams.getSessionKey(), sessionKey);
+        assertEquals(controleeParams.getDeviceRole(), RANGING_DEVICE_ROLE_RESPONDER);
+        assertEquals(controleeParams.getDeviceType(), RANGING_DEVICE_TYPE_CONTROLEE);
     }
 }
