@@ -203,15 +203,19 @@ public class FiraControleeParams extends FiraParams {
             }
 
             checkArgument(
-                    mSubSessionIdList == null || mSubSessionIdList.length == mAddressList.length);
+                    mSubSessionIdList == null
+                            || mSubSessionIdList.length == mAddressList.length);
 
-            if (mAction == P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_16_BYTE) {
-                checkArgument(mSubSessionKeyList != null
-                        && mSubSessionKeyList.length == 16 * mSubSessionIdList.length);
-            }
-            if (mAction == P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_32_BYTE) {
-                checkArgument(mSubSessionKeyList != null
-                        && mSubSessionKeyList.length == 32 * mSubSessionIdList.length);
+            // SubSessionKey may not always be present as it can be read from secure component
+            // also.
+            if (mSubSessionKeyList != null) {
+                if (mAction == P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_16_BYTE) {
+                    checkArgument(
+                         mSubSessionKeyList.length == 16 * mSubSessionIdList.length);
+                } else if (mAction == P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_32_BYTE) {
+                    checkArgument(
+                         mSubSessionKeyList.length == 32 * mSubSessionIdList.length);
+                }
             }
         }
 

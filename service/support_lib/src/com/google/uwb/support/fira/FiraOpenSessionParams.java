@@ -519,7 +519,7 @@ public class FiraOpenSessionParams extends FiraParams {
         return mMeasurementReportType;
     }
 
-    @MeasurementReportType
+    @MeasurementReportPhase
     public int getMeasurementReportPhase() {
         return mMeasurementReportPhase;
     }
@@ -848,19 +848,21 @@ public class FiraOpenSessionParams extends FiraParams {
         bundle.putInt(KEY_SFD_ID, mSfdId);
         bundle.putInt(KEY_STS_SEGMENT_COUNT, mStsSegmentCount);
         bundle.putInt(KEY_STS_LENGTH, mStsLength);
-        bundle.putIntArray(KEY_SESSION_KEY, byteArrayToIntArray(mSessionKey));
-        bundle.putIntArray(KEY_SUBSESSION_KEY, byteArrayToIntArray(mSubSessionKey));
         bundle.putInt(KEY_PSDU_DATA_RATE, mPsduDataRate);
         bundle.putInt(KEY_BPRF_PHR_DATA_RATE, mBprfPhrDataRate);
         bundle.putInt(KEY_FCS_TYPE, mFcsType);
         bundle.putBoolean(
                 KEY_IS_TX_ADAPTIVE_PAYLOAD_POWER_ENABLED, mIsTxAdaptivePayloadPowerEnabled);
         bundle.putInt(KEY_STS_CONFIG, mStsConfig);
-        if (mStsConfig == STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY) {
+        if (mStsConfig == STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY
+            || mStsConfig == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
             bundle.putInt(KEY_SUB_SESSION_ID, mSubSessionId);
         }
-        if (mStsConfig == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
-            bundle.putInt(KEY_SUB_SESSION_ID, mSubSessionId);
+        if (mSessionKey != null) {
+            bundle.putIntArray(KEY_SESSION_KEY, byteArrayToIntArray(mSessionKey));
+        }
+        if (mSubSessionKey != null) {
+            bundle.putIntArray(KEY_SUBSESSION_KEY, byteArrayToIntArray(mSubSessionKey));
         }
         bundle.putIntArray(KEY_VENDOR_ID, byteArrayToIntArray(mVendorId));
         bundle.putIntArray(KEY_STATIC_STS_IV, byteArrayToIntArray(mStaticStsIV));
@@ -1975,28 +1977,25 @@ public class FiraOpenSessionParams extends FiraParams {
                 checkArgument(mStaticStsIV != null && mStaticStsIV.length == 6);
             }
 
-            if (mStsConfig != STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY) {
-                // Sub Session ID is used for dynamic individual key STS only.
-                if (!mSubSessionId.isSet()) {
-                    mSubSessionId.set(0);
-                }
+            if ((mStsConfig == STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY ||
+                 mStsConfig == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) &&
+                 (mDeviceType.get() == RANGING_DEVICE_TYPE_CONTROLEE)) {
+                // Sub Session ID is used for dynamic/Provisional individual key and
+                // for controlee device.
+                checkArgument(mSubSessionId.isSet());
+            } else {
+                mSubSessionId.set(0);
             }
 
-            if (mStsConfig == STS_CONFIG_PROVISIONED) {
-                checkArgument(mSessionKey != null
-                        && (mSessionKey.length == 16 || mSessionKey.length == 32));
+            if (mStsConfig == STS_CONFIG_PROVISIONED && mSessionKey != null) {
+                checkArgument(mSessionKey.length == 16 || mSessionKey.length == 32);
             }
 
-            if (mStsConfig == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
-                checkArgument(mSessionKey != null
-                        && (mSessionKey.length == 16 || mSessionKey.length == 32));
-                if (mDeviceType.get() == RANGING_DEVICE_TYPE_CONTROLEE) {
-                    if (!mSubSessionId.isSet()) {
-                        mSubSessionId.set(0);
-                    }
-                    checkArgument(mSubsessionKey != null
-                            && (mSubsessionKey.length == 16 || mSubsessionKey.length == 32));
-                }
+            if (mStsConfig == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY
+                && mDeviceType.get() == RANGING_DEVICE_TYPE_CONTROLEE && mSubsessionKey != null) {
+                checkArgument(mSessionKey != null &&
+                        (mSessionKey.length == 16 || mSessionKey.length == 32));
+                checkArgument(mSubsessionKey.length == 16 || mSubsessionKey.length == 32);
             }
         }
 
