@@ -219,6 +219,8 @@ public abstract class RangingSessionController extends StateMachine {
         public final String mChipId;
         public SessionData mSessionData;
         private Optional<byte[]> mSharedSessionKeyInfo = Optional.empty();
+        public Optional<byte[]> mSubSessionKey = Optional.empty();
+        public Optional<byte[]> mSessionKey = Optional.empty();
 
         public SessionInfo(AttributionSource attributionSource, SessionHandle sessionHandle,
                 ServiceProfileInfo serviceProfileInfo,
@@ -256,6 +258,13 @@ public abstract class RangingSessionController extends StateMachine {
             this.subSessionId = Optional.of(subSessionId);
         }
 
+        public void setSubSessionKey(byte[] subSessionKey) {
+            this.mSubSessionKey = Optional.of(subSessionKey);
+        }
+
+        public void setSessionKey(byte[] sessionKey) {
+            this.mSessionKey = Optional.of(sessionKey);
+        }
         /**  Gets the session key info, required for controller of multicast case. */
         @NonNull
         public byte[] getSharedSessionKeyInfo() {

@@ -563,6 +563,8 @@ public class UwbConfig {
                 .setScheduledMode(uwbConfig.mScheduleMode);
 
         sessionInfo.subSessionId.ifPresent(firaOpenSessionBuilder::setSubSessionId);
+        sessionInfo.mSubSessionKey.ifPresent(firaOpenSessionBuilder::setSubsessionKey);
+        sessionInfo.mSessionKey.ifPresent(firaOpenSessionBuilder::setSessionKey);
 
         return firaOpenSessionBuilder.build();
     }
