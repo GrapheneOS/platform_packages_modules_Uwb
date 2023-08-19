@@ -30,3 +30,5 @@ pub(crate) const DT_RANGING_ROUNDS_STATUS_CLASS: &str =
     "com/android/server/uwb/data/DtTagUpdateRangingRoundsStatus";
 pub(crate) const UWB_DL_TDOA_MEASUREMENT_CLASS: &str =
     "com/android/server/uwb/data/UwbDlTDoAMeasurement";
+pub(crate) const UWB_RADAR_DATA_CLASS: &str = "com/android/server/uwb/data/UwbRadarData";
+pub(crate) const UWB_RADAR_SWEEP_DATA_CLASS: &str = "com/android/server/uwb/data/UwbRadarSweepData";
