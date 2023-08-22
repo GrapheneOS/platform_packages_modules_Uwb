@@ -27,6 +27,9 @@ aidl_interface {
         java: {
             enabled: true,
             min_sdk_version: "30",
+            apex_available: [
+                "com.android.tethering",
+            ],
         },
     },
     visibility: ["//visibility:public"],
