@@ -823,6 +823,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         }
         pw.println("Ranging session opened with params: "
                 + bundleToString(openRangingSessionParams.toBundle()));
+        sSessionIdToInfo.put(sessionId, sessionInfo);
 
         if (openRangingSessionParams instanceof  FiraOpenSessionParams
                 && ((FiraOpenSessionParams) openRangingSessionParams).getDeviceRole()
@@ -863,7 +864,6 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             return;
         }
         pw.println("Ranging session started for sessionId: " + sessionId);
-        sSessionIdToInfo.put(sessionId, sessionInfo);
         while (shouldBlockCall) {
             Thread.sleep(RANGE_CTL_TIMEOUT_MILLIS);
         }
