@@ -146,6 +146,9 @@ public class FiraEncoder extends TlvEncoder {
                     tlvBufferBuilder.putLong(ConfigParam.UWB_INITIATION_TIME,
                             params.getInitiationTime());
                 }
+            } else {
+                tlvBufferBuilder.putByte(ConfigParam.DL_TDOA_BLOCK_STRIDING,
+                    (byte) params.getDlTdoaBlockStriding());
             }
             tlvBufferBuilder.putByte(ConfigParam.LINK_LAYER_MODE, (byte) params.getLinkLayerMode())
                     .putByte(ConfigParam.DATA_REPETITION_COUNT,
