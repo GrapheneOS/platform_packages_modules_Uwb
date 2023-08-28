@@ -18,7 +18,6 @@ package {
 
 android_test {
     name: "CtsUwbTestCases",
-    enabled: false,
     defaults: [
         "cts_defaults",
     ],
