@@ -40,7 +40,7 @@ public class GenericSpecificationParams extends GenericParams {
     private static final int BUNDLE_VERSION_1 = 1;
     private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_1;
 
-    private final FiraSpecificationParams mFiraSpecificationParams;
+    private FiraSpecificationParams mFiraSpecificationParams;
     private final CccSpecificationParams mCccSpecificationParams;
     private final RadarSpecificationParams mRadarSpecificationParams;
     private final boolean mHasPowerStatsSupport;
@@ -86,6 +86,10 @@ public class GenericSpecificationParams extends GenericParams {
      */
     public boolean hasPowerStatsSupport() {
         return mHasPowerStatsSupport;
+    }
+
+    public void setFiraSpecificationParams(FiraSpecificationParams params) {
+        mFiraSpecificationParams = params;
     }
 
     @Override
