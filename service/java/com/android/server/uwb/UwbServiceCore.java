@@ -67,6 +67,7 @@ import com.google.uwb.support.fira.FiraControleeParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
+import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.fira.FiraSuspendRangingParams;
 import com.google.uwb.support.generic.GenericParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
@@ -458,6 +459,15 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                 || specificationParams.second == null)  {
             Log.e(TAG, "Failed to retrieve specification params");
             return new PersistableBundle();
+        }
+        if (specificationParams.second.getFiraSpecificationParams() != null) {
+            FiraSpecificationParams firaSpecificationParams =
+                    new FiraSpecificationParams.Builder(
+                            specificationParams.second.getFiraSpecificationParams())
+                            .setBackgroundRangingSupport(mUwbInjector.getDeviceConfigFacade()
+                                    .isBackgroundRangingEnabled())
+                            .build();
+            specificationParams.second.setFiraSpecificationParams(firaSpecificationParams);
         }
         mCachedSpecificationParams = specificationParams.second;
         return specificationParams.second.toBundle();
