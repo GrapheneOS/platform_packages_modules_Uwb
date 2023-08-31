@@ -637,6 +637,7 @@ public class FiraTests {
         int deviceType = RANGING_DEVICE_TYPE_CONTROLLER;
         boolean suspendRangingSupport = true;
         int sessionKeyLength = 1;
+        boolean hasBackgroundSupport = true;
 
         FiraSpecificationParams params =
                 new FiraSpecificationParams.Builder()
@@ -664,6 +665,7 @@ public class FiraTests {
                         .setDeviceType(deviceType)
                         .setSuspendRangingSupport(suspendRangingSupport)
                         .setSessionKeyLength(sessionKeyLength)
+                        .setBackgroundRangingSupport(false)
                         .build();
         assertEquals(minPhyVersionSupported, params.getMinPhyVersionSupported());
         assertEquals(maxPhyVersionSupported, params.getMaxPhyVersionSupported());
@@ -689,6 +691,7 @@ public class FiraTests {
         assertEquals(deviceType, params.getDeviceType());
         assertEquals(suspendRangingSupport, params.hasSuspendRangingSupport());
         assertEquals(sessionKeyLength, params.getSessionKeyLength());
+        assertEquals(false, params.hasBackgroundRangingSupport());
 
         FiraSpecificationParams fromBundle = FiraSpecificationParams.fromBundle(params.toBundle());
         assertEquals(minPhyVersionSupported, fromBundle.getMinPhyVersionSupported());
@@ -714,8 +717,40 @@ public class FiraTests {
         assertEquals(deviceType, fromBundle.getDeviceType());
         assertEquals(suspendRangingSupport, fromBundle.hasSuspendRangingSupport());
         assertEquals(sessionKeyLength, fromBundle.getSessionKeyLength());
+        assertEquals(false, fromBundle.hasBackgroundRangingSupport());
         verifyProtocolPresent(params);
         verifyBundlesEqual(params, fromBundle);
+
+        FiraSpecificationParams fromCopy = new FiraSpecificationParams.Builder(params)
+                .setBackgroundRangingSupport(hasBackgroundSupport)
+                .build();
+
+        assertEquals(minPhyVersionSupported, fromCopy.getMinPhyVersionSupported());
+        assertEquals(maxPhyVersionSupported, fromCopy.getMaxPhyVersionSupported());
+        assertEquals(minMacVersionSupported, fromCopy.getMinMacVersionSupported());
+        assertEquals(maxMacVersionSupported, fromCopy.getMaxMacVersionSupported());
+        assertEquals(supportedChannels, fromCopy.getSupportedChannels());
+        assertEquals(aoaCapabilities, fromCopy.getAoaCapabilities());
+        assertEquals(deviceRoleCapabilities, fromCopy.getDeviceRoleCapabilities());
+        assertEquals(hasBlockStridingSupport, fromCopy.hasBlockStridingSupport());
+        assertEquals(hasNonDeferredModeSupport, fromCopy.hasNonDeferredModeSupport());
+        assertEquals(hasInitiationTimeSupport, params.hasInitiationTimeSupport());
+        assertEquals(multiNodeCapabilities, fromCopy.getMultiNodeCapabilities());
+        assertEquals(prfCapabilities, fromCopy.getPrfCapabilities());
+        assertEquals(rangingRoundCapabilities, fromCopy.getRangingRoundCapabilities());
+        assertEquals(rframeCapabilities, fromCopy.getRframeCapabilities());
+        assertEquals(stsCapabilities, fromCopy.getStsCapabilities());
+        assertEquals(psduDataRateCapabilities, fromCopy.getPsduDataRateCapabilities());
+        assertEquals(bprfCapabilities, fromCopy.getBprfParameterSetCapabilities());
+        assertEquals(hprfCapabilities, fromCopy.getHprfParameterSetCapabilities());
+        assertEquals(rangeDataNtfConfigCapabilities,
+                fromCopy.getRangeDataNtfConfigCapabilities());
+        assertEquals(deviceType, fromCopy.getDeviceType());
+        assertEquals(suspendRangingSupport, fromCopy.hasSuspendRangingSupport());
+        assertEquals(sessionKeyLength, fromCopy.getSessionKeyLength());
+        assertEquals(hasBackgroundSupport, fromCopy.hasBackgroundRangingSupport());
+        verifyProtocolPresent(params);
+        verifyBundlesEqual(params, fromCopy);
     }
 
     @Test
