@@ -163,4 +163,9 @@ public class RangingCapabilities {
     public List<Integer> getSupportedRangingUpdateRates() {
         return mSupportedRangingUpdateRates;
     }
+
+    /** Whether background ranging is supported. */
+    public boolean hasBackgroundRangingSupport() {
+        return mHasBackgroundRangingSupport;
+    }
 }
