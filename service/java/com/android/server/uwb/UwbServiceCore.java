@@ -515,7 +515,9 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         } else if (FiraParams.isCorrectProtocol(params)) {
             FiraOpenSessionParams.Builder builder =
                     new FiraOpenSessionParams.Builder(FiraOpenSessionParams.fromBundle(params));
-            if (getCachedSpecificationParams(chipId)
+            UwbDeviceInfoResponse deviceInfo = getCachedDeviceInfoResponse(chipId);
+            if ((deviceInfo != null && deviceInfo.mUciVersion >= 2)
+                    || getCachedSpecificationParams(chipId)
                     .getFiraSpecificationParams().hasRssiReportingSupport()) {
                 builder.setIsRssiReportingEnabled(true);
             }
