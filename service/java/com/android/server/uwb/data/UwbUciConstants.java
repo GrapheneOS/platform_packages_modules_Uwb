@@ -178,6 +178,7 @@ public class UwbUciConstants {
     public static final int STATUS_CODE_UNKNOWN_OID = FiraParams.STATUS_CODE_UNKNOWN_OID;
     public static final int STATUS_CODE_READ_ONLY = FiraParams.STATUS_CODE_READ_ONLY;
     public static final int STATUS_CODE_COMMAND_RETRY = FiraParams.STATUS_CODE_COMMAND_RETRY;
+    public static final int STATUS_CODE_UNKNOWN = FiraParams.STATUS_CODE_UNKNOWN;
     /* UWB Session Specific Status Codes */
     public static final int STATUS_CODE_ERROR_SESSION_NOT_EXIST =
             FiraParams.STATUS_CODE_ERROR_SESSION_NOT_EXIST;
