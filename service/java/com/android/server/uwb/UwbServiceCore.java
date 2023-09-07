@@ -271,7 +271,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         mUwbTask.computeAndNotifyAdapterStateChange(
                 getReasonFromDeviceState(deviceState),
                 mUwbCountryCode.getCountryCode(),
-                Optional.empty());
+                mUwbCountryCode.getCountryCodeStatus());
     }
 
     void updateDeviceState(int deviceState, String chipId) {
@@ -362,7 +362,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     }
 
     @Override
-    public void onCountryCodeChanged(@Nullable String countryCode) {
+    public void onCountryCodeChanged(int setCountryCodeStatus, @Nullable String countryCode) {
         Log.i(TAG, "Received onCountryCodeChanged() with countryCode = " + countryCode);
 
         // Notify the current UWB adapter state. For example:
@@ -373,7 +373,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         mUwbTask.computeAndNotifyAdapterStateChange(
                 getReasonFromDeviceState(getInternalAdapterState()),
                 countryCode,
-                Optional.empty());
+                Optional.of(setCountryCodeStatus));
         Log.d(TAG, "Resetting cached specifications");
         mNeedCachedSpecParamsUpdate = true;
     }
@@ -696,14 +696,15 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
      * Get the UWB Adapter State.
      */
     public /* @UwbManager.AdapterStateCallback.State */ int getAdapterState() {
-        return computeAdapterState(mUwbCountryCode.getCountryCode(), Optional.empty());
+        return computeAdapterState(
+                mUwbCountryCode.getCountryCode(), mUwbCountryCode.getCountryCodeStatus());
     }
 
     private int computeAdapterState(String countryCode, Optional<Integer> setCountryCodeStatus) {
         // When either the country code is not valid or setting it in UWBS failed with an error,
         // notify the UWB stack state as DISABLED (even though internally the UWB device state
         // may be stored as READY), so that applications wait for starting a ranging session.
-        if (!mUwbCountryCode.isValid(countryCode)
+        if (!UwbCountryCode.isValid(countryCode)
                 || (setCountryCodeStatus.isPresent()
                 && setCountryCodeStatus.get() != STATUS_CODE_OK)) {
             return AdapterStateCallback.STATE_DISABLED;
@@ -1031,7 +1032,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                 String countryCode, Optional<Integer> setCountryCodeStatus) {
             // When either the country code is not valid or setting it in UWBS failed with the error
             // STATUS_CODE_ANDROID_REGULATION_UWB_OFF, notify with the reason SYSTEM_REGULATION.
-            if (!mUwbCountryCode.isValid(countryCode)
+            if (!UwbCountryCode.isValid(countryCode)
                     || (setCountryCodeStatus.isPresent()
                         && setCountryCodeStatus.get()
                         == UwbUciConstants.STATUS_CODE_ANDROID_REGULATION_UWB_OFF)) {
