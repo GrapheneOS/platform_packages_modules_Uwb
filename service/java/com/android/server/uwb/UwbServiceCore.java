@@ -933,12 +933,12 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                     Map<String, UwbDeviceInfoResponse> result = mNativeUwbManager.doInitialize();
                     if (result == null) {
                         Log.e(TAG, "Error enabling UWB");
-                        mUwbMetrics.incrementDeviceInitFailureCount();
 
                         // Capture a bug report only if the Listener list is empty. This acts as a
                         // proxy for this being the second initialization attempt, since currently
                         // there is only one listener (UwbServiceImpl), which is removed after the
                         // first retry attempt.
+                        mUwbMetrics.incrementDeviceInitFailureCount(mListeners.isEmpty());
                         if (mListeners.isEmpty()) {
                             takBugReportAfterDeviceError("UWB Bugreport: error enabling UWB");
                         }
