@@ -90,8 +90,6 @@ public class FiraEncoder extends TlvEncoder {
                 // n.a. for OWR UL-TDoA and 0x01 for all other RangingRoundUsage values.
                 .putByte(ConfigParam.RANGING_TIME_STRUCT, (byte) 0x01)
                 .putByte(ConfigParam.SLOTS_PER_RR, (byte) params.getSlotsPerRangingRound())
-                .putByte(ConfigParam.TX_ADAPTIVE_PAYLOAD_POWER,
-                        params.isTxAdaptivePayloadPowerEnabled() ? (byte) 1 : (byte) 0)
                 .putByte(ConfigParam.PRF_MODE, (byte) params.getPrfMode())
                 .putByte(ConfigParam.SCHEDULED_MODE, (byte) params.getScheduledMode())
                 .putByte(ConfigParam.KEY_ROTATION,
@@ -163,6 +161,8 @@ public class FiraEncoder extends TlvEncoder {
                         .putInt(ConfigParam.UWB_INITIATION_TIME,
                                 Math.toIntExact(params.getInitiationTime()));
             }
+            tlvBufferBuilder.putByte(ConfigParam.TX_ADAPTIVE_PAYLOAD_POWER,
+                        params.isTxAdaptivePayloadPowerEnabled() ? (byte) 1 : (byte) 0);
         }
 
         configureStsParameters(tlvBufferBuilder, params);
