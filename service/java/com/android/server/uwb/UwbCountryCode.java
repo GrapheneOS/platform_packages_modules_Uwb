@@ -57,6 +57,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -102,6 +103,7 @@ public class UwbCountryCode {
     private String mLocationCountryCode = null;
     private String mOverrideCountryCode = null;
     private String mCountryCode = null;
+    private Optional<Integer> mCountryCodeStatus = Optional.empty();
     private String mCountryCodeUpdatedTimestamp = null;
     private String mWifiCountryTimestamp = null;
     private String mLocationCountryTimestamp = null;
@@ -125,7 +127,16 @@ public class UwbCountryCode {
     }
 
     public interface CountryCodeChangedListener {
-        void onCountryCodeChanged(@Nullable String newCountryCode);
+        /**
+         * Notify listeners about a country code change.
+         * @param statusCode - Status of the UWBS controller configuring the {@code newCountryCode}:
+         *         - STATUS_CODE_OK: The country code was successfully configured by UWBS.
+         *         - STATUS_CODE_ANDROID_REGULATION_UWB_OFF: UWB is not supported in the configured
+         *                   country code.
+         *         - Other status codes returned by the UWBS controller.
+         * @param newCountryCode - The new UWB country code configured in the UWBS controller.
+         */
+        void onCountryCodeChanged(int statusCode, @Nullable String newCountryCode);
     }
 
     public UwbCountryCode(
@@ -342,23 +353,33 @@ public class UwbCountryCode {
         int status = mNativeUwbManager.setCountryCode(country.getBytes(StandardCharsets.UTF_8));
         if (status != STATUS_CODE_OK) {
             Log.i(TAG, "Failed to set country code, with status code: " + status);
-            return new Pair<>(status, country);
         }
         mCountryCode = country;
         mCountryCodeUpdatedTimestamp = LocalDateTime.now().format(FORMATTER);
+        mCountryCodeStatus = Optional.of(status);
+
         for (CountryCodeChangedListener listener : mListeners) {
-            listener.onCountryCodeChanged(country);
+            listener.onCountryCodeChanged(status, country);
         }
-        return new Pair<>(status, mCountryCode);
+        return new Pair<>(status, country);
     }
 
     /**
-     * Get country code
+     * Get country code.
      *
-     * @return true if the country code is set successfully, false otherwise.
+     * @return the country code that was last configured in the UWBS.
      */
     public String getCountryCode() {
         return mCountryCode;
+    }
+
+    /**
+     * Get country code configuration status.
+     *
+     * @return Status of the last attempt to configure a country code in the UWBS.
+     */
+    public Optional<Integer> getCountryCodeStatus() {
+        return mCountryCodeStatus;
     }
 
     /**
@@ -410,6 +431,8 @@ public class UwbCountryCode {
         pw.println("mLocationCountryCode: " + mLocationCountryCode);
         pw.println("mLocationCountryTimestamp: " + mLocationCountryTimestamp);
         pw.println("mCountryCode: " + mCountryCode);
+        pw.println("mCountryCodeStatus: "
+                + (mCountryCodeStatus.isEmpty() ? "none" : mCountryCodeStatus.get()));
         pw.println("mCountryCodeUpdatedTimestamp: " + mCountryCodeUpdatedTimestamp);
         pw.println("---- Dump of UwbCountryCode ----");
     }
