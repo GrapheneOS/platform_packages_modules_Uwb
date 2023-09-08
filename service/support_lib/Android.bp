@@ -30,6 +30,7 @@ java_defaults {
     apex_available: [
         "com.android.uwb",
         "com.android.tethering",
+        "//apex_available:platform",
     ],
     visibility : [
         "//external/sl4a/Common",
