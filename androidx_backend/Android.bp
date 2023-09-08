@@ -55,6 +55,7 @@ java_library {
     ],
     apex_available: [
         "com.android.tethering",
+        "//apex_available:platform",
     ],
     visibility: [
         ":__subpackages__",
@@ -76,5 +77,8 @@ android_app {
         "com.uwb.support.fira",
         "guava",
         "uwb_androidx_backend",
+    ],
+    apex_available: [
+        "//apex_available:platform",
     ],
 }
