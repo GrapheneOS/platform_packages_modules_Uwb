@@ -1140,7 +1140,7 @@ impl NotificationManager for NotificationManagerAndroid {
                 &[
                     // session_token below has already been mapped to session_id by uci layer.
                     jvalue::from(JValue::Long(data_rcv_notification.session_token as i64)),
-                    jvalue::from(JValue::Int(data_rcv_notification.status as i32)),
+                    jvalue::from(JValue::Int(i32::from(data_rcv_notification.status))),
                     jvalue::from(JValue::Long(data_rcv_notification.uci_sequence_num as i64)),
                     jvalue::from(JValue::Object(source_address_jobject)),
                     jvalue::from(JValue::Object(payload_jobject)),
