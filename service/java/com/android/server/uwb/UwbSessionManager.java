@@ -86,9 +86,9 @@ import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccRangingStartedParams;
+import com.google.uwb.support.ccc.CccRangingStoppedParams;
 import com.google.uwb.support.ccc.CccSpecificationParams;
 import com.google.uwb.support.ccc.CccStartRangingParams;
-import com.google.uwb.support.ccc.CccRangingStoppedParams;
 import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
 import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdateStatus;
 import com.google.uwb.support.fira.FiraHybridSessionConfig;
@@ -496,6 +496,15 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     }
 
     private int setAppConfigurations(UwbSession uwbSession) {
+        if (uwbSession.getProtocolName().equals(FiraParams.PROTOCOL_NAME)
+                        && uwbSession.getParams() instanceof FiraOpenSessionParams) {
+            FiraOpenSessionParams params = (FiraOpenSessionParams) uwbSession.getParams();
+            if (mSessionTokenMap.containsKey(params.getReferenceSessionHandle())) {
+                uwbSession.updateFiraParamsForSessionTimeBase(
+                           mSessionTokenMap.get(params.getReferenceSessionHandle()));
+            }
+        }
+
         int status = mConfigurationManager.setAppConfigurations(uwbSession.getSessionId(),
                 uwbSession.getParams(), uwbSession.getChipId());
         if (status == UwbUciConstants.STATUS_CODE_OK
@@ -2325,6 +2334,25 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         }
 
         /**
+         * For Fira 2.0+ controller devices, replace the reference Session's SessionID with
+         * its SessionToken, in the SessionTimeBase AppConfig parameter.
+         */
+        public void updateFiraParamsForSessionTimeBase(int sessionToken) {
+            if (mParams instanceof FiraOpenSessionParams) {
+                FiraOpenSessionParams firaOpenSessionParams = (FiraOpenSessionParams) mParams;
+                int deviceRole = firaOpenSessionParams.getDeviceRole();
+                if (deviceRole == FiraParams.RANGING_DEVICE_TYPE_CONTROLLER
+                           && UwbUtil.isBitSet(firaOpenSessionParams.getReferenceTimeBase(),
+                           FiraParams.SESSION_TIME_BASE_REFERENCE_FEATURE_ENABLED)) {
+                    this.mParams = ((FiraOpenSessionParams) mParams).toBuilder().setSessionTimeBase(
+                        firaOpenSessionParams.getReferenceTimeBase(), sessionToken,
+                        firaOpenSessionParams.getSessionOffsetInMicroSeconds())
+                        .build();
+                }
+            }
+        }
+
+       /**
          * Compute absolute initiation time, by doing a sum of the UWBS Timestamp (in micro-seconds)
          * and the relative initiation time (in milli-seconds). This method should be
          * called only for FiRa UCI ProtocolVersion >= 2.0 devices.
