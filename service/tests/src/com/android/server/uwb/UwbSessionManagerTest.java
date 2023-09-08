@@ -217,6 +217,7 @@ public class UwbSessionManagerTest {
     private static final int HANDLE_ID = 12;
     private static final int MAX_RX_DATA_PACKETS_TO_STORE = 10;
     private static final int PID = Process.myPid();
+    private static final int REFERENCE_SESSION_HANDLE = 10;
 
     @Mock
     private UwbConfigurationManager mUwbConfigurationManager;
@@ -3566,6 +3567,46 @@ public class UwbSessionManagerTest {
         assertThrows(IllegalStateException.class,
                 () -> mUwbSessionManager.queryMaxDataSizeBytes(mockSessionHandle));
     }
+
+    @Test
+    public void testReferenceTimeBase() throws Exception {
+        Params refParams = setupFiraParams(new FiraProtocolVersion(2, 0));
+        FiraOpenSessionParams refFiraParams = new
+                FiraOpenSessionParams.Builder((FiraOpenSessionParams) refParams)
+                        .setSessionId(TEST_SESSION_ID)
+                        .build();
+        UwbSession refUwbSession = setUpUwbSessionForExecution(ATTRIBUTION_SOURCE, refFiraParams);
+        mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, refUwbSession.getSessionHandle(),
+                TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME,
+                refUwbSession.getParams(), refUwbSession.getIUwbRangingCallbacks(), TEST_CHIP_ID);
+        when(mNativeUwbManager.initSession(anyInt(), anyByte(), anyString()))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+        when(mNativeUwbManager.getSessionToken(eq(TEST_SESSION_ID), anyString()))
+                .thenReturn(REFERENCE_SESSION_HANDLE);
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_INIT,
+                UwbUciConstants.UWB_SESSION_STATE_IDLE).when(refUwbSession).getSessionState();
+        mTestLooper.dispatchAll();
+
+        Params params = setupFiraParams(new FiraProtocolVersion(2, 0));
+        FiraOpenSessionParams firaParams = new
+                FiraOpenSessionParams.Builder((FiraOpenSessionParams) params)
+                        .setSessionId(TEST_SESSION_ID_2)
+                        .setSessionTimeBase(1, TEST_SESSION_ID, 200)
+                        .build();
+        UwbSession uwbSession = setUpUwbSessionForExecution(ATTRIBUTION_SOURCE, firaParams);
+
+        when(mNativeUwbManager.initSession(anyInt(), anyByte(), anyString()))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_INIT,
+                UwbUciConstants.UWB_SESSION_STATE_IDLE).when(uwbSession).getSessionState();
+        mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
+                TEST_SESSION_ID_2, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME,
+                uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks(), TEST_CHIP_ID);
+        mTestLooper.dispatchAll();
+
+        verify(uwbSession).updateFiraParamsForSessionTimeBase(REFERENCE_SESSION_HANDLE);
+    }
+
 
     @Test
     public void testSetHybridSessionConfiguration() throws Exception {
