@@ -147,6 +147,9 @@ public class FiraOpenSessionParams extends FiraParams {
     @FilterType private final int mFilterType;
     private final int mMaxNumberOfMeasurements;
     private final boolean mSessionDataTransferStatusNtfConfig;
+    @Nullable private final int mReferenceTimeBase;
+    @Nullable private final int mReferenceSessionHandle;
+    @Nullable private final int mSessionOffsetInMicroSeconds;
     private final int mApplicationDataEndpoint;
 
     private static final int BUNDLE_VERSION_1 = 1;
@@ -253,6 +256,10 @@ public class FiraOpenSessionParams extends FiraParams {
     private static final String KEY_MAX_NUMBER_OF_MEASUREMENTS = "max_number_of_measurements";
     private static final String KEY_SESSION_DATA_TRANSFER_STATUS_NTF_CONFIG =
             "session_data_transfer_status_ntf_config";
+    private static final String KEY_REFERENCE_TIME_BASE = "reference_time_base";
+    private static final String KEY_REFERENCE_SESSION_HANDLE = "reference_session_handle";
+    private static final String KEY_SESSION_OFFSET_IN_MICRO_SECONDS =
+                "session_offset_in_micro_seconds";
     private static final String KEY_APPLICATION_DATA_ENDPOINT = "application_data_endpoint";
 
     private FiraOpenSessionParams(
@@ -337,6 +344,9 @@ public class FiraOpenSessionParams extends FiraParams {
             int filterType,
             int maxNumberOfMeasurements,
             boolean sessionDataTransferStatusNtfConfig,
+            @Nullable int referenceTimeBase,
+            @Nullable int referenceSessionHandle,
+            @Nullable int sessionOffsetInMicroSecond,
             int applicationDataEndpoint) {
         mProtocolVersion = protocolVersion;
         mSessionId = sessionId;
@@ -419,6 +429,9 @@ public class FiraOpenSessionParams extends FiraParams {
         mFilterType = filterType;
         mMaxNumberOfMeasurements = maxNumberOfMeasurements;
         mSessionDataTransferStatusNtfConfig = sessionDataTransferStatusNtfConfig;
+        mReferenceTimeBase = referenceTimeBase;
+        mReferenceSessionHandle = referenceSessionHandle;
+        mSessionOffsetInMicroSeconds = sessionOffsetInMicroSecond;
         mApplicationDataEndpoint = applicationDataEndpoint;
     }
 
@@ -776,6 +789,21 @@ public class FiraOpenSessionParams extends FiraParams {
         return mSessionDataTransferStatusNtfConfig;
     }
 
+    @Nullable
+    public int getReferenceTimeBase() {
+        return mReferenceTimeBase;
+    }
+
+    @Nullable
+    public int getReferenceSessionHandle() {
+        return mReferenceSessionHandle;
+    }
+
+    @Nullable
+    public int getSessionOffsetInMicroSeconds() {
+        return mSessionOffsetInMicroSeconds;
+    }
+
     public int getApplicationDataEndpoint() {
         return mApplicationDataEndpoint;
     }
@@ -915,6 +943,11 @@ public class FiraOpenSessionParams extends FiraParams {
         bundle.putInt(KEY_MAX_NUMBER_OF_MEASUREMENTS, mMaxNumberOfMeasurements);
         bundle.putBoolean(
                 KEY_SESSION_DATA_TRANSFER_STATUS_NTF_CONFIG, mSessionDataTransferStatusNtfConfig);
+        if (mDeviceType == FiraParams.RANGING_DEVICE_TYPE_CONTROLLER) {
+            bundle.putInt(KEY_REFERENCE_TIME_BASE, mReferenceTimeBase);
+            bundle.putInt(KEY_REFERENCE_SESSION_HANDLE, mReferenceSessionHandle);
+            bundle.putInt(KEY_SESSION_OFFSET_IN_MICRO_SECONDS, mSessionOffsetInMicroSeconds);
+        }
         bundle.putInt(KEY_APPLICATION_DATA_ENDPOINT, mApplicationDataEndpoint);
         return bundle;
     }
@@ -1048,6 +1081,9 @@ public class FiraOpenSessionParams extends FiraParams {
                         KEY_MAX_NUMBER_OF_MEASUREMENTS, MAX_NUMBER_OF_MEASUREMENTS_DEFAULT))
                 .setSessionDataTransferStatusNtfConfig(bundle.getBoolean(
                         KEY_SESSION_DATA_TRANSFER_STATUS_NTF_CONFIG))
+                .setSessionTimeBase(bundle.getInt(KEY_REFERENCE_TIME_BASE),
+                        bundle.getInt(KEY_REFERENCE_SESSION_HANDLE),
+                        bundle.getInt(KEY_SESSION_OFFSET_IN_MICRO_SECONDS))
                 .setApplicationDataEndpoint(bundle.getInt(
                         KEY_APPLICATION_DATA_ENDPOINT, APPLICATION_DATA_ENDPOINT_DEFAULT));
 
@@ -1308,6 +1344,13 @@ public class FiraOpenSessionParams extends FiraParams {
         /** UCI spec default: 0x00(Disable) */
         private boolean mSessionDataTransferStatusNtfConfig = false;
 
+        /** UCI spec default: 9 Octets of SESSION_TIME_BASE as per UCI spec*/
+        private int mReferenceTimeBase = 0;
+
+        private int mReferenceSessionHandle = 0;
+
+        private int mSessionOffsetInMicroSeconds = 0;
+
         private int mApplicationDataEndpoint = APPLICATION_DATA_ENDPOINT_DEFAULT;
 
         public Builder() {}
@@ -1395,6 +1438,9 @@ public class FiraOpenSessionParams extends FiraParams {
             mUlTdoaTxTimestampType = builder.mUlTdoaTxTimestampType;
             mMaxNumberOfMeasurements = builder.mMaxNumberOfMeasurements;
             mSessionDataTransferStatusNtfConfig = builder.mSessionDataTransferStatusNtfConfig;
+            mReferenceTimeBase = builder.mReferenceTimeBase;
+            mReferenceSessionHandle = builder.mReferenceSessionHandle;
+            mSessionOffsetInMicroSeconds = builder.mSessionOffsetInMicroSeconds;
             mApplicationDataEndpoint = builder.mApplicationDataEndpoint;
         }
 
@@ -1482,6 +1528,9 @@ public class FiraOpenSessionParams extends FiraParams {
             mFilterType = params.mFilterType;
             mMaxNumberOfMeasurements = params.mMaxNumberOfMeasurements;
             mSessionDataTransferStatusNtfConfig = params.mSessionDataTransferStatusNtfConfig;
+            mReferenceTimeBase = params.mReferenceTimeBase;
+            mReferenceSessionHandle = params.mReferenceSessionHandle;
+            mSessionOffsetInMicroSeconds = params.mSessionOffsetInMicroSeconds;
             mApplicationDataEndpoint = params.mApplicationDataEndpoint;
         }
 
@@ -1965,6 +2014,14 @@ public class FiraOpenSessionParams extends FiraParams {
             return this;
         }
 
+        public FiraOpenSessionParams.Builder setSessionTimeBase(@Nullable int referenceTimeBase,
+                int referenceSessionHandle, int sessionOffsetInMicroSecond) {
+            mReferenceTimeBase = referenceTimeBase;
+            mReferenceSessionHandle = referenceSessionHandle;
+            mSessionOffsetInMicroSeconds = sessionOffsetInMicroSecond;
+            return this;
+        }
+
         public FiraOpenSessionParams.Builder setApplicationDataEndpoint(
                 int applicationDataEndpoint) {
             mApplicationDataEndpoint = applicationDataEndpoint;
@@ -2208,6 +2265,9 @@ public class FiraOpenSessionParams extends FiraParams {
                     mFilterType,
                     mMaxNumberOfMeasurements,
                     mSessionDataTransferStatusNtfConfig,
+                    mReferenceTimeBase,
+                    mReferenceSessionHandle,
+                    mSessionOffsetInMicroSeconds,
                     mApplicationDataEndpoint);
         }
     }
