@@ -68,6 +68,7 @@ android_app {
     sdk_version: "system_UpsideDownCake",
     min_sdk_version: "32",
     certificate: "platform",
+    privileged: true,
     manifest: "AndroidManifest.xml",
     libs: ["android-support-annotations"],
     static_libs: [
@@ -78,7 +79,15 @@ android_app {
         "guava",
         "uwb_androidx_backend",
     ],
+    privapp_allowlist: ":privapp_allowlist_androidx.core.uwb.backend.xml",
     apex_available: [
         "//apex_available:platform",
     ],
+}
+
+prebuilt_etc {
+    name: "privapp_allowlist_androidx.core.uwb.backend.xml",
+    sub_dir: "permissions",
+    src: "androidx.core.uwb.backend.xml",
+    installable: false,
 }
