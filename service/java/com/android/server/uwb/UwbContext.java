@@ -61,7 +61,7 @@ public class UwbContext extends ContextWrapper {
 
         List<ResolveInfo> resolveInfos = getPackageManager().queryIntentActivities(
                 new Intent(ACTION_RESOURCES_APK),
-                PackageManager.MATCH_SYSTEM_ONLY);
+                PackageManager.MATCH_SYSTEM_ONLY | PackageManager.MATCH_DISABLED_COMPONENTS);
 
         // remove apps that don't live in the Uwb apex
         resolveInfos.removeIf(info ->
@@ -86,6 +86,13 @@ public class UwbContext extends ContextWrapper {
         ResolveInfo info = resolveInfos.get(0);
         mUwbOverlayApkPkgName = info.activityInfo.applicationInfo.packageName;
         Log.i(TAG, "Found Uwb Resources APK at: " + mUwbOverlayApkPkgName);
+        int enabledState = getPackageManager().getApplicationEnabledSetting(mUwbOverlayApkPkgName);
+        if (enabledState != PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
+            Log.w(TAG, "Uwb resources APK disabled, state: " + enabledState
+                    + ". Trying to re-enable");
+            getPackageManager().setApplicationEnabledSetting(
+                    mUwbOverlayApkPkgName, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, 0);
+        }
         return mUwbOverlayApkPkgName;
     }
 
