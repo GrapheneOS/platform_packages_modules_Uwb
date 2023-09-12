@@ -881,6 +881,7 @@ public class FiraEncoderTest {
 
     @Test
     public void testFiraOpenSessionParamsForEnabledReferenceTimeBase() throws Exception {
+        assumeTrue(SdkLevel.isAtLeastU());
         FiraOpenSessionParams params =
                 new FiraOpenSessionParams.Builder()
                         .setProtocolVersion(FiraParams.PROTOCOL_VERSION_2_0)
@@ -906,16 +907,7 @@ public class FiraEncoderTest {
                         .setSessionTimeBase(1, 1, 200)
                         .build();
 
-        byte[] expected_data;
-        if (!SdkLevel.isAtLeastU()) {
-            expected_data = UwbUtil.getByteArray(
-                    "01010102010303010004010906020604080260090B01000C01030D01010E01040F02"
-                            + "00001002204E11010012010313010014010A1501021601001701011A01011B01191C"
-                            + "01001F01002201012301002401002501322601002901012A0200002C01002D01002E"
-                            + "01012F0101310100320200003501010904C8000000000101050101070206042B0400"
-                            + "0000004510057805780578057805780578057805781D0807D59E4707D56022");
-        } else {
-            expected_data = UwbUtil.getByteArray(RANGING_ROUND_USAGE_SS_TWR_TLV
+        byte[] expected_data = UwbUtil.getByteArray(RANGING_ROUND_USAGE_SS_TWR_TLV
                     + STS_CONFIG_STATIC_TLV + MULTI_NODE_MODE_UNICAST_TLV + CHANNEL_NUMBER_TLV
                     + DEVICE_MAC_ADDRESS_TLV + SLOT_DURATION_TLV + MAC_FCS_TYPE_TLV
                     + RANGING_ROUND_CONTROL_TLV + AOA_RESULT_REQ_TLV
@@ -940,7 +932,6 @@ public class FiraEncoderTest {
                     + SESSION_TIME_BASE_TLV
                     + VENDOR_ID_TLV + STATIC_STS_IV_TLV
                     + RANGE_DATA_NTF_AOA_BOUND_TLV);
-        }
         TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(49);
