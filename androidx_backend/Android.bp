@@ -80,7 +80,7 @@ android_app {
         "guava",
         "uwb_androidx_backend",
     ],
-    privapp_allowlist: ":privapp_allowlist_androidx.core.uwb.backend.xml",
+    required: ["privapp_allowlist_androidx.core.uwb.backend.xml"],
     apex_available: [
         "//apex_available:platform",
     ],
