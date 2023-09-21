@@ -64,6 +64,7 @@ public class RangingCapabilities {
     private final List<Integer> mSupportedConfigIds;
     private final List<Integer> mSupportedSlotDurations;
     private final List<Integer> mSupportedRangingUpdateRates;
+    private final boolean mHasBackgroundRangingSupport;
 
     public RangingCapabilities(
             boolean supportsDistance,
@@ -79,7 +80,8 @@ public class RangingCapabilities {
                 new ArrayList<>(RANGE_DATA_NTF_ENABLE),
                 FIRA_DEFAULT_SUPPORTED_CONFIG_IDS,
                 DEFAULT_SUPPORTED_SLOT_DURATIONS,
-                DEFAULT_SUPPORTED_RANGING_UPDATE_RATE);
+                DEFAULT_SUPPORTED_RANGING_UPDATE_RATE,
+                false);
     }
 
     public RangingCapabilities(
@@ -92,7 +94,8 @@ public class RangingCapabilities {
             List<Integer> supportedNtfConfigs,
             List<Integer> supportedConfigIds,
             ImmutableList<Integer> supportedSlotDurations,
-            ImmutableList<Integer> supportedRangingUpdateRates) {
+            ImmutableList<Integer> supportedRangingUpdateRates,
+            boolean hasBackgroundRangingSupport) {
         this.mSupportsDistance = supportsDistance;
         this.mSupportsAzimuthalAngle = supportsAzimuthalAngle;
         this.mSupportsElevationAngle = supportsElevationAngle;
@@ -103,6 +106,7 @@ public class RangingCapabilities {
         this.mSupportedConfigIds = supportedConfigIds;
         this.mSupportedSlotDurations = supportedSlotDurations;
         this.mSupportedRangingUpdateRates = supportedRangingUpdateRates;
+        this.mHasBackgroundRangingSupport = hasBackgroundRangingSupport;
     }
 
     /** Whether distance ranging is supported. */
@@ -158,5 +162,10 @@ public class RangingCapabilities {
     /** Gets the supported ranging intervals. */
     public List<Integer> getSupportedRangingUpdateRates() {
         return mSupportedRangingUpdateRates;
+    }
+
+    /** Whether background ranging is supported. */
+    public boolean hasBackgroundRangingSupport() {
+        return mHasBackgroundRangingSupport;
     }
 }

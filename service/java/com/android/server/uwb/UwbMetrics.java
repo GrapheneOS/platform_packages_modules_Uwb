@@ -661,6 +661,7 @@ public class UwbMetrics {
 
     private int mNumDeviceInitSuccess = 0;
     private int mNumDeviceInitFailure = 0;
+    private boolean mFirstDeviceInitFailure = false;
     private int mNumDeviceStatusError = 0;
     private int mNumUciGenericError = 0;
 
@@ -674,10 +675,14 @@ public class UwbMetrics {
     /**
      * Increment the count of device initialization failure
      */
-    public synchronized void incrementDeviceInitFailureCount() {
+    public synchronized void incrementDeviceInitFailureCount(boolean isFirstInitAttempt) {
         mNumDeviceInitFailure++;
-        UwbStatsLog.write(UwbStatsLog.UWB_DEVICE_ERROR_REPORTED,
-                UwbStatsLog.UWB_DEVICE_ERROR_REPORTED__TYPE__INIT_ERROR);
+        if (isFirstInitAttempt) {
+            mFirstDeviceInitFailure = true;
+        } else {
+            UwbStatsLog.write(UwbStatsLog.UWB_DEVICE_ERROR_REPORTED,
+                    UwbStatsLog.UWB_DEVICE_ERROR_REPORTED__TYPE__INIT_ERROR);
+        }
     }
 
     /**
@@ -720,6 +725,7 @@ public class UwbMetrics {
             pw.println("-- Device operation success/error count --");
             pw.println("mNumDeviceInitSuccess = " + mNumDeviceInitSuccess);
             pw.println("mNumDeviceInitFailure = " + mNumDeviceInitFailure);
+            pw.println("mFirstDeviceInitFailure = " + mFirstDeviceInitFailure);
             pw.println("mNumDeviceStatusError = " + mNumDeviceStatusError);
             pw.println("mNumUciGenericError = " + mNumUciGenericError);
             pw.println("---- Dump of UwbMetrics ----");

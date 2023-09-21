@@ -18,7 +18,7 @@ use crate::dispatcher::Dispatcher;
 use crate::helper::{boolean_result_helper, byte_result_helper, option_result_helper};
 use crate::jclass_name::{
     CONFIG_STATUS_DATA_CLASS, DT_RANGING_ROUNDS_STATUS_CLASS, POWER_STATS_CLASS, TLV_DATA_CLASS,
-    UWB_RANGING_DATA_CLASS, VENDOR_RESPONSE_CLASS,
+    UWB_DEVICE_INFO_RESPONSE_CLASS, UWB_RANGING_DATA_CLASS, VENDOR_RESPONSE_CLASS,
 };
 use crate::unique_jvm;
 
@@ -35,8 +35,9 @@ use jni::JNIEnv;
 use log::{debug, error};
 use uwb_core::error::{Error, Result};
 use uwb_core::params::{
-    AppConfigTlv, CountryCode, PhaseList, RawAppConfigTlv, RawUciMessage,
-    SessionUpdateDtTagRangingRoundsResponse, SetAppConfigResponse, UpdateTime,
+    AndroidRadarConfigResponse, AppConfigTlv, CountryCode, GetDeviceInfoResponse, PhaseList,
+    RadarConfigTlv, RawAppConfigTlv, RawUciMessage, SessionUpdateDtTagRangingRoundsResponse,
+    SetAppConfigResponse, UpdateTime,
 };
 use uwb_uci_packets::{
     AppConfigTlvType, CapTlv, Controlee, Controlee_V2_0_16_Byte_Version,
@@ -87,18 +88,58 @@ fn native_init(env: JNIEnv) -> Result<()> {
     unique_jvm::set_once(jvm)
 }
 
+fn create_device_info_response(rsp: GetDeviceInfoResponse, env: JNIEnv) -> Result<jobject> {
+    let device_info_response_class = env
+        .find_class(UWB_DEVICE_INFO_RESPONSE_CLASS)
+        .map_err(|_| Error::ForeignFunctionInterface)?;
+
+    let vendor_spec_info_jbytearray = env
+        .byte_array_from_slice(rsp.vendor_spec_info.as_ref())
+        .map_err(|_| Error::ForeignFunctionInterface)?;
+    // Safety: vendor_spec_info_jbytearray is safely instantiated above.
+    let vendor_spec_info_jobject = unsafe { JObject::from_raw(vendor_spec_info_jbytearray) };
+
+    match env.new_object(
+        device_info_response_class,
+        "(IIIII[B)V",
+        &[
+            JValue::Int(i32::from(rsp.status)),
+            JValue::Int(rsp.uci_version as i32),
+            JValue::Int(rsp.mac_version as i32),
+            JValue::Int(rsp.phy_version as i32),
+            JValue::Int(rsp.uci_test_version as i32),
+            JValue::Object(vendor_spec_info_jobject),
+        ],
+    ) {
+        Ok(o) => Ok(*o),
+        Err(_) => Err(Error::ForeignFunctionInterface),
+    }
+}
+
 /// Turn on Single UWB chip.
 #[no_mangle]
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeDoInitialize(
     env: JNIEnv,
     obj: JObject,
     chip_id: JString,
-) -> jboolean {
+) -> jobject {
     debug!("{}: enter", function_name!());
-    boolean_result_helper(native_do_initialize(env, obj, chip_id), function_name!())
+    match option_result_helper(native_do_initialize(env, obj, chip_id), function_name!()) {
+        Some(rsp) => create_device_info_response(rsp, env)
+            .map_err(|e| {
+                error!("{} failed with {:?}", function_name!(), &e);
+                e
+            })
+            .unwrap_or(*JObject::null()),
+        None => *JObject::null(),
+    }
 }
 
-fn native_do_initialize(env: JNIEnv, obj: JObject, chip_id: JString) -> Result<()> {
+fn native_do_initialize(
+    env: JNIEnv,
+    obj: JObject,
+    chip_id: JString,
+) -> Result<GetDeviceInfoResponse> {
     let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
     uci_manager.open_hal()
 }
@@ -310,6 +351,58 @@ fn parse_app_config_tlv_vec(no_of_params: i32, mut byte_array: &[u8]) -> Result<
     Ok(tlvs)
 }
 
+fn parse_radar_config_tlv_vec(
+    no_of_params: i32,
+    mut byte_array: &[u8],
+) -> Result<Vec<RadarConfigTlv>> {
+    let mut parsed_tlvs_len = 0;
+    let received_tlvs_len = byte_array.len();
+    let mut tlvs = Vec::<RadarConfigTlv>::new();
+    for _ in 0..no_of_params {
+        // The tlv consists of the type of payload in 1 byte, the length of payload as u8
+        // in 1 byte, and the payload.
+        const TLV_HEADER_SIZE: usize = 2;
+        let tlv = RadarConfigTlv::parse(byte_array).map_err(|_| Error::BadParameters)?;
+        byte_array = byte_array.get(tlv.v.len() + TLV_HEADER_SIZE..).ok_or(Error::BadParameters)?;
+        parsed_tlvs_len += tlv.v.len() + TLV_HEADER_SIZE;
+        tlvs.push(tlv);
+    }
+    if parsed_tlvs_len != received_tlvs_len {
+        return Err(Error::BadParameters);
+    };
+    Ok(tlvs)
+}
+
+fn create_radar_config_response(
+    response: AndroidRadarConfigResponse,
+    env: JNIEnv,
+) -> Result<jbyteArray> {
+    let uwb_config_status_class =
+        env.find_class(CONFIG_STATUS_DATA_CLASS).map_err(|_| Error::ForeignFunctionInterface)?;
+    let mut buf = Vec::<u8>::new();
+    for config_status in &response.config_status {
+        buf.push(u8::from(config_status.cfg_id));
+        buf.push(u8::from(config_status.status));
+    }
+    let config_status_jbytearray =
+        env.byte_array_from_slice(&buf).map_err(|_| Error::ForeignFunctionInterface)?;
+
+    // Safety: config_status_jbytearray is safely instantiated above.
+    let config_status_jobject = unsafe { JObject::from_raw(config_status_jbytearray) };
+    let config_status_jobject = env
+        .new_object(
+            uwb_config_status_class,
+            "(II[B)V",
+            &[
+                JValue::Int(i32::from(response.status)),
+                JValue::Int(response.config_status.len() as i32),
+                JValue::Object(config_status_jobject),
+            ],
+        )
+        .map_err(|_| Error::ForeignFunctionInterface)?;
+    Ok(*config_status_jobject)
+}
+
 fn create_set_config_response(response: SetAppConfigResponse, env: JNIEnv) -> Result<jbyteArray> {
     let uwb_config_status_class =
         env.find_class(CONFIG_STATUS_DATA_CLASS).map_err(|_| Error::ForeignFunctionInterface)?;
@@ -383,6 +476,54 @@ fn native_set_app_configurations(
         env.convert_byte_array(app_config_params).map_err(|_| Error::ForeignFunctionInterface)?;
     let tlvs = parse_app_config_tlv_vec(no_of_params, &config_byte_array)?;
     uci_manager.session_set_app_config(session_id as u32, tlvs)
+}
+
+/// Set radar app configurations on a single UWB device. Return null JObject if failed.
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSetRadarAppConfigurations(
+    env: JNIEnv,
+    obj: JObject,
+    session_id: jint,
+    no_of_params: jint,
+    _radar_config_param_len: jint,
+    radar_config_params: jbyteArray,
+    chip_id: JString,
+) -> jbyteArray {
+    debug!("{}: enter", function_name!());
+    match option_result_helper(
+        native_set_radar_app_configurations(
+            env,
+            obj,
+            session_id,
+            no_of_params,
+            radar_config_params,
+            chip_id,
+        ),
+        function_name!(),
+    ) {
+        Some(config_response) => create_radar_config_response(config_response, env)
+            .map_err(|e| {
+                error!("{} failed with {:?}", function_name!(), &e);
+                e
+            })
+            .unwrap_or(*JObject::null()),
+        None => *JObject::null(),
+    }
+}
+
+fn native_set_radar_app_configurations(
+    env: JNIEnv,
+    obj: JObject,
+    session_id: jint,
+    no_of_params: jint,
+    radar_config_params: jbyteArray,
+    chip_id: JString,
+) -> Result<AndroidRadarConfigResponse> {
+    let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
+    let config_byte_array =
+        env.convert_byte_array(radar_config_params).map_err(|_| Error::ForeignFunctionInterface)?;
+    let tlvs = parse_radar_config_tlv_vec(no_of_params, &config_byte_array)?;
+    uci_manager.android_set_radar_config(session_id as u32, tlvs)
 }
 
 fn parse_hybrid_config_phase_list_vec(
@@ -667,39 +808,57 @@ fn native_controller_multicast_list_update(
             )
         }
         UpdateMulticastListAction::AddControleeWithShortSubSessionKey => {
-            Controlees::ShortSessionKey(
-                zip(
-                    zip(address_list, sub_session_id_list),
-                    env.convert_byte_array(sub_session_keys)
-                        .map_err(|_| Error::ForeignFunctionInterface)?
-                        .chunks(16),
+            if sub_session_keys.is_null() {
+                Controlees::NoSessionKey(
+                    zip(address_list, sub_session_id_list)
+                        .map(|(a, s)| Controlee { short_address: a, subsession_id: s as u32 })
+                        .collect::<Vec<Controlee>>(),
                 )
-                .map(|((address, id), key)| {
-                    Ok(Controlee_V2_0_16_Byte_Version {
-                        short_address: address,
-                        subsession_id: id as u32,
-                        subsession_key: key.try_into().map_err(|_| Error::BadParameters)?,
+            } else {
+                Controlees::ShortSessionKey(
+                    zip(
+                        zip(address_list, sub_session_id_list),
+                        env.convert_byte_array(sub_session_keys)
+                            .map_err(|_| Error::ForeignFunctionInterface)?
+                            .chunks(16),
+                    )
+                    .map(|((address, id), key)| {
+                        Ok(Controlee_V2_0_16_Byte_Version {
+                            short_address: address,
+                            subsession_id: id as u32,
+                            subsession_key: key.try_into().map_err(|_| Error::BadParameters)?,
+                        })
                     })
-                })
-                .collect::<Result<Vec<Controlee_V2_0_16_Byte_Version>>>()?,
-            )
+                    .collect::<Result<Vec<Controlee_V2_0_16_Byte_Version>>>()?,
+                )
+            }
         }
-        UpdateMulticastListAction::AddControleeWithLongSubSessionKey => Controlees::LongSessionKey(
-            zip(
-                zip(address_list, sub_session_id_list),
-                env.convert_byte_array(sub_session_keys)
-                    .map_err(|_| Error::ForeignFunctionInterface)?
-                    .chunks(32),
-            )
-            .map(|((address, id), key)| {
-                Ok(Controlee_V2_0_32_Byte_Version {
-                    short_address: address,
-                    subsession_id: id as u32,
-                    subsession_key: key.try_into().map_err(|_| Error::BadParameters)?,
-                })
-            })
-            .collect::<Result<Vec<Controlee_V2_0_32_Byte_Version>>>()?,
-        ),
+        UpdateMulticastListAction::AddControleeWithLongSubSessionKey => {
+            if sub_session_keys.is_null() {
+                Controlees::NoSessionKey(
+                    zip(address_list, sub_session_id_list)
+                        .map(|(a, s)| Controlee { short_address: a, subsession_id: s as u32 })
+                        .collect::<Vec<Controlee>>(),
+                )
+            } else {
+                Controlees::LongSessionKey(
+                    zip(
+                        zip(address_list, sub_session_id_list),
+                        env.convert_byte_array(sub_session_keys)
+                            .map_err(|_| Error::ForeignFunctionInterface)?
+                            .chunks(32),
+                    )
+                    .map(|((address, id), key)| {
+                        Ok(Controlee_V2_0_32_Byte_Version {
+                            short_address: address,
+                            subsession_id: id as u32,
+                            subsession_key: key.try_into().map_err(|_| Error::BadParameters)?,
+                        })
+                    })
+                    .collect::<Result<Vec<Controlee_V2_0_32_Byte_Version>>>()?,
+                )
+            }
+        }
     };
     uci_manager.session_update_controller_multicast_list(
         session_id as u32,
@@ -1199,7 +1358,9 @@ mod tests {
     use uwb_core::uci::uci_manager_sync::{
         NotificationManager, NotificationManagerBuilder, UciManagerSync,
     };
-    use uwb_core::uci::{CoreNotification, DataRcvNotification, SessionNotification};
+    use uwb_core::uci::{
+        CoreNotification, DataRcvNotification, RadarDataRcvNotification, SessionNotification,
+    };
 
     struct NullNotificationManager {}
     impl NotificationManager for NullNotificationManager {
@@ -1216,6 +1377,13 @@ mod tests {
             Ok(())
         }
         fn on_data_rcv_notification(&mut self, _data_rcv_notf: DataRcvNotification) -> Result<()> {
+            Ok(())
+        }
+        /// Callback for RadarDataRcvNotification.
+        fn on_radar_data_rcv_notification(
+            &mut self,
+            _radar_data_rcv_notification: RadarDataRcvNotification,
+        ) -> Result<()> {
             Ok(())
         }
     }

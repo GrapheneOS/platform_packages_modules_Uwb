@@ -101,7 +101,7 @@ CR456,NA,
 CR457,NA,Marked as N/A (MAC)
 CR458,NA,Marked as N/A (MAC)
 CR459,YES,
-CR460,NO,
+CR460,YES,
 CR461,YES,
 CR462,NA,Marked as N/A (MAC)
 CR466,NA,Marked as N/A (MAC)
@@ -154,8 +154,8 @@ CR1031,NA,Marked as N/A (MAC)
 CR1032,NO,
 CR1033,NA,Marked as N/A (MAC)
 CR1036,NA,Marked as N/A (MAC)
-CR1037,Partial,Implemented: OwrAoa uses standard status table; Pending: New status field in SESSION_QUERY_DATA_SIZE_IN_RANGING_RSP and other changes.
-CR1038,NO,
+CR1037,YES,
+CR1038,YES,
 CR1043,NA,Marked as N/A (MAC)
 CR1044,NO,
 CR1046,NA,Marked as N/A (MAC)

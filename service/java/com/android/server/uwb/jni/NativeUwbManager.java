@@ -16,6 +16,7 @@
 package com.android.server.uwb.jni;
 
 import android.annotation.NonNull;
+import android.annotation.Nullable;
 import android.util.Log;
 
 import com.android.internal.annotations.Keep;
@@ -23,6 +24,7 @@ import com.android.server.uwb.UciLogModeStore;
 import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.data.DtTagUpdateRangingRoundsStatus;
 import com.android.server.uwb.data.UwbConfigStatusData;
+import com.android.server.uwb.data.UwbDeviceInfoResponse;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbRadarData;
 import com.android.server.uwb.data.UwbRangingData;
@@ -33,6 +35,8 @@ import com.android.server.uwb.info.UwbPowerStats;
 import com.android.server.uwb.multchip.UwbMultichipData;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 @Keep
 public class NativeUwbManager {
@@ -127,19 +131,26 @@ public class NativeUwbManager {
     /**
      * Enable UWB hardware.
      *
-     * @return : If this returns true, UWB is on
+     * @return : {@code Map<String,UwbDeviceInfoResponse>}, error is indicated by it being null.
+     *           The key for the map is the ChipId (string).
      */
-    public boolean doInitialize() {
+    @Nullable
+    public Map<String, UwbDeviceInfoResponse> doInitialize() {
+        UwbDeviceInfoResponse deviceInfoResponse = null;
+        Map<String, UwbDeviceInfoResponse> chipIdToDeviceInfoResponseMap = new HashMap<>();
         synchronized (mNativeLock) {
             mDispatcherPointer = nativeDispatcherNew(mUwbMultichipData.getChipIds().toArray());
             for (String chipId : mUwbMultichipData.getChipIds()) {
-                if (!nativeDoInitialize(chipId)) {
-                    return false;
+                deviceInfoResponse = nativeDoInitialize(chipId);
+                if (deviceInfoResponse == null
+                            || deviceInfoResponse.mStatusCode != UwbUciConstants.STATUS_CODE_OK) {
+                    return null;
                 }
+                chipIdToDeviceInfoResponseMap.put(chipId, deviceInfoResponse);
             }
             nativeSetLogMode(mUciLogModeStore.getMode());
         }
-        return true;
+        return chipIdToDeviceInfoResponseMap;
     }
 
     /**
@@ -509,7 +520,7 @@ public class NativeUwbManager {
 
     private native boolean nativeInit();
 
-    private native boolean nativeDoInitialize(String chipIds);
+    private native UwbDeviceInfoResponse nativeDoInitialize(String chipIds);
 
     private native boolean nativeDoDeinitialize(String chipId);
 

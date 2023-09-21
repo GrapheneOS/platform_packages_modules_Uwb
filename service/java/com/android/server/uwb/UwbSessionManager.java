@@ -36,15 +36,12 @@ import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTIO
 import static com.google.uwb.support.fira.FiraParams.PROTOCOL_NAME;
 import static com.google.uwb.support.fira.FiraParams.P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_16_BYTE;
 import static com.google.uwb.support.fira.FiraParams.P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_32_BYTE;
-import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_DISABLE;
-import static com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag.HAS_RANGE_DATA_NTF_CONFIG_ENABLE;
 
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.app.ActivityManager;
 import android.app.AlarmManager;
 import android.content.AttributionSource;
-import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -68,6 +65,7 @@ import com.android.server.uwb.correction.UwbFilterEngine;
 import com.android.server.uwb.correction.pose.ApplicationPoseSource;
 import com.android.server.uwb.correction.pose.IPoseSource;
 import com.android.server.uwb.data.DtTagUpdateRangingRoundsStatus;
+import com.android.server.uwb.data.UwbDeviceInfoResponse;
 import com.android.server.uwb.data.UwbDlTDoAMeasurement;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbOwrAoaMeasurement;
@@ -88,6 +86,7 @@ import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccRangingStartedParams;
+import com.google.uwb.support.ccc.CccRangingStoppedParams;
 import com.google.uwb.support.ccc.CccSpecificationParams;
 import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
@@ -96,6 +95,7 @@ import com.google.uwb.support.fira.FiraHybridSessionConfig;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraPoseUpdateParams;
+import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
@@ -112,7 +112,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -172,8 +171,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     private final Looper mLooper;
     private final EventTask mEventTask;
 
-    private Boolean mIsRangeDataNtfConfigEnableDisableSupported;
-
     public UwbSessionManager(
             UwbConfigurationManager uwbConfigurationManager,
             NativeUwbManager nativeUwbManager, UwbMetrics uwbMetrics,
@@ -195,23 +192,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         registerUidImportanceTransitions();
     }
 
-    private boolean isRangeDataNtfConfigEnableDisableSupported() {
-        if (mIsRangeDataNtfConfigEnableDisableSupported == null) {
-            String defaultChipId = mUwbInjector.getMultichipData().getDefaultChipId();
-            GenericSpecificationParams specificationParams =
-                    mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(defaultChipId);
-            if (specificationParams == null) return false;
-            EnumSet<FiraParams.RangeDataNtfConfigCapabilityFlag> supportedRangeDataNtfConfigs =
-                    specificationParams.getFiraSpecificationParams()
-                            .getRangeDataNtfConfigCapabilities();
-            mIsRangeDataNtfConfigEnableDisableSupported =
-                    supportedRangeDataNtfConfigs.containsAll(EnumSet.of(
-                            HAS_RANGE_DATA_NTF_CONFIG_DISABLE,
-                            HAS_RANGE_DATA_NTF_CONFIG_ENABLE));
-        }
-        return mIsRangeDataNtfConfigEnableDisableSupported;
-    }
-
     @Override
     public void onUidImportance(final int uid, final int importance) {
         Handler handler = new Handler(mLooper);
@@ -219,24 +199,22 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             List<UwbSession> uwbSessions = mNonPrivilegedUidToFiraSessionsTable.get(uid);
             // Not a uid in the watch list
             if (uwbSessions == null) return;
-            boolean newModeHasNonPrivilegedFgApp =
+            boolean newModeHasNonPrivilegedFgAppOrService =
                     UwbInjector.isForegroundAppOrServiceImportance(importance);
             for (UwbSession uwbSession : uwbSessions) {
                 // already at correct state.
-                if (newModeHasNonPrivilegedFgApp == uwbSession.hasNonPrivilegedFgApp()) {
+                if (newModeHasNonPrivilegedFgAppOrService
+                        == uwbSession.hasNonPrivilegedFgAppOrService()) {
                     continue;
                 }
-                uwbSession.setHasNonPrivilegedFgApp(newModeHasNonPrivilegedFgApp);
+                uwbSession.setHasNonPrivilegedFgAppOrService(newModeHasNonPrivilegedFgAppOrService);
                 int sessionId = uwbSession.getSessionId();
                 Log.i(TAG, "App state change for session " + sessionId + ". IsFg: "
-                        + newModeHasNonPrivilegedFgApp);
-                // Reconfigure the session based on the new fg/bg state if
-                // NtfConfigEnableDisable is supported.
-                if (isRangeDataNtfConfigEnableDisableSupported()) {
-                    Log.i(TAG, "Session " + sessionId
-                            + " reconfiguring ntf control due to app state change");
-                    uwbSession.reconfigureFiraSessionOnFgStateChange();
-                }
+                        + newModeHasNonPrivilegedFgAppOrService);
+                // Reconfigure the session based on the new fg/bg state
+                Log.i(TAG, "Session " + sessionId
+                        + " reconfiguring ntf control due to app state change");
+                uwbSession.reconfigureFiraSessionOnFgStateChange();
                 // Recalculate session priority based on the new fg/bg state.
                 if (!uwbSession.mSessionPriorityOverride) {
                     int newSessionPriority = uwbSession.calculateSessionPriority();
@@ -458,25 +436,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             Log.d(TAG, "onSessionStatusNotificationReceived - invalid session");
             return;
         }
-        if (mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
-            String appPackageName = uwbSession.getAnyNonPrivilegedAppInAttributionSource() != null
-                    ? uwbSession.getAnyNonPrivilegedAppInAttributionSource().getPackageName()
-                    : uwbSession.getAttributionSource().getPackageName();
-            PersistableBundle sessionStatusBundle = new SessionStatus.Builder()
-                    .setSessionId(sessionId)
-                    .setState(state)
-                    .setReasonCode(reasonCode)
-                    .setAppPackageName(appPackageName)
-                    .setSessiontoken(mSessionTokenMap.getOrDefault(uwbSession.getSessionId(), 0))
-                    .build()
-                    .toBundle();
-            try {
-                mUwbInjector.getUwbServiceCore().getOemExtensionCallback()
-                        .onSessionStatusNotificationReceived(sessionStatusBundle);
-            } catch (RemoteException e) {
-                Log.e(TAG, "Failed to send vendor notification", e);
-            }
-        }
+
         int prevState = uwbSession.getSessionState();
         setCurrentSessionState((int) sessionId, state);
 
@@ -514,9 +474,37 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             default:
                 break;
         }
+        if (mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
+            String appPackageName = uwbSession.getAnyNonPrivilegedAppInAttributionSource() != null
+                    ? uwbSession.getAnyNonPrivilegedAppInAttributionSource().getPackageName()
+                    : uwbSession.getAttributionSource().getPackageName();
+            PersistableBundle sessionStatusBundle = new SessionStatus.Builder()
+                    .setSessionId(sessionId)
+                    .setState(state)
+                    .setReasonCode(reasonCode)
+                    .setAppPackageName(appPackageName)
+                    .setSessiontoken(mSessionTokenMap.getOrDefault(uwbSession.getSessionId(), 0))
+                    .build()
+                    .toBundle();
+            try {
+                mUwbInjector.getUwbServiceCore().getOemExtensionCallback()
+                        .onSessionStatusNotificationReceived(sessionStatusBundle);
+            } catch (RemoteException e) {
+                Log.e(TAG, "Failed to send vendor notification", e);
+            }
+        }
     }
 
     private int setAppConfigurations(UwbSession uwbSession) {
+        if (uwbSession.getProtocolName().equals(FiraParams.PROTOCOL_NAME)
+                        && uwbSession.getParams() instanceof FiraOpenSessionParams) {
+            FiraOpenSessionParams params = (FiraOpenSessionParams) uwbSession.getParams();
+            if (mSessionTokenMap.containsKey(params.getReferenceSessionHandle())) {
+                uwbSession.updateFiraParamsForSessionTimeBase(
+                           mSessionTokenMap.get(params.getReferenceSessionHandle()));
+            }
+        }
+
         int status = mConfigurationManager.setAppConfigurations(uwbSession.getSessionId(),
                 uwbSession.getParams(), uwbSession.getChipId());
         if (status == UwbUciConstants.STATUS_CODE_OK
@@ -553,13 +541,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             Log.d(TAG, "Found a 3p app/service in the attribution source of request: "
                     + nonPrivilegedAppAttrSource);
             // TODO(b/211445008): Move this operation to uwb thread.
-            long identity = Binder.clearCallingIdentity();
-            boolean hasNonPrivilegedFgApp = mUwbInjector.isForegroundAppOrService(
+            boolean hasNonPrivilegedFgAppOrService = mUwbInjector.isForegroundAppOrService(
                     nonPrivilegedAppAttrSource.getUid(),
                     nonPrivilegedAppAttrSource.getPackageName());
-            Binder.restoreCallingIdentity(identity);
-            uwbSession.setHasNonPrivilegedFgApp(hasNonPrivilegedFgApp);
-            if (!hasNonPrivilegedFgApp) {
+            uwbSession.setHasNonPrivilegedFgAppOrService(hasNonPrivilegedFgAppOrService);
+            if (!hasNonPrivilegedFgAppOrService) {
                 if (!mUwbInjector.getDeviceConfigFacade().isBackgroundRangingEnabled()) {
                     Log.e(TAG, "openRanging - System policy disallows for non fg 3p apps");
                     rangingCallbacks.onRangingOpenFailed(sessionHandle,
@@ -697,11 +683,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         if (currentSessionState == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
             if (uwbSession.getProtocolName().equals(CccParams.PROTOCOL_NAME)
                     && params instanceof CccStartRangingParams) {
-                CccStartRangingParams rangingStartParams = (CccStartRangingParams) params;
+                CccStartRangingParams cccStartRangingParams = (CccStartRangingParams) params;
                 Log.i(TAG, "startRanging() - update RAN multiplier: "
-                        + rangingStartParams.getRanMultiplier());
+                        + cccStartRangingParams.getRanMultiplier()
+                        + ", stsIndex: " + cccStartRangingParams.getStsIndex());
                 // Need to update the RAN multiplier from the CccStartRangingParams for CCC session.
-                uwbSession.updateCccParamsOnStart(rangingStartParams);
+                uwbSession.updateCccParamsOnStart(cccStartRangingParams);
             }
             if (uwbSession.getProtocolName().equals(FiraParams.PROTOCOL_NAME)) {
                 // Need to update session priority if it changed.
@@ -1364,7 +1351,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                             status = UwbUciConstants.STATUS_CODE_FAILED;
                             if (uwbSession.getSessionState()
                                     == UwbUciConstants.UWB_SESSION_STATE_INIT) {
+                                uwbSession.setNeedsQueryUwbsTimestamp(
+                                        null /* cccRangingStartParams */);
+                                uwbSession.setAbsoluteInitiationTimeIfNeeded();
                                 status = UwbSessionManager.this.setAppConfigurations(uwbSession);
+                                uwbSession.resetAbsoluteInitiationTime();
                                 if (status != UwbUciConstants.STATUS_CODE_OK) {
                                     return status;
                                 }
@@ -1415,15 +1406,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     () -> {
                         int status = UwbUciConstants.STATUS_CODE_FAILED;
                         synchronized (uwbSession.getWaitObj()) {
-                            if (uwbSession.getNeedsQueryUwbsTimestamp()) {
-                                // Query the UWBS timestamp and add the relative initiation time
-                                // stored in the FiraOpenSessionParams, to get the absolute
-                                // initiation time to be configured.
-                                long uwbsTimestamp =
-                                        mUwbInjector.getUwbServiceCore().queryUwbsTimestampMicros();
-                                uwbSession.computeAbsoluteInitiationTime(uwbsTimestamp);
-                            }
-
+                            uwbSession.setAbsoluteInitiationTimeIfNeeded();
                             if (uwbSession.getNeedsAppConfigUpdate()) {
                                 uwbSession.resetNeedsAppConfigUpdate();
                                 status = mConfigurationManager.setAppConfigurations(
@@ -1467,6 +1450,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                 }
                                 mSessionNotificationManager.onRangingStarted(
                                         uwbSession, rangingStartedParams);
+                                if (uwbSession.hasNonPrivilegedApp()
+                                        && !uwbSession.hasNonPrivilegedFgAppOrService()) {
+                                    Log.i(TAG, "Session " + uwbSession.getSessionId()
+                                            + " reconfiguring ntf control due to app state change");
+                                    uwbSession.reconfigureFiraSessionOnFgStateChange();
+                                }
                             } else {
                                 status = UwbUciConstants.STATUS_CODE_FAILED;
                                 mSessionNotificationManager.onRangingStartFailed(uwbSession,
@@ -1509,11 +1498,26 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                             uwbSession.getWaitObj().blockingWait();
                             if (uwbSession.getSessionState()
                                     == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
+                                 Params rangingStoppedParams = uwbSession.getParams();
+                                // For CCC sessions, retrieve the app configs
+                                if (uwbSession.getProtocolName().equals(CccParams.PROTOCOL_NAME)) {
+                                    Pair<Integer, CccRangingStoppedParams> statusAndParams  =
+                                            mConfigurationManager.getAppConfigurations(
+                                                    uwbSession.getSessionId(),
+                                                    CccParams.PROTOCOL_NAME,
+                                                    new byte[0],
+                                                    CccRangingStoppedParams.class,
+                                                    uwbSession.getChipId());
+                                    if (statusAndParams.first != UwbUciConstants.STATUS_CODE_OK) {
+                                        Log.e(TAG, "Failed to get CCC ranging stopped params");
+                                    }
+                                    rangingStoppedParams = statusAndParams.second;
+                                }
                                 int apiReasonCode = triggeredBySystemPolicy
                                         ? RangingChangeReason.SYSTEM_POLICY
                                         : RangingChangeReason.LOCAL_API;
                                 mSessionNotificationManager.onRangingStoppedWithApiReasonCode(
-                                        uwbSession, apiReasonCode);
+                                        uwbSession, apiReasonCode, rangingStoppedParams.toBundle());
                             } else {
                                 status = UwbUciConstants.STATUS_CODE_FAILED;
                                 mSessionNotificationManager.onRangingStopFailed(uwbSession,
@@ -1927,6 +1931,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         private final String mProtocolName;
         private final IBinder mIBinder;
         private final WaitObj mWaitObj;
+        private final AttributionSource mNonPrivilegedAppInAttributionSource;
         private boolean mAcquiredDefaultPose = false;
         private Params mParams;
         private int mSessionState;
@@ -1943,7 +1948,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         private AlarmManager.OnAlarmListener mNonPrivilegedBgAppTimerListener;
         private int mOperationType = OPERATION_TYPE_INIT_SESSION;
         private final String mChipId;
-        private boolean mHasNonPrivilegedFgApp = false;
+        private boolean mHasNonPrivilegedFgAppOrService = false;
         private long mRangingErrorStreakTimeoutMs = RANGING_RESULT_ERROR_NO_TIMEOUT;
         // Use a Map<RemoteMacAddress, SortedMap<SequenceNumber, ReceivedDataInfo>> to store all
         // the Application payload data packets received in this (active) UWB Session.
@@ -1978,11 +1983,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             this.mIUwbRangingCallbacks = iUwbRangingCallbacks;
             this.mIBinder = iUwbRangingCallbacks.asBinder();
             this.mSessionState = UwbUciConstants.UWB_SESSION_STATE_DEINIT;
-            this.mStackSessionPriority = calculateSessionPriority();
             this.mParams = params;
             this.mWaitObj = new WaitObj();
             this.mProfileType = convertProtolNameToProfileType(protocolName);
             this.mChipId = chipId;
+            this.mNonPrivilegedAppInAttributionSource =
+                    getAnyNonPrivilegedAppInAttributionSourceInternal();
+            this.mStackSessionPriority = calculateSessionPriority();
 
             if (params instanceof FiraOpenSessionParams) {
                 FiraOpenSessionParams firaParams = (FiraOpenSessionParams) params;
@@ -2047,16 +2054,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             if (mProtocolName.equals(CccParams.PROTOCOL_NAME)) {
                 return CCC_SESSION_PRIORITY;
             }
-            AttributionSource nonPrivilegedAppAttrSource =
-                    this.getAnyNonPrivilegedAppInAttributionSource();
-            if (nonPrivilegedAppAttrSource == null) {
+            if (mNonPrivilegedAppInAttributionSource == null) {
                 return SYSTEM_APP_SESSION_PRIORITY;
             }
-            long identity = Binder.clearCallingIdentity();
             boolean isFgAppOrService = mUwbInjector.isForegroundAppOrService(
-                    nonPrivilegedAppAttrSource.getUid(),
-                    nonPrivilegedAppAttrSource.getPackageName());
-            Binder.restoreCallingIdentity(identity);
+                    mNonPrivilegedAppInAttributionSource.getUid(),
+                    mNonPrivilegedAppInAttributionSource.getPackageName());
             if (isFgAppOrService) {
                 return FG_SESSION_PRIORITY;
             }
@@ -2073,7 +2076,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
          * @return AttributionSource of first non-system app found in the chain, null otherwise.
          */
         @Nullable
-        public AttributionSource getAnyNonPrivilegedAppInAttributionSource() {
+        private AttributionSource getAnyNonPrivilegedAppInAttributionSourceInternal() {
             // Iterate attribution source chain to ensure that there is no non-fg 3p app in the
             // request.
             AttributionSource attributionSource = mAttributionSource;
@@ -2086,6 +2089,23 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 attributionSource = attributionSource.getNext();
             }
             return null;
+        }
+
+        /**
+         * Check the attribution source chain to check if there are any 3p apps.
+         * @return AttributionSource of first non-system app found in the chain, null otherwise.
+         */
+        @Nullable
+        public AttributionSource getAnyNonPrivilegedAppInAttributionSource() {
+            return mNonPrivilegedAppInAttributionSource;
+        }
+
+        /**
+         * Check the attribution source chain to check if there are any 3p apps.
+         * @return true if 3p app found in attribution source chain.
+         */
+        public boolean hasNonPrivilegedApp() {
+            return mNonPrivilegedAppInAttributionSource != null;
         }
 
         /**
@@ -2261,15 +2281,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             return mDataRepetitionCount;
         }
         public void updateCccParamsOnStart(CccStartRangingParams rangingStartParams) {
-            GenericSpecificationParams specificationParams = mUwbInjector.getUwbServiceCore()
-                    .getCachedSpecificationParams(mChipId);
-            if (specificationParams != null && specificationParams
-                    .getFiraSpecificationParams()
-                    .getMinPhyVersionSupported().getMajor() >= 2
-                    && ((CccOpenRangingParams) mParams).getAbsoluteInitiationTimeUs() == 0
-                    && rangingStartParams.getAbsoluteInitiationTimeUs() == 0) {
-                this.mNeedsQueryUwbsTimestamp = true;
-            }
+            setNeedsQueryUwbsTimestamp(rangingStartParams);
+
             // Need to update the RAN multiplier and initiation time
             // from the CccStartRangingParams for CCC session.
             CccOpenRangingParams newParams =
@@ -2278,6 +2291,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                             .setInitiationTimeMs(rangingStartParams.getInitiationTimeMs())
                             .setAbsoluteInitiationTimeUs(rangingStartParams
                                     .getAbsoluteInitiationTimeUs())
+                            .setStsIndex(rangingStartParams.getStsIndex())
                             .build();
             this.mParams = newParams;
             this.mNeedsAppConfigUpdate = true;
@@ -2296,19 +2310,73 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 this.mNeedsAppConfigUpdate = true;
             }
 
-            // When the UWBS supports Fira 2.0+ and the application has not configured an absolute
-            // UWB initiation time, we must fetch the UWBS timestamp (to compute the absolute time).
-            GenericSpecificationParams specificationParams =
-                    mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(mChipId);
-            if (specificationParams != null
-                    && specificationParams.getFiraSpecificationParams()
-                            .getMinPhyVersionSupported().getMajor() >= 2
-                    && firaOpenSessionParams.getAbsoluteInitiationTime() == 0) {
-                this.mNeedsQueryUwbsTimestamp = true;
+            setNeedsQueryUwbsTimestamp(null /* rangingStartParams */);
+        }
+
+        /**
+         * Sets {@code mNeedsQueryUwbsTimestamp} to {@code true}, if the UWBS Timestamp needs to be
+         * fetched from the UWBS controller (for computing an absolute UWB initiation time).
+         */
+        public void setNeedsQueryUwbsTimestamp(
+                @Nullable CccStartRangingParams cccStartRangingParams) {
+            UwbDeviceInfoResponse deviceInfo =
+                    mUwbInjector.getUwbServiceCore().getCachedDeviceInfoResponse(mChipId);
+
+            // When the UWBS supports Fira 2.0+ and the application has not configured an
+            // absolute UWB initiation time, we must fetch the UWBS timestamp (to compute
+            // the absolute time).
+            if (deviceInfo != null && FiraProtocolVersion.fromLEShort(
+                    (short) deviceInfo.mUciVersion).getMajor() >= 2) {
+                if (mParams instanceof FiraOpenSessionParams) {
+                    FiraOpenSessionParams firaOpenSessionParams = (FiraOpenSessionParams) mParams;
+                    if (firaOpenSessionParams.getAbsoluteInitiationTime() == 0) {
+                        this.mNeedsQueryUwbsTimestamp = true;
+                    }
+                } else if (mParams instanceof CccOpenRangingParams) {
+                    CccOpenRangingParams cccOpenRangingParams = (CccOpenRangingParams) mParams;
+                    if (cccOpenRangingParams.getAbsoluteInitiationTimeUs() == 0
+                            && cccStartRangingParams != null
+                            && cccStartRangingParams.getAbsoluteInitiationTimeUs() == 0) {
+                        this.mNeedsQueryUwbsTimestamp = true;
+                    }
+                }
             }
         }
 
         /**
+         * Computes an absolute UWB initiation time, if it's needed.
+         */
+        public void setAbsoluteInitiationTimeIfNeeded() {
+            if (this.mNeedsQueryUwbsTimestamp) {
+                // Query the UWBS timestamp and add the relative initiation time
+                // stored in the FiraOpenSessionParams, to get the absolute
+                // initiation time to be configured.
+                long uwbsTimestamp =
+                        mUwbInjector.getUwbServiceCore().queryUwbsTimestampMicros();
+                computeAbsoluteInitiationTime(uwbsTimestamp);
+            }
+        }
+
+        /**
+         * For Fira 2.0+ controller devices, replace the reference Session's SessionID with
+         * its SessionToken, in the SessionTimeBase AppConfig parameter.
+         */
+        public void updateFiraParamsForSessionTimeBase(int sessionToken) {
+            if (mParams instanceof FiraOpenSessionParams) {
+                FiraOpenSessionParams firaOpenSessionParams = (FiraOpenSessionParams) mParams;
+                int deviceRole = firaOpenSessionParams.getDeviceRole();
+                if (deviceRole == FiraParams.RANGING_DEVICE_TYPE_CONTROLLER
+                           && UwbUtil.isBitSet(firaOpenSessionParams.getReferenceTimeBase(),
+                           FiraParams.SESSION_TIME_BASE_REFERENCE_FEATURE_ENABLED)) {
+                    this.mParams = ((FiraOpenSessionParams) mParams).toBuilder().setSessionTimeBase(
+                        firaOpenSessionParams.getReferenceTimeBase(), sessionToken,
+                        firaOpenSessionParams.getSessionOffsetInMicroSeconds())
+                        .build();
+                }
+            }
+        }
+
+       /**
          * Compute absolute initiation time, by doing a sum of the UWBS Timestamp (in micro-seconds)
          * and the relative initiation time (in milli-seconds). This method should be
          * called only for FiRa UCI ProtocolVersion >= 2.0 devices.
@@ -2477,12 +2545,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             return mWaitObj;
         }
 
-        public boolean hasNonPrivilegedFgApp() {
-            return mHasNonPrivilegedFgApp;
+        public boolean hasNonPrivilegedFgAppOrService() {
+            return mHasNonPrivilegedFgAppOrService;
         }
 
-        public void setHasNonPrivilegedFgApp(boolean hasNonPrivilegedFgApp) {
-            mHasNonPrivilegedFgApp = hasNonPrivilegedFgApp;
+        public void setHasNonPrivilegedFgAppOrService(boolean hasNonPrivilegedFgAppOrService) {
+            mHasNonPrivilegedFgAppOrService = hasNonPrivilegedFgAppOrService;
         }
 
         /**
@@ -2556,7 +2624,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             FiraRangingReconfigureParams.Builder builder =
                     new FiraRangingReconfigureParams.Builder();
             // If app is in fg, use the configured ntf control, else disable.
-            if (mHasNonPrivilegedFgApp) {
+            if (mHasNonPrivilegedFgAppOrService) {
                 FiraOpenSessionParams params = (FiraOpenSessionParams) mParams;
                 builder.setRangeDataNtfConfig(params.getRangeDataNtfConfig())
                         .setRangeDataProximityNear(params.getRangeDataNtfProximityNear())
@@ -2574,7 +2642,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 // When a non-privileged app goes into the background, start a timer (that will stop
                 // the ranging session). If the app goes back into the foreground, the timer will
                 // get reset (but any stopped UWB session will not be auto-resumed).
-                if (!mHasNonPrivilegedFgApp) {
+                if (!mHasNonPrivilegedFgAppOrService) {
                     startNonPrivilegedBgAppTimerIfNotSet();
                 } else {
                     stopNonPrivilegedBgAppTimerIfSet();

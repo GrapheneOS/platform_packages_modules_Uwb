@@ -109,9 +109,11 @@ public class ConfigParam {
     public static final int MIN_FRAMES_PER_RR = 0x3A;
     public static final int MTU_SIZE = 0x3B;
     public static final int INTER_FRAME_INTERVAL = 0x3C;
+    public static final int DL_TDOA_BLOCK_STRIDING = 0x43;
     public static final int SESSION_KEY = 0x45;
     public static final int SUBSESSION_KEY = 0x46;
     public static final int SESSION_DATA_TRANSFER_STATUS_NTF_CONFIG = 0x47;
+    public static final int SESSION_TIME_BASE = 0x48;
     public static final int APPLICATION_DATA_ENDPOINT = 0x4C;
 
     // Android specific params.

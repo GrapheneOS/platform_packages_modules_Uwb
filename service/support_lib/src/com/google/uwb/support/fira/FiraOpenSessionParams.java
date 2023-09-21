@@ -138,6 +138,7 @@ public class FiraOpenSessionParams extends FiraParams {
     private final int mMinFramesPerRr;
     private final int mMtuSize;
     private final int mInterFrameInterval;
+    private final int mDlTdoaBlockStriding;
     private final int mUlTdoaTxIntervalMs;
     private final int mUlTdoaRandomWindowMs;
     @UlTdoaDeviceIdType private final int mUlTdoaDeviceIdType;
@@ -146,6 +147,9 @@ public class FiraOpenSessionParams extends FiraParams {
     @FilterType private final int mFilterType;
     private final int mMaxNumberOfMeasurements;
     private final boolean mSessionDataTransferStatusNtfConfig;
+    @Nullable private final int mReferenceTimeBase;
+    @Nullable private final int mReferenceSessionHandle;
+    @Nullable private final int mSessionOffsetInMicroSeconds;
     private final int mApplicationDataEndpoint;
 
     private static final int BUNDLE_VERSION_1 = 1;
@@ -242,6 +246,7 @@ public class FiraOpenSessionParams extends FiraParams {
             "mtu_size";
     private static final String KEY_INTER_FRAME_INTERVAL =
             "inter_frame_interval";
+    private static final String KEY_DLTDOA_BLOCK_STRIDING = "dltdoa_block_striding";
     private static final String UL_TDOA_TX_INTERVAL = "ul_tdoa_tx_interval";
     private static final String UL_TDOA_RANDOM_WINDOW = "ul_tdoa_random_window";
     private static final String UL_TDOA_DEVICE_ID_TYPE = "ul_tdoa_device_id_type";
@@ -251,6 +256,10 @@ public class FiraOpenSessionParams extends FiraParams {
     private static final String KEY_MAX_NUMBER_OF_MEASUREMENTS = "max_number_of_measurements";
     private static final String KEY_SESSION_DATA_TRANSFER_STATUS_NTF_CONFIG =
             "session_data_transfer_status_ntf_config";
+    private static final String KEY_REFERENCE_TIME_BASE = "reference_time_base";
+    private static final String KEY_REFERENCE_SESSION_HANDLE = "reference_session_handle";
+    private static final String KEY_SESSION_OFFSET_IN_MICRO_SECONDS =
+                "session_offset_in_micro_seconds";
     private static final String KEY_APPLICATION_DATA_ENDPOINT = "application_data_endpoint";
 
     private FiraOpenSessionParams(
@@ -326,6 +335,7 @@ public class FiraOpenSessionParams extends FiraParams {
             int minFramePerRr,
             int mtuSize,
             int interFrameInterval,
+            int dlTdoaBlockStriding,
             int ulTdoaTxIntervalMs,
             int ulTdoaRandomWindowMs,
             int ulTdoaDeviceIdType,
@@ -334,6 +344,9 @@ public class FiraOpenSessionParams extends FiraParams {
             int filterType,
             int maxNumberOfMeasurements,
             boolean sessionDataTransferStatusNtfConfig,
+            @Nullable int referenceTimeBase,
+            @Nullable int referenceSessionHandle,
+            @Nullable int sessionOffsetInMicroSecond,
             int applicationDataEndpoint) {
         mProtocolVersion = protocolVersion;
         mSessionId = sessionId;
@@ -407,6 +420,7 @@ public class FiraOpenSessionParams extends FiraParams {
         mMinFramesPerRr = minFramePerRr;
         mMtuSize = mtuSize;
         mInterFrameInterval = interFrameInterval;
+        mDlTdoaBlockStriding = dlTdoaBlockStriding;
         mUlTdoaTxIntervalMs = ulTdoaTxIntervalMs;
         mUlTdoaRandomWindowMs = ulTdoaRandomWindowMs;
         mUlTdoaDeviceIdType = ulTdoaDeviceIdType;
@@ -415,6 +429,9 @@ public class FiraOpenSessionParams extends FiraParams {
         mFilterType = filterType;
         mMaxNumberOfMeasurements = maxNumberOfMeasurements;
         mSessionDataTransferStatusNtfConfig = sessionDataTransferStatusNtfConfig;
+        mReferenceTimeBase = referenceTimeBase;
+        mReferenceSessionHandle = referenceSessionHandle;
+        mSessionOffsetInMicroSeconds = sessionOffsetInMicroSecond;
         mApplicationDataEndpoint = applicationDataEndpoint;
     }
 
@@ -519,7 +536,7 @@ public class FiraOpenSessionParams extends FiraParams {
         return mMeasurementReportType;
     }
 
-    @MeasurementReportType
+    @MeasurementReportPhase
     public int getMeasurementReportPhase() {
         return mMeasurementReportPhase;
     }
@@ -736,6 +753,10 @@ public class FiraOpenSessionParams extends FiraParams {
         return mInterFrameInterval;
     }
 
+    public int getDlTdoaBlockStriding() {
+        return mDlTdoaBlockStriding;
+    }
+
     public int getUlTdoaTxIntervalMs() {
         return mUlTdoaTxIntervalMs;
     }
@@ -766,6 +787,21 @@ public class FiraOpenSessionParams extends FiraParams {
 
     public boolean getSessionDataTransferStatusNtfConfig() {
         return mSessionDataTransferStatusNtfConfig;
+    }
+
+    @Nullable
+    public int getReferenceTimeBase() {
+        return mReferenceTimeBase;
+    }
+
+    @Nullable
+    public int getReferenceSessionHandle() {
+        return mReferenceSessionHandle;
+    }
+
+    @Nullable
+    public int getSessionOffsetInMicroSeconds() {
+        return mSessionOffsetInMicroSeconds;
     }
 
     public int getApplicationDataEndpoint() {
@@ -818,6 +854,8 @@ public class FiraOpenSessionParams extends FiraParams {
                 destAddressList[i++] = uwbAddressToLong(destAddress);
             }
             bundle.putLongArray(KEY_DEST_ADDRESS_LIST, destAddressList);
+        } else {
+            bundle.putInt(KEY_DLTDOA_BLOCK_STRIDING, mDlTdoaBlockStriding);
         }
 
         bundle.putLong(KEY_INITIATION_TIME_MS, mInitiationTime);
@@ -848,19 +886,21 @@ public class FiraOpenSessionParams extends FiraParams {
         bundle.putInt(KEY_SFD_ID, mSfdId);
         bundle.putInt(KEY_STS_SEGMENT_COUNT, mStsSegmentCount);
         bundle.putInt(KEY_STS_LENGTH, mStsLength);
-        bundle.putIntArray(KEY_SESSION_KEY, byteArrayToIntArray(mSessionKey));
-        bundle.putIntArray(KEY_SUBSESSION_KEY, byteArrayToIntArray(mSubSessionKey));
         bundle.putInt(KEY_PSDU_DATA_RATE, mPsduDataRate);
         bundle.putInt(KEY_BPRF_PHR_DATA_RATE, mBprfPhrDataRate);
         bundle.putInt(KEY_FCS_TYPE, mFcsType);
         bundle.putBoolean(
                 KEY_IS_TX_ADAPTIVE_PAYLOAD_POWER_ENABLED, mIsTxAdaptivePayloadPowerEnabled);
         bundle.putInt(KEY_STS_CONFIG, mStsConfig);
-        if (mStsConfig == STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY) {
+        if (mStsConfig == STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY
+            || mStsConfig == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
             bundle.putInt(KEY_SUB_SESSION_ID, mSubSessionId);
         }
-        if (mStsConfig == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
-            bundle.putInt(KEY_SUB_SESSION_ID, mSubSessionId);
+        if (mSessionKey != null) {
+            bundle.putIntArray(KEY_SESSION_KEY, byteArrayToIntArray(mSessionKey));
+        }
+        if (mSubSessionKey != null) {
+            bundle.putIntArray(KEY_SUBSESSION_KEY, byteArrayToIntArray(mSubSessionKey));
         }
         bundle.putIntArray(KEY_VENDOR_ID, byteArrayToIntArray(mVendorId));
         bundle.putIntArray(KEY_STATIC_STS_IV, byteArrayToIntArray(mStaticStsIV));
@@ -903,6 +943,11 @@ public class FiraOpenSessionParams extends FiraParams {
         bundle.putInt(KEY_MAX_NUMBER_OF_MEASUREMENTS, mMaxNumberOfMeasurements);
         bundle.putBoolean(
                 KEY_SESSION_DATA_TRANSFER_STATUS_NTF_CONFIG, mSessionDataTransferStatusNtfConfig);
+        if (mDeviceType == FiraParams.RANGING_DEVICE_TYPE_CONTROLLER) {
+            bundle.putInt(KEY_REFERENCE_TIME_BASE, mReferenceTimeBase);
+            bundle.putInt(KEY_REFERENCE_SESSION_HANDLE, mReferenceSessionHandle);
+            bundle.putInt(KEY_SESSION_OFFSET_IN_MICRO_SECONDS, mSessionOffsetInMicroSeconds);
+        }
         bundle.putInt(KEY_APPLICATION_DATA_ENDPOINT, mApplicationDataEndpoint);
         return bundle;
     }
@@ -1025,6 +1070,7 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setMinFramePerRr(bundle.getInt(KEY_MIN_FRAMES_PER_RR, 1))
                 .setMtuSize(bundle.getInt(KEY_MTU_SIZE, 1048))
                 .setInterFrameInterval(bundle.getInt(KEY_INTER_FRAME_INTERVAL, 1))
+                .setDlTdoaBlockStriding(bundle.getInt(KEY_DLTDOA_BLOCK_STRIDING))
                 .setUlTdoaTxIntervalMs(bundle.getInt(UL_TDOA_TX_INTERVAL))
                 .setUlTdoaRandomWindowMs(bundle.getInt(UL_TDOA_RANDOM_WINDOW))
                 .setUlTdoaDeviceIdType(bundle.getInt(UL_TDOA_DEVICE_ID_TYPE))
@@ -1035,6 +1081,9 @@ public class FiraOpenSessionParams extends FiraParams {
                         KEY_MAX_NUMBER_OF_MEASUREMENTS, MAX_NUMBER_OF_MEASUREMENTS_DEFAULT))
                 .setSessionDataTransferStatusNtfConfig(bundle.getBoolean(
                         KEY_SESSION_DATA_TRANSFER_STATUS_NTF_CONFIG))
+                .setSessionTimeBase(bundle.getInt(KEY_REFERENCE_TIME_BASE),
+                        bundle.getInt(KEY_REFERENCE_SESSION_HANDLE),
+                        bundle.getInt(KEY_SESSION_OFFSET_IN_MICRO_SECONDS))
                 .setApplicationDataEndpoint(bundle.getInt(
                         KEY_APPLICATION_DATA_ENDPOINT, APPLICATION_DATA_ENDPOINT_DEFAULT));
 
@@ -1269,6 +1318,9 @@ public class FiraOpenSessionParams extends FiraParams {
         /** UCI spec default: 1 */
         public int mInterFrameInterval = 1;
 
+        /** UCI spec default: no dltdoa block striding. */
+        private int mDlTdoaBlockStriding = 0;
+
         /** Ul-TDoA Tx Interval in Milliseconds */
         private int mUlTdoaTxIntervalMs = 2000;
 
@@ -1291,6 +1343,13 @@ public class FiraOpenSessionParams extends FiraParams {
 
         /** UCI spec default: 0x00(Disable) */
         private boolean mSessionDataTransferStatusNtfConfig = false;
+
+        /** UCI spec default: 9 Octets of SESSION_TIME_BASE as per UCI spec*/
+        private int mReferenceTimeBase = 0;
+
+        private int mReferenceSessionHandle = 0;
+
+        private int mSessionOffsetInMicroSeconds = 0;
 
         private int mApplicationDataEndpoint = APPLICATION_DATA_ENDPOINT_DEFAULT;
 
@@ -1371,6 +1430,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mMinFramesPerRr = builder.mMinFramesPerRr;
             mMtuSize = builder.mMtuSize;
             mInterFrameInterval = builder.mInterFrameInterval;
+            mDlTdoaBlockStriding = builder.mDlTdoaBlockStriding;
             mUlTdoaTxIntervalMs = builder.mUlTdoaTxIntervalMs;
             mUlTdoaRandomWindowMs = builder.mUlTdoaRandomWindowMs;
             mUlTdoaDeviceIdType = builder.mUlTdoaDeviceIdType;
@@ -1378,6 +1438,9 @@ public class FiraOpenSessionParams extends FiraParams {
             mUlTdoaTxTimestampType = builder.mUlTdoaTxTimestampType;
             mMaxNumberOfMeasurements = builder.mMaxNumberOfMeasurements;
             mSessionDataTransferStatusNtfConfig = builder.mSessionDataTransferStatusNtfConfig;
+            mReferenceTimeBase = builder.mReferenceTimeBase;
+            mReferenceSessionHandle = builder.mReferenceSessionHandle;
+            mSessionOffsetInMicroSeconds = builder.mSessionOffsetInMicroSeconds;
             mApplicationDataEndpoint = builder.mApplicationDataEndpoint;
         }
 
@@ -1456,6 +1519,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mMinFramesPerRr = params.mMinFramesPerRr;
             mMtuSize = params.mMtuSize;
             mInterFrameInterval = params.mInterFrameInterval;
+            mDlTdoaBlockStriding = params.mDlTdoaBlockStriding;
             mUlTdoaTxIntervalMs = params.mUlTdoaTxIntervalMs;
             mUlTdoaRandomWindowMs = params.mUlTdoaRandomWindowMs;
             mUlTdoaDeviceIdType = params.mUlTdoaDeviceIdType;
@@ -1464,6 +1528,9 @@ public class FiraOpenSessionParams extends FiraParams {
             mFilterType = params.mFilterType;
             mMaxNumberOfMeasurements = params.mMaxNumberOfMeasurements;
             mSessionDataTransferStatusNtfConfig = params.mSessionDataTransferStatusNtfConfig;
+            mReferenceTimeBase = params.mReferenceTimeBase;
+            mReferenceSessionHandle = params.mReferenceSessionHandle;
+            mSessionOffsetInMicroSeconds = params.mSessionOffsetInMicroSeconds;
             mApplicationDataEndpoint = params.mApplicationDataEndpoint;
         }
 
@@ -1878,6 +1945,11 @@ public class FiraOpenSessionParams extends FiraParams {
             return this;
         }
 
+        public FiraOpenSessionParams.Builder setDlTdoaBlockStriding(int dlTdoaBlockStriding) {
+            mDlTdoaBlockStriding = dlTdoaBlockStriding;
+            return this;
+        }
+
         public FiraOpenSessionParams.Builder setUlTdoaTxIntervalMs(
                 int ulTdoaTxIntervalMs) {
             mUlTdoaTxIntervalMs = ulTdoaTxIntervalMs;
@@ -1942,6 +2014,14 @@ public class FiraOpenSessionParams extends FiraParams {
             return this;
         }
 
+        public FiraOpenSessionParams.Builder setSessionTimeBase(@Nullable int referenceTimeBase,
+                int referenceSessionHandle, int sessionOffsetInMicroSecond) {
+            mReferenceTimeBase = referenceTimeBase;
+            mReferenceSessionHandle = referenceSessionHandle;
+            mSessionOffsetInMicroSeconds = sessionOffsetInMicroSecond;
+            return this;
+        }
+
         public FiraOpenSessionParams.Builder setApplicationDataEndpoint(
                 int applicationDataEndpoint) {
             mApplicationDataEndpoint = applicationDataEndpoint;
@@ -1975,28 +2055,25 @@ public class FiraOpenSessionParams extends FiraParams {
                 checkArgument(mStaticStsIV != null && mStaticStsIV.length == 6);
             }
 
-            if (mStsConfig != STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY) {
-                // Sub Session ID is used for dynamic individual key STS only.
-                if (!mSubSessionId.isSet()) {
-                    mSubSessionId.set(0);
-                }
+            if ((mStsConfig == STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY ||
+                 mStsConfig == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) &&
+                 (mDeviceType.get() == RANGING_DEVICE_TYPE_CONTROLEE)) {
+                // Sub Session ID is used for dynamic/Provisional individual key and
+                // for controlee device.
+                checkArgument(mSubSessionId.isSet());
+            } else {
+                mSubSessionId.set(0);
             }
 
-            if (mStsConfig == STS_CONFIG_PROVISIONED) {
-                checkArgument(mSessionKey != null
-                        && (mSessionKey.length == 16 || mSessionKey.length == 32));
+            if (mStsConfig == STS_CONFIG_PROVISIONED && mSessionKey != null) {
+                checkArgument(mSessionKey.length == 16 || mSessionKey.length == 32);
             }
 
-            if (mStsConfig == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
-                checkArgument(mSessionKey != null
-                        && (mSessionKey.length == 16 || mSessionKey.length == 32));
-                if (mDeviceType.get() == RANGING_DEVICE_TYPE_CONTROLEE) {
-                    if (!mSubSessionId.isSet()) {
-                        mSubSessionId.set(0);
-                    }
-                    checkArgument(mSubsessionKey != null
-                            && (mSubsessionKey.length == 16 || mSubsessionKey.length == 32));
-                }
+            if (mStsConfig == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY
+                && mDeviceType.get() == RANGING_DEVICE_TYPE_CONTROLEE && mSubsessionKey != null) {
+                checkArgument(mSessionKey != null &&
+                        (mSessionKey.length == 16 || mSessionKey.length == 32));
+                checkArgument(mSubsessionKey.length == 16 || mSubsessionKey.length == 32);
             }
         }
 
@@ -2179,6 +2256,7 @@ public class FiraOpenSessionParams extends FiraParams {
                     mMinFramesPerRr,
                     mMtuSize,
                     mInterFrameInterval,
+                    mDlTdoaBlockStriding,
                     mUlTdoaTxIntervalMs,
                     mUlTdoaRandomWindowMs,
                     mUlTdoaDeviceIdType,
@@ -2187,6 +2265,9 @@ public class FiraOpenSessionParams extends FiraParams {
                     mFilterType,
                     mMaxNumberOfMeasurements,
                     mSessionDataTransferStatusNtfConfig,
+                    mReferenceTimeBase,
+                    mReferenceSessionHandle,
+                    mSessionOffsetInMicroSeconds,
                     mApplicationDataEndpoint);
         }
     }

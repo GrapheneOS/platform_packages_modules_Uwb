@@ -55,6 +55,7 @@ java_library {
         "framework-statsd.stubs.module_lib",
         "framework-wifi.stubs.module_lib",
         "framework-bluetooth.stubs.module_lib",
+        "framework-location.stubs.module_lib",
     ],
 
     static_libs: [

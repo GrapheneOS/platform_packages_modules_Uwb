@@ -16,7 +16,8 @@
 
 use crate::jclass_name::{
     MULTICAST_LIST_UPDATE_STATUS_CLASS, UWB_DL_TDOA_MEASUREMENT_CLASS,
-    UWB_OWR_AOA_MEASUREMENT_CLASS, UWB_RANGING_DATA_CLASS, UWB_TWO_WAY_MEASUREMENT_CLASS,
+    UWB_OWR_AOA_MEASUREMENT_CLASS, UWB_RADAR_DATA_CLASS, UWB_RADAR_SWEEP_DATA_CLASS,
+    UWB_RANGING_DATA_CLASS, UWB_TWO_WAY_MEASUREMENT_CLASS,
 };
 
 use std::collections::HashMap;
@@ -32,11 +33,11 @@ use uwb_core::error::{Error as UwbError, Result as UwbResult};
 use uwb_core::params::UwbAddress;
 use uwb_core::uci::uci_manager_sync::{NotificationManager, NotificationManagerBuilder};
 use uwb_core::uci::{
-    CoreNotification, DataRcvNotification, RangingMeasurements, SessionNotification,
-    SessionRangeData,
+    CoreNotification, DataRcvNotification, RadarDataRcvNotification, RangingMeasurements,
+    SessionNotification, SessionRangeData,
 };
 use uwb_uci_packets::{
-    ControleeStatus, ExtendedAddressDlTdoaRangingMeasurement,
+    radar_bytes_per_sample_value, ControleeStatus, ExtendedAddressDlTdoaRangingMeasurement,
     ExtendedAddressOwrAoaRangingMeasurement, ExtendedAddressTwoWayRangingMeasurement,
     MacAddressIndicator, RangingMeasurementType, SessionState,
     ShortAddressDlTdoaRangingMeasurement, ShortAddressOwrAoaRangingMeasurement,
@@ -48,6 +49,7 @@ const SHORT_MAC_ADDRESS_LEN: i32 = 2;
 const EXTENDED_MAC_ADDRESS_LEN: i32 = 8;
 const MAX_ANCHOR_LOCATION_LEN: i32 = 12;
 const MAX_RANGING_ROUNDS_LEN: i32 = 16;
+const MAX_RADAR_VENDOR_DATA_LEN: i32 = 256;
 
 // Maximum allowed number of Java Object to be allocated inside with_local_frame
 const MAX_JAVA_OBJECTS_CAPACITY: i32 = 50;
@@ -1138,11 +1140,155 @@ impl NotificationManager for NotificationManagerAndroid {
                 &[
                     // session_token below has already been mapped to session_id by uci layer.
                     jvalue::from(JValue::Long(data_rcv_notification.session_token as i64)),
-                    jvalue::from(JValue::Int(data_rcv_notification.status as i32)),
+                    jvalue::from(JValue::Int(i32::from(data_rcv_notification.status))),
                     jvalue::from(JValue::Long(data_rcv_notification.uci_sequence_num as i64)),
                     jvalue::from(JValue::Object(source_address_jobject)),
                     jvalue::from(JValue::Object(payload_jobject)),
                 ],
+            )
+        })
+        .map_err(|_| UwbError::ForeignFunctionInterface)?;
+        Ok(())
+    }
+
+    fn on_radar_data_rcv_notification(
+        &mut self,
+        radar_data_rcv_notification: RadarDataRcvNotification,
+    ) -> UwbResult<()> {
+        debug!("UCI JNI: Radar Data Rcv notification callback.");
+        let env = *self.env;
+        env.with_local_frame(MAX_JAVA_OBJECTS_CAPACITY, || {
+            let radar_sweep_data_jclass = NotificationManagerAndroid::find_local_class(
+                &mut self.jclass_map,
+                &self.class_loader_obj,
+                &self.env,
+                UWB_RADAR_SWEEP_DATA_CLASS,
+            )?;
+
+            let max_sample_data_length =
+                radar_bytes_per_sample_value(radar_data_rcv_notification.bits_per_sample) as i32
+                    * radar_data_rcv_notification.samples_per_sweep as i32;
+            let sample_data_jbytearray = self.env.new_byte_array(max_sample_data_length)?;
+            let vendor_data_jbytearray = self.env.new_byte_array(MAX_RADAR_VENDOR_DATA_LEN)?;
+
+            // Safety: sample_data_jbytearray is safely instantiated above.
+            let sample_data_jobject = unsafe { JObject::from_raw(sample_data_jbytearray) };
+            // Safety: vendor_data_jbytearray is safely instantiated above.
+            let vendor_data_jobject = unsafe { JObject::from_raw(vendor_data_jbytearray) };
+
+            let sweep_data_sig: &str = "(JJ[B[B)V";
+
+            let zero_initiated_sweep_data = self
+                .env
+                .new_object(
+                    radar_sweep_data_jclass,
+                    sweep_data_sig,
+                    &[
+                        JValue::Long(0),
+                        JValue::Long(0),
+                        JValue::Object(vendor_data_jobject),
+                        JValue::Object(sample_data_jobject),
+                    ],
+                )
+                .map_err(|e| {
+                    error!(
+                        "UCI JNI: zero initiated RadarSweepData object creation failed: {:?}",
+                        e
+                    );
+                    e
+                })?;
+
+            let radar_sweep_data_jobjectarray = self
+                .env
+                .new_object_array(
+                    radar_data_rcv_notification.sweep_data.len() as i32,
+                    radar_sweep_data_jclass,
+                    zero_initiated_sweep_data,
+                )
+                .map_err(|e| {
+                    error!("UCI JNI: RadarSweepData object array creation failed: {:?}", e);
+                    e
+                })?;
+
+            for (i, sweep_data) in radar_data_rcv_notification.sweep_data.into_iter().enumerate() {
+                let vendor_data_jbytearray =
+                    self.env.byte_array_from_slice(&sweep_data.vendor_specific_data)?;
+                let sample_data_jbytearray =
+                    self.env.byte_array_from_slice(&sweep_data.sample_data)?;
+                // Safety: vendor_data_jbytearray instantiated above
+                let vendor_data_jobject = unsafe { JObject::from_raw(vendor_data_jbytearray) };
+                // Safety: sample_data_jbytearray instantiated above
+                let sample_data_jobject = unsafe { JObject::from_raw(sample_data_jbytearray) };
+                let sweep_data_jobject = self
+                    .env
+                    .new_object(
+                        radar_sweep_data_jclass,
+                        sweep_data_sig,
+                        &[
+                            JValue::Long(sweep_data.sequence_number as i64),
+                            JValue::Long(sweep_data.timestamp as i64),
+                            JValue::Object(vendor_data_jobject),
+                            JValue::Object(sample_data_jobject),
+                        ],
+                    )
+                    .map_err(|e| {
+                        error!("UCI JNI: RadarSweepData object creation failed: {:?}", e);
+                        e
+                    })?;
+
+                self.env
+                    .set_object_array_element(
+                        radar_sweep_data_jobjectarray,
+                        i as i32,
+                        sweep_data_jobject,
+                    )
+                    .map_err(|e| {
+                        error!(
+                            "UCI JNI: sweep_data_jobject copy into jobjectarray failed: {:?}",
+                            e
+                        );
+                        e
+                    })?;
+            }
+
+            let radar_sweep_data_array_jobject =
+                // Safety: radar_sweep_data_jobjectarray is safely instantiated above.
+                unsafe { JObject::from_raw(radar_sweep_data_jobjectarray) };
+
+            let radar_data_jclass = NotificationManagerAndroid::find_local_class(
+                &mut self.jclass_map,
+                &self.class_loader_obj,
+                &self.env,
+                UWB_RADAR_DATA_CLASS,
+            )?;
+
+            let radar_data_jobject = self
+                .env
+                .new_object(
+                    radar_data_jclass,
+                    "(JIIIII[L".to_owned() + UWB_RADAR_SWEEP_DATA_CLASS + ";)V",
+                    &[
+                        // session_token below has already been mapped to session_id by uci layer.
+                        JValue::Long(radar_data_rcv_notification.session_token as i64),
+                        JValue::Int(radar_data_rcv_notification.status as i32),
+                        JValue::Int(radar_data_rcv_notification.radar_data_type as i32),
+                        JValue::Int(radar_data_rcv_notification.samples_per_sweep as i32),
+                        JValue::Int(radar_data_rcv_notification.bits_per_sample as i32),
+                        JValue::Int(radar_data_rcv_notification.sweep_offset as i32),
+                        JValue::Object(radar_sweep_data_array_jobject),
+                    ],
+                )
+                .map_err(|e| {
+                    error!("UCI JNI: UwbRadarData object creation failed: {:?}", e);
+                    e
+                })?;
+
+            let method_sig = "(L".to_owned() + UWB_RADAR_DATA_CLASS + ";)V";
+
+            self.cached_jni_call(
+                "onRadarDataMessageReceived",
+                &method_sig,
+                &[jvalue::from(JValue::Object(radar_data_jobject))],
             )
         })
         .map_err(|_| UwbError::ForeignFunctionInterface)?;

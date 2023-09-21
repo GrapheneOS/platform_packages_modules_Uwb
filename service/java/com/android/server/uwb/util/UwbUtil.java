@@ -158,4 +158,8 @@ public final class UwbUtil {
 
         return inputStream;
     }
+
+    public static boolean isBitSet(int flags, int mask) {
+        return (flags & mask) != 0;
+    }
 }
