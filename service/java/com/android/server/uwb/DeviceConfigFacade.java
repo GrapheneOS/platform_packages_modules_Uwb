@@ -86,6 +86,8 @@ public class DeviceConfigFacade {
     private boolean mBackgroundRangingEnabled;
     // Flag to disable error streak timer when a session is ongoing.
     private boolean mRangingErrorStreakTimerEnabled;
+    // Flag to enable sending ranging stopped params.
+    private boolean mCccRangingStoppedParamsSendEnabled;
 
     public DeviceConfigFacade(Handler handler, Context context) {
         mContext = context;
@@ -248,6 +250,12 @@ public class DeviceConfigFacade {
                 DeviceConfig.NAMESPACE_UWB,
                 "ranging_error_streak_timer_enabled",
                 mContext.getResources().getBoolean(R.bool.ranging_error_streak_timer_enabled)
+        );
+
+        mCccRangingStoppedParamsSendEnabled = DeviceConfig.getBoolean(
+                DeviceConfig.NAMESPACE_UWB,
+                "ccc_ranging_stopped_params_send_enabled",
+                mContext.getResources().getBoolean(R.bool.ccc_ranging_stopped_params_send_enabled)
         );
 
         // A little parsing and cleanup:
@@ -488,5 +496,13 @@ public class DeviceConfigFacade {
      */
     public boolean isRangingErrorStreakTimerEnabled() {
         return mRangingErrorStreakTimerEnabled;
+    }
+
+    /**
+     * Returns whether to send ranging stopped params for CCC session stop or not.
+     * If enabled, newly added `CccRangingStoppedParams` are sent in `onStopped()` callback.
+     */
+    public boolean isCccRangingStoppedParamsSendEnabled() {
+        return mCccRangingStoppedParamsSendEnabled;
     }
 }
