@@ -170,4 +170,9 @@
     If disabled, session would not be automatically stopped if there is no peer available.
     -->
     <bool name = "ranging_error_streak_timer_enabled">true</bool>
+
+    <!-- Whether to send ranging stopped params for CCC session stop or not.
+    If enabled, newly added `CccRangingStoppedParams` are sent in `onStopped()` callback.
+    -->
+    <bool name = "ccc_ranging_stopped_params_send_enabled">false</bool>
 </resources>
