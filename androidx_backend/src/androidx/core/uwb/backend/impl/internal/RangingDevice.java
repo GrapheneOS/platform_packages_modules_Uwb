@@ -30,6 +30,8 @@ import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_DT_TAG;
 
 import static java.util.Objects.requireNonNull;
 
+import android.os.Build.VERSION;
+import android.os.Build.VERSION_CODES;
 import android.os.PersistableBundle;
 import android.util.Log;
 import android.uwb.RangingMeasurement;
@@ -44,8 +46,10 @@ import androidx.annotation.WorkerThread;
 import com.google.common.hash.Hashing;
 import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
+import com.google.uwb.support.multichip.ChipInfoParams;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -54,6 +58,7 @@ import java.util.concurrent.ExecutorService;
 public abstract class RangingDevice {
 
     public static final int SESSION_ID_UNSET = 0;
+    private static final String NO_MULTICHIP_SUPPORT = "NO_MULTICHIP_SUPPORT";
 
     /** Timeout value after ranging start call */
     private static final int RANGING_START_TIMEOUT_MILLIS = 3100;
@@ -98,6 +103,8 @@ public abstract class RangingDevice {
     @NonNull
     protected final UwbFeatureFlags mUwbFeatureFlags;
 
+    private final HashMap<String, UwbAddress> mMultiChipMap;
+
     RangingDevice(UwbManager manager, Executor executor,
             OpAsyncCallbackRunner<Boolean> opAsyncCallbackRunner, UwbFeatureFlags uwbFeatureFlags) {
         mUwbManager = manager;
@@ -105,6 +112,8 @@ public abstract class RangingDevice {
         mOpAsyncCallbackRunner = opAsyncCallbackRunner;
         mOpAsyncCallbackRunner.setOperationTimeoutMillis(RANGING_START_TIMEOUT_MILLIS);
         mUwbFeatureFlags = uwbFeatureFlags;
+        this.mMultiChipMap = new HashMap<>();
+        initializeUwbAddress();
     }
 
     /** Sets the chip ID. By default, the default chip is used. */
@@ -122,10 +131,23 @@ public abstract class RangingDevice {
 
     /** Gets local address. The first call will return a randomized short address. */
     public UwbAddress getLocalAddress() {
-        if (mLocalAddress == null) {
-            mLocalAddress = getRandomizedLocalAddress();
+        if (isLocalAddressSet()) {
+          return mLocalAddress;
         }
-        return mLocalAddress;
+        // UwbManager#getDefaultChipId is supported from Android T.
+        if (VERSION.SDK_INT <= VERSION_CODES.S) {
+            return getLocalAddress(NO_MULTICHIP_SUPPORT);
+        }
+        String defaultChipId = mUwbManager.getDefaultChipId();
+        return getLocalAddress(defaultChipId);
+    }
+
+    /** Gets local address given chip ID. The first call will return a randomized short address. */
+    public UwbAddress getLocalAddress(String chipId) {
+        if (mMultiChipMap.get(chipId) == null) {
+            mMultiChipMap.put(chipId, getRandomizedLocalAddress());
+        }
+        return mMultiChipMap.get(chipId);
     }
 
     /** Check whether local address was previously set. */
@@ -244,6 +266,19 @@ public abstract class RangingDevice {
         return UwbDevice.createForAddress(getLocalAddress().toBytes());
     }
 
+    private void initializeUwbAddress() {
+        // UwbManager#getChipInfos is supported from Android T.
+        if (VERSION.SDK_INT >= VERSION_CODES.TIRAMISU) {
+            List<PersistableBundle> chipInfoBundles = mUwbManager.getChipInfos();
+            for (PersistableBundle chipInfo : chipInfoBundles) {
+                mMultiChipMap.put(ChipInfoParams.fromBundle(chipInfo).getChipId(),
+                        getRandomizedLocalAddress());
+            }
+        } else {
+            mMultiChipMap.put(NO_MULTICHIP_SUPPORT, getRandomizedLocalAddress());
+        }
+    }
+
     protected RangingSession.Callback convertCallback(RangingSessionCallback callback) {
         return new RangingSession.Callback() {
 
@@ -332,7 +367,9 @@ public abstract class RangingDevice {
             @WorkerThread
             @Override
             public void onStopFailed(int reason, PersistableBundle params) {
-                mOpAsyncCallbackRunner.complete(false);
+                if (mOpAsyncCallbackRunner.isActive()) {
+                    mOpAsyncCallbackRunner.complete(false);
+                }
             }
 
             @WorkerThread
@@ -426,7 +463,7 @@ public abstract class RangingDevice {
             return RANGING_ALREADY_STARTED;
         }
 
-        if (mLocalAddress == null) {
+        if (getLocalAddress() == null) {
             return INVALID_API_CALL;
         }
 
