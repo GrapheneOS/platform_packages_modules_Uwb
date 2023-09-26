@@ -270,7 +270,7 @@ public class RangingController extends RangingDevice {
             UwbAddress[] controleeAddress,
             @Nullable int[] subSessionIdList,
             @Nullable byte[] subSessionKeyInfo) {
-        if (VERSION.SDK_INT <= VERSION_CODES.S) {
+        if (VERSION.SDK_INT < VERSION_CODES.TIRAMISU) {
             return reconfigureRanging(
                     ConfigurationManager.createReconfigureParams(
                                     mRangingParameters.getUwbConfigId(),
@@ -337,7 +337,7 @@ public class RangingController extends RangingDevice {
      * @return true if removeControlee() was successful.
      */
     private synchronized boolean removeControleeAdapter(UwbAddress[] controleeAddress) {
-        if (VERSION.SDK_INT <= VERSION_CODES.S) {
+        if (VERSION.SDK_INT < VERSION_CODES.TIRAMISU) {
             return reconfigureRanging(
                     ConfigurationManager.createReconfigureParams(
                                     mRangingParameters.getUwbConfigId(),

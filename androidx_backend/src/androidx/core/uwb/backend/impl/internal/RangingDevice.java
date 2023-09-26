@@ -135,7 +135,7 @@ public abstract class RangingDevice {
           return mLocalAddress;
         }
         // UwbManager#getDefaultChipId is supported from Android T.
-        if (VERSION.SDK_INT <= VERSION_CODES.S) {
+        if (VERSION.SDK_INT < VERSION_CODES.TIRAMISU) {
             return getLocalAddress(NO_MULTICHIP_SUPPORT);
         }
         String defaultChipId = mUwbManager.getDefaultChipId();
