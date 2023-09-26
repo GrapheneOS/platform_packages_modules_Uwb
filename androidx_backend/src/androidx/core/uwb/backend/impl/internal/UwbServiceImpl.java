@@ -141,7 +141,7 @@ public class UwbServiceImpl {
         requireNonNull(mUwbFeatureFlags);
 
         if (mUwbFeatureFlags.skipRangingCapabilitiesCheck()
-                && VERSION.SDK_INT <= VERSION_CODES.S_V2) {
+                && VERSION.SDK_INT < VERSION_CODES.TIRAMISU) {
             return new RangingCapabilities(
                     /* supportsDistance= */ true,
                     mUwbFeatureFlags.hasAzimuthSupport(),
