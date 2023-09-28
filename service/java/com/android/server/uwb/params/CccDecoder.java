@@ -62,7 +62,6 @@ import android.util.Log;
 import com.android.server.uwb.config.ConfigParam;
 
 import com.google.uwb.support.base.Params;
-import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccProtocolVersion;
 import com.google.uwb.support.ccc.CccPulseShapeCombo;
 import com.google.uwb.support.ccc.CccRangingStartedParams;
@@ -162,11 +161,14 @@ public class CccDecoder extends TlvDecoder {
         if (isBitSet(chapsPerslot, CCC_CHAPS_PER_SLOT_24)) {
             builder.addChapsPerSlot(CHAPS_PER_SLOT_24);
         }
-        // Don't use TlvDecodeBuffer#getInt() to avoid conversion to little endian.
-        int syncCodes = ByteBuffer.wrap(tlvs.getByteArray(CCC_SUPPORTED_SYNC_CODES)).getInt();
-        for (int i = 0; i < 32; i++) {
-            if (isBitSet(syncCodes, 1 << i)) {
-                builder.addSyncCode(i + 1);
+        byte[] syncCodes = tlvs.getByteArray(CCC_SUPPORTED_SYNC_CODES);
+        for (int byteIndex = 0; byteIndex < syncCodes.length; byteIndex++) {
+            byte syncCodeByte = syncCodes[byteIndex];
+            for (int bitIndex = 0; bitIndex < 8; bitIndex++) {
+                if ((syncCodeByte & (1 << bitIndex)) != 0) {
+                    int syncCodeValue = (byteIndex * 8) + bitIndex + 1;
+                    builder.addSyncCode(syncCodeValue);
+                }
             }
         }
 
