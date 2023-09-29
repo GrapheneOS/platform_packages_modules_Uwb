@@ -76,6 +76,7 @@ java_library {
         "modules-utils-build",
         "cbor-java",
         "bouncycastle-uwb",
+        "uwb_flags_lib",
     ],
 
     apex_available: [
