@@ -45,6 +45,8 @@ android_test {
         // Then, the jarjar_rules here will perform the rename for the entire APK
         // i.e. service-uwb + test code
         "service-uwb-pre-jarjar",
+        "flag-junit",
+        "platform-test-annotations",
     ],
 
     jarjar_rules: ":uwb-jarjar-rules",
