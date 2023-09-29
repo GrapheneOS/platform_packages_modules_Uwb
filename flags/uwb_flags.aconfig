@@ -1,0 +1,15 @@
+package: "com.android.uwb.flags"
+
+flag {
+    name: "query_timestamp_micros"
+    namespace: "uwb"
+    description: "This flag controls whether querying timestamp is allowed"
+    bug: "293919345"
+}
+
+flag {
+    name: "hybrid_session_support"
+    namespace: "uwb"
+    description: "This flag controls hybrid session configuration support"
+    bug: "293919345"
+}
