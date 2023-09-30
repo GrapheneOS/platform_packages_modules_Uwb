@@ -87,6 +87,9 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
     @Override
     public void onSessionStatusNotificationReceived(PersistableBundle sessionStatusBundle)
             throws RemoteException {
+        if (mCallback == null || mExecutor == null) {
+            return;
+        }
         synchronized (this) {
             final long identity = Binder.clearCallingIdentity();
             try {
@@ -103,6 +106,9 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
     @Override
     public void onDeviceStatusNotificationReceived(PersistableBundle deviceStateBundle)
             throws RemoteException {
+        if (mCallback == null || mExecutor == null) {
+            return;
+        }
         synchronized (this) {
             final long identity = Binder.clearCallingIdentity();
             try {
@@ -120,6 +126,9 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
     @Override
     public int onSessionConfigurationReceived(PersistableBundle openSessionBundle)
             throws RemoteException {
+        if (mCallback == null) {
+            return 0;
+        }
         synchronized (this) {
             int status = 0;
             final long identity = Binder.clearCallingIdentity();
@@ -150,6 +159,9 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
     @Override
     public RangingReport onRangingReportReceived(RangingReport rangingReport)
             throws RemoteException {
+        if (mCallback == null) {
+            return rangingReport;
+        }
         synchronized (this) {
             final long identity = Binder.clearCallingIdentity();
             RangingReport vendorRangingReport = rangingReport;
@@ -182,6 +194,9 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
     @Override
     public boolean onCheckPointedTarget(PersistableBundle pointedTargetBundle)
             throws RemoteException {
+        if (mCallback == null) {
+            return false;
+        }
         synchronized (this) {
             final long identity = Binder.clearCallingIdentity();
             boolean result = false;
