@@ -1772,6 +1772,7 @@ public class UwbManagerTest {
             rangingSessionCallback.rangingSession.start(new PersistableBundle());
             // Wait for the on started callback.
             assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(oemExtensionCountDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
             assertThat(uwbOemExtensionCallback.onSessionChangedCalled).isTrue();
             assertThat(uwbOemExtensionCallback.mSessionChangeNtf).isNotNull();
             assertThat(uwbOemExtensionCallback.onDeviceStatusNtfCalled).isTrue();
