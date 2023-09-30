@@ -112,7 +112,7 @@ public class CccDecoderTest {
         assertThat(cccSpecificationParams.getChapsPerSlot()).isEqualTo(
                 List.of(CHAPS_PER_SLOT_3, CHAPS_PER_SLOT_9));
         assertThat(cccSpecificationParams.getSyncCodes()).isEqualTo(
-                List.of(2, 8));
+                List.of(26, 32));
         assertThat(cccSpecificationParams.getChannels()).isEqualTo(List.of(5, 9));
         assertThat(cccSpecificationParams.getHoppingConfigModes()).isEqualTo(
                 List.of(HOPPING_CONFIG_MODE_CONTINUOUS, HOPPING_CONFIG_MODE_ADAPTIVE));
