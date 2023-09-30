@@ -1177,7 +1177,9 @@ public class UwbManagerTest {
         // Register the UwbOemExtensionCallback with UwbManager, this requires both an API SDK
         // level of at least U, and UWB_PRIVILEGED permission.
         assumeTrue(SdkLevel.isAtLeastU());
-        UwbOemExtensionCallback uwbOemExtensionCallback = new UwbOemExtensionCallback();
+        CountDownLatch oemExtensionCountDownLatch = new CountDownLatch(1);
+        UwbOemExtensionCallback uwbOemExtensionCallback =
+                new UwbOemExtensionCallback(oemExtensionCountDownLatch);
         try {
             uiAutomation.adoptShellPermissionIdentity();
             mUwbManager.registerUwbOemExtensionCallback(
@@ -1198,6 +1200,8 @@ public class UwbManagerTest {
                 (rangingSessionCallback) -> {
                     // Check that onCheckPointedTarget() is called, this should happen when an
                     // OWR_AOA Ranging report is received (on the observer).
+                    assertThat(oemExtensionCountDownLatch
+                            .await(1, TimeUnit.SECONDS)).isTrue();
                     assertThat(uwbOemExtensionCallback.onCheckPointedTargetCalled).isTrue();
 
                     // Send a Data packet to the remote device (Advertiser)
@@ -1646,18 +1650,28 @@ public class UwbManagerTest {
         public boolean onSessionChangedCalled = false;
         public boolean onDeviceStatusNtfCalled = false;
         public boolean onCheckPointedTargetCalled = false;
+        private CountDownLatch mCountDownLatch;
 
+        UwbOemExtensionCallback(CountDownLatch countDownLatch) {
+            mCountDownLatch = countDownLatch;
+        }
+
+        public void replaceCountDownLatch(CountDownLatch countDownLatch) {
+            mCountDownLatch = countDownLatch;
+        }
         @Override
         public void onSessionStatusNotificationReceived(
                 @NonNull PersistableBundle sessionStatusBundle) {
             mSessionChangeNtf = sessionStatusBundle;
             onSessionChangedCalled = true;
+            mCountDownLatch.countDown();
         }
 
         @Override
         public void onDeviceStatusNotificationReceived(PersistableBundle deviceStatusBundle) {
             mDeviceStatusNtf = deviceStatusBundle;
             onDeviceStatusNtfCalled = true;
+            mCountDownLatch.countDown();
         }
 
         @NonNull
@@ -1665,6 +1679,7 @@ public class UwbManagerTest {
         public int onSessionConfigurationComplete(@NonNull PersistableBundle openSessionBundle) {
             mSessionConfig = openSessionBundle;
             onSessionConfigCompleteCalled = true;
+            mCountDownLatch.countDown();
             return 0;
         }
 
@@ -1674,6 +1689,7 @@ public class UwbManagerTest {
                 @NonNull RangingReport rangingReport) {
             onRangingReportReceivedCalled = true;
             mRangingReport = rangingReport;
+            mCountDownLatch.countDown();
             return mRangingReport;
         }
 
@@ -1681,6 +1697,7 @@ public class UwbManagerTest {
         public boolean onCheckPointedTarget(
                 @NonNull PersistableBundle pointedTargetBundle) {
             onCheckPointedTargetCalled = true;
+            mCountDownLatch.countDown();
             return true;
         }
     }
@@ -1693,7 +1710,10 @@ public class UwbManagerTest {
         CancellationSignal cancellationSignal = null;
         CountDownLatch countDownLatch = new CountDownLatch(1);
         CountDownLatch resultCountDownLatch = new CountDownLatch(1);
-        UwbOemExtensionCallback uwbOemExtensionCallback = new UwbOemExtensionCallback();
+        // Expect to receive onSessionConfigurationComplete and onSessionChangedCalled
+        CountDownLatch oemExtensionCountDownLatch = new CountDownLatch(3);
+        UwbOemExtensionCallback uwbOemExtensionCallback =
+                new UwbOemExtensionCallback(oemExtensionCountDownLatch);
 
         int sessionId = 1;
         RangingSessionCallback rangingSessionCallback =
@@ -1723,6 +1743,7 @@ public class UwbManagerTest {
                     mDefaultChipId);
             // Wait for the on opened callback.
             assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(oemExtensionCountDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
             assertThat(uwbOemExtensionCallback.onSessionConfigCompleteCalled).isTrue();
             assertThat(uwbOemExtensionCallback.mSessionConfig).isNotNull();
 
@@ -1747,7 +1768,11 @@ public class UwbManagerTest {
                     REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS);
 
             countDownLatch = new CountDownLatch(1);
+            // Expect to receive onSessionChangedCalled, onDeviceStatusNtfCalled and
+            // onRangingReportReceivedCalled
+            oemExtensionCountDownLatch = new CountDownLatch(3);
             rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+            uwbOemExtensionCallback.replaceCountDownLatch(oemExtensionCountDownLatch);
             rangingSessionCallback.rangingSession.start(new PersistableBundle());
             // Wait for the on started callback.
             assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
@@ -1786,14 +1811,19 @@ public class UwbManagerTest {
         } finally {
             if (cancellationSignal != null) {
                 countDownLatch = new CountDownLatch(1);
+                // Expect to receive onSessionChangedCalled.
+                oemExtensionCountDownLatch = new CountDownLatch(1);
                 rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+                uwbOemExtensionCallback.replaceCountDownLatch(oemExtensionCountDownLatch);
 
                 // Close session.
                 cancellationSignal.cancel();
 
                 // Wait for the on closed callback.
-                assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+                assertThat(countDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
+                assertThat(oemExtensionCountDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
                 assertThat(rangingSessionCallback.onClosedCalled).isTrue();
+                assertThat(uwbOemExtensionCallback.onSessionChangedCalled).isTrue();
             }
             try {
                 mUwbManager.unregisterUwbOemExtensionCallback(uwbOemExtensionCallback);
@@ -1809,7 +1839,8 @@ public class UwbManagerTest {
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     public void testRegisterUwbOemExtensionCallbackWithoutUwbPrivileged() {
         Assume.assumeTrue(SdkLevel.isAtLeastU());
-        UwbManager.UwbOemExtensionCallback cb = new UwbOemExtensionCallback();
+        CountDownLatch countDownLatch = new CountDownLatch(0);
+        UwbManager.UwbOemExtensionCallback cb = new UwbOemExtensionCallback(countDownLatch);
         try {
             mUwbManager.registerUwbOemExtensionCallback(
                     Executors.newSingleThreadExecutor(), cb);
@@ -1826,7 +1857,8 @@ public class UwbManagerTest {
     public void testUnregisterUwbOemExtensionCallbackWithoutUwbPrivileged() {
         Assume.assumeTrue(SdkLevel.isAtLeastU());
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
-        UwbManager.UwbOemExtensionCallback cb = new UwbOemExtensionCallback();
+        CountDownLatch countDownLatch = new CountDownLatch(0);
+        UwbManager.UwbOemExtensionCallback cb = new UwbOemExtensionCallback(countDownLatch);
         try {
             // Needs UWB_PRIVILEGED & UWB_RANGING permission which is held by shell.
             uiAutomation.adoptShellPermissionIdentity();
