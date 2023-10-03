@@ -13,3 +13,10 @@ flag {
     description: "This flag controls hybrid session configuration support"
     bug: "293919345"
 }
+
+flag {
+    name: "use_uwbs_uci_version"
+    namespace: "uwb"
+    description: "Replace usage of ProtocolVersion from Fira/Ccc params with UWBS UCI version"
+    bug: "303104817"
+}
