@@ -25,6 +25,7 @@ import static com.google.uwb.support.fira.FiraParams.MEASUREMENT_REPORT_TYPE_INI
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_MANY_TO_MANY;
 import static com.google.uwb.support.fira.FiraParams.PREAMBLE_DURATION_T32_SYMBOLS;
 import static com.google.uwb.support.fira.FiraParams.PRF_MODE_HPRF;
+import static com.google.uwb.support.fira.FiraParams.PROTOCOL_VERSION_1_1;
 import static com.google.uwb.support.fira.FiraParams.PSDU_DATA_RATE_7M80;
 import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_INITIATOR;
@@ -82,12 +83,15 @@ public class UwbConfigurationManagerTest {
     private static final String TEST_CHIP_ID = "testChipId";
     @Mock
     private NativeUwbManager mNativeUwbManager;
+    @Mock
+    private UwbInjector mUwbInjector;
     private UwbConfigurationManager mUwbConfigurationManager;
     @Mock
     private UwbSessionManager.UwbSession mUwbSession;
     private FiraOpenSessionParams mFiraParams;
     @Mock
     private UwbSessionManager.UwbSession mRadarSession;
+
     private static final RadarOpenSessionParams TEST_RADAR_OPEN_SESSION_PARAMS =
             new RadarOpenSessionParams.Builder()
                     .setSessionId(22)
@@ -110,7 +114,7 @@ public class UwbConfigurationManagerTest {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-        mUwbConfigurationManager = new UwbConfigurationManager(mNativeUwbManager);
+        mUwbConfigurationManager = new UwbConfigurationManager(mNativeUwbManager, mUwbInjector);
         mFiraParams = getFiraParams();
 
         when(mUwbSession.getSessionId()).thenReturn(1);
@@ -133,7 +137,8 @@ public class UwbConfigurationManagerTest {
                 any(byte[].class), anyString())).thenReturn(appConfig);
 
         int status = mUwbConfigurationManager
-                .setAppConfigurations(mUwbSession.getSessionId(), mFiraParams, TEST_CHIP_ID);
+                .setAppConfigurations(mUwbSession.getSessionId(), mFiraParams, TEST_CHIP_ID,
+                        PROTOCOL_VERSION_1_1);
 
         verify(mNativeUwbManager).setAppConfigurations(anyInt(), anyInt(), anyInt(),
                 any(byte[].class), eq(TEST_CHIP_ID));
@@ -149,7 +154,8 @@ public class UwbConfigurationManagerTest {
                 any(byte[].class), anyString())).thenReturn(appConfig);
 
         int status = mUwbConfigurationManager.setAppConfigurations(
-                mRadarSession.getSessionId(), TEST_RADAR_OPEN_SESSION_PARAMS, TEST_CHIP_ID);
+                mRadarSession.getSessionId(), TEST_RADAR_OPEN_SESSION_PARAMS, TEST_CHIP_ID,
+                PROTOCOL_VERSION_1_1);
 
         verify(mNativeUwbManager).setRadarAppConfigurations(anyInt(), anyInt(), anyInt(),
                 any(byte[].class), eq(TEST_CHIP_ID));
