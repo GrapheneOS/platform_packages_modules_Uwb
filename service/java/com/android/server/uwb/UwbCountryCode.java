@@ -202,7 +202,8 @@ public class UwbCountryCode {
             mContext.getSystemService(WifiManager.class).registerActiveCountryCodeChangedCallback(
                     new HandlerExecutor(mHandler), new WifiCountryCodeCallback());
         }
-        if (mUwbInjector.isGeocoderPresent()) {
+        if (mUwbInjector.getDeviceConfigFacade().isLocationUseForCountryCodeEnabled() &&
+                mUwbInjector.isGeocoderPresent()) {
             mLocationManager.requestLocationUpdates(
                     LocationManager.PASSIVE_PROVIDER,
                     TIME_BETWEEN_UPDATES_MS,
@@ -229,7 +230,8 @@ public class UwbCountryCode {
             }
             setTelephonyCountryCodeAndLastKnownCountryCode(slotIdx, countryCode, null);
         }
-        if (mUwbInjector.isGeocoderPresent()) {
+        if (mUwbInjector.getDeviceConfigFacade().isLocationUseForCountryCodeEnabled() &&
+                mUwbInjector.isGeocoderPresent()) {
             setCountryCodeFromGeocodingLocation(
                     mLocationManager.getLastKnownLocation(LocationManager.FUSED_PROVIDER));
         }

@@ -175,4 +175,10 @@
     If enabled, newly added `CccRangingStoppedParams` are sent in `onStopped()` callback.
     -->
     <bool name = "ccc_ranging_stopped_params_send_enabled">false</bool>
+
+    <!-- Whether to use location APIs in the algorithm to determine country code or not.
+    If disabled, will use other sources (telephony, wifi, etc) to determine device location for
+    UWB regulatory purposes.
+    -->
+    <bool name = "location_use_for_country_code_enabled">true</bool>
 </resources>
