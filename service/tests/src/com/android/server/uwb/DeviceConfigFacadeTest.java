@@ -146,6 +146,8 @@ public class DeviceConfigFacadeTest {
                 .thenReturn(true);
         when(mResources.getBoolean(R.bool.ccc_ranging_stopped_params_send_enabled))
                 .thenReturn(false);
+        when(mResources.getBoolean(R.bool.location_use_for_country_code_enabled))
+                .thenReturn(true);
 
         when(mContext.getResources()).thenReturn(mResources);
 
@@ -221,6 +223,7 @@ public class DeviceConfigFacadeTest {
         assertEquals(false, mDeviceConfigFacade.isBackgroundRangingEnabled());
         assertEquals(true, mDeviceConfigFacade.isRangingErrorStreakTimerEnabled());
         assertEquals(false, mDeviceConfigFacade.isCccRangingStoppedParamsSendEnabled());
+        assertEquals(true, mDeviceConfigFacade.isLocationUseForCountryCodeEnabled());
     }
 
     /**
@@ -324,6 +327,8 @@ public class DeviceConfigFacadeTest {
                 anyBoolean())).thenReturn(false);
         when(DeviceConfig.getBoolean(anyString(), eq("ccc_ranging_stopped_params_send_enabled"),
                 anyBoolean())).thenReturn(true);
+        when(DeviceConfig.getBoolean(anyString(), eq("location_use_for_country_code_enabled"),
+                anyBoolean())).thenReturn(false);
 
         mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
         assertEquals(0, mDeviceConfigFacade.getPrimerFovDegree());
@@ -340,6 +345,7 @@ public class DeviceConfigFacadeTest {
         assertEquals(true, mDeviceConfigFacade.isBackgroundRangingEnabled());
         assertEquals(false, mDeviceConfigFacade.isRangingErrorStreakTimerEnabled());
         assertEquals(true, mDeviceConfigFacade.isCccRangingStoppedParamsSendEnabled());
+        assertEquals(false, mDeviceConfigFacade.isLocationUseForCountryCodeEnabled());
         when(DeviceConfig.getString(anyString(), eq("pose_source_type"),
                 anyString())).thenReturn("NONE");
         mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
