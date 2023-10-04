@@ -31,6 +31,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import android.content.BroadcastReceiver;
@@ -88,6 +89,7 @@ public class UwbCountryCodeTest {
     @Mock PackageManager mPackageManager;
     @Mock Location mLocation;
     @Mock UwbCountryCode.CountryCodeChangedListener mListener;
+    @Mock DeviceConfigFacade mDeviceConfigFacade;
     private TestLooper mTestLooper;
     private UwbCountryCode mUwbCountryCode;
 
@@ -132,6 +134,8 @@ public class UwbCountryCodeTest {
         when(mLocation.getLongitude()).thenReturn(0.0);
         when(mUwbInjector.makeGeocoder()).thenReturn(mGeocoder);
         when(mUwbInjector.isGeocoderPresent()).thenReturn(true);
+        when(mDeviceConfigFacade.isLocationUseForCountryCodeEnabled()).thenReturn(true);
+        when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
         when(mPackageManager.hasSystemFeature(PackageManager.FEATURE_WIFI)).thenReturn(true);
         when(mNativeUwbManager.setCountryCode(any())).thenReturn(
                 (byte) STATUS_CODE_OK);
@@ -216,6 +220,15 @@ public class UwbCountryCodeTest {
         verify(mNativeUwbManager, never()).setCountryCode(
                 TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
         verify(mListener, never()).onCountryCodeChanged(STATUS_CODE_OK, TEST_COUNTRY_CODE);
+    }
+
+    @Test
+    public void testSetCountryCodeWhenLocationUseIsDisabled() {
+        when(mDeviceConfigFacade.isLocationUseForCountryCodeEnabled()).thenReturn(false);
+        when(mLocationManager.getLastKnownLocation(LocationManager.FUSED_PROVIDER))
+                .thenReturn(mLocation);
+        mUwbCountryCode.initialize();
+        verifyNoMoreInteractions(mGeocoder);
     }
 
     @Test
