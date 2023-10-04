@@ -88,6 +88,8 @@ public class DeviceConfigFacade {
     private boolean mRangingErrorStreakTimerEnabled;
     // Flag to enable sending ranging stopped params.
     private boolean mCccRangingStoppedParamsSendEnabled;
+    // Flag to enable usage of location APIs for country code determination
+    private boolean mLocationUseForCountryCodeEnabled;
 
     public DeviceConfigFacade(Handler handler, Context context) {
         mContext = context;
@@ -256,6 +258,12 @@ public class DeviceConfigFacade {
                 DeviceConfig.NAMESPACE_UWB,
                 "ccc_ranging_stopped_params_send_enabled",
                 mContext.getResources().getBoolean(R.bool.ccc_ranging_stopped_params_send_enabled)
+        );
+
+        mLocationUseForCountryCodeEnabled = DeviceConfig.getBoolean(
+                DeviceConfig.NAMESPACE_UWB,
+                "location_use_for_country_code_enabled",
+                mContext.getResources().getBoolean(R.bool.location_use_for_country_code_enabled)
         );
 
         // A little parsing and cleanup:
@@ -504,5 +512,14 @@ public class DeviceConfigFacade {
      */
     public boolean isCccRangingStoppedParamsSendEnabled() {
         return mCccRangingStoppedParamsSendEnabled;
+    }
+
+    /**
+     * Returns whether to use location APIs in the algorithm to determine country code or not.
+     * If disabled, will use other sources (telephony, wifi, etc) to determine device location for
+     * UWB regulatory purposes.
+     */
+    public boolean isLocationUseForCountryCodeEnabled() {
+        return mLocationUseForCountryCodeEnabled;
     }
 }
