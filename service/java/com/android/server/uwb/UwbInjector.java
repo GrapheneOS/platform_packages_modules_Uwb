@@ -144,7 +144,7 @@ public class UwbInjector {
         mUwbMetrics = new UwbMetrics(this);
         mDeviceConfigFacade = new DeviceConfigFacade(new Handler(mLooper), mContext);
         UwbConfigurationManager uwbConfigurationManager =
-                new UwbConfigurationManager(mNativeUwbManager);
+                new UwbConfigurationManager(mNativeUwbManager, this);
         UwbSessionNotificationManager uwbSessionNotificationManager =
                 new UwbSessionNotificationManager(this);
         UwbAdvertiseManager uwbAdvertiseManager = new UwbAdvertiseManager(this,

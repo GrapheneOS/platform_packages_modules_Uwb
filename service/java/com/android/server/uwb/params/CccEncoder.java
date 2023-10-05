@@ -21,13 +21,14 @@ import com.android.server.uwb.data.UwbCccConstants;
 import com.android.server.uwb.data.UwbUciConstants;
 
 import com.google.uwb.support.base.Params;
+import com.google.uwb.support.base.ProtocolVersion;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.fira.FiraParams;
 
 public class CccEncoder extends TlvEncoder {
     @Override
-    public TlvBuffer getTlvBuffer(Params param) {
+    public TlvBuffer getTlvBuffer(Params param, ProtocolVersion protocolVersion) {
         if (param instanceof CccOpenRangingParams) {
             return getTlvBufferFromCccOpenRangingParams(param);
         }
