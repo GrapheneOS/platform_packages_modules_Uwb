@@ -65,9 +65,9 @@ public class UwbMulticastListUpdateStatusTest {
                 .isEqualTo(TEST_CONTROLEE_ADDRESS);
 
         for (int i = 0; i < TEST_NUM_OF_CONTROLLEES; i++) {
-            assertThat(mUwbMulticastListUpdateStatus.getControleeUwbAddresses()[i])
-                    .isEqualTo(UwbAddress.fromBytes(new byte[]{TEST_CONTROLEE_ADDRESS[0],
-                            TEST_CONTROLEE_ADDRESS[1]}));
+            assertThat(getComputedMacAddress(
+                mUwbMulticastListUpdateStatus.getControleeUwbAddresses()[i].toBytes())).isEqualTo(
+                    new byte[]{TEST_CONTROLEE_ADDRESS[0], TEST_CONTROLEE_ADDRESS[1]});
         }
 
         assertThat(mUwbMulticastListUpdateStatus.getSubSessionId()).isEqualTo(TEST_SUB_SESSION_ID);
@@ -109,7 +109,7 @@ public class UwbMulticastListUpdateStatusTest {
         assertThat(mUwbMulticastListUpdateStatus.getStatus()).isEqualTo(TEST_STATUS);
     }
 
-    private static byte[] getComputedMacAddress(byte[] address) {
+    public static byte[] getComputedMacAddress(byte[] address) {
         if (!SdkLevel.isAtLeastU()) {
             return TlvUtil.getReverseBytes(address);
         }
