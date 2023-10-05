@@ -16,15 +16,21 @@
 
 package com.android.server.uwb.params;
 
+import com.android.server.uwb.UwbInjector;
+
 import com.google.uwb.support.base.Params;
+import com.google.uwb.support.base.ProtocolVersion;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.radar.RadarParams;
 
 public abstract class TlvEncoder {
-    public static TlvEncoder getEncoder(String protocolName) {
+    /**
+     * Get the appropriate TlvEncoder implementation, based upon the {@code protocolName}.
+     */
+    public static TlvEncoder getEncoder(String protocolName, UwbInjector uwbInjector) {
         if (protocolName.equals(FiraParams.PROTOCOL_NAME)) {
-            return new FiraEncoder();
+            return new FiraEncoder(uwbInjector);
         }
         if (protocolName.equals(CccParams.PROTOCOL_NAME)) {
             return new CccEncoder();
@@ -35,5 +41,8 @@ public abstract class TlvEncoder {
         return null;
     }
 
-    public abstract TlvBuffer getTlvBuffer(Params param);
+    /**
+     * Convert the given {@code Params} into a TLV representation (that can be sent to the UWBS).
+     */
+    public abstract TlvBuffer getTlvBuffer(Params param, ProtocolVersion protocolVersion);
 }

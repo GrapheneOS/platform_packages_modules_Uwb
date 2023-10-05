@@ -30,6 +30,7 @@ import static com.android.server.uwb.config.ConfigParam.SESSION_PRIORITY_KEY;
 import static com.android.server.uwb.config.ConfigParam.SWEEP_OFFSET_KEY;
 
 import com.google.uwb.support.base.Params;
+import com.google.uwb.support.base.ProtocolVersion;
 import com.google.uwb.support.radar.RadarOpenSessionParams;
 
 import java.nio.ByteBuffer;
@@ -37,7 +38,7 @@ import java.nio.ByteBuffer;
 /** Radar encoder */
 public class RadarEncoder extends TlvEncoder {
     @Override
-    public TlvBuffer getTlvBuffer(Params param) {
+    public TlvBuffer getTlvBuffer(Params param, ProtocolVersion protocolVersion) {
         if (param instanceof RadarOpenSessionParams) {
             return getTlvBufferFromRadarOpenSessionParams(param);
         }

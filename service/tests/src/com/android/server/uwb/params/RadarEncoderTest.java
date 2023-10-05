@@ -23,20 +23,24 @@ import android.test.suitebuilder.annotation.SmallTest;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.util.UwbUtil;
 
 import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.radar.RadarOpenSessionParams;
 import com.google.uwb.support.radar.RadarParams;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
 
 /** Unit tests for {@link com.android.server.uwb.params.RadarEncoder}. */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 @Presubmit
 public class RadarEncoderTest {
+    private static final FiraProtocolVersion PROTOCOL_VERSION_DUMMY = new FiraProtocolVersion(0, 0);
     private static final RadarOpenSessionParams.Builder TEST_RADAR_OPEN_SESSION_PARAMS =
             new RadarOpenSessionParams.Builder()
                     .setSessionId(22)
@@ -70,6 +74,9 @@ public class RadarEncoderTest {
                             + "090101"
                             + "0a02e803"
                             + "0b0100");
+
+    @Mock
+    private UwbInjector mUwbInjector;
     private final RadarEncoder mRadarEncoder = new RadarEncoder();
 
     public static void verifyRadarOpenSessionParamsTlvBuffer(TlvBuffer tlvs) {
@@ -81,7 +88,8 @@ public class RadarEncoderTest {
     public void testRadarOpenSessionParams() throws Exception {
         RadarOpenSessionParams params = TEST_RADAR_OPEN_SESSION_PARAMS.build();
 
-        verifyRadarOpenSessionParamsTlvBuffer(mRadarEncoder.getTlvBuffer(params));
+        verifyRadarOpenSessionParamsTlvBuffer(
+                mRadarEncoder.getTlvBuffer(params, PROTOCOL_VERSION_DUMMY));
     }
 
     @Test
@@ -89,6 +97,7 @@ public class RadarEncoderTest {
         RadarOpenSessionParams params = TEST_RADAR_OPEN_SESSION_PARAMS.build();
 
         verifyRadarOpenSessionParamsTlvBuffer(
-                TlvEncoder.getEncoder(RadarParams.PROTOCOL_NAME).getTlvBuffer(params));
+                TlvEncoder.getEncoder(RadarParams.PROTOCOL_NAME, mUwbInjector)
+                        .getTlvBuffer(params, PROTOCOL_VERSION_DUMMY));
     }
 }

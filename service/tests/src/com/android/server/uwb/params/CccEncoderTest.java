@@ -29,6 +29,7 @@ import android.test.suitebuilder.annotation.SmallTest;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.util.UwbUtil;
 
 import com.google.uwb.support.ccc.CccOpenRangingParams;
@@ -37,7 +38,7 @@ import com.google.uwb.support.ccc.CccPulseShapeCombo;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
+import org.mockito.Mock;
 
 /**
  * Unit tests for {@link com.android.server.uwb.params.CccEncoder}.
@@ -70,12 +71,14 @@ public class CccEncoderTest {
                     + "11B01062C0100A3020001A4020000A50100A602D0020802B004140101"
                     + "2B080100000000000000");
 
+    @Mock
+    private UwbInjector mUwbInjector;
     private final CccEncoder mCccEncoder = new CccEncoder();
 
     @Test
     public void testCccOpenRangingParams() throws Exception {
         CccOpenRangingParams params = TEST_CCC_OPEN_RANGING_PARAMS.build();
-        TlvBuffer tlvs = mCccEncoder.getTlvBuffer(params);
+        TlvBuffer tlvs = mCccEncoder.getTlvBuffer(params, CccParams.PROTOCOL_VERSION_1_0);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(17);
         assertThat(tlvs.getByteArray()).isEqualTo(TEST_CCC_OPEN_RANGING_TLV_DATA);
@@ -84,7 +87,8 @@ public class CccEncoderTest {
     @Test
     public void testCccOpenRangingParamsViaTlvEncoder() throws Exception {
         CccOpenRangingParams params = TEST_CCC_OPEN_RANGING_PARAMS.build();
-        TlvBuffer tlvs = TlvEncoder.getEncoder(CccParams.PROTOCOL_NAME).getTlvBuffer(params);
+        TlvBuffer tlvs = TlvEncoder.getEncoder(CccParams.PROTOCOL_NAME, mUwbInjector)
+                .getTlvBuffer(params, CccParams.PROTOCOL_VERSION_1_0);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(17);
         assertThat(tlvs.getByteArray()).isEqualTo(TEST_CCC_OPEN_RANGING_TLV_DATA);
@@ -97,7 +101,7 @@ public class CccEncoderTest {
                 .Builder(TEST_CCC_OPEN_RANGING_PARAMS);
         CccOpenRangingParams params = builder.setAbsoluteInitiationTimeUs(absoluteInitiationTimeUs)
                 .build();
-        TlvBuffer tlvs = mCccEncoder.getTlvBuffer(params);
+        TlvBuffer tlvs = mCccEncoder.getTlvBuffer(params, CccParams.PROTOCOL_VERSION_1_0);
 
         byte[] testCccOpenRangingAbsoluteInitiationTimeTlvData =
                 UwbUtil.getByteArray("0001010201010401090501010904800100000E010011010103010"
