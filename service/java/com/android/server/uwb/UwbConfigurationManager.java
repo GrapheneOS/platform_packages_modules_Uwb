@@ -28,32 +28,36 @@ import com.android.server.uwb.params.TlvDecoderBuffer;
 import com.android.server.uwb.params.TlvEncoder;
 
 import com.google.uwb.support.base.Params;
+import com.google.uwb.support.base.ProtocolVersion;
 import com.google.uwb.support.radar.RadarParams;
 
 public class UwbConfigurationManager {
     private static final String TAG = "UwbConfManager";
 
-    NativeUwbManager mNativeUwbManager;
+    private final NativeUwbManager mNativeUwbManager;
+    private final UwbInjector mUwbInjector;
 
-    public UwbConfigurationManager(NativeUwbManager nativeUwbManager) {
+    public UwbConfigurationManager(NativeUwbManager nativeUwbManager, UwbInjector uwbInjector) {
         mNativeUwbManager = nativeUwbManager;
+        mUwbInjector = uwbInjector;
     }
 
     /**
      * Set app configurations.
      */
-    public int setAppConfigurations(int sessionId, Params params, String chipId) {
+    public int setAppConfigurations(int sessionId, Params params, String chipId,
+                                    ProtocolVersion protocolVersion) {
         int status = UwbUciConstants.STATUS_CODE_FAILED;
         TlvBuffer tlvBuffer = null;
 
         Log.d(TAG, "setAppConfigurations for protocol: " + params.getProtocolName());
-        TlvEncoder encoder = TlvEncoder.getEncoder(params.getProtocolName());
+        TlvEncoder encoder = TlvEncoder.getEncoder(params.getProtocolName(), mUwbInjector);
         if (encoder == null) {
             Log.d(TAG, "unsupported encoder protocol type");
             return status;
         }
 
-        tlvBuffer = encoder.getTlvBuffer(params);
+        tlvBuffer = encoder.getTlvBuffer(params, protocolVersion);
 
         if (tlvBuffer.getNoOfParams() != 0) {
             byte[] tlvByteArray = tlvBuffer.getByteArray();
