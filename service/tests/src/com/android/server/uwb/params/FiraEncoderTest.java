@@ -21,6 +21,8 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.uwb.support.fira.FiraParams.CONTENTION_BASED_RANGING;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_UNICAST;
+import static com.google.uwb.support.fira.FiraParams.PROTOCOL_VERSION_1_1;
+import static com.google.uwb.support.fira.FiraParams.PROTOCOL_VERSION_2_0;
 import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_LEVEL_TRIG;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_DT_TAG;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_INITIATOR;
@@ -42,6 +44,7 @@ import static com.google.uwb.support.fira.FiraParams.TX_TIMESTAMP_40_BIT;
 import static com.google.uwb.support.fira.FiraParams.UL_TDOA_DEVICE_ID_16_BIT;
 
 import static org.junit.Assume.assumeTrue;
+import static org.mockito.Mockito.when;
 
 import android.platform.test.annotations.Presubmit;
 import android.test.suitebuilder.annotation.SmallTest;
@@ -50,15 +53,20 @@ import android.uwb.UwbAddress;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.modules.utils.build.SdkLevel;
+import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.util.UwbUtil;
+import com.android.uwb.flags.FeatureFlags;
 
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.util.Arrays;
 
@@ -70,6 +78,7 @@ import java.util.Arrays;
 @SmallTest
 @Presubmit
 public class FiraEncoderTest {
+    private static final FiraProtocolVersion PROTOCOL_VERSION_DUMMY = new FiraProtocolVersion(0, 0);
     private static final FiraOpenSessionParams.Builder TEST_FIRA_OPEN_SESSION_COMMON_PARAMS =
             new FiraOpenSessionParams.Builder()
                     .setProtocolVersion(FiraParams.PROTOCOL_VERSION_1_1) // Required Parameter
@@ -213,7 +222,10 @@ public class FiraEncoderTest {
     private static final String SESSION_KEY_TLV  = "451005780578057805780578057805780578";
     private static final String SESSION_TIME_BASE_TLV  = "48090101000000C8000000";
 
-    private final FiraEncoder mFiraEncoder = new FiraEncoder();
+    @Mock private UwbInjector mUwbInjector;
+    @Mock private FeatureFlags mFeatureFlags;
+
+    private FiraEncoder mFiraEncoder;
     private byte[] mFiraOpenSessionTlvUtTag;
     private byte[] mFiraSessionv11TlvData;
     private byte[] mFiraSessionv20TlvData;
@@ -221,6 +233,14 @@ public class FiraEncoderTest {
 
     @Before
     public void setUp() {
+        MockitoAnnotations.initMocks(this);
+
+        // Setup the unit tests to have the default behavior of using the UWBS UCI version.
+        when(mUwbInjector.getFeatureFlags()).thenReturn(mFeatureFlags);
+        when(mFeatureFlags.useUwbsUciVersion()).thenReturn(true);
+
+        mFiraEncoder = new FiraEncoder(mUwbInjector);
+
         if (!SdkLevel.isAtLeastU()) {
             mFiraSessionv11TlvData = UwbUtil.getByteArray(
                     "01010102010003010004010906020604080260090B01000C01030D01010E01040F02"
@@ -330,12 +350,16 @@ public class FiraEncoderTest {
         }
     }
 
-
+    // Test FiraEncoder behavior when the Fira ProtocolVersion comes from the given params.
     @Test
-    public void testFiraOpenSessionParams() throws Exception {
+    public void testFiraOpenSessionParams_useFiraOpenSessionParamsProtocolVersion()
+            throws Exception {
+        // Revert to older behavior of using FiraProtocolVersion from the FiraOpenSessionParams.
+        when(mFeatureFlags.useUwbsUciVersion()).thenReturn(false);
+
         // Test FiRa v1.1 Params
         FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS_V_1_1.build();
-        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
+        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_DUMMY);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(45);
         assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionv11TlvData);
@@ -344,14 +368,45 @@ public class FiraEncoderTest {
         if (SdkLevel.isAtLeastU()) {
             // Test the default Fira v2.0 OpenSessionParams.
             params = TEST_FIRA_OPEN_SESSION_PARAMS_V_2_0.build();
-            tlvs = mFiraEncoder.getTlvBuffer(params);
+            tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_DUMMY);
 
             assertThat(tlvs.getNoOfParams()).isEqualTo(48);
             assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionv20TlvData);
 
             // Test the Fira v2.0 OpenSessionParams with ABSOLUTE_INITIATION_TIME set.
             params = TEST_FIRA_OPEN_SESSION_PARAMS_V_2_0_ABSOLUTE_INITIATION_TIME.build();
-            tlvs = mFiraEncoder.getTlvBuffer(params);
+            tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_DUMMY);
+
+            assertThat(tlvs.getNoOfParams()).isEqualTo(48);
+            assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionv20AbsoluteInitiationTimeTlvData);
+
+        }
+    }
+
+    // Test FiraEncoder behavior when the Fira ProtocolVersion comes from the UWBS UCI version.
+    @Test
+    public void testFiraOpenSessionParams_useUwbsUciVersion() throws Exception {
+        when(mFeatureFlags.useUwbsUciVersion()).thenReturn(true);
+
+        // Test FiRa v1.1 Params
+        FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS_V_1_1.build();
+        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_1_1);
+
+        assertThat(tlvs.getNoOfParams()).isEqualTo(45);
+        assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionv11TlvData);
+
+        // Test FiRa v2.0 Params
+        if (SdkLevel.isAtLeastU()) {
+            // Test the default Fira v2.0 OpenSessionParams.
+            params = TEST_FIRA_OPEN_SESSION_PARAMS_V_2_0.build();
+            tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_2_0);
+
+            assertThat(tlvs.getNoOfParams()).isEqualTo(48);
+            assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionv20TlvData);
+
+            // Test the Fira v2.0 OpenSessionParams with ABSOLUTE_INITIATION_TIME set.
+            params = TEST_FIRA_OPEN_SESSION_PARAMS_V_2_0_ABSOLUTE_INITIATION_TIME.build();
+            tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_2_0);
 
             assertThat(tlvs.getNoOfParams()).isEqualTo(48);
             assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionv20AbsoluteInitiationTimeTlvData);
@@ -362,7 +417,7 @@ public class FiraEncoderTest {
     @Test
     public void testFiraRangingReconfigureParams() throws Exception {
         FiraRangingReconfigureParams params = TEST_FIRA_RECONFIGURE_PARAMS.build();
-        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
+        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_1_1);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(5);
         assertThat(tlvs.getByteArray()).isEqualTo(TEST_FIRA_RECONFIGURE_TLV_DATA);
@@ -373,7 +428,8 @@ public class FiraEncoderTest {
     @Test
     public void testFiraOpenSessionParamsViaTlvEncoder() throws Exception {
         FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS_V_1_1.build();
-        TlvBuffer tlvs = TlvEncoder.getEncoder(FiraParams.PROTOCOL_NAME).getTlvBuffer(params);
+        TlvBuffer tlvs = TlvEncoder.getEncoder(FiraParams.PROTOCOL_NAME, mUwbInjector)
+                .getTlvBuffer(params, PROTOCOL_VERSION_1_1);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(45);
         assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionv11TlvData);
@@ -382,7 +438,8 @@ public class FiraEncoderTest {
     @Test
     public void testFiraRangingReconfigureParamsViaTlvEncoder() throws Exception {
         FiraRangingReconfigureParams params = TEST_FIRA_RECONFIGURE_PARAMS.build();
-        TlvBuffer tlvs = TlvEncoder.getEncoder(FiraParams.PROTOCOL_NAME).getTlvBuffer(params);
+        TlvBuffer tlvs = TlvEncoder.getEncoder(FiraParams.PROTOCOL_NAME, mUwbInjector)
+                .getTlvBuffer(params, PROTOCOL_VERSION_DUMMY);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(5);
         assertThat(tlvs.getByteArray()).isEqualTo(TEST_FIRA_RECONFIGURE_TLV_DATA);
@@ -391,7 +448,7 @@ public class FiraEncoderTest {
     @Test
     public void testFiraOpenSessionParamsUtTag() throws Exception {
         FiraOpenSessionParams params = TEST_FIRA_UT_TAG_OPEN_SESSION_PARAM.build();
-        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
+        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_1_1);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(45);
         assertThat(tlvs.getByteArray()).isEqualTo(mFiraOpenSessionTlvUtTag);
@@ -452,7 +509,7 @@ public class FiraEncoderTest {
                     + DST_MAC_ADDRESS_TLV + UWB_INITIATION_TIME_TLV + TX_ADAPTIVE_PAYLOAD_POWER_TLV
                     + SESSION_KEY_TLV + RANGE_DATA_NTF_AOA_BOUND_TLV);
         }
-        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
+        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_1_1);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(44);
         assertThat(tlvs.getByteArray()).isEqualTo(expected_data);
@@ -509,7 +566,7 @@ public class FiraEncoderTest {
                     + DST_MAC_ADDRESS_TLV + UWB_INITIATION_TIME_TLV + TX_ADAPTIVE_PAYLOAD_POWER_TLV
                     + RANGE_DATA_NTF_AOA_BOUND_TLV);
         }
-        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
+        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_1_1);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(43);
         assertThat(tlvs.getByteArray()).isEqualTo(expected_data);
@@ -569,7 +626,7 @@ public class FiraEncoderTest {
                     + DST_MAC_ADDRESS_TLV + UWB_INITIATION_TIME_TLV + TX_ADAPTIVE_PAYLOAD_POWER_TLV
                     + SUB_SESSION_ID_TLV + RANGE_DATA_NTF_AOA_BOUND_TLV);
         }
-        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
+        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_1_1);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(44);
         assertThat(tlvs.getByteArray()).isEqualTo(expected_data);
@@ -637,7 +694,7 @@ public class FiraEncoderTest {
                     + SUB_SESSION_ID_TLV + subsession_key + SESSION_KEY_TLV
                     + RANGE_DATA_NTF_AOA_BOUND_TLV);
         }
-        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
+        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_1_1);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(46);
         assertThat(tlvs.getByteArray()).isEqualTo(expected_data);
@@ -697,7 +754,7 @@ public class FiraEncoderTest {
                     + SUB_SESSION_ID_TLV
                     + RANGE_DATA_NTF_AOA_BOUND_TLV);
         }
-        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
+        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_1_1);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(44);
         assertThat(tlvs.getByteArray()).isEqualTo(expected_data);
@@ -741,7 +798,7 @@ public class FiraEncoderTest {
                 + RANGING_INTERVAL_TLV + TX_ADAPTIVE_PAYLOAD_POWER_TLV
                 + VENDOR_ID_TLV + STATIC_STS_IV_TLV);
 
-        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
+        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_1_1);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(40);
         assertThat(tlvs.getByteArray()).isEqualTo(expected_data);
@@ -790,7 +847,7 @@ public class FiraEncoderTest {
                 + APPLICATION_DATA_ENDPOINT_HOST_TLV
                 + VENDOR_ID_TLV + STATIC_STS_IV_TLV);
 
-        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
+        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_2_0);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(44);
         assertThat(tlvs.getByteArray()).isEqualTo(expected_data);
@@ -873,7 +930,7 @@ public class FiraEncoderTest {
                     + STATIC_STS_IV_TLV
                     + RANGE_DATA_NTF_AOA_BOUND_TLV
                     + CAP_SIZE_RANGE_DEFAULT_TLV);
-        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
+        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_2_0);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(47);
         assertThat(tlvs.getByteArray()).isEqualTo(expected_data);
@@ -932,7 +989,7 @@ public class FiraEncoderTest {
                     + SESSION_TIME_BASE_TLV
                     + VENDOR_ID_TLV + STATIC_STS_IV_TLV
                     + RANGE_DATA_NTF_AOA_BOUND_TLV);
-        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params);
+        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_2_0);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(49);
         assertThat(tlvs.getByteArray()).isEqualTo(expected_data);
