@@ -90,5 +90,4 @@ prebuilt_etc {
     name: "privapp_allowlist_androidx.core.uwb.backend.xml",
     sub_dir: "permissions",
     src: "androidx.core.uwb.backend.xml",
-    installable: false,
 }
