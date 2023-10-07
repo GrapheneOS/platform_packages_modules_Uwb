@@ -43,7 +43,7 @@ android_test {
         "frameworks-base-testutils",
         "guava",
         "mockito-target-minus-junit4",
-        "truth-prebuilt",
+        "truth",
         "modules-utils-build",
     ],
 

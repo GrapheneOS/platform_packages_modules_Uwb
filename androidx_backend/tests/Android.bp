@@ -22,7 +22,7 @@ android_test {
     name: "AndroidxBackendUwbTests",
 
     srcs: [
-        "**/*.java"
+        "**/*.java",
     ],
 
     dxflags: ["--multi-dex"],
@@ -37,7 +37,7 @@ android_test {
         "mockito-target-extended-minus-junit4",
         "platform-test-annotations",
         "frameworks-base-testutils",
-        "truth-prebuilt",
+        "truth",
         "com.uwb.support.fira",
         "com.uwb.support.multichip",
         "guava",
