@@ -17,16 +17,16 @@
 //  package {
 //      default_applicable_licenses: ["Android-Apache-2.0"],
 //  }
-//  
+//
 //  android_test {
 //      name: "IndevUwbServiceTests",
 //      defaults: ["uwb-module-sdk-version-defaults"],
 //      target_sdk_version: "33",
-//  
+//
 //      srcs: ["src/**/*.java"],
-//  
+//
 //      auto_gen_config: true,
-//  
+//
 //      static_libs: [
 //          "androidx.test.ext.junit",
 //          "androidx.test.rules",
@@ -38,16 +38,16 @@
 //          "com.uwb.support.profile",
 //          "libuwb_adaptation_service",
 //          "platform-test-annotations",
-//          "truth-prebuilt",
+//          "truth",
 //      ],
-//  
+//
 //      libs: [
 //          "android.test.base",
 //          "android.test.runner",
 //          "service-uwb",
 //      ],
-//  
+//
 //      jni_libs: ["libuwb_adaptation_jni"],
-//  
+//
 //      test_suites: ["general-tests"],
 //  }
