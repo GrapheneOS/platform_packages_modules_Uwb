@@ -87,10 +87,10 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
     @Override
     public void onSessionStatusNotificationReceived(PersistableBundle sessionStatusBundle)
             throws RemoteException {
-        if (mCallback == null || mExecutor == null) {
-            return;
-        }
         synchronized (this) {
+            if (mCallback == null || mExecutor == null) {
+                return;
+            }
             final long identity = Binder.clearCallingIdentity();
             try {
                 if (SdkLevel.isAtLeastU()) {
@@ -106,10 +106,10 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
     @Override
     public void onDeviceStatusNotificationReceived(PersistableBundle deviceStateBundle)
             throws RemoteException {
-        if (mCallback == null || mExecutor == null) {
-            return;
-        }
         synchronized (this) {
+            if (mCallback == null || mExecutor == null) {
+                return;
+            }
             final long identity = Binder.clearCallingIdentity();
             try {
                 if (SdkLevel.isAtLeastU()) {
@@ -126,10 +126,11 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
     @Override
     public int onSessionConfigurationReceived(PersistableBundle openSessionBundle)
             throws RemoteException {
-        if (mCallback == null) {
-            return 0;
-        }
         synchronized (this) {
+            if (mCallback == null) {
+                return 0;
+            }
+
             int status = 0;
             final long identity = Binder.clearCallingIdentity();
             try {
@@ -159,10 +160,10 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
     @Override
     public RangingReport onRangingReportReceived(RangingReport rangingReport)
             throws RemoteException {
-        if (mCallback == null) {
-            return rangingReport;
-        }
         synchronized (this) {
+            if (mCallback == null) {
+                return rangingReport;
+            }
             final long identity = Binder.clearCallingIdentity();
             RangingReport vendorRangingReport = rangingReport;
             try {
@@ -194,10 +195,11 @@ public final class UwbOemExtensionCallbackListener extends IUwbOemExtensionCallb
     @Override
     public boolean onCheckPointedTarget(PersistableBundle pointedTargetBundle)
             throws RemoteException {
-        if (mCallback == null) {
-            return false;
-        }
         synchronized (this) {
+            if (mCallback == null) {
+                return false;
+            }
+
             final long identity = Binder.clearCallingIdentity();
             boolean result = false;
             try {
