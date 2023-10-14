@@ -2337,21 +2337,26 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
          */
         public void setNeedsQueryUwbsTimestamp(
                 @Nullable CccStartRangingParams cccStartRangingParams) {
-            // When the UWBS supports Fira 2.0+ and the application has not configured an
-            // absolute UWB initiation time, we must fetch the UWBS timestamp (to compute
-            // the absolute time).
+            // When the UWBS supports Fira 2.0+, the application has configured a relative UWB
+            // initation time, but not configured an absolute UWB initiation time, we must fetch
+            // the UWBS timestamp (to compute the absolute UWB initiation time).
             if (getUwbsFiraProtocolVersion(mChipId).getMajor() >= 2) {
                 if (mParams instanceof FiraOpenSessionParams) {
                     FiraOpenSessionParams firaOpenSessionParams = (FiraOpenSessionParams) mParams;
-                    if (firaOpenSessionParams.getAbsoluteInitiationTime() == 0) {
+                    if (firaOpenSessionParams.getInitiationTime() != 0
+                            && firaOpenSessionParams.getAbsoluteInitiationTime() == 0) {
                         this.mNeedsQueryUwbsTimestamp = true;
                     }
                 } else if (mParams instanceof CccOpenRangingParams) {
-                    CccOpenRangingParams cccOpenRangingParams = (CccOpenRangingParams) mParams;
-                    if (cccOpenRangingParams.getAbsoluteInitiationTimeUs() == 0
-                            && cccStartRangingParams != null
-                            && cccStartRangingParams.getAbsoluteInitiationTimeUs() == 0) {
-                        this.mNeedsQueryUwbsTimestamp = true;
+                    // When CccStartRangingParams is present; we check only for it's fields,
+                    // since its values overrides the earlier CccOpenRangingParams.
+                    if (cccStartRangingParams != null) {
+                        if (cccStartRangingParams.getInitiationTimeMs() != 0
+                                && cccStartRangingParams.getAbsoluteInitiationTimeUs() == 0) {
+                            this.mNeedsQueryUwbsTimestamp = true;
+                        }
+                    } else {
+                        // TODO(b/291851851): Query UWBS timestamp at time of CCC SessionInit also.
                     }
                 }
             }
