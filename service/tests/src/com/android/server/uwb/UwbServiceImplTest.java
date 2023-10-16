@@ -22,6 +22,7 @@ import static android.uwb.UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE
 
 import static com.android.server.uwb.UwbServiceImpl.SETTINGS_SATELLITE_MODE_ENABLED;
 import static com.android.server.uwb.UwbServiceImpl.SETTINGS_SATELLITE_MODE_RADIOS;
+import static com.android.server.uwb.UwbSettingsStore.SETTINGS_FIRST_TOGGLE_DONE;
 import static com.android.server.uwb.UwbSettingsStore.SETTINGS_TOGGLE_STATE;
 import static com.android.server.uwb.UwbTestUtils.MAX_DATA_SIZE;
 import static com.android.server.uwb.UwbTestUtils.TEST_STATUS;
@@ -126,6 +127,9 @@ public class UwbServiceImplTest {
     @Mock private UwbMultichipData mUwbMultichipData;
     @Mock private ProfileManager mProfileManager;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS) private UserManager mUserManager;
+    @Mock private DeviceConfigFacade mDeviceConfigFacade;
+    @Mock private UwbCountryCode mUwbCountryCode;
+    @Mock private UciLogModeStore mUciLogModeStore;
     @Captor private ArgumentCaptor<IUwbRangingCallbacks> mRangingCbCaptor;
     @Captor private ArgumentCaptor<BroadcastReceiver> mApmModeBroadcastReceiver;
     @Captor private ArgumentCaptor<ContentObserver> mSatelliteModeContentObserver;
@@ -150,6 +154,9 @@ public class UwbServiceImplTest {
         mTestLooper = new TestLooper();
         when(mUwbInjector.getUwbSettingsStore()).thenReturn(mUwbSettingsStore);
         when(mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).thenReturn(true);
+        when(mUwbSettingsStore.get(SETTINGS_FIRST_TOGGLE_DONE)).thenReturn(false);
+        when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
+        when(mDeviceConfigFacade.isUwbDisabledUntilFirstToggle()).thenReturn(false);
         when(mUwbMultichipData.getChipInfos()).thenReturn(List.of(DEFAULT_CHIP_INFO_PARAMS));
         when(mUwbMultichipData.getDefaultChipId()).thenReturn(DEFAULT_CHIP_ID);
         when(mUwbInjector.getUwbServiceCore()).thenReturn(mUwbServiceCore);
@@ -163,6 +170,8 @@ public class UwbServiceImplTest {
         when(mUwbInjector.getNativeUwbManager()).thenReturn(mNativeUwbManager);
         when(mUwbInjector.getUserManager()).thenReturn(mUserManager);
         when(mUwbInjector.getFeatureFlags()).thenReturn(mFeatureFlags);
+        when(mUwbInjector.getUwbCountryCode()).thenReturn(mUwbCountryCode);
+        when(mUwbInjector.getUciLogModeStore()).thenReturn(mUciLogModeStore);
         when(mUserManager.getUserRestrictions().getBoolean(anyString())).thenReturn(false);
         when(mUwbServiceCore.getHandler()).thenReturn(new Handler(mTestLooper.getLooper()));
 
@@ -354,6 +363,31 @@ public class UwbServiceImplTest {
     }
 
     @Test
+    public void testInitialize() throws Exception {
+        when(mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).thenReturn(true);
+        mUwbServiceImpl.initialize();
+        verify(mUwbServiceCore).setEnabled(true);
+
+        when(mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).thenReturn(false);
+        mUwbServiceImpl.initialize();
+        verify(mUwbServiceCore).setEnabled(false);
+    }
+
+    @Test
+    public void testInitializeWithUwbDisabledUntilFirstToggleFlagOn() throws Exception {
+        when(mDeviceConfigFacade.isUwbDisabledUntilFirstToggle()).thenReturn(true);
+        when(mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).thenReturn(true);
+
+        when(mUwbSettingsStore.get(SETTINGS_FIRST_TOGGLE_DONE)).thenReturn(false);
+        mUwbServiceImpl.initialize();
+        verify(mUwbServiceCore).setEnabled(false);
+
+        when(mUwbSettingsStore.get(SETTINGS_FIRST_TOGGLE_DONE)).thenReturn(true);
+        mUwbServiceImpl.initialize();
+        verify(mUwbServiceCore).setEnabled(true);
+    }
+
+    @Test
     public void testToggleStatePersistenceToSharedPrefs() throws Exception {
         mUwbServiceImpl.setEnabled(true);
         verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, true);
@@ -362,6 +396,23 @@ public class UwbServiceImplTest {
         when(mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).thenReturn(false);
         mUwbServiceImpl.setEnabled(false);
         verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, false);
+        verify(mUwbServiceCore).setEnabled(false);
+    }
+
+    @Test
+    public void testToggleStatePersistenceToSharedPrefsWithUwbDisabledUntilFirstToggleFlagOn()
+            throws Exception {
+        when(mDeviceConfigFacade.isUwbDisabledUntilFirstToggle()).thenReturn(true);
+
+        mUwbServiceImpl.setEnabled(true);
+        verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, true);
+        verify(mUwbSettingsStore).put(SETTINGS_FIRST_TOGGLE_DONE, true);
+        verify(mUwbServiceCore).setEnabled(true);
+
+        when(mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).thenReturn(false);
+        mUwbServiceImpl.setEnabled(false);
+        verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, false);
+        verify(mUwbSettingsStore, times(2)).put(SETTINGS_FIRST_TOGGLE_DONE, true);
         verify(mUwbServiceCore).setEnabled(false);
     }
 
