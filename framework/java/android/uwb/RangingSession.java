@@ -17,6 +17,7 @@
 package android.uwb;
 
 import android.Manifest;
+import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
 import android.annotation.NonNull;
 import android.annotation.RequiresPermission;
@@ -196,6 +197,7 @@ public final class RangingSession implements AutoCloseable {
         /**
          * Indicates session was stopped due to inband signal.
          */
+        @FlaggedApi("com.android.uwb.flags.reason_inband_session_stop")
         int REASON_INBAND_SESSION_STOP = 16;
 
         /**
