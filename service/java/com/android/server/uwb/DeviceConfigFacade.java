@@ -90,6 +90,8 @@ public class DeviceConfigFacade {
     private boolean mCccRangingStoppedParamsSendEnabled;
     // Flag to enable usage of location APIs for country code determination
     private boolean mLocationUseForCountryCodeEnabled;
+    // Flag to disable UWB until first toggle
+    private boolean mUwbDisabledUntilFirstToggle;
 
     public DeviceConfigFacade(Handler handler, Context context) {
         mContext = context;
@@ -264,6 +266,12 @@ public class DeviceConfigFacade {
                 DeviceConfig.NAMESPACE_UWB,
                 "location_use_for_country_code_enabled",
                 mContext.getResources().getBoolean(R.bool.location_use_for_country_code_enabled)
+        );
+
+        mUwbDisabledUntilFirstToggle = DeviceConfig.getBoolean(
+                DeviceConfig.NAMESPACE_UWB,
+                "uwb_disabled_until_first_toggle",
+                mContext.getResources().getBoolean(R.bool.uwb_disabled_until_first_toggle)
         );
 
         // A little parsing and cleanup:
@@ -521,5 +529,14 @@ public class DeviceConfigFacade {
      */
     public boolean isLocationUseForCountryCodeEnabled() {
         return mLocationUseForCountryCodeEnabled;
+    }
+
+    /**
+     * Returns whether to disable uwb until first toggle or not.
+     * If enabled, UWB will remain disabled on boot until the user toggles UWB on for the
+     * first time.
+     */
+    public boolean isUwbDisabledUntilFirstToggle() {
+        return mUwbDisabledUntilFirstToggle;
     }
 }
