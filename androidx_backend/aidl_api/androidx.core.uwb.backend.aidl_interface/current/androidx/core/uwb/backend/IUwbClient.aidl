@@ -42,4 +42,6 @@ interface IUwbClient {
   void addControlee(in androidx.core.uwb.backend.UwbAddress address);
   void addControleeWithSessionParams(in androidx.core.uwb.backend.RangingControleeParameters params);
   void removeControlee(in androidx.core.uwb.backend.UwbAddress address);
+  void reconfigureRangingInterval(in int intervalSkipCount);
+  void reconfigureRangeDataNtf(in int configType, in int proximityNearCm, in int proximityFarCm);
 }

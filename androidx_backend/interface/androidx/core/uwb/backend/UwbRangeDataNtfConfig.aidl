@@ -16,17 +16,9 @@
  */
 package androidx.core.uwb.backend;
 
-/** Gms Reference: com.google.android.gms.nearby.uwb.RangingCapabilities */
-parcelable RangingCapabilities {
-    boolean supportsDistance;
-    boolean supportsAzimuthalAngle;
-    boolean supportsElevationAngle;
-    int minRangingInterval;
-    int[] supportedChannels;
-    int[] supportedNtfConfigs;
-    int[] supportedConfigIds;
-    @nullable int[] supportedSlotDurations;
-    @nullable int[] supportedRangingUpdateRates;
-    boolean supportsRangingIntervalReconfigure;
-    boolean hasBackgroundRangingSupport;
+/** Gms Reference: com.google.android.gms.nearby.uwb.UwbRangeDataNtfConfig */
+parcelable UwbRangeDataNtfConfig {
+    int rangeDataNtfConfigType;
+    int ntfProximityNearCm;
+    int ntfProximityFarCm;
 }

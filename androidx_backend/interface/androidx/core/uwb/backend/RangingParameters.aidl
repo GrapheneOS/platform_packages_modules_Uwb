@@ -18,6 +18,7 @@ package androidx.core.uwb.backend;
 
 import androidx.core.uwb.backend.UwbComplexChannel;
 import androidx.core.uwb.backend.UwbDevice;
+import androidx.core.uwb.backend.UwbRangeDataNtfConfig;
 
 /** Gms Reference: com.google.android.gms.nearby.uwb.RangingParameters */
 parcelable RangingParameters {
@@ -29,4 +30,7 @@ parcelable RangingParameters {
     UwbComplexChannel complexChannel;
     List<UwbDevice> peerDevices;
     int rangingUpdateRate;
+    @nullable UwbRangeDataNtfConfig uwbRangeDataNtfConfig;
+    int slotDuration;
+    boolean isAoaDisabled;
 }
