@@ -48,6 +48,7 @@
             <item name="ranging_error_streak_timer_enabled" type="bool" />
             <item name="ccc_ranging_stopped_params_send_enabled" type="bool" />
             <item name="location_use_for_country_code_enabled" type="bool" />
+            <item name="uwb_disabled_until_first_toggle" type="bool" />
           <!-- Params from config.xml that can be overlaid -->
 
           <!-- Params from strings.xml that can be overlaid -->
