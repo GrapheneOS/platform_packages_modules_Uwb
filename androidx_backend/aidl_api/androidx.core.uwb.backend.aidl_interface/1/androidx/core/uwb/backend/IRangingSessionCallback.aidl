@@ -32,16 +32,14 @@
 // later when a module using the interface is updated, e.g., Mainline modules.
 
 package androidx.core.uwb.backend;
-parcelable RangingCapabilities {
-  boolean supportsDistance;
-  boolean supportsAzimuthalAngle;
-  boolean supportsElevationAngle;
-  int minRangingInterval;
-  int[] supportedChannels;
-  int[] supportedNtfConfigs;
-  int[] supportedConfigIds;
-  @nullable int[] supportedSlotDurations;
-  @nullable int[] supportedRangingUpdateRates;
-  boolean supportsRangingIntervalReconfigure;
-  boolean hasBackgroundRangingSupport;
+interface IRangingSessionCallback {
+  oneway void onRangingInitialized(in androidx.core.uwb.backend.UwbDevice device);
+  oneway void onRangingResult(in androidx.core.uwb.backend.UwbDevice device, in androidx.core.uwb.backend.RangingPosition position);
+  oneway void onRangingSuspended(in androidx.core.uwb.backend.UwbDevice device, int reason);
+  const int UNKNOWN = 0;
+  const int WRONG_PARAMETERS = 1;
+  const int FAILED_TO_START = 2;
+  const int STOPPED_BY_PEER = 3;
+  const int STOP_RANGING_CALLED = 4;
+  const int MAX_RANGING_ROUND_RETRY_REACHED = 5;
 }
