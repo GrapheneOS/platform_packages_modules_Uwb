@@ -30,7 +30,7 @@ android_test {
     java_version: "1.9",
 
     static_libs: [
-        "androidx.core.uwb.backend.aidl_interface-V1-java",
+        "androidx.core.uwb.backend.aidl_interface-V2-java",
         "androidx.test.rules",
         "collector-device-lib",
         "hamcrest-library",

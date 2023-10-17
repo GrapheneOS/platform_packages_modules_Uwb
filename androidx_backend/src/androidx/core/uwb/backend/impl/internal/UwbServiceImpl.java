@@ -153,7 +153,7 @@ public class UwbServiceImpl {
                     FIRA_DEFAULT_SUPPORTED_CONFIG_IDS,
                     DEFAULT_SUPPORTED_SLOT_DURATIONS,
                     DEFAULT_SUPPORTED_RANGING_UPDATE_RATE,
-                    false);
+                    /* hasBackgroundRangingSupport */ false);
         }
 
         PersistableBundle bundle = mUwbManager.getSpecificationInfo();

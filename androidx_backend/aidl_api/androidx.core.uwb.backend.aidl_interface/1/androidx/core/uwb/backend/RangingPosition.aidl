@@ -32,16 +32,9 @@
 // later when a module using the interface is updated, e.g., Mainline modules.
 
 package androidx.core.uwb.backend;
-parcelable RangingCapabilities {
-  boolean supportsDistance;
-  boolean supportsAzimuthalAngle;
-  boolean supportsElevationAngle;
-  int minRangingInterval;
-  int[] supportedChannels;
-  int[] supportedNtfConfigs;
-  int[] supportedConfigIds;
-  @nullable int[] supportedSlotDurations;
-  @nullable int[] supportedRangingUpdateRates;
-  boolean supportsRangingIntervalReconfigure;
-  boolean hasBackgroundRangingSupport;
+parcelable RangingPosition {
+  androidx.core.uwb.backend.RangingMeasurement distance;
+  androidx.core.uwb.backend.RangingMeasurement azimuth;
+  androidx.core.uwb.backend.RangingMeasurement elevation;
+  long elapsedRealtimeNanos;
 }
