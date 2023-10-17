@@ -34,6 +34,13 @@ aidl_interface {
         },
     },
     visibility: ["//visibility:public"],
+    versions_with_info: [
+        {
+            version: "1",
+            imports: [],
+        },
+    ],
+
 }
 
 java_library {
@@ -48,7 +55,7 @@ java_library {
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.concurrent_concurrent-futures",
-        "androidx.core.uwb.backend.aidl_interface-V1-java",
+        "androidx.core.uwb.backend.aidl_interface-V2-java",
         "com.uwb.support.fira",
         "com.uwb.support.multichip",
         "com.uwb.support.dltdoa",
@@ -75,7 +82,7 @@ android_app {
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.concurrent_concurrent-futures",
-        "androidx.core.uwb.backend.aidl_interface-V1-java",
+        "androidx.core.uwb.backend.aidl_interface-V2-java",
         "com.uwb.support.fira",
         "guava",
         "uwb_androidx_backend",

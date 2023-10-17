@@ -77,6 +77,10 @@ public class UwbControleeClient extends UwbClient {
     }
 
     @Override
+    public void reconfigureRangingInterval(int intervalSkipCount) {
+    }
+
+    @Override
     public int getInterfaceVersion() throws RemoteException {
         return 0;
     }
