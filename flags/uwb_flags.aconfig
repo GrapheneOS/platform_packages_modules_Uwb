@@ -20,3 +20,10 @@ flag {
     description: "Replace usage of ProtocolVersion from Fira/Ccc params with UWBS UCI version"
     bug: "303104817"
 }
+
+flag {
+    name: "reason_inband_session_stop"
+    namespace: "uwb"
+    description: "Allow applications to receive callback when session was stopped due to inband signal"
+    bug: "304476327"
+}

@@ -28,6 +28,7 @@ import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_FAILED;
 
 import static com.google.uwb.support.radar.RadarParams.RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES;
 
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -43,6 +44,7 @@ import android.content.AttributionSource;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.test.suitebuilder.annotation.SmallTest;
 import android.util.Pair;
 import android.uwb.IUwbOemExtensionCallback;
@@ -56,6 +58,7 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.server.uwb.data.UwbRadarData;
 import com.android.server.uwb.data.UwbRangingData;
 import com.android.server.uwb.data.UwbUciConstants;
+import com.android.uwb.flags.Flags;
 
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
@@ -507,7 +510,9 @@ public class UwbSessionNotificationManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_REASON_INBAND_SESSION_STOP)
     public void testRangingStoppedDuetoInbandSignal() throws Exception {
+        assumeTrue(com.android.uwb.flags.Flags.reasonInbandSessionStop());
         mUwbSessionNotificationManager.onRangingStoppedWithApiReasonCode(mUwbSession,
                 RangingChangeReason.INBAND_SESSION_STOP, new PersistableBundle());
 
