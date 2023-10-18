@@ -28,7 +28,6 @@ import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_FAILED;
 
 import static com.google.uwb.support.radar.RadarParams.RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES;
 
-import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -45,6 +44,8 @@ import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.test.suitebuilder.annotation.SmallTest;
 import android.util.Pair;
 import android.uwb.IUwbOemExtensionCallback;
@@ -68,6 +69,7 @@ import com.google.uwb.support.radar.RadarParams;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -98,6 +100,8 @@ public class UwbSessionNotificationManagerTest {
     @Mock private UwbServiceCore mUwbServiceCore;
     @Mock private UwbMetrics mUwbMetrics;
     @Mock private IUwbOemExtensionCallback mIOemExtensionCallback;
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private UwbSessionNotificationManager mUwbSessionNotificationManager;
 
@@ -512,7 +516,6 @@ public class UwbSessionNotificationManagerTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_REASON_INBAND_SESSION_STOP)
     public void testRangingStoppedDuetoInbandSignal() throws Exception {
-        assumeTrue(com.android.uwb.flags.Flags.reasonInbandSessionStop());
         mUwbSessionNotificationManager.onRangingStoppedWithApiReasonCode(mUwbSession,
                 RangingChangeReason.INBAND_SESSION_STOP, new PersistableBundle());
 
