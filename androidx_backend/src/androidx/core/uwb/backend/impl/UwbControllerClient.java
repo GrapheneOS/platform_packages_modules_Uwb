@@ -19,6 +19,7 @@ package androidx.core.uwb.backend.impl;
 import static androidx.core.uwb.backend.impl.internal.Utils.STATUS_OK;
 import static androidx.core.uwb.backend.impl.internal.Utils.TAG;
 
+import android.annotation.TargetApi;
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -103,6 +104,16 @@ public class UwbControllerClient extends UwbClient {
         int status = ((RangingController) mDevice).removeControlee(uwbAddress);
         if (status != STATUS_OK) {
             Log.w(TAG, String.format("Removing controlee failed with status %d", status));
+        }
+    }
+
+    @Override
+    @TargetApi(31)
+    public void reconfigureRangingInterval(int intervalSkipCount) throws RemoteException {
+        int status = ((RangingController) mDevice).setBlockStriding(intervalSkipCount);
+        if (status != STATUS_OK) {
+            Log.w(TAG, String.format(
+                    "Reconfiguring ranging interval failed with status %d", status));
         }
     }
 

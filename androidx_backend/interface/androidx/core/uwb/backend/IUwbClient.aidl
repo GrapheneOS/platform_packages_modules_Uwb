@@ -34,4 +34,6 @@ interface IUwbClient {
     void addControlee(in UwbAddress address);
     void addControleeWithSessionParams(in RangingControleeParameters params);
     void removeControlee(in UwbAddress address);
+    void reconfigureRangingInterval(in int intervalSkipCount);
+    void reconfigureRangeDataNtf(in int configType, in int proximityNearCm, in int proximityFarCm);
 }
