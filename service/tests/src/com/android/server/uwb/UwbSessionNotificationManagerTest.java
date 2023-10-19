@@ -37,6 +37,7 @@ import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.validateMockitoUsage;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import android.content.AttributionSource;
@@ -384,8 +385,7 @@ public class UwbSessionNotificationManagerTest {
         UwbRangingData testRangingData = UwbTestUtils.generateBadOwrAoaMeasurementRangingData(
                 MAC_ADDRESSING_MODE_SHORT, PEER_SHORT_MAC_ADDRESS);
         mUwbSessionNotificationManager.onRangingResult(mUwbSession, testRangingData);
-        verify(mIUwbRangingCallbacks).onRangingResult(mSessionHandle, null);
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingData), eq(null));
+        verifyZeroInteractions(mIUwbRangingCallbacks);
     }
 
     @Test
