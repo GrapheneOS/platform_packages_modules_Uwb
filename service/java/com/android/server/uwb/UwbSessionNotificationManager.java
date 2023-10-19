@@ -79,14 +79,17 @@ public class UwbSessionNotificationManager {
         try {
             rangingReport = getRangingReport(rangingData, uwbSession.getProtocolName(),
                     uwbSession.getParams(), mUwbInjector.getElapsedSinceBootNanos(), uwbSession);
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             Log.e(TAG, "getRangingReport Failed.");
             e.printStackTrace();
         }
+        if (rangingReport == null) {
+            Log.e(TAG, "Generated ranging report is null");
+            return;
+        }
 
         try {
-            RangingMeasurement filteredRangingMeasurement = rangingReport != null
-                    ? rangingReport.getMeasurements().get(0) : null;
+            RangingMeasurement filteredRangingMeasurement = rangingReport.getMeasurements().get(0);
             mUwbInjector.getUwbMetrics().logRangingResult(uwbSession.getProfileType(), rangingData,
                     filteredRangingMeasurement);
         } catch (Exception e) {
