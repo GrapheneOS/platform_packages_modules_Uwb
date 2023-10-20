@@ -33,13 +33,20 @@ import static com.google.uwb.support.fira.FiraParams.AOA_RESULT_REQUEST_MODE_REQ
 import static com.google.uwb.support.fira.FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_AZIMUTH_ONLY;
 import static com.google.uwb.support.fira.FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_ELEVATION_ONLY;
 import static com.google.uwb.support.fira.FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_INTERLEAVED;
+import static com.google.uwb.support.fira.FiraParams.BPRF_PHR_DATA_RATE_6M81;
+import static com.google.uwb.support.fira.FiraParams.BPRF_PHR_DATA_RATE_850K;
 import static com.google.uwb.support.fira.FiraParams.HOPPING_MODE_DISABLE;
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD;
 import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_MANY_TO_MANY;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_UNICAST;
+import static com.google.uwb.support.fira.FiraParams.PRF_MODE_BPRF;
 import static com.google.uwb.support.fira.FiraParams.PRF_MODE_HPRF;
+import static com.google.uwb.support.fira.FiraParams.PSDU_DATA_RATE_27M2;
+import static com.google.uwb.support.fira.FiraParams.PSDU_DATA_RATE_31M2;
+import static com.google.uwb.support.fira.FiraParams.PSDU_DATA_RATE_6M81;
+import static com.google.uwb.support.fira.FiraParams.PSDU_DATA_RATE_7M80;
 import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_DT_TAG;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_INITIATOR;
@@ -649,6 +656,40 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                                     + "reserved for default and has no effect.");
                 }
                 builder.setSessionPriority(sessionPriority);
+            }
+            if (option.equals("-pm")) {
+                String prfMode = getNextArgRequired();
+                if (prfMode.equals("bprf")) {
+                    builder.setPrfMode(PRF_MODE_BPRF);
+                } else if (prfMode.equals("hprf")) {
+                    builder.setPrfMode(PRF_MODE_HPRF);
+                } else {
+                    throw new IllegalArgumentException("Wrong arguments for prmMode");
+                }
+            }
+            if (option.equals("-pd")) {
+                String psduDataRate = getNextArgRequired();
+                if (psduDataRate.equals("6m81")) {
+                    builder.setPsduDataRate(PSDU_DATA_RATE_6M81);
+                } else if (psduDataRate.equals("7m80")) {
+                    builder.setPsduDataRate(PSDU_DATA_RATE_7M80);
+                } else if (psduDataRate.equals("27m2")) {
+                    builder.setPsduDataRate(PSDU_DATA_RATE_27M2);
+                } else if (psduDataRate.equals("31m2")) {
+                    builder.setPsduDataRate(PSDU_DATA_RATE_31M2);
+                } else {
+                    throw new IllegalArgumentException("Wrong arguments for psduDataRate");
+                }
+            }
+            if (option.equals("-bd")) {
+                String bprfPhrDataRate = getNextArgRequired();
+                if (bprfPhrDataRate.equals("850k")) {
+                    builder.setBprfPhrDataRate(BPRF_PHR_DATA_RATE_850K);
+                } else if (bprfPhrDataRate.equals("6m81")) {
+                    builder.setBprfPhrDataRate(BPRF_PHR_DATA_RATE_6M81);
+                } else {
+                    throw new IllegalArgumentException("Wrong arguments for bprfPhrDataRate");
+                }
             }
             option = getNextOption();
         }
@@ -1387,7 +1428,10 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " [-n <sessionKey>](sessionKey 16 or 32 bytes)"
                 + " [-k <subSessionKey>](subSessionKey 16 or 32 bytes)"
                 + " [-j <errorStreakTimeoutMs>](error streak timeout in millis, default=30000)"
-                + " [-q <sessionPriority>](sessionPriority 1-49 or 51-100)");
+                + " [-q <sessionPriority>](sessionPriority 1-49 or 51-100)"
+                + " [-pm bprf|hprf](prfMode)"
+                + " [-pd 6m81|7m80|27m2|31m2](psduDataRate)"
+                + " [-bd 850k|6m81](bprfPhrDataRate)");
         pw.println("    Starts a FIRA ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
                 + " retrieved using |get-ranging-session-reports|");
