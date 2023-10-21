@@ -16,6 +16,7 @@
 
 package androidx.core.uwb.backend.impl;
 
+import static androidx.core.uwb.backend.impl.internal.Utils.DURATION_2_MS;
 import static androidx.core.uwb.backend.impl.internal.Utils.STATUS_OK;
 import static androidx.core.uwb.backend.impl.internal.Utils.TAG;
 
@@ -103,13 +104,13 @@ public abstract class UwbClient extends IUwbClient.Stub {
                     .setNtfProximityNear(parameters.uwbRangeDataNtfConfig.ntfProximityNearCm)
                     .setNtfProximityFar(parameters.uwbRangeDataNtfConfig.ntfProximityFarCm);
         }
+        int duration = parameters.slotDuration == 0 ? DURATION_2_MS : parameters.slotDuration;
         mDevice.setRangingParameters(
                 new androidx.core.uwb.backend.impl.internal.RangingParameters(
                         parameters.uwbConfigId, parameters.sessionId, parameters.subSessionId,
                         parameters.sessionKeyInfo, parameters.subSessionKeyInfo,
                         channel, addresses, parameters.rangingUpdateRate,
-                        uwbRangeDataNtfConfigBuilder.build(),
-                        parameters.slotDuration, parameters.isAoaDisabled));
+                        uwbRangeDataNtfConfigBuilder.build(), duration, parameters.isAoaDisabled));
     }
 
     protected androidx.core.uwb.backend.impl.internal.RangingSessionCallback convertCallback(
