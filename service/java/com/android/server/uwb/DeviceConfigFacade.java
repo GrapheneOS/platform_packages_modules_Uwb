@@ -88,6 +88,8 @@ public class DeviceConfigFacade {
     private boolean mRangingErrorStreakTimerEnabled;
     // Flag to enable sending ranging stopped params.
     private boolean mCccRangingStoppedParamsSendEnabled;
+    // Flag to enable the UWB Initiation time as an absolute time, for a CCC ranging session.
+    private boolean mCccAbsoluteUwbInitiationTimeEnabled;
     // Flag to enable usage of location APIs for country code determination
     private boolean mLocationUseForCountryCodeEnabled;
 
@@ -258,6 +260,12 @@ public class DeviceConfigFacade {
                 DeviceConfig.NAMESPACE_UWB,
                 "ccc_ranging_stopped_params_send_enabled",
                 mContext.getResources().getBoolean(R.bool.ccc_ranging_stopped_params_send_enabled)
+        );
+
+        mCccAbsoluteUwbInitiationTimeEnabled = DeviceConfig.getBoolean(
+                DeviceConfig.NAMESPACE_UWB,
+                "ccc_absolute_uwb_initiation_time_enabled",
+                mContext.getResources().getBoolean(R.bool.ccc_absolute_uwb_initiation_time_enabled)
         );
 
         mLocationUseForCountryCodeEnabled = DeviceConfig.getBoolean(
@@ -512,6 +520,16 @@ public class DeviceConfigFacade {
      */
     public boolean isCccRangingStoppedParamsSendEnabled() {
         return mCccRangingStoppedParamsSendEnabled;
+    }
+
+    /**
+     * Returns whether an absolute UWB initiation time should be computed and configured for
+     * CCC ranging session(s).
+     * If disabled, a relative UWB initiation time (the value in CCCStartRangingParams), is
+     * configured for the CCC ranging session.
+     */
+    public boolean isCccAbsoluteUwbInitiationTimeEnabled() {
+        return mCccAbsoluteUwbInitiationTimeEnabled;
     }
 
     /**
