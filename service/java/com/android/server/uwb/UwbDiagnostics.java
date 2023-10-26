@@ -18,6 +18,7 @@ package com.android.server.uwb;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Binder;
 import android.os.BugreportManager;
 import android.os.BugreportParams;
 import android.util.Log;
@@ -74,6 +75,7 @@ public class UwbDiagnostics {
             return false;
         }
 
+        long identity = Binder.clearCallingIdentity();
         try {
             launchBetterBugIntent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
             mContext.startActivity(launchBetterBugIntent);
@@ -83,6 +85,8 @@ public class UwbDiagnostics {
         } catch (RuntimeException e) {
             Log.e(TAG, "Error taking bugreport: " + e);
             return false;
+        } finally {
+            Binder.restoreCallingIdentity(identity);
         }
     }
 
