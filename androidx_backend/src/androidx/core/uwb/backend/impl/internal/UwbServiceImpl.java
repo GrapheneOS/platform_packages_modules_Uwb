@@ -28,6 +28,7 @@ import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_M
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_AOA;
 import static androidx.core.uwb.backend.impl.internal.Utils.RANGE_DATA_NTF_ENABLE;
+import static androidx.core.uwb.backend.impl.internal.UwbAvailabilityCallback.REASON_UNKNOWN;
 
 import static java.util.Objects.requireNonNull;
 
@@ -64,17 +65,36 @@ public class UwbServiceImpl {
     private final UwbManager mUwbManager;
     @NonNull
     private final UwbFeatureFlags mUwbFeatureFlags;
+    @NonNull
+    private final UwbAvailabilityCallback mUwbAvailabilityCallback;
 
-    /** Adapter State callback used to update adapterState field */
-    private final UwbManager.AdapterStateCallback mAdapterStateCallback =
-            (state, reason) -> mAdapterState = state;
 
     /** A serial thread used to handle session callback */
     private final ExecutorService mSerialExecutor = Executors.newSingleThreadExecutor();
 
-    public UwbServiceImpl(Context context, @NonNull UwbFeatureFlags uwbFeatureFlags) {
+    /** Adapter State callback used to update adapterState field */
+    private final UwbManager.AdapterStateCallback mAdapterStateCallback;
+    @UwbAvailabilityCallback.UwbStateChangeReason
+    private int mLastStateChangeReason = REASON_UNKNOWN;
+
+    public UwbServiceImpl(Context context, @NonNull UwbFeatureFlags uwbFeatureFlags,
+            UwbAvailabilityCallback uwbAvailabilityCallback) {
         mHasUwbFeature = context.getPackageManager().hasSystemFeature(FEATURE_UWB);
         mUwbFeatureFlags = uwbFeatureFlags;
+        mUwbAvailabilityCallback = uwbAvailabilityCallback;
+        this.mAdapterStateCallback =
+                (state, reason) -> {
+                    mLastStateChangeReason = Conversions.convertAdapterStateReason(reason);
+                    // Send update only if old or new state is disabled, ignore if state
+                    // changed from active
+                    // to inactive and vice-versa.
+                    if (state == STATE_DISABLED || mAdapterState == STATE_DISABLED) {
+                        mSerialExecutor.execute(
+                                () -> mUwbAvailabilityCallback.onUwbAvailabilityChanged(
+                                        isAvailable(), mLastStateChangeReason));
+                    }
+                    mAdapterState = state;
+                };
         if (mHasUwbFeature) {
             mUwbManager = context.getSystemService(UwbManager.class);
             requireNonNull(mUwbManager);
@@ -93,7 +113,7 @@ public class UwbServiceImpl {
         UwbManager uwbManagerWithContext = context.getSystemService(UwbManager.class);
         return new RangingController(
                 uwbManagerWithContext, mSerialExecutor, new OpAsyncCallbackRunner<>(),
-                        mUwbFeatureFlags);
+                mUwbFeatureFlags);
     }
 
     /** Gets a Ranging Controlee session with given context. */
@@ -101,7 +121,7 @@ public class UwbServiceImpl {
         UwbManager uwbManagerWithContext = context.getSystemService(UwbManager.class);
         return new RangingControlee(
                 uwbManagerWithContext, mSerialExecutor, new OpAsyncCallbackRunner<>(),
-                        mUwbFeatureFlags);
+                mUwbFeatureFlags);
     }
 
     /** Returns multi-chip information. */
@@ -133,6 +153,11 @@ public class UwbServiceImpl {
     /** True if UWB is available. */
     public boolean isAvailable() {
         return mHasUwbFeature && mAdapterState != STATE_DISABLED;
+    }
+
+    /** Gets the reason code for last state change. */
+    public int getLastStateChangeReason() {
+        return mLastStateChangeReason;
     }
 
     /** Gets ranging capabilities of the device. */
@@ -221,7 +246,7 @@ public class UwbServiceImpl {
                 ImmutableList.copyOf(supportedSlotDurations),
                 ImmutableList.copyOf(supportedRangingUpdateRates),
                 specificationParams.hasBackgroundRangingSupport()
-                );
+        );
     }
 
     /**
