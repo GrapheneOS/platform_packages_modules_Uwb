@@ -147,6 +147,8 @@ public class DeviceConfigFacadeTest {
                 .thenReturn(true);
         when(mResources.getBoolean(R.bool.ccc_ranging_stopped_params_send_enabled))
                 .thenReturn(false);
+        when(mResources.getBoolean(R.bool.ccc_absolute_uwb_initiation_time_enabled))
+                .thenReturn(false);
         when(mResources.getBoolean(R.bool.location_use_for_country_code_enabled))
                 .thenReturn(true);
         when(mResources.getBoolean(R.bool.uwb_disabled_until_first_toggle))
@@ -226,6 +228,7 @@ public class DeviceConfigFacadeTest {
         assertEquals(false, mDeviceConfigFacade.isBackgroundRangingEnabled());
         assertEquals(true, mDeviceConfigFacade.isRangingErrorStreakTimerEnabled());
         assertEquals(false, mDeviceConfigFacade.isCccRangingStoppedParamsSendEnabled());
+        assertEquals(false, mDeviceConfigFacade.isCccAbsoluteUwbInitiationTimeEnabled());
         assertEquals(true, mDeviceConfigFacade.isLocationUseForCountryCodeEnabled());
         assertEquals(false, mDeviceConfigFacade.isUwbDisabledUntilFirstToggle());
     }
@@ -331,6 +334,8 @@ public class DeviceConfigFacadeTest {
                 anyBoolean())).thenReturn(false);
         when(DeviceConfig.getBoolean(anyString(), eq("ccc_ranging_stopped_params_send_enabled"),
                 anyBoolean())).thenReturn(true);
+        when(DeviceConfig.getBoolean(anyString(), eq("ccc_absolute_uwb_initiation_time_enabled"),
+                anyBoolean())).thenReturn(true);
         when(DeviceConfig.getBoolean(anyString(), eq("location_use_for_country_code_enabled"),
                 anyBoolean())).thenReturn(false);
         when(DeviceConfig.getBoolean(anyString(), eq("uwb_disabled_until_first_toggle"),
@@ -351,6 +356,7 @@ public class DeviceConfigFacadeTest {
         assertEquals(true, mDeviceConfigFacade.isBackgroundRangingEnabled());
         assertEquals(false, mDeviceConfigFacade.isRangingErrorStreakTimerEnabled());
         assertEquals(true, mDeviceConfigFacade.isCccRangingStoppedParamsSendEnabled());
+        assertEquals(true, mDeviceConfigFacade.isCccAbsoluteUwbInitiationTimeEnabled());
         assertEquals(false, mDeviceConfigFacade.isLocationUseForCountryCodeEnabled());
         assertEquals(true, mDeviceConfigFacade.isUwbDisabledUntilFirstToggle());
         when(DeviceConfig.getString(anyString(), eq("pose_source_type"),
