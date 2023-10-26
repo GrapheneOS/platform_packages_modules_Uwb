@@ -20,6 +20,8 @@ import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_POWER_STAT
 
 import android.util.Log;
 
+import com.android.server.uwb.UwbInjector;
+
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccSpecificationParams;
@@ -30,6 +32,11 @@ import com.google.uwb.support.radar.RadarParams;
 import com.google.uwb.support.radar.RadarSpecificationParams;
 
 public class GenericDecoder extends TlvDecoder {
+    private final UwbInjector mUwbInjector;
+
+    public GenericDecoder(UwbInjector uwbInjector) {
+        mUwbInjector = uwbInjector;
+    }
     private static final String TAG = "GenericDecoder";
 
     @Override
@@ -44,7 +51,7 @@ public class GenericDecoder extends TlvDecoder {
         GenericSpecificationParams.Builder builder = new GenericSpecificationParams.Builder();
         try {
             FiraSpecificationParams firaSpecificationParams =
-                    TlvDecoder.getDecoder(FiraParams.PROTOCOL_NAME).getParams(
+                    TlvDecoder.getDecoder(FiraParams.PROTOCOL_NAME, mUwbInjector).getParams(
                             tlvs, FiraSpecificationParams.class);
             builder.setFiraSpecificationParams(firaSpecificationParams);
         } catch (IllegalArgumentException e) {
@@ -52,7 +59,7 @@ public class GenericDecoder extends TlvDecoder {
         }
         try {
             CccSpecificationParams cccSpecificationParams =
-                    TlvDecoder.getDecoder(CccParams.PROTOCOL_NAME).getParams(
+                    TlvDecoder.getDecoder(CccParams.PROTOCOL_NAME, mUwbInjector).getParams(
                             tlvs, CccSpecificationParams.class);
             builder.setCccSpecificationParams(cccSpecificationParams);
         } catch (IllegalArgumentException e) {
@@ -60,7 +67,7 @@ public class GenericDecoder extends TlvDecoder {
         }
         try {
             RadarSpecificationParams radarSpecificationParams =
-                    TlvDecoder.getDecoder(RadarParams.PROTOCOL_NAME)
+                    TlvDecoder.getDecoder(RadarParams.PROTOCOL_NAME, mUwbInjector)
                             .getParams(tlvs, RadarSpecificationParams.class);
             builder.setRadarSpecificationParams(radarSpecificationParams);
         } catch (IllegalArgumentException e) {

@@ -124,7 +124,7 @@ public class UwbConfigurationManager {
             Log.e(TAG, "TlvData is null or size of TlvData is zero");
             return Pair.create(UwbUciConstants.STATUS_CODE_FAILED, null);
         }
-        TlvDecoder decoder = TlvDecoder.getDecoder(protocolName);
+        TlvDecoder decoder = TlvDecoder.getDecoder(protocolName, mUwbInjector);
         if (decoder == null) {
             Log.d(TAG, "unsupported decoder protocol type");
             return Pair.create(status, null);
