@@ -2347,7 +2347,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                             && firaOpenSessionParams.getAbsoluteInitiationTime() == 0) {
                         this.mNeedsQueryUwbsTimestamp = true;
                     }
-                } else if (mParams instanceof CccOpenRangingParams) {
+                } else if (mParams instanceof CccOpenRangingParams
+                               && mUwbInjector.getDeviceConfigFacade()
+                                       .isCccAbsoluteUwbInitiationTimeEnabled()) {
                     // When CccStartRangingParams is present; we check only for it's fields,
                     // since its values overrides the earlier CccOpenRangingParams.
                     if (cccStartRangingParams != null) {

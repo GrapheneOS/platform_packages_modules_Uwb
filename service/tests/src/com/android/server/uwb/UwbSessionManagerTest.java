@@ -2494,12 +2494,18 @@ public class UwbSessionManagerTest {
                 eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
     }
 
+    // Test CCC StartRanging on a Fira UCI version 2.0+ device, when the App configures a relative
+    // UWB initiation time, and the computation of an absolute UWB initiation time is enabled on
+    // the device. In this case, the UwbSessionManager is expected to query the UWBS timestamp.
     @Test
-    public void execStartRanging_success_Ccc_2_0_absoluteInitiationTimeIsComputed()
+    public void execStartRanging_success_Ccc_2_0_absoluteInitiationTimeComputationIsEnabled()
             throws Exception {
         // Setup the UWBS to return Fira UCI version as 2.0.
         when(mUwbServiceCore.getCachedDeviceInfoResponse(TEST_CHIP_ID)).thenReturn(
                 UWB_DEVICE_INFO_RESPONSE_2_0);
+        // Setup the flag to be "true", so that absolute UWB initiation time computation is
+        // enabled for a CCC ranging session.
+        when(mDeviceConfigFacade.isCccAbsoluteUwbInitiationTimeEnabled()).thenReturn(true);
 
         UwbSession uwbSession = prepareExistingCccUwbSession();
         Params params = new CccStartRangingParams.Builder()
@@ -2542,6 +2548,59 @@ public class UwbSessionManagerTest {
                 eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
     }
 
+    // Test CCC StartRanging on a Fira UCI version 2.0+ device, when the App configures a relative
+    // UWB initiation time, and the computation of an absolute UWB initiation time is disabled on
+    // the device. In this case, the UwbSessionManager is not expected to query the UWBS timestamp.
+    @Test
+    public void execStartRanging_success_Ccc_2_0_absoluteInitiationTimeComputationIsDisabled()
+            throws Exception {
+        // Setup the UWBS to return Fira UCI version as 2.0.
+        when(mUwbServiceCore.getCachedDeviceInfoResponse(TEST_CHIP_ID)).thenReturn(
+                UWB_DEVICE_INFO_RESPONSE_2_0);
+        // Setup the flag to "false" (which is also the default value), so that absolute
+        // UWB initiation time computation is disabled for a CCC ranging session.
+        when(mDeviceConfigFacade.isCccAbsoluteUwbInitiationTimeEnabled()).thenReturn(false);
+
+        UwbSession uwbSession = prepareExistingCccUwbSession();
+        Params params = new CccStartRangingParams.Builder()
+                .setSessionId(TEST_SESSION_ID)
+                .setRanMultiplier(4)
+                .setInitiationTimeMs(100)
+                .build();
+        CccRangingStartedParams rangingStartedParams = new CccRangingStartedParams.Builder()
+                .setStartingStsIndex(0)
+                .setUwbTime0(1)
+                .setHopModeKey(0)
+                .setSyncCodeIndex(1)
+                .setRanMultiplier(4)
+                .build();
+
+        // Setup for start ranging.
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_IDLE, UwbUciConstants.UWB_SESSION_STATE_ACTIVE)
+                .when(uwbSession).getSessionState();
+        when(mNativeUwbManager.startRanging(eq(TEST_SESSION_ID), anyString()))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+        when(mUwbServiceCore.queryUwbsTimestampMicros()).thenReturn(UWBS_TIMESTAMP);
+        when(mUwbConfigurationManager.setAppConfigurations(anyInt(), any(), anyString(), any()))
+                .thenReturn(UwbUciConstants.STATUS_CODE_OK);
+        when(mUwbConfigurationManager.getAppConfigurations(
+                eq(TEST_SESSION_ID), anyString(), any(), any(), eq(TEST_CHIP_ID)))
+                .thenReturn(new Pair<>(UwbUciConstants.STATUS_CODE_OK, rangingStartedParams));
+
+        mUwbSessionManager.startRanging(uwbSession.getSessionHandle(), params);
+        mTestLooper.dispatchAll();
+
+        // Verify that queryUwbsTimestampMicros() is not called when it is configured with
+        // CccStartRangingParams
+        verify(mUwbServiceCore, never()).queryUwbsTimestampMicros();
+        verify(mUwbConfigurationManager).setAppConfigurations(
+                anyInt(), any(), any(), eq(FIRA_VERSION_2_0));
+        verify(mNativeUwbManager).startRanging(eq(TEST_SESSION_ID), anyString());
+        verify(mUwbSessionNotificationManager).onRangingStarted(eq(uwbSession), any());
+        verify(mUwbMetrics).longRangingStartEvent(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
+    }
+
     // Test CCC StartRanging on a Fira UCI version 2.0+ device, when the App configures an absolute
     // UWB initiation time. In this case, the UwbSessionManager is not expected to query the UWBS
     // timestamp.
@@ -2551,6 +2610,9 @@ public class UwbSessionManagerTest {
         // Setup the UWBS to return Fira version as 2.0.
         when(mUwbServiceCore.getCachedDeviceInfoResponse(TEST_CHIP_ID)).thenReturn(
                 UWB_DEVICE_INFO_RESPONSE_2_0);
+        // Setup the flag to be "true", so that absolute UWB initiation time computation is
+        // enabled for a CCC ranging session.
+        when(mDeviceConfigFacade.isCccAbsoluteUwbInitiationTimeEnabled()).thenReturn(true);
 
         UwbSession uwbSession = prepareExistingCccUwbSession();
         CccStartRangingParams params = new CccStartRangingParams.Builder()
