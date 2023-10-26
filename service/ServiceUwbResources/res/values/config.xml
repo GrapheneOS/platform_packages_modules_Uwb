@@ -192,4 +192,9 @@
     If enabled, UWB will remain disabled on boot until the user toggles UWB on for the first time.
     -->
     <bool name = "uwb_disabled_until_first_toggle">false</bool>
+
+    <!-- Whether to interpret CCC supported sync codes value as little endian.
+    If enabled, CCC supported sync codes value will be interpreted as little endian.
+    -->
+    <bool name = "ccc_supported_sync_codes_little_endian">false</bool>
 </resources>
