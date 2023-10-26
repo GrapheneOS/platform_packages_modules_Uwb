@@ -23,6 +23,7 @@ import android.util.Log;
 
 import androidx.core.uwb.backend.IUwb;
 import androidx.core.uwb.backend.IUwbClient;
+import androidx.core.uwb.backend.impl.internal.UwbAvailabilityCallback;
 import androidx.core.uwb.backend.impl.internal.UwbFeatureFlags;
 import androidx.core.uwb.backend.impl.internal.UwbServiceImpl;
 
@@ -38,7 +39,10 @@ public class UwbService extends Service {
                 .setReversedByteOrderFiraParams(
                         Build.VERSION.SDK_INT <= Build.VERSION_CODES.TIRAMISU)
                 .build();
-        mUwbServiceImpl = new UwbServiceImpl(this, uwbFeatureFlags);
+        UwbAvailabilityCallback uwbAvailabilityCallback = (isUwbAvailable, reason) -> {
+            // TODO: Implement when adding backend support.
+        };
+        mUwbServiceImpl = new UwbServiceImpl(this, uwbFeatureFlags, uwbAvailabilityCallback);
     }
 
     @Override

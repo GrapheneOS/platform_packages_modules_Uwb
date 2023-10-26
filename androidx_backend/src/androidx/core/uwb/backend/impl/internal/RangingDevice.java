@@ -147,7 +147,8 @@ public abstract class RangingDevice {
         if (mMultiChipMap.get(chipId) == null) {
             mMultiChipMap.put(chipId, getRandomizedLocalAddress());
         }
-        return mMultiChipMap.get(chipId);
+        mLocalAddress = mMultiChipMap.get(chipId);
+        return mLocalAddress;
     }
 
     /** Check whether local address was previously set. */
