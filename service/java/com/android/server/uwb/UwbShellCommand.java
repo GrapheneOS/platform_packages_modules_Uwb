@@ -691,6 +691,10 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     throw new IllegalArgumentException("Wrong arguments for bprfPhrDataRate");
                 }
             }
+            if (option.equals("-ap")) {
+                builder.setIsTxAdaptivePayloadPowerEnabled(
+                        getNextArgRequiredTrueOrFalse("enabled", "disabled"));
+            }
             option = getNextOption();
         }
         if (aoaResultReqEnabled && interleavingEnabled) {
@@ -1431,7 +1435,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " [-q <sessionPriority>](sessionPriority 1-49 or 51-100)"
                 + " [-pm bprf|hprf](prfMode)"
                 + " [-pd 6m81|7m80|27m2|31m2](psduDataRate)"
-                + " [-bd 850k|6m81](bprfPhrDataRate)");
+                + " [-bd 850k|6m81](bprfPhrDataRate)"
+                + " [-ap enabled|disabled](TX adaptive power, default = disabled");
         pw.println("    Starts a FIRA ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
                 + " retrieved using |get-ranging-session-reports|");
