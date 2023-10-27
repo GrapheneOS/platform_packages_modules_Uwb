@@ -23,6 +23,7 @@ import android.test.suitebuilder.annotation.SmallTest;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.util.UwbUtil;
 
 import com.google.uwb.support.radar.RadarData;
@@ -30,8 +31,11 @@ import com.google.uwb.support.radar.RadarParams;
 import com.google.uwb.support.radar.RadarParams.RadarCapabilityFlag;
 import com.google.uwb.support.radar.RadarSpecificationParams;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.util.EnumSet;
 
@@ -47,6 +51,13 @@ public class RadarDecoderTest {
     private static final EnumSet<RadarCapabilityFlag> RADAR_CAPABILITIES =
             EnumSet.of(RadarCapabilityFlag.HAS_RADAR_SWEEP_SAMPLES_SUPPORT);
     private final RadarDecoder mRadarDecoder = new RadarDecoder();
+    @Mock
+    private UwbInjector mUwbInjector;
+
+    @Before
+    public void setUp() throws Exception {
+        MockitoAnnotations.initMocks(this);
+    }
 
     public static void verifyRadarSpecification(RadarSpecificationParams radarSpecificationParams) {
         assertThat(radarSpecificationParams).isNotNull();
@@ -82,7 +93,7 @@ public class RadarDecoderTest {
         assertThat(tlvDecoderBuffer.parse()).isTrue();
 
         RadarSpecificationParams radarSpecificationParams =
-                TlvDecoder.getDecoder(RadarParams.PROTOCOL_NAME)
+                TlvDecoder.getDecoder(RadarParams.PROTOCOL_NAME, mUwbInjector)
                         .getParams(tlvDecoderBuffer, RadarSpecificationParams.class);
         verifyRadarSpecification(radarSpecificationParams);
     }
