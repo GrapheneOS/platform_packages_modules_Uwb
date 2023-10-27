@@ -176,6 +176,12 @@
     -->
     <bool name = "ccc_ranging_stopped_params_send_enabled">false</bool>
 
+    <!-- Returns whether an absolute UWB initiation time should be computed and configured for
+    CCC ranging session(s).
+    If disabled, a relative UWB initiation time (the value in CCCStartRangingParams), is
+    configured for the CCC ranging session. -->
+    <bool name = "ccc_absolute_uwb_initiation_time_enabled">false</bool>
+
     <!-- Whether to use location APIs in the algorithm to determine country code or not.
     If disabled, will use other sources (telephony, wifi, etc) to determine device location for
     UWB regulatory purposes.
@@ -186,4 +192,9 @@
     If enabled, UWB will remain disabled on boot until the user toggles UWB on for the first time.
     -->
     <bool name = "uwb_disabled_until_first_toggle">false</bool>
+
+    <!-- Whether to interpret CCC supported sync codes value as little endian.
+    If enabled, CCC supported sync codes value will be interpreted as little endian.
+    -->
+    <bool name = "ccc_supported_sync_codes_little_endian">false</bool>
 </resources>

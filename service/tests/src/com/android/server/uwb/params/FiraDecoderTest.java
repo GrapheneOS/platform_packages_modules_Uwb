@@ -49,11 +49,15 @@ import static com.google.uwb.support.fira.FiraParams.RframeCapabilityFlag.HAS_SP
 import static com.google.uwb.support.fira.FiraParams.StsCapabilityFlag.HAS_DYNAMIC_STS_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.StsCapabilityFlag.HAS_STATIC_STS_SUPPORT;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
 import android.platform.test.annotations.Presubmit;
 import android.test.suitebuilder.annotation.SmallTest;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.util.UwbUtil;
 
 import com.google.uwb.support.fira.FiraParams;
@@ -63,11 +67,11 @@ import com.google.uwb.support.fira.FiraParams.RangeDataNtfConfigCapabilityFlag;
 import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.fira.FiraSpecificationParams;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -146,6 +150,14 @@ public class FiraDecoderTest {
     public static final int TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_2 = 31;
 
     private final FiraDecoder mFiraDecoder = new FiraDecoder();
+
+    @Mock
+    private UwbInjector mUwbInjector;
+
+    @Before
+    public void setUp() throws Exception {
+        MockitoAnnotations.initMocks(this);
+    }
 
     public static void verifyFiraSpecificationVersion2(
             FiraSpecificationParams firaSpecificationParams) {
@@ -239,7 +251,7 @@ public class FiraDecoderTest {
         assertThat(tlvDecoderBuffer.parse()).isTrue();
 
         FiraSpecificationParams firaSpecificationParams = TlvDecoder
-                .getDecoder(FiraParams.PROTOCOL_NAME)
+                .getDecoder(FiraParams.PROTOCOL_NAME, mUwbInjector)
                 .getParams(tlvDecoderBuffer, FiraSpecificationParams.class);
         verifyFiraSpecificationVersion2(firaSpecificationParams);
     }
@@ -329,7 +341,7 @@ public class FiraDecoderTest {
         assertThat(tlvDecoderBuffer.parse()).isTrue();
 
         FiraSpecificationParams firaSpecificationParams = TlvDecoder
-                .getDecoder(FiraParams.PROTOCOL_NAME)
+                .getDecoder(FiraParams.PROTOCOL_NAME, mUwbInjector)
                 .getParams(tlvDecoderBuffer, FiraSpecificationParams.class);
         verifyFiraSpecificationVersion1(firaSpecificationParams);
     }
