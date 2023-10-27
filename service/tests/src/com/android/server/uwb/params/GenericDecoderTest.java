@@ -26,17 +26,24 @@ import static com.android.server.uwb.params.RadarDecoderTest.TEST_RADAR_SPECIFIC
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.mockito.Mockito.when;
+
 import android.platform.test.annotations.Presubmit;
 import android.test.suitebuilder.annotation.SmallTest;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.server.uwb.DeviceConfigFacade;
+import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.util.UwbUtil;
 
 import com.google.uwb.support.generic.GenericSpecificationParams;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 /** Unit tests for {@link com.android.server.uwb.params.GenericDecoder}. */
 @RunWith(AndroidJUnit4.class)
@@ -67,7 +74,19 @@ public class GenericDecoderTest {
                     + TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS
                     + TEST_RADAR_SPECIFICATION_TLV_NUM_PARAMS;
 
-    private final GenericDecoder mGenericDecoder = new GenericDecoder();
+    @Mock
+    private UwbInjector mUwbInjector;
+    @Mock
+    private DeviceConfigFacade mDeviceConfigFacade;
+    private GenericDecoder mGenericDecoder;
+
+    @Before
+    public void setUp() throws Exception {
+        MockitoAnnotations.initMocks(this);
+        when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
+        when(mDeviceConfigFacade.isCccSupportedSyncCodesLittleEndian()).thenReturn(true);
+        mGenericDecoder = new GenericDecoder(mUwbInjector);
+    }
 
     @Test
     public void testGetGenericSpecificationVersion1() throws Exception {

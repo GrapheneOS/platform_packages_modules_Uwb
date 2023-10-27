@@ -94,6 +94,8 @@ public class DeviceConfigFacade {
     private boolean mLocationUseForCountryCodeEnabled;
     // Flag to disable UWB until first toggle
     private boolean mUwbDisabledUntilFirstToggle;
+    // Flag to interpret CCC supported sync codes value as little endian
+    private boolean mCccSupportedSyncCodesLittleEndian;
 
     public DeviceConfigFacade(Handler handler, Context context) {
         mContext = context;
@@ -280,6 +282,12 @@ public class DeviceConfigFacade {
                 DeviceConfig.NAMESPACE_UWB,
                 "uwb_disabled_until_first_toggle",
                 mContext.getResources().getBoolean(R.bool.uwb_disabled_until_first_toggle)
+        );
+
+        mCccSupportedSyncCodesLittleEndian = DeviceConfig.getBoolean(
+                DeviceConfig.NAMESPACE_UWB,
+                "ccc_supported_sync_codes_little_endian",
+                mContext.getResources().getBoolean(R.bool.ccc_supported_sync_codes_little_endian)
         );
 
         // A little parsing and cleanup:
@@ -556,5 +564,12 @@ public class DeviceConfigFacade {
      */
     public boolean isUwbDisabledUntilFirstToggle() {
         return mUwbDisabledUntilFirstToggle;
+    }
+
+    /**
+     * Returns whether CCC supported sync codes value is interpreted as little endian.
+     */
+    public boolean isCccSupportedSyncCodesLittleEndian() {
+        return mCccSupportedSyncCodesLittleEndian;
     }
 }
