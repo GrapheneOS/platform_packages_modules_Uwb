@@ -16,6 +16,8 @@
 
 package com.android.server.uwb.params;
 
+import com.android.server.uwb.UwbInjector;
+
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.fira.FiraParams;
@@ -23,18 +25,18 @@ import com.google.uwb.support.generic.GenericParams;
 import com.google.uwb.support.radar.RadarParams;
 
 public abstract class TlvDecoder {
-    public static TlvDecoder getDecoder(String protocolName) {
+    public static TlvDecoder getDecoder(String protocolName, UwbInjector uwbInjector) {
         if (protocolName.equals(FiraParams.PROTOCOL_NAME)) {
             return new FiraDecoder();
         }
         if (protocolName.equals(CccParams.PROTOCOL_NAME)) {
-            return new CccDecoder();
+            return new CccDecoder(uwbInjector);
         }
         if (protocolName.equals(RadarParams.PROTOCOL_NAME)) {
             return new RadarDecoder();
         }
         if (protocolName.equals(GenericParams.PROTOCOL_NAME)) {
-            return new GenericDecoder();
+            return new GenericDecoder(uwbInjector);
         }
         return null;
     }

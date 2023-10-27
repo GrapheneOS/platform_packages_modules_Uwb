@@ -59,6 +59,7 @@ import static com.google.uwb.support.ccc.CccParams.UWB_CHANNEL_9;
 
 import android.util.Log;
 
+import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.config.ConfigParam;
 
 import com.google.uwb.support.base.Params;
@@ -76,6 +77,11 @@ import java.nio.ByteOrder;
  */
 public class CccDecoder extends TlvDecoder {
     private static final String TAG = "CccDecoder";
+    private final UwbInjector mUwbInjector;
+
+    public CccDecoder(UwbInjector uwbInjector) {
+        mUwbInjector = uwbInjector;
+    }
 
     @Override
     public <T extends Params> T getParams(TlvDecoderBuffer tlvs, Class<T> paramsType)
@@ -161,13 +167,22 @@ public class CccDecoder extends TlvDecoder {
         if (isBitSet(chapsPerslot, CCC_CHAPS_PER_SLOT_24)) {
             builder.addChapsPerSlot(CHAPS_PER_SLOT_24);
         }
-        byte[] syncCodes = tlvs.getByteArray(CCC_SUPPORTED_SYNC_CODES);
-        for (int byteIndex = 0; byteIndex < syncCodes.length; byteIndex++) {
-            byte syncCodeByte = syncCodes[byteIndex];
-            for (int bitIndex = 0; bitIndex < 8; bitIndex++) {
-                if ((syncCodeByte & (1 << bitIndex)) != 0) {
-                    int syncCodeValue = (byteIndex * 8) + bitIndex + 1;
-                    builder.addSyncCode(syncCodeValue);
+        if (mUwbInjector.getDeviceConfigFacade().isCccSupportedSyncCodesLittleEndian()) {
+            byte[] syncCodes = tlvs.getByteArray(CCC_SUPPORTED_SYNC_CODES);
+            for (int byteIndex = 0; byteIndex < syncCodes.length; byteIndex++) {
+                byte syncCodeByte = syncCodes[byteIndex];
+                for (int bitIndex = 0; bitIndex < 8; bitIndex++) {
+                    if ((syncCodeByte & (1 << bitIndex)) != 0) {
+                        int syncCodeValue = (byteIndex * 8) + bitIndex + 1;
+                        builder.addSyncCode(syncCodeValue);
+                    }
+                }
+            }
+        } else {
+            int syncCodes = ByteBuffer.wrap(tlvs.getByteArray(CCC_SUPPORTED_SYNC_CODES)).getInt();
+            for (int i = 0; i < 32; i++) {
+                if (isBitSet(syncCodes, 1 << i)) {
+                    builder.addSyncCode(i + 1);
                 }
             }
         }
