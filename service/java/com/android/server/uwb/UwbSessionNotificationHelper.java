@@ -62,7 +62,9 @@ public class UwbSessionNotificationHelper {
                 rangingChangeReason = RangingChangeReason.SESSION_SUSPENDED;
                 break;
             case UwbUciConstants.REASON_SESSION_STOPPED_DUE_TO_INBAND_SIGNAL:
-                rangingChangeReason = RangingChangeReason.INBAND_SESSION_STOP;
+                if (com.android.uwb.flags.Flags.reasonInbandSessionStop()) {
+                    rangingChangeReason = RangingChangeReason.INBAND_SESSION_STOP;
+                }
                 break;
         }
         return rangingChangeReason;
