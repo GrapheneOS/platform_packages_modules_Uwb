@@ -43,6 +43,7 @@ import java.util.List;
 public abstract class UwbClient extends IUwbClient.Stub {
     protected final UwbServiceImpl mUwbService;
     protected final RangingDevice mDevice;
+    protected boolean mSupportsAzimuthalAngle = true;
 
     protected UwbClient(RangingDevice device, UwbServiceImpl uwbService) {
         mDevice = device;
@@ -59,7 +60,8 @@ public abstract class UwbClient extends IUwbClient.Stub {
         androidx.core.uwb.backend.impl.internal.RangingCapabilities cap =
                 mUwbService.getRangingCapabilities();
         RangingCapabilities rangingCapabilities = new RangingCapabilities();
-        rangingCapabilities.supportsAzimuthalAngle = cap.supportsAzimuthalAngle();
+        mSupportsAzimuthalAngle = cap.supportsAzimuthalAngle();
+        rangingCapabilities.supportsAzimuthalAngle = mSupportsAzimuthalAngle;
         rangingCapabilities.supportsDistance = cap.supportsDistance();
         rangingCapabilities.supportsElevationAngle = cap.supportsElevationAngle();
         rangingCapabilities.supportsRangingIntervalReconfigure =
@@ -110,7 +112,8 @@ public abstract class UwbClient extends IUwbClient.Stub {
                         parameters.uwbConfigId, parameters.sessionId, parameters.subSessionId,
                         parameters.sessionKeyInfo, parameters.subSessionKeyInfo,
                         channel, addresses, parameters.rangingUpdateRate,
-                        uwbRangeDataNtfConfigBuilder.build(), duration, parameters.isAoaDisabled));
+                        uwbRangeDataNtfConfigBuilder.build(), duration,
+                        !mSupportsAzimuthalAngle || parameters.isAoaDisabled));
     }
 
     protected androidx.core.uwb.backend.impl.internal.RangingSessionCallback convertCallback(
