@@ -987,6 +987,47 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         return true;
     }
 
+    private boolean sessionUpdateMulticastListCmdPreconditioncheck(UwbSession uwbSession,
+              int action, byte[] subSessionKeyList) {
+        FiraOpenSessionParams firaOpenSessionParams =
+                (FiraOpenSessionParams) uwbSession.getParams();
+        int deviceType = firaOpenSessionParams.getDeviceType();
+        int stsConfig = firaOpenSessionParams.getStsConfig();
+        byte[] sessionKey = firaOpenSessionParams.getSessionKey();
+        Log.i(TAG, "sessionUpdateMulticastListCmdPreconditioncheck  - deviceType: "
+                   + deviceType + " stsConfig: " + stsConfig + " action: " + action);
+        if (deviceType == FiraParams.RANGING_DEVICE_TYPE_CONTROLLER) {
+            switch (action) {
+                case FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD:
+                case FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE:
+                    if (subSessionKeyList != null) {
+                        return false;
+                    }
+                    break;
+                case FiraParams.P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_16_BYTE:
+                case FiraParams.P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_32_BYTE:
+                    if (stsConfig
+                            != FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
+                        return false;
+                    }
+                    // sessionKey is provided while opening the session and subSessionKeyList
+                    // is provided while updating the multicast list. Check that both the
+                    // sessionKey and subSessionKeyList are either set or not set (as both
+                    // have to be provided by the same source - Host or SE).
+                    if ((sessionKey == null && subSessionKeyList != null)
+                            || (sessionKey != null && subSessionKeyList == null)) {
+                        return false;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        } else {
+            return false;
+        }
+        return true;
+    }
+
     private synchronized int reconfigureInternal(SessionHandle sessionHandle,
             @Nullable Params params, boolean triggeredByFgStateChange) {
         int status = UwbUciConstants.STATUS_CODE_ERROR_SESSION_NOT_EXIST;
@@ -1006,6 +1047,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             // suspendRangingPreconditionCheck only on suspend ranging reconfigure
             if ((rangingReconfigureParams.getSuspendRangingRounds() != null) &&
                     (!suspendRangingPreconditionCheck(uwbSession))) {
+                return UwbUciConstants.STATUS_CODE_REJECTED;
+            }
+            if ((rangingReconfigureParams.getAddressList() != null)
+                    && (!sessionUpdateMulticastListCmdPreconditioncheck(uwbSession,
+                        rangingReconfigureParams.getAction(),
+                        rangingReconfigureParams.getSubSessionKeyList()))) {
                 return UwbUciConstants.STATUS_CODE_REJECTED;
             }
             // Do not update mParams if this was triggered by framework.
