@@ -3569,7 +3569,14 @@ public class UwbSessionManagerTest {
 
     @Test
     public void reconfigure_existingSession() throws Exception {
-        UwbSession uwbSession = prepareExistingUwbSession();
+        FiraOpenSessionParams firaParams = new
+                FiraOpenSessionParams.Builder(
+                    (FiraOpenSessionParams) setupFiraParams(FIRA_VERSION_1_1))
+                .setSessionKey(new byte[]{0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5,
+                    0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78})
+                .setStsConfig(FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY)
+                .build();
+        UwbSession uwbSession = prepareExistingUwbSession(firaParams);
 
         int status = mUwbSessionManager.reconfigure(
                 uwbSession.getSessionHandle(), buildReconfigureParamsV2());
@@ -3622,6 +3629,18 @@ public class UwbSessionManagerTest {
     }
 
     @Test
+    public void execReconfigureAddControlee_failed() throws Exception {
+        UwbSession uwbSession = prepareExistingUwbSession();
+        FiraRangingReconfigureParams reconfigureParams =
+                buildReconfigureParamsV2(FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD);
+
+        int status = mUwbSessionManager
+                .reconfigure(uwbSession.getSessionHandle(), reconfigureParams);
+
+        assertThat(status).isEqualTo(UwbUciConstants.STATUS_CODE_REJECTED);
+    }
+
+    @Test
     public void execReconfigureRemoveControleeV1_success() throws Exception {
         UwbSession uwbSession = prepareExistingUwbSession();
         FiraRangingReconfigureParams reconfigureParams =
@@ -3665,8 +3684,27 @@ public class UwbSessionManagerTest {
     }
 
     @Test
-    public void execReconfigureAddControleeV2_success() throws Exception {
+    public void execReconfigureRemoveControlee_failed() throws Exception {
         UwbSession uwbSession = prepareExistingUwbSession();
+        FiraRangingReconfigureParams reconfigureParams =
+                buildReconfigureParamsV2(FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE);
+
+        int status = mUwbSessionManager
+                .reconfigure(uwbSession.getSessionHandle(), reconfigureParams);
+
+        assertThat(status).isEqualTo(UwbUciConstants.STATUS_CODE_REJECTED);
+    }
+
+    @Test
+    public void execReconfigureAddControleeV2_success() throws Exception {
+        FiraOpenSessionParams firaParams = new
+                FiraOpenSessionParams.Builder(
+                    (FiraOpenSessionParams) setupFiraParams(FIRA_VERSION_1_1))
+                .setSessionKey(new byte[]{0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5,
+                    0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78})
+                .setStsConfig(FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY)
+                .build();
+        UwbSession uwbSession = prepareExistingUwbSession(firaParams);
         FiraRangingReconfigureParams reconfigureParams =
                 buildReconfigureParamsV2();
         when(mNativeUwbManager
@@ -3707,8 +3745,103 @@ public class UwbSessionManagerTest {
     }
 
     @Test
+    public void execReconfigureAddControlee_fetchKeysFromSE_V2_success() throws Exception {
+        // When both sessionKey and subSessionKey are not provided from APP,
+        // it will be fetched from SE
+        FiraOpenSessionParams firaParams = new
+                FiraOpenSessionParams.Builder(
+                    (FiraOpenSessionParams) setupFiraParams(FIRA_VERSION_1_1))
+                .setStsConfig(FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY)
+                .build();
+        UwbSession uwbSession = prepareExistingUwbSession(firaParams);
+        FiraRangingReconfigureParams reconfigureParams =
+                buildReconfigureParams(FiraParams.P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_16_BYTE);
+        when(mNativeUwbManager
+                .controllerMulticastListUpdate(anyInt(), anyInt(), anyInt(), any(), any(),
+                                any(), anyString()))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+        UwbMulticastListUpdateStatus uwbMulticastListUpdateStatus =
+                mock(UwbMulticastListUpdateStatus.class);
+        when(uwbMulticastListUpdateStatus.getNumOfControlee()).thenReturn(1);
+        when(uwbMulticastListUpdateStatus.getControleeUwbAddresses())
+                .thenReturn(new UwbAddress[] {UWB_DEST_ADDRESS_2});
+        when(uwbMulticastListUpdateStatus.getStatus()).thenReturn(
+                new int[] { UwbUciConstants.STATUS_CODE_OK });
+        doReturn(uwbMulticastListUpdateStatus).when(uwbSession).getMulticastListUpdateStatus();
+        when(mUwbConfigurationManager.setAppConfigurations(anyInt(), any(), anyString(), any()))
+                .thenReturn(UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.reconfigure(uwbSession.getSessionHandle(), reconfigureParams);
+        mTestLooper.dispatchNext();
+
+        // Make sure the original address is still there.
+        assertThat(uwbSession.getControleeList().stream()
+                .anyMatch(e -> e.getUwbAddress().equals(UWB_DEST_ADDRESS)))
+                .isTrue();
+
+        // Make sure this new address was added.
+        assertThat(uwbSession.getControleeList().stream()
+                .anyMatch(e -> e.getUwbAddress().equals(UWB_DEST_ADDRESS_2)))
+                .isTrue();
+
+        byte[] dstAddress = getComputedMacAddress(reconfigureParams.getAddressList()[0].toBytes());
+        verify(mNativeUwbManager).controllerMulticastListUpdate(
+                uwbSession.getSessionId(), reconfigureParams.getAction(), 1,
+                dstAddress, reconfigureParams.getSubSessionIdList(),
+                reconfigureParams.getSubSessionKeyList(), uwbSession.getChipId());
+        verify(mUwbSessionNotificationManager).onControleeAdded(eq(uwbSession));
+        verify(mUwbSessionNotificationManager).onRangingReconfigured(eq(uwbSession));
+    }
+
+    @Test
+    public void execReconfigureAddControlee_onlyWithSessionKey_failed() throws Exception {
+        //If sessionKey is only provided from app, reconfigure will be rejected from sessionManager
+        FiraOpenSessionParams firaParams = new
+                FiraOpenSessionParams.Builder(
+                    (FiraOpenSessionParams) setupFiraParams(FIRA_VERSION_1_1))
+                .setSessionKey(new byte[]{0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5,
+                    0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78})
+                .setStsConfig(FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY)
+                .build();
+        UwbSession uwbSession = prepareExistingUwbSession(firaParams);
+        FiraRangingReconfigureParams reconfigureParams =
+                buildReconfigureParams(FiraParams.P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_16_BYTE);
+
+        int status = mUwbSessionManager
+                .reconfigure(uwbSession.getSessionHandle(), reconfigureParams);
+
+        assertThat(status).isEqualTo(UwbUciConstants.STATUS_CODE_REJECTED);
+    }
+
+    @Test
+    public void execReconfigureAddControlee_onlyWithSubSessionKey_failed() throws Exception {
+        //If subSessionKeyList is only provided from app,
+        //reconfigure will be rejected from sessionManager
+        FiraOpenSessionParams firaParams = new
+                FiraOpenSessionParams.Builder(
+                    (FiraOpenSessionParams) setupFiraParams(FIRA_VERSION_1_1))
+                .setStsConfig(FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY)
+                .build();
+        UwbSession uwbSession = prepareExistingUwbSession(firaParams);
+        FiraRangingReconfigureParams reconfigureParams =
+                buildReconfigureParamsV2();
+
+        int status = mUwbSessionManager
+                .reconfigure(uwbSession.getSessionHandle(), reconfigureParams);
+
+        assertThat(status).isEqualTo(UwbUciConstants.STATUS_CODE_REJECTED);
+    }
+
+    @Test
     public void execReconfigure_nativeUpdateFailed() throws Exception {
-        UwbSession uwbSession = prepareExistingUwbSession();
+        FiraOpenSessionParams firaParams = new
+                FiraOpenSessionParams.Builder(
+                    (FiraOpenSessionParams) setupFiraParams(FIRA_VERSION_1_1))
+                .setSessionKey(new byte[]{0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5,
+                    0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78})
+                .setStsConfig(FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY)
+                .build();
+        UwbSession uwbSession = prepareExistingUwbSession(firaParams);
         FiraRangingReconfigureParams reconfigureParams =
                 buildReconfigureParamsV2();
         when(mNativeUwbManager
@@ -3727,7 +3860,14 @@ public class UwbSessionManagerTest {
 
     @Test
     public void execReconfigure_uwbSessionUpdateMixedSuccess() throws Exception {
-        UwbSession uwbSession = prepareExistingUwbSession();
+        FiraOpenSessionParams firaParams = new
+                FiraOpenSessionParams.Builder(
+                    (FiraOpenSessionParams) setupFiraParams(FIRA_VERSION_1_1))
+                .setSessionKey(new byte[]{0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5,
+                    0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78})
+                .setStsConfig(FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY)
+                .build();
+        UwbSession uwbSession = prepareExistingUwbSession(firaParams);
         FiraRangingReconfigureParams reconfigureParams =
                 buildReconfigureParamsV2();
         when(mNativeUwbManager
@@ -3765,7 +3905,14 @@ public class UwbSessionManagerTest {
 
     @Test
     public void execReconfigure_uwbSessionUpdateFailed() throws Exception {
-        UwbSession uwbSession = prepareExistingUwbSession();
+        FiraOpenSessionParams firaParams = new
+                FiraOpenSessionParams.Builder(
+                    (FiraOpenSessionParams) setupFiraParams(FIRA_VERSION_1_1))
+                .setSessionKey(new byte[]{0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5,
+                    0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78})
+                .setStsConfig(FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY)
+                .build();
+        UwbSession uwbSession = prepareExistingUwbSession(firaParams);
         FiraRangingReconfigureParams reconfigureParams =
                 buildReconfigureParamsV2();
         when(mNativeUwbManager
@@ -3821,7 +3968,14 @@ public class UwbSessionManagerTest {
 
     @Test
     public void execReconfigure_setAppConfigurationsFailed() throws Exception {
-        UwbSession uwbSession = prepareExistingUwbSession();
+        FiraOpenSessionParams firaParams = new
+                FiraOpenSessionParams.Builder(
+                    (FiraOpenSessionParams) setupFiraParams(FIRA_VERSION_1_1))
+                .setSessionKey(new byte[]{0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5,
+                    0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78})
+                .setStsConfig(FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY)
+                .build();
+        UwbSession uwbSession = prepareExistingUwbSession(firaParams);
         FiraRangingReconfigureParams reconfigureParams =
                 buildReconfigureParamsV2();
         when(mNativeUwbManager
