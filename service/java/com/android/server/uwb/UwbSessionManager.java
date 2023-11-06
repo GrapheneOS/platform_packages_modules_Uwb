@@ -1541,35 +1541,18 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                             status = mNativeUwbManager.stopRanging(uwbSession.getSessionId(),
                                     uwbSession.getChipId());
                             if (status != UwbUciConstants.STATUS_CODE_OK) {
+                                if (uwbSession.getSessionState()
+                                        == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
+                                    handleStopRangingParams(uwbSession, true /*systemPolicy*/);
+                                    return UwbUciConstants.STATUS_CODE_OK;
+                                }
                                 mSessionNotificationManager.onRangingStopFailed(uwbSession, status);
                                 return status;
                             }
                             uwbSession.getWaitObj().blockingWait();
                             if (uwbSession.getSessionState()
                                     == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
-                                PersistableBundle rangingStoppedParamsBundle =
-                                        new PersistableBundle();
-                                // For CCC sessions, retrieve the app configs
-                                if (uwbSession.getProtocolName().equals(CccParams.PROTOCOL_NAME)
-                                        && mUwbInjector.getDeviceConfigFacade()
-                                        .isCccRangingStoppedParamsSendEnabled()) {
-                                    Pair<Integer, CccRangingStoppedParams> statusAndParams  =
-                                            mConfigurationManager.getAppConfigurations(
-                                                    uwbSession.getSessionId(),
-                                                    CccParams.PROTOCOL_NAME,
-                                                    new byte[0],
-                                                    CccRangingStoppedParams.class,
-                                                    uwbSession.getChipId());
-                                    if (statusAndParams.first != UwbUciConstants.STATUS_CODE_OK) {
-                                        Log.e(TAG, "Failed to get CCC ranging stopped params");
-                                    }
-                                    rangingStoppedParamsBundle = statusAndParams.second.toBundle();
-                                }
-                                int apiReasonCode = triggeredBySystemPolicy
-                                        ? RangingChangeReason.SYSTEM_POLICY
-                                        : RangingChangeReason.LOCAL_API;
-                                mSessionNotificationManager.onRangingStoppedWithApiReasonCode(
-                                        uwbSession, apiReasonCode, rangingStoppedParamsBundle);
+                                handleStopRangingParams(uwbSession, triggeredBySystemPolicy);
                             } else {
                                 status = UwbUciConstants.STATUS_CODE_FAILED;
                                 mSessionNotificationManager.onRangingStopFailed(uwbSession,
@@ -1605,6 +1588,32 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             uwbSession.stopTimers();
             removeAdvertiserData(uwbSession);
             Trace.endSection();
+        }
+
+        private void handleStopRangingParams(UwbSession uwbSession,
+                boolean triggeredBySystemPolicy) {
+            PersistableBundle rangingStoppedParamsBundle = new PersistableBundle();
+            // For CCC sessions, retrieve the app configs
+            if (uwbSession.getProtocolName().equals(CccParams.PROTOCOL_NAME)
+                    && mUwbInjector.getDeviceConfigFacade()
+                    .isCccRangingStoppedParamsSendEnabled()) {
+                Pair<Integer, CccRangingStoppedParams> statusAndParams  =
+                        mConfigurationManager.getAppConfigurations(
+                                uwbSession.getSessionId(),
+                                CccParams.PROTOCOL_NAME,
+                                new byte[0],
+                                CccRangingStoppedParams.class,
+                                uwbSession.getChipId());
+                if (statusAndParams.first != UwbUciConstants.STATUS_CODE_OK) {
+                    Log.e(TAG, "Failed to get CCC ranging stopped params");
+                }
+                rangingStoppedParamsBundle = statusAndParams.second.toBundle();
+            }
+            int apiReasonCode = triggeredBySystemPolicy
+                    ? RangingChangeReason.SYSTEM_POLICY
+                    : RangingChangeReason.LOCAL_API;
+            mSessionNotificationManager.onRangingStoppedWithApiReasonCode(
+                    uwbSession, apiReasonCode, rangingStoppedParamsBundle);
         }
 
         private void suspendRangingCallbacks(int suspendRangingRounds, int status,
