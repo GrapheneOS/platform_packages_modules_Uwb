@@ -3512,8 +3512,7 @@ public class UwbSessionManagerTest {
     @Test
     public void execStopRanging_nativeFailed() throws Exception {
         UwbSession uwbSession = prepareExistingUwbSession();
-        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE, UwbUciConstants.UWB_SESSION_STATE_IDLE)
-                .when(uwbSession).getSessionState();
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE).when(uwbSession).getSessionState();
         when(mNativeUwbManager.stopRanging(eq(TEST_SESSION_ID), anyString()))
                 .thenReturn((byte) UwbUciConstants.STATUS_CODE_FAILED);
 
@@ -3523,6 +3522,51 @@ public class UwbSessionManagerTest {
         verify(mUwbSessionNotificationManager)
                 .onRangingStopFailed(eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
         verify(mUwbMetrics, never()).longRangingStopEvent(eq(uwbSession));
+    }
+
+    @Test
+    public void testFiraSessionStoppedDuetoInbandSignal() throws Exception {
+        //Assuming that when session is in active state,
+        //in-band signal is received and session moved IDLE state
+        UwbSession uwbSession = prepareExistingUwbSession();
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE, UwbUciConstants.UWB_SESSION_STATE_IDLE)
+                .when(uwbSession).getSessionState();
+        when(mNativeUwbManager.stopRanging(eq(TEST_SESSION_ID), anyString()))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_REJECTED);
+
+        mUwbSessionManager.stopRanging(uwbSession.getSessionHandle());
+        mTestLooper.dispatchNext();
+        verify(mUwbSessionNotificationManager)
+                .onRangingStoppedWithApiReasonCode(eq(uwbSession),
+                eq(RangingChangeReason.SYSTEM_POLICY), any());
+    }
+
+    @Test
+    public void testCCCSessionStoppedDuetoInbandSignal() throws Exception {
+        //Assuming that when session is in active state,
+        //in-band signal is received and session moved IDLE state
+        UwbSession uwbSession = prepareExistingCccUwbSession();
+        CccRangingStartedParams rangingStartedParams = new CccRangingStartedParams.Builder()
+                .setStartingStsIndex(0)
+                .setUwbTime0(1)
+                .setHopModeKey(0)
+                .setSyncCodeIndex(1)
+                .setRanMultiplier(4)
+                .build();
+
+        when(mUwbConfigurationManager.getAppConfigurations(
+                eq(TEST_SESSION_ID), anyString(), any(), any(), eq(TEST_CHIP_ID)))
+                .thenReturn(new Pair<>(UwbUciConstants.STATUS_CODE_OK, rangingStartedParams));
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE, UwbUciConstants.UWB_SESSION_STATE_IDLE)
+                .when(uwbSession).getSessionState();
+        when(mNativeUwbManager.stopRanging(eq(TEST_SESSION_ID), anyString()))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_REJECTED);
+
+        mUwbSessionManager.stopRanging(uwbSession.getSessionHandle());
+        mTestLooper.dispatchNext();
+        verify(mUwbSessionNotificationManager)
+                .onRangingStoppedWithApiReasonCode(eq(uwbSession),
+                eq(RangingChangeReason.SYSTEM_POLICY), any());
     }
 
     @Test
