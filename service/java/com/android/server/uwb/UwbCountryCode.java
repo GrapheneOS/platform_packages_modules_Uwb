@@ -36,7 +36,6 @@ import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
-import android.util.ArrayMap;
 import android.util.ArraySet;
 import android.util.Log;
 import android.util.Pair;
@@ -59,6 +58,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -98,7 +98,7 @@ public class UwbCountryCode {
     private final Set<CountryCodeChangedListener> mListeners = new ArraySet<>();
 
     private Map<Integer, TelephonyCountryCodeSlotInfo> mTelephonyCountryCodeInfoPerSlot =
-            new ArrayMap();
+            new ConcurrentHashMap();
     private String mWifiCountryCode = null;
     private String mLocationCountryCode = null;
     private String mOverrideCountryCode = null;
