@@ -657,7 +657,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 }
                 builder.setSessionPriority(sessionPriority);
             }
-            if (option.equals("-pm")) {
+            if (option.equals("-P")) {
                 String prfMode = getNextArgRequired();
                 if (prfMode.equals("bprf")) {
                     builder.setPrfMode(PRF_MODE_BPRF);
@@ -667,7 +667,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     throw new IllegalArgumentException("Wrong arguments for prmMode");
                 }
             }
-            if (option.equals("-pd")) {
+            if (option.equals("-D")) {
                 String psduDataRate = getNextArgRequired();
                 if (psduDataRate.equals("6m81")) {
                     builder.setPsduDataRate(PSDU_DATA_RATE_6M81);
@@ -681,7 +681,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     throw new IllegalArgumentException("Wrong arguments for psduDataRate");
                 }
             }
-            if (option.equals("-bd")) {
+            if (option.equals("-B")) {
                 String bprfPhrDataRate = getNextArgRequired();
                 if (bprfPhrDataRate.equals("850k")) {
                     builder.setBprfPhrDataRate(BPRF_PHR_DATA_RATE_850K);
@@ -691,7 +691,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     throw new IllegalArgumentException("Wrong arguments for bprfPhrDataRate");
                 }
             }
-            if (option.equals("-ap")) {
+            if (option.equals("-A")) {
                 builder.setIsTxAdaptivePayloadPowerEnabled(
                         getNextArgRequiredTrueOrFalse("enabled", "disabled"));
             }
@@ -996,11 +996,11 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 int rangeDataNtfConfig = Integer.parseInt(getNextArgRequired());
                 builder.setRangeDataNtfConfig(rangeDataNtfConfig);
             }
-            if (option.equals("-pn")) {
+            if (option.equals("-n")) {
                 int proximityNear = Integer.parseInt(getNextArgRequired());
                 builder.setRangeDataProximityNear(proximityNear);
             }
-            if (option.equals("-pf")) {
+            if (option.equals("-f")) {
                 int proximityFar = Integer.parseInt(getNextArgRequired());
                 builder.setRangeDataProximityFar(proximityFar);
             }
@@ -1053,43 +1053,43 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 case "-b":
                     shouldBlockCall = true;
                     break;
-                case "-id":
+                case "-i":
                     builder.setSessionId(Integer.parseInt(getNextArgRequired()));
                     break;
-                case "-ch":
+                case "-c":
                     builder.setChannelNumber(Integer.parseInt(getNextArgRequired()));
                     break;
-                case "-sp":
+                case "-s":
                     builder.setSweepPeriod(Integer.parseInt(getNextArgRequired()));
                     break;
-                case "-sb":
+                case "-u":
                     builder.setSweepsPerBurst(Integer.parseInt(getNextArgRequired()));
                     break;
-                case "-ss":
+                case "-e":
                     builder.setSamplesPerSweep(Integer.parseInt(getNextArgRequired()));
                     break;
-                case "-so":
+                case "-o":
                     builder.setSweepOffset(Integer.parseInt(getNextArgRequired()));
                     break;
-                case "-rc":
+                case "-r":
                     builder.setRframeConfig(Integer.parseInt(getNextArgRequired()));
                     break;
-                case "-pd":
+                case "-t":
                     builder.setPreambleDuration(Integer.parseInt(getNextArgRequired()));
                     break;
-                case "-pc":
+                case "-d":
                     builder.setPreambleCodeIndex(Integer.parseInt(getNextArgRequired()));
                     break;
-                case "-p":
+                case "-x":
                     builder.setSessionPriority(Integer.parseInt(getNextArgRequired()));
                     break;
-                case "-bs":
+                case "-p":
                     builder.setBitsPerSample(Integer.parseInt(getNextArgRequired()));
                     break;
-                case "-pm":
+                case "-m":
                     builder.setPrfMode(Integer.parseInt(getNextArgRequired()));
                     break;
-                case "-nb":
+                case "-n":
                     builder.setNumberOfBursts(Integer.parseInt(getNextArgRequired()));
                     break;
             }
@@ -1433,10 +1433,10 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " [-k <subSessionKey>](subSessionKey 16 or 32 bytes)"
                 + " [-j <errorStreakTimeoutMs>](error streak timeout in millis, default=30000)"
                 + " [-q <sessionPriority>](sessionPriority 1-49 or 51-100)"
-                + " [-pm bprf|hprf](prfMode)"
-                + " [-pd 6m81|7m80|27m2|31m2](psduDataRate)"
-                + " [-bd 850k|6m81](bprfPhrDataRate)"
-                + " [-ap enabled|disabled](TX adaptive power, default = disabled");
+                + " [-P bprf|hprf](prfMode)"
+                + " [-D 6m81|7m80|27m2|31m2](psduDataRate)"
+                + " [-B 850k|6m81](bprfPhrDataRate)"
+                + " [-A enabled|disabled](TX adaptive power, default = disabled");
         pw.println("    Starts a FIRA ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
                 + " retrieved using |get-ranging-session-reports|");
@@ -1463,19 +1463,19 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         pw.println("  start-radar-session"
                 + " [-b](blocking call)"
                 + " Radar data will be displayed on screen)"
-                + " [-id <sessionId>](session-id)"
-                + " [-ch <channel>](channel)"
-                + " [-sp <sweepPeriod>](sweep-period)"
-                + " [-sb <sweepsPerBurst>](sweeps-per-burst)"
-                + " [-ss <samplesPerSweep>](samples-per-sweep)"
-                + " [-bs <bitsPerSample>](bits-per-sample)"
-                + " [-so <sweepOffset>](sweep-offset)"
-                + " [-rc <rframeConfig>](rframe-config)"
-                + " [-pd <preambleDuration>](preamble-duration)"
-                + " [-pc <preambleCodeIndex>](preamble-code-index)"
-                + " [-p  <sessionPriority>](session-priority)"
-                + " [-pm <prfMode>](prf-mode)"
-                + " [-nb <numberOfBursts>](number-of-bursts)");
+                + " [-i <sessionId>](session-id)"
+                + " [-c <channel>](channel)"
+                + " [-s <sweepPeriod>](sweep-period)"
+                + " [-u <sweepsPerBurst>](sweeps-per-burst)"
+                + " [-e <samplesPerSweep>](samples-per-sweep)"
+                + " [-p <bitsPerSample>](bits-per-sample)"
+                + " [-o <sweepOffset>](sweep-offset)"
+                + " [-r <rframeConfig>](rframe-config)"
+                + " [-t <preambleDuration>](preamble-duration)"
+                + " [-d <preambleCodeIndex>](preamble-code-index)"
+                + " [-x  <sessionPriority>](session-priority)"
+                + " [-m <prfMode>](prf-mode)"
+                + " [-n <numberOfBursts>](number-of-bursts)");
         pw.println("    Starts a Radar session with the provided params defined in the radar UCI"
                 + "    spec.");
         pw.println("  reconfigure-fira-ranging-session"
@@ -1485,8 +1485,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " [-s <subSessionId-1, subSessionId-2,...>](sub-sessionIds)"
                 + " [-b <block-striding>](block-striding)"
                 + " [-c <range-data-ntf-cfg>](range-data-ntf-cfg)"
-                + " [-pn <proximity-near>(proximity-near)"
-                + " [-pf <proximity-far>](proximity-far)");
+                + " [-n <proximity-near>(proximity-near)"
+                + " [-f <proximity-far>](proximity-far)");
         pw.println("  get-ranging-session-reports <sessionId>");
         pw.println("    Displays latest cached ranging reports for an ongoing ranging session");
         pw.println("  get-all-ranging-session-reports");
