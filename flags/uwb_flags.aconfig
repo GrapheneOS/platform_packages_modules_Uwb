@@ -27,3 +27,10 @@ flag {
     description: "Allow applications to receive callback when session was stopped due to inband signal"
     bug: "304476327"
 }
+
+flag {
+    name: "parse_cap_tlv_rust_uses_uwbs_uci_version"
+    namespace: "uwb"
+    description: "Parse the UWBS Capability tag(s) based on it's Fira UCI version"
+    bug: "301834443"
+}
