@@ -2414,7 +2414,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                             this.mNeedsQueryUwbsTimestamp = true;
                         }
                     } else {
-                        // TODO(b/291851851): Query UWBS timestamp at time of CCC SessionInit also.
+                        CccOpenRangingParams cccOpenRangingParams = (CccOpenRangingParams) mParams;
+                        if (cccOpenRangingParams.getInitiationTimeMs() != 0
+                                && cccOpenRangingParams.getAbsoluteInitiationTimeUs() == 0) {
+                            this.mNeedsQueryUwbsTimestamp = true;
+                        }
                     }
                 }
             }
