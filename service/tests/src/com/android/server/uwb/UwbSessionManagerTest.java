@@ -213,6 +213,24 @@ public class UwbSessionManagerTest {
                     /* PhyVersion 2.0 = */ 0x0002,
                     /* UciTestVersion 2.0 = */ 0x0002,
                     /* vendor_spec_info = */ new byte[]{0x0a, 0x0b, 0x0c, 0x0d});
+    private static final CccOpenRangingParams CCC_OPEN_RANGING_PARAMS_DEFAULT =
+            new CccOpenRangingParams.Builder()
+                .setProtocolVersion(CccParams.PROTOCOL_VERSION_1_0)
+                .setUwbConfig(CccParams.UWB_CONFIG_0)
+                .setPulseShapeCombo(
+                        new CccPulseShapeCombo(
+                                CccParams.PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE,
+                                CccParams.PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE))
+                .setSessionId(1)
+                .setRanMultiplier(4)
+                .setChannel(CccParams.UWB_CHANNEL_9)
+                .setNumChapsPerSlot(CccParams.CHAPS_PER_SLOT_3)
+                .setNumResponderNodes(1)
+                .setNumSlotsPerRound(CccParams.SLOTS_PER_ROUND_6)
+                .setSyncCodeIndex(1)
+                .setHoppingConfigMode(CccParams.HOPPING_CONFIG_MODE_NONE)
+                .setHoppingSequence(CccParams.HOPPING_SEQUENCE_DEFAULT)
+                .build();
     private static final long UWBS_TIMESTAMP = 2000000L;
     private static final int HANDLE_ID = 12;
     private static final int MAX_RX_DATA_PACKETS_TO_STORE = 10;
@@ -1574,30 +1592,13 @@ public class UwbSessionManagerTest {
                         .build();
     }
 
-    private UwbSession setUpCccUwbSessionForExecution() throws RemoteException {
+    private UwbSession setUpCccUwbSessionForExecution(Params params) throws RemoteException {
         // setup message
         doReturn(0).when(mUwbSessionManager).getSessionCount();
         doReturn(0L).when(mUwbSessionManager).getCccSessionCount();
         doReturn(false).when(mUwbSessionManager).isExistedSession(anyInt());
         IUwbRangingCallbacks mockRangingCallbacks = mock(IUwbRangingCallbacks.class);
         SessionHandle mockSessionHandle = mock(SessionHandle.class);
-        Params params = new CccOpenRangingParams.Builder()
-                .setProtocolVersion(CccParams.PROTOCOL_VERSION_1_0)
-                .setUwbConfig(CccParams.UWB_CONFIG_0)
-                .setPulseShapeCombo(
-                        new CccPulseShapeCombo(
-                                CccParams.PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE,
-                                CccParams.PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE))
-                .setSessionId(1)
-                .setRanMultiplier(4)
-                .setChannel(CccParams.UWB_CHANNEL_9)
-                .setNumChapsPerSlot(CccParams.CHAPS_PER_SLOT_3)
-                .setNumResponderNodes(1)
-                .setNumSlotsPerRound(CccParams.SLOTS_PER_ROUND_6)
-                .setSyncCodeIndex(1)
-                .setHoppingConfigMode(CccParams.HOPPING_CONFIG_MODE_NONE)
-                .setHoppingSequence(CccParams.HOPPING_SEQUENCE_DEFAULT)
-                .build();
         IBinder mockBinder = mock(IBinder.class);
         UwbSession uwbSession = spy(
                 mUwbSessionManager.new UwbSession(ATTRIBUTION_SOURCE, mockSessionHandle,
@@ -1691,7 +1692,7 @@ public class UwbSessionManagerTest {
         when(mUwbServiceCore.getCachedDeviceInfoResponse(TEST_CHIP_ID)).thenReturn(
                 UWB_DEVICE_INFO_RESPONSE_1_1);
 
-        UwbSession uwbSession = setUpCccUwbSessionForExecution();
+        UwbSession uwbSession = setUpCccUwbSessionForExecution(CCC_OPEN_RANGING_PARAMS_DEFAULT);
 
         // Stub for openRanging conditions
         when(mNativeUwbManager.initSession(anyInt(), anyByte(), anyString()))
@@ -1720,13 +1721,20 @@ public class UwbSessionManagerTest {
     // we don't expect this to set the {@code CccOpenRangingParams.mAbsoluteInitiationTimeUs}
     // (at SESSION_INIT time), or, result in the UWBS_TIMESTAMP being fetched from the UWBS.
     @Test
-    public void openRanging_success_Ccc_2_0_absoluteInitiationTimeNotComputed()
+    public void openRanging_success_Ccc_2_0_absoluteInitiationTimeComputationIsDisabled()
             throws Exception {
         // Setup the UWBS to return Fira UCI version as 2.0.
         when(mUwbServiceCore.getCachedDeviceInfoResponse(TEST_CHIP_ID)).thenReturn(
                 UWB_DEVICE_INFO_RESPONSE_2_0);
 
-        UwbSession uwbSession = setUpCccUwbSessionForExecution();
+        // Setup the flag to "false" (which is also the default value), so that absolute
+        // UWB initiation time computation is disabled for a CCC ranging session.
+        when(mDeviceConfigFacade.isCccAbsoluteUwbInitiationTimeEnabled()).thenReturn(false);
+
+        CccOpenRangingParams params = CCC_OPEN_RANGING_PARAMS_DEFAULT.toBuilder()
+                .setInitiationTimeMs(1000)
+                .build();
+        UwbSession uwbSession = setUpCccUwbSessionForExecution(params);
 
         // Stub for openRanging conditions
         when(mNativeUwbManager.initSession(anyInt(), anyByte(), anyString()))
@@ -1745,6 +1753,89 @@ public class UwbSessionManagerTest {
         // to be called.
         verify(mNativeUwbManager).initSession(eq(TEST_SESSION_ID), anyByte(), eq(TEST_CHIP_ID));
         verify(mUwbServiceCore, never()).queryUwbsTimestampMicros();
+        verify(mUwbConfigurationManager).setAppConfigurations(
+                eq(TEST_SESSION_ID), any(), eq(TEST_CHIP_ID), eq(FIRA_VERSION_2_0));
+        verify(mUwbSessionNotificationManager).onRangingOpened(eq(uwbSession));
+        verify(mUwbMetrics).logRangingInitEvent(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
+    }
+
+    // Test SESSION_INIT for a CCC ranging session on a UWBS controller (UCI ver 2.0+). Currently,
+    // we don't expect this to set the {@code CccOpenRangingParams.mAbsoluteInitiationTimeUs}
+    // (at SESSION_INIT time), or, result in the UWBS_TIMESTAMP being fetched from the UWBS.
+    @Test
+    public void openRanging_success_Ccc_2_0_absoluteInitiationTimeComputationIsEnabled()
+            throws Exception {
+        // Setup the UWBS to return Fira UCI version as 2.0.
+        when(mUwbServiceCore.getCachedDeviceInfoResponse(TEST_CHIP_ID)).thenReturn(
+                UWB_DEVICE_INFO_RESPONSE_2_0);
+
+        // Setup the flag to "true", so that absolute UWB initiation time computation
+        // is enabled for a CCC ranging session.
+        when(mDeviceConfigFacade.isCccAbsoluteUwbInitiationTimeEnabled()).thenReturn(true);
+
+        UwbSession uwbSession = setUpCccUwbSessionForExecution(CCC_OPEN_RANGING_PARAMS_DEFAULT);
+
+        // Stub for openRanging conditions
+        when(mNativeUwbManager.initSession(anyInt(), anyByte(), anyString()))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_INIT,
+                UwbUciConstants.UWB_SESSION_STATE_IDLE).when(uwbSession).getSessionState();
+        when(mUwbConfigurationManager.setAppConfigurations(anyInt(), any(), anyString(), any()))
+                .thenReturn(UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
+                TEST_SESSION_ID, TEST_SESSION_TYPE, CccParams.PROTOCOL_NAME,
+                uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks(), TEST_CHIP_ID);
+        mTestLooper.dispatchAll();
+
+        // Verifications related to CCC Open Ranging - we don't expect queryUwbsTimestampMicros()
+        // to be called.
+        verify(mNativeUwbManager).initSession(eq(TEST_SESSION_ID), anyByte(), eq(TEST_CHIP_ID));
+        verify(mUwbServiceCore, never()).queryUwbsTimestampMicros();
+        verify(mUwbConfigurationManager).setAppConfigurations(
+                eq(TEST_SESSION_ID), any(), eq(TEST_CHIP_ID), eq(FIRA_VERSION_2_0));
+        verify(mUwbSessionNotificationManager).onRangingOpened(eq(uwbSession));
+        verify(mUwbMetrics).logRangingInitEvent(
+                eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
+    }
+
+    // Test SESSION_INIT for a CCC ranging session on a UWBS controller (UCI ver 2.0+). Currently,
+    // we don't expect this to set the {@code CccOpenRangingParams.mAbsoluteInitiationTimeUs}
+    // (at SESSION_INIT time), or, result in the UWBS_TIMESTAMP being fetched from the UWBS.
+    @Test
+    public void openRanging_success_Ccc_2_0_absoluteInitiationTimeComputationEnabledAndConfigured()
+            throws Exception {
+        // Setup the UWBS to return Fira UCI version as 2.0.
+        when(mUwbServiceCore.getCachedDeviceInfoResponse(TEST_CHIP_ID)).thenReturn(
+                UWB_DEVICE_INFO_RESPONSE_2_0);
+
+        // Setup the flag to "true", so that absolute UWB initiation time computation
+        // is enabled for a CCC ranging session.
+        when(mDeviceConfigFacade.isCccAbsoluteUwbInitiationTimeEnabled()).thenReturn(true);
+
+        CccOpenRangingParams params = CCC_OPEN_RANGING_PARAMS_DEFAULT.toBuilder()
+                .setInitiationTimeMs(1000)
+                .build();
+        UwbSession uwbSession = setUpCccUwbSessionForExecution(params);
+
+        // Stub for openRanging conditions
+        when(mNativeUwbManager.initSession(anyInt(), anyByte(), anyString()))
+                .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_INIT,
+                UwbUciConstants.UWB_SESSION_STATE_IDLE).when(uwbSession).getSessionState();
+        when(mUwbConfigurationManager.setAppConfigurations(anyInt(), any(), anyString(), any()))
+                .thenReturn(UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
+                TEST_SESSION_ID, TEST_SESSION_TYPE, CccParams.PROTOCOL_NAME,
+                uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks(), TEST_CHIP_ID);
+        mTestLooper.dispatchAll();
+
+        // Verifications related to CCC Open Ranging - we expect queryUwbsTimestampMicros()
+        // to be called.
+        verify(mNativeUwbManager).initSession(eq(TEST_SESSION_ID), anyByte(), eq(TEST_CHIP_ID));
+        verify(mUwbServiceCore).queryUwbsTimestampMicros();
         verify(mUwbConfigurationManager).setAppConfigurations(
                 eq(TEST_SESSION_ID), any(), eq(TEST_CHIP_ID), eq(FIRA_VERSION_2_0));
         verify(mUwbSessionNotificationManager).onRangingOpened(eq(uwbSession));
@@ -2233,7 +2324,7 @@ public class UwbSessionManagerTest {
     }
 
     private UwbSession prepareExistingCccUwbSession() throws Exception {
-        UwbSession uwbSession = setUpCccUwbSessionForExecution();
+        UwbSession uwbSession = setUpCccUwbSessionForExecution(CCC_OPEN_RANGING_PARAMS_DEFAULT);
         mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
                 TEST_SESSION_ID, TEST_SESSION_TYPE, CccParams.PROTOCOL_NAME,
                 uwbSession.getParams(), uwbSession.getIUwbRangingCallbacks(), TEST_CHIP_ID);
