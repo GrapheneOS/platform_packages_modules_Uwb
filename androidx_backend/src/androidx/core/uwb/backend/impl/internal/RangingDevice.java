@@ -334,17 +334,13 @@ public abstract class RangingDevice {
             @WorkerThread
             @Override
             public void onReconfigured(PersistableBundle params) {
-                if (mOpAsyncCallbackRunner.isActive()) {
-                    mOpAsyncCallbackRunner.complete(true);
-                }
+                mOpAsyncCallbackRunner.completeIfActive(true);
             }
 
             @WorkerThread
             @Override
             public void onReconfigureFailed(int reason, PersistableBundle params) {
-                if (mOpAsyncCallbackRunner.isActive()) {
-                    mOpAsyncCallbackRunner.complete(false);
-                }
+                mOpAsyncCallbackRunner.completeIfActive(false);
             }
 
             @WorkerThread
@@ -368,18 +364,14 @@ public abstract class RangingDevice {
             @WorkerThread
             @Override
             public void onStopFailed(int reason, PersistableBundle params) {
-                if (mOpAsyncCallbackRunner.isActive()) {
-                    mOpAsyncCallbackRunner.complete(false);
-                }
+                mOpAsyncCallbackRunner.completeIfActive(false);
             }
 
             @WorkerThread
             @Override
             public void onClosed(int reason, PersistableBundle parameters) {
                 mRangingSession = null;
-                if (mOpAsyncCallbackRunner.isActive()) {
-                    mOpAsyncCallbackRunner.complete(true);
-                }
+                mOpAsyncCallbackRunner.completeIfActive(true);
             }
 
             @WorkerThread
