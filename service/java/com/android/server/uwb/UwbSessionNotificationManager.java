@@ -67,14 +67,16 @@ public class UwbSessionNotificationManager {
     public void onRangingResult(UwbSession uwbSession, UwbRangingData rangingData) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
-        boolean permissionGranted = mUwbInjector.checkUwbRangingPermissionForDataDelivery(
-                uwbSession.getAttributionSource(), "uwb ranging result");
-        if (!permissionGranted) {
-            Log.e(TAG, "Not delivering ranging result because of permission denial"
-                    + sessionHandle);
-            return;
+        if (uwbSession.isDataDeliveryPermissionCheckNeeded()) {
+            boolean permissionGranted = mUwbInjector.checkUwbRangingPermissionForStartDataDelivery(
+                    uwbSession.getAttributionSource(), "uwb ranging result");
+            if (!permissionGranted) {
+                Log.e(TAG, "Not delivering ranging result because of permission denial"
+                        + sessionHandle);
+                return;
+            }
+            uwbSession.setDataDeliveryPermissionCheckNeeded(false);
         }
-
         RangingReport rangingReport = null;
         try {
             rangingReport = getRangingReport(rangingData, uwbSession.getProtocolName(),
@@ -175,6 +177,8 @@ public class UwbSessionNotificationManager {
             PersistableBundle params)  {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        mUwbInjector.finishUwbRangingPermissionForDataDelivery(uwbSession.getAttributionSource());
+        uwbSession.setDataDeliveryPermissionCheckNeeded(true);
         try {
             uwbRangingCallbacks.onRangingStopped(sessionHandle, reason, params);
             Log.i(TAG, "IUwbRangingCallbacks - onRangingStopped");
@@ -478,14 +482,18 @@ public class UwbSessionNotificationManager {
     public void onRadarDataMessageReceived(UwbSession uwbSession, UwbRadarData radarData) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
-        boolean permissionGranted =
-                mUwbInjector.checkUwbRangingPermissionForDataDelivery(
-                        uwbSession.getAttributionSource(), "uwb radar data");
-        if (!permissionGranted) {
-            Log.e(
-                    TAG,
-                    "Not delivering uwb radar data because of permission denial" + sessionHandle);
-            return;
+        if (uwbSession.isDataDeliveryPermissionCheckNeeded()) {
+            boolean permissionGranted =
+                    mUwbInjector.checkUwbRangingPermissionForStartDataDelivery(
+                            uwbSession.getAttributionSource(), "uwb radar data");
+            if (!permissionGranted) {
+                Log.e(
+                        TAG,
+                        "Not delivering uwb radar data because of permission denial"
+                                + sessionHandle);
+                return;
+            }
+            uwbSession.setDataDeliveryPermissionCheckNeeded(false);
         }
         PersistableBundle radarDataBundle = getRadarData(radarData).toBundle();
         try {
