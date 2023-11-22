@@ -70,6 +70,18 @@ public class OpAsyncCallbackRunner<T> {
         }
     }
 
+    /** Complete the operation if active, useful for unexpected callback. */
+    public synchronized void completeIfActive(T result) {
+        if (!mActive) {
+            return;
+        }
+        Completer<T> opCompleter = this.mOpCompleter;
+        if (opCompleter != null) {
+            opCompleter.set(result);
+            this.mResult = result;
+        }
+    }
+
     @Nullable
     public T getResult() {
         return mResult;
