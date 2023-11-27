@@ -97,6 +97,7 @@ import android.os.PersistableBundle;
 import android.os.Process;
 import android.os.RemoteException;
 import android.os.test.TestLooper;
+import android.permission.flags.Flags;
 import android.util.Pair;
 import android.uwb.IUwbAdapter;
 import android.uwb.IUwbRangingCallbacks;
@@ -2017,7 +2018,7 @@ public class UwbSessionManagerTest {
     private AttributionSource.Builder setNextAttributionSource(
             @NonNull AttributionSource.Builder builder,
             @Nullable AttributionSource nextAttributionSource) {
-        if (isAtLeastV()) {
+        if (isAtLeastV() && Flags.setNextAttributionSource()) {
             return builder.setNextAttributionSource(nextAttributionSource);
         } else {
             return builder.setNext(nextAttributionSource);
