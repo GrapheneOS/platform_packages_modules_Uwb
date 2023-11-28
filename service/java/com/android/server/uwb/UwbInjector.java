@@ -272,14 +272,19 @@ public class UwbInjector {
     /**
      * Returns true if the UWB_RANGING permission is granted for the calling app.
      *
-     * <p>Should be used in situations where data will be delivered and hence the app op should
-     * be noted.
+     * <p>Used for checking permission before first data delivery for the session.
      */
-    public boolean checkUwbRangingPermissionForDataDelivery(
+    public boolean checkUwbRangingPermissionForStartDataDelivery(
             @NonNull AttributionSource attributionSource, @NonNull String message) {
-        int permissionCheckResult = mPermissionManager.checkPermissionForDataDelivery(
+        int permissionCheckResult = mPermissionManager.checkPermissionForStartDataDelivery(
                 UWB_RANGING, attributionSource, message);
         return permissionCheckResult == PERMISSION_GRANTED;
+    }
+
+    /** Indicate permission manager that the ranging session is done or stopped. */
+    public void finishUwbRangingPermissionForDataDelivery(
+            @NonNull AttributionSource attributionSource) {
+        mPermissionManager.finishDataDelivery(UWB_RANGING, attributionSource);
     }
 
     /**
