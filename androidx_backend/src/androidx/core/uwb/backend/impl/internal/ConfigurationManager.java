@@ -492,9 +492,7 @@ public final class ConfigurationManager {
                 == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
             builder.setSessionKey(rangingParameters.getSessionKeyInfo())
                     .setSubSessionId(rangingParameters.getSubSessionId())
-                    .setSubsessionKey(rangingParameters.getSubSessionKeyInfo())
-                    .setIsKeyRotationEnabled(true)
-                    .setKeyRotationRate(0);
+                    .setSubsessionKey(rangingParameters.getSubSessionKeyInfo());
         }
 
         if (timingParams.isHoppingEnabled()) {
