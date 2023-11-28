@@ -124,7 +124,8 @@ public class UwbSessionNotificationManagerTest {
         when(mFiraParams.hasRangingResultReportMessage()).thenReturn(false);
         when(mFiraParams.hasControlMessage()).thenReturn(false);
         when(mFiraParams.hasRangingControlPhase()).thenReturn(true);
-        when(mUwbInjector.checkUwbRangingPermissionForDataDelivery(any(), any())).thenReturn(true);
+        when(mUwbInjector.checkUwbRangingPermissionForStartDataDelivery(any(), any()))
+                .thenReturn(true);
         when(mUwbInjector.getElapsedSinceBootNanos()).thenReturn(TEST_ELAPSED_NANOS);
         when(mUwbInjector.getUwbServiceCore()).thenReturn(mUwbServiceCore);
         when(mUwbServiceCore.isOemExtensionCbRegistered()).thenReturn(true);
@@ -150,8 +151,9 @@ public class UwbSessionNotificationManagerTest {
                         PEER_SHORT_MAC_ADDRESS, MAC_ADDRESSING_MODE_SHORT,
                         RANGING_MEASUREMENT_TYPE_TWO_WAY,
                         true, true, false, false, TEST_ELAPSED_NANOS);
-        when(mUwbInjector.checkUwbRangingPermissionForDataDelivery(eq(ATTRIBUTION_SOURCE), any()))
-                .thenReturn(false);
+        when(mUwbInjector.checkUwbRangingPermissionForStartDataDelivery(eq(ATTRIBUTION_SOURCE),
+                any())).thenReturn(false);
+        when(mUwbSession.isDataDeliveryPermissionCheckNeeded()).thenReturn(true);
         mUwbSessionNotificationManager.onRangingResult(
                 mUwbSession, testRangingDataAndRangingReport.first);
 
@@ -658,8 +660,9 @@ public class UwbSessionNotificationManagerTest {
         Pair<UwbRadarData, RadarData> testUwbRadarDataAndRadarData =
                 UwbTestUtils.generateUwbRadarDataAndRadarData(
                         RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES);
-        when(mUwbInjector.checkUwbRangingPermissionForDataDelivery(eq(ATTRIBUTION_SOURCE), any()))
-                .thenReturn(false);
+        when(mUwbInjector.checkUwbRangingPermissionForStartDataDelivery(eq(ATTRIBUTION_SOURCE),
+                any())).thenReturn(false);
+        when(mUwbRadarSession.isDataDeliveryPermissionCheckNeeded()).thenReturn(true);
         mUwbSessionNotificationManager.onRadarDataMessageReceived(
                 mUwbRadarSession, testUwbRadarDataAndRadarData.first);
 
