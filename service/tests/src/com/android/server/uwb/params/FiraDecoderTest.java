@@ -138,6 +138,8 @@ public class FiraDecoderTest {
                     + "150100" // Suspend ranging
                     + "160101" // Session key length
                     + "180110" // Dt tag max active ranging rounds
+                    + "190101" //Dt tag block skipping
+                    + "1A0100" //Psdu length support
                     + "E30101"
                     + "E40401010101"
                     + "E50403000000"
@@ -147,7 +149,7 @@ public class FiraDecoderTest {
                     + "E90401000000";
     private static final byte[] TEST_FIRA_SPECIFICATION_TLV_DATA_VER_2 =
             UwbUtil.getByteArray(TEST_FIRA_SPECIFICATION_TLV_STRING_VER_2);
-    public static final int TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_2 = 31;
+    public static final int TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_2 = 33;
 
     private final FiraDecoder mFiraDecoder = new FiraDecoder();
 

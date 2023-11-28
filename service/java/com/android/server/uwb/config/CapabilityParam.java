@@ -71,6 +71,8 @@ public class CapabilityParam {
     public static final int SUPPORTED_SUSPEND_RANGING_VER_2_0  = 0x15;
     public static final int SUPPORTED_SESSION_KEY_LENGTH_VER_2_0  = 0x16;
     public static final int SUPPORTED_DT_TAG_MAX_ACTIVE_RR_2_0 = 0x18;
+    public static final int SUPPORTED_DT_TAG_BLOCK_SKIPPING_2_0 = 0x19;
+    public static final int SUPPORTED_PSDU_LENGTH_2_0 = 0x1A;
 
     /**
      * CR 287 params common across versions
@@ -198,6 +200,12 @@ public class CapabilityParam {
 
     public static final int NO_DIAGNOSTICS = 0x0;
     public static final int DIAGNOSTICS = 0x1;
+
+    public static final int NO_DT_TAG_BLOCK_SKIPPING = 0x0;
+    public static final int DT_TAG_BLOCK_SKIPPING = 0x1;
+
+    public static final int NO_PSDU_LENGTH_SUPPORT = 0x0;
+    public static final int PSDU_LENGTH_SUPPORT = 0x1;
 
     public static final int CCC_CHANNEL_5 = (int) UwbVendorCapabilityTlvValues.CCC_CHANNEL_5;
     public static final int CCC_CHANNEL_9 = (int) UwbVendorCapabilityTlvValues.CCC_CHANNEL_9;
