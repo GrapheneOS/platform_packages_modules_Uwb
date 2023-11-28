@@ -1229,6 +1229,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             removeAdvertiserData(uwbSession);
             uwbSession.close();
             removeFromNonPrivilegedUidToFiraSessionTableIfNecessary(uwbSession);
+            if (!uwbSession.isDataDeliveryPermissionCheckNeeded()) {
+                mUwbInjector.finishUwbRangingPermissionForDataDelivery(
+                        uwbSession.getAttributionSource());
+            }
             mSessionTokenMap.remove(uwbSession.getSessionId());
             mSessionTable.remove(uwbSession.getSessionHandle());
             mDbgRecentlyClosedSessions.add(uwbSession);
@@ -2043,6 +2047,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         // used when the corresponding DataTransferStatusNtf is received (from UWBS).
         private final ConcurrentHashMap<Long, SendDataInfo> mSendDataInfoMap;
 
+        // Whether data delivery permission check is needed for the ranging session.
+        private boolean mDataDeliveryPermissionCheckNeeded = true;
+
         @VisibleForTesting
         public List<UwbControlee> mControleeList;
 
@@ -2588,6 +2595,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             return mReceivedDataInfoMap.keySet();
         }
 
+        public boolean isDataDeliveryPermissionCheckNeeded() {
+            return mDataDeliveryPermissionCheckNeeded;
+        }
+
+        public void setDataDeliveryPermissionCheckNeeded(boolean permissionCheckNeeded) {
+            mDataDeliveryPermissionCheckNeeded = permissionCheckNeeded;
+        }
         public void setMulticastListUpdateStatus(
                 UwbMulticastListUpdateStatus multicastListUpdateStatus) {
             mMulticastListUpdateStatus = multicastListUpdateStatus;
