@@ -695,6 +695,13 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 builder.setIsTxAdaptivePayloadPowerEnabled(
                         getNextArgRequiredTrueOrFalse("enabled", "disabled"));
             }
+            if (option.equals("-S")) {
+                int sfd_id = Integer.parseInt(getNextArgRequired());
+                if (sfd_id < 0 || sfd_id > 4) {
+                    throw new IllegalArgumentException("SFD_ID should be in range 0-4");
+                }
+                builder.setSfdId(sfd_id);
+            }
             option = getNextOption();
         }
         if (aoaResultReqEnabled && interleavingEnabled) {
@@ -1436,7 +1443,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " [-P bprf|hprf](prfMode)"
                 + " [-D 6m81|7m80|27m2|31m2](psduDataRate)"
                 + " [-B 850k|6m81](bprfPhrDataRate)"
-                + " [-A enabled|disabled](TX adaptive power, default = disabled");
+                + " [-A enabled|disabled](TX adaptive power, default = disabled)"
+                + " [-S <sfd_id>](sfd_id 0-4, default = 2)");
         pw.println("    Starts a FIRA ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
                 + " retrieved using |get-ranging-session-reports|");
