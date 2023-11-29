@@ -161,7 +161,7 @@ CR1044,NO,
 CR1046,NA,Marked as N/A (MAC)
 CR1048,NA,CR clarifies the DL-TDoA Ranging Measurement field values in case of an error; no Android stack change required
 CR1049,NA,Marked as N/A (MAC)
-CR1051,NO,
+CR1051,YES,
 CR1056,NA,Marked as N/A (MAC)
 CR1057,NO,
 CR1058,Partial,Slot index field is already present in UwbTwoWayMeasurement.
