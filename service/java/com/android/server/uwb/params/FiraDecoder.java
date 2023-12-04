@@ -43,6 +43,7 @@ import static com.android.server.uwb.config.CapabilityParam.DS_TWR_DEFERRED;
 import static com.android.server.uwb.config.CapabilityParam.DS_TWR_NON_DEFERRED;
 import static com.android.server.uwb.config.CapabilityParam.DT_ANCHOR;
 import static com.android.server.uwb.config.CapabilityParam.DT_TAG;
+import static com.android.server.uwb.config.CapabilityParam.DT_TAG_BLOCK_SKIPPING;
 import static com.android.server.uwb.config.CapabilityParam.DYNAMIC_STS;
 import static com.android.server.uwb.config.CapabilityParam.DYNAMIC_STS_RESPONDER_SPECIFIC_SUBSESSION_KEY;
 import static com.android.server.uwb.config.CapabilityParam.ESS_TWR_NON_DEFERRED;
@@ -58,6 +59,7 @@ import static com.android.server.uwb.config.CapabilityParam.OWR_DL_TDOA;
 import static com.android.server.uwb.config.CapabilityParam.OWR_UL_TDOA;
 import static com.android.server.uwb.config.CapabilityParam.PROVISIONED_STS;
 import static com.android.server.uwb.config.CapabilityParam.PROVISIONED_STS_RESPONDER_SPECIFIC_SUBSESSION_KEY;
+import static com.android.server.uwb.config.CapabilityParam.PSDU_LENGTH_SUPPORT;
 import static com.android.server.uwb.config.CapabilityParam.RANGE_DATA_NTF_CONFIG_DISABLE;
 import static com.android.server.uwb.config.CapabilityParam.RANGE_DATA_NTF_CONFIG_ENABLE;
 import static com.android.server.uwb.config.CapabilityParam.RANGE_DATA_NTF_CONFIG_ENABLE_AOA_EDGE_TRIG;
@@ -89,6 +91,7 @@ import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_DEVICE_ROL
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_DEVICE_ROLES_VER_2_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_DEVICE_TYPE_VER_2_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_DIAGNOSTICS;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_DT_TAG_BLOCK_SKIPPING_2_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_DT_TAG_MAX_ACTIVE_RR_2_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_EXTENDED_MAC_ADDRESS_VER_1_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_EXTENDED_MAC_ADDRESS_VER_2_0;
@@ -109,6 +112,7 @@ import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MIN_RANGIN
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MIN_SLOT_DURATION_RSTU;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MULTI_NODE_MODES_VER_1_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MULTI_NODE_MODES_VER_2_0;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_PSDU_LENGTH_2_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_RANGE_DATA_NTF_CONFIG;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_RANGING_METHOD_VER_1_0;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_RANGING_METHOD_VER_2_0;
@@ -736,6 +740,24 @@ public class FiraDecoder extends TlvDecoder {
                 builder.setDtTagMaxActiveRr(dtTagMaxActiveRr);
             } catch (IllegalArgumentException e) {
                 Log.w(TAG, "SUPPORTED_DT_TAG_MAX_ACTIVE_RR not found.");
+            }
+
+            try {
+                byte dtTagBlockSkippingUci = tlvs.getByte(SUPPORTED_DT_TAG_BLOCK_SKIPPING_2_0);
+                if (isBitSet(dtTagBlockSkippingUci, DT_TAG_BLOCK_SKIPPING)) {
+                    builder.setDtTagBlockSkippingSupport(true);
+                }
+            } catch (IllegalArgumentException e) {
+                Log.w(TAG, "SUPPORTED_DT_TAG_BLOCK_SKIPPING_2_0 not found.");
+            }
+
+            try {
+                byte psduLengthUci = tlvs.getByte(SUPPORTED_PSDU_LENGTH_2_0);
+                if (isBitSet(psduLengthUci, PSDU_LENGTH_SUPPORT)) {
+                    builder.setPsduLengthSupport(true);
+                }
+            } catch (IllegalArgumentException e) {
+                Log.w(TAG, "SUPPORTED_PSDU_LENGTH_2_0 not found.");
             }
         } else {
             // This FiRa version is not supported yet.
