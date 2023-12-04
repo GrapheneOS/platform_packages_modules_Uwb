@@ -109,6 +109,10 @@ public class FiraSpecificationParams extends FiraParams {
 
     private final boolean mHasBackgroundRangingSupport;
 
+    private final boolean mHasDtTagBlockSkippingSupport;
+
+    private final boolean mHasPsduLengthSupport;
+
     private static final String KEY_MIN_PHY_VERSION = "min_phy_version";
     private static final String KEY_MAX_PHY_VERSION = "max_phy_version";
     private static final String KEY_MIN_MAC_VERSION = "min_mac_version";
@@ -157,6 +161,10 @@ public class FiraSpecificationParams extends FiraParams {
 
     public static final String KEY_BACKGROUND_RANGING_SUPPORT = "background_ranging_support";
 
+    public static final String KEY_DT_TAG_BLOCK_SKIPPING_SUPPORT = "dt_tag_block_skipping";
+
+    public static final String KEY_PSDU_LENGTH_SUPPORT = "psdu_length_support";
+
     public static final int DEFAULT_MAX_RANGING_SESSIONS_NUMBER = 5;
 
     private FiraSpecificationParams(
@@ -192,7 +200,8 @@ public class FiraSpecificationParams extends FiraParams {
             Integer maxDataPacketPayloadSize,
             EnumSet<RangeDataNtfConfigCapabilityFlag> rangeDataNtfConfigCapabilities,
             int deviceType, boolean suspendRangingSupport, int sessionKeyLength,
-            int dtTagMaxActiveRr, boolean hasBackgroundRangingSupport) {
+            int dtTagMaxActiveRr, boolean hasBackgroundRangingSupport,
+            boolean hasDtTagBlockSkippingSupport, boolean hasPsduLengthSupport) {
         mMinPhyVersionSupported = minPhyVersionSupported;
         mMaxPhyVersionSupported = maxPhyVersionSupported;
         mMinMacVersionSupported = minMacVersionSupported;
@@ -229,6 +238,8 @@ public class FiraSpecificationParams extends FiraParams {
         mSessionKeyLength = sessionKeyLength;
         mDtTagMaxActiveRr = dtTagMaxActiveRr;
         mHasBackgroundRangingSupport = hasBackgroundRangingSupport;
+        mHasDtTagBlockSkippingSupport = hasDtTagBlockSkippingSupport;
+        mHasPsduLengthSupport = hasPsduLengthSupport;
     }
 
     @Override
@@ -382,6 +393,14 @@ public class FiraSpecificationParams extends FiraParams {
         return mHasBackgroundRangingSupport;
     }
 
+    public boolean hasDtTagBlockSkippingSupport() {
+        return mHasDtTagBlockSkippingSupport;
+    }
+
+    public boolean hasPsduLengthSupport() {
+        return mHasPsduLengthSupport;
+    }
+
     private static int[] toIntArray(List<Integer> data) {
         int[] res = new int[data.size()];
         for (int i = 0; i < data.size(); i++) {
@@ -435,6 +454,8 @@ public class FiraSpecificationParams extends FiraParams {
         bundle.putInt(KEY_SESSION_KEY_LENGTH, mSessionKeyLength);
         bundle.putInt(DT_TAG_MAX_ACTIVE_RR, mDtTagMaxActiveRr);
         bundle.putBoolean(KEY_BACKGROUND_RANGING_SUPPORT, mHasBackgroundRangingSupport);
+        bundle.putBoolean(KEY_DT_TAG_BLOCK_SKIPPING_SUPPORT, mHasDtTagBlockSkippingSupport);
+        bundle.putBoolean(KEY_PSDU_LENGTH_SUPPORT, mHasPsduLengthSupport);
         return bundle;
     }
 
@@ -468,6 +489,8 @@ public class FiraSpecificationParams extends FiraParams {
         builder.setSessionKeyLength(bundle.getInt(KEY_SESSION_KEY_LENGTH));
         builder.setDtTagMaxActiveRr(bundle.getInt(DT_TAG_MAX_ACTIVE_RR, 0));
         builder.setBackgroundRangingSupport(bundle.getBoolean(KEY_BACKGROUND_RANGING_SUPPORT));
+        builder.setDtTagBlockSkippingSupport(bundle.getBoolean(KEY_DT_TAG_BLOCK_SKIPPING_SUPPORT));
+        builder.setPsduLengthSupport(bundle.getBoolean(KEY_PSDU_LENGTH_SUPPORT));
         return builder;
     }
 
@@ -668,6 +691,12 @@ public class FiraSpecificationParams extends FiraParams {
 
         //Default is false. i.e., no background ranging support.
         private boolean mHasBackgroundRangingSupport = false;
+
+        // DT_TAG_BLOCK_SKIPPING.
+        private boolean mHasDtTagBlockSkippingSupport = false;
+
+        // PSDU_LENGTH_SUPPORT.
+        private boolean mHasPsduLengthSupport = false;
 
         public FiraSpecificationParams.Builder setMinPhyVersionSupported(
                 FiraProtocolVersion version) {
@@ -886,6 +915,16 @@ public class FiraSpecificationParams extends FiraParams {
             return this;
         }
 
+        public FiraSpecificationParams.Builder setDtTagBlockSkippingSupport(boolean value) {
+            mHasDtTagBlockSkippingSupport = value;
+            return this;
+        }
+
+        public FiraSpecificationParams.Builder setPsduLengthSupport(boolean value) {
+            mHasPsduLengthSupport = value;
+            return this;
+        }
+
         public Builder() {}
 
         public Builder(@NonNull FiraSpecificationParams params) {
@@ -925,6 +964,8 @@ public class FiraSpecificationParams extends FiraParams {
             mSessionKeyLength = params.mSessionKeyLength;
             mDtTagMaxActiveRr = params.mDtTagMaxActiveRr;
             mHasBackgroundRangingSupport = params.mHasBackgroundRangingSupport;
+            mHasDtTagBlockSkippingSupport = params.mHasDtTagBlockSkippingSupport;
+            mHasPsduLengthSupport = params.mHasPsduLengthSupport;
         }
 
         public FiraSpecificationParams build() {
@@ -964,7 +1005,9 @@ public class FiraSpecificationParams extends FiraParams {
                     mSuspendRangingSupport,
                     mSessionKeyLength,
                     mDtTagMaxActiveRr,
-                    mHasBackgroundRangingSupport);
+                    mHasBackgroundRangingSupport,
+                    mHasDtTagBlockSkippingSupport,
+                    mHasPsduLengthSupport);
         }
     }
 }
