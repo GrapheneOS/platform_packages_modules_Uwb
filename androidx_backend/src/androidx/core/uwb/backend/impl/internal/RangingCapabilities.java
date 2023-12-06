@@ -21,6 +21,7 @@ import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_MULTICAST_DS_
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_MULTICAST_DS_TWR_NO_AOA;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_UNICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_UNICAST_DS_TWR_NO_AOA;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE;
 import static androidx.core.uwb.backend.impl.internal.Utils.RANGE_DATA_NTF_ENABLE;
 
 import androidx.annotation.IntRange;
@@ -43,7 +44,8 @@ public class RangingCapabilities {
                     CONFIG_MULTICAST_DS_TWR,
                     CONFIG_UNICAST_DS_TWR_NO_AOA,
                     CONFIG_MULTICAST_DS_TWR_NO_AOA,
-                    CONFIG_DL_TDOA_DT_TAG);
+                    CONFIG_DL_TDOA_DT_TAG,
+                    CONFIG_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE);
     /** Ranging interval reconfigure is not supported if the system API doesn't provide. */
     public static final boolean DEFAULT_SUPPORTS_RANGING_INTERVAL_RECONFIGURE = false;
     /** Default supported slot duration if the system API doesn't provide it. */
