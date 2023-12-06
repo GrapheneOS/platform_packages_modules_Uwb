@@ -25,6 +25,8 @@ import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_U
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_AOA;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_UNICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_UNICAST_DS_TWR_NO_AOA;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE_HPRF;
 import static androidx.core.uwb.backend.impl.internal.Utils.STATIC_STS_SESSION_KEY_INFO_SIZE;
 import static androidx.core.uwb.backend.impl.internal.Utils.VENDOR_ID_SIZE;
 import static androidx.core.uwb.backend.impl.internal.Utils.getRangingTimingParams;
@@ -34,6 +36,7 @@ import static com.google.uwb.support.fira.FiraParams.HOPPING_MODE_FIRA_HOPPING_E
 import static com.google.uwb.support.fira.FiraParams.MAC_ADDRESS_MODE_2_BYTES;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_UNICAST;
+import static com.google.uwb.support.fira.FiraParams.PRF_MODE_HPRF;
 import static com.google.uwb.support.fira.FiraParams.PROTOCOL_VERSION_1_1;
 import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_EDGE_TRIG;
 import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG;
@@ -392,6 +395,78 @@ public final class ConfigurationManager {
                         return RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
                     }
                 });
+
+        // ID_1002 properties.
+        sConfigs.put(
+                CONFIG_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE,
+                new UwbConfiguration() {
+
+                    @Override
+                    public int getConfigId() {
+                        return CONFIG_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE;
+                    }
+
+                    @Override
+                    public int getMultiNodeMode() {
+                        return MULTI_NODE_MODE_UNICAST;
+                    }
+
+                    @Override
+                    public int getStsConfig() {
+                        return FiraParams.STS_CONFIG_STATIC;
+                    }
+
+                    @Override
+                    public int getAoaResultRequestMode() {
+                        return FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS;
+                    }
+
+                    @Override
+                    public boolean isControllerTheInitiator() {
+                        return true;
+                    }
+
+                    @Override
+                    public int getRangingRoundUsage() {
+                        return RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
+                    }
+                });
+
+        // ID_1003 properties.
+        sConfigs.put(
+                CONFIG_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE_HPRF,
+                new UwbConfiguration() {
+
+                    @Override
+                    public int getConfigId() {
+                        return CONFIG_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE_HPRF;
+                    }
+
+                    @Override
+                    public int getMultiNodeMode() {
+                        return MULTI_NODE_MODE_UNICAST;
+                    }
+
+                    @Override
+                    public int getStsConfig() {
+                        return FiraParams.STS_CONFIG_STATIC;
+                    }
+
+                    @Override
+                    public int getAoaResultRequestMode() {
+                        return FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS;
+                    }
+
+                    @Override
+                    public boolean isControllerTheInitiator() {
+                        return true;
+                    }
+
+                    @Override
+                    public int getRangingRoundUsage() {
+                        return RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
+                    }
+                });
     }
 
     private ConfigurationManager() {
@@ -505,6 +580,16 @@ public final class ConfigurationManager {
                     featureFlags.isReversedByteOrderFiraParams()));
         } else {
             builder.setRframeConfig(RFRAME_CONFIG_SP1);
+        }
+
+        if (configuration.getConfigId() == CONFIG_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE_HPRF) {
+            builder.setPrfMode(PRF_MODE_HPRF);
+        }
+
+        if (configuration.getConfigId() == CONFIG_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE
+                || configuration.getConfigId()
+                    == CONFIG_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE_HPRF) {
+            builder.setHasRangingResultReportMessage(false);
         }
 
         return builder.build();
