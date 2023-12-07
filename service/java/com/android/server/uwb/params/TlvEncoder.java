@@ -33,7 +33,7 @@ public abstract class TlvEncoder {
             return new FiraEncoder(uwbInjector);
         }
         if (protocolName.equals(CccParams.PROTOCOL_NAME)) {
-            return new CccEncoder();
+            return new CccEncoder(uwbInjector);
         }
         if (protocolName.equals(RadarParams.PROTOCOL_NAME)) {
             return new RadarEncoder();
