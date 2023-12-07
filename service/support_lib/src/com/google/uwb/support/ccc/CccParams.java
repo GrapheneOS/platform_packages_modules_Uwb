@@ -207,6 +207,36 @@ public abstract class CccParams extends Params {
             value = {SESSION_TYPE_CCC})
     public @interface SessionType {}
 
+    /** Range Data Notification Config */
+    @IntDef(
+            value = {
+                RANGE_DATA_NTF_CONFIG_DISABLE,
+                RANGE_DATA_NTF_CONFIG_ENABLE,
+                RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG,
+                RANGE_DATA_NTF_CONFIG_ENABLE_AOA_LEVEL_TRIG,
+                RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_LEVEL_TRIG,
+                RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_EDGE_TRIG,
+                RANGE_DATA_NTF_CONFIG_ENABLE_AOA_EDGE_TRIG,
+                RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_EDGE_TRIG,
+            })
+    public @interface RangeDataNtfConfig {}
+
+    public static final int RANGE_DATA_NTF_CONFIG_DISABLE = 0;
+    public static final int RANGE_DATA_NTF_CONFIG_ENABLE = 1;
+    public static final int RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG = 2;
+    public static final int RANGE_DATA_NTF_CONFIG_ENABLE_AOA_LEVEL_TRIG = 3;
+    public static final int RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_LEVEL_TRIG = 4;
+    public static final int RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_EDGE_TRIG = 5;
+    public static final int RANGE_DATA_NTF_CONFIG_ENABLE_AOA_EDGE_TRIG = 6;
+    public static final int RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_EDGE_TRIG = 7;
+
+    public static final int RANGE_DATA_NTF_PROXIMITY_NEAR_DEFAULT = 0;
+    public static final int RANGE_DATA_NTF_PROXIMITY_FAR_DEFAULT = 20000;
+    public static final double RANGE_DATA_NTF_AOA_AZIMUTH_LOWER_DEFAULT = -Math.PI;
+    public static final double RANGE_DATA_NTF_AOA_AZIMUTH_UPPER_DEFAULT = Math.PI;
+    public static final double RANGE_DATA_NTF_AOA_ELEVATION_LOWER_DEFAULT = -Math.PI / 2;
+    public static final double RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT = Math.PI / 2;
+
     public static final int SESSION_TYPE_CCC = 160;
 
     public static final long UWB_INITIATION_TIME_MS_UNSET = 0;

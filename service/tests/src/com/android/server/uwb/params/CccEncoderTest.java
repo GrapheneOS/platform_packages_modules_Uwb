@@ -21,14 +21,19 @@ import static com.google.uwb.support.ccc.CccParams.CHAPS_PER_SLOT_3;
 import static com.google.uwb.support.ccc.CccParams.HOPPING_CONFIG_MODE_NONE;
 import static com.google.uwb.support.ccc.CccParams.HOPPING_SEQUENCE_DEFAULT;
 import static com.google.uwb.support.ccc.CccParams.PULSE_SHAPE_SYMMETRICAL_ROOT_RAISED_COSINE;
+import static com.google.uwb.support.ccc.CccParams.RANGE_DATA_NTF_CONFIG_ENABLE;
+import static com.google.uwb.support.ccc.CccParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG;
 import static com.google.uwb.support.ccc.CccParams.SLOTS_PER_ROUND_6;
 import static com.google.uwb.support.ccc.CccParams.UWB_CHANNEL_9;
+
+import static org.mockito.Mockito.when;
 
 import android.platform.test.annotations.Presubmit;
 import android.test.suitebuilder.annotation.SmallTest;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.server.uwb.DeviceConfigFacade;
 import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.util.UwbUtil;
 
@@ -36,9 +41,11 @@ import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccPulseShapeCombo;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 /**
  * Unit tests for {@link com.android.server.uwb.params.CccEncoder}.
@@ -66,14 +73,36 @@ public class CccEncoderTest {
                     .setHoppingSequence(HOPPING_SEQUENCE_DEFAULT)
                     .setInitiationTimeMs(1);
 
-    private static final byte[] TEST_CCC_OPEN_RANGING_TLV_DATA =
-            UwbUtil.getByteArray("0001010201010401090501010904800100000E010011010103010"
+    private static final String RANGE_DATA_NTF_CONFIG_DISABLED_TLV = "0E0100";
+    private static final String RANGE_DATA_NTF_CONFIG_ENABLED_TLV = "0E0101";
+    private static final String RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG_TLV = "0E0102";
+    private static final String RANGE_DATA_NTF_PROXIMITY_NEAR_DEFAULT_TLV = "0F020000";
+    private static final String RANGE_DATA_NTF_PROXIMITY_NEAR_TLV = "0F026400";
+    private static final String RANGE_DATA_NTF_PROXIMITY_FAR_DEFAULT_TLV = "1002204E";
+    private static final String RANGE_DATA_NTF_PROXIMITY_FAR_TLV = "1002C800";
+    private static final String TEST_CCC_OPEN_RANGING_TLV =
+            "00010102010104010905010109048001000011010103010"
                     + "11B01062C0100A3020001A4020000A50100A602D0020802B004140101"
-                    + "2B080100000000000000");
+                    + "2B080100000000000000";
+    private static final String TEST_CCC_OPEN_RANGING_TLV_DEFAULT =
+            TEST_CCC_OPEN_RANGING_TLV + RANGE_DATA_NTF_CONFIG_DISABLED_TLV;
+    private static final byte[] TEST_CCC_OPEN_RANGING_TLV_DATA =
+            UwbUtil.getByteArray(TEST_CCC_OPEN_RANGING_TLV_DEFAULT);
 
     @Mock
     private UwbInjector mUwbInjector;
-    private final CccEncoder mCccEncoder = new CccEncoder();
+    @Mock
+    private DeviceConfigFacade mDeviceConfigFacade;
+    private CccEncoder mCccEncoder;
+
+    @Before
+    public void setUp() throws Exception {
+        MockitoAnnotations.initMocks(this);
+        mCccEncoder = new CccEncoder(mUwbInjector);
+
+        when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
+        when(mDeviceConfigFacade.isCccSupportedRangeDataNtfConfig()).thenReturn(false);
+    }
 
     @Test
     public void testCccOpenRangingParams() throws Exception {
@@ -104,12 +133,83 @@ public class CccEncoderTest {
         TlvBuffer tlvs = mCccEncoder.getTlvBuffer(params, CccParams.PROTOCOL_VERSION_1_0);
 
         byte[] testCccOpenRangingAbsoluteInitiationTimeTlvData =
-                UwbUtil.getByteArray("0001010201010401090501010904800100000E010011010103010"
+                UwbUtil.getByteArray("00010102010104010905010109048001000011010103010"
                         + "11B01062C0100A3020001A4020000A50100A602D0020802B004140101"
-                        + "2B081027000000000000");
+                        + "2B0810270000000000000E0100");
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(17);
         assertThat(tlvs.getByteArray()).isEqualTo(
                 testCccOpenRangingAbsoluteInitiationTimeTlvData);
+    }
+
+    @Test
+    public void testCccOpenRangingParams_withRangeDataNtfConfigSupportedAndDisabled()
+            throws Exception {
+        // Setup the DeviceConfigFacade flag to indicate that RANGE_DATA_NTF_CONFIG and related
+        // fields will be configured for a CCC ranging session.
+        when(mDeviceConfigFacade.isCccSupportedRangeDataNtfConfig()).thenReturn(true);
+
+        CccOpenRangingParams params = TEST_CCC_OPEN_RANGING_PARAMS.build();
+        TlvBuffer tlvs = mCccEncoder.getTlvBuffer(params, CccParams.PROTOCOL_VERSION_1_0);
+
+        // Setup the expected values to be the default ones, since the parameters are not
+        // configured.
+        String expectedTlvStr = TEST_CCC_OPEN_RANGING_TLV
+                + RANGE_DATA_NTF_CONFIG_DISABLED_TLV
+                + RANGE_DATA_NTF_PROXIMITY_NEAR_DEFAULT_TLV
+                + RANGE_DATA_NTF_PROXIMITY_FAR_DEFAULT_TLV;
+
+        assertThat(tlvs.getNoOfParams()).isEqualTo(19);
+        assertThat(tlvs.getByteArray()).isEqualTo(UwbUtil.getByteArray(expectedTlvStr));
+    }
+
+    @Test
+    public void testCccOpenRangingParams_withRangeDataNtfConfigSupportedAndEnabled()
+            throws Exception {
+        // Setup the DeviceConfigFacade flag to indicate that RANGE_DATA_NTF_CONFIG and related
+        // fields will be configured for a CCC ranging session (to default value of Disabled).
+        when(mDeviceConfigFacade.isCccSupportedRangeDataNtfConfig()).thenReturn(true);
+
+        CccOpenRangingParams.Builder builder = new CccOpenRangingParams
+                .Builder(TEST_CCC_OPEN_RANGING_PARAMS);
+        CccOpenRangingParams params = builder.setRangeDataNtfConfig(RANGE_DATA_NTF_CONFIG_ENABLE)
+                .build();
+        TlvBuffer tlvs = mCccEncoder.getTlvBuffer(params, CccParams.PROTOCOL_VERSION_1_0);
+
+        // Setup the expected values to be enabled for RANGE_DATA_NTF_CONFIG and default for the
+        // other parameters, since they are not configured.
+        String expectedTlvStr = TEST_CCC_OPEN_RANGING_TLV
+                + RANGE_DATA_NTF_CONFIG_ENABLED_TLV
+                + RANGE_DATA_NTF_PROXIMITY_NEAR_DEFAULT_TLV
+                + RANGE_DATA_NTF_PROXIMITY_FAR_DEFAULT_TLV;
+
+        assertThat(tlvs.getNoOfParams()).isEqualTo(19);
+        assertThat(tlvs.getByteArray()).isEqualTo(UwbUtil.getByteArray(expectedTlvStr));
+    }
+
+    @Test
+    public void testCccOpenRangingParams_withRangeDataNtfConfigSupportedAndConfigured()
+            throws Exception {
+        // Setup the DeviceConfigFacade flag to indicate that RANGE_DATA_NTF_CONFIG and related
+        // fields will be configured for a CCC ranging session (to default value of Disabled).
+        when(mDeviceConfigFacade.isCccSupportedRangeDataNtfConfig()).thenReturn(true);
+
+        CccOpenRangingParams.Builder builder = new CccOpenRangingParams
+                .Builder(TEST_CCC_OPEN_RANGING_PARAMS);
+        CccOpenRangingParams params = builder
+                .setRangeDataNtfConfig(RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG)
+                .setRangeDataNtfProximityNear(100)
+                .setRangeDataNtfProximityFar(200)
+                .build();
+        TlvBuffer tlvs = mCccEncoder.getTlvBuffer(params, CccParams.PROTOCOL_VERSION_1_0);
+
+        // Setup the expected values to match the configured parameter values.
+        String expectedTlvStr = TEST_CCC_OPEN_RANGING_TLV
+                + RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG_TLV
+                + RANGE_DATA_NTF_PROXIMITY_NEAR_TLV
+                + RANGE_DATA_NTF_PROXIMITY_FAR_TLV;
+
+        assertThat(tlvs.getNoOfParams()).isEqualTo(19);
+        assertThat(tlvs.getByteArray()).isEqualTo(UwbUtil.getByteArray(expectedTlvStr));
     }
 }

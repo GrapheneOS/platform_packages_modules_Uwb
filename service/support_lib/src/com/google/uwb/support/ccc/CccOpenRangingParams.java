@@ -16,12 +16,20 @@
 
 package com.google.uwb.support.ccc;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.uwb.support.ccc.CccParams.RANGE_DATA_NTF_PROXIMITY_NEAR_DEFAULT;
+import static com.google.uwb.support.ccc.CccParams.RANGE_DATA_NTF_PROXIMITY_FAR_DEFAULT;
+import static com.google.uwb.support.ccc.CccParams.RANGE_DATA_NTF_AOA_AZIMUTH_LOWER_DEFAULT;
+import static com.google.uwb.support.ccc.CccParams.RANGE_DATA_NTF_AOA_AZIMUTH_UPPER_DEFAULT;
+import static com.google.uwb.support.ccc.CccParams.RANGE_DATA_NTF_AOA_ELEVATION_LOWER_DEFAULT;
+import static com.google.uwb.support.ccc.CccParams.RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT;
 
 import android.os.Build.VERSION_CODES;
 import android.os.PersistableBundle;
 import android.uwb.UwbManager;
 
+import androidx.annotation.FloatRange;
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
@@ -54,6 +62,17 @@ public class CccOpenRangingParams extends CccParams {
     private static final String KEY_STS_INDEX = "sts_index";
     private static final String KEY_INITIATION_TIME_MS = "initiation_time_ms";
     private static final String KEY_ABSOLUTE_INITIATION_TIME_US = "absolute_initiation_time_us";
+    private static final String KEY_RANGE_DATA_NTF_CONFIG = "range_data_ntf_config";
+    private static final String KEY_RANGE_DATA_NTF_PROXIMITY_NEAR = "range_data_ntf_proximity_near";
+    private static final String KEY_RANGE_DATA_NTF_PROXIMITY_FAR = "range_data_ntf_proximity_far";
+    private static final String KEY_RANGE_DATA_NTF_AOA_AZIMUTH_LOWER =
+            "range_data_ntf_aoa_azimuth_lower";
+    private static final String KEY_RANGE_DATA_NTF_AOA_AZIMUTH_UPPER =
+            "range_data_ntf_aoa_azimuth_upper";
+    private static final String KEY_RANGE_DATA_NTF_AOA_ELEVATION_LOWER =
+            "range_data_ntf_aoa_elevation_lower";
+    private static final String KEY_RANGE_DATA_NTF_AOA_ELEVATION_UPPER =
+            "range_data_ntf_aoa_elevation_upper";
 
     private final CccProtocolVersion mProtocolVersion;
     @UwbConfig private final int mUwbConfig;
@@ -69,7 +88,6 @@ public class CccOpenRangingParams extends CccParams {
     @HoppingConfigMode private final int mHoppingConfigMode;
     @HoppingSequence private final int mHoppingSequence;
     private final int mStsIndex;
-
     // FiRa 1.0: Relative time (in milli-seconds).
     // FiRa 2.0: Relative time (in milli-seconds).
     private final long mInitiationTimeMs;
@@ -77,6 +95,14 @@ public class CccOpenRangingParams extends CccParams {
     // FiRa 2.0: Absolute time in UWB time domain, as specified in CR-272 (in micro-seconds).
     private final long mAbsoluteInitiationTimeUs;
 
+    // RANGE_DATA_NTF_CONFIG related fields.
+    @RangeDataNtfConfig private final int mRangeDataNtfConfig;
+    private final int mRangeDataNtfProximityNear;
+    private final int mRangeDataNtfProximityFar;
+    private double mRangeDataNtfAoaAzimuthLower;
+    private double mRangeDataNtfAoaAzimuthUpper;
+    private double mRangeDataNtfAoaElevationLower;
+    private double mRangeDataNtfAoaElevationUpper;
 
     private CccOpenRangingParams(
             CccProtocolVersion protocolVersion,
@@ -94,7 +120,14 @@ public class CccOpenRangingParams extends CccParams {
             @HoppingSequence int hoppingSequence,
             int stsIndex,
             long initiationTimeMs,
-            long absoluteInitiationTimeUs) {
+            long absoluteInitiationTimeUs,
+            @RangeDataNtfConfig int rangeDataNtfConfig,
+            int rangeDataNtfProximityNear,
+            int rangeDataNtfProximityFar,
+            double rangeDataNtfAoaAzimuthLower,
+            double rangeDataNtfAoaAzimuthUpper,
+            double rangeDataNtfAoaElevationLower,
+            double rangeDataNtfAoaElevationUpper) {
         mProtocolVersion = protocolVersion;
         mUwbConfig = uwbConfig;
         mPulseShapeCombo = pulseShapeCombo;
@@ -111,6 +144,13 @@ public class CccOpenRangingParams extends CccParams {
         mStsIndex = stsIndex;
         mInitiationTimeMs = initiationTimeMs;
         mAbsoluteInitiationTimeUs = absoluteInitiationTimeUs;
+        mRangeDataNtfConfig = rangeDataNtfConfig;
+        mRangeDataNtfProximityNear = rangeDataNtfProximityNear;
+        mRangeDataNtfProximityFar = rangeDataNtfProximityFar;
+        mRangeDataNtfAoaAzimuthLower = rangeDataNtfAoaAzimuthLower;
+        mRangeDataNtfAoaAzimuthUpper = rangeDataNtfAoaAzimuthUpper;
+        mRangeDataNtfAoaElevationLower = rangeDataNtfAoaElevationLower;
+        mRangeDataNtfAoaElevationUpper = rangeDataNtfAoaElevationUpper;
     }
 
     @Override
@@ -137,6 +177,13 @@ public class CccOpenRangingParams extends CccParams {
         bundle.putInt(KEY_STS_INDEX, mStsIndex);
         bundle.putLong(KEY_INITIATION_TIME_MS, mInitiationTimeMs);
         bundle.putLong(KEY_ABSOLUTE_INITIATION_TIME_US, mAbsoluteInitiationTimeUs);
+        bundle.putInt(KEY_RANGE_DATA_NTF_CONFIG, mRangeDataNtfConfig);
+        bundle.putInt(KEY_RANGE_DATA_NTF_PROXIMITY_NEAR, mRangeDataNtfProximityNear);
+        bundle.putInt(KEY_RANGE_DATA_NTF_PROXIMITY_FAR, mRangeDataNtfProximityFar);
+        bundle.putDouble(KEY_RANGE_DATA_NTF_AOA_AZIMUTH_LOWER, mRangeDataNtfAoaAzimuthLower);
+        bundle.putDouble(KEY_RANGE_DATA_NTF_AOA_AZIMUTH_UPPER, mRangeDataNtfAoaAzimuthUpper);
+        bundle.putDouble(KEY_RANGE_DATA_NTF_AOA_ELEVATION_LOWER, mRangeDataNtfAoaElevationLower);
+        bundle.putDouble(KEY_RANGE_DATA_NTF_AOA_ELEVATION_UPPER, mRangeDataNtfAoaElevationUpper);
         return bundle;
     }
 
@@ -175,6 +222,26 @@ public class CccOpenRangingParams extends CccParams {
                 .setStsIndex(bundle.getInt(KEY_STS_INDEX))
                 .setInitiationTimeMs(bundle.getLong(KEY_INITIATION_TIME_MS))
                 .setAbsoluteInitiationTimeUs(bundle.getLong(KEY_ABSOLUTE_INITIATION_TIME_US))
+                .setRangeDataNtfConfig(
+                        bundle.getInt(KEY_RANGE_DATA_NTF_CONFIG, RANGE_DATA_NTF_CONFIG_DISABLE))
+                .setRangeDataNtfProximityNear(
+                        bundle.getInt(KEY_RANGE_DATA_NTF_PROXIMITY_NEAR,
+                                RANGE_DATA_NTF_PROXIMITY_NEAR_DEFAULT))
+                .setRangeDataNtfProximityFar(
+                        bundle.getInt(KEY_RANGE_DATA_NTF_PROXIMITY_FAR,
+                                RANGE_DATA_NTF_PROXIMITY_FAR_DEFAULT))
+                .setRangeDataNtfAoaAzimuthLower(
+                        bundle.getDouble(KEY_RANGE_DATA_NTF_AOA_AZIMUTH_LOWER,
+                                RANGE_DATA_NTF_AOA_AZIMUTH_LOWER_DEFAULT))
+                .setRangeDataNtfAoaAzimuthUpper(
+                        bundle.getDouble(KEY_RANGE_DATA_NTF_AOA_AZIMUTH_UPPER,
+                                RANGE_DATA_NTF_AOA_AZIMUTH_UPPER_DEFAULT))
+                .setRangeDataNtfAoaElevationLower(
+                        bundle.getDouble(KEY_RANGE_DATA_NTF_AOA_ELEVATION_LOWER,
+                                RANGE_DATA_NTF_AOA_ELEVATION_LOWER_DEFAULT))
+                .setRangeDataNtfAoaElevationUpper(
+                        bundle.getDouble(KEY_RANGE_DATA_NTF_AOA_ELEVATION_UPPER,
+                                RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT))
                 .build();
     }
 
@@ -249,6 +316,35 @@ public class CccOpenRangingParams extends CccParams {
         return mAbsoluteInitiationTimeUs;
     }
 
+    @RangeDataNtfConfig
+    public int getRangeDataNtfConfig() {
+        return mRangeDataNtfConfig;
+    }
+
+    public int getRangeDataNtfProximityNear() {
+        return mRangeDataNtfProximityNear;
+    }
+
+    public int getRangeDataNtfProximityFar() {
+        return mRangeDataNtfProximityFar;
+    }
+
+    public double getRangeDataNtfAoaAzimuthLower() {
+        return mRangeDataNtfAoaAzimuthLower;
+    }
+
+    public double getRangeDataNtfAoaAzimuthUpper() {
+        return mRangeDataNtfAoaAzimuthUpper;
+    }
+
+    public double getRangeDataNtfAoaElevationLower() {
+        return mRangeDataNtfAoaElevationLower;
+    }
+
+    public double getRangeDataNtfAoaElevationUpper() {
+        return mRangeDataNtfAoaElevationUpper;
+    }
+
     /** Returns a builder from the params. */
     public CccOpenRangingParams.Builder toBuilder() {
         return new CccOpenRangingParams.Builder(this);
@@ -278,6 +374,27 @@ public class CccOpenRangingParams extends CccParams {
         private long mInitiationTimeMs = 0;
         private long mAbsoluteInitiationTimeUs = 0;
 
+        /** CCC default: Ranging notification enabled. */
+        @RangeDataNtfConfig private int mRangeDataNtfConfig = RANGE_DATA_NTF_CONFIG_DISABLE;
+
+        /** UCI spec default: 0 (No low-bound filtering) */
+        private int mRangeDataNtfProximityNear = RANGE_DATA_NTF_PROXIMITY_NEAR_DEFAULT;
+
+        /** UCI spec default: 20000 cm (or 200 meters) */
+        private int mRangeDataNtfProximityFar = RANGE_DATA_NTF_PROXIMITY_FAR_DEFAULT;
+
+        /** UCI spec default: -180 (No low-bound filtering) */
+        private double mRangeDataNtfAoaAzimuthLower = RANGE_DATA_NTF_AOA_AZIMUTH_LOWER_DEFAULT;
+
+        /** UCI spec default: +180 (No upper-bound filtering) */
+        private double mRangeDataNtfAoaAzimuthUpper = RANGE_DATA_NTF_AOA_AZIMUTH_UPPER_DEFAULT;
+
+        /** UCI spec default: -90 (No low-bound filtering) */
+        private double mRangeDataNtfAoaElevationLower = RANGE_DATA_NTF_AOA_ELEVATION_LOWER_DEFAULT;
+
+        /** UCI spec default: +90 (No upper-bound filtering) */
+        private double mRangeDataNtfAoaElevationUpper = RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT;
+
         public Builder() {}
 
         public Builder(@NonNull Builder builder) {
@@ -297,6 +414,13 @@ public class CccOpenRangingParams extends CccParams {
             mStsIndex = builder.mStsIndex;
             mInitiationTimeMs = builder.mInitiationTimeMs;
             mAbsoluteInitiationTimeUs = builder.mAbsoluteInitiationTimeUs;
+            mRangeDataNtfConfig = builder.mRangeDataNtfConfig;
+            mRangeDataNtfProximityNear = builder.mRangeDataNtfProximityNear;
+            mRangeDataNtfProximityFar = builder.mRangeDataNtfProximityFar;
+            mRangeDataNtfAoaAzimuthLower = builder.mRangeDataNtfAoaAzimuthLower;
+            mRangeDataNtfAoaAzimuthUpper = builder.mRangeDataNtfAoaAzimuthUpper;
+            mRangeDataNtfAoaElevationLower = builder.mRangeDataNtfAoaElevationLower;
+            mRangeDataNtfAoaElevationUpper = builder.mRangeDataNtfAoaElevationUpper;
         }
 
         public Builder(@NonNull CccOpenRangingParams params) {
@@ -313,6 +437,13 @@ public class CccOpenRangingParams extends CccParams {
             mSyncCodeIndex.set(params.mSyncCodeIndex);
             mHoppingConfigMode.set(params.mHoppingConfigMode);
             mHoppingSequence.set(params.mHoppingSequence);
+            mRangeDataNtfConfig = params.mRangeDataNtfConfig;
+            mRangeDataNtfProximityNear = params.mRangeDataNtfProximityNear;
+            mRangeDataNtfProximityFar = params.mRangeDataNtfProximityFar;
+            mRangeDataNtfAoaAzimuthLower = params.mRangeDataNtfAoaAzimuthLower;
+            mRangeDataNtfAoaAzimuthUpper = params.mRangeDataNtfAoaAzimuthUpper;
+            mRangeDataNtfAoaElevationLower = params.mRangeDataNtfAoaElevationLower;
+            mRangeDataNtfAoaElevationUpper = params.mRangeDataNtfAoaElevationUpper;
         }
 
         public Builder setProtocolVersion(CccProtocolVersion version) {
@@ -397,7 +528,120 @@ public class CccOpenRangingParams extends CccParams {
             return this;
         }
 
+        public Builder setRangeDataNtfConfig(
+                @RangeDataNtfConfig int rangeDataNtfConfig) {
+            mRangeDataNtfConfig = rangeDataNtfConfig;
+            return this;
+        }
+
+        public Builder setRangeDataNtfProximityNear(
+                @IntRange(from = RANGE_DATA_NTF_PROXIMITY_NEAR_DEFAULT,
+                        to = RANGE_DATA_NTF_PROXIMITY_FAR_DEFAULT)
+                        int rangeDataNtfProximityNear) {
+            mRangeDataNtfProximityNear = rangeDataNtfProximityNear;
+            return this;
+        }
+
+        public Builder setRangeDataNtfProximityFar(
+                @IntRange(from = RANGE_DATA_NTF_PROXIMITY_NEAR_DEFAULT,
+                        to = RANGE_DATA_NTF_PROXIMITY_FAR_DEFAULT)
+                        int rangeDataNtfProximityFar) {
+            mRangeDataNtfProximityFar = rangeDataNtfProximityFar;
+            return this;
+        }
+
+        public Builder setRangeDataNtfAoaAzimuthLower(
+                @FloatRange(from = RANGE_DATA_NTF_AOA_AZIMUTH_LOWER_DEFAULT,
+                        to = RANGE_DATA_NTF_AOA_AZIMUTH_UPPER_DEFAULT)
+                        double rangeDataNtfAoaAzimuthLower) {
+            mRangeDataNtfAoaAzimuthLower = rangeDataNtfAoaAzimuthLower;
+            return this;
+        }
+
+        public Builder setRangeDataNtfAoaAzimuthUpper(
+                @FloatRange(from = RANGE_DATA_NTF_AOA_AZIMUTH_LOWER_DEFAULT,
+                        to = RANGE_DATA_NTF_AOA_AZIMUTH_UPPER_DEFAULT)
+                        double rangeDataNtfAoaAzimuthUpper) {
+            mRangeDataNtfAoaAzimuthUpper = rangeDataNtfAoaAzimuthUpper;
+            return this;
+        }
+
+        public Builder setRangeDataNtfAoaElevationLower(
+                @FloatRange(from = RANGE_DATA_NTF_AOA_ELEVATION_LOWER_DEFAULT,
+                        to = RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT)
+                        double rangeDataNtfAoaElevationLower) {
+            mRangeDataNtfAoaElevationLower = rangeDataNtfAoaElevationLower;
+            return this;
+        }
+
+        public Builder setRangeDataNtfAoaElevationUpper(
+                @FloatRange(from = RANGE_DATA_NTF_AOA_ELEVATION_LOWER_DEFAULT,
+                        to = RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT)
+                        double rangeDataNtfAoaElevationUpper) {
+            mRangeDataNtfAoaElevationUpper = rangeDataNtfAoaElevationUpper;
+            return this;
+        }
+
+        private void checkRangeDataNtfConfig() {
+            if (mRangeDataNtfConfig == RANGE_DATA_NTF_CONFIG_DISABLE) {
+                checkArgument(mRangeDataNtfProximityNear
+                        == RANGE_DATA_NTF_PROXIMITY_NEAR_DEFAULT);
+                checkArgument(mRangeDataNtfProximityFar
+                        == RANGE_DATA_NTF_PROXIMITY_FAR_DEFAULT);
+                checkArgument(mRangeDataNtfAoaAzimuthLower
+                        == RANGE_DATA_NTF_AOA_AZIMUTH_LOWER_DEFAULT);
+                checkArgument(mRangeDataNtfAoaAzimuthUpper
+                        == RANGE_DATA_NTF_AOA_AZIMUTH_UPPER_DEFAULT);
+                checkArgument(mRangeDataNtfAoaElevationLower
+                        == RANGE_DATA_NTF_AOA_ELEVATION_LOWER_DEFAULT);
+                checkArgument(mRangeDataNtfAoaElevationUpper
+                        == RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT);
+            } else if (mRangeDataNtfConfig == RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG
+                    || mRangeDataNtfConfig == RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_EDGE_TRIG) {
+                checkArgument(
+                        mRangeDataNtfProximityNear != RANGE_DATA_NTF_PROXIMITY_NEAR_DEFAULT
+                        || mRangeDataNtfProximityFar != RANGE_DATA_NTF_PROXIMITY_FAR_DEFAULT);
+                checkArgument(mRangeDataNtfAoaAzimuthLower
+                        == RANGE_DATA_NTF_AOA_AZIMUTH_LOWER_DEFAULT);
+                checkArgument(mRangeDataNtfAoaAzimuthUpper
+                        == RANGE_DATA_NTF_AOA_AZIMUTH_UPPER_DEFAULT);
+                checkArgument(mRangeDataNtfAoaElevationLower
+                        == RANGE_DATA_NTF_AOA_ELEVATION_LOWER_DEFAULT);
+                checkArgument(mRangeDataNtfAoaElevationUpper
+                        == RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT);
+            } else if (mRangeDataNtfConfig == RANGE_DATA_NTF_CONFIG_ENABLE_AOA_LEVEL_TRIG
+                    || mRangeDataNtfConfig == RANGE_DATA_NTF_CONFIG_ENABLE_AOA_EDGE_TRIG) {
+                checkArgument(mRangeDataNtfProximityNear
+                        == RANGE_DATA_NTF_PROXIMITY_NEAR_DEFAULT);
+                checkArgument(mRangeDataNtfProximityFar
+                        == RANGE_DATA_NTF_PROXIMITY_FAR_DEFAULT);
+                checkArgument(mRangeDataNtfAoaAzimuthLower
+                            != RANGE_DATA_NTF_AOA_AZIMUTH_LOWER_DEFAULT
+                        || mRangeDataNtfAoaAzimuthUpper
+                            != RANGE_DATA_NTF_AOA_AZIMUTH_UPPER_DEFAULT
+                        || mRangeDataNtfAoaElevationLower
+                            != RANGE_DATA_NTF_AOA_ELEVATION_LOWER_DEFAULT
+                        || mRangeDataNtfAoaElevationUpper
+                            != RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT);
+            } else if (mRangeDataNtfConfig == RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_LEVEL_TRIG
+                    || mRangeDataNtfConfig
+                    == RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_EDGE_TRIG) {
+                checkArgument(
+                        mRangeDataNtfProximityNear != RANGE_DATA_NTF_PROXIMITY_NEAR_DEFAULT
+                        || mRangeDataNtfProximityFar != RANGE_DATA_NTF_PROXIMITY_FAR_DEFAULT
+                        || mRangeDataNtfAoaAzimuthLower
+                            != RANGE_DATA_NTF_AOA_AZIMUTH_LOWER_DEFAULT
+                        || mRangeDataNtfAoaAzimuthUpper
+                            != RANGE_DATA_NTF_AOA_AZIMUTH_UPPER_DEFAULT
+                        || mRangeDataNtfAoaElevationLower
+                            != RANGE_DATA_NTF_AOA_ELEVATION_LOWER_DEFAULT
+                        || mRangeDataNtfAoaElevationUpper
+                            != RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT);
+            }
+        }
+
         public CccOpenRangingParams build() {
+            checkRangeDataNtfConfig();
             return new CccOpenRangingParams(
                     mProtocolVersion.get(),
                     mUwbConfig.get(),
@@ -414,7 +658,14 @@ public class CccOpenRangingParams extends CccParams {
                     mHoppingSequence.get(),
                     mStsIndex,
                     mInitiationTimeMs,
-                    mAbsoluteInitiationTimeUs);
+                    mAbsoluteInitiationTimeUs,
+                    mRangeDataNtfConfig,
+                    mRangeDataNtfProximityNear,
+                    mRangeDataNtfProximityFar,
+                    mRangeDataNtfAoaAzimuthLower,
+                    mRangeDataNtfAoaAzimuthUpper,
+                    mRangeDataNtfAoaElevationLower,
+                    mRangeDataNtfAoaElevationUpper);
         }
     }
 }

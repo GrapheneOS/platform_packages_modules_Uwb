@@ -95,6 +95,13 @@ public class CccTests {
         @CccParams.HoppingConfigMode int hoppingConfigMode = CccParams.HOPPING_CONFIG_MODE_ADAPTIVE;
         @CccParams.HoppingSequence int hoppingSequence = CccParams.HOPPING_SEQUENCE_AES;
         long absoluteInitiationTimeUs = 20_000L;
+        int rangeDataNtfConfig = CccParams.RANGE_DATA_NTF_CONFIG_ENABLE;
+        int rangeDataNtfProximityNear = 100;
+        int rangeDataNtfProximityFar = 200;
+        double rangeDataNtfAoaAzimuthLower = -0.7;
+        double rangeDataNtfAoaAzimuthUpper = +1.3;
+        double rangeDataNtfAoaElevationLower = -1.1;
+        double rangeDataNtfAoaElevationUpper = +1.2;
 
         CccOpenRangingParams params =
                 new CccOpenRangingParams.Builder()
@@ -111,6 +118,13 @@ public class CccTests {
                         .setHoppingConfigMode(hoppingConfigMode)
                         .setHoppingSequence(hoppingSequence)
                         .setAbsoluteInitiationTimeUs(absoluteInitiationTimeUs)
+                        .setRangeDataNtfConfig(rangeDataNtfConfig)
+                        .setRangeDataNtfProximityNear(rangeDataNtfProximityNear)
+                        .setRangeDataNtfProximityFar(rangeDataNtfProximityFar)
+                        .setRangeDataNtfAoaAzimuthLower(rangeDataNtfAoaAzimuthLower)
+                        .setRangeDataNtfAoaAzimuthUpper(rangeDataNtfAoaAzimuthUpper)
+                        .setRangeDataNtfAoaElevationLower(rangeDataNtfAoaElevationLower)
+                        .setRangeDataNtfAoaElevationUpper(rangeDataNtfAoaElevationUpper)
                         .build();
 
         assertEquals(params.getProtocolVersion(), protocolVersion);
@@ -148,6 +162,17 @@ public class CccTests {
         assertEquals(fromBundle.getHoppingConfigMode(), hoppingConfigMode);
         assertEquals(fromBundle.getHoppingSequence(), hoppingSequence);
         assertEquals(fromBundle.getAbsoluteInitiationTimeUs(), absoluteInitiationTimeUs);
+        assertEquals(fromBundle.getRangeDataNtfConfig(), rangeDataNtfConfig);
+        assertEquals(fromBundle.getRangeDataNtfProximityNear(), rangeDataNtfProximityNear);
+        assertEquals(fromBundle.getRangeDataNtfProximityFar(), rangeDataNtfProximityFar);
+        assertEquals(
+                fromBundle.getRangeDataNtfAoaAzimuthLower(), rangeDataNtfAoaAzimuthLower, 0.1d);
+        assertEquals(
+                fromBundle.getRangeDataNtfAoaAzimuthUpper(), rangeDataNtfAoaAzimuthUpper, 0.1d);
+        assertEquals(
+                fromBundle.getRangeDataNtfAoaElevationLower(), rangeDataNtfAoaElevationLower, 0.1d);
+        assertEquals(
+                fromBundle.getRangeDataNtfAoaElevationUpper(), rangeDataNtfAoaElevationUpper, 0.1d);
 
         verifyProtocolPresent(params);
         verifyBundlesEqual(params, fromBundle);
