@@ -138,8 +138,11 @@ import static com.android.server.uwb.config.CapabilityParam.UWB_INITIATION_TIME;
 
 import android.util.Log;
 
+import com.android.server.uwb.UwbInjector;
+
 import com.google.uwb.support.base.FlagEnum;
 import com.google.uwb.support.base.Params;
+import com.google.uwb.support.base.ProtocolVersion;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraParams.BprfParameterSetCapabilityFlag;
 import com.google.uwb.support.fira.FiraParams.CcConstraintLengthCapabilitiesFlag;
@@ -164,10 +167,22 @@ import java.util.stream.IntStream;
 public class FiraDecoder extends TlvDecoder {
     private static final String TAG = "FiraDecoder";
 
+    private final UwbInjector mUwbInjector;
+
+    public FiraDecoder(UwbInjector uwbInjector) {
+        mUwbInjector = uwbInjector;
+    }
+
     @Override
-    public <T extends Params> T getParams(TlvDecoderBuffer tlvs, Class<T> paramType) {
+    public <T extends Params> T getParams(TlvDecoderBuffer tlvs, Class<T> paramType,
+            ProtocolVersion protocolVersion) {
         if (FiraSpecificationParams.class.equals(paramType)) {
-            return (T) getFiraSpecificationParamsFromTlvBuffer(tlvs);
+            // The "protocolVersion" is always expected to be of type "FiraProtocolVersion" here,
+            // but in case it's not, we use a backup value of "PROTOCOL_VERSION_1_1".
+            FiraProtocolVersion uwbsFiraProtocolVersion =
+                    (protocolVersion instanceof FiraProtocolVersion)
+                        ? (FiraProtocolVersion) protocolVersion : FiraParams.PROTOCOL_VERSION_1_1;
+            return (T) getFiraSpecificationParamsFromTlvBuffer(tlvs, uwbsFiraProtocolVersion);
         }
         return null;
     }
@@ -176,7 +191,8 @@ public class FiraDecoder extends TlvDecoder {
         return (flags & mask) != 0;
     }
 
-    private FiraSpecificationParams getFiraSpecificationParamsFromTlvBuffer(TlvDecoderBuffer tlvs) {
+    private FiraSpecificationParams getFiraSpecificationParamsFromTlvBuffer(TlvDecoderBuffer tlvs,
+                    ProtocolVersion protocolVersion) {
         FiraSpecificationParams.Builder builder = new FiraSpecificationParams.Builder();
         byte[] versionCheck = tlvs.getByteArray(SUPPORTED_FIRA_PHY_VERSION_RANGE_VER_2_0);
         if (versionCheck.length == 1) {
@@ -258,7 +274,8 @@ public class FiraDecoder extends TlvDecoder {
             byte rangingTimeStructUci = tlvs.getByte(SUPPORTED_RANGING_TIME_STRUCT_VER_1_0);
             EnumSet<RangingTimeStructCapabilitiesFlag> rangingTimeStructFlag =
                     EnumSet.noneOf(RangingTimeStructCapabilitiesFlag.class);
-            if (isBitSet(rangingTimeStructUci, INTERVAL_BASED_SCHEDULING)) {
+            if (protocolVersion.getMajor() <= 2
+                    && isBitSet(rangingTimeStructUci, INTERVAL_BASED_SCHEDULING)) {
                 rangingTimeStructFlag.add(
                         RangingTimeStructCapabilitiesFlag.HAS_INTERVAL_BASED_SCHEDULING_SUPPORT);
             }
@@ -549,9 +566,12 @@ public class FiraDecoder extends TlvDecoder {
             byte rangingTimeStructUci = tlvs.getByte(SUPPORTED_RANGING_TIME_STRUCT_VER_2_0);
             EnumSet<RangingTimeStructCapabilitiesFlag> rangingTimeStructFlag =
                     EnumSet.noneOf(RangingTimeStructCapabilitiesFlag.class);
-            if (isBitSet(rangingTimeStructUci, INTERVAL_BASED_SCHEDULING)) {
-                rangingTimeStructFlag.add(
-                        RangingTimeStructCapabilitiesFlag.HAS_INTERVAL_BASED_SCHEDULING_SUPPORT);
+            // When CR-423 is implemented, do not parse for the "INTERVAL_BASED_SCHEDULING" bit.
+            if (!mUwbInjector.getFeatureFlags().cr423CleanupIntervalScheduling()) {
+                if (isBitSet(rangingTimeStructUci, INTERVAL_BASED_SCHEDULING)) {
+                    rangingTimeStructFlag.add(
+                            RangingTimeStructCapabilitiesFlag.HAS_INTERVAL_BASED_SCHEDULING_SUPPORT);
+                }
             }
             if (isBitSet(rangingTimeStructUci, BLOCK_BASED_SCHEDULING)) {
                 rangingTimeStructFlag.add(

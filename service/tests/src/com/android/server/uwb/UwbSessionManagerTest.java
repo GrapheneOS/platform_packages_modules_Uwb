@@ -2569,7 +2569,8 @@ public class UwbSessionManagerTest {
         when(mUwbConfigurationManager.setAppConfigurations(anyInt(), any(), anyString(), any()))
                 .thenReturn(UwbUciConstants.STATUS_CODE_OK);
         when(mUwbConfigurationManager.getAppConfigurations(
-                eq(TEST_SESSION_ID), anyString(), any(), any(), eq(TEST_CHIP_ID)))
+                eq(TEST_SESSION_ID), anyString(), any(), any(), eq(TEST_CHIP_ID),
+                eq(CccParams.PROTOCOL_VERSION_1_0)))
                 .thenReturn(new Pair<>(UwbUciConstants.STATUS_CODE_OK, rangingStartedParams));
 
         mUwbSessionManager.startRanging(uwbSession.getSessionHandle(), params);
@@ -2621,7 +2622,8 @@ public class UwbSessionManagerTest {
         when(mUwbConfigurationManager.setAppConfigurations(anyInt(), any(), anyString(), any()))
                 .thenReturn(UwbUciConstants.STATUS_CODE_OK);
         when(mUwbConfigurationManager.getAppConfigurations(
-                eq(TEST_SESSION_ID), anyString(), any(), any(), eq(TEST_CHIP_ID)))
+                eq(TEST_SESSION_ID), anyString(), any(), any(), eq(TEST_CHIP_ID),
+                eq(CccParams.PROTOCOL_VERSION_1_0)))
                 .thenReturn(new Pair<>(UwbUciConstants.STATUS_CODE_OK, rangingStartedParams));
 
         mUwbSessionManager.startRanging(uwbSession.getSessionHandle(), params);
@@ -2675,7 +2677,8 @@ public class UwbSessionManagerTest {
         when(mUwbConfigurationManager.setAppConfigurations(anyInt(), any(), anyString(), any()))
                 .thenReturn(UwbUciConstants.STATUS_CODE_OK);
         when(mUwbConfigurationManager.getAppConfigurations(
-                eq(TEST_SESSION_ID), anyString(), any(), any(), eq(TEST_CHIP_ID)))
+                eq(TEST_SESSION_ID), anyString(), any(), any(), eq(TEST_CHIP_ID),
+                eq(CccParams.PROTOCOL_VERSION_1_0)))
                 .thenReturn(new Pair<>(UwbUciConstants.STATUS_CODE_OK, rangingStartedParams));
 
         mUwbSessionManager.startRanging(uwbSession.getSessionHandle(), params);
@@ -2728,7 +2731,8 @@ public class UwbSessionManagerTest {
         when(mUwbConfigurationManager.setAppConfigurations(anyInt(), any(), anyString(), any()))
                 .thenReturn(UwbUciConstants.STATUS_CODE_OK);
         when(mUwbConfigurationManager.getAppConfigurations(
-                eq(TEST_SESSION_ID), anyString(), any(), any(), eq(TEST_CHIP_ID)))
+                eq(TEST_SESSION_ID), anyString(), any(), any(), eq(TEST_CHIP_ID),
+                eq(CccParams.PROTOCOL_VERSION_1_0)))
                 .thenReturn(new Pair<>(UwbUciConstants.STATUS_CODE_OK, rangingStartedParams));
 
         mUwbSessionManager.startRanging(uwbSession.getSessionHandle(), params);
@@ -3633,7 +3637,8 @@ public class UwbSessionManagerTest {
                 .build();
 
         when(mUwbConfigurationManager.getAppConfigurations(
-                eq(TEST_SESSION_ID), anyString(), any(), any(), eq(TEST_CHIP_ID)))
+                eq(TEST_SESSION_ID), anyString(), any(), any(), eq(TEST_CHIP_ID),
+                eq(CccParams.PROTOCOL_VERSION_1_0)))
                 .thenReturn(new Pair<>(UwbUciConstants.STATUS_CODE_OK, rangingStartedParams));
         doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE, UwbUciConstants.UWB_SESSION_STATE_IDLE)
                 .when(uwbSession).getSessionState();
