@@ -74,7 +74,7 @@ CR412,NA,Marked as N/A (MAC)
 CR414,NA,CR adds clarifying text; no Android stack changes required
 CR421,NA,Marked as N/A (MAC)
 CR422,NA,CR specifies interpretation of existing field; no Android stack change required
-CR423,NO,
+CR423,Yes,Ranging interval renaming not addressed
 CR424,YES,
 CR425,NA,Marked as N/A (MAC)
 CR426,NA,CR clarifies UWBS behavior; no Android stack changes required

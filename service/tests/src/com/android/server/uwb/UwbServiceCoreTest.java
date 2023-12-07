@@ -311,7 +311,7 @@ public class UwbServiceCoreTest {
         when(genericSpecificationParams.toBundle()).thenReturn(genericSpecificationBundle);
 
         when(mUwbConfigurationManager
-                .getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any(), anyString()))
+                .getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any(), anyString(), any()))
                 .thenReturn(Pair.create(
                         UwbUciConstants.STATUS_CODE_OK, genericSpecificationParams));
 
@@ -319,7 +319,8 @@ public class UwbServiceCoreTest {
                 TEST_DEFAULT_CHIP_ID);
         assertThat(specifications).isEqualTo(genericSpecificationBundle);
         verify(mUwbConfigurationManager)
-                .getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any(), eq(TEST_DEFAULT_CHIP_ID));
+                .getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any(),
+                                eq(TEST_DEFAULT_CHIP_ID), any());
 
         assertThat(mUwbServiceCore.getCachedSpecificationParams(TEST_DEFAULT_CHIP_ID)).isEqualTo(
                 genericSpecificationParams);
@@ -332,7 +333,7 @@ public class UwbServiceCoreTest {
         when(genericSpecificationParams.toBundle()).thenReturn(genericSpecificationBundle);
 
         when(mUwbConfigurationManager
-                .getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any(), anyString()))
+                .getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any(), anyString(), any()))
                 .thenReturn(Pair.create(
                         UwbUciConstants.STATUS_CODE_OK, genericSpecificationParams));
 
@@ -340,7 +341,8 @@ public class UwbServiceCoreTest {
                 TEST_DEFAULT_CHIP_ID);
         assertThat(specifications.toBundle()).isEqualTo(genericSpecificationBundle);
         verify(mUwbConfigurationManager)
-                .getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any(), eq(TEST_DEFAULT_CHIP_ID));
+                .getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any(),
+                                eq(TEST_DEFAULT_CHIP_ID), any());
     }
 
     private void enableUwb(String countryCode) throws Exception {
@@ -1053,7 +1055,7 @@ public class UwbServiceCoreTest {
         AttributionSource attributionSource = TEST_ATTRIBUTION_SOURCE;
         FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS.build();
         when(mUwbConfigurationManager
-                .getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any(), anyString()))
+                .getCapsInfo(eq(GenericParams.PROTOCOL_NAME), any(), anyString(), any()))
                 .thenReturn(Pair.create(
                         UwbUciConstants.STATUS_CODE_OK, genericSpecificationParams));
         when(genericSpecificationParams.getFiraSpecificationParams())
@@ -1466,7 +1468,7 @@ public class UwbServiceCoreTest {
                         .setFiraSpecificationParams(firaSpecificationParams)
                         .setCccSpecificationParams(cccSpecificationParams)
                         .build();
-        when(mUwbConfigurationManager.getCapsInfo(any(), any(), anyString()))
+        when(mUwbConfigurationManager.getCapsInfo(any(), any(), anyString(), any()))
                 .thenReturn(Pair.create(
                         UwbUciConstants.STATUS_CODE_OK, genericSpecificationParams));
 
@@ -1493,7 +1495,7 @@ public class UwbServiceCoreTest {
                         .setFiraSpecificationParams(firaSpecificationParams)
                         .setCccSpecificationParams(cccSpecificationParams)
                         .build();
-        when(mUwbConfigurationManager.getCapsInfo(any(), any(), anyString()))
+        when(mUwbConfigurationManager.getCapsInfo(any(), any(), anyString(), any()))
                 .thenReturn(Pair.create(
                         UwbUciConstants.STATUS_CODE_OK, genericSpecificationParams));
         IUwbVendorUciCallback vendorCb = mock(IUwbVendorUciCallback.class);

@@ -177,7 +177,7 @@ public class UwbConfigurationManagerTest {
 
         mUwbConfigurationManager.getAppConfigurations(mUwbSession.getSessionId(),
                 mFiraParams.getProtocolName(), new byte[0], FiraOpenSessionParams.class,
-                TEST_CHIP_ID);
+                TEST_CHIP_ID, FiraParams.PROTOCOL_VERSION_1_1);
 
         verify(mNativeUwbManager).getAppConfigurations(anyInt(), anyInt(), anyInt(),
                 any(byte[].class), eq(TEST_CHIP_ID));
@@ -190,7 +190,7 @@ public class UwbConfigurationManagerTest {
         when(mNativeUwbManager.getCapsInfo(anyString())).thenReturn(getAppConfig);
 
         mUwbConfigurationManager.getCapsInfo(mFiraParams.getProtocolName(),
-                FiraOpenSessionParams.class, TEST_CHIP_ID);
+                FiraOpenSessionParams.class, TEST_CHIP_ID, any());
 
         verify(mNativeUwbManager).getCapsInfo(TEST_CHIP_ID);
     }
