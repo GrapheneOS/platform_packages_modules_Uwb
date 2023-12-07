@@ -1495,7 +1495,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                                     CccParams.PROTOCOL_NAME,
                                                     new byte[0],
                                                     CccRangingStartedParams.class,
-                                                    uwbSession.getChipId());
+                                                    uwbSession.getChipId(),
+                                                    CccParams.PROTOCOL_VERSION_1_0);
                                     if (statusAndParams.first != UwbUciConstants.STATUS_CODE_OK) {
                                         Log.e(TAG, "Failed to get CCC ranging started params");
                                     }
@@ -1607,7 +1608,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                 CccParams.PROTOCOL_NAME,
                                 new byte[0],
                                 CccRangingStoppedParams.class,
-                                uwbSession.getChipId());
+                                uwbSession.getChipId(),
+                                CccParams.PROTOCOL_VERSION_1_0);
                 if (statusAndParams.first != UwbUciConstants.STATUS_CODE_OK) {
                     Log.e(TAG, "Failed to get CCC ranging stopped params");
                 }
@@ -1965,7 +1967,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         return true;
     }
 
-    private FiraProtocolVersion getUwbsFiraProtocolVersion(String chipId) {
+    protected FiraProtocolVersion getUwbsFiraProtocolVersion(String chipId) {
         UwbDeviceInfoResponse deviceInfo =
                 mUwbInjector.getUwbServiceCore().getCachedDeviceInfoResponse(chipId);
         if (deviceInfo != null) {

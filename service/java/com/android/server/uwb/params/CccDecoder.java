@@ -63,6 +63,7 @@ import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.config.ConfigParam;
 
 import com.google.uwb.support.base.Params;
+import com.google.uwb.support.base.ProtocolVersion;
 import com.google.uwb.support.ccc.CccProtocolVersion;
 import com.google.uwb.support.ccc.CccPulseShapeCombo;
 import com.google.uwb.support.ccc.CccRangingStartedParams;
@@ -84,7 +85,8 @@ public class CccDecoder extends TlvDecoder {
     }
 
     @Override
-    public <T extends Params> T getParams(TlvDecoderBuffer tlvs, Class<T> paramsType)
+    public <T extends Params> T getParams(TlvDecoderBuffer tlvs, Class<T> paramsType,
+            ProtocolVersion protocolVersion)
             throws IllegalArgumentException {
         if (CccRangingStartedParams.class.equals(paramsType)) {
             return (T) getCccRangingStartedParamsFromTlvBuffer(tlvs);

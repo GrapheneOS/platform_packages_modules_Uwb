@@ -20,13 +20,15 @@ import static com.android.server.uwb.config.CapabilityParam.RADAR_SUPPORT;
 import static com.android.server.uwb.config.CapabilityParam.RADAR_SWEEP_SAMPLES_SUPPORTED;
 
 import com.google.uwb.support.base.Params;
+import com.google.uwb.support.base.ProtocolVersion;
 import com.google.uwb.support.radar.RadarParams;
 import com.google.uwb.support.radar.RadarSpecificationParams;
 
 /** Radar decoder */
 public class RadarDecoder extends TlvDecoder {
     @Override
-    public <T extends Params> T getParams(TlvDecoderBuffer tlvs, Class<T> paramsType)
+    public <T extends Params> T getParams(TlvDecoderBuffer tlvs, Class<T> paramsType,
+            ProtocolVersion protocolVersion)
             throws IllegalArgumentException {
         if (RadarSpecificationParams.class.equals(paramsType)) {
             return (T) getRadarSpecificationParamsFromTlvBuffer(tlvs);
