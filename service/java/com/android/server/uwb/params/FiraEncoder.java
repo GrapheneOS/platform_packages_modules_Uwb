@@ -103,7 +103,7 @@ public class FiraEncoder extends TlvEncoder {
                 .putByte(ConfigParam.PSDU_DATA_RATE, (byte) params.getPsduDataRate())
                 .putByte(ConfigParam.PREAMBLE_DURATION, (byte) params.getPreambleDuration())
                 // n.a. for OWR UL-TDoA and 0x01 for all other RangingRoundUsage values.
-                .putByte(ConfigParam.RANGING_TIME_STRUCT, (byte) 0x01)
+                .putByte(ConfigParam.RANGING_TIME_STRUCT, (byte) params.getRangingTimeStruct())
                 .putByte(ConfigParam.SLOTS_PER_RR, (byte) params.getSlotsPerRangingRound())
                 .putByte(ConfigParam.PRF_MODE, (byte) params.getPrfMode())
                 .putByte(ConfigParam.SCHEDULED_MODE, (byte) params.getScheduledMode())
