@@ -50,6 +50,7 @@
             <item name="location_use_for_country_code_enabled" type="bool" />
             <item name="uwb_disabled_until_first_toggle" type="bool" />
             <item name="ccc_supported_sync_codes_little_endian" type="bool" />
+            <item name="ccc_supported_range_data_ntf_config" type="bool" />
           <!-- Params from config.xml that can be overlaid -->
 
           <!-- Params from strings.xml that can be overlaid -->
