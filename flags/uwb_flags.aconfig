@@ -34,3 +34,10 @@ flag {
     description: "Parse the UWBS Capability tag(s) based on it's Fira UCI version"
     bug: "301834443"
 }
+
+flag {
+    name: "cr423_cleanup_interval_scheduling"
+    namespace: "uwb"
+    description: "Implement CR-423: Remove Interval-based scheduling for Fira 2.0+ devices"
+    bug: "285984664"
+}

@@ -149,7 +149,7 @@ public class CccDecoderTest {
         assertThat(tlvDecoderBuffer.parse()).isTrue();
 
         CccRangingStartedParams cccRangingStartedParams = mCccDecoder.getParams(
-                tlvDecoderBuffer, CccRangingStartedParams.class);
+                tlvDecoderBuffer, CccRangingStartedParams.class, CccParams.PROTOCOL_VERSION_1_0);
         verifyCccRangingOpend(cccRangingStartedParams);
     }
 
@@ -161,7 +161,7 @@ public class CccDecoderTest {
         assertThat(tlvDecoderBuffer.parse()).isTrue();
 
         CccSpecificationParams cccSpecificationParams = mCccDecoder.getParams(
-                tlvDecoderBuffer, CccSpecificationParams.class);
+                tlvDecoderBuffer, CccSpecificationParams.class, CccParams.PROTOCOL_VERSION_1_0);
         verifyCccSpecification(cccSpecificationParams);
     }
 
@@ -174,7 +174,8 @@ public class CccDecoderTest {
 
         CccRangingStartedParams cccRangingStartedParams = TlvDecoder
                 .getDecoder(CccParams.PROTOCOL_NAME, mUwbInjector)
-                .getParams(tlvDecoderBuffer, CccRangingStartedParams.class);
+                .getParams(tlvDecoderBuffer, CccRangingStartedParams.class,
+                        CccParams.PROTOCOL_VERSION_1_0);
         verifyCccRangingOpend(cccRangingStartedParams);
     }
 
@@ -187,7 +188,8 @@ public class CccDecoderTest {
 
         CccSpecificationParams cccSpecificationParams = TlvDecoder
                 .getDecoder(CccParams.PROTOCOL_NAME, mUwbInjector)
-                .getParams(tlvDecoderBuffer, CccSpecificationParams.class);
+                .getParams(tlvDecoderBuffer, CccSpecificationParams.class,
+                        CccParams.PROTOCOL_VERSION_1_0);
         verifyCccSpecification(cccSpecificationParams);
     }
 
@@ -200,7 +202,7 @@ public class CccDecoderTest {
         assertThat(tlvDecoderBuffer.parse()).isTrue();
 
         CccSpecificationParams cccSpecificationParams = mCccDecoder.getParams(
-                tlvDecoderBuffer, CccSpecificationParams.class);
+                tlvDecoderBuffer, CccSpecificationParams.class, CccParams.PROTOCOL_VERSION_1_0);
         verifyCccSpecification(cccSpecificationParams);
     }
 }

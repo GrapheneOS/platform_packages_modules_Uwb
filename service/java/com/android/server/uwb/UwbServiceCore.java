@@ -453,7 +453,8 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         // TODO(b/211445008): Consolidate to a single uwb thread.
         Pair<Integer, GenericSpecificationParams> specificationParams =
                 mConfigurationManager.getCapsInfo(
-                        GenericParams.PROTOCOL_NAME, GenericSpecificationParams.class, chipId);
+                        GenericParams.PROTOCOL_NAME, GenericSpecificationParams.class, chipId,
+                        mSessionManager.getUwbsFiraProtocolVersion(chipId));
         Trace.endSection();
         if (specificationParams.first != UwbUciConstants.STATUS_CODE_OK
                 || specificationParams.second == null)  {
