@@ -26,6 +26,7 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.util.UwbUtil;
 
+import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.radar.RadarData;
 import com.google.uwb.support.radar.RadarParams;
 import com.google.uwb.support.radar.RadarParams.RadarCapabilityFlag;
@@ -44,6 +45,7 @@ import java.util.EnumSet;
 @SmallTest
 @Presubmit
 public class RadarDecoderTest {
+    private static final FiraProtocolVersion PROTOCOL_VERSION_DUMMY = new FiraProtocolVersion(0, 0);
     public static final String TEST_RADAR_SPECIFICATION_TLV_DATA_STRING = "b00101";
     private static final byte[] TEST_RADAR_SPECIFICATION_TLV_DATA =
             UwbUtil.getByteArray(TEST_RADAR_SPECIFICATION_TLV_DATA_STRING);
@@ -70,7 +72,8 @@ public class RadarDecoderTest {
                 new TlvDecoderBuffer(
                         TEST_RADAR_SPECIFICATION_TLV_DATA, TEST_RADAR_SPECIFICATION_TLV_NUM_PARAMS);
 
-        assertThat(mRadarDecoder.getParams(tlvDecoderBuffer, RadarData.class)).isNull();
+        assertThat(mRadarDecoder.getParams(tlvDecoderBuffer, RadarData.class,
+                                 PROTOCOL_VERSION_DUMMY)).isNull();
     }
 
     @Test
@@ -81,7 +84,8 @@ public class RadarDecoderTest {
         assertThat(tlvDecoderBuffer.parse()).isTrue();
 
         RadarSpecificationParams radarSpecificationParams =
-                mRadarDecoder.getParams(tlvDecoderBuffer, RadarSpecificationParams.class);
+                mRadarDecoder.getParams(tlvDecoderBuffer, RadarSpecificationParams.class,
+                                 PROTOCOL_VERSION_DUMMY);
         verifyRadarSpecification(radarSpecificationParams);
     }
 
@@ -94,7 +98,8 @@ public class RadarDecoderTest {
 
         RadarSpecificationParams radarSpecificationParams =
                 TlvDecoder.getDecoder(RadarParams.PROTOCOL_NAME, mUwbInjector)
-                        .getParams(tlvDecoderBuffer, RadarSpecificationParams.class);
+                        .getParams(tlvDecoderBuffer, RadarSpecificationParams.class,
+                                 PROTOCOL_VERSION_DUMMY);
         verifyRadarSpecification(radarSpecificationParams);
     }
 }

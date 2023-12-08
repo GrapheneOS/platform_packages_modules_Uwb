@@ -89,34 +89,35 @@ public class UwbConfigurationManager {
      * Retrieve app configurations from UWBS.
      */
     public <T extends Params> Pair<Integer, T> getAppConfigurations(int sessionId,
-            String protocolName, byte[] appConfigIds, Class<T> paramType, String chipId) {
+            String protocolName, byte[] appConfigIds, Class<T> paramType, String chipId,
+            ProtocolVersion protocolVersion) {
 
         Log.d(TAG, "getAppConfigurations for protocol: " + protocolName);
         UwbTlvData getAppConfig = mNativeUwbManager.getAppConfigurations(sessionId,
                     appConfigIds.length, appConfigIds.length, appConfigIds, chipId);
         Log.i(TAG, "getAppConfigurations respData: "
                 + (getAppConfig != null ? getAppConfig.toString() : "null"));
-        return decodeTLV(protocolName, getAppConfig, paramType);
+        return decodeTLV(protocolName, getAppConfig, paramType, protocolVersion);
     }
 
     /**
      * Retrieve capability information from UWBS.
      */
     public <T extends Params> Pair<Integer, T> getCapsInfo(String protocolName,
-            Class<T> paramType, String chipId) {
+            Class<T> paramType, String chipId, ProtocolVersion protocolVersion) {
 
         Log.d(TAG, "getCapsInfo for protocol: " + protocolName);
         UwbTlvData capsInfo = mNativeUwbManager.getCapsInfo(chipId);
         Log.i(TAG, "getCapsInfo respData: "
                 + (capsInfo != null ? capsInfo.toString() : "null"));
-        return decodeTLV(protocolName, capsInfo, paramType);
+        return decodeTLV(protocolName, capsInfo, paramType, protocolVersion);
     }
 
     /**
      * Common decode TLV function based on protocol
      */
     public <T extends Params> Pair<Integer, T> decodeTLV(String protocolName,
-            UwbTlvData tlvData, Class<T> paramType) {
+            UwbTlvData tlvData, Class<T> paramType, ProtocolVersion protocolVersion) {
         int status;
         if (tlvData != null) {
             status = tlvData.getStatus();
@@ -138,7 +139,7 @@ public class UwbConfigurationManager {
         }
         T params = null;
         try {
-            params = decoder.getParams(tlvs, paramType);
+            params = decoder.getParams(tlvs, paramType, protocolVersion);
         } catch (IllegalArgumentException e) {
             Log.e(TAG, "Failed to decode", e);
         }

@@ -96,6 +96,9 @@ public class DeviceConfigFacade {
     private boolean mUwbDisabledUntilFirstToggle;
     // Flag to interpret CCC supported sync codes value as little endian
     private boolean mCccSupportedSyncCodesLittleEndian;
+    // Flag to control whether RANGE_DATA_NTF_CONFIG and related fields should be configured
+    // for a CCC ranging session.
+    private boolean mCccSupportedRangeDataNtfConfig;
 
     public DeviceConfigFacade(Handler handler, Context context) {
         mContext = context;
@@ -288,6 +291,12 @@ public class DeviceConfigFacade {
                 DeviceConfig.NAMESPACE_UWB,
                 "ccc_supported_sync_codes_little_endian",
                 mContext.getResources().getBoolean(R.bool.ccc_supported_sync_codes_little_endian)
+        );
+
+        mCccSupportedRangeDataNtfConfig = DeviceConfig.getBoolean(
+                DeviceConfig.NAMESPACE_UWB,
+                "ccc_supported_range_data_ntf_config",
+                mContext.getResources().getBoolean(R.bool.ccc_supported_range_data_ntf_config)
         );
 
         // A little parsing and cleanup:
@@ -571,5 +580,13 @@ public class DeviceConfigFacade {
      */
     public boolean isCccSupportedSyncCodesLittleEndian() {
         return mCccSupportedSyncCodesLittleEndian;
+    }
+
+    /**
+     * Returns whether the RANGE_DATA_NTF_CONFIG and related fields are supported (ie, should be
+     * configured), for a CCC ranging session.
+     */
+    public boolean isCccSupportedRangeDataNtfConfig() {
+        return mCccSupportedRangeDataNtfConfig;
     }
 }
