@@ -73,7 +73,7 @@ java_library {
 
 android_app {
     name: "uwb_androidx_backend_app",
-    sdk_version: "system_UpsideDownCake",
+    sdk_version: "system_34",
     min_sdk_version: "32",
     certificate: "platform",
     privileged: true,
