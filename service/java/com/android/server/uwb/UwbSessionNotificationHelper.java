@@ -54,6 +54,10 @@ public class UwbSessionNotificationHelper {
             case UwbUciConstants.REASON_ERROR_HUS_OTHERS:
                 rangingChangeReason = RangingChangeReason.BAD_PARAMETERS;
                 break;
+            case UwbUciConstants.REASON_ERROR_SESSION_KEY_NOT_FOUND:
+            case UwbUciConstants.REASON_ERROR_SUB_SESSION_KEY_NOT_FOUND:
+                rangingChangeReason = RangingChangeReason.PROTOCOL_SPECIFIC;
+                break;
             case UwbUciConstants.REASON_REGULATION_UWB_OFF:
                 rangingChangeReason = RangingChangeReason.SYSTEM_REGULATION;
                 break;
@@ -97,6 +101,24 @@ public class UwbSessionNotificationHelper {
                 break;
         }
         return rangingChangeReason;
+    }
+
+    /**
+     * Convert UCI reason code values to UCI status code, as some of the callbacks expect to get
+     * the latter.
+     */
+    public static int convertUciReasonCodeToUciStatusCode(int reasonCode) {
+        int statusCode = UwbUciConstants.STATUS_CODE_FAILED;
+        switch (reasonCode) {
+            case UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS:
+                statusCode = UwbUciConstants.STATUS_CODE_OK;
+                break;
+            case UwbUciConstants.REASON_ERROR_SESSION_KEY_NOT_FOUND:
+            case UwbUciConstants.REASON_ERROR_SUB_SESSION_KEY_NOT_FOUND:
+                statusCode = UwbUciConstants.STATUS_CODE_ERROR_SESSION_NOT_EXIST;
+                break;
+        }
+        return statusCode;
     }
 
     private static @CccParams.ProtocolError int convertUciStatusToApiCccProtocolError(int status) {

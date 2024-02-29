@@ -56,3 +56,10 @@ flag {
     description: "This flag enables the new hardware state APIs"
     bug: "322372275"
 }
+
+flag {
+    name: "data_transfer_phase_config"
+    namespace: "uwb"
+    description: "Implement CR-1022, CR-1047: Used to update data transfer phase config"
+    bug: "319596317"
+}

@@ -845,6 +845,16 @@ public class UwbServiceImplTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DATA_TRANSFER_PHASE_CONFIG)
+    public void testSetDataTransferPhaseConfig() throws Exception {
+        assumeTrue(SdkLevel.isAtLeastV()); // Test should only run on V+ devices.
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
+        PersistableBundle bundle = new PersistableBundle();
+        mUwbServiceImpl.setDataTransferPhaseConfig(sessionHandle, bundle);
+        verify(mUwbServiceCore).setDataTransferPhaseConfig(sessionHandle, bundle);
+    }
+
+    @Test
     public void testSendVendorUciMessage() throws Exception {
         final int mt = 1;
         final int gid = 0;

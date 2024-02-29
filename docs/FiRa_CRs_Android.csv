@@ -145,6 +145,7 @@ CR1010,NO,
 CR1016,NA,CR specifies UWBS behavior; no Android stack change required
 CR1018,NO,
 CR1021,Partial,"Pending: Host should not send the parameters marked as ""n.a."", some parameter values (like RANGING_ROUND_USAGE = 0x09)"
+CR1022,YES
 CR1025,NO,
 CR1026,NA,CR specifies UWBS behavior; no Android stack change required
 CR1027,NA,CR specifies UWBS behavior; no Android stack change required

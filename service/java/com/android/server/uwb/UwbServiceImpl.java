@@ -369,6 +369,17 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
         mUwbServiceCore.sendData(sessionHandle, remoteDeviceAddress, params, data);
     }
 
+
+    @Override
+    public void setDataTransferPhaseConfig(SessionHandle sessionHandle, PersistableBundle params)
+            throws RemoteException {
+        if (!SdkLevel.isAtLeastV() || !mUwbInjector.getFeatureFlags().dataTransferPhaseConfig()) {
+            throw new UnsupportedOperationException();
+        }
+        enforceUwbPrivilegedPermission();
+        mUwbServiceCore.setDataTransferPhaseConfig(sessionHandle, params);
+    }
+
     @Override
     public void updateRangingRoundsDtTag(SessionHandle sessionHandle,
             PersistableBundle parameters) throws RemoteException {

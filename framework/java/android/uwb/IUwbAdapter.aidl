@@ -277,6 +277,22 @@ interface IUwbAdapter {
           in PersistableBundle params, in byte[] data);
 
   /**
+    * Set data transfer phase configuration during ranging as well as dedicated data transfer.
+    * <p>This is only functional on a FIRA 2.0 compliant device.
+    *
+    * <p>On successfully sending the data transfer phase config,
+    * {@link RangingSession.Callback#onDataTransferPhaseConfigured(PersistableBundle)} is
+    * invoked.
+    *
+    * <p>On failure to send the data transfer phase config,
+    * {@link RangingSession.Callback#onDataTransferPhaseConfigFailed(PersistableBundle)} is
+    * invoked.
+    *
+    * @param params Protocol specific data transfer phase configuration parameters
+    */
+  void setDataTransferPhaseConfig(in SessionHandle sessionHandle, in PersistableBundle params);
+
+  /**
    * Disables or enables UWB for a user
    *
    * The provided callback's IUwbAdapterStateCallbacks#onAdapterStateChanged
@@ -420,4 +436,9 @@ interface IUwbAdapter {
    * The maximum allowed time to configure ranging rounds update for DT Tag
    */
   const int RANGING_ROUNDS_UPDATE_DT_TAG_THRESHOLD_MS = 3000; // Value TBD
+
+  /**
+   * The maximum allowed time to configure session data transfer phase config
+   */
+  const int SESSION_DATA_TRANSFER_PHASE_CONFIG_THRESHOLD_MS = 3000; // Value TBD
 }

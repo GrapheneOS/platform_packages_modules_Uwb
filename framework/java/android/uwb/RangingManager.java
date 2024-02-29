@@ -399,6 +399,36 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks.Stub {
     }
 
     @Override
+    public void onDataTransferPhaseConfigured(SessionHandle sessionHandle,
+            PersistableBundle parameters) {
+        synchronized (this) {
+            if (!hasSession(sessionHandle)) {
+                Log.w(mTag, "onDataTransferPhaseConfigured - received unexpected SessionHandle: "
+                        + sessionHandle);
+                return;
+            }
+
+            RangingSession session = mRangingSessionTable.get(sessionHandle);
+            session.onDataTransferPhaseConfigured(parameters);
+        }
+    }
+
+    @Override
+    public void onDataTransferPhaseConfigFailed(SessionHandle sessionHandle,
+            PersistableBundle parameters) {
+        synchronized (this) {
+            if (!hasSession(sessionHandle)) {
+                Log.w(mTag, "onDataTransferPhaseConfigFailed - received unknown SessionHandle: "
+                        + sessionHandle);
+                return;
+            }
+
+            RangingSession session = mRangingSessionTable.get(sessionHandle);
+            session.onDataTransferPhaseConfigFailed(parameters);
+        }
+    }
+
+    @Override
     public void onDataReceived(SessionHandle sessionHandle, UwbAddress remoteDeviceAddress,
             PersistableBundle parameters, byte[] data) {
         synchronized (this) {

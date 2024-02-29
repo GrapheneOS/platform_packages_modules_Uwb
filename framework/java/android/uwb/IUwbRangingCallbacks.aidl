@@ -231,6 +231,27 @@ oneway interface IUwbRangingCallbacks {
           RangingChangeReason reason, in PersistableBundle parameters);
 
   /**
+   * Invoked when set data transfer phase config via {@link RangingSession#
+   * setDataTransferPhaseConfig(in SessionHandle sessionHandle, in PersistableBundle params)}
+   * succeeds.
+   *
+   * @param sessionHandle the session for which the callback is being invoked for
+   * @param parameters protocol specific parameters for set data transfer phase config success.
+   */
+  void onDataTransferPhaseConfigured(in SessionHandle sessionHandle,
+        in PersistableBundle parameters);
+
+  /**
+   * Invoked when set data transfer phase config via {@link RangingSession#
+   * setDataTransferPhaseConfig(in SessionHandle sessionHandle, in PersistableBundle params)} fails.
+   *
+   * @param sessionHandle the session for which the callback is being invoked for
+   * @param parameters protocol specific parameters for set data transfer phase config failure.
+   */
+  void onDataTransferPhaseConfigFailed(in SessionHandle sessionHandle,
+          in PersistableBundle parameters);
+
+  /**
    * Invoked when data is received successfully from a remote device.
    * The data is received piggybacked over RRM (initiator -> responder) or
    * RIM (responder -> initiator).

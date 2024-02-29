@@ -849,6 +849,18 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     }
 
     /**
+     * Configure's data transfer session
+     */
+    public void setDataTransferPhaseConfig(SessionHandle sessionHandle,
+            PersistableBundle params) throws RemoteException {
+        if (!isUwbEnabled()) {
+            throw new IllegalStateException("Uwb is not enabled");
+        }
+
+        mSessionManager.setDataTransferPhaseConfig(sessionHandle, params);
+    }
+
+    /**
      * Get the UWB Adapter State.
      */
     public /* @UwbManager.AdapterStateCallback.State */ int getAdapterState() {

@@ -78,6 +78,8 @@ public class UwbUciConstants {
     public static final int REASON_ERROR_HUS_CFP_PHASE_TOO_SHORT = 0x27;
     public static final int REASON_ERROR_HUS_CAP_PHASE_TOO_SHORT = 0x28;
     public static final int REASON_ERROR_HUS_OTHERS = 0x29;
+    public static final int REASON_ERROR_SESSION_KEY_NOT_FOUND = 0x2A;
+    public static final int REASON_ERROR_SUB_SESSION_KEY_NOT_FOUND = 0x2B;
     /* Vendor Specific reason codes */
     public static final int REASON_REGULATION_UWB_OFF =
             UwbVendorReasonCodes.REASON_REGULATION_UWB_OFF;
@@ -257,6 +259,14 @@ public class UwbUciConstants {
     public static final int STATUS_CODE_DATA_TRANSFER_ERROR_DATA_TRANSFER =
             FiraParams.STATUS_CODE_DATA_TRANSFER_NTF_ERROR_DATA_TRANSFER;
 
+    /**
+     * Table TBD: Status codes in the DATA_TRANSFER_PHASE_CONFIGURATION_NTF
+     */
+    public static final int STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_DTPCM_CONFIG_SUCCESS =
+            FiraParams.STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_DTPCM_CONFIG_SUCCESS;
+    public static final int STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_ERROR_DUPLICATE_SLOT_ASSIGMENT =
+            FiraParams.STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_ERROR_DUPLICATE_SLOT_ASSIGMENT;
+
     /* UWB Device Extended Mac address length */
     public static final int UWB_DEVICE_SHORT_MAC_ADDRESS_LEN = 2;
     public static final int UWB_DEVICE_EXT_MAC_ADDRESS_LEN = 8;
@@ -274,4 +284,7 @@ public class UwbUciConstants {
      */
     public static final int FIRA_VERSION_MAJOR_1 = 1;
     public static final int FIRA_VERSION_MAJOR_2 = 2;
+
+    /* Used by DATA_TRANSFER_PHASE_CONFIG */
+    public static final int DATA_TRANSFER_CONTROL_SHORT_MAC_ADDRESS = 0;
 }

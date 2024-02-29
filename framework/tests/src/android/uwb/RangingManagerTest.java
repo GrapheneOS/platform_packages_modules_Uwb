@@ -244,6 +244,15 @@ public class RangingManagerTest {
         rangingManager.onDataSendFailed(handle, ADDRESS, REASON, PARAMS);
         verify(callback, times(1)).onDataSendFailed(eq(ADDRESS), eq(REASON), eq(PARAMS));
 
+        // Test should only run on V+ devices.
+        if (SdkLevel.isAtLeastV()) {
+            rangingManager.onDataTransferPhaseConfigured(handle, PARAMS);
+            verify(callback, times(1)).onDataTransferPhaseConfigured(eq(PARAMS));
+
+            rangingManager.onDataTransferPhaseConfigFailed(handle, PARAMS);
+            verify(callback, times(1)).onDataTransferPhaseConfigFailed(eq(PARAMS));
+        }
+
         rangingManager.onDataReceived(handle, ADDRESS, PARAMS, DATA);
         verify(callback, times(1)).onDataReceived(eq(ADDRESS), eq(PARAMS), eq(DATA));
 
@@ -349,6 +358,15 @@ public class RangingManagerTest {
 
         rangingManager.onDataReceiveFailed(handle, ADDRESS, REASON, PARAMS);
         verify(callback, never()).onDataReceiveFailed(eq(ADDRESS), eq(REASON), eq(PARAMS));
+
+        // Test should only run on V+ devices.
+        if (SdkLevel.isAtLeastV()) {
+            rangingManager.onDataTransferPhaseConfigured(handle, PARAMS);
+            verify(callback, never()).onDataTransferPhaseConfigured(eq(PARAMS));
+
+            rangingManager.onDataTransferPhaseConfigFailed(handle, PARAMS);
+            verify(callback, never()).onDataTransferPhaseConfigFailed(eq(PARAMS));
+        }
 
         rangingManager.onServiceDiscovered(handle, PARAMS);
         verify(callback, never()).onServiceDiscovered(eq(PARAMS));

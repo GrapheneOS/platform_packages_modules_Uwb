@@ -423,6 +423,22 @@ public final class RangingSession implements AutoCloseable {
                 @DataFailureReason int reason, @NonNull PersistableBundle parameters) {}
 
         /**
+         * Invoked when set data transfer phase config is called successfully
+         *
+         * @param parameters protocol specific parameters for set data transfer phase config success
+         */
+        @FlaggedApi("com.android.uwb.flags.data_transfer_phase_config")
+        default void onDataTransferPhaseConfigured(@NonNull PersistableBundle parameters) {}
+
+        /**
+         * Invoked when set data transfer phase config is failed
+         *
+         * @param parameters protocol specific parameters for set data transfer phase config failure
+         */
+        @FlaggedApi("com.android.uwb.flags.data_transfer_phase_config")
+        default void onDataTransferPhaseConfigFailed(@NonNull PersistableBundle parameters) {}
+
+        /**
          * Invoked when service is discovered via OOB.
          * <p>
          * If this a one to many session, this can be invoked multiple times to indicate different
@@ -756,6 +772,35 @@ public final class RangingSession implements AutoCloseable {
         Log.v(mTag, "sendData - sessionHandle: " + mSessionHandle);
         try {
             mAdapter.sendData(mSessionHandle, remoteDeviceAddress, params, data);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Set data transfer phase configuration during ranging as well as dedicated data transfer.
+     * <p>This is only functional on a FIRA 2.0 compliant device.
+     *
+     * <p>On successfully sending the data transfer phase config,
+     * {@link RangingSession.Callback#onDataTransferPhaseConfigured(PersistableBundle)} is
+     * invoked.
+     *
+     * <p>On failure to send the data transfer phase config,
+     * {@link RangingSession.Callback#onDataTransferPhaseConfigFailed(PersistableBundle)} is
+     * invoked.
+     *
+     * @param params Protocol specific data transfer phase configuration parameters
+     */
+    @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
+    @FlaggedApi("com.android.uwb.flags.data_transfer_phase_config")
+    public void setDataTransferPhaseConfig(@NonNull PersistableBundle params) {
+        if (!isOpen()) {
+            throw new IllegalStateException();
+        }
+
+        Log.v(mTag, "setDataTransferPhaseConfig - sessionHandle: " + mSessionHandle);
+        try {
+            mAdapter.setDataTransferPhaseConfig(mSessionHandle, params);
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();
         }
@@ -1137,6 +1182,32 @@ public final class RangingSession implements AutoCloseable {
 
         Log.v(mTag, "onDataReceiveFailed - sessionHandle: " + mSessionHandle);
         executeCallback(() -> mCallback.onDataReceiveFailed(remoteDeviceAddress, reason, params));
+    }
+
+    /**
+     * @hide
+     */
+    public void onDataTransferPhaseConfigured(@NonNull PersistableBundle params) {
+        if (!isOpen()) {
+            Log.w(mTag, "onDataTransferPhaseConfigured invoked for non-open session");
+            return;
+        }
+
+        Log.v(mTag, "onDataTransferPhaseConfigured - sessionHandle: " + mSessionHandle);
+        executeCallback(() -> mCallback.onDataTransferPhaseConfigured(params));
+    }
+
+    /**
+     * @hide
+     */
+    public void onDataTransferPhaseConfigFailed(@NonNull PersistableBundle params) {
+        if (!isOpen()) {
+            Log.w(mTag, "onDataTransferPhaseConfigFailed invoked for non-open session");
+            return;
+        }
+
+        Log.v(mTag, "onDataTransferPhaseConfigFailed - sessionHandle: " + mSessionHandle);
+        executeCallback(() -> mCallback.onDataTransferPhaseConfigFailed(params));
     }
 
     /**

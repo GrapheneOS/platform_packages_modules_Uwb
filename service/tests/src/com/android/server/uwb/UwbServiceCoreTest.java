@@ -1392,6 +1392,31 @@ public class UwbServiceCoreTest {
     }
 
     @Test
+    public void testSetDataTransferPhaseConfig_success() throws Exception {
+        enableUwbWithCountryCodeChangedCallback();
+
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+        PersistableBundle params = mock(PersistableBundle.class);
+
+        mUwbServiceCore.setDataTransferPhaseConfig(sessionHandle, params);
+        verify(mUwbSessionManager).setDataTransferPhaseConfig(
+                eq(sessionHandle), eq(params));
+    }
+
+    @Test
+    public void testSetDataTransferPhaseConfig_whenUwbIsDisabled() throws Exception {
+        disableUwb();
+
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+        PersistableBundle params = mock(PersistableBundle.class);
+
+        try {
+            mUwbServiceCore.setDataTransferPhaseConfig(sessionHandle, params);
+            fail();
+        } catch (IllegalStateException e) { }
+    }
+
+    @Test
     public void testAddControlee() throws Exception {
         enableUwbWithCountryCodeChangedCallback();
 

@@ -439,6 +439,28 @@ public class NativeUwbManager {
     }
 
     /**
+     * Set Data transfer phase configuration
+     */
+    public byte setDataTransferPhaseConfig(int sessionId, byte dtpcmRepetition,
+            byte dataTransferControl, byte dtpmlSize, byte[] macAddress, byte[] slotBitmap,
+            String chipId) {
+        synchronized (mNativeLock) {
+            return nativeSessionDataTransferPhaseConfig(sessionId, dtpcmRepetition,
+                dataTransferControl, dtpmlSize, macAddress, slotBitmap, chipId);
+        }
+    }
+
+    /**
+     * Receive the data transfer phase config status
+     */
+    public void onDataTransferPhaseConfigNotificationReceived(long sessionId,
+            int dataTransferPhaseConfigStatus) {
+        Log.d(TAG, "onDataTransferPhaseConfigNotificationReceived ");
+        mSessionListener.onDataTransferPhaseConfigNotificationReceived(sessionId,
+                dataTransferPhaseConfigStatus);
+    }
+
+    /**
      * Update Ranging Rounds for DT Tag
      *
      * @param sessionId Session ID to which ranging round to be updated
@@ -513,6 +535,10 @@ public class NativeUwbManager {
 
     private native byte nativeSendData(int sessionId, byte[] address,
             short sequenceNum, byte[] appData, String chipId);
+
+    private native byte nativeSessionDataTransferPhaseConfig(int sessionId, byte dtpcmRepetition,
+            byte dataTransferControl, byte dtpmlSize, byte[] macAddress, byte[] slotBitmap,
+            String chipId);
 
     private native long nativeDispatcherNew(Object[] chipIds);
 

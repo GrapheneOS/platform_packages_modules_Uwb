@@ -976,6 +976,21 @@ impl NotificationManagerAndroid {
             ],
         )
     }
+
+    fn on_data_transfer_phase_config_notification(
+        &mut self,
+        session_id: u32,
+        status_code: u8,
+    ) -> Result<JObject, JNIError> {
+        self.cached_jni_call(
+            "onDataTransferPhaseConfigNotificationReceived",
+            "(JI)V",
+            &[
+                jvalue::from(JValue::Long(session_id as i64)),
+                jvalue::from(JValue::Int(status_code as i32)),
+            ],
+        )
+    }
 }
 
 impl NotificationManager for NotificationManagerAndroid {
@@ -1076,6 +1091,9 @@ impl NotificationManager for NotificationManagerAndroid {
                         session_token, credit_availability
                     );
                     Err(JNIError::InvalidCtorReturn)
+                }
+                SessionNotification::DataTransferPhaseConfig { session_token, status } => {
+                    self.on_data_transfer_phase_config_notification(session_token, u8::from(status))
                 }
             }
         })

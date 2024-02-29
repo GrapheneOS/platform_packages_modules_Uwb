@@ -87,6 +87,15 @@ public interface INativeUwbManager {
          * @param radarData : refer to Android UWB Radar UCI Specification: radar Data Message
          */
         void onRadarDataMessageReceived(UwbRadarData radarData);
+
+        /**
+         * Interface for receiving the data transfer phase config notification
+         *
+         * @param sessionId                     : Session ID
+         * @param dataTransferPhaseConfigStatus  : DATA_TRANSFER_PHASE_CONFIG_STATUS_NTF status code
+         */
+        void onDataTransferPhaseConfigNotificationReceived(long sessionId,
+                int dataTransferPhaseConfigStatus);
     }
 
     interface DeviceNotification {

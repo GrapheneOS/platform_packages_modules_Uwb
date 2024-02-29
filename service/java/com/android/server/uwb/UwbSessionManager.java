@@ -97,6 +97,9 @@ import com.google.uwb.support.ccc.CccSpecificationParams;
 import com.google.uwb.support.ccc.CccStartRangingParams;
 import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
 import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdateStatus;
+import com.google.uwb.support.fira.FiraDataTransferPhaseConfig;
+import com.google.uwb.support.fira.FiraDataTransferPhaseConfig.FiraDataTransferPhaseManagementList;
+import com.google.uwb.support.fira.FiraDataTransferPhaseConfigStatusCode;
 import com.google.uwb.support.fira.FiraHybridSessionConfig;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
@@ -157,6 +160,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     public static final int SESSION_SEND_DATA = 7;
     @VisibleForTesting
     public static final int SESSION_UPDATE_DT_TAG_RANGING_ROUNDS = 8;
+    @VisibleForTesting
+    public static final int SESSION_DATA_TRANSFER_PHASE_CONFIG = 11;
 
     // TODO: don't expose the internal field for testing.
     @VisibleForTesting
@@ -394,6 +399,34 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         Trace.endSection();
     }
 
+    @Override
+    public void onDataTransferPhaseConfigNotificationReceived(long sessionId,
+            int dataTransferPhaseConfigStatus) {
+        Log.d(TAG, "onDataTransferPhaseConfigNotificationReceived:"
+                + ", sessionId: " + sessionId
+                + ", status: " + dataTransferPhaseConfigStatus);
+
+        UwbSession uwbSession = getUwbSession((int) sessionId);
+        if (uwbSession == null) {
+            Log.e(TAG, "onDataTransferPhaseConfigNotificationReceived: Received data transfer"
+                    + "config notification for unknown sessionId = " + sessionId);
+            return;
+        }
+
+        FiraDataTransferPhaseConfigStatusCode statusCode =
+                new FiraDataTransferPhaseConfigStatusCode.Builder()
+                .setStatusCode(dataTransferPhaseConfigStatus).build();
+
+        if (dataTransferPhaseConfigStatus
+                == UwbUciConstants.STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_DTPCM_CONFIG_SUCCESS) {
+            mSessionNotificationManager.onDataTransferPhaseConfigured(uwbSession,
+                    statusCode.toBundle());
+        } else {
+            mSessionNotificationManager.onDataTransferPhaseConfigFailed(uwbSession,
+                    statusCode.toBundle());
+        }
+    }
+
     /** Updates pose information if the session is using an ApplicationPoseSource */
     public void updatePose(SessionHandle sessionHandle, PersistableBundle params) {
         int sessionId = getSessionId(sessionHandle);
@@ -445,6 +478,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
         int prevState = uwbSession.getSessionState();
         setCurrentSessionState((int) sessionId, state);
+
+        // Store the reasonCode before notifying on the waitObj.
+        synchronized (uwbSession.getWaitObj()) {
+            uwbSession.setLastSessionStatusNtfReasonCode(reasonCode);
+        }
 
         if ((uwbSession.getOperationType() == SESSION_ON_DEINIT
                 && state == UwbUciConstants.UWB_SESSION_STATE_IDLE)
@@ -1121,6 +1159,25 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     }
 
     /**
+     * Sets the data transfer session configuration
+     *
+     * @param sessionHandle : session handle
+     * @param params        : protocol specific parameters to configure data transfer session
+     */
+    public void setDataTransferPhaseConfig(SessionHandle sessionHandle, PersistableBundle params) {
+        if (!isExistedSession(sessionHandle)) {
+            throw new IllegalStateException("Not initialized session ID: "
+                + getSessionId(sessionHandle));
+        }
+
+        UpdateSessionInfo updateSessionInfo = new UpdateSessionInfo();
+        updateSessionInfo.sessionHandle = sessionHandle;
+        updateSessionInfo.params = params;
+
+        mEventTask.execute(SESSION_DATA_TRANSFER_PHASE_CONFIG, updateSessionInfo);
+    }
+
+    /**
      * Sets the hybrid UWB configuration
      *
      * @param sessionHandle : Primary session handle
@@ -1166,6 +1223,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     }
 
     private static final class RangingRoundsUpdateDtTagInfo {
+        public SessionHandle sessionHandle;
+        public PersistableBundle params;
+    }
+
+    private static final class UpdateSessionInfo {
         public SessionHandle sessionHandle;
         public PersistableBundle params;
     }
@@ -1256,6 +1318,100 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 .build()
                 .toBundle();
         mSessionNotificationManager.onRangingRoundsUpdateStatus(uwbSession, params);
+    }
+
+    private void handleSetDataTransferPhaseConfig(UpdateSessionInfo info) {
+        SessionHandle sessionHandle = info.sessionHandle;
+        Integer sessionId = getSessionId(sessionHandle);
+        UwbSession uwbSession = getUwbSession(sessionHandle);
+
+        int sessionType = uwbSession.getSessionType();
+        if (sessionType != FiraParams.SESSION_TYPE_RANGING_AND_IN_BAND_DATA
+                && sessionType != FiraParams.SESSION_TYPE_DATA_TRANSFER
+                && sessionType !=  FiraParams.SESSION_TYPE_IN_BAND_DATA_PHASE) {
+            Log.e(TAG, "SetDataTransferPhaseConfig not applicable for session type: "
+                    + sessionType);
+            return;
+        }
+
+        FiraDataTransferPhaseConfig dataTransferPhaseConfig =
+                FiraDataTransferPhaseConfig.fromBundle(info.params);
+
+        List<FiraDataTransferPhaseManagementList> mDataTransferPhaseManagementList =
+                dataTransferPhaseConfig.getDataTransferPhaseManagementList();
+        int dataTransferManagementListSize = mDataTransferPhaseManagementList.size();
+        int dataTransferControl = dataTransferPhaseConfig.getDataTransferControl();
+        int slotBitmapSizeInBytes = 1 << ((dataTransferControl & 0X0F) >> 1);
+
+        List<byte[]> macAddressList = new ArrayList<>();
+        ByteBuffer slotBitmapByteBuffer = ByteBuffer.allocate(dataTransferManagementListSize
+                * slotBitmapSizeInBytes);
+        slotBitmapByteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+
+        int addressByteLength = ((dataTransferControl & 0x01)
+                       == UwbUciConstants.DATA_TRANSFER_CONTROL_SHORT_MAC_ADDRESS)
+                ? UwbAddress.SHORT_ADDRESS_BYTE_LENGTH : UwbAddress.EXTENDED_ADDRESS_BYTE_LENGTH;
+
+        for (FiraDataTransferPhaseManagementList dataTransferPhaseManagementList :
+                mDataTransferPhaseManagementList) {
+            UwbAddress uwbAddress = dataTransferPhaseManagementList.getUwbAddress();
+            byte[] slotBitMap = dataTransferPhaseManagementList.getSlotBitMap();
+            if (uwbAddress != null && uwbAddress.size() == addressByteLength
+                    && slotBitMap.length == slotBitmapSizeInBytes) {
+                macAddressList.add(getComputedMacAddress(uwbAddress));
+                slotBitmapByteBuffer.put(slotBitMap);
+            } else {
+                Log.e(TAG, "handleSetDataTransferPhaseConfig: slot bitmap size "
+                            + "or address is not matching");
+                return;
+            }
+        }
+
+        // Check for buffer size mismatches
+        if (slotBitmapByteBuffer.array().length
+                != (slotBitmapSizeInBytes * dataTransferManagementListSize)
+                || macAddressList.size() != dataTransferManagementListSize) {
+            Log.e(TAG, "handleSetDataTransferPhaseConfig: slot bitmap buffer size or address list"
+                    + " size mismatch");
+            return;
+        }
+
+        // create session data transfer phase configuration task
+        FutureTask<Integer> sessionDataTransferPhaseConfigTask = new FutureTask<>(
+                (Callable<Integer>) () -> {
+                    int status = UwbUciConstants.STATUS_CODE_FAILED;
+                    synchronized (uwbSession.getWaitObj()) {
+                        status = mNativeUwbManager.setDataTransferPhaseConfig(sessionId,
+                                (byte) dataTransferPhaseConfig.getDtpcmRepetition(),
+                                (byte) dataTransferControl,
+                                (byte) dataTransferManagementListSize,
+                                ArrayUtils.toPrimitive(macAddressList),
+                                slotBitmapByteBuffer.array(),
+                                uwbSession.getChipId());
+                    }
+                    return status;
+                }
+        );
+
+        // execute task
+        int status = UwbUciConstants.STATUS_CODE_FAILED;
+        try {
+            status = mUwbInjector.runTaskOnSingleThreadExecutor(sessionDataTransferPhaseConfigTask,
+                    IUwbAdapter.SESSION_DATA_TRANSFER_PHASE_CONFIG_THRESHOLD_MS);
+        } catch (TimeoutException e) {
+            Log.i(TAG, "Failed to set session data transfer phase config : TIMEOUT");
+            mSessionNotificationManager.onDataTransferPhaseConfigFailed(
+                    uwbSession, UwbSessionNotificationHelper.convertUciStatusToParam(
+                    uwbSession.getProtocolName(), status));
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+
+        if (status != UwbUciConstants.STATUS_CODE_OK) {
+            mSessionNotificationManager.onDataTransferPhaseConfigFailed(
+                    uwbSession, UwbSessionNotificationHelper.convertUciStatusToParam(
+                    uwbSession.getProtocolName(), status));
+        }
     }
 
     void removeSession(UwbSession uwbSession) {
@@ -1395,6 +1551,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     Log.d(TAG, "SESSION_UPDATE_DT_TAG_RANGING_ROUNDS");
                     RangingRoundsUpdateDtTagInfo info = (RangingRoundsUpdateDtTagInfo) msg.obj;
                     handleRangingRoundsUpdateDtTag(info);
+                    break;
+                }
+
+                case SESSION_DATA_TRANSFER_PHASE_CONFIG: {
+                    Log.d(TAG, "SESSION_DATA_TRANSFER_PHASE_CONFIG");
+                    UpdateSessionInfo info = (UpdateSessionInfo) msg.obj;
+                    handleSetDataTransferPhaseConfig(info);
                     break;
                 }
 
@@ -1569,9 +1732,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                     uwbSession.reconfigureFiraSessionOnFgStateChange();
                                 }
                             } else {
-                                status = UwbUciConstants.STATUS_CODE_FAILED;
-                                mSessionNotificationManager.onRangingStartFailed(uwbSession,
-                                        status);
+                                int reasonCode = uwbSession.getLastSessionStatusNtfReasonCode();
+                                status =
+                                        UwbSessionNotificationHelper.convertUciReasonCodeToUciStatusCode(
+                                               reasonCode);
+                                mSessionNotificationManager.onRangingStartFailedWithUciReasonCode(
+                                        uwbSession, reasonCode);
                             }
                         }
                         return status;
@@ -2131,6 +2297,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
         // Whether data delivery permission check is needed for the ranging session.
         private boolean mDataDeliveryPermissionCheckNeeded = true;
+
+        // reasonCode from the last received SESSION_STATUS_NTF for this session.
+        private int mLastSessionStatusNtfReasonCode = -1;
 
         @VisibleForTesting
         public List<UwbControlee> mControleeList;
@@ -2893,6 +3062,14 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
         public void setOperationType(int type) {
             mOperationType = type;
+        }
+
+        public int getLastSessionStatusNtfReasonCode() {
+            return mLastSessionStatusNtfReasonCode;
+        }
+
+        public void setLastSessionStatusNtfReasonCode(int lastSessionStatusNtfReasonCode) {
+            mLastSessionStatusNtfReasonCode = lastSessionStatusNtfReasonCode;
         }
 
         /** Creates a filter engine based on the device configuration. */

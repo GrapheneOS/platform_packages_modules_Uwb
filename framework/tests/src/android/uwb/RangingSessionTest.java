@@ -325,6 +325,9 @@ public class RangingSessionTest {
         verify(callback, times(1)).onDataReceiveFailed(
                 UWB_ADDRESS, REASON_BAD_PARAMETERS, PARAMS);
 
+        session.onDataTransferPhaseConfigured(PARAMS);
+        verify(callback, times(1)).onDataTransferPhaseConfigured(any());
+
         session.stop();
         verifyOpenState(session, true);
         verify(callback, times(1)).onStopped(REASON, PARAMS);
@@ -565,6 +568,30 @@ public class RangingSessionTest {
         // ranging session has now been closed.
         session.onRangingClosed(REASON, PARAMS);
         verifyThrowIllegalState(() -> session.setHybridSessionConfiguration(PARAMS));
+    }
+
+    @Test
+    public void testSetDataTransferPhaseConfig() throws RemoteException {
+        assumeTrue(SdkLevel.isAtLeastV()); // Test should only run on V+ devices.
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
+
+        // Confirm that setDataTransferPhaseConfig() throws an IllegalStateException
+        // when the ranging session is not open.
+        assertFalse(session.isOpen());
+        verifyThrowIllegalState(() -> session.setDataTransferPhaseConfig(PARAMS));
+
+        // Confirm that setDataTransferPhaseConfig() returns a value when the ranging
+        // session has been opened.
+        session.onRangingOpened();
+        verifyNoThrowIllegalState(() -> session.setDataTransferPhaseConfig(PARAMS));
+
+        // Confirm that setDataTransferPhaseConfig() throws an IllegalStateException when the
+        // ranging session has now been closed.
+        session.onRangingClosed(REASON, PARAMS);
+        verifyThrowIllegalState(() -> session.setDataTransferPhaseConfig(PARAMS));
     }
 
     @Test

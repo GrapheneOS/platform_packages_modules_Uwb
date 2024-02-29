@@ -175,6 +175,23 @@ public class UwbSessionNotificationManager {
         }
     }
 
+    public void onRangingStartFailedWithUciReasonCode(UwbSession uwbSession, int reasonCode)  {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            int statusCode =
+                    UwbSessionNotificationHelper.convertUciReasonCodeToUciStatusCode(reasonCode);
+            uwbRangingCallbacks.onRangingStartFailed(sessionHandle,
+                    UwbSessionNotificationHelper.convertUciReasonCodeToApiReasonCode(reasonCode),
+                    UwbSessionNotificationHelper.convertUciStatusToParam(
+                            uwbSession.getProtocolName(), statusCode));
+            Log.i(TAG, "IUwbRangingCallbacks - onRangingStartFailedWithUciReasonCode");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onRangingStartFailedWithUciReasonCode : Failed");
+            e.printStackTrace();
+        }
+    }
+
     private void onRangingStoppedInternal(UwbSession uwbSession, int reason,
             PersistableBundle params)  {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
@@ -464,6 +481,34 @@ public class UwbSessionNotificationManager {
             Log.i(TAG, "IUwbRangingCallbacks - onDataSendFailed");
         } catch (Exception e) {
             Log.e(TAG, "IUwbRangingCallbacks - onDataSendFailed : Failed");
+            e.printStackTrace();
+        }
+    }
+
+    /** Notify that data transfer phase config setting is successful. */
+    public void onDataTransferPhaseConfigured(UwbSession uwbSession,
+            PersistableBundle parameters) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            uwbRangingCallbacks.onDataTransferPhaseConfigured(sessionHandle, parameters);
+            Log.i(TAG, "IUwbRangingCallbacks - onDataTransferPhaseConfigured");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onDataTransferPhaseConfigured : Failed");
+            e.printStackTrace();
+        }
+    }
+
+    /** Notify that data transfer phase config setting is failed. */
+    public void onDataTransferPhaseConfigFailed(UwbSession uwbSession,
+            PersistableBundle parameters) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            uwbRangingCallbacks.onDataTransferPhaseConfigFailed(sessionHandle, parameters);
+            Log.i(TAG, "IUwbRangingCallbacks - onDataTransferPhaseConfigFailed");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onDataTransferPhaseConfigFailed : Failed");
             e.printStackTrace();
         }
     }
