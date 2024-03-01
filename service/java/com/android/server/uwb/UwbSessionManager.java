@@ -479,21 +479,18 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         int prevState = uwbSession.getSessionState();
         setCurrentSessionState((int) sessionId, state);
 
-        // Store the reasonCode before notifying on the waitObj.
-        synchronized (uwbSession.getWaitObj()) {
-            uwbSession.setLastSessionStatusNtfReasonCode(reasonCode);
-        }
-
         if ((uwbSession.getOperationType() == SESSION_ON_DEINIT
                 && state == UwbUciConstants.UWB_SESSION_STATE_IDLE)
                 || (uwbSession.getOperationType() == SESSION_STOP_RANGING
                 && state == UwbUciConstants.UWB_SESSION_STATE_IDLE
                 && reasonCode != REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS)) {
             Log.d(TAG, "Session status NTF is received due to in-band session state change");
-        } else {
-            synchronized (uwbSession.getWaitObj()) {
-                uwbSession.getWaitObj().blockingNotify();
-            }
+        }
+
+        // Store the reasonCode before notifying on the waitObj.
+        synchronized (uwbSession.getWaitObj()) {
+            uwbSession.setLastSessionStatusNtfReasonCode(reasonCode);
+            uwbSession.getWaitObj().blockingNotify();
         }
 
         //TODO : process only error handling in this switch function, b/218921154
