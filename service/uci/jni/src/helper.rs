@@ -37,10 +37,11 @@ pub(crate) fn byte_result_helper<T>(result: Result<T>, error_msg: &str) -> jbyte
 
 /// helper function to convert Result to StatusCode
 fn result_to_status_code<T>(result: Result<T>, error_msg: &str) -> StatusCode {
-    match result.map_err(|e| {
+    let result = result.map_err(|e| {
         error!("{} failed with {:?}", error_msg, &e);
         e
-    }) {
+    });
+    match result {
         Ok(_) => StatusCode::UciStatusOk,
         Err(Error::BadParameters) => StatusCode::UciStatusInvalidParam,
         Err(Error::MaxSessionsExceeded) => StatusCode::UciStatusMaxSessionsExceeded,
