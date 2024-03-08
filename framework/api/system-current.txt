@@ -112,7 +112,8 @@ package android.uwb {
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void resume(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void sendData(@NonNull android.uwb.UwbAddress, @NonNull android.os.PersistableBundle, @NonNull byte[]);
     method @FlaggedApi("com.android.uwb.flags.data_transfer_phase_config") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void setDataTransferPhaseConfig(@NonNull android.os.PersistableBundle);
-    method @FlaggedApi("com.android.uwb.flags.hybrid_session_support") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public int setHybridSessionConfiguration(@NonNull android.os.PersistableBundle);
+    method @FlaggedApi("com.android.uwb.flags.hybrid_session_support") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void setHybridSessionControleeConfiguration(@NonNull android.os.PersistableBundle);
+    method @FlaggedApi("com.android.uwb.flags.hybrid_session_support") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void setHybridSessionControllerConfiguration(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void start(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void stop();
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void updatePose(@NonNull android.os.PersistableBundle);
@@ -131,6 +132,10 @@ package android.uwb {
     method public default void onDataSent(@NonNull android.uwb.UwbAddress, @NonNull android.os.PersistableBundle);
     method @FlaggedApi("com.android.uwb.flags.data_transfer_phase_config") public default void onDataTransferPhaseConfigFailed(@NonNull android.os.PersistableBundle);
     method @FlaggedApi("com.android.uwb.flags.data_transfer_phase_config") public default void onDataTransferPhaseConfigured(@NonNull android.os.PersistableBundle);
+    method @FlaggedApi("com.android.uwb.flags.hybrid_session_support") public default void onHybridSessionControleeConfigurationFailed(@NonNull android.os.PersistableBundle);
+    method @FlaggedApi("com.android.uwb.flags.hybrid_session_support") public default void onHybridSessionControleeConfigured(@NonNull android.os.PersistableBundle);
+    method @FlaggedApi("com.android.uwb.flags.hybrid_session_support") public default void onHybridSessionControllerConfigurationFailed(@NonNull android.os.PersistableBundle);
+    method @FlaggedApi("com.android.uwb.flags.hybrid_session_support") public default void onHybridSessionControllerConfigured(@NonNull android.os.PersistableBundle);
     method public void onOpenFailed(int, @NonNull android.os.PersistableBundle);
     method public void onOpened(@NonNull android.uwb.RangingSession);
     method public default void onPauseFailed(int, @NonNull android.os.PersistableBundle);

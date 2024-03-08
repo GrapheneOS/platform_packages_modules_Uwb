@@ -528,6 +528,68 @@ public class UwbSessionNotificationManager {
         }
     }
 
+    /** Notify that Hybrid session configuration for controller is updated. */
+    public void onHybridSessionControllerConfigured(UwbSession uwbSession, int status) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            uwbRangingCallbacks.onHybridSessionControllerConfigured(sessionHandle,
+                    UwbSessionNotificationHelper.convertUciStatusToParam(
+                            uwbSession.getProtocolName(), status));
+            Log.i(TAG, "IUwbRangingCallbacks - onHybridSessionControllerConfigured");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onHybridSessionControllerConfigured: Failed");
+            e.printStackTrace();
+        }
+    }
+
+    /** Notify that Hybrid session configuration for controller is failed to update. */
+    public void onHybridSessionControllerConfigurationFailed(UwbSession uwbSession, int status) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            uwbRangingCallbacks.onHybridSessionControllerConfigurationFailed(sessionHandle,
+                    UwbSessionNotificationHelper.convertUciStatusToParam(
+                            uwbSession.getProtocolName(), status));
+            Log.i(TAG, "IUwbRangingCallbacks - onHybridSessionControllerConfigurationFailed");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onHybridSessionControllerConfigurationFailed :"
+                    + "Failed");
+            e.printStackTrace();
+        }
+    }
+
+    /** Notify that Hybrid session configuration for controlee is updated. */
+    public void onHybridSessionControleeConfigured(UwbSession uwbSession, int status) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            uwbRangingCallbacks.onHybridSessionControleeConfigured(sessionHandle,
+                    UwbSessionNotificationHelper.convertUciStatusToParam(
+                            uwbSession.getProtocolName(), status));
+            Log.i(TAG, "IUwbRangingCallbacks - onHybridSessionControleeConfigured");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onHybridSessionControleeConfigured: Failed");
+            e.printStackTrace();
+        }
+    }
+
+    /** Notify that Hybrid session configuration for controlee is failed to update. */
+    public void onHybridSessionControleeConfigurationFailed(UwbSession uwbSession, int status) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            uwbRangingCallbacks.onHybridSessionControleeConfigurationFailed(sessionHandle,
+                    UwbSessionNotificationHelper.convertUciStatusToParam(
+                            uwbSession.getProtocolName(), status));
+            Log.i(TAG, "IUwbRangingCallbacks - onHybridSessionControleeConfigurationFailed");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onHybridSessionControleeConfigurationFailed :"
+                    + "Failed");
+            e.printStackTrace();
+        }
+    }
+
     /** Notify about new radar data message. */
     public void onRadarDataMessageReceived(UwbSession uwbSession, UwbRadarData radarData) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();

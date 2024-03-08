@@ -25,7 +25,6 @@ import static com.android.server.uwb.UwbServiceImpl.SETTINGS_SATELLITE_MODE_RADI
 import static com.android.server.uwb.UwbSettingsStore.SETTINGS_FIRST_TOGGLE_DONE;
 import static com.android.server.uwb.UwbSettingsStore.SETTINGS_TOGGLE_STATE;
 import static com.android.server.uwb.UwbTestUtils.MAX_DATA_SIZE;
-import static com.android.server.uwb.UwbTestUtils.TEST_STATUS;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.uwb.support.fira.FiraParams.PACS_PROFILE_SERVICE_ID;
@@ -890,18 +889,28 @@ public class UwbServiceImplTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_HYBRID_SESSION_SUPPORT)
-    public void testSetHybridSessionConfiguration() throws Exception {
+    public void testSetHybridSessionControllerConfiguration() throws Exception {
         assumeTrue(SdkLevel.isAtLeastV()); // Test should only run on V+ devices.
         final SessionHandle sessionHandle = mock(SessionHandle.class);
         final PersistableBundle parameters = new PersistableBundle();
 
         when(mFeatureFlags.hybridSessionSupport()).thenReturn(true);
-        when(mUwbServiceCore.setHybridSessionConfiguration(sessionHandle, parameters))
-               .thenReturn(TEST_STATUS);
-        assertThat(mUwbServiceImpl.setHybridSessionConfiguration(sessionHandle, parameters))
-                .isEqualTo(TEST_STATUS);
+        mUwbServiceImpl.setHybridSessionControllerConfiguration(sessionHandle, parameters);
 
-        verify(mUwbServiceCore).setHybridSessionConfiguration(sessionHandle, parameters);
+        verify(mUwbServiceCore).setHybridSessionControllerConfiguration(sessionHandle, parameters);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HYBRID_SESSION_SUPPORT)
+    public void testSetHybridSessionControleeConfiguration() {
+        assumeTrue(SdkLevel.isAtLeastV()); // Test should only run on V+ devices.
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+        PersistableBundle params = mock(PersistableBundle.class);
+
+        when(mFeatureFlags.hybridSessionSupport()).thenReturn(true);
+        mUwbServiceImpl.setHybridSessionControleeConfiguration(sessionHandle, params);
+
+        verify(mUwbServiceCore).setHybridSessionControleeConfiguration(sessionHandle, params);
     }
 
     @Test

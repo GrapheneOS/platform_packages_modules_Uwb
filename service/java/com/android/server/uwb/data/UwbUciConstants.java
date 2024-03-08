@@ -132,6 +132,8 @@ public class UwbUciConstants {
 
     public static final int CONTENTION_BASED_RANGING = FiraParams.CONTENTION_BASED_RANGING;
     public static final int TIME_SCHEDULED_RANGING = FiraParams.TIME_SCHEDULED_RANGING;
+    public static final int HYBRID_SCHEDULED_RANGING =
+            FiraParams.HYBRID_SCHEDULED_RANGING;
 
     public static final int CONSTRAINT_LENGTH_3 = FiraParams.CONSTRAINT_LENGTH_3;
     public static final int CONSTRAINT_LENGTH_7 = FiraParams.CONSTRAINT_LENGTH_7;
@@ -285,6 +287,6 @@ public class UwbUciConstants {
     public static final int FIRA_VERSION_MAJOR_1 = 1;
     public static final int FIRA_VERSION_MAJOR_2 = 2;
 
-    /* Used by DATA_TRANSFER_PHASE_CONFIG */
-    public static final int DATA_TRANSFER_CONTROL_SHORT_MAC_ADDRESS = 0;
+    /* Used by DATA_TRANSFER_PHASE_CONFIG and Hybrid config updates */
+    public static final int SHORT_MAC_ADDRESS = 0;
 }

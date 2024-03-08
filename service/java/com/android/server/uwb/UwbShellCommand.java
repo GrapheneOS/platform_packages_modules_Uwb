@@ -397,6 +397,18 @@ public class UwbShellCommand extends BasicShellCommandHandler {
 
         public void onRangingRoundsUpdateDtTagStatus(SessionHandle sessionHandle,
                 PersistableBundle params) {}
+
+        public void onHybridSessionControllerConfigured(SessionHandle sessionHandle,
+                PersistableBundle parameters) {}
+
+        public void onHybridSessionControllerConfigurationFailed(SessionHandle sessionHandle,
+                PersistableBundle parameters) {}
+
+        public void onHybridSessionControleeConfigured(SessionHandle sessionHandle,
+                PersistableBundle parameters) {}
+
+        public void onHybridSessionControleeConfigurationFailed(SessionHandle sessionHandle,
+                PersistableBundle parameters) {}
     }
 
 

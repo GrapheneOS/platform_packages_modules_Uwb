@@ -255,6 +255,24 @@ public abstract class FiraParams extends Params {
 
     public static final int BLOCK_BASED_SCHEDULING = 1;
 
+    /** Hybrid session controller phase participation */
+    @IntDef(
+            value = {
+                PARTICIPATION_AS_DEFINED_DEVICE_ROLE,
+                NO_PARTICIPATION_IN_THE_PHASE,
+                PARTICIPATION_AS_INITIATOR,
+                PARTICIPATION_AS_RESPONDER,
+            })
+    public @interface PhaseParticipationHybridSessionController {}
+
+    public static final int PARTICIPATION_AS_DEFINED_DEVICE_ROLE = 0;
+
+    public static final int NO_PARTICIPATION_IN_THE_PHASE = 1;
+
+    public static final int PARTICIPATION_AS_INITIATOR = 2;
+
+    public static final int PARTICIPATION_AS_RESPONDER = 3;
+
     /** Cc Constraint Length */
     @IntDef(
             value = {
@@ -1138,7 +1156,8 @@ public abstract class FiraParams extends Params {
         return UwbAddress.fromBytes(Arrays.copyOf(buffer.array(), length));
     }
 
-    protected static long uwbAddressToLong(UwbAddress address) {
+    /** Helper functions to convert UwbAdrress in long value. */
+    public static long uwbAddressToLong(UwbAddress address) {
         ByteBuffer buffer = ByteBuffer.wrap(Arrays.copyOf(address.toBytes(), Long.BYTES));
         return buffer.getLong();
     }

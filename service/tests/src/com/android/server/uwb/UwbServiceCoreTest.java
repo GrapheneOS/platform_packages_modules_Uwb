@@ -1910,14 +1910,26 @@ public class UwbServiceCoreTest {
     }
 
     @Test
-    public void testHybridSessionConfiguration() throws Exception {
+    public void testSetHybridSessionControllerConfiguration() throws Exception {
         enableUwbWithCountryCodeChangedCallback();
 
         SessionHandle sessionHandle = mock(SessionHandle.class);
         PersistableBundle bundle = new PersistableBundle();
-        mUwbServiceCore.setHybridSessionConfiguration(sessionHandle, bundle);
+        mUwbServiceCore.setHybridSessionControllerConfiguration(sessionHandle, bundle);
 
-        verify(mUwbSessionManager).setHybridSessionConfiguration(sessionHandle, bundle);
+        verify(mUwbSessionManager).setHybridSessionControllerConfiguration(sessionHandle, bundle);
+    }
+
+    @Test
+    public void testSetHybridSessionControleeConfiguration() throws Exception {
+        enableUwbWithCountryCodeChangedCallback();
+
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+        PersistableBundle params = mock(PersistableBundle.class);
+
+        mUwbServiceCore.setHybridSessionControleeConfiguration(sessionHandle, params);
+
+        verify(mUwbSessionManager).setHybridSessionControleeConfiguration(sessionHandle, params);
     }
 
     private CccSpecificationParams getTestCccSpecificationParams() {

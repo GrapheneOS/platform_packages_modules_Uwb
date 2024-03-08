@@ -405,13 +405,23 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     }
 
     @Override
-    public int setHybridSessionConfiguration(SessionHandle sessionHandle,
+    public void setHybridSessionControllerConfiguration(SessionHandle sessionHandle,
             PersistableBundle params) {
         if (!SdkLevel.isAtLeastV() || !mUwbInjector.getFeatureFlags().hybridSessionSupport()) {
             throw new UnsupportedOperationException();
         }
         enforceUwbPrivilegedPermission();
-        return mUwbServiceCore.setHybridSessionConfiguration(sessionHandle, params);
+        mUwbServiceCore.setHybridSessionControllerConfiguration(sessionHandle, params);
+    }
+
+    @Override
+    public void setHybridSessionControleeConfiguration(SessionHandle sessionHandle,
+            PersistableBundle params) {
+        if (!SdkLevel.isAtLeastV() || !mUwbInjector.getFeatureFlags().hybridSessionSupport()) {
+            throw new UnsupportedOperationException();
+        }
+        enforceUwbPrivilegedPermission();
+        mUwbServiceCore.setHybridSessionControleeConfiguration(sessionHandle, params);
     }
 
     @Override

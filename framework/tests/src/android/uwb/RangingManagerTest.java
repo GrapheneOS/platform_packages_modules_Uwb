@@ -272,6 +272,25 @@ public class RangingManagerTest {
                     .onRangingRoundsUpdateDtTagStatus(eq(PARAMS));
         }
 
+        // Test should only run on V+ devices.
+        if (SdkLevel.isAtLeastV()) {
+            rangingManager.onHybridSessionControllerConfigured(handle, PARAMS);
+            verify(callback, times(1))
+                    .onHybridSessionControllerConfigured(eq(PARAMS));
+
+            rangingManager.onHybridSessionControllerConfigurationFailed(handle, PARAMS);
+            verify(callback, times(1))
+                    .onHybridSessionControllerConfigurationFailed(eq(PARAMS));
+
+            rangingManager.onHybridSessionControleeConfigured(handle, PARAMS);
+            verify(callback, times(1))
+                    .onHybridSessionControleeConfigured(eq(PARAMS));
+
+            rangingManager.onHybridSessionControleeConfigurationFailed(handle, PARAMS);
+            verify(callback, times(1))
+                    .onHybridSessionControleeConfigurationFailed(eq(PARAMS));
+        }
+
         rangingManager.onRangingClosed(handle, REASON, PARAMS);
         verify(callback, times(1)).onClosed(eq(REASON), eq(PARAMS));
     }
@@ -373,6 +392,20 @@ public class RangingManagerTest {
 
         rangingManager.onServiceConnected(handle, PARAMS);
         verify(callback, never()).onServiceConnected(eq(PARAMS));
+
+        if (SdkLevel.isAtLeastV()) {
+            rangingManager.onHybridSessionControllerConfigured(handle, PARAMS);
+            verify(callback, never()).onHybridSessionControllerConfigured(eq(PARAMS));
+
+            rangingManager.onHybridSessionControllerConfigurationFailed(handle, PARAMS);
+            verify(callback, never()).onHybridSessionControllerConfigurationFailed(eq(PARAMS));
+
+            rangingManager.onHybridSessionControleeConfigured(handle, PARAMS);
+            verify(callback, never()).onHybridSessionControleeConfigured(eq(PARAMS));
+
+            rangingManager.onHybridSessionControleeConfigurationFailed(handle, PARAMS);
+            verify(callback, never()).onHybridSessionControleeConfigurationFailed(eq(PARAMS));
+        }
 
         rangingManager.onRangingClosed(handle, REASON, PARAMS);
         verify(callback, times(1)).onClosed(eq(REASON), eq(PARAMS));

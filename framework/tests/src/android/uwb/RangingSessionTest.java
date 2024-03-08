@@ -537,37 +537,177 @@ public class RangingSessionTest {
     }
 
     @Test
-    public void testSetHybridSessionConfiguration() throws RemoteException {
+    public void testSetHybridSessionControllerConfiguration_NotOpenSession_ThrowsException()
+            throws RemoteException {
         assumeTrue(SdkLevel.isAtLeastV()); // Test should only run on V+ devices.
-        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
+        // Mocking necessary objects and behaviors
+        SessionHandle sessionHandle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         IUwbAdapter adapter = mock(IUwbAdapter.class);
-        RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
+        RangingSession rangingSession = new RangingSession(EXECUTOR, callback, adapter,
+                sessionHandle);
+        assertFalse(rangingSession.isOpen());
 
-        // Confirm that setHybridSessionConfiguration() throws an IllegalStateException
-        // when the ranging session is not open.
-        assertFalse(session.isOpen());
-        verifyThrowIllegalState(() -> session.setHybridSessionConfiguration(PARAMS));
+        // Verify that an IllegalStateException is thrown when attempting to set the hybrid session
+        // controller configuration while the session is not open.
+        verifyThrowIllegalState(() ->
+                rangingSession.setHybridSessionControllerConfiguration(PARAMS));
+    }
 
-        // Confirm that setHybridSessionConfiguration() returns a value when the ranging
-        // session has been opened.
-        session.onRangingOpened();
-        assertEquals(session.setHybridSessionConfiguration(PARAMS), STATUS_OK);
+    @Test
+    public void testSetHybridSessionControllerConfiguration_OpenSession_Success()
+            throws RemoteException {
+        assumeTrue(SdkLevel.isAtLeastV()); // Test should only run on V+ devices.
+        // Mocking necessary objects and behaviors
+        SessionHandle sessionHandle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        RangingSession rangingSession = new RangingSession(EXECUTOR, callback, adapter,
+                sessionHandle);
+        rangingSession.onRangingOpened();
 
-        // Confirm that setHybridSessionConfiguration() returns a value when the ranging
-        // session has been started.
-        session.onRangingStarted(PARAMS);
-        assertEquals(session.setHybridSessionConfiguration(PARAMS), STATUS_OK);
+        // Invoke the method being tested
+        rangingSession.setHybridSessionControllerConfiguration(PARAMS);
 
-        // Confirm that setHybridSessionConfiguration() still returns a value, when the ranging
-        // session was stopped.
-        session.onRangingStopped(REASON, PARAMS);
-        assertEquals(session.setHybridSessionConfiguration(PARAMS), STATUS_OK);
+        // Verify that the adapter's method setHybridSessionControllerConfiguration() is called once
+        // with the correct parameters.
+        verify(adapter).setHybridSessionControllerConfiguration(sessionHandle, PARAMS);
 
-        // Confirm that setHybridSessionConfiguration() throws an IllegalStateException when the
-        // ranging session has now been closed.
-        session.onRangingClosed(REASON, PARAMS);
-        verifyThrowIllegalState(() -> session.setHybridSessionConfiguration(PARAMS));
+        // Simulate the session being closed
+        rangingSession.onRangingClosed(REASON, PARAMS);
+
+        // Verify that an IllegalStateException is thrown when attempting to set the configuration
+        // after the session is closed.
+        verifyThrowIllegalState(() ->
+                rangingSession.setHybridSessionControllerConfiguration(PARAMS));
+    }
+
+    @Test
+    public void testOnHybridSessionControllerConfigured_WhenSessionOpened_CallbackMethodCalled()
+            throws RemoteException {
+        assumeTrue(SdkLevel.isAtLeastV()); // Test should only run on V+ devices.
+        // Mocking necessary objects and behaviors
+        SessionHandle sessionHandle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        RangingSession rangingSession = new RangingSession(EXECUTOR, callback, adapter,
+                sessionHandle);
+
+        // Simulate the session opening
+        rangingSession.onRangingOpened();
+        rangingSession.onHybridSessionControllerConfigured(PARAMS);
+
+        // Verify that the callback method onHybridSessionControllerConfigured() is called once
+        // with the correct parameters.
+        verify(callback).onHybridSessionControllerConfigured(PARAMS);
+    }
+
+    @Test
+    public void
+            testOnHybridSessionControllerConfigurationFailed_WhenSessionOpenedCallbackCalled()
+            throws RemoteException {
+        assumeTrue(SdkLevel.isAtLeastV()); // Test should only run on V+ devices.
+        // Mocking necessary objects and behaviors
+        SessionHandle sessionHandle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        RangingSession rangingSession = new RangingSession(EXECUTOR, callback, adapter,
+                sessionHandle);
+
+        // Simulate the session opening
+        rangingSession.onRangingOpened();
+        rangingSession.onHybridSessionControllerConfigurationFailed(PARAMS);
+
+        // Verify that the callback method onHybridSessionControllerConfigurationFailed() is
+        // called once with the correct parameters.
+        verify(callback).onHybridSessionControllerConfigurationFailed(PARAMS);
+    }
+
+    @Test
+    public void testSetHybridSessionControleeConfiguration_WhenSessionNotOpen_ThrowsException()
+            throws RemoteException {
+        assumeTrue(SdkLevel.isAtLeastV()); // Test should only run on V+ devices.
+        // Mocking necessary objects and behaviors
+        SessionHandle sessionHandle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        RangingSession rangingSession = new RangingSession(EXECUTOR, callback, adapter,
+                sessionHandle);
+        assertFalse(rangingSession.isOpen());
+
+        // Verify that an IllegalStateException is thrown when attempting to set the hybrid session
+        // controlee configuration while the session is not open.
+        verifyThrowIllegalState(() -> rangingSession.setHybridSessionControleeConfiguration(
+                PARAMS));
+    }
+
+    @Test
+    public void testSetHybridSessionControleeConfiguration_OpenSession_Success()
+            throws RemoteException {
+        assumeTrue(SdkLevel.isAtLeastV()); // Test should only run on V+ devices.
+        // Mocking necessary objects and behaviors
+        SessionHandle sessionHandle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        RangingSession rangingSession = new RangingSession(EXECUTOR, callback, adapter,
+                sessionHandle);
+        rangingSession.onRangingOpened();
+
+        // Invoke the method being tested
+        rangingSession.setHybridSessionControleeConfiguration(PARAMS);
+
+        // Verify that the adapter's method setHybridSessionControleeConfiguration() is called once
+        // with the correct parameters.
+        verify(adapter).setHybridSessionControleeConfiguration(sessionHandle, PARAMS);
+
+        // Simulate the session being closed
+        rangingSession.onRangingClosed(REASON, PARAMS);
+
+        // Verify that an IllegalStateException is thrown when attempting to set the configuration
+        // after the session is closed.
+        verifyThrowIllegalState(() ->
+                rangingSession.setHybridSessionControleeConfiguration(PARAMS));
+    }
+
+    @Test
+    public void testOnHybridSessionControleeConfigured_WhenSessionOpened_CallbackMethodCalled()
+            throws RemoteException {
+        assumeTrue(SdkLevel.isAtLeastV()); // Test should only run on V+ devices.
+        // Mocking necessary objects and behaviors
+        SessionHandle sessionHandle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        RangingSession rangingSession = new RangingSession(EXECUTOR, callback, adapter,
+                sessionHandle);
+
+        // Simulate the session opening
+        rangingSession.onRangingOpened();
+        rangingSession.onHybridSessionControleeConfigured(PARAMS);
+
+        // Verify that the callback method onHybridSessionControleeConfigured() is called once
+        // with the correct parameters.
+        verify(callback).onHybridSessionControleeConfigured(PARAMS);
+    }
+
+    @Test
+    public void
+            testOnHybridSessionControleeConfigurationFailed_WhenSessionOpenedCallbackCalled()
+            throws RemoteException {
+        assumeTrue(SdkLevel.isAtLeastV()); // Test should only run on V+ devices.
+        // Mocking necessary objects and behaviors
+        SessionHandle sessionHandle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        RangingSession rangingSession = new RangingSession(EXECUTOR, callback, adapter,
+                sessionHandle);
+
+        // Simulate the session opening
+        rangingSession.onRangingOpened();
+        rangingSession.onHybridSessionControleeConfigurationFailed(PARAMS);
+
+        // Verify that the callback method onHybridSessionControleeConfigurationFailed() is
+        // called once with the correct parameters.
+        verify(callback).onHybridSessionControleeConfigurationFailed(PARAMS);
     }
 
     @Test

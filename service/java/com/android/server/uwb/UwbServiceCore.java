@@ -888,21 +888,27 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     }
 
     /**
-     * Configure a Hybrid session.
+     * Configure a Hybrid session controller.
      */
-    public int setHybridSessionConfiguration(SessionHandle sessionHandle,
+    public void setHybridSessionControllerConfiguration(SessionHandle sessionHandle,
             PersistableBundle params) {
-        int status = UwbUciConstants.STATUS_CODE_FAILED;
         if (!isUwbEnabled()) {
             throw new IllegalStateException("Uwb is not enabled");
         }
-        try {
-            status = mSessionManager.setHybridSessionConfiguration(sessionHandle, params);
-            return status;
-        } catch (RemoteException e) {
-            Log.e(TAG, "Failed to set Hybrid Session Configuration", e);
+
+        mSessionManager.setHybridSessionControllerConfiguration(sessionHandle, params);
+    }
+
+    /**
+     * Configure a Hybrid session controlee.
+     */
+    public void setHybridSessionControleeConfiguration(SessionHandle sessionHandle,
+            PersistableBundle params) {
+        if (!isUwbEnabled()) {
+            throw new IllegalStateException("Uwb is not enabled");
         }
-        return status;
+
+        mSessionManager.setHybridSessionControleeConfiguration(sessionHandle, params);
     }
 
     private /* @UwbManager.AdapterStateCallback.State */ int getInternalAdapterState() {

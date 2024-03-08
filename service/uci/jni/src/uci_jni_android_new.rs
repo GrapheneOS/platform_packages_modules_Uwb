@@ -40,9 +40,10 @@ use uwb_core::params::{
     SetAppConfigResponse, UpdateTime,
 };
 use uwb_uci_packets::{
-    AppConfigTlvType, CapTlv, Controlee, Controlee_V2_0_16_Byte_Version,
-    Controlee_V2_0_32_Byte_Version, Controlees, PowerStats, ResetConfig, SessionState, SessionType,
-    StatusCode, UpdateMulticastListAction,
+    AppConfigTlvType, CapTlv, Controlee, ControleePhaseList, Controlee_V2_0_16_Byte_Version,
+    Controlee_V2_0_32_Byte_Version, Controlees, MacAddressIndicator, PhaseListExtendedMacAddress,
+    PhaseListShortMacAddress, PowerStats, ResetConfig, SessionState, SessionType, StatusCode,
+    UpdateMulticastListAction,
 };
 
 /// Macro capturing the name of the function calling this macro.
@@ -526,34 +527,80 @@ fn native_set_radar_app_configurations(
     uci_manager.android_set_radar_config(session_id as u32, tlvs)
 }
 
-fn parse_hybrid_config_phase_list_vec(
+fn parse_hybrid_controller_config_phase_list(
     number_of_phases: usize,
+    message_control: u8,
     byte_array: &[u8],
-) -> Result<Vec<PhaseList>> {
-    let mut parsed_phase_lists_len = 0;
-    let received_phase_list_len = byte_array.len();
-    let mut phase_lists = Vec::with_capacity(number_of_phases);
-    // The PhaseList consists of session handle as u32 in 4 bytes, Start Slot Index as u16
-    // in 2 byte and End Slot Index as u16 in 2 bytes
-    const PHASE_LIST_SIZE: usize = 8;
-    for chunk in byte_array.chunks_exact(PHASE_LIST_SIZE) {
-        let phase_list = PhaseList::parse(chunk).map_err(|_| Error::BadParameters)?;
-        parsed_phase_lists_len += PHASE_LIST_SIZE;
-        phase_lists.push(phase_list);
-    }
+) -> Result<PhaseList> {
+    const MAC_ADDRESS_BIT_MASK: u8 = 0x01;
+    let phase_list = match MacAddressIndicator::try_from(message_control & MAC_ADDRESS_BIT_MASK)
+        .map_err(|_| Error::BadParameters)?
+    {
+        MacAddressIndicator::ShortAddress => {
+            const PHASE_LIST_SHORT_ADDRESS_SIZE: usize = 11;
 
-    if parsed_phase_lists_len != received_phase_list_len {
-        return Err(Error::BadParameters);
-    }
-    Ok(phase_lists)
+            let phase_list_short = byte_array
+                .chunks(PHASE_LIST_SHORT_ADDRESS_SIZE)
+                .filter(|chunk| chunk.len() == PHASE_LIST_SHORT_ADDRESS_SIZE)
+                .map(|chunk| {
+                    let session_token = u32::from_le_bytes(chunk[0..4].try_into().unwrap());
+                    let start_slot_index = u16::from_le_bytes(chunk[4..6].try_into().unwrap());
+                    let end_slot_index = u16::from_le_bytes(chunk[6..8].try_into().unwrap());
+                    let phase_participation = chunk[8];
+                    let mac_address = [chunk[9], chunk[10]];
+                    PhaseListShortMacAddress {
+                        session_token,
+                        start_slot_index,
+                        end_slot_index,
+                        phase_participation,
+                        mac_address,
+                    }
+                })
+                .collect::<Vec<PhaseListShortMacAddress>>();
+            if phase_list_short.len() != number_of_phases {
+                return Err(Error::BadParameters);
+            }
+            PhaseList::ShortMacAddress(phase_list_short)
+        }
+        MacAddressIndicator::ExtendedAddress => {
+            const PHASE_LIST_EXTENDED_ADDRESS_SIZE: usize = 17;
+            let phase_list_extended = byte_array
+                .chunks(PHASE_LIST_EXTENDED_ADDRESS_SIZE)
+                .filter(|chunk| chunk.len() == PHASE_LIST_EXTENDED_ADDRESS_SIZE)
+                .map(|chunk| {
+                    let session_token = u32::from_le_bytes(chunk[0..4].try_into().unwrap());
+                    let start_slot_index = u16::from_le_bytes(chunk[4..6].try_into().unwrap());
+                    let end_slot_index = u16::from_le_bytes(chunk[6..8].try_into().unwrap());
+                    let phase_participation = chunk[8];
+                    let mut mac_address = [0; 8];
+                    mac_address.copy_from_slice(&chunk[9..17]);
+                    PhaseListExtendedMacAddress {
+                        session_token,
+                        start_slot_index,
+                        end_slot_index,
+                        phase_participation,
+                        mac_address,
+                    }
+                })
+                .collect::<Vec<PhaseListExtendedMacAddress>>();
+            if phase_list_extended.len() != number_of_phases {
+                return Err(Error::BadParameters);
+            }
+            PhaseList::ExtendedMacAddress(phase_list_extended)
+        }
+    };
+
+    Ok(phase_list)
 }
 
-/// Set hybrid session configurations. Return null JObject if failed.
+/// Set hybrid session controller configurations. Return null JObject if failed.
 #[no_mangle]
-pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSetHybridSessionConfigurations(
+#[allow(clippy::too_many_arguments)]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSetHybridSessionControllerConfigurations(
     env: JNIEnv,
     obj: JObject,
     session_id: jint,
+    message_control: jbyte,
     number_of_phases: jint,
     update_time: jbyteArray,
     phase_list: jbyteArray,
@@ -561,10 +608,11 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
 ) -> jbyte {
     debug!("{}: enter", function_name!());
     byte_result_helper(
-        native_set_hybrid_session_configurations(
+        native_set_hybrid_session_controller_configurations(
             env,
             obj,
             session_id,
+            message_control,
             number_of_phases,
             update_time,
             phase_list,
@@ -574,10 +622,12 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
     )
 }
 
-fn native_set_hybrid_session_configurations(
+#[allow(clippy::too_many_arguments)]
+fn native_set_hybrid_session_controller_configurations(
     env: JNIEnv,
     obj: JObject,
     session_id: jint,
+    message_control: jbyte,
     number_of_phases: jint,
     update_time: jbyteArray,
     phase_list: jbyteArray,
@@ -586,20 +636,86 @@ fn native_set_hybrid_session_configurations(
     let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
     let phase_list_bytes =
         env.convert_byte_array(phase_list).map_err(|_| Error::ForeignFunctionInterface)?;
-    let phase_list_vec =
-        parse_hybrid_config_phase_list_vec(number_of_phases as usize, &phase_list_bytes)?;
+    let phase_list = parse_hybrid_controller_config_phase_list(
+        number_of_phases as usize,
+        message_control as u8,
+        &phase_list_bytes,
+    )?;
 
     let update_time_bytes =
         env.convert_byte_array(update_time).map_err(|_| Error::ForeignFunctionInterface)?;
     let update_time_array: [u8; 8] =
         TryFrom::try_from(&update_time_bytes[..]).map_err(|_| Error::BadParameters)?;
 
-    uci_manager.session_set_hybrid_config(
+    uci_manager.session_set_hybrid_controller_config(
         session_id as u32,
+        message_control as u8,
         number_of_phases as u8,
         UpdateTime::new(&update_time_array).unwrap(),
-        phase_list_vec,
+        phase_list,
     )
+}
+
+fn parse_hybrid_controlee_config_phase_list(
+    number_of_phases: usize,
+    byte_array: &[u8],
+) -> Result<Vec<ControleePhaseList>> {
+    const CONTROLEE_PHASE_LIST_SIZE: usize = 5;
+    let controlee_phase_list = byte_array
+        .chunks(CONTROLEE_PHASE_LIST_SIZE)
+        .filter(|chunk| chunk.len() == CONTROLEE_PHASE_LIST_SIZE)
+        .map(|chunk| {
+            let session_token = u32::from_le_bytes(chunk[0..4].try_into().unwrap());
+            let phase_participation = chunk[4];
+            ControleePhaseList { session_token, phase_participation }
+        })
+        .collect::<Vec<ControleePhaseList>>();
+    if controlee_phase_list.len() != number_of_phases {
+        return Err(Error::BadParameters);
+    }
+
+    Ok(controlee_phase_list)
+}
+
+/// Set hybrid session controlee configurations. Return null JObject if failed.
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSetHybridSessionControleeConfigurations(
+    env: JNIEnv,
+    obj: JObject,
+    session_id: jint,
+    number_of_phases: jint,
+    phase_list: jbyteArray,
+    chip_id: JString,
+) -> jbyte {
+    debug!("{}: enter", function_name!());
+    byte_result_helper(
+        native_set_hybrid_session_controlee_configurations(
+            env,
+            obj,
+            session_id,
+            number_of_phases,
+            phase_list,
+            chip_id,
+        ),
+        function_name!(),
+    )
+}
+
+fn native_set_hybrid_session_controlee_configurations(
+    env: JNIEnv,
+    obj: JObject,
+    session_id: jint,
+    number_of_phases: jint,
+    phase_list: jbyteArray,
+    chip_id: JString,
+) -> Result<()> {
+    let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
+    let phase_list_bytes =
+        env.convert_byte_array(phase_list).map_err(|_| Error::ForeignFunctionInterface)?;
+    let controlee_phase_list =
+        parse_hybrid_controlee_config_phase_list(number_of_phases as usize, &phase_list_bytes)?;
+
+    uci_manager.session_set_hybrid_controlee_config(session_id as u32, controlee_phase_list)
 }
 
 fn create_get_config_response(tlvs: Vec<AppConfigTlv>, env: JNIEnv) -> Result<jbyteArray> {
