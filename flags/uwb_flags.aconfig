@@ -3,6 +3,7 @@ container: "com.android.uwb"
 
 flag {
     name: "query_timestamp_micros"
+    is_exported: true
     namespace: "uwb"
     description: "This flag controls whether querying timestamp is allowed"
     bug: "293919345"
@@ -10,6 +11,7 @@ flag {
 
 flag {
     name: "hybrid_session_support"
+    is_exported: true
     namespace: "uwb"
     description: "This flag controls hybrid session configuration support"
     bug: "293919345"
@@ -24,6 +26,7 @@ flag {
 
 flag {
     name: "reason_inband_session_stop"
+    is_exported: true
     namespace: "uwb"
     description: "Allow applications to receive callback when session was stopped due to inband signal"
     bug: "304476327"
@@ -52,6 +55,7 @@ flag {
 
 flag {
     name: "hw_state"
+    is_exported: true
     namespace: "uwb"
     description: "This flag enables the new hardware state APIs"
     bug: "322372275"
@@ -59,6 +63,7 @@ flag {
 
 flag {
     name: "data_transfer_phase_config"
+    is_exported: true
     namespace: "uwb"
     description: "Implement CR-1022, CR-1047: Used to update data transfer phase config"
     bug: "319596317"
