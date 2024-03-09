@@ -1123,6 +1123,117 @@ public class UwbManagerTest {
         verifyFiraRangingSession(firaOpenSessionParams, null, null);
     }
 
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
+    @RequiresFlagsEnabled("com.android.uwb.flags.query_timestamp_micros")
+    public void testQueryMaxDataSizeBytesWithNoPermission() throws Exception {
+        FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder()
+                .build();
+        verifyFiraRangingSession(
+                firaOpenSessionParams,
+                null,
+                (rangingSessionCallback) -> {
+                    CountDownLatch countDownLatch = new CountDownLatch(1);
+                    rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+                    UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+                    uiAutomation.dropShellPermissionIdentity();
+
+                    try {
+                        rangingSessionCallback.rangingSession.queryMaxDataSizeBytes();
+                        fail();
+                    } catch (SecurityException e) {
+                        /* pass */
+                        Log.i(TAG, "Failed with expected security exception: " + e);
+                    } finally {
+                        uiAutomation.adoptShellPermissionIdentity();
+                    }
+                });
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
+    @RequiresFlagsEnabled("com.android.uwb.flags.data_transfer_phase_config")
+    public void testsetDataTransferPhaseConfigWithNoPermission() throws Exception {
+        FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder()
+                .build();
+        verifyFiraRangingSession(
+                firaOpenSessionParams,
+                null,
+                (rangingSessionCallback) -> {
+                    CountDownLatch countDownLatch = new CountDownLatch(1);
+                    rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+                    UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+                    uiAutomation.dropShellPermissionIdentity();
+
+                    try {
+                        rangingSessionCallback.rangingSession.setDataTransferPhaseConfig(
+                                new PersistableBundle());
+                        fail();
+                    } catch (SecurityException e) {
+                        /* pass */
+                        Log.i(TAG, "Failed with expected security exception: " + e);
+                    } finally {
+                        uiAutomation.adoptShellPermissionIdentity();
+                    }
+                });
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
+    @RequiresFlagsEnabled("com.android.uwb.flags.hybrid_session_support")
+    public void testsetHybridSessionControllerConfigurationWithNoPermission() throws Exception {
+        FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder()
+                .build();
+        verifyFiraRangingSession(
+                firaOpenSessionParams,
+                null,
+                (rangingSessionCallback) -> {
+                    CountDownLatch countDownLatch = new CountDownLatch(1);
+                    rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+                    UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+                    uiAutomation.dropShellPermissionIdentity();
+
+                    try {
+                        rangingSessionCallback.rangingSession
+                                .setHybridSessionControllerConfiguration(new PersistableBundle());
+                        fail();
+                    } catch (SecurityException e) {
+                        /* pass */
+                        Log.i(TAG, "Failed with expected security exception: " + e);
+                    } finally {
+                        uiAutomation.adoptShellPermissionIdentity();
+                    }
+                });
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
+    @RequiresFlagsEnabled("com.android.uwb.flags.hybrid_session_support")
+    public void testsetHybridSessionControleeConfigurationWithNoPermission() throws Exception {
+        FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder()
+                .build();
+        verifyFiraRangingSession(
+                firaOpenSessionParams,
+                null,
+                (rangingSessionCallback) -> {
+                    CountDownLatch countDownLatch = new CountDownLatch(1);
+                    rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+                    UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+                    uiAutomation.dropShellPermissionIdentity();
+
+                    try {
+                        rangingSessionCallback.rangingSession
+                                .setHybridSessionControleeConfiguration(new PersistableBundle());
+                        fail();
+                    } catch (SecurityException e) {
+                        /* pass */
+                        Log.i(TAG, "Failed with expected security exception: " + e);
+                    } finally {
+                        uiAutomation.adoptShellPermissionIdentity();
+                    }
+                });
+    }
+
     @Ignore // Disabled in U as FiRa 2.0 is not fully formalized.
     @Test
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})

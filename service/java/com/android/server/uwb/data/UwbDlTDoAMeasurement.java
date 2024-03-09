@@ -59,7 +59,7 @@ public class UwbDlTDoAMeasurement {
         mAoaAzimuthFom = aoaAzimuthFom;
         mAoaElevation = toFloatFromQ9_7_Format(aoaElevation);
         mAoaElevationFom = aoaElevationFom;
-        mRssi = rssi;
+        mRssi = -(rssi / 2);
         mTxTimestamp = txTimestamp;
         mRxTimestamp = rxTimestamp;
         mAnchorCfo = toFloatFromQ6_10_Format(anchorCfo);

@@ -75,7 +75,7 @@ public class UwbRangingDataTest {
     private static final float TEST_AOA_DEST_ELEVATION = 37;
     private static final int TEST_AOA_DEST_ELEVATION_FOM = 90;
     private static final int TEST_SLOT_IDX = 10;
-    private static final int TEST_RSSI = -1;
+    private static final int TEST_RSSI = 127;
     private static final long TEST_TIMESTAMP = 500_000L;
     private static final int TEST_ANCHOR_CFO = 100;
     private static final int TEST_CFO = 200;
@@ -195,6 +195,8 @@ public class UwbRangingDataTest {
         assertThat(mUwbRangingData.getMacAddressMode()).isEqualTo(TEST_MAC_ADDRESS_MODE);
         assertThat(mUwbRangingData.getNoOfRangingMeasures()).isEqualTo(1);
         assertThat(mUwbRangingData.getRawNtfData()).isEqualTo(TEST_RAW_NTF_DATA);
+        assertThat(mUwbRangingData.getUwbDlTDoAMeasurements()[0].getRssi())
+                .isEqualTo(-(TEST_RSSI / 2));
 
         final String testString = "UwbRangingData { "
                 + " SeqCounter = " + TEST_SEQ_COUNTER

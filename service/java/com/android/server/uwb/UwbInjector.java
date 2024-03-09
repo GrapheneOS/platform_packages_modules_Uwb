@@ -19,6 +19,8 @@ package com.android.server.uwb;
 import static android.Manifest.permission.UWB_RANGING;
 import static android.permission.PermissionManager.PERMISSION_GRANTED;
 
+import static java.lang.Math.toRadians;
+
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.app.ActivityManager;
@@ -612,7 +614,7 @@ public class UwbInjector {
 
             // Fov requires an elevation and a spherical coord.
             if (cfg.isEnablePrimerFov()) {
-                builder.addPrimer(new FovPrimer(cfg.getPrimerFovDegree()));
+                builder.addPrimer(new FovPrimer((float) toRadians(cfg.getPrimerFovDegree())));
             }
 
             // Back azimuth detection requires true spherical.

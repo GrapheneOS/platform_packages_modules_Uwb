@@ -146,6 +146,7 @@ public class RangingController extends RangingDevice {
     @Override
     public synchronized int stopRanging() {
         int status = super.stopRanging();
+        mDynamicallyAddedPeers.clear();
         mRangingSessionCallback = null;
         return status;
     }

@@ -70,6 +70,10 @@ final class Conversions {
             com.google.uwb.support.dltdoa.DlTDoAMeasurement
                     dlTDoAMeasurement = com.google.uwb.support.dltdoa.DlTDoAMeasurement.fromBundle(
                     measurement.getRangingMeasurementMetadata());
+            // Return null if Dl-TDoA measurement is not valid.
+            if (dlTDoAMeasurement.getMessageControl() == 0) {
+                return null;
+            }
             dlTdoaMeasurement = new DlTdoaMeasurement(
                     dlTDoAMeasurement.getMessageType(),
                     dlTDoAMeasurement.getMessageControl(),

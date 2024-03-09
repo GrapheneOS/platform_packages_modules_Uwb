@@ -347,6 +347,7 @@ public class UwbTestUtils {
                     .setActiveRangingRounds(TEST_ACTIVE_RANGING_ROUNDS)
                     .setRoundIndex(TEST_ROUND_INDEX)
                     .build();
+            rangingMeasurementBuilder.setRssiDbm(-TEST_RSSI / 2);
             rangingMeasurementBuilder.setRangingMeasurementMetadata(dlTDoAMeasurement.toBundle());
         }
 
