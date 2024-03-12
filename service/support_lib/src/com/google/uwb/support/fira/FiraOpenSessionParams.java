@@ -348,9 +348,9 @@ public class FiraOpenSessionParams extends FiraParams {
             int filterType,
             int maxNumberOfMeasurements,
             boolean sessionDataTransferStatusNtfConfig,
-            @Nullable int referenceTimeBase,
-            @Nullable int referenceSessionHandle,
-            @Nullable int sessionOffsetInMicroSecond,
+            int referenceTimeBase,
+            int referenceSessionHandle,
+            int sessionOffsetInMicroSecond,
             int applicationDataEndpoint) {
         mProtocolVersion = protocolVersion;
         mSessionId = sessionId;
@@ -799,17 +799,14 @@ public class FiraOpenSessionParams extends FiraParams {
         return mSessionDataTransferStatusNtfConfig;
     }
 
-    @Nullable
     public int getReferenceTimeBase() {
         return mReferenceTimeBase;
     }
 
-    @Nullable
     public int getReferenceSessionHandle() {
         return mReferenceSessionHandle;
     }
 
-    @Nullable
     public int getSessionOffsetInMicroSeconds() {
         return mSessionOffsetInMicroSeconds;
     }
@@ -2038,7 +2035,7 @@ public class FiraOpenSessionParams extends FiraParams {
             return this;
         }
 
-        public FiraOpenSessionParams.Builder setSessionTimeBase(@Nullable int referenceTimeBase,
+        public FiraOpenSessionParams.Builder setSessionTimeBase(int referenceTimeBase,
                 int referenceSessionHandle, int sessionOffsetInMicroSecond) {
             mReferenceTimeBase = referenceTimeBase;
             mReferenceSessionHandle = referenceSessionHandle;

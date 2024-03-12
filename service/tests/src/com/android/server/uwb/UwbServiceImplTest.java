@@ -849,6 +849,7 @@ public class UwbServiceImplTest {
         assumeTrue(SdkLevel.isAtLeastV()); // Test should only run on V+ devices.
         final SessionHandle sessionHandle = mock(SessionHandle.class);
         PersistableBundle bundle = new PersistableBundle();
+        when(mFeatureFlags.dataTransferPhaseConfig()).thenReturn(true);
         mUwbServiceImpl.setDataTransferPhaseConfig(sessionHandle, bundle);
         verify(mUwbServiceCore).setDataTransferPhaseConfig(sessionHandle, bundle);
     }

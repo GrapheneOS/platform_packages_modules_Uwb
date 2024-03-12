@@ -388,6 +388,36 @@ public class UwbCountryCodeTest {
     }
 
     @Test
+    public void testWifiECallback_error() {
+        // Disable other sources (Geocoder) for the Wifi location error test.
+        when(mUwbInjector.isGeocoderPresent()).thenReturn(false);
+        when(mDeviceConfigFacade.isLocationUseForCountryCodeEnabled()).thenReturn(false);
+
+        doThrow(new SecurityException()).when(mWifiManager)
+                .registerActiveCountryCodeChangedCallback(any(), any());
+        mUwbCountryCode.initialize();
+
+        verify(mWifiManager).registerActiveCountryCodeChangedCallback(any(), any());
+        verify(mNativeUwbManager).setCountryCode(
+                DEFAULT_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
+        verify(mListener).onCountryCodeChanged(STATUS_CODE_OK, DEFAULT_COUNTRY_CODE);
+    }
+
+    @Test
+    public void testGeocodingLocation_error() {
+        doThrow(new IllegalArgumentException()).when(mLocation).getLatitude();
+        when(mLocation.getLongitude()).thenReturn(0.0);
+        mUwbCountryCode.initialize();
+
+        verify(mLocationManager).requestLocationUpdates(
+                anyString(), anyLong(), anyFloat(), mLocationListenerCaptor.capture());
+        mLocationListenerCaptor.getValue().onLocationChanged(mLocation);
+        verify(mNativeUwbManager).setCountryCode(
+                DEFAULT_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
+        verify(mListener).onCountryCodeChanged(STATUS_CODE_OK, DEFAULT_COUNTRY_CODE);
+    }
+
+    @Test
     public void testChangeInLocationCountryCode() {
         mUwbCountryCode.initialize();
         verify(mLocationManager).requestLocationUpdates(

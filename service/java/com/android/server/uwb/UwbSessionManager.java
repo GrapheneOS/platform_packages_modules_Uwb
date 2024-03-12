@@ -1605,7 +1605,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     uwbSession, UwbSessionNotificationHelper.convertUciStatusToParam(
                     uwbSession.getProtocolName(), status));
         } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+            Log.e(TAG, "Exception while executing task " + e);
         }
 
         if (status != UwbUciConstants.STATUS_CODE_OK) {

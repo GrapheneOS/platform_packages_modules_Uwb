@@ -177,8 +177,17 @@ public class UwbCountryCode {
                 mHandler.post(() -> setLocationCountryCode(countryCode));
             }
         };
-        mGeocoder.getFromLocation(
-                location.getLatitude(), location.getLongitude(), 1, geocodeListener);
+        try {
+            mGeocoder.getFromLocation(
+                    location.getLatitude(), location.getLongitude(), 1, geocodeListener);
+        } catch (IllegalArgumentException e) {
+            // Wrong Type of Latitude and Longitude return from getFromLocation.
+            Log.e(TAG, "Exception while fetching latitude/longitude from location", e);
+
+            // Call setCountryCode() to update country code from other sources.
+            mLocationCountryCode = null;
+            setCountryCode(false);
+        }
     }
 
     /**
@@ -209,9 +218,16 @@ public class UwbCountryCode {
                 },
                 new IntentFilter(TelephonyManager.ACTION_NETWORK_COUNTRY_CHANGED),
                 null, mHandler);
-        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI)) {
-            mContext.getSystemService(WifiManager.class).registerActiveCountryCodeChangedCallback(
-                    new HandlerExecutor(mHandler), new WifiCountryCodeCallback());
+        try {
+            if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI)) {
+                mContext.getSystemService(WifiManager.class)
+                        .registerActiveCountryCodeChangedCallback(
+                            new HandlerExecutor(mHandler), new WifiCountryCodeCallback());
+            }
+        } catch (SecurityException e) {
+            // failed to register WifiCountryCodeCallback
+            Log.e(TAG, "failed to register WifiCountryCodeCallback", e);
+            mWifiCountryCode = null;
         }
         if (mUwbInjector.getDeviceConfigFacade().isLocationUseForCountryCodeEnabled() &&
                 mUwbInjector.isGeocoderPresent()) {
@@ -338,19 +354,25 @@ public class UwbCountryCode {
         if (mOverrideCountryCode != null) {
             return mOverrideCountryCode;
         }
-        for (TelephonyCountryCodeSlotInfo telephonyCountryCodeInfoSlot :
-                mTelephonyCountryCodeInfoPerSlot.values()) {
-            if (telephonyCountryCodeInfoSlot.countryCode != null) {
-                return telephonyCountryCodeInfoSlot.countryCode;
+        if (mTelephonyCountryCodeInfoPerSlot != null) {
+            for (TelephonyCountryCodeSlotInfo telephonyCountryCodeInfoSlot :
+                    mTelephonyCountryCodeInfoPerSlot.values()) {
+                if (telephonyCountryCodeInfoSlot != null
+                        && telephonyCountryCodeInfoSlot.countryCode != null) {
+                    return telephonyCountryCodeInfoSlot.countryCode;
+                }
             }
         }
         if (mWifiCountryCode != null) {
             return mWifiCountryCode;
         }
-        for (TelephonyCountryCodeSlotInfo telephonyCountryCodeInfoSlot :
-                mTelephonyCountryCodeInfoPerSlot.values()) {
-            if (telephonyCountryCodeInfoSlot.lastKnownCountryCode != null) {
-                return telephonyCountryCodeInfoSlot.lastKnownCountryCode;
+        if (mTelephonyCountryCodeInfoPerSlot != null) {
+            for (TelephonyCountryCodeSlotInfo telephonyCountryCodeInfoSlot :
+                    mTelephonyCountryCodeInfoPerSlot.values()) {
+                if (telephonyCountryCodeInfoSlot != null
+                        && telephonyCountryCodeInfoSlot.lastKnownCountryCode != null) {
+                    return telephonyCountryCodeInfoSlot.lastKnownCountryCode;
+                }
             }
         }
         if (mLocationCountryCode != null) {
