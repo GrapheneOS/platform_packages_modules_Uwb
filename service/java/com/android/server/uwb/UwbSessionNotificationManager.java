@@ -47,6 +47,7 @@ import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccRangingReconfiguredParams;
 import com.google.uwb.support.dltdoa.DlTDoAMeasurement;
+import com.google.uwb.support.fira.FiraDataTransferPhaseConfigStatusCode;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.oemextension.RangingReportMetadata;
@@ -487,11 +488,15 @@ public class UwbSessionNotificationManager {
 
     /** Notify that data transfer phase config setting is successful. */
     public void onDataTransferPhaseConfigured(UwbSession uwbSession,
-            PersistableBundle parameters) {
+            int dataTransferPhaseConfigStatus) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        FiraDataTransferPhaseConfigStatusCode statusCode =
+                new FiraDataTransferPhaseConfigStatusCode.Builder()
+                        .setStatusCode(dataTransferPhaseConfigStatus).build();
         try {
-            uwbRangingCallbacks.onDataTransferPhaseConfigured(sessionHandle, parameters);
+            uwbRangingCallbacks.onDataTransferPhaseConfigured(
+                    sessionHandle, statusCode.toBundle());
             Log.i(TAG, "IUwbRangingCallbacks - onDataTransferPhaseConfigured");
         } catch (Exception e) {
             Log.e(TAG, "IUwbRangingCallbacks - onDataTransferPhaseConfigured : Failed");
@@ -501,11 +506,18 @@ public class UwbSessionNotificationManager {
 
     /** Notify that data transfer phase config setting is failed. */
     public void onDataTransferPhaseConfigFailed(UwbSession uwbSession,
-            PersistableBundle parameters) {
+            int dataTransferPhaseConfigStatus) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        int reason =
+                UwbSessionNotificationHelper.convertDataTransferPhaseConfigStatusToApiReasonCode(
+                        dataTransferPhaseConfigStatus);
+        FiraDataTransferPhaseConfigStatusCode statusCode =
+                new FiraDataTransferPhaseConfigStatusCode.Builder()
+                        .setStatusCode(dataTransferPhaseConfigStatus).build();
         try {
-            uwbRangingCallbacks.onDataTransferPhaseConfigFailed(sessionHandle, parameters);
+            uwbRangingCallbacks.onDataTransferPhaseConfigFailed(sessionHandle,
+                    reason, statusCode.toBundle());
             Log.i(TAG, "IUwbRangingCallbacks - onDataTransferPhaseConfigFailed");
         } catch (Exception e) {
             Log.e(TAG, "IUwbRangingCallbacks - onDataTransferPhaseConfigFailed : Failed");
@@ -549,6 +561,7 @@ public class UwbSessionNotificationManager {
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
         try {
             uwbRangingCallbacks.onHybridSessionControllerConfigurationFailed(sessionHandle,
+                    UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(status),
                     UwbSessionNotificationHelper.convertUciStatusToParam(
                             uwbSession.getProtocolName(), status));
             Log.i(TAG, "IUwbRangingCallbacks - onHybridSessionControllerConfigurationFailed");
@@ -580,6 +593,7 @@ public class UwbSessionNotificationManager {
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
         try {
             uwbRangingCallbacks.onHybridSessionControleeConfigurationFailed(sessionHandle,
+                    UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(status),
                     UwbSessionNotificationHelper.convertUciStatusToParam(
                             uwbSession.getProtocolName(), status));
             Log.i(TAG, "IUwbRangingCallbacks - onHybridSessionControleeConfigurationFailed");

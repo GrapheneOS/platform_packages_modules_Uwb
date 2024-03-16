@@ -249,7 +249,7 @@ oneway interface IUwbRangingCallbacks {
    * @param parameters protocol specific parameters for set data transfer phase config failure.
    */
   void onDataTransferPhaseConfigFailed(in SessionHandle sessionHandle,
-          in PersistableBundle parameters);
+          RangingChangeReason reason, in PersistableBundle parameters);
 
   /**
    * Invoked when data is received successfully from a remote device.
@@ -286,7 +286,7 @@ oneway interface IUwbRangingCallbacks {
    * success.
    */
   void onHybridSessionControllerConfigured(in SessionHandle sessionHandle,
-                        in PersistableBundle parameters);
+          in PersistableBundle parameters);
 
   /**
    * Invoked when set hybrid session controller configuration via {@link RangingSession#
@@ -298,7 +298,7 @@ oneway interface IUwbRangingCallbacks {
    * failure.
    */
   void onHybridSessionControllerConfigurationFailed(in SessionHandle sessionHandle,
-                            in PersistableBundle parameters);
+          RangingChangeReason reason, in PersistableBundle parameters);
 
   /**
    * Invoked when set hybrid session Controlee configuration via {@link RangingSession#
@@ -310,7 +310,7 @@ oneway interface IUwbRangingCallbacks {
    * success.
    */
   void onHybridSessionControleeConfigured(in SessionHandle sessionHandle,
-                        in PersistableBundle parameters);
+          in PersistableBundle parameters);
 
   /**
    * Invoked when set hybrid session Controlee configuration via {@link RangingSession#
@@ -322,7 +322,7 @@ oneway interface IUwbRangingCallbacks {
    * failure.
    */
   void onHybridSessionControleeConfigurationFailed(in SessionHandle sessionHandle,
-                            in PersistableBundle parameters);
+          RangingChangeReason reason, in PersistableBundle parameters);
 
   void onServiceDiscovered(in SessionHandle sessionHandle, in PersistableBundle parameters);
 

@@ -415,7 +415,7 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks.Stub {
 
     @Override
     public void onDataTransferPhaseConfigFailed(SessionHandle sessionHandle,
-            PersistableBundle parameters) {
+            @RangingChangeReason int reason, PersistableBundle parameters) {
         synchronized (this) {
             if (!hasSession(sessionHandle)) {
                 Log.w(mTag, "onDataTransferPhaseConfigFailed - received unknown SessionHandle: "
@@ -424,7 +424,7 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks.Stub {
             }
 
             RangingSession session = mRangingSessionTable.get(sessionHandle);
-            session.onDataTransferPhaseConfigFailed(parameters);
+            session.onDataTransferPhaseConfigFailed(reason, parameters);
         }
     }
 
@@ -490,7 +490,7 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks.Stub {
 
     @Override
     public void onHybridSessionControllerConfigurationFailed(SessionHandle sessionHandle,
-            PersistableBundle parameters) {
+            @RangingChangeReason int reason, PersistableBundle parameters) {
         synchronized (this) {
             if (!hasSession(sessionHandle)) {
                 Log.w(mTag, "onHybridSessionControllerConfigurationFailed - received"
@@ -499,7 +499,7 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks.Stub {
             }
 
             RangingSession session = mRangingSessionTable.get(sessionHandle);
-            session.onHybridSessionControllerConfigurationFailed(parameters);
+            session.onHybridSessionControllerConfigurationFailed(reason, parameters);
         }
     }
 
@@ -520,7 +520,7 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks.Stub {
 
     @Override
     public void onHybridSessionControleeConfigurationFailed(SessionHandle sessionHandle,
-            PersistableBundle parameters) {
+            @RangingChangeReason int reason, PersistableBundle parameters) {
         synchronized (this) {
             if (!hasSession(sessionHandle)) {
                 Log.w(mTag, "onHybridSessionControleeConfigurationFailed - received"
@@ -529,7 +529,7 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks.Stub {
             }
 
             RangingSession session = mRangingSessionTable.get(sessionHandle);
-            session.onHybridSessionControleeConfigurationFailed(parameters);
+            session.onHybridSessionControleeConfigurationFailed(reason, parameters);
         }
     }
 

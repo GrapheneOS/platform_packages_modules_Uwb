@@ -616,11 +616,11 @@ public class RangingSessionTest {
 
         // Simulate the session opening
         rangingSession.onRangingOpened();
-        rangingSession.onHybridSessionControllerConfigurationFailed(PARAMS);
+        rangingSession.onHybridSessionControllerConfigurationFailed(REASON, PARAMS);
 
         // Verify that the callback method onHybridSessionControllerConfigurationFailed() is
         // called once with the correct parameters.
-        verify(callback).onHybridSessionControllerConfigurationFailed(PARAMS);
+        verify(callback).onHybridSessionControllerConfigurationFailed(REASON, PARAMS);
     }
 
     @Test
@@ -703,11 +703,11 @@ public class RangingSessionTest {
 
         // Simulate the session opening
         rangingSession.onRangingOpened();
-        rangingSession.onHybridSessionControleeConfigurationFailed(PARAMS);
+        rangingSession.onHybridSessionControleeConfigurationFailed(REASON, PARAMS);
 
         // Verify that the callback method onHybridSessionControleeConfigurationFailed() is
         // called once with the correct parameters.
-        verify(callback).onHybridSessionControleeConfigurationFailed(PARAMS);
+        verify(callback).onHybridSessionControleeConfigurationFailed(REASON, PARAMS);
     }
 
     @Test

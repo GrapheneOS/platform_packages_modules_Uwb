@@ -382,7 +382,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                   PersistableBundle params) {
         }
 
-        public void onDataTransferPhaseConfigFailed(SessionHandle sessionHandle,
+        public void onDataTransferPhaseConfigFailed(SessionHandle sessionHandle, int reason,
                 PersistableBundle params) {}
 
         public void onDataReceived(SessionHandle sessionHandle, UwbAddress uwbAddress,
@@ -402,13 +402,13 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 PersistableBundle parameters) {}
 
         public void onHybridSessionControllerConfigurationFailed(SessionHandle sessionHandle,
-                PersistableBundle parameters) {}
+                int reason, PersistableBundle parameters) {}
 
         public void onHybridSessionControleeConfigured(SessionHandle sessionHandle,
                 PersistableBundle parameters) {}
 
         public void onHybridSessionControleeConfigurationFailed(SessionHandle sessionHandle,
-                PersistableBundle parameters) {}
+                int reason, PersistableBundle parameters) {}
     }
 
 

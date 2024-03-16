@@ -130,11 +130,11 @@ package android.uwb {
     method public default void onDataReceived(@NonNull android.uwb.UwbAddress, @NonNull android.os.PersistableBundle, @NonNull byte[]);
     method public default void onDataSendFailed(@NonNull android.uwb.UwbAddress, int, @NonNull android.os.PersistableBundle);
     method public default void onDataSent(@NonNull android.uwb.UwbAddress, @NonNull android.os.PersistableBundle);
-    method @FlaggedApi("com.android.uwb.flags.data_transfer_phase_config") public default void onDataTransferPhaseConfigFailed(@NonNull android.os.PersistableBundle);
+    method @FlaggedApi("com.android.uwb.flags.data_transfer_phase_config") public default void onDataTransferPhaseConfigFailed(int, @NonNull android.os.PersistableBundle);
     method @FlaggedApi("com.android.uwb.flags.data_transfer_phase_config") public default void onDataTransferPhaseConfigured(@NonNull android.os.PersistableBundle);
-    method @FlaggedApi("com.android.uwb.flags.hybrid_session_support") public default void onHybridSessionControleeConfigurationFailed(@NonNull android.os.PersistableBundle);
+    method @FlaggedApi("com.android.uwb.flags.hybrid_session_support") public default void onHybridSessionControleeConfigurationFailed(int, @NonNull android.os.PersistableBundle);
     method @FlaggedApi("com.android.uwb.flags.hybrid_session_support") public default void onHybridSessionControleeConfigured(@NonNull android.os.PersistableBundle);
-    method @FlaggedApi("com.android.uwb.flags.hybrid_session_support") public default void onHybridSessionControllerConfigurationFailed(@NonNull android.os.PersistableBundle);
+    method @FlaggedApi("com.android.uwb.flags.hybrid_session_support") public default void onHybridSessionControllerConfigurationFailed(int, @NonNull android.os.PersistableBundle);
     method @FlaggedApi("com.android.uwb.flags.hybrid_session_support") public default void onHybridSessionControllerConfigured(@NonNull android.os.PersistableBundle);
     method public void onOpenFailed(int, @NonNull android.os.PersistableBundle);
     method public void onOpened(@NonNull android.uwb.RangingSession);

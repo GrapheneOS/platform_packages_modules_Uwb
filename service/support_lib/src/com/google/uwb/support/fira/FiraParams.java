@@ -649,13 +649,13 @@ public abstract class FiraParams extends Params {
     @IntDef(
             value = {
                     STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_DTPCM_CONFIG_SUCCESS,
-                    STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_ERROR_DUPLICATE_SLOT_ASSIGMENT
+                    STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_ERROR_DUPLICATE_SLOT_ASSIGNMENT
             })
     public @interface DataTransferPhaseConfigNtfStatusCode {}
 
     public static final int STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_DTPCM_CONFIG_SUCCESS = 0;
     public static final int
-            STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_ERROR_DUPLICATE_SLOT_ASSIGMENT = 1;
+            STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_ERROR_DUPLICATE_SLOT_ASSIGNMENT = 1;
 
     /** State change reason codes defined in UCI table-15 */
     @IntDef(

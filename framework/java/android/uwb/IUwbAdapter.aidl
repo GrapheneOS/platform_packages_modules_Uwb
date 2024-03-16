@@ -285,7 +285,7 @@ interface IUwbAdapter {
     * invoked.
     *
     * <p>On failure to send the data transfer phase config,
-    * {@link RangingSession.Callback#onDataTransferPhaseConfigFailed(PersistableBundle)} is
+    * {@link RangingSession.Callback#onDataTransferPhaseConfigFailed(int, PersistableBundle)} is
     * invoked.
     *
     * @param params Protocol specific data transfer phase configuration parameters

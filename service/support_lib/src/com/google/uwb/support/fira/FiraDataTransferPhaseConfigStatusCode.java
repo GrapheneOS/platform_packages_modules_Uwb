@@ -27,7 +27,7 @@ public class FiraDataTransferPhaseConfigStatusCode extends FiraParams {
 
     @DataTransferPhaseConfigNtfStatusCode private final int mStatusCode;
 
-    private static final String KEY_STATUS_CODE = "multicast_list_update_status_code";
+    private static final String KEY_STATUS_CODE = "data_transfer_phase_config_status_code";
 
     private FiraDataTransferPhaseConfigStatusCode(
             @DataTransferPhaseConfigNtfStatusCode int statusCode) {

@@ -5468,15 +5468,17 @@ public class UwbSessionManagerTest {
         mTestLooper.dispatchAll();
         verify(mUwbSessionNotificationManager)
                 .onDataTransferPhaseConfigured(
-                isA(UwbSession.class), isA(PersistableBundle.class));
+                isA(UwbSession.class),
+                eq(UwbUciConstants.STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_DTPCM_CONFIG_SUCCESS));
 
         //failed to set the configuration
         mUwbSessionManager.onDataTransferPhaseConfigNotificationReceived(uwbSession.getSessionId(),
                 UwbUciConstants
-                .STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_ERROR_DUPLICATE_SLOT_ASSIGMENT);
+                .STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_ERROR_DUPLICATE_SLOT_ASSIGNMENT);
         mTestLooper.dispatchAll();
         verify(mUwbSessionNotificationManager).onDataTransferPhaseConfigFailed(
-                isA(UwbSession.class), isA(PersistableBundle.class));
+                isA(UwbSession.class),
+                eq(UwbUciConstants.STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_ERROR_DUPLICATE_SLOT_ASSIGNMENT));
     }
 
 

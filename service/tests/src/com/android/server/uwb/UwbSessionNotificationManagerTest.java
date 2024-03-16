@@ -660,20 +660,67 @@ public class UwbSessionNotificationManagerTest {
 
     @Test
     public void testOnDataTransferPhaseConfigured() throws Exception {
+        int dataTransferPhaseConfigStatus =
+                UwbUciConstants.STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_DTPCM_CONFIG_SUCCESS;
         mUwbSessionNotificationManager.onDataTransferPhaseConfigured(mUwbSession,
-                PERSISTABLE_BUNDLE);
+                dataTransferPhaseConfigStatus);
 
         verify(mIUwbRangingCallbacks).onDataTransferPhaseConfigured(eq(mSessionHandle),
-                eq(PERSISTABLE_BUNDLE));
+                argThat(p -> (p.getInt("data_transfer_phase_config_status_code"))
+                      == dataTransferPhaseConfigStatus));
     }
 
     @Test
     public void testOnDataTransferPhaseConfigFailed() throws Exception {
+        int dataTransferPhaseConfigStatus =
+                UwbUciConstants.STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_ERROR_DUPLICATE_SLOT_ASSIGNMENT;
         mUwbSessionNotificationManager.onDataTransferPhaseConfigFailed(mUwbSession,
-                PERSISTABLE_BUNDLE);
+                dataTransferPhaseConfigStatus);
 
         verify(mIUwbRangingCallbacks).onDataTransferPhaseConfigFailed(eq(mSessionHandle),
-                eq(PERSISTABLE_BUNDLE));
+                eq(RangingChangeReason.PROTOCOL_SPECIFIC),
+                argThat(p -> (p.getInt("data_transfer_phase_config_status_code"))
+                      == dataTransferPhaseConfigStatus));
+    }
+
+    @Test
+    public void testOnHybridSessionControllerConfigured() throws Exception {
+        mUwbSessionNotificationManager.onHybridSessionControllerConfigured(mUwbSession,
+                UwbUciConstants.STATUS_CODE_OK);
+
+        verify(mIUwbRangingCallbacks).onHybridSessionControllerConfigured(eq(mSessionHandle),
+                argThat(p -> (p.getInt("status_code")) == UwbUciConstants.STATUS_CODE_OK));
+    }
+
+    @Test
+    public void testOnHybridSessionControllerConfigurationFailed() throws Exception {
+        mUwbSessionNotificationManager.onHybridSessionControllerConfigurationFailed(mUwbSession,
+                UwbUciConstants.STATUS_CODE_FAILED);
+
+        verify(mIUwbRangingCallbacks).onHybridSessionControllerConfigurationFailed(
+                eq(mSessionHandle),
+                eq(RangingChangeReason.UNKNOWN),
+                argThat(p -> (p.getInt("status_code")) == UwbUciConstants.STATUS_CODE_FAILED));
+    }
+
+    @Test
+    public void testOnHybridSessionControleeConfigured() throws Exception {
+        mUwbSessionNotificationManager.onHybridSessionControleeConfigured(mUwbSession,
+                UwbUciConstants.STATUS_CODE_OK);
+
+        verify(mIUwbRangingCallbacks).onHybridSessionControleeConfigured(eq(mSessionHandle),
+                argThat(p -> (p.getInt("status_code")) == UwbUciConstants.STATUS_CODE_OK));
+    }
+
+    @Test
+    public void testOnHybridSessionControleeConfigurationFailed() throws Exception {
+        mUwbSessionNotificationManager.onHybridSessionControleeConfigurationFailed(mUwbSession,
+                UwbUciConstants.STATUS_CODE_FAILED);
+
+        verify(mIUwbRangingCallbacks).onHybridSessionControleeConfigurationFailed(
+                eq(mSessionHandle),
+                eq(RangingChangeReason.UNKNOWN),
+                argThat(p -> (p.getInt("status_code")) == UwbUciConstants.STATUS_CODE_FAILED));
     }
 
     @Test

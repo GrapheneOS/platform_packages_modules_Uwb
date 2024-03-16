@@ -104,6 +104,24 @@ public class UwbSessionNotificationHelper {
     }
 
     /**
+     * Convert UCI status code received in SESSION_DATA_TRANSFER_PHASE_CONFIGURATION_NTF to
+     * an API reason code.
+     */
+    public static int convertDataTransferPhaseConfigStatusToApiReasonCode(
+            int dataTransferPhaseConfigStatus) {
+        int rangingChangeReason = RangingChangeReason.UNKNOWN;
+        switch (dataTransferPhaseConfigStatus) {
+            case UwbUciConstants.STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_DTPCM_CONFIG_SUCCESS:
+                rangingChangeReason = RangingChangeReason.LOCAL_API;
+                break;
+            case UwbUciConstants.STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_ERROR_DUPLICATE_SLOT_ASSIGNMENT:
+                rangingChangeReason = RangingChangeReason.PROTOCOL_SPECIFIC;
+                break;
+        }
+        return rangingChangeReason;
+    }
+
+    /**
      * Convert UCI reason code values to UCI status code, as some of the callbacks expect to get
      * the latter.
      */

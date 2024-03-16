@@ -99,7 +99,6 @@ import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
 import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdateStatus;
 import com.google.uwb.support.fira.FiraDataTransferPhaseConfig;
 import com.google.uwb.support.fira.FiraDataTransferPhaseConfig.FiraDataTransferPhaseManagementList;
-import com.google.uwb.support.fira.FiraDataTransferPhaseConfigStatusCode;
 import com.google.uwb.support.fira.FiraHybridSessionControleeConfig;
 import com.google.uwb.support.fira.FiraHybridSessionControllerConfig;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
@@ -420,17 +419,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             return;
         }
 
-        FiraDataTransferPhaseConfigStatusCode statusCode =
-                new FiraDataTransferPhaseConfigStatusCode.Builder()
-                .setStatusCode(dataTransferPhaseConfigStatus).build();
-
         if (dataTransferPhaseConfigStatus
                 == UwbUciConstants.STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_DTPCM_CONFIG_SUCCESS) {
-            mSessionNotificationManager.onDataTransferPhaseConfigured(uwbSession,
-                    statusCode.toBundle());
+            mSessionNotificationManager.onDataTransferPhaseConfigured(
+                    uwbSession, dataTransferPhaseConfigStatus);
         } else {
-            mSessionNotificationManager.onDataTransferPhaseConfigFailed(uwbSession,
-                    statusCode.toBundle());
+            mSessionNotificationManager.onDataTransferPhaseConfigFailed(
+                    uwbSession, dataTransferPhaseConfigStatus);
         }
     }
 
@@ -1601,17 +1596,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     IUwbAdapter.SESSION_DATA_TRANSFER_PHASE_CONFIG_THRESHOLD_MS);
         } catch (TimeoutException e) {
             Log.e(TAG, "Failed to set session data transfer phase config : TIMEOUT");
-            mSessionNotificationManager.onDataTransferPhaseConfigFailed(
-                    uwbSession, UwbSessionNotificationHelper.convertUciStatusToParam(
-                    uwbSession.getProtocolName(), status));
+            mSessionNotificationManager.onDataTransferPhaseConfigFailed(uwbSession, status);
         } catch (InterruptedException | ExecutionException e) {
             Log.e(TAG, "Exception while executing task " + e);
         }
 
         if (status != UwbUciConstants.STATUS_CODE_OK) {
-            mSessionNotificationManager.onDataTransferPhaseConfigFailed(
-                    uwbSession, UwbSessionNotificationHelper.convertUciStatusToParam(
-                    uwbSession.getProtocolName(), status));
+            mSessionNotificationManager.onDataTransferPhaseConfigFailed(uwbSession, status);
         }
     }
 
