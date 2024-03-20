@@ -451,8 +451,8 @@ public class UwbCountryCode {
      */
     public static boolean isValid(String countryCode) {
         return countryCode != null && countryCode.length() == 2
-                && countryCode.chars().allMatch(Character::isLetterOrDigit)
-                && !countryCode.equals(DEFAULT_COUNTRY_CODE);
+                && !countryCode.equals(DEFAULT_COUNTRY_CODE)
+                && countryCode.chars().allMatch(Character::isLetter);
     }
 
     /**
