@@ -853,7 +853,8 @@ public class FiraOpenSessionParams extends FiraParams {
         // Always store address as long in bundle.
         bundle.putLong(KEY_DEVICE_ADDRESS, uwbAddressToLong(mDeviceAddress));
 
-        if (mDeviceRole != RANGING_DEVICE_DT_TAG) {
+        if (mDeviceRole != RANGING_DEVICE_DT_TAG &&
+            mScheduledMode != CONTENTION_BASED_RANGING) {
             // Dest Address list needs to be converted to long array.
             long[] destAddressList = new long[mDestAddressList.size()];
             int i = 0;

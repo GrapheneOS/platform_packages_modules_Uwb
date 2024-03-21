@@ -864,8 +864,6 @@ public class FiraEncoderTest {
                     .setDeviceType(RANGING_DEVICE_TYPE_CONTROLLER)
                     .setDeviceRole(RANGING_DEVICE_ROLE_INITIATOR)
                     .setDeviceAddress(UwbAddress.fromBytes(new byte[]{0x4, 0x6}))
-                    // DestAddressList should be ignored and not set in the TLV params.
-                    .setDestAddressList(Arrays.asList(UwbAddress.fromBytes(new byte[]{0x4, 0x6})))
                     .setMultiNodeMode(MULTI_NODE_MODE_ONE_TO_MANY)
                     .setRangingRoundUsage(RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE)
                     .setStsConfig(STS_CONFIG_STATIC)
