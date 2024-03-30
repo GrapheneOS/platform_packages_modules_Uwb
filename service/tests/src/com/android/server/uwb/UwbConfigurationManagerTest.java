@@ -131,7 +131,6 @@ public class UwbConfigurationManagerTest {
 
         // Setup the unit tests to have the default behavior of using the UWBS UCI version.
         when(mUwbInjector.getFeatureFlags()).thenReturn(mFeatureFlags);
-        when(mFeatureFlags.useUwbsUciVersion()).thenReturn(true);
     }
 
     @Test

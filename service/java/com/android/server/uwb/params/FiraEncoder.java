@@ -148,10 +148,7 @@ public class FiraEncoder extends TlvEncoder {
             }
         }
 
-        FiraProtocolVersion firaProtocolVersion =
-                mUwbInjector.getFeatureFlags().useUwbsUciVersion()
-                        ? uwbsFiraProtocolVersion : params.getProtocolVersion();
-        if (firaProtocolVersion.getMajor() >= 2) {
+        if (uwbsFiraProtocolVersion.getMajor() >= 2) {
             // Initiation time Changed from 4 byte field to 8 byte field in version 2.
             if (deviceRole != FiraParams.RANGING_DEVICE_DT_TAG) {
                 // For FiRa 2.0+ device, prefer to set the Absolute UWB Initiation time.

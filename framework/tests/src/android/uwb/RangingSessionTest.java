@@ -256,6 +256,12 @@ public class RangingSessionTest {
         doAnswer(new DataSendAnswer(session)).when(adapter).sendData(any(), any(), any(), any());
         doAnswer(new StopAnswer(session)).when(adapter).stopRanging(any());
         doAnswer(new CloseAnswer(session)).when(adapter).closeRanging(any());
+        doAnswer(new DataTransferPhaseConfigAnswer(session)).when(adapter)
+                .setDataTransferPhaseConfig(any(), any());
+        doAnswer(new HybridSessionControllerConfigurationAnswer(session)).when(adapter)
+                .setHybridSessionControllerConfiguration(any(), any());
+        doAnswer(new HybridSessionControleeConfigurationAnswer(session)).when(adapter)
+                .setHybridSessionControleeConfiguration(any(), any());
 
         verifyThrowIllegalState(() -> session.reconfigure(PARAMS));
         verify(callback, times(0)).onReconfigured(any());
@@ -327,6 +333,39 @@ public class RangingSessionTest {
 
         session.onDataTransferPhaseConfigured(PARAMS);
         verify(callback, times(1)).onDataTransferPhaseConfigured(any());
+        session.setDataTransferPhaseConfig(PARAMS);
+        verify(callback, times(2)).onDataTransferPhaseConfigured(any());
+
+        session.onDataTransferPhaseConfigFailed(REASON_BAD_PARAMETERS, PARAMS);
+        verify(callback, times(1)).onDataTransferPhaseConfigFailed(
+                eq(REASON_BAD_PARAMETERS), eq(PARAMS));
+        verifyNoThrowIllegalState(() -> session.setDataTransferPhaseConfig(null));
+        verify(callback, times(1)).onDataTransferPhaseConfigFailed(
+                eq(REASON_BAD_PARAMETERS), eq(null));
+
+        session.onHybridSessionControllerConfigured(PARAMS);
+        verify(callback, times(1)).onHybridSessionControllerConfigured(any());
+        session.setHybridSessionControllerConfiguration(PARAMS);
+        verify(callback, times(2)).onHybridSessionControllerConfigured(any());
+
+        session.onHybridSessionControllerConfigurationFailed(REASON_BAD_PARAMETERS, PARAMS);
+        verify(callback, times(1)).onHybridSessionControllerConfigurationFailed(
+                eq(REASON_BAD_PARAMETERS), eq(PARAMS));
+        verifyNoThrowIllegalState(() -> session.setHybridSessionControllerConfiguration(null));
+        verify(callback, times(1)).onHybridSessionControllerConfigurationFailed(
+                eq(REASON_BAD_PARAMETERS), eq(null));
+
+        session.onHybridSessionControleeConfigured(PARAMS);
+        verify(callback, times(1)).onHybridSessionControleeConfigured(any());
+        session.setHybridSessionControleeConfiguration(PARAMS);
+        verify(callback, times(2)).onHybridSessionControleeConfigured(any());
+
+        session.onHybridSessionControleeConfigurationFailed(REASON_BAD_PARAMETERS, PARAMS);
+        verify(callback, times(1)).onHybridSessionControleeConfigurationFailed(
+                eq(REASON_BAD_PARAMETERS), eq(PARAMS));
+        verifyNoThrowIllegalState(() -> session.setHybridSessionControleeConfiguration(null));
+        verify(callback, times(1)).onHybridSessionControleeConfigurationFailed(
+                eq(REASON_BAD_PARAMETERS), eq(null));
 
         session.stop();
         verifyOpenState(session, true);
@@ -941,6 +980,58 @@ public class RangingSessionTest {
         @Override
         public Object answer(InvocationOnMock invocation) {
             mSession.onRangingClosed(REASON, PARAMS);
+            return null;
+        }
+    }
+
+    class DataTransferPhaseConfigAnswer extends AdapterAnswer {
+        DataTransferPhaseConfigAnswer(RangingSession session) {
+            super(session);
+        }
+
+        @Override
+        public Object answer(InvocationOnMock invocation) {
+            PersistableBundle argParams = invocation.getArgument(1);
+            System.out.println("AKJ: DataTransferPhaseConfigAnswer: argParams = " + argParams);
+            if (argParams != null) {
+                mSession.onDataTransferPhaseConfigured(PARAMS);
+            } else {
+                mSession.onDataTransferPhaseConfigFailed(REASON_BAD_PARAMETERS, null);
+            }
+            return null;
+        }
+    }
+
+    class HybridSessionControllerConfigurationAnswer extends AdapterAnswer {
+        HybridSessionControllerConfigurationAnswer(RangingSession session) {
+            super(session);
+        }
+
+        @Override
+        public Object answer(InvocationOnMock invocation) {
+            PersistableBundle argParams = invocation.getArgument(1);
+            if (argParams != null) {
+                mSession.onHybridSessionControllerConfigured(PARAMS);
+            } else {
+                mSession.onHybridSessionControllerConfigurationFailed(REASON_BAD_PARAMETERS, null);
+            }
+            return null;
+        }
+    }
+
+    class HybridSessionControleeConfigurationAnswer extends AdapterAnswer {
+        HybridSessionControleeConfigurationAnswer(RangingSession session) {
+            super(session);
+        }
+
+        @Override
+        public Object answer(InvocationOnMock invocation) {
+            PersistableBundle argParams = invocation.getArgument(1);
+            if (argParams != null) {
+                mSession.onHybridSessionControleeConfigured(PARAMS);
+            } else {
+                mSession.onHybridSessionControleeConfigurationFailed(REASON_BAD_PARAMETERS, null);
+            }
             return null;
         }
     }

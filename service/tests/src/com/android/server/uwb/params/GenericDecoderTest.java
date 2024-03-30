@@ -91,7 +91,6 @@ public class GenericDecoderTest {
         when(mDeviceConfigFacade.isCccSupportedSyncCodesLittleEndian()).thenReturn(true);
 
         when(mUwbInjector.getFeatureFlags()).thenReturn(mFeatureFlags);
-        when(mFeatureFlags.cr423CleanupIntervalScheduling()).thenReturn(true);
 
         mGenericDecoder = new GenericDecoder(mUwbInjector);
     }

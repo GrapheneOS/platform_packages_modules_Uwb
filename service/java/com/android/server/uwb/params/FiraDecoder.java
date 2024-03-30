@@ -566,13 +566,6 @@ public class FiraDecoder extends TlvDecoder {
             byte rangingTimeStructUci = tlvs.getByte(SUPPORTED_RANGING_TIME_STRUCT_VER_2_0);
             EnumSet<RangingTimeStructCapabilitiesFlag> rangingTimeStructFlag =
                     EnumSet.noneOf(RangingTimeStructCapabilitiesFlag.class);
-            // When CR-423 is implemented, do not parse for the "INTERVAL_BASED_SCHEDULING" bit.
-            if (!mUwbInjector.getFeatureFlags().cr423CleanupIntervalScheduling()) {
-                if (isBitSet(rangingTimeStructUci, INTERVAL_BASED_SCHEDULING)) {
-                    rangingTimeStructFlag.add(
-                            RangingTimeStructCapabilitiesFlag.HAS_INTERVAL_BASED_SCHEDULING_SUPPORT);
-                }
-            }
             if (isBitSet(rangingTimeStructUci, BLOCK_BASED_SCHEDULING)) {
                 rangingTimeStructFlag.add(
                         RangingTimeStructCapabilitiesFlag.HAS_BLOCK_BASED_SCHEDULING_SUPPORT);

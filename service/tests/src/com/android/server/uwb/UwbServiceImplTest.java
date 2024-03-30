@@ -849,7 +849,6 @@ public class UwbServiceImplTest {
         assumeTrue(SdkLevel.isAtLeastV()); // Test should only run on V+ devices.
         final SessionHandle sessionHandle = mock(SessionHandle.class);
         PersistableBundle bundle = new PersistableBundle();
-        when(mFeatureFlags.dataTransferPhaseConfig()).thenReturn(true);
         mUwbServiceImpl.setDataTransferPhaseConfig(sessionHandle, bundle);
         verify(mUwbServiceCore).setDataTransferPhaseConfig(sessionHandle, bundle);
     }
@@ -881,7 +880,6 @@ public class UwbServiceImplTest {
         final SessionHandle sessionHandle = mock(SessionHandle.class);
         final PersistableBundle parameters = new PersistableBundle();
 
-        when(mFeatureFlags.queryTimestampMicros()).thenReturn(true);
         when(mUwbServiceCore.queryMaxDataSizeBytes(sessionHandle)).thenReturn(MAX_DATA_SIZE);
         assertThat(mUwbServiceImpl.queryMaxDataSizeBytes(sessionHandle)).isEqualTo(MAX_DATA_SIZE);
 
@@ -895,7 +893,6 @@ public class UwbServiceImplTest {
         final SessionHandle sessionHandle = mock(SessionHandle.class);
         final PersistableBundle parameters = new PersistableBundle();
 
-        when(mFeatureFlags.hybridSessionSupport()).thenReturn(true);
         mUwbServiceImpl.setHybridSessionControllerConfiguration(sessionHandle, parameters);
 
         verify(mUwbServiceCore).setHybridSessionControllerConfiguration(sessionHandle, parameters);
@@ -908,7 +905,6 @@ public class UwbServiceImplTest {
         SessionHandle sessionHandle = mock(SessionHandle.class);
         PersistableBundle params = mock(PersistableBundle.class);
 
-        when(mFeatureFlags.hybridSessionSupport()).thenReturn(true);
         mUwbServiceImpl.setHybridSessionControleeConfiguration(sessionHandle, params);
 
         verify(mUwbServiceCore).setHybridSessionControleeConfiguration(sessionHandle, params);

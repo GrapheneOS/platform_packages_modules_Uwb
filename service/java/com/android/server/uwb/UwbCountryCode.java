@@ -260,12 +260,10 @@ public class UwbCountryCode {
         } else {
             // Fetch and configure the networkCountryIso() when the subscriptionInfoList is either
             // null or empty. This is done only when the country code is valid.
-            if (mUwbInjector.getFeatureFlags().useNetworkCountryIso()) {
-                String countryCode = mTelephonyManager.getNetworkCountryIso();
-                if (isValid(countryCode)) {
-                    setTelephonyCountryCodeAndLastKnownCountryCode(
-                            LAST_SIM_SLOT_INDEX, countryCode, null);
-                }
+            String countryCode = mTelephonyManager.getNetworkCountryIso();
+            if (isValid(countryCode)) {
+                setTelephonyCountryCodeAndLastKnownCountryCode(
+                        LAST_SIM_SLOT_INDEX, countryCode, null);
             }
         }
 

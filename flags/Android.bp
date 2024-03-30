@@ -55,6 +55,8 @@ java_library {
     ],
 }
 
+// The build rules below are currently unused, as usage of "libuwb_aconfig_flags_rust" and
+// "libuwb_aconfig_flags_rust_test" was removed as part of b/329709371.
 rust_aconfig_library {
     name: "libuwb_aconfig_flags_rust",
     crate_name: "uwb_aconfig_flags_rust",

@@ -166,7 +166,6 @@ public class FiraDecoderTest {
         MockitoAnnotations.initMocks(this);
 
         when(mUwbInjector.getFeatureFlags()).thenReturn(mFeatureFlags);
-        when(mFeatureFlags.cr423CleanupIntervalScheduling()).thenReturn(true);
 
         mFiraDecoder = new FiraDecoder(mUwbInjector);
     }

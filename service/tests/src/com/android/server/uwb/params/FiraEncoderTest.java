@@ -236,7 +236,6 @@ public class FiraEncoderTest {
 
         // Setup the unit tests to have the default behavior of using the UWBS UCI version.
         when(mUwbInjector.getFeatureFlags()).thenReturn(mFeatureFlags);
-        when(mFeatureFlags.useUwbsUciVersion()).thenReturn(true);
 
         mFiraEncoder = new FiraEncoder(mUwbInjector);
 
@@ -349,44 +348,9 @@ public class FiraEncoderTest {
         }
     }
 
-    // Test FiraEncoder behavior when the Fira ProtocolVersion comes from the given params.
-    @Test
-    public void testFiraOpenSessionParams_useFiraOpenSessionParamsProtocolVersion()
-            throws Exception {
-        // Revert to older behavior of using FiraProtocolVersion from the FiraOpenSessionParams.
-        when(mFeatureFlags.useUwbsUciVersion()).thenReturn(false);
-
-        // Test FiRa v1.1 Params
-        FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS_V_1_1.build();
-        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_DUMMY);
-
-        assertThat(tlvs.getNoOfParams()).isEqualTo(45);
-        assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionv11TlvData);
-
-        // Test FiRa v2.0 Params
-        if (SdkLevel.isAtLeastU()) {
-            // Test the default Fira v2.0 OpenSessionParams.
-            params = TEST_FIRA_OPEN_SESSION_PARAMS_V_2_0.build();
-            tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_DUMMY);
-
-            assertThat(tlvs.getNoOfParams()).isEqualTo(48);
-            assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionv20TlvData);
-
-            // Test the Fira v2.0 OpenSessionParams with ABSOLUTE_INITIATION_TIME set.
-            params = TEST_FIRA_OPEN_SESSION_PARAMS_V_2_0_ABSOLUTE_INITIATION_TIME.build();
-            tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_DUMMY);
-
-            assertThat(tlvs.getNoOfParams()).isEqualTo(48);
-            assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionv20AbsoluteInitiationTimeTlvData);
-
-        }
-    }
-
     // Test FiraEncoder behavior when the Fira ProtocolVersion comes from the UWBS UCI version.
     @Test
     public void testFiraOpenSessionParams_useUwbsUciVersion() throws Exception {
-        when(mFeatureFlags.useUwbsUciVersion()).thenReturn(true);
-
         // Test FiRa v1.1 Params
         FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS_V_1_1.build();
         TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_1_1);
