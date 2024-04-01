@@ -147,7 +147,16 @@ public class CccDecoder extends TlvDecoder {
         for (int i = 0; i < pulse_shape_combos.length; i++) {
             builder.addPulseShapeCombo(CccPulseShapeCombo.fromBytes(pulse_shape_combos, i));
         }
-        builder.setRanMultiplier(tlvs.getInt(CCC_SUPPORTED_RAN_MULTIPLIER));
+        int supportedRanMultiplier;
+        try {
+            supportedRanMultiplier = tlvs.getInt(CCC_SUPPORTED_RAN_MULTIPLIER);
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "CCC_SUPPORTED_RAN_MULTIPLIER not a 4 byte value");
+            // Try for single byte
+            supportedRanMultiplier = tlvs.getByte(CCC_SUPPORTED_RAN_MULTIPLIER);
+        }
+        builder.setRanMultiplier(supportedRanMultiplier);
+
         byte chapsPerslot = tlvs.getByte(CCC_SUPPORTED_CHAPS_PER_SLOT);
         if (isBitSet(chapsPerslot, CCC_CHAPS_PER_SLOT_3)) {
             builder.addChapsPerSlot(CHAPS_PER_SLOT_3);
