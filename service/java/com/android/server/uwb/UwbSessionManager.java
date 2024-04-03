@@ -91,6 +91,7 @@ import com.google.uwb.support.aliro.AliroStartRangingParams;
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
+import com.google.uwb.support.ccc.CccRangingReconfiguredParams;
 import com.google.uwb.support.ccc.CccRangingStartedParams;
 import com.google.uwb.support.ccc.CccRangingStoppedParams;
 import com.google.uwb.support.ccc.CccSpecificationParams;
@@ -1135,6 +1136,14 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             if (!triggeredByFgStateChange) {
                 uwbSession.updateFiraParamsOnReconfigure(rangingReconfigureParams);
             }
+        } else if (uwbSession.getProtocolName().equals(CccParams.PROTOCOL_NAME)
+                && params instanceof CccRangingReconfiguredParams) {
+            CccRangingReconfiguredParams rangingReconfigureParams =
+                    (CccRangingReconfiguredParams) params;
+            // Do not update mParams if this was triggered by framework.
+            if (!triggeredByFgStateChange) {
+                uwbSession.updateCccParamsOnReconfigure(rangingReconfigureParams);
+            }
         }
         mEventTask.execute(SESSION_RECONFIG_RANGING,
                 new ReconfigureEventParams(uwbSession, params, triggeredByFgStateChange));
@@ -2091,23 +2100,31 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
         private void handleReconfigure(UwbSession uwbSession, @Nullable Params param,
                 boolean triggeredByFgStateChange) {
-            if (!(param instanceof FiraRangingReconfigureParams)) {
+            if (!(param instanceof FiraRangingReconfigureParams
+                    || param instanceof CccRangingReconfiguredParams)) {
                 Log.e(TAG, "Invalid reconfigure params: " + param);
                 mSessionNotificationManager.onRangingReconfigureFailed(
                         uwbSession, UwbUciConstants.STATUS_CODE_INVALID_PARAM);
                 return;
             }
             Trace.beginSection("UWB#handleReconfigure");
-            FiraRangingReconfigureParams rangingReconfigureParams =
-                    (FiraRangingReconfigureParams) param;
+
+            final FiraRangingReconfigureParams rangingReconfigureParams =
+                    (param instanceof FiraRangingReconfigureParams)
+                        ? (FiraRangingReconfigureParams) param : null;
             // TODO(b/211445008): Consolidate to a single uwb thread.
             FutureTask<Integer> cmdTask = new FutureTask<>(
                     () -> {
                         int status = UwbUciConstants.STATUS_CODE_FAILED;
                         synchronized (uwbSession.getWaitObj()) {
                             // Handle SESSION_UPDATE_CONTROLLER_MULTICAST_LIST_CMD
-                            UwbAddress[] addrList = rangingReconfigureParams.getAddressList();
-                            Integer action = rangingReconfigureParams.getAction();
+                            UwbAddress[] addrList = null;
+                            Integer action = null;
+
+                            if (rangingReconfigureParams != null) {
+                                addrList = rangingReconfigureParams.getAddressList();
+                                action = rangingReconfigureParams.getAction();
+                            }
                             // Action will indicate if this is a controlee add/remove.
                             //  if null, it's a session configuration change.
                             if (action != null) {
@@ -3075,6 +3092,41 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         }
 
         // Return the Ranging Interval (Fira 2.0: Ranging Duration) in milliseconds.
+        public void updateCccParamsOnReconfigure(CccRangingReconfiguredParams reconfigureParams) {
+            // Need to update the reconfigure params from the CccRangingReconfiguredParams for
+            // Ccc session.
+            CccOpenRangingParams.Builder newParamsBuilder =
+                    new CccOpenRangingParams.Builder((CccOpenRangingParams) mParams);
+            if (reconfigureParams.getRangeDataNtfConfig() != null) {
+                newParamsBuilder.setRangeDataNtfConfig(reconfigureParams.getRangeDataNtfConfig());
+            }
+            if (reconfigureParams.getRangeDataProximityNear() != null) {
+                newParamsBuilder.setRangeDataNtfProximityNear(
+                        reconfigureParams.getRangeDataProximityNear());
+            }
+            if (reconfigureParams.getRangeDataProximityFar() != null) {
+                newParamsBuilder.setRangeDataNtfProximityFar(
+                        reconfigureParams.getRangeDataProximityFar());
+            }
+            if (reconfigureParams.getRangeDataAoaAzimuthLower() != null) {
+                newParamsBuilder.setRangeDataNtfAoaAzimuthLower(
+                        reconfigureParams.getRangeDataAoaAzimuthLower());
+            }
+            if (reconfigureParams.getRangeDataAoaAzimuthUpper() != null) {
+                newParamsBuilder.setRangeDataNtfAoaAzimuthUpper(
+                        reconfigureParams.getRangeDataAoaAzimuthUpper());
+            }
+            if (reconfigureParams.getRangeDataAoaElevationLower() != null) {
+                newParamsBuilder.setRangeDataNtfAoaElevationLower(
+                        reconfigureParams.getRangeDataAoaElevationLower());
+            }
+            if (reconfigureParams.getRangeDataAoaElevationUpper() != null) {
+                newParamsBuilder.setRangeDataNtfAoaElevationUpper(
+                        reconfigureParams.getRangeDataAoaElevationUpper());
+            }
+            this.mParams = newParamsBuilder.build();
+        }
+
         public int getCurrentFiraRangingIntervalMs() {
             FiraOpenSessionParams firaOpenSessionParams = (FiraOpenSessionParams) mParams;
             return firaOpenSessionParams.getRangingIntervalMs()
