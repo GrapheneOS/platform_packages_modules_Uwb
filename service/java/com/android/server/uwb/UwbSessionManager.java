@@ -528,6 +528,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     .setReasonCode(reasonCode)
                     .setAppPackageName(appPackageName)
                     .setSessiontoken(mSessionTokenMap.getOrDefault(uwbSession.getSessionId(), 0))
+                    .setProtocolName(uwbSession.getProtocolName())
                     .build()
                     .toBundle();
             try {
