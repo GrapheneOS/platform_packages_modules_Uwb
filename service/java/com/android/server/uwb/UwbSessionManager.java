@@ -468,8 +468,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     }
 
     @Override
-    public void onSessionStatusNotificationReceived(long sessionId, int state, int reasonCode) {
-        Log.i(TAG, "onSessionStatusNotificationReceived - Session ID : " + sessionId + ", state : "
+    public void onSessionStatusNotificationReceived(long sessionId, int sessionToken,
+            int state, int reasonCode) {
+        Log.i(TAG, "onSessionStatusNotificationReceived - Session ID : " + sessionId
+                + ", sessionToken: " + sessionToken + ", state : "
                 + UwbSessionNotificationHelper.getSessionStateString(state)
                 + ", reasonCode:" + reasonCode);
         UwbSession uwbSession = getUwbSession((int) sessionId);
@@ -518,6 +520,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             default:
                 break;
         }
+
         if (mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
             String appPackageName = uwbSession.getAnyNonPrivilegedAppInAttributionSource() != null
                     ? uwbSession.getAnyNonPrivilegedAppInAttributionSource().getPackageName()
@@ -527,7 +530,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     .setState(state)
                     .setReasonCode(reasonCode)
                     .setAppPackageName(appPackageName)
-                    .setSessiontoken(mSessionTokenMap.getOrDefault(uwbSession.getSessionId(), 0))
+                    .setSessiontoken(sessionToken)
                     .setProtocolName(uwbSession.getProtocolName())
                     .build()
                     .toBundle();

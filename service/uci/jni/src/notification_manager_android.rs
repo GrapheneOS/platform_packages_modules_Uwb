@@ -363,14 +363,16 @@ impl NotificationManagerAndroid {
     fn on_session_status_notification(
         &mut self,
         session_id: u32,
+        session_token: u32,
         session_state: SessionState,
         reason_code: u8,
     ) -> Result<JObject, JNIError> {
         self.cached_jni_call(
             "onSessionStatusNotificationReceived",
-            "(JII)V",
+            "(JIII)V",
             &[
                 jvalue::from(JValue::Long(session_id as i64)),
+                jvalue::from(JValue::Int(session_token as i32)),
                 jvalue::from(JValue::Int(session_state as i32)),
                 jvalue::from(JValue::Int(reason_code as i32)),
             ],
@@ -1035,10 +1037,17 @@ impl NotificationManager for NotificationManagerAndroid {
         let env = *self.env;
         env.with_local_frame(MAX_JAVA_OBJECTS_CAPACITY, || {
             match session_notification {
-                // session_token below has already been mapped to session_id by uci layer.
-                SessionNotification::Status { session_token, session_state, reason_code } => {
-                    self.on_session_status_notification(session_token, session_state, reason_code)
-                }
+                SessionNotification::Status {
+                    session_id,
+                    session_token,
+                    session_state,
+                    reason_code,
+                } => self.on_session_status_notification(
+                    session_id,
+                    session_token,
+                    session_state,
+                    reason_code,
+                ),
                 SessionNotification::UpdateControllerMulticastList {
                     session_token,
                     remaining_multicast_list_size,

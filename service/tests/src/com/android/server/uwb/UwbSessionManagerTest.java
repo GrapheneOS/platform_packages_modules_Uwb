@@ -301,6 +301,7 @@ public class UwbSessionManagerTest {
     private static final int MAX_RX_DATA_PACKETS_TO_STORE = 10;
     private static final int PID = Process.myPid();
     private static final int REFERENCE_SESSION_HANDLE = 10;
+    private static final int SESSION_TOKEN = 1;
 
     @Mock
     private UwbConfigurationManager mUwbConfigurationManager;
@@ -934,7 +935,7 @@ public class UwbSessionManagerTest {
         when(mockUwbSession.getSessionState()).thenReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE);
 
         mUwbSessionManager.onSessionStatusNotificationReceived(
-                TEST_SESSION_ID,
+                TEST_SESSION_ID, SESSION_TOKEN,
                 UwbUciConstants.UWB_SESSION_STATE_IDLE,
                 UwbUciConstants.REASON_MAX_RANGING_ROUND_RETRY_COUNT_REACHED);
 
@@ -954,7 +955,7 @@ public class UwbSessionManagerTest {
         when(mockUwbSession.getSessionState()).thenReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE);
 
         mUwbSessionManager.onSessionStatusNotificationReceived(
-                TEST_SESSION_ID,
+                TEST_SESSION_ID, SESSION_TOKEN,
                 UwbUciConstants.UWB_SESSION_STATE_IDLE,
                 UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS);
 
@@ -3476,7 +3477,7 @@ public class UwbSessionManagerTest {
 
         // UWBS sends the SESSION_STATS_NTF with ReasonCode as REASON_ERROR_SESSION_KEY_NOT_FOUND.
         mUwbSessionManager.onSessionStatusNotificationReceived(
-                TEST_SESSION_ID,
+                TEST_SESSION_ID, SESSION_TOKEN,
                 UwbUciConstants.UWB_SESSION_STATE_IDLE,
                 UwbUciConstants.REASON_ERROR_SESSION_KEY_NOT_FOUND);
 
@@ -5367,7 +5368,8 @@ public class UwbSessionManagerTest {
                 .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
 
         mUwbSessionManager.onSessionStatusNotificationReceived(
-                uwbSession.getSessionId(), UwbUciConstants.UWB_SESSION_STATE_DEINIT,
+                uwbSession.getSessionId(), SESSION_TOKEN,
+                UwbUciConstants.UWB_SESSION_STATE_DEINIT,
                 UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS);
         mTestLooper.dispatchNext();
 
@@ -5433,7 +5435,8 @@ public class UwbSessionManagerTest {
                 .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
 
         mUwbSessionManager.onSessionStatusNotificationReceived(
-                uwbSession.getSessionId(), UwbUciConstants.UWB_SESSION_STATE_DEINIT,
+                uwbSession.getSessionId(), SESSION_TOKEN,
+                UwbUciConstants.UWB_SESSION_STATE_DEINIT,
                 UwbUciConstants.REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS);
         mTestLooper.dispatchNext();
 

@@ -94,10 +94,10 @@ public class NativeUwbManager {
         mDeviceListener.onCoreGenericErrorNotificationReceived(status, chipId);
     }
 
-    public void onSessionStatusNotificationReceived(long id, int state, int reasonCode) {
-        Log.d(TAG, "onSessionStatusNotificationReceived(" + id + ", " + state + ", " + reasonCode
-                + ")");
-        mSessionListener.onSessionStatusNotificationReceived(id, state, reasonCode);
+    public void onSessionStatusNotificationReceived(long id, int token, int state, int reasonCode) {
+        Log.d(TAG, "onSessionStatusNotificationReceived(" + id + ", " + token + ", "
+                + state + ", " + reasonCode + ")");
+        mSessionListener.onSessionStatusNotificationReceived(id, token, state, reasonCode);
     }
 
     public void onRangeDataNotificationReceived(UwbRangingData rangeData) {

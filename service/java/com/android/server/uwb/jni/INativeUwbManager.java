@@ -41,11 +41,12 @@ public interface INativeUwbManager {
          * Interface for receiving Session Status Notification
          *
          * @param id         : Session ID
+         * @param token      : Session Token
          * @param state      : Session State
          * @param reasonCode : Reason Code - UCI GENERIC SPECIFICATION Table 15 : state change with
          *                   reason codes
          */
-        void onSessionStatusNotificationReceived(long id, int state, int reasonCode);
+        void onSessionStatusNotificationReceived(long id, int token, int state, int reasonCode);
 
         /**
          * Interface for receiving Multicast List Update Data
