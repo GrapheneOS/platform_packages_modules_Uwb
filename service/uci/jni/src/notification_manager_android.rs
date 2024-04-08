@@ -30,14 +30,14 @@ use jni::sys::jvalue;
 use jni::{AttachGuard, JavaVM};
 use log::{debug, error};
 use uwb_core::error::{Error as UwbError, Result as UwbResult};
-use uwb_core::params::UwbAddress;
+use uwb_core::params::{ControleeStatusList, UwbAddress};
 use uwb_core::uci::uci_manager_sync::{NotificationManager, NotificationManagerBuilder};
 use uwb_core::uci::{
     CoreNotification, DataRcvNotification, RadarDataRcvNotification, RangingMeasurements,
     SessionNotification, SessionRangeData,
 };
 use uwb_uci_packets::{
-    radar_bytes_per_sample_value, ControleeStatus, ExtendedAddressDlTdoaRangingMeasurement,
+    radar_bytes_per_sample_value, ExtendedAddressDlTdoaRangingMeasurement,
     ExtendedAddressOwrAoaRangingMeasurement, ExtendedAddressTwoWayRangingMeasurement,
     MacAddressIndicator, RangingMeasurementType, SessionState,
     ShortAddressDlTdoaRangingMeasurement, ShortAddressOwrAoaRangingMeasurement,
@@ -383,18 +383,32 @@ impl NotificationManagerAndroid {
         &mut self,
         session_id: u32,
         remaining_multicast_list_size: usize,
-        status_list: Vec<ControleeStatus>,
+        status_list: ControleeStatusList,
     ) -> Result<JObject, JNIError> {
         let remaining_multicast_list_size: i32 =
             remaining_multicast_list_size.try_into().map_err(|_| JNIError::InvalidCtorReturn)?;
-        let count: i32 = status_list.len().try_into().map_err(|_| JNIError::InvalidCtorReturn)?;
+        let mac_address_vec: Vec<[u8; 2]>;
+        let subsession_id_vec: Vec<_>;
+        let status_vec: Vec<_>;
+        let count: i32;
+        match status_list {
+            ControleeStatusList::V1(status_list) => {
+                count = status_list.len().try_into().map_err(|_| JNIError::InvalidCtorReturn)?;
+                (mac_address_vec, (subsession_id_vec, status_vec)) = status_list
+                    .into_iter()
+                    .map(|cs| (cs.mac_address, (cs.subsession_id as i64, i32::from(cs.status))))
+                    .unzip();
+            }
+            ControleeStatusList::V2(status_list) => {
+                count = status_list.len().try_into().map_err(|_| JNIError::InvalidCtorReturn)?;
+                (mac_address_vec, (subsession_id_vec, status_vec)) = status_list
+                    .into_iter()
+                    .map(|cs| (cs.mac_address, (0_i64, i32::from(cs.status))))
+                    .unzip();
+            }
+        }
         let subsession_id_jlongarray = self.env.new_long_array(count)?;
         let status_jintarray = self.env.new_int_array(count)?;
-        let (mac_address_vec, (subsession_id_vec, status_vec)): (Vec<[u8; 2]>, (Vec<_>, Vec<_>)) =
-            status_list
-                .into_iter()
-                .map(|cs| (cs.mac_address, (cs.subsession_id as i64, i32::from(cs.status))))
-                .unzip();
 
         let mac_address_vec_i8 =
             mac_address_vec.iter().flat_map(|&[a, b]| vec![a as i8, b as i8]).collect::<Vec<i8>>();
@@ -1048,14 +1062,22 @@ impl NotificationManager for NotificationManagerAndroid {
                     session_state,
                     reason_code,
                 ),
-                SessionNotification::UpdateControllerMulticastList {
+                SessionNotification::UpdateControllerMulticastListV1 {
                     session_token,
                     remaining_multicast_list_size,
                     status_list,
                 } => self.on_session_update_multicast_notification(
                     session_token,
                     remaining_multicast_list_size,
+                    ControleeStatusList::V1(status_list),
+                ),
+                SessionNotification::UpdateControllerMulticastListV2 {
+                    session_token,
                     status_list,
+                } => self.on_session_update_multicast_notification(
+                    session_token,
+                    0_usize,
+                    ControleeStatusList::V2(status_list),
                 ),
                 // TODO(b/246678053): Match here on range_data.ranging_measurement_type instead.
                 SessionNotification::SessionInfo(range_data) => {
