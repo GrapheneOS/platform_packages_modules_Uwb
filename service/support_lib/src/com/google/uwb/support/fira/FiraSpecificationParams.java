@@ -113,6 +113,8 @@ public class FiraSpecificationParams extends FiraParams {
 
     private final boolean mHasPsduLengthSupport;
 
+    private final int mUciVersion;
+
     private static final String KEY_MIN_PHY_VERSION = "min_phy_version";
     private static final String KEY_MAX_PHY_VERSION = "max_phy_version";
     private static final String KEY_MIN_MAC_VERSION = "min_mac_version";
@@ -165,6 +167,8 @@ public class FiraSpecificationParams extends FiraParams {
 
     public static final String KEY_PSDU_LENGTH_SUPPORT = "psdu_length_support";
 
+    public static final String KEY_UCI_VERSION = "uci_version";
+
     public static final int DEFAULT_MAX_RANGING_SESSIONS_NUMBER = 5;
 
     private FiraSpecificationParams(
@@ -201,7 +205,8 @@ public class FiraSpecificationParams extends FiraParams {
             EnumSet<RangeDataNtfConfigCapabilityFlag> rangeDataNtfConfigCapabilities,
             int deviceType, boolean suspendRangingSupport, int sessionKeyLength,
             int dtTagMaxActiveRr, boolean hasBackgroundRangingSupport,
-            boolean hasDtTagBlockSkippingSupport, boolean hasPsduLengthSupport) {
+            boolean hasDtTagBlockSkippingSupport, boolean hasPsduLengthSupport,
+            int uciVersion) {
         mMinPhyVersionSupported = minPhyVersionSupported;
         mMaxPhyVersionSupported = maxPhyVersionSupported;
         mMinMacVersionSupported = minMacVersionSupported;
@@ -240,6 +245,7 @@ public class FiraSpecificationParams extends FiraParams {
         mHasBackgroundRangingSupport = hasBackgroundRangingSupport;
         mHasDtTagBlockSkippingSupport = hasDtTagBlockSkippingSupport;
         mHasPsduLengthSupport = hasPsduLengthSupport;
+        mUciVersion = uciVersion;
     }
 
     @Override
@@ -401,6 +407,10 @@ public class FiraSpecificationParams extends FiraParams {
         return mHasPsduLengthSupport;
     }
 
+    public int getUciVersionSupported() {
+        return mUciVersion;
+    }
+
     private static int[] toIntArray(List<Integer> data) {
         int[] res = new int[data.size()];
         for (int i = 0; i < data.size(); i++) {
@@ -456,6 +466,7 @@ public class FiraSpecificationParams extends FiraParams {
         bundle.putBoolean(KEY_BACKGROUND_RANGING_SUPPORT, mHasBackgroundRangingSupport);
         bundle.putBoolean(KEY_DT_TAG_BLOCK_SKIPPING_SUPPORT, mHasDtTagBlockSkippingSupport);
         bundle.putBoolean(KEY_PSDU_LENGTH_SUPPORT, mHasPsduLengthSupport);
+        bundle.putInt(KEY_UCI_VERSION, mUciVersion);
         return bundle;
     }
 
@@ -491,6 +502,7 @@ public class FiraSpecificationParams extends FiraParams {
         builder.setBackgroundRangingSupport(bundle.getBoolean(KEY_BACKGROUND_RANGING_SUPPORT));
         builder.setDtTagBlockSkippingSupport(bundle.getBoolean(KEY_DT_TAG_BLOCK_SKIPPING_SUPPORT));
         builder.setPsduLengthSupport(bundle.getBoolean(KEY_PSDU_LENGTH_SUPPORT));
+        builder.setUciVersionSupported(bundle.getInt(KEY_UCI_VERSION, 1));
         return builder;
     }
 
@@ -627,6 +639,8 @@ public class FiraSpecificationParams extends FiraParams {
         private int mMinSlotDurationUs = -1;
 
         private int mMaxRangingSessionNumber = DEFAULT_MAX_RANGING_SESSIONS_NUMBER;
+
+        private int mUciVersion = 1;
 
         // Unicast support is mandatory
         private EnumSet<MultiNodeCapabilityFlag> mMultiNodeCapabilities =
@@ -925,6 +939,12 @@ public class FiraSpecificationParams extends FiraParams {
             return this;
         }
 
+        public FiraSpecificationParams.Builder setUciVersionSupported(
+                int uciVersion) {
+            mUciVersion = uciVersion;
+            return this;
+        }
+
         public Builder() {}
 
         public Builder(@NonNull FiraSpecificationParams params) {
@@ -1007,7 +1027,8 @@ public class FiraSpecificationParams extends FiraParams {
                     mDtTagMaxActiveRr,
                     mHasBackgroundRangingSupport,
                     mHasDtTagBlockSkippingSupport,
-                    mHasPsduLengthSupport);
+                    mHasPsduLengthSupport,
+                    mUciVersion);
         }
     }
 }

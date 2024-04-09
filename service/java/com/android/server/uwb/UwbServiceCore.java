@@ -609,6 +609,8 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                             specificationParams.second.getFiraSpecificationParams())
                             .setBackgroundRangingSupport(mUwbInjector.getDeviceConfigFacade()
                                     .isBackgroundRangingEnabled())
+                            .setUciVersionSupported(getCachedDeviceInfoResponse(
+                                    mUwbInjector.getMultichipData().getDefaultChipId()).mUciVersion)
                             .build();
             specificationParams.second.setFiraSpecificationParams(firaSpecificationParams);
         }
