@@ -25,6 +25,8 @@ python_defaults {
     test_suites: [
         "cts",
         "general-tests",
+        "mts-uwb",
+        "mcts-uwb",
     ],
     version: {
         py3: {

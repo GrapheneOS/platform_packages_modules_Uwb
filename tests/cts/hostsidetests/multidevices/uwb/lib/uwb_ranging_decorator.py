@@ -270,6 +270,7 @@ class UwbRangingDecorator():
     Args:
     """
     for session in self._callback_keys:
+      self.clear_ranging_session_callback_events(session)
       self.ad.uwb.closeRangingSession(self._callback_keys[session])
       self.verify_callback_received("Closed", session)
     self.clear_all_ranging_sessions()
