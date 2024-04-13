@@ -144,6 +144,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
     private static final int RSSI_FLAG = 1;
     private static final int AOA_FLAG = 1 << 1;
     private static final int CIR_FLAG = 1 << 2;
+    private static final int SEGMENT_METRICS_FLAG = 1 << 5;
     private static final int CMD_TIMEOUT_MS = 10_000;
 
     // These don't require root access.
@@ -1383,6 +1384,9 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                         if (option.equals("-c")) {
                             diagramFrameReportsFlags |= CIR_FLAG;
                         }
+                        if (option.equals("-s")) {
+                            diagramFrameReportsFlags |= SEGMENT_METRICS_FLAG;
+                        }
                         option = getNextOption();
                     }
                     mUwbServiceCore.enableDiagnostics(true, diagramFrameReportsFlags);
@@ -1562,7 +1566,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         pw.println("  enable-diagnostics-notification"
                 + " [-r](enable rssi)"
                 + " [-a](enable aoa)"
-                + " [-c](enable cir)");
+                + " [-c](enable cir)"
+                + " [-s](enable segment metrics)");
         pw.println("    Enable vendor diagnostics notification");
         pw.println("  disable-diagnostics-notification");
         pw.println("    Disable vendor diagnostics notification");
