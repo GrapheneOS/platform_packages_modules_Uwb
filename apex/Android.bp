@@ -43,6 +43,7 @@ apex {
     name: "com.android.uwb",
     defaults: ["com.android.uwb-defaults"],
     manifest: "apex_manifest.json",
+    visibility: ["//packages/modules/common/build"],
 }
 
 apex_key {

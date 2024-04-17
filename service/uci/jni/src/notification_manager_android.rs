@@ -54,6 +54,7 @@ const MAX_RADAR_VENDOR_DATA_LEN: i32 = 256;
 // Maximum allowed number of Java Object to be allocated inside with_local_frame
 const MAX_JAVA_OBJECTS_CAPACITY: i32 = 50;
 
+#[derive(Debug, PartialEq)]
 enum MacAddress {
     Short(u16),
     Extended(u64),
@@ -1370,5 +1371,324 @@ impl NotificationManagerBuilder for NotificationManagerAndroidBuilder {
         } else {
             None
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_two_way_ranigng_measurement_from_short_address_two_way_ranging_measurement() {
+        let short_address_measurement = ShortAddressTwoWayRangingMeasurement {
+            mac_address: 0x1234,
+            status: StatusCode::UciStatusOk,
+            nlos: 0,
+            distance: 1,
+            aoa_azimuth: 2,
+            aoa_azimuth_fom: 3,
+            aoa_elevation: 4,
+            aoa_elevation_fom: 5,
+            aoa_destination_azimuth: 6,
+            aoa_destination_azimuth_fom: 7,
+            aoa_destination_elevation: 8,
+            aoa_destination_elevation_fom: 9,
+            slot_index: 10,
+            rssi: 11,
+        };
+        let measurement = TwoWayRangingMeasurement::from(short_address_measurement.clone());
+        assert_eq!(
+            measurement.mac_address,
+            MacAddress::Short(short_address_measurement.mac_address)
+        );
+        assert_eq!(measurement.status, short_address_measurement.status);
+        assert_eq!(measurement.nlos, short_address_measurement.nlos);
+        assert_eq!(measurement.distance, short_address_measurement.distance);
+        assert_eq!(measurement.aoa_azimuth, short_address_measurement.aoa_azimuth);
+        assert_eq!(measurement.aoa_azimuth_fom, short_address_measurement.aoa_azimuth_fom);
+        assert_eq!(measurement.aoa_elevation, short_address_measurement.aoa_elevation);
+        assert_eq!(measurement.aoa_elevation_fom, short_address_measurement.aoa_elevation_fom);
+        assert_eq!(
+            measurement.aoa_destination_azimuth,
+            short_address_measurement.aoa_destination_azimuth
+        );
+        assert_eq!(
+            measurement.aoa_destination_azimuth_fom,
+            short_address_measurement.aoa_destination_azimuth_fom
+        );
+        assert_eq!(
+            measurement.aoa_destination_elevation,
+            short_address_measurement.aoa_destination_elevation
+        );
+        assert_eq!(
+            measurement.aoa_destination_elevation_fom,
+            short_address_measurement.aoa_destination_elevation_fom
+        );
+        assert_eq!(measurement.slot_index, short_address_measurement.slot_index);
+        assert_eq!(measurement.rssi, short_address_measurement.rssi);
+    }
+
+    #[test]
+    fn test_get_two_way_ranigng_measurement_from_extended_address_two_way_ranging_measurement() {
+        let extended_address_measurement = ExtendedAddressTwoWayRangingMeasurement {
+            mac_address: 0x1234_5678,
+            status: StatusCode::UciStatusOk,
+            nlos: 0,
+            distance: 1,
+            aoa_azimuth: 2,
+            aoa_azimuth_fom: 3,
+            aoa_elevation: 4,
+            aoa_elevation_fom: 5,
+            aoa_destination_azimuth: 6,
+            aoa_destination_azimuth_fom: 7,
+            aoa_destination_elevation: 8,
+            aoa_destination_elevation_fom: 9,
+            slot_index: 10,
+            rssi: 11,
+        };
+        let measurement = TwoWayRangingMeasurement::from(extended_address_measurement.clone());
+        assert_eq!(
+            measurement.mac_address,
+            MacAddress::Extended(extended_address_measurement.mac_address)
+        );
+        assert_eq!(measurement.status, extended_address_measurement.status);
+        assert_eq!(measurement.nlos, extended_address_measurement.nlos);
+        assert_eq!(measurement.distance, extended_address_measurement.distance);
+        assert_eq!(measurement.aoa_azimuth, extended_address_measurement.aoa_azimuth);
+        assert_eq!(measurement.aoa_azimuth_fom, extended_address_measurement.aoa_azimuth_fom);
+        assert_eq!(measurement.aoa_elevation, extended_address_measurement.aoa_elevation);
+        assert_eq!(measurement.aoa_elevation_fom, extended_address_measurement.aoa_elevation_fom);
+        assert_eq!(
+            measurement.aoa_destination_azimuth,
+            extended_address_measurement.aoa_destination_azimuth
+        );
+        assert_eq!(
+            measurement.aoa_destination_azimuth_fom,
+            extended_address_measurement.aoa_destination_azimuth_fom
+        );
+        assert_eq!(
+            measurement.aoa_destination_elevation,
+            extended_address_measurement.aoa_destination_elevation
+        );
+        assert_eq!(
+            measurement.aoa_destination_elevation_fom,
+            extended_address_measurement.aoa_destination_elevation_fom
+        );
+        assert_eq!(measurement.slot_index, extended_address_measurement.slot_index);
+        assert_eq!(measurement.rssi, extended_address_measurement.rssi);
+    }
+
+    #[test]
+    fn test_get_owr_aoa_ranging_measurement_from_short_address_measurement() {
+        let short_address_measurement = ShortAddressOwrAoaRangingMeasurement {
+            mac_address: 0x1234,
+            status: StatusCode::UciStatusOk,
+            nlos: 0,
+            frame_sequence_number: 1,
+            block_index: 2,
+            aoa_azimuth: 3,
+            aoa_azimuth_fom: 4,
+            aoa_elevation: 5,
+            aoa_elevation_fom: 6,
+        };
+        let measurement = OwrAoaRangingMeasurement::from(short_address_measurement.clone());
+        assert_eq!(
+            measurement.mac_address,
+            MacAddress::Short(short_address_measurement.mac_address)
+        );
+        assert_eq!(measurement.status, short_address_measurement.status);
+        assert_eq!(measurement.nlos, short_address_measurement.nlos);
+        assert_eq!(
+            measurement.frame_sequence_number,
+            short_address_measurement.frame_sequence_number
+        );
+        assert_eq!(measurement.block_index, short_address_measurement.block_index);
+        assert_eq!(measurement.aoa_azimuth, short_address_measurement.aoa_azimuth);
+        assert_eq!(measurement.aoa_azimuth_fom, short_address_measurement.aoa_azimuth_fom);
+        assert_eq!(measurement.aoa_elevation, short_address_measurement.aoa_elevation);
+        assert_eq!(measurement.aoa_elevation_fom, short_address_measurement.aoa_elevation_fom);
+    }
+
+    #[test]
+    fn test_get_owr_aoa_ranging_measurement_from_extended_address_measurement() {
+        let extended_address_measurement = ExtendedAddressOwrAoaRangingMeasurement {
+            mac_address: 0x1234_5678,
+            status: StatusCode::UciStatusOk,
+            nlos: 0,
+            frame_sequence_number: 1,
+            block_index: 2,
+            aoa_azimuth: 3,
+            aoa_azimuth_fom: 4,
+            aoa_elevation: 5,
+            aoa_elevation_fom: 6,
+        };
+        let measurement = OwrAoaRangingMeasurement::from(extended_address_measurement.clone());
+        assert_eq!(
+            measurement.mac_address,
+            MacAddress::Extended(extended_address_measurement.mac_address)
+        );
+        assert_eq!(measurement.status, extended_address_measurement.status);
+        assert_eq!(measurement.nlos, extended_address_measurement.nlos);
+        assert_eq!(
+            measurement.frame_sequence_number,
+            extended_address_measurement.frame_sequence_number
+        );
+        assert_eq!(measurement.block_index, extended_address_measurement.block_index);
+        assert_eq!(measurement.aoa_azimuth, extended_address_measurement.aoa_azimuth);
+        assert_eq!(measurement.aoa_azimuth_fom, extended_address_measurement.aoa_azimuth_fom);
+        assert_eq!(measurement.aoa_elevation, extended_address_measurement.aoa_elevation);
+        assert_eq!(measurement.aoa_elevation_fom, extended_address_measurement.aoa_elevation_fom);
+    }
+
+    #[test]
+    fn test_get_dl_tdoa_ranging_measurement_from_short_address_measurement() {
+        let bytes = [
+            // All Fields in Little Endian (LE)
+            0x0a, 0x01, 0x33, 0x05, // 2(Mac address), Status, Message Type
+            0x53, 0x05, 0x02, 0x05, // 2(Message control), 2(Block Index)
+            0x07, 0x09, 0x0a, 0x01, // Round Index, NLoS, 2(AoA Azimuth)
+            0x02, 0x05, 0x07, 0x09, // AoA Azimuth FOM, 2(AoA Elevation), AoA Elevation FOM
+            0x0a, 0x01, 0x02, 0x05, // RSSI, 3(Tx Timestamp..)
+            0x07, 0x09, 0x0a, 0x01, // 4(Tx Timestamp..)
+            0x02, 0x05, 0x07, 0x09, // Tx Timestamp, 3(Rx Timestamp..)
+            0x05, 0x07, 0x09, 0x0a, // 2(Rx Timestamp), 2(Anchor Cfo)
+            0x01, 0x02, 0x05, 0x07, // 2(Cfo), 2(Initiator Reply Time..)
+            0x09, 0x05, 0x07, 0x09, // 2(Initiator Reply Time), 2(Responder Reply Time..)
+            0x0a, 0x01, 0x02, 0x05, // 2(Responder Reply Time), 2(Initiator-Responder ToF)
+            0x07, 0x09, 0x07, 0x09, // 4(Anchor Location..)
+            0x05, 0x07, 0x09, 0x0a, // 4(Anchor Location..)
+            0x01, 0x02, 0x05, 0x07, // 2(Anchor Location..), 2(Active Ranging Rounds..)
+            0x09, 0x0a, 0x01, 0x02, // 4(Active Ranging Rounds..)
+            0x05, 0x07, 0x09, 0x05, // 4(Active Ranging Rounds)
+        ];
+        let short_address_measurement_vec =
+            ShortAddressDlTdoaRangingMeasurement::parse(&bytes, 1).unwrap();
+        let short_address_measurement = &short_address_measurement_vec[0];
+        let measurement = DlTdoaRangingMeasurement::from(short_address_measurement.clone());
+        assert_eq!(
+            measurement.mac_address,
+            MacAddress::Short(short_address_measurement.mac_address)
+        );
+        assert_eq!(measurement.status, short_address_measurement.measurement.status);
+        assert_eq!(measurement.message_type, short_address_measurement.measurement.message_type);
+        assert_eq!(
+            measurement.message_control,
+            short_address_measurement.measurement.message_control
+        );
+        assert_eq!(measurement.block_index, short_address_measurement.measurement.block_index);
+        assert_eq!(measurement.round_index, short_address_measurement.measurement.round_index);
+        assert_eq!(measurement.nlos, short_address_measurement.measurement.nlos);
+        assert_eq!(measurement.aoa_azimuth, short_address_measurement.measurement.aoa_azimuth);
+        assert_eq!(
+            measurement.aoa_azimuth_fom,
+            short_address_measurement.measurement.aoa_azimuth_fom
+        );
+        assert_eq!(measurement.aoa_elevation, short_address_measurement.measurement.aoa_elevation);
+        assert_eq!(
+            measurement.aoa_elevation_fom,
+            short_address_measurement.measurement.aoa_elevation_fom
+        );
+        assert_eq!(measurement.rssi, short_address_measurement.measurement.rssi);
+        assert_eq!(measurement.tx_timestamp, short_address_measurement.measurement.tx_timestamp);
+        assert_eq!(measurement.rx_timestamp, short_address_measurement.measurement.rx_timestamp);
+        assert_eq!(measurement.anchor_cfo, short_address_measurement.measurement.anchor_cfo);
+        assert_eq!(measurement.cfo, short_address_measurement.measurement.cfo);
+        assert_eq!(
+            measurement.initiator_reply_time,
+            short_address_measurement.measurement.initiator_reply_time
+        );
+        assert_eq!(
+            measurement.responder_reply_time,
+            short_address_measurement.measurement.responder_reply_time
+        );
+        assert_eq!(
+            measurement.initiator_responder_tof,
+            short_address_measurement.measurement.initiator_responder_tof
+        );
+        assert_eq!(
+            measurement.dt_anchor_location,
+            short_address_measurement.measurement.dt_anchor_location
+        );
+        assert_eq!(
+            measurement.ranging_rounds,
+            short_address_measurement.measurement.ranging_rounds
+        );
+    }
+
+    #[test]
+    fn test_get_dl_tdoa_ranging_measurement_from_extended_address_measurement() {
+        let bytes = [
+            // All Fields in Little Endian (LE)
+            0x0a, 0x01, 0x33, 0x05, // 4(Mac address..)
+            0x33, 0x05, 0x02, 0x05, // 4(Mac address)
+            0x07, 0x09, 0x0a, 0x01, // Status, Message Type, 2(Message control),
+            0x02, 0x05, 0x07, 0x09, // 2(Block Index), Round Index, NLoS,
+            0x0a, 0x01, 0x02, 0x05, // 2(AoA Azimuth), AoA Azimuth FOM, 1(AoA Elevation..)
+            0x07, 0x09, 0x0a, // 1(AoA Elevation), AoA Elevation FOM, RSSI,
+            0x01, 0x02, 0x05, 0x07, // 4(Tx Timestamp..)
+            0x09, 0x05, 0x07, 0x09, // 4(Tx Timestamp),
+            0x0a, 0x01, 0x02, 0x05, // 4(Rx Timestamp..)
+            0x07, 0x09, 0x05, 0x07, // 4(Rx Timestamp)
+            0x09, 0x0a, 0x01, 0x02, // 2(Anchor Cfo), 2(Cfo),
+            0x05, 0x07, 0x09, 0x05, // 4(Initiator Reply Time)
+            0x07, 0x09, 0x0a, 0x01, // 4(Responder Reply Time),
+            0x02, 0x05, 0x02, 0x05, // 2(Initiator-Responder ToF), 2(Active Ranging Rounds)
+        ];
+        let extended_address_measurement_vec =
+            ExtendedAddressDlTdoaRangingMeasurement::parse(&bytes, 1).unwrap();
+        let extended_address_measurement = &extended_address_measurement_vec[0];
+
+        let measurement = DlTdoaRangingMeasurement::from(extended_address_measurement.clone());
+        assert_eq!(
+            measurement.mac_address,
+            MacAddress::Extended(extended_address_measurement.mac_address)
+        );
+        assert_eq!(measurement.status, extended_address_measurement.measurement.status);
+        assert_eq!(measurement.message_type, extended_address_measurement.measurement.message_type);
+        assert_eq!(
+            measurement.message_control,
+            extended_address_measurement.measurement.message_control
+        );
+        assert_eq!(measurement.block_index, extended_address_measurement.measurement.block_index);
+        assert_eq!(measurement.round_index, extended_address_measurement.measurement.round_index);
+        assert_eq!(measurement.nlos, extended_address_measurement.measurement.nlos);
+        assert_eq!(measurement.aoa_azimuth, extended_address_measurement.measurement.aoa_azimuth);
+        assert_eq!(
+            measurement.aoa_azimuth_fom,
+            extended_address_measurement.measurement.aoa_azimuth_fom
+        );
+        assert_eq!(
+            measurement.aoa_elevation,
+            extended_address_measurement.measurement.aoa_elevation
+        );
+        assert_eq!(
+            measurement.aoa_elevation_fom,
+            extended_address_measurement.measurement.aoa_elevation_fom
+        );
+        assert_eq!(measurement.rssi, extended_address_measurement.measurement.rssi);
+        assert_eq!(measurement.tx_timestamp, extended_address_measurement.measurement.tx_timestamp);
+        assert_eq!(measurement.rx_timestamp, extended_address_measurement.measurement.rx_timestamp);
+        assert_eq!(measurement.anchor_cfo, extended_address_measurement.measurement.anchor_cfo);
+        assert_eq!(measurement.cfo, extended_address_measurement.measurement.cfo);
+        assert_eq!(
+            measurement.initiator_reply_time,
+            extended_address_measurement.measurement.initiator_reply_time
+        );
+        assert_eq!(
+            measurement.responder_reply_time,
+            extended_address_measurement.measurement.responder_reply_time
+        );
+        assert_eq!(
+            measurement.initiator_responder_tof,
+            extended_address_measurement.measurement.initiator_responder_tof
+        );
+        assert_eq!(
+            measurement.dt_anchor_location,
+            extended_address_measurement.measurement.dt_anchor_location
+        );
+        assert_eq!(
+            measurement.ranging_rounds,
+            extended_address_measurement.measurement.ranging_rounds
+        );
     }
 }
