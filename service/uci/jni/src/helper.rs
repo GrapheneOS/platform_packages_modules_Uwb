@@ -60,3 +60,60 @@ pub(crate) fn option_result_helper<T>(result: Result<T>, error_msg: &str) -> Opt
         })
         .ok()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_boolean_result_helper() {
+        let result: Result<i32> = Ok(5);
+        let error_msg = "Error!";
+        let jboolean_result = boolean_result_helper(result, error_msg);
+        assert_eq!(jboolean_result, true.into()); // Should return true
+
+        // Test case 2: Result is Err
+        let result: Result<i32> = Err(Error::BadParameters);
+        let error_msg = "Error!";
+        let jboolean_result = boolean_result_helper(result, error_msg);
+        assert_eq!(jboolean_result, false.into()); // Should return false
+    }
+
+    #[test]
+    fn test_byte_result_helper() {
+        // Test cases for each Error variant
+        assert_eq!(byte_result_helper(Ok(10), "Test"), u8::from(StatusCode::UciStatusOk) as i8);
+        assert_eq!(
+            byte_result_helper::<i8>(Err(Error::BadParameters), "Test"),
+            u8::from(StatusCode::UciStatusInvalidParam) as i8
+        );
+        assert_eq!(
+            byte_result_helper::<i8>(Err(Error::MaxSessionsExceeded), "Test"),
+            u8::from(StatusCode::UciStatusMaxSessionsExceeded) as i8
+        );
+        assert_eq!(
+            byte_result_helper::<i8>(Err(Error::CommandRetry), "Test"),
+            u8::from(StatusCode::UciStatusCommandRetry) as i8
+        );
+        assert_eq!(
+            byte_result_helper::<i8>(Err(Error::RegulationUwbOff), "Test"),
+            u8::from(StatusCode::UciStatusRegulationUwbOff) as i8
+        );
+
+        // Test case for a generic error
+        assert_eq!(
+            byte_result_helper::<i8>(Err(Error::DuplicatedSessionId), "Test"),
+            u8::from(StatusCode::UciStatusFailed) as i8
+        );
+    }
+
+    #[test]
+    fn test_option_result_helper() {
+        let result: Result<i32> = Ok(42);
+        let optional_result = option_result_helper(result, "Operation");
+        assert_eq!(optional_result, Some(42));
+
+        let result: Result<i32> = Err(Error::BadParameters);
+        let optional_result = option_result_helper(result, "Operation");
+        assert_eq!(optional_result, None);
+    }
+}
