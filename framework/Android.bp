@@ -97,6 +97,10 @@ java_sdk_library {
         "//packages/modules/Uwb:__subpackages__",
     ],
 
+    aconfig_declarations: [
+        "uwb_aconfig_flags",
+    ],
+
     apex_available: [
         "com.android.uwb",
     ],
