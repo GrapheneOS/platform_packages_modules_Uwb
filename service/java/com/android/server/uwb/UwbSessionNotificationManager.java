@@ -626,7 +626,8 @@ public class UwbSessionNotificationManager {
             // TODO: Add radar specific @SystemApi
             // Temporary workaround to avoid adding a new @SystemApi for the short-term.
             uwbRangingCallbacks.onDataReceived(
-                    sessionHandle, null, radarDataBundle, new byte[] {});
+                    sessionHandle, UwbAddress.fromBytes(new byte[] {0x0, 0x0}),
+                    radarDataBundle, new byte[] {});
             Log.i(TAG, "IUwbRangingCallbacks - onDataReceived with radar data");
         } catch (Exception e) {
             Log.e(TAG, "IUwbRangingCallbacks - onDataReceived with radar data: Failed");

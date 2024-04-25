@@ -53,6 +53,7 @@ import android.uwb.IUwbRangingCallbacks;
 import android.uwb.RangingChangeReason;
 import android.uwb.RangingReport;
 import android.uwb.SessionHandle;
+import android.uwb.UwbAddress;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
@@ -756,7 +757,7 @@ public class UwbSessionNotificationManagerTest {
 
         verify(mIUwbRangingCallbacks).onDataReceived(
                 eq(mSessionHandle),
-                eq(null),
+                eq(UwbAddress.fromBytes(new byte[] {0x00, 0x00})),
                 argThat(p -> p.getInt("sweep_offset")
                         == testUwbRadarDataAndRadarData.second.getSweepOffset()),
                 eq(new byte[] {}));
