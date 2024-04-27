@@ -500,6 +500,11 @@ public class UwbInjector {
         }
     }
 
+    public boolean isMulticastListNtfV2Supported() {
+        return mContext.getResources().getBoolean(
+                        com.android.uwb.resources.R.bool.is_multicast_list_update_ntf_v2_supported);
+    }
+
     /**
      * Gets the configured pose source, which is reference counted. If there are no references
      * to the pose source, one will be created based on the device configuration. This may

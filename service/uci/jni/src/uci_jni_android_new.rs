@@ -860,6 +860,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeCo
     sub_session_ids: jintArray,
     sub_session_keys: jbyteArray,
     chip_id: JString,
+    is_multicast_list_ntf_v2_supported: jboolean,
 ) -> jbyte {
     debug!("{}: enter", function_name!());
     byte_result_helper(
@@ -873,6 +874,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeCo
             sub_session_ids,
             sub_session_keys,
             chip_id,
+            is_multicast_list_ntf_v2_supported,
         ),
         function_name!(),
     )
@@ -890,6 +892,7 @@ fn native_controller_multicast_list_update(
     sub_session_ids: jintArray,
     sub_session_keys: jbyteArray,
     chip_id: JString,
+    is_multicast_list_ntf_v2_supported: jboolean,
 ) -> Result<()> {
     let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
 
@@ -980,6 +983,7 @@ fn native_controller_multicast_list_update(
         session_id as u32,
         UpdateMulticastListAction::try_from(action as u8).map_err(|_| Error::BadParameters)?,
         controlee_list,
+        is_multicast_list_ntf_v2_supported != 0,
     )
 }
 
