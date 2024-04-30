@@ -25,7 +25,6 @@ rust_defaults {
     apex_available: [
         "com.android.uwb",
     ],
-    host_supported: true,
 }
 
 rust_ffi_shared {
@@ -51,21 +50,6 @@ rust_test {
                 "mts-uwb",
             ],
             test_config_template: "uwb_rust_test_config_template.xml",
-        },
-        host: {
-            test_suites: [
-                "general-tests",
-            ],
-            data_libs: [
-                "libandroid_runtime_lazy",
-                "libbase",
-                "libbinder",
-                "libbinder_ndk",
-                "libcutils",
-                "liblog",
-                "libutils",
-                "libc++",
-            ],
         },
     },
     test_options: {
