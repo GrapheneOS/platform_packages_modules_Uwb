@@ -24,6 +24,7 @@ import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_OK;
 import android.annotation.NonNull;
 import android.content.AttributionSource;
 import android.content.Context;
+import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -144,6 +145,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     private final Handler mHandler;
     private GenericSpecificationParams mCachedSpecificationParams;
     private boolean mNeedCachedSpecParamsUpdate = true;
+    private boolean mSetEnabled = false;
     private final Set<InitializationFailureListener> mListeners = new ArraySet<>();
 
     /**
@@ -872,7 +874,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
 
     private int computeAdapterState(String countryCode, Optional<Integer> setCountryCodeStatus) {
         int internalAdapterState = getInternalAdapterState();
-        if (internalAdapterState == AdapterStateCallback.STATE_DISABLED
+        if (internalAdapterState == AdapterStateCallback.STATE_DISABLED && mSetEnabled
                 && !mUwbClientHwState.shouldHwBeEnabled()) {
             // If the UWB chip was disabled due to lack of vote for uwb hardware, then
             // send corresponding state.
@@ -935,7 +937,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
 
     public synchronized void setEnabled(boolean enabled) {
         int task = enabled ? TASK_ENABLE : TASK_DISABLE;
-
+        Log.d(TAG, "setEnabled: " + enabled + "callingUid: " + Binder.getCallingUid());
         if (enabled && isUwbEnabledInternal()) {
             Log.w(TAG, "Uwb is already enabled");
         } else if (!enabled && !isUwbEnabledInternal()) {
@@ -950,6 +952,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         int task = enabled ? TASK_HW_ENABLE : TASK_HW_DISABLE;
         AttributionSourceHolder attributionSourceHolder =
                 mUwbClientHwState.getOrCreate(attributionSource, binder);
+        Log.d(TAG, "requestHwEnabled: " + enabled + ", source: " + attributionSource);
         if (enabled && mUwbClientHwState.isEnabled(attributionSourceHolder)) {
             Log.w(TAG, "Uwb hardware is already enabled by " + attributionSource);
         } else if (!enabled && !mUwbClientHwState.isEnabled(attributionSourceHolder)) {
@@ -1247,6 +1250,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
 
 
         private void handleEnable() {
+            mSetEnabled = true;
             if (isUwbEnabledInternal()) {
                 Log.i(TAG, "UWB chip is already enabled, notify adapter state = "
                         + getAdapterState());
@@ -1265,6 +1269,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         }
 
         private void handleDisable() {
+            mSetEnabled = false;
             if (!isUwbEnabledInternal()) {
                 Log.i(TAG, "UWB chip is already disabled, notify adapter state = "
                         + getAdapterState());
@@ -1280,7 +1285,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             }
             boolean prevShouldHwBeEnabled = mUwbClientHwState.shouldHwBeEnabled();
             updateHwState(attributionSourceHolder, true);
-            if (!prevShouldHwBeEnabled && mUwbClientHwState.shouldHwBeEnabled()) {
+            if (mSetEnabled && !prevShouldHwBeEnabled && mUwbClientHwState.shouldHwBeEnabled()) {
                 Log.i(TAG, "UWB Hw requested, enabling");
                 initializeHw();
             }
@@ -1369,6 +1374,8 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             pw.println("Device state = " + getDeviceStateString(mChipIdToStateMap.get(chipId))
                     + " for chip id = " + chipId);
         }
+        pw.println("mSetEnabled = " + mSetEnabled);
+        pw.println("mUwbClientHwState = " + mUwbClientHwState);
         pw.println("mLastAdapterStateChangedReason = " + mLastAdapterStateChangedReason);
         pw.println("mLastAdapterStateNotification = " + mLastAdapterStateNotification);
         pw.println("---- Dump of UwbServiceCore ----");

@@ -314,12 +314,15 @@ public abstract class FiraParams extends Params {
             value = {
                 PRF_MODE_BPRF,
                 PRF_MODE_HPRF,
+                PRF_MODE_HPRF_HIGH_DATA_RATE,
             })
     public @interface PrfMode {}
 
     public static final int PRF_MODE_BPRF = 0;
 
     public static final int PRF_MODE_HPRF = 1;
+
+    public static final int PRF_MODE_HPRF_HIGH_DATA_RATE = 2;
 
     /** Preamble duration: BPRF always uses 64 symbols */
     @IntDef(

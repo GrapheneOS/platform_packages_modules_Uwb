@@ -1641,6 +1641,8 @@ public class UwbManagerTest {
             setUwbEnabledAndWaitForCompletion(false);
             assertThat(mUwbManager.getAdapterState()).isEqualTo(STATE_DISABLED);
         } finally {
+            // Toggle the state back on.
+            setUwbEnabledAndWaitForCompletion(true);
             uiAutomation.dropShellPermissionIdentity();
         }
     }
@@ -2174,6 +2176,51 @@ public class UwbManagerTest {
         } finally {
             // Reset back to vote as expected by the setup.
             requestUwbHwEnabledAndWaitForCompletion(true, mUwbManager, true);
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-4"})
+    @RequiresFlagsEnabled("com.android.uwb.flags.hw_state")
+    public void testUwbHwStateToggle_WhenUwbToggleDisabled() throws Exception {
+        assumeTrue(mUwbManager.isUwbHwIdleTurnOffEnabled());
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        CountDownLatch countDownLatch;
+        AdapterStateCallback adapterStateCallback;
+        try {
+            // Needs UWB_PRIVILEGED permission which is held by shell.
+            uiAutomation.adoptShellPermissionIdentity();
+            // Toggle the HW state off (to clear the vote from setup).
+            requestUwbHwEnabledAndWaitForCompletion(false, mUwbManager, false);
+
+            // Toggle the state to disabled.
+            countDownLatch = new CountDownLatch(1);
+            adapterStateCallback =
+                    new AdapterStateCallback(countDownLatch, STATE_ENABLED_INACTIVE);
+            mUwbManager.registerAdapterStateCallback(
+                    Executors.newSingleThreadExecutor(), adapterStateCallback);
+            mUwbManager.setUwbEnabled(false);
+            // Ensure we don't get any state change callback.
+            assertThat(countDownLatch.await(2, TimeUnit.SECONDS)).isFalse();
+            assertThat(mUwbManager.getAdapterState()).isEqualTo(STATE_DISABLED);
+            mUwbManager.unregisterAdapterStateCallback(adapterStateCallback);
+
+            // Toggle the HW state on and ensure the state does not change.
+            countDownLatch = new CountDownLatch(1);
+            adapterStateCallback =
+                    new AdapterStateCallback(countDownLatch, STATE_ENABLED_INACTIVE);
+            mUwbManager.registerAdapterStateCallback(
+                    Executors.newSingleThreadExecutor(), adapterStateCallback);
+            mUwbManager.requestUwbHwEnabled(true);
+            // Ensure we don't get any state change callback.
+            assertThat(countDownLatch.await(2, TimeUnit.SECONDS)).isFalse();
+            assertThat(mUwbManager.isUwbHwEnableRequested()).isEqualTo(true);
+            assertThat(mUwbManager.getAdapterState()).isEqualTo(STATE_DISABLED);
+            mUwbManager.unregisterAdapterStateCallback(adapterStateCallback);
+        } finally {
+            // Reset uwb toggle back on
+            setUwbEnabledAndWaitForCompletion(true);
             uiAutomation.dropShellPermissionIdentity();
         }
     }
