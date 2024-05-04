@@ -68,4 +68,5 @@ rust_test {
         },
     },
     auto_gen_config: true,
+    native_coverage: false,
 }
