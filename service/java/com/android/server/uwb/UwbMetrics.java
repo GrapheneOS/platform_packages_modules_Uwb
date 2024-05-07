@@ -16,6 +16,7 @@
 package com.android.server.uwb;
 
 import android.content.AttributionSource;
+import android.util.Log;
 import android.util.SparseArray;
 import android.uwb.RangingMeasurement;
 
@@ -422,6 +423,7 @@ public class UwbMetrics {
             mRangingSessionList.add(session);
             mOpenedSessionMap.put(uwbSession.getSessionId(), session);
             if (status != UwbUciConstants.STATUS_CODE_OK) {
+                Log.wtf(TAG, "Session init failed with status " + status);
                 takBugReportSessionInitError("UWB Bugreport: session init failed reason " + status);
             }
             UwbStatsLog.write(UwbStatsLog.UWB_SESSION_INITED, uwbSession.getProfileType(),

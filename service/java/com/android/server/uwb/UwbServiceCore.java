@@ -398,7 +398,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             }
 
             if ((byte) deviceState == UwbUciConstants.DEVICE_STATE_ERROR) {
-                Log.e(TAG, "Error device status received. Restarting...");
+                Log.wtf(TAG, "Error device status received. Restarting...");
                 mUwbMetrics.incrementDeviceStatusErrorCount();
                 takBugReportAfterDeviceError("UWB Bugreport: restarting UWB due to device error");
                 mUwbTask.execute(TASK_RESTART);
