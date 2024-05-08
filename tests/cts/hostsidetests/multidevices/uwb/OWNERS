@@ -1,4 +1,4 @@
-# Bug component: 33618
+# Bug component: 1042770
 include platform/packages/modules/Uwb:/OWNERS
 
 # Engprod - Not owner of the test but help maintaining the module as an example
