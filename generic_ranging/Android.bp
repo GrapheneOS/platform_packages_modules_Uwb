@@ -19,11 +19,36 @@ package {
 
 java_library {
     name: "generic_ranging",
-    sdk_version: "34",
+    sdk_version: "system_UpsideDownCake",
     min_sdk_version: "34",
     installable: false,
     srcs: [
         //"src/**/*.java",
+        "src/**/RangingTechnology.java",
+        "src/**/RangingData.java",
+        "src/**/RangingAdapter.java",
+        "src/**/FusionData.java",
+        "src/**/PrecisionData.java",
+        "src/**/PrecisionRanging.java",
+        "src/**/PrecisionRangingConfig.java",
+        "src/**/UwbAdapter.java",
+        "src/**/PrecisionRangingImpl.java",
+    ],
+    plugins: [
+        "auto_value_plugin",
+    ],
+    libs: [
+        "auto_value_annotations",
+        "error_prone_annotations",
+    ],
+    static_libs: [
+        "androidx.annotation_annotation",
+        "androidx.concurrent_concurrent-futures",
+        "androidx.concurrent_concurrent-futures",
+        "dagger2",
+        "framework-annotations-lib",
+        "guava",
+        "uwb_androidx_backend",
     ],
     visibility: [
         ":__subpackages__",

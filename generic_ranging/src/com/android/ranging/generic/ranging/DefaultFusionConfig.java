@@ -35,7 +35,8 @@ import location.bluemoon.finder.VarianceBasedSwitchingMeasurementModelConfig;
 /** Default configuration for the Fusion algorithm. */
 public final class DefaultFusionConfig {
 
-    private DefaultFusionConfig() {}
+    private DefaultFusionConfig() {
+    }
 
     public static MultiSensorFinderConfig getDefaultConfig() {
         return MultiSensorFinderConfig.newBuilder()
@@ -53,9 +54,11 @@ public final class DefaultFusionConfig {
                                                         ModelConfigContainer.newBuilder()
                                                                 .setExponentiallyWeightedGaussianModelConfig(
                                                                         ExponentiallyWeightedGaussianModelConfig.newBuilder()
-                                                                                .setLambdaScaled(0.52711296)
+                                                                                .setLambdaScaled(
+                                                                                        0.52711296)
                                                                                 .setLoc(-0.16149637)
-                                                                                .setScale(0.22877243)
+                                                                                .setScale(
+                                                                                        0.22877243)
                                                                                 .build())
                                                                 .build())
                                                 .build())
@@ -89,9 +92,11 @@ public final class DefaultFusionConfig {
                                 .build())
                 .setOdometryPollingRateHz(60)
                 .setOdometryThrottlerConfig(
-                        OdometryThrottlerConfig.newBuilder().setThrottlingDtNanos(100000000).build())
+                        OdometryThrottlerConfig.newBuilder().setThrottlingDtNanos(
+                                100000000).build())
                 .setOdometryBasedEstimatePropagatorConfig(
-                        OdometryBasedEstimatePropagatorConfig.newBuilder().setBufferSize(100).build())
+                        OdometryBasedEstimatePropagatorConfig.newBuilder().setBufferSize(
+                                100).build())
                 .setUwbInitialStateSamplerConfig(
                         InitialStateSamplerConfig.newBuilder()
                                 .setRangeSamplerConfig(

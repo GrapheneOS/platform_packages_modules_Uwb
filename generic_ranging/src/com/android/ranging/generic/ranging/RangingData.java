@@ -16,7 +16,8 @@
 
 package com.android.ranging.generic.ranging;
 
-import com.google.android.libraries.precisionfinding.RangingTechnology;
+import com.android.ranging.generic.RangingTechnology;
+
 import com.google.auto.value.AutoValue;
 
 /** Ranging Data class contains data received from a ranging technology such as UWB or CS. */

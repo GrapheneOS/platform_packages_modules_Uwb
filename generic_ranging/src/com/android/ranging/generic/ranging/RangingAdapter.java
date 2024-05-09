@@ -15,7 +15,11 @@
  */
 
 package com.android.ranging.generic.ranging;
-import com.google.android.libraries.precisionfinding.RangingTechnology;
+
+import android.os.RemoteException;
+
+import com.android.ranging.generic.RangingTechnology;
+
 import com.google.common.util.concurrent.ListenableFuture;
 
 /** RangingAdapter representing a common ranging interface for different ranging technologies. */
@@ -31,16 +35,20 @@ interface RangingAdapter {
     boolean isPresent();
 
     /**
-     * Returns true if ranging with this ranging technology is currently enabled, or false otherwise.
-     * When this returns false it's most likely because of not being enabled in the settings, airplane
+     * Returns true if ranging with this ranging technology is currently enabled, or false
+     * otherwise.
+     * When this returns false it's most likely because of not being enabled in the settings,
+     * airplane
      * mode being on, etc.
      */
-    ListenableFuture<Boolean> isEnabled();
+    ListenableFuture<Boolean> isEnabled() throws RemoteException;
 
     /**
-     * Initiate start ranging. The provided callback will notify once ranging has started or stopped.
+     * Initiate start ranging. The provided callback will notify once ranging has started or
+     * stopped.
      * Ranging data will be provided via the callback. In case start is called while the API has
-     * previously been started then this is a no op and the previously provided callback will still be
+     * previously been started then this is a no op and the previously provided callback will still
+     * be
      * used instead of the new one if they're different.
      */
     void start(Callback callback);
@@ -61,7 +69,8 @@ interface RangingAdapter {
         void onStopped(StoppedReason reason);
 
         /**
-         * Notifies the caller on each instance of ranging data received from the ranging technology.
+         * Notifies the caller on each instance of ranging data received from the ranging
+         * technology.
          */
         void onRangingData(RangingData rangingData);
 

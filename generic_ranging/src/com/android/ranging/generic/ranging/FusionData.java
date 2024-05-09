@@ -17,8 +17,8 @@
 package com.android.ranging.generic.ranging;
 
 import com.google.auto.value.AutoValue;
-import com.google.hardware.techeng.sensors.finder.Estimate;
-import com.google.hardware.techeng.sensors.finder.Status;
+//import com.google.hardware.techeng.sensors.finder.Estimate;
+//import com.google.hardware.techeng.sensors.finder.Status;
 
 /**
  * Fusion data represents a fusion of data received from ranging technologies and data received from
@@ -63,40 +63,40 @@ public abstract class FusionData {
         public abstract FusionData build();
     }
 
-    public static FusionData fromFusionAlgorithmEstimate(Estimate estimate) {
-        return FusionData.builder()
-                .setFusionRange(estimate.getRangeM())
-                .setFusionRangeErrorStdDev(estimate.getRangeErrorStdDevM())
-                .setFusionBearing(estimate.getBearingRad())
-                .setFusionBearingErrorStdDev(estimate.getBearingErrorStdDevRad())
-                .setArCoreState(convertToArCoreStateFromStatus(estimate.getStatus()))
-                .build();
-    }
+//    public static FusionData fromFusionAlgorithmEstimate(Estimate estimate) {
+//        return FusionData.builder()
+//                .setFusionRange(estimate.getRangeM())
+//                .setFusionRangeErrorStdDev(estimate.getRangeErrorStdDevM())
+//                .setFusionBearing(estimate.getBearingRad())
+//                .setFusionBearingErrorStdDev(estimate.getBearingErrorStdDevRad())
+//                .setArCoreState(convertToArCoreStateFromStatus(estimate.getStatus()))
+//                .build();
+//    }
 
-    private static ArCoreState convertToArCoreStateFromStatus(Status status) {
-        switch (status) {
-            case OK:
-                return ArCoreState.OK;
-            case RECOVERING_FROM_FAILURE_DUE_TO_INSUFFICIENT_LIGHT:
-                return ArCoreState.POOR_LIGHTNING;
-            case RECOVERING_FROM_FAILURE_DUE_TO_EXCESSIVE_MOTION:
-                return ArCoreState.EXCESSIVE_MOTION;
-            case RECOVERING_FROM_FAILURE_DUE_TO_INSUFFICIENT_FEATURES:
-                return ArCoreState.INSUFFICIENT_FEATURES;
-            case RECOVERING_FROM_FAILURE_DUE_TO_CAMERA_UNAVAILABILITY:
-                return ArCoreState.CAMERA_UNAVAILABLE;
-            case ESTIMATE_NOT_AVAILABLE:
-            case RECOVERING:
-            case RECOVERING_FROM_FAILURE_DUE_TO_BAD_ODOMETRY_STATE:
-            case ODOMETRY_ERROR:
-            case BEACON_MOVING_ERROR:
-            case CONFIGURATION_ERROR:
-            case SENSOR_PERMISSION_DENIED_ERROR:
-            case UNKNOWN_ERROR:
-                return ArCoreState.BAD_STATE;
-        }
-        return ArCoreState.BAD_STATE;
-    }
+//    private static ArCoreState convertToArCoreStateFromStatus(Status status) {
+//        switch (status) {
+//            case OK:
+//                return ArCoreState.OK;
+//            case RECOVERING_FROM_FAILURE_DUE_TO_INSUFFICIENT_LIGHT:
+//                return ArCoreState.POOR_LIGHTNING;
+//            case RECOVERING_FROM_FAILURE_DUE_TO_EXCESSIVE_MOTION:
+//                return ArCoreState.EXCESSIVE_MOTION;
+//            case RECOVERING_FROM_FAILURE_DUE_TO_INSUFFICIENT_FEATURES:
+//                return ArCoreState.INSUFFICIENT_FEATURES;
+//            case RECOVERING_FROM_FAILURE_DUE_TO_CAMERA_UNAVAILABILITY:
+//                return ArCoreState.CAMERA_UNAVAILABLE;
+//            case ESTIMATE_NOT_AVAILABLE:
+//            case RECOVERING:
+//            case RECOVERING_FROM_FAILURE_DUE_TO_BAD_ODOMETRY_STATE:
+//            case ODOMETRY_ERROR:
+//            case BEACON_MOVING_ERROR:
+//            case CONFIGURATION_ERROR:
+//            case SENSOR_PERMISSION_DENIED_ERROR:
+//            case UNKNOWN_ERROR:
+//                return ArCoreState.BAD_STATE;
+//        }
+//        return ArCoreState.BAD_STATE;
+//    }
 
     /** State of ArCore */
     public enum ArCoreState {

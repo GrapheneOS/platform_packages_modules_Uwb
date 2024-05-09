@@ -16,13 +16,18 @@
 
 package com.android.ranging.generic.ranging;
 
+import android.os.RemoteException;
+
 import androidx.annotation.IntDef;
-import com.google.android.gms.nearby.uwb.RangingCapabilities;
-import com.google.android.gms.nearby.uwb.RangingParameters;
-import com.google.android.gms.nearby.uwb.UwbAddress;
-import com.google.android.libraries.precisionfinding.RangingTechnology;
+import androidx.core.uwb.backend.impl.internal.RangingCapabilities;
+import androidx.core.uwb.backend.impl.internal.RangingParameters;
+import androidx.core.uwb.backend.impl.internal.UwbAddress;
+
+import com.android.ranging.generic.RangingTechnology;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListenableFuture;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
@@ -34,8 +39,10 @@ import java.lang.annotation.RetentionPolicy;
 public interface PrecisionRanging {
 
     /**
-     * Creates a new instance of {@link PrecisionRanging}. Ranging technologies that will be used are
-     * set through the configuration. Each ranging technology that's used may require additional setup
+     * Creates a new instance of {@link PrecisionRanging}. Ranging technologies that will be used
+     * are
+     * set through the configuration. Each ranging technology that's used may require additional
+     * setup
      * through set*RangingTech*Config before start can be called.
      */
     interface Factory {
@@ -51,16 +58,18 @@ public interface PrecisionRanging {
     /**
      * Returns a map that describes the {@link RangingTechnologyAvailability} for each requested
      * {@link RangingTechnology} for this session. {@link RangingTechnologyAvailability} is either
-     * NOT_SUPPORTED when the hardware or software doesn't support the technology, DISABLED when it's
+     * NOT_SUPPORTED when the hardware or software doesn't support the technology, DISABLED when
+     * it's
      * disabled due to a condition or a user switch, or ENABLED when it's available to use.
      */
-    ListenableFuture<ImmutableMap<RangingTechnology, Integer>> rangingTechnologiesAvailability();
+    ListenableFuture<ImmutableMap<RangingTechnology, Integer>> rangingTechnologiesAvailability()
+            throws RemoteException;
 
     /** Returns UWB capabilities if UWB was requested. */
     ListenableFuture<RangingCapabilities> getUwbCapabilities();
 
     /** Returns UWB address if UWB was requested. */
-    ListenableFuture<UwbAddress> getUwbAddress();
+    ListenableFuture<UwbAddress> getUwbAddress() throws RemoteException;
 
     /** Sets UWB configuration. No op if UWB was not requested. */
     void setUwbConfig(RangingParameters rangingParameters);

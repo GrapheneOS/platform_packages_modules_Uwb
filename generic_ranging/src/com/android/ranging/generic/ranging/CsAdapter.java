@@ -18,7 +18,8 @@ package com.android.ranging.generic.ranging;
 
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 
-import com.google.android.libraries.precisionfinding.RangingTechnology;
+import com.android.ranging.generic.RangingTechnology;
+
 import com.google.common.util.concurrent.ListenableFuture;
 
 /** Channel Sounding adapter for ranging. */

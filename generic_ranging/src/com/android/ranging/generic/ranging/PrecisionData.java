@@ -18,6 +18,7 @@ package com.android.ranging.generic.ranging;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+
 import java.util.Optional;
 
 /**

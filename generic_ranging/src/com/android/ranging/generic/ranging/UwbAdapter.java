@@ -19,36 +19,45 @@ package com.android.ranging.generic.ranging;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
-import com.google.android.apps.common.inject.annotation.ApplicationContext;
-import com.google.android.gms.nearby.Nearby;
-import com.google.android.gms.nearby.uwb.RangingCapabilities;
-import com.google.android.gms.nearby.uwb.RangingParameters;
-import com.google.android.gms.nearby.uwb.RangingPosition;
-import com.google.android.gms.nearby.uwb.RangingSessionCallback;
-import com.google.android.gms.nearby.uwb.UwbAddress;
-import com.google.android.gms.nearby.uwb.UwbClient;
-import com.google.android.gms.nearby.uwb.UwbDevice;
-import com.google.android.libraries.gmstasks.TaskFutures;
-import com.google.android.libraries.precisionfinding.RangingTechnology;
-import com.google.android.libraries.spot.concurrent.Executors.LightweightExecutor;
+import android.os.Build;
+import android.os.RemoteException;
+import android.util.Log;
+
+import androidx.core.uwb.backend.IUwb;
+import androidx.core.uwb.backend.impl.internal.RangingCapabilities;
+import androidx.core.uwb.backend.impl.internal.RangingDevice;
+import androidx.core.uwb.backend.impl.internal.RangingParameters;
+import androidx.core.uwb.backend.impl.internal.RangingPosition;
+import androidx.core.uwb.backend.impl.internal.RangingSessionCallback;
+import androidx.core.uwb.backend.impl.internal.UwbAddress;
+import androidx.core.uwb.backend.impl.internal.UwbAvailabilityCallback;
+import androidx.core.uwb.backend.impl.internal.UwbDevice;
+import androidx.core.uwb.backend.impl.internal.UwbFeatureFlags;
+import androidx.core.uwb.backend.impl.internal.UwbServiceImpl;
+
+import com.android.internal.annotations.GuardedBy;
+import com.android.ranging.generic.RangingTechnology;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.flogger.GoogleLogger;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.errorprone.annotations.concurrent.GuardedBy;
+
 import java.util.Optional;
-import javax.inject.Inject;
 
 /** Ranging Adapter for Ultra-Wide Band (UWB). */
 class UwbAdapter implements RangingAdapter {
 
-    private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
+    public static String TAG = UwbAdapter.class.getSimpleName();
 
-    private final Optional<UwbClient> uwbClient;
+    public IUwb mIUwb;
+    private UwbServiceImpl mUwbService;
+
+    private final Optional<RangingDevice> uwbClient;
     private Optional<RangingSessionCallback> uwbListener;
     private Optional<RangingParameters> rangingParameters;
     private Optional<Callback> callback;
@@ -60,13 +69,22 @@ class UwbAdapter implements RangingAdapter {
 
     private final ListeningExecutorService executorService;
 
-    @Inject
-    UwbAdapter(
-            @ApplicationContext Context context,
-            @LightweightExecutor ListeningExecutorService executorServices) {
+    public UwbAdapter(Context context, ListeningExecutorService executorServices)
+            throws RemoteException {
+
+        UwbFeatureFlags uwbFeatureFlags = new UwbFeatureFlags.Builder()
+                .setSkipRangingCapabilitiesCheck(Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2)
+                .setReversedByteOrderFiraParams(
+                        Build.VERSION.SDK_INT <= Build.VERSION_CODES.TIRAMISU)
+                .build();
+        UwbAvailabilityCallback uwbAvailabilityCallback = (isUwbAvailable, reason) -> {
+            // TODO: Implement when adding backend support.
+        };
+        mUwbService = new UwbServiceImpl(context, uwbFeatureFlags, uwbAvailabilityCallback);
+        //TODO(b/331206299): Add support to pick controller or controlee.
         this.uwbClient =
                 context.getPackageManager().hasSystemFeature("android.hardware.uwb")
-                        ? Optional.of(Nearby.getUwbControleeClient(context))
+                        ? Optional.of(mUwbService.getControlee(context))
                         : Optional.empty();
         this.rangingParameters = Optional.empty();
         this.callback = Optional.empty();
@@ -79,8 +97,8 @@ class UwbAdapter implements RangingAdapter {
 
     @VisibleForTesting
     public UwbAdapter(
-            Optional<UwbClient> uwbClient,
-            @LightweightExecutor ListeningExecutorService executorService) {
+            Optional<RangingDevice> uwbClient,
+            ListeningExecutorService executorService) {
         this.uwbClient = uwbClient;
         this.rangingParameters = Optional.empty();
         this.callback = Optional.empty();
@@ -101,17 +119,20 @@ class UwbAdapter implements RangingAdapter {
         return uwbClient.isPresent();
     }
 
+    @SuppressLint("CheckResult")
     @Override
-    public ListenableFuture<Boolean> isEnabled() {
+    public ListenableFuture<Boolean> isEnabled() throws RemoteException {
         if (uwbClient.isEmpty()) {
             return immediateFuture(false);
         }
-        return TaskFutures.toListenableFuture(uwbClient.get().isAvailable());
+        return Futures.submit(() -> {
+            return mUwbService.isAvailable();
+        }, executorService);
     }
 
     @Override
     public void start(Callback callback) {
-        logger.atInfo().log("Start UwbAdapter called.");
+        Log.i(TAG, "Start UwbAdapter called.");
         if (uwbClient.isEmpty()) {
             callback.onStopped(RangingAdapter.Callback.StoppedReason.ERROR);
             clear();
@@ -119,7 +140,7 @@ class UwbAdapter implements RangingAdapter {
         }
         synchronized (lock) {
             if (internalState != UwbAdapterState.STOPPED) {
-                logger.atWarning().log("Tried to start UWB while it is not in stopped state");
+                Log.w(TAG, "Tried to start UWB while it is not in stopped state");
                 return;
             }
             internalState = UwbAdapterState.STARTING;
@@ -130,36 +151,41 @@ class UwbAdapter implements RangingAdapter {
 
     @Override
     public void stop() {
-        logger.atInfo().log("Stop UwbAdapter API called.");
+        Log.i(TAG, "Stop UwbAdapter API called.");
         if (uwbClient.isEmpty()) {
-            logger.atWarning().log("Tried to stop UWB but it is not available.");
+            Log.w(TAG, "Tried to stop UWB but it is not available.");
             clear();
             return;
         }
         synchronized (lock) {
             if (internalState == UwbAdapterState.STOPPED) {
-                logger.atWarning().log("Tried to stop UWB while it is already in stopped state");
+                Log.w(TAG, "Tried to stop UWB while it is already in stopped state");
                 return;
             }
         }
         stopRanging();
     }
 
-    ListenableFuture<UwbAddress> getLocalAddress() {
+    ListenableFuture<UwbAddress> getLocalAddress() throws RemoteException {
         if (uwbClient.isEmpty()) {
             clear();
 
             return immediateFailedFuture(new IllegalStateException("UWB is not available."));
         }
-        return TaskFutures.toListenableFuture(uwbClient.get().getLocalAddress());
+        return Futures.submit(() -> {
+            return uwbClient.get().getLocalAddress();
+        }, executorService);
     }
 
-    ListenableFuture<RangingCapabilities> getCapabilities() {
+    ListenableFuture<RangingCapabilities> getCapabilities() throws RemoteException {
         if (uwbClient.isEmpty()) {
             clear();
             return immediateFailedFuture(new IllegalStateException("UWB is not available."));
         }
-        return TaskFutures.toListenableFuture(uwbClient.get().getRangingCapabilities());
+        return Futures.submit(() -> {
+            return mUwbService.getRangingCapabilities();
+        }, executorService);
+
     }
 
     void setRangingParameters(RangingParameters params) {
@@ -172,22 +198,23 @@ class UwbAdapter implements RangingAdapter {
             return;
         }
         this.uwbListener = Optional.of(uwbListener);
-        var future =
-                TaskFutures.toListenableFuture(
-                        uwbClient.get().startRanging(this.rangingParameters.get(), uwbListener));
+        uwbClient.get().setRangingParameters(this.rangingParameters.get());
+        var future = Futures.submit(() -> {
+            uwbClient.get().startRanging(uwbListener, executorService);
+        }, executorService);
         Futures.addCallback(
                 future,
                 new FutureCallback<Void>() {
                     @Override
                     public void onSuccess(Void result) {
-                        logger.atInfo().log("UWB startRanging call succeeded.");
+                        Log.i(TAG, "UWB startRanging call succeeded.");
                         // On started will be called after onRangingInitialized is invoked from
                         // the UWB callback.
                     }
 
                     @Override
                     public void onFailure(Throwable t) {
-                        logger.atWarning().withCause(t).log("Failed UWB startRanging call.");
+                        Log.w(TAG, "Failed UWB startRanging call.", t);
                         callback.get().onStopped(RangingAdapter.Callback.StoppedReason.ERROR);
                         synchronized (lock) {
                             internalState = UwbAdapterState.STOPPED;
@@ -199,9 +226,11 @@ class UwbAdapter implements RangingAdapter {
     }
 
     private void stopRanging() {
-        logger.atInfo().log("UwbAdapter stopRanging.");
+        Log.i(TAG, "UwbAdapter stopRanging.");
         var future =
-                TaskFutures.toListenableFuture(uwbClient.get().stopRanging(this.uwbListener.get()));
+                Futures.submit(() -> {
+                    uwbClient.get().stopRanging();
+                }, executorService);
         Futures.addCallback(
                 future,
                 new FutureCallback<Void>() {
@@ -213,7 +242,7 @@ class UwbAdapter implements RangingAdapter {
 
                     @Override
                     public void onFailure(Throwable t) {
-                        logger.atWarning().withCause(t).log("Failed UWB stopRanging call.");
+                        Log.w(TAG, "Failed UWB stopRanging call.", t);
                         // We failed to stop but there's nothing else we can do.
                         callback.get().onStopped(RangingAdapter.Callback.StoppedReason.REQUESTED);
                         synchronized (lock) {
@@ -227,14 +256,15 @@ class UwbAdapter implements RangingAdapter {
 
     private class UwbListener implements RangingSessionCallback {
 
-        public UwbListener() {}
+        public UwbListener() {
+        }
 
         @Override
         public void onRangingInitialized(UwbDevice device) {
-            logger.atInfo().log("onRangingInitialized");
+            Log.i(TAG, "onRangingInitialized");
             synchronized (lock) {
                 if (internalState != UwbAdapterState.STARTING) {
-                    logger.atSevere().log("Uwb initialized but wasn't in STARTING state.");
+                    Log.e(TAG, "Uwb initialized but wasn't in STARTING state.");
                     return;
                 }
                 internalState = UwbAdapterState.STARTED;
@@ -246,8 +276,9 @@ class UwbAdapter implements RangingAdapter {
         public void onRangingResult(UwbDevice device, RangingPosition position) {
             synchronized (lock) {
                 if (internalState != UwbAdapterState.STARTED) {
-                    logger.atSevere().log(
-                            "onRangingResult callback received but UwbAdapter not in STARTED state.");
+                    Log.e(TAG,
+                            "onRangingResult callback received but UwbAdapter not in STARTED "
+                                    + "state.");
                     return;
                 }
             }
@@ -264,16 +295,17 @@ class UwbAdapter implements RangingAdapter {
 
         @Override
         public void onRangingSuspended(UwbDevice device, @RangingSuspendedReason int reason) {
-            logger.atInfo().log("onRangingSuspended: %d", reason);
+            Log.i(TAG, "onRangingSuspended: " + reason);
             synchronized (lock) {
                 if (internalState == UwbAdapterState.STOPPED) {
-                    logger.atSevere().log(
-                            "onRangingSuspended callback received but UwbAdapter was in STOPPED state.");
+                    Log.e(TAG,
+                            "onRangingSuspended callback received but UwbAdapter was in STOPPED "
+                                    + "state.");
                     return;
                 }
                 internalState = UwbAdapterState.STOPPED;
             }
-            if (reason == RangingSuspendedReason.STOP_RANGING_CALLED) {
+            if (reason == RangingSessionCallback.REASON_STOP_RANGING_CALLED) {
                 callback.get().onStopped(RangingAdapter.Callback.StoppedReason.REQUESTED);
             } else {
                 callback.get().onStopped(RangingAdapter.Callback.StoppedReason.ERROR);

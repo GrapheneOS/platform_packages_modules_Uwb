@@ -68,6 +68,7 @@ java_library {
     ],
     visibility: [
         ":__subpackages__",
+        "//packages/modules/Uwb/generic_ranging:__subpackages__",
         "//packages/modules/Connectivity/remoteauth:__subpackages__",
     ],
     lint: {

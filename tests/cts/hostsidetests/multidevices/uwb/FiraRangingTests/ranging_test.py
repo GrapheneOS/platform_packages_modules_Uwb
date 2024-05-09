@@ -293,6 +293,15 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     responder.start_fira_ranging()
     uwb_test_utils.verify_peer_found(initiator, peer_addr)
 
+  def _is_bg_ranging_supported(
+      self, device: uwb_ranging_decorator.UwbRangingDecorator):
+    """Checks if device supports bg ranging.
+
+    Args:
+      device: uwb device object.
+    """
+    return device.ad.uwb.getSpecificationInfo()["fira"]["background_ranging_support"]
+
   def _verify_one_to_one_ranging_airplane_mode_toggle(
       self, initiator: uwb_ranging_decorator.UwbRangingDecorator,
       responder: uwb_ranging_decorator.UwbRangingDecorator,
@@ -1428,6 +1437,10 @@ class RangingTest(uwb_base_test.UwbBaseTest):
       4. Remain in background.
       5. Ensures the session is stopped within 4 mins.
     """
+    asserts.skip_if(
+        self._is_bg_ranging_supported(self.initiator),
+        f"Bg ranging is supported on {self.initiator}",
+    )
     initiator_params = uwb_ranging_params.UwbRangingParams(
         device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
         device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
@@ -1481,6 +1494,10 @@ class RangingTest(uwb_base_test.UwbBaseTest):
       1. Move app to background.
       2. Ensures the app cannot open session.
     """
+    asserts.skip_if(
+        self._is_bg_ranging_supported(self.initiator),
+        f"Bg ranging is supported on {self.initiator}",
+    )
     initiator_params = uwb_ranging_params.UwbRangingParams(
         device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
         device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
