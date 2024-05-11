@@ -338,7 +338,7 @@ impl NotificationManagerAndroid {
             return Err(jni::errors::Error::InvalidArgList(type_signature));
         }
         let name_signature = name.to_owned() + sig;
-        if self.jmethod_id_map.get(&name_signature).is_none() {
+        if !self.jmethod_id_map.contains_key(&name_signature) {
             self.jmethod_id_map.insert(
                 name_signature.clone(),
                 self.env.get_method_id(self.callback_obj.as_obj(), name, sig).map_err(|e| {

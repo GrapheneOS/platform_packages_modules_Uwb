@@ -555,6 +555,19 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 builder.setRangeDataNtfProximityNear(rangeDataNtfProximityNearCm);
                 builder.setRangeDataNtfProximityFar(rangeDataNtfProximityFarCm);
             }
+            if (option.equals("-R")) {
+                // enable / disable range data NTFs
+                // range-data-notification
+                String range_data_ntf = getNextArgRequired();
+                if (range_data_ntf.equals("disabled")) {
+                    builder.setRangeDataNtfConfig(FiraParams.RANGE_DATA_NTF_CONFIG_DISABLE);
+                } else if (range_data_ntf.equals("enabled")) {
+                    builder.setRangeDataNtfConfig(FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE);
+                } else {
+                    throw new IllegalArgumentException("Unknown range data ntf setting: "
+                        + range_data_ntf);
+                }
+            }
             if (option.equals("-z")) {
                 String[] interleaveRatioString = getNextArgRequired().split(",");
                 if (interleaveRatioString.length != 3) {
@@ -1498,7 +1511,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " [-D 6m81|7m80|27m2|31m2](psduDataRate)"
                 + " [-B 850k|6m81](bprfPhrDataRate)"
                 + " [-A enabled|disabled](TX adaptive power, default = disabled)"
-                + " [-S <sfd_id>](sfd_id 0-4, default = 2)");
+                + " [-S <sfd_id>](sfd_id 0-4, default = 2)"
+                + " [-R enabled|disabled](range-data-notification)");
         pw.println("    Starts a FIRA ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
                 + " retrieved using |get-ranging-session-reports|");
