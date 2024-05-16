@@ -23,16 +23,7 @@ java_library {
     min_sdk_version: "34",
     installable: false,
     srcs: [
-        //"src/**/*.java",
-        "src/**/RangingTechnology.java",
-        "src/**/RangingData.java",
-        "src/**/RangingAdapter.java",
-        "src/**/FusionData.java",
-        "src/**/PrecisionData.java",
-        "src/**/PrecisionRanging.java",
-        "src/**/PrecisionRangingConfig.java",
-        "src/**/UwbAdapter.java",
-        "src/**/PrecisionRangingImpl.java",
+        "src/**/*.java",
     ],
     plugins: [
         "auto_value_plugin",
@@ -48,6 +39,7 @@ java_library {
         "dagger2",
         "framework-annotations-lib",
         "guava",
+        "multi-sensor-finder-configuration-java-proto",
         "uwb_androidx_backend",
     ],
     visibility: [

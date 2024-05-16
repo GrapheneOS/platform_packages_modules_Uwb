@@ -304,6 +304,7 @@ class UwbAdapter implements RangingAdapter {
                     return;
                 }
                 internalState = UwbAdapterState.STOPPED;
+                stopRanging();
             }
             if (reason == RangingSessionCallback.REASON_STOP_RANGING_CALLED) {
                 callback.get().onStopped(RangingAdapter.Callback.StoppedReason.REQUESTED);

@@ -17,14 +17,14 @@
 package com.android.ranging.generic.ranging;
 
 import com.android.ranging.generic.RangingTechnology;
+import com.android.ranging.generic.proto.MultiSensorFinderConfig;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import java.time.Duration;
-//import java.util.Optional;
-//import location.bluemoon.finder.MultiSensorFinderConfig;
+import java.util.Optional;
 
 /** Configuration for Precision Ranging. */
 @AutoValue
@@ -67,7 +67,7 @@ public abstract class PrecisionRangingConfig {
     public abstract Duration getNoUpdateTimeout();
 
     /** Returns the fusion algorithm configuration if present. */
-    //public abstract Optional<MultiSensorFinderConfig> getFusionAlgorithmConfig();
+    public abstract Optional<MultiSensorFinderConfig> getFusionAlgorithmConfig();
 
     /** Returns a builder for {@link PrecisionRangingConfig}. */
     public static Builder builder() {
@@ -90,8 +90,8 @@ public abstract class PrecisionRangingConfig {
 
         public abstract Builder setInitTimeout(Duration duration);
 
-        //public abstract Builder setFusionAlgorithmConfig(MultiSensorFinderConfig
-        // fusionAlgorithmConfig);
+        public abstract Builder setFusionAlgorithmConfig(MultiSensorFinderConfig
+                fusionAlgorithmConfig);
 
         abstract PrecisionRangingConfig autoBuild();
 
@@ -101,20 +101,18 @@ public abstract class PrecisionRangingConfig {
                     !config.getRangingTechnologiesToRangeWith().isEmpty(),
                     "Ranging technologies to range with must contain at least one ranging "
                             + "technology.");
-//            Preconditions.checkArgument(
-//                    config.getUseFusingAlgorithm() == config.getFusionAlgorithmConfig()
-//                    .isPresent(),
-//                    "Fusion algorithm config must be set when and only when useFusingAlgorithm
-//                    is set to"
-//                            + " true.");
-//            if (config.getUseFusingAlgorithm()
-//                    && config.getRangingTechnologiesToRangeWith().contains(RangingTechnology
-//                    .UWB)) {
-//                Preconditions.checkArgument(
-//                        config.getFusionAlgorithmConfig().get().getUseUwbMeasurements(),
-//                        "Fusion algorithm should accept UWB measurements since UWB was
-//                        requested.");
-//            }
+            Preconditions.checkArgument(
+                    config.getUseFusingAlgorithm() == config.getFusionAlgorithmConfig()
+                    .isPresent(),
+                    "Fusion algorithm config must be set when and only when useFusingAlgorithm"
+                    + "is set to");
+            if (config.getUseFusingAlgorithm()
+                    && config.getRangingTechnologiesToRangeWith().contains(RangingTechnology
+                    .UWB)) {
+                Preconditions.checkArgument(
+                        config.getFusionAlgorithmConfig().get().getUseUwbMeasurements(),
+                        "Fusion algorithm should accept UWB measurements since UWB was requested.");
+            }
             return config;
         }
     }

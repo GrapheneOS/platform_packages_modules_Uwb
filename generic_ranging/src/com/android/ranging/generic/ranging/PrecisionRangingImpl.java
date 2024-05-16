@@ -31,6 +31,8 @@ import androidx.core.uwb.backend.impl.internal.UwbAddress;
 
 import com.android.internal.annotations.GuardedBy;
 import com.android.ranging.generic.RangingTechnology;
+import com.android.sensor.Estimate;
+import com.android.sensor.MultiSensorFinderListener;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -368,7 +370,13 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
         //lastUpdateTime = timeSource.now();
         lastUpdateTime = Instant.now();
         precisionDataBuilder.setTimestamp(lastUpdateTime.toEpochMilli());
-        callback.get().onData(precisionDataBuilder.build());
+        PrecisionData precisionData = precisionDataBuilder.build();
+        synchronized (lock) {
+            if (internalState == State.STOPPED) {
+                return;
+            }
+            callback.get().onData(precisionData);
+        }
     }
 
     /* Checks if stopping conditions are met and if so, stops precision ranging. */
@@ -465,13 +473,13 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
     /* Calls stop on all ranging adapters and the fusion algorithm and resets all internal states
     . */
     private void stopPrecisionRanging(@PrecisionRanging.Callback.StoppedReason int reason) {
-        Log.i(TAG, "stopPrecisionRanging with reason: " + reason);
         synchronized (lock) {
             if (internalState == State.STOPPED) {
                 return;
             }
             internalState = State.STOPPED;
         }
+        Log.i(TAG, "stopPrecisionRanging with reason: " + reason);
         callback.get().onStopped(reason);
         // stop all ranging techs
         for (RangingTechnology technology : config.getRangingTechnologiesToRangeWith()) {
@@ -517,8 +525,6 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
         rangingConfigurationsAdded.clear();
         //fusionAlgorithmListener = Optional.empty();
         callback = Optional.empty();
-        periodicUpdateExecutorService.shutdown();
-        internalExecutorService.shutdown();
         seenSuccessfulFusionData = false;
     }
 
@@ -674,14 +680,17 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
             lastRangeDataReceivedTime = Instant.now();
             feedDataToFusionAlgorithm(rangingData);
             if (config.getMaxUpdateInterval().isZero()) {
-                callback
-                        .get()
-                        .onData(
-                                PrecisionData.builder()
-                                        .setRangingData(ImmutableList.of(rangingData))
-                                        //.setTimestamp(timeSource.now().toEpochMilli())
-                                        .setTimestamp(Instant.now().toEpochMilli())
-                                        .build());
+                PrecisionData precisionData =
+                        PrecisionData.builder()
+                                .setRangingData(ImmutableList.of(rangingData))
+                                .setTimestamp(Instant.now().toEpochMilli())
+                                .build();
+                synchronized (lock) {
+                    if (internalState == State.STOPPED) {
+                        return;
+                    }
+                    callback.get().onData(precisionData);
+                }
             }
             switch (rangingData.getRangingTechnology()) {
                 case UWB:
@@ -695,41 +704,44 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
         }
     }
 
-//    /* Listener implementation for fusion algorithm callback. */
-//    private class FusionAlgorithmListener implements MultiSensorFinderListener {
-//        @Override
-//        public void onUpdatedEstimate(Estimate estimate) {
-//            synchronized (lock) {
-//                if (internalState == State.STOPPED) {
-//                    return;
-//                }
-//                if (internalState == State.STARTING) {
-//                    internalState = State.ACTIVE;
-//                    // call started as soon as at least one ranging tech starts or fusion alg
-//                    estimate
-//                    // received.
-//                    callback.get().onStarted();
-//                }
-//            }
-//            FusionData fusionData = FusionData.fromFusionAlgorithmEstimate(estimate);
-//            if (fusionData.getArCoreState() == ArCoreState.OK) {
-//                lastFusionDataReceivedTime = timeSource.now();
-//                seenSuccessfulFusionData = true;
-//            }
-//            synchronized (lock) {
-//                lastFusionDataResult = Optional.of(fusionData);
-//            }
-//            if (config.getMaxUpdateInterval().isZero()) {
-//                callback
-//                        .get()
-//                        .onData(
-//                                PrecisionData.builder()
-//                                        .setFusionData(fusionData)
-//                                        .setTimestamp(timeSource.now().toEpochMilli())
-//                                        .build());
-//            }
-//        }
-//    }
+    /* Listener implementation for fusion algorithm callback. */
+    private class FusionAlgorithmListener implements MultiSensorFinderListener {
+        @Override
+        public void onUpdatedEstimate(Estimate estimate) {
+            synchronized (lock) {
+                if (internalState == State.STOPPED) {
+                    return;
+                }
+                if (internalState == State.STARTING) {
+                    internalState = State.ACTIVE;
+                    // call started as soon as at least one ranging tech starts or fusion alg
+                    //estimate received.
+                    callback.get().onStarted();
+                }
+            }
+            FusionData fusionData = FusionData.fromFusionAlgorithmEstimate(estimate);
+            if (fusionData.getArCoreState() == FusionData.ArCoreState.OK) {
+                lastFusionDataReceivedTime = Instant.now();
+                seenSuccessfulFusionData = true;
+            }
+            synchronized (lock) {
+                lastFusionDataResult = Optional.of(fusionData);
+            }
+            if (config.getMaxUpdateInterval().isZero()) {
+                PrecisionData precisionData =
+                        PrecisionData.builder()
+                                .setFusionData(fusionData)
+                                .setTimestamp(Instant.now().toEpochMilli())
+                                .build();
+                synchronized (lock) {
+                    if (internalState == State.STOPPED) {
+                        return;
+                    }
+                    callback.get().onData(precisionData);
+                }
+            }
+        }
+    }
 
     /* Internal states. */
     private enum State {
