@@ -12,7 +12,7 @@ rust_defaults {
     srcs: ["src/lib.rs"],
     rustlibs: [
         "libbinder_rs",
-        "libjni",
+        "libjni_legacy",
         "liblazy_static",
         "liblog_rust",
         "liblogger",

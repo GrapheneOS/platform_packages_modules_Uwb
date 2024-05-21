@@ -85,7 +85,7 @@ public class UwbSettingsStore {
     public static final Key<Boolean> SETTINGS_TOGGLE_STATE =
             new Key<>("settings_toggle", true);
     public static final Key<String> SETTINGS_LOG_MODE =
-            new Key<>("settings_log_mode", UciLogModeStore.Mode.DISABLED.getMode());
+            new Key<>("settings_log_mode", UciLogModeStore.Mode.FILTERED.getMode());
 
     public static final Key<Boolean> SETTINGS_FIRST_TOGGLE_DONE =
             new Key<>("settings_first_toggle_done", false);
