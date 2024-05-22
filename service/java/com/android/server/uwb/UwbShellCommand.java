@@ -1349,7 +1349,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     stopRangingSession(pw);
                     return 0;
                 case "stop-all-ranging-sessions": {
-                    for (int sessionId : sSessionIdToInfo.keySet().stream().toList()) {
+                    for (int sessionId : new ArrayList<>(sSessionIdToInfo.keySet())) {
                         if (!sSessionIdToInfo.get(sessionId).isRadarSession) {
                             stopRangingSession(pw, sessionId);
                         }
@@ -1357,7 +1357,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     return 0;
                 }
                 case "stop-all-radar-sessions": {
-                    for (int sessionId : sSessionIdToInfo.keySet().stream().toList()) {
+                    for (int sessionId : new ArrayList<>(sSessionIdToInfo.keySet())) {
                         if (sSessionIdToInfo.get(sessionId).isRadarSession) {
                             stopRangingSession(pw, sessionId);
                         }
