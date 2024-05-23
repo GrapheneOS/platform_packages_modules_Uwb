@@ -405,9 +405,7 @@ public abstract class RangingDevice {
             @WorkerThread
             @Override
             public void onControleeRemoved(PersistableBundle params) {
-                if (mOpAsyncCallbackRunner.isActive()) {
-                    mOpAsyncCallbackRunner.complete(true);
-                }
+                mOpAsyncCallbackRunner.complete(true);
             }
 
             @WorkerThread
