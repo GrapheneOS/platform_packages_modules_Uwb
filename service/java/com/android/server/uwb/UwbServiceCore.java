@@ -996,7 +996,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
      */
     public synchronized int sendVendorUciMessage(int mt, int gid, int oid, byte[] payload,
             String chipId) {
-        if ((!isUwbEnabled())) {
+        if ((!isUwbEnabledInternal())) {
             Log.e(TAG, "sendRawVendor : Uwb is not enabled");
             return UwbUciConstants.STATUS_CODE_FAILED;
         }
