@@ -115,6 +115,7 @@ public class FiraOpenSessionParams extends FiraParams {
     private final boolean mIsRssiReportingEnabled;
     private final boolean mIsDiagnosticsEnabled;
     private final byte mDiagramsFrameReportsFieldsFlags;
+    private final byte mAntennaMode;
     private final boolean mIsKeyRotationEnabled;
     private final int mKeyRotationRate;
     @AoaResultRequestMode private final int mAoaResultRequest;
@@ -264,6 +265,7 @@ public class FiraOpenSessionParams extends FiraParams {
     private static final String KEY_SESSION_OFFSET_IN_MICRO_SECONDS =
                 "session_offset_in_micro_seconds";
     private static final String KEY_APPLICATION_DATA_ENDPOINT = "application_data_endpoint";
+    private static final String KEY_ANTENNA_MODE = "antenna_mode";
 
     private FiraOpenSessionParams(
             FiraProtocolVersion protocolVersion,
@@ -314,6 +316,7 @@ public class FiraOpenSessionParams extends FiraParams {
             boolean isRssiReportingEnabled,
             boolean isDiagnosticsEnabled,
             byte diagramsFrameReportsFieldsFlags,
+            @AntennaMode byte antennaMode,
             boolean isKeyRotationEnabled,
             int keyRotationRate,
             @AoaResultRequestMode int aoaResultRequest,
@@ -400,6 +403,7 @@ public class FiraOpenSessionParams extends FiraParams {
         mIsRssiReportingEnabled = isRssiReportingEnabled;
         mIsDiagnosticsEnabled = isDiagnosticsEnabled;
         mDiagramsFrameReportsFieldsFlags = diagramsFrameReportsFieldsFlags;
+        mAntennaMode = antennaMode;
         mIsKeyRotationEnabled = isKeyRotationEnabled;
         mKeyRotationRate = keyRotationRate;
         mAoaResultRequest = aoaResultRequest;
@@ -659,6 +663,11 @@ public class FiraOpenSessionParams extends FiraParams {
         return mDiagramsFrameReportsFieldsFlags;
     }
 
+    @AntennaMode
+    public byte getAntennaMode() {
+        return mAntennaMode;
+    }
+
     public boolean isKeyRotationEnabled() {
         return mIsKeyRotationEnabled;
     }
@@ -915,6 +924,7 @@ public class FiraOpenSessionParams extends FiraParams {
         bundle.putBoolean(KEY_IS_RSSI_REPORTING_ENABLED, mIsRssiReportingEnabled);
         bundle.putBoolean(KEY_IS_DIAGNOSTICS_ENABLED, mIsDiagnosticsEnabled);
         bundle.putInt(KEY_DIAGRAMS_FRAME_REPORTS_FIELDS_FLAGS, mDiagramsFrameReportsFieldsFlags);
+        bundle.putInt(KEY_ANTENNA_MODE, mAntennaMode);
         bundle.putBoolean(KEY_IS_KEY_ROTATION_ENABLED, mIsKeyRotationEnabled);
         bundle.putInt(KEY_KEY_ROTATION_RATE, mKeyRotationRate);
         bundle.putInt(KEY_AOA_RESULT_REQUEST, mAoaResultRequest);
@@ -1042,6 +1052,7 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setIsDiagnosticsEnabled(bundle.getBoolean(KEY_IS_DIAGNOSTICS_ENABLED, false))
                 .setDiagramsFrameReportsFieldsFlags((byte)
                         bundle.getInt(KEY_DIAGRAMS_FRAME_REPORTS_FIELDS_FLAGS, 0))
+                .setAntennaMode((byte) bundle.getInt(KEY_ANTENNA_MODE, ANTENNA_MODE_OMNI))
                 .setIsKeyRotationEnabled(bundle.getBoolean(KEY_IS_KEY_ROTATION_ENABLED))
                 .setKeyRotationRate(bundle.getInt(KEY_KEY_ROTATION_RATE))
                 .setAoaResultRequest(bundle.getInt(KEY_AOA_RESULT_REQUEST))
@@ -1260,6 +1271,9 @@ public class FiraOpenSessionParams extends FiraParams {
         /** All fields are set to 0 by default */
         private byte mDiagramsFrameReportsFieldsFlags = 0;
 
+        /** Defaults to omni mode **/
+        @AntennaMode private byte mAntennaMode = ANTENNA_MODE_OMNI;
+
         /** UCI spec default: no key rotation */
         private boolean mIsKeyRotationEnabled = false;
 
@@ -1420,6 +1434,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mIsRssiReportingEnabled = builder.mIsRssiReportingEnabled;
             mIsDiagnosticsEnabled = builder.mIsDiagnosticsEnabled;
             mDiagramsFrameReportsFieldsFlags = builder.mDiagramsFrameReportsFieldsFlags;
+            mAntennaMode = builder.mAntennaMode;
             mIsKeyRotationEnabled = builder.mIsKeyRotationEnabled;
             mKeyRotationRate = builder.mKeyRotationRate;
             mAoaResultRequest = builder.mAoaResultRequest;
@@ -1510,6 +1525,7 @@ public class FiraOpenSessionParams extends FiraParams {
             mIsRssiReportingEnabled = params.mIsRssiReportingEnabled;
             mIsDiagnosticsEnabled = params.mIsDiagnosticsEnabled;
             mDiagramsFrameReportsFieldsFlags = params.mDiagramsFrameReportsFieldsFlags;
+            mAntennaMode = params.mAntennaMode;
             mIsKeyRotationEnabled = params.mIsKeyRotationEnabled;
             mKeyRotationRate = params.mKeyRotationRate;
             mAoaResultRequest = params.mAoaResultRequest;
@@ -1828,6 +1844,12 @@ public class FiraOpenSessionParams extends FiraParams {
         public FiraOpenSessionParams.Builder
                 setDiagramsFrameReportsFieldsFlags(byte diagramsFrameReportsFieldsFlags) {
             mDiagramsFrameReportsFieldsFlags = diagramsFrameReportsFieldsFlags;
+            return this;
+        }
+
+        /** Set the antenna mode **/
+        public FiraOpenSessionParams.Builder setAntennaMode(@AntennaMode byte antennaMode) {
+            mAntennaMode = antennaMode;
             return this;
         }
 
@@ -2254,6 +2276,7 @@ public class FiraOpenSessionParams extends FiraParams {
                     mIsRssiReportingEnabled,
                     mIsDiagnosticsEnabled,
                     mDiagramsFrameReportsFieldsFlags,
+                    mAntennaMode,
                     mIsKeyRotationEnabled,
                     mKeyRotationRate,
                     mAoaResultRequest,

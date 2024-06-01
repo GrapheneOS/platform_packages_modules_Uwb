@@ -101,6 +101,7 @@ public class DeviceConfigFacade {
     private boolean mCccSupportedRangeDataNtfConfig;
     private boolean mPersistentCacheUseForCountryCodeEnabled;
     private boolean mHwIdleTurnOffEnabled;
+    private boolean mIsAntennaModeConfigSupported;
 
     public DeviceConfigFacade(Handler handler, Context context) {
         mContext = context;
@@ -312,6 +313,12 @@ public class DeviceConfigFacade {
                 DeviceConfig.NAMESPACE_UWB,
                 "hw_idle_turn_off_enabled",
                 mContext.getResources().getBoolean(R.bool.hw_idle_turn_off_enabled)
+        );
+
+        mIsAntennaModeConfigSupported = DeviceConfig.getBoolean(
+                DeviceConfig.NAMESPACE_UWB,
+                "is_antenna_mode_config_supported",
+                mContext.getResources().getBoolean(R.bool.is_antenna_mode_config_supported)
         );
 
         // A little parsing and cleanup:
@@ -618,4 +625,9 @@ public class DeviceConfigFacade {
     public boolean isHwIdleTurnOffEnabled() {
         return mHwIdleTurnOffEnabled;
     }
+
+    /**
+     * Returns whether antenna mode configuration is supported or not.
+     */
+    public boolean isAntennaModeConfigSupported() { return mIsAntennaModeConfigSupported; }
 }

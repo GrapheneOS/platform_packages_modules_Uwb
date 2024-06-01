@@ -123,6 +123,8 @@ public class ConfigParam {
 
     public static final int ENABLE_DIAGNOSTICS_RSSI = ENABLE_DIAGNOSTICS;
     public static final int ENABLE_DIAGRAMS_FRAME_REPORTS_FIELDS = DIAGRAMS_FRAME_REPORTS_FIELDS;
+    public static final int ANTENNA_MODE = android.hardware.uwb.fira_android
+            .UwbVendorSessionAppConfigTlvTypes.ANTENNA_MODE;
 
     public static final int VENDOR_ID_BYTE_COUNT = 2;
     public static final int STATIC_STS_IV_BYTE_COUNT = 6;

@@ -218,4 +218,8 @@
      <!-- Whether multicast list update notification v2 is supported or not.
      If enabled, the notification will be parsed into version 2 if uci major version is 2.0. -->
     <bool name = "is_multicast_list_update_ntf_v2_supported">false</bool>
+
+    <!-- Whether or not the antenna operation mode shall be configured by the ANTENNA_MODE vendor
+    config param. If false, the FiRa-specified AOA_RESULT_REQ param is used instead. -->
+    <bool name = "is_antenna_mode_config_supported">false</bool>
 </resources>

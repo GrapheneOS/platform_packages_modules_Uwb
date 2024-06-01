@@ -248,6 +248,10 @@ public class FiraEncoder extends TlvEncoder {
                     .putByte(ConfigParam.INTER_FRAME_INTERVAL,
                             (byte) params.getInterFrameInterval());
         }
+
+        if (mUwbInjector.getDeviceConfigFacade().isAntennaModeConfigSupported()) {
+            tlvBufferBuilder.putByte(ConfigParam.ANTENNA_MODE, params.getAntennaMode());
+        }
         return tlvBufferBuilder.build();
     }
 

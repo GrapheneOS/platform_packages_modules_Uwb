@@ -157,6 +157,8 @@ public class DeviceConfigFacadeTest {
                 .thenReturn(false);
         when(mResources.getBoolean(R.bool.hw_idle_turn_off_enabled))
                 .thenReturn(false);
+        when(mResources.getBoolean(R.bool.is_antenna_mode_config_supported))
+                .thenReturn(false);
 
         when(mContext.getResources()).thenReturn(mResources);
 
@@ -237,6 +239,7 @@ public class DeviceConfigFacadeTest {
         assertEquals(false, mDeviceConfigFacade.isUwbDisabledUntilFirstToggle());
         assertEquals(false, mDeviceConfigFacade.isPersistentCacheUseForCountryCodeEnabled());
         assertEquals(false, mDeviceConfigFacade.isHwIdleTurnOffEnabled());
+        assertEquals(false, mDeviceConfigFacade.isAntennaModeConfigSupported());
     }
 
     /**
@@ -351,6 +354,8 @@ public class DeviceConfigFacadeTest {
                 anyBoolean())).thenReturn(true);
         when(DeviceConfig.getBoolean(anyString(), eq("hw_idle_turn_off_enabled"),
                 anyBoolean())).thenReturn(true);
+        when(DeviceConfig.getBoolean(anyString(), eq("is_antenna_mode_config_supported"),
+                anyBoolean())).thenReturn(true);
 
         mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
         assertEquals(0, mDeviceConfigFacade.getPrimerFovDegree());
@@ -372,6 +377,7 @@ public class DeviceConfigFacadeTest {
         assertEquals(true, mDeviceConfigFacade.isUwbDisabledUntilFirstToggle());
         assertEquals(true, mDeviceConfigFacade.isPersistentCacheUseForCountryCodeEnabled());
         assertEquals(true, mDeviceConfigFacade.isHwIdleTurnOffEnabled());
+        assertEquals(true, mDeviceConfigFacade.isAntennaModeConfigSupported());
         when(DeviceConfig.getString(anyString(), eq("pose_source_type"),
                 anyString())).thenReturn("NONE");
         mOnPropertiesChangedListenerCaptor.getValue().onPropertiesChanged(null);
