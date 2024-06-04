@@ -362,13 +362,14 @@ public class NativeUwbManager {
      * @return : refer to SESSION_SET_APP_CONFIG_RSP
      * in the Table 16: Control messages to set Application configurations
      */
-    public byte controllerMulticastListUpdate(int sessionId, int action, int noOfControlee,
-            byte[] addresses, int[] subSessionIds, byte[] subSessionKeyList,
+    public UwbMulticastListUpdateStatus controllerMulticastListUpdate(int sessionId, int action,
+            int noOfControlee, byte[] addresses, int[] subSessionIds, byte[] subSessionKeyList,
             String chipId) {
         synchronized (mNativeLock) {
             return nativeControllerMulticastListUpdate(sessionId, (byte) action,
                     (byte) noOfControlee, addresses, subSessionIds, subSessionKeyList, chipId,
-                    mUwbInjector.isMulticastListNtfV2Supported());
+                    mUwbInjector.isMulticastListNtfV2Supported(),
+                    mUwbInjector.isMulticastListRspV2Supported());
         }
     }
 
@@ -597,9 +598,10 @@ public class NativeUwbManager {
 
     private native UwbTlvData nativeGetCapsInfo(String chipId);
 
-    private native byte nativeControllerMulticastListUpdate(int sessionId, byte action,
-            byte noOfControlee, byte[] address, int[] subSessionId, byte[] subSessionKeyList,
-            String chipId, boolean isMulticastListNtfV2Supported);
+    private native UwbMulticastListUpdateStatus nativeControllerMulticastListUpdate(int sessionId,
+            byte action, byte noOfControlee, byte[] address, int[] subSessionId,
+            byte[] subSessionKeyList, String chipId, boolean isMulticastListNtfV2Supported,
+            boolean isMulticastListRspV2Supported);
 
     private native byte nativeSetCountryCode(byte[] countryCode, String chipId);
 

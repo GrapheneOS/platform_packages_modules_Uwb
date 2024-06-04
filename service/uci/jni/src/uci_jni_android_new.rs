@@ -17,8 +17,9 @@
 use crate::dispatcher::Dispatcher;
 use crate::helper::{boolean_result_helper, byte_result_helper, option_result_helper};
 use crate::jclass_name::{
-    CONFIG_STATUS_DATA_CLASS, DT_RANGING_ROUNDS_STATUS_CLASS, POWER_STATS_CLASS, TLV_DATA_CLASS,
-    UWB_DEVICE_INFO_RESPONSE_CLASS, UWB_RANGING_DATA_CLASS, VENDOR_RESPONSE_CLASS,
+    CONFIG_STATUS_DATA_CLASS, DT_RANGING_ROUNDS_STATUS_CLASS, MULTICAST_LIST_UPDATE_STATUS_CLASS,
+    POWER_STATS_CLASS, TLV_DATA_CLASS, UWB_DEVICE_INFO_RESPONSE_CLASS, UWB_RANGING_DATA_CLASS,
+    VENDOR_RESPONSE_CLASS,
 };
 use crate::unique_jvm;
 
@@ -36,8 +37,8 @@ use log::{debug, error};
 use uwb_core::error::{Error, Result};
 use uwb_core::params::{
     AndroidRadarConfigResponse, AppConfigTlv, CountryCode, GetDeviceInfoResponse, PhaseList,
-    RadarConfigTlv, RawAppConfigTlv, RawUciMessage, SessionUpdateDtTagRangingRoundsResponse,
-    SetAppConfigResponse, UpdateTime,
+    RadarConfigTlv, RawAppConfigTlv, RawUciMessage, SessionUpdateControllerMulticastResponse,
+    SessionUpdateDtTagRangingRoundsResponse, SetAppConfigResponse, UpdateTime,
 };
 use uwb_uci_packets::{
     AppConfigTlvType, CapTlv, Controlee, ControleePhaseList, Controlee_V2_0_16_Byte_Version,
@@ -848,6 +849,62 @@ fn native_get_caps_info(env: JNIEnv, obj: JObject, chip_id: JString) -> Result<V
     uci_manager.core_get_caps_info()
 }
 
+fn create_session_update_controller_multicast_response(
+    response: SessionUpdateControllerMulticastResponse,
+    env: JNIEnv,
+) -> Result<jobject> {
+    let session_update_controller_multicast_data_class = env
+        .find_class(MULTICAST_LIST_UPDATE_STATUS_CLASS)
+        .map_err(|_| Error::ForeignFunctionInterface)?;
+
+    let (count, mac_address_jobject, status_jobject) = if response.status == StatusCode::UciStatusOk
+    {
+        (0, JObject::null(), JObject::null())
+    } else {
+        let count = response.status_list.len() as i32;
+        let (mac_address_vec, status_vec): (Vec<[u8; 2]>, Vec<_>) = response
+            .status_list
+            .into_iter()
+            .map(|cs| (cs.mac_address, i32::from(cs.status)))
+            .unzip();
+
+        let mac_address_vec_i8 =
+            mac_address_vec.iter().flat_map(|&[a, b]| vec![a as i8, b as i8]).collect::<Vec<i8>>();
+
+        let mac_address_jbytearray = env
+            .new_byte_array(mac_address_vec_i8.len() as i32)
+            .map_err(|_| Error::ForeignFunctionInterface)?;
+
+        let _ = env.set_byte_array_region(mac_address_jbytearray, 0, &mac_address_vec_i8);
+        // Safety: mac_address_jobject is safely instantiated above.
+        let mac_address_jobject = unsafe { JObject::from_raw(mac_address_jbytearray) };
+
+        let status_jintarray =
+            env.new_int_array(count).map_err(|_| Error::ForeignFunctionInterface)?;
+
+        let _ = env.set_int_array_region(status_jintarray, 0, &status_vec);
+
+        // Safety: status_jintarray is safely instantiated above.
+        let status_jobject = unsafe { JObject::from_raw(status_jintarray) };
+        (count, mac_address_jobject, status_jobject)
+    };
+    match env.new_object(
+        session_update_controller_multicast_data_class,
+        "(JII[B[J[I)V",
+        &[
+            JValue::Long(0_i64),
+            JValue::Int(0_i32),
+            JValue::Int(count),
+            JValue::Object(mac_address_jobject),
+            JValue::Object(JObject::null()),
+            JValue::Object(status_jobject),
+        ],
+    ) {
+        Ok(o) => Ok(*o),
+        Err(_) => Err(Error::ForeignFunctionInterface),
+    }
+}
+
 /// Update multicast list on a single UWB device. Return value defined by uci_packets.pdl
 #[no_mangle]
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeControllerMulticastListUpdate(
@@ -861,9 +918,10 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeCo
     sub_session_keys: jbyteArray,
     chip_id: JString,
     is_multicast_list_ntf_v2_supported: jboolean,
-) -> jbyte {
+    is_multicast_list_rsp_v2_supported: jboolean,
+) -> jobject {
     debug!("{}: enter", function_name!());
-    byte_result_helper(
+    match option_result_helper(
         native_controller_multicast_list_update(
             env,
             obj,
@@ -875,9 +933,18 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeCo
             sub_session_keys,
             chip_id,
             is_multicast_list_ntf_v2_supported,
+            is_multicast_list_rsp_v2_supported,
         ),
         function_name!(),
-    )
+    ) {
+        Some(v) => create_session_update_controller_multicast_response(v, env)
+            .map_err(|e| {
+                error!("{} failed with {:?}", function_name!(), &e);
+                e
+            })
+            .unwrap_or(*JObject::null()),
+        None => *JObject::null(),
+    }
 }
 
 // Function is used only once that copies arguments from JNI
@@ -893,7 +960,8 @@ fn native_controller_multicast_list_update(
     sub_session_keys: jbyteArray,
     chip_id: JString,
     is_multicast_list_ntf_v2_supported: jboolean,
-) -> Result<()> {
+    is_multicast_list_rsp_v2_supported: jboolean,
+) -> Result<SessionUpdateControllerMulticastResponse> {
     let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
 
     let addresses_bytes =
@@ -984,6 +1052,7 @@ fn native_controller_multicast_list_update(
         UpdateMulticastListAction::try_from(action as u8).map_err(|_| Error::BadParameters)?,
         controlee_list,
         is_multicast_list_ntf_v2_supported != 0,
+        is_multicast_list_rsp_v2_supported != 0,
     )
 }
 

@@ -54,6 +54,7 @@
             <item name="persistent_cache_use_for_country_code_enabled" type="bool" />
             <item name="hw_idle_turn_off_enabled" type="bool" />
             <item name="is_multicast_list_update_ntf_v2_supported" type="bool" />
+            <item name="is_multicast_list_update_rsp_v2_supported" type="bool" />
             <item name="is_antenna_mode_config_supported" type="bool" />
           <!-- Params from config.xml that can be overlaid -->
 
