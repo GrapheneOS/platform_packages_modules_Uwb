@@ -2083,7 +2083,8 @@ public class FiraOpenSessionParams extends FiraParams {
 
             // Make sure address length matches the address mode
             checkArgument(mDeviceAddress != null && mDeviceAddress.size() == addressByteLength);
-            if (isTimeScheduledTwrSession()) {
+            if (isTimeScheduledTwrSession()
+                    && mStsConfig != STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
                 checkNotNull(mDestAddressList);
                 for (UwbAddress destAddress : mDestAddressList) {
                     checkArgument(destAddress != null

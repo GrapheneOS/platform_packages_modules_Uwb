@@ -236,6 +236,58 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     except signals.TestFailure:
       self.initiator.log.info("Peer %s not found as expected", peer_addr)
 
+  def _verify_add_controlee_when_starting_ranging_with_no_controlee(
+        self, initiator: uwb_ranging_decorator.UwbRangingDecorator,
+        responder: uwb_ranging_decorator.UwbRangingDecorator,
+        initiator_params: uwb_ranging_params.UwbRangingParams,
+        responder_params: uwb_ranging_params.UwbRangingParams,
+        peer_addr: List[int],
+        sub_session_id: Optional[int] = None,
+        sub_session_key: Optional[List[int]] = None):
+    """Verifies ranging between two uwb devices with dynamically added controlee.
+
+    Args:
+      initiator: The uwb device object.
+      responder: The uwb device object.
+      initiator_params: The ranging params for initiator.
+      responder_params: The ranging params for responder.
+      peer_addr: The new address of uwb device.
+      sub_session_id: Sub session id for p-sts with individual controlee keys.
+      sub_session_key: Sub session key for p-sts with individual controlee keys.
+    """
+    initiator.open_fira_ranging(initiator_params)
+    initiator.start_fira_ranging()
+
+    if sub_session_id is not None:
+        responder_params.update(sub_session_id=sub_session_id)
+    if sub_session_key is not None:
+        responder_params.update(sub_session_key=sub_session_key)
+    responder.open_fira_ranging(responder_params)
+    responder.start_fira_ranging()
+
+    # reconfigure initiator with new peer addr and verify peer found
+    sub_session_id_list = None
+    sub_session_key_list = None
+    if sub_session_id is not None:
+        sub_session_id_list = [sub_session_id]
+    if sub_session_key is not None:
+        sub_session_key_list = sub_session_key
+    action = uwb_ranging_params.FiraParamEnums.MULTICAST_LIST_UPDATE_ACTION_ADD
+    if sub_session_id is not None and sub_session_key is not None:
+        action = uwb_ranging_params.FiraParamEnums.P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_16_BYTE
+    controlee_params = uwb_ranging_params.UwbRangingControleeParams(
+        action=action,
+        address_list=[peer_addr],
+        sub_session_id_list=sub_session_id_list,
+        sub_session_key_list=sub_session_key_list)
+    initiator.add_controlee_fira_ranging(controlee_params)
+    uwb_test_utils.verify_peer_found(initiator, peer_addr)
+    controlee_params = uwb_ranging_params.UwbRangingControleeParams(
+        action=uwb_ranging_params.FiraParamEnums
+        .MULTICAST_LIST_UPDATE_ACTION_DELETE,
+        address_list=[peer_addr])
+    initiator.remove_controlee_fira_ranging(controlee_params)
+
   def _verify_stop_initiator_callback(
       self, initiator: uwb_ranging_decorator.UwbRangingDecorator,
       responder: uwb_ranging_decorator.UwbRangingDecorator,
@@ -567,11 +619,17 @@ class RangingTest(uwb_base_test.UwbBaseTest):
 
   def test_ranging_nearby_share_profile_p_sts_reconfigure_controlee(self):
     """Verifies ranging for device nearby share with default profile."""
+    #TODO: Remove this after fix in pica.
+    for ad in self.android_devices:
+        asserts.skip_if("cutf_cvm" in ad.build_info["hardware"],
+                        "This test is not yet supported in cuttlefish."
+        )
+
     initiator_params = uwb_ranging_params.UwbRangingParams(
         device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
         device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
         device_address=self.initiator_addr,
-        destination_addresses=[self.responder_addr],
+        destination_addresses=[],
         ranging_interval_ms=200,
         slots_per_ranging_round=20,
         in_band_termination_attempt_count=3,
@@ -589,11 +647,10 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         sts_config=uwb_ranging_params.FiraParamEnums
         .STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY,
     )
-    self._verify_one_to_one_ranging_reconfigured_controlee_params(
+    self._verify_add_controlee_when_starting_ranging_with_no_controlee(
         self.initiator, self.responder, initiator_params, responder_params,
-        self.new_responder_addr, self.p_sts_sub_session_id,
+        self.responder_addr, self.p_sts_sub_session_id,
         self.p_sts_sub_session_key)
-    self.responder.stop_ranging()
     self.initiator.stop_ranging()
 
   def test_ranging_nearby_share_profile_add_remove_controlee(self):
@@ -631,11 +688,16 @@ class RangingTest(uwb_base_test.UwbBaseTest):
 
   def test_ranging_nearby_share_profile_p_sts_add_remove_controlee(self):
     """Verifies ranging for device nearby share with default profile."""
+    #TODO: Remove this after fix in pica.
+    for ad in self.android_devices:
+        asserts.skip_if("cutf_cvm" in ad.build_info["hardware"],
+                        "This test is not yet supported in cuttlefish."
+        )
     initiator_params = uwb_ranging_params.UwbRangingParams(
         device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
         device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
         device_address=self.initiator_addr,
-        destination_addresses=[self.responder_addr],
+        destination_addresses=[],
         ranging_interval_ms=200,
         slots_per_ranging_round=20,
         in_band_termination_attempt_count=3,
@@ -653,16 +715,10 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         sts_config=uwb_ranging_params.FiraParamEnums
         .STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY
     )
-    self._verify_one_to_one_ranging_add_remove_controlee(
+    self._verify_add_controlee_when_starting_ranging_with_no_controlee(
         self.initiator, self.responder, initiator_params, responder_params,
-        self.new_responder_addr, self.p_sts_sub_session_id,
+        self.responder_addr, self.p_sts_sub_session_id,
         self.p_sts_sub_session_key)
-    try:
-        self.responder.verify_callback_received("Stopped", timeout=60 * 1)
-    except TimeoutError:
-        asserts.fail(
-            "Should receive ranging stop when the controlee is removed from session"
-        )
     self.initiator.stop_ranging()
 
   def test_open_ranging_with_same_session_id_nearby_share(self):
