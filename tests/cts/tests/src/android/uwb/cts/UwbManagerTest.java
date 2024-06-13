@@ -1154,6 +1154,7 @@ public class UwbManagerTest {
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
     @RequiresFlagsEnabled("com.android.uwb.flags.data_transfer_phase_config")
     public void testsetDataTransferPhaseConfigWithNoPermission() throws Exception {
+        assumeTrue(SdkLevel.isAtLeastV());
         FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder()
                 .build();
         verifyFiraRangingSession(
@@ -1182,6 +1183,7 @@ public class UwbManagerTest {
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
     @RequiresFlagsEnabled("com.android.uwb.flags.hybrid_session_support")
     public void testsetHybridSessionControllerConfigurationWithNoPermission() throws Exception {
+        assumeTrue(SdkLevel.isAtLeastV());
         FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder()
                 .build();
         verifyFiraRangingSession(
@@ -1210,6 +1212,7 @@ public class UwbManagerTest {
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
     @RequiresFlagsEnabled("com.android.uwb.flags.hybrid_session_support")
     public void testsetHybridSessionControleeConfigurationWithNoPermission() throws Exception {
+        assumeTrue(SdkLevel.isAtLeastV());
         FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder()
                 .build();
         verifyFiraRangingSession(
