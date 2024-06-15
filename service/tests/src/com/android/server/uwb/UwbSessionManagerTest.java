@@ -4245,7 +4245,8 @@ public class UwbSessionManagerTest {
                 uwbSession.getSessionId(), reconfigureParams.getAction(), 1,
                 dstAddress, reconfigureParams.getSubSessionIdList(), null,
                 uwbSession.getChipId());
-        verify(mUwbSessionNotificationManager).onControleeRemoved(eq(uwbSession));
+        verify(mUwbSessionNotificationManager).onControleeRemoved(eq(uwbSession),
+                eq(UWB_DEST_ADDRESS), anyInt());
         verify(mUwbSessionNotificationManager).onRangingReconfigured(eq(uwbSession));
     }
 

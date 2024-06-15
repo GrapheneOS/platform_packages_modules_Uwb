@@ -28,6 +28,7 @@ import androidx.annotation.VisibleForTesting;
 import androidx.core.uwb.backend.impl.internal.RangingCapabilities;
 import androidx.core.uwb.backend.impl.internal.RangingParameters;
 import androidx.core.uwb.backend.impl.internal.UwbAddress;
+import androidx.core.uwb.backend.impl.internal.UwbComplexChannel;
 
 import com.android.internal.annotations.GuardedBy;
 import com.android.ranging.generic.RangingTechnology;
@@ -551,6 +552,16 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
         }
         UwbAdapter uwbAdapter = (UwbAdapter) rangingAdapters.get(RangingTechnology.UWB);
         return uwbAdapter.getLocalAddress();
+    }
+
+    @Override
+    public ListenableFuture<UwbComplexChannel> getUwbComplexChannel() throws RemoteException {
+        if (!rangingAdapters.containsKey(RangingTechnology.UWB)) {
+            return immediateFailedFuture(
+                    new IllegalStateException("UWB was not requested for this session."));
+        }
+        UwbAdapter uwbAdapter = (UwbAdapter) rangingAdapters.get(RangingTechnology.UWB);
+        return uwbAdapter.getComplexChannel();
     }
 
     @Override

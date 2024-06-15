@@ -48,6 +48,7 @@ import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccRangingReconfiguredParams;
 import com.google.uwb.support.dltdoa.DlTDoAMeasurement;
 import com.google.uwb.support.fira.FiraDataTransferPhaseConfigStatusCode;
+import com.google.uwb.support.fira.FiraOnControleeRemovedParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.oemextension.RangingReportMetadata;
@@ -310,11 +311,14 @@ public class UwbSessionNotificationManager {
         }
     }
 
-    public void onControleeRemoved(UwbSession uwbSession) {
+    public void onControleeRemoved(UwbSession uwbSession, UwbAddress controleeAddress,
+            @FiraOnControleeRemovedParams.Reason int reason) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
         try {
-            uwbRangingCallbacks.onControleeRemoved(sessionHandle, new PersistableBundle());
+            uwbRangingCallbacks.onControleeRemoved(sessionHandle,
+                    new FiraOnControleeRemovedParams.Builder(controleeAddress).setReason(reason)
+                            .build().toBundle());
             Log.i(TAG, "IUwbRangingCallbacks - onControleeRemoved");
         } catch (Exception e) {
             Log.e(TAG, "IUwbRangingCallbacks - onControleeRemoved: Failed");

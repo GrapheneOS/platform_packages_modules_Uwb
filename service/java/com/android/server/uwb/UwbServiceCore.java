@@ -1162,7 +1162,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                             takBugReportAfterDeviceError("UWB Bugreport: error enabling UWB");
                         }
                         for (String chipId : mUwbInjector.getMultichipData().getChipIds()) {
-                            updateState(AdapterStateCallback.STATE_DISABLED, chipId);
+                            updateDeviceState(UwbUciConstants.DEVICE_STATE_ERROR, chipId);
                         }
                         for (InitializationFailureListener listener : mListeners) {
                             listener.onFailure();

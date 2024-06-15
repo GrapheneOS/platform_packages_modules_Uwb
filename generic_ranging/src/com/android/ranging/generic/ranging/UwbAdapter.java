@@ -27,12 +27,14 @@ import android.util.Log;
 
 import androidx.core.uwb.backend.IUwb;
 import androidx.core.uwb.backend.impl.internal.RangingCapabilities;
+import androidx.core.uwb.backend.impl.internal.RangingController;
 import androidx.core.uwb.backend.impl.internal.RangingDevice;
 import androidx.core.uwb.backend.impl.internal.RangingParameters;
 import androidx.core.uwb.backend.impl.internal.RangingPosition;
 import androidx.core.uwb.backend.impl.internal.RangingSessionCallback;
 import androidx.core.uwb.backend.impl.internal.UwbAddress;
 import androidx.core.uwb.backend.impl.internal.UwbAvailabilityCallback;
+import androidx.core.uwb.backend.impl.internal.UwbComplexChannel;
 import androidx.core.uwb.backend.impl.internal.UwbDevice;
 import androidx.core.uwb.backend.impl.internal.UwbFeatureFlags;
 import androidx.core.uwb.backend.impl.internal.UwbServiceImpl;
@@ -50,7 +52,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import java.util.Optional;
 
 /** Ranging Adapter for Ultra-Wide Band (UWB). */
-class UwbAdapter implements RangingAdapter {
+public class UwbAdapter implements RangingAdapter {
 
     public static String TAG = UwbAdapter.class.getSimpleName();
 
@@ -69,7 +71,8 @@ class UwbAdapter implements RangingAdapter {
 
     private final ListeningExecutorService executorService;
 
-    public UwbAdapter(Context context, ListeningExecutorService executorServices)
+    public UwbAdapter(Context context, ListeningExecutorService executorServices,
+            DeviceType deviceType)
             throws RemoteException {
 
         UwbFeatureFlags uwbFeatureFlags = new UwbFeatureFlags.Builder()
@@ -84,7 +87,9 @@ class UwbAdapter implements RangingAdapter {
         //TODO(b/331206299): Add support to pick controller or controlee.
         this.uwbClient =
                 context.getPackageManager().hasSystemFeature("android.hardware.uwb")
-                        ? Optional.of(mUwbService.getControlee(context))
+                        ? (deviceType == DeviceType.CONTROLEE) ? Optional.of(
+                        mUwbService.getControlee(context)) : Optional.of(
+                        mUwbService.getController(context))
                         : Optional.empty();
         this.rangingParameters = Optional.empty();
         this.callback = Optional.empty();
@@ -175,6 +180,25 @@ class UwbAdapter implements RangingAdapter {
         return Futures.submit(() -> {
             return uwbClient.get().getLocalAddress();
         }, executorService);
+    }
+
+    ListenableFuture<UwbComplexChannel> getComplexChannel() throws RemoteException {
+        if (uwbClient.isEmpty()) {
+            clear();
+
+            return immediateFailedFuture(new IllegalStateException("UWB is not available."));
+        }
+        if (!(uwbClient.get() instanceof RangingController)) {
+            return immediateFuture(null);
+        }
+        return Futures.submit(() -> {
+            return ((RangingController) uwbClient.get()).getComplexChannel();
+        }, executorService);
+    }
+
+    @VisibleForTesting
+    public void setLocalADdress(UwbAddress uwbAddress) {
+        uwbClient.get().setLocalAddress(uwbAddress);
     }
 
     ListenableFuture<RangingCapabilities> getCapabilities() throws RemoteException {
@@ -315,6 +339,13 @@ class UwbAdapter implements RangingAdapter {
         }
     }
 
+    @VisibleForTesting
+    public void setComplexChannelForTesting() {
+        if (uwbClient.get() instanceof RangingController) {
+            uwbClient.get().setForTesting(true);
+        }
+    }
+
     private void clear() {
         synchronized (lock) {
             Preconditions.checkState(
@@ -329,6 +360,11 @@ class UwbAdapter implements RangingAdapter {
     @VisibleForTesting
     public RangingSessionCallback getListener() {
         return this.uwbListener.get();
+    }
+
+    public enum DeviceType {
+        CONTROLEE,
+        CONTROLLER,
     }
 
     private enum UwbAdapterState {

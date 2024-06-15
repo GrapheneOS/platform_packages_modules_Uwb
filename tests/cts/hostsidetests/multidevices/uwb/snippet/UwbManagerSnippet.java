@@ -165,6 +165,7 @@ public class UwbManagerSnippet implements Snippet {
             switch (state) {
                 case 1: return "Inactive";
                 case 2: return "Active";
+                case 3: return "HwIdle";
                 default: return "Disabled";
             }
         }
@@ -430,10 +431,28 @@ public class UwbManagerSnippet implements Snippet {
         return mUwbManager.isUwbEnabled();
     }
 
-    /** Get the UWB state. */
+    /** Set the UWB state. */
     @Rpc(description = "Set Uwb state")
     public void setUwbEnabled(boolean enabled) {
         mUwbManager.setUwbEnabled(enabled);
+    }
+
+    /** Get the UWB hardware state. */
+    @Rpc(description = "Get Uwb hardware state")
+    public boolean isUwbHwEnableRequested() {
+        return mUwbManager.isUwbHwEnableRequested();
+    }
+
+    /** Set the UWB hardware state. */
+    @Rpc(description = "Set Uwb hardware state")
+    public void requestUwbHwEnabled(boolean enabled) {
+        mUwbManager.requestUwbHwEnabled(enabled);
+    }
+
+    /** Get UWB HW idle feature state. */
+    @Rpc(description = "Get Uwb hardware idle feature state")
+    public boolean isUwbHwIdleTurnOffEnabled() {
+        return mUwbManager.isUwbHwIdleTurnOffEnabled();
     }
 
     private byte[] convertJSONArrayToByteArray(JSONArray jArray) throws JSONException {
