@@ -442,13 +442,6 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     }
 
     void notifyAdapterState(int adapterState, int reason) {
-        // Check if the current adapter state is same as the state in the last adapter state
-        // notification, to avoid sending extra onAdapterStateChanged() notifications. For example,
-        // this can happen when UWB is toggled on and a valid country code is already set.
-        if (mLastAdapterStateNotification == adapterState
-                && mLastAdapterStateChangedReason == reason) {
-            return;
-        }
         Log.d(TAG, "notifyAdapterState(): adapterState = " + adapterState + ", reason = " + reason);
 
         synchronized (mAdapterStateCallbacksList) {
