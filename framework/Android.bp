@@ -75,6 +75,9 @@ java_library {
     sdk_version: "module_current",
     libs: ["framework-annotations-lib"],
     installable: false,
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 // post-jarjar version of framework-uwb
@@ -112,6 +115,7 @@ java_sdk_library {
     ],
     lint: {
         strict_updatability_linting: true,
+        baseline_filename: "lint-baseline.xml",
     },
 }
 
