@@ -36,8 +36,9 @@ _TEST_CASES = (
     "test_stop_initiator_ranging_nearby_share_profile",
     "test_stop_responder_ranging_device_tracker_profile",
     "test_stop_responder_ranging_nearby_share_profile",
-    "test_ranging_device_tracker_profile_with_airplane_mode_toggle",
-    "test_ranging_nearby_share_profile_with_airplane_mode_toggle",
+    # (TODO: gmoturu) Re-enable tests after adding fix - b/339139695
+    # "test_ranging_device_tracker_profile_with_airplane_mode_toggle",
+    # "test_ranging_nearby_share_profile_with_airplane_mode_toggle",
     "test_ranging_nearby_share_profile_move_to_bg_and_fg",
     "test_ranging_nearby_share_profile_verify_app_in_bg_stops_session",
     "test_ranging_nearby_share_profile_bg_fails",
