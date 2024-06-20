@@ -32,6 +32,11 @@ public class UwbUciConstants {
     public static final byte DEVICE_STATE_OFF = 0x00; //NOT defined in the UCI spec
     public static final byte DEVICE_STATE_READY = 0x01;
     public static final byte DEVICE_STATE_ACTIVE = 0x02;
+    /**
+     * This is NOT defined in the UCI spec. It exists so that OEMs can trace initialization
+     * failures from IUwbOemExtensionCallback#onDeviceStatusNotificationReceived.
+     */
+    public static final byte DEVICE_STATE_INIT_ERROR = (byte) 0xFE;
     public static final byte DEVICE_STATE_ERROR = (byte) 0xFF;
 
     public static final byte UWBS_RESET = 0x00;

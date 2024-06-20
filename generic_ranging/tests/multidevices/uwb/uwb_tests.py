@@ -82,6 +82,7 @@ class RangingTest(ranging_base_test.RangingBaseTest):
     ### Test Cases ###
 
     def test_one_to_one_ranging(self):
+        """Verifies ranging with peer device, devices range for 20 seconds."""
         initiator_params = uwb_ranging_params.UwbRangingParams(
             config_id=1,
             session_id=5,
@@ -100,12 +101,15 @@ class RangingTest(ranging_base_test.RangingBaseTest):
             device_address=self.responder_addr,
             destination_addresses=[self.initiator_addr],
         )
-        self.initiator.start_uwb_ranging(initiator_params)
-        self.responder.start_uwb_ranging(responder_params)
-
+        self.initiator.start_uwb_ranging(initiator_params, session_id=5)
+        self.responder.start_uwb_ranging(responder_params, session_id=5)
+        uwb_test_utils.verify_peer_found(self.initiator, self.responder_addr, session=5)
+        uwb_test_utils.verify_peer_found(self.responder, self.initiator_addr, session=5)
         time.sleep(20)
-        self.initiator.stop_uwb_ranging(initiator_params)
-        self.responder.stop_uwb_ranging(responder_params)
+        uwb_test_utils.verify_peer_found(self.initiator, self.responder_addr, session=5)
+        uwb_test_utils.verify_peer_found(self.responder, self.initiator_addr, session=5)
+        self.initiator.stop_uwb_ranging(session_id=5)
+        self.responder.stop_uwb_ranging(session_id=5)
 
 
 if __name__ == "__main__":

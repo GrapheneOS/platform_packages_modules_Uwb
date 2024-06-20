@@ -365,6 +365,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                 ret = "ACTIVE";
                 break;
             case UwbUciConstants.DEVICE_STATE_ERROR:
+            case UwbUciConstants.DEVICE_STATE_INIT_ERROR:
                 ret = "ERROR";
                 break;
         }
@@ -1155,7 +1156,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                             takBugReportAfterDeviceError("UWB Bugreport: error enabling UWB");
                         }
                         for (String chipId : mUwbInjector.getMultichipData().getChipIds()) {
-                            updateState(AdapterStateCallback.STATE_DISABLED, chipId);
+                            updateDeviceState(UwbUciConstants.DEVICE_STATE_INIT_ERROR, chipId);
                         }
                         for (InitializationFailureListener listener : mListeners) {
                             listener.onFailure();

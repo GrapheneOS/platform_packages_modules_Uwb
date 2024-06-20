@@ -37,6 +37,7 @@ import com.android.ranging.generic.ranging.UwbAdapter;
 import com.google.android.mobly.snippet.Snippet;
 import com.google.android.mobly.snippet.event.EventCache;
 import com.google.android.mobly.snippet.event.SnippetEvent;
+import com.google.android.mobly.snippet.rpc.AsyncRpc;
 import com.google.android.mobly.snippet.rpc.Rpc;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -195,8 +196,8 @@ public class GenericRangingSnippet implements Snippet {
         return bArray;
     }
 
-    @Rpc(description = "Start UWB ranging session")
-    public void startUwbRanging(String key, JSONObject config)
+    @AsyncRpc(description = "Start UWB ranging session")
+    public void startUwbRanging(String callbackId, String key, JSONObject config)
             throws JSONException, RemoteException {
         int deviceType = config.getInt("deviceType");
         UwbAdapter uwbAdapter = null;
@@ -230,7 +231,7 @@ public class GenericRangingSnippet implements Snippet {
         // Test forces channel to 9 and preamble to 11
         uwbAdapter.setComplexChannelForTesting();
         precisionRanging.getUwbComplexChannel();
-        GenericRangingCallback genericRangingCallback = new GenericRangingCallback("1",
+        GenericRangingCallback genericRangingCallback = new GenericRangingCallback(callbackId,
                 Event.EventAll.getType());
         sRangingHashMap.put(key, precisionRanging);
         precisionRanging.start(genericRangingCallback);
