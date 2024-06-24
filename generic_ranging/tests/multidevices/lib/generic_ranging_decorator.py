@@ -31,7 +31,7 @@ class GenericRangingDecorator():
     def stop_uwb_ranging(self,session_id: int):
         callback_key = "fira_session_%s" % session_id
         self.ad.ranging.stopUwbRanging(callback_key)
-        #self.verify_callback_received("Stopped", session_id)
+        self.verify_callback_received("Stopped", session_id)
 
     def clear_ranging_session_callback_events(self, ranging_session_id: int = 0):
         """Clear 'GenericRangingCallback' events from EventCache.
@@ -74,6 +74,7 @@ class GenericRangingDecorator():
             except errors.CallbackHandlerTimeoutError as e:
                 self.log.warn("Failed to receive 'RangingSessionCallback' event")
         raise TimeoutError("Failed to receive '%s' event" % ranging_event)
+
     def is_uwb_peer_found(self, addr: List[int], session: int = 0) -> bool:
         """Verifies if the UWB peer is found.
 

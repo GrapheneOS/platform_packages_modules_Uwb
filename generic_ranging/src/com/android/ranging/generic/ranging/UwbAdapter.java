@@ -50,6 +50,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 import java.util.Optional;
+import java.util.concurrent.Executors;
 
 /** Ranging Adapter for Ultra-Wide Band (UWB). */
 public class UwbAdapter implements RangingAdapter {
@@ -224,7 +225,7 @@ public class UwbAdapter implements RangingAdapter {
         this.uwbListener = Optional.of(uwbListener);
         uwbClient.get().setRangingParameters(this.rangingParameters.get());
         var future = Futures.submit(() -> {
-            uwbClient.get().startRanging(uwbListener, executorService);
+            uwbClient.get().startRanging(uwbListener, Executors.newSingleThreadExecutor());
         }, executorService);
         Futures.addCallback(
                 future,
@@ -328,7 +329,7 @@ public class UwbAdapter implements RangingAdapter {
                     return;
                 }
                 internalState = UwbAdapterState.STOPPED;
-                stopRanging();
+                // stopRanging();
             }
             if (reason == RangingSessionCallback.REASON_STOP_RANGING_CALLED) {
                 callback.get().onStopped(RangingAdapter.Callback.StoppedReason.REQUESTED);
