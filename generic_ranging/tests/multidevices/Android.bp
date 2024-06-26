@@ -23,7 +23,7 @@ python_defaults {
         "mobly",
     ],
     test_suites: [
-        "cts",
+        //"cts",
         "general-tests",
     ],
     version: {
