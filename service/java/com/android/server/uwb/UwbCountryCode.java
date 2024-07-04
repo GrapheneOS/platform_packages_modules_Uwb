@@ -19,6 +19,8 @@ package com.android.server.uwb;
 import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_OK;
 
 import android.annotation.NonNull;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.ContextParams;
@@ -28,10 +30,12 @@ import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiManager.ActiveCountryCodeChangedCallback;
 import android.os.Handler;
+import android.provider.Settings;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
@@ -64,7 +68,7 @@ import java.util.stream.Collectors;
 /**
  * Provide functions for making changes to UWB country code.
  * This Country Code is from MCC or phone default setting. This class sends Country Code
- * to UWB venodr via the HAL.
+ * to UWB vendor via the HAL.
  */
 public class UwbCountryCode {
     private static final String TAG = "UwbCountryCode";
@@ -81,6 +85,9 @@ public class UwbCountryCode {
     public static final String EXTRA_LAST_KNOWN_NETWORK_COUNTRY =
             "android.telephony.extra.LAST_KNOWN_NETWORK_COUNTRY";
 
+    public static final String GEOCODER_RETRY_TIMEOUT_INTENT =
+            "com.android.uwb.uwbcountrycode.GEOCODE_RETRY";
+
     // Wait 1 hour between updates
     private static final long TIME_BETWEEN_UPDATES_MS = 1000L * 60 * 60 * 1;
     // Minimum distance before an update is triggered, in meters. We don't need this to be too
@@ -90,6 +97,13 @@ public class UwbCountryCode {
     // The last SIM slot index, used when the slot is not known, so that the corresponding
     // country code has the lowest priority (in the sorted mTelephonyCountryCodeInfoPerSlot map).
     private static final int LAST_SIM_SLOT_INDEX = Integer.MAX_VALUE;
+
+    // Wait between Fused updates
+    public static final long FUSED_TIME_BETWEEN_UPDATES_MS = 1000L * 60 * 1;
+
+    // Geocode Resolver timer timeout
+    public static final long GEOCODE_RESOLVER_FIRST_TIMEOUT_MS = 1000L * 5 * 1;
+    public static final long GEOCODE_RESOLVER_RETRY_TIMEOUT_MS = 1000L * 60 * 1;
 
     private final Context mContext;
     private final Handler mHandler;
@@ -101,6 +115,11 @@ public class UwbCountryCode {
     private final UwbInjector mUwbInjector;
     private final Set<CountryCodeChangedListener> mListeners = new ArraySet<>();
 
+    private AlarmManager mGeocodeRetryTimer = null;
+    private Intent mRetryTimerIntent = new Intent(GEOCODER_RETRY_TIMEOUT_INTENT);
+    private BroadcastReceiver mRetryTimeoutReceiver;
+    private boolean mGeocoderRetryTimerActive = false;
+    private boolean mFusedLocationProviderActive = false;
     private Map<Integer, TelephonyCountryCodeSlotInfo> mTelephonyCountryCodeInfoPerSlot =
             new ConcurrentSkipListMap();
     private String mWifiCountryCode = null;
@@ -156,6 +175,7 @@ public class UwbCountryCode {
         mNativeUwbManager = nativeUwbManager;
         mHandler = handler;
         mUwbInjector = uwbInjector;
+        mGeocodeRetryTimer = mContext.getSystemService(AlarmManager.class);
     }
 
     @Keep
@@ -266,17 +286,96 @@ public class UwbCountryCode {
                         LAST_SIM_SLOT_INDEX, countryCode, null);
             }
         }
-
         if (mUwbInjector.getDeviceConfigFacade().isLocationUseForCountryCodeEnabled() &&
                 mUwbInjector.isGeocoderPresent()) {
             setCountryCodeFromGeocodingLocation(
                     mLocationManager.getLastKnownLocation(LocationManager.FUSED_PROVIDER));
+        }
+        if (mUwbInjector.getDeviceConfigFacade().isLocationUseForCountryCodeEnabled()
+                && mUwbInjector.isGeocoderPresent() && !isValid(mCachedCountryCode)
+                && mUwbInjector.getDeviceConfigFacade().isPersistentCacheUseForCountryCodeEnabled()
+                && (mUwbInjector.getGlobalSettingsInt(
+                    Settings.Global.AIRPLANE_MODE_ON, 0) == 0)) {
+            startFusedLocationManager();
         }
         // Current Wifi country code update is sent immediately on registration.
     }
 
     public void addListener(@NonNull CountryCodeChangedListener listener) {
         mListeners.add(listener);
+    }
+
+    /** Start Fused Provider Country Code Resolver */
+    private void startFusedLocationManager() {
+        if (mFusedLocationProviderActive || !mUwbInjector
+                .getDeviceConfigFacade().isFusedCountryCodeProviderEnabled()) {
+            return;
+        }
+        Log.d(TAG, "Start Fused Country Code Resolver");
+        mLocationManager.requestLocationUpdates(LocationManager.FUSED_PROVIDER,
+                FUSED_TIME_BETWEEN_UPDATES_MS, DISTANCE_BETWEEN_UPDATES_METERS,
+                mFusedLocationListener);
+        mFusedLocationProviderActive = true;
+    }
+
+    /** Stop Fused Provider Country Code Resolver */
+    private void stopFusedLocationManager() {
+        if (mFusedLocationProviderActive) {
+            Log.d(TAG, "Stopping Fused Country Code Resolver");
+            mLocationManager.requestFlush(LocationManager.FUSED_PROVIDER,
+                    mFusedLocationListener, 0);
+            mLocationManager.removeUpdates(mFusedLocationListener);
+            mFusedLocationProviderActive = false;
+        }
+    }
+
+    private final LocationListener mFusedLocationListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+            synchronized (UwbCountryCode.this) {
+                Log.d(TAG, "Fused Provider onLocationChanged: " + location);
+                if (location.isComplete()) {
+                    setCountryCodeFromGeocodingLocation(location);
+                    startRetryRequest();
+                    stopFusedLocationManager();
+                }
+            }
+        }
+    };
+
+    /** Start retry timer in case Geocode Resolver fails */
+    private void startRetryRequest() {
+        if (mGeocoderRetryTimerActive) return;
+
+        Log.d(TAG, "Starting Geocode Resolver Timer");
+        mRetryTimeoutReceiver = new BroadcastReceiver() {
+            @Override public void onReceive(Context context, Intent intent) {
+                Log.d(TAG, "Geocode Resolver Retry Timeout onReceive");
+                setCountryCodeFromGeocodingLocation(
+                        mLocationManager.getLastKnownLocation(LocationManager.FUSED_PROVIDER));
+            }
+        };
+        mContext.registerReceiver(mRetryTimeoutReceiver,
+                new IntentFilter(GEOCODER_RETRY_TIMEOUT_INTENT));
+        mGeocodeRetryTimer.setInexactRepeating(AlarmManager.ELAPSED_REALTIME,
+                mUwbInjector.getElapsedSinceBootMillis() + GEOCODE_RESOLVER_FIRST_TIMEOUT_MS,
+                GEOCODE_RESOLVER_RETRY_TIMEOUT_MS, getRetryTimerBroadcast());
+        mGeocoderRetryTimerActive = true;
+    }
+
+    /** Stop retry timer in case Geocode Resolver fails */
+    private void stopRetryRequest() {
+        if (mGeocoderRetryTimerActive) {
+            Log.d(TAG, "Stop Geocode Resolver timer");
+            mGeocodeRetryTimer.cancel(getRetryTimerBroadcast());
+            mContext.unregisterReceiver(mRetryTimeoutReceiver);
+            mGeocoderRetryTimerActive = false;
+        }
+    }
+
+    private PendingIntent getRetryTimerBroadcast() {
+        return PendingIntent.getBroadcast(mContext, 0, mRetryTimerIntent,
+                PendingIntent.FLAG_IMMUTABLE);
     }
 
     private void setTelephonyCountryCodeAndLastKnownCountryCode(int slotIdx, String countryCode,
@@ -398,6 +497,10 @@ public class UwbCountryCode {
             Log.i(TAG, "No valid country code, reset to " + DEFAULT_COUNTRY_CODE);
             country = DEFAULT_COUNTRY_CODE;
         }
+        if (isValid(country)) {
+            stopFusedLocationManager();
+            stopRetryRequest();
+        }
         if (!forceUpdate && Objects.equals(country, mCountryCode)) {
             Log.i(TAG, "Ignoring already set country code: " + country);
             return new Pair<>(STATUS_CODE_OK, mCountryCode);
@@ -486,6 +589,11 @@ public class UwbCountryCode {
             mCachedCountryCode = null;
             mUwbInjector.getUwbSettingsStore().put(
                     UwbSettingsStore.SETTINGS_CACHED_COUNTRY_CODE, "");
+        }
+        if (mUwbInjector.getGlobalSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0) == 1) {
+            stopFusedLocationManager();
+        } else {
+            startFusedLocationManager();
         }
     }
 

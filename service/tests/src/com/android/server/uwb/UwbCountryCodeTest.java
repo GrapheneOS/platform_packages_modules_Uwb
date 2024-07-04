@@ -29,15 +29,19 @@ import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
@@ -47,7 +51,9 @@ import android.location.LocationManager;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiManager.ActiveCountryCodeChangedCallback;
 import android.os.Handler;
+import android.os.UserHandle;
 import android.os.test.TestLooper;
+import android.provider.Settings;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
@@ -95,6 +101,12 @@ public class UwbCountryCodeTest {
     @Mock DeviceConfigFacade mDeviceConfigFacade;
     @Mock FeatureFlags mFeatureFlags;
     @Mock UwbSettingsStore mUwbSettingsStore;
+    @Mock AlarmManager mGeocodeRetryTimer;
+    @Mock IntentFilter mGeocoderRetryIntentFilter;
+    @Mock PendingIntent mGeocodeRetryPendingIntent;
+    @Mock LocationListener mFusedLocationListener;
+    @Mock Intent mLocalIntent;
+    @Mock UserHandle mUserHandle;
 
     private TestLooper mTestLooper;
     private UwbCountryCode mUwbCountryCode;
@@ -105,6 +117,8 @@ public class UwbCountryCodeTest {
     private ArgumentCaptor<ActiveCountryCodeChangedCallback> mWifiCountryCodeReceiverCaptor;
     @Captor
     private ArgumentCaptor<LocationListener> mLocationListenerCaptor;
+    @Captor
+    private ArgumentCaptor<LocationListener> mFusedLocationListenerCaptor;
     @Captor
     private ArgumentCaptor<Geocoder.GeocodeListener> mGeocodeListenerCaptor;
 
@@ -151,6 +165,10 @@ public class UwbCountryCodeTest {
         when(mPackageManager.hasSystemFeature(PackageManager.FEATURE_WIFI)).thenReturn(true);
         when(mNativeUwbManager.setCountryCode(any())).thenReturn(
                 (byte) STATUS_CODE_OK);
+
+        when(mLocalIntent.getAction()).thenReturn(UwbCountryCode.GEOCODER_RETRY_TIMEOUT_INTENT);
+        when(mContext.getSystemService(AlarmManager.class)).thenReturn(mGeocodeRetryTimer);
+
         mUwbCountryCode = new UwbCountryCode(
                 mContext, mNativeUwbManager, new Handler(mTestLooper.getLooper()), mUwbInjector);
 
@@ -553,8 +571,46 @@ public class UwbCountryCodeTest {
                 .thenReturn(TEST_COUNTRY_CODE);
         mUwbCountryCode.initialize();
         verify(mUwbSettingsStore).get(UwbSettingsStore.SETTINGS_CACHED_COUNTRY_CODE);
-        verify(mNativeUwbManager).setCountryCode(
-                TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
+        verify(mNativeUwbManager)
+                .setCountryCode(TEST_COUNTRY_CODE.getBytes(StandardCharsets.UTF_8));
         verify(mListener).onCountryCodeChanged(STATUS_CODE_OK, TEST_COUNTRY_CODE);
+    }
+
+    @Test
+    public void testAirplaneModeDisableTriggeredFusedProviderResolving() {
+        when(mLocation.getLongitude()).thenReturn(0.0);
+        when(mDeviceConfigFacade.isFusedCountryCodeProviderEnabled()).thenReturn(true);
+        when(mUwbInjector.getGlobalSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0))
+                .thenReturn(0);
+        mUwbCountryCode.initialize();
+
+        // Now clear the cache and ensure we reset the country code.
+        mUwbCountryCode.clearCachedCountryCode();
+
+        verify(mLocationManager).requestLocationUpdates(eq(LocationManager.FUSED_PROVIDER),
+                anyLong(), anyFloat(), mFusedLocationListenerCaptor.capture());
+
+        //TODO: b/350063314: Update with behaviour upon receiving Location Update
+    }
+
+    @Test
+    public void testAirplaneModeEnableTriggeredFusedProviderStop() {
+        when(mDeviceConfigFacade.isFusedCountryCodeProviderEnabled()).thenReturn(true);
+        when(mUwbInjector.getGlobalSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0))
+                .thenReturn(0);
+
+        mUwbCountryCode.initialize();
+        mUwbCountryCode.clearCachedCountryCode();
+
+        // Simulate user disabled APM
+        when(mUwbInjector.getGlobalSettingsInt(Settings.Global.AIRPLANE_MODE_ON, 0))
+                .thenReturn(1);
+
+        // Now clear the cache and ensure we reset the country code.
+        mUwbCountryCode.clearCachedCountryCode();
+
+        verify(mLocationManager).requestFlush(eq(LocationManager.FUSED_PROVIDER),
+                     mLocationListenerCaptor.capture(), anyInt());
+        verify(mLocationManager).removeUpdates(mLocationListenerCaptor.capture());
     }
 }

@@ -101,6 +101,7 @@ public class DeviceConfigFacade {
     private boolean mCccSupportedRangeDataNtfConfig;
     private boolean mPersistentCacheUseForCountryCodeEnabled;
     private boolean mHwIdleTurnOffEnabled;
+    private boolean mFusedCountryCodeProviderEnabled;
     private boolean mIsAntennaModeConfigSupported;
 
     public DeviceConfigFacade(Handler handler, Context context) {
@@ -313,6 +314,12 @@ public class DeviceConfigFacade {
                 DeviceConfig.NAMESPACE_UWB,
                 "hw_idle_turn_off_enabled",
                 mContext.getResources().getBoolean(R.bool.hw_idle_turn_off_enabled)
+        );
+
+        mFusedCountryCodeProviderEnabled = DeviceConfig.getBoolean(
+                DeviceConfig.NAMESPACE_UWB,
+                "fused_country_code_provider_enabled",
+                mContext.getResources().getBoolean(R.bool.fused_country_code_provider_enabled)
         );
 
         mIsAntennaModeConfigSupported = DeviceConfig.getBoolean(
@@ -624,6 +631,13 @@ public class DeviceConfigFacade {
      */
     public boolean isHwIdleTurnOffEnabled() {
         return mHwIdleTurnOffEnabled;
+    }
+
+    /**
+     * Returns whether used country code provider is enabled or not.
+     */
+    public boolean isFusedCountryCodeProviderEnabled() {
+        return mFusedCountryCodeProviderEnabled;
     }
 
     /**
