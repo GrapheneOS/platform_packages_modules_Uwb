@@ -19,39 +19,41 @@ from mobly import base_test
 from mobly import records
 from mobly import test_runner
 from mobly.controllers import android_device
-
 from test_utils import uwb_test_utils
-
 
 RELEASE_ID_REGEX = re.compile(r"\w+\.\d+\.\d+")
 
 
 class RangingBaseTest(base_test.BaseTestClass):
-    """Base class for Uwb tests."""
+  """Base class for Uwb tests."""
 
-    def setup_class(self):
-        """Sets up the Android devices for Uwb test."""
-        super().setup_class()
-        self.android_devices = self.register_controller(android_device, min_number=2)
-        for ad in self.android_devices:
-            ad.load_snippet("ranging", "multidevices.snippet.ranging")
-            uwb_test_utils.initialize_uwb_country_code_if_necessary(ad)
+  def setup_class(self):
+    """Sets up the Android devices for Uwb test."""
+    super().setup_class()
+    self.android_devices = self.register_controller(
+        android_device, min_number=2
+    )
+    for ad in self.android_devices:
+      ad.load_snippet("ranging", "multidevices.snippet.ranging")
+      uwb_test_utils.initialize_uwb_country_code_if_necessary(ad)
 
-    def setup_test(self):
-        super().setup_test()
-        for ad in self.android_devices:
-            ad.ranging.logInfo(
-                "*** TEST START: " + self.current_test_info.name + " ***"
-            )
+  def setup_test(self):
+    super().setup_test()
+    for ad in self.android_devices:
+      ad.ranging.logInfo(
+          "*** TEST START: " + self.current_test_info.name + " ***"
+      )
 
-    def teardown_test(self):
-        super().teardown_test()
-        for ad in self.android_devices:
-            ad.ranging.logInfo("*** TEST END: " + self.current_test_info.name + " ***")
+  def teardown_test(self):
+    super().teardown_test()
+    for ad in self.android_devices:
+      ad.ranging.logInfo(
+          "*** TEST END: " + self.current_test_info.name + " ***"
+      )
 
-    def teardown_class(self):
-        super().teardown_class()
+  def teardown_class(self):
+    super().teardown_class()
 
 
 if __name__ == "__main__":
-    test_runner.main()
+  test_runner.main()

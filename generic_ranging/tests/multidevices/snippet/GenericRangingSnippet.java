@@ -34,6 +34,7 @@ import com.android.ranging.generic.ranging.PrecisionData;
 import com.android.ranging.generic.ranging.PrecisionRanging;
 import com.android.ranging.generic.ranging.PrecisionRangingConfig;
 import com.android.ranging.generic.ranging.PrecisionRangingImpl;
+import com.android.ranging.generic.ranging.RangingData;
 import com.android.ranging.generic.ranging.UwbAdapter;
 
 import com.google.android.mobly.snippet.Snippet;
@@ -71,6 +72,8 @@ public class GenericRangingSnippet implements Snippet {
             Executors.newSingleThreadExecutor());
     private final EventCache mEventCache = EventCache.getInstance();
     private static final HashMap<String, PrecisionRanging> sRangingHashMap =
+            new HashMap<>();
+    private static final HashMap<String, GenericRangingCallback> sRangingCallbackHashMap =
             new HashMap<>();
 
     public GenericRangingSnippet() throws Throwable {
@@ -126,11 +129,18 @@ public class GenericRangingSnippet implements Snippet {
     }
 
     class GenericRangingCallback implements PrecisionRanging.Callback {
-
-        public String mId;
+        private String mId;
+        private PrecisionData mLastDataReceived = null;
 
         GenericRangingCallback(String id, int events) {
             mId = id;
+        }
+
+        public Optional<PrecisionData> getLastDataReceived() {
+            if (mLastDataReceived == null) {
+                return Optional.empty();
+            }
+            return Optional.of(mLastDataReceived);
         }
 
         private void handleEvent(Event e) {
@@ -155,6 +165,7 @@ public class GenericRangingSnippet implements Snippet {
         @Override
         public void onData(PrecisionData data) {
             Log.d(TAG, "GenericRangingCallback#onData() called");
+            mLastDataReceived = data;
             handleEvent(Event.ReportReceived);
         }
     }
@@ -248,8 +259,10 @@ public class GenericRangingSnippet implements Snippet {
 
         GenericRangingCallback genericRangingCallback =
                 new GenericRangingCallback(callbackId, Event.EventAll.getType());
-        sRangingHashMap.put(getUwbSessionKeyFromId(config.getInt("sessionId")), precisionRanging);
+        String uwbSessionKey = getUwbSessionKeyFromId(config.getInt("sessionId"));
+        sRangingHashMap.put(uwbSessionKey, precisionRanging);
         precisionRanging.start(genericRangingCallback);
+        sRangingCallbackHashMap.put(uwbSessionKey, genericRangingCallback);
     }
 
     @Rpc(description = "Stop UWB ranging session")
@@ -258,6 +271,34 @@ public class GenericRangingSnippet implements Snippet {
         if (sRangingHashMap.containsKey(uwbSessionKey)) {
             sRangingHashMap.get(uwbSessionKey).stop();
         }
+    }
+
+    @Rpc(description = "Check whether the last report included UWB data from the specified address")
+    public boolean verifyUwbPeerFound(JSONArray peerAddress, int sessionId)
+            throws JSONException {
+        GenericRangingCallback callback =
+                sRangingCallbackHashMap.get(getUwbSessionKeyFromId(sessionId));
+        if (callback == null) {
+            throw new IllegalArgumentException("Could not find session with id " + sessionId);
+        }
+
+        Optional<PrecisionData> precisionData = callback.getLastDataReceived();
+        if (precisionData.isEmpty() || precisionData.get().getRangingData().isEmpty()) {
+            Log.i(TAG, "No data has been received yet, or the last data received was empty");
+            return false;
+        }
+
+        byte[] address = convertJSONArrayToByteArray(peerAddress);
+        ImmutableList<RangingData> rangingData = precisionData.get().getRangingData().get();
+        for (RangingData data : rangingData) {
+            if (data.getRangingTechnology() == RangingTechnology.UWB
+                    && Arrays.equals(data.getPeerAddress(), address)) {
+                return true;
+            }
+        }
+        Log.i(TAG, "Last ranging report did not include any data from peer "
+                + Arrays.toString(address));
+        return false;
     }
 
     @Rpc(description = "Check whether uwb is enabled")

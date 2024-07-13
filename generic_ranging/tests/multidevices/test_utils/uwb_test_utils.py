@@ -24,121 +24,131 @@ from mobly.controllers import android_device
 WAIT_TIME_SEC = 3
 
 
-def verify_peer_found(
+def assert_uwb_peer_found(
     device: generic_ranging_decorator.GenericRangingDecorator,
     peer_addr: List[int],
     session_id: int,
     timeout_s=WAIT_TIME_SEC,
 ):
-    """Verifies that the UWB peer was found.
+  """Asserts that the UWB peer was found.
 
-    Args:
-      device: uwb ranging device.
-      peer_addr: uwb peer device address.
-      session: session id.
-    """
-    device.ad.log.info(f"Looking for peer {peer_addr}...")
-    start_time = time.time()
+  Args:
+    device: uwb ranging device.
+    peer_addr: uwb peer device address.
+    session_d: session id.
+    timeout_s: timeout in seconds.
 
-    while not device.is_uwb_peer_found(peer_addr, session_id):
-        if time.time() - start_time > timeout_s:
-            raise TimeoutError(f"UWB peer with address {peer_addr} not found")
-
-    logging.info(
-        (f"Peer {peer_addr} found in" f"{round(time.time() - start_time, 2)} seconds")
+  Throws:
+      TimeoutError if peer could not be found
+  """
+  device.ad.log.info(f"Looking for peer {peer_addr}...")
+  if not device.verify_uwb_peer_found(
+      peer_addr, session_id, timeout_s=timeout_s
+  ):
+    raise TimeoutError(
+        f"Peer {peer_addr} not found before timeout expiry of"
+        f" {timeout_s} seconds"
     )
 
 
 def initialize_uwb_country_code_if_necessary(ad: android_device.AndroidDevice):
-    """Sets UWB country code to US if the device does not have it set.
+  """Sets UWB country code to US if the device does not have it set.
 
-    Note: This intentionally relies on an unstable API (shell command) since we
-    don't want to expose an API that allows users to circumvent the UWB
-    regulatory requirements.
+  Note: This intentionally relies on an unstable API (shell command) since we
+  don't want to expose an API that allows users to circumvent the UWB
+  regulatory requirements.
 
-    Args:
-      ad: android device object.
-      handler: callback handler.
-    """
-    # Wait to see if UWB state is reported as enabled. If not, this could be
-    # because the country code is not set. Try forcing the country code in that
-    # case.
-    if is_uwb_enabled(ad, timeout_s=120):
-        return
+  Args:
+    ad: android device object.
+    handler: callback handler.
+  """
+  # Wait to see if UWB state is reported as enabled. If not, this could be
+  # because the country code is not set. Try forcing the country code in that
+  # case.
+  if is_uwb_enabled(ad, timeout_s=120):
+    return
 
-    try:
-        ad.adb.shell(["cmd", "uwb", "force-country-code", "enabled", "US"])
-    except adb.AdbError:
-        logging.warning("Unable to force country code")
+  try:
+    ad.adb.shell(["cmd", "uwb", "force-country-code", "enabled", "US"])
+  except adb.AdbError:
+    logging.warning("Unable to force country code")
 
-    # Unable to get UWB enabled even after setting country code, abort!
-    asserts.fail(not is_uwb_enabled(ad, timeout_s=120), "Uwb is not enabled")
+  # Unable to get UWB enabled even after setting country code, abort!
+  asserts.fail(not is_uwb_enabled(ad, timeout_s=120), "Uwb is not enabled")
 
 
-def is_uwb_enabled(ad: android_device.AndroidDevice, timeout_s=WAIT_TIME_SEC) -> bool:
-    """Checks if UWB becomes enabled before the provided timeout_s"""
-    start_time = time.time()
-    while not ad.ranging.isUwbEnabled():
-        if time.time() - start_time > timeout_s:
-            return False
+def is_uwb_enabled(
+    ad: android_device.AndroidDevice, timeout_s=WAIT_TIME_SEC
+) -> bool:
+  """Checks if UWB becomes enabled before the provided timeout_s"""
+  start_time = time.time()
+  while not ad.ranging.isUwbEnabled():
+    if time.time() - start_time > timeout_s:
+      return False
 
-    return True
+  return True
 
 
 def set_airplane_mode(ad: android_device.AndroidDevice, isEnabled: bool):
-    """Sets the airplane mode to the given state.
+  """Sets the airplane mode to the given state.
 
-    Args:
-      ad: android device object.
-      isEnabled: True for Airplane mode enabled, False for disabled.
-    """
-    ad.ranging.setAirplaneMode(isEnabled)
-    start_time = time.time()
-    while get_airplane_mode(ad) != isEnabled:
-        time.sleep(0.5)
-        if time.time() - start_time > WAIT_TIME_SEC:
-            asserts.fail(f"Failed to set airplane mode to: {isEnabled}")
+  Args:
+    ad: android device object.
+    isEnabled: True for Airplane mode enabled, False for disabled.
+  """
+  ad.ranging.setAirplaneMode(isEnabled)
+  start_time = time.time()
+  while get_airplane_mode(ad) != isEnabled:
+    time.sleep(0.5)
+    if time.time() - start_time > WAIT_TIME_SEC:
+      asserts.fail(f"Failed to set airplane mode to: {isEnabled}")
 
 
 def get_airplane_mode(ad: android_device.AndroidDevice) -> bool:
-    """Gets the current airplane mode setting.
+  """Gets the current airplane mode setting.
 
-    Args:
-      ad: android device object.
+  Args:
+    ad: android device object.
 
-    Returns:
-      True if airplane mode On, False for Off.
-    """
-    state = ad.adb.shell(["settings", "get", "global", "airplane_mode_on"])
-    return bool(int(state.decode().strip()))
-
-
-def set_screen_rotation_landscape(ad: android_device.AndroidDevice, isLandscape: bool):
-    """Sets screen orientation to landscape or portrait mode.
-
-    Args:
-      ad: android device object.
-      isLandscape: True for landscape mode, False for potrait.
-    """
-    ad.adb.shell(["settings", "put", "system", "accelerometer_rotation", "0"])
-    ad.adb.shell(
-        ["settings", "put", "system", "user_rotation", "1" if isLandscape else "0"]
-    )
+  Returns:
+    True if airplane mode On, False for Off.
+  """
+  state = ad.adb.shell(["settings", "get", "global", "airplane_mode_on"])
+  return bool(int(state.decode().strip()))
 
 
-def set_snippet_foreground_state(ad: android_device.AndroidDevice, isForeground: bool):
-    """Sets the snippet app's foreground/background state.
+def set_screen_rotation_landscape(
+    ad: android_device.AndroidDevice, isLandscape: bool
+):
+  """Sets screen orientation to landscape or portrait mode.
 
-    Args:
-      ad: android device object.
-      isForeground: True to move snippet to foreground, False for background.
-    """
-    ad.adb.shell(
-        [
-            "cmd",
-            "uwb",
-            "simulate-app-state-change",
-            "multidevices.snippet.ranging",
-            "foreground" if isForeground else "background",
-        ]
-    )
+  Args:
+    ad: android device object.
+    isLandscape: True for landscape mode, False for potrait.
+  """
+  ad.adb.shell(["settings", "put", "system", "accelerometer_rotation", "0"])
+  ad.adb.shell([
+      "settings",
+      "put",
+      "system",
+      "user_rotation",
+      "1" if isLandscape else "0",
+  ])
+
+
+def set_snippet_foreground_state(
+    ad: android_device.AndroidDevice, isForeground: bool
+):
+  """Sets the snippet app's foreground/background state.
+
+  Args:
+    ad: android device object.
+    isForeground: True to move snippet to foreground, False for background.
+  """
+  ad.adb.shell([
+      "cmd",
+      "uwb",
+      "simulate-app-state-change",
+      "multidevices.snippet.ranging",
+      "foreground" if isForeground else "background",
+  ])

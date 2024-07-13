@@ -309,11 +309,12 @@ public class UwbAdapter implements RangingAdapter {
             }
 
             RangingData rangingData =
-                    RangingData.builder()
+                    new RangingData.Builder()
                             .setRangingTechnology(RangingTechnology.UWB)
                             .setRangeDistance(position.getDistance().getValue())
                             .setRssi(position.getRssiDbm())
                             .setTimestamp(position.getElapsedRealtimeNanos())
+                            .setPeerAddress(device.getAddress().toBytes())
                             .build();
             callback.get().onRangingData(rangingData);
         }
