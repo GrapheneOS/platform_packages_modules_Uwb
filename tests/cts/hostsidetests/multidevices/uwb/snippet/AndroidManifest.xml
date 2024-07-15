@@ -13,6 +13,11 @@
     <meta-data
         android:name="mobly-snippets"
         android:value="com.google.snippet.uwb.UwbManagerSnippet" />
+     <!-- Optional: tag which will be used for logs through the snippet lib's logger.
+          If not specified, full class name of the snippet will be used. -->
+     <meta-data
+        android:name="mobly-log-tag"
+        android:value="uwb_snippet" />
   </application>
   <!-- Add an instrumentation tag so that the app can be launched through an
        instrument command. The runner `com.google.android.mobly.snippet.SnippetRunner`

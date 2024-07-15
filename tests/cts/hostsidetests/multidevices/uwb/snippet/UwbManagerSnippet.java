@@ -703,6 +703,15 @@ public class UwbManagerSnippet implements Snippet {
         if (j.has("filterType")) {
             builder.setFilterType(j.getInt("filterType"));
         }
+        if (j.has("rangeDataNtfConfig")) {
+            builder.setRangeDataNtfConfig(j.getInt("rangeDataNtfConfig"));
+        }
+        if (j.has("errorStreakTimeoutInMs")) {
+            builder.setRangingErrorStreakTimeoutMs(j.getInt("errorStreakTimeoutInMs"));
+        }
+        if (j.has("hasRangingResultReportMessage")) {
+            builder.setHasRangingResultReportMessage(j.getBoolean("hasRangingResultReportMessage"));
+        }
 
         return builder.build();
     }
