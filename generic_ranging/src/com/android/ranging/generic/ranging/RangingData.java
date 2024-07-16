@@ -18,10 +18,14 @@ package com.android.ranging.generic.ranging;
 
 import com.android.ranging.generic.RangingTechnology;
 
+import java.util.OptionalDouble;
+
 /** Ranging Data class contains data received from a ranging technology such as UWB or CS. */
 public class RangingData {
     private final RangingTechnology mRangingTechnology;
     private final double mRangeDistance;
+    private final float mAzimuth;
+    private final float mElevation;
     private final int mRssi;
     private final long mTimestamp;
     private final byte[] mPeerAddress;
@@ -34,6 +38,22 @@ public class RangingData {
     /** Returns range distance in meters. */
     public double getRangeDistance() {
         return mRangeDistance;
+    }
+
+    /** Gets the azimuth in degrees. */
+    public OptionalDouble getAzimuth() {
+        if (mAzimuth != Float.MAX_VALUE) {
+            return OptionalDouble.of(mAzimuth);
+        }
+        return OptionalDouble.empty();
+    }
+
+    /** Gets the elevation in degrees. */
+    public OptionalDouble getElevation() {
+        if (mElevation != Float.MAX_VALUE) {
+            return OptionalDouble.of(mElevation);
+        }
+        return OptionalDouble.empty();
     }
 
     /** Returns rssi. */
@@ -57,12 +77,16 @@ public class RangingData {
         mRssi = builder.mRssi;
         mTimestamp = builder.mTimestamp;
         mPeerAddress = builder.mPeerAddress;
+        mAzimuth = builder.mAzimuth;
+        mElevation = builder.mElevation;
     }
 
     /** Builder for {@link RangingData}. */
     public static class Builder {
         private RangingTechnology mRangingTechnology;
         private double mRangeDistance;
+        private float mAzimuth = Float.MAX_VALUE;
+        private float mElevation = Float.MAX_VALUE;
         private int mRssi;
         private long mTimestamp;
         private byte[] mPeerAddress;
@@ -76,6 +100,18 @@ public class RangingData {
         /** Set the measured distance in meters */
         public Builder setRangeDistance(double rangeDistance) {
             mRangeDistance = rangeDistance;
+            return this;
+        }
+
+        /** Sets the azimuth in degrees. */
+        public Builder setAzimuth(float azimuth) {
+            mAzimuth = azimuth;
+            return this;
+        }
+
+        /** Sets the elevation in degrees. */
+        public Builder setElevation(float elevation) {
+            mElevation = elevation;
             return this;
         }
 
