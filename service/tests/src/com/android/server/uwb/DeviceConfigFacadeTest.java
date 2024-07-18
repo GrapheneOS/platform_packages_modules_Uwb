@@ -186,8 +186,8 @@ public class DeviceConfigFacadeTest {
     public void testDefaultValue() throws Exception {
         assertEquals(DeviceConfigFacade.DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS,
                 mDeviceConfigFacade.getRangingResultLogIntervalMs());
-        assertEquals(false, mDeviceConfigFacade.isDeviceErrorBugreportEnabled());
-        assertEquals(false, mDeviceConfigFacade.isSessionInitErrorBugreportEnabled());
+        assertEquals(true, mDeviceConfigFacade.isDeviceErrorBugreportEnabled());
+        assertEquals(true, mDeviceConfigFacade.isSessionInitErrorBugreportEnabled());
         assertEquals(DeviceConfigFacade.DEFAULT_BUG_REPORT_MIN_INTERVAL_MS,
                 mDeviceConfigFacade.getBugReportMinIntervalMs());
 
