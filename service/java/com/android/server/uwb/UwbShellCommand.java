@@ -459,16 +459,16 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         boolean aoaResultReqEnabled = false;
         String option = getNextOption();
         while (option != null) {
-            if (option.equals("-b")) {
+            if (option.equals("-b") || option.equals("--blocking")) {
                 shouldBlockCall = true;
             }
-            if (option.equals("-i")) {
+            if (option.equals("-i") || option.equals("--session-id")) {
                 builder.setSessionId(Integer.parseInt(getNextArgRequired()));
             }
-            if (option.equals("-c")) {
+            if (option.equals("-c") || option.equals("--channel")) {
                 builder.setChannelNumber(Integer.parseInt(getNextArgRequired()));
             }
-            if (option.equals("-t")) {
+            if (option.equals("-t") || option.equals("--device-type")) {
                 String type = getNextArgRequired();
                 if (type.equals("controller")) {
                     builder.setDeviceType(RANGING_DEVICE_TYPE_CONTROLLER);
@@ -478,7 +478,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     throw new IllegalArgumentException("Unknown device type: " + type);
                 }
             }
-            if (option.equals("-r")) {
+            if (option.equals("-r") || option.equals("--device-role")) {
                 String role = getNextArgRequired();
                 if (role.equals("initiator")) {
                     builder.setDeviceRole(RANGING_DEVICE_ROLE_INITIATOR);
@@ -488,14 +488,14 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     throw new IllegalArgumentException("Unknown device role: " + role);
                 }
             }
-            if (option.equals("-a")) {
+            if (option.equals("-a") || option.equals("--device-address")) {
                 builder.setDeviceAddress(
                         UwbAddress.fromBytes(
                                 ByteBuffer.allocate(SHORT_ADDRESS_BYTE_LENGTH)
                                         .putShort(Short.parseShort(getNextArgRequired()))
                                         .array()));
             }
-            if (option.equals("-d")) {
+            if (option.equals("-d") || option.equals("--dest-addresses")) {
                 String[] destAddressesString = getNextArgRequired().split(",");
                 List<UwbAddress> destAddresses = new ArrayList<>();
                 for (String destAddressString : destAddressesString) {
@@ -509,7 +509,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                         ? MULTI_NODE_MODE_ONE_TO_MANY
                         : MULTI_NODE_MODE_UNICAST);
             }
-            if (option.equals("-m")) {
+            if (option.equals("-m") || option.equals("--multi-node-mode")) {
                 String mode = getNextArgRequired();
                 if (mode.equals("unicast")) {
                     builder.setMultiNodeMode(MULTI_NODE_MODE_UNICAST);
@@ -518,10 +518,10 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 } else if (mode.equals("many-to-many")) {
                     builder.setMultiNodeMode(MULTI_NODE_MODE_MANY_TO_MANY);
                 } else {
-                    throw new IllegalArgumentException("Unknown multi-node mode: " + mode);
+                    throw new IllegalArgumentException("Unknown multi-node-mode: " + mode);
                 }
             }
-            if (option.equals("-u")) {
+            if (option.equals("-u") || option.equals("--round-usage")) {
                 String usage = getNextArgRequired();
                 if (usage.equals("ds-twr")) {
                     builder.setRangingRoundUsage(RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE);
@@ -535,13 +535,13 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     throw new IllegalArgumentException("Unknown round usage: " + usage);
                 }
             }
-            if (option.equals("-l")) {
+            if (option.equals("-l") || option.equals("--ranging-interval-ms")) {
                 builder.setRangingIntervalMs(Integer.parseInt(getNextArgRequired()));
             }
-            if (option.equals("-s")) {
+            if (option.equals("-s") || option.equals("--slots-per-ranging-round")) {
                 builder.setSlotsPerRangingRound(Integer.parseInt(getNextArgRequired()));
             }
-            if (option.equals("-x")) {
+            if (option.equals("-x") || option.equals("--range-data-ntf-proximity")) {
                 String[] rangeDataNtfProximityString = getNextArgRequired().split(",");
                 if (rangeDataNtfProximityString.length != 2) {
                     throw new IllegalArgumentException("Unexpected range data ntf proximity range:"
@@ -555,7 +555,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 builder.setRangeDataNtfProximityNear(rangeDataNtfProximityNearCm);
                 builder.setRangeDataNtfProximityFar(rangeDataNtfProximityFarCm);
             }
-            if (option.equals("-R")) {
+            if (option.equals("-R") || option.equals("--range-data-notification")) {
                 // enable / disable range data NTFs
                 // range-data-notification
                 String range_data_ntf = getNextArgRequired();
@@ -568,7 +568,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                         + range_data_ntf);
                 }
             }
-            if (option.equals("-z")) {
+            if (option.equals("-z") || option.equals("--interleaving-ratio")) {
                 String[] interleaveRatioString = getNextArgRequired().split(",");
                 if (interleaveRatioString.length != 3) {
                     throw new IllegalArgumentException("Unexpected interleaving ratio: "
@@ -586,7 +586,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                         numOfAoaElevationMrmts);
                 interleavingEnabled = true;
             }
-            if (option.equals("-e")) {
+            if (option.equals("-e") || option.equals("--aoa-result-request")) {
                 String aoaType = getNextArgRequired();
                 if (aoaType.equals("none")) {
                     builder.setAoaResultRequest(AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT);
@@ -603,7 +603,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 }
                 aoaResultReqEnabled = true;
             }
-            if (option.equals("-f")) {
+            if (option.equals("-f") || option.equals("--result-report-config")) {
                 String[] resultReportConfigs = getNextArgRequired().split(",");
                 for (String resultReportConfig : resultReportConfigs) {
                     if (resultReportConfig.equals("tof")) {
@@ -620,7 +620,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     }
                 }
             }
-            if (option.equals("-g")) {
+            if (option.equals("-g") || option.equals("--sts-iv")) {
                 String staticSTSIV = getNextArgRequired();
                 if (staticSTSIV.length() == 12) {
                     builder.setStaticStsIV(BaseEncoding.base16().decode(staticSTSIV.toUpperCase()));
@@ -628,7 +628,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     throw new IllegalArgumentException("staticSTSIV expecting 6 bytes");
                 }
             }
-            if (option.equals("-v")) {
+            if (option.equals("-v") || option.equals("--vendor-id")) {
                 String vendorId = getNextArgRequired();
                 if (vendorId.length() == 4) {
                     builder.setVendorId(BaseEncoding.base16().decode(vendorId.toUpperCase()));
@@ -636,24 +636,24 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     throw new IllegalArgumentException("vendorId expecting 2 bytes");
                 }
             }
-            if (option.equals("-h")) {
+            if (option.equals("-h") || option.equals("--slot-duration-rstu")) {
                 int slotDurationRstu = Integer.parseInt(getNextArgRequired());
                 builder.setSlotDurationRstu(slotDurationRstu);
             }
-            if (option.equals("-w")) {
+            if (option.equals("-w") || option.equals("--has-result-report-phase")) {
                 boolean hasRangingResultReportMessage =
                         getNextArgRequiredTrueOrFalse("enabled", "disabled");
                 builder.setHasRangingResultReportMessage(hasRangingResultReportMessage);
             }
-            if (option.equals("-y")) {
+            if (option.equals("-y") || option.equals("--hopping-mode")) {
                 boolean hoppingEnabled = getNextArgRequiredTrueOrFalse("enabled", "disabled");
                 builder.setHoppingMode(hoppingEnabled ? 1 : 0);
             }
-            if (option.equals("-p")) {
+            if (option.equals("-p") || option.equals("--preamble-code-index")) {
                 int preambleCodeIndex = Integer.parseInt(getNextArgRequired());
                 builder.setPreambleCodeIndex(preambleCodeIndex);
             }
-            if (option.equals("-o")) {
+            if (option.equals("-o") || option.equals("--sts-config-type")) {
                 String stsConfigType = getNextArgRequired();
                 if (stsConfigType.equals("static")) {
                     builder.setStsConfig(STS_CONFIG_STATIC);
@@ -663,7 +663,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     throw new IllegalArgumentException("unknown sts config type");
                 }
             }
-            if (option.equals("-n")) {
+            if (option.equals("-n") || option.equals("--session-key")) {
                 String sessionKey = getNextArgRequired();
                 if (sessionKey.length() == 32 || sessionKey.length() == 64) {
                     builder.setSessionKey(BaseEncoding.base16().decode(sessionKey));
@@ -671,7 +671,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     throw new IllegalArgumentException("sessionKey expecting 16 or 32 bytes");
                 }
             }
-            if (option.equals("-k")) {
+            if (option.equals("-k") || option.equals("--sub-session-key")) {
                 String subSessionKey = getNextArgRequired();
                 if (subSessionKey.length() == 32 || subSessionKey.length() == 64) {
                     builder.setSubsessionKey(BaseEncoding.base16().decode(subSessionKey));
@@ -679,11 +679,11 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     throw new IllegalArgumentException(("subSessionKey expecting 16 or 32 bytes"));
                 }
             }
-            if (option.equals("-j")) {
+            if (option.equals("-j") || option.equals("--error-streak-timeout-ms")) {
                 int errorStreakTimeoutMs = Integer.parseInt(getNextArgRequired());
                 builder.setRangingErrorStreakTimeoutMs(errorStreakTimeoutMs);
             }
-            if (option.equals("-q")) {
+            if (option.equals("-q") || option.equals("--session-priority")) {
                 int sessionPriority = Integer.parseInt(getNextArgRequired());
                 if (sessionPriority < 1 || sessionPriority > 100 || sessionPriority == 50) {
                     throw new IllegalArgumentException(
@@ -692,7 +692,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 }
                 builder.setSessionPriority(sessionPriority);
             }
-            if (option.equals("-P")) {
+            if (option.equals("-P") || option.equals("--prf-mode")) {
                 String prfMode = getNextArgRequired();
                 if (prfMode.equals("bprf")) {
                     builder.setPrfMode(PRF_MODE_BPRF);
@@ -702,7 +702,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     throw new IllegalArgumentException("Wrong arguments for prmMode");
                 }
             }
-            if (option.equals("-D")) {
+            if (option.equals("-D") || option.equals("--psdu-data-rate")) {
                 String psduDataRate = getNextArgRequired();
                 if (psduDataRate.equals("6m81")) {
                     builder.setPsduDataRate(PSDU_DATA_RATE_6M81);
@@ -716,7 +716,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     throw new IllegalArgumentException("Wrong arguments for psduDataRate");
                 }
             }
-            if (option.equals("-B")) {
+            if (option.equals("-B") || option.equals("--bprf-phr-data-rate")) {
                 String bprfPhrDataRate = getNextArgRequired();
                 if (bprfPhrDataRate.equals("850k")) {
                     builder.setBprfPhrDataRate(BPRF_PHR_DATA_RATE_850K);
@@ -726,11 +726,11 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     throw new IllegalArgumentException("Wrong arguments for bprfPhrDataRate");
                 }
             }
-            if (option.equals("-A")) {
+            if (option.equals("-A") || option.equals("--tx-adaptive-power")) {
                 builder.setIsTxAdaptivePayloadPowerEnabled(
                         getNextArgRequiredTrueOrFalse("enabled", "disabled"));
             }
-            if (option.equals("-S")) {
+            if (option.equals("-S") || option.equals("--sfd-id")) {
                 int sfd_id = Integer.parseInt(getNextArgRequired());
                 if (sfd_id < 0 || sfd_id > 4) {
                     throw new IllegalArgumentException("SFD_ID should be in range 0-4");
@@ -795,13 +795,13 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         boolean shouldBlockCall = false;
         String option = getNextOption();
         while (option != null) {
-            if (option.equals("-b")) {
+            if (option.equals("-b") || option.equals("--blocking")) {
                 shouldBlockCall = true;
             }
-            if (option.equals("-u")) {
+            if (option.equals("-u") || option.equals("--uwb-config")) {
                 builder.setUwbConfig(Integer.parseInt(getNextArgRequired()));
             }
-            if (option.equals("-p")) {
+            if (option.equals("-p") || option.equals("--pulse-shape-combo")) {
                 String[] pulseComboString = getNextArgRequired().split(",");
                 if (pulseComboString.length != 2) {
                     throw new IllegalArgumentException("Erroneous pulse combo: "
@@ -811,28 +811,28 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                         Integer.parseInt(pulseComboString[0]),
                         Integer.parseInt(pulseComboString[1])));
             }
-            if (option.equals("-i")) {
+            if (option.equals("-i") || option.equals("--session-id")) {
                 builder.setSessionId(Integer.parseInt(getNextArgRequired()));
             }
-            if (option.equals("-r")) {
+            if (option.equals("-r") || option.equals("--ran-multiplier")) {
                 builder.setRanMultiplier(Integer.parseInt(getNextArgRequired()));
             }
-            if (option.equals("-c")) {
+            if (option.equals("-c") || option.equals("--channel")) {
                 builder.setChannel(Integer.parseInt(getNextArgRequired()));
             }
-            if (option.equals("-m")) {
+            if (option.equals("-m") || option.equals("--num-chaps-per-slot")) {
                 builder.setNumChapsPerSlot(Integer.parseInt(getNextArgRequired()));
             }
-            if (option.equals("-n")) {
+            if (option.equals("-n") || option.equals("--num-responder-nodes")) {
                 builder.setNumResponderNodes(Integer.parseInt(getNextArgRequired()));
             }
-            if (option.equals("-o")) {
+            if (option.equals("-o") || option.equals("--num-slots-per-round")) {
                 builder.setNumSlotsPerRound(Integer.parseInt(getNextArgRequired()));
             }
-            if (option.equals("-s")) {
+            if (option.equals("-s") || option.equals("--sync-code-index")) {
                 builder.setSyncCodeIndex(Integer.parseInt(getNextArgRequired()));
             }
-            if (option.equals("-h")) {
+            if (option.equals("-h") || option.equals("--hopping-config-mode")) {
                 String hoppingConfigMode = getNextArgRequired();
                 if (hoppingConfigMode.equals("none")) {
                     builder.setHoppingConfigMode(HOPPING_MODE_DISABLE);
@@ -845,7 +845,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                             + hoppingConfigMode);
                 }
             }
-            if (option.equals("-a")) {
+            if (option.equals("-a") || option.equals("--hopping-sequence")) {
                 String hoppingSequence = getNextArgRequired();
                 if (hoppingSequence.equals("default")) {
                     builder.setHoppingSequence(HOPPING_SEQUENCE_DEFAULT);
@@ -855,6 +855,10 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     throw new IllegalArgumentException("Unknown hopping sequence: "
                             + hoppingSequence);
                 }
+            }
+            if (option.equals("-S") || option.equals("--sts-index")) {
+                Integer sts_index = Integer.parseInt(getNextArgRequired());
+                builder.setStsIndex(sts_index);
             }
             option = getNextOption();
         }
@@ -1487,32 +1491,32 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " [-r initiator|responder](device-role)"
                 + " [-a <deviceAddress>](device-address)"
                 + " [-d <destAddress-1, destAddress-2,...>](dest-addresses)"
-                + " [-m <unicast|one-to-many|many-to-many>](multi-node mode)"
+                + " [-m <unicast|one-to-many|many-to-many>](multi-node-mode)"
                 + " [-u ds-twr|ss-twr|ds-twr-non-deferred|ss-twr-non-deferred](round-usage)"
                 + " [-l <ranging-interval-ms>](ranging-interval-ms)"
                 + " [-s <slots-per-ranging-round>](slots-per-ranging-round)"
                 + " [-x <proximity-near-cm, proximity-far-cm>](range-data-ntf-proximity)"
+                + " [-R enabled|disabled](range-data-notification)"
                 + " [-z <numRangeMrmts, numAoaAzimuthMrmts, numAoaElevationMrmts>"
                 + "(interleaving-ratio)"
-                + " [-e none|enabled|azimuth-only|elevation-only](aoa type)"
+                + " [-e none|enabled|azimuth-only|elevation-only](aoa-result-request)"
                 + " [-f <tof,azimuth,elevation,aoa-fom>(result-report-config)"
-                + " [-g <staticStsIV>(staticStsIV 6-bytes)"
-                + " [-v <staticStsVendorId>(staticStsVendorId 2-bytes)"
+                + " [-g <staticStsIV>(sts-iv: staticStsIV 6-bytes)"
+                + " [-v <staticStsVendorId>(vendor-id: staticStsVendorId 2-bytes)"
+                + " [-h <slot-duration-rstu>(slot-duration-rstu, default=2400)"
                 + " [-w enabled|disabled](has-result-report-phase)"
                 + " [-y enabled|disabled](hopping-mode, default = disabled)"
                 + " [-p <preamble-code-index>](preamble-code-index, default = 10)"
-                + " [-h <slot-duration-rstu>(slot-duration-rstu, default=2400)"
                 + " [-o static|provisioned](sts-config-type)"
-                + " [-n <sessionKey>](sessionKey 16 or 32 bytes)"
-                + " [-k <subSessionKey>](subSessionKey 16 or 32 bytes)"
-                + " [-j <errorStreakTimeoutMs>](error streak timeout in millis, default=30000)"
-                + " [-q <sessionPriority>](sessionPriority 1-49 or 51-100)"
-                + " [-P bprf|hprf](prfMode)"
-                + " [-D 6m81|7m80|27m2|31m2](psduDataRate)"
-                + " [-B 850k|6m81](bprfPhrDataRate)"
-                + " [-A enabled|disabled](TX adaptive power, default = disabled)"
-                + " [-S <sfd_id>](sfd_id 0-4, default = 2)"
-                + " [-R enabled|disabled](range-data-notification)");
+                + " [-n <sessionKey>](session-key 16 or 32 bytes)"
+                + " [-k <subSessionKey>](sub-session-key 16 or 32 bytes)"
+                + " [-j <errorStreakTimeoutMs>](error-streak-timeout-ms in millis, default=30000)"
+                + " [-q <sessionPriority>](session-priority 1-49 or 51-100)"
+                + " [-P bprf|hprf](prf-mode)"
+                + " [-D 6m81|7m80|27m2|31m2](psdu-data-rate)"
+                + " [-B 850k|6m81](bprf-phr-data-rate)"
+                + " [-A enabled|disabled](tx-adaptive-power, default = disabled)"
+                + " [-S <sfd_id>](sfd-id 0-4, default = 2)");
         pw.println("    Starts a FIRA ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
                 + " retrieved using |get-ranging-session-reports|");
@@ -1532,7 +1536,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " [-o <num-slots-per-round>](num-slots-per-round)"
                 + " [-s <sync-code-index>](sync-code-index)"
                 + " [-h none|continuous|adaptive](hopping-config-mode)"
-                + " [-a default|aes](hopping-sequence)");
+                + " [-a default|aes](hopping-sequence)"
+                + " [-S <stsIndex>](sts-index)");
         pw.println("    Starts a CCC ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
                 + " retrieved using |get-ranging-session-reports|");
