@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.ranging.generic.ranging;
+package com.android.ranging;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;

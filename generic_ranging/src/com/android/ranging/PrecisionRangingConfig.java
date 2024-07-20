@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.ranging.generic.ranging;
+package com.android.ranging;
 
-import com.android.ranging.generic.RangingTechnology;
-import com.android.ranging.generic.proto.MultiSensorFinderConfig;
+import com.android.ranging.proto.MultiSensorFinderConfig;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;

@@ -27,7 +27,7 @@ import androidx.annotation.GuardedBy;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
-import com.android.ranging.generic.proto.MultiSensorFinderConfig;
+import com.android.ranging.proto.MultiSensorFinderConfig;
 
 import java.time.Duration;
 import java.time.Instant;

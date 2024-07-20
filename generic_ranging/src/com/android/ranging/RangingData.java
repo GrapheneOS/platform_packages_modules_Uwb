@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.ranging.generic.ranging;
-
-import com.android.ranging.generic.RangingTechnology;
+package com.android.ranging;
 
 import java.util.OptionalDouble;
 

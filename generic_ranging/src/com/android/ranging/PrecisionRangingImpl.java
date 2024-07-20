@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.ranging.generic.ranging;
+package com.android.ranging;
 
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 
@@ -32,7 +32,8 @@ import androidx.core.uwb.backend.impl.internal.UwbAddress;
 import androidx.core.uwb.backend.impl.internal.UwbComplexChannel;
 
 import com.android.internal.annotations.GuardedBy;
-import com.android.ranging.generic.RangingTechnology;
+import com.android.ranging.adapter.RangingAdapter;
+import com.android.ranging.adapter.UwbAdapter;
 import com.android.sensor.Estimate;
 import com.android.sensor.MultiSensorFinderListener;
 

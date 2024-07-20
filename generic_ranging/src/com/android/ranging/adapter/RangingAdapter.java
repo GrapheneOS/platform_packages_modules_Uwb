@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package com.android.ranging.generic.ranging;
+package com.android.ranging.adapter;
 
 import android.os.RemoteException;
 
-import com.android.ranging.generic.RangingTechnology;
+import com.android.ranging.RangingData;
+import com.android.ranging.RangingTechnology;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
 /** RangingAdapter representing a common ranging interface for different ranging technologies. */
-interface RangingAdapter {
+public interface RangingAdapter {
 
     /** Returns {@link RangingTechnology} of this adapter. */
     RangingTechnology getType();

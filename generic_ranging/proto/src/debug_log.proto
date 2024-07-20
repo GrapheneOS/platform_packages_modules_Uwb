@@ -16,11 +16,11 @@
 
 syntax = "proto3";
 
-package com.android.ranging.generic.proto;
+package com.android.ranging.proto;
 
 import "packages/modules/Uwb/generic_ranging/proto/src/estimate.proto";
 
-option java_package = "com.android.ranging.generic.proto";
+option java_package = "com.android.ranging.proto";
 option java_multiple_files = true;
 
 message Event {
@@ -55,7 +55,7 @@ message InputContainer {
 }
 
 message LeanEstimate {
-  com.android.ranging.generic.proto.Estimate.Status status = 1;
+  com.android.ranging.proto.Estimate.Status status = 1;
   float range_m = 2;
   float bearing_rad = 3;
   float estimated_beacon_position_error_std_dev_m = 4;

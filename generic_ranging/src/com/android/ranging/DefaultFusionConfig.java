@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-package com.android.ranging.generic.ranging;
+package com.android.ranging;
 
-import com.android.ranging.generic.proto.ConfidenceLevel;
-import com.android.ranging.generic.proto.DebugLoggerConfiguration;
-import com.android.ranging.generic.proto.DistanceTraveledCheckConfig;
-import com.android.ranging.generic.proto.ExponentiallyWeightedGaussianModelConfig;
-import com.android.ranging.generic.proto.FuzzyUpdateSchedulerConfig;
-import com.android.ranging.generic.proto.InitialStateSamplerConfig;
-import com.android.ranging.generic.proto.ModelConfigContainer;
-import com.android.ranging.generic.proto.MultiSensorFinderConfig;
-import com.android.ranging.generic.proto.NisDivergenceDetectorConfig;
-import com.android.ranging.generic.proto.OdometryBasedEstimatePropagatorConfig;
-import com.android.ranging.generic.proto.OdometryNoiseAdderConfig;
-import com.android.ranging.generic.proto.OdometryThrottlerConfig;
-import com.android.ranging.generic.proto.ParticleFilterConfig;
-import com.android.ranging.generic.proto.RangeMeasurementConfig;
-import com.android.ranging.generic.proto.RangeMeasurementConfig.RangeSensorModelType;
-import com.android.ranging.generic.proto.VarianceBasedSwitchingMeasurementModelConfig;
+import com.android.ranging.proto.ConfidenceLevel;
+import com.android.ranging.proto.DebugLoggerConfiguration;
+import com.android.ranging.proto.DistanceTraveledCheckConfig;
+import com.android.ranging.proto.ExponentiallyWeightedGaussianModelConfig;
+import com.android.ranging.proto.FuzzyUpdateSchedulerConfig;
+import com.android.ranging.proto.InitialStateSamplerConfig;
+import com.android.ranging.proto.ModelConfigContainer;
+import com.android.ranging.proto.MultiSensorFinderConfig;
+import com.android.ranging.proto.NisDivergenceDetectorConfig;
+import com.android.ranging.proto.OdometryBasedEstimatePropagatorConfig;
+import com.android.ranging.proto.OdometryNoiseAdderConfig;
+import com.android.ranging.proto.OdometryThrottlerConfig;
+import com.android.ranging.proto.ParticleFilterConfig;
+import com.android.ranging.proto.RangeMeasurementConfig;
+import com.android.ranging.proto.RangeMeasurementConfig.RangeSensorModelType;
+import com.android.ranging.proto.VarianceBasedSwitchingMeasurementModelConfig;
 
 /** Default configuration for the Fusion algorithm. */
 public final class DefaultFusionConfig {

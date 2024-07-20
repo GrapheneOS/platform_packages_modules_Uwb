@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.ranging.generic;
+package com.android.ranging;
 
 import com.google.common.collect.ImmutableList;
 

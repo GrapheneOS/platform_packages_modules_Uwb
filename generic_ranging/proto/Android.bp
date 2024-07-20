@@ -25,11 +25,7 @@ java_library {
     },
     sdk_version: "system_current",
     min_sdk_version: "34",
-    srcs: [
-        "src/estimate.proto",
-        "src/debug_log.proto",
-        "src/multi_sensor_finder_configuration.proto",
-    ],
+    srcs: ["src/**/*.proto"],
     apex_available: [
         "com.android.uwb",
     ],

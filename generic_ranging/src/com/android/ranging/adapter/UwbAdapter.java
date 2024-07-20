@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.ranging.generic.ranging;
+package com.android.ranging.adapter;
 
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
@@ -40,7 +40,8 @@ import androidx.core.uwb.backend.impl.internal.UwbFeatureFlags;
 import androidx.core.uwb.backend.impl.internal.UwbServiceImpl;
 
 import com.android.internal.annotations.GuardedBy;
-import com.android.ranging.generic.RangingTechnology;
+import com.android.ranging.RangingData;
+import com.android.ranging.RangingTechnology;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -172,7 +173,7 @@ public class UwbAdapter implements RangingAdapter {
         stopRanging();
     }
 
-    ListenableFuture<UwbAddress> getLocalAddress() throws RemoteException {
+    public ListenableFuture<UwbAddress> getLocalAddress() throws RemoteException {
         if (uwbClient.isEmpty()) {
             clear();
 
@@ -183,7 +184,7 @@ public class UwbAdapter implements RangingAdapter {
         }, executorService);
     }
 
-    ListenableFuture<UwbComplexChannel> getComplexChannel() throws RemoteException {
+    public ListenableFuture<UwbComplexChannel> getComplexChannel() throws RemoteException {
         if (uwbClient.isEmpty()) {
             clear();
 
@@ -202,7 +203,7 @@ public class UwbAdapter implements RangingAdapter {
         uwbClient.get().setLocalAddress(uwbAddress);
     }
 
-    ListenableFuture<RangingCapabilities> getCapabilities() throws RemoteException {
+    public ListenableFuture<RangingCapabilities> getCapabilities() throws RemoteException {
         if (uwbClient.isEmpty()) {
             clear();
             return immediateFailedFuture(new IllegalStateException("UWB is not available."));
@@ -213,7 +214,7 @@ public class UwbAdapter implements RangingAdapter {
 
     }
 
-    void setRangingParameters(RangingParameters params) {
+    public void setRangingParameters(RangingParameters params) {
         rangingParameters = Optional.of(params);
     }
 
