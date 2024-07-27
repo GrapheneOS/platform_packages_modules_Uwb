@@ -250,7 +250,7 @@ public class GenericRangingSnippet implements Snippet {
                 Optional.of(ImmutableMap.of(RangingTechnology.UWB, uwbAdapter)));
 
         precisionRanging.setUwbConfig(generateRangingParameters(config));
-        uwbAdapter.setLocalADdress(UwbAddress.fromBytes(
+        uwbAdapter.setLocalAddress(UwbAddress.fromBytes(
                 convertJSONArrayToByteArray(config.getJSONArray("deviceAddress"))));
 
         // Test forces channel to 9 and preamble to 11

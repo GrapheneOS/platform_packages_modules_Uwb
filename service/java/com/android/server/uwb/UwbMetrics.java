@@ -167,10 +167,16 @@ public class UwbMetrics {
         private void parseFiraParams(FiraOpenSessionParams params) {
             if (params.getStsConfig() == FiraParams.STS_CONFIG_STATIC) {
                 mStsType = UwbStatsLog.UWB_SESSION_INITIATED__STS__STATIC;
-            } else if (params.getStsConfig() == FiraParams.STS_CONFIG_DYNAMIC) {
+            } else if (params.getStsConfig() == FiraParams.STS_CONFIG_DYNAMIC
+                    || params.getStsConfig()
+                            == FiraParams.STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY) {
                 mStsType = UwbStatsLog.UWB_SESSION_INITIATED__STS__DYNAMIC;
-            } else {
+            } else if (params.getStsConfig() == FiraParams.STS_CONFIG_PROVISIONED
+                    || params.getStsConfig()
+                            == FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
                 mStsType = UwbStatsLog.UWB_SESSION_INITIATED__STS__PROVISIONED;
+            } else {
+                mStsType = UwbStatsLog.UWB_SESSION_INITIATED__STS__UNKNOWN_STS;
             }
 
             mIsInitiator = params.getDeviceRole() == FiraParams.RANGING_DEVICE_ROLE_INITIATOR;
@@ -180,10 +186,12 @@ public class UwbMetrics {
         }
 
         private void parseCccParams(CccOpenRangingParams params) {
+            mStsType = UwbStatsLog.UWB_SESSION_INITIATED__STS__DYNAMIC;
             mChannel = params.getChannel();
         }
 
         private void parseAliroParams(AliroOpenRangingParams params) {
+            mStsType = UwbStatsLog.UWB_SESSION_INITIATED__STS__PROVISIONED;
             mChannel = params.getChannel();
         }
 

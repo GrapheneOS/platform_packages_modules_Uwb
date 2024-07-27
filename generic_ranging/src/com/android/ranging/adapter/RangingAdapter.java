@@ -23,34 +23,24 @@ import com.android.ranging.RangingTechnology;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-/** RangingAdapter representing a common ranging interface for different ranging technologies. */
+/** RangingAdapter representing a common ranging class for multiple ranging technologies. */
 public interface RangingAdapter {
 
     /** Returns {@link RangingTechnology} of this adapter. */
     RangingTechnology getType();
 
     /**
-     * Returns true if this device is capable (has supporting hardware) to range using the ranging
-     * technology it represents, false otherwise.
-     */
-    boolean isPresent();
-
-    /**
-     * Returns true if ranging with this ranging technology is currently enabled, or false
-     * otherwise.
-     * When this returns false it's most likely because of not being enabled in the settings,
-     * airplane
-     * mode being on, etc.
+     * @return true if ranging with this ranging technology is currently enabled, or false
+     * otherwise. When this returns false it's most likely because of not being enabled in settings,
+     * airplane mode being on, etc.
      */
     ListenableFuture<Boolean> isEnabled() throws RemoteException;
 
     /**
-     * Initiate start ranging. The provided callback will notify once ranging has started or
-     * stopped.
-     * Ranging data will be provided via the callback. In case start is called while the API has
-     * previously been started then this is a no op and the previously provided callback will still
-     * be
-     * used instead of the new one if they're different.
+     * Start ranging. Does nothing if the ranging technology is not enabled on device or if ranging
+     * has already been started. In the latter case, this method will not overwrite the existing
+     * callback.
+     * @param callback to be called on the occurrence of ranging events.
      */
     void start(Callback callback);
 
@@ -58,7 +48,7 @@ public interface RangingAdapter {
     void stop();
 
     /** Callback for getting notified when ranging starts or stops. */
-    public interface Callback {
+    interface Callback {
         /**
          * Notifies the caller that ranging has started on this device. onStarted will not be called
          * after start if API failed to initialize, in that case onStopped with an appropriate error
@@ -76,7 +66,7 @@ public interface RangingAdapter {
         void onRangingData(RangingData rangingData);
 
         /** Stopped reason for this ranging adapter. */
-        public enum StoppedReason {
+        enum StoppedReason {
             REQUESTED,
             NO_PARAMS,
             ERROR,

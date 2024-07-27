@@ -617,9 +617,6 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
                             Log.e(TAG, "Adapter not found for ranging technology: " + tech);
                             rangingTechnologiesAvailability.put(
                                     tech, RangingTechnologyAvailability.NOT_SUPPORTED);
-                        } else if (!adapter.isPresent()) {
-                            rangingTechnologiesAvailability.put(
-                                    tech, RangingTechnologyAvailability.NOT_SUPPORTED);
                         } else if (!enabledList.get(i)) {
                             rangingTechnologiesAvailability.put(tech,
                                     RangingTechnologyAvailability.DISABLED);

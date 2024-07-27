@@ -16,6 +16,11 @@
 
 package com.android.ranging;
 
+import android.content.Context;
+
+import com.android.ranging.adapter.CsAdapter;
+import com.android.ranging.adapter.UwbAdapter;
+
 import com.google.common.collect.ImmutableList;
 
 import java.util.BitSet;
@@ -38,6 +43,21 @@ public enum RangingTechnology {
 
     public byte toByte() {
         return (byte) (1 << value);
+    }
+
+    /**
+     * Check whether this technology is available given the provided context.
+     * @return true if the technology is supported, false otherwise.
+     */
+    public boolean isSupported(Context context) {
+        switch (this) {
+            case UWB:
+                return UwbAdapter.isSupported(context);
+            case CS:
+                return CsAdapter.isSupported();
+            default:
+                return false;
+        }
     }
 
     public static ImmutableList<RangingTechnology> parseByte(byte technologiesByte) {

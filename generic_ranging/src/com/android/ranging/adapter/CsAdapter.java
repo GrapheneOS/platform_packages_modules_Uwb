@@ -25,14 +25,17 @@ import com.google.common.util.concurrent.ListenableFuture;
 /** Channel Sounding adapter for ranging. */
 public class CsAdapter implements RangingAdapter {
 
-    @Override
-    public RangingTechnology getType() {
-        return RangingTechnology.CS;
+    public static boolean isSupported() {
+        return false;
+    }
+
+    public CsAdapter() {
+        throw new UnsupportedOperationException("Not implemented.");
     }
 
     @Override
-    public boolean isPresent() {
-        return false;
+    public RangingTechnology getType() {
+        return RangingTechnology.CS;
     }
 
     @Override
