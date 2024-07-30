@@ -1237,6 +1237,38 @@ public class UwbManagerTest {
                 });
     }
 
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
+    public void testUpdateRangingRoundsDtTagWithNoPermissions() throws Exception {
+        FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder().build();
+        verifyFiraRangingSession(
+                firaOpenSessionParams,
+                null,
+                (rangingSessionCallback) -> {
+                    CountDownLatch countDownLatch = new CountDownLatch(1);
+                    rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+                    UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+                    uiAutomation.dropShellPermissionIdentity();
+
+                    DlTDoARangingRoundsUpdate rangingRoundsUpdate =
+                            new DlTDoARangingRoundsUpdate.Builder()
+                                    .setSessionId(1)
+                                    .setNoOfRangingRounds(1)
+                                    .setRangingRoundIndexes(new byte[]{0})
+                                    .build();
+                    try {
+                        rangingSessionCallback.rangingSession.updateRangingRoundsDtTag(
+                                rangingRoundsUpdate.toBundle());
+                        fail();
+                    } catch (SecurityException e) {
+                        /* pass */
+                        Log.i(TAG, "Failed with expected security exception: " + e);
+                    } finally {
+                        uiAutomation.adoptShellPermissionIdentity();
+                    }
+                });
+    }
+
     @Ignore // Disabled in U as FiRa 2.0 is not fully formalized.
     @Test
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
@@ -1285,6 +1317,35 @@ public class UwbManagerTest {
                             rangingRoundsUpdate.toBundle());
                     assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
                     assertThat(rangingSessionCallback.onUpdateDtTagStatusCalled).isTrue();
+                });
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
+    public void testSendDataWithNoPermission() throws Exception {
+        FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder().build();
+        verifyFiraRangingSession(
+                firaOpenSessionParams,
+                null,
+                (rangingSessionCallback) -> {
+                    CountDownLatch countDownLatch = new CountDownLatch(1);
+                    rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+                    UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+                    uiAutomation.dropShellPermissionIdentity();
+
+                    try {
+                        rangingSessionCallback.rangingSession.sendData(
+                                UwbAddress.fromBytes(new byte[]{0x1, 0x2}),
+                                new PersistableBundle(),
+                                new byte[]{0x01, 0x02, 0x03, 0x04}
+                        );
+                        fail();
+                    } catch (SecurityException e) {
+                        /* pass */
+                        Log.i(TAG, "Failed with expected security exception: " + e);
+                    } finally {
+                        uiAutomation.adoptShellPermissionIdentity();
+                    }
                 });
     }
 
@@ -1528,6 +1589,68 @@ public class UwbManagerTest {
                     assertThat(rangingSessionCallback.onReconfiguredFailedCalled).isFalse();
                     assertThat(rangingSessionCallback.onControleeRemoveCalled).isTrue();
                     assertThat(rangingSessionCallback.onControleeRemoveFailedCalled).isFalse();
+                });
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
+    public void testFiraRangingSessionPauseWithNoPermission() throws Exception {
+        FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder()
+                .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_ONE_TO_MANY)
+                .build();
+        verifyFiraRangingSession(
+                firaOpenSessionParams,
+                null,
+                (rangingSessionCallback) -> {
+                    CountDownLatch countDownLatch = new CountDownLatch(1);
+                    rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+                    UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+                    uiAutomation.dropShellPermissionIdentity();
+
+                    FiraSuspendRangingParams pauseParams =
+                            new FiraSuspendRangingParams.Builder()
+                                    .setSuspendRangingRounds(FiraParams.SUSPEND_RANGING_ENABLED)
+                                    .build();
+                    try {
+                        rangingSessionCallback.rangingSession.pause(pauseParams.toBundle());
+                        fail();
+                    } catch (SecurityException e) {
+                        /* pass */
+                        Log.i(TAG, "Failed with expected security exception: " + e);
+                    } finally {
+                        uiAutomation.adoptShellPermissionIdentity();
+                    }
+                });
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
+    public void testFiraRangingSessionResumeWithNoPermission() throws Exception {
+        FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder()
+                .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_ONE_TO_MANY)
+                .build();
+        verifyFiraRangingSession(
+                firaOpenSessionParams,
+                null,
+                (rangingSessionCallback) -> {
+                    CountDownLatch countDownLatch = new CountDownLatch(1);
+                    rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+                    UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+                    uiAutomation.dropShellPermissionIdentity();
+
+                    FiraSuspendRangingParams resumeParams =
+                            new FiraSuspendRangingParams.Builder()
+                                    .setSuspendRangingRounds(FiraParams.SUSPEND_RANGING_DISABLED)
+                                    .build();
+                    try {
+                        rangingSessionCallback.rangingSession.resume(resumeParams.toBundle());
+                        fail();
+                    } catch (SecurityException e) {
+                        /* pass */
+                        Log.i(TAG, "Failed with expected security exception: " + e);
+                    } finally {
+                        uiAutomation.adoptShellPermissionIdentity();
+                    }
                 });
     }
 
