@@ -26,6 +26,9 @@ android_test {
     certificate: "platform",
     static_libs: [
         "generic_ranging",
+        "framework-uwb.stubs.module_lib",
+        "androidx.test.rules",
+        "androidx.test.ext.junit",
         "androidx.test.runner",
         "mockito-target-minus-junit4",
     ],

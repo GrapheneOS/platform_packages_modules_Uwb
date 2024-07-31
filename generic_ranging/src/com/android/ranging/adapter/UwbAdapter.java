@@ -19,6 +19,7 @@ package com.android.ranging.adapter;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.RemoteException;
 import android.util.Log;
@@ -32,7 +33,6 @@ import androidx.core.uwb.backend.impl.internal.RangingPosition;
 import androidx.core.uwb.backend.impl.internal.RangingSessionCallback;
 import androidx.core.uwb.backend.impl.internal.Utils;
 import androidx.core.uwb.backend.impl.internal.UwbAddress;
-import androidx.core.uwb.backend.impl.internal.UwbAvailabilityCallback;
 import androidx.core.uwb.backend.impl.internal.UwbComplexChannel;
 import androidx.core.uwb.backend.impl.internal.UwbDevice;
 import androidx.core.uwb.backend.impl.internal.UwbFeatureFlags;
@@ -67,26 +67,39 @@ public class UwbAdapter implements RangingAdapter {
 
     /** @return true if UWB is supported in the provided context, false otherwise */
     public static boolean isSupported(Context context) {
-        return context.getPackageManager().hasSystemFeature("android.hardware.uwb");
+        return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_UWB);
     }
 
     public UwbAdapter(
             @NonNull Context context, @NonNull ListeningExecutorService executorService,
             @NonNull DeviceType deviceType
     ) {
+        this(context, executorService,
+                new UwbServiceImpl(
+                        context,
+                        new UwbFeatureFlags.Builder()
+                                .setSkipRangingCapabilitiesCheck(
+                                        Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2)
+                                .setReversedByteOrderFiraParams(
+                                        Build.VERSION.SDK_INT <= Build.VERSION_CODES.TIRAMISU)
+                                .build(),
+                        (isUwbAvailable, reason) -> {
+                            // TODO: Implement when adding backend support.
+                        }
+                ),
+                deviceType);
+    }
+
+    @VisibleForTesting
+    public UwbAdapter(
+            @NonNull Context context, @NonNull ListeningExecutorService executorService,
+            @NonNull UwbServiceImpl uwbService, @NonNull DeviceType deviceType
+    ) {
         if (!UwbAdapter.isSupported(context)) {
             throw new IllegalArgumentException("UWB system feature not found.");
         }
 
-        UwbFeatureFlags uwbFeatureFlags = new UwbFeatureFlags.Builder()
-                .setSkipRangingCapabilitiesCheck(Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2)
-                .setReversedByteOrderFiraParams(
-                        Build.VERSION.SDK_INT <= Build.VERSION_CODES.TIRAMISU)
-                .build();
-        UwbAvailabilityCallback uwbAvailabilityCallback = (isUwbAvailable, reason) -> {
-            // TODO: Implement when adding backend support.
-        };
-        mUwbService = new UwbServiceImpl(context, uwbFeatureFlags, uwbAvailabilityCallback);
+        mUwbService = uwbService;
         mUwbClient = deviceType == DeviceType.CONTROLLER
                 ? mUwbService.getController(context)
                 : mUwbService.getControlee(context);
@@ -141,11 +154,6 @@ public class UwbAdapter implements RangingAdapter {
         }
         return Futures.submit(() -> ((RangingController) mUwbClient).getComplexChannel(),
                 mExecutorService);
-    }
-
-    @VisibleForTesting
-    public void setLocalAddress(@NonNull UwbAddress uwbAddress) {
-        mUwbClient.setLocalAddress(uwbAddress);
     }
 
     public ListenableFuture<RangingCapabilities> getCapabilities() throws RemoteException {
@@ -206,14 +214,14 @@ public class UwbAdapter implements RangingAdapter {
         }
     }
 
+    @VisibleForTesting
+    public void setLocalAddressForTesting(@NonNull UwbAddress uwbAddress) {
+        mUwbClient.setLocalAddress(uwbAddress);
+    }
+
     private void clear() {
         mRangingParameters = null;
         mCallbacks = null;
-    }
-
-    @VisibleForTesting
-    public RangingSessionCallback getListener() {
-        return mUwbListener;
     }
 
     public enum DeviceType {
