@@ -21,6 +21,7 @@ import android.os.PersistableBundle;
 
 import androidx.annotation.RequiresApi;
 
+import com.google.uwb.support.base.FlagEnum;
 import com.google.uwb.support.base.Params;
 
 @RequiresApi(VERSION_CODES.LOLLIPOP)
@@ -34,5 +35,21 @@ public abstract class GenericParams extends Params {
 
     public static boolean isCorrectProtocol(PersistableBundle bundle) {
         return isProtocol(bundle, PROTOCOL_NAME);
+    }
+
+    public enum AntennaModeCapabilityFlag implements FlagEnum {
+        HAS_OMNI_MODE_SUPPORT(1),
+        HAS_DIRECTIONAL_MODE_SUPPORT(1 << 1);
+
+        private final long mValue;
+
+        AntennaModeCapabilityFlag(long value) {
+            mValue = value;
+        }
+
+        @Override
+        public long getValue() {
+            return mValue;
+        }
     }
 }

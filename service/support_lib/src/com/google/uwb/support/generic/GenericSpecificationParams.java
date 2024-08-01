@@ -24,6 +24,7 @@ import androidx.annotation.Nullable;
 
 import com.google.uwb.support.aliro.AliroParams;
 import com.google.uwb.support.aliro.AliroSpecificationParams;
+import com.google.uwb.support.base.FlagEnum;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccSpecificationParams;
 import com.google.uwb.support.fira.FiraParams;
@@ -31,6 +32,8 @@ import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.radar.RadarParams;
 import com.google.uwb.support.radar.RadarSpecificationParams;
 
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.Objects;
 
 /**
@@ -47,24 +50,22 @@ public class GenericSpecificationParams extends GenericParams {
     private final AliroSpecificationParams mAliroSpecificationParams;
     private final RadarSpecificationParams mRadarSpecificationParams;
     private final boolean mHasPowerStatsSupport;
+    private final EnumSet<AntennaModeCapabilityFlag> mAntennaModeCapabilities;
 
     private static final String KEY_FIRA_SPECIFICATION_PARAMS = FiraParams.PROTOCOL_NAME;
     private static final String KEY_ALIRO_SPECIFICATION_PARAMS = AliroParams.PROTOCOL_NAME;
     private static final String KEY_CCC_SPECIFICATION_PARAMS = CccParams.PROTOCOL_NAME;
     private static final String KEY_RADAR_SPECIFICATION_PARAMS = RadarParams.PROTOCOL_NAME;
     private static final String KEY_POWER_STATS_QUERY_SUPPORT = "power_stats_query";
+    private static final String KEY_SUPPORTED_ANTENNA_MODES = "supported_antenna_modes";
 
-    private GenericSpecificationParams(
-            FiraSpecificationParams firaSpecificationParams,
-            CccSpecificationParams cccSpecificationParams,
-            AliroSpecificationParams aliroSpecificationParams,
-            RadarSpecificationParams radarSpecificationParams,
-            boolean hasPowerStatsSupport) {
-        mFiraSpecificationParams = firaSpecificationParams;
-        mCccSpecificationParams = cccSpecificationParams;
-        mAliroSpecificationParams = aliroSpecificationParams;
-        mRadarSpecificationParams = radarSpecificationParams;
-        mHasPowerStatsSupport = hasPowerStatsSupport;
+    private GenericSpecificationParams(Builder builder) {
+        mFiraSpecificationParams = builder.mFiraSpecificationParams;
+        mCccSpecificationParams = builder.mCccSpecificationParams;
+        mAliroSpecificationParams = builder.mAliroSpecificationParams;
+        mRadarSpecificationParams = builder.mRadarSpecificationParams;
+        mHasPowerStatsSupport = builder.mHasPowerStatsSupport;
+        mAntennaModeCapabilities = builder.mAntennaModeCapabilities;
     }
 
     @Override
@@ -99,6 +100,11 @@ public class GenericSpecificationParams extends GenericParams {
         return mHasPowerStatsSupport;
     }
 
+    /** @return antenna mode capabilities. */
+    public EnumSet<AntennaModeCapabilityFlag> getAntennaModeCapabilities() {
+        return mAntennaModeCapabilities;
+    }
+
     public void setFiraSpecificationParams(FiraSpecificationParams params) {
         mFiraSpecificationParams = params;
     }
@@ -121,6 +127,7 @@ public class GenericSpecificationParams extends GenericParams {
                     mRadarSpecificationParams.toBundle());
         }
         bundle.putBoolean(KEY_POWER_STATS_QUERY_SUPPORT, mHasPowerStatsSupport);
+        bundle.putInt(KEY_SUPPORTED_ANTENNA_MODES, FlagEnum.toInt(mAntennaModeCapabilities));
         return bundle;
     }
 
@@ -135,11 +142,16 @@ public class GenericSpecificationParams extends GenericParams {
     }
 
     private static GenericSpecificationParams parseVersion1(PersistableBundle bundle) {
-        GenericSpecificationParams.Builder builder = new GenericSpecificationParams.Builder();
+        GenericSpecificationParams.Builder builder = new GenericSpecificationParams.Builder()
+                .setAntennaModeCapabilities(FlagEnum.toEnumSet(
+                        bundle.getInt(KEY_SUPPORTED_ANTENNA_MODES, 0),
+                        AntennaModeCapabilityFlag.values()))
+                .hasPowerStatsSupport(bundle.getBoolean(KEY_POWER_STATS_QUERY_SUPPORT));
+
         builder = builder.setFiraSpecificationParams(
                 FiraSpecificationParams.fromBundle(
-                        bundle.getPersistableBundle(KEY_FIRA_SPECIFICATION_PARAMS)))
-                .hasPowerStatsSupport(bundle.getBoolean(KEY_POWER_STATS_QUERY_SUPPORT));
+                        bundle.getPersistableBundle(KEY_FIRA_SPECIFICATION_PARAMS)));
+
         PersistableBundle cccBundle = bundle.getPersistableBundle(KEY_CCC_SPECIFICATION_PARAMS);
         if (cccBundle != null) {
             builder = builder.setCccSpecificationParams(
@@ -167,7 +179,10 @@ public class GenericSpecificationParams extends GenericParams {
         private CccSpecificationParams mCccSpecificationParams = null;
         private AliroSpecificationParams mAliroSpecificationParams = null;
         private RadarSpecificationParams mRadarSpecificationParams = null;
+
         private boolean mHasPowerStatsSupport = false;
+        private EnumSet<AntennaModeCapabilityFlag> mAntennaModeCapabilities =
+                EnumSet.noneOf(AntennaModeCapabilityFlag.class);
 
         /**
          * Set FIRA specification params
@@ -214,15 +229,19 @@ public class GenericSpecificationParams extends GenericParams {
         }
 
         /**
+         * Set antenna mode capabilities.
+         */
+        public Builder setAntennaModeCapabilities(
+                Collection<AntennaModeCapabilityFlag> antennaModeCapabilities) {
+            mAntennaModeCapabilities.addAll(antennaModeCapabilities);
+            return this;
+        }
+
+        /**
          * Build {@link GenericSpecificationParams}
          */
         public GenericSpecificationParams build() {
-            return new GenericSpecificationParams(
-                    mFiraSpecificationParams,
-                    mCccSpecificationParams,
-                    mAliroSpecificationParams,
-                    mRadarSpecificationParams,
-                    mHasPowerStatsSupport);
+            return new GenericSpecificationParams(this);
         }
     }
 }

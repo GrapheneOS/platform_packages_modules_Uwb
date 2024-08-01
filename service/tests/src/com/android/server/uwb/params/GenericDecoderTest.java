@@ -40,6 +40,7 @@ import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.util.UwbUtil;
 import com.android.uwb.flags.FeatureFlags;
 
+import com.google.uwb.support.generic.GenericParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
 
 import org.junit.Before;
@@ -54,28 +55,25 @@ import org.mockito.MockitoAnnotations;
 @Presubmit
 public class GenericDecoderTest {
     private static final byte[] TEST_GENERIC_SPECIFICATION_TLV_DATA_VER_1 =
-            UwbUtil.getByteArray(
-                    "C00101" // SUPPORTED_POWER_STATS_QUERY
+            UwbUtil.getByteArray("C00101" // SUPPORTED_POWER_STATS_QUERY
                             + TEST_FIRA_SPECIFICATION_TLV_STRING_VER_1
                             + TEST_CCC_SPECIFICATION_TLV_DATA_STRING
                             + TEST_RADAR_SPECIFICATION_TLV_DATA_STRING);
-    private static final int TEST_GENERIC_SPECIFICATION_TLV_NUM_PARAMS_VER_1 =
-            1
+    private static final int TEST_GENERIC_SPECIFICATION_TLV_NUM_PARAMS_VER_1 = 1
                     + TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_1
                     + TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS
                     + TEST_RADAR_SPECIFICATION_TLV_NUM_PARAMS;
 
     private static final byte[] TEST_GENERIC_SPECIFICATION_TLV_DATA_VER_2 =
-            UwbUtil.getByteArray(
-                    "C00101" // SUPPORTED_POWER_STATS_QUERY
+            UwbUtil.getByteArray("C00101" // SUPPORTED_POWER_STATS_QUERY
+                            + "C10103" // ANTENNA MODE CAPABILITIES
                             + FiraDecoderTest.TEST_FIRA_SPECIFICATION_TLV_STRING_VER_2
                             + TEST_CCC_SPECIFICATION_TLV_DATA_STRING
                             + TEST_RADAR_SPECIFICATION_TLV_DATA_STRING);
-    private static final int TEST_GENERIC_SPECIFICATION_TLV_NUM_PARAMS_VER_2 =
-            1
-                    + TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_2
-                    + TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS
-                    + TEST_RADAR_SPECIFICATION_TLV_NUM_PARAMS;
+    private static final int TEST_GENERIC_SPECIFICATION_TLV_NUM_PARAMS_VER_2 = 2
+            + TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_2
+            + TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS
+            + TEST_RADAR_SPECIFICATION_TLV_NUM_PARAMS;
 
     @Mock private UwbInjector mUwbInjector;
     @Mock private DeviceConfigFacade mDeviceConfigFacade;
@@ -107,6 +105,7 @@ public class GenericDecoderTest {
                 mGenericDecoder.getParams(tlvDecoderBuffer, GenericSpecificationParams.class,
                            PROTOCOL_VERSION_1_1);
         assertThat(genericSpecificationParams.hasPowerStatsSupport()).isTrue();
+        assertThat(genericSpecificationParams.getAntennaModeCapabilities()).isEmpty();
         FiraDecoderTest.verifyFiraSpecificationVersion1(
                 genericSpecificationParams.getFiraSpecificationParams());
         CccDecoderTest.verifyCccSpecification(
@@ -127,6 +126,7 @@ public class GenericDecoderTest {
                 mGenericDecoder.getParams(tlvDecoderBuffer, GenericSpecificationParams.class,
                             PROTOCOL_VERSION_1_1);
         assertThat(genericSpecificationParams.hasPowerStatsSupport()).isTrue();
+        assertThat(genericSpecificationParams.getAntennaModeCapabilities()).isEmpty();
         FiraDecoderTest.verifyFiraSpecificationVersion1(
                 genericSpecificationParams.getFiraSpecificationParams());
         CccDecoderTest.verifyCccSpecification(
@@ -147,6 +147,9 @@ public class GenericDecoderTest {
                 mGenericDecoder.getParams(tlvDecoderBuffer, GenericSpecificationParams.class,
                             PROTOCOL_VERSION_2_0);
         assertThat(genericSpecificationParams.hasPowerStatsSupport()).isTrue();
+        assertThat(genericSpecificationParams.getAntennaModeCapabilities()).containsExactly(
+                GenericParams.AntennaModeCapabilityFlag.HAS_OMNI_MODE_SUPPORT,
+                GenericParams.AntennaModeCapabilityFlag.HAS_DIRECTIONAL_MODE_SUPPORT);
         FiraDecoderTest.verifyFiraSpecificationVersion2(
                 genericSpecificationParams.getFiraSpecificationParams());
         CccDecoderTest.verifyCccSpecification(
@@ -167,6 +170,9 @@ public class GenericDecoderTest {
                 mGenericDecoder.getParams(tlvDecoderBuffer, GenericSpecificationParams.class,
                             PROTOCOL_VERSION_2_0);
         assertThat(genericSpecificationParams.hasPowerStatsSupport()).isTrue();
+        assertThat(genericSpecificationParams.getAntennaModeCapabilities()).containsExactly(
+                GenericParams.AntennaModeCapabilityFlag.HAS_OMNI_MODE_SUPPORT,
+                GenericParams.AntennaModeCapabilityFlag.HAS_DIRECTIONAL_MODE_SUPPORT);
         FiraDecoderTest.verifyFiraSpecificationVersion2(
                 genericSpecificationParams.getFiraSpecificationParams());
         CccDecoderTest.verifyCccSpecification(
@@ -185,11 +191,11 @@ public class GenericDecoderTest {
                         TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_1
                                 + TEST_RADAR_SPECIFICATION_TLV_NUM_PARAMS);
         assertThat(tlvDecoderBuffer.parse()).isTrue();
-
         GenericSpecificationParams genericSpecificationParams =
                 mGenericDecoder.getParams(tlvDecoderBuffer, GenericSpecificationParams.class,
                             PROTOCOL_VERSION_1_1);
         assertThat(genericSpecificationParams.hasPowerStatsSupport()).isFalse();
+        assertThat(genericSpecificationParams.getAntennaModeCapabilities()).isEmpty();
         FiraDecoderTest.verifyFiraSpecificationVersion1(
                 genericSpecificationParams.getFiraSpecificationParams());
         RadarDecoderTest.verifyRadarSpecification(
@@ -212,6 +218,7 @@ public class GenericDecoderTest {
                 mGenericDecoder.getParams(tlvDecoderBuffer, GenericSpecificationParams.class,
                             PROTOCOL_VERSION_1_1);
         assertThat(genericSpecificationParams.hasPowerStatsSupport()).isFalse();
+        assertThat(genericSpecificationParams.getAntennaModeCapabilities()).isEmpty();
         CccDecoderTest.verifyCccSpecification(
                 genericSpecificationParams.getCccSpecificationParams());
         RadarDecoderTest.verifyRadarSpecification(
@@ -234,6 +241,7 @@ public class GenericDecoderTest {
                 mGenericDecoder.getParams(tlvDecoderBuffer, GenericSpecificationParams.class,
                             PROTOCOL_VERSION_1_1);
         assertThat(genericSpecificationParams.hasPowerStatsSupport()).isFalse();
+        assertThat(genericSpecificationParams.getAntennaModeCapabilities()).isEmpty();
         FiraDecoderTest.verifyFiraSpecificationVersion1(
                 genericSpecificationParams.getFiraSpecificationParams());
         CccDecoderTest.verifyCccSpecification(

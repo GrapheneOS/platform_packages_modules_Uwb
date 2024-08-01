@@ -16,6 +16,7 @@
 
 package com.android.server.uwb.params;
 
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_ANTENNA_MODES;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_POWER_STATS_QUERY;
 
 import android.util.Log;
@@ -24,12 +25,14 @@ import com.android.server.uwb.UwbInjector;
 
 import com.google.uwb.support.aliro.AliroParams;
 import com.google.uwb.support.aliro.AliroSpecificationParams;
+import com.google.uwb.support.base.FlagEnum;
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.base.ProtocolVersion;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccSpecificationParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraSpecificationParams;
+import com.google.uwb.support.generic.GenericParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
 import com.google.uwb.support.radar.RadarParams;
 import com.google.uwb.support.radar.RadarSpecificationParams;
@@ -93,6 +96,13 @@ public class GenericDecoder extends TlvDecoder {
             }
         } catch (IllegalArgumentException e) {
             // Do nothing. By default, hasPowerStatsSupport() returns false.
+        }
+        try {
+            builder.setAntennaModeCapabilities(
+                    FlagEnum.toEnumSet(tlvs.getByte(SUPPORTED_ANTENNA_MODES),
+                            GenericParams.AntennaModeCapabilityFlag.values()));
+        } catch (IllegalArgumentException e) {
+            // Do nothing. Mask is set to 0 by default in builder.
         }
         return builder.build();
     }

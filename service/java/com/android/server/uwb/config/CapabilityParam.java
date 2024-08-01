@@ -239,8 +239,17 @@ public class CapabilityParam {
     public static final int CCC_HOPPING_SEQUENCE_DEFAULT =
             (int) UwbVendorCapabilityTlvValues.HOPPING_SEQUENCE_DEFAULT;
 
+    // Protocol Agnostic
     public static final int SUPPORTED_POWER_STATS_QUERY =
             UwbVendorCapabilityTlvTypes.SUPPORTED_POWER_STATS_QUERY;
+
+    public static final int SUPPORTED_ANTENNA_MODES =
+            UwbVendorCapabilityTlvTypes.SUPPORTED_ANTENNA_MODES;
+
+    public static final int ANTENNA_MODE_OMNI =
+            (int) UwbVendorCapabilityTlvValues.ANTENNA_MODE_OMNI;
+    public static final int ANTENNA_MODE_DIRECTIONAL =
+            (int) UwbVendorCapabilityTlvValues.ANTENNA_MODE_DIRECTIONAL;
 
     public static final int RANGE_DATA_NTF_CONFIG_ENABLE = 1 << 0;
     public static final int RANGE_DATA_NTF_CONFIG_DISABLE = 1 << 1;
