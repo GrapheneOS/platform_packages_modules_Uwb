@@ -627,7 +627,8 @@ class RangingTest(uwb_base_test.UwbBaseTest):
   def test_ranging_nearby_share_profile_p_sts_add_controlee(self):
     """Verifies ranging for device nearby share with default profile."""
     asserts.skip_if(
-        self._get_uci_version(self.initiator) < 2 or self._get_uci_version(self.responder) < 2,
+        self._get_uci_version(self.initiator) & 0xFF < 2
+        or self._get_uci_version(self.responder) & 0xFF < 2,
         f"Provisioned STS individual key case is not supported",
     )
     initiator_params = uwb_ranging_params.UwbRangingParams(
