@@ -4877,7 +4877,7 @@ public class UwbSessionManagerTest {
                         UWB_DEST_ADDRESS))
                 .setProtocolVersion(new FiraProtocolVersion(1, 0))
                 .setSessionId(10)
-                .setSessionType(FiraParams.SESSION_TYPE_IN_BAND_DATA_PHASE)
+                .setSessionType(FiraParams.SESSION_TYPE_RANGING)
                 .setDeviceType(FiraParams.RANGING_DEVICE_TYPE_CONTROLLER)
                 .setDeviceRole(FiraParams.RANGING_DEVICE_ROLE_INITIATOR)
                 .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_UNICAST)
@@ -4886,7 +4886,7 @@ public class UwbSessionManagerTest {
                 .setDataRepetitionCount(0)
                 .build();
         UwbSession uwbSession = prepareExistingUwbSessionWithSessionType(
-                (byte) FiraParams.SESSION_TYPE_IN_BAND_DATA_PHASE, params);
+                (byte) FiraParams.SESSION_TYPE_RANGING, params);
 
         byte messageControl = 0;
         int noOfPhases = 2;
@@ -4937,7 +4937,7 @@ public class UwbSessionManagerTest {
                         UWB_DEST_ADDRESS))
                 .setProtocolVersion(new FiraProtocolVersion(1, 0))
                 .setSessionId(10)
-                .setSessionType(FiraParams.SESSION_TYPE_RANGING_ONLY_PHASE)
+                .setSessionType(FiraParams.SESSION_TYPE_RANGING)
                 .setDeviceType(FiraParams.RANGING_DEVICE_TYPE_CONTROLLER)
                 .setDeviceRole(FiraParams.RANGING_DEVICE_ROLE_INITIATOR)
                 .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_UNICAST)
@@ -4946,7 +4946,7 @@ public class UwbSessionManagerTest {
                 .setDataRepetitionCount(0)
                 .build();
         UwbSession uwbSession = prepareExistingUwbSessionWithSessionType(
-                (byte) FiraParams.SESSION_TYPE_RANGING_ONLY_PHASE, params);
+                (byte) FiraParams.SESSION_TYPE_RANGING, params);
 
         byte[] updateTime = new byte[8];
         int noOfPhases = 2;
@@ -5017,7 +5017,7 @@ public class UwbSessionManagerTest {
                         UWB_DEST_ADDRESS))
                 .setProtocolVersion(new FiraProtocolVersion(1, 0))
                 .setSessionId(10)
-                .setSessionType(FiraParams.SESSION_TYPE_RANGING)
+                .setSessionType(FiraParams.SESSION_TYPE_RANGING_ONLY_PHASE)
                 .setDeviceType(FiraParams.RANGING_DEVICE_TYPE_CONTROLLER)
                 .setDeviceRole(FiraParams.RANGING_DEVICE_ROLE_INITIATOR)
                 .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_UNICAST)
@@ -5026,7 +5026,7 @@ public class UwbSessionManagerTest {
                 .setDataRepetitionCount(0)
                 .build();
         UwbSession uwbSession = prepareExistingUwbSessionWithSessionType(
-                (byte) FiraParams.SESSION_TYPE_RANGING, params);
+                (byte) FiraParams.SESSION_TYPE_RANGING_ONLY_PHASE, params);
 
 
         // Expected to fail due to invalid session type
@@ -5131,7 +5131,7 @@ public class UwbSessionManagerTest {
                         UWB_DEST_ADDRESS))
                 .setProtocolVersion(new FiraProtocolVersion(1, 0))
                 .setSessionId(10)
-                .setSessionType(FiraParams.SESSION_TYPE_RANGING_WITH_DATA_PHASE)
+                .setSessionType(FiraParams.SESSION_TYPE_RANGING)
                 .setDeviceType(FiraParams.RANGING_DEVICE_TYPE_CONTROLEE)
                 .setDeviceRole(FiraParams.RANGING_DEVICE_ROLE_INITIATOR)
                 .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_UNICAST)
@@ -5140,7 +5140,7 @@ public class UwbSessionManagerTest {
                 .setDataRepetitionCount(0)
                 .build();
         UwbSession uwbSession = prepareExistingUwbSessionWithSessionType(
-                (byte) FiraParams.SESSION_TYPE_RANGING_WITH_DATA_PHASE, params);
+                (byte) FiraParams.SESSION_TYPE_RANGING, params);
 
         int noOfPhases = 2;
         byte phaseParticipation = 0;

@@ -1402,9 +1402,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         int sessionType = uwbSession.getSessionType();
         if (UwbUciConstants.DEVICE_TYPE_CONTROLLER != deviceType
                 || UwbUciConstants.HYBRID_SCHEDULED_RANGING != scheduleMode
-                || (FiraParams.SESSION_TYPE_RANGING_ONLY_PHASE != sessionType
-                && FiraParams.SESSION_TYPE_IN_BAND_DATA_PHASE != sessionType
-                && FiraParams.SESSION_TYPE_RANGING_WITH_DATA_PHASE != sessionType)) {
+                || (UwbUciConstants.SESSION_TYPE_RANGING != sessionType
+                        && UwbUciConstants.SESSION_TYPE_DATA_TRANSFER != sessionType)) {
             Log.e(TAG, "SetHybridSessionControllerConfiguration() failed: device type: "
                     + deviceType + " schedule mode: "
                     + scheduleMode + " sessionType: " + sessionType);
@@ -1505,9 +1504,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         int sessionType = uwbSession.getSessionType();
         if (UwbUciConstants.DEVICE_TYPE_CONTROLEE != deviceType
                 || UwbUciConstants.HYBRID_SCHEDULED_RANGING != scheduleMode
-                || (FiraParams.SESSION_TYPE_RANGING_ONLY_PHASE != sessionType
-                && FiraParams.SESSION_TYPE_IN_BAND_DATA_PHASE != sessionType
-                && FiraParams.SESSION_TYPE_RANGING_WITH_DATA_PHASE != sessionType)) {
+                || (UwbUciConstants.SESSION_TYPE_RANGING != sessionType
+                        && UwbUciConstants.SESSION_TYPE_DATA_TRANSFER != sessionType)) {
             Log.e(TAG, "handleSetHybridSessionControleeConfiguration() failed: device type: "
                     + deviceType + " schedule mode: " + scheduleMode
                     + " sessionType: " + sessionType);
