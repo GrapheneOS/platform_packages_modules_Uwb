@@ -862,8 +862,8 @@ public class FiraOpenSessionParams extends FiraParams {
         // Always store address as long in bundle.
         bundle.putLong(KEY_DEVICE_ADDRESS, uwbAddressToLong(mDeviceAddress));
 
-        if (mDeviceRole != RANGING_DEVICE_DT_TAG &&
-            mScheduledMode != CONTENTION_BASED_RANGING) {
+        if (mScheduledMode != CONTENTION_BASED_RANGING
+                && mDestAddressList != null) {
             // Dest Address list needs to be converted to long array.
             long[] destAddressList = new long[mDestAddressList.size()];
             int i = 0;
@@ -871,7 +871,10 @@ public class FiraOpenSessionParams extends FiraParams {
                 destAddressList[i++] = uwbAddressToLong(destAddress);
             }
             bundle.putLongArray(KEY_DEST_ADDRESS_LIST, destAddressList);
-        } else {
+        }
+
+        if (mRangingRoundUsage == RANGING_ROUND_USAGE_DL_TDOA
+                && mDeviceRole == RANGING_DEVICE_DT_TAG) {
             bundle.putInt(KEY_DLTDOA_BLOCK_STRIDING, mDlTdoaBlockStriding);
         }
 
