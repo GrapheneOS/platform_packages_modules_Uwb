@@ -45,7 +45,7 @@ public class UwbMulticastListUpdateStatus {
 
         Log.d(TAG, "Controlee count: " + numOfControlees + " mac addresses: "
                 + Arrays.toString(controleeMacAddresses));
-        if (controleeMacAddresses != null) {
+        if ((controleeMacAddresses != null) && (numOfControlees > 0)) {
             // Precache mac addresses in a more usable and universal form.
             mControleeUwbAddresses = getUwbAddresses(mControleeMacAddresses, mNumOfControlees,
                     mControleeMacAddresses.length / mNumOfControlees);

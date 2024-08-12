@@ -28,7 +28,7 @@ import androidx.annotation.NonNull;
 /**
  * UWB parameters for removing a controlee from a FiRa session.
  */
-public class FiraOnControleeRemovedParams {
+public class FiraOnControleeAddRemoveParams {
     @IntDef(
         value = {
             Reason.UNKNOWN,
@@ -48,7 +48,7 @@ public class FiraOnControleeRemovedParams {
     private final @NonNull UwbAddress mAddress;
     private final @Reason int mReason;
 
-    private FiraOnControleeRemovedParams(@NonNull UwbAddress address, @Reason int reason) {
+    private FiraOnControleeAddRemoveParams(@NonNull UwbAddress address, @Reason int reason) {
         mAddress = address;
         mReason = reason;
     }
@@ -69,7 +69,7 @@ public class FiraOnControleeRemovedParams {
      * @return the parameters stored within the bundle.
      */
     @SuppressWarnings("NewApi")
-    public static FiraOnControleeRemovedParams fromBundle(PersistableBundle bundle) {
+    public static FiraOnControleeAddRemoveParams fromBundle(PersistableBundle bundle) {
         int addressMode = bundle.getInt(KEY_MAC_ADDRESS_MODE);
         UwbAddress uwbAddress = longToUwbAddress(
                 bundle.getLong(KEY_ADDRESS),
@@ -104,17 +104,17 @@ public class FiraOnControleeRemovedParams {
         /**
          * @param reason for removal.
          */
-        public FiraOnControleeRemovedParams.Builder setReason(@Reason int reason) {
+        public FiraOnControleeAddRemoveParams.Builder setReason(@Reason int reason) {
             mReason = reason;
             return this;
         }
 
         /**
-         * @return a {@link FiraOnControleeRemovedParams} containing the provided params.
+         * @return a {@link FiraOnControleeAddRemoveParams} containing the provided params.
          * @throws IllegalArgumentException if an address was not provided.
          */
-        public FiraOnControleeRemovedParams build() throws IllegalArgumentException {
-            return new FiraOnControleeRemovedParams(mAddress, mReason);
+        public FiraOnControleeAddRemoveParams build() throws IllegalArgumentException {
+            return new FiraOnControleeAddRemoveParams(mAddress, mReason);
         }
     }
 }

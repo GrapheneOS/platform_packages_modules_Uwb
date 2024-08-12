@@ -48,7 +48,7 @@ import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccRangingReconfiguredParams;
 import com.google.uwb.support.dltdoa.DlTDoAMeasurement;
 import com.google.uwb.support.fira.FiraDataTransferPhaseConfigStatusCode;
-import com.google.uwb.support.fira.FiraOnControleeRemovedParams;
+import com.google.uwb.support.fira.FiraOnControleeAddRemoveParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.oemextension.RangingReportMetadata;
@@ -272,8 +272,8 @@ public class UwbSessionNotificationManager {
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
         try {
             uwbRangingCallbacks.onRangingReconfigureFailed(sessionHandle,
-                    UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(
-                            status),
+                    UwbSessionNotificationHelper.convertMulticastListUpdateStatusToApiReasonCode(
+                        status),
                     UwbSessionNotificationHelper.convertUciStatusToParam(
                             uwbSession.getProtocolName(), status));
             Log.i(TAG, "IUwbRangingCallbacks - onRangingReconfigureFailed");
@@ -283,11 +283,14 @@ public class UwbSessionNotificationManager {
         }
     }
 
-    public void onControleeAdded(UwbSession uwbSession) {
+    public void onControleeAdded(UwbSession uwbSession, UwbAddress controleeAddress) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
         try {
-            uwbRangingCallbacks.onControleeAdded(sessionHandle, new PersistableBundle());
+            uwbRangingCallbacks.onControleeAdded(sessionHandle,
+                new FiraOnControleeAddRemoveParams.Builder(controleeAddress)
+                    .setReason(FiraOnControleeAddRemoveParams.Reason.REQUESTED_BY_API)
+                    .build().toBundle());
             Log.i(TAG, "IUwbRangingCallbacks - onControleeAdded");
         } catch (Exception e) {
             Log.e(TAG, "IUwbRangingCallbacks - onControleeAdded: Failed");
@@ -295,15 +298,16 @@ public class UwbSessionNotificationManager {
         }
     }
 
-    public void onControleeAddFailed(UwbSession uwbSession, int status) {
+    public void onControleeAddFailed(
+            UwbSession uwbSession, UwbAddress controleeAddress, int status) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
         try {
             uwbRangingCallbacks.onControleeAddFailed(sessionHandle,
-                    UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(
-                            status),
-                    UwbSessionNotificationHelper.convertUciStatusToParam(
-                            uwbSession.getProtocolName(), status));
+                    status,
+                    new FiraOnControleeAddRemoveParams.Builder(controleeAddress)
+                        .setReason(FiraOnControleeAddRemoveParams.Reason.REQUESTED_BY_API)
+                        .build().toBundle());
             Log.i(TAG, "IUwbRangingCallbacks - onControleeAddFailed");
         } catch (Exception e) {
             Log.e(TAG, "IUwbRangingCallbacks - onControleeAddFailed : Failed");
@@ -312,12 +316,12 @@ public class UwbSessionNotificationManager {
     }
 
     public void onControleeRemoved(UwbSession uwbSession, UwbAddress controleeAddress,
-            @FiraOnControleeRemovedParams.Reason int reason) {
+            @FiraOnControleeAddRemoveParams.Reason int reason) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
         try {
             uwbRangingCallbacks.onControleeRemoved(sessionHandle,
-                    new FiraOnControleeRemovedParams.Builder(controleeAddress).setReason(reason)
+                    new FiraOnControleeAddRemoveParams.Builder(controleeAddress).setReason(reason)
                             .build().toBundle());
             Log.i(TAG, "IUwbRangingCallbacks - onControleeRemoved");
         } catch (Exception e) {
@@ -326,15 +330,15 @@ public class UwbSessionNotificationManager {
         }
     }
 
-    public void onControleeRemoveFailed(UwbSession uwbSession, int status) {
+    public void onControleeRemoveFailed(UwbSession uwbSession, UwbAddress controleeAddress,
+            int status, int reason) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
         try {
             uwbRangingCallbacks.onControleeRemoveFailed(sessionHandle,
-                    UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(
-                            status),
-                    UwbSessionNotificationHelper.convertUciStatusToParam(
-                            uwbSession.getProtocolName(), status));
+                    status,
+                    new FiraOnControleeAddRemoveParams.Builder(controleeAddress).setReason(reason)
+                            .build().toBundle());
             Log.i(TAG, "IUwbRangingCallbacks - onControleeRemoveFailed");
         } catch (Exception e) {
             Log.e(TAG, "IUwbRangingCallbacks - onControleeRemoveFailed : Failed");

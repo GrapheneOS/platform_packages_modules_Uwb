@@ -919,14 +919,22 @@ public class UwbSessionManagerTest {
         when(mockUwbSession.getOperationType())
                 .thenReturn(UwbSessionManager.SESSION_RECONFIG_RANGING);
         doReturn(mockUwbSession)
-                .when(mUwbSessionManager).getUwbSession(anyInt());
+                        .when(mUwbSessionManager).getUwbSession(anyInt());
+        when(mockUwbMulticastListUpdateStatus.getNumOfControlee())
+                .thenReturn(2);
+        when(mockUwbMulticastListUpdateStatus.getStatus())
+                        .thenReturn(new int[] {
+                                UwbUciConstants.STATUS_CODE_OK, UwbUciConstants.STATUS_CODE_OK });
 
         mUwbSessionManager.onMulticastListUpdateNotificationReceived(
                 mockUwbMulticastListUpdateStatus);
 
         verify(mockUwbSession, times(2)).getWaitObj();
         verify(mockUwbSession)
-                .setMulticastListUpdateStatus(eq(mockUwbMulticastListUpdateStatus));
+                        .setMulticastListUpdateStatus(eq(mockUwbMulticastListUpdateStatus));
+        verify(mUwbSessionNotificationManager, never())
+                .onControleeAddFailed(any(), any(), anyInt());
+        verify(mUwbSessionNotificationManager, never()).onRangingReconfigureFailed(any(), anyInt());
     }
 
     @Test
@@ -4188,7 +4196,8 @@ public class UwbSessionManagerTest {
                 uwbSession.getSessionId(), reconfigureParams.getAction(), 1,
                 dstAddress, reconfigureParams.getSubSessionIdList(), null,
                 uwbSession.getChipId());
-        verify(mUwbSessionNotificationManager).onControleeAdded(eq(uwbSession));
+        verify(mUwbSessionNotificationManager).onControleeAdded(eq(uwbSession),
+                        eq(UWB_DEST_ADDRESS_2));
         verify(mUwbSessionNotificationManager).onRangingReconfigured(eq(uwbSession));
     }
 
@@ -4308,7 +4317,8 @@ public class UwbSessionManagerTest {
                 uwbSession.getSessionId(), reconfigureParams.getAction(), 1,
                 dstAddress, reconfigureParams.getSubSessionIdList(),
                 reconfigureParams.getSubSessionKeyList(), uwbSession.getChipId());
-        verify(mUwbSessionNotificationManager).onControleeAdded(eq(uwbSession));
+        verify(mUwbSessionNotificationManager).onControleeAdded(eq(uwbSession),
+                        eq(UWB_DEST_ADDRESS_2));
         verify(mUwbSessionNotificationManager).onRangingReconfigured(eq(uwbSession));
     }
 
@@ -4358,7 +4368,8 @@ public class UwbSessionManagerTest {
                 uwbSession.getSessionId(), reconfigureParams.getAction(), 1,
                 dstAddress, reconfigureParams.getSubSessionIdList(),
                 reconfigureParams.getSubSessionKeyList(), uwbSession.getChipId());
-        verify(mUwbSessionNotificationManager).onControleeAdded(eq(uwbSession));
+        verify(mUwbSessionNotificationManager).onControleeAdded(eq(uwbSession),
+                        eq(UWB_DEST_ADDRESS_2));
         verify(mUwbSessionNotificationManager).onRangingReconfigured(eq(uwbSession));
     }
 
@@ -4430,7 +4441,7 @@ public class UwbSessionManagerTest {
         mTestLooper.dispatchNext();
 
         verify(mUwbSessionNotificationManager).onControleeAddFailed(eq(uwbSession),
-                eq(UwbUciConstants.STATUS_CODE_FAILED));
+                        eq(UWB_DEST_ADDRESS_2), eq(UwbUciConstants.STATUS_CODE_FAILED));
         verify(mUwbSessionNotificationManager).onRangingReconfigureFailed(
                 eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
     }
@@ -4466,9 +4477,10 @@ public class UwbSessionManagerTest {
 
         // Fail callback for the first one.
         verify(mUwbSessionNotificationManager).onControleeAddFailed(eq(uwbSession),
-                eq(UwbUciConstants.STATUS_CODE_FAILED));
+                eq(UWB_DEST_ADDRESS_2), eq(UwbUciConstants.STATUS_CODE_FAILED));
         // Success callback for the second.
-        verify(mUwbSessionNotificationManager).onControleeAdded(eq(uwbSession));
+        verify(mUwbSessionNotificationManager).onControleeAdded(eq(uwbSession),
+                        eq(UWB_DEST_ADDRESS_3));
 
         // Make sure the failed address was not added.
         assertThat(uwbSession.getControleeList().stream()
@@ -4500,6 +4512,8 @@ public class UwbSessionManagerTest {
         UwbMulticastListUpdateStatus uwbMulticastListUpdateStatus =
                 mock(UwbMulticastListUpdateStatus.class);
         when(uwbMulticastListUpdateStatus.getNumOfControlee()).thenReturn(1);
+        when(uwbMulticastListUpdateStatus.getControleeUwbAddresses()).thenReturn(
+                new UwbAddress[] { UWB_DEST_ADDRESS_2 });
         when(uwbMulticastListUpdateStatus.getStatus()).thenReturn(
                 new int[] { UwbUciConstants.STATUS_CODE_FAILED });
         doReturn(uwbMulticastListUpdateStatus).when(uwbSession).getMulticastListUpdateStatus();
@@ -4508,7 +4522,7 @@ public class UwbSessionManagerTest {
         mTestLooper.dispatchNext();
 
         verify(mUwbSessionNotificationManager).onControleeAddFailed(eq(uwbSession),
-                eq(UwbUciConstants.STATUS_CODE_FAILED));
+                eq(UWB_DEST_ADDRESS_2), eq(UwbUciConstants.STATUS_CODE_FAILED));
         verify(mUwbSessionNotificationManager).onRangingReconfigureFailed(
                 eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_FAILED));
     }

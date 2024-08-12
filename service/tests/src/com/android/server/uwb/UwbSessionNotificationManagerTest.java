@@ -64,7 +64,7 @@ import com.android.server.uwb.data.UwbRangingData;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.uwb.flags.Flags;
 
-import com.google.uwb.support.fira.FiraOnControleeRemovedParams;
+import com.google.uwb.support.fira.FiraOnControleeAddRemoveParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.radar.RadarData;
@@ -571,7 +571,8 @@ public class UwbSessionNotificationManagerTest {
 
     @Test
     public void testOnControleeAdded() throws Exception {
-        mUwbSessionNotificationManager.onControleeAdded(mUwbSession);
+        mUwbSessionNotificationManager.onControleeAdded(mUwbSession,
+                        UwbTestUtils.PEER_SHORT_UWB_ADDRESS);
 
         verify(mIUwbRangingCallbacks).onControleeAdded(eq(mSessionHandle), any());
     }
@@ -579,17 +580,28 @@ public class UwbSessionNotificationManagerTest {
     @Test
     public void testOnControleeAddFailed() throws Exception {
         int status =  UwbUciConstants.STATUS_CODE_INVALID_MESSAGE_SIZE;
-        mUwbSessionNotificationManager.onControleeAddFailed(mUwbSession, status);
+        mUwbSessionNotificationManager.onControleeAddFailed(mUwbSession,
+                UwbTestUtils.PEER_SHORT_UWB_ADDRESS, status);
 
         verify(mIUwbRangingCallbacks).onControleeAddFailed(eq(mSessionHandle),
                 eq(UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(status)),
-                argThat(p -> (p.getInt("status_code")) == status));
+                argThat(bundle -> {
+                        int addressMode = bundle.getInt("mac_address_mode");
+                        UwbAddress address = FiraParams.longToUwbAddress(
+                                bundle.getLong("address"),
+                                addressMode == FiraParams.MAC_ADDRESS_MODE_2_BYTES
+                                        ? UwbAddress.SHORT_ADDRESS_BYTE_LENGTH
+                                        : UwbAddress.EXTENDED_ADDRESS_BYTE_LENGTH);
+                        int reason = bundle.getInt("reason");
+                        return address.equals(UwbTestUtils.PEER_SHORT_UWB_ADDRESS)
+                                && FiraOnControleeAddRemoveParams.Reason.REQUESTED_BY_API == reason;
+                }));
     }
 
     @Test
     public void testOnControleeRemoved() throws Exception {
         UwbAddress address = UwbTestUtils.PEER_EXTENDED_UWB_ADDRESS;
-        int reason = FiraOnControleeRemovedParams.Reason.LOST_CONNECTION;
+        int reason = FiraOnControleeAddRemoveParams.Reason.LOST_CONNECTION;
 
         ArgumentCaptor<PersistableBundle> bundleCaptor =
                 ArgumentCaptor.forClass(PersistableBundle.class);
@@ -598,8 +610,8 @@ public class UwbSessionNotificationManagerTest {
         verify(mIUwbRangingCallbacks).onControleeRemoved(eq(mSessionHandle),
                 bundleCaptor.capture());
 
-        FiraOnControleeRemovedParams params =
-                FiraOnControleeRemovedParams.fromBundle(bundleCaptor.getValue());
+        FiraOnControleeAddRemoveParams params =
+                FiraOnControleeAddRemoveParams.fromBundle(bundleCaptor.getValue());
         assertThat(params.getAddress()).isEqualTo(address);
         assertThat(params.getReason()).isEqualTo(reason);
     }
@@ -607,11 +619,23 @@ public class UwbSessionNotificationManagerTest {
     @Test
     public void testOnControleeRemoveFailed() throws Exception {
         int status =  UwbUciConstants.STATUS_CODE_INVALID_MESSAGE_SIZE;
-        mUwbSessionNotificationManager.onControleeRemoveFailed(mUwbSession, status);
+        mUwbSessionNotificationManager.onControleeRemoveFailed(mUwbSession,
+                UwbTestUtils.PEER_SHORT_UWB_ADDRESS, status,
+                FiraOnControleeAddRemoveParams.Reason.LOST_CONNECTION);
 
         verify(mIUwbRangingCallbacks).onControleeRemoveFailed(eq(mSessionHandle),
                 eq(UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(status)),
-                argThat(p -> (p.getInt("status_code")) == status));
+                argThat(bundle -> {
+                        int addressMode = bundle.getInt("mac_address_mode");
+                        UwbAddress address = FiraParams.longToUwbAddress(
+                                bundle.getLong("address"),
+                                addressMode == FiraParams.MAC_ADDRESS_MODE_2_BYTES
+                                        ? UwbAddress.SHORT_ADDRESS_BYTE_LENGTH
+                                        : UwbAddress.EXTENDED_ADDRESS_BYTE_LENGTH);
+                        int reason = bundle.getInt("reason");
+                        return address.equals(UwbTestUtils.PEER_SHORT_UWB_ADDRESS)
+                                && FiraOnControleeAddRemoveParams.Reason.LOST_CONNECTION == reason;
+                }));
     }
 
     @Test

@@ -120,6 +120,32 @@ public class UwbSessionNotificationHelper {
     }
 
     /**
+     * Convert Multicast list update status codes to an API reason code.
+     */
+    public static int convertMulticastListUpdateStatusToApiReasonCode(
+            int multicastListUpdateStatus) {
+        int rangingChangeReason = RangingChangeReason.UNKNOWN;
+        switch (multicastListUpdateStatus) {
+            case UwbUciConstants.MULTICAST_LIST_UPDATE_STATUS_OK:
+                rangingChangeReason = RangingChangeReason.LOCAL_API;
+                break;
+            case UwbUciConstants.MULTICAST_LIST_UPDATE_STATUS_ERROR_FULL:
+            case UwbUciConstants.MULTICAST_LIST_UPDATE_STATUS_ERROR_KEY_FETCH_FAIL:
+                rangingChangeReason = RangingChangeReason.PROTOCOL_SPECIFIC;
+                break;
+            case UwbUciConstants.MULTICAST_LIST_UPDATE_STATUS_ERROR_SUB_SESSION_ID_NOT_FOUND:
+            case UwbUciConstants.MULTICAST_LIST_UPDATE_STATUS_ERROR_SUB_SESSION_KEY_NOT_FOUND:
+            case UwbUciConstants.MULTICAST_LIST_UPDATE_STATUS_ERROR_SUB_SESSION_KEY_NOT_APPLICABLE:
+            case UwbUciConstants.MULTICAST_LIST_UPDATE_STATUS_ERROR_SESSION_KEY_NOT_FOUND:
+            case UwbUciConstants.MULTICAST_LIST_UPDATE_STATUS_ERROR_ADDRESS_NOT_FOUND:
+            case UwbUciConstants.MULTICAST_LIST_UPDATE_STATUS_ERROR_ADDRESS_ALREADY_PRESENT:
+                rangingChangeReason = RangingChangeReason.BAD_PARAMETERS;
+                break;
+        }
+        return rangingChangeReason;
+    }
+
+    /**
      * Convert UCI reason code values to UCI status code, as some of the callbacks expect to get
      * the latter.
      */

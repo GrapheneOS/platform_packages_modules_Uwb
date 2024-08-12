@@ -1166,14 +1166,14 @@ public abstract class FiraParams extends Params {
     /** The patch antenna is used for both Tx and Rx. **/
     public static final int ANTENNA_MODE_DIRECTIONAL = 1;
 
-    // Helper functions
-    protected static UwbAddress longToUwbAddress(long value, int length) {
+    /** Helper function to covert long value to UwbAddress. */
+    public static UwbAddress longToUwbAddress(long value, int length) {
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
         buffer.putLong(value);
         return UwbAddress.fromBytes(Arrays.copyOf(buffer.array(), length));
     }
 
-    /** Helper functions to convert UwbAdrress in long value. */
+    /** Helper functions to convert UwbAddress in long value. */
     public static long uwbAddressToLong(UwbAddress address) {
         ByteBuffer buffer = ByteBuffer.wrap(Arrays.copyOf(address.toBytes(), Long.BYTES));
         return buffer.getLong();
