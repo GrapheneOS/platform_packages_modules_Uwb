@@ -51,6 +51,7 @@ import android.location.LocationManager;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiManager.ActiveCountryCodeChangedCallback;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.UserHandle;
 import android.os.test.TestLooper;
 import android.provider.Settings;
@@ -107,6 +108,7 @@ public class UwbCountryCodeTest {
     @Mock LocationListener mFusedLocationListener;
     @Mock Intent mLocalIntent;
     @Mock UserHandle mUserHandle;
+    @Mock Looper mLooper;
 
     private TestLooper mTestLooper;
     private UwbCountryCode mUwbCountryCode;
@@ -162,6 +164,7 @@ public class UwbCountryCodeTest {
         when(mDeviceConfigFacade.isLocationUseForCountryCodeEnabled()).thenReturn(true);
         when(mUwbInjector.getDeviceConfigFacade()).thenReturn(mDeviceConfigFacade);
         when(mUwbInjector.getUwbSettingsStore()).thenReturn(mUwbSettingsStore);
+        when(mUwbInjector.getUwbServiceLooper()).thenReturn(mLooper);
         when(mPackageManager.hasSystemFeature(PackageManager.FEATURE_WIFI)).thenReturn(true);
         when(mNativeUwbManager.setCountryCode(any())).thenReturn(
                 (byte) STATUS_CODE_OK);
@@ -588,7 +591,8 @@ public class UwbCountryCodeTest {
         mUwbCountryCode.clearCachedCountryCode();
 
         verify(mLocationManager).requestLocationUpdates(eq(LocationManager.FUSED_PROVIDER),
-                anyLong(), anyFloat(), mFusedLocationListenerCaptor.capture());
+                anyLong(), anyFloat(), mFusedLocationListenerCaptor.capture(),
+                        eq(mLooper));
 
         //TODO: b/350063314: Update with behaviour upon receiving Location Update
     }
@@ -609,8 +613,6 @@ public class UwbCountryCodeTest {
         // Now clear the cache and ensure we reset the country code.
         mUwbCountryCode.clearCachedCountryCode();
 
-        verify(mLocationManager).requestFlush(eq(LocationManager.FUSED_PROVIDER),
-                     mLocationListenerCaptor.capture(), anyInt());
         verify(mLocationManager).removeUpdates(mLocationListenerCaptor.capture());
     }
 }

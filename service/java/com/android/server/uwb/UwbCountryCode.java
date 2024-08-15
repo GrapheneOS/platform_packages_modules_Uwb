@@ -314,7 +314,7 @@ public class UwbCountryCode {
         Log.d(TAG, "Start Fused Country Code Resolver");
         mLocationManager.requestLocationUpdates(LocationManager.FUSED_PROVIDER,
                 FUSED_TIME_BETWEEN_UPDATES_MS, DISTANCE_BETWEEN_UPDATES_METERS,
-                mFusedLocationListener);
+                mFusedLocationListener, mUwbInjector.getUwbServiceLooper());
         mFusedLocationProviderActive = true;
     }
 
@@ -322,8 +322,6 @@ public class UwbCountryCode {
     private void stopFusedLocationManager() {
         if (mFusedLocationProviderActive) {
             Log.d(TAG, "Stopping Fused Country Code Resolver");
-            mLocationManager.requestFlush(LocationManager.FUSED_PROVIDER,
-                    mFusedLocationListener, 0);
             mLocationManager.removeUpdates(mFusedLocationListener);
             mFusedLocationProviderActive = false;
         }
