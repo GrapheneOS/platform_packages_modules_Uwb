@@ -48,6 +48,7 @@ import com.google.uwb.support.fira.FiraSpecificationParams;
 import com.google.uwb.support.multichip.ChipInfoParams;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -236,7 +237,7 @@ public class UwbServiceImpl {
             supportedConfigIds.add(CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE_HPRF);
         }
         int minSlotDurationUs = specificationParams.getMinSlotDurationUs();
-        List<Integer> supportedSlotDurations = new ArrayList<>(Utils.DURATION_2_MS);
+        List<Integer> supportedSlotDurations = new ArrayList<>(Arrays.asList(Utils.DURATION_2_MS));
         if (minSlotDurationUs <= 1000) {
             supportedSlotDurations.add(Utils.DURATION_1_MS);
         }
