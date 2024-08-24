@@ -53,6 +53,8 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
+import java.util.concurrent.ExecutionException;
+
 @RunWith(JUnit4.class)
 @SmallTest
 public class UwbAdapterTest {
@@ -82,13 +84,10 @@ public class UwbAdapterTest {
     }
 
     @Test
-    public void isEnabled_checksServiceIsAvailable() {
+    public void isEnabled_checksServiceIsAvailable()
+            throws InterruptedException, ExecutionException {
         when(mMockUwbService.isAvailable()).thenReturn(true);
-        try {
-            Assert.assertTrue(mUwbAdapter.isEnabled().get());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        Assert.assertTrue(mUwbAdapter.isEnabled().get());
     }
 
     @Test
@@ -121,6 +120,7 @@ public class UwbAdapterTest {
 
     @Test
     public void stop_stopsUwbClient() {
+        mUwbAdapter.start(mMockCallback);
         mUwbAdapter.stop();
         verify(mMockUwbClient).stopRanging();
     }

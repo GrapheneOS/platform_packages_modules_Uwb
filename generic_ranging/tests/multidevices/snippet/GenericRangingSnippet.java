@@ -43,7 +43,6 @@ import com.google.android.mobly.snippet.event.SnippetEvent;
 import com.google.android.mobly.snippet.rpc.AsyncRpc;
 import com.google.android.mobly.snippet.rpc.Rpc;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
@@ -233,6 +232,17 @@ public class GenericRangingSnippet implements Snippet {
             logInfo("Starting controller session");
             uwbAdapter = new UwbAdapter(mContext, mExecutor, UwbAdapter.DeviceType.CONTROLLER);
         }
+        uwbAdapter.setLocalAddressForTesting(UwbAddress.fromBytes(
+                convertJSONArrayToByteArray(config.getJSONArray("deviceAddress"))));
+
+        // Test forces channel to 9 and preamble to 11
+        uwbAdapter.setComplexChannelForTesting();
+        try {
+            uwbAdapter.getComplexChannel().get();
+        } catch (Exception e) {
+            Log.w(TAG, "Could not get complex channel for uwb adapter");
+            throw new RuntimeException(e);
+        }
 
         //TODO: Make this configurable
         //    private Provider<PrecisionRanging.Factory> mRangingFactory;
@@ -244,18 +254,12 @@ public class GenericRangingSnippet implements Snippet {
                         Duration.ofSeconds(1)).setNoUpdateTimeout(
                         Duration.ofSeconds(2)).setInitTimeout(Duration.ofSeconds(3)).build();
 
-        PrecisionRanging precisionRanging = new PrecisionRangingImpl(
-                new CustomUwbAdapterProvider(uwbAdapter), mContext, precisionRangingConfig,
-                Executors.newSingleThreadScheduledExecutor(),
-                Optional.of(ImmutableMap.of(RangingTechnology.UWB, uwbAdapter)));
+        PrecisionRangingImpl precisionRanging = new PrecisionRangingImpl(mContext,
+                precisionRangingConfig, Executors.newSingleThreadScheduledExecutor(),
+                MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor()));
 
+        precisionRanging.useAdapterForTesting(RangingTechnology.UWB, uwbAdapter);
         precisionRanging.setUwbConfig(generateRangingParameters(config));
-        uwbAdapter.setLocalAddressForTesting(UwbAddress.fromBytes(
-                convertJSONArrayToByteArray(config.getJSONArray("deviceAddress"))));
-
-        // Test forces channel to 9 and preamble to 11
-        uwbAdapter.setComplexChannelForTesting();
-        precisionRanging.getUwbComplexChannel();
 
         GenericRangingCallback genericRangingCallback =
                 new GenericRangingCallback(callbackId, Event.EventAll.getType());

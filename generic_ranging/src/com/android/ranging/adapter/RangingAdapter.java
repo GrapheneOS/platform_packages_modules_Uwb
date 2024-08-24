@@ -16,8 +16,6 @@
 
 package com.android.ranging.adapter;
 
-import android.os.RemoteException;
-
 import com.android.ranging.RangingData;
 import com.android.ranging.RangingTechnology;
 
@@ -34,7 +32,7 @@ public interface RangingAdapter {
      * otherwise. When this returns false it's most likely because of not being enabled in settings,
      * airplane mode being on, etc.
      */
-    ListenableFuture<Boolean> isEnabled() throws RemoteException;
+    ListenableFuture<Boolean> isEnabled();
 
     /**
      * Start ranging. Does nothing if the ranging technology is not enabled on device or if ranging

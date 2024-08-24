@@ -16,10 +16,10 @@
 
 package com.android.ranging.adapter;
 
-import static com.google.common.util.concurrent.Futures.immediateFuture;
 
 import com.android.ranging.RangingTechnology;
 
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 /** Channel Sounding adapter for ranging. */
@@ -40,7 +40,7 @@ public class CsAdapter implements RangingAdapter {
 
     @Override
     public ListenableFuture<Boolean> isEnabled() {
-        return immediateFuture(false);
+        return Futures.immediateFuture(false);
     }
 
     @Override

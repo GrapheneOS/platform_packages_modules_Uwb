@@ -24,11 +24,11 @@ import androidx.core.uwb.backend.impl.internal.RangingParameters;
 import androidx.core.uwb.backend.impl.internal.UwbAddress;
 import androidx.core.uwb.backend.impl.internal.UwbComplexChannel;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.EnumMap;
 
 /**
  * PrecisionRanging provides an API for ranging with multiple ranging technologies such as
@@ -55,14 +55,9 @@ public interface PrecisionRanging {
     void stop();
 
     /**
-     * Returns a map that describes the {@link RangingTechnologyAvailability} for each requested
-     * {@link RangingTechnology} for this session. {@link RangingTechnologyAvailability} is either
-     * NOT_SUPPORTED when the hardware or software doesn't support the technology, DISABLED when
-     * it's
-     * disabled due to a condition or a user switch, or ENABLED when it's available to use.
+     * Returns a map that describes the {@link TechnologyStatus} of every {@link RangingTechnology}
      */
-    ListenableFuture<ImmutableMap<RangingTechnology, Integer>> rangingTechnologiesAvailability()
-            throws RemoteException;
+    ListenableFuture<EnumMap<RangingTechnology, Integer>> getTechnologyStatus();
 
     /** Returns UWB capabilities if UWB was requested. */
     ListenableFuture<RangingCapabilities> getUwbCapabilities();
@@ -85,15 +80,15 @@ public interface PrecisionRanging {
     /** State of an individual Ranging Technology on this device. */
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({
-            /* Ranging technology is not supported on this device. */
-            RangingTechnologyAvailability.NOT_SUPPORTED,
-            /* Ranging technology is disabled. */
-            RangingTechnologyAvailability.DISABLED,
+            /* Ranging technology is not part of this session. */
+            TechnologyStatus.UNUSED,
+            /* Ranging technology is disabled due to a device condition or user switch. */
+            TechnologyStatus.DISABLED,
             /* Ranging technology is enabled. */
-            RangingTechnologyAvailability.ENABLED,
+            TechnologyStatus.ENABLED,
     })
-    @interface RangingTechnologyAvailability {
-        int NOT_SUPPORTED = 0;
+    @interface TechnologyStatus {
+        int UNUSED = 0;
         int DISABLED = 1;
         int ENABLED = 2;
     }

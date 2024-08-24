@@ -32,6 +32,8 @@ import androidx.core.uwb.backend.impl.internal.UwbAddress;
 import androidx.core.uwb.backend.impl.internal.UwbComplexChannel;
 
 import com.android.internal.annotations.GuardedBy;
+import com.android.ranging.RangingUtils.StateMachine;
+import com.android.ranging.adapter.CsAdapter;
 import com.android.ranging.adapter.RangingAdapter;
 import com.android.ranging.adapter.UwbAdapter;
 import com.android.sensor.Estimate;
@@ -39,25 +41,21 @@ import com.android.sensor.MultiSensorFinderListener;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.errorprone.annotations.DoNotCall;
 
-import dagger.Lazy;
-import dagger.assisted.Assisted;
-import dagger.assisted.AssistedFactory;
-import dagger.assisted.AssistedInject;
-
 import java.time.Instant;
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.stream.Collectors;
 
 /** Precision Ranging Implementation (Generic Ranging Layer). */
 public final class PrecisionRangingImpl implements PrecisionRanging {
@@ -77,17 +75,7 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
      */
     private final long periodicUpdateIntervalMs;
 
-    private final Object lock = new Object();
-
-    /** Keeps the internal state of precision ranging (such as starting, active or stopped). */
-    @GuardedBy("lock")
-    private State internalState;
-
-    /** Keeps the state of each individual ranging adapter (such as starting, active or stopped). */
-    @GuardedBy("lock")
-    private final Map<RangingTechnology, State> rangingAdaptersStateMap;
-
-    private final ImmutableMap<RangingTechnology, RangingAdapter> rangingAdapters;
+    private final Map<RangingTechnology, RangingAdapter> mAdapters;
     private final Map<RangingTechnology, RangingAdapter.Callback> rangingAdapterListeners;
 
     /**
@@ -100,6 +88,9 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
     private final Context context;
     private final PrecisionRangingConfig config;
     private Optional<PrecisionRanging.Callback> callback;
+
+    /** Keeps track of state of the ranging session */
+    private final StateMachine<State> mStateMachine;
 
     /**
      * In this instance the primary fusion algorithm is the ArCoreMultiSensorFinder algorithm. In
@@ -125,18 +116,16 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
 
     /**
      * Executor service for running async tasks such as starting/stopping individual ranging
-     * adapters
-     * and fusion algorithm. Most of the results of running the tasks are received via listeners.
+     * adapters and fusion algorithm. Most of the results of running the tasks are received via
+     * listeners.
      */
-    private final ExecutorService internalExecutorService;
+    private final ListeningExecutorService mAdapterExecutor;
 
-    @GuardedBy("lock")
-    private Optional<RangingData> lastUwbRangingDataResult;
+    /** Last data received from each ranging technology */
+    @GuardedBy("mStateMachine")
+    private final Map<RangingTechnology, RangingData> mLastRangingData;
 
-    @GuardedBy("lock")
-    private Optional<RangingData> lastCsRangingDataResult;
-
-    @GuardedBy("lock")
+    @GuardedBy("mStateMachine")
     private Optional<FusionData> lastFusionDataResult;
 
     /**
@@ -175,80 +164,54 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
      */
     private boolean seenSuccessfulFusionData;
 
-    /** Factory for creating {@link PrecisionRangingImpl}. */
-    @AssistedFactory
-    public interface Factory extends PrecisionRanging.Factory {
-        @Override
-        PrecisionRangingImpl create(PrecisionRangingConfig config);
-    }
-
-    /**
-     * Constructs Precision Ranging. Additional setup might be needed depending on the ranging
-     * technologies requested in the configuration.
-     */
-    @AssistedInject
     public PrecisionRangingImpl(
-            Lazy<UwbAdapter> lazyUwbAdapter,
-            Context context,
-            @Assisted PrecisionRangingConfig config,
-            ScheduledExecutorService scheduledExecutorService) {
-        this(
-                lazyUwbAdapter,
-                context,
-                config,
-                scheduledExecutorService,
-                //TimeSource.system(),
-                //Optional.empty(),
-                Optional.empty());
-    }
-
-    @VisibleForTesting
-    public PrecisionRangingImpl(
-            Lazy<UwbAdapter> lazyUwbAdapter,
             Context context,
             PrecisionRangingConfig config,
-            ScheduledExecutorService scheduledExecutorService,
+            @NonNull ScheduledExecutorService periodicUpdateExecutor,
+            @NonNull ListeningExecutorService rangingAdapterExecutor
             //TimeSource timeSource,
             //Optional<ArCoreMultiSensorFinder> fusionAlgorithm,
-            Optional<ImmutableMap<RangingTechnology, RangingAdapter>> rangingAdapters) {
+    ) {
         this.context = context;
         this.config = config;
+        mStateMachine = new StateMachine<>(State.STOPPED);
         this.callback = Optional.empty();
-        this.periodicUpdateExecutorService = scheduledExecutorService;
-        this.internalExecutorService = scheduledExecutorService;
+        this.periodicUpdateExecutorService = periodicUpdateExecutor;
+        mAdapterExecutor = rangingAdapterExecutor;
         //this.timeSource = timeSource;
         seenSuccessfulFusionData = false;
         rangingConfigurationsAdded = EnumSet.noneOf(RangingTechnology.class);
+        mAdapters = Collections.synchronizedMap(new EnumMap<>(RangingTechnology.class));
         rangingAdapterListeners = new HashMap<>();
-        rangingAdaptersStateMap = new HashMap<>();
         lastUpdateTime = Instant.EPOCH;
         lastRangeDataReceivedTime = Instant.EPOCH;
         lastFusionDataReceivedTime = Instant.EPOCH;
-        lastUwbRangingDataResult = Optional.empty();
-        lastCsRangingDataResult = Optional.empty();
+        mLastRangingData = new EnumMap<>(RangingTechnology.class);
         lastFusionDataResult = Optional.empty();
         periodicUpdateIntervalMs =
                 config.getMaxUpdateInterval().isZero()
                         ? DEFAULT_INTERNAL_UPDATE_INTERVAL_MS
                         : config.getMaxUpdateInterval().toMillis();
         //this.fusionAlgorithm = fusionAlgorithm;
-        if (rangingAdapters.isPresent()) {
-            this.rangingAdapters = rangingAdapters.get();
-        } else {
-            HashMap<RangingTechnology, RangingAdapter> adapters = new HashMap<>();
-            for (RangingTechnology technology : config.getRangingTechnologiesToRangeWith()) {
-                switch (technology) {
-                    case UWB:
-                        adapters.put(technology, lazyUwbAdapter.get());
-                        break;
-                    case CS:
-                        throw new UnsupportedOperationException("CS support not implemented.");
-                }
+
+        for (RangingTechnology technology : config.getRangingTechnologiesToRangeWith()) {
+            if (technology.isSupported(context)) {
+                mAdapters.put(technology, newAdapter(technology));
+            } else {
+                Log.w(TAG, "Attempted to create adapter for unsupported technology " + technology);
             }
-            this.rangingAdapters = ImmutableMap.copyOf(adapters);
         }
-        synchronized (lock) {
-            internalState = State.STOPPED;
+    }
+
+    private @NonNull RangingAdapter newAdapter(@NonNull RangingTechnology technology) {
+        switch (technology) {
+            case UWB:
+                return new UwbAdapter(context, mAdapterExecutor, UwbAdapter.DeviceType.CONTROLLER);
+            case CS:
+                return new CsAdapter();
+            default:
+                throw new IllegalArgumentException(
+                        "Tried to create adapter for unknown technology" + technology);
         }
     }
 
@@ -258,30 +221,22 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
         Preconditions.checkArgument(
                 rangingConfigurationsAdded.containsAll(config.getRangingTechnologiesToRangeWith()),
                 "Missing configuration for some ranging technologies that were requested.");
-        synchronized (lock) {
-            internalState = State.STARTING;
+        if (!mStateMachine.transition(State.STOPPED, State.STARTING)) {
+            Log.w(TAG, "Failed transition STOPPED -> STARTING");
+            return;
         }
         this.callback = Optional.of(callback);
-        for (RangingTechnology technology : config.getRangingTechnologiesToRangeWith()) {
-            synchronized (lock) {
-                rangingAdaptersStateMap.put(technology, State.STARTING);
+
+        synchronized (mAdapters) {
+            for (RangingTechnology technology : config.getRangingTechnologiesToRangeWith()) {
+                var listener = new RangingAdapterListener(technology);
+                rangingAdapterListeners.put(technology, listener);
+                mAdapters.get(technology).start(listener);
             }
-            var listener = new RangingAdapterListener(technology);
-            rangingAdapterListeners.put(technology, listener);
-            internalExecutorService.execute(
-                    () -> {
-                        var adapter = rangingAdapters.get(technology);
-                        if (adapter == null) {
-                            Log.e(TAG,
-                                    "No ranging adapter found when trying to start for "
-                                            + technology);
-                            return;
-                        }
-                        adapter.start(listener);
-                    });
         }
+
         if (config.getUseFusingAlgorithm()) {
-            internalExecutorService.execute(this::startFusingAlgorithm);
+            mAdapterExecutor.execute(this::startFusingAlgorithm);
         }
 
         //startTime = timeSource.now();
@@ -316,10 +271,8 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
      * stopping conditions are met.
      */
     private void performPeriodicUpdate() {
-        synchronized (lock) {
-            if (internalState == State.STOPPED) {
-                return;
-            }
+        if (mStateMachine.getState() == State.STOPPED) {
+            return;
         }
         reportNewDataIfAvailable();
         checkAndStopIfNeeded();
@@ -327,51 +280,47 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
 
     /* Reports new data if available via the callback. */
     private void reportNewDataIfAvailable() {
-        synchronized (lock) {
-            if (internalState == State.STOPPED) {
-                return;
-            }
+        if (mStateMachine.getState() == State.STOPPED) {
+            return;
         }
         // Skip update if it's set to immediate updating (updateInterval == 0), or if not enough
-        // time
-        // has passed since last update.
-        //Instant currentTime = timeSource.now();
+        // time has passed since last update.
         Instant currentTime = Instant.now();
         if (config.getMaxUpdateInterval().isZero()
                 || currentTime.isBefore(lastUpdateTime.plus(config.getMaxUpdateInterval()))) {
             return;
         }
         // Skip update if there's no new data to report
-        synchronized (lock) {
-            if (lastUwbRangingDataResult.isEmpty()
-                    && lastCsRangingDataResult.isEmpty()
-                    && lastFusionDataResult.isEmpty()) {
+        synchronized (mStateMachine) {
+            if (mLastRangingData.isEmpty()) {
                 return;
             }
         }
 
         PrecisionData.Builder precisionDataBuilder = PrecisionData.builder();
-        synchronized (lock) {
+        synchronized (mStateMachine) {
             ImmutableList.Builder<RangingData> rangingDataBuilder = ImmutableList.builder();
-            lastUwbRangingDataResult.ifPresent(rangingDataBuilder::add);
-            lastCsRangingDataResult.ifPresent(rangingDataBuilder::add);
-            var rangingData = rangingDataBuilder.build();
-
+            for (RangingTechnology technology : mAdapters.keySet()) {
+                if (mLastRangingData.containsKey(technology)) {
+                    rangingDataBuilder.add(mLastRangingData.get(technology));
+                }
+            }
+            ImmutableList<RangingData> rangingData = rangingDataBuilder.build();
             if (!rangingData.isEmpty()) {
                 precisionDataBuilder.setRangingData(rangingData);
             }
             lastFusionDataResult.ifPresent(precisionDataBuilder::setFusionData);
 
-            lastUwbRangingDataResult = Optional.empty();
-            lastCsRangingDataResult = Optional.empty();
+            for (RangingTechnology technology : mAdapters.keySet()) {
+                mLastRangingData.remove(technology);
+            }
             lastFusionDataResult = Optional.empty();
         }
-        //lastUpdateTime = timeSource.now();
         lastUpdateTime = Instant.now();
         precisionDataBuilder.setTimestamp(lastUpdateTime.toEpochMilli());
         PrecisionData precisionData = precisionDataBuilder.build();
-        synchronized (lock) {
-            if (internalState == State.STOPPED) {
+        synchronized (mStateMachine) {
+            if (mStateMachine.getState() == State.STOPPED) {
                 return;
             }
             callback.get().onData(precisionData);
@@ -380,12 +329,7 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
 
     /* Checks if stopping conditions are met and if so, stops precision ranging. */
     private void checkAndStopIfNeeded() {
-        boolean noActiveRanging;
-        synchronized (lock) {
-            noActiveRanging =
-                    !rangingAdaptersStateMap.containsValue(State.ACTIVE)
-                            && !rangingAdaptersStateMap.containsValue(State.STARTING);
-        }
+        boolean noActiveRanging = mAdapters.isEmpty();
 
         // if only ranging is used and all ranging techs are stopped then stop since we won't be
         // getting
@@ -472,35 +416,21 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
     /* Calls stop on all ranging adapters and the fusion algorithm and resets all internal states
     . */
     private void stopPrecisionRanging(@PrecisionRanging.Callback.StoppedReason int reason) {
-        synchronized (lock) {
-            if (internalState == State.STOPPED) {
+        Log.i(TAG, "stopPrecisionRanging with reason: " + reason);
+        synchronized (mStateMachine) {
+            if (mStateMachine.getState() == State.STOPPED) {
+                Log.v(TAG, "Ranging already stopped, skipping");
                 return;
             }
-            internalState = State.STOPPED;
+            mStateMachine.setState(State.STOPPED);
         }
-        Log.i(TAG, "stopPrecisionRanging with reason: " + reason);
-        callback.get().onStopped(reason);
         // stop all ranging techs
-        for (RangingTechnology technology : config.getRangingTechnologiesToRangeWith()) {
-            synchronized (lock) {
-                if (rangingAdaptersStateMap.get(technology) == State.STOPPED) {
-                    continue;
-                }
-                rangingAdaptersStateMap.put(technology, State.STOPPED);
+        synchronized (mAdapters) {
+            for (RangingAdapter adapter : mAdapters.values()) {
+                adapter.stop();
             }
-            internalExecutorService.execute(
-                    () -> {
-                        var adapter = rangingAdapters.get(technology);
-                        if (adapter == null) {
-                            Log.e(TAG,
-                                    "Adapter not found for ranging technology when trying to stop: "
-                                            + technology);
-                            return;
-                        }
-                        adapter.stop();
-                    });
         }
-        // stop fusion algorithm
+
         if (config.getUseFusingAlgorithm()) {
 //            internalExecutorService.execute(
 //                    () -> {
@@ -512,9 +442,8 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
         }
 
         // reset internal states and objects
-        synchronized (lock) {
-            lastUwbRangingDataResult = Optional.empty();
-            lastCsRangingDataResult = Optional.empty();
+        synchronized (mStateMachine) {
+            mLastRangingData.clear();
             lastFusionDataResult = Optional.empty();
         }
         lastUpdateTime = Instant.EPOCH;
@@ -529,11 +458,11 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
 
     @Override
     public ListenableFuture<RangingCapabilities> getUwbCapabilities() {
-        if (!rangingAdapters.containsKey(RangingTechnology.UWB)) {
+        if (!mAdapters.containsKey(RangingTechnology.UWB)) {
             return immediateFailedFuture(
                     new IllegalStateException("UWB was not requested for this session."));
         }
-        UwbAdapter uwbAdapter = (UwbAdapter) rangingAdapters.get(RangingTechnology.UWB);
+        UwbAdapter uwbAdapter = (UwbAdapter) mAdapters.get(RangingTechnology.UWB);
         try {
             return uwbAdapter.getCapabilities();
         } catch (RemoteException e) {
@@ -544,28 +473,28 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
 
     @Override
     public ListenableFuture<UwbAddress> getUwbAddress() throws RemoteException {
-        if (!rangingAdapters.containsKey(RangingTechnology.UWB)) {
+        if (!mAdapters.containsKey(RangingTechnology.UWB)) {
             return immediateFailedFuture(
                     new IllegalStateException("UWB was not requested for this session."));
         }
-        UwbAdapter uwbAdapter = (UwbAdapter) rangingAdapters.get(RangingTechnology.UWB);
+        UwbAdapter uwbAdapter = (UwbAdapter) mAdapters.get(RangingTechnology.UWB);
         return uwbAdapter.getLocalAddress();
     }
 
     @Override
     public ListenableFuture<UwbComplexChannel> getUwbComplexChannel() throws RemoteException {
-        if (!rangingAdapters.containsKey(RangingTechnology.UWB)) {
+        if (!mAdapters.containsKey(RangingTechnology.UWB)) {
             return immediateFailedFuture(
                     new IllegalStateException("UWB was not requested for this session."));
         }
-        UwbAdapter uwbAdapter = (UwbAdapter) rangingAdapters.get(RangingTechnology.UWB);
+        UwbAdapter uwbAdapter = (UwbAdapter) mAdapters.get(RangingTechnology.UWB);
         return uwbAdapter.getComplexChannel();
     }
 
     @Override
     public void setUwbConfig(RangingParameters rangingParameters) {
         if (config.getRangingTechnologiesToRangeWith().contains(RangingTechnology.UWB)) {
-            UwbAdapter uwbAdapter = (UwbAdapter) rangingAdapters.get(RangingTechnology.UWB);
+            UwbAdapter uwbAdapter = (UwbAdapter) mAdapters.get(RangingTechnology.UWB);
             if (uwbAdapter == null) {
                 Log.e(TAG,
                         "UWB adapter not found when setting config even though it was requested.");
@@ -590,44 +519,44 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
     }
 
     @Override
-    public ListenableFuture<ImmutableMap<RangingTechnology, Integer>>
-    rangingTechnologiesAvailability() throws RemoteException {
-
-        List<ListenableFuture<Boolean>> enabledFutures = new ArrayList<>();
-        for (RangingTechnology technology : config.getRangingTechnologiesToRangeWith()) {
-            var adapter = rangingAdapters.get(technology);
-            if (adapter == null) {
-                return immediateFailedFuture(
-                        new IllegalStateException(
-                                "Adapter not found for ranging technology: " + technology));
-            }
-            enabledFutures.add(adapter.isEnabled());
+    public ListenableFuture<EnumMap<RangingTechnology, Integer>> getTechnologyStatus() {
+        // Combine all isEnabled futures for each technology into a single future. The resulting
+        // future contains a list of technologies grouped with their corresponding
+        // enabled state.
+        ListenableFuture<List<Map.Entry<RangingTechnology, Boolean>>> enabledStatesFuture;
+        synchronized (mAdapters) {
+            enabledStatesFuture = Futures.allAsList(mAdapters.entrySet().stream()
+                    .map((var entry) -> Futures.transform(
+                            entry.getValue().isEnabled(),
+                            (Boolean isEnabled) -> Map.entry(entry.getKey(), isEnabled),
+                            mAdapterExecutor)
+                    )
+                    .collect(Collectors.toList())
+            );
         }
-        var f = Futures.allAsList(enabledFutures);
+
+        // Transform the list of enabled states into a technology status map.
         return Futures.transform(
-                f,
-                (List<Boolean> enabledList) -> {
-                    ImmutableMap.Builder<RangingTechnology, Integer>
-                            rangingTechnologiesAvailability =
-                            ImmutableMap.builder();
-                    for (int i = 0; i < config.getRangingTechnologiesToRangeWith().size(); i++) {
-                        var tech = config.getRangingTechnologiesToRangeWith().get(i);
-                        var adapter = rangingAdapters.get(tech);
-                        if (adapter == null) {
-                            Log.e(TAG, "Adapter not found for ranging technology: " + tech);
-                            rangingTechnologiesAvailability.put(
-                                    tech, RangingTechnologyAvailability.NOT_SUPPORTED);
-                        } else if (!enabledList.get(i)) {
-                            rangingTechnologiesAvailability.put(tech,
-                                    RangingTechnologyAvailability.DISABLED);
+                enabledStatesFuture,
+                (List<Map.Entry<RangingTechnology, Boolean>> enabledStates) -> {
+                    EnumMap<RangingTechnology, Integer> statuses =
+                            new EnumMap<>(RangingTechnology.class);
+                    for (RangingTechnology technology : RangingTechnology.values()) {
+                        statuses.put(technology, TechnologyStatus.UNUSED);
+                    }
+
+                    for (Map.Entry<RangingTechnology, Boolean> enabledState : enabledStates) {
+                        RangingTechnology technology = enabledState.getKey();
+                        if (enabledState.getValue()) {
+                            statuses.put(technology, TechnologyStatus.ENABLED);
                         } else {
-                            rangingTechnologiesAvailability.put(tech,
-                                    RangingTechnologyAvailability.ENABLED);
+                            statuses.put(technology, TechnologyStatus.DISABLED);
                         }
                     }
-                    return rangingTechnologiesAvailability.buildOrThrow();
+                    return statuses;
                 },
-                internalExecutorService);
+                mAdapterExecutor
+        );
     }
 
     @VisibleForTesting
@@ -650,62 +579,43 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
 
         @Override
         public void onStarted() {
-            synchronized (lock) {
-                if (internalState == State.STOPPED) {
+            synchronized (mStateMachine) {
+                if (mStateMachine.getState() != State.STARTED
+                        && !mStateMachine.transition(State.STARTING, State.STARTED)) {
+                    Log.w(TAG, "Failed transition STARTING -> STARTED");
                     return;
                 }
-                if (internalState == State.STARTING) {
-                    internalState = State.ACTIVE;
-                    // call started as soon as at least one ranging tech starts or fusion alg
-                    // estimate
-                    // received.
-                    callback.get().onStarted();
-                }
-                rangingAdaptersStateMap.put(technology, State.ACTIVE);
             }
+            callback.get().onStarted();
         }
 
         @Override
         public void onStopped(RangingAdapter.Callback.StoppedReason reason) {
-            synchronized (lock) {
-                if (internalState == State.STOPPED) {
-                    return;
+            synchronized (mAdapters) {
+                if (mStateMachine.getState() != State.STOPPED) {
+                    mAdapters.remove(technology);
+                    rangingAdapterListeners.remove(technology);
                 }
-                rangingAdaptersStateMap.put(technology, State.STOPPED);
             }
         }
 
         @Override
         public void onRangingData(RangingData rangingData) {
-            synchronized (lock) {
-                if (internalState == State.STOPPED) {
+            synchronized (mStateMachine) {
+                if (mStateMachine.getState() != State.STARTED) {
                     return;
                 }
-            }
-            //lastRangeDataReceivedTime = timeSource.now();
-            lastRangeDataReceivedTime = Instant.now();
-            feedDataToFusionAlgorithm(rangingData);
-            if (config.getMaxUpdateInterval().isZero()) {
-                PrecisionData precisionData =
-                        PrecisionData.builder()
-                                .setRangingData(ImmutableList.of(rangingData))
-                                .setTimestamp(Instant.now().toEpochMilli())
-                                .build();
-                synchronized (lock) {
-                    if (internalState == State.STOPPED) {
-                        return;
-                    }
+                lastRangeDataReceivedTime = Instant.now();
+                feedDataToFusionAlgorithm(rangingData);
+                if (config.getMaxUpdateInterval().isZero()) {
+                    PrecisionData precisionData =
+                            PrecisionData.builder()
+                                    .setRangingData(ImmutableList.of(rangingData))
+                                    .setTimestamp(Instant.now().toEpochMilli())
+                                    .build();
                     callback.get().onData(precisionData);
                 }
-            }
-            switch (rangingData.getRangingTechnology()) {
-                case UWB:
-                    synchronized (lock) {
-                        lastUwbRangingDataResult = Optional.of(rangingData);
-                    }
-                    break;
-                case CS:
-                    throw new UnsupportedOperationException("CS support not implemented.");
+                mLastRangingData.put(technology, rangingData);
             }
         }
     }
@@ -714,45 +624,38 @@ public final class PrecisionRangingImpl implements PrecisionRanging {
     private class FusionAlgorithmListener implements MultiSensorFinderListener {
         @Override
         public void onUpdatedEstimate(Estimate estimate) {
-            synchronized (lock) {
-                if (internalState == State.STOPPED) {
+            synchronized (mStateMachine) {
+                if (mStateMachine.getState() == State.STOPPED) {
                     return;
                 }
-                if (internalState == State.STARTING) {
-                    internalState = State.ACTIVE;
-                    // call started as soon as at least one ranging tech starts or fusion alg
-                    //estimate received.
+                if (mStateMachine.transition(State.STARTING, State.STARTED)) {
                     callback.get().onStarted();
                 }
-            }
-            FusionData fusionData = FusionData.fromFusionAlgorithmEstimate(estimate);
-            if (fusionData.getArCoreState() == FusionData.ArCoreState.OK) {
-                lastFusionDataReceivedTime = Instant.now();
-                seenSuccessfulFusionData = true;
-            }
-            synchronized (lock) {
+                FusionData fusionData = FusionData.fromFusionAlgorithmEstimate(estimate);
+                if (fusionData.getArCoreState() == FusionData.ArCoreState.OK) {
+                    lastFusionDataReceivedTime = Instant.now();
+                }
                 lastFusionDataResult = Optional.of(fusionData);
-            }
-            if (config.getMaxUpdateInterval().isZero()) {
-                PrecisionData precisionData =
-                        PrecisionData.builder()
-                                .setFusionData(fusionData)
-                                .setTimestamp(Instant.now().toEpochMilli())
-                                .build();
-                synchronized (lock) {
-                    if (internalState == State.STOPPED) {
-                        return;
-                    }
+                if (config.getMaxUpdateInterval().isZero()) {
+                    PrecisionData precisionData =
+                            PrecisionData.builder()
+                                    .setFusionData(fusionData)
+                                    .setTimestamp(Instant.now().toEpochMilli())
+                                    .build();
                     callback.get().onData(precisionData);
                 }
             }
         }
     }
 
-    /* Internal states. */
+    @VisibleForTesting
+    public void useAdapterForTesting(RangingTechnology technology, RangingAdapter adapter) {
+        mAdapters.put(technology, adapter);
+    }
+
     private enum State {
         STARTING,
-        ACTIVE,
+        STARTED,
         STOPPED,
     }
 }

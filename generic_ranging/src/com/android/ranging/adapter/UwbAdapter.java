@@ -40,6 +40,7 @@ import androidx.core.uwb.backend.impl.internal.UwbServiceImpl;
 
 import com.android.ranging.RangingData;
 import com.android.ranging.RangingTechnology;
+import com.android.ranging.RangingUtils.StateMachine;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -60,6 +61,7 @@ public class UwbAdapter implements RangingAdapter {
     private final ListeningExecutorService mExecutorService;
     private final ExecutorResultHandlers mUwbClientResultHandlers = new ExecutorResultHandlers();
     private final RangingSessionCallback mUwbListener = new UwbListener();
+    private final StateMachine<State> mStateMachine;
 
     /** Invariant: non-null while a ranging session is active */
     private Callback mCallbacks;
@@ -99,6 +101,7 @@ public class UwbAdapter implements RangingAdapter {
             throw new IllegalArgumentException("UWB system feature not found.");
         }
 
+        mStateMachine = new StateMachine<>(State.STOPPED);
         mUwbService = uwbService;
         mUwbClient = deviceType == DeviceType.CONTROLLER
                 ? mUwbService.getController(context)
@@ -114,13 +117,17 @@ public class UwbAdapter implements RangingAdapter {
     }
 
     @Override
-    public ListenableFuture<Boolean> isEnabled() throws RemoteException {
-        return Futures.submit(mUwbService::isAvailable, mExecutorService);
+    public ListenableFuture<Boolean> isEnabled() {
+        return Futures.immediateFuture(mUwbService.isAvailable());
     }
 
     @Override
     public void start(Callback callbacks) {
         Log.i(TAG, "Start called.");
+        if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {
+            Log.v(TAG, "Attempted to start adapter when it was already started");
+            return;
+        }
 
         mCallbacks = callbacks;
         if (mRangingParameters == null) {
@@ -139,6 +146,10 @@ public class UwbAdapter implements RangingAdapter {
     @Override
     public void stop() {
         Log.i(TAG, "Stop called.");
+        if (!mStateMachine.transition(State.STARTED, State.STOPPED)) {
+            Log.v(TAG, "Attempted to stop adapter when it was already stopped");
+            return;
+        }
 
         var future = Futures.submit(mUwbClient::stopRanging, mExecutorService);
         Futures.addCallback(future, mUwbClientResultHandlers.stopRanging, mExecutorService);
@@ -227,6 +238,11 @@ public class UwbAdapter implements RangingAdapter {
     public enum DeviceType {
         CONTROLEE,
         CONTROLLER,
+    }
+
+    public enum State {
+        STARTED,
+        STOPPED,
     }
 
     private class ExecutorResultHandlers {
