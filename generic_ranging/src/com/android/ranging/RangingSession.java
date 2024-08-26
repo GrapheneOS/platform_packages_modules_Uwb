@@ -22,7 +22,6 @@ import androidx.annotation.IntDef;
 import androidx.core.uwb.backend.impl.internal.RangingCapabilities;
 import androidx.core.uwb.backend.impl.internal.RangingParameters;
 import androidx.core.uwb.backend.impl.internal.UwbAddress;
-import androidx.core.uwb.backend.impl.internal.UwbComplexChannel;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -30,28 +29,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.EnumMap;
 
-/**
- * PrecisionRanging provides an API for ranging with multiple ranging technologies such as
- * Ultra-Wide Band (UWB) and Channel Sounding (CS), and fusing the ranging data with additional
- * sensor data such as IMU and ArCore.
- */
-public interface PrecisionRanging {
+/** A multi-technology ranging session in the Android generic ranging service */
+public interface RangingSession {
 
-    /**
-     * Creates a new instance of {@link PrecisionRanging}. Ranging technologies that will be used
-     * are
-     * set through the configuration. Each ranging technology that's used may require additional
-     * setup
-     * through set*RangingTech*Config before start can be called.
-     */
-    interface Factory {
-        PrecisionRanging create(PrecisionRangingConfig config);
-    }
-
-    /** Starts precision ranging, results are provided via the given callback. */
+    /** Starts ranging with all technologies specified, providing results via the given callback. */
     void start(Callback callback);
 
-    /** Stops precision ranging. */
+    /** Stops ranging. */
     void stop();
 
     /**
@@ -68,16 +52,13 @@ public interface PrecisionRanging {
     /** Sets UWB configuration. No op if UWB was not requested. */
     void setUwbConfig(RangingParameters rangingParameters);
 
-    /** Get the Uwb complex channel for the controller. */
-    ListenableFuture<UwbComplexChannel> getUwbComplexChannel() throws RemoteException;
-
     /** Returns CS capabilities if CS was requested. */
     void getCsCapabilities();
 
     /** Sets CS configuration. No op if CS was not requested. */
     void setCsConfig();
 
-    /** State of an individual Ranging Technology on this device. */
+    /** State of an individual {@link RangingTechnology}. */
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({
             /* Ranging technology is not part of this session. */
@@ -93,27 +74,30 @@ public interface PrecisionRanging {
         int ENABLED = 2;
     }
 
-    /** Callback for {@link PrecisionRanging} operations. */
+    /** Callback for {@link RangingSession} events. */
     interface Callback {
-        /** Callback method for reporting when precision ranging has started. */
+        /** Callback method for reporting when ranging has started. */
         void onStarted();
 
-        /** Callback method for reporting when precision ranging has stopped. */
+        /** Callback method for reporting when ranging has stopped. */
         void onStopped(@StoppedReason int reason);
 
-        /** Callback for reporting precision data. */
-        void onData(PrecisionData data);
+        /** Callback for reporting ranging data. */
+        void onData(RangingData data);
 
-        /** Reason why Precision Finding was stopped. */
+        /** Reason why ranging was stopped. */
         @Retention(RetentionPolicy.SOURCE)
         @IntDef({
                 /* Unexpected internal error. */
                 StoppedReason.INTERNAL_ERROR,
-                /* Stopped as a result of calling {@link #stop()}. */
+                /* Stopped as a result of calling {@link RangingSession#stop()}. */
                 StoppedReason.REQUESTED,
-                /* Stopped due to no ranging data received timeout. */
+                /* Stopped because no ranging data was received before a timeout expired. */
                 StoppedReason.NO_RANGES_TIMEOUT,
-                /* Exceeded drift timeout due to no incoming ranges. */
+                /*
+                 * Stopped because the fusion algorithm attempted to without ranging measurements
+                 * for too long.
+                 */
                 StoppedReason.FUSION_DRIFT_TIMEOUT,
         })
         @interface StoppedReason {

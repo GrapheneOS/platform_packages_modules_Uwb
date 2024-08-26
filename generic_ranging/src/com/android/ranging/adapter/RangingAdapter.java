@@ -16,7 +16,7 @@
 
 package com.android.ranging.adapter;
 
-import com.android.ranging.RangingData;
+import com.android.ranging.RangingReport;
 import com.android.ranging.RangingTechnology;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -61,7 +61,7 @@ public interface RangingAdapter {
          * Notifies the caller on each instance of ranging data received from the ranging
          * technology.
          */
-        void onRangingData(RangingData rangingData);
+        void onRangingData(RangingReport rangingReport);
 
         /** Stopped reason for this ranging adapter. */
         enum StoppedReason {

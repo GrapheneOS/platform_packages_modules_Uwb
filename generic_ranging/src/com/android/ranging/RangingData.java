@@ -16,124 +16,40 @@
 
 package com.android.ranging;
 
-import java.util.OptionalDouble;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
 
-/** Ranging Data class contains data received from a ranging technology such as UWB or CS. */
-public class RangingData {
-    private final RangingTechnology mRangingTechnology;
-    private final double mRangeDistance;
-    private final float mAzimuth;
-    private final float mElevation;
-    private final int mRssi;
-    private final long mTimestamp;
-    private final byte[] mPeerAddress;
+import java.util.Optional;
 
-    /** Returns the ranging technology this data is for. */
-    public RangingTechnology getRangingTechnology() {
-        return mRangingTechnology;
+/**
+ * Represents both data received from ranging technologies and data from the fusion algorithm.
+ */
+@AutoValue
+public abstract class RangingData {
+
+    /** Returns a list of {@link RangingReport} for different ranging technologies if present. */
+    public abstract Optional<ImmutableList<RangingReport>> getRangingReports();
+
+    /** Returns {@link FusionReport} if present. */
+    public abstract Optional<FusionReport> getFusionReport();
+
+    /** Returns the timestamp for this data. */
+    public abstract long getTimestamp();
+
+    /** Returns a builder for {@link RangingReport}. */
+    public static Builder builder() {
+        return new AutoValue_RangingData.Builder();
     }
 
-    /** Returns range distance in meters. */
-    public double getRangeDistance() {
-        return mRangeDistance;
-    }
+    /** Builder for {@link RangingReport}. */
+    @AutoValue.Builder
+    public abstract static class Builder {
+        public abstract Builder setRangingReports(ImmutableList<RangingReport> rangingData);
 
-    /** Gets the azimuth in degrees. */
-    public OptionalDouble getAzimuth() {
-        if (mAzimuth != Float.MAX_VALUE) {
-            return OptionalDouble.of(mAzimuth);
-        }
-        return OptionalDouble.empty();
-    }
+        public abstract Builder setFusionReport(FusionReport fusionReport);
 
-    /** Gets the elevation in degrees. */
-    public OptionalDouble getElevation() {
-        if (mElevation != Float.MAX_VALUE) {
-            return OptionalDouble.of(mElevation);
-        }
-        return OptionalDouble.empty();
-    }
+        public abstract Builder setTimestamp(long timestamp);
 
-    /** Returns rssi. */
-    public int getRssi() {
-        return mRssi;
-    }
-
-    /** Returns timestamp in nanos. */
-    public long getTimestamp() {
-        return mTimestamp;
-    }
-
-    /** Returns a copy of the sender's address */
-    public byte[] getPeerAddress() {
-        return mPeerAddress.clone();
-    }
-
-    private RangingData(Builder builder) {
-        mRangingTechnology = builder.mRangingTechnology;
-        mRangeDistance = builder.mRangeDistance;
-        mRssi = builder.mRssi;
-        mTimestamp = builder.mTimestamp;
-        mPeerAddress = builder.mPeerAddress;
-        mAzimuth = builder.mAzimuth;
-        mElevation = builder.mElevation;
-    }
-
-    /** Builder for {@link RangingData}. */
-    public static class Builder {
-        private RangingTechnology mRangingTechnology;
-        private double mRangeDistance;
-        private float mAzimuth = Float.MAX_VALUE;
-        private float mElevation = Float.MAX_VALUE;
-        private int mRssi;
-        private long mTimestamp;
-        private byte[] mPeerAddress;
-
-        /** Set the ranging technology that produced this data */
-        public Builder setRangingTechnology(RangingTechnology rangingTechnology) {
-            mRangingTechnology = rangingTechnology;
-            return this;
-        }
-
-        /** Set the measured distance in meters */
-        public Builder setRangeDistance(double rangeDistance) {
-            mRangeDistance = rangeDistance;
-            return this;
-        }
-
-        /** Sets the azimuth in degrees. */
-        public Builder setAzimuth(float azimuth) {
-            mAzimuth = azimuth;
-            return this;
-        }
-
-        /** Sets the elevation in degrees. */
-        public Builder setElevation(float elevation) {
-            mElevation = elevation;
-            return this;
-        }
-
-        /** Set the measured RSSI in dBm */
-        public Builder setRssi(int rssi) {
-            mRssi = rssi;
-            return this;
-        }
-
-        /** Set the timestamp of the measurement */
-        public Builder setTimestamp(long timestamp) {
-            mTimestamp = timestamp;
-            return this;
-        }
-
-        /** Set the peer address as a byte array */
-        public Builder setPeerAddress(byte[] peerAddress) {
-            mPeerAddress = peerAddress;
-            return this;
-        }
-
-        /** Build the ranging data */
-        public RangingData build() {
-            return new RangingData(this);
-        }
+        public abstract RangingData build();
     }
 }

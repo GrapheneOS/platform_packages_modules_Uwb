@@ -26,7 +26,7 @@ import com.google.auto.value.AutoValue;
  * other sensors such as ArCore and IMU.
  */
 @AutoValue
-public abstract class FusionData {
+public abstract class FusionReport {
 
     /** Returns distance result from fusion in meters. */
     public abstract double getFusionRange();
@@ -49,12 +49,12 @@ public abstract class FusionData {
     /** Returns the state of ArCore. */
     public abstract ArCoreState getArCoreState();
 
-    /** Returns a builder for {@link FusionData}. */
+    /** Returns a builder for {@link FusionReport}. */
     public static Builder builder() {
-        return new AutoValue_FusionData.Builder();
+        return new AutoValue_FusionReport.Builder();
     }
 
-    /** Builder for {@link FusionData}. */
+    /** Builder for {@link FusionReport}. */
     @AutoValue.Builder
     public abstract static class Builder {
         public abstract Builder setFusionRange(double value);
@@ -69,11 +69,11 @@ public abstract class FusionData {
 
         public abstract Builder setArCoreState(ArCoreState arCoreState);
 
-        public abstract FusionData build();
+        public abstract FusionReport build();
     }
 
-    public static FusionData fromFusionAlgorithmEstimate(Estimate estimate) {
-        return FusionData.builder()
+    public static FusionReport fromFusionAlgorithmEstimate(Estimate estimate) {
+        return FusionReport.builder()
                 .setFusionRange(estimate.getRangeM())
                 .setFusionRangeErrorStdDev(estimate.getRangeErrorStdDevM())
                 .setFusionBearing(estimate.getBearingRad())

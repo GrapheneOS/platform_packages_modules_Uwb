@@ -38,7 +38,7 @@ import androidx.core.uwb.backend.impl.internal.UwbDevice;
 import androidx.core.uwb.backend.impl.internal.UwbFeatureFlags;
 import androidx.core.uwb.backend.impl.internal.UwbServiceImpl;
 
-import com.android.ranging.RangingData;
+import com.android.ranging.RangingReport;
 import com.android.ranging.RangingTechnology;
 import com.android.ranging.RangingUtils.StateMachine;
 
@@ -188,8 +188,8 @@ public class UwbAdapter implements RangingAdapter {
 
         @Override
         public void onRangingResult(UwbDevice device, RangingPosition position) {
-            RangingData.Builder rangingDataBuilder =
-                    new RangingData.Builder()
+            RangingReport.Builder rangingDataBuilder =
+                    new RangingReport.Builder()
                             .setRangingTechnology(RangingTechnology.UWB)
                             .setRangeDistance(position.getDistance().getValue())
                             .setRssi(position.getRssiDbm())

@@ -29,11 +29,11 @@ import androidx.core.uwb.backend.impl.internal.UwbComplexChannel;
 import androidx.core.uwb.backend.impl.internal.UwbRangeDataNtfConfig;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.ranging.PrecisionData;
-import com.android.ranging.PrecisionRanging;
-import com.android.ranging.PrecisionRangingConfig;
-import com.android.ranging.PrecisionRangingImpl;
+import com.android.ranging.RangingConfig;
 import com.android.ranging.RangingData;
+import com.android.ranging.RangingReport;
+import com.android.ranging.RangingSession;
+import com.android.ranging.RangingSessionImpl;
 import com.android.ranging.RangingTechnology;
 import com.android.ranging.adapter.UwbAdapter;
 
@@ -70,7 +70,7 @@ public class GenericRangingSnippet implements Snippet {
     private final ListeningExecutorService mExecutor = MoreExecutors.listeningDecorator(
             Executors.newSingleThreadExecutor());
     private final EventCache mEventCache = EventCache.getInstance();
-    private static final HashMap<String, PrecisionRanging> sRangingHashMap =
+    private static final HashMap<String, RangingSessionImpl> sRangingHashMap =
             new HashMap<>();
     private static final HashMap<String, GenericRangingCallback> sRangingCallbackHashMap =
             new HashMap<>();
@@ -127,15 +127,15 @@ public class GenericRangingSnippet implements Snippet {
         }
     }
 
-    class GenericRangingCallback implements PrecisionRanging.Callback {
+    class GenericRangingCallback implements RangingSession.Callback {
         private String mId;
-        private PrecisionData mLastDataReceived = null;
+        private RangingData mLastDataReceived = null;
 
         GenericRangingCallback(String id, int events) {
             mId = id;
         }
 
-        public Optional<PrecisionData> getLastDataReceived() {
+        public Optional<RangingData> getLastDataReceived() {
             if (mLastDataReceived == null) {
                 return Optional.empty();
             }
@@ -162,7 +162,7 @@ public class GenericRangingSnippet implements Snippet {
         }
 
         @Override
-        public void onData(PrecisionData data) {
+        public void onData(RangingData data) {
             Log.d(TAG, "GenericRangingCallback#onData() called");
             mLastDataReceived = data;
             handleEvent(Event.ReportReceived);
@@ -246,16 +246,16 @@ public class GenericRangingSnippet implements Snippet {
 
         //TODO: Make this configurable
         //    private Provider<PrecisionRanging.Factory> mRangingFactory;
-        PrecisionRangingConfig precisionRangingConfig =
-                PrecisionRangingConfig.builder().setRangingTechnologiesToRangeWith(
+        RangingConfig rangingConfig =
+                RangingConfig.builder().setRangingTechnologiesToRangeWith(
                         ImmutableList.of(RangingTechnology.UWB)).setUseFusingAlgorithm(
                         false).setMaxUpdateInterval(
                         Duration.ofMillis(200)).setFusionAlgorithmDriftTimeout(
                         Duration.ofSeconds(1)).setNoUpdateTimeout(
                         Duration.ofSeconds(2)).setInitTimeout(Duration.ofSeconds(3)).build();
 
-        PrecisionRangingImpl precisionRanging = new PrecisionRangingImpl(mContext,
-                precisionRangingConfig, Executors.newSingleThreadScheduledExecutor(),
+        RangingSessionImpl precisionRanging = new RangingSessionImpl(mContext,
+                rangingConfig, Executors.newSingleThreadScheduledExecutor(),
                 MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor()));
 
         precisionRanging.useAdapterForTesting(RangingTechnology.UWB, uwbAdapter);
@@ -286,15 +286,15 @@ public class GenericRangingSnippet implements Snippet {
             throw new IllegalArgumentException("Could not find session with id " + sessionId);
         }
 
-        Optional<PrecisionData> precisionData = callback.getLastDataReceived();
-        if (precisionData.isEmpty() || precisionData.get().getRangingData().isEmpty()) {
+        Optional<RangingData> precisionData = callback.getLastDataReceived();
+        if (precisionData.isEmpty() || precisionData.get().getRangingReports().isEmpty()) {
             Log.i(TAG, "No data has been received yet, or the last data received was empty");
             return false;
         }
 
         byte[] address = convertJSONArrayToByteArray(peerAddress);
-        ImmutableList<RangingData> rangingData = precisionData.get().getRangingData().get();
-        for (RangingData data : rangingData) {
+        ImmutableList<RangingReport> rangingData = precisionData.get().getRangingReports().get();
+        for (RangingReport data : rangingData) {
             if (data.getRangingTechnology() == RangingTechnology.UWB
                     && Arrays.equals(data.getPeerAddress(), address)) {
                 return true;

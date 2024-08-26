@@ -20,7 +20,7 @@ import android.util.Log;
 
 import androidx.test.filters.SmallTest;
 
-import com.android.ranging.PrecisionRanging;
+import com.android.ranging.RangingSession;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,12 +28,12 @@ import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 @SmallTest
-public class PrecisionRangingTest {
-    private static final String TAG = PrecisionRangingTest.class.getSimpleName();
+public class RangingSessionTest {
+    private static final String TAG = RangingSessionTest.class.getSimpleName();
 
     @Test
     public void replaceMe() {
         Log.d(TAG, "Running generic ranging unit tests. The PrecisionRanging class is: "
-                + PrecisionRanging.class.getSimpleName());
+                + RangingSession.class.getSimpleName());
     }
 }
