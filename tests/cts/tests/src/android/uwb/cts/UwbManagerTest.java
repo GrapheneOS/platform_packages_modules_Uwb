@@ -1127,6 +1127,7 @@ public class UwbManagerTest {
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
     @RequiresFlagsEnabled("com.android.uwb.flags.query_timestamp_micros")
     public void testQueryMaxDataSizeBytesWithNoPermission() throws Exception {
+        assumeTrue(SdkLevel.isAtLeastU());
         FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder()
                 .build();
         verifyFiraRangingSession(
@@ -1240,6 +1241,7 @@ public class UwbManagerTest {
     @Test
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
     public void testUpdateRangingRoundsDtTagWithNoPermissions() throws Exception {
+        assumeTrue(SdkLevel.isAtLeastU());
         FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder().build();
         verifyFiraRangingSession(
                 firaOpenSessionParams,
