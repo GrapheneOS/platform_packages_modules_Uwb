@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.ranging.adapter;
+package com.android.ranging.uwb;
 
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 
@@ -38,6 +38,8 @@ import androidx.core.uwb.backend.impl.internal.UwbDevice;
 import androidx.core.uwb.backend.impl.internal.UwbFeatureFlags;
 import androidx.core.uwb.backend.impl.internal.UwbServiceImpl;
 
+import com.android.ranging.RangingAdapter;
+import com.android.ranging.RangingParameters.TechnologyParameters;
 import com.android.ranging.RangingReport;
 import com.android.ranging.RangingTechnology;
 import com.android.ranging.RangingUtils.StateMachine;
@@ -65,7 +67,6 @@ public class UwbAdapter implements RangingAdapter {
 
     /** Invariant: non-null while a ranging session is active */
     private Callback mCallbacks;
-    private RangingParameters mRangingParameters;
 
     /** @return true if UWB is supported in the provided context, false otherwise */
     public static boolean isSupported(Context context) {
@@ -108,7 +109,6 @@ public class UwbAdapter implements RangingAdapter {
                 : mUwbService.getControlee(context);
         mExecutorService = executorService;
         mCallbacks = null;
-        mRangingParameters = null;
     }
 
     @Override
@@ -122,7 +122,7 @@ public class UwbAdapter implements RangingAdapter {
     }
 
     @Override
-    public void start(Callback callbacks) {
+    public void start(@NonNull TechnologyParameters parameters, @NonNull Callback callbacks) {
         Log.i(TAG, "Start called.");
         if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {
             Log.v(TAG, "Attempted to start adapter when it was already started");
@@ -130,12 +130,12 @@ public class UwbAdapter implements RangingAdapter {
         }
 
         mCallbacks = callbacks;
-        if (mRangingParameters == null) {
-            Log.w(TAG, "Tried to start adapter but no ranging parameters have been provided");
-            mCallbacks.onStopped(RangingAdapter.Callback.StoppedReason.NO_PARAMS);
+        if (!(parameters instanceof RangingParameters)) {
+            Log.w(TAG, "Tried to start adapter with invalid ranging parameters");
+            mCallbacks.onStopped(Callback.StoppedReason.FAILED_TO_START);
             return;
         }
-        mUwbClient.setRangingParameters(mRangingParameters);
+        mUwbClient.setRangingParameters((RangingParameters) parameters);
 
         var future = Futures.submit(() -> {
             mUwbClient.startRanging(mUwbListener, Executors.newSingleThreadExecutor());
@@ -171,15 +171,8 @@ public class UwbAdapter implements RangingAdapter {
         return Futures.submit(mUwbService::getRangingCapabilities, mExecutorService);
     }
 
-    /**
-     * Set the parameters for the UWB session. This must be called before starting the session.
-     * @param params for UWB session configuration.
-     */
-    public void setRangingParameters(@NonNull RangingParameters params) {
-        mRangingParameters = params;
-    }
-
     private class UwbListener implements RangingSessionCallback {
+
         @Override
         public void onRangingInitialized(UwbDevice device) {
             Log.i(TAG, "onRangingInitialized");
@@ -205,15 +198,29 @@ public class UwbAdapter implements RangingAdapter {
             mCallbacks.onRangingData(rangingDataBuilder.build());
         }
 
+        private static @Callback.StoppedReason int convertReason(
+                @RangingSessionCallback.RangingSuspendedReason int reason) {
+            switch (reason) {
+                case REASON_WRONG_PARAMETERS:
+                case REASON_FAILED_TO_START:
+                    return Callback.StoppedReason.FAILED_TO_START;
+                case REASON_STOPPED_BY_PEER:
+                case REASON_STOP_RANGING_CALLED:
+                    return Callback.StoppedReason.REQUESTED;
+                case REASON_MAX_RANGING_ROUND_RETRY_REACHED:
+                    return Callback.StoppedReason.LOST_CONNECTION;
+                case REASON_SYSTEM_POLICY:
+                    return Callback.StoppedReason.SYSTEM_POLICY;
+                default:
+                    return Callback.StoppedReason.UNKNOWN;
+            }
+        }
+
         @Override
         public void onRangingSuspended(UwbDevice device, @RangingSuspendedReason int reason) {
             Log.i(TAG, "onRangingSuspended: " + reason);
 
-            if (reason == RangingSessionCallback.REASON_STOP_RANGING_CALLED) {
-                mCallbacks.onStopped(RangingAdapter.Callback.StoppedReason.REQUESTED);
-            } else {
-                mCallbacks.onStopped(RangingAdapter.Callback.StoppedReason.ERROR);
-            }
+            mCallbacks.onStopped(convertReason(reason));
             clear();
         }
     }
@@ -231,7 +238,6 @@ public class UwbAdapter implements RangingAdapter {
     }
 
     private void clear() {
-        mRangingParameters = null;
         mCallbacks = null;
     }
 

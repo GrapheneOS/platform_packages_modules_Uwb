@@ -23,7 +23,7 @@ import android.os.RemoteException;
 import android.util.Log;
 import android.uwb.UwbManager;
 
-import androidx.core.uwb.backend.impl.internal.RangingParameters;
+import androidx.annotation.Nullable;
 import androidx.core.uwb.backend.impl.internal.UwbAddress;
 import androidx.core.uwb.backend.impl.internal.UwbComplexChannel;
 import androidx.core.uwb.backend.impl.internal.UwbRangeDataNtfConfig;
@@ -31,11 +31,13 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.ranging.RangingConfig;
 import com.android.ranging.RangingData;
+import com.android.ranging.RangingParameters;
 import com.android.ranging.RangingReport;
 import com.android.ranging.RangingSession;
 import com.android.ranging.RangingSessionImpl;
 import com.android.ranging.RangingTechnology;
-import com.android.ranging.adapter.UwbAdapter;
+import com.android.ranging.uwb.UwbAdapter;
+import com.android.ranging.uwb.UwbParameters;
 
 import com.google.android.mobly.snippet.Snippet;
 import com.google.android.mobly.snippet.event.EventCache;
@@ -150,13 +152,13 @@ public class GenericRangingSnippet implements Snippet {
         }
 
         @Override
-        public void onStarted() {
+        public void onStarted(@Nullable RangingTechnology technology) {
             Log.d(TAG, "GenericRangingCallback#onStarted() called");
             handleEvent(Event.Started);
         }
 
         @Override
-        public void onStopped(int reason) {
+        public void onStopped(@Nullable RangingTechnology technology, @StoppedReason int reason) {
             Log.d(TAG, "GenericRangingCallback#onStopped() called");
             handleEvent(Event.Stopped);
         }
@@ -188,7 +190,7 @@ public class GenericRangingSnippet implements Snippet {
                 .setRangeDataConfigType(j.getInt("rangeDataConfigType"))
                 .build();
 
-        return new RangingParameters(
+        UwbParameters uwbParams = new UwbParameters(
                 j.getInt("configType"),
                 j.getInt("sessionId"),
                 j.getInt("subSessionId"),
@@ -203,6 +205,7 @@ public class GenericRangingSnippet implements Snippet {
                 j.getInt("slotDurationMillis"),
                 j.getBoolean("isAoaDisabled")
         );
+        return new RangingParameters.Builder().useUwb(uwbParams).build();
     }
 
     private byte[] convertJSONArrayToByteArray(JSONArray jArray) throws JSONException {
@@ -247,25 +250,25 @@ public class GenericRangingSnippet implements Snippet {
         //TODO: Make this configurable
         //    private Provider<PrecisionRanging.Factory> mRangingFactory;
         RangingConfig rangingConfig =
-                RangingConfig.builder().setRangingTechnologiesToRangeWith(
-                        ImmutableList.of(RangingTechnology.UWB)).setUseFusingAlgorithm(
-                        false).setMaxUpdateInterval(
-                        Duration.ofMillis(200)).setFusionAlgorithmDriftTimeout(
-                        Duration.ofSeconds(1)).setNoUpdateTimeout(
-                        Duration.ofSeconds(2)).setInitTimeout(Duration.ofSeconds(3)).build();
+                RangingConfig.builder()
+                        .setUseFusingAlgorithm(false)
+                        .setMaxUpdateInterval(Duration.ofMillis(200))
+                        .setFusionAlgorithmDriftTimeout(Duration.ofSeconds(1))
+                        .setNoUpdateTimeout(Duration.ofSeconds(2))
+                        .setInitTimeout(Duration.ofSeconds(3))
+                        .build();
 
-        RangingSessionImpl precisionRanging = new RangingSessionImpl(mContext,
+        RangingSessionImpl session = new RangingSessionImpl(mContext,
                 rangingConfig, Executors.newSingleThreadScheduledExecutor(),
                 MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor()));
 
-        precisionRanging.useAdapterForTesting(RangingTechnology.UWB, uwbAdapter);
-        precisionRanging.setUwbConfig(generateRangingParameters(config));
+        session.useAdapterForTesting(RangingTechnology.UWB, uwbAdapter);
 
         GenericRangingCallback genericRangingCallback =
                 new GenericRangingCallback(callbackId, Event.EventAll.getType());
         String uwbSessionKey = getUwbSessionKeyFromId(config.getInt("sessionId"));
-        sRangingHashMap.put(uwbSessionKey, precisionRanging);
-        precisionRanging.start(genericRangingCallback);
+        sRangingHashMap.put(uwbSessionKey, session);
+        session.start(generateRangingParameters(config), genericRangingCallback);
         sRangingCallbackHashMap.put(uwbSessionKey, genericRangingCallback);
     }
 

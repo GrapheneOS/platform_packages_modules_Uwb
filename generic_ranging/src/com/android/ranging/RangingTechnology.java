@@ -18,8 +18,8 @@ package com.android.ranging;
 
 import android.content.Context;
 
-import com.android.ranging.adapter.CsAdapter;
-import com.android.ranging.adapter.UwbAdapter;
+import com.android.ranging.cs.CsAdapter;
+import com.android.ranging.uwb.UwbAdapter;
 
 import com.google.common.collect.ImmutableList;
 
@@ -54,7 +54,7 @@ public enum RangingTechnology {
             case UWB:
                 return UwbAdapter.isSupported(context);
             case CS:
-                return CsAdapter.isSupported();
+                return CsAdapter.isSupported(context);
             default:
                 return false;
         }
