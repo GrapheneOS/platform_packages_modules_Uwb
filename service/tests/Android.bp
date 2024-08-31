@@ -53,9 +53,9 @@ android_test {
     jarjar_rules: ":uwb-jarjar-rules",
 
     libs: [
-        "android.test.runner",
-        "android.test.base",
-        "android.test.mock",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
+        "android.test.mock.stubs.system",
         "framework-annotations-lib",
         "framework-uwb-pre-jarjar",
         "ServiceUwbResources",

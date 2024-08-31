@@ -29,7 +29,7 @@ android_test {
         "mts-uwb",
         "mcts-uwb",
     ],
-    libs: ["android.test.runner"],
+    libs: ["android.test.runner.stubs.system"],
     static_libs: [
         "androidx.test.ext.junit",
         "ctstestrunner-axt",
