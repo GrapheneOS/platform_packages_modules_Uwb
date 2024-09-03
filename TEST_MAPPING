@@ -15,5 +15,10 @@
     {
       "name": "libuwb_uci_jni_rust_tests"
     }
+  ],
+  "postsubmit": [
+    {
+      "name": "UwbFusionLibTests"
+    }
   ]
 }

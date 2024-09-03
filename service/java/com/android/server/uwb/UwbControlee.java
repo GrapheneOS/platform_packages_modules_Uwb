@@ -24,8 +24,8 @@ import android.uwb.DistanceMeasurement;
 import android.uwb.RangingMeasurement;
 import android.uwb.UwbAddress;
 
-import com.android.server.uwb.correction.UwbFilterEngine;
-import com.android.server.uwb.correction.math.SphericalVector;
+import com.android.uwb.fusion.UwbFilterEngine;
+import com.android.uwb.fusion.math.SphericalVector;
 
 /**
  * Represents a remote controlee that is involved in a session.

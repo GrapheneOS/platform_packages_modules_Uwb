@@ -63,9 +63,6 @@ import androidx.annotation.VisibleForTesting;
 
 import com.android.modules.utils.build.SdkLevel;
 import com.android.server.uwb.advertisement.UwbAdvertiseManager;
-import com.android.server.uwb.correction.UwbFilterEngine;
-import com.android.server.uwb.correction.pose.ApplicationPoseSource;
-import com.android.server.uwb.correction.pose.IPoseSource;
 import com.android.server.uwb.data.DtTagUpdateRangingRoundsStatus;
 import com.android.server.uwb.data.UwbDeviceInfoResponse;
 import com.android.server.uwb.data.UwbDlTDoAMeasurement;
@@ -83,6 +80,9 @@ import com.android.server.uwb.util.ArrayUtils;
 import com.android.server.uwb.util.DataTypeConversionUtil;
 import com.android.server.uwb.util.LruList;
 import com.android.server.uwb.util.UwbUtil;
+import com.android.uwb.fusion.UwbFilterEngine;
+import com.android.uwb.fusion.pose.ApplicationPoseSource;
+import com.android.uwb.fusion.pose.IPoseSource;
 
 import com.google.uwb.support.aliro.AliroOpenRangingParams;
 import com.google.uwb.support.aliro.AliroParams;
