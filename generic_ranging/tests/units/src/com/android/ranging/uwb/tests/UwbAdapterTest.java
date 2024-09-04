@@ -35,6 +35,7 @@ import androidx.core.uwb.backend.impl.internal.UwbServiceImpl;
 import androidx.test.filters.SmallTest;
 
 import com.android.ranging.RangingAdapter;
+import com.android.ranging.RangingParameters.DeviceRole;
 import com.android.ranging.RangingTechnology;
 import com.android.ranging.cs.CsParameters;
 import com.android.ranging.uwb.UwbAdapter;
@@ -76,7 +77,7 @@ public class UwbAdapterTest {
                 .thenReturn(true);
         when(mMockUwbService.getController(any())).thenReturn(mMockUwbClient);
         mUwbAdapter = new UwbAdapter(mMockContext, MoreExecutors.newDirectExecutorService(),
-                mMockUwbService, UwbAdapter.DeviceType.CONTROLLER);
+                mMockUwbService, DeviceRole.CONTROLLER);
     }
 
     @Test

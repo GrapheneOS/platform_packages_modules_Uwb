@@ -36,6 +36,7 @@ import com.android.ranging.RangingAdapter;
 import com.android.ranging.RangingConfig;
 import com.android.ranging.RangingData;
 import com.android.ranging.RangingParameters;
+import com.android.ranging.RangingParameters.DeviceRole;
 import com.android.ranging.RangingReport;
 import com.android.ranging.RangingSession;
 import com.android.ranging.RangingSessionImpl;
@@ -125,7 +126,9 @@ public class RangingSessionTest {
     public void start_startsSessionAndTechnology() {
         InOrder inOrder = Mockito.inOrder(mMockCallback);
 
-        startSession(new RangingParameters.Builder().useUwb(mock(UwbParameters.class)).build());
+        startSession(new RangingParameters.Builder(DeviceRole.CONTROLLER)
+                .useUwb(mock(UwbParameters.class))
+                .build());
 
         inOrder.verify(mMockCallback).onStarted(eq(null));
         inOrder.verify(mMockCallback).onStarted(eq(UWB));
@@ -134,7 +137,7 @@ public class RangingSessionTest {
     @Test
     @Ignore("TODO: Add support for technologies other than UWB")
     public void start_startsMultipleTechnologies() {
-        startSession(new RangingParameters.Builder()
+        startSession(new RangingParameters.Builder(DeviceRole.CONTROLLER)
                         .useUwb(mock(UwbParameters.class))
                         .useCs(mock(CsParameters.class))
                         .build());
@@ -149,7 +152,9 @@ public class RangingSessionTest {
         when(mMockContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_UWB))
                 .thenReturn(false);
 
-        mSession.start(new RangingParameters.Builder().useUwb(mock(UwbParameters.class)).build(),
+        mSession.start(new RangingParameters.Builder(DeviceRole.CONTROLLER)
+                        .useUwb(mock(UwbParameters.class))
+                        .build(),
                 mMockCallback);
 
         verify(mMockAdapters.get(UWB), never()).start(any(), any());
@@ -158,7 +163,9 @@ public class RangingSessionTest {
 
     @Test
     public void start_doesNotStartUnusedTechnologies() {
-        startSession(new RangingParameters.Builder().useUwb(mock(UwbParameters.class)).build());
+        startSession(new RangingParameters.Builder(DeviceRole.CONTROLLER)
+                .useUwb(mock(UwbParameters.class))
+                .build());
 
         verify(mMockAdapters.get(CS), never()).start(any(), any());
         verify(mMockCallback, never()).onStarted(eq(CS));
@@ -168,7 +175,9 @@ public class RangingSessionTest {
     public void stop_stopsTechnologyAndSession() {
         InOrder inOrder = Mockito.inOrder(mMockCallback);
 
-        startSession(new RangingParameters.Builder().useUwb(mock(UwbParameters.class)).build());
+        startSession(new RangingParameters.Builder(DeviceRole.CONTROLLER)
+                .useUwb(mock(UwbParameters.class))
+                .build());
 
         mSession.stop();
 
@@ -182,7 +191,7 @@ public class RangingSessionTest {
     @Test
     @Ignore("TODO: Add support for technologies other than UWB")
     public void stop_stopsMultipleTechnologies() {
-        startSession(new RangingParameters.Builder()
+        startSession(new RangingParameters.Builder(DeviceRole.CONTROLLER)
                 .useUwb(mock(UwbParameters.class))
                 .useCs(mock(CsParameters.class))
                 .build());
@@ -199,7 +208,7 @@ public class RangingSessionTest {
     @Test
     public void shouldStop_whenAdapterStops() {
         EnumMap<RangingTechnology, RangingAdapter.Callback> adapterCallbacks =
-                startSession(new RangingParameters.Builder()
+                startSession(new RangingParameters.Builder(DeviceRole.CONTROLLER)
                         .useUwb(mock(UwbParameters.class))
                         .build());
 
@@ -210,7 +219,7 @@ public class RangingSessionTest {
 
     @Test
     public void shouldStop_whenSessionIsEmpty() {
-        startSession(new RangingParameters.Builder().build());
+        startSession(new RangingParameters.Builder(DeviceRole.CONTROLLER).build());
 
         ArgumentCaptor<Runnable> periodicUpdateCaptor = ArgumentCaptor.forClass(Runnable.class);
         verify(mMockUpdateExecutor).scheduleWithFixedDelay(periodicUpdateCaptor.capture(),
@@ -225,7 +234,7 @@ public class RangingSessionTest {
     @Test
     public void shouldReportDataImmediately_whenUpdateIntervalIsZero() {
         EnumMap<RangingTechnology, RangingAdapter.Callback> adapterCallbacks =
-                startSession(new RangingParameters.Builder()
+                startSession(new RangingParameters.Builder(DeviceRole.CONTROLLER)
                         .useUwb(mock(UwbParameters.class))
                         .build());
 
@@ -250,7 +259,7 @@ public class RangingSessionTest {
         when(mMockConfig.getInitTimeout()).thenReturn(Duration.ofSeconds(3));
 
         EnumMap<RangingTechnology, RangingAdapter.Callback> adapterCallbacks =
-                startSession(new RangingParameters.Builder()
+                startSession(new RangingParameters.Builder(DeviceRole.CONTROLLER)
                         .useUwb(mock(UwbParameters.class))
                         .useCs(mock(CsParameters.class))
                         .build());

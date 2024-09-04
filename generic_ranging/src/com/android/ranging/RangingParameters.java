@@ -29,16 +29,38 @@ public class RangingParameters {
     /** Parameters for a specific generic ranging technology. */
     public interface TechnologyParameters { }
 
+    public enum DeviceRole {
+        /**
+         * The device is a controlee within the session.
+         */
+        CONTROLEE,
+        /**
+         * The device is the session controller. It decides when the session is started or stopped,
+         * ranging technology preferences, etc.
+         */
+        CONTROLLER
+    }
+
+    private final DeviceRole mRole;
     private final EnumMap<RangingTechnology, TechnologyParameters> mParameters;
 
     private RangingParameters(@NonNull RangingParameters.Builder builder) {
+        mRole = builder.mRole;
         mParameters = new EnumMap<>(RangingTechnology.class);
+
         if (builder.mUwbParameters != null) {
             mParameters.put(RangingTechnology.UWB, builder.mUwbParameters);
         }
         if (builder.mCsParameters != null) {
             mParameters.put(RangingTechnology.CS, builder.mCsParameters);
         }
+    }
+
+    /**
+     * @return The configured device role.
+     */
+    public DeviceRole getRole() {
+        return mRole;
     }
 
     /**
@@ -63,8 +85,16 @@ public class RangingParameters {
     }
 
     public static class Builder {
+        private final DeviceRole mRole;
         private UwbParameters mUwbParameters = null;
         private CsParameters mCsParameters = null;
+
+        /**
+         @param role of the device within the session.
+         */
+        public Builder(DeviceRole role) {
+            mRole = role;
+        }
 
         /** Build the {@link RangingParameters object} */
         public RangingParameters build() {

@@ -30,6 +30,7 @@ import androidx.core.uwb.backend.impl.internal.RangingCapabilities;
 import androidx.core.uwb.backend.impl.internal.UwbAddress;
 
 import com.android.internal.annotations.GuardedBy;
+import com.android.ranging.RangingParameters.DeviceRole;
 import com.android.ranging.RangingUtils.StateMachine;
 import com.android.ranging.cs.CsAdapter;
 import com.android.ranging.uwb.UwbAdapter;
@@ -170,10 +171,13 @@ public final class RangingSessionImpl implements RangingSession {
         //this.fusionAlgorithm = fusionAlgorithm;
     }
 
-    private @NonNull RangingAdapter newAdapter(@NonNull RangingTechnology technology) {
+    private @NonNull RangingAdapter newAdapter(
+            @NonNull RangingTechnology technology,
+            DeviceRole role
+    ) {
         switch (technology) {
             case UWB:
-                return new UwbAdapter(mContext, mAdapterExecutor, UwbAdapter.DeviceType.CONTROLLER);
+                return new UwbAdapter(mContext, mAdapterExecutor, role);
             case CS:
                 return new CsAdapter();
             default:
@@ -211,7 +215,7 @@ public final class RangingSessionImpl implements RangingSession {
 
             // Do not overwrite any adapters that were supplied for testing
             if (!mAdapters.containsKey(technology)) {
-                mAdapters.put(technology, newAdapter(technology));
+                mAdapters.put(technology, newAdapter(technology, parameters.getRole()));
             }
 
             AdapterListener listener = new AdapterListener(technology);

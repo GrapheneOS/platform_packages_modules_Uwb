@@ -39,6 +39,7 @@ import androidx.core.uwb.backend.impl.internal.UwbFeatureFlags;
 import androidx.core.uwb.backend.impl.internal.UwbServiceImpl;
 
 import com.android.ranging.RangingAdapter;
+import com.android.ranging.RangingParameters.DeviceRole;
 import com.android.ranging.RangingParameters.TechnologyParameters;
 import com.android.ranging.RangingReport;
 import com.android.ranging.RangingTechnology;
@@ -75,7 +76,7 @@ public class UwbAdapter implements RangingAdapter {
 
     public UwbAdapter(
             @NonNull Context context, @NonNull ListeningExecutorService executorService,
-            @NonNull DeviceType deviceType
+            @NonNull DeviceRole role
     ) {
         this(context, executorService,
                 new UwbServiceImpl(
@@ -90,13 +91,13 @@ public class UwbAdapter implements RangingAdapter {
                             // TODO: Implement when adding backend support.
                         }
                 ),
-                deviceType);
+                role);
     }
 
     @VisibleForTesting
     public UwbAdapter(
             @NonNull Context context, @NonNull ListeningExecutorService executorService,
-            @NonNull UwbServiceImpl uwbService, @NonNull DeviceType deviceType
+            @NonNull UwbServiceImpl uwbService, @NonNull DeviceRole role
     ) {
         if (!UwbAdapter.isSupported(context)) {
             throw new IllegalArgumentException("UWB system feature not found.");
@@ -104,7 +105,7 @@ public class UwbAdapter implements RangingAdapter {
 
         mStateMachine = new StateMachine<>(State.STOPPED);
         mUwbService = uwbService;
-        mUwbClient = deviceType == DeviceType.CONTROLLER
+        mUwbClient = role == DeviceRole.CONTROLLER
                 ? mUwbService.getController(context)
                 : mUwbService.getControlee(context);
         mExecutorService = executorService;
@@ -239,11 +240,6 @@ public class UwbAdapter implements RangingAdapter {
 
     private void clear() {
         mCallbacks = null;
-    }
-
-    public enum DeviceType {
-        CONTROLEE,
-        CONTROLLER,
     }
 
     public enum State {
