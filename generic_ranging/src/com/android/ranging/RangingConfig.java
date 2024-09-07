@@ -20,7 +20,6 @@ import com.android.ranging.proto.MultiSensorFinderConfig;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 
 import java.time.Duration;
 import java.util.Optional;
@@ -28,9 +27,6 @@ import java.util.Optional;
 /** Configuration for multi-tecnology ranging */
 @AutoValue
 public abstract class RangingConfig {
-
-    /** Returns the list of ranging technologies that were requested for this ranging session. */
-    public abstract ImmutableList<RangingTechnology> getRangingTechnologiesToRangeWith();
 
     /** Returns whether to use the fusing algorithm or not. */
     public abstract boolean getUseFusingAlgorithm();
@@ -72,9 +68,6 @@ public abstract class RangingConfig {
     /** Builder for {@link RangingConfig}. */
     @AutoValue.Builder
     public abstract static class Builder {
-        public abstract Builder setRangingTechnologiesToRangeWith(
-                ImmutableList<RangingTechnology> rangingTechnologiesToRangeWith);
-
         public abstract Builder setUseFusingAlgorithm(boolean useFusingAlgorithm);
 
         public abstract Builder setMaxUpdateInterval(Duration maxUpdateInterval);
@@ -93,21 +86,10 @@ public abstract class RangingConfig {
         public RangingConfig build() {
             RangingConfig config = autoBuild();
             Preconditions.checkArgument(
-                    !config.getRangingTechnologiesToRangeWith().isEmpty(),
-                    "Ranging technologies to range with must contain at least one ranging "
-                            + "technology.");
-            Preconditions.checkArgument(
                     config.getUseFusingAlgorithm() == config.getFusionAlgorithmConfig()
                     .isPresent(),
                     "Fusion algorithm config must be set when and only when useFusingAlgorithm"
-                    + "is set to");
-            if (config.getUseFusingAlgorithm()
-                    && config.getRangingTechnologiesToRangeWith().contains(RangingTechnology
-                    .UWB)) {
-                Preconditions.checkArgument(
-                        config.getFusionAlgorithmConfig().get().getUseUwbMeasurements(),
-                        "Fusion algorithm should accept UWB measurements since UWB was requested.");
-            }
+                    + "is set too");
             return config;
         }
     }

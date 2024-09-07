@@ -29,8 +29,7 @@ import android.uwb.DistanceMeasurement;
 import android.uwb.RangingMeasurement;
 import android.uwb.UwbAddress;
 
-import com.android.server.uwb.correction.TestHelpers;
-import com.android.server.uwb.correction.UwbFilterEngine;
+import com.android.uwb.fusion.UwbFilterEngine;
 
 import org.junit.After;
 import org.junit.Before;
@@ -88,8 +87,8 @@ public class UwbControleeTest {
         mControlee.filterMeasurement(rm);
 
         RangingMeasurement newMeasure = rm.build();
-        TestHelpers.assertClose(newMeasure.getAngleOfArrivalMeasurement().getAzimuth()
-                .getRadians(), testRads);
+        assertThat(newMeasure.getAngleOfArrivalMeasurement().getAzimuth().getRadians())
+                .isWithin(0.001).of(testRads);
     }
 
     @Test

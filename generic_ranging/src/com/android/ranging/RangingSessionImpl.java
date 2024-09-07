@@ -27,14 +27,13 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
 import androidx.core.uwb.backend.impl.internal.RangingCapabilities;
-import androidx.core.uwb.backend.impl.internal.RangingParameters;
 import androidx.core.uwb.backend.impl.internal.UwbAddress;
 
 import com.android.internal.annotations.GuardedBy;
+import com.android.ranging.RangingParameters.DeviceRole;
 import com.android.ranging.RangingUtils.StateMachine;
-import com.android.ranging.adapter.CsAdapter;
-import com.android.ranging.adapter.RangingAdapter;
-import com.android.ranging.adapter.UwbAdapter;
+import com.android.ranging.cs.CsAdapter;
+import com.android.ranging.uwb.UwbAdapter;
 import com.android.sensor.Estimate;
 import com.android.sensor.MultiSensorFinderListener;
 
@@ -48,7 +47,6 @@ import com.google.errorprone.annotations.DoNotCall;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -83,13 +81,6 @@ public final class RangingSessionImpl implements RangingSession {
     private final Map<RangingTechnology, RangingAdapter> mAdapters;
     /** Must be thread safe */
     private final Map<RangingTechnology, RangingAdapter.Callback> mAdapterListeners;
-
-    /**
-     * Some of the ranging adapters need to be configured before being called. This list keeps track
-     * of all adapters that were configured so we can report an error to the caller if any of them
-     * were not.
-     */
-    private final EnumSet<RangingTechnology> rangingConfigurationsAdded;
 
     /**
      * In this instance the primary fusion algorithm is the ArCoreMultiSensorFinder algorithm. In
@@ -177,23 +168,16 @@ public final class RangingSessionImpl implements RangingSession {
         mLastFusionReport = Optional.empty();
         mLastFusionDataReceivedTime = Instant.EPOCH;
 
-        rangingConfigurationsAdded = EnumSet.noneOf(RangingTechnology.class);
-
         //this.fusionAlgorithm = fusionAlgorithm;
-
-        for (RangingTechnology technology : config.getRangingTechnologiesToRangeWith()) {
-            if (technology.isSupported(context)) {
-                mAdapters.put(technology, newAdapter(technology));
-            } else {
-                Log.w(TAG, "Attempted to create adapter for unsupported technology " + technology);
-            }
-        }
     }
 
-    private @NonNull RangingAdapter newAdapter(@NonNull RangingTechnology technology) {
+    private @NonNull RangingAdapter newAdapter(
+            @NonNull RangingTechnology technology,
+            DeviceRole role
+    ) {
         switch (technology) {
             case UWB:
-                return new UwbAdapter(mContext, mAdapterExecutor, UwbAdapter.DeviceType.CONTROLLER);
+                return new UwbAdapter(mContext, mAdapterExecutor, role);
             case CS:
                 return new CsAdapter();
             default:
@@ -203,22 +187,40 @@ public final class RangingSessionImpl implements RangingSession {
     }
 
     @Override
-    public void start(@NonNull Callback callback) {
+    public void start(@NonNull RangingParameters parameters, @NonNull Callback callback) {
+        // TODO(b/353991075): We might want to set useUwbMeasurements automatically based on
+        // provided parameters to avoid this failure condition.
+        if (mConfig.getUseFusingAlgorithm() && parameters.getUwbParameters().isPresent()) {
+            Preconditions.checkArgument(
+                    mConfig.getFusionAlgorithmConfig().get().getUseUwbMeasurements(),
+                    "Fusion algorithm should accept UWB measurements since UWB was requested.");
+        }
+        EnumMap<RangingTechnology, RangingParameters.TechnologyParameters> paramsMap =
+                parameters.asMap();
+        mAdapters.keySet().retainAll(paramsMap.keySet());
+
         Log.i(TAG, "Start Precision Ranging called.");
-        Preconditions.checkArgument(rangingConfigurationsAdded.containsAll(mAdapters.keySet()),
-                "Missing configuration for some ranging technologies that were requested.");
         if (!mStateMachine.transition(State.STOPPED, State.STARTING)) {
             Log.w(TAG, "Failed transition STOPPED -> STARTING");
             return;
         }
         mCallback = callback;
 
-        synchronized (mAdapters) {
-            for (RangingTechnology technology : mAdapters.keySet()) {
-                AdapterListener listener = new AdapterListener(technology);
-                mAdapterListeners.put(technology, listener);
-                mAdapters.get(technology).start(listener);
+        for (RangingTechnology technology : paramsMap.keySet()) {
+            if (!technology.isSupported(mContext)) {
+                Log.w(TAG, "Attempted to range with unsupported technology " + technology
+                        + ", skipping");
+                continue;
             }
+
+            // Do not overwrite any adapters that were supplied for testing
+            if (!mAdapters.containsKey(technology)) {
+                mAdapters.put(technology, newAdapter(technology, parameters.getRole()));
+            }
+
+            AdapterListener listener = new AdapterListener(technology);
+            mAdapterListeners.put(technology, listener);
+            mAdapters.get(technology).start(paramsMap.get(technology), listener);
         }
 
         if (mConfig.getUseFusingAlgorithm()) {
@@ -328,7 +330,7 @@ public final class RangingSessionImpl implements RangingSession {
                     "stopping precision ranging cause: no active ranging in progress and  not "
                             + "using fusion"
                             + " algorithm");
-            stopPrecisionRanging(RangingSession.Callback.StoppedReason.NO_RANGES_TIMEOUT);
+            stopPrecisionRanging(Callback.StoppedReason.EMPTY_SESSION_TIMEOUT);
             return;
         }
 
@@ -340,7 +342,7 @@ public final class RangingSessionImpl implements RangingSession {
                     "stopping precision ranging cause: no active ranging in progress and haven't "
                             + "seen"
                             + " successful fusion data");
-            stopPrecisionRanging(RangingSession.Callback.StoppedReason.NO_RANGES_TIMEOUT);
+            stopPrecisionRanging(Callback.StoppedReason.EMPTY_SESSION_TIMEOUT);
             return;
         }
 
@@ -354,7 +356,7 @@ public final class RangingSessionImpl implements RangingSession {
                 Log.i(TAG,
                         "stopping precision ranging cause: fusion algorithm drift timeout ["
                                 + mConfig.getFusionAlgorithmDriftTimeout().toMillis() + " ms]");
-                stopPrecisionRanging(RangingSession.Callback.StoppedReason.FUSION_DRIFT_TIMEOUT);
+                stopPrecisionRanging(Callback.StoppedReason.EMPTY_SESSION_TIMEOUT);
                 return;
             }
         }
@@ -374,7 +376,7 @@ public final class RangingSessionImpl implements RangingSession {
             Log.i(TAG,
                     "stopping precision ranging cause: no update timeout ["
                             + mConfig.getNoUpdateTimeout().toMillis() + " ms]");
-            stopPrecisionRanging(RangingSession.Callback.StoppedReason.NO_RANGES_TIMEOUT);
+            stopPrecisionRanging(Callback.StoppedReason.EMPTY_SESSION_TIMEOUT);
             return;
         }
 
@@ -391,14 +393,14 @@ public final class RangingSessionImpl implements RangingSession {
 //                        .getTimestamp());
                 break;
             case CS:
-                throw new UnsupportedOperationException(
-                        "CS support not implemented. Can't update fusion alg.");
+//                throw new UnsupportedOperationException(
+//                        "CS support not implemented. Can't update fusion alg.");
         }
     }
 
     @Override
     public void stop() {
-        stopPrecisionRanging(RangingSession.Callback.StoppedReason.REQUESTED);
+        stopPrecisionRanging(RangingAdapter.Callback.StoppedReason.REQUESTED);
     }
 
     /* Calls stop on all ranging adapters and the fusion algorithm and resets all internal states
@@ -414,8 +416,9 @@ public final class RangingSessionImpl implements RangingSession {
         }
         // stop all ranging techs
         synchronized (mAdapters) {
-            for (RangingAdapter adapter : mAdapters.values()) {
-                adapter.stop();
+            for (RangingTechnology technology : mAdapters.keySet()) {
+                mAdapters.get(technology).stop();
+                mCallback.onStopped(technology, reason);
             }
         }
 
@@ -429,7 +432,7 @@ public final class RangingSessionImpl implements RangingSession {
 //                    });
         }
 
-        mCallback.onStopped(reason);
+        mCallback.onStopped(null, reason);
 
         // reset internal states and objects
         synchronized (mStateMachine) {
@@ -439,8 +442,8 @@ public final class RangingSessionImpl implements RangingSession {
         mLastUpdateTime = Instant.EPOCH;
         mLastRangeDataReceivedTime = Instant.EPOCH;
         mLastFusionDataReceivedTime = Instant.EPOCH;
+        mAdapters.clear();
         mAdapterListeners.clear();
-        rangingConfigurationsAdded.clear();
         //fusionAlgorithmListener = Optional.empty();
         mCallback = null;
     }
@@ -470,30 +473,9 @@ public final class RangingSessionImpl implements RangingSession {
         return uwbAdapter.getLocalAddress();
     }
 
-    @Override
-    public void setUwbConfig(RangingParameters rangingParameters) {
-        if (mConfig.getRangingTechnologiesToRangeWith().contains(RangingTechnology.UWB)) {
-            UwbAdapter uwbAdapter = (UwbAdapter) mAdapters.get(RangingTechnology.UWB);
-            if (uwbAdapter == null) {
-                Log.e(TAG,
-                        "UWB adapter not found when setting config even though it was requested.");
-                return;
-            }
-            uwbAdapter.setRangingParameters(rangingParameters);
-        }
-        rangingConfigurationsAdded.add(RangingTechnology.UWB);
-    }
-
     @DoNotCall("Not implemented")
     @Override
     public void getCsCapabilities() {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    /** Sets CS configuration. */
-    @DoNotCall("Not implemented")
-    @Override
-    public void setCsConfig() {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -545,30 +527,34 @@ public final class RangingSessionImpl implements RangingSession {
 
     /* Listener implementation for ranging adapter callback. */
     private class AdapterListener implements RangingAdapter.Callback {
-        private final RangingTechnology technology;
+        private final RangingTechnology mTechnology;
 
         AdapterListener(RangingTechnology technology) {
-            this.technology = technology;
+            this.mTechnology = technology;
         }
 
         @Override
         public void onStarted() {
             synchronized (mStateMachine) {
-                if (mStateMachine.getState() != State.STARTED
-                        && !mStateMachine.transition(State.STARTING, State.STARTED)) {
-                    Log.w(TAG, "Failed transition STARTING -> STARTED");
+                if (mStateMachine.getState() == State.STOPPED) {
+                    Log.w(TAG, "Received adapter onStarted but ranging session is stopped");
                     return;
                 }
+                if (mStateMachine.transition(State.STARTING, State.STARTED)) {
+                    // The first adapter in the session has started, so start the session.
+                    mCallback.onStarted(null);
+                }
             }
-            mCallback.onStarted();
+            mCallback.onStarted(mTechnology);
         }
 
         @Override
-        public void onStopped(RangingAdapter.Callback.StoppedReason reason) {
+        public void onStopped(@RangingAdapter.Callback.StoppedReason int reason) {
             synchronized (mAdapters) {
                 if (mStateMachine.getState() != State.STOPPED) {
-                    mAdapters.remove(technology);
-                    mAdapterListeners.remove(technology);
+                    mAdapters.remove(mTechnology);
+                    mAdapterListeners.remove(mTechnology);
+                    mCallback.onStopped(mTechnology, reason);
                 }
             }
         }
@@ -589,7 +575,7 @@ public final class RangingSessionImpl implements RangingSession {
                                     .build();
                     mCallback.onData(data);
                 }
-                mLastRangingReports.put(technology, rangingReports);
+                mLastRangingReports.put(mTechnology, rangingReports);
             }
         }
     }
@@ -603,7 +589,7 @@ public final class RangingSessionImpl implements RangingSession {
                     return;
                 }
                 if (mStateMachine.transition(State.STARTING, State.STARTED)) {
-                    mCallback.onStarted();
+                    mCallback.onStarted(null);
                 }
                 FusionReport fusionReport = FusionReport.fromFusionAlgorithmEstimate(estimate);
                 if (fusionReport.getArCoreState() == FusionReport.ArCoreState.OK) {

@@ -47,7 +47,7 @@ java_library {
     libs: [
         "androidx.annotation_annotation",
         "framework-annotations-lib",
-        "framework-configinfrastructure",
+        "framework-configinfrastructure.stubs.module_lib",
         "framework-uwb-pre-jarjar",
         "ServiceUwbResources",
         "framework-statsd.stubs.module_lib",
@@ -67,6 +67,7 @@ java_library {
         "com.uwb.support.oemextension",
         "com.uwb.support.dltdoa",
         "com.uwb.support.radar",
+        "com.uwb.fusion",
         "guava",
         "modules-utils-shell-command-handler",
         "modules-utils-handlerexecutor",

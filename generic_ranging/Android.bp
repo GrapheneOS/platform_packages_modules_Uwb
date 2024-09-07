@@ -40,6 +40,7 @@ java_library {
         "framework-annotations-lib",
         "guava",
         "multi-sensor-finder-configuration-java-proto",
+        "com.uwb.fusion",
         "uwb_androidx_backend",
     ],
     visibility: [

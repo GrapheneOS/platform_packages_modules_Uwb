@@ -46,6 +46,7 @@ android_test {
         // Then, the jarjar_rules here will perform the rename for the entire APK
         // i.e. service-uwb + test code
         "service-uwb-pre-jarjar",
+        "com.uwb.fusion",
         "flag-junit",
         "platform-test-annotations",
     ],
@@ -53,9 +54,9 @@ android_test {
     jarjar_rules: ":uwb-jarjar-rules",
 
     libs: [
-        "android.test.runner",
-        "android.test.base",
-        "android.test.mock",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
+        "android.test.mock.stubs.system",
         "framework-annotations-lib",
         "framework-uwb-pre-jarjar",
         "ServiceUwbResources",
