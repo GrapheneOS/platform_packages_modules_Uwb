@@ -37,9 +37,8 @@ pub(crate) fn byte_result_helper<T>(result: Result<T>, error_msg: &str) -> jbyte
 
 /// helper function to convert Result to StatusCode
 fn result_to_status_code<T>(result: Result<T>, error_msg: &str) -> StatusCode {
-    let result = result.map_err(|e| {
+    let result = result.inspect_err(|e| {
         error!("{} failed with {:?}", error_msg, &e);
-        e
     });
     match result {
         Ok(_) => StatusCode::UciStatusOk,
@@ -54,9 +53,8 @@ fn result_to_status_code<T>(result: Result<T>, error_msg: &str) -> StatusCode {
 
 pub(crate) fn option_result_helper<T>(result: Result<T>, error_msg: &str) -> Option<T> {
     result
-        .map_err(|e| {
+        .inspect_err(|e| {
             error!("{} failed with {:?}", error_msg, &e);
-            e
         })
         .ok()
 }
