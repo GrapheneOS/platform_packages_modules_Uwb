@@ -17,17 +17,17 @@
 package com.android.ranging.uwb;
 
 import androidx.annotation.NonNull;
-import androidx.core.uwb.backend.impl.internal.UwbAddress;
-import androidx.core.uwb.backend.impl.internal.UwbComplexChannel;
-import androidx.core.uwb.backend.impl.internal.UwbRangeDataNtfConfig;
 
 import com.android.ranging.RangingParameters;
+import com.android.ranging.uwb.backend.internal.UwbAddress;
+import com.android.ranging.uwb.backend.internal.UwbComplexChannel;
+import com.android.ranging.uwb.backend.internal.UwbRangeDataNtfConfig;
 
 import java.util.List;
 
 /** Parameters for UWB ranging. */
 public class UwbParameters
-        extends androidx.core.uwb.backend.impl.internal.RangingParameters
+        extends com.android.ranging.uwb.backend.internal.RangingParameters
         implements RangingParameters.TechnologyParameters {
 
     public UwbParameters(int uwbConfigId, int sessionId, int subSessionId,

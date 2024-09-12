@@ -27,11 +27,6 @@ import static org.mockito.Mockito.when;
 import android.content.Context;
 import android.content.pm.PackageManager;
 
-import androidx.core.uwb.backend.impl.internal.RangingController;
-import androidx.core.uwb.backend.impl.internal.RangingPosition;
-import androidx.core.uwb.backend.impl.internal.RangingSessionCallback;
-import androidx.core.uwb.backend.impl.internal.UwbDevice;
-import androidx.core.uwb.backend.impl.internal.UwbServiceImpl;
 import androidx.test.filters.SmallTest;
 
 import com.android.ranging.RangingAdapter;
@@ -40,6 +35,11 @@ import com.android.ranging.RangingTechnology;
 import com.android.ranging.cs.CsParameters;
 import com.android.ranging.uwb.UwbAdapter;
 import com.android.ranging.uwb.UwbParameters;
+import com.android.ranging.uwb.backend.internal.RangingController;
+import com.android.ranging.uwb.backend.internal.RangingPosition;
+import com.android.ranging.uwb.backend.internal.RangingSessionCallback;
+import com.android.ranging.uwb.backend.internal.UwbDevice;
+import com.android.ranging.uwb.backend.internal.UwbServiceImpl;
 
 import com.google.common.util.concurrent.MoreExecutors;
 

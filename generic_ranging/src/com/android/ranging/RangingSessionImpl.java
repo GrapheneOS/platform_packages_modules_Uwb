@@ -26,14 +26,14 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
-import androidx.core.uwb.backend.impl.internal.RangingCapabilities;
-import androidx.core.uwb.backend.impl.internal.UwbAddress;
 
 import com.android.internal.annotations.GuardedBy;
 import com.android.ranging.RangingParameters.DeviceRole;
 import com.android.ranging.RangingUtils.StateMachine;
 import com.android.ranging.cs.CsAdapter;
 import com.android.ranging.uwb.UwbAdapter;
+import com.android.ranging.uwb.backend.internal.RangingCapabilities;
+import com.android.ranging.uwb.backend.internal.UwbAddress;
 import com.android.sensor.Estimate;
 import com.android.sensor.MultiSensorFinderListener;
 

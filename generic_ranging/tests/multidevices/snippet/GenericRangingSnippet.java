@@ -24,9 +24,6 @@ import android.util.Log;
 import android.uwb.UwbManager;
 
 import androidx.annotation.Nullable;
-import androidx.core.uwb.backend.impl.internal.UwbAddress;
-import androidx.core.uwb.backend.impl.internal.UwbComplexChannel;
-import androidx.core.uwb.backend.impl.internal.UwbRangeDataNtfConfig;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.ranging.RangingConfig;
@@ -39,6 +36,9 @@ import com.android.ranging.RangingSessionImpl;
 import com.android.ranging.RangingTechnology;
 import com.android.ranging.uwb.UwbAdapter;
 import com.android.ranging.uwb.UwbParameters;
+import com.android.ranging.uwb.backend.internal.UwbAddress;
+import com.android.ranging.uwb.backend.internal.UwbComplexChannel;
+import com.android.ranging.uwb.backend.internal.UwbRangeDataNtfConfig;
 
 import com.google.android.mobly.snippet.Snippet;
 import com.google.android.mobly.snippet.event.EventCache;

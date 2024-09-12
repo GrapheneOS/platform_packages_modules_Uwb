@@ -18,32 +18,29 @@ package {
 }
 
 java_library {
-    name: "generic_ranging",
+    name: "ranging_uwb_backend",
     sdk_version: "system_UpsideDownCake",
     min_sdk_version: "34",
     installable: false,
     srcs: [
         "src/**/*.java",
     ],
-    plugins: [
-        "auto_value_plugin",
-    ],
-    libs: [
-        "auto_value_annotations",
-        "error_prone_annotations",
-    ],
+    libs: ["android-support-annotations"],
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.concurrent_concurrent-futures",
-        "androidx.concurrent_concurrent-futures",
-        "dagger2",
-        "framework-annotations-lib",
+        "com.uwb.support.fira",
+        "com.uwb.support.multichip",
+        "com.uwb.support.dltdoa",
         "guava",
-        "multi-sensor-finder-configuration-java-proto",
-        "com.uwb.fusion",
-        "ranging_uwb_backend",
+    ],
+    apex_available: [
+        "com.android.tethering",
+        "//apex_available:platform",
     ],
     visibility: [
         ":__subpackages__",
+        "//packages/modules/Uwb/generic_ranging:__subpackages__",
+        "//packages/modules/Connectivity/remoteauth:__subpackages__",
     ],
 }
