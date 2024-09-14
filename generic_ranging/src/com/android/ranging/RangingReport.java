@@ -38,7 +38,7 @@ public class RangingReport {
         return mRangeDistance;
     }
 
-    /** Gets the azimuth in degrees. */
+    /** Gets the azimuth in radians. */
     public OptionalDouble getAzimuth() {
         if (mAzimuth != Float.MAX_VALUE) {
             return OptionalDouble.of(mAzimuth);
@@ -46,7 +46,7 @@ public class RangingReport {
         return OptionalDouble.empty();
     }
 
-    /** Gets the elevation in degrees. */
+    /** Gets the elevation in radians. */
     public OptionalDouble getElevation() {
         if (mElevation != Float.MAX_VALUE) {
             return OptionalDouble.of(mElevation);
@@ -101,13 +101,13 @@ public class RangingReport {
             return this;
         }
 
-        /** Sets the azimuth in degrees. */
+        /** Sets the azimuth in radians. */
         public Builder setAzimuth(float azimuth) {
             mAzimuth = azimuth;
             return this;
         }
 
-        /** Sets the elevation in degrees. */
+        /** Sets the elevation in radians. */
         public Builder setElevation(float elevation) {
             mElevation = elevation;
             return this;

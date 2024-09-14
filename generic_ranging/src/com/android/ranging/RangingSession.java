@@ -21,8 +21,9 @@ import android.os.RemoteException;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.uwb.backend.impl.internal.RangingCapabilities;
-import androidx.core.uwb.backend.impl.internal.UwbAddress;
+
+import com.android.ranging.uwb.backend.internal.RangingCapabilities;
+import com.android.ranging.uwb.backend.internal.UwbAddress;
 
 import com.google.common.util.concurrent.ListenableFuture;
 

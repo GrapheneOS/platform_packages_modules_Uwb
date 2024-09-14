@@ -1039,7 +1039,10 @@ impl NotificationManager for NotificationManagerAndroid {
                 ),
             }
         })
-        .map_err(|_| UwbError::ForeignFunctionInterface)?;
+        .map_err(|e| {
+            error!("on_core_notification error: {:?}", e);
+            UwbError::ForeignFunctionInterface
+        })?;
 
         Ok(())
     }
@@ -1129,7 +1132,10 @@ impl NotificationManager for NotificationManagerAndroid {
                 }
             }
         })
-        .map_err(|_| UwbError::ForeignFunctionInterface)?;
+        .map_err(|e| {
+            error!("on_session_notification error {:?}", e);
+            UwbError::ForeignFunctionInterface
+        })?;
         Ok(())
     }
 
@@ -1166,7 +1172,10 @@ impl NotificationManager for NotificationManagerAndroid {
                 ],
             )
         })
-        .map_err(|_| UwbError::ForeignFunctionInterface)?;
+        .map_err(|e| {
+            error!("on_vendor_notification error: {:?}", e);
+            UwbError::ForeignFunctionInterface
+        })?;
         Ok(())
     }
 
@@ -1200,7 +1209,10 @@ impl NotificationManager for NotificationManagerAndroid {
                 ],
             )
         })
-        .map_err(|_| UwbError::ForeignFunctionInterface)?;
+        .map_err(|e| {
+            error!("on_data_rcv_notification error: {:?}", e);
+            UwbError::ForeignFunctionInterface
+        })?;
         Ok(())
     }
 
@@ -1344,7 +1356,10 @@ impl NotificationManager for NotificationManagerAndroid {
                 &[jvalue::from(JValue::Object(radar_data_jobject))],
             )
         })
-        .map_err(|_| UwbError::ForeignFunctionInterface)?;
+        .map_err(|e| {
+            error!("on_radar_data_rcv_notification error: {:?}", e);
+            UwbError::ForeignFunctionInterface
+        })?;
         Ok(())
     }
 }

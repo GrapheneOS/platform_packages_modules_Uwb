@@ -25,18 +25,6 @@ import android.os.RemoteException;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.core.uwb.backend.impl.internal.RangingCapabilities;
-import androidx.core.uwb.backend.impl.internal.RangingController;
-import androidx.core.uwb.backend.impl.internal.RangingDevice;
-import androidx.core.uwb.backend.impl.internal.RangingParameters;
-import androidx.core.uwb.backend.impl.internal.RangingPosition;
-import androidx.core.uwb.backend.impl.internal.RangingSessionCallback;
-import androidx.core.uwb.backend.impl.internal.Utils;
-import androidx.core.uwb.backend.impl.internal.UwbAddress;
-import androidx.core.uwb.backend.impl.internal.UwbComplexChannel;
-import androidx.core.uwb.backend.impl.internal.UwbDevice;
-import androidx.core.uwb.backend.impl.internal.UwbFeatureFlags;
-import androidx.core.uwb.backend.impl.internal.UwbServiceImpl;
 
 import com.android.ranging.RangingAdapter;
 import com.android.ranging.RangingParameters.DeviceRole;
@@ -44,6 +32,18 @@ import com.android.ranging.RangingParameters.TechnologyParameters;
 import com.android.ranging.RangingReport;
 import com.android.ranging.RangingTechnology;
 import com.android.ranging.RangingUtils.StateMachine;
+import com.android.ranging.uwb.backend.internal.RangingCapabilities;
+import com.android.ranging.uwb.backend.internal.RangingController;
+import com.android.ranging.uwb.backend.internal.RangingDevice;
+import com.android.ranging.uwb.backend.internal.RangingParameters;
+import com.android.ranging.uwb.backend.internal.RangingPosition;
+import com.android.ranging.uwb.backend.internal.RangingSessionCallback;
+import com.android.ranging.uwb.backend.internal.Utils;
+import com.android.ranging.uwb.backend.internal.UwbAddress;
+import com.android.ranging.uwb.backend.internal.UwbComplexChannel;
+import com.android.ranging.uwb.backend.internal.UwbDevice;
+import com.android.ranging.uwb.backend.internal.UwbFeatureFlags;
+import com.android.ranging.uwb.backend.internal.UwbServiceImpl;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
