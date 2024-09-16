@@ -23,6 +23,7 @@ import android.os.RemoteException;
 import android.util.Log;
 import android.uwb.UwbManager;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -30,7 +31,6 @@ import com.android.ranging.RangingConfig;
 import com.android.ranging.RangingData;
 import com.android.ranging.RangingParameters;
 import com.android.ranging.RangingParameters.DeviceRole;
-import com.android.ranging.RangingReport;
 import com.android.ranging.RangingSession;
 import com.android.ranging.RangingSessionImpl;
 import com.android.ranging.RangingTechnology;
@@ -45,7 +45,6 @@ import com.google.android.mobly.snippet.event.EventCache;
 import com.google.android.mobly.snippet.event.SnippetEvent;
 import com.google.android.mobly.snippet.rpc.AsyncRpc;
 import com.google.android.mobly.snippet.rpc.Rpc;
-import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
@@ -65,7 +64,7 @@ import java.util.Optional;
 import java.util.concurrent.Executors;
 
 public class GenericRangingSnippet implements Snippet {
-    private static final String TAG = "GenericRangingSnippet: ";
+    private static final String TAG = "GenericRangingSnippet";
 
     private final Context mContext;
     private final ConnectivityManager mConnectivityManager;
@@ -139,10 +138,7 @@ public class GenericRangingSnippet implements Snippet {
         }
 
         public Optional<RangingData> getLastDataReceived() {
-            if (mLastDataReceived == null) {
-                return Optional.empty();
-            }
-            return Optional.of(mLastDataReceived);
+            return Optional.ofNullable(mLastDataReceived);
         }
 
         private void handleEvent(Event e) {
@@ -165,7 +161,7 @@ public class GenericRangingSnippet implements Snippet {
         }
 
         @Override
-        public void onData(RangingData data) {
+        public void onData(@NonNull RangingData data) {
             Log.d(TAG, "GenericRangingCallback#onData() called");
             mLastDataReceived = data;
             handleEvent(Event.ReportReceived);
@@ -292,23 +288,20 @@ public class GenericRangingSnippet implements Snippet {
             throw new IllegalArgumentException("Could not find session with id " + sessionId);
         }
 
-        Optional<RangingData> precisionData = callback.getLastDataReceived();
-        if (precisionData.isEmpty() || precisionData.get().getRangingReports().isEmpty()) {
+        Optional<RangingData> data = callback.getLastDataReceived();
+        if (data.isEmpty()) {
             Log.i(TAG, "No data has been received yet, or the last data received was empty");
             return false;
         }
 
         byte[] address = convertJSONArrayToByteArray(peerAddress);
-        ImmutableList<RangingReport> rangingData = precisionData.get().getRangingReports().get();
-        for (RangingReport data : rangingData) {
-            if (data.getRangingTechnology() == RangingTechnology.UWB
-                    && Arrays.equals(data.getPeerAddress(), address)) {
-                return true;
-            }
+        if (Arrays.equals(data.get().getPeerAddress(), address)) {
+            return true;
+        } else {
+            Log.i(TAG, "Last ranging report did not include any data from peer "
+                    + Arrays.toString(address));
+            return false;
         }
-        Log.i(TAG, "Last ranging report did not include any data from peer "
-                + Arrays.toString(address));
-        return false;
     }
 
     @Rpc(description = "Check whether uwb is enabled")

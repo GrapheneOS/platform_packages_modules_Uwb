@@ -22,7 +22,6 @@ use std::sync::{Arc, RwLock, RwLockReadGuard};
 
 use jni::objects::{GlobalRef, JObject, JString};
 use jni::{JNIEnv, JavaVM, MonitorGuard};
-use lazy_static::lazy_static;
 use log::error;
 use tokio::runtime::{Builder as RuntimeBuilder, Runtime};
 use uci_hal_android::uci_hal_android::UciHalAndroid;
@@ -33,10 +32,8 @@ use uwb_core::uci::uci_logger_factory::UciLoggerFactory;
 use uwb_core::uci::uci_manager_sync::UciManagerSync;
 use uwb_core::uci::UciManagerImpl;
 
-lazy_static! {
-    /// Shared unique dispatcher that may be created and deleted during runtime.
-    static ref DISPATCHER: RwLock<Option<Dispatcher>> = RwLock::new(None);
-}
+/// Shared unique dispatcher that may be created and deleted during runtime.
+static DISPATCHER: RwLock<Option<Dispatcher>> = RwLock::new(None);
 
 /// Dispatcher is managed by Java side. Construction and Destruction are provoked by JNI function
 /// nativeDispatcherNew and nativeDispatcherDestroy respectively.

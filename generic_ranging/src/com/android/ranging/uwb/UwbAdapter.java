@@ -27,9 +27,9 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.android.ranging.RangingAdapter;
+import com.android.ranging.RangingData;
 import com.android.ranging.RangingParameters.DeviceRole;
 import com.android.ranging.RangingParameters.TechnologyParameters;
-import com.android.ranging.RangingReport;
 import com.android.ranging.RangingTechnology;
 import com.android.ranging.RangingUtils.StateMachine;
 import com.android.ranging.uwb.backend.internal.RangingCapabilities;
@@ -51,6 +51,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
+import java.time.Duration;
 import java.util.concurrent.Executors;
 
 /** Ranging adapter for Ultra-wideband (UWB). */
@@ -182,21 +183,20 @@ public class UwbAdapter implements RangingAdapter {
 
         @Override
         public void onRangingResult(UwbDevice device, RangingPosition position) {
-            RangingReport.Builder rangingDataBuilder =
-                    new RangingReport.Builder()
-                            .setRangingTechnology(RangingTechnology.UWB)
-                            .setRangeDistance(position.getDistance().getValue())
-                            .setRssi(position.getRssiDbm())
-                            .setTimestamp(position.getElapsedRealtimeNanos())
-                            .setPeerAddress(device.getAddress().toBytes());
+            RangingData.Builder dataBuilder = new RangingData.Builder()
+                    .setTechnology(RangingTechnology.UWB)
+                    .setRangeDistance(position.getDistance().getValue())
+                    .setRssi(position.getRssiDbm())
+                    .setTimestamp(Duration.ofNanos(position.getElapsedRealtimeNanos()))
+                    .setPeerAddress(device.getAddress().toBytes());
 
             if (position.getAzimuth() != null) {
-                rangingDataBuilder.setAzimuth(position.getAzimuth().getValue());
+                dataBuilder.setAzimuthRadians(position.getAzimuth().getValue());
             }
             if (position.getElevation() != null) {
-                rangingDataBuilder.setElevation(position.getElevation().getValue());
+                dataBuilder.setElevationRadians(position.getElevation().getValue());
             }
-            mCallbacks.onRangingData(rangingDataBuilder.build());
+            mCallbacks.onRangingData(dataBuilder.build());
         }
 
         private static @Callback.StoppedReason int convertReason(

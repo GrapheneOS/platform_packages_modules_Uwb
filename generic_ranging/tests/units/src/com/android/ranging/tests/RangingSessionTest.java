@@ -37,7 +37,6 @@ import com.android.ranging.RangingConfig;
 import com.android.ranging.RangingData;
 import com.android.ranging.RangingParameters;
 import com.android.ranging.RangingParameters.DeviceRole;
-import com.android.ranging.RangingReport;
 import com.android.ranging.RangingSession;
 import com.android.ranging.RangingSessionImpl;
 import com.android.ranging.RangingTechnology;
@@ -46,7 +45,6 @@ import com.android.ranging.uwb.UwbParameters;
 
 import com.google.common.util.concurrent.MoreExecutors;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -63,6 +61,7 @@ import org.mockito.junit.MockitoRule;
 
 import java.time.Duration;
 import java.util.EnumMap;
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -238,16 +237,15 @@ public class RangingSessionTest {
                         .useUwb(mock(UwbParameters.class))
                         .build());
 
-        RangingReport report = mock(RangingReport.class);
-        when(report.getRangingTechnology()).thenReturn(UWB);
-        adapterCallbacks.get(UWB).onRangingData(report);
+        RangingData data = new RangingData.Builder()
+                .setTechnology(UWB)
+                .setRangeDistance(123)
+                .setTimestamp(Duration.ofSeconds(1))
+                .setPeerAddress(new byte[]{0x1, 0x2})
+                .build();
+        adapterCallbacks.get(UWB).onRangingData(data);
 
-        ArgumentCaptor<RangingData> dataCaptor = ArgumentCaptor.forClass(RangingData.class);
-        verify(mMockCallback).onData(dataCaptor.capture());
-
-        Assert.assertTrue(dataCaptor.getValue().getRangingReports().isPresent());
-        Assert.assertEquals(1, dataCaptor.getValue().getRangingReports().get().size());
-        Assert.assertTrue(dataCaptor.getValue().getRangingReports().get().contains(report));
+        verify(mMockCallback).onData(any(RangingData.class));
     }
 
     @Test
@@ -268,22 +266,16 @@ public class RangingSessionTest {
         verify(mMockUpdateExecutor).scheduleWithFixedDelay(periodicUpdateCaptor.capture(),
                 anyLong(), eq(updateInterval.toMillis()), eq(TimeUnit.MILLISECONDS));
 
-        RangingReport uwbReport = mock(RangingReport.class);
-        when(uwbReport.getRangingTechnology()).thenReturn(UWB);
-        adapterCallbacks.get(UWB).onRangingData(uwbReport);
+        RangingData uwbData = mock(RangingData.class);
+        when(uwbData.getTechnology()).thenReturn(Optional.of(UWB));
+        adapterCallbacks.get(UWB).onRangingData(uwbData);
 
-        RangingReport csReport = mock(RangingReport.class);
-        when(csReport.getRangingTechnology()).thenReturn(CS);
+        RangingData csReport = mock(RangingData.class);
+        when(csReport.getTechnology()).thenReturn(Optional.of(CS));
         adapterCallbacks.get(CS).onRangingData(csReport);
 
         periodicUpdateCaptor.getValue().run();
 
-        ArgumentCaptor<RangingData> dataCaptor = ArgumentCaptor.forClass(RangingData.class);
-        verify(mMockCallback).onData(dataCaptor.capture());
-
-        Assert.assertTrue(dataCaptor.getValue().getRangingReports().isPresent());
-        Assert.assertEquals(2, dataCaptor.getValue().getRangingReports().get().size());
-        Assert.assertTrue(dataCaptor.getValue().getRangingReports().get().contains(uwbReport));
-        Assert.assertTrue(dataCaptor.getValue().getRangingReports().get().contains(csReport));
+        verify(mMockCallback).onData(any(RangingData.class));
     }
 }

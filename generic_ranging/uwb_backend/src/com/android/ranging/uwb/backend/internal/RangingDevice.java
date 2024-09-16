@@ -370,6 +370,17 @@ public abstract class RangingDevice {
             @WorkerThread
             @Override
             public void onClosed(int reason, PersistableBundle parameters) {
+                UwbDevice device = getUwbDevice();
+                if (mIsRanging) {
+                    runOnBackendCallbackThread(
+                            () -> {
+                                synchronized (RangingDevice.this) {
+                                    mIsRanging = false;
+                                }
+                                callback.onRangingSuspended(device,
+                                        RangingSessionCallback.REASON_SYSTEM_POLICY);
+                            });
+                }
                 mRangingSession = null;
                 mOpAsyncCallbackRunner.completeIfActive(true);
             }
