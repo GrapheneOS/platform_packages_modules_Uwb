@@ -34,6 +34,8 @@ import com.android.ranging.RangingParameters.DeviceRole;
 import com.android.ranging.RangingSession;
 import com.android.ranging.RangingSessionImpl;
 import com.android.ranging.RangingTechnology;
+import com.android.ranging.fusion.DataFusers;
+import com.android.ranging.fusion.FilteringFusionEngine;
 import com.android.ranging.uwb.UwbAdapter;
 import com.android.ranging.uwb.UwbParameters;
 import com.android.ranging.uwb.backend.internal.UwbAddress;
@@ -257,8 +259,13 @@ public class GenericRangingSnippet implements Snippet {
                         .setInitTimeout(Duration.ofSeconds(3))
                         .build();
 
-        RangingSessionImpl session = new RangingSessionImpl(mContext,
-                rangingConfig, Executors.newSingleThreadScheduledExecutor(),
+        FilteringFusionEngine fusionEngine =
+                new FilteringFusionEngine(
+                        new DataFusers.PreferentialDataFuser(RangingTechnology.UWB));
+
+        RangingSessionImpl session = new RangingSessionImpl(
+                mContext, rangingConfig, fusionEngine,
+                Executors.newSingleThreadScheduledExecutor(),
                 MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor()));
 
         session.useAdapterForTesting(RangingTechnology.UWB, uwbAdapter);

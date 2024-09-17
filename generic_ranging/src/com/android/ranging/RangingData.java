@@ -170,7 +170,7 @@ public class RangingData {
             return this;
         }
 
-        /** Set the peer address as a byte array. */
+        /** @param peerAddress as a byte array. */
         public Builder setPeerAddress(byte[] peerAddress) {
             mPeerAddress = peerAddress;
             return this;
