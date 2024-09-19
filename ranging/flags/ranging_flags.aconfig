@@ -1,0 +1,10 @@
+package: "com.android.ranging.flags"
+container: "com.android.ranging"
+
+flag {
+    name: "ranging_stack_enabled"
+    is_exported: true
+    namespace: "ranging"
+    description: "This flags controls generic ranging feature"
+    bug: "331206299"
+}

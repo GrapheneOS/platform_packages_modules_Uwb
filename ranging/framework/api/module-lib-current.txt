@@ -1,0 +1,8 @@
+// Signature format: 2.0
+package android.ranging {
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public class RangingFrameworkInitializer {
+  }
+
+}
+
