@@ -261,6 +261,7 @@ public final class RangingSessionImpl implements RangingSession {
     private synchronized void cancelScheduledTimeout() {
         if (mPendingTimeout != null) {
             mPendingTimeout.cancel(false);
+            mPendingTimeout = null;
         }
     }
 
@@ -274,12 +275,12 @@ public final class RangingSessionImpl implements RangingSession {
             @NonNull Duration timeout, @Callback.StoppedReason int reason
     ) {
         cancelScheduledTimeout();
-        mPendingTimeout = mTimeoutExecutor.scheduleWithFixedDelay(
+        mPendingTimeout = mTimeoutExecutor.schedule(
                 () -> {
                     Log.w(TAG, "Reached scheduled timeout of " + timeout.toMillis());
                     stopForReason(reason);
                 },
-                0, mConfig.getNoUpdateTimeout().toMillis(), TimeUnit.MILLISECONDS
+                mConfig.getNoUpdateTimeout().toMillis(), TimeUnit.MILLISECONDS
         );
     }
 

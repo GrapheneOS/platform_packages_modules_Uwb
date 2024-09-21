@@ -45,7 +45,7 @@ java_library {
     libs: [
         "androidx.annotation_annotation",
         "framework-annotations-lib",
-        "framework-configinfrastructure",
+        "framework-configinfrastructure.stubs.module_lib",
         "framework-ranging-pre-jarjar",
         "framework-statsd.stubs.module_lib",
         "framework-wifi.stubs.module_lib",

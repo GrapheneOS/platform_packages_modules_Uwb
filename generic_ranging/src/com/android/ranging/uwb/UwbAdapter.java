@@ -178,7 +178,11 @@ public class UwbAdapter implements RangingAdapter {
         @Override
         public void onRangingInitialized(UwbDevice device) {
             Log.i(TAG, "onRangingInitialized");
-            mCallbacks.onStarted();
+            synchronized (mStateMachine) {
+                if (mStateMachine.getState() == State.STARTED) {
+                    mCallbacks.onStarted();
+                }
+            }
         }
 
         @Override
@@ -196,7 +200,11 @@ public class UwbAdapter implements RangingAdapter {
             if (position.getElevation() != null) {
                 dataBuilder.setElevationRadians(position.getElevation().getValue());
             }
-            mCallbacks.onRangingData(dataBuilder.build());
+            synchronized (mStateMachine) {
+                if (mStateMachine.getState() == State.STARTED) {
+                    mCallbacks.onRangingData(dataBuilder.build());
+                }
+            }
         }
 
         private static @Callback.StoppedReason int convertReason(
@@ -221,8 +229,10 @@ public class UwbAdapter implements RangingAdapter {
         public void onRangingSuspended(UwbDevice device, @RangingSuspendedReason int reason) {
             Log.i(TAG, "onRangingSuspended: " + reason);
 
-            mCallbacks.onStopped(convertReason(reason));
-            clear();
+            synchronized (mStateMachine) {
+                mCallbacks.onStopped(convertReason(reason));
+                clear();
+            }
         }
     }
 
