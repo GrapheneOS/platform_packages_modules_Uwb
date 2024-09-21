@@ -1576,6 +1576,15 @@ public class UwbManagerTest {
                     assertThat(rangingSessionCallback.onControleeAddCalled).isTrue();
                     assertThat(rangingSessionCallback.onControleeAddFailedCalled).isFalse();
 
+                    // Wait for a little over a ranging round to see if there are any
+                    // ranging timeouts, and remove this controlee if it was not
+                    // found in UWB Range.
+                    countDownLatch = new CountDownLatch(1);
+                    rangingSessionCallback.replaceResultCountDownLatch(countDownLatch);
+                    assertThat(countDownLatch.await(
+                        firaOpenSessionParams.getRangingIntervalMs() + 10,
+                        TimeUnit.MILLISECONDS)).isTrue();
+
                     // Remove controlee
                     countDownLatch = new CountDownLatch(2);
                     rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);

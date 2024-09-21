@@ -97,21 +97,20 @@ public interface RangingSession {
         /** Reason why ranging was stopped. */
         @Retention(RetentionPolicy.SOURCE)
         @IntDef({
-            RangingAdapter.Callback.StoppedReason.UNKNOWN,
-            RangingAdapter.Callback.StoppedReason.FAILED_TO_START,
-            RangingAdapter.Callback.StoppedReason.REQUESTED,
-            RangingAdapter.Callback.StoppedReason.LOST_CONNECTION,
-            RangingAdapter.Callback.StoppedReason.SYSTEM_POLICY,
-            RangingAdapter.Callback.StoppedReason.ERROR,
-            StoppedReason.EMPTY_SESSION_TIMEOUT,
+                RangingAdapter.Callback.StoppedReason.UNKNOWN,
+                RangingAdapter.Callback.StoppedReason.FAILED_TO_START,
+                RangingAdapter.Callback.StoppedReason.REQUESTED,
+                RangingAdapter.Callback.StoppedReason.LOST_CONNECTION,
+                RangingAdapter.Callback.StoppedReason.SYSTEM_POLICY,
+                RangingAdapter.Callback.StoppedReason.ERROR,
+                StoppedReason.NO_INITIAL_DATA_TIMEOUT,
+                StoppedReason.NO_UPDATED_DATA_TIMEOUT,
         })
         @interface StoppedReason {
-            /**
-             * Stopped because no ranging data was received before a timeout expired. While the
-             * fusion algorithm can continue to produce data without ranging reports, this
-             * causes inaccuracies and thus a "fusion drift timeout" is enforced.
-             */
-            int EMPTY_SESSION_TIMEOUT = 6;
+            /** The session failed to report data before the initial data timeout expired. */
+            int NO_INITIAL_DATA_TIMEOUT = 6;
+            /** The session had no new data to report before the data update timeout expired. */
+            int NO_UPDATED_DATA_TIMEOUT = 7;
         }
     }
 }

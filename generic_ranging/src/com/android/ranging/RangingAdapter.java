@@ -63,7 +63,7 @@ public interface RangingAdapter {
          * Notifies the caller on each instance of ranging data received from the ranging
          * technology.
          */
-        void onRangingData(RangingReport rangingReport);
+        void onRangingData(RangingData data);
 
         @IntDef({
                 StoppedReason.UNKNOWN,

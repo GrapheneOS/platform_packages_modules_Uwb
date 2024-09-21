@@ -66,10 +66,34 @@ sdk {
     ],
 }
 
+soong_config_module_type {
+    name: "custom_bootclasspath_fragment",
+    module_type: "bootclasspath_fragment",
+    config_namespace: "bootclasspath",
+    bool_variables: [
+        "release_ranging_stack",
+    ],
+    properties: [
+        "contents",
+    ],
+}
+
 // Encapsulate the contributions made by the com.android.uwb to the bootclasspath.
-bootclasspath_fragment {
+custom_bootclasspath_fragment {
     name: "com.android.uwb-bootclasspath-fragment",
-    contents: ["framework-uwb"],
+    soong_config_variables: {
+        release_ranging_stack: {
+            contents: [
+                "framework-uwb",
+                "framework-ranging",
+            ],
+            conditions_default: {
+                contents: [
+                    "framework-uwb",
+                ],
+            },
+        },
+    },
     apex_available: ["com.android.uwb"],
 
     // The bootclasspath_fragments that provide APIs on which this depends.
@@ -96,6 +120,7 @@ bootclasspath_fragment {
         // API.
         split_packages: [
             "android.uwb",
+            "android.ranging",
         ],
 
         // The following packages and all their subpackages currently only
@@ -111,8 +136,32 @@ bootclasspath_fragment {
     },
 }
 
-systemserverclasspath_fragment {
+soong_config_module_type {
+    name: "custom_systemserverclasspath_fragment",
+    module_type: "systemserverclasspath_fragment",
+    config_namespace: "bootclasspath",
+    bool_variables: [
+        "release_ranging_stack",
+    ],
+    properties: [
+        "standalone_contents",
+    ],
+}
+
+custom_systemserverclasspath_fragment {
     name: "com.android.uwb-systemserverclasspath-fragment",
-    standalone_contents: ["service-uwb"],
+    soong_config_variables: {
+        release_ranging_stack: {
+            standalone_contents: [
+                "service-uwb",
+                "service-ranging",
+            ],
+            conditions_default: {
+                standalone_contents: [
+                    "service-uwb",
+                ],
+            },
+        },
+    },
     apex_available: ["com.android.uwb"],
 }

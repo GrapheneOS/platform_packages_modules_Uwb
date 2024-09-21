@@ -53,6 +53,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Implements start/stop ranging operations. */
 public abstract class RangingDevice {
@@ -87,7 +88,7 @@ public abstract class RangingDevice {
     @Nullable
     private RangingSession mRangingSession;
 
-    private boolean mIsRanging = false;
+    private AtomicBoolean mIsRanging = new AtomicBoolean(false);
 
     /** If true, local address and complex channel will be hardcoded */
     private Boolean mForTesting = false;
@@ -210,7 +211,7 @@ public abstract class RangingDevice {
      * session can be open but not ranging
      */
     public boolean isRanging() {
-        return mIsRanging;
+        return mIsRanging.get();
     }
 
     protected boolean isKnownPeer(UwbAddress address) {
@@ -309,7 +310,7 @@ public abstract class RangingDevice {
             @Override
             public void onStarted(PersistableBundle sessionInfo) {
                 callback.onRangingInitialized(getUwbDevice());
-                mIsRanging = true;
+                mIsRanging.set(true);
                 mOpAsyncCallbackRunner.complete(true);
             }
 
@@ -350,9 +351,7 @@ public abstract class RangingDevice {
                 UwbDevice device = getUwbDevice();
                 runOnBackendCallbackThread(
                         () -> {
-                            synchronized (RangingDevice.this) {
-                                mIsRanging = false;
-                            }
+                            mIsRanging.set(false);
                             callback.onRangingSuspended(device, suspendedReason);
                         });
                 if (suspendedReason == REASON_STOP_RANGING_CALLED
@@ -370,6 +369,14 @@ public abstract class RangingDevice {
             @WorkerThread
             @Override
             public void onClosed(int reason, PersistableBundle parameters) {
+                UwbDevice device = getUwbDevice();
+                runOnBackendCallbackThread(
+                        () -> {
+                            if (mIsRanging.compareAndSet(true, false)) {
+                                callback.onRangingSuspended(device,
+                                        RangingSessionCallback.REASON_SYSTEM_POLICY);
+                            }
+                        });
                 mRangingSession = null;
                 mOpAsyncCallbackRunner.completeIfActive(true);
             }
@@ -529,7 +536,7 @@ public abstract class RangingDevice {
             return INVALID_API_CALL;
         }
         mRangingReportedAllowed = false;
-        if (mIsRanging) {
+        if (mIsRanging.get()) {
             mOpAsyncCallbackRunner.execOperation(
                     () -> requireNonNull(mRangingSession).stop(), "Stop Ranging");
         } else {

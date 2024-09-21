@@ -13,7 +13,6 @@ rust_defaults {
     rustlibs: [
         "libbinder_rs",
         "libjni_legacy",
-        "liblazy_static",
         "liblog_rust",
         "liblogger",
         "libnum_traits",
