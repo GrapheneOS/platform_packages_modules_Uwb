@@ -32,7 +32,7 @@ java_library {
     ],
     visibility: [
         "//packages/modules/Uwb/service:__subpackages__",
-        "//packages/modules/Uwb/generic_ranging:__subpackages__",
+        "//packages/modules/Uwb/ranging:__subpackages__",
     ],
     apex_available: [
         "com.android.uwb",

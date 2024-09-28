@@ -17,8 +17,8 @@
 package android.ranging;
 
 import android.annotation.FlaggedApi;
-import android.annotation.Hide;
 import android.annotation.NonNull;
+import android.annotation.SystemService;
 import android.content.Context;
 
 
@@ -29,31 +29,34 @@ import android.content.Context;
  *
  * <p>To get a {@link RangingManager}, call the
  * <code>Context.getSystemService(RangingManager.class)</code>.
- *
- * @hide
  */
-//@SystemApi
-//@SystemService(Context.UWB_SERVICE)
 
 /**
  * @hide
  */
-@Hide
+@SystemService(Context.RANGING_SERVICE)
 @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled")
 public final class RangingManager {
     private static final String TAG = "RangingManager";
 
-    public RangingManager(@NonNull Context context, IRangingAdapter adapter) {
+    private final Context mContext;
+    private final IRangingAdapter mRangingAdapter;
 
+    /**
+     * @hide
+     */
+    public RangingManager(@NonNull Context context, @NonNull IRangingAdapter adapter) {
+        mContext = context;
+        mRangingAdapter = adapter;
     }
 
     /**
      * @hide
      */
-    @Hide
+
     @NonNull
     @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled")
-    RangingSession createRangingSession() {
+    public RangingSession createRangingSession() {
         return new RangingSession();
     }
 }

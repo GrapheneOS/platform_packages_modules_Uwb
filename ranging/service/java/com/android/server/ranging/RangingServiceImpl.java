@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package android.ranging;
+package com.android.server.ranging;
 
-import android.annotation.FlaggedApi;
+import android.annotation.NonNull;
+import android.content.Context;
+import android.ranging.IRangingAdapter;
 
-/**
- * @hide
- */
-@FlaggedApi("com.android.ranging.flags.ranging_stack_enabled")
-public class RangingSession implements AutoCloseable{
+public class RangingServiceImpl extends IRangingAdapter.Stub {
 
-    /**
-     * @hide
-     */
-    @Override
-    public void close() {
-        //TODO: End ranging session.
+    private static final String TAG = "RangingServiceImpl";
+    private final Context mContext;
+
+    RangingServiceImpl(@NonNull Context context) {
+        mContext = context;
     }
 }

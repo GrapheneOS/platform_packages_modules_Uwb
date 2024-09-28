@@ -14,21 +14,14 @@
  * limitations under the License.
  */
 
-package android.ranging;
+package com.android.server.ranging.cs;
 
-import android.annotation.FlaggedApi;
+import com.android.server.ranging.RangingParameters;
 
-/**
- * @hide
- */
-@FlaggedApi("com.android.ranging.flags.ranging_stack_enabled")
-public class RangingSession implements AutoCloseable{
-
-    /**
-     * @hide
-     */
-    @Override
-    public void close() {
-        //TODO: End ranging session.
+/** Parameters for Bluetooth channel sounding ranging. */
+public class CsParameters implements RangingParameters.TechnologyParameters {
+    public CsParameters() {
+        throw new UnsupportedOperationException("Not implemented!");
     }
 }
+

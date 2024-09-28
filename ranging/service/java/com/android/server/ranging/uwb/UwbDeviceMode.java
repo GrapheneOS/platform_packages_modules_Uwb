@@ -14,21 +14,25 @@
  * limitations under the License.
  */
 
-package android.ranging;
+package com.android.server.ranging.uwb;
 
-import android.annotation.FlaggedApi;
+/** UWB Device Mode, whether it's a controller or a controlee. */
+public enum UwbDeviceMode {
+    UNKNOWN(0),
+    CONTROLLER(1),
+    CONTROLEE(2);
 
-/**
- * @hide
- */
-@FlaggedApi("com.android.ranging.flags.ranging_stack_enabled")
-public class RangingSession implements AutoCloseable{
+    private final int mValue;
 
-    /**
-     * @hide
-     */
-    @Override
-    public void close() {
-        //TODO: End ranging session.
+    UwbDeviceMode(int value) {
+        this.mValue = value;
+    }
+
+    public int getValue() {
+        return mValue;
+    }
+
+    public static UwbDeviceMode fromValue(int value) {
+        return value < 0 || value > 2 ? UNKNOWN : UwbDeviceMode.values()[value];
     }
 }

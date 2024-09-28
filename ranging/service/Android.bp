@@ -42,11 +42,14 @@ java_library {
     srcs: [":service-ranging-srcs"],
     sdk_version: "system_server_current",
 
+    plugins: [
+        "auto_value_plugin",
+    ],
     libs: [
         "androidx.annotation_annotation",
+        "error_prone_annotations",
         "framework-annotations-lib",
         "framework-configinfrastructure.stubs.module_lib",
-        "framework-ranging-pre-jarjar",
         "framework-statsd.stubs.module_lib",
         "framework-wifi.stubs.module_lib",
         "framework-bluetooth.stubs.module_lib",
@@ -57,8 +60,16 @@ java_library {
         "guava",
         "modules-utils-shell-command-handler",
         "modules-utils-handlerexecutor",
+        // TODO: migrate away from auto value if possible.
+        "auto_value_annotations",
         //"modules-utils-preconditions",
         //"modules-utils-build",
+        "framework-ranging-pre-jarjar",
+        "androidx.annotation_annotation",
+        "androidx.concurrent_concurrent-futures",
+        "androidx.concurrent_concurrent-futures",
+        "com.uwb.fusion",
+        "ranging_uwb_backend",
     ],
 
     apex_available: [
@@ -76,7 +87,10 @@ java_library {
         "standalone-system-server-module-optimize-defaults",
     ],
     installable: true,
-    static_libs: ["service-ranging-pre-jarjar"],
+    static_libs: [
+        "service-ranging-pre-jarjar",
+        "ranging_uwb_backend",
+    ],
 
     // Need to include `libs` so that Soong doesn't complain about missing classes after jarjaring
     // The below libraries are not actually needed to build since no source is compiled

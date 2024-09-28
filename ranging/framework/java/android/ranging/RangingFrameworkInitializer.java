@@ -17,7 +17,6 @@
 package android.ranging;
 
 import android.annotation.FlaggedApi;
-import android.annotation.Hide;
 import android.annotation.SystemApi;
 import android.app.SystemServiceRegistry;
 import android.content.Context;
@@ -30,14 +29,9 @@ import android.content.Context;
  */
 @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled")
 @SystemApi(client = SystemApi.Client.MODULE_LIBRARIES)
-public class RangingFrameworkInitializer {
+public final class RangingFrameworkInitializer {
     private RangingFrameworkInitializer() {}
 
-    /**
-     * @hide
-     */
-    @Hide
-    @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled")
     public static void registerServiceWrappers() {
         SystemServiceRegistry.registerContextAwareService(
                 Context.RANGING_SERVICE,

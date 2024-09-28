@@ -73,8 +73,12 @@ java_library {
     name: "framework-ranging-pre-jarjar",
     defaults: ["framework-ranging-defaults"],
     sdk_version: "module_current",
+    min_sdk_version: "33",
     libs: ["framework-annotations-lib"],
     installable: false,
+    apex_available: [
+        "com.android.uwb",
+    ],
 }
 
 // post-jarjar version of framework-ranging

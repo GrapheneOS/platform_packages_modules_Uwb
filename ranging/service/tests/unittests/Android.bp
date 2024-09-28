@@ -14,21 +14,23 @@
  * limitations under the License.
  */
 
-package android.ranging;
+package {
+    default_team: "trendy_team_fwk_uwb",
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
 
-import android.annotation.FlaggedApi;
-
-/**
- * @hide
- */
-@FlaggedApi("com.android.ranging.flags.ranging_stack_enabled")
-public class RangingSession implements AutoCloseable{
-
-    /**
-     * @hide
-     */
-    @Override
-    public void close() {
-        //TODO: End ranging session.
-    }
+android_test {
+    name: "GenericRangingTests",
+    srcs: ["src/**/*.java"],
+    sdk_version: "34",
+    certificate: "platform",
+    static_libs: [
+        "service-ranging-pre-jarjar",
+        "framework-uwb.stubs.module_lib",
+        "androidx.test.rules",
+        "androidx.test.ext.junit",
+        "androidx.test.runner",
+        "mockito-target-minus-junit4",
+    ],
+    test_suites: ["device-tests"],
 }

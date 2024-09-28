@@ -14,21 +14,25 @@
  * limitations under the License.
  */
 
-package android.ranging;
+package com.android.server.ranging.uwb;
 
-import android.annotation.FlaggedApi;
+/** Device role, whether it's an initiator or a responder. */
+public enum UwbDeviceRole {
+    UNKNOWN(0),
+    INITIATOR(1),
+    RESPONDER(2);
 
-/**
- * @hide
- */
-@FlaggedApi("com.android.ranging.flags.ranging_stack_enabled")
-public class RangingSession implements AutoCloseable{
+    private final int mValue;
 
-    /**
-     * @hide
-     */
-    @Override
-    public void close() {
-        //TODO: End ranging session.
+    UwbDeviceRole(int value) {
+        this.mValue = value;
+    }
+
+    public int getValue() {
+        return mValue;
+    }
+
+    public static UwbDeviceRole fromValue(int value) {
+        return value < 0 || value > 2 ? UNKNOWN : UwbDeviceRole.values()[value];
     }
 }

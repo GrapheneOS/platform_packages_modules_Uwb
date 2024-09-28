@@ -47,6 +47,7 @@ import static com.google.uwb.support.fira.FiraParams.UL_TDOA_DEVICE_ID_16_BIT;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import android.os.PersistableBundle;
@@ -781,5 +782,19 @@ public class FiraTests {
         firaVersion = FiraProtocolVersion.fromLEShort((short) 0x1002);
         assertEquals(2, firaVersion.getMajor());
         assertEquals(1, firaVersion.getMinor());
+    }
+
+    @Test
+    public void testAsUnsigned() {
+        assertEquals(-1, FiraOpenSessionParams.Builder.asUnsigned((1L << 32) - 1));
+        assertEquals(-2147483647, FiraOpenSessionParams.Builder.asUnsigned(0x80000001L));
+        assertEquals(0, FiraOpenSessionParams.Builder.asUnsigned(0L));
+
+        // Input must be positive.
+        assertThrows(IllegalArgumentException.class,
+                () -> FiraOpenSessionParams.Builder.asUnsigned(-1));
+        // Input must fit in 32 bit unsigned integer.
+        assertThrows(IllegalArgumentException.class,
+                () -> FiraOpenSessionParams.Builder.asUnsigned(1L << 32));
     }
 }

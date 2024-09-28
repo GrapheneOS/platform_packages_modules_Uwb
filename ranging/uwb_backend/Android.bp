@@ -1,4 +1,3 @@
-//
 // Copyright (C) 2024 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,48 +11,36 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
 package {
     default_team: "trendy_team_fwk_uwb",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-aconfig_declarations {
-    name: "ranging_aconfig_flags",
-    package: "com.android.ranging.flags",
-    container: "com.android.uwb",
-    srcs: ["ranging_flags.aconfig"],
-    visibility: [
-        "//packages/modules/Uwb/ranging:__subpackages__",
-        "//frameworks/base:__subpackages__",
-    ],
-}
-
-java_aconfig_library {
-    name: "ranging_aconfig_flags_lib",
-    aconfig_declarations: "ranging_aconfig_flags",
-    min_sdk_version: "33",
-    apex_available: [
-        "com.android.uwb",
-    ],
-}
-
 java_library {
-    name: "ranging_flags_lib",
-    sdk_version: "system_current",
+    name: "ranging_uwb_backend",
+    sdk_version: "system_UpsideDownCake",
     min_sdk_version: "33",
+    installable: false,
     srcs: [
-        "lib/**/*.java",
+        "src/**/*.java",
     ],
     static_libs: [
-        "ranging_aconfig_flags_lib",
+        "androidx.annotation_annotation",
+        "androidx.concurrent_concurrent-futures",
+        "com.uwb.support.fira",
+        "com.uwb.support.multichip",
+        "com.uwb.support.dltdoa",
+        "guava",
     ],
     apex_available: [
         "com.android.uwb",
+        "com.android.tethering",
+        "//apex_available:platform",
     ],
-    installable: false,
     visibility: [
+        ":__subpackages__",
         "//packages/modules/Uwb/ranging:__subpackages__",
+        "//packages/modules/Connectivity/remoteauth:__subpackages__",
     ],
 }

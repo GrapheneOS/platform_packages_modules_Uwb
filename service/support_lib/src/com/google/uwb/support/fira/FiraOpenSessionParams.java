@@ -29,9 +29,12 @@ import androidx.annotation.FloatRange;
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
+import com.google.common.primitives.Longs;
 import com.google.uwb.support.base.RequiredParam;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -1579,6 +1582,11 @@ public class FiraOpenSessionParams extends FiraParams {
             return this;
         }
 
+        /** @param sessionId must be non-negative and fit in 32 bit unsigned integer. */
+        public FiraOpenSessionParams.Builder setSessionId(long sessionId) {
+            return setSessionId(asUnsigned(sessionId));
+        }
+
         public FiraOpenSessionParams.Builder setSessionType(@SessionType int sessionType) {
             mSessionType = sessionType;
             return this;
@@ -1813,6 +1821,11 @@ public class FiraOpenSessionParams extends FiraParams {
         public FiraOpenSessionParams.Builder setSubSessionId(int subSessionId) {
             mSubSessionId.set(subSessionId);
             return this;
+        }
+
+        /** @param subSessionId must be non-negative and fit in 32 bit unsigned integer. */
+        public FiraOpenSessionParams.Builder setSubSessionId(long subSessionId) {
+            return setSubSessionId(asUnsigned(subSessionId));
         }
 
         public FiraOpenSessionParams.Builder setVendorId(@Nullable byte[] vendorId) {
@@ -2061,12 +2074,23 @@ public class FiraOpenSessionParams extends FiraParams {
             return this;
         }
 
+
         public FiraOpenSessionParams.Builder setSessionTimeBase(int referenceTimeBase,
                 int referenceSessionHandle, int sessionOffsetInMicroSecond) {
             mReferenceTimeBase = referenceTimeBase;
             mReferenceSessionHandle = referenceSessionHandle;
             mSessionOffsetInMicroSeconds = sessionOffsetInMicroSecond;
             return this;
+        }
+
+        /**
+         * @param referenceSessionHandle must be non-negative and fit in 32 bit unsigned integer.
+         */
+        public FiraOpenSessionParams.Builder setSessionTimeBase(
+                int referenceTimeBase, long referenceSessionHandle,
+                int sessionOffsetInMicroSecond) {
+            return setSessionTimeBase(referenceTimeBase, asUnsigned(referenceSessionHandle),
+                    sessionOffsetInMicroSecond);
         }
 
         public FiraOpenSessionParams.Builder setApplicationDataEndpoint(
@@ -2223,6 +2247,21 @@ public class FiraOpenSessionParams extends FiraParams {
                 }
             }
             return false;
+        }
+
+        /**
+         * Reinterprets the least significant 32 bits of the input as an unsigned integer and
+         * returns the result as a signed integer.
+         *
+         * @param x input treated as unsigned 32 bit integer.
+         * @return a (signed) integer interpretation of the input's underlying bytes.
+         */
+        @VisibleForTesting
+        public static int asUnsigned(long x) {
+            checkArgument(x >= 0, "Input was negative");
+            checkArgument(x < 1L << 32, "Input does not fit in an unsigned 32 bit integer");
+
+            return ByteBuffer.wrap(Longs.toByteArray(x)).getInt(4);
         }
 
         public FiraOpenSessionParams build() {

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+package com.google.uwb.support;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
