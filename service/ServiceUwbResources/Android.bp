@@ -34,6 +34,7 @@ android_app {
         "com.android.uwb",
     ],
     certificate: ":com.android.uwb.resources.certificate",
+    updatable: true,
 }
 
 android_app_certificate {

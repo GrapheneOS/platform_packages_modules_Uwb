@@ -57,9 +57,11 @@ java_defaults {
     static_libs: [
         //"modules-utils-preconditions",
         "modules-utils-build",
+        "ranging_aconfig_flags_lib",
     ],
     libs: [
         "androidx.annotation_annotation",
+        "guava",
         "unsupportedappusage", // for android.compat.annotation.UnsupportedAppUsage
     ],
     srcs: [

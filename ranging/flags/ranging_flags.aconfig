@@ -8,3 +8,19 @@ flag {
     description: "This flags controls generic ranging feature"
     bug: "331206299"
 }
+
+flag {
+    name: "ranging_cs_enabled"
+    is_exported: true
+    namespace: "ranging"
+    description: "This flags controls channel sounding in generic ranging"
+    bug: "331206299"
+}
+
+flag {
+    name: "ranging_rtt_enabled"
+    is_exported: true
+    namespace: "ranging"
+    description: "This flags controls channel sounding in generic ranging"
+    bug: "331206299"
+}

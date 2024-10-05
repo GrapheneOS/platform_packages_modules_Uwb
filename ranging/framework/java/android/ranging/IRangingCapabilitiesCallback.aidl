@@ -14,25 +14,11 @@
  * limitations under the License.
  */
 
-package com.android.server.ranging.uwb;
+package android.ranging;
 
-/** Device role, whether it's an initiator or a responder. */
-public enum UwbDeviceRole {
-    UNKNOWN(0),
-    INITIATOR(1),
-    RESPONDER(2);
-
-    private final int mValue;
-
-    UwbDeviceRole(int value) {
-        this.mValue = value;
-    }
-
-    public int getValue() {
-        return mValue;
-    }
-
-    public static UwbDeviceRole fromValue(int value) {
-        return value < 0 || value > 2 ? UNKNOWN : UwbDeviceRole.values()[value];
-    }
+/**
+*  @hide
+*/
+oneway interface IRangingCapabilitiesCallback {
+    void onRangingCapabilites();
 }

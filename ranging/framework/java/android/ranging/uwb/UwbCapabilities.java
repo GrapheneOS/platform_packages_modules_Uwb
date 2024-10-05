@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package com.android.server.ranging.cs;
+package android.ranging.uwb;
 
-/** Parameters for Bluetooth channel sounding ranging. */
-public class CsParameters {
-    public CsParameters() {
-        throw new UnsupportedOperationException("Not implemented!");
-    }
+import android.annotation.FlaggedApi;
+
+import com.android.ranging.flags.Flags;
+
+/**
+ * @hide
+ */
+@FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
+public class UwbCapabilities {
 }
-

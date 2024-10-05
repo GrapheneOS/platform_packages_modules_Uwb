@@ -107,15 +107,15 @@ public class RangingSession {
      * Starts ranging in the session.
      *
      * @param callback   to notify on session events.
-     * @param parameters for the session. Each key is the UUID of a peer, and each value is the
-     *                   {@link RangingParameters} to use with that peer.
+     * @param configs for the session. Each key is the UUID of a peer, and each value is that peer's
+     *                configuration.
      */
     public void start(
-            @NonNull ImmutableMap<UUID, RangingParameters> parameters, @NonNull Callback callback
+            @NonNull ImmutableMap<UUID, RangingConfig> configs, @NonNull Callback callback
     ) {
-        for (Map.Entry<UUID, RangingParameters> entry : parameters.entrySet()) {
+        for (Map.Entry<UUID, RangingConfig> entry : configs.entrySet()) {
             UUID peerId = entry.getKey();
-            RangingParameters peerParams = entry.getValue();
+            RangingConfig peerConfig = entry.getValue();
 
             synchronized (mPeers) {
                 // Don't overwrite peers inserted for testing.
@@ -124,7 +124,7 @@ public class RangingSession {
                             new RangingPeer(mContext, mAdapterExecutor, mTimeoutExecutor));
                 }
 
-                mPeers.get(peerId).start(peerParams, new PeerListener(peerId, callback));
+                mPeers.get(peerId).start(peerConfig, new PeerListener(peerId, callback));
             }
         }
     }

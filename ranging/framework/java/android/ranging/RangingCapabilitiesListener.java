@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,11 @@
  * limitations under the License.
  */
 
-package com.android.server.ranging.uwb;
+package android.ranging;
 
-/** UWB Device Mode, whether it's a controller or a controlee. */
-public enum UwbDeviceMode {
-    UNKNOWN(0),
-    CONTROLLER(1),
-    CONTROLEE(2);
-
-    private final int mValue;
-
-    UwbDeviceMode(int value) {
-        this.mValue = value;
-    }
-
-    public int getValue() {
-        return mValue;
-    }
-
-    public static UwbDeviceMode fromValue(int value) {
-        return value < 0 || value > 2 ? UNKNOWN : UwbDeviceMode.values()[value];
-    }
+/**
+ *  @hide
+ */
+public interface RangingCapabilitiesListener {
+    void onRangingCapabilities(RangingCapabilities capabilities);
 }

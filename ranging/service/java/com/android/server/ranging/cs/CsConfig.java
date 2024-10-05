@@ -16,10 +16,10 @@
 
 package com.android.server.ranging.cs;
 
-/** Parameters for Bluetooth channel sounding ranging. */
-public class CsParameters {
-    public CsParameters() {
+import com.android.server.ranging.RangingConfig.TechnologyConfig;
+
+public class CsConfig extends CsParameters implements TechnologyConfig {
+    public CsConfig() {
         throw new UnsupportedOperationException("Not implemented!");
     }
 }
-

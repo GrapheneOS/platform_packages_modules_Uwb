@@ -25,16 +25,15 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
 
+import com.android.ranging.uwb.backend.internal.RangingCapabilities;
+import com.android.server.ranging.RangingConfig.TechnologyConfig;
 import com.android.server.ranging.RangingParameters.DeviceRole;
-import com.android.server.ranging.RangingParameters.TechnologyParameters;
 import com.android.server.ranging.RangingUtils.StateMachine;
 import com.android.server.ranging.cs.CsAdapter;
 import com.android.server.ranging.fusion.DataFusers;
 import com.android.server.ranging.fusion.FilteringFusionEngine;
 import com.android.server.ranging.fusion.FusionEngine;
 import com.android.server.ranging.uwb.UwbAdapter;
-import com.android.ranging.uwb.backend.internal.RangingCapabilities;
-import com.android.ranging.uwb.backend.internal.UwbAddress;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
@@ -64,7 +63,7 @@ public final class RangingPeer {
      * Parameters provided when the session was started.
      * <b>Invariant: Non-null while a session is ongoing</b>.
      */
-    private volatile RangingParameters mParameters;
+    private volatile RangingConfig mConfig;
 
     /**
      * Callback for session events.
@@ -131,7 +130,7 @@ public final class RangingPeer {
 
     /** Start a ranging session with this peer */
     public void start(
-            @NonNull RangingParameters parameters, @NonNull RangingSession.Callback callback
+            @NonNull RangingConfig config, @NonNull RangingSession.Callback callback
     ) {
         Log.i(TAG, "Start Precision Ranging called.");
         if (!mStateMachine.transition(State.STOPPED, State.STARTING)) {
@@ -139,19 +138,19 @@ public final class RangingPeer {
             return;
         }
         mCallback = callback;
-        mParameters = parameters;
+        mConfig = config;
 
-        if (mParameters.getDataFuser().isPresent()) {
-            mFusionEngine = new FilteringFusionEngine(parameters.getDataFuser().get());
+        if (config.getDataFuser() != null) {
+            mFusionEngine = new FilteringFusionEngine(config.getDataFuser());
         } else {
             mFusionEngine = new NoOpFusionEngine();
         }
 
-        ImmutableMap<RangingTechnology, TechnologyParameters> techParams =
-                parameters.getTechnologyParams();
-        mAdapters.keySet().retainAll(techParams.keySet());
+        ImmutableMap<RangingTechnology, TechnologyConfig> techConfigs =
+                config.getTechnologyConfigs();
+        mAdapters.keySet().retainAll(techConfigs.keySet());
         mFusionEngine.start(new FusionEngineListener());
-        for (RangingTechnology technology : techParams.keySet()) {
+        for (RangingTechnology technology : techConfigs.keySet()) {
             if (!technology.isSupported(mContext)) {
                 Log.w(TAG, "Attempted to range with unsupported technology " + technology
                         + ", skipping");
@@ -161,18 +160,19 @@ public final class RangingPeer {
             synchronized (mAdapters) {
                 // Do not overwrite any adapters that were supplied for testing
                 if (!mAdapters.containsKey(technology)) {
-                    mAdapters.put(technology, newAdapter(technology, parameters.getRole()));
+                    mAdapters.put(technology,
+                            newAdapter(technology, config.getDeviceRole()));
                 }
                 mAdapters.get(technology)
-                        .start(techParams.get(technology), new AdapterListener(technology));
+                        .start(techConfigs.get(technology), new AdapterListener(technology));
             }
         }
 
-        scheduleTimeout(parameters.getNoInitialDataTimeout(),
+        scheduleTimeout(config.getNoInitialDataTimeout(),
                 RangingSession.Callback.StoppedReason.NO_INITIAL_DATA_TIMEOUT);
     }
 
-    /** Stop the active sessionw with this peer */
+    /** Stop the active session with this peer */
     public void stop() {
         stopForReason(RangingAdapter.Callback.StoppedReason.REQUESTED);
     }
@@ -199,7 +199,7 @@ public final class RangingPeer {
             }
 
             // Reset internal state.
-            mParameters = null;
+            mConfig = null;
             mFusionEngine.stop();
             mFusionEngine = null;
             mAdapters.clear();
@@ -221,16 +221,6 @@ public final class RangingPeer {
             Log.e(TAG, "Failed to get Uwb capabilities");
             return null;
         }
-    }
-
-    /** Returns UWB address if UWB was requested. */
-    public ListenableFuture<UwbAddress> getUwbAddress() throws RemoteException {
-        if (!mAdapters.containsKey(RangingTechnology.UWB)) {
-            return immediateFailedFuture(
-                    new IllegalStateException("UWB was not requested for this session."));
-        }
-        UwbAdapter uwbAdapter = (UwbAdapter) mAdapters.get(RangingTechnology.UWB);
-        return uwbAdapter.getLocalAddress();
     }
 
     /** Returns CS capabilities if CS was requested. */
@@ -367,7 +357,7 @@ public final class RangingPeer {
                 }
                 mCallback.onData(data);
                 scheduleTimeout(
-                        mParameters.getNoUpdatedDataTimeout(),
+                        mConfig.getNoUpdatedDataTimeout(),
                         RangingSession.Callback.StoppedReason.NO_UPDATED_DATA_TIMEOUT);
             }
         }

@@ -111,14 +111,14 @@ class RangingTest(ranging_base_test.RangingBaseTest):
         session_id=5,
         peer_addresses=[self.responder_addr],
         device_address=self.initiator_addr,
-        device_role=params.Constants.DeviceRole.CONTROLLER,
+        device_role=params.Constants.DeviceRole.INITIATOR,
     )
     responder_params = params.UwbRangingParams(
         config_type=params.Constants.ConfigType.UNICAST_DS_TWR,
         session_id=5,
         peer_addresses=[self.initiator_addr],
         device_address=self.responder_addr,
-        device_role=params.Constants.DeviceRole.CONTROLEE,
+        device_role=params.Constants.DeviceRole.RESPONDER,
     )
     self._start_and_verify_mutual_ranging(
         initiator_params, responder_params, session_id=5
@@ -143,14 +143,14 @@ class RangingTest(ranging_base_test.RangingBaseTest):
         session_id=5,
         peer_addresses=[self.responder_addr],
         device_address=self.initiator_addr,
-        device_role=params.Constants.DeviceRole.CONTROLLER,
+        device_role=params.Constants.DeviceRole.INITIATOR,
     )
     responder_params = params.UwbRangingParams(
         config_type=params.Constants.ConfigType.PROVISIONED_UNICAST_DS_TWR,
         session_id=5,
         peer_addresses=[self.initiator_addr],
         device_address=self.responder_addr,
-        device_role=params.Constants.DeviceRole.CONTROLEE,
+        device_role=params.Constants.DeviceRole.RESPONDER,
     )
 
     self._start_and_verify_mutual_ranging(
@@ -167,7 +167,7 @@ class RangingTest(ranging_base_test.RangingBaseTest):
         session_id=5,
         peer_addresses=[self.responder_addr],
         device_address=self.initiator_addr,
-        device_role=params.Constants.DeviceRole.CONTROLLER,
+        device_role=params.Constants.DeviceRole.INITIATOR,
         range_data_config_type=params.Constants.RangeDataConfigType.DISABLE,
     )
     responder_params = params.UwbRangingParams(
@@ -175,7 +175,7 @@ class RangingTest(ranging_base_test.RangingBaseTest):
         session_id=5,
         peer_addresses=[self.initiator_addr],
         device_address=self.responder_addr,
-        device_role=params.Constants.DeviceRole.CONTROLEE,
+        device_role=params.Constants.DeviceRole.RESPONDER,
         range_data_config_type=params.Constants.RangeDataConfigType.ENABLE,
     )
 

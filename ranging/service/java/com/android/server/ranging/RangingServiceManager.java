@@ -16,41 +16,44 @@
 
 package com.android.server.ranging;
 
-import android.annotation.NonNull;
 import android.content.AttributionSource;
 import android.content.Context;
-import android.ranging.IRangingAdapter;
+import android.content.ContextParams;
 import android.ranging.IRangingCallbacks;
 import android.ranging.IRangingCapabilitiesCallback;
 import android.ranging.RangingPreference;
 import android.ranging.SessionHandle;
 
-public class RangingServiceImpl extends IRangingAdapter.Stub {
+public class RangingServiceManager {
 
-    private static final String TAG = "RangingServiceImpl";
     private final RangingInjector mRangingInjector;
-    private final Context mContext;
 
-    RangingServiceImpl(@NonNull Context context, @NonNull RangingInjector rangingInjector) {
-        mContext = context;
+    public RangingServiceManager(RangingInjector rangingInjector) {
         mRangingInjector = rangingInjector;
     }
 
-    @Override
     public void getRangingCapabilities(IRangingCapabilitiesCallback callback) {
-        mRangingInjector.getRangingServiceManager().getRangingCapabilities(callback);
+
     }
 
-    @Override
     public void startRanging(AttributionSource attributionSource, SessionHandle sessionHandle,
-            RangingPreference rangingPreference,
-               IRangingCallbacks callbacks) {
-        mRangingInjector.getRangingServiceManager().startRanging(attributionSource, sessionHandle,
-                rangingPreference, callbacks);
+            RangingPreference rangingPreference, IRangingCallbacks callbacks) {
+        // TODO android.permission.RANGING permission check here
+        Context context = mRangingInjector.getContext()
+                .createContext(new ContextParams
+                        .Builder()
+                        .setNextAttributionSource(attributionSource)
+                        .build());
+
+        //Use new context for creating RangingSession or SmartRangingSession.
     }
 
-    @Override
     public void stopRanging(SessionHandle sessionHandle) {
-        mRangingInjector.getRangingServiceManager().stopRanging(sessionHandle);
+    }
+
+    public static class RangingSessionInfo {
+        SessionHandle mSessionHandle;
+        RangingPreference mRangingPreference;
+
     }
 }

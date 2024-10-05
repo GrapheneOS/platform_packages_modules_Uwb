@@ -37,6 +37,10 @@ java_aconfig_library {
     apex_available: [
         "com.android.uwb",
     ],
+    defaults: ["framework-minus-apex-aconfig-java-defaults"],
+    visibility: [
+        "//packages/modules/Uwb/ranging:__subpackages__",
+    ],
 }
 
 java_library {

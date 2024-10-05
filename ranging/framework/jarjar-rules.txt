@@ -1,3 +1,5 @@
 ## used by both framework-uwb and service-uwb ##
 # Statically included module utils.
 rule com.android.modules.utils.** com.android.x.ranging.@0
+# Statically included ranging flags.
+rule com.android.ranging.flags.** com.android.x.ranging.@0

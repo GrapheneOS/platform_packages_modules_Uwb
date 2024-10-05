@@ -29,21 +29,23 @@ import static org.mockito.Mockito.when;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.ranging.uwb.UwbComplexChannel;
+import android.ranging.uwb.UwbParameters;
 
 import androidx.test.filters.SmallTest;
 
+import com.android.ranging.uwb.backend.internal.UwbAddress;
 import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingConfig;
 import com.android.server.ranging.RangingData;
-import com.android.server.ranging.RangingParameters;
 import com.android.server.ranging.RangingParameters.DeviceRole;
 import com.android.server.ranging.RangingPeer;
 import com.android.server.ranging.RangingSession;
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.cs.CsParameters;
-import com.android.server.ranging.fusion.DataFusers;
-import com.android.server.ranging.uwb.UwbParameters;
+import com.android.server.ranging.cs.CsConfig;
+import com.android.server.ranging.uwb.UwbConfig;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import org.junit.Before;
@@ -69,32 +71,30 @@ import java.util.concurrent.ScheduledExecutorService;
 public class RangingPeerTest {
     @Rule public final MockitoRule mMockito = MockitoJUnit.rule();
 
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS) private Context mMockContext;
-    @Mock private RangingConfig mMockConfig;
-    @Mock
-    private ScheduledExecutorService mMockTimeoutExecutor;
-
-    @Mock private RangingSession.Callback mMockCallback;
+    private @Mock(answer = Answers.RETURNS_DEEP_STUBS) Context mMockContext;
+    private @Mock(answer = Answers.RETURNS_DEEP_STUBS) RangingConfig mMockConfig;
+    private @Mock ScheduledExecutorService mMockTimeoutExecutor;
+    private @Mock RangingSession.Callback mMockCallback;
     private final EnumMap<RangingTechnology, RangingAdapter> mMockAdapters =
             new EnumMap<>(RangingTechnology.class);
-
     private RangingPeer mSession;
 
     /**
-     * Starts a ranging session with the provided parameters.
-     * @param params to use for the session.
+     * Starts a ranging session with the provided configs.
+     * @param configs to use for the session.
      * @return {@link RangingAdapter.Callback} for each of the provided technologies' adapters.
      * These callbacks are captured from underlying {@link RangingAdapter} mock for each technology.
      */
     private EnumMap<RangingTechnology, RangingAdapter.Callback> startSession(
-            RangingParameters params
+            ImmutableMap<RangingTechnology, RangingConfig.TechnologyConfig> configs
     ) {
         EnumMap<RangingTechnology, RangingAdapter.Callback> adapterCallbacks =
                 new EnumMap<>(RangingTechnology.class);
 
-        mSession.start(params, mMockCallback);
+        when(mMockConfig.getTechnologyConfigs()).thenReturn(configs);
+        mSession.start(mMockConfig, mMockCallback);
 
-        for (RangingTechnology technology : params.getTechnologyParams().keySet()) {
+        for (RangingTechnology technology : configs.keySet()) {
             ArgumentCaptor<RangingAdapter.Callback> callbackCaptor =
                     ArgumentCaptor.forClass(RangingAdapter.Callback.class);
             verify(mMockAdapters.get(technology)).start(any(), callbackCaptor.capture());
@@ -115,20 +115,28 @@ public class RangingPeerTest {
                 .build();
     }
 
-    private RangingParameters.Builder generateParameters() {
-        return new RangingParameters.Builder(DeviceRole.CONTROLLER)
-                .setNoInitialDataTimeout(Duration.ZERO)
-                .setNoUpdatedDataTimeout(Duration.ZERO)
-                .useSensorFusion(new DataFusers.PassthroughDataFuser());
+    private UwbParameters.Builder getUwbParams() {
+        return new UwbParameters.Builder()
+                .setConfigId(UwbParameters.ConfigId.UNICAST_DS_TWR)
+                .setPeerAddresses(ImmutableMap.of())
+                .setRangingUpdateRate(UwbParameters.RangingUpdateRate.NORMAL);
+    }
+
+    private UwbConfig.Builder getUwbConfig(UwbParameters parameters) {
+        return new UwbConfig.Builder(parameters)
+                .setCountryCode("US")
+                .setDeviceRole(DeviceRole.INITIATOR)
+                .setLocalAddress(UwbAddress.fromBytes(new byte[]{1, 2}))
+                .setComplexChannel(new UwbComplexChannel(9, 11));
     }
 
     @Before
     public void setup() {
         when(mMockContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_UWB))
                 .thenReturn(true);
-        when(mMockConfig.getInitTimeout()).thenReturn(Duration.ZERO);
-        when(mMockConfig.getNoUpdateTimeout()).thenReturn(Duration.ZERO);
-        when(mMockConfig.getUseFusingAlgorithm()).thenReturn(true);
+        when(mMockConfig.getNoInitialDataTimeout()).thenReturn(Duration.ZERO);
+        when(mMockConfig.getNoUpdatedDataTimeout()).thenReturn(Duration.ZERO);
+        when(mMockConfig.getDataFuser()).thenReturn(null);
 
         mSession = new RangingPeer(
                 mMockContext, MoreExecutors.newDirectExecutorService(), mMockTimeoutExecutor);
@@ -144,8 +152,9 @@ public class RangingPeerTest {
     public void start_startsTechnologyThenSession() {
         InOrder inOrder = Mockito.inOrder(mMockCallback);
 
-        EnumMap<RangingTechnology, RangingAdapter.Callback> adapterCallbacks =
-                startSession(generateParameters().useUwb(mock(UwbParameters.class)).build());
+        EnumMap<RangingTechnology, RangingAdapter.Callback> adapterCallbacks = startSession(
+                ImmutableMap.of(UWB, getUwbConfig(getUwbParams().build()).build())
+        );
 
         inOrder.verify(mMockCallback).onStarted(eq(UWB));
         verify(mMockCallback, never()).onStarted(eq(null));
@@ -157,10 +166,10 @@ public class RangingPeerTest {
     @Test
     @Ignore("TODO: Add support for technologies other than UWB")
     public void start_startsMultipleTechnologies() {
-        startSession(generateParameters()
-                .useUwb(mock(UwbParameters.class))
-                .useCs(mock(CsParameters.class))
-                .build());
+        startSession(ImmutableMap.of(
+                UWB, getUwbConfig(getUwbParams().build()).build(),
+                CS, mock(CsConfig.class))
+        );
 
         verify(mMockCallback).onStarted(eq(null));
         verify(mMockCallback).onStarted(eq(UWB));
@@ -172,8 +181,11 @@ public class RangingPeerTest {
         when(mMockContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_UWB))
                 .thenReturn(false);
 
-        mSession.start(generateParameters().useUwb(mock(UwbParameters.class)).build(),
-                mMockCallback);
+        ImmutableMap<RangingTechnology, RangingConfig.TechnologyConfig> configs =
+                ImmutableMap.of(UWB, getUwbConfig(getUwbParams().build()).build());
+        when(mMockConfig.getTechnologyConfigs()).thenReturn(configs);
+
+        mSession.start(mMockConfig, mMockCallback);
 
         verify(mMockAdapters.get(UWB), never()).start(any(), any());
         verify(mMockCallback, never()).onStarted(any());
@@ -181,7 +193,7 @@ public class RangingPeerTest {
 
     @Test
     public void start_doesNotStartUnusedTechnologies() {
-        startSession(generateParameters().useUwb(mock(UwbParameters.class)).build());
+        startSession(ImmutableMap.of(UWB, getUwbConfig(getUwbParams().build()).build()));
 
         verify(mMockAdapters.get(CS), never()).start(any(), any());
         verify(mMockCallback, never()).onStarted(eq(CS));
@@ -191,7 +203,7 @@ public class RangingPeerTest {
     public void stop_stopsTechnologyAndSession() {
         InOrder inOrder = Mockito.inOrder(mMockCallback);
 
-        startSession(generateParameters().useUwb(mock(UwbParameters.class)).build());
+        startSession(ImmutableMap.of(UWB, getUwbConfig(getUwbParams().build()).build()));
 
         mSession.stop();
 
@@ -205,9 +217,10 @@ public class RangingPeerTest {
     @Test
     @Ignore("TODO: Add support for technologies other than UWB")
     public void stop_stopsMultipleTechnologies() {
-        startSession(generateParameters()
-                .useUwb(mock(UwbParameters.class))
-                .useCs(mock(CsParameters.class)).build());
+        startSession(ImmutableMap.of(
+                UWB, getUwbConfig(getUwbParams().build()).build(),
+                CS, mock(CsConfig.class))
+        );
 
         mSession.stop();
 
@@ -221,7 +234,7 @@ public class RangingPeerTest {
     @Test
     public void shouldStop_whenAdapterStops() {
         EnumMap<RangingTechnology, RangingAdapter.Callback> adapterCallbacks =
-                startSession(generateParameters().useUwb(mock(UwbParameters.class)).build());
+                startSession(ImmutableMap.of(UWB, getUwbConfig(getUwbParams().build()).build()));
 
         adapterCallbacks.get(UWB).onStopped(RangingAdapter.Callback.StoppedReason.LOST_CONNECTION);
 
@@ -230,7 +243,7 @@ public class RangingPeerTest {
 
     @Test
     public void shouldStop_whenNoInitialDataIsReported() {
-        startSession(generateParameters().build());
+        startSession(ImmutableMap.of());
 
         ArgumentCaptor<Runnable> onTimeoutCaptor = ArgumentCaptor.forClass(Runnable.class);
         verify(mMockTimeoutExecutor).schedule(onTimeoutCaptor.capture(), anyLong(), any());
@@ -244,7 +257,7 @@ public class RangingPeerTest {
     @Test
     public void shouldReportData_fromAdapter() {
         EnumMap<RangingTechnology, RangingAdapter.Callback> adapterCallbacks =
-                startSession(generateParameters().useUwb(mock(UwbParameters.class)).build());
+                startSession(ImmutableMap.of(UWB, getUwbConfig(getUwbParams().build()).build()));
 
         adapterCallbacks.get(UWB).onRangingData(generateData(UWB));
 

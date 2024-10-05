@@ -18,8 +18,6 @@ package com.android.server.ranging;
 
 import androidx.annotation.IntDef;
 
-import com.android.server.ranging.RangingParameters.TechnologyParameters;
-
 import com.google.common.util.concurrent.ListenableFuture;
 
 /** RangingAdapter representing a common ranging class for multiple ranging technologies. */
@@ -39,10 +37,10 @@ public interface RangingAdapter {
      * Start ranging. Does nothing if the ranging technology is not enabled on device or if ranging
      * has already been started. In the latter case, this method will not overwrite the existing
      * callback.
-     * @param parameters to range with.
+     * @param config for the ranging session.
      * @param callback to be called on the occurrence of ranging events.
      */
-    void start(TechnologyParameters parameters, Callback callback);
+    void start(RangingConfig.TechnologyConfig config, Callback callback);
 
     /** Stop ranging. */
     void stop();

@@ -26,7 +26,7 @@ public class RangingService extends SystemService {
     private final RangingServiceImpl mRangingImpl;
     public RangingService(Context context) {
         super(context);
-        mRangingImpl = new RangingServiceImpl(context);
+        mRangingImpl = new RangingServiceImpl(context, new RangingInjector(context));
     }
 
     @Override

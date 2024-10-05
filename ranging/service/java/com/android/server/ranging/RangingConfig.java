@@ -13,73 +13,85 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.android.server.ranging;
 
+import android.ranging.uwb.UwbParameters;
+import android.util.Log;
 
-import com.google.auto.value.AutoValue;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
-import java.time.Duration;
+import com.android.server.ranging.cs.CsConfig;
+import com.android.server.ranging.uwb.UwbAdapter;
+import com.android.server.ranging.uwb.UwbConfig;
 
-/** Configuration for multi-tecnology ranging */
-@AutoValue
-public abstract class RangingConfig {
+import com.google.common.collect.ImmutableMap;
 
-    /** Returns whether to use the fusing algorithm or not. */
-    public abstract boolean getUseFusingAlgorithm();
+/**
+ * A complete configuration for a ranging session. This encapsulates all information contained in
+ * an OOB configuration message and everything needed to configure each requested ranging
+ * technology's underlying API.
+ */
+public class RangingConfig extends RangingParameters {
 
-    /**
-     * Returns the max interval at which data will be reported back. If set to 0 data will be
-     * reported immediately on reception. If set to non zero value, only latest received data that
-     * hasn't yet been reported will be reported, so there's a chance that some data doesn't get
-     * reported if multiple data points were received during the same update interval.
-     */
-    public abstract Duration getMaxUpdateInterval();
+    private static final String TAG = RangingConfig.class.getSimpleName();
 
-    /**
-     * Returns the timeout after which precision ranging will be stopped if no data was produced
-     * since precision ranging started.
-     */
-    public abstract Duration getInitTimeout();
+    private final RangingInjector mRangingInjector;
 
-    /**
-     * Returns the timeout to stop reporting back new data if fusion algorithm wasn't fed ranging
-     * data in that amount of time. Checked only if useFusingAlgorithm is set to true.
-     */
-    public abstract Duration getFusionAlgorithmDriftTimeout();
+    private final ImmutableMap<RangingTechnology, TechnologyConfig> mTechnologyConfigs;
 
-    /**
-     * Returns the timeout to stop ranging if there were no new data updates sent in that time
-     * period.
-     */
-    public abstract Duration getNoUpdateTimeout();
-
-    /** Returns the fusion algorithm configuration if present. */
-
-    /** Returns a builder for {@link RangingConfig}. */
-    public static Builder builder() {
-        return new AutoValue_RangingConfig.Builder();
+    /** A complete configuration for a specific ranging technology */
+    public interface TechnologyConfig {
     }
 
-    /** Builder for {@link RangingConfig}. */
-    @AutoValue.Builder
-    public abstract static class Builder {
-        public abstract Builder setUseFusingAlgorithm(boolean useFusingAlgorithm);
+    public RangingConfig(
+            @NonNull RangingInjector rangingInjector, @NonNull RangingParameters parameters
+    ) {
+        super(parameters);
+        mRangingInjector = rangingInjector;
 
-        public abstract Builder setMaxUpdateInterval(Duration maxUpdateInterval);
+        ImmutableMap.Builder<RangingTechnology, TechnologyConfig> technologyConfigsBuilder =
+                new ImmutableMap.Builder<>();
 
-        public abstract Builder setFusionAlgorithmDriftTimeout(Duration duration);
-
-        public abstract Builder setNoUpdateTimeout(Duration duration);
-
-        public abstract Builder setInitTimeout(Duration duration);
-
-
-        abstract RangingConfig autoBuild();
-
-        public RangingConfig build() {
-            RangingConfig config = autoBuild();
-            return config;
+        UwbConfig uwbConfig = getUwbConfig();
+        if (uwbConfig != null) {
+            technologyConfigsBuilder.put(RangingTechnology.UWB, uwbConfig);
         }
+
+        CsConfig csConfig = getCsConfig();
+        if (csConfig != null) {
+            technologyConfigsBuilder.put(RangingTechnology.CS, csConfig);
+        }
+
+        mTechnologyConfigs = technologyConfigsBuilder.build();
+    }
+
+    public @NonNull ImmutableMap<RangingTechnology, TechnologyConfig> getTechnologyConfigs() {
+        return mTechnologyConfigs;
+    }
+
+    private @Nullable UwbConfig getUwbConfig() {
+        UwbParameters uwbParameters = getUwbParameters();
+        if (uwbParameters == null) return null;
+        UwbAdapter adapter = mRangingInjector.getAdapterProvider().getUwbAdapter();
+        if (adapter == null) {
+            Log.w(TAG, "Uwb was requested for this session but is not supported by the device");
+            return null;
+        }
+
+        return new UwbConfig.Builder(uwbParameters)
+                // TODO(370077264): Set country code based on geolocation.
+                .setCountryCode("US")
+                .setDeviceRole(getDeviceRole())
+                .setLocalAddress(getLocalUwbAddressSetForTesting() != null
+                        ? getLocalUwbAddressSetForTesting()
+                        : adapter.getLocalAddress())
+                .setDataNotificationConfig(getDataNotificationConfig())
+                .build();
+    }
+
+
+    private @Nullable CsConfig getCsConfig() {
+        return null;
     }
 }

@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.server.ranging.cs;
+package android.ranging;
 
-/** Parameters for Bluetooth channel sounding ranging. */
-public class CsParameters {
-    public CsParameters() {
-        throw new UnsupportedOperationException("Not implemented!");
-    }
-}
-
+/**
+*  @hide
+*/
+parcelable RangingCapabilities;

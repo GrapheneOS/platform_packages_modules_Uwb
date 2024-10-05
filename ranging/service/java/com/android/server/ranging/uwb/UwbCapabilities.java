@@ -16,9 +16,11 @@
 
 package com.android.server.ranging.uwb;
 
+
+import com.android.ranging.uwb.backend.internal.UwbAddress;
+import com.android.server.ranging.RangingParameters.DeviceRole;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.Conversions;
-import com.android.ranging.uwb.backend.internal.UwbAddress;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -115,10 +117,10 @@ public abstract class UwbCapabilities {
         parseCursor += MIN_SLOT_SIZE;
 
         // Parse Device Role
-        ImmutableList.Builder<UwbDeviceRole> deviceRoles = new ImmutableList.Builder<>();
+        ImmutableList.Builder<DeviceRole> deviceRoles = new ImmutableList.Builder<>();
         for (byte role : Arrays.copyOfRange(
                 capabilitiesBytes, parseCursor, parseCursor + DEVICE_ROLE_SIZE)) {
-            deviceRoles.add(UwbDeviceRole.fromValue(role));
+            deviceRoles.add(UwbConfig.fromOobDeviceRole(role));
         }
         parseCursor += DEVICE_ROLE_SIZE;
 
@@ -152,7 +154,7 @@ public abstract class UwbCapabilities {
                 .put(
                         Conversions.intListToByteArrayBitmap(
                                 getSupportedDeviceRole().stream()
-                                        .map(UwbDeviceRole::getValue)
+                                        .map(UwbConfig::toOobDeviceRole)
                                         .collect(Collectors.toList()),
                                 DEVICE_ROLE_SIZE,
                                 DEVICE_ROLE_SHIFT));
@@ -179,7 +181,7 @@ public abstract class UwbCapabilities {
     public abstract int getMinimumSlotDurationMs();
 
     /** Returns supported device roles. */
-    public abstract ImmutableList<UwbDeviceRole> getSupportedDeviceRole();
+    public abstract ImmutableList<DeviceRole> getSupportedDeviceRole();
 
     /** Returns a builder for {@link UwbCapabilities}. */
     public static Builder builder() {
@@ -204,7 +206,7 @@ public abstract class UwbCapabilities {
         public abstract Builder setMinimumSlotDurationMs(int minimumSlotDurationMs);
 
         public abstract Builder setSupportedDeviceRole(
-                ImmutableList<UwbDeviceRole> supportedDeviceRole);
+                ImmutableList<DeviceRole> supportedDeviceRole);
 
         public abstract UwbCapabilities build();
     }
