@@ -211,6 +211,7 @@ public class UwbSessionManagerTest {
                     .setMinPhyVersionSupported(FIRA_VERSION_1_0)
                     .setMaxPhyVersionSupported(FIRA_VERSION_1_1)
                     .setSupportedChannels(List.of(9))
+                    .setMaxMessageSize(0xFF)
                     .setRangeDataNtfConfigCapabilities(
                             EnumSet.of(
                                         HAS_RANGE_DATA_NTF_CONFIG_DISABLE,

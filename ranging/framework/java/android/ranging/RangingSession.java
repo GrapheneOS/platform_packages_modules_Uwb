@@ -30,7 +30,7 @@ import java.util.concurrent.Executor;
  * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
-public class RangingSession implements AutoCloseable {
+public final class RangingSession implements AutoCloseable {
 
     private final AttributionSource mAttributionSource;
     private final SessionHandle mSessionHandle;
@@ -80,6 +80,10 @@ public class RangingSession implements AutoCloseable {
         mExecutor.execute(() -> mCallback.onClosed(reason));
     }
 
+    public void onData(RangingDevice device, RangingData data) {
+        mExecutor.execute(() -> mCallback.onResults(device, data));
+    }
+
     public interface Callback {
         void onStarted(@RangingManager.RangingTechnology int technology);
 
@@ -91,9 +95,7 @@ public class RangingSession implements AutoCloseable {
                 params);*/
         void onRangingStopped(@NonNull RangingDevice device);
 
-        void onResults(@NonNull RangingDevice device,
-                @NonNull RangingData data);
-
+        void onResults(@NonNull RangingDevice device, @NonNull RangingData data);
     }
 
     /**

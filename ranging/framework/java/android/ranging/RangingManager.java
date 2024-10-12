@@ -25,7 +25,6 @@ import android.annotation.SystemService;
 import android.content.AttributionSource;
 import android.content.Context;
 
-
 import com.android.ranging.flags.Flags;
 
 import java.lang.annotation.Retention;
@@ -62,7 +61,7 @@ public final class RangingManager {
             RangingTechnology.WIFI_RTT,
             RangingTechnology.BLE_RSSI,
     })
-    @interface RangingTechnology {
+    public @interface RangingTechnology {
         int UWB = 0;
         int BT_CS = 1;
         int WIFI_RTT = 2;
@@ -80,7 +79,7 @@ public final class RangingManager {
             /* Ranging technology is enabled. */
             RangingTechnologyAvailability.ENABLED,
     })
-    @interface RangingTechnologyAvailability {
+    public @interface RangingTechnologyAvailability {
         int NOT_SUPPORTED = 0;
         int DISABLED_USER = 1;
         int DISABLED_REGULATORY = 2;

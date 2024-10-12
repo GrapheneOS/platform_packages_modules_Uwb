@@ -23,6 +23,14 @@
         android:name="androidx.test.runner.AndroidJUnitRunner"
         android:label="CTS tests for android.ranging"
         android:targetPackage="android.ranging.cts" >
+
     </instrumentation>
+
+    <uses-permission android:name="android.permissions.UWB_PRIVILEGED" />
+    <!-- Add an instrumentation tag so that the app can be launched through an
+         instrument command. The runner `com.google.android.mobly.snippet.SnippetRunner`
+         is derived from `AndroidJUnitRunner`, and is required to use the
+         Mobly Snippet Lib. -->
+    <uses-permission android:name="android.permission.UWB_RANGING" />
 </manifest>
 

@@ -28,7 +28,7 @@ import com.android.ranging.flags.Flags;
  * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
-public class RangingMeasurement implements Parcelable {
+public final class RangingMeasurement implements Parcelable {
     private final double mMeasurement;
 
     //TODO: Add values once decided.

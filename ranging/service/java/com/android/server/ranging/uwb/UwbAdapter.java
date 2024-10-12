@@ -16,15 +16,18 @@
 
 package com.android.server.ranging.uwb;
 
-import static com.google.common.util.concurrent.Futures.immediateFuture;
+import static com.android.server.ranging.uwb.UwbConfig.toBackend;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.RemoteException;
+import android.ranging.uwb.UwbAddress;
+import android.ranging.uwb.UwbComplexChannel;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.android.ranging.uwb.backend.internal.RangingCapabilities;
 import com.android.ranging.uwb.backend.internal.RangingController;
@@ -32,15 +35,12 @@ import com.android.ranging.uwb.backend.internal.RangingDevice;
 import com.android.ranging.uwb.backend.internal.RangingPosition;
 import com.android.ranging.uwb.backend.internal.RangingSessionCallback;
 import com.android.ranging.uwb.backend.internal.Utils;
-import com.android.ranging.uwb.backend.internal.UwbAddress;
-import com.android.ranging.uwb.backend.internal.UwbComplexChannel;
 import com.android.ranging.uwb.backend.internal.UwbDevice;
 import com.android.ranging.uwb.backend.internal.UwbFeatureFlags;
 import com.android.ranging.uwb.backend.internal.UwbServiceImpl;
 import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingConfig;
 import com.android.server.ranging.RangingData;
-import com.android.server.ranging.RangingParameters.DeviceRole;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.StateMachine;
 
@@ -49,6 +49,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.uwb.support.fira.FiraParams;
 
 import java.time.Duration;
 import java.util.concurrent.Executors;
@@ -76,7 +77,7 @@ public class UwbAdapter implements RangingAdapter {
 
     public UwbAdapter(
             @NonNull Context context, @NonNull ListeningExecutorService executorService,
-            @NonNull DeviceRole role
+            @FiraParams.RangingDeviceType int type
     ) {
         this(context, executorService,
                 new UwbServiceImpl(
@@ -91,13 +92,13 @@ public class UwbAdapter implements RangingAdapter {
                             // TODO: Implement when adding backend support.
                         }
                 ),
-                role);
+                type);
     }
 
     @VisibleForTesting
     public UwbAdapter(
             @NonNull Context context, @NonNull ListeningExecutorService executorService,
-            @NonNull UwbServiceImpl uwbService, @NonNull DeviceRole role
+            @NonNull UwbServiceImpl uwbService, @FiraParams.RangingDeviceType int type
     ) {
         if (!UwbAdapter.isSupported(context)) {
             throw new IllegalArgumentException("UWB system feature not found.");
@@ -105,7 +106,7 @@ public class UwbAdapter implements RangingAdapter {
 
         mStateMachine = new StateMachine<>(State.STOPPED);
         mUwbService = uwbService;
-        mUwbClient = role == DeviceRole.INITIATOR
+        mUwbClient = type == FiraParams.RANGING_DEVICE_TYPE_CONTROLLER
                 ? mUwbService.getController(context)
                 : mUwbService.getControlee(context);
         mExecutorService = executorService;
@@ -137,11 +138,7 @@ public class UwbAdapter implements RangingAdapter {
             return;
         }
         mUwbClient.setRangingParameters(uwbConfig.asBackendParameters());
-        mUwbClient.setLocalAddress(uwbConfig.getLocalAddress());
-        if (mUwbClient instanceof RangingController controller) {
-            controller.setComplexChannel(
-                    UwbConfig.toBackend(uwbConfig.getComplexChannel()));
-        }
+        mUwbClient.setLocalAddress(toBackend(uwbConfig.getParameters().getDeviceAddress()));
 
         var future = Futures.submit(() -> {
             mUwbClient.startRanging(mUwbListener, Executors.newSingleThreadExecutor());
@@ -161,16 +158,18 @@ public class UwbAdapter implements RangingAdapter {
         Futures.addCallback(future, mUwbClientResultHandlers.stopRanging, mExecutorService);
     }
 
-    public UwbAddress getLocalAddress() {
-        return mUwbClient.getLocalAddress();
+    public @NonNull UwbAddress getLocalAddress() {
+        return UwbAddress.fromBytes(mUwbClient.getLocalAddress().toBytes());
     }
 
-    public ListenableFuture<UwbComplexChannel> getComplexChannel() {
-        if (!(mUwbClient instanceof RangingController)) {
-            return immediateFuture(null);
+    public @Nullable UwbComplexChannel getComplexChannel() {
+        if (!(mUwbClient instanceof RangingController controller)) {
+            return null;
         }
-        return Futures.submit(() -> ((RangingController) mUwbClient).getComplexChannel(),
-                mExecutorService);
+        com.android.ranging.uwb.backend.internal.UwbComplexChannel complexChannel =
+                controller.getComplexChannel();
+        return new UwbComplexChannel(
+                complexChannel.getChannel(), complexChannel.getPreambleIndex());
     }
 
     public ListenableFuture<RangingCapabilities> getCapabilities() throws RemoteException {
@@ -238,18 +237,6 @@ public class UwbAdapter implements RangingAdapter {
                 clear();
             }
         }
-    }
-
-    @VisibleForTesting
-    public void setComplexChannelForTesting() {
-        if (mUwbClient instanceof RangingController) {
-            mUwbClient.setForTesting(true);
-        }
-    }
-
-    @VisibleForTesting
-    public void setLocalAddressForTesting(@NonNull UwbAddress uwbAddress) {
-        mUwbClient.setLocalAddress(uwbAddress);
     }
 
     private void clear() {

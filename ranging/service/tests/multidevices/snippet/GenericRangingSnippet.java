@@ -22,9 +22,12 @@ import android.net.ConnectivityManager;
 import android.os.RemoteException;
 import android.ranging.DataNotificationConfig;
 import android.ranging.RangingDevice;
+import android.ranging.RangingParameters;
+import android.ranging.RangingPreference;
+import android.ranging.SensorFusionParameters;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
-import android.ranging.uwb.UwbParameters;
+import android.ranging.uwb.UwbRangingParameters;
 import android.util.Log;
 import android.uwb.UwbManager;
 
@@ -35,12 +38,8 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.ranging.uwb.backend.internal.Utils;
 import com.android.server.ranging.RangingConfig;
 import com.android.server.ranging.RangingData;
-import com.android.server.ranging.RangingInjector;
-import com.android.server.ranging.RangingParameters;
-import com.android.server.ranging.RangingParameters.DeviceRole;
 import com.android.server.ranging.RangingSession;
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.fusion.DataFusers;
 import com.android.server.ranging.uwb.UwbAdapter;
 
 import com.google.android.mobly.snippet.Snippet;
@@ -186,9 +185,12 @@ public class GenericRangingSnippet implements Snippet {
             }
         }
 
-        UwbParameters.Builder uwbParamsBuilder = new UwbParameters.Builder()
+        UwbRangingParameters.Builder uwbParamsBuilder = new UwbRangingParameters.Builder()
+                .setDeviceRole(j.getInt("deviceRole"))
                 .setPeerAddresses(peerAddressesBuilder.build())
                 .setConfigId(j.getInt("configType"))
+                .setDeviceAddress(UwbAddress.fromBytes(
+                        convertJSONArrayToByteArray(j.getJSONArray("deviceAddress"))))
                 .setSessionId(j.getInt("sessionId"))
                 .setSubSessionId(j.getInt("subSessionId"))
                 .setSessionKeyInfo(
@@ -204,20 +206,8 @@ public class GenericRangingSnippet implements Snippet {
                     convertJSONArrayToByteArray(j.getJSONArray("subSessionKeyInfo")));
         }
 
-        DataNotificationConfig dataNotificationConfig = new DataNotificationConfig.Builder()
-                .setNotificationConfig(j.getInt("rangeDataConfigType"))
-                .build();
-
-        DeviceRole role = DeviceRole.ROLES.get(j.getInt("deviceRole"));
-        return new RangingParameters.Builder(role)
-                .setNoInitialDataTimeout(Duration.ofSeconds(3))
-                .setNoUpdatedDataTimeout(Duration.ofSeconds(2))
-                .setDataNotificationConfig(dataNotificationConfig)
-                .useUwb(uwbParamsBuilder.build())
-                .useSensorFusion(new DataFusers.PreferentialDataFuser(RangingTechnology.UWB))
-                .setLocalUwbAddressForTesting(
-                        com.android.ranging.uwb.backend.internal.UwbAddress.fromBytes(
-                                convertJSONArrayToByteArray(j.getJSONArray("deviceAddress"))))
+        return new RangingParameters.Builder()
+                .setUwbParameters(uwbParamsBuilder.build())
                 .build();
     }
 
@@ -245,12 +235,24 @@ public class GenericRangingSnippet implements Snippet {
 
         RangingSession session = new RangingSession(mContext, adapterExecutor, timeoutExecutor);
 
+        DataNotificationConfig dataNotificationConfig = new DataNotificationConfig.Builder()
+                .setNotificationConfig(config.getInt("rangeDataConfigType"))
+                .build();
+
+        RangingConfig rangingConfig = new RangingConfig.Builder(
+                new RangingPreference.Builder()
+                        .setRangingParameters(generateRangingParameters(config))
+                        .setSensorFusionParameters(new SensorFusionParameters.Builder().build())
+                        .setDataNotificationConfig(dataNotificationConfig)
+                        .build()
+        )
+                .setNoInitialDataTimeout(Duration.ofSeconds(3))
+                .setNoUpdatedDataTimeout(Duration.ofSeconds(2))
+                .build();
+
         ImmutableMap<UUID, RangingConfig> parameters =
                 new ImmutableMap.Builder<UUID, RangingConfig>()
-                        .put(UUID.randomUUID(),
-                                new RangingConfig(new RangingInjector(mContext),
-                                        generateRangingParameters(config))
-                        )
+                        .put(UUID.randomUUID(), rangingConfig)
                         .build();
         GenericRangingCallback callback =
                 new GenericRangingCallback(callbackId, Event.EventAll.getType());

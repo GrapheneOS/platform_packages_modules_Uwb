@@ -19,9 +19,11 @@ package android.ranging;
 import android.annotation.FlaggedApi;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.ranging.uwb.UwbParameters;
+import android.ranging.cs.CsRangingParameters;
+import android.ranging.uwb.UwbRangingParameters;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.android.ranging.flags.Flags;
 
@@ -29,20 +31,25 @@ import com.android.ranging.flags.Flags;
  * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
-public class RangingParameters implements Parcelable {
+public final class RangingParameters implements Parcelable {
 
-    private final UwbParameters mUwbParameters;
+    private final UwbRangingParameters mUwbParameters;
+
+    private final CsRangingParameters mCsParameters;
 
     private RangingParameters(Builder builder) {
         mUwbParameters = builder.mUwbParameters;
+        mCsParameters = builder.mCsParameters;
     }
 
-    protected RangingParameters(Parcel in) {
+    private RangingParameters(Parcel in) {
         mUwbParameters = in.readParcelable(
-                UwbParameters.class.getClassLoader(), UwbParameters.class);
+                UwbRangingParameters.class.getClassLoader(), UwbRangingParameters.class);
+        mCsParameters = in.readParcelable(CsRangingParameters.class.getClassLoader(),
+                CsRangingParameters.class);
     }
 
-    public static final Creator<RangingParameters> CREATOR = new Creator<RangingParameters>() {
+    public static final Creator<RangingParameters> CREATOR = new Creator<>() {
         @Override
         public RangingParameters createFromParcel(Parcel in) {
             return new RangingParameters(in);
@@ -54,8 +61,14 @@ public class RangingParameters implements Parcelable {
         }
     };
 
-    public @NonNull UwbParameters getUwbParameters() {
+    /** @return ranging parameters for UWB, if they were provided */
+    public @Nullable UwbRangingParameters getUwbParameters() {
         return mUwbParameters;
+    }
+
+    /** @return ranging parameters for CS, if they were provided */
+    public @Nullable CsRangingParameters getCsParameters() {
+        return mCsParameters;
     }
 
     @Override
@@ -66,17 +79,35 @@ public class RangingParameters implements Parcelable {
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
         dest.writeParcelable(mUwbParameters, flags);
+        dest.writeParcelable(mCsParameters, flags);
     }
 
     public static class Builder {
-        private UwbParameters mUwbParameters;
+        private UwbRangingParameters mUwbParameters = null;
+        private CsRangingParameters mCsParameters = null;
 
+        /** Build the {@link RangingParameters object} */
         public RangingParameters build() {
             return new RangingParameters(this);
         }
 
-        public Builder setUwbParameters(UwbParameters uwbParameters) {
+        /**
+         * Set parameters for UWB ranging in this session.
+         *
+         * @param uwbParameters containing a configuration for UWB ranging.
+         */
+        public Builder setUwbParameters(UwbRangingParameters uwbParameters) {
             mUwbParameters = uwbParameters;
+            return this;
+        }
+
+        /**
+         * Set parameters for Bluetooth Channel Sounding ranging in this session.
+         *
+         * @param csParameters containing a configuration for CS ranging.
+         */
+        public Builder setCsParameters(CsRangingParameters csParameters) {
+            mCsParameters = csParameters;
             return this;
         }
     }

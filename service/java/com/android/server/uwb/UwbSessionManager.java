@@ -2535,7 +2535,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                 sendDataInfo.params);
                         return sendDataStatus;
                     }
-                    if (!isValidSendDataInfo(sendDataInfo)) {
+                    if (!isValidSendDataInfo(sendDataInfo, uwbSession.getChipId())) {
                         sendDataStatus = UwbUciConstants.STATUS_CODE_INVALID_PARAM;
                         mSessionNotificationManager.onDataSendFailed(
                                 uwbSession, sendDataInfo.remoteDeviceAddress, sendDataStatus,
@@ -2605,12 +2605,19 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         return uwbSession != null && uwbSession.getSessionState() == UWB_SESSION_STATE_ACTIVE;
     }
 
-    private boolean isValidSendDataInfo(SendDataInfo sendDataInfo) {
-        if (sendDataInfo.data == null) {
-            return false;
-        }
+    /** Returns max length of data message possible on a given chip */
+    private int getMaxMessageSize(String chipId) {
+        GenericSpecificationParams params =
+                mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(chipId);
 
-        if (sendDataInfo.remoteDeviceAddress == null) {
+        return (params != null && params.getFiraSpecificationParams() != null)
+                ? params.getFiraSpecificationParams().getMaxMessageSize()
+                : 0;
+    }
+
+    private boolean isValidSendDataInfo(SendDataInfo sendDataInfo, String chipId) {
+        if (sendDataInfo == null || sendDataInfo.data == null
+                || sendDataInfo.remoteDeviceAddress == null) {
             return false;
         }
 
@@ -2618,6 +2625,21 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 > UwbUciConstants.UWB_DEVICE_EXT_MAC_ADDRESS_LEN) {
             return false;
         }
+
+        final int fixedLength = FiraParams.SESSION_HANDLE_LEN
+                                + UwbUciConstants.UWB_DEVICE_EXT_MAC_ADDRESS_LEN
+                                + FiraParams.SEQUENCE_NUMBER_LENGTH
+                                + FiraParams.DATA_MSG_LENGTH;
+
+        int sendDataInfoLength = fixedLength + sendDataInfo.data.length;
+        int maxMessageSize = getMaxMessageSize(chipId);
+        if (sendDataInfoLength > maxMessageSize) {
+            Log.e(TAG, "SendDataInfo length:" + sendDataInfoLength
+                    + " exceeds max supported message size:" + maxMessageSize + " for chipId: "
+                    + chipId);
+            return false;
+        }
+
         return true;
     }
 

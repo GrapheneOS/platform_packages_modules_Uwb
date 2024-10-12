@@ -26,20 +26,19 @@ import static org.mockito.Mockito.when;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
-import android.ranging.uwb.UwbParameters;
+import android.ranging.uwb.UwbRangingParameters;
 
 import androidx.test.filters.SmallTest;
 
 import com.android.ranging.uwb.backend.internal.RangingController;
 import com.android.ranging.uwb.backend.internal.RangingPosition;
 import com.android.ranging.uwb.backend.internal.RangingSessionCallback;
-import com.android.ranging.uwb.backend.internal.UwbAddress;
 import com.android.ranging.uwb.backend.internal.UwbDevice;
 import com.android.ranging.uwb.backend.internal.UwbServiceImpl;
 import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingData;
-import com.android.server.ranging.RangingParameters.DeviceRole;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.cs.CsConfig;
 import com.android.server.ranging.uwb.UwbAdapter;
@@ -78,16 +77,16 @@ public class UwbAdapterTest {
 
     private UwbConfig.Builder generateConfig() {
         return new UwbConfig.Builder(
-                new UwbParameters.Builder()
-                        .setConfigId(UwbParameters.ConfigId.UNICAST_DS_TWR)
+                new UwbRangingParameters.Builder()
+                        .setConfigId(UwbRangingParameters.ConfigId.UNICAST_DS_TWR)
+                        .setDeviceRole(UwbRangingParameters.DeviceRole.INITIATOR)
+                        .setDeviceAddress(UwbAddress.fromBytes(new byte[]{1, 2}))
+                        .setComplexChannel(new UwbComplexChannel(9, 11))
                         .setPeerAddresses(ImmutableMap.of())
-                        .setRangingUpdateRate(UwbParameters.RangingUpdateRate.NORMAL)
+                        .setRangingUpdateRate(UwbRangingParameters.RangingUpdateRate.NORMAL)
                         .build()
         )
-                .setCountryCode("US")
-                .setDeviceRole(DeviceRole.INITIATOR)
-                .setLocalAddress(UwbAddress.fromBytes(new byte[]{1, 2}))
-                .setComplexChannel(new UwbComplexChannel(9, 11));
+                .setCountryCode("US");
     }
 
     @Before
@@ -96,7 +95,7 @@ public class UwbAdapterTest {
                 .thenReturn(true);
         when(mMockUwbService.getController(any())).thenReturn(mMockUwbClient);
         mUwbAdapter = new UwbAdapter(mMockContext, MoreExecutors.newDirectExecutorService(),
-                mMockUwbService, DeviceRole.INITIATOR);
+                mMockUwbService, UwbRangingParameters.DeviceRole.INITIATOR);
     }
 
     @Test

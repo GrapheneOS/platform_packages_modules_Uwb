@@ -32,7 +32,7 @@ import java.util.Map;
  *  @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
-public class RangingCapabilities implements Parcelable {
+public final class RangingCapabilities implements Parcelable {
 
     protected RangingCapabilities(Parcel in) {
     }

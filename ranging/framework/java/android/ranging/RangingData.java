@@ -31,7 +31,7 @@ import java.util.Objects;
  * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
-public class RangingData implements Parcelable {
+public final class RangingData implements Parcelable {
 
     @RangingManager.RangingTechnology
     private final int mRangingTechnology;

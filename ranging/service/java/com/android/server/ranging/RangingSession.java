@@ -120,11 +120,11 @@ public class RangingSession {
             synchronized (mPeers) {
                 // Don't overwrite peers inserted for testing.
                 if (!mPeers.containsKey(peerId)) {
-                    mPeers.put(peerId,
-                            new RangingPeer(mContext, mAdapterExecutor, mTimeoutExecutor));
+//                    mPeers.put(peerId,
+//                            new RangingPeer(mContext, mAdapterExecutor, mTimeoutExecutor));
                 }
 
-                mPeers.get(peerId).start(peerConfig, new PeerListener(peerId, callback));
+//                mPeers.get(peerId).start(peerConfig, new PeerListener(peerId, callback));
             }
         }
     }

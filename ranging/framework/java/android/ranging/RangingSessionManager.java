@@ -20,8 +20,6 @@ import android.content.AttributionSource;
 import android.os.Process;
 import android.util.Log;
 
-import com.android.ranging.flags.Flags;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -29,47 +27,50 @@ import java.util.concurrent.Executor;
 /**
  * @hide
  */
-public class RangingSessionManager extends IRangingCallbacks.Stub {
+public final class RangingSessionManager extends IRangingCallbacks.Stub {
 
     private static final String TAG = "RangingSessionManager";
     private final IRangingAdapter mRangingAdapter;
     private static long sSessionIdCounter = 1;
 
-    private final Map<SessionHandle, RangingSession> mRangingSessionMap = new ConcurrentHashMap<>();
+    private final Map<SessionHandle, RangingSession> mSessions = new ConcurrentHashMap<>();
 
     public RangingSessionManager(IRangingAdapter rangingAdapter) {
         mRangingAdapter = rangingAdapter;
     }
 
-    public RangingSession createRangingSessionInstance(AttributionSource attributionSource,
-            RangingSession.Callback callback, Executor executor) {
-        if (Flags.rangingStackEnabled()) {
-            SessionHandle sessionHandle = new SessionHandle(sSessionIdCounter++, attributionSource,
-                    Process.myPid());
-            RangingSession rangingSession = new RangingSession(this, attributionSource,
-                    sessionHandle,
-                    mRangingAdapter, callback, executor);
-            mRangingSessionMap.put(sessionHandle, rangingSession);
-            return rangingSession;
-        }
-        return null;
+    public RangingSession createRangingSessionInstance(
+            AttributionSource attributionSource, RangingSession.Callback callback, Executor executor
+    ) {
+        SessionHandle sessionHandle = new SessionHandle(sSessionIdCounter++, attributionSource,
+                Process.myPid());
+        RangingSession rangingSession = new RangingSession(this,
+                attributionSource, sessionHandle, mRangingAdapter, callback, executor);
+        mSessions.put(sessionHandle, rangingSession);
+        return rangingSession;
     }
 
     @Override
     public void onStarted(SessionHandle sessionHandle, int technology) {
-        if (!mRangingSessionMap.containsKey(sessionHandle)) {
+        if (!mSessions.containsKey(sessionHandle)) {
             Log.e(TAG, "SessionHandle not found");
         }
-
-        mRangingSessionMap.get(sessionHandle).onRangingStarted(technology);
+        mSessions.get(sessionHandle).onRangingStarted(technology);
     }
 
     @Override
     public void onClosed(SessionHandle sessionHandle, int reason) {
-        if (!mRangingSessionMap.containsKey(sessionHandle)) {
+        if (!mSessions.containsKey(sessionHandle)) {
             Log.e(TAG, "SessionHandle not found");
         }
-        mRangingSessionMap.get(sessionHandle).onRangingClosed(reason);
+        mSessions.get(sessionHandle).onRangingClosed(reason);
+    }
 
+    @Override
+    public void onData(SessionHandle sessionHandle, RangingDevice device, RangingData data) {
+        if (!mSessions.containsKey(sessionHandle)) {
+            Log.e(TAG, "SessionHandle not found");
+        }
+        mSessions.get(sessionHandle).onData(device, data);
     }
 }

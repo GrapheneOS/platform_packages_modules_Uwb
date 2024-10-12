@@ -22,22 +22,23 @@ import com.android.server.ranging.cs.CsAdapter;
 import com.android.server.ranging.uwb.UwbAdapter;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.uwb.support.fira.FiraParams;
 
 import java.util.concurrent.Executors;
 
-public class AdapterProvider {
+public class CapabilitiesProvider {
 
     private final RangingInjector mRangingInjector;
 
     private @Nullable UwbAdapter mUwbAdapter;
     private @Nullable CsAdapter mCsAdapter;
 
-    public AdapterProvider(RangingInjector rangingInjector) {
+    public CapabilitiesProvider(RangingInjector rangingInjector) {
         mRangingInjector = rangingInjector;
         if (UwbAdapter.isSupported(mRangingInjector.getContext())) {
             mUwbAdapter = new UwbAdapter(mRangingInjector.getContext(),
                     MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor()),
-                    RangingParameters.DeviceRole.INITIATOR);
+                    FiraParams.RANGING_DEVICE_TYPE_CONTROLLER);
         }
         if (CsAdapter.isSupported(mRangingInjector.getContext())) {
             mCsAdapter = new CsAdapter();

@@ -61,7 +61,6 @@ java_defaults {
     ],
     libs: [
         "androidx.annotation_annotation",
-        "guava",
         "unsupportedappusage", // for android.compat.annotation.UnsupportedAppUsage
     ],
     srcs: [

@@ -29,25 +29,29 @@ import com.android.ranging.flags.Flags;
  * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
-public class RangingPreference implements Parcelable {
+public final class RangingPreference implements Parcelable {
 
     private final RangingParameters mRangingParameters;
+    private final SensorFusionParameters mFusionParameters;
 
     private final DataNotificationConfig mDataNotificationConfig;
 
     private RangingPreference(Builder builder) {
         mRangingParameters = builder.mRangingParameters;
         mDataNotificationConfig = builder.mDataNotificationConfig;
+        mFusionParameters = builder.mFusionParameters;
     }
 
-    protected RangingPreference(Parcel in) {
+    private RangingPreference(Parcel in) {
         mRangingParameters = in.readParcelable(
                 RangingParameters.class.getClassLoader(), RangingParameters.class);
+        mFusionParameters = in.readParcelable(
+                SensorFusionParameters.class.getClassLoader(), SensorFusionParameters.class);
         mDataNotificationConfig = in.readParcelable(
                 DataNotificationConfig.class.getClassLoader(), DataNotificationConfig.class);
     }
 
-    public static final Creator<RangingPreference> CREATOR = new Creator<RangingPreference>() {
+    public static final Creator<RangingPreference> CREATOR = new Creator<>() {
         @Override
         public RangingPreference createFromParcel(Parcel in) {
             return new RangingPreference(in);
@@ -59,11 +63,15 @@ public class RangingPreference implements Parcelable {
         }
     };
 
-    public RangingParameters getRangingParameters() {
+    public @Nullable RangingParameters getRangingParameters() {
         return mRangingParameters;
     }
 
-    public @Nullable DataNotificationConfig getNotificationConfig() {
+    public @NonNull SensorFusionParameters getSensorFusionParameters() {
+        return mFusionParameters;
+    }
+
+    public @NonNull DataNotificationConfig getDataNotificationConfig() {
         return mDataNotificationConfig;
     }
 
@@ -75,20 +83,39 @@ public class RangingPreference implements Parcelable {
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
         dest.writeParcelable(mRangingParameters, flags);
+        dest.writeParcelable(mFusionParameters, flags);
+        dest.writeParcelable(mDataNotificationConfig, flags);
     }
 
     public static class Builder {
         private RangingParameters mRangingParameters;
         private DataNotificationConfig mDataNotificationConfig;
+        private SensorFusionParameters mFusionParameters;
 
-        public Builder setRangingParameters(RangingParameters rangingParameters) {
+        public RangingPreference build() {
+            if (mDataNotificationConfig == null) {
+                mDataNotificationConfig = new DataNotificationConfig.Builder().build();
+            }
+            if (mFusionParameters == null) {
+                mFusionParameters = new SensorFusionParameters.Builder().build();
+            }
+            return new RangingPreference(this);
+        }
+
+        public Builder setRangingParameters(@NonNull RangingParameters rangingParameters) {
             mRangingParameters = rangingParameters;
             return this;
         }
 
-        public Builder setDataNotificationConfig(DataNotificationConfig config) {
+        public Builder setSensorFusionParameters(@NonNull SensorFusionParameters parameters) {
+            mFusionParameters = parameters;
+            return this;
+        }
+
+        public Builder setDataNotificationConfig(@NonNull DataNotificationConfig config) {
             mDataNotificationConfig = config;
             return this;
         }
+
     }
 }

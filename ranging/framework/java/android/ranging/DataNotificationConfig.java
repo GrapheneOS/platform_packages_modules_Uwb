@@ -16,9 +16,6 @@
 
 package android.ranging;
 
-
-import static com.google.common.base.Preconditions.checkArgument;
-
 import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
 import android.os.Parcel;
@@ -35,7 +32,7 @@ import java.lang.annotation.RetentionPolicy;
  * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
-public class DataNotificationConfig implements Parcelable {
+public final class DataNotificationConfig implements Parcelable {
 
     private final @NotificationConfig int mRangeDataNtfConfigType;
     private final int mProximityNearCm;
@@ -47,18 +44,17 @@ public class DataNotificationConfig implements Parcelable {
         mProximityFarCm = in.readInt();
     }
 
-    public static final Creator<DataNotificationConfig> CREATOR =
-            new Creator<DataNotificationConfig>() {
-                @Override
-                public DataNotificationConfig createFromParcel(Parcel in) {
-                    return new DataNotificationConfig(in);
-                }
+    public static final Creator<DataNotificationConfig> CREATOR = new Creator<>() {
+        @Override
+        public DataNotificationConfig createFromParcel(Parcel in) {
+            return new DataNotificationConfig(in);
+        }
 
-                @Override
-                public DataNotificationConfig[] newArray(int size) {
-                    return new DataNotificationConfig[size];
-                }
-            };
+        @Override
+        public DataNotificationConfig[] newArray(int size) {
+            return new DataNotificationConfig[size];
+        }
+    };
 
     @Override
     public int describeContents() {
@@ -88,8 +84,10 @@ public class DataNotificationConfig implements Parcelable {
 
 
     private DataNotificationConfig(Builder builder) {
-        checkArgument(builder.mProximityNearCm <= builder.mProximityFarCm,
-                "Ntf proximity near cannot be greater than Ntf proximity far");
+        if (builder.mProximityNearCm > builder.mProximityFarCm) {
+            throw new IllegalArgumentException(
+                    "Ntf proximity near cannot be greater than Ntf proximity far");
+        }
         mRangeDataNtfConfigType = builder.mRangeDataConfigType;
         mProximityNearCm = builder.mProximityNearCm;
         mProximityFarCm = builder.mProximityFarCm;

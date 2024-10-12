@@ -28,7 +28,7 @@ import java.util.UUID;
  * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
-public class RangingDevice implements Parcelable {
+public final class RangingDevice implements Parcelable {
     private final UUID mId;
 
     // Constructor that takes UUID
@@ -72,5 +72,19 @@ public class RangingDevice implements Parcelable {
     // Getter for the UUID
     public UUID getId() {
         return mId;
+    }
+
+    @Override
+    public int hashCode() {
+        return mId.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof RangingDevice device) {
+            return mId.equals(device.getId());
+        } else {
+            return false;
+        }
     }
 }

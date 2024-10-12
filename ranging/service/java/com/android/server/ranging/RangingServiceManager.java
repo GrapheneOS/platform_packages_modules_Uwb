@@ -17,19 +17,32 @@
 package com.android.server.ranging;
 
 import android.content.AttributionSource;
-import android.content.Context;
-import android.content.ContextParams;
 import android.ranging.IRangingCallbacks;
 import android.ranging.IRangingCapabilitiesCallback;
 import android.ranging.RangingPreference;
 import android.ranging.SessionHandle;
 
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+
 public class RangingServiceManager {
 
     private final RangingInjector mRangingInjector;
 
+    private final ListeningExecutorService mAdapterExecutor;
+    private final ScheduledExecutorService mTimeoutExecutor;
+
+    private final ConcurrentHashMap<SessionHandle, RangingPeer> mSessions;
+
     public RangingServiceManager(RangingInjector rangingInjector) {
         mRangingInjector = rangingInjector;
+        mAdapterExecutor = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
+        mTimeoutExecutor = Executors.newSingleThreadScheduledExecutor();
+        mSessions = new ConcurrentHashMap<>();
     }
 
     public void getRangingCapabilities(IRangingCapabilitiesCallback callback) {
@@ -39,21 +52,31 @@ public class RangingServiceManager {
     public void startRanging(AttributionSource attributionSource, SessionHandle sessionHandle,
             RangingPreference rangingPreference, IRangingCallbacks callbacks) {
         // TODO android.permission.RANGING permission check here
-        Context context = mRangingInjector.getContext()
-                .createContext(new ContextParams
-                        .Builder()
-                        .setNextAttributionSource(attributionSource)
-                        .build());
+//        Context context = mRangingInjector.getContext()
+//                .createContext(new ContextParams
+//                        .Builder()
+//                        .setNextAttributionSource(attributionSource)
+//                        .build());
 
-        //Use new context for creating RangingSession or SmartRangingSession.
+        if (rangingPreference.getRangingParameters() != null) {
+            startPassthroughRanging(sessionHandle, callbacks, rangingPreference);
+        } else {
+            throw new UnsupportedOperationException("Smart ranging is not yet supported");
+        }
     }
 
-    public void stopRanging(SessionHandle sessionHandle) {
+    public void startPassthroughRanging(
+            SessionHandle sessionHandle, IRangingCallbacks callbacks, RangingPreference preference
+    ) {
+        RangingConfig config = new RangingConfig.Builder(preference).build();
+        RangingPeer session = new RangingPeer(
+                mRangingInjector.getContext(), mAdapterExecutor, mTimeoutExecutor, sessionHandle);
+        mSessions.put(sessionHandle, session);
+        session.start(config, callbacks);
     }
 
-    public static class RangingSessionInfo {
-        SessionHandle mSessionHandle;
-        RangingPreference mRangingPreference;
-
+    public void stopRanging(SessionHandle handle) {
+        mSessions.get(handle).stop();
+        mSessions.remove(handle);
     }
 }

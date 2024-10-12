@@ -29,7 +29,11 @@ public class DataFusers {
      * A data fuser that passes through all provided data as fused data.
      */
     public static class PassthroughDataFuser implements FusionEngine.DataFuser {
-
+        /**
+         * {@inheritDoc}
+         *
+         * @param sources is ignored
+         */
         @Override
         public Optional<RangingData> fuse(
                 @NonNull RangingData data, final @NonNull Set<RangingTechnology> sources

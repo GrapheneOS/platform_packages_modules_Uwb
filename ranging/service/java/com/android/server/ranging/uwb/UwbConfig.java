@@ -21,15 +21,14 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import android.ranging.DataNotificationConfig;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
-import android.ranging.uwb.UwbParameters;
+import android.ranging.uwb.UwbRangingParameters;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import com.android.ranging.uwb.backend.internal.RangingParameters;
 import com.android.ranging.uwb.backend.internal.Utils;
 import com.android.ranging.uwb.backend.internal.UwbRangeDataNtfConfig;
 import com.android.server.ranging.RangingConfig.TechnologyConfig;
-import com.android.server.ranging.RangingParameters.DeviceRole;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.Conversions;
 
@@ -44,7 +43,7 @@ import java.util.Arrays;
  * configuration message sent over OOB and everything required to start a session in the underlying
  * UWB system API.
  */
-public class UwbConfig extends UwbParameters implements TechnologyConfig {
+public class UwbConfig implements TechnologyConfig {
     private static final String TAG = UwbConfig.class.getSimpleName();
 
     private static final int MIN_SIZE_BYTES = 20;
@@ -71,19 +70,14 @@ public class UwbConfig extends UwbParameters implements TechnologyConfig {
         return MIN_SIZE_BYTES + getSessionKeyInfoLength();
     }
 
-    private final DeviceRole mDeviceRole;
-    private final com.android.ranging.uwb.backend.internal.UwbAddress mLocalAddress;
     private final String mCountryCode;
     private final DataNotificationConfig mDataNotificationConfig;
-    private final UwbComplexChannel mComplexChannel;
+    private final UwbRangingParameters mParameters;
 
     private UwbConfig(Builder builder) {
-        super(builder.mParameters);
-        mDeviceRole = builder.mDeviceRole.get();
-        mLocalAddress = builder.mLocalAddress.get();
+        mParameters = builder.mParameters;
         mCountryCode = builder.mCountryCode.get();
         mDataNotificationConfig = builder.mDataNotificationConfig;
-        mComplexChannel = builder.mComplexChannel.get();
     }
 
     /**
@@ -163,23 +157,30 @@ public class UwbConfig extends UwbParameters implements TechnologyConfig {
         parseCursor += COUNTRY_CODE_SIZE;
 
         // Parse Device Role
-        DeviceRole deviceRole = fromOobDeviceRole(uwbConfigBytes[parseCursor]);
+        @UwbRangingParameters.DeviceRole int deviceRole = fromOobDeviceRole(
+                uwbConfigBytes[parseCursor]);
         parseCursor += DEVICE_ROLE_SIZE;
 
         // Parse Device Type
-        int deviceType = uwbConfigBytes[parseCursor];
+        int deviceType = fromOobDeviceType(uwbConfigBytes[parseCursor]);
         parseCursor += DEVICE_TYPE_SIZE;
 
-        UwbParameters.Builder paramsBuilder = new UwbParameters.Builder()
+        if (deviceType != deviceRole) {
+            Log.w(TAG, "parsed device role " + deviceRole + " inconsistent with device type "
+                    + deviceType + ". Ignoring type and using role.");
+        }
+
+        UwbRangingParameters.Builder paramsBuilder = new UwbRangingParameters.Builder()
+                .setDeviceRole(deviceRole)
+                .setComplexChannel(new UwbComplexChannel(channel, preambleIndex))
                 .setSessionId(sessionId)
                 .setConfigId(configId)
                 .setSlotDurationMs(slotDurationMs)
                 .setSessionKeyInfo(sessionKey);
 
-
-        for (@UwbParameters.RangingUpdateRate int rate =
-                UwbParameters.RangingUpdateRate.NORMAL;
-                rate <= UwbParameters.RangingUpdateRate.FAST;
+        for (@UwbRangingParameters.RangingUpdateRate int rate =
+                UwbRangingParameters.RangingUpdateRate.NORMAL;
+                rate <= UwbRangingParameters.RangingUpdateRate.FAST;
                 rate++
         ) {
             if (Utils.getRangingTimingParams(configId).getRangingInterval((int) rate)
@@ -190,9 +191,7 @@ public class UwbConfig extends UwbParameters implements TechnologyConfig {
         }
 
         return new Builder(paramsBuilder.build())
-                .setLocalAddress(uwbAddress)
                 .setCountryCode(countryCode)
-                .setComplexChannel(new UwbComplexChannel(channel, preambleIndex))
                 .build();
     }
 
@@ -201,43 +200,40 @@ public class UwbConfig extends UwbParameters implements TechnologyConfig {
         int size = MIN_SIZE_BYTES + getSessionKeyInfoLength();
         return ByteBuffer.allocate(size)
                 .put(RangingTechnology.UWB.toByte())
-                .put(getLocalAddress().toBytes())
-                .put(Conversions.intToByteArray(getSessionId(), SESSION_ID_SIZE))
-                .put(Conversions.intToByteArray(getConfigId(), CONFIG_ID_SIZE))
-                .put(Conversions.intToByteArray(getComplexChannel().getChannel(), CHANNEL_SIZE))
-                .put(Conversions.intToByteArray(getComplexChannel().getPreambleIndex(),
+                .put(mParameters.getDeviceAddress().toBytes())
+                .put(Conversions.intToByteArray(mParameters.getSessionId(), SESSION_ID_SIZE))
+                .put(Conversions.intToByteArray(mParameters.getConfigId(), CONFIG_ID_SIZE))
+                .put(Conversions.intToByteArray(mParameters.getComplexChannel().getChannel(),
+                        CHANNEL_SIZE))
+                .put(Conversions.intToByteArray(mParameters.getComplexChannel().getPreambleIndex(),
                         PREAMBLE_INDEX_SIZE))
                 .put(Conversions.intToByteArray(
-                        Utils.getRangingTimingParams((int) getConfigId())
-                                .getRangingInterval((int) getRangingUpdateRate()),
+                        Utils.getRangingTimingParams((int) mParameters.getConfigId())
+                                .getRangingInterval((int) mParameters.getRangingUpdateRate()),
                         RANGING_INTERVAL_SIZE))
-                .put(Conversions.intToByteArray(getSlotDurationMs(), SLOT_DURATION_SIZE))
+                .put(Conversions.intToByteArray(
+                        mParameters.getSlotDurationMs(), SLOT_DURATION_SIZE))
                 .put(Conversions.intToByteArray(getSessionKeyInfoLength(), SESSION_KEY_LENGTH_SIZE))
-                .put(getSessionKeyInfo())
+                .put(mParameters.getSessionKeyInfo())
                 .put(getCountryCode().getBytes(US_ASCII))
                 .put(Conversions.intToByteArray(
-                        toOobDeviceRole(getDeviceRole()), DEVICE_ROLE_SIZE))
+                        toOobDeviceRole(mParameters.getDeviceRole()), DEVICE_ROLE_SIZE))
                 .put(Conversions.intToByteArray(
-                        toOobDeviceType(getDeviceType()), DEVICE_TYPE_SIZE))
+                        toOobDeviceType(mParameters.getDeviceRole()), DEVICE_TYPE_SIZE))
                 .array();
     }
 
     /** Returns the length of the session key. */
     public final int getSessionKeyInfoLength() {
-        if (getSessionKeyInfo() == null) {
+        if (mParameters.getSessionKeyInfo() == null) {
             return 0;
         } else {
-            return getSessionKeyInfo().length;
+            return mParameters.getSessionKeyInfo().length;
         }
     }
 
-    /** Returns the device's role within the session. */
-    public @NonNull DeviceRole getDeviceRole() {
-        return mDeviceRole;
-    }
-
-    public @NonNull com.android.ranging.uwb.backend.internal.UwbAddress getLocalAddress() {
-        return mLocalAddress;
+    public @NonNull UwbRangingParameters getParameters() {
+        return mParameters;
     }
 
     public @NonNull String getCountryCode() {
@@ -248,62 +244,58 @@ public class UwbConfig extends UwbParameters implements TechnologyConfig {
         return mDataNotificationConfig;
     }
 
-    @Override
-    public @NonNull UwbComplexChannel getComplexChannel() {
-        return mComplexChannel;
-    }
-
     /**
      * @return the configuration converted to a
      * {@link androidx.core.uwb.backend.impl.internal.RangingParameters} accepted by the UWB
      * backend.
      */
-    public RangingParameters asBackendParameters() {
-        return new RangingParameters(
-                (int) getConfigId(),
-                getSessionId(),
-                getSubSessionId(),
-                getSessionKeyInfo(),
-                getSubSessionKeyInfo(),
-                toBackend(getComplexChannel()),
-                getPeerAddresses().values().stream().map(UwbConfig::toBackend).toList(),
-                (int) getRangingUpdateRate(),
+    public com.android.ranging.uwb.backend.internal.RangingParameters asBackendParameters() {
+        return new com.android.ranging.uwb.backend.internal.RangingParameters(
+                (int) mParameters.getConfigId(),
+                mParameters.getSessionId(),
+                mParameters.getSubSessionId(),
+                mParameters.getSessionKeyInfo(),
+                mParameters.getSubSessionKeyInfo(),
+                toBackend(mParameters.getComplexChannel()),
+                mParameters.getPeerAddresses().values().stream().map(UwbConfig::toBackend).toList(),
+                (int) mParameters.getRangingUpdateRate(),
                 toBackend(getDataNotificationConfig()),
-                (int) getSlotDurationMs(),
-                isAoaDisabled()
+                (int) mParameters.getSlotDurationMs(),
+                mParameters.isAoaDisabled()
         );
     }
 
-    public static int toOobDeviceRole(@NonNull DeviceRole role) {
-        switch (role) {
-            case INITIATOR: return 0x01;
-            case RESPONDER: return 0x02;
+
+    public static int toOobDeviceType(@UwbRangingParameters.DeviceRole int type) {
+        switch (type) {
+            case UwbRangingParameters.DeviceRole.RESPONDER: return 0x02;
+            case UwbRangingParameters.DeviceRole.INITIATOR: return 0x01;
             default: return 0x00;
         }
     }
 
-    public static @NonNull DeviceRole fromOobDeviceRole(int role) {
-        switch (role) {
-            case 0x01: return DeviceRole.INITIATOR;
-            case 0x02: return DeviceRole.RESPONDER;
-            default: throw new IllegalArgumentException("Unknown device role with value " + role);
-        }
-    }
-
-    public static int toOobDeviceType(@UwbParameters.DeviceType int type) {
+    public static @UwbRangingParameters.DeviceRole int fromOobDeviceType(int type) {
         switch (type) {
-            case UwbParameters.DeviceType.CONTROLEE: return 0x02;
-            case UwbParameters.DeviceType.CONTROLLER: return 0x01;
-            default: return 0x00;
-        }
-    }
-
-    public static @UwbParameters.DeviceType int fromOobDeviceType(int type) {
-        switch (type) {
-            case 0x01: return UwbParameters.DeviceType.CONTROLLER;
-            case 0x02: return UwbParameters.DeviceType.CONTROLEE;
+            case 0x01: return UwbRangingParameters.DeviceRole.INITIATOR;
+            case 0x02: return UwbRangingParameters.DeviceRole.RESPONDER;
             default: throw new IllegalArgumentException(
                     "Unknown device type with value " + type);
+        }
+    }
+
+    public static int toOobDeviceRole(@UwbRangingParameters.DeviceRole int role) {
+        switch (role) {
+            case UwbRangingParameters.DeviceRole.INITIATOR: return 0x01;
+            case UwbRangingParameters.DeviceRole.RESPONDER: return 0x02;
+            default: return 0x00;
+        }
+    }
+
+    public static @UwbRangingParameters.DeviceRole int fromOobDeviceRole(int role) {
+        switch (role) {
+            case 0x01: return UwbRangingParameters.DeviceRole.INITIATOR;
+            case 0x02: return UwbRangingParameters.DeviceRole.RESPONDER;
+            default: throw new IllegalArgumentException("Unknown device role with value " + role);
         }
     }
 
@@ -333,35 +325,17 @@ public class UwbConfig extends UwbParameters implements TechnologyConfig {
 
     /** Builder for {@link UwbConfig}. */
     public static class Builder {
-        private final UwbParameters mParameters;
-        private final RequiredParam<DeviceRole> mDeviceRole = new RequiredParam<>();
-        private final RequiredParam<com.android.ranging.uwb.backend.internal.UwbAddress>
-                mLocalAddress = new RequiredParam<>();
+        private final UwbRangingParameters mParameters;
         private final RequiredParam<String> mCountryCode = new RequiredParam<>();
         private DataNotificationConfig mDataNotificationConfig =
                 new DataNotificationConfig.Builder().build();
 
-        private final RequiredParam<UwbComplexChannel> mComplexChannel = new RequiredParam<>();
-
-
-        public Builder(@NonNull UwbParameters parameters) {
+        public Builder(@NonNull UwbRangingParameters parameters) {
             mParameters = parameters;
         }
 
         public @NonNull UwbConfig build() {
             return new UwbConfig(this);
-        }
-
-        public Builder setDeviceRole(@NonNull DeviceRole role) {
-            mDeviceRole.set(role);
-            return this;
-        }
-
-        public Builder setLocalAddress(
-                @NonNull com.android.ranging.uwb.backend.internal.UwbAddress address
-        ) {
-            mLocalAddress.set(address);
-            return this;
         }
 
         public Builder setCountryCode(@NonNull String countryCode) {
@@ -371,11 +345,6 @@ public class UwbConfig extends UwbParameters implements TechnologyConfig {
 
         public Builder setDataNotificationConfig(@NonNull DataNotificationConfig config) {
             mDataNotificationConfig = config;
-            return this;
-        }
-
-        public Builder setComplexChannel(@NonNull UwbComplexChannel complexChannel) {
-            mComplexChannel.set(complexChannel);
             return this;
         }
     }
