@@ -301,6 +301,23 @@ public class NativeUwbManager {
     }
 
     /**
+     * set RF Test Configuration Parameters for the requested UWB Test session
+     *
+     * @param noOfParams        : The number (n) of APP Configuration Parameters
+     * @param appConfigParamLen : The length of APP Configuration Parameters
+     * @param appConfigParams   : APP Configuration Parameter
+     * @param chipId            : Identifier of UWB chip for multi-HAL devices
+     * @return : {@link UwbConfigStatusData} : Contains statuses for all cfg_id
+     */
+    public UwbConfigStatusData setRfTestAppConfigurations(int sessionId, int noOfParams,
+            int appConfigParamLen, byte[] appConfigParams, String chipId) {
+        synchronized (mNativeLock) {
+            return nativeSetRfTestAppConfigurations(sessionId, noOfParams, appConfigParamLen,
+                    appConfigParams, chipId);
+        }
+    }
+
+    /**
      * Set radar APP Configuration Parameters for the requested UWB radar session
      *
      * @param noOfParams        : The number (n) of APP Configuration Parameters
@@ -625,4 +642,7 @@ public class NativeUwbManager {
 
     private native byte nativeSetHybridSessionControleeConfigurations(int sessionId,
             int noOfPhases, byte[] phaseList, String chipId);
+
+    private native UwbConfigStatusData nativeSetRfTestAppConfigurations(int sessionId,
+            int noOfParams, int appConfigParamLen, byte[] appConfigParams, String chipId);
 }

@@ -16,7 +16,7 @@
 package com.android.server.ranging;
 
 import android.ranging.RangingPreference;
-import android.ranging.uwb.UwbRangingParameters;
+import android.ranging.uwb.UwbRangingParams;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -76,7 +76,7 @@ public class RangingConfig {
         mTechnologyConfigs = technologyConfigsBuilder.build();
 
         // Sensor fusion configuration
-        if (builder.mPreference.getSensorFusionParameters().getUseSensorFusion()) {
+        if (builder.mPreference.getSensorFusionParameters().isSensorFusionEnabled()) {
             mFusionEngine = new FilteringFusionEngine(
                     new DataFusers.PreferentialDataFuser(RangingTechnology.UWB)
             );
@@ -104,7 +104,7 @@ public class RangingConfig {
 
     private @Nullable UwbConfig getUwbConfig() {
         if (mPreference.getRangingParameters() == null) return null;
-        UwbRangingParameters uwbParameters = mPreference.getRangingParameters().getUwbParameters();
+        UwbRangingParams uwbParameters = mPreference.getRangingParameters().getUwbParameters();
         if (uwbParameters == null) return null;
 
         UwbConfig.Builder configBuilder = new UwbConfig.Builder(uwbParameters)

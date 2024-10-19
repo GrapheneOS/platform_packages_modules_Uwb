@@ -156,3 +156,15 @@ java_library {
         "com.uwb.support.fira",
     ],
 }
+
+java_library {
+    name: "com.uwb.support.rftest",
+    defaults: ["support-lib-uwb-common-defaults"],
+    srcs: [
+        "src/com/google/uwb/support/rftest/**/*.java",
+    ],
+    static_libs: [
+        "com.uwb.support.base",
+        "com.uwb.support.fira",
+    ],
+}

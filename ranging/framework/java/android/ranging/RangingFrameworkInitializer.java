@@ -21,17 +21,26 @@ import android.annotation.SystemApi;
 import android.app.SystemServiceRegistry;
 import android.content.Context;
 
+import com.android.ranging.flags.Flags;
+
 
 /**
  * Class for performing registration for Ranging service.
  *
  * @hide
  */
-@FlaggedApi("com.android.ranging.flags.ranging_stack_enabled")
+@FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 @SystemApi(client = SystemApi.Client.MODULE_LIBRARIES)
 public final class RangingFrameworkInitializer {
     private RangingFrameworkInitializer() {}
 
+    /**
+     * Called by {@link SystemServiceRegistry}'s static initializer and registers Ranging service
+     * to {@link Context}, so that {@link Context#getSystemService} can return them.
+     *
+     * @throws IllegalStateException if this is called from anywhere besides
+     * {@link SystemServiceRegistry}
+     */
     public static void registerServiceWrappers() {
         SystemServiceRegistry.registerContextAwareService(
                 Context.RANGING_SERVICE,

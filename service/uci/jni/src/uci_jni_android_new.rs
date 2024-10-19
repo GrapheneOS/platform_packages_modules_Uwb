@@ -37,8 +37,9 @@ use log::{debug, error};
 use uwb_core::error::{Error, Result};
 use uwb_core::params::{
     AndroidRadarConfigResponse, AppConfigTlv, CountryCode, GetDeviceInfoResponse, PhaseList,
-    RadarConfigTlv, RawAppConfigTlv, RawUciMessage, SessionUpdateControllerMulticastResponse,
-    SessionUpdateDtTagRangingRoundsResponse, SetAppConfigResponse, UpdateTime,
+    RadarConfigTlv, RawAppConfigTlv, RawUciMessage, RfTestConfigResponse, RfTestConfigTlv,
+    SessionUpdateControllerMulticastResponse, SessionUpdateDtTagRangingRoundsResponse,
+    SetAppConfigResponse, UpdateTime,
 };
 use uwb_uci_packets::{
     AppConfigTlvType, CapTlv, Controlee, ControleePhaseList, Controlee_V2_0_16_Byte_Version,
@@ -476,6 +477,105 @@ fn native_set_app_configurations(
         env.convert_byte_array(app_config_params).map_err(|_| Error::ForeignFunctionInterface)?;
     let tlvs = parse_app_config_tlv_vec(no_of_params, &config_byte_array)?;
     uci_manager.session_set_app_config(session_id as u32, tlvs)
+}
+
+fn parse_rf_test_config_tlv_vec(
+    no_of_params: i32,
+    mut byte_array: &[u8],
+) -> Result<Vec<RfTestConfigTlv>> {
+    let mut parsed_tlvs_len = 0;
+    let received_tlvs_len = byte_array.len();
+    let mut tlvs = Vec::<RfTestConfigTlv>::new();
+    for _ in 0..no_of_params {
+        // The tlv consists of the type of payload in 1 byte, the length of payload as u8
+        // in 1 byte, and the payload.
+        const TLV_HEADER_SIZE: usize = 2;
+        let tlv = RfTestConfigTlv::parse(byte_array).map_err(|_| Error::BadParameters)?;
+        byte_array = byte_array.get(tlv.v.len() + TLV_HEADER_SIZE..).ok_or(Error::BadParameters)?;
+        parsed_tlvs_len += tlv.v.len() + TLV_HEADER_SIZE;
+        tlvs.push(tlv);
+    }
+    if parsed_tlvs_len != received_tlvs_len {
+        return Err(Error::BadParameters);
+    };
+    Ok(tlvs)
+}
+
+fn create_rf_test_config_response(
+    response: RfTestConfigResponse,
+    env: JNIEnv,
+) -> Result<jbyteArray> {
+    let uwb_config_status_class =
+        env.find_class(CONFIG_STATUS_DATA_CLASS).map_err(|_| Error::ForeignFunctionInterface)?;
+    let mut buf = Vec::<u8>::new();
+    for config_status in &response.config_status {
+        buf.push(u8::from(config_status.cfg_id));
+        buf.push(u8::from(config_status.status));
+    }
+    let config_status_jbytearray =
+        env.byte_array_from_slice(&buf).map_err(|_| Error::ForeignFunctionInterface)?;
+
+    // Safety: config_status_jbytearray is safely instantiated above.
+    let config_status_jobject = unsafe { JObject::from_raw(config_status_jbytearray) };
+    let config_status_jobject = env
+        .new_object(
+            uwb_config_status_class,
+            "(II[B)V",
+            &[
+                JValue::Int(i32::from(response.status)),
+                JValue::Int(response.config_status.len() as i32),
+                JValue::Object(config_status_jobject),
+            ],
+        )
+        .map_err(|_| Error::ForeignFunctionInterface)?;
+    Ok(*config_status_jobject)
+}
+
+/// Set Test configurations on a single UWB device. Return null JObject if failed.
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSetRfTestAppConfigurations(
+    env: JNIEnv,
+    obj: JObject,
+    session_id: jint,
+    no_of_params: jint,
+    _rf_test_app_config_param_len: jint,
+    rf_test_app_config_params: jbyteArray,
+    chip_id: JString,
+) -> jbyteArray {
+    debug!("{}: enter", function_name!());
+    match option_result_helper(
+        native_set_rf_test_app_configurations(
+            env,
+            obj,
+            session_id,
+            no_of_params,
+            rf_test_app_config_params,
+            chip_id,
+        ),
+        function_name!(),
+    ) {
+        Some(config_response) => create_rf_test_config_response(config_response, env)
+            .inspect_err(|e| {
+                error!("{} failed with {:?}", function_name!(), &e);
+            })
+            .unwrap_or(*JObject::null()),
+        None => *JObject::null(),
+    }
+}
+
+fn native_set_rf_test_app_configurations(
+    env: JNIEnv,
+    obj: JObject,
+    session_id: jint,
+    no_of_params: jint,
+    app_config_params: jbyteArray,
+    chip_id: JString,
+) -> Result<RfTestConfigResponse> {
+    let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
+    let config_byte_array =
+        env.convert_byte_array(app_config_params).map_err(|_| Error::ForeignFunctionInterface)?;
+    let tlvs = parse_rf_test_config_tlv_vec(no_of_params, &config_byte_array)?;
+    uci_manager.session_set_rf_test_app_config(session_id as u32, tlvs)
 }
 
 /// Set radar app configurations on a single UWB device. Return null JObject if failed.

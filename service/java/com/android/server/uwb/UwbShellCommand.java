@@ -410,6 +410,10 @@ public class UwbShellCommand extends BasicShellCommandHandler {
 
         public void onHybridSessionControleeConfigurationFailed(SessionHandle sessionHandle,
                 int reason, PersistableBundle parameters) {}
+
+
+        public void onRfTestNotificationReceived(SessionHandle sessionHandle,
+                PersistableBundle parameters) {}
     }
 
 
@@ -465,7 +469,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             if (option.equals("-i") || option.equals("--session-id")) {
                 builder.setSessionId(Integer.parseInt(getNextArgRequired()));
             }
-            if (option.equals("-c") || option.equals("--channel")) {
+            if (option.equals("-c") || option.equals("--channel-number")) {
                 builder.setChannelNumber(Integer.parseInt(getNextArgRequired()));
             }
             if (option.equals("-t") || option.equals("--device-type")) {
@@ -1005,7 +1009,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 new FiraRangingReconfigureParams.Builder();
         String option = getNextOption();
         while (option != null) {
-            if (option.equals("-a")) {
+            if (option.equals("-a") || option.equals("--action")) {
                 String action = getNextArgRequired();
                 if (action.equals("add")) {
                     builder.setAction(MULTICAST_LIST_UPDATE_ACTION_ADD);
@@ -1015,7 +1019,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     throw new IllegalArgumentException("Unexpected action " + action);
                 }
             }
-            if (option.equals("-d")) {
+            if (option.equals("-d") || option.equals("--dest-addresses")) {
                 String[] destAddressesString = getNextArgRequired().split(",");
                 List<UwbAddress> destAddresses = new ArrayList<>();
                 for (String destAddressString : destAddressesString) {
@@ -1026,7 +1030,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 }
                 builder.setAddressList(destAddresses.toArray(new UwbAddress[0]));
             }
-            if (option.equals("-s")) {
+            if (option.equals("-s") || option.equals("--sub-session-ids")) {
                 String[] subSessionIdsString = getNextArgRequired().split(",");
                 List<Integer> subSessionIds = new ArrayList<>();
                 for (String subSessionIdString : subSessionIdsString) {
@@ -1034,19 +1038,19 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 }
                 builder.setSubSessionIdList(subSessionIds.stream().mapToInt(s -> s).toArray());
             }
-            if (option.equals("-b")) {
+            if (option.equals("-b") || option.equals("--block-stride-length")) {
                 int blockStrideLength = Integer.parseInt(getNextArgRequired());
                 builder.setBlockStrideLength(blockStrideLength);
             }
-            if (option.equals("-c")) {
+            if (option.equals("-c") || option.equals("--range-data-ntf-config")) {
                 int rangeDataNtfConfig = Integer.parseInt(getNextArgRequired());
                 builder.setRangeDataNtfConfig(rangeDataNtfConfig);
             }
-            if (option.equals("-n")) {
+            if (option.equals("-n") || option.equals("--range-data-proximity-near")) {
                 int proximityNear = Integer.parseInt(getNextArgRequired());
                 builder.setRangeDataProximityNear(proximityNear);
             }
-            if (option.equals("-f")) {
+            if (option.equals("-f") || option.equals("--range-data-proximity-far")) {
                 int proximityFar = Integer.parseInt(getNextArgRequired());
                 builder.setRangeDataProximityFar(proximityFar);
             }
@@ -1097,45 +1101,59 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         for (String option = getNextOption(); option != null; option = getNextOption()) {
             switch (option) {
                 case "-b":
+                case "--block":
                     shouldBlockCall = true;
                     break;
                 case "-i":
+                case "--session-id":
                     builder.setSessionId(Integer.parseInt(getNextArgRequired()));
                     break;
                 case "-c":
+                case "--channel-number":
                     builder.setChannelNumber(Integer.parseInt(getNextArgRequired()));
                     break;
                 case "-s":
+                case "--sweep-period":
                     builder.setSweepPeriod(Integer.parseInt(getNextArgRequired()));
                     break;
                 case "-u":
+                case "--sweeps-per-burst":
                     builder.setSweepsPerBurst(Integer.parseInt(getNextArgRequired()));
                     break;
                 case "-e":
+                case "--samples-per-sweep":
                     builder.setSamplesPerSweep(Integer.parseInt(getNextArgRequired()));
                     break;
                 case "-o":
+                case "--sweep-offset":
                     builder.setSweepOffset(Integer.parseInt(getNextArgRequired()));
                     break;
                 case "-r":
+                case "--rframe-config":
                     builder.setRframeConfig(Integer.parseInt(getNextArgRequired()));
                     break;
                 case "-t":
+                case "--preamble-duration":
                     builder.setPreambleDuration(Integer.parseInt(getNextArgRequired()));
                     break;
                 case "-d":
+                case "--preamble-code-index":
                     builder.setPreambleCodeIndex(Integer.parseInt(getNextArgRequired()));
                     break;
                 case "-x":
+                case "--session-priority":
                     builder.setSessionPriority(Integer.parseInt(getNextArgRequired()));
                     break;
                 case "-p":
+                case "--bits-per-sample":
                     builder.setBitsPerSample(Integer.parseInt(getNextArgRequired()));
                     break;
                 case "-m":
+                case "--prf-mode":
                     builder.setPrfMode(Integer.parseInt(getNextArgRequired()));
                     break;
                 case "-n":
+                case "--number-of-bursts":
                     builder.setNumberOfBursts(Integer.parseInt(getNextArgRequired()));
                     break;
             }
@@ -1392,16 +1410,16 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     byte diagramFrameReportsFlags = 0;
                     String option = getNextOption();
                     while (option != null) {
-                        if (option.equals("-r")) {
+                        if (option.equals("-r") || option.equals("--rssi")) {
                             diagramFrameReportsFlags |= RSSI_FLAG;
                         }
-                        if (option.equals("-a")) {
+                        if (option.equals("-a") || option.equals("--aoa")) {
                             diagramFrameReportsFlags |= AOA_FLAG;
                         }
-                        if (option.equals("-c")) {
+                        if (option.equals("-c") || option.equals("--cir")) {
                             diagramFrameReportsFlags |= CIR_FLAG;
                         }
-                        if (option.equals("-s")) {
+                        if (option.equals("-s") || option.equals("--segment-metrics")) {
                             diagramFrameReportsFlags |= SEGMENT_METRICS_FLAG;
                         }
                         option = getNextOption();
@@ -1483,91 +1501,92 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         pw.println("    If 'hw_idle_turn_off_enabled' feature is enabled, vote for UWB on");
         pw.println("  disable-uwb-hw");
         pw.println("    If 'hw_idle_turn_off_enabled' feature is enabled, vote for UWB off");
-        pw.println("  start-fira-ranging-session"
-                + " [-b](blocking call)"
-                + " [-i <sessionId>](session-id)"
-                + " [-c <channel>](channel)"
-                + " [-t controller|controlee](device-type)"
-                + " [-r initiator|responder](device-role)"
-                + " [-a <deviceAddress>](device-address)"
-                + " [-d <destAddress-1, destAddress-2,...>](dest-addresses)"
-                + " [-m <unicast|one-to-many|many-to-many>](multi-node-mode)"
-                + " [-u ds-twr|ss-twr|ds-twr-non-deferred|ss-twr-non-deferred](round-usage)"
-                + " [-l <ranging-interval-ms>](ranging-interval-ms)"
-                + " [-s <slots-per-ranging-round>](slots-per-ranging-round)"
-                + " [-x <proximity-near-cm, proximity-far-cm>](range-data-ntf-proximity)"
-                + " [-R enabled|disabled](range-data-notification)"
-                + " [-z <numRangeMrmts, numAoaAzimuthMrmts, numAoaElevationMrmts>"
-                + "(interleaving-ratio)"
-                + " [-e none|enabled|azimuth-only|elevation-only](aoa-result-request)"
-                + " [-f <tof,azimuth,elevation,aoa-fom>(result-report-config)"
-                + " [-g <staticStsIV>(sts-iv: staticStsIV 6-bytes)"
-                + " [-v <staticStsVendorId>(vendor-id: staticStsVendorId 2-bytes)"
-                + " [-h <slot-duration-rstu>(slot-duration-rstu, default=2400)"
-                + " [-w enabled|disabled](has-result-report-phase)"
-                + " [-y enabled|disabled](hopping-mode, default = disabled)"
-                + " [-p <preamble-code-index>](preamble-code-index, default = 10)"
-                + " [-o static|provisioned](sts-config-type)"
-                + " [-n <sessionKey>](session-key 16 or 32 bytes)"
-                + " [-k <subSessionKey>](sub-session-key 16 or 32 bytes)"
-                + " [-j <errorStreakTimeoutMs>](error-streak-timeout-ms in millis, default=30000)"
-                + " [-q <sessionPriority>](session-priority 1-49 or 51-100)"
-                + " [-P bprf|hprf](prf-mode)"
-                + " [-D 6m81|7m80|27m2|31m2](psdu-data-rate)"
-                + " [-B 850k|6m81](bprf-phr-data-rate)"
-                + " [-A enabled|disabled](tx-adaptive-power, default = disabled)"
-                + " [-S <sfd_id>](sfd-id 0-4, default = 2)");
+        pw.println("  start-fira-ranging-session\n"
+                + "    [-b blocking call](block)\n"
+                + "    [-i <sessionId>](session-id)\n"
+                + "    [-c <channel>](channel-number)\n"
+                + "    [-t controller|controlee](device-type)\n"
+                + "    [-r initiator|responder](device-role)\n"
+                + "    [-a <deviceAddress>](device-address)\n"
+                + "    [-d <destAddress-1, destAddress-2,...>](dest-addresses)\n"
+                + "    [-m <unicast|one-to-many|many-to-many>](multi-node-mode)\n"
+                + "    [-u ds-twr|ss-twr|ds-twr-non-deferred|ss-twr-non-deferred](round-usage)\n"
+                + "    [-l <ranging-interval-ms>](ranging-interval-ms)\n"
+                + "    [-s <slots-per-ranging-round>](slots-per-ranging-round)\n"
+                + "    [-x <proximity-near-cm, proximity-far-cm>](range-data-ntf-proximity)\n"
+                + "    [-R enabled|disabled](range-data-notification)\n"
+                + "    [-z <numRangeMrmts, numAoaAzimuthMrmts, numAoaElevationMrmts>"
+                + "(interleaving-ratio)\n"
+                + "    [-e none|enabled|azimuth-only|elevation-only](aoa-result-request)\n"
+                + "    [-f <tof,azimuth,elevation,aoa-fom>(result-report-config)\n"
+                + "    [-g <staticStsIV>(sts-iv: staticStsIV 6-bytes)\n"
+                + "    [-v <staticStsVendorId>(vendor-id: staticStsVendorId 2-bytes)\n"
+                + "    [-h <slot-duration-rstu>(slot-duration-rstu, default=2400)\n"
+                + "    [-w enabled|disabled](has-result-report-phase)\n"
+                + "    [-y enabled|disabled](hopping-mode, default = disabled)\n"
+                + "    [-p <preamble-code-index>](preamble-code-index, default = 10)\n"
+                + "    [-o static|provisioned](sts-config-type)\n"
+                + "    [-n <sessionKey>](session-key 16 or 32 bytes)\n"
+                + "    [-k <subSessionKey>](sub-session-key 16 or 32 bytes)\n"
+                + "    [-j <errorStreakTimeoutMs>]"
+                + "(error-streak-timeout-ms in millis, default=30000)\n"
+                + "    [-q <sessionPriority>](session-priority 1-49 or 51-100)\n"
+                + "    [-P bprf|hprf](prf-mode)\n"
+                + "    [-D 6m81|7m80|27m2|31m2](psdu-data-rate)\n"
+                + "    [-B 850k|6m81](bprf-phr-data-rate)\n"
+                + "    [-A enabled|disabled](tx-adaptive-power, default = disabled)\n"
+                + "    [-S <sfd_id>](sfd-id 0-4, default = 2)");
         pw.println("    Starts a FIRA ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
                 + " retrieved using |get-ranging-session-reports|");
-        pw.println("  start-dl-tdoa-ranging-session"
-                        + " [-i <sessionId>](session-id)");
+        pw.println("  start-dl-tdoa-ranging-session\n"
+                        + "    [-i <sessionId>](session-id)");
         pw.println("    Starts a FIRA Dl-TDoA ranging session for DT-Tag");
-        pw.println("  start-ccc-ranging-session"
-                + " [-b](blocking call)"
-                + " Ranging reports will be displayed on screen)"
-                + " [-u 0|1](uwb-config)"
-                + " [-p <tx>,<rx>](pulse-shape-combo)"
-                + " [-i <sessionId>](session-id)"
-                + " [-r <ran_multiplier>](ran-multiplier)"
-                + " [-c <channel>](channel)"
-                + " [-m <num-chaps-per-slot>](num-chaps-per-slot)"
-                + " [-n <num-responder-nodes>](num-responder-nodes)"
-                + " [-o <num-slots-per-round>](num-slots-per-round)"
-                + " [-s <sync-code-index>](sync-code-index)"
-                + " [-h none|continuous|adaptive](hopping-config-mode)"
-                + " [-a default|aes](hopping-sequence)"
-                + " [-S <stsIndex>](sts-index)");
+        pw.println("  start-ccc-ranging-session\n"
+                + "    [-b](blocking call)"
+                + " Ranging reports will be displayed on screen)\n"
+                + "    [-u 0|1](uwb-config)\n"
+                + "    [-p <tx>,<rx>](pulse-shape-combo)\n"
+                + "    [-i <sessionId>](session-id)\n"
+                + "    [-r <ran_multiplier>](ran-multiplier)\n"
+                + "    [-c <channel>](channel)\n"
+                + "    [-m <num-chaps-per-slot>](num-chaps-per-slot)\n"
+                + "    [-n <num-responder-nodes>](num-responder-nodes)\n"
+                + "    [-o <num-slots-per-round>](num-slots-per-round)\n"
+                + "    [-s <sync-code-index>](sync-code-index)\n"
+                + "    [-h none|continuous|adaptive](hopping-config-mode)\n"
+                + "    [-a default|aes](hopping-sequence)\n"
+                + "    [-S <stsIndex>](sts-index)");
         pw.println("    Starts a CCC ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
                 + " retrieved using |get-ranging-session-reports|");
-        pw.println("  start-radar-session"
-                + " [-b](blocking call)"
-                + " Radar data will be displayed on screen)"
-                + " [-i <sessionId>](session-id)"
-                + " [-c <channel>](channel)"
-                + " [-s <sweepPeriod>](sweep-period)"
-                + " [-u <sweepsPerBurst>](sweeps-per-burst)"
-                + " [-e <samplesPerSweep>](samples-per-sweep)"
-                + " [-p <bitsPerSample>](bits-per-sample)"
-                + " [-o <sweepOffset>](sweep-offset)"
-                + " [-r <rframeConfig>](rframe-config)"
-                + " [-t <preambleDuration>](preamble-duration)"
-                + " [-d <preambleCodeIndex>](preamble-code-index)"
-                + " [-x  <sessionPriority>](session-priority)"
-                + " [-m <prfMode>](prf-mode)"
-                + " [-n <numberOfBursts>](number-of-bursts)");
+        pw.println("  start-radar-session\n"
+                + "    [-b](blocking call)"
+                + " Radar data will be displayed on screen)\n"
+                + "    [-i <sessionId>](session-id)\n"
+                + "    [-c <channel>](channel-number)\n"
+                + "    [-s <sweepPeriod>](sweep-period)\n"
+                + "    [-u <sweepsPerBurst>](sweeps-per-burst)\n"
+                + "    [-e <samplesPerSweep>](samples-per-sweep)\n"
+                + "    [-o <sweepOffset>](sweep-offset)\n"
+                + "    [-r <rframeConfig>](rframe-config)\n"
+                + "    [-t <preambleDuration>](preamble-duration)\n"
+                + "    [-d <preambleCodeIndex>](preamble-code-index)\n"
+                + "    [-x <sessionPriority>](session-priority)\n"
+                + "    [-p <bitsPerSample>](bits-per-sample)\n"
+                + "    [-m <prfMode>](prf-mode)\n"
+                + "    [-n <numberOfBursts>](number-of-bursts)");
         pw.println("    Starts a Radar session with the provided params defined in the radar UCI"
                 + "    spec.");
         pw.println("  reconfigure-fira-ranging-session"
-                + " <sessionId>"
-                + " [-a add|delete](action)"
-                + " [-d <destAddress-1, destAddress-2,...>](dest-addresses)"
-                + " [-s <subSessionId-1, subSessionId-2,...>](sub-sessionIds)"
-                + " [-b <block-striding>](block-striding)"
-                + " [-c <range-data-ntf-cfg>](range-data-ntf-cfg)"
-                + " [-n <proximity-near>(proximity-near)"
-                + " [-f <proximity-far>](proximity-far)");
+                + " <sessionId>\n"
+                + "    [-a add|delete](action)\n"
+                + "    [-d <destAddress-1, destAddress-2,...>](dest-addresses)\n"
+                + "    [-s <subSessionId-1, subSessionId-2,...>](sub-session-ids)\n"
+                + "    [-b <block-striding>](block-stride-length)\n"
+                + "    [-c <range-data-ntf-cfg>](range-data-ntf-cfg)\n"
+                + "    [-n <proximity-near>(range-data-proximity-near)\n"
+                + "    [-f <proximity-far>](range-data-proximity-far)");
         pw.println("  get-ranging-session-reports <sessionId>");
         pw.println("    Displays latest cached ranging reports for an ongoing ranging session");
         pw.println("  get-all-ranging-session-reports");
@@ -1582,11 +1601,11 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         pw.println("    Stops all ongoing radar sessions");
         pw.println("  get-specification-info");
         pw.println("    Gets specification info from uwb chip");
-        pw.println("  enable-diagnostics-notification"
-                + " [-r](enable rssi)"
-                + " [-a](enable aoa)"
-                + " [-c](enable cir)"
-                + " [-s](enable segment metrics)");
+        pw.println("  enable-diagnostics-notification\n"
+                + "    [-r](enable rssi)\n"
+                + "    [-a](enable aoa)\n"
+                + "    [-c](enable cir)\n"
+                + "    [-s](enable segment-metrics)");
         pw.println("    Enable vendor diagnostics notification");
         pw.println("  disable-diagnostics-notification");
         pw.println("    Disable vendor diagnostics notification");

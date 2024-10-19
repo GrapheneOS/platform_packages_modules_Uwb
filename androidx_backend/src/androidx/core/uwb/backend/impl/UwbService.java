@@ -19,18 +19,27 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.RemoteException;
 import android.util.Log;
 
 import androidx.core.uwb.backend.IUwb;
+import androidx.core.uwb.backend.IUwbAvailabilityObserver;
 import androidx.core.uwb.backend.IUwbClient;
 import androidx.core.uwb.backend.impl.internal.UwbAvailabilityCallback;
 import androidx.core.uwb.backend.impl.internal.UwbFeatureFlags;
 import androidx.core.uwb.backend.impl.internal.UwbServiceImpl;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+
 /** Uwb service entry point of the backend. */
 public class UwbService extends Service {
 
     private UwbServiceImpl mUwbServiceImpl;
+    private static final String TAG = "UwbService";
+
+    private List<IUwbAvailabilityObserver> mUwbAvailabilityObservers = new ArrayList<>();
     @Override
     public void onCreate() {
         super.onCreate();
@@ -40,7 +49,15 @@ public class UwbService extends Service {
                         Build.VERSION.SDK_INT <= Build.VERSION_CODES.TIRAMISU)
                 .build();
         UwbAvailabilityCallback uwbAvailabilityCallback = (isUwbAvailable, reason) -> {
-            // TODO: Implement when adding backend support.
+            for (IUwbAvailabilityObserver observer : mUwbAvailabilityObservers) {
+                if (observer != null) {
+                    try {
+                        observer.onUwbStateChanged(isUwbAvailable, reason);
+                    } catch (RemoteException e) {
+                        Log.e(TAG, "Availability observer error");
+                    }
+                }
+            }
         };
         mUwbServiceImpl = new UwbServiceImpl(this, uwbFeatureFlags, uwbAvailabilityCallback);
     }
@@ -61,7 +78,7 @@ public class UwbService extends Service {
             new IUwb.Stub() {
                 @Override
                 public IUwbClient getControleeClient() {
-                    Log.i("UwbService", "Getting controleeClient");
+                    Log.i(TAG, "Getting controleeClient");
                     return new UwbControleeClient(mUwbServiceImpl
                             .getControlee(UwbService.this.getApplicationContext()),
                             mUwbServiceImpl);
@@ -69,10 +86,25 @@ public class UwbService extends Service {
 
                 @Override
                 public IUwbClient getControllerClient() {
-                    Log.i("UwbService", "Getting controllerClient");
-                    return new UwbControllerClient(mUwbServiceImpl
+                    Log.i(TAG, "Getting controllerClient");
+                    Consumer<IUwbAvailabilityObserver> subscribeConsumer =
+                            (observer) -> {
+                                mUwbAvailabilityObservers.add(observer);
+                                try {
+                                    observer.onUwbStateChanged(mUwbServiceImpl.isAvailable(),
+                                            mUwbServiceImpl.getLastStateChangeReason());
+                                } catch (RemoteException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            };
+                    Consumer<IUwbAvailabilityObserver> unsubscribeConsumer =
+                            (observer) -> mUwbAvailabilityObservers.remove(observer);
+                    UwbControllerClient client = new UwbControllerClient(mUwbServiceImpl
                             .getController(UwbService.this.getApplicationContext()),
                             mUwbServiceImpl);
+                    client.setSubscribeConsumer(subscribeConsumer);
+                    client.setUnsubscribeConsumer(unsubscribeConsumer);
+                    return client;
                 }
 
                 @Override

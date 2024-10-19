@@ -29,6 +29,7 @@ aconfig_declarations {
 java_aconfig_library {
     name: "uwb_aconfig_flags_lib",
     aconfig_declarations: "uwb_aconfig_flags",
+    defaults: ["framework-minus-apex-aconfig-java-defaults"],
     min_sdk_version: "33",
     apex_available: [
         "com.android.uwb",

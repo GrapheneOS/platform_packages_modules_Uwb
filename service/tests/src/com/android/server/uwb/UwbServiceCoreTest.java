@@ -117,6 +117,8 @@ import com.google.uwb.support.generic.GenericParams;
 import com.google.uwb.support.generic.GenericSpecificationParams;
 import com.google.uwb.support.radar.RadarOpenSessionParams;
 import com.google.uwb.support.radar.RadarParams;
+import com.google.uwb.support.rftest.RfTestOpenSessionParams;
+import com.google.uwb.support.rftest.RfTestParams;
 
 import org.junit.After;
 import org.junit.Before;
@@ -227,6 +229,36 @@ public class UwbServiceCoreTest {
                         .setPrfMode(FiraParams.PRF_MODE_HPRF)
                         .setNumberOfBursts(1000)
                         .setRadarDataType(RadarParams.RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES);
+
+    private static final RfTestOpenSessionParams.Builder TEST_RFTEST_OPEN_SESSION_PARAMS =
+                            new RfTestOpenSessionParams.Builder()
+                            .setChannelNumber(FiraParams.UWB_CHANNEL_5)
+                            .setNumberOfControlee(1)
+                            .setDeviceAddress(UwbAddress.fromBytes(new byte[] { 0x4, 0x6}))
+                            .setDestAddressList(Arrays.asList(UwbAddress.fromBytes(
+                                    new byte[] { 0x4, 0x6})))
+                            .setSlotDurationRstu(2400)
+                            .setStsIndex(0)
+                            .setFcsType(0)
+                            .setDeviceRole(RANGING_DEVICE_ROLE_RESPONDER)
+                            .setRframeConfig(FiraParams.RFRAME_CONFIG_SP3)
+                            .setPreambleCodeIndex(90)
+                            .setSfdId(2)
+                            .setPsduDataRate(0)
+                            .setPreambleDuration(RadarParams.PREAMBLE_DURATION_T16384_SYMBOLS)
+                            .setPrfMode(FiraParams.PRF_MODE_HPRF)
+                            .setStsSegmentCount(1)
+                            .setNumberOfPackets(1000)
+                            .setTgap(2000)
+                            .setTstart(450)
+                            .setTwin(750)
+                            .setRandomizePsdu(0)
+                            .setPhrRangingBit(0)
+                            .setRmarkerTxStart(0)
+                            .setRmarkerRxStart(0)
+                            .setStsIndexAutoIncr(0)
+                                        .setStsDetectBitmap(0);
+
     private static final UwbDeviceInfoResponse UWB_DEVICE_INFO_RESPONSE =
             new UwbDeviceInfoResponse(
                     UwbUciConstants.STATUS_CODE_OK,
@@ -1188,6 +1220,25 @@ public class UwbServiceCoreTest {
 
         // Should be ignored.
         verifyNoMoreInteractions(mUwbSessionManager);
+    }
+
+    @Test
+    public void testOpenRfTestSession() throws Exception {
+        enableUwbWithCountryCodeChangedCallback();
+
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+        IUwbRangingCallbacks cb = mock(IUwbRangingCallbacks.class);
+        RfTestOpenSessionParams params = TEST_RFTEST_OPEN_SESSION_PARAMS.build();
+        AttributionSource attributionSource = TEST_ATTRIBUTION_SOURCE;
+        mUwbServiceCore.openRanging(
+                attributionSource, sessionHandle, cb, params.toBundle(), TEST_DEFAULT_CHIP_ID);
+
+        verify(mUwbSessionManager).initSession(
+                eq(attributionSource),
+                eq(sessionHandle), eq(params.getSessionId()), eq((byte) params.getSessionType()),
+                eq(RfTestParams.PROTOCOL_NAME),
+                argThat(p -> ((RfTestOpenSessionParams) p).getSessionId() == params.getSessionId()),
+                eq(cb), eq(TEST_DEFAULT_CHIP_ID));
     }
 
     @Test

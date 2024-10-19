@@ -19,9 +19,7 @@ package {
 
 android_test {
     name: "uwb_snippet",
-    // Enable system_35 when available
-    // sdk_version: "system_35",
-    sdk_version: "system_current",
+    sdk_version: "system_35",
     srcs: [
         "UwbManagerSnippet.java",
     ],

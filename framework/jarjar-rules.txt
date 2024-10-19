@@ -16,5 +16,7 @@ rule com.google.protobuf.** com.android.x.uwb.@0
 rule org.bouncycastle.** com.android.x.uwb.@0
 # Statically linked third party library
 rule com.google.thirdparty.** com.android.x.uwb.@0
+# Statically included ranging flags.
+rule com.android.uwb.flags.** com.android.x.uwb.@0
 
 ## used by both framework-uwb and service-uwb ##

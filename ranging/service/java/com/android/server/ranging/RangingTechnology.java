@@ -19,6 +19,7 @@ package com.android.server.ranging;
 import android.content.Context;
 
 import com.android.server.ranging.cs.CsAdapter;
+import com.android.server.ranging.rtt.RttAdapter;
 import com.android.server.ranging.uwb.UwbAdapter;
 
 import com.google.common.collect.ImmutableList;
@@ -29,7 +30,9 @@ import java.util.List;
 /** Enum representing an individual ranging technology. */
 public enum RangingTechnology {
     UWB(0), // Ultra-Wide Band
-    CS(1); // Channel Sounding, formerly known as HADM
+    CS(1), // Channel Sounding, formerly known as HADM
+
+    RTT(2); // Wifi RTT.
 
     private final int value;
 
@@ -55,6 +58,8 @@ public enum RangingTechnology {
                 return UwbAdapter.isSupported(context);
             case CS:
                 return CsAdapter.isSupported(context);
+            case RTT:
+                return RttAdapter.isSupported(context);
             default:
                 return false;
         }

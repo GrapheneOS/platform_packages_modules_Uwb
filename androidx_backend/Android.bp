@@ -44,6 +44,10 @@ aidl_interface {
             version: "2",
             imports: [],
         },
+        {
+            version: "3",
+            imports: [],
+        },
 
     ],
     frozen: true,
@@ -62,7 +66,7 @@ java_library {
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.concurrent_concurrent-futures",
-        "androidx.core.uwb.backend.aidl_interface-V2-java",
+        "androidx.core.uwb.backend.aidl_interface-V3-java",
         "com.uwb.support.fira",
         "com.uwb.support.multichip",
         "com.uwb.support.dltdoa",
@@ -93,7 +97,7 @@ android_app {
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.concurrent_concurrent-futures",
-        "androidx.core.uwb.backend.aidl_interface-V2-java",
+        "androidx.core.uwb.backend.aidl_interface-V3-java",
         "com.uwb.support.fira",
         "guava",
         "uwb_androidx_backend",

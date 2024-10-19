@@ -16,9 +16,10 @@
 
 package android.ranging;
 
+import android.ranging.RangingCapabilities;
 /**
 *  @hide
 */
 oneway interface IRangingCapabilitiesCallback {
-    void onRangingCapabilites();
+    void onRangingCapabilities(in RangingCapabilities rangingCapabilities);
 }

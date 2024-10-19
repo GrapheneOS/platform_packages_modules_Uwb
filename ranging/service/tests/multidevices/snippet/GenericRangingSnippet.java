@@ -22,12 +22,12 @@ import android.net.ConnectivityManager;
 import android.os.RemoteException;
 import android.ranging.DataNotificationConfig;
 import android.ranging.RangingDevice;
-import android.ranging.RangingParameters;
+import android.ranging.RangingParams;
 import android.ranging.RangingPreference;
-import android.ranging.SensorFusionParameters;
+import android.ranging.SensorFusionParams;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
-import android.ranging.uwb.UwbRangingParameters;
+import android.ranging.uwb.UwbRangingParams;
 import android.util.Log;
 import android.uwb.UwbManager;
 
@@ -171,7 +171,7 @@ public class GenericRangingSnippet implements Snippet {
         }
     }
 
-    private RangingParameters generateRangingParameters(JSONObject j) throws JSONException {
+    private RangingParams generateRangingParameters(JSONObject j) throws JSONException {
         if (j == null) {
             return null;
         }
@@ -180,12 +180,12 @@ public class GenericRangingSnippet implements Snippet {
         if (j.has("peerAddresses")) {
             JSONArray jArray = j.getJSONArray("peerAddresses");
             for (int i = 0; i < jArray.length(); i++) {
-                peerAddressesBuilder.put(new RangingDevice(UUID.randomUUID()),
+                peerAddressesBuilder.put(new RangingDevice.Builder().build(),
                         UwbAddress.fromBytes(convertJSONArrayToByteArray(jArray.getJSONArray(i))));
             }
         }
 
-        UwbRangingParameters.Builder uwbParamsBuilder = new UwbRangingParameters.Builder()
+        UwbRangingParams.Builder uwbParamsBuilder = new UwbRangingParams.Builder()
                 .setDeviceRole(j.getInt("deviceRole"))
                 .setPeerAddresses(peerAddressesBuilder.build())
                 .setConfigId(j.getInt("configType"))
@@ -195,10 +195,11 @@ public class GenericRangingSnippet implements Snippet {
                 .setSubSessionId(j.getInt("subSessionId"))
                 .setSessionKeyInfo(
                         convertJSONArrayToByteArray(j.getJSONArray("sessionKeyInfo")))
-                .setComplexChannel(new UwbComplexChannel(
-                        Utils.channelForTesting, Utils.preambleIndexForTesting))
+                .setComplexChannel(new UwbComplexChannel.Builder().setChannel(
+                                Utils.channelForTesting)
+                        .setPreambleIndex(Utils.preambleIndexForTesting).build())
                 .setRangingUpdateRate(j.getInt("updateRateType"))
-                .setSlotDurationMs(j.getInt("slotDurationMillis"))
+                .setSlotDurationMillis(j.getInt("slotDurationMillis"))
                 .setAoaDisabled(j.getBoolean("isAoaDisabled"));
 
         if (j.has("subSessionKeyInfo")) {
@@ -206,7 +207,7 @@ public class GenericRangingSnippet implements Snippet {
                     convertJSONArrayToByteArray(j.getJSONArray("subSessionKeyInfo")));
         }
 
-        return new RangingParameters.Builder()
+        return new RangingParams.Builder()
                 .setUwbParameters(uwbParamsBuilder.build())
                 .build();
     }
@@ -236,13 +237,13 @@ public class GenericRangingSnippet implements Snippet {
         RangingSession session = new RangingSession(mContext, adapterExecutor, timeoutExecutor);
 
         DataNotificationConfig dataNotificationConfig = new DataNotificationConfig.Builder()
-                .setNotificationConfig(config.getInt("rangeDataConfigType"))
+                .setNotificationConfigType(config.getInt("rangeDataConfigType"))
                 .build();
 
         RangingConfig rangingConfig = new RangingConfig.Builder(
                 new RangingPreference.Builder()
                         .setRangingParameters(generateRangingParameters(config))
-                        .setSensorFusionParameters(new SensorFusionParameters.Builder().build())
+                        .setSensorFusionParameters(new SensorFusionParams.Builder().build())
                         .setDataNotificationConfig(dataNotificationConfig)
                         .build()
         )

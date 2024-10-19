@@ -168,8 +168,10 @@ public class UwbAdapter implements RangingAdapter {
         }
         com.android.ranging.uwb.backend.internal.UwbComplexChannel complexChannel =
                 controller.getComplexChannel();
-        return new UwbComplexChannel(
-                complexChannel.getChannel(), complexChannel.getPreambleIndex());
+        return new UwbComplexChannel.Builder()
+                .setChannel(complexChannel.getChannel())
+                .setPreambleIndex(complexChannel.getPreambleIndex())
+                .build();
     }
 
     public ListenableFuture<RangingCapabilities> getCapabilities() throws RemoteException {

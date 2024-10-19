@@ -13,6 +13,7 @@ android_test {
         "com.uwb.support.ccc",
         "com.uwb.support.fira",
         "com.uwb.support.radar",
+        "com.uwb.support.rftest",
         "com.uwb.support.generic",
         "com.uwb.support.multichip",
         "com.uwb.support.oemextension",

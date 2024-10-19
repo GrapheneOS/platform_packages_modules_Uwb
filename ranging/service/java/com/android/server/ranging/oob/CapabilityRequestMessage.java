@@ -43,18 +43,18 @@ public abstract class CapabilityRequestMessage {
         return builder().setRequestedRangingTechnologies(rangingTechnologies).build();
     }
 
-    /** Serializes this {@link CapabilityRequestMessage} object to bytes. */
-    public final byte toByte() {
-        return RangingTechnology.toBitmap(getRequestedRangingTechnologies());
-    }
-
-    /** Returns a list of ranging technologies for which capabilities are requested. */
-    public abstract ImmutableList<RangingTechnology> getRequestedRangingTechnologies();
-
     /** Returns a builder for {@link CapabilityRequestMessage}. */
     public static Builder builder() {
         return new AutoValue_CapabilityRequestMessage.Builder();
     }
+
+    /** Serializes this {@link CapabilityRequestMessage} object to bytes. */
+    public final byte[] toBytes() {
+        return new byte[]{RangingTechnology.toBitmap(getRequestedRangingTechnologies())};
+    }
+
+    /** Returns a list of ranging technologies for which capabilities are requested. */
+    public abstract ImmutableList<RangingTechnology> getRequestedRangingTechnologies();
 
     /** Builder for {@link CapabilityRequestMessage}. */
     @AutoValue.Builder

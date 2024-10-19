@@ -17,17 +17,19 @@
 package android.ranging;
 
 import android.annotation.FlaggedApi;
+import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.os.Parcel;
 import android.os.Parcelable;
-
-import androidx.annotation.NonNull;
 
 import com.android.ranging.flags.Flags;
 
 import java.util.Objects;
 
 /**
+ * Represents ranging data, including distance, azimuth, elevation, and RSSI measurements,
+ * along with the ranging technology used and a timestamp.
+ *
  * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
@@ -41,7 +43,7 @@ public final class RangingData implements Parcelable {
     private final int mRssi;
     private final long mTimestamp;
 
-    public RangingData(Builder builder) {
+    private RangingData(Builder builder) {
         mRangingTechnology = builder.mRangingTechnology;
         mDistance = builder.mDistance;
         mAzimuth = builder.mAzimuth;
@@ -50,7 +52,7 @@ public final class RangingData implements Parcelable {
         mTimestamp = builder.mTimestamp;
     }
 
-    protected RangingData(Parcel in) {
+    private RangingData(Parcel in) {
         mRangingTechnology = in.readInt();
         mDistance = Objects.requireNonNull(
                 in.readParcelable(
@@ -64,6 +66,7 @@ public final class RangingData implements Parcelable {
         mTimestamp = in.readLong();
     }
 
+    @NonNull
     public static final Creator<RangingData> CREATOR = new Creator<RangingData>() {
         @Override
         public RangingData createFromParcel(Parcel in) {
@@ -76,26 +79,60 @@ public final class RangingData implements Parcelable {
         }
     };
 
+    /**
+     * Returns the ranging technology used.
+     *
+     * @return The ranging technology as an integer.
+     */
+    @RangingManager.RangingTechnology
     public int getRangingTechnology() {
         return mRangingTechnology;
     }
 
+    /**
+     * Returns the distance measurement.
+     *
+     * @return The {@link RangingMeasurement} representing the distance.
+     */
+    @Nullable
     public RangingMeasurement getDistance() {
         return mDistance;
     }
 
-    public @Nullable RangingMeasurement getAzimuth() {
+    /**
+     * Returns the azimuth measurement, or {@code null} if not available.
+     *
+     * @return The {@link RangingMeasurement} representing the azimuth, or {@code null}.
+     */
+    @Nullable
+    public RangingMeasurement getAzimuth() {
         return mAzimuth;
     }
 
-    public @Nullable RangingMeasurement getElevation() {
+    /**
+     * Returns the elevation measurement, or {@code null} if not available.
+     *
+     * @return The {@link RangingMeasurement} representing the elevation, or {@code null}.
+     */
+    @Nullable
+    public RangingMeasurement getElevation() {
         return mElevation;
     }
 
+    /**
+     * Returns the RSSI (Received Signal Strength Indicator) value.
+     *
+     * @return The RSSI value as an integer.
+     */
     public int getRssi() {
         return mRssi;
     }
 
+    /**
+     * Returns the timestamp of when the ranging data was collected.
+     *
+     * @return The timestamp in milliseconds.
+     */
     public long getTimestamp() {
         return mTimestamp;
     }
@@ -115,6 +152,9 @@ public final class RangingData implements Parcelable {
         dest.writeLong(mTimestamp);
     }
 
+    /**
+     * Builder class for creating instances of {@link RangingData}.
+     */
     public static final class Builder {
         @RangingManager.RangingTechnology
         private int mRangingTechnology;
@@ -124,34 +164,92 @@ public final class RangingData implements Parcelable {
         private int mRssi;
         private long mTimestamp;
 
+        /**
+         * Sets the ranging technology.
+         *
+         * @param rangingTechnology The ranging technology used.
+         * @return This {@link Builder} instance.
+         */
+        @NonNull
         public Builder setRangingTechnology(int rangingTechnology) {
             mRangingTechnology = rangingTechnology;
             return this;
         }
 
-        public Builder setDistance(RangingMeasurement distance) {
+        /**
+         * Sets the distance measurement.
+         *
+         * @param distance The {@link RangingMeasurement} representing the distance.
+         * @return This {@link Builder} instance.
+         *
+         * @throws IllegalArgumentException if the provided measurement is null.
+         */
+        @NonNull
+        public Builder setDistance(@NonNull RangingMeasurement distance) {
             mDistance = distance;
             return this;
         }
 
-        public Builder setAzimuth(RangingMeasurement azimuth) {
+        /**
+         * Sets the azimuth measurement.
+         *
+         * @param azimuth The {@link RangingMeasurement} representing the azimuth.
+         * @return This {@link Builder} instance.
+         *
+         * @throws IllegalArgumentException if the provided measurement is null.
+         */
+        @NonNull
+        public Builder setAzimuth(@NonNull RangingMeasurement azimuth) {
             mAzimuth = azimuth;
             return this;
         }
 
-        public Builder setElevation(RangingMeasurement elevation) {
+        /**
+         * Sets the elevation measurement.
+         *
+         * @param elevation The {@link RangingMeasurement} representing the elevation.
+         * @return This {@link Builder} instance.
+         *
+         * @throws IllegalArgumentException if the provided measurement is null.
+         */
+        @NonNull
+        public Builder setElevation(@NonNull RangingMeasurement elevation) {
             mElevation = elevation;
             return this;
         }
 
+        /**
+         * Sets the RSSI value.
+         *
+         * @param rssi The RSSI value as an integer.
+         * @return This {@link Builder} instance.
+         */
+        @NonNull
         public Builder setRssi(int rssi) {
             mRssi = rssi;
             return this;
         }
 
+        /**
+         * Sets the timestamp of the ranging data.
+         *
+         * @param timestamp The timestamp in milliseconds.
+         * @return This {@link Builder} instance.
+         */
+        @NonNull
         public Builder setTimestamp(long timestamp) {
             mTimestamp = timestamp;
             return this;
+        }
+
+        /**
+         * Builds and returns a new instance of {@link RangingData}.
+         *
+         * @return A new {@link RangingData} instance.
+         */
+        @NonNull
+        public RangingData build() {
+            return new RangingData(this);
         }
     }
 }

@@ -28,7 +28,6 @@ import java.util.Arrays;
 
 /**
  * A class representing a UWB address
- *
  * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)

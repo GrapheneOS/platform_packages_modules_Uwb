@@ -22,6 +22,7 @@ import com.android.server.uwb.data.UwbConfigStatusData;
 import com.android.server.uwb.data.UwbTlvData;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.jni.NativeUwbManager;
+import com.android.server.uwb.params.RfTestEncoder;
 import com.android.server.uwb.params.TlvBuffer;
 import com.android.server.uwb.params.TlvDecoder;
 import com.android.server.uwb.params.TlvDecoderBuffer;
@@ -81,6 +82,39 @@ public class UwbConfigurationManager {
         } else {
             // Number of reconfig params FiraRangingReconfigureParams can be null
             status = UwbUciConstants.STATUS_CODE_OK;
+        }
+        return status;
+    }
+
+    /**
+     * Set RF test app configurations.
+     */
+    public int setRfTestAppConfigurations(int sessionId, Params params, String chipId) {
+        int status = UwbUciConstants.STATUS_CODE_FAILED;
+        Log.d(TAG, "setRfTestAppConfigurations");
+        RfTestEncoder encoder = (RfTestEncoder) TlvEncoder.getEncoder(
+                params.getProtocolName(), mUwbInjector);
+        if (encoder == null) {
+            Log.d(TAG, "unsupported encoder protocol type");
+            return status;
+        }
+        TlvBuffer tlvBuffer = encoder.getRfTestTlvBuffer(params);
+
+        if (tlvBuffer.getNoOfParams() != 0) {
+            byte[] tlvByteArray = tlvBuffer.getByteArray();
+            UwbConfigStatusData appConfig = mNativeUwbManager.setRfTestAppConfigurations(sessionId,
+                    tlvBuffer.getNoOfParams(),
+                    tlvByteArray.length, tlvByteArray, chipId);
+            if (appConfig != null) {
+                Log.i(TAG, "setRfTestAppConfigurations respData: " + appConfig);
+                status = appConfig.getStatus();
+            } else {
+                Log.e(TAG, "appConfigList is null or size of appConfigList is zero");
+                status = UwbUciConstants.STATUS_CODE_FAILED;
+            }
+        } else {
+            Log.e(TAG, "tlvBuffer is empty");
+            status = UwbUciConstants.STATUS_CODE_FAILED;
         }
         return status;
     }

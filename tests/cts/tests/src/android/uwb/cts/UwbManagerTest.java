@@ -1008,8 +1008,8 @@ public class UwbManagerTest {
                 .setDeviceType(FiraParams.RANGING_DEVICE_TYPE_CONTROLLER)
                 .setDeviceRole(FiraParams.RANGING_DEVICE_ROLE_INITIATOR)
                 .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_UNICAST)
-                .setDeviceAddress(UwbAddress.fromBytes(new byte[] {0x5, 0x6}))
-                .setDestAddressList(List.of(UwbAddress.fromBytes(new byte[] {0x5, 0x7})));
+                .setDeviceAddress(UwbAddress.fromBytes(new byte[]{0x5, 0x6}))
+                .setDestAddressList(List.of(UwbAddress.fromBytes(new byte[]{0x5, 0x7})));
     }
 
     private interface VerifyRangingReportInterface {
@@ -1471,9 +1471,9 @@ public class UwbManagerTest {
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
     public void testFiraPoseChanges() throws Exception {
         FiraPoseUpdateParams poseVQUpdate = new FiraPoseUpdateParams.Builder()
-                .setPose(new float[] {0, 0, 0, 0, 0, 0, 1}) // identity vector & quaternion
+                .setPose(new float[]{0, 0, 0, 0, 0, 0, 1}) // identity vector & quaternion
                 .build();
-        float[] identityMatrix = new float[] {
+        float[] identityMatrix = new float[]{
                 1.0f, 0.0f, 0.0f, 0.0f,
                 0.0f, 1.0f, 0.0f, 0.0f,
                 0.0f, 0.0f, 1.0f, 0.0f,
@@ -1512,17 +1512,17 @@ public class UwbManagerTest {
                     // Wrong number of values.
                     assertThrows(IllegalArgumentException.class,
                             () -> new FiraPoseUpdateParams.Builder()
-                                    .setPose(new float[] {5, 1})
+                                    .setPose(new float[]{5, 1})
                                     .build());
 
                     // Nonreal numbers.
                     assertThrows(IllegalArgumentException.class,
                             () -> new FiraPoseUpdateParams.Builder()
-                                    .setPose(new float[] {1, 2, 3, 4, 5, Float.NaN, 7})
+                                    .setPose(new float[]{1, 2, 3, 4, 5, Float.NaN, 7})
                                     .build());
                     assertThrows(IllegalArgumentException.class,
                             () -> new FiraPoseUpdateParams.Builder()
-                                    .setPose(new float[] {
+                                    .setPose(new float[]{
                                             Float.NEGATIVE_INFINITY, 2, 3, 4, 5, 6, 7})
                                     .build());
                 });
@@ -1533,7 +1533,7 @@ public class UwbManagerTest {
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
     public void testFiraRangingPoseFailures() throws Exception {
         FiraPoseUpdateParams poseUpdateParams = new FiraPoseUpdateParams.Builder()
-                .setPose(new float[] {1, 2, 3, 4, 5, 6, 7})
+                .setPose(new float[]{1, 2, 3, 4, 5, 6, 7})
                 .build();
         FiraOpenSessionParams firaOpenSessionParams = makeOpenSessionBuilder()
                 .setFilterType(FiraParams.FILTER_TYPE_NONE)
@@ -1582,8 +1582,8 @@ public class UwbManagerTest {
                     countDownLatch = new CountDownLatch(1);
                     rangingSessionCallback.replaceResultCountDownLatch(countDownLatch);
                     assertThat(countDownLatch.await(
-                        firaOpenSessionParams.getRangingIntervalMs() + 10,
-                        TimeUnit.MILLISECONDS)).isTrue();
+                            firaOpenSessionParams.getRangingIntervalMs() + 10,
+                            TimeUnit.MILLISECONDS)).isTrue();
 
                     // Remove controlee
                     countDownLatch = new CountDownLatch(2);
@@ -2251,7 +2251,7 @@ public class UwbManagerTest {
                         .setAttributionTag(attributionTag)
                         .build()
         );
-        return  contextWithAttrTag.getSystemService(UwbManager.class);
+        return contextWithAttrTag.getSystemService(UwbManager.class);
     }
 
     // Should be invoked with shell permissions.

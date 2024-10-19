@@ -57,6 +57,7 @@ java_defaults {
     static_libs: [
         "modules-utils-preconditions",
         "modules-utils-build",
+        "uwb_aconfig_flags_lib",
     ],
     libs: [
         "androidx.annotation_annotation",

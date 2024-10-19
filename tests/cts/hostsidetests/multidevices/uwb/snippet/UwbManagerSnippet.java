@@ -712,6 +712,21 @@ public class UwbManagerSnippet implements Snippet {
         if (j.has("hasRangingResultReportMessage")) {
             builder.setHasRangingResultReportMessage(j.getBoolean("hasRangingResultReportMessage"));
         }
+        if (j.has("rangingErrorStreakTimeoutMs")) {
+            builder.setRangingErrorStreakTimeoutMs(j.getLong("rangingErrorStreakTimeoutMs"));
+        }
+        if (j.has("isKeyRotationEnabled")) {
+            builder.setIsKeyRotationEnabled(j.getBoolean("isKeyRotationEnabled"));
+        }
+        if (j.has("keyRotationRate")) {
+            builder.setKeyRotationRate(j.getInt("keyRotationRate"));
+        }
+        if (j.has("hasRangingResultReportMessage")) {
+            builder.setHasRangingResultReportMessage(j.getBoolean("hasRangingResultReportMessage"));
+        }
+        if (j.has("prfMode")) {
+            builder.setPrfMode(j.getInt("prfMode"));
+        }
 
         return builder.build();
     }

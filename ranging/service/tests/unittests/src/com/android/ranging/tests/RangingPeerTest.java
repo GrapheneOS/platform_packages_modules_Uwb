@@ -35,7 +35,7 @@ import android.ranging.RangingDevice;
 import android.ranging.SessionHandle;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
-import android.ranging.uwb.UwbRangingParameters;
+import android.ranging.uwb.UwbRangingParams;
 
 import androidx.test.filters.SmallTest;
 
@@ -70,7 +70,8 @@ import java.util.concurrent.ScheduledExecutorService;
 @RunWith(JUnit4.class)
 @SmallTest
 public class RangingPeerTest {
-    @Rule public final MockitoRule mMockito = MockitoJUnit.rule();
+    @Rule
+    public final MockitoRule mMockito = MockitoJUnit.rule();
 
     private @Mock(answer = Answers.RETURNS_DEEP_STUBS) Context mMockContext;
     private @Mock(answer = Answers.RETURNS_DEEP_STUBS) RangingConfig mMockConfig;
@@ -83,6 +84,7 @@ public class RangingPeerTest {
 
     /**
      * Starts a ranging session with the provided configs.
+     *
      * @param configs to use for the session.
      * @return {@link RangingAdapter.Callback} for each of the provided technologies' adapters.
      * These callbacks are captured from underlying {@link RangingAdapter} mock for each technology.
@@ -117,17 +119,18 @@ public class RangingPeerTest {
                 .build();
     }
 
-    private UwbRangingParameters.Builder getUwbParams() {
-        return new UwbRangingParameters.Builder()
-                .setDeviceRole(UwbRangingParameters.DeviceRole.INITIATOR)
+    private UwbRangingParams.Builder getUwbParams() {
+        return new UwbRangingParams.Builder()
+                .setDeviceRole(UwbRangingParams.DeviceRole.INITIATOR)
                 .setDeviceAddress(UwbAddress.fromBytes(new byte[]{1, 2}))
-                .setComplexChannel(new UwbComplexChannel(9, 11))
-                .setConfigId(UwbRangingParameters.ConfigId.UNICAST_DS_TWR)
+                .setComplexChannel(new UwbComplexChannel.Builder().setChannel(9).setPreambleIndex(
+                        11).build())
+                .setConfigId(UwbRangingParams.ConfigId.UNICAST_DS_TWR)
                 .setPeerAddresses(ImmutableMap.of())
-                .setRangingUpdateRate(UwbRangingParameters.RangingUpdateRate.NORMAL);
+                .setRangingUpdateRate(UwbRangingParams.RangingUpdateRate.NORMAL);
     }
 
-    private UwbConfig.Builder getUwbConfig(UwbRangingParameters parameters) {
+    private UwbConfig.Builder getUwbConfig(UwbRangingParams parameters) {
         return new UwbConfig.Builder(parameters)
                 .setCountryCode("US");
     }

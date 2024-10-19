@@ -65,6 +65,7 @@ import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.radar.RadarOpenSessionParams;
 import com.google.uwb.support.radar.RadarParams;
+import com.google.uwb.support.rftest.RfTestOpenSessionParams;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -73,6 +74,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -114,6 +116,34 @@ public class UwbConfigurationManagerTest {
                     .setRadarDataType(RadarParams.RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES)
                     .build();
 
+    private static final RfTestOpenSessionParams TEST_RFTEST_OPEN_SESSION_PARAMS =
+            new RfTestOpenSessionParams.Builder()
+                .setChannelNumber(FiraParams.UWB_CHANNEL_5)
+                .setNumberOfControlee(1)
+                .setDeviceAddress(UwbAddress.fromBytes(new byte[] { 0x4, 0x6}))
+                .setDestAddressList(Arrays.asList(UwbAddress.fromBytes(new byte[] { 0x4, 0x6})))
+                .setSlotDurationRstu(2400)
+                .setStsIndex(0)
+                .setFcsType(0)
+                .setDeviceRole(1)
+                .setRframeConfig(FiraParams.RFRAME_CONFIG_SP3)
+                .setPreambleCodeIndex(90)
+                .setSfdId(2)
+                .setPsduDataRate(0)
+                .setPreambleDuration(0)
+                .setPrfMode(FiraParams.PRF_MODE_HPRF)
+                .setStsSegmentCount(1)
+                .setNumberOfPackets(1000)
+                .setTgap(2000)
+                .setTstart(450)
+                .setTwin(750)
+                .setRandomizePsdu(0)
+                .setPhrRangingBit(0)
+                .setRmarkerTxStart(0)
+                .setRmarkerRxStart(0)
+                .setStsIndexAutoIncr(0)
+                .setStsDetectBitmap(0)
+                .build();
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
@@ -197,6 +227,22 @@ public class UwbConfigurationManagerTest {
                 FiraOpenSessionParams.class, TEST_CHIP_ID, any());
 
         verify(mNativeUwbManager).getCapsInfo(TEST_CHIP_ID);
+    }
+
+    @Test
+    public void testSetRfTestAppConfigurations() throws Exception {
+        byte[] cfgStatus = {0x01, UwbUciConstants.STATUS_CODE_OK};
+        UwbConfigStatusData appConfig = new UwbConfigStatusData(UwbUciConstants.STATUS_CODE_OK,
+                1, cfgStatus);
+        when(mNativeUwbManager.setRfTestAppConfigurations(anyInt(), anyInt(), anyInt(),
+                any(byte[].class), anyString())).thenReturn(appConfig);
+
+        int status = mUwbConfigurationManager.setRfTestAppConfigurations(
+                mUwbSession.getSessionId(), TEST_RFTEST_OPEN_SESSION_PARAMS, TEST_CHIP_ID);
+
+        verify(mNativeUwbManager).setRfTestAppConfigurations(anyInt(), anyInt(), anyInt(),
+                any(byte[].class), eq(TEST_CHIP_ID));
+        assertEquals(UwbUciConstants.STATUS_CODE_OK, status);
     }
 
     private FiraOpenSessionParams getFiraParams() {

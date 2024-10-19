@@ -17,21 +17,22 @@
 package android.ranging;
 
 import android.annotation.FlaggedApi;
+import android.annotation.NonNull;
 import android.os.Parcel;
 import android.os.Parcelable;
-
-import androidx.annotation.NonNull;
 
 import com.android.ranging.flags.Flags;
 
 /**
+ * Represents a ranging measurement.
+ *
+ * <p>This class provides a measurement result, such as a distance or angle.
+ *
  * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 public final class RangingMeasurement implements Parcelable {
     private final double mMeasurement;
-
-    //TODO: Add values once decided.
     private final int mConfidence;
 
     private RangingMeasurement(Builder builder) {
@@ -39,11 +40,12 @@ public final class RangingMeasurement implements Parcelable {
         mConfidence = builder.mConfidence;
     }
 
-    protected RangingMeasurement(Parcel in) {
+    private RangingMeasurement(@NonNull Parcel in) {
         mMeasurement = in.readDouble();
         mConfidence = in.readInt();
     }
 
+    @NonNull
     public static final Creator<RangingMeasurement> CREATOR = new Creator<RangingMeasurement>() {
         @Override
         public RangingMeasurement createFromParcel(Parcel in) {
@@ -56,10 +58,21 @@ public final class RangingMeasurement implements Parcelable {
         }
     };
 
+    /**
+     * Returns the measurement value.
+     *
+     * @return The measurement, such as a distance in meters or an angle in degrees.
+     */
+    @NonNull
     public double getMeasurement() {
         return mMeasurement;
     }
 
+    /**
+     * Returns the confidence score for this measurement.
+     *
+     * @hide
+     */
     public int getConfidence() {
         return mConfidence;
     }
@@ -75,18 +88,48 @@ public final class RangingMeasurement implements Parcelable {
         dest.writeInt(mConfidence);
     }
 
+    /**
+     * A builder class for creating instances of {@link RangingMeasurement}.
+     */
     public static final class Builder {
         private double mMeasurement = 0.0;
         private int mConfidence = 1;
 
+        /**
+         * Sets the measurement value.
+         *
+         * @param measurement The measurement value, such as a distance in meters or angle in
+         *                    degrees.
+         * @return This {@link Builder} instance.
+         */
+        @NonNull
         public Builder setMeasurement(double measurement) {
             mMeasurement = measurement;
             return this;
         }
 
+        /**
+         * Sets the confidence score for the measurement.
+         *
+         * @param confidence indicating confidence in the measurement.
+         * @return This {@link Builder} instance.
+         *
+         * @hide
+         */
+        @NonNull
         public Builder setConfidence(int confidence) {
             mConfidence = confidence;
             return this;
+        }
+
+        /**
+         * Builds a new {@link RangingMeasurement} instance with the specified parameters.
+         *
+         * @return A new {@link RangingMeasurement} object.
+         */
+        @NonNull
+        public RangingMeasurement build() {
+            return new RangingMeasurement(this);
         }
     }
 }

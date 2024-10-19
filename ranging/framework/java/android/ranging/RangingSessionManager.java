@@ -18,6 +18,7 @@ package android.ranging;
 
 import android.content.AttributionSource;
 import android.os.Process;
+import android.os.RemoteException;
 import android.util.Log;
 
 import java.util.Map;
@@ -30,22 +31,25 @@ import java.util.concurrent.Executor;
 public final class RangingSessionManager extends IRangingCallbacks.Stub {
 
     private static final String TAG = "RangingSessionManager";
-    private final IRangingAdapter mRangingAdapter;
     private static long sSessionIdCounter = 1;
-
+    private final IRangingAdapter mRangingAdapter;
     private final Map<SessionHandle, RangingSession> mSessions = new ConcurrentHashMap<>();
 
     public RangingSessionManager(IRangingAdapter rangingAdapter) {
         mRangingAdapter = rangingAdapter;
+        try {
+            mRangingAdapter.registerOobSendDataListener(new OobSendDataListener());
+        } catch (RemoteException e) {
+            Log.e(TAG, "Failed to register OobSendDataListener", e);
+        }
     }
 
-    public RangingSession createRangingSessionInstance(
-            AttributionSource attributionSource, RangingSession.Callback callback, Executor executor
-    ) {
+    RangingSession createRangingSessionInstance(AttributionSource attributionSource,
+            RangingSession.Callback callback, Executor executor) {
         SessionHandle sessionHandle = new SessionHandle(sSessionIdCounter++, attributionSource,
                 Process.myPid());
-        RangingSession rangingSession = new RangingSession(this,
-                attributionSource, sessionHandle, mRangingAdapter, callback, executor);
+        RangingSession rangingSession = new RangingSession(this, attributionSource, sessionHandle,
+                mRangingAdapter, callback, executor);
         mSessions.put(sessionHandle, rangingSession);
         return rangingSession;
     }
@@ -54,6 +58,7 @@ public final class RangingSessionManager extends IRangingCallbacks.Stub {
     public void onStarted(SessionHandle sessionHandle, int technology) {
         if (!mSessions.containsKey(sessionHandle)) {
             Log.e(TAG, "SessionHandle not found");
+            return;
         }
         mSessions.get(sessionHandle).onRangingStarted(technology);
     }
@@ -62,6 +67,7 @@ public final class RangingSessionManager extends IRangingCallbacks.Stub {
     public void onClosed(SessionHandle sessionHandle, int reason) {
         if (!mSessions.containsKey(sessionHandle)) {
             Log.e(TAG, "SessionHandle not found");
+            return;
         }
         mSessions.get(sessionHandle).onRangingClosed(reason);
     }
@@ -70,7 +76,76 @@ public final class RangingSessionManager extends IRangingCallbacks.Stub {
     public void onData(SessionHandle sessionHandle, RangingDevice device, RangingData data) {
         if (!mSessions.containsKey(sessionHandle)) {
             Log.e(TAG, "SessionHandle not found");
+            return;
         }
         mSessions.get(sessionHandle).onData(device, data);
+    }
+
+    /**
+     * Tells the service that OOB data has been received.
+     *
+     * @param oobHandle uniquely identifiers a session/device pair for OOB communication.
+     * @param data      payload
+     */
+    public void oobDataReceived(OobHandle oobHandle, byte[] data) {
+        try {
+            mRangingAdapter.oobDataReceived(oobHandle, data);
+        } catch (RemoteException e) {
+            Log.e(TAG, "Failed mRangingAdapter.oobDataReceived", e);
+        }
+    }
+
+    /**
+     * Tells the service that OOB channel has been reconnected.
+     *
+     * @param oobHandle uniquely identifiers a session/device pair for OOB communication.
+     */
+    public void deviceOobReconnected(OobHandle oobHandle) {
+        try {
+            mRangingAdapter.deviceOobReconnected(oobHandle);
+        } catch (RemoteException e) {
+            Log.e(TAG, "Failed mRangingAdapter.deviceOobReconnected", e);
+        }
+    }
+
+    /**
+     * Tells the service that OOB channel has been disconnected.
+     *
+     * @param oobHandle uniquely identifiers a session/device pair for OOB communication.
+     */
+    public void deviceOobDisconnected(OobHandle oobHandle) {
+        try {
+            mRangingAdapter.deviceOobDisconnected(oobHandle);
+        } catch (RemoteException e) {
+            Log.e(TAG, "Failed mRangingAdapter.deviceOobDisconnected", e);
+        }
+
+    }
+
+    /**
+     * Tells the service that OOB channel has been permanently closed.
+     *
+     * @param oobHandle uniquely identifiers a session/device pair for OOB communication.
+     */
+    public void deviceOobClosed(OobHandle oobHandle) {
+        try {
+            mRangingAdapter.deviceOobClosed(oobHandle);
+        } catch (RemoteException e) {
+            Log.e(TAG, "Failed mRangingAdapter.deviceOobClosed", e);
+        }
+    }
+
+    class OobSendDataListener extends IOobSendDataListener.Stub {
+
+        @Override
+        public void sendOobData(OobHandle oobHandle, byte[] data) throws RemoteException {
+            SessionHandle session = oobHandle.getSessionHandle();
+            if (!mSessions.containsKey(session)) {
+                Log.e(TAG, "SessionHandle not found, session: " + session);
+                return;
+            }
+            mSessions.get(session).sendOobData(oobHandle.getRangingDevice(),
+                    data);
+        }
     }
 }

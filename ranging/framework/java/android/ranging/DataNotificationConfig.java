@@ -18,10 +18,9 @@ package android.ranging;
 
 import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
+import android.annotation.NonNull;
 import android.os.Parcel;
 import android.os.Parcelable;
-
-import androidx.annotation.NonNull;
 
 import com.android.ranging.flags.Flags;
 
@@ -29,21 +28,27 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
+ * Represents the configuration for data notifications in ranging operations.
+ *
+ * <p>This class holds the configuration settings for how notifications are sent
+ * regarding the proximity of ranging devices.
+ *
  * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 public final class DataNotificationConfig implements Parcelable {
 
-    private final @NotificationConfig int mRangeDataNtfConfigType;
+    private final @NotificationConfigType int mNotificationConfigType;
     private final int mProximityNearCm;
     private final int mProximityFarCm;
 
-    protected DataNotificationConfig(Parcel in) {
-        mRangeDataNtfConfigType = in.readInt();
+    private DataNotificationConfig(Parcel in) {
+        mNotificationConfigType = in.readInt();
         mProximityNearCm = in.readInt();
         mProximityFarCm = in.readInt();
     }
 
+    @NonNull
     public static final Creator<DataNotificationConfig> CREATOR = new Creator<>() {
         @Override
         public DataNotificationConfig createFromParcel(Parcel in) {
@@ -63,22 +68,29 @@ public final class DataNotificationConfig implements Parcelable {
 
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
-        dest.writeInt(mRangeDataNtfConfigType);
+        dest.writeInt(mNotificationConfigType);
         dest.writeInt(mProximityNearCm);
         dest.writeInt(mProximityFarCm);
     }
 
+    /**
+     * @hide
+     */
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({
-            NotificationConfig.DISABLE,
-            NotificationConfig.ENABLE,
-            NotificationConfig.PROXIMITY_LEVEL,
-            NotificationConfig.PROXIMITY_EDGE,
+            NotificationConfigType.DISABLE,
+            NotificationConfigType.ENABLE,
+            NotificationConfigType.PROXIMITY_LEVEL,
+            NotificationConfigType.PROXIMITY_EDGE,
     })
-    @interface NotificationConfig {
+    @interface NotificationConfigType {
+        // Range data notification will be disabled.
         int DISABLE = 0;
+        // Range data notification will be enabled (default).
         int ENABLE = 1;
+        // Range data notification is enabled when peer device is in the configured range.
         int PROXIMITY_LEVEL = 2;
+        //Range data notification is enabled when peer device enters or exits the configured range.
         int PROXIMITY_EDGE = 3;
     }
 
@@ -88,44 +100,89 @@ public final class DataNotificationConfig implements Parcelable {
             throw new IllegalArgumentException(
                     "Ntf proximity near cannot be greater than Ntf proximity far");
         }
-        mRangeDataNtfConfigType = builder.mRangeDataConfigType;
+        mNotificationConfigType = builder.mNotificationConfigType;
         mProximityNearCm = builder.mProximityNearCm;
         mProximityFarCm = builder.mProximityFarCm;
     }
 
-    public @NotificationConfig int getRangeDataNtfConfigType() {
-        return mRangeDataNtfConfigType;
+    /**
+     * Returns the notification configuration type.
+     *
+     * @return the notification configuration type as defined in {@link NotificationConfigType}.
+     */
+    @NotificationConfigType
+    public int getNotificationConfigType() {
+        return mNotificationConfigType;
     }
 
+    /**
+     * Returns the near proximity threshold in centimeters.
+     *
+     * @return the near proximity in centimeters.
+     */
     public int getProximityNearCm() {
         return mProximityNearCm;
     }
 
+    /**
+     * Returns the far proximity threshold in centimeters.
+     *
+     * @return the far proximity in centimeters.
+     */
     public int getProximityFarCm() {
         return mProximityFarCm;
     }
 
-    /** Builder for UwbRangeDataNtfConfig */
-    public static class Builder {
-        private @NotificationConfig int mRangeDataConfigType = NotificationConfig.ENABLE;
+    /** Builder for {@link DataNotificationConfig} */
+    public static final class Builder {
+        @NotificationConfigType
+        private int mNotificationConfigType = NotificationConfigType.ENABLE;
         private int mProximityNearCm = 0;
         private int mProximityFarCm = 20_000;
 
-        public Builder setNotificationConfig(@NotificationConfig int config) {
-            mRangeDataConfigType = config;
+        /**
+         * Sets the notification configuration type.
+         *
+         * @param config The notification configuration type to set.
+         * @return this Builder instance.
+         */
+        @NonNull
+        public Builder setNotificationConfigType(@NotificationConfigType int config) {
+            mNotificationConfigType = config;
             return this;
         }
 
+        /**
+         * Sets the near proximity threshold in centimeters.
+         *
+         * @param proximityCm The near proximity to set, in centimeters.
+         * @return this Builder instance.
+         */
+        @NonNull
         public Builder setProximityNearCm(int proximityCm) {
             mProximityNearCm = proximityCm;
             return this;
         }
 
+        /**
+         * Sets the far proximity threshold in centimeters.
+         *
+         * @param proximityCm The far proximity to set, in centimeters.
+         * @return this Builder instance.
+         */
+        @NonNull
         public Builder setProximityFarCm(int proximityCm) {
             mProximityFarCm = proximityCm;
             return this;
         }
 
+        /**
+         * Builds a new instance of {@link DataNotificationConfig}.
+         *
+         * @return a new {@link DataNotificationConfig} instance created using the current state of
+         * the builder.
+         */
+        @NonNull
         public DataNotificationConfig build() {
             return new DataNotificationConfig(this);
         }

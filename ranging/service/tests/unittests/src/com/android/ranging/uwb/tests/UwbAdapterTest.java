@@ -28,7 +28,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
-import android.ranging.uwb.UwbRangingParameters;
+import android.ranging.uwb.UwbRangingParams;
 
 import androidx.test.filters.SmallTest;
 
@@ -64,26 +64,32 @@ import java.util.concurrent.ExecutionException;
 @RunWith(JUnit4.class)
 @SmallTest
 public class UwbAdapterTest {
-    @Rule public final MockitoRule mMockito = MockitoJUnit.rule();
+    @Rule
+    public final MockitoRule mMockito = MockitoJUnit.rule();
 
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS) private Context mMockContext;
-    @Mock private UwbServiceImpl mMockUwbService;
-    @Mock private RangingController mMockUwbClient;
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private Context mMockContext;
+    @Mock
+    private UwbServiceImpl mMockUwbService;
+    @Mock
+    private RangingController mMockUwbClient;
 
-    @Mock private RangingAdapter.Callback mMockCallback;
+    @Mock
+    private RangingAdapter.Callback mMockCallback;
 
     /** Class under test */
     private UwbAdapter mUwbAdapter;
 
     private UwbConfig.Builder generateConfig() {
         return new UwbConfig.Builder(
-                new UwbRangingParameters.Builder()
-                        .setConfigId(UwbRangingParameters.ConfigId.UNICAST_DS_TWR)
-                        .setDeviceRole(UwbRangingParameters.DeviceRole.INITIATOR)
+                new UwbRangingParams.Builder()
+                        .setConfigId(UwbRangingParams.ConfigId.UNICAST_DS_TWR)
+                        .setDeviceRole(UwbRangingParams.DeviceRole.INITIATOR)
                         .setDeviceAddress(UwbAddress.fromBytes(new byte[]{1, 2}))
-                        .setComplexChannel(new UwbComplexChannel(9, 11))
+                        .setComplexChannel(new UwbComplexChannel.Builder().setChannel(
+                                9).setPreambleIndex(11).build())
                         .setPeerAddresses(ImmutableMap.of())
-                        .setRangingUpdateRate(UwbRangingParameters.RangingUpdateRate.NORMAL)
+                        .setRangingUpdateRate(UwbRangingParams.RangingUpdateRate.NORMAL)
                         .build()
         )
                 .setCountryCode("US");
@@ -95,7 +101,7 @@ public class UwbAdapterTest {
                 .thenReturn(true);
         when(mMockUwbService.getController(any())).thenReturn(mMockUwbClient);
         mUwbAdapter = new UwbAdapter(mMockContext, MoreExecutors.newDirectExecutorService(),
-                mMockUwbService, UwbRangingParameters.DeviceRole.INITIATOR);
+                mMockUwbService, UwbRangingParams.DeviceRole.INITIATOR);
     }
 
     @Test

@@ -24,6 +24,7 @@ import com.google.uwb.support.base.ProtocolVersion;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.radar.RadarParams;
+import com.google.uwb.support.rftest.RfTestParams;
 
 public abstract class TlvEncoder {
     /**
@@ -41,6 +42,9 @@ public abstract class TlvEncoder {
         }
         if (protocolName.equals(RadarParams.PROTOCOL_NAME)) {
             return new RadarEncoder();
+        }
+        if (protocolName.equals(RfTestParams.PROTOCOL_NAME)) {
+            return new RfTestEncoder();
         }
         return null;
     }

@@ -81,6 +81,8 @@ import com.google.uwb.support.oemextension.DeviceStatus;
 import com.google.uwb.support.profile.UuidBundleWrapper;
 import com.google.uwb.support.radar.RadarOpenSessionParams;
 import com.google.uwb.support.radar.RadarParams;
+import com.google.uwb.support.rftest.RfTestOpenSessionParams;
+import com.google.uwb.support.rftest.RfTestParams;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
@@ -696,6 +698,14 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             mSessionManager.initSession(attributionSource, sessionHandle, sessionId,
                     (byte) sessionType, radarOpenSessionParams.getProtocolName(),
                     radarOpenSessionParams, rangingCallbacks, chipId);
+        } else if (RfTestParams.isCorrectProtocol(params)) {
+            RfTestOpenSessionParams rfTestOpenSessionParams =
+                    RfTestOpenSessionParams.fromBundle(params);
+            sessionId = rfTestOpenSessionParams.getSessionId();
+            sessionType = rfTestOpenSessionParams.getSessionType();
+            mSessionManager.initSession(attributionSource, sessionHandle, sessionId,
+                    (byte) sessionType, rfTestOpenSessionParams.getProtocolName(),
+                    rfTestOpenSessionParams, rangingCallbacks, chipId);
         } else {
             Log.e(TAG, "openRanging - Wrong parameters");
             try {

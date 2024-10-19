@@ -158,6 +158,18 @@ public class ConfigParam {
     public static final int NUMBER_OF_BURSTS_KEY = NUMBER_OF_BURSTS;
     public static final int RADAR_DATA_TYPE_KEY = RADAR_DATA_TYPE;
 
+    //Rf test related config IDs
+    public static final int NUMBER_OF_PACKETS = 0x00;
+    public static final int T_GAP = 0x01;
+    public static final int T_START = 0x02;
+    public static final int T_WIN = 0x03;
+    public static final int RANDOMIZE_PSDU = 0x04;
+    public static final int PHR_RANGING_BIT = 0x05;
+    public static final int RMARKER_TX_START = 0x06;
+    public static final int RMARKER_RX_START = 0x07;
+    public static final int STS_INDEX_AUTO_INCR = 0x08;
+    public static final int STS_DETECT_BITMAP = 0x09;
+
     public static byte[] getTagBytes(int tagType) {
         int tagLength = 1;
         ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES).putInt(tagType);

@@ -115,6 +115,7 @@ import com.google.uwb.support.generic.GenericSpecificationParams;
 import com.google.uwb.support.oemextension.AdvertisePointedTarget;
 import com.google.uwb.support.oemextension.SessionConfigParams;
 import com.google.uwb.support.oemextension.SessionStatus;
+import com.google.uwb.support.rftest.RfTestParams;
 
 import java.io.Closeable;
 import java.io.FileDescriptor;
@@ -623,6 +624,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         int status = mConfigurationManager.setAppConfigurations(uwbSession.getSessionId(),
                 uwbSession.getParams(), uwbSession.getChipId(),
                 getUwbsFiraProtocolVersion(uwbSession.getChipId()));
+
+        if (status == UwbUciConstants.STATUS_CODE_OK
+                && uwbSession.getProtocolName().equals(RfTestParams.PROTOCOL_NAME)) {
+            status = mConfigurationManager.setRfTestAppConfigurations(uwbSession.getSessionId(),
+                    uwbSession.getParams(), uwbSession.getChipId());
+        }
+
         if (status == UwbUciConstants.STATUS_CODE_OK
                 && mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
             try {

@@ -17,6 +17,7 @@
 package android.ranging;
 
 import android.annotation.FlaggedApi;
+import android.annotation.NonNull;
 import android.os.Parcel;
 import android.os.Parcelable;
 
@@ -25,19 +26,22 @@ import com.android.ranging.flags.Flags;
 import java.util.UUID;
 
 /**
+ * Represents a ranging device identified by a unique UUID.
+ *
+ * <p> This class is designed for ranging operations, where each device involved in the ranging
+ * session is uniquely identified by a {@link UUID}.
+ *
  * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 public final class RangingDevice implements Parcelable {
     private final UUID mId;
 
-    // Constructor that takes UUID
-    public RangingDevice(UUID id) {
-        mId = id;
+    private RangingDevice(Builder builder) {
+        mId = builder.mId;
     }
 
-    // Constructor used when recreating object from Parcel
-    protected RangingDevice(Parcel in) {
+    private RangingDevice(Parcel in) {
         // Read the UUID as two long values (UUID is stored as two longs)
         long mostSigBits = in.readLong();
         long leastSigBits = in.readLong();
@@ -45,8 +49,7 @@ public final class RangingDevice implements Parcelable {
     }
 
     @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        // Write the UUID as two long values
+    public void writeToParcel(@NonNull Parcel dest, int flags) {
         dest.writeLong(mId.getMostSignificantBits());
         dest.writeLong(mId.getLeastSignificantBits());
     }
@@ -56,7 +59,7 @@ public final class RangingDevice implements Parcelable {
         return 0;
     }
 
-    // Parcelable.Creator to recreate the object from Parcel
+    @NonNull
     public static final Creator<RangingDevice> CREATOR = new Creator<RangingDevice>() {
         @Override
         public RangingDevice createFromParcel(Parcel in) {
@@ -69,8 +72,13 @@ public final class RangingDevice implements Parcelable {
         }
     };
 
-    // Getter for the UUID
-    public UUID getId() {
+    /**
+     * Returns the UUID that uniquely identifies the ranging device.
+     *
+     * @return The device's {@link UUID}.
+     */
+    @NonNull
+    public UUID getUuid() {
         return mId;
     }
 
@@ -82,9 +90,40 @@ public final class RangingDevice implements Parcelable {
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof RangingDevice device) {
-            return mId.equals(device.getId());
+            return mId.equals(device.getUuid());
         } else {
             return false;
+        }
+    }
+
+    /**
+     * A builder class for creating instances of {@link RangingDevice}.
+     */
+    public static final class Builder {
+        private UUID mId = UUID.randomUUID();
+
+        /**
+         * Sets the UUID for the device.
+         *
+         * @param id The {@link UUID} to assign to the device.
+         * @return This {@link Builder} instance.
+         *
+         * @throws IllegalArgumentException if the provided UUID is null.
+         */
+        @NonNull
+        public Builder setUuid(@NonNull UUID id) {
+            mId = id;
+            return this;
+        }
+
+        /**
+         * Builds a new instance of {@link RangingDevice} with the provided configuration.
+         *
+         * @return A new {@link RangingDevice} instance.
+         */
+        @NonNull
+        public RangingDevice build() {
+            return new RangingDevice(this);
         }
     }
 }

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.android.ranging.rtt.backend">
+
+<uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+<uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+<!-- If your app targets Android 13 (API level 33) or higher, you must declare the NEARBY_WIFI_DEVICES permission. -->
+<uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" android:usesPermissionFlags="neverForLocation" />
+<!-- If your app derives location information from Wi-Fi APIs, don't include the "usesPermissionFlags" attribute. -->
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="32" />
+<!-- If any feature in your app relies on precise location information, don't include the "maxSdkVersion" attribute. -->
+
+  <application
+         android:persistent="true"
+         android:directBootAware="true"
+         android:defaultToDeviceProtectedStorage="true">
+      <!--
+    <service android:name=".impl.RttService"
+            android:exported="true"
+            android:process=":remote">
+        <intent-filter>
+          <action android:name="com.android.ranging.rtt.backend"></action>
+        </intent-filter>
+    </service>
+    -->
+  </application>
+</manifest>
