@@ -20,10 +20,12 @@ import android.annotation.Nullable;
 import android.os.RemoteException;
 import android.ranging.RangingCapabilities;
 import android.ranging.RangingManager;
+import android.ranging.rtt.RttRangingParams;
 import android.ranging.uwb.UwbRangingCapabilities;
 import android.util.Log;
 
 import com.android.server.ranging.cs.CsAdapter;
+import com.android.server.ranging.rtt.RttAdapter;
 import com.android.server.ranging.uwb.UwbAdapter;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -47,6 +49,9 @@ public class CapabilitiesProvider {
     @Nullable
     private CsAdapter mCsAdapter;
 
+    @Nullable
+    private RttAdapter mRttAdapter;
+
     private final ExecutorService mExecutorService;
 
 
@@ -57,11 +62,16 @@ public class CapabilitiesProvider {
         mExecutorService = Executors.newSingleThreadExecutor();
         if (UwbAdapter.isSupported(mRangingInjector.getContext())) {
             mUwbAdapter = new UwbAdapter(mRangingInjector.getContext(),
-                    MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor()),
+                    MoreExecutors.listeningDecorator(mExecutorService),
                     FiraParams.RANGING_DEVICE_TYPE_CONTROLLER);
         }
         if (CsAdapter.isSupported(mRangingInjector.getContext())) {
             mCsAdapter = new CsAdapter();
+        }
+        if (RttAdapter.isSupported(mRangingInjector.getContext())) {
+            mRttAdapter = new RttAdapter(mRangingInjector.getContext(),
+                    MoreExecutors.listeningDecorator(mExecutorService),
+                    RttRangingParams.DEVICE_ROLE_SUBSCRIBER);
         }
     }
 
@@ -72,36 +82,52 @@ public class CapabilitiesProvider {
                 builder.addAvailability(RangingManager.RangingTechnology.UWB,
                         RangingManager.RangingTechnologyAvailability.NOT_SUPPORTED);
             } else {
-                ListenableFuture<com.android.ranging.uwb.backend.internal.RangingCapabilities>
-                        future =
-                        mUwbAdapter.getCapabilities();
+                ListenableFuture<Boolean> enabledFuture = mUwbAdapter.isEnabled();
                 try {
-                    com.android.ranging.uwb.backend.internal.RangingCapabilities capabilities =
-                            future.get(AVAILABILITY_TIMEOUT, TimeUnit.SECONDS);
-                    UwbRangingCapabilities uwbRangingCapabilities =
-                            new UwbRangingCapabilities.Builder()
-                                    .setSupportsDistance(capabilities.supportsDistance())
-                                    .setSupportsAzimuthalAngle(
-                                            capabilities.supportsAzimuthalAngle())
-                                    .setSupportsElevationAngle(
-                                            capabilities.supportsElevationAngle())
-                                    .setSupportsRangingIntervalReconfigure(
+                    boolean enabled = enabledFuture.get(AVAILABILITY_TIMEOUT, TimeUnit.SECONDS);
+                    if (!enabled) {
+                        builder.addAvailability(RangingManager.RangingTechnology.UWB,
+                                RangingManager.RangingTechnologyAvailability.DISABLED_USER);
+                    } else {
+                        ListenableFuture<
+                                com.android.ranging.uwb.backend.internal.RangingCapabilities>
+                                future = mUwbAdapter.getCapabilities();
+                        try {
+                            com.android.ranging.uwb.backend.internal.RangingCapabilities
+                                    capabilities =
+                                    future.get(AVAILABILITY_TIMEOUT, TimeUnit.SECONDS);
+                            UwbRangingCapabilities uwbRangingCapabilities =
+                                    new UwbRangingCapabilities.Builder()
+                                            .setSupportsDistance(capabilities.supportsDistance())
+                                            .setSupportsAzimuthalAngle(
+                                                    capabilities.supportsAzimuthalAngle())
+                                            .setSupportsElevationAngle(
+                                                    capabilities.supportsElevationAngle())
+                                            .setSupportsRangingIntervalReconfigure(
                                             capabilities.supportsRangingIntervalReconfigure())
-                                    .setMinRangingInterval(capabilities.getMinRangingInterval())
-                                    .setSupportedChannels(capabilities.getSupportedChannels())
-                                    .setSupportedNtfConfigs(capabilities.getSupportedNtfConfigs())
-                                    .setSupportedConfigIds(capabilities.getSupportedConfigIds())
-                                    .setSupportedSlotDurations(
-                                            capabilities.getSupportedSlotDurations())
-                                    .setSupportedRangingUpdateRates(
-                                            capabilities.getSupportedRangingUpdateRates())
-                                    .setHasBackgroundRangingSupport(
-                                            capabilities.hasBackgroundRangingSupport())
-                                    .build();
+                                            .setMinRangingInterval(
+                                                    capabilities.getMinRangingInterval())
+                                            .setSupportedChannels(
+                                                    capabilities.getSupportedChannels())
+                                            .setSupportedNtfConfigs(
+                                                    capabilities.getSupportedNtfConfigs())
+                                            .setSupportedConfigIds(
+                                                    capabilities.getSupportedConfigIds())
+                                            .setSupportedSlotDurations(
+                                                    capabilities.getSupportedSlotDurations())
+                                            .setSupportedRangingUpdateRates(
+                                                    capabilities.getSupportedRangingUpdateRates())
+                                            .setHasBackgroundRangingSupport(
+                                                    capabilities.hasBackgroundRangingSupport())
+                                            .build();
 
-                    builder.addAvailability(RangingManager.RangingTechnology.UWB,
-                                    RangingManager.RangingTechnologyAvailability.ENABLED)
-                            .setUwbRangingCapabilities(uwbRangingCapabilities);
+                            builder.addAvailability(RangingManager.RangingTechnology.UWB,
+                                            RangingManager.RangingTechnologyAvailability.ENABLED)
+                                    .setUwbRangingCapabilities(uwbRangingCapabilities);
+                        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                            e.printStackTrace();
+                        }
+                    }
                 } catch (InterruptedException | ExecutionException | TimeoutException e) {
                     e.printStackTrace();
                 }
@@ -119,13 +145,37 @@ public class CapabilitiesProvider {
             return null;
         });
 
+        FutureTask<Void> rttFutureTask = new FutureTask<>(() -> {
+            if (mRttAdapter == null) {
+                builder.addAvailability(RangingManager.RangingTechnology.WIFI_RTT,
+                        RangingManager.RangingTechnologyAvailability.NOT_SUPPORTED);
+            } else {
+                ListenableFuture<Boolean> enabledFuture = mRttAdapter.isEnabled();
+                try {
+                    boolean enabled = enabledFuture.get(AVAILABILITY_TIMEOUT, TimeUnit.SECONDS);
+                    if (!enabled) {
+                        builder.addAvailability(RangingManager.RangingTechnology.WIFI_RTT,
+                                RangingManager.RangingTechnologyAvailability.DISABLED_USER);
+                    } else {
+                        builder.addAvailability(RangingManager.RangingTechnology.WIFI_RTT,
+                                RangingManager.RangingTechnologyAvailability.ENABLED);
+                    }
+                } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                    e.printStackTrace();
+                }
+            }
+            return null;
+        });
+
         mExecutorService.submit(uwbFutureTask);
         mExecutorService.submit(csFutureTask);
+        mExecutorService.submit(rttFutureTask);
 
         try {
-            // Wait for both tasks to complete (or timeout)
+            // Wait for all tasks to complete (or timeout)
             uwbFutureTask.get(AVAILABILITY_TIMEOUT, TimeUnit.SECONDS);
             csFutureTask.get(AVAILABILITY_TIMEOUT, TimeUnit.SECONDS);
+            rttFutureTask.get(AVAILABILITY_TIMEOUT, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             Log.e(TAG, "Timed out while fetching ranging capabilities");
         }

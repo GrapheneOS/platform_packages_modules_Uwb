@@ -18,13 +18,13 @@ package com.android.server.ranging.rtt;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.ranging.rtt.RttRangingParams;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 
 import com.android.ranging.rtt.backend.internal.RttDevice;
 import com.android.ranging.rtt.backend.internal.RttRangingDevice;
-import com.android.ranging.rtt.backend.internal.RttRangingParameters;
 import com.android.ranging.rtt.backend.internal.RttRangingPosition;
 import com.android.ranging.rtt.backend.internal.RttRangingSessionCallback;
 import com.android.ranging.rtt.backend.internal.RttService;
@@ -69,21 +69,21 @@ public class RttAdapter implements RangingAdapter {
 
     public RttAdapter(
             @NonNull Context context, @NonNull ListeningExecutorService executorService,
-            @RttRangingParameters.DeviceRole int role
+            @RttRangingParams.DeviceRole int role
     ) {
         this(context, executorService, new RttServiceImpl(context), role);
     }
 
     @VisibleForTesting
     public RttAdapter(@NonNull Context context, @NonNull ListeningExecutorService executorService,
-            @NonNull RttService rttService, @RttRangingParameters.DeviceRole int role) {
+            @NonNull RttService rttService, @RttRangingParams.DeviceRole int role) {
         if (!RttAdapter.isSupported(context)) {
             throw new IllegalArgumentException("WiFi RTT system feature not found.");
         }
 
         mStateMachine = new StateMachine<>(State.STOPPED);
         mRttService = rttService;
-        mRttClient = role == RttRangingParameters.DeviceRole.SUBSCRIBER
+        mRttClient = role == RttRangingParams.DEVICE_ROLE_SUBSCRIBER
                 ? mRttService.getSubscriber(context)
                 : mRttService.getPublisher(context);
 
@@ -102,7 +102,7 @@ public class RttAdapter implements RangingAdapter {
     }
 
     @Override
-    public void start(@NonNull RangingConfig.TechnologyConfig parameters,
+    public void start(@NonNull RangingConfig.TechnologyConfig config,
             @NonNull Callback callbacks) {
         Log.i(TAG, "Start called.");
         if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {
@@ -111,12 +111,13 @@ public class RttAdapter implements RangingAdapter {
         }
 
         mCallbacks = callbacks;
-        if (!(parameters instanceof RttRangingParameters)) {
+        if (!(config instanceof RttConfig)) {
             Log.w(TAG, "Tried to start adapter with invalid ranging parameters");
             mCallbacks.onStopped(Callback.StoppedReason.FAILED_TO_START);
             return;
         }
-        mRttClient.setRangingParameters((RttRangingParameters) parameters);
+        mRttClient.setRangingParameters(
+                ((RttConfig) config).asBackendParameters());
 
         var future = Futures.submit(() -> {
             mRttClient.startRanging(mRttListener, Executors.newSingleThreadExecutor());
@@ -215,8 +216,10 @@ public class RttAdapter implements RangingAdapter {
             @Override
             public void onSuccess(Void v) {
                 Log.i(TAG, "startRanging succeeded.");
+                // TODO: check where onStarted needs to be called.
                 // On started will be called after onRangingInitialized is invoked from
                 // the RTT callback.
+                mCallbacks.onStarted();
             }
 
             @Override
@@ -232,6 +235,7 @@ public class RttAdapter implements RangingAdapter {
             public void onSuccess(Void v) {
                 // On stopped will be called after onRangingSuspended is invoked from
                 // the RTT callback.
+                mCallbacks.onStopped(RangingAdapter.Callback.StoppedReason.REQUESTED);
             }
 
             @Override

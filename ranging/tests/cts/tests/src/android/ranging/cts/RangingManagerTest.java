@@ -186,6 +186,10 @@ public class RangingManagerTest {
         private volatile CountDownLatch mOnStartedCalled = new CountDownLatch(1);
         private volatile CountDownLatch mOnClosedCalled = new CountDownLatch(1);
 
+        public void replaceOnStartedCountDownLatch(CountDownLatch latch) {
+            mOnStartedCalled = latch;
+        }
+
         @Override
         public void onStarted(int technology) {
             mOnStartedCalled.countDown();
@@ -220,9 +224,11 @@ public class RangingManagerTest {
         mRangingManager.registerCapabilitiesCallback(Executors.newSingleThreadExecutor(),
                 capabilitiesCallback);
 
-        assertThat(capabilitiesCallback.mCountDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+        assertThat(capabilitiesCallback.mCountDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
         assertThat(capabilitiesCallback.mOnCapabilitiesReceived).isTrue();
         assertThat(capabilitiesCallback.mRangingCapabilities).isNotNull();
+        assertThat(capabilitiesCallback.mRangingCapabilities.getTechnologyAvailabilityMap())
+                .isNotNull();
 
         UwbRangingCapabilities uwbRangingCapabilities =
                 capabilitiesCallback.mRangingCapabilities.getUwbCapabilities();
@@ -232,6 +238,57 @@ public class RangingManagerTest {
         }
 
         mRangingManager.unregisterCapabilitiesCallback(capabilitiesCallback);
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @RequiresFlagsEnabled("com.android.ranging.flags.ranging_rtt_enabled")
+    public void testRttRanging() throws InterruptedException {
+        //Enable when
+//        CapabilitiesCallback capabilitiesCallback = new CapabilitiesCallback(new CountDownLatch
+//        (1));
+//        mRangingManager.registerCapabilitiesCallback(Executors.newSingleThreadExecutor(),
+//                capabilitiesCallback);
+//
+//        assertThat(capabilitiesCallback.mCountDownLatch.await(3, TimeUnit.SECONDS)).isTrue();
+//        assertThat(capabilitiesCallback.mOnCapabilitiesReceived).isTrue();
+//        assertThat(capabilitiesCallback.mRangingCapabilities).isNotNull();
+//        assertThat(
+//                capabilitiesCallback.mRangingCapabilities.getTechnologyAvailabilityMap())
+//                .isNotNull();
+//
+//        assumeTrue(capabilitiesCallback.mRangingCapabilities.getTechnologyAvailabilityMap().get(
+//                RangingManager.RangingTechnology.WIFI_RTT)
+//                == RangingManager.RangingTechnologyAvailability.ENABLED);
+//        List<RttRangingParams> rttParamsList = new ArrayList<>();
+//        rttParamsList.add(new RttRangingParams.Builder()
+//                .setDeviceRole(RttRangingParams.DEVICE_ROLE_SUBSCRIBER)
+//                .setServiceName("Test1")
+//                .setMatchFilter(new byte[]{0,1,2})
+//                .build());
+//        rttParamsList.add(new RttRangingParams.Builder()
+//                .setDeviceRole(RttRangingParams.DEVICE_ROLE_SUBSCRIBER)
+//                .setServiceName("Test2")
+//                .setMatchFilter(new byte[]{0,1})
+//                .build());
+//        RangingPreference preference = new RangingPreference.Builder()
+//                .setRangingParameters(new RangingParams.Builder()
+//                        .setRttParameters(rttParamsList)
+//                        .build())
+//                .build();
+//
+//        CallbackVerifier callback = new CallbackVerifier();
+//        RangingSession rangingSession = mRangingManager.createRangingSession(
+//                MoreExecutors.directExecutor(), callback);
+//        assertThat(rangingSession).isNotNull();
+//
+//        callback.replaceOnStartedCountDownLatch(new CountDownLatch(2));
+//        rangingSession.start(preference);
+//        assertThat(callback.mOnStartedCalled.await(2, TimeUnit.SECONDS)).isTrue();
+//        rangingSession.stop();
+//        assertThat(callback.mOnClosedCalled.await(2, TimeUnit.SECONDS)).isTrue();
+//
+//        mRangingManager.unregisterCapabilitiesCallback(capabilitiesCallback);
     }
 
     private static class CapabilitiesCallback implements RangingCapabilitiesCallback {

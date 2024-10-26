@@ -22,9 +22,13 @@ import android.annotation.Nullable;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.ranging.cs.CsRangingParameters;
+import android.ranging.rtt.RttRangingParams;
 import android.ranging.uwb.UwbRangingParams;
 
 import com.android.ranging.flags.Flags;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * RangingParameters is a container for parameters used in ranging sessions.
@@ -40,20 +44,24 @@ public final class RangingParams implements Parcelable {
 
     private final CsRangingParameters mCsParameters;
 
+    private final List<RttRangingParams> mRttRangingParams;
+
     private RangingParams(Builder builder) {
         mUwbParameters = builder.mUwbParameters;
         mCsParameters = builder.mCsParameters;
+        mRttRangingParams = builder.mRttRangingParams;
     }
+
 
     private RangingParams(Parcel in) {
-        mUwbParameters = in.readParcelable(
-                UwbRangingParams.class.getClassLoader(), UwbRangingParams.class);
+        mUwbParameters = in.readParcelable(UwbRangingParams.class.getClassLoader(),
+                UwbRangingParams.class);
         mCsParameters = in.readParcelable(CsRangingParameters.class.getClassLoader(),
                 CsRangingParameters.class);
+        mRttRangingParams = in.createTypedArrayList(RttRangingParams.CREATOR);
     }
 
-    @NonNull
-    public static final Creator<RangingParams> CREATOR = new Creator<>() {
+    public static final Creator<RangingParams> CREATOR = new Creator<RangingParams>() {
         @Override
         public RangingParams createFromParcel(Parcel in) {
             return new RangingParams(in);
@@ -78,12 +86,20 @@ public final class RangingParams implements Parcelable {
     /**
      * Gets the Channel Sounding ranging parameters.
      *
-     * @hide
      * @return the {@link CsRangingParameters} if present, otherwise {@code null}.
+     * @hide
      */
     @Nullable
     public CsRangingParameters getCsParameters() {
         return mCsParameters;
+    }
+
+    /**
+     * @hide
+     */
+    @FlaggedApi(Flags.FLAG_RANGING_RTT_ENABLED)
+    public List<RttRangingParams> getRttRangingParams() {
+        return mRttRangingParams;
     }
 
     /**
@@ -98,9 +114,10 @@ public final class RangingParams implements Parcelable {
      * @hide
      */
     @Override
-    public void writeToParcel(@NonNull Parcel dest, int flags) {
+    public void writeToParcel(Parcel dest, int flags) {
         dest.writeParcelable(mUwbParameters, flags);
         dest.writeParcelable(mCsParameters, flags);
+        dest.writeTypedList(mRttRangingParams);
     }
 
     /**
@@ -109,13 +126,13 @@ public final class RangingParams implements Parcelable {
     public static final class Builder {
         private UwbRangingParams mUwbParameters = null;
         private CsRangingParameters mCsParameters = null;
+        private List<RttRangingParams> mRttRangingParams = new ArrayList<>();
 
         /**
          * Sets the UWB ranging parameters.
          *
          * @param uwbParameters The UWB-specific configuration.
          * @return This builder instance.
-         *
          * @throws IllegalArgumentException if the uwbParameters is null.
          */
         @NonNull
@@ -127,16 +144,29 @@ public final class RangingParams implements Parcelable {
         /**
          * Sets the Channel Sounding ranging parameters.
          *
-         * @hide
-         *
          * @param csParameters The CS-specific configuration.
          * @return This builder instance.
-         *
          * @throws IllegalArgumentException if the csParameters is null.
+         * @hide
          */
         @NonNull
         public Builder setCsParameters(@NonNull CsRangingParameters csParameters) {
             mCsParameters = csParameters;
+            return this;
+        }
+
+        /**
+         * Sets the Wi-Fi RTT ranging parameters.
+         *
+         * @param rttRangingParams The RTT-specific configuration.
+         * @return This builder instance.
+         * @throws IllegalArgumentException if the rttRangingParams is null.
+         * @hide
+         */
+        @NonNull
+        @FlaggedApi(Flags.FLAG_RANGING_RTT_ENABLED)
+        public Builder setRttParameters(@NonNull List<RttRangingParams> rttRangingParams) {
+            mRttRangingParams = rttRangingParams;
             return this;
         }
 

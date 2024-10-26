@@ -89,18 +89,20 @@ def set_uwb_state_and_verify(
 
 
 def verify_peer_found(ranging_dut: uwb_ranging_decorator.UwbRangingDecorator,
-                      peer_addr: List[int], session: int = 0):
+                      peer_addr: List[int], session: int = 0,
+                      timeout: int = WAIT_TIME_SEC):
   """Verifies if the UWB peer is found.
 
   Args:
     ranging_dut: uwb ranging device.
     peer_addr: uwb peer device address.
     session: session id.
+    timeout: timeout for peer to be found.
   """
   ranging_dut.ad.log.info("Look for peer: %s" % peer_addr)
   start_time = time.time()
   while not ranging_dut.is_uwb_peer_found(peer_addr, session):
-    if time.time() - start_time > WAIT_TIME_SEC:
+    if time.time() - start_time > timeout:
       asserts.fail("UWB peer with address %s not found" % peer_addr)
   logging.info("Peer %s found in %s seconds", peer_addr,
                round(time.time() - start_time, 2))

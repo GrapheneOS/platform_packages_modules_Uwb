@@ -1112,6 +1112,10 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 case "--channel-number":
                     builder.setChannelNumber(Integer.parseInt(getNextArgRequired()));
                     break;
+                case "-f":
+                case "--burst-period":
+                    builder.setBurstPeriod(Integer.parseInt(getNextArgRequired()));
+                    break;
                 case "-s":
                 case "--sweep-period":
                     builder.setSweepPeriod(Integer.parseInt(getNextArgRequired()));
@@ -1565,6 +1569,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + " Radar data will be displayed on screen)\n"
                 + "    [-i <sessionId>](session-id)\n"
                 + "    [-c <channel>](channel-number)\n"
+                + "    [-f <burstPeriod>](burst-period)\n"
                 + "    [-s <sweepPeriod>](sweep-period)\n"
                 + "    [-u <sweepsPerBurst>](sweeps-per-burst)\n"
                 + "    [-e <samplesPerSweep>](samples-per-sweep)\n"

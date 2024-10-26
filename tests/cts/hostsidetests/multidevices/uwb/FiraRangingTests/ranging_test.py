@@ -386,7 +386,7 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     reconfigure_params = uwb_ranging_params.UwbRangingReconfigureParams(
         block_stride_length=block_stride_length)
     initiator.reconfigure_fira_ranging(reconfigure_params)
-    uwb_test_utils.verify_peer_found(initiator, peer_addr)
+    uwb_test_utils.verify_peer_found(initiator, peer_addr, 0, 10)
 
   def _verify_add_controlee_when_opened_ranging_with_no_controlee(
         self, initiator: uwb_ranging_decorator.UwbRangingDecorator,

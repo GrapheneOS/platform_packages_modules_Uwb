@@ -33,6 +33,8 @@ import com.android.server.ranging.RangingConfig.TechnologyConfig;
 import com.android.server.ranging.RangingUtils.StateMachine;
 import com.android.server.ranging.cs.CsAdapter;
 import com.android.server.ranging.fusion.FusionEngine;
+import com.android.server.ranging.rtt.RttAdapter;
+import com.android.server.ranging.rtt.RttConfig;
 import com.android.server.ranging.uwb.UwbAdapter;
 import com.android.server.ranging.uwb.UwbConfig;
 
@@ -132,8 +134,9 @@ public final class RangingPeer {
                                 : FiraParams.RANGING_DEVICE_TYPE_CONTROLEE);
             case CS:
                 return new CsAdapter();
-//            case RTT:
-//                return new RttAdapter(mContext, mAdapterExecutor, role);
+            case RTT:
+                return new RttAdapter(mContext, mAdapterExecutor,
+                        ((RttConfig) config).getRangingParams().getDeviceRole());
             default:
                 throw new IllegalArgumentException(
                         "Tried to create adapter for unknown technology" + technology);
@@ -188,6 +191,7 @@ public final class RangingPeer {
 
     /**
      * Stop all ranging adapters and reset internal state.
+     *
      * @param reason why the session was stopped.
      */
     private void stopForReason(@RangingSession.Callback.StoppedReason int reason) {
@@ -305,6 +309,7 @@ public final class RangingPeer {
     /** Listens for ranging adapter events. */
     private class AdapterListener implements RangingAdapter.Callback {
         private final RangingTechnology mTechnology;
+
         AdapterListener(RangingTechnology technology) {
             this.mTechnology = technology;
         }

@@ -18,7 +18,7 @@ package com.android.ranging.rtt.backend.internal;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.net.wifi.WifiManager;
+import android.net.wifi.aware.WifiAwareManager;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -29,11 +29,13 @@ import androidx.annotation.NonNull;
 public class RttServiceImpl implements RttService {
     private static final String TAG = RttServiceImpl.class.getSimpleName();
     private final Context mContext;
-    private WifiManager mWifiManager;
+    private WifiAwareManager mWifiAwareManager;
 
     public RttServiceImpl(@NonNull Context context) {
         this.mContext = context;
-        mWifiManager = context.getSystemService(WifiManager.class);
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_AWARE)) {
+            mWifiAwareManager = context.getSystemService(WifiAwareManager.class);
+        }
     }
 
     @Override
@@ -48,16 +50,10 @@ public class RttServiceImpl implements RttService {
 
     @Override
     public boolean isAvailable() {
-        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_AWARE)) {
-            Log.w(TAG, "WiFi Aware is not supported");
+        if (mWifiAwareManager == null || !mWifiAwareManager.isAvailable()) {
+            Log.w(TAG, "Wifi RTT unavailable");
             return false;
         }
-
-        if (!mWifiManager.isWifiEnabled()) {
-            Log.w(TAG, "Could not start test because Wifi is not enabled");
-            return false;
-        }
-
         return true;
     }
 }

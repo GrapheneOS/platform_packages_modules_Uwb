@@ -47,7 +47,7 @@ python_test_host {
     test_options: {
         unit_test: false,
     },
-    data: [
+    device_common_data: [
         // Package the snippet with the mobly test
         ":generic_ranging_snippet",
         "README.md",

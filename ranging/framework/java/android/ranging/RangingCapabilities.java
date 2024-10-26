@@ -55,6 +55,13 @@ public final class RangingCapabilities implements Parcelable {
     private RangingCapabilities(Parcel in) {
         mUwbRangingCapabilities = in.readParcelable(UwbRangingCapabilities.class.getClassLoader(),
                 UwbRangingCapabilities.class);
+        int size = in.readInt();
+        mTechnologyAvailabilityMap = new HashMap<>(size);
+        for (int i = 0; i < size; i++) {
+            int key = in.readInt();
+            int value = in.readInt();
+            mTechnologyAvailabilityMap.put(key, value);
+        }
     }
 
     @NonNull
@@ -105,6 +112,11 @@ public final class RangingCapabilities implements Parcelable {
     @Override
     public void writeToParcel(@androidx.annotation.NonNull Parcel dest, int flags) {
         dest.writeParcelable(mUwbRangingCapabilities, flags);
+        dest.writeInt(mTechnologyAvailabilityMap.size()); // Write map size
+        for (Map.Entry<Integer, Integer> entry : mTechnologyAvailabilityMap.entrySet()) {
+            dest.writeInt(entry.getKey()); // Write the key
+            dest.writeInt(entry.getValue()); // Write the value
+        }
     }
 
     /**
