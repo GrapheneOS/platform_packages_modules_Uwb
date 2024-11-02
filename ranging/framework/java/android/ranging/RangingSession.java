@@ -210,6 +210,8 @@ public final class RangingSession implements AutoCloseable {
          *
          * @param technology {@link android.ranging.RangingManager.RangingTechnology }
          * the ranging technology used for the session.
+         *
+         * @hide
          */
         void onStarted(@RangingManager.RangingTechnology int technology);
 
@@ -218,7 +220,7 @@ public final class RangingSession implements AutoCloseable {
          *
          * @param reason the reason for the failure, limited to values defined by {@link Reason}.
          */
-        void onStartFailed(@Reason int reason);
+        void onStartFailed(@Reason int reason, RangingDevice device);
 
         /**
          * Called when the ranging session is closed.

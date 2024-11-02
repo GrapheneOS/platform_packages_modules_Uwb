@@ -18,10 +18,11 @@ package {
 }
 
 android_test {
-    name: "generic_ranging_snippet",
+    name: "ranging_snippet",
     sdk_version: "system_34",
     srcs: [
-        "GenericRangingSnippet.java",
+        "RangingSnippet.java",
+        "RangingPreferenceConverter.java",
     ],
     manifest: "AndroidManifest.xml",
     static_libs: [
@@ -31,8 +32,8 @@ android_test {
         "guava",
         "jsr330",
         "mobly-snippet-lib",
-        "service-ranging-pre-jarjar",
-        "ranging_uwb_backend",
+        "ranging_flags_lib",
+        "framework-ranging.impl",
     ],
     min_sdk_version: "34",
 }

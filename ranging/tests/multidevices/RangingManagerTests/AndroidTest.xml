@@ -14,7 +14,7 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<configuration description="Config for CTS Uwb multi-device test cases">
+<configuration description="Config for ranging multi-device test cases">
     <option name="test-suite-tag" value="cts" />
     <option name="config-descriptor:metadata" key="component" value="uwb" />
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
@@ -29,7 +29,7 @@
 
     <device name="device1">
         <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
-            <option name="test-file-name" value="generic_ranging_snippet.apk" />
+            <option name="test-file-name" value="ranging_snippet.apk" />
         </target_preparer>
         <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
             <option name="run-command" value="input keyevent KEYCODE_WAKEUP" />
@@ -38,7 +38,7 @@
     </device>
     <device name="device2">
         <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
-            <option name="test-file-name" value="generic_ranging_snippet.apk" />
+            <option name="test-file-name" value="ranging_snippet.apk" />
         </target_preparer>
         <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
             <option name="run-command" value="input keyevent KEYCODE_WAKEUP" />
@@ -48,7 +48,7 @@
 
     <test class="com.android.tradefed.testtype.mobly.MoblyBinaryHostTest">
         <!-- The mobly-par-file-name should match the module name -->
-        <option name="mobly-par-file-name" value="MultiDeviceRangingTestCase_Uwb" />
+        <option name="mobly-par-file-name" value="MultiDeviceRangingTestCases" />
         <!-- Timeout limit in milliseconds for all test cases of the python binary -->
         <option name="mobly-test-timeout" value="1800000" />
     </test>

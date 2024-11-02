@@ -36,6 +36,9 @@ public final class RangingMeasurement implements Parcelable {
     private final int mConfidence;
 
     private RangingMeasurement(Builder builder) {
+        if (Double.isNaN(builder.mMeasurement)) {
+            throw new IllegalArgumentException("Missing required parameter: measurement");
+        }
         mMeasurement = builder.mMeasurement;
         mConfidence = builder.mConfidence;
     }
@@ -63,7 +66,6 @@ public final class RangingMeasurement implements Parcelable {
      *
      * @return The measurement, such as a distance in meters or an angle in degrees.
      */
-    @NonNull
     public double getMeasurement() {
         return mMeasurement;
     }
@@ -92,7 +94,7 @@ public final class RangingMeasurement implements Parcelable {
      * A builder class for creating instances of {@link RangingMeasurement}.
      */
     public static final class Builder {
-        private double mMeasurement = 0.0;
+        private double mMeasurement = Double.NaN;
         private int mConfidence = 1;
 
         /**

@@ -20,7 +20,7 @@ import android.annotation.Nullable;
 import android.os.RemoteException;
 import android.ranging.RangingCapabilities;
 import android.ranging.RangingManager;
-import android.ranging.rtt.RttRangingParams;
+import android.ranging.RangingPreference;
 import android.ranging.uwb.UwbRangingCapabilities;
 import android.util.Log;
 
@@ -59,7 +59,7 @@ public class CapabilitiesProvider {
     // all callbacks registered.
     public CapabilitiesProvider(RangingInjector rangingInjector) {
         mRangingInjector = rangingInjector;
-        mExecutorService = Executors.newSingleThreadExecutor();
+        mExecutorService = Executors.newCachedThreadPool();
         if (UwbAdapter.isSupported(mRangingInjector.getContext())) {
             mUwbAdapter = new UwbAdapter(mRangingInjector.getContext(),
                     MoreExecutors.listeningDecorator(mExecutorService),
@@ -71,7 +71,7 @@ public class CapabilitiesProvider {
         if (RttAdapter.isSupported(mRangingInjector.getContext())) {
             mRttAdapter = new RttAdapter(mRangingInjector.getContext(),
                     MoreExecutors.listeningDecorator(mExecutorService),
-                    RttRangingParams.DEVICE_ROLE_SUBSCRIBER);
+                    RangingPreference.DEVICE_ROLE_RESPONDER);
         }
     }
 
@@ -79,14 +79,14 @@ public class CapabilitiesProvider {
         RangingCapabilities.Builder builder = new RangingCapabilities.Builder();
         FutureTask<Void> uwbFutureTask = new FutureTask<>(() -> {
             if (mUwbAdapter == null) {
-                builder.addAvailability(RangingManager.RangingTechnology.UWB,
+                builder.addAvailability(RangingManager.UWB,
                         RangingManager.RangingTechnologyAvailability.NOT_SUPPORTED);
             } else {
                 ListenableFuture<Boolean> enabledFuture = mUwbAdapter.isEnabled();
                 try {
                     boolean enabled = enabledFuture.get(AVAILABILITY_TIMEOUT, TimeUnit.SECONDS);
                     if (!enabled) {
-                        builder.addAvailability(RangingManager.RangingTechnology.UWB,
+                        builder.addAvailability(RangingManager.UWB,
                                 RangingManager.RangingTechnologyAvailability.DISABLED_USER);
                     } else {
                         ListenableFuture<
@@ -121,7 +121,7 @@ public class CapabilitiesProvider {
                                                     capabilities.hasBackgroundRangingSupport())
                                             .build();
 
-                            builder.addAvailability(RangingManager.RangingTechnology.UWB,
+                            builder.addAvailability(RangingManager.UWB,
                                             RangingManager.RangingTechnologyAvailability.ENABLED)
                                     .setUwbRangingCapabilities(uwbRangingCapabilities);
                         } catch (InterruptedException | ExecutionException | TimeoutException e) {
@@ -137,7 +137,7 @@ public class CapabilitiesProvider {
 
         FutureTask<Void> csFutureTask = new FutureTask<>(() -> {
             if (mCsAdapter == null) {
-                builder.addAvailability(RangingManager.RangingTechnology.BT_CS,
+                builder.addAvailability(RangingManager.BT_CS,
                         RangingManager.RangingTechnologyAvailability.NOT_SUPPORTED);
             } else {
                 // TODO add CS support
@@ -147,17 +147,17 @@ public class CapabilitiesProvider {
 
         FutureTask<Void> rttFutureTask = new FutureTask<>(() -> {
             if (mRttAdapter == null) {
-                builder.addAvailability(RangingManager.RangingTechnology.WIFI_RTT,
+                builder.addAvailability(RangingManager.WIFI_NAN_RTT,
                         RangingManager.RangingTechnologyAvailability.NOT_SUPPORTED);
             } else {
                 ListenableFuture<Boolean> enabledFuture = mRttAdapter.isEnabled();
                 try {
                     boolean enabled = enabledFuture.get(AVAILABILITY_TIMEOUT, TimeUnit.SECONDS);
                     if (!enabled) {
-                        builder.addAvailability(RangingManager.RangingTechnology.WIFI_RTT,
+                        builder.addAvailability(RangingManager.WIFI_NAN_RTT,
                                 RangingManager.RangingTechnologyAvailability.DISABLED_USER);
                     } else {
-                        builder.addAvailability(RangingManager.RangingTechnology.WIFI_RTT,
+                        builder.addAvailability(RangingManager.WIFI_NAN_RTT,
                                 RangingManager.RangingTechnologyAvailability.ENABLED);
                     }
                 } catch (InterruptedException | ExecutionException | TimeoutException e) {

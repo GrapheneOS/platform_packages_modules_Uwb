@@ -21,8 +21,10 @@ import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import android.content.Context;
 import android.os.RemoteException;
 import android.ranging.IRangingCallbacks;
+import android.ranging.RangingData;
+import android.ranging.RangingDevice;
+import android.ranging.RangingPreference;
 import android.ranging.SessionHandle;
-import android.ranging.uwb.UwbRangingParams;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -48,6 +50,7 @@ import com.google.uwb.support.fira.FiraParams;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
@@ -74,11 +77,8 @@ public final class RangingPeer {
      */
     private volatile IRangingCallbacks mCallback;
 
-    /**
-     * Fusion engine to use for this session.
-     * <b>Invariant: Non-null while a session is ongoing</b>.
-     */
-    private volatile FusionEngine mFusionEngine;
+    /** Fusion engines to use for each device in this session. */
+    private final Map<RangingDevice, FusionEngine> mFusionEngines;
 
     /**
      * Keeps track of state of the ranging session.
@@ -108,17 +108,21 @@ public final class RangingPeer {
             @NonNull Context context,
             @NonNull ListeningExecutorService adapterExecutor,
             @NonNull ScheduledExecutorService timeoutExecutor,
-            @NonNull SessionHandle sessionHandle
+            @NonNull SessionHandle sessionHandle,
+            RangingConfig rangingConfig,
+            IRangingCallbacks rangingCallbacks
     ) {
         mContext = context;
         mStateMachine = new StateMachine<>(State.STOPPED);
         mCallback = null;
-        mFusionEngine = null;
+        mFusionEngines = new HashMap<>();
         mAdapters = Collections.synchronizedMap(new EnumMap<>(RangingTechnology.class));
         mTimeoutExecutor = timeoutExecutor;
         mAdapterExecutor = adapterExecutor;
         mPendingTimeout = null;
         mSessionHandle = sessionHandle;
+        mConfig = rangingConfig;
+        mCallback = rangingCallbacks;
     }
 
     private @NonNull RangingAdapter newAdapter(
@@ -128,15 +132,15 @@ public final class RangingPeer {
             case UWB:
                 return new UwbAdapter(
                         mContext, mAdapterExecutor,
-                        ((UwbConfig) config).getParameters().getDeviceRole()
-                                == UwbRangingParams.DeviceRole.INITIATOR
+                        ((UwbConfig) config).getDeviceRole()
+                                == RangingPreference.DEVICE_ROLE_INITIATOR
                                 ? FiraParams.RANGING_DEVICE_TYPE_CONTROLLER
                                 : FiraParams.RANGING_DEVICE_TYPE_CONTROLEE);
             case CS:
                 return new CsAdapter();
             case RTT:
                 return new RttAdapter(mContext, mAdapterExecutor,
-                        ((RttConfig) config).getRangingParams().getDeviceRole());
+                        ((RttConfig) config).getDeviceRole());
             default:
                 throw new IllegalArgumentException(
                         "Tried to create adapter for unknown technology" + technology);
@@ -144,22 +148,15 @@ public final class RangingPeer {
     }
 
     /** Start a ranging session with this peer */
-    public void start(
-            @NonNull RangingConfig config, @NonNull IRangingCallbacks callback
-    ) {
+    public void start() {
         if (!mStateMachine.transition(State.STOPPED, State.STARTING)) {
             Log.w(TAG, "Failed transition STOPPED -> STARTING");
             return;
         }
-        mCallback = callback;
-        mConfig = config;
-
-        mFusionEngine = config.getFusionEngine();
 
         ImmutableMap<RangingTechnology, TechnologyConfig> techConfigs =
-                config.getTechnologyConfigs();
+                mConfig.getTechnologyConfigs();
         mAdapters.keySet().retainAll(techConfigs.keySet());
-        mFusionEngine.start(new FusionEngineListener());
 
         for (Map.Entry<RangingTechnology, TechnologyConfig> entry : techConfigs.entrySet()) {
             RangingTechnology technology = entry.getKey();
@@ -180,7 +177,7 @@ public final class RangingPeer {
             }
         }
 
-        scheduleTimeout(config.getNoInitialDataTimeout(),
+        scheduleTimeout(mConfig.getNoInitialDataTimeout(),
                 RangingSession.Callback.StoppedReason.NO_INITIAL_DATA_TIMEOUT);
     }
 
@@ -195,7 +192,6 @@ public final class RangingPeer {
      * @param reason why the session was stopped.
      */
     private void stopForReason(@RangingSession.Callback.StoppedReason int reason) {
-        Log.i(TAG, "stopPrecisionRanging with reason: " + reason);
         synchronized (mStateMachine) {
             if (mStateMachine.getState() == State.STOPPING
                     || mStateMachine.getState() == State.STOPPED
@@ -321,7 +317,6 @@ public final class RangingPeer {
                     Log.w(TAG, "Received adapter onStarted but ranging session is stopped");
                     return;
                 }
-                mFusionEngine.addDataSource(mTechnology);
                 try {
                     mCallback.onStarted(mSessionHandle, mTechnology.ordinal());
                 } catch (RemoteException e) {
@@ -333,10 +328,13 @@ public final class RangingPeer {
         @Override
         public void onStopped(@RangingAdapter.Callback.StoppedReason int reason) {
             synchronized (mStateMachine) {
+                if (mStateMachine.getState() != State.STOPPING) {
+                    mAdapters.get(mTechnology).stop();
+                }
                 mAdapters.remove(mTechnology);
-                mFusionEngine.removeDataSource(mTechnology);
-                if (mAdapters.isEmpty()
-                        && mStateMachine.transition(State.STOPPING, State.STOPPED)) {
+                mFusionEngines.values().forEach(engine -> engine.removeDataSource(mTechnology));
+                if (mAdapters.isEmpty()) {
+                    mStateMachine.setState(State.STOPPED);
                     // The last technology in the session has stopped, so signal that the entire
                     // session has stopped.
                     try {
@@ -346,18 +344,28 @@ public final class RangingPeer {
                     }
                     // Reset internal state.
                     mConfig = null;
-                    mFusionEngine.stop();
-                    mFusionEngine = null;
+                    mFusionEngines.values().forEach(FusionEngine::stop);
+                    mFusionEngines.clear();
                     mCallback = null;
                 }
             }
         }
 
         @Override
-        public void onRangingData(RangingData data) {
+        public void onRangingData(RangingDevice peer, RangingData data) {
             synchronized (mStateMachine) {
                 if (mStateMachine.getState() != State.STOPPED) {
-                    mFusionEngine.feed(data);
+                    FusionEngine engine = mFusionEngines.get(peer);
+                    if (engine == null) {
+                        // Create and start engines lazily
+                        engine = mConfig.createConfiguredFusionEngine();
+                        mFusionEngines.put(peer, engine);
+                        engine.start(new FusionEngineListener(peer));
+                    }
+                    if (!engine.getDataSources().contains(mTechnology)) {
+                        engine.addDataSource(mTechnology);
+                    }
+                    engine.feed(data);
                 }
             }
         }
@@ -366,6 +374,12 @@ public final class RangingPeer {
     /** Listens for fusion engine events. */
     private class FusionEngineListener implements FusionEngine.Callback {
 
+        private final RangingDevice mPeer;
+
+        FusionEngineListener(RangingDevice peer) {
+            mPeer = peer;
+        }
+
         @Override
         public void onData(@NonNull RangingData data) {
             synchronized (mStateMachine) {
@@ -373,8 +387,11 @@ public final class RangingPeer {
                     return;
                 }
                 cancelScheduledTimeout();
-                // TODO:
-                // mCallback.onData(data);
+                try {
+                    mCallback.onData(mSessionHandle, mPeer, data);
+                } catch (RemoteException e) {
+                    Log.e(TAG, "onData failed: " + e);
+                }
                 scheduleTimeout(
                         mConfig.getNoUpdatedDataTimeout(),
                         RangingSession.Callback.StoppedReason.NO_UPDATED_DATA_TIMEOUT);

@@ -23,7 +23,10 @@
              of a snippet class -->
         <meta-data
             android:name="mobly-snippets"
-            android:value="multidevices.snippet.ranging.GenericRangingSnippet" />
+            android:value="multidevices.snippet.ranging.RangingSnippet" />
+        <meta-data
+            android:name="mobly-object-converter"
+            android:value="multidevices.snippet.ranging.RangingPreferenceConverter" />
     </application>
     <instrumentation
         android:name="com.google.android.mobly.snippet.SnippetRunner"

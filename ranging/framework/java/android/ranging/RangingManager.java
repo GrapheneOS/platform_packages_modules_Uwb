@@ -27,8 +27,10 @@ import android.content.Context;
 
 import com.android.ranging.flags.Flags;
 
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 
@@ -61,34 +63,33 @@ public final class RangingManager {
      * @hide
      */
     @Retention(RetentionPolicy.SOURCE)
+    @Target({ElementType.TYPE_USE})
     @IntDef({
-            RangingTechnology.UWB,
-            RangingTechnology.BT_CS,
-            RangingTechnology.WIFI_RTT,
-            RangingTechnology.BLE_RSSI,
+            UWB,
+            BT_CS,
+            WIFI_NAN_RTT,
+            BLE_RSSI,
     })
-    public @interface RangingTechnology {
-        /**
-         * Ultra-Wideband (UWB) technology.
-         */
-        int UWB = 0;
+    public @interface RangingTechnology {}
+    /**
+     * Ultra-Wideband (UWB) technology.
+     */
+    public static final int UWB = 0;
 
-        /**
-         * Bluetooth Channel Sounding (BT-CS) technology.
-         */
-        int BT_CS = 1;
+    /**
+     * Bluetooth Channel Sounding (BT-CS) technology.
+     */
+    public static final int BT_CS = 1;
 
-        /**
-         * WiFi Round Trip Time (WiFi-RTT) technology.
-         */
-        int WIFI_RTT = 2;
+    /**
+     * WiFi Round Trip Time (WiFi-RTT) technology.
+     */
+    public static final int WIFI_NAN_RTT = 2;
 
-        /**
-         * Bluetooth Low Energy (BLE) RSSI-based ranging technology.
-         */
-        int BLE_RSSI = 3;
-    }
-
+    /**
+     * Bluetooth Low Energy (BLE) RSSI-based ranging technology.
+     */
+    public static final int BLE_RSSI = 3;
     /**
      * @hide
      */

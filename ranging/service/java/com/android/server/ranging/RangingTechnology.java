@@ -34,6 +34,8 @@ public enum RangingTechnology {
 
     RTT(2); // Wifi RTT.
 
+    public static final ImmutableList<RangingTechnology> TECHNOLOGIES =
+            ImmutableList.copyOf(RangingTechnology.values());
     private final int value;
 
     RangingTechnology(int value) {

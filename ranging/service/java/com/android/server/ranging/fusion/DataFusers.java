@@ -16,9 +16,10 @@
 
 package com.android.server.ranging.fusion;
 
+import android.ranging.RangingData;
+
 import androidx.annotation.NonNull;
 
-import com.android.server.ranging.RangingData;
 import com.android.server.ranging.RangingTechnology;
 
 import java.util.Optional;
@@ -67,7 +68,7 @@ public class DataFusers {
                 @NonNull RangingData data, final @NonNull Set<RangingTechnology> sources
         ) {
             if (sources.contains(mPreferred)) {
-                if (data.getTechnology().isPresent() && mPreferred == data.getTechnology().get()) {
+                if (data.getRangingTechnology() == (int) mPreferred.getValue()) {
                     return Optional.of(data);
                 } else {
                     return Optional.empty();

@@ -21,6 +21,7 @@ import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.ranging.RangingManager.RangingTechnology;
 
 import com.android.ranging.flags.Flags;
 
@@ -44,7 +45,16 @@ public final class RangingData implements Parcelable {
     private final long mTimestamp;
 
     private RangingData(Builder builder) {
-        mRangingTechnology = builder.mRangingTechnology;
+        if (builder.mDistance == null) {
+            throw new IllegalArgumentException("Missing required parameter: distance");
+        }
+        if (builder.mTimestamp == Long.MIN_VALUE) {
+            throw new IllegalArgumentException("Missing required parameter: timestamp");
+        }
+        if (builder.mRangingTechnology == Integer.MIN_VALUE) {
+            throw new IllegalArgumentException("Missing required parameter: rangingTechnology");
+        }
+        mRangingTechnology = (int) builder.mRangingTechnology;
         mDistance = builder.mDistance;
         mAzimuth = builder.mAzimuth;
         mElevation = builder.mElevation;
@@ -55,19 +65,17 @@ public final class RangingData implements Parcelable {
     private RangingData(Parcel in) {
         mRangingTechnology = in.readInt();
         mDistance = Objects.requireNonNull(
-                in.readParcelable(
-                        RangingMeasurement.class.getClassLoader(), RangingMeasurement.class));
+                in.readParcelable(RangingMeasurement.class.getClassLoader(),
+                        RangingMeasurement.class));
         mAzimuth = in.readParcelable(
                 RangingMeasurement.class.getClassLoader(), RangingMeasurement.class);
         mElevation = in.readParcelable(
-                RangingMeasurement.class.getClassLoader(),
-                RangingMeasurement.class);
+                RangingMeasurement.class.getClassLoader(), RangingMeasurement.class);
         mRssi = in.readInt();
         mTimestamp = in.readLong();
     }
 
-    @NonNull
-    public static final Creator<RangingData> CREATOR = new Creator<RangingData>() {
+    public static final @NonNull Creator<RangingData> CREATOR = new Creator<>() {
         @Override
         public RangingData createFromParcel(Parcel in) {
             return new RangingData(in);
@@ -84,8 +92,7 @@ public final class RangingData implements Parcelable {
      *
      * @return The ranging technology as an integer.
      */
-    @RangingManager.RangingTechnology
-    public int getRangingTechnology() {
+    public @RangingTechnology int getRangingTechnology() {
         return mRangingTechnology;
     }
 
@@ -120,11 +127,24 @@ public final class RangingData implements Parcelable {
     }
 
     /**
-     * Returns the RSSI (Received Signal Strength Indicator) value.
+     * Returns whether an RSSI measurement is included with the data.
      *
      * @return The RSSI value as an integer.
      */
+    public boolean hasRssi() {
+        return mRssi != Integer.MIN_VALUE;
+    }
+
+    /**
+     * Returns the RSSI (Received Signal Strength Indicator) value.
+     *
+     * @return The RSSI value as an integer.
+     * @throws IllegalStateException if rssi is not set.
+     */
     public int getRssi() {
+        if (!hasRssi()) {
+            throw new IllegalStateException("rssi is not set");
+        }
         return mRssi;
     }
 
@@ -156,13 +176,12 @@ public final class RangingData implements Parcelable {
      * Builder class for creating instances of {@link RangingData}.
      */
     public static final class Builder {
-        @RangingManager.RangingTechnology
-        private int mRangingTechnology;
-        private RangingMeasurement mDistance;
-        private RangingMeasurement mAzimuth;
-        private RangingMeasurement mElevation;
-        private int mRssi;
-        private long mTimestamp;
+        private int mRangingTechnology = Integer.MIN_VALUE;
+        private RangingMeasurement mDistance = null;
+        private RangingMeasurement mAzimuth = null;
+        private RangingMeasurement mElevation = null;
+        private int mRssi = Integer.MIN_VALUE;
+        private long mTimestamp = Long.MIN_VALUE;
 
         /**
          * Sets the ranging technology.
@@ -171,7 +190,7 @@ public final class RangingData implements Parcelable {
          * @return This {@link Builder} instance.
          */
         @NonNull
-        public Builder setRangingTechnology(int rangingTechnology) {
+        public Builder setRangingTechnology(@RangingTechnology int rangingTechnology) {
             mRangingTechnology = rangingTechnology;
             return this;
         }

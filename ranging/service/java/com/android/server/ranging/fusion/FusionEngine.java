@@ -16,9 +16,10 @@
 
 package com.android.server.ranging.fusion;
 
+import android.ranging.RangingData;
+
 import androidx.annotation.NonNull;
 
-import com.android.server.ranging.RangingData;
 import com.android.server.ranging.RangingTechnology;
 
 import java.util.Optional;
@@ -100,7 +101,7 @@ public abstract class FusionEngine {
     /**
      * @return the current set of data sources to the fusion engine.
      */
-    protected abstract @NonNull Set<RangingTechnology> getDataSources();
+    public abstract @NonNull Set<RangingTechnology> getDataSources();
 
     /**
      * Add a technology as a source of data to the engine.

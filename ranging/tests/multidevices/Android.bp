@@ -18,7 +18,7 @@ package {
 }
 
 python_defaults {
-    name: "GenericRangingMultiDevicePythonDefaults",
+    name: "RangingMultiDevicePythonDefaults",
     libs: [
         "mobly",
     ],
@@ -34,23 +34,20 @@ python_defaults {
 }
 
 python_test_host {
-    name: "MultiDeviceRangingTestCase_Uwb",
-    main: "uwb/uwb_tests.py",
+    name: "MultiDeviceRangingTestCases",
+    main: "RangingManagerTests/ranging_manager_tests.py",
     srcs: [
-        "uwb/uwb_tests.py",
-        "uwb/uwb_ranging_params.py",
-        "lib/ranging_base_test.py",
-        "lib/generic_ranging_decorator.py",
-        "test_utils/uwb_test_utils.py",
+        "RangingManagerTests/ranging_manager_tests.py",
+        "lib/*.py",
     ],
-    test_config: "uwb/AndroidTest.xml",
+    test_config: "RangingManagerTests/AndroidTest.xml",
     test_options: {
         unit_test: false,
     },
     device_common_data: [
         // Package the snippet with the mobly test
-        ":generic_ranging_snippet",
+        ":ranging_snippet",
         "README.md",
     ],
-    defaults: ["GenericRangingMultiDevicePythonDefaults"],
+    defaults: ["RangingMultiDevicePythonDefaults"],
 }

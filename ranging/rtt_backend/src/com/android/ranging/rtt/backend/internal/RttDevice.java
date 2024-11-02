@@ -24,6 +24,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import androidx.annotation.NonNull;
 
+import java.util.Arrays;
+
 public class RttDevice {
 
     private final RttRangingDevice mRttRangingDevice;
@@ -45,6 +47,19 @@ public class RttDevice {
 
     public void setAddress(String addressStr) {
         mAddress = new RttAddress(addressStr);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(mAddress.toBytes());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof RttDevice device)) {
+            return false;
+        }
+        return Arrays.equals(mAddress.toBytes(), device.mAddress.toBytes());
     }
 
     /**

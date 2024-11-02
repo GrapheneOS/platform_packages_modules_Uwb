@@ -22,7 +22,8 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.RemoteException;
-import android.ranging.uwb.UwbAddress;
+import android.ranging.RangingData;
+import android.ranging.RangingDevice;
 import android.ranging.uwb.UwbComplexChannel;
 import android.util.Log;
 
@@ -31,16 +32,16 @@ import androidx.annotation.Nullable;
 
 import com.android.ranging.uwb.backend.internal.RangingCapabilities;
 import com.android.ranging.uwb.backend.internal.RangingController;
-import com.android.ranging.uwb.backend.internal.RangingDevice;
+import com.android.ranging.uwb.backend.internal.RangingMeasurement;
 import com.android.ranging.uwb.backend.internal.RangingPosition;
 import com.android.ranging.uwb.backend.internal.RangingSessionCallback;
 import com.android.ranging.uwb.backend.internal.Utils;
+import com.android.ranging.uwb.backend.internal.UwbAddress;
 import com.android.ranging.uwb.backend.internal.UwbDevice;
 import com.android.ranging.uwb.backend.internal.UwbFeatureFlags;
 import com.android.ranging.uwb.backend.internal.UwbServiceImpl;
 import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingConfig;
-import com.android.server.ranging.RangingData;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.StateMachine;
 
@@ -51,7 +52,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.uwb.support.fira.FiraParams;
 
-import java.time.Duration;
+import java.util.Map;
 import java.util.concurrent.Executors;
 
 /** Ranging adapter for Ultra-wideband (UWB). */
@@ -61,7 +62,7 @@ public class UwbAdapter implements RangingAdapter {
     private final UwbServiceImpl mUwbService;
     // private IUwb mIUwb;
 
-    private final RangingDevice mUwbClient;
+    private final com.android.ranging.uwb.backend.internal.RangingDevice mUwbClient;
     private final ListeningExecutorService mExecutorService;
     private final ExecutorResultHandlers mUwbClientResultHandlers = new ExecutorResultHandlers();
     private final RangingSessionCallback mUwbListener = new UwbListener();
@@ -69,6 +70,9 @@ public class UwbAdapter implements RangingAdapter {
 
     /** Invariant: non-null while a ranging session is active */
     private Callback mCallbacks;
+
+    /** Invariant: non-null while a ranging session is active */
+    private Map<UwbAddress, RangingDevice> mDeviceFromUwbAddress;
 
     /** @return true if UWB is supported in the provided context, false otherwise */
     public static boolean isSupported(Context context) {
@@ -134,11 +138,19 @@ public class UwbAdapter implements RangingAdapter {
         mCallbacks = callbacks;
         if (!(config instanceof UwbConfig uwbConfig)) {
             Log.w(TAG, "Tried to start adapter with invalid ranging parameters");
-            mCallbacks.onStopped(Callback.StoppedReason.FAILED_TO_START);
             return;
         }
+        // TODO(b/376273627): Support multiple peer devices here
+        mDeviceFromUwbAddress = Map.of(
+                UwbAddress.fromBytes(uwbConfig.getPeer().second.toBytes()),
+                uwbConfig.getPeer().first
+        );
         mUwbClient.setRangingParameters(uwbConfig.asBackendParameters());
         mUwbClient.setLocalAddress(toBackend(uwbConfig.getParameters().getDeviceAddress()));
+        if (mUwbClient instanceof RangingController controller) {
+            controller.setComplexChannel(
+                    toBackend(uwbConfig.getParameters().getComplexChannel()));
+        }
 
         var future = Futures.submit(() -> {
             mUwbClient.startRanging(mUwbListener, Executors.newSingleThreadExecutor());
@@ -158,8 +170,8 @@ public class UwbAdapter implements RangingAdapter {
         Futures.addCallback(future, mUwbClientResultHandlers.stopRanging, mExecutorService);
     }
 
-    public @NonNull UwbAddress getLocalAddress() {
-        return UwbAddress.fromBytes(mUwbClient.getLocalAddress().toBytes());
+    public @NonNull android.ranging.uwb.UwbAddress getLocalAddress() {
+        return android.ranging.uwb.UwbAddress.fromBytes(mUwbClient.getLocalAddress().toBytes());
     }
 
     public @Nullable UwbComplexChannel getComplexChannel() {
@@ -181,7 +193,7 @@ public class UwbAdapter implements RangingAdapter {
     private class UwbListener implements RangingSessionCallback {
 
         @Override
-        public void onRangingInitialized(UwbDevice device) {
+        public void onRangingInitialized(UwbDevice localDevice) {
             Log.i(TAG, "onRangingInitialized");
             synchronized (mStateMachine) {
                 if (mStateMachine.getState() == State.STARTED) {
@@ -190,24 +202,41 @@ public class UwbAdapter implements RangingAdapter {
             }
         }
 
+        private static android.ranging.RangingMeasurement convertMeasurement(
+                @NonNull RangingMeasurement measurement
+        ) {
+            return new android.ranging.RangingMeasurement.Builder()
+                    .setMeasurement(measurement.getValue())
+                    .setConfidence(measurement.getConfidence())
+                    .build();
+        }
+
         @Override
-        public void onRangingResult(UwbDevice device, RangingPosition position) {
+        public void onRangingResult(UwbDevice peer, RangingPosition position) {
             RangingData.Builder dataBuilder = new RangingData.Builder()
-                    .setTechnology(RangingTechnology.UWB)
-                    .setRangeDistance(position.getDistance().getValue())
-                    .setRssi(position.getRssiDbm())
-                    .setTimestamp(Duration.ofNanos(position.getElapsedRealtimeNanos()))
-                    .setPeerAddress(device.getAddress().toBytes());
+                    .setRangingTechnology((int) RangingTechnology.UWB.getValue())
+                    .setDistance(convertMeasurement(position.getDistance()))
+                    .setTimestamp(position.getElapsedRealtimeNanos());
 
             if (position.getAzimuth() != null) {
-                dataBuilder.setAzimuthRadians(position.getAzimuth().getValue());
+                dataBuilder.setAzimuth(convertMeasurement(position.getAzimuth()));
             }
             if (position.getElevation() != null) {
-                dataBuilder.setElevationRadians(position.getElevation().getValue());
+                dataBuilder.setElevation(convertMeasurement(position.getElevation()));
             }
+            if (position.getRssiDbm() != RangingPosition.RSSI_UNKNOWN) {
+                dataBuilder.setRssi(position.getRssiDbm());
+            }
+
             synchronized (mStateMachine) {
                 if (mStateMachine.getState() == State.STARTED) {
-                    mCallbacks.onRangingData(dataBuilder.build());
+                    RangingDevice device = mDeviceFromUwbAddress.get(peer.getAddress());
+                    if (device == null) {
+                        Log.w(TAG, "onRangingResult for unknown peer with UWB address "
+                                + peer.getAddress().toHexString());
+                    } else {
+                        mCallbacks.onRangingData(device, dataBuilder.build());
+                    }
                 }
             }
         }
@@ -231,7 +260,7 @@ public class UwbAdapter implements RangingAdapter {
         }
 
         @Override
-        public void onRangingSuspended(UwbDevice device, @RangingSuspendedReason int reason) {
+        public void onRangingSuspended(UwbDevice localDevice, @RangingSuspendedReason int reason) {
             Log.i(TAG, "onRangingSuspended: " + reason);
 
             synchronized (mStateMachine) {
@@ -243,6 +272,7 @@ public class UwbAdapter implements RangingAdapter {
 
     private void clear() {
         mCallbacks = null;
+        mDeviceFromUwbAddress = null;
     }
 
     public enum State {
@@ -278,7 +308,7 @@ public class UwbAdapter implements RangingAdapter {
             public void onFailure(@NonNull Throwable t) {
                 Log.w(TAG, "stopRanging failed ", t);
                 // We failed to stop but there's nothing else we can do.
-                mCallbacks.onStopped(RangingAdapter.Callback.StoppedReason.REQUESTED);
+                mCallbacks.onStopped(Callback.StoppedReason.ERROR);
                 clear();
             }
         };

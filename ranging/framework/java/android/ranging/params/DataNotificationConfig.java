@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.ranging;
+package android.ranging.params;
 
 import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
@@ -78,21 +78,22 @@ public final class DataNotificationConfig implements Parcelable {
      */
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({
-            NotificationConfigType.DISABLE,
-            NotificationConfigType.ENABLE,
-            NotificationConfigType.PROXIMITY_LEVEL,
-            NotificationConfigType.PROXIMITY_EDGE,
+            DISABLE,
+            ENABLE,
+            PROXIMITY_LEVEL,
+            PROXIMITY_EDGE,
     })
-    @interface NotificationConfigType {
-        // Range data notification will be disabled.
-        int DISABLE = 0;
-        // Range data notification will be enabled (default).
-        int ENABLE = 1;
-        // Range data notification is enabled when peer device is in the configured range.
-        int PROXIMITY_LEVEL = 2;
-        //Range data notification is enabled when peer device enters or exits the configured range.
-        int PROXIMITY_EDGE = 3;
+    public @interface NotificationConfigType {
     }
+
+    // Range data notification will be disabled.
+    public static final int DISABLE = 0;
+    // Range data notification will be enabled (default).
+    public static final int ENABLE = 1;
+    // Range data notification is enabled when peer device is in the configured range.
+    public static final int PROXIMITY_LEVEL = 2;
+    //Range data notification is enabled when peer device enters or exits the configured range.
+    public static final int PROXIMITY_EDGE = 3;
 
 
     private DataNotificationConfig(Builder builder) {
@@ -136,7 +137,7 @@ public final class DataNotificationConfig implements Parcelable {
     /** Builder for {@link DataNotificationConfig} */
     public static final class Builder {
         @NotificationConfigType
-        private int mNotificationConfigType = NotificationConfigType.ENABLE;
+        private int mNotificationConfigType = ENABLE;
         private int mProximityNearCm = 0;
         private int mProximityFarCm = 20_000;
 

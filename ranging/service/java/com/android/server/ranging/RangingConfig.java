@@ -15,7 +15,9 @@
  */
 package com.android.server.ranging;
 
+import android.ranging.RangingDevice;
 import android.ranging.RangingPreference;
+import android.ranging.cs.CsRangingParams;
 import android.ranging.rtt.RttRangingParams;
 import android.ranging.uwb.UwbRangingParams;
 
@@ -33,8 +35,6 @@ import com.android.server.ranging.uwb.UwbConfig;
 import com.google.common.collect.ImmutableMap;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -49,7 +49,7 @@ public class RangingConfig {
     private final RangingPreference mPreference;
     private final ImmutableMap<RangingTechnology, TechnologyConfig> mTechnologyConfigs;
 
-    private final FusionEngine mFusionEngine;
+    private final boolean mIsFusionEnabled;
 
     private final Duration mNoInitialDataTimeout;
     private final Duration mNoUpdatedDataTimeout;
@@ -62,39 +62,40 @@ public class RangingConfig {
         mPreference = builder.mPreference;
         mNoInitialDataTimeout = builder.mNoInitialDataTimeout;
         mNoUpdatedDataTimeout = builder.mNoUpdatedDataTimeout;
-
         // Technology-specific configurations
         ImmutableMap.Builder<RangingTechnology, TechnologyConfig> technologyConfigsBuilder =
                 new ImmutableMap.Builder<>();
 
-        UwbConfig uwbConfig = getUwbConfig();
-        if (uwbConfig != null) {
+        if (builder.mUwbRangingParams != null) {
+            UwbConfig uwbConfig = getUwbConfig(builder);
             technologyConfigsBuilder.put(RangingTechnology.UWB, uwbConfig);
         }
-
-        CsConfig csConfig = getCsConfig();
-        if (csConfig != null) {
+        if (builder.mCsRangingParams != null) {
+            CsConfig csConfig = getCsConfig();
             technologyConfigsBuilder.put(RangingTechnology.CS, csConfig);
         }
-
+        if (builder.mRttRangingParams != null) {
+            RttConfig rttConfig = getRttConfig(builder);
+            technologyConfigsBuilder.put(RangingTechnology.RTT, rttConfig);
+        }
         mTechnologyConfigs = technologyConfigsBuilder.build();
 
-        // Sensor fusion configuration
-        if (builder.mPreference.getSensorFusionParameters().isSensorFusionEnabled()) {
-            mFusionEngine = new FilteringFusionEngine(
-                    new DataFusers.PreferentialDataFuser(RangingTechnology.UWB)
-            );
-        } else {
-            mFusionEngine = new NoOpFusionEngine();
-        }
+        mIsFusionEnabled = builder.mPreference.getSensorFusionParameters().isSensorFusionEnabled();
     }
 
     public @NonNull ImmutableMap<RangingTechnology, TechnologyConfig> getTechnologyConfigs() {
         return mTechnologyConfigs;
     }
 
-    public @NonNull FusionEngine getFusionEngine() {
-        return mFusionEngine;
+    /** @return a new fusion engine matching the current configuration. */
+    public @NonNull FusionEngine createConfiguredFusionEngine() {
+        if (mIsFusionEnabled) {
+            return new FilteringFusionEngine(
+                    new DataFusers.PreferentialDataFuser(RangingTechnology.UWB)
+            );
+        } else {
+            return new NoOpFusionEngine();
+        }
     }
 
     public @NonNull Duration getNoInitialDataTimeout() {
@@ -105,13 +106,11 @@ public class RangingConfig {
         return mNoUpdatedDataTimeout;
     }
 
-
-    private @Nullable UwbConfig getUwbConfig() {
-        if (mPreference.getRangingParameters() == null) return null;
-        UwbRangingParams uwbParameters = mPreference.getRangingParameters().getUwbParameters();
-        if (uwbParameters == null) return null;
-
-        UwbConfig.Builder configBuilder = new UwbConfig.Builder(uwbParameters)
+    private UwbConfig getUwbConfig(Builder builder) {
+        UwbConfig.Builder configBuilder = new UwbConfig.Builder(builder.mUwbRangingParams)
+                .setPeerDevice(builder.mPeerDevice)
+                .setAoaNeeded(mPreference.isAoaNeeded())
+                .setDeviceRole(mPreference.getDeviceRole())
                 // TODO(370077264): Set country code based on geolocation.
                 .setCountryCode("US")
                 .setDataNotificationConfig(mPreference.getDataNotificationConfig());
@@ -119,19 +118,10 @@ public class RangingConfig {
         return configBuilder.build();
     }
 
-    @Nullable
-    private List<RttConfig> getRttConfigList() {
-        if (mPreference.getRangingParameters() == null
-                || mPreference.getRangingParameters().getRttRangingParams().isEmpty()) {
-            return null;
-        }
-        List<RttConfig> rttConfigList = new ArrayList<>();
-        List<RttRangingParams> rangingParams =
-                mPreference.getRangingParameters().getRttRangingParams();
-        for (RttRangingParams params : rangingParams) {
-            rttConfigList.add(new RttConfig(params, mPreference.getDataNotificationConfig()));
-        }
-        return rttConfigList;
+    private RttConfig getRttConfig(Builder builder) {
+        RttRangingParams rttRangingParams = builder.mRttRangingParams;
+        return new RttConfig(mPreference.getDeviceRole(), rttRangingParams,
+                mPreference.getDataNotificationConfig(), builder.mPeerDevice);
     }
 
     private @Nullable CsConfig getCsConfig() {
@@ -140,11 +130,35 @@ public class RangingConfig {
 
     public static class Builder {
         private final RangingPreference mPreference;
+        private RangingDevice mPeerDevice;
+        private UwbRangingParams mUwbRangingParams;
+        private CsRangingParams mCsRangingParams;
+        private RttRangingParams mRttRangingParams;
         private Duration mNoInitialDataTimeout = Duration.ofSeconds(999);
         private Duration mNoUpdatedDataTimeout = Duration.ofSeconds(999);
 
         public RangingConfig build() {
             return new RangingConfig(this);
+        }
+
+        public Builder setPeerDevice(RangingDevice device) {
+            mPeerDevice = device;
+            return this;
+        }
+
+        public Builder setUwbRangingParams(UwbRangingParams params) {
+            mUwbRangingParams = params;
+            return this;
+        }
+
+        public Builder setRttRangingParams(RttRangingParams params) {
+            mRttRangingParams = params;
+            return this;
+        }
+
+        public Builder setCsRangingParams(CsRangingParams params) {
+            mCsRangingParams = params;
+            return this;
         }
 
         public Builder(@NonNull RangingPreference preference) {
@@ -179,7 +193,7 @@ public class RangingConfig {
         }
 
         @Override
-        protected @NonNull Set<RangingTechnology> getDataSources() {
+        public @NonNull Set<RangingTechnology> getDataSources() {
             return Set.of();
         }
 

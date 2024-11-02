@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.ranging;
+package android.ranging.params;
 
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;

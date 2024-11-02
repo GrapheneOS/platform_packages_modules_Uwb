@@ -16,14 +16,17 @@
 
 package com.android.server.ranging.fusion;
 
+import android.ranging.RangingData;
+import android.ranging.RangingMeasurement;
+
 import androidx.annotation.NonNull;
 
-import com.android.server.ranging.RangingData;
 import com.android.server.ranging.RangingTechnology;
 import com.android.uwb.fusion.UwbFilterEngine;
 import com.android.uwb.fusion.math.SphericalVector;
 
 import java.util.EnumMap;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -63,41 +66,57 @@ public class FilteringFusionEngine extends FusionEngine {
 
     @Override
     public void feed(@NonNull RangingData data) {
-        if (data.getTechnology().isEmpty()) {
-            return;
-        }
+        Optional<RangingMeasurement> azimuth = Optional.ofNullable(data.getAzimuth());
+        Optional<RangingMeasurement> elevation = Optional.ofNullable(data.getElevation());
 
         SphericalVector.Annotated in = SphericalVector.fromRadians(
-                (float) data.getAzimuthRadians().orElse(0.0),
-                (float) data.getElevationRadians().orElse(0.0),
-                (float) data.getRangeMeters()
+                azimuth.map(RangingMeasurement::getMeasurement).orElse(0.0).floatValue(),
+                elevation.map(RangingMeasurement::getMeasurement).orElse(0.0).floatValue(),
+                (float) data.getDistance().getMeasurement()
         ).toAnnotated(
-                data.getAzimuthRadians().isPresent(),
-                data.getElevationRadians().isPresent(),
+                azimuth.isPresent(),
+                elevation.isPresent(),
                 true
         );
 
-        UwbFilterEngine engine = mFilters.get(data.getTechnology().get());
-        engine.add(in, data.getTimestamp().toMillis());
-        SphericalVector.Annotated out = engine.compute(data.getTimestamp().toMillis());
+        UwbFilterEngine engine = mFilters.get(
+                RangingTechnology.TECHNOLOGIES.get(data.getRangingTechnology()));
+        engine.add(in, data.getTimestamp());
+        SphericalVector.Annotated out = engine.compute(data.getTimestamp());
         if (out == null) {
             return;
         }
 
-        RangingData.Builder filteredData = RangingData.Builder.fromBuilt(data);
-        filteredData.setRangeDistance(out.distance);
-        if (data.getAzimuthRadians().isPresent()) {
-            filteredData.setAzimuthRadians(out.azimuth);
-        }
-        if (data.getElevationRadians().isPresent()) {
-            filteredData.setElevationRadians(out.elevation);
+        RangingData.Builder filteredData = new RangingData.Builder()
+                .setRangingTechnology(data.getRangingTechnology())
+                .setTimestamp(data.getTimestamp())
+                .setDistance(
+                        new RangingMeasurement.Builder()
+                                .setMeasurement(out.distance)
+                                .setConfidence(data.getDistance().getConfidence())
+                                .build()
+                );
+        azimuth.ifPresent(azimuthMeasure -> filteredData.setAzimuth(
+                new RangingMeasurement.Builder()
+                        .setMeasurement(out.azimuth)
+                        .setConfidence(azimuthMeasure.getConfidence())
+                        .build()
+        ));
+        elevation.ifPresent(elevationMeasure -> filteredData.setElevation(
+                new RangingMeasurement.Builder()
+                        .setMeasurement(out.elevation)
+                        .setConfidence(elevationMeasure.getConfidence())
+                        .build()
+        ));
+        if (data.hasRssi()) {
+            filteredData.setRssi(data.getRssi());
         }
 
         super.feed(filteredData.build());
     }
 
     @Override
-    protected @NonNull Set<RangingTechnology> getDataSources() {
+    public @NonNull Set<RangingTechnology> getDataSources() {
         return mFilters.keySet();
     }
 

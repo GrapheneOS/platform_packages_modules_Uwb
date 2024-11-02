@@ -33,6 +33,7 @@ import static com.android.ranging.uwb.backend.internal.UwbAvailabilityCallback.R
 
 import static java.util.Objects.requireNonNull;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
@@ -164,12 +165,17 @@ public class UwbServiceImpl {
     }
 
     /** Gets ranging capabilities of the device. */
+    @SuppressLint("NewApi")
     public RangingCapabilities getRangingCapabilities() {
         requireNonNull(mUwbManager);
         requireNonNull(mUwbFeatureFlags);
 
-        if (mUwbFeatureFlags.skipRangingCapabilitiesCheck()
-                && VERSION.SDK_INT < VERSION_CODES.TIRAMISU) {
+        PersistableBundle bundle = new PersistableBundle();
+        if (!mUwbFeatureFlags.skipRangingCapabilitiesCheck()
+                || VERSION.SDK_INT >= VERSION_CODES.TIRAMISU) {
+            bundle = mUwbManager.getSpecificationInfo();
+        }
+        if (bundle.isEmpty()) {
             return new RangingCapabilities(
                     /* supportsDistance= */ true,
                     mUwbFeatureFlags.hasAzimuthSupport(),
@@ -184,7 +190,6 @@ public class UwbServiceImpl {
                     /* hasBackgroundRangingSupport */ false);
         }
 
-        PersistableBundle bundle = mUwbManager.getSpecificationInfo();
         if (bundle.keySet().contains(FIRA_SPECIFICATION_BUNDLE_KEY)) {
             bundle = requireNonNull(bundle.getPersistableBundle(FIRA_SPECIFICATION_BUNDLE_KEY));
         }

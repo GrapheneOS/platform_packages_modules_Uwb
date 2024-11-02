@@ -16,7 +16,9 @@
 
 package com.android.server.ranging.rtt;
 
-import android.ranging.DataNotificationConfig;
+import android.ranging.RangingDevice;
+import android.ranging.RangingPreference;
+import android.ranging.params.DataNotificationConfig;
 import android.ranging.rtt.RttRangingParams;
 
 import com.android.ranging.rtt.backend.internal.RttRangingParameters;
@@ -26,11 +28,19 @@ public class RttConfig implements RangingConfig.TechnologyConfig {
 
     private final DataNotificationConfig mDataNotificationConfig;
     private final RttRangingParams mRangingParams;
+    private final RangingDevice mPeerDevice;
 
-    public RttConfig(RttRangingParams rttRangingParams,
-            DataNotificationConfig dataNotificationConfig) {
+    @RangingPreference.DeviceRole
+    private final int mDeviceRole;
+
+    public RttConfig(int deviceRole,
+            RttRangingParams rttRangingParams,
+            DataNotificationConfig dataNotificationConfig,
+            RangingDevice peerDevice) {
+        mDeviceRole = deviceRole;
         mRangingParams = rttRangingParams;
         mDataNotificationConfig = dataNotificationConfig;
+        mPeerDevice = peerDevice;
     }
 
     public DataNotificationConfig getDataNotificationConfig() {
@@ -41,9 +51,17 @@ public class RttConfig implements RangingConfig.TechnologyConfig {
         return mRangingParams;
     }
 
+    public int getDeviceRole() {
+        return mDeviceRole;
+    }
+
+    public RangingDevice getPeerDevice() {
+        return mPeerDevice;
+    }
+
     public RttRangingParameters asBackendParameters() {
         return new RttRangingParameters.Builder()
-                .setDeviceRole(mRangingParams.getDeviceRole())
+                .setDeviceRole(mDeviceRole)
                 .setServiceName(mRangingParams.getServiceName())
                 .setMatchFilter(mRangingParams.getMatchFilter())
                 .setMaxDistanceMm(mDataNotificationConfig.getProximityFarCm() * 100)

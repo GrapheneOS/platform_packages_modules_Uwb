@@ -16,6 +16,9 @@
 
 package com.android.server.ranging;
 
+import android.ranging.RangingData;
+import android.ranging.RangingDevice;
+
 import androidx.annotation.IntDef;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -54,14 +57,20 @@ public interface RangingAdapter {
          */
         void onStarted();
 
-        /** Notifies the caller that ranging has stopped on this device. */
+        /**
+         * Notifies the caller that ranging has stopped on this device.
+         *
+         * @param reason why ranging was stopped.
+         */
         void onStopped(@StoppedReason int reason);
 
         /**
          * Notifies the caller on each instance of ranging data received from the ranging
          * technology.
+         * @param peer device whose distance was measured.
+         * @param data the distance measurement and other position-related data.
          */
-        void onRangingData(RangingData data);
+        void onRangingData(RangingDevice peer, RangingData data);
 
         @IntDef({
                 StoppedReason.UNKNOWN,
