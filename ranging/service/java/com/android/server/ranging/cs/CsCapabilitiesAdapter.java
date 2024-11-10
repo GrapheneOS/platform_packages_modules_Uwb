@@ -16,10 +16,26 @@
 
 package com.android.server.ranging.cs;
 
-import com.android.server.ranging.RangingPeerConfig.TechnologyConfig;
+import android.content.Context;
+import android.ranging.RangingManager.RangingTechnologyAvailability;
 
-public class CsConfig implements TechnologyConfig {
-    public CsConfig() {
-        throw new UnsupportedOperationException("Not implemented!");
+import androidx.annotation.Nullable;
+
+import com.android.server.ranging.CapabilitiesProvider.CapabilitiesAdapter;
+
+public class CsCapabilitiesAdapter extends CapabilitiesAdapter {
+    public static boolean isSupported(Context context) {
+        return false;
+    }
+
+    @Override
+    public @RangingTechnologyAvailability int getAvailability() {
+        return RangingTechnologyAvailability.NOT_SUPPORTED;
+    }
+
+    @Override
+    public @Nullable CsCapabilities getCapabilities() {
+        // TODO
+        return null;
     }
 }

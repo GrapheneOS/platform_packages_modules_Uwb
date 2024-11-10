@@ -34,13 +34,23 @@ public final class RangingSessionManager extends IRangingCallbacks.Stub {
     private static long sSessionIdCounter = 1;
     private final IRangingAdapter mRangingAdapter;
     private final Map<SessionHandle, RangingSession> mSessions = new ConcurrentHashMap<>();
+    private boolean mOobListenerRegistered = false;
 
     public RangingSessionManager(IRangingAdapter rangingAdapter) {
         mRangingAdapter = rangingAdapter;
-        try {
-            mRangingAdapter.registerOobSendDataListener(new OobSendDataListener());
-        } catch (RemoteException e) {
-            Log.e(TAG, "Failed to register OobSendDataListener", e);
+    }
+
+    /**
+     * Lazy registration of Oob data listener.
+     */
+    public void registerOobSendDataListener() {
+        if (!mOobListenerRegistered) {
+            try {
+                mRangingAdapter.registerOobSendDataListener(new OobSendDataListener());
+                mOobListenerRegistered = true;
+            } catch (RemoteException e) {
+                Log.e(TAG, "Failed to register OobSendDataListener", e);
+            }
         }
     }
 
@@ -55,7 +65,7 @@ public final class RangingSessionManager extends IRangingCallbacks.Stub {
     }
 
     @Override
-    public void onStarted(SessionHandle sessionHandle, int technology) {
+    public void onStarted(SessionHandle sessionHandle, RangingDevice peer, int technology) {
         if (!mSessions.containsKey(sessionHandle)) {
             Log.e(TAG, "SessionHandle not found");
             return;
@@ -64,7 +74,7 @@ public final class RangingSessionManager extends IRangingCallbacks.Stub {
     }
 
     @Override
-    public void onClosed(SessionHandle sessionHandle, int reason) {
+    public void onClosed(SessionHandle sessionHandle, RangingDevice peer, int reason) {
         if (!mSessions.containsKey(sessionHandle)) {
             Log.e(TAG, "SessionHandle not found");
             return;

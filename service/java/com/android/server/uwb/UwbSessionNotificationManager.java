@@ -44,6 +44,7 @@ import com.android.server.uwb.util.UwbUtil;
 import com.google.uwb.support.aliro.AliroParams;
 import com.google.uwb.support.aliro.AliroRangingReconfiguredParams;
 import com.google.uwb.support.base.Params;
+import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccRangingReconfiguredParams;
 import com.google.uwb.support.dltdoa.DlTDoAMeasurement;
@@ -715,6 +716,9 @@ public class UwbSessionNotificationManager {
                     isDestAoaElevationEnabled = true;
                 }
             }
+        } else if (protocolName.equals(CccParams.PROTOCOL_NAME)) {
+            CccOpenRangingParams openSessionParams = (CccOpenRangingParams) sessionParams;
+            sessionId = openSessionParams.getSessionId();
         }
 
         // TODO(b/256734264): The unit tests are currently not checking for this field, as

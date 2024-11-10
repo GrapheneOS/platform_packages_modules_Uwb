@@ -21,20 +21,11 @@ import android.ranging.RangingDevice;
 
 import androidx.annotation.IntDef;
 
-import com.google.common.util.concurrent.ListenableFuture;
-
 /** RangingAdapter representing a common ranging class for multiple ranging technologies. */
 public interface RangingAdapter {
 
     /** Returns {@link RangingTechnology} of this adapter. */
     RangingTechnology getType();
-
-    /**
-     * @return true if ranging with this ranging technology is currently enabled, or false
-     * otherwise. When this returns false it's most likely because of not being enabled in settings,
-     * airplane mode being on, etc.
-     */
-    ListenableFuture<Boolean> isEnabled();
 
     /**
      * Start ranging. Does nothing if the ranging technology is not enabled on device or if ranging
@@ -43,7 +34,7 @@ public interface RangingAdapter {
      * @param config for the ranging session.
      * @param callback to be called on the occurrence of ranging events.
      */
-    void start(RangingConfig.TechnologyConfig config, Callback callback);
+    void start(RangingPeerConfig.TechnologyConfig config, Callback callback);
 
     /** Stop ranging. */
     void stop();

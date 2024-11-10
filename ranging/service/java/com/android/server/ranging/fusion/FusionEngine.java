@@ -101,7 +101,7 @@ public abstract class FusionEngine {
     /**
      * @return the current set of data sources to the fusion engine.
      */
-    public abstract @NonNull Set<RangingTechnology> getDataSources();
+    protected abstract @NonNull Set<RangingTechnology> getDataSources();
 
     /**
      * Add a technology as a source of data to the engine.

@@ -37,7 +37,7 @@ import androidx.annotation.NonNull;
 
 import com.android.ranging.uwb.backend.internal.Utils;
 import com.android.ranging.uwb.backend.internal.UwbRangeDataNtfConfig;
-import com.android.server.ranging.RangingConfig.TechnologyConfig;
+import com.android.server.ranging.RangingPeerConfig.TechnologyConfig;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.Conversions;
 

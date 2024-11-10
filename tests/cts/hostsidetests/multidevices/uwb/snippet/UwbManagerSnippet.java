@@ -202,6 +202,14 @@ public class UwbManagerSnippet implements Snippet {
             mEventCache.postEvent(event);
         }
 
+        private void handleEvent(Event e, int reason) {
+            Log.d(TAG + "RangingSessionCallback#handleEvent() for " + e.toString());
+            SnippetEvent event = new SnippetEvent(mId, "RangingSessionCallback");
+            event.getData().putString("rangingSessionEvent", e.toString());
+            event.getData().putInt("reasonCode", reason);
+            mEventCache.postEvent(event);
+        }
+
         @Override
         public void onOpened(RangingSession session) {
             Log.d(TAG + "RangingSessionCallback#onOpened() called");
@@ -214,7 +222,7 @@ public class UwbManagerSnippet implements Snippet {
             Log.d(TAG + "RangingSessionCallback#onOpenedFailed() called");
             Log.d(TAG + "OpenFailed reason " + String.valueOf(reason));
             persistableBundle = params;
-            handleEvent(Event.OpenFailed);
+            handleEvent(Event.OpenFailed, reason);
         }
 
         @Override
@@ -229,7 +237,7 @@ public class UwbManagerSnippet implements Snippet {
             Log.d(TAG + "RangingSessionCallback#onStartFailed() called");
             Log.d(TAG + "StartFailed reason " + String.valueOf(reason));
             persistableBundle = params;
-            handleEvent(Event.StartFailed);
+            handleEvent(Event.StartFailed, reason);
         }
 
         @Override
@@ -244,7 +252,7 @@ public class UwbManagerSnippet implements Snippet {
             Log.d(TAG + "RangingSessionCallback#onReconfigureFailed() called");
             Log.d(TAG + "ReconfigureFailed reason " + String.valueOf(reason));
             persistableBundle = params;
-            handleEvent(Event.ReconfigureFailed);
+            handleEvent(Event.ReconfigureFailed, reason);
         }
 
         @Override
@@ -252,7 +260,7 @@ public class UwbManagerSnippet implements Snippet {
             Log.d(TAG + "RangingSessionCallback#onStopped() called");
             Log.d(TAG + "Stopped reason " + String.valueOf(reason));
             persistableBundle = params;
-            handleEvent(Event.Stopped);
+            handleEvent(Event.Stopped, reason);
         }
 
         @Override
@@ -260,7 +268,7 @@ public class UwbManagerSnippet implements Snippet {
             Log.d(TAG + "RangingSessionCallback#onStopFailed() called");
             Log.d(TAG + "StopFailed reason " + String.valueOf(reason));
             persistableBundle = params;
-            handleEvent(Event.StopFailed);
+            handleEvent(Event.StopFailed, reason);
         }
 
         @Override
@@ -268,7 +276,7 @@ public class UwbManagerSnippet implements Snippet {
             Log.d(TAG + "RangingSessionCallback#onClosed() called");
             Log.d(TAG + "Closed reason " + String.valueOf(reason));
             persistableBundle = params;
-            handleEvent(Event.Closed);
+            handleEvent(Event.Closed, reason);
         }
 
         @Override
@@ -292,7 +300,7 @@ public class UwbManagerSnippet implements Snippet {
             Log.d(TAG + "RangingSessionCallback#onControleeAddFailed() called");
             Log.d(TAG + "ControleeAddFailed reason " + String.valueOf(reason));
             persistableBundle = params;
-            handleEvent(Event.ControleeAddFailed);
+            handleEvent(Event.ControleeAddFailed, reason);
 
         }
 
@@ -309,7 +317,7 @@ public class UwbManagerSnippet implements Snippet {
             Log.d(TAG + "RangingSessionCallback#onControleeRemoveFailed() called");
             Log.d(TAG + "ControleeRemoveFailed reason " + String.valueOf(reason));
             persistableBundle = params;
-            handleEvent(Event.ControleeRemoveFailed);
+            handleEvent(Event.ControleeRemoveFailed, reason);
         }
 
         @Override
@@ -324,7 +332,7 @@ public class UwbManagerSnippet implements Snippet {
             Log.d(TAG + "RangingSessionCallback#onPauseFailed() called");
             Log.d(TAG + "PauseFailed reason " + String.valueOf(reason));
             persistableBundle = params;
-            handleEvent(Event.PauseFailed);
+            handleEvent(Event.PauseFailed, reason);
         }
 
         @Override
@@ -339,7 +347,7 @@ public class UwbManagerSnippet implements Snippet {
             Log.d(TAG + "RangingSessionCallback#onResumeFailed() called");
             Log.d(TAG + "ResumeFailed reason " + String.valueOf(reason));
             persistableBundle = params;
-            handleEvent(Event.ResumeFailed);
+            handleEvent(Event.ResumeFailed, reason);
         }
 
         @Override
@@ -358,7 +366,7 @@ public class UwbManagerSnippet implements Snippet {
             Log.d(TAG + "DataSendFailed reason " + String.valueOf(reason));
             uwbAddress = getComputedMacAddress(remoteDeviceAddress);
             persistableBundle = params;
-            handleEvent(Event.DataSendFailed);
+            handleEvent(Event.DataSendFailed, reason);
         }
 
         @Override
@@ -378,7 +386,7 @@ public class UwbManagerSnippet implements Snippet {
             Log.d(TAG + "DataReceiveFailed reason " + String.valueOf(reason));
             uwbAddress = getComputedMacAddress(remoteDeviceAddress);
             persistableBundle = params;
-            handleEvent(Event.DataReceiveFailed);
+            handleEvent(Event.DataReceiveFailed, reason);
         }
 
         @Override
@@ -661,6 +669,9 @@ public class UwbManagerSnippet implements Snippet {
         }
         if (j.has("maxRangingRoundRetries")) {
             builder.setMaxRangingRoundRetries(j.getInt("maxRangingRoundRetries"));
+        }
+        if (j.has("maxNumberOfMeasurements")) {
+            builder.setMaxNumberOfMeasurements(j.getInt("maxNumberOfMeasurements"));
         }
         if (j.has("sessionPriority")) {
             builder.setSessionPriority(j.getInt("sessionPriority"));

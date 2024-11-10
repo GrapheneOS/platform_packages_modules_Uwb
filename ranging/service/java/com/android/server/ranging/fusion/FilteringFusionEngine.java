@@ -116,7 +116,7 @@ public class FilteringFusionEngine extends FusionEngine {
     }
 
     @Override
-    public @NonNull Set<RangingTechnology> getDataSources() {
+    protected @NonNull Set<RangingTechnology> getDataSources() {
         return mFilters.keySet();
     }
 

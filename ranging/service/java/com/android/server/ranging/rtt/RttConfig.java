@@ -22,9 +22,9 @@ import android.ranging.params.DataNotificationConfig;
 import android.ranging.rtt.RttRangingParams;
 
 import com.android.ranging.rtt.backend.internal.RttRangingParameters;
-import com.android.server.ranging.RangingConfig;
+import com.android.server.ranging.RangingPeerConfig;
 
-public class RttConfig implements RangingConfig.TechnologyConfig {
+public class RttConfig implements RangingPeerConfig.TechnologyConfig {
 
     private final DataNotificationConfig mDataNotificationConfig;
     private final RttRangingParams mRangingParams;

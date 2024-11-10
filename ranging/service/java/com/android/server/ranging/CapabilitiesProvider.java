@@ -16,169 +16,157 @@
 
 package com.android.server.ranging;
 
+import android.annotation.IntDef;
 import android.annotation.Nullable;
+import android.os.RemoteCallbackList;
 import android.os.RemoteException;
+import android.ranging.IRangingCapabilitiesCallback;
 import android.ranging.RangingCapabilities;
+import android.ranging.RangingCapabilities.TechnologyCapabilities;
 import android.ranging.RangingManager;
-import android.ranging.RangingPreference;
-import android.ranging.uwb.UwbRangingCapabilities;
+import android.ranging.RangingManager.RangingTechnologyAvailability;
 import android.util.Log;
 
-import com.android.server.ranging.cs.CsAdapter;
-import com.android.server.ranging.rtt.RttAdapter;
-import com.android.server.ranging.uwb.UwbAdapter;
+import androidx.annotation.NonNull;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
-import com.google.uwb.support.fira.FiraParams;
+import com.android.server.ranging.cs.CsCapabilitiesAdapter;
+import com.android.server.ranging.rtt.RttCapabilitiesAdapter;
+import com.android.server.ranging.uwb.UwbCapabilitiesAdapter;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class CapabilitiesProvider {
 
-    private static final int AVAILABILITY_TIMEOUT = 3;
-    private static final String TAG = CapabilitiesProvider.class.getSimpleName();
-    private final RangingInjector mRangingInjector;
-    @Nullable
-    private UwbAdapter mUwbAdapter;
-    @Nullable
-    private CsAdapter mCsAdapter;
+    /**
+     * An adapter to the capability and availability APIs exposed by an underlying technology's
+     * stack.
+     */
+    public abstract static class CapabilitiesAdapter {
+        private AvailabilityCallback mAvailabilityCallback = null;
 
-    @Nullable
-    private RttAdapter mRttAdapter;
-
-    private final ExecutorService mExecutorService;
-
-
-    //TODO: Add support for registering state changes for each ranging technologies and update
-    // all callbacks registered.
-    public CapabilitiesProvider(RangingInjector rangingInjector) {
-        mRangingInjector = rangingInjector;
-        mExecutorService = Executors.newCachedThreadPool();
-        if (UwbAdapter.isSupported(mRangingInjector.getContext())) {
-            mUwbAdapter = new UwbAdapter(mRangingInjector.getContext(),
-                    MoreExecutors.listeningDecorator(mExecutorService),
-                    FiraParams.RANGING_DEVICE_TYPE_CONTROLLER);
+        /**
+         * Register a callback to notify when availability changes. This callback will get called
+         * once on registration with the initial availability.
+         */
+        public void registerAvailabilityCallback(@Nullable AvailabilityCallback callback) {
+            mAvailabilityCallback = callback;
+            if (mAvailabilityCallback != null) {
+                mAvailabilityCallback.onAvailabilityChange(
+                        getAvailability(),
+                        AvailabilityCallback.AvailabilityChangedReason.UNKNOWN);
+            }
         }
-        if (CsAdapter.isSupported(mRangingInjector.getContext())) {
-            mCsAdapter = new CsAdapter();
-        }
-        if (RttAdapter.isSupported(mRangingInjector.getContext())) {
-            mRttAdapter = new RttAdapter(mRangingInjector.getContext(),
-                    MoreExecutors.listeningDecorator(mExecutorService),
-                    RangingPreference.DEVICE_ROLE_RESPONDER);
+
+        public abstract @RangingTechnologyAvailability int getAvailability();
+
+        public abstract @Nullable TechnologyCapabilities getCapabilities();
+
+        protected @Nullable AvailabilityCallback getAvailabilityCallback() {
+            return mAvailabilityCallback;
         }
     }
 
-    public RangingCapabilities getCapabilities() throws RemoteException {
-        RangingCapabilities.Builder builder = new RangingCapabilities.Builder();
-        FutureTask<Void> uwbFutureTask = new FutureTask<>(() -> {
-            if (mUwbAdapter == null) {
-                builder.addAvailability(RangingManager.UWB,
-                        RangingManager.RangingTechnologyAvailability.NOT_SUPPORTED);
-            } else {
-                ListenableFuture<Boolean> enabledFuture = mUwbAdapter.isEnabled();
-                try {
-                    boolean enabled = enabledFuture.get(AVAILABILITY_TIMEOUT, TimeUnit.SECONDS);
-                    if (!enabled) {
-                        builder.addAvailability(RangingManager.UWB,
-                                RangingManager.RangingTechnologyAvailability.DISABLED_USER);
-                    } else {
-                        ListenableFuture<
-                                com.android.ranging.uwb.backend.internal.RangingCapabilities>
-                                future = mUwbAdapter.getCapabilities();
-                        try {
-                            com.android.ranging.uwb.backend.internal.RangingCapabilities
-                                    capabilities =
-                                    future.get(AVAILABILITY_TIMEOUT, TimeUnit.SECONDS);
-                            UwbRangingCapabilities uwbRangingCapabilities =
-                                    new UwbRangingCapabilities.Builder()
-                                            .setSupportsDistance(capabilities.supportsDistance())
-                                            .setSupportsAzimuthalAngle(
-                                                    capabilities.supportsAzimuthalAngle())
-                                            .setSupportsElevationAngle(
-                                                    capabilities.supportsElevationAngle())
-                                            .setSupportsRangingIntervalReconfigure(
-                                            capabilities.supportsRangingIntervalReconfigure())
-                                            .setMinRangingInterval(
-                                                    capabilities.getMinRangingInterval())
-                                            .setSupportedChannels(
-                                                    capabilities.getSupportedChannels())
-                                            .setSupportedNtfConfigs(
-                                                    capabilities.getSupportedNtfConfigs())
-                                            .setSupportedConfigIds(
-                                                    capabilities.getSupportedConfigIds())
-                                            .setSupportedSlotDurations(
-                                                    capabilities.getSupportedSlotDurations())
-                                            .setSupportedRangingUpdateRates(
-                                                    capabilities.getSupportedRangingUpdateRates())
-                                            .setHasBackgroundRangingSupport(
-                                                    capabilities.hasBackgroundRangingSupport())
-                                            .build();
-
-                            builder.addAvailability(RangingManager.UWB,
-                                            RangingManager.RangingTechnologyAvailability.ENABLED)
-                                    .setUwbRangingCapabilities(uwbRangingCapabilities);
-                        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                    e.printStackTrace();
-                }
-            }
-            return null;
-        });
-
-        FutureTask<Void> csFutureTask = new FutureTask<>(() -> {
-            if (mCsAdapter == null) {
-                builder.addAvailability(RangingManager.BT_CS,
-                        RangingManager.RangingTechnologyAvailability.NOT_SUPPORTED);
-            } else {
-                // TODO add CS support
-            }
-            return null;
-        });
-
-        FutureTask<Void> rttFutureTask = new FutureTask<>(() -> {
-            if (mRttAdapter == null) {
-                builder.addAvailability(RangingManager.WIFI_NAN_RTT,
-                        RangingManager.RangingTechnologyAvailability.NOT_SUPPORTED);
-            } else {
-                ListenableFuture<Boolean> enabledFuture = mRttAdapter.isEnabled();
-                try {
-                    boolean enabled = enabledFuture.get(AVAILABILITY_TIMEOUT, TimeUnit.SECONDS);
-                    if (!enabled) {
-                        builder.addAvailability(RangingManager.WIFI_NAN_RTT,
-                                RangingManager.RangingTechnologyAvailability.DISABLED_USER);
-                    } else {
-                        builder.addAvailability(RangingManager.WIFI_NAN_RTT,
-                                RangingManager.RangingTechnologyAvailability.ENABLED);
-                    }
-                } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                    e.printStackTrace();
-                }
-            }
-            return null;
-        });
-
-        mExecutorService.submit(uwbFutureTask);
-        mExecutorService.submit(csFutureTask);
-        mExecutorService.submit(rttFutureTask);
-
-        try {
-            // Wait for all tasks to complete (or timeout)
-            uwbFutureTask.get(AVAILABILITY_TIMEOUT, TimeUnit.SECONDS);
-            csFutureTask.get(AVAILABILITY_TIMEOUT, TimeUnit.SECONDS);
-            rttFutureTask.get(AVAILABILITY_TIMEOUT, TimeUnit.SECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            Log.e(TAG, "Timed out while fetching ranging capabilities");
+    public interface AvailabilityCallback {
+        @IntDef({
+                AvailabilityChangedReason.UNKNOWN,
+                AvailabilityChangedReason.SYSTEM_POLICY,
+        })
+        @interface AvailabilityChangedReason {
+            int UNKNOWN = 0;
+            int SYSTEM_POLICY = 1;
         }
-        return builder.build();
+
+        /** Indicates that the availability of the underlying technology has changed. */
+        void onAvailabilityChange(
+                @RangingTechnologyAvailability int availability,
+                @AvailabilityChangedReason int reason);
+    }
+
+    private static final String TAG = CapabilitiesProvider.class.getSimpleName();
+    private final RangingInjector mRangingInjector;
+    private final Map<Integer, CapabilitiesAdapter> mCapabilityAdapters;
+
+    /** Callbacks provided from the framework */
+    private final RemoteCallbackList<IRangingCapabilitiesCallback> mCallbacks =
+            new RemoteCallbackList<>();
+
+    public CapabilitiesProvider(RangingInjector rangingInjector) {
+        mRangingInjector = rangingInjector;
+        mCapabilityAdapters = new HashMap<>();
+        mCapabilityAdapters.put(
+                RangingManager.UWB,
+                new UwbCapabilitiesAdapter(mRangingInjector.getContext()));
+        mCapabilityAdapters.put(
+                RangingManager.BT_CS,
+                new CsCapabilitiesAdapter());
+        mCapabilityAdapters.put(
+                RangingManager.WIFI_NAN_RTT,
+                new RttCapabilitiesAdapter(rangingInjector.getContext())
+        );
+
+        for (@RangingManager.RangingTechnology int technology : mCapabilityAdapters.keySet()) {
+            mCapabilityAdapters
+                    .get(technology)
+                    .registerAvailabilityCallback(new AvailabilityListener(technology));
+        }
+    }
+
+    public synchronized void registerCapabilitiesCallback(
+            @NonNull IRangingCapabilitiesCallback callback
+    ) {
+        mCallbacks.register(callback);
+        try {
+            callback.onRangingCapabilities(getCapabilities().build());
+        } catch (RemoteException e) {
+            Log.e(TAG, "Failed to call provided capabilities callback", e);
+        }
+    }
+
+    public synchronized void unregisterCapabilitiesCallback(
+            @NonNull IRangingCapabilitiesCallback callback
+    ) {
+        mCallbacks.unregister(callback);
+    }
+
+    private RangingCapabilities.Builder getCapabilities() {
+        RangingCapabilities.Builder builder = new RangingCapabilities.Builder();
+        for (@RangingManager.RangingTechnology int technology : mCapabilityAdapters.keySet()) {
+            CapabilitiesAdapter adapter = mCapabilityAdapters.get(technology);
+            TechnologyCapabilities capabilities = adapter.getCapabilities();
+
+            builder.addAvailability(technology, adapter.getAvailability());
+            if (capabilities != null) {
+                builder.addCapabilities(capabilities);
+            }
+        }
+        return builder;
+    }
+
+
+    private class AvailabilityListener implements AvailabilityCallback {
+        private final @RangingManager.RangingTechnology int mTechnology;
+
+        AvailabilityListener(@RangingManager.RangingTechnology int technology) {
+            mTechnology = technology;
+        }
+
+        @Override
+        public void onAvailabilityChange(
+                @RangingTechnologyAvailability int availability,
+                @AvailabilityChangedReason int unused
+        ) {
+            RangingCapabilities capabilities = getCapabilities()
+                    .addAvailability(mTechnology, availability)
+                    .build();
+            for (int i = mCallbacks.beginBroadcast() - 1; i >= 0; i--) {
+                try {
+                    mCallbacks.getBroadcastItem(i).onRangingCapabilities(capabilities);
+                } catch (RemoteException e) {
+                    Log.w(TAG, "Failed to notify callback " + i + " of availability change");
+                }
+            }
+            mCallbacks.finishBroadcast();
+        }
     }
 }

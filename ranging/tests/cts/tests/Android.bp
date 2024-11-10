@@ -57,6 +57,7 @@ custom_android_test {
         "mockito-target-minus-junit4",
         "ranging_flags_lib",
         "framework-ranging.impl",
+        "framework-uwb.impl",
     ],
     srcs: ["src/**/*.java"],
     platform_apis: true,

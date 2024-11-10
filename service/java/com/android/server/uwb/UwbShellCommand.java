@@ -741,6 +741,27 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 }
                 builder.setSfdId(sfd_id);
             }
+            if (option.equals("--is-key-rotation-enabled")) {
+                boolean isKeyRotationEnabled =
+                        getNextArgRequiredTrueOrFalse("enabled", "disabled");
+                builder.setIsKeyRotationEnabled(isKeyRotationEnabled);
+            }
+            if (option.equals("--key-rotation-rate")) {
+                int keyRotationRate = Integer.parseInt(getNextArgRequired());
+                builder.setKeyRotationRate(keyRotationRate);
+            }
+            if (option.equals("--max-ranging-round-retries")) {
+                int maxRangingRoundRetries = Integer.parseInt(getNextArgRequired());
+                builder.setMaxRangingRoundRetries(maxRangingRoundRetries);
+            }
+            if (option.equals("--max-number-of-measurements")) {
+                int maxNumberOfMeasurements = Integer.parseInt(getNextArgRequired());
+                builder.setMaxNumberOfMeasurements(maxNumberOfMeasurements);
+            }
+            if (option.equals("--in-band-termination-attempt-count")) {
+                int inBandTerminationAttemptCount = Integer.parseInt(getNextArgRequired());
+                builder.setInBandTerminationAttemptCount(inBandTerminationAttemptCount);
+            }
             option = getNextOption();
         }
         if (aoaResultReqEnabled && interleavingEnabled) {
@@ -1539,8 +1560,14 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + "    [-D 6m81|7m80|27m2|31m2](psdu-data-rate)\n"
                 + "    [-B 850k|6m81](bprf-phr-data-rate)\n"
                 + "    [-A enabled|disabled](tx-adaptive-power, default = disabled)\n"
-                + "    [-S <sfd_id>](sfd-id 0-4, default = 2)");
-        pw.println("    Starts a FIRA ranging session with the provided params."
+                + "    [-S <sfd_id>](sfd-id 0-4, default = 2)\n"
+                + "    [--is-key-rotation-enabled enabled|disabled]\n"
+                + "    [--key-rotation-rate <int>]\n"
+                + "    [--max-ranging-round-retries <int>]\n"
+                + "    [--max-number-of-measurements <int>]\n"
+                + "    [--in-band-termination-attempt-count <int>]\n"
+                + ""
+                + "    Starts a FIRA ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
                 + " retrieved using |get-ranging-session-reports|");
         pw.println("  start-dl-tdoa-ranging-session\n"

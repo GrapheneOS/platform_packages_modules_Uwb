@@ -18,6 +18,13 @@ package com.android.server.ranging;
 
 import android.annotation.NonNull;
 import android.content.Context;
+import android.ranging.RangingPreference;
+
+import com.android.server.ranging.cs.CsAdapter;
+import com.android.server.ranging.rtt.RttAdapter;
+import com.android.server.ranging.uwb.UwbAdapter;
+
+import com.google.common.util.concurrent.ListeningExecutorService;
 
 public class RangingInjector {
 
@@ -45,4 +52,24 @@ public class RangingInjector {
     public RangingServiceManager getRangingServiceManager() {
         return mRangingServiceManager;
     }
+
+    /**
+     * Create a new adapter for a technology.
+     */
+    public @NonNull RangingAdapter createAdapter(
+            @NonNull RangingTechnology technology, @RangingPreference.DeviceRole int role,
+            @NonNull ListeningExecutorService executor
+    ) {
+        switch (technology) {
+            case UWB:
+                return new UwbAdapter(mContext, executor, role);
+            case CS:
+                return new CsAdapter();
+            case RTT:
+                return new RttAdapter(mContext, executor, role);
+            default:
+                throw new IllegalArgumentException("Adapter does not exist for technology " + this);
+        }
+    }
+
 }

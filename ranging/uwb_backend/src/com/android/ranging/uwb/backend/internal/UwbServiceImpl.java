@@ -54,6 +54,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -71,6 +72,7 @@ public class UwbServiceImpl {
     @NonNull
     private final UwbAvailabilityCallback mUwbAvailabilityCallback;
 
+    public static final UwbFeatureFlags FEATURE_FLAGS = new UwbFeatureFlags.Builder().build();
 
     /** A serial thread used to handle session callback */
     private final ExecutorService mSerialExecutor = Executors.newSingleThreadExecutor();
@@ -113,19 +115,17 @@ public class UwbServiceImpl {
     }
 
     /** Gets a Ranging Controller session with given context. */
-    public RangingController getController(Context context) {
+    public static RangingController getController(Context context, Executor executor) {
         UwbManager uwbManagerWithContext = context.getSystemService(UwbManager.class);
-        return new RangingController(
-                uwbManagerWithContext, mSerialExecutor, new OpAsyncCallbackRunner<>(),
-                mUwbFeatureFlags);
+        return new RangingController(uwbManagerWithContext, executor,
+                new OpAsyncCallbackRunner<>(), FEATURE_FLAGS);
     }
 
     /** Gets a Ranging Controlee session with given context. */
-    public RangingControlee getControlee(Context context) {
+    public static RangingControlee getControlee(Context context, Executor executor) {
         UwbManager uwbManagerWithContext = context.getSystemService(UwbManager.class);
-        return new RangingControlee(
-                uwbManagerWithContext, mSerialExecutor, new OpAsyncCallbackRunner<>(),
-                mUwbFeatureFlags);
+        return new RangingControlee(uwbManagerWithContext, executor,
+                new OpAsyncCallbackRunner<>(), FEATURE_FLAGS);
     }
 
     /** Returns multi-chip information. */

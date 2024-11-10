@@ -16,12 +16,20 @@
 
 package com.android.server.ranging.cs;
 
+import android.ranging.RangingCapabilities;
+import android.ranging.RangingManager;
+
 import com.google.errorprone.annotations.DoNotCall;
 
 /** Channel Sounding Capability data send as part of CapabilityResponseMessage during Finder OOB. */
-public final class CsCapabilities {
+public final class CsCapabilities implements RangingCapabilities.TechnologyCapabilities {
 
     private CsCapabilities() {
+    }
+
+    @Override
+    public @RangingManager.RangingTechnology int getTechnology() {
+        return RangingManager.BT_CS;
     }
 
     // // CS data
@@ -68,4 +76,5 @@ public final class CsCapabilities {
     public String toString() {
         return "CsCapabilities{}";
     }
+
 }

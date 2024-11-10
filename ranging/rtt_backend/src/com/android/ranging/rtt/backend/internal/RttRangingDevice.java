@@ -183,7 +183,7 @@ public class RttRangingDevice {
 
         synchronized (mLock) {
             if (!mIsRunning) {
-                Log.w(TAG, "This client is already stop.");
+                Log.w(TAG, "This client has stopped ranging already");
                 return;
             }
             mIsRunning = false;
@@ -260,6 +260,9 @@ public class RttRangingDevice {
             public void onSubscribeStarted(SubscribeDiscoverySession session) {
                 Log.i(TAG, "onSubscribeStarted, SubscribeDiscoverySession= " + session);
                 mCurrentSubscribeDiscoverySession = session;
+                if (mRttListener != null) {
+                    mRttListener.onRangingInitialized(mRttDevice);
+                }
             }
 
             @Override

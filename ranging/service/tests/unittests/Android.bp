@@ -30,7 +30,12 @@ android_test {
         "androidx.test.rules",
         "androidx.test.ext.junit",
         "androidx.test.runner",
-        "mockito-target-minus-junit4",
+        "mockito-target-extended-minus-junit4",
+    ],
+    jni_libs: [
+        // these are needed for Extended Mockito
+        "libdexmakerjvmtiagent",
+        "libstaticjvmtiagent",
     ],
     test_suites: ["device-tests"],
 }

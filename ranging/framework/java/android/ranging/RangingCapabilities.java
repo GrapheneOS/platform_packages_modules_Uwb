@@ -21,6 +21,8 @@ import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.ranging.RangingManager.RangingTechnology;
+import android.ranging.RangingManager.RangingTechnologyAvailability;
 import android.ranging.uwb.UwbRangingCapabilities;
 
 import com.android.ranging.flags.Flags;
@@ -40,27 +42,39 @@ import java.util.Map;
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 public final class RangingCapabilities implements Parcelable {
 
+    /**
+     * Capabilities object for an individual ranging technology.
+     *
+     * @hide
+     */
+    public interface TechnologyCapabilities {
+        /** @return the technology that these capabilities are associated with. */
+        @RangingManager.RangingTechnology
+        int getTechnology();
+    }
+
     @Nullable
-    private final UwbRangingCapabilities mUwbRangingCapabilities;
+    private final UwbRangingCapabilities mUwbCapabilities;
 
     @NonNull
-    private HashMap<Integer, Integer>
-            mTechnologyAvailabilityMap;
+    private final HashMap<Integer, Integer> mAvailabilities;
 
     private RangingCapabilities(Builder builder) {
-        mUwbRangingCapabilities = builder.mUwbRangingCapabilities;
-        mTechnologyAvailabilityMap = builder.mTechnologyAvailabilityMap;
+        mUwbCapabilities =
+                (UwbRangingCapabilities) builder.mCapabilities.get(RangingManager.UWB);
+        mAvailabilities = builder.mAvailabilities;
     }
 
     private RangingCapabilities(Parcel in) {
-        mUwbRangingCapabilities = in.readParcelable(UwbRangingCapabilities.class.getClassLoader(),
+        mUwbCapabilities = in.readParcelable(
+                UwbRangingCapabilities.class.getClassLoader(),
                 UwbRangingCapabilities.class);
         int size = in.readInt();
-        mTechnologyAvailabilityMap = new HashMap<>(size);
+        mAvailabilities = new HashMap<>(size);
         for (int i = 0; i < size; i++) {
             int key = in.readInt();
             int value = in.readInt();
-            mTechnologyAvailabilityMap.put(key, value);
+            mAvailabilities.put(key, value);
         }
     }
 
@@ -88,7 +102,7 @@ public final class RangingCapabilities implements Parcelable {
      */
     @NonNull
     public Map<Integer, Integer> getTechnologyAvailabilityMap() {
-        return mTechnologyAvailabilityMap;
+        return mAvailabilities;
     }
 
     /**
@@ -98,7 +112,7 @@ public final class RangingCapabilities implements Parcelable {
      */
     @Nullable
     public UwbRangingCapabilities getUwbCapabilities() {
-        return mUwbRangingCapabilities;
+        return mUwbCapabilities;
     }
 
     /**
@@ -111,30 +125,32 @@ public final class RangingCapabilities implements Parcelable {
 
     @Override
     public void writeToParcel(@androidx.annotation.NonNull Parcel dest, int flags) {
-        dest.writeParcelable(mUwbRangingCapabilities, flags);
-        dest.writeInt(mTechnologyAvailabilityMap.size()); // Write map size
-        for (Map.Entry<Integer, Integer> entry : mTechnologyAvailabilityMap.entrySet()) {
+        dest.writeParcelable(mUwbCapabilities, flags);
+        dest.writeInt(mAvailabilities.size()); // Write map size
+        for (Map.Entry<Integer, Integer> entry : mAvailabilities.entrySet()) {
             dest.writeInt(entry.getKey()); // Write the key
             dest.writeInt(entry.getValue()); // Write the value
         }
     }
 
     /**
-     * Builder for {@link UwbRangingCapabilities}
+     * Builder for {@link RangingCapabilities}
      *
      * @hide
      */
     public static class Builder {
-        private UwbRangingCapabilities mUwbRangingCapabilities = null;
-        private final HashMap<Integer, Integer> mTechnologyAvailabilityMap = new HashMap<>();
+        private final HashMap<Integer, TechnologyCapabilities> mCapabilities = new HashMap<>();
+        private final HashMap<Integer, Integer> mAvailabilities = new HashMap<>();
 
-        public Builder setUwbRangingCapabilities(UwbRangingCapabilities uwbRangingCapabilities) {
-            mUwbRangingCapabilities = uwbRangingCapabilities;
+        public Builder addCapabilities(@NonNull TechnologyCapabilities capabilities) {
+            mCapabilities.put(capabilities.getTechnology(), capabilities);
             return this;
         }
 
-        public Builder addAvailability(int technology, int availability) {
-            mTechnologyAvailabilityMap.put(technology, availability);
+        public Builder addAvailability(
+                @RangingTechnology int technology, @RangingTechnologyAvailability int availability
+        ) {
+            mAvailabilities.put(technology, availability);
             return this;
         }
 

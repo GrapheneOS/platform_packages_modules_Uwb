@@ -17,8 +17,10 @@
 package android.ranging.params;
 
 import android.annotation.FlaggedApi;
+import android.annotation.Nullable;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.ranging.ITransportHandle;
 import android.ranging.RangingDevice;
 
 import androidx.annotation.NonNull;
@@ -33,14 +35,17 @@ public class DeviceHandle implements Parcelable {
 
     private final RangingDevice mRangingDevice;
 
-    //TODO: add transport handle
+    private final ITransportHandle mTransportHandle;
 
     private DeviceHandle(Builder builder) {
         mRangingDevice = builder.mRangingDevice;
+        mTransportHandle = builder.mTransportHandle;
     }
 
     protected DeviceHandle(Parcel in) {
         mRangingDevice = in.readParcelable(RangingDevice.class.getClassLoader());
+        // Not need in service layer.
+        mTransportHandle = null;
     }
 
     public static final Creator<DeviceHandle> CREATOR = new Creator<DeviceHandle>() {
@@ -59,6 +64,11 @@ public class DeviceHandle implements Parcelable {
         return mRangingDevice;
     }
 
+    @Nullable
+    public ITransportHandle getTransportHandle() {
+        return mTransportHandle;
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -71,9 +81,15 @@ public class DeviceHandle implements Parcelable {
 
     public static final class Builder {
         private RangingDevice mRangingDevice;
+        private ITransportHandle mTransportHandle;
 
         public Builder setRangingDevice(RangingDevice rangingDevice) {
             mRangingDevice = rangingDevice;
+            return this;
+        }
+
+        public Builder setTransportHandle(ITransportHandle transportHandle) {
+            mTransportHandle = transportHandle;
             return this;
         }
 

@@ -242,14 +242,15 @@ class UwbRangingDecorator():
     except errors.ApiError as api_error:
       raise ValueError("Failed to get RSSI measurement.") from api_error
 
-  def stop_ranging(self, session: int = 0):
+  def stop_ranging(self, session: int = 0, timeout: int = STOP_CALLBACK_WAIT_TIME_SEC):
     """Stops UWB ranging session.
 
     Args:
       session: ranging session.
+      timeout: timeout for stop to complete.
     """
     self.ad.uwb.stopRangingSession(self._callback_keys[session])
-    self.verify_callback_received("Stopped", session, STOP_CALLBACK_WAIT_TIME_SEC)
+    self.verify_callback_received("Stopped", session, timeout)
 
   def close_ranging(self, session: int = 0):
     """Closes ranging session.

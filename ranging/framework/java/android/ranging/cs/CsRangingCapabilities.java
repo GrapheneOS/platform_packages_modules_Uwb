@@ -19,6 +19,8 @@ package android.ranging.cs;
 import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
 import android.annotation.NonNull;
+import android.ranging.RangingCapabilities.TechnologyCapabilities;
+import android.ranging.RangingManager;
 
 import com.android.ranging.flags.Flags;
 
@@ -33,8 +35,7 @@ import java.util.List;
  * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_CS_ENABLED)
-public final class CsRangingCapabilities {
-
+public final class CsRangingCapabilities implements TechnologyCapabilities {
     /**
      * @hide
      */
@@ -72,6 +73,14 @@ public final class CsRangingCapabilities {
 
     private CsRangingCapabilities(Builder builder) {
         mSupportedSecurityLevels = builder.mSupportedSecurityLevels;
+    }
+
+    /**
+     * @hide
+     */
+    @Override
+    public int getTechnology() {
+        return RangingManager.BT_CS;
     }
 
     /**

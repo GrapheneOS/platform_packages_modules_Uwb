@@ -20,6 +20,8 @@ import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.ranging.RangingCapabilities.TechnologyCapabilities;
+import android.ranging.RangingManager;
 
 import com.android.ranging.flags.Flags;
 
@@ -36,7 +38,7 @@ import java.util.List;
  * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
-public final class UwbRangingCapabilities implements Parcelable {
+public final class UwbRangingCapabilities implements Parcelable, TechnologyCapabilities {
 
     private final boolean mSupportsDistance;
     private final boolean mSupportsAzimuthalAngle;
@@ -96,6 +98,14 @@ public final class UwbRangingCapabilities implements Parcelable {
                     return new UwbRangingCapabilities[size];
                 }
             };
+
+    /**
+     * @hide
+     */
+    @Override
+    public @RangingManager.RangingTechnology int getTechnology() {
+        return RangingManager.UWB;
+    }
 
     /**
      * Checks if the device supports distance measurement.

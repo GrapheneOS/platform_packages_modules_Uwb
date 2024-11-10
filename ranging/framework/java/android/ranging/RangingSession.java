@@ -22,12 +22,18 @@ import android.annotation.NonNull;
 import android.content.AttributionSource;
 import android.os.CancellationSignal;
 import android.os.RemoteException;
+import android.ranging.params.DeviceHandle;
+import android.ranging.params.OobInitiatorRangingParams;
+import android.ranging.params.OobResponderRangingParams;
+import android.ranging.params.RangingParams;
 import android.util.Log;
 
 import com.android.ranging.flags.Flags;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -85,11 +91,18 @@ public final class RangingSession implements AutoCloseable {
      * automatically to release resources.
      *
      * @param rangingPreference {@link RangingPreference} the preferences for configuring the
-     *                                ranging session.
+     *                          ranging session.
      * @return a {@link CancellationSignal} to close the session.
      */
     @NonNull
     public CancellationSignal start(@NonNull RangingPreference rangingPreference) {
+        //TODO : check whether this needs to be called after start, or handle when a session is
+        // created in ranging service.
+        if (rangingPreference.getRangingParameters().getRangingSessionType()
+                == RangingParams.RANGING_SESSION_OOB) {
+            mRangingSessionManager.registerOobSendDataListener();
+            setupTransportHandles(rangingPreference);
+        }
         try {
             mRangingAdapter.startRanging(mAttributionSource, mSessionHandle, rangingPreference,
                     mRangingSessionManager);
@@ -97,27 +110,34 @@ public final class RangingSession implements AutoCloseable {
             throw e.rethrowFromSystemServer();
         }
         CancellationSignal cancellationSignal = new CancellationSignal();
-        cancellationSignal.setOnCancelListener(() -> this.close());
+        cancellationSignal.setOnCancelListener(this::close);
 
-        // TODO: if SmartRangingParams then setupTransportHandles();
         return cancellationSignal;
     }
 
-    private void setupTransportHandles() {
-        // TODO: Add TransportHandle initialization
-        //      foreach deviceHandle:
-        //          mTransportHandles.add(rangingDevice, transportHandle)
-        //          transportHandle.registerReceiveCallback(new TransportHandleReceiveCallback
-        //          (device))
+    private void setupTransportHandles(RangingPreference rangingPreference) {
+        List<DeviceHandle> deviceHandleList = new ArrayList<>();
+        if (rangingPreference.getRangingParameters() instanceof OobInitiatorRangingParams) {
+            deviceHandleList.addAll(((OobInitiatorRangingParams)
+                    rangingPreference.getRangingParameters()).getDeviceHandles());
+        } else if (rangingPreference.getRangingParameters() instanceof OobResponderRangingParams) {
+            deviceHandleList.add(((OobResponderRangingParams)
+                    rangingPreference.getRangingParameters()).getDeviceHandle());
+        }
+        for (DeviceHandle deviceHandle : deviceHandleList) {
+            TransportHandleReceiveCallback receiveCallback =
+                    new TransportHandleReceiveCallback(deviceHandle.getRangingDevice());
+            deviceHandle.getTransportHandle().registerReceiveCallback(receiveCallback);
+            mTransportHandles.put(deviceHandle.getRangingDevice(),
+                    deviceHandle.getTransportHandle());
+        }
     }
-
 
     /**
      * Stops the ranging session.
      *
      * <p>This method releases any ongoing ranging operations. If the operation fails,
      * it will propagate a {@link RemoteException} from the system server.
-     *
      */
     public void stop() {
         try {
@@ -139,6 +159,7 @@ public final class RangingSession implements AutoCloseable {
      */
     public void onRangingClosed(int reason) {
         mExecutor.execute(() -> mCallback.onClosed(reason));
+        mTransportHandles.clear();
     }
 
     /**
@@ -181,7 +202,8 @@ public final class RangingSession implements AutoCloseable {
                 REASON_SYSTEM_POLICY,
                 REASON_UNSUPPORTED,
         })
-        @interface Reason {}
+        @interface Reason {
+        }
 
         /**
          * Indicates that the session was closed or failed to open due to an unknown reason
@@ -209,8 +231,7 @@ public final class RangingSession implements AutoCloseable {
          * Called when the ranging session starts successfully.
          *
          * @param technology {@link android.ranging.RangingManager.RangingTechnology }
-         * the ranging technology used for the session.
-         *
+         *                   the ranging technology used for the session.
          * @hide
          */
         void onStarted(@RangingManager.RangingTechnology int technology);
@@ -244,7 +265,7 @@ public final class RangingSession implements AutoCloseable {
          * Called when ranging data is available for the ranging device.
          *
          * @param device the {@link RangingDevice} for which ranging data was received.
-         * @param data the {@link RangingData} received during the ranging session.
+         * @param data   the {@link RangingData} received during the ranging session.
          */
         void onResults(@NonNull RangingDevice device, @NonNull RangingData data);
     }

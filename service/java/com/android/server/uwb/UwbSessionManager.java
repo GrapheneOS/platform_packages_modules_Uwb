@@ -3020,7 +3020,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
          * @return The matching {@link UwbControlee}, or null if not found.
          */
         public UwbControlee getControlee(UwbAddress address) {
-            if (mControlees.isEmpty()) {
+            if (mControlees == null || mControlees.isEmpty()) {
+                Log.d(TAG, "Controlee list is null or empty");
                 return null;
             }
             UwbControlee result = mControlees.get(address);

@@ -30,7 +30,6 @@ import static org.mockito.Mockito.when;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.ranging.RangingData;
-import android.ranging.RangingPreference;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingParams;
@@ -41,7 +40,6 @@ import com.android.ranging.uwb.backend.internal.RangingController;
 import com.android.ranging.uwb.backend.internal.RangingPosition;
 import com.android.ranging.uwb.backend.internal.RangingSessionCallback;
 import com.android.ranging.uwb.backend.internal.UwbDevice;
-import com.android.ranging.uwb.backend.internal.UwbServiceImpl;
 import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.cs.CsConfig;
@@ -62,8 +60,6 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
-import java.util.concurrent.ExecutionException;
-
 @RunWith(JUnit4.class)
 @SmallTest
 public class UwbAdapterTest {
@@ -72,8 +68,6 @@ public class UwbAdapterTest {
 
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private Context mMockContext;
-    @Mock
-    private UwbServiceImpl mMockUwbService;
     @Mock
     private RangingController mMockUwbClient;
 
@@ -101,21 +95,13 @@ public class UwbAdapterTest {
     public void setup() {
         when(mMockContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_UWB))
                 .thenReturn(true);
-        when(mMockUwbService.getController(any())).thenReturn(mMockUwbClient);
         mUwbAdapter = new UwbAdapter(mMockContext, MoreExecutors.newDirectExecutorService(),
-                mMockUwbService, RangingPreference.DEVICE_ROLE_INITIATOR);
+                MoreExecutors.newDirectExecutorService(), mMockUwbClient);
     }
 
     @Test
     public void getType_returnsUwb() {
         Assert.assertEquals(RangingTechnology.UWB, mUwbAdapter.getType());
-    }
-
-    @Test
-    public void isEnabled_checksServiceIsAvailable()
-            throws InterruptedException, ExecutionException {
-        when(mMockUwbService.isAvailable()).thenReturn(true);
-        Assert.assertTrue(mUwbAdapter.isEnabled().get());
     }
 
     @Test
