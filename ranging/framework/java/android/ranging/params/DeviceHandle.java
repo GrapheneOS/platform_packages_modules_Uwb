@@ -17,7 +17,6 @@
 package android.ranging.params;
 
 import android.annotation.FlaggedApi;
-import android.annotation.Nullable;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.ranging.ITransportHandle;
@@ -27,7 +26,12 @@ import androidx.annotation.NonNull;
 
 import com.android.ranging.flags.Flags;
 
+import java.util.Objects;
+
 /**
+ * Represents a handle to a ranging device, containing information about the device
+ * and a transport handle for out-of-band communication.
+ *
  * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
@@ -48,6 +52,7 @@ public class DeviceHandle implements Parcelable {
         mTransportHandle = null;
     }
 
+    @NonNull
     public static final Creator<DeviceHandle> CREATOR = new Creator<DeviceHandle>() {
         @Override
         public DeviceHandle createFromParcel(Parcel in) {
@@ -60,11 +65,22 @@ public class DeviceHandle implements Parcelable {
         }
     };
 
+    /**
+     * Returns the ranging device associated with this handle.
+     *
+     * @return The {@link RangingDevice} instance.
+     */
+    @NonNull
     public RangingDevice getRangingDevice() {
         return mRangingDevice;
     }
 
-    @Nullable
+    /**
+     * Returns the transport handle, if set, for communication.
+     *
+     * @return The {@link ITransportHandle} instance.
+     */
+    @NonNull
     public ITransportHandle getTransportHandle() {
         return mTransportHandle;
     }
@@ -79,20 +95,36 @@ public class DeviceHandle implements Parcelable {
         dest.writeParcelable(mRangingDevice, flags);
     }
 
+    /**
+     * Builder class for creating instances of {@link DeviceHandle}.
+     */
     public static final class Builder {
         private RangingDevice mRangingDevice;
         private ITransportHandle mTransportHandle;
 
-        public Builder setRangingDevice(RangingDevice rangingDevice) {
+        /**
+         * Constructs a new {@link Builder} with the required {@link RangingDevice}
+         * and {@link ITransportHandle}.
+         *
+         * @param rangingDevice the {@link RangingDevice}
+         * @param transportHandle the {@link ITransportHandle}
+         * @throws NullPointerException if either parameter is {@code null}.
+         */
+        public Builder(@NonNull RangingDevice rangingDevice,
+                @NonNull ITransportHandle transportHandle) {
+            Objects.requireNonNull(rangingDevice);
+            Objects.requireNonNull(transportHandle);
             mRangingDevice = rangingDevice;
-            return this;
-        }
-
-        public Builder setTransportHandle(ITransportHandle transportHandle) {
             mTransportHandle = transportHandle;
-            return this;
         }
 
+        /**
+         * Builds and returns a new {@link DeviceHandle} instance using the
+         * parameters provided to this builder.
+         *
+         * @return a newly created {@link DeviceHandle} instance.
+         */
+        @NonNull
         public DeviceHandle build() {
             return new DeviceHandle(this);
         }

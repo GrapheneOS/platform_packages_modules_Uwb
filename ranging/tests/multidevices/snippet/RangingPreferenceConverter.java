@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package multidevices.snippet.ranging;
+package com.google.snippet.ranging;
 
 import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
+import static android.ranging.uwb.UwbComplexChannel.UWB_CHANNEL_9;
+import static android.ranging.uwb.UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_11;
 
 import android.ranging.RangingDevice;
 import android.ranging.RangingPreference;
@@ -51,8 +53,7 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
     public Object deserialize(JSONObject j, Type type) throws JSONException {
         if (type != RangingPreference.class) return null;
 
-        return new RangingPreference.Builder()
-                .setDeviceRole(j.getInt("device_role"))
+        return new RangingPreference.Builder(j.getInt("device_role"))
                 .setRangingParameters(
                         getRangingParams(j.getJSONObject("ranging_params"), j.getInt("device_role"))
                 )
@@ -122,18 +123,20 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
     }
 
     private UwbRangingParams getUwbParams(JSONObject j) throws JSONException {
-        UwbRangingParams.Builder builder = new UwbRangingParams.Builder();
+        UwbRangingParams.Builder builder = new UwbRangingParams.Builder(
+                j.getInt("session_id"),
+                j.getInt("config_id"),
+                UwbAddress.fromBytes(toBytes(j.getJSONArray("device_address"))),
+                UwbAddress.fromBytes(toBytes(j.getJSONArray("peer_address")))
+        );
 
-        builder.setPeerAddress(UwbAddress.fromBytes(toBytes(j.getJSONArray("peer_address"))))
-                .setConfigId(j.getInt("config_id"))
-                .setDeviceAddress(UwbAddress.fromBytes(toBytes(j.getJSONArray("device_address"))))
-                .setSessionId(j.getInt("session_id"))
-                .setSubSessionId(j.getInt("sub_session_id"))
+        builder.setSubSessionId(j.getInt("sub_session_id"))
                 .setSessionKeyInfo(toBytes(j.getJSONArray("session_key_info")))
                 .setComplexChannel(
-                        new UwbComplexChannel.Builder().setChannel(9).setPreambleIndex(11).build())
+                        new UwbComplexChannel.Builder().setChannel(UWB_CHANNEL_9)
+                                .setPreambleIndex(UWB_PREAMBLE_CODE_INDEX_11).build())
                 .setRangingUpdateRate(j.getInt("ranging_update_rate"))
-                .setSlotDurationMillis(j.getInt("slot_duration_ms"));
+                .setSlotDuration(j.getInt("slot_duration_ms"));
 
         if (!j.isNull("sub_session_key_info")) {
             builder.setSubSessionKeyInfo(toBytes(j.getJSONArray("sub_session_key_info")));
@@ -142,10 +145,10 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
     }
 
     private RttRangingParams getRttParams(JSONObject j) throws JSONException {
-        RttRangingParams.Builder builder = new RttRangingParams.Builder();
+        RttRangingParams.Builder builder = new RttRangingParams.Builder(
+                j.getString("service_name"));
 
-        return builder.setServiceName(j.getString("service_name"))
-                .setRangingUpdateRate(j.getInt("ranging_update_rate"))
+        return builder.setRangingUpdateRate(j.getInt("ranging_update_rate"))
                 .build();
     }
 

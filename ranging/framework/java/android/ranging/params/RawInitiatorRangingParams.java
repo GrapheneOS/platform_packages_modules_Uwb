@@ -31,26 +31,25 @@ import java.util.List;
  * This class encapsulates a list of {@link RawRangingDevice} objects that participate in the
  * session.
  *
- * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
-public class RawInitiatorRangingParams extends RangingParams implements Parcelable {
+public final class RawInitiatorRangingParams extends RangingParams implements Parcelable {
 
     private final List<RawRangingDevice> mRawRangingDevices;
 
     private RawInitiatorRangingParams(Builder builder) {
-        mRangingSessionType = RangingParams.RANGING_SESSION_RAW;
+        setRangingSessionType(RangingParams.RANGING_SESSION_RAW);
         mRawRangingDevices = new ArrayList<>(builder.mRawRangingDeviceList);
     }
 
-    protected RawInitiatorRangingParams(Parcel in) {
-        mRangingSessionType = in.readInt();
+    private RawInitiatorRangingParams(Parcel in) {
+        setRangingSessionType(in.readInt());
         mRawRangingDevices = in.createTypedArrayList(RawRangingDevice.CREATOR);
     }
 
     @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeInt(mRangingSessionType);
+    public void writeToParcel(@NonNull Parcel dest, int flags) {
+        dest.writeInt(getRangingSessionType());
         dest.writeTypedList(mRawRangingDevices);
     }
 
@@ -59,6 +58,7 @@ public class RawInitiatorRangingParams extends RangingParams implements Parcelab
         return 0;
     }
 
+    @NonNull
     public static final Creator<RawInitiatorRangingParams> CREATOR =
             new Creator<RawInitiatorRangingParams>() {
                 @Override
@@ -77,6 +77,7 @@ public class RawInitiatorRangingParams extends RangingParams implements Parcelab
      *
      * @return a list of ranging devices.
      */
+    @NonNull
     public List<RawRangingDevice> getRawRangingDevices() {
         return mRawRangingDevices;
     }
@@ -94,7 +95,7 @@ public class RawInitiatorRangingParams extends RangingParams implements Parcelab
          * @return this {@link Builder} instance.
          */
         @NonNull
-        public Builder addRawRangingDevice(RawRangingDevice rangingDevice) {
+        public Builder addRawRangingDevice(@NonNull RawRangingDevice rangingDevice) {
             mRawRangingDeviceList.add(rangingDevice);
             return this;
         }

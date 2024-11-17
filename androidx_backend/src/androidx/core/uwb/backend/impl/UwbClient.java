@@ -189,6 +189,17 @@ public abstract class UwbClient extends IUwbClient.Stub {
                     e.printStackTrace();
                 }
             }
+
+            @Override
+            public void onPeerDisconnected(UwbDevice peer, int reason) {
+                androidx.core.uwb.backend.UwbDevice backendPeer =
+                        new androidx.core.uwb.backend.UwbDevice();
+                backendPeer.address = new UwbAddress();
+                backendPeer.address.address = peer.getAddress().toBytes();
+                // TODO: implement in jetpack
+                // callback.onPeerDisconnected(backendPeer, reason);
+            }
+
         };
     }
 

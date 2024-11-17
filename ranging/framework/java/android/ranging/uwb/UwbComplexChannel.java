@@ -17,21 +17,112 @@
 package android.ranging.uwb;
 
 import android.annotation.FlaggedApi;
+import android.annotation.IntDef;
 import android.annotation.NonNull;
 import android.os.Parcel;
 import android.os.Parcelable;
 
 import com.android.ranging.flags.Flags;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
 /**
  * A Class representing the complex channel for UWB which comprises channel and preamble index
  * negotiated between peer devices out of band before ranging.
- * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 public final class UwbComplexChannel implements Parcelable {
 
+    /**
+     * UWB Channel selections
+     *
+     * @hide
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef(
+            value = {
+                    UWB_CHANNEL_5,
+                    UWB_CHANNEL_6,
+                    UWB_CHANNEL_8,
+                    UWB_CHANNEL_9,
+                    UWB_CHANNEL_10,
+                    UWB_CHANNEL_12,
+                    UWB_CHANNEL_13,
+                    UWB_CHANNEL_14,
+            })
+    public @interface UwbChannel {
+    }
+
+    /** UWB channel 5 */
+    public static final int UWB_CHANNEL_5 = 5;
+    /** UWB channel 6 */
+    public static final int UWB_CHANNEL_6 = 6;
+    /** UWB channel 8 */
+    public static final int UWB_CHANNEL_8 = 8;
+    /** UWB channel 9 */
+    public static final int UWB_CHANNEL_9 = 9;
+    /** UWB channel 10 */
+    public static final int UWB_CHANNEL_10 = 10;
+    /** UWB channel 12 */
+    public static final int UWB_CHANNEL_12 = 12;
+    /** UWB channel 13 */
+    public static final int UWB_CHANNEL_13 = 13;
+    /** UWB channel 14 */
+    public static final int UWB_CHANNEL_14 = 14;
+
+    /**
+     * UWB preamble selections
+     *
+     * @hide
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef(
+            value = {
+                    UWB_PREAMBLE_CODE_INDEX_9,
+                    UWB_PREAMBLE_CODE_INDEX_10,
+                    UWB_PREAMBLE_CODE_INDEX_11,
+                    UWB_PREAMBLE_CODE_INDEX_12,
+                    UWB_PREAMBLE_CODE_INDEX_25,
+                    UWB_PREAMBLE_CODE_INDEX_26,
+                    UWB_PREAMBLE_CODE_INDEX_27,
+                    UWB_PREAMBLE_CODE_INDEX_28,
+                    UWB_PREAMBLE_CODE_INDEX_29,
+                    UWB_PREAMBLE_CODE_INDEX_30,
+                    UWB_PREAMBLE_CODE_INDEX_31,
+                    UWB_PREAMBLE_CODE_INDEX_32,
+            })
+    public @interface UwbPreambleCodeIndex {
+    }
+
+    /** UWB preamble code index 9 */
+    public static final int UWB_PREAMBLE_CODE_INDEX_9 = 9;
+    /** UWB preamble code index 10 */
+    public static final int UWB_PREAMBLE_CODE_INDEX_10 = 10;
+    /** UWB preamble code index 11 */
+    public static final int UWB_PREAMBLE_CODE_INDEX_11 = 11;
+    /** UWB preamble code index 12 */
+    public static final int UWB_PREAMBLE_CODE_INDEX_12 = 12;
+    /** UWB preamble code index 25 */
+    public static final int UWB_PREAMBLE_CODE_INDEX_25 = 25;
+    /** UWB preamble code index 26 */
+    public static final int UWB_PREAMBLE_CODE_INDEX_26 = 26;
+    /** UWB preamble code index 27 */
+    public static final int UWB_PREAMBLE_CODE_INDEX_27 = 27;
+    /** UWB preamble code index 28 */
+    public static final int UWB_PREAMBLE_CODE_INDEX_28 = 28;
+    /** UWB preamble code index 29 */
+    public static final int UWB_PREAMBLE_CODE_INDEX_29 = 29;
+    /** UWB preamble code index 30 */
+    public static final int UWB_PREAMBLE_CODE_INDEX_30 = 30;
+    /** UWB preamble code index 31 */
+    public static final int UWB_PREAMBLE_CODE_INDEX_31 = 31;
+    /** UWB preamble code index 32 */
+    public static final int UWB_PREAMBLE_CODE_INDEX_32 = 32;
+
+    @UwbChannel
     private final int mChannel;
+    @UwbPreambleCodeIndex
     private final int mPreambleIndex;
 
     private UwbComplexChannel(Builder builder) {
@@ -57,10 +148,26 @@ public final class UwbComplexChannel implements Parcelable {
         }
     };
 
+    /**
+     * Gets the UWB channel associated with this configuration.
+     *
+     * @return The channel number, which is one of the predefined UWB channels:
+     *
+     */
+    @UwbChannel
     public int getChannel() {
         return mChannel;
     }
 
+    /**
+     * Gets the UWB preamble index associated with this configuration.
+     *
+     * @return The preamble index, which is one of the predefined UWB preamble indices:
+     *
+     * @See <a href="https://groups.firaconsortium.org/wg/members/document/1949> FiRa UCI Spec.</a>
+     */
+
+    @UwbPreambleCodeIndex
     public int getPreambleIndex() {
         return mPreambleIndex;
     }
@@ -80,29 +187,36 @@ public final class UwbComplexChannel implements Parcelable {
      * Builder for creating instances of {@link UwbComplexChannel}.
      */
     public static final class Builder {
-        private int mChannel = 5;
-        private int mPreambleIndex =  9;
+        @UwbChannel
+        private int mChannel = UWB_CHANNEL_5;
+        @UwbPreambleCodeIndex
+        private int mPreambleIndex = UWB_PREAMBLE_CODE_INDEX_9;
 
         /**
          * Sets the channel for the ranging device.
+         * <p> Defaults to {@link #UWB_CHANNEL_5}
          *
          * @param channel The channel number to be set.
          * @return This {@link Builder} instance.
          */
         @NonNull
-        public Builder setChannel(int channel) {
+        public Builder setChannel(@UwbChannel int channel) {
             mChannel = channel;
             return this;
         }
 
         /**
-         * Sets the preamble index for the ranging device.
+         * Sets the preamble index for the ranging device as defined in
+         * See <a href="https://groups.firaconsortium.org/wg/members/document/1949> FiRa UCI
+         * Spec.</a>}
+         *
+         * <p> Defaults to {@link #UWB_PREAMBLE_CODE_INDEX_9}
          *
          * @param preambleIndex The preamble index to be set.
          * @return This {@link Builder} instance.
          */
         @NonNull
-        public Builder setPreambleIndex(int preambleIndex) {
+        public Builder setPreambleIndex(@UwbPreambleCodeIndex int preambleIndex) {
             mPreambleIndex = preambleIndex;
             return this;
         }

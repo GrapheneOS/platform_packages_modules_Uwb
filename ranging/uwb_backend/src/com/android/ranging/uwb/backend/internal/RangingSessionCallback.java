@@ -30,6 +30,9 @@ public interface RangingSessionCallback {
     /** Callback when a session has been suspended. */
     void onRangingSuspended(UwbDevice device, @RangingSuspendedReason int reason);
 
+    /** Callback when a peer disconnects from the session. */
+    void onPeerDisconnected(UwbDevice peer, @PeerDisconnectedReason int reason);
+
     /** Reason why ranging was stopped. */
     @IntDef({
             REASON_UNKNOWN,
@@ -50,4 +53,14 @@ public interface RangingSessionCallback {
     int REASON_STOP_RANGING_CALLED = 4;
     int REASON_MAX_RANGING_ROUND_RETRY_REACHED = 5;
     int REASON_SYSTEM_POLICY = 6;
+
+    /** Reason why peer disconnected. */
+    @IntDef({
+            PeerDisconnectedReason.UNKNOWN,
+            PeerDisconnectedReason.SYSTEM_POLICY,
+    })
+    @interface PeerDisconnectedReason {
+        int UNKNOWN = 0;
+        int SYSTEM_POLICY = 1;
+    }
 }

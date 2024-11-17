@@ -18,6 +18,7 @@ package android.ranging.params;
 
 import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
+import android.annotation.SuppressLint;
 import android.os.Parcelable;
 
 import com.android.ranging.flags.Flags;
@@ -26,11 +27,14 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * @hide
+ * Abstract class to represent type of ranging parameters.
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
+@SuppressLint({"ParcelCreator", "ParcelNotFinal"})
 public abstract class RangingParams implements Parcelable {
-
+    /**
+     * @hide
+     */
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({
             RANGING_SESSION_RAW,
@@ -39,14 +43,26 @@ public abstract class RangingParams implements Parcelable {
     public @interface RangingSessionType {
     }
 
-    /** Ranging session with oob performed by the app */
+    /** Ranging session with the out-of-band negotiations performed by the app. */
     public static final int RANGING_SESSION_RAW = 0;
-    /** Ranging session oob performed by ranging module */
+    /** Ranging session with the out-of-band negotiations performed by the ranging API. */
     public static final int RANGING_SESSION_OOB = 1;
 
     @RangingSessionType
-    protected int mRangingSessionType;
+    private int mRangingSessionType;
 
+    /**
+     * @hide
+     */
+    protected void setRangingSessionType(@RangingSessionType int rangingSessionType) {
+        mRangingSessionType = rangingSessionType;
+    }
+
+    /**
+     * Gets the ranging session type {@link RangingSessionType}
+     *
+     * @return the type of ranging session.
+     */
     public int getRangingSessionType() {
         return mRangingSessionType;
     }

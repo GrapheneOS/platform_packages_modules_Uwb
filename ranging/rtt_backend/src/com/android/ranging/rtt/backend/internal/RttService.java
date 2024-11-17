@@ -24,4 +24,6 @@ public interface RttService {
     RttRangingDevice getSubscriber(Context context);
 
     boolean isAvailable();
+
+    boolean hasPeriodicRangingSupport();
 }

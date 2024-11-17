@@ -28,7 +28,6 @@ import java.util.Arrays;
 
 /**
  * A class representing a UWB address
- * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 public final class UwbAddress implements Parcelable {
@@ -68,17 +67,8 @@ public final class UwbAddress implements Parcelable {
      * @return the byte representation of this {@link android.uwb.UwbAddress}
      */
     @NonNull
-    public byte[] toBytes() {
+    public byte[] getAddressBytes() {
         return mAddressBytes;
-    }
-
-    /**
-     * The length of the address in bytes
-     * <p>Possible values are {@link #SHORT_ADDRESS_BYTE_LENGTH} and
-     * {@link #EXTENDED_ADDRESS_BYTE_LENGTH}.
-     */
-    public int size() {
-        return mAddressBytes.length;
     }
 
     @NonNull
@@ -94,7 +84,7 @@ public final class UwbAddress implements Parcelable {
     @Override
     public boolean equals(@Nullable Object obj) {
         if (obj instanceof UwbAddress) {
-            return Arrays.equals(mAddressBytes, ((UwbAddress) obj).toBytes());
+            return Arrays.equals(mAddressBytes, ((UwbAddress) obj).getAddressBytes());
         }
         return false;
     }

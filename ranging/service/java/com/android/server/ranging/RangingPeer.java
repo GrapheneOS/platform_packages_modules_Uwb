@@ -16,17 +16,9 @@
 
 package com.android.server.ranging;
 
-import static android.ranging.RangingSession.Callback.REASON_LOCAL_REQUEST;
-import static android.ranging.RangingSession.Callback.REASON_SYSTEM_POLICY;
-import static android.ranging.RangingSession.Callback.REASON_UNKNOWN;
-import static android.ranging.RangingSession.Callback.REASON_UNSUPPORTED;
-
-import android.os.RemoteException;
-import android.ranging.IRangingCallbacks;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
-import android.ranging.RangingSession;
-import android.ranging.SessionHandle;
+import android.os.Binder;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -60,10 +52,9 @@ public final class RangingPeer {
     private final RangingPeerConfig mConfig;
 
     /**
-     * Callback for session events.
-     * <b>Invariant: Non-null while a session is ongoing</b>.
+     * Listener for session events.
      */
-    private final IRangingCallbacks mCallback;
+    private final RangingServiceManager.SessionListener mSessionListener;
 
     /** Fusion engine to use for this device */
     private final FusionEngine mFusionEngine;
@@ -81,17 +72,16 @@ public final class RangingPeer {
      */
     private final Map<RangingTechnology, RangingAdapter> mAdapters;
 
-    /** Handle for the session this peer belongs to. */
-    private final SessionHandle mSessionHandle;
-
     /** Executor for ranging technology adapters. */
     private final ListeningExecutorService mAdapterExecutor;
+
+    /** Lock for the ranging peer. */
+    private final Object mLock = new Object();
 
     public RangingPeer(
             @NonNull RangingInjector injector,
             @NonNull RangingPeerConfig config,
-            @NonNull IRangingCallbacks callbacks,
-            @NonNull SessionHandle handle,
+            @NonNull RangingServiceManager.SessionListener listener,
             @NonNull ListeningExecutorService adapterExecutor
     ) {
         mInjector = injector;
@@ -99,8 +89,7 @@ public final class RangingPeer {
         mAdapters = Collections.synchronizedMap(new EnumMap<>(RangingTechnology.class));
         mAdapterExecutor = adapterExecutor;
         mConfig = config;
-        mCallback = callbacks;
-        mSessionHandle = handle;
+        mSessionListener = listener;
 
         if (mConfig.getSensorFusionConfig().isSensorFusionEnabled()) {
             mFusionEngine = new FilteringFusionEngine(
@@ -113,31 +102,33 @@ public final class RangingPeer {
 
     /** Start a ranging session with this peer */
     public void start() {
-        if (!mStateMachine.transition(State.STOPPED, State.STARTING)) {
-            Log.w(TAG, "Failed transition STOPPED -> STARTING");
-            return;
-        }
+        synchronized (mLock) {
+            if (!mStateMachine.transition(State.STOPPED, State.STARTING)) {
+                Log.w(TAG, "Failed transition STOPPED -> STARTING");
+                return;
+            }
+            ImmutableMap<RangingTechnology, TechnologyConfig> configs =
+                    mConfig.getTechnologyConfigs();
 
-        ImmutableMap<RangingTechnology, TechnologyConfig> configs =
-                mConfig.getTechnologyConfigs();
-
-        mFusionEngine.start(new FusionEngineListener());
-        for (Map.Entry<RangingTechnology, TechnologyConfig> entry : configs.entrySet()) {
-            RangingTechnology technology = entry.getKey();
-            TechnologyConfig config = entry.getValue();
-
-            synchronized (mAdapters) {
+            mFusionEngine.start(new FusionEngineListener());
+            for (Map.Entry<RangingTechnology, TechnologyConfig> entry : configs.entrySet()) {
+                RangingTechnology technology = entry.getKey();
+                TechnologyConfig config = entry.getValue();
+                // Any calls to the corresponding technology stacks must be
+                // done with a clear calling identity.
+                long token = Binder.clearCallingIdentity();
                 RangingAdapter adapter = mInjector.createAdapter(
                         technology, mConfig.getDeviceRole(), mAdapterExecutor);
                 mAdapters.put(technology, adapter);
                 adapter.start(config, new AdapterListener(technology));
+                Binder.restoreCallingIdentity(token);
             }
         }
     }
 
     /** Stop the active session. */
     public void stop() {
-        synchronized (mStateMachine) {
+        synchronized (mLock) {
             if (mStateMachine.getState() == State.STOPPING
                     || mStateMachine.getState() == State.STOPPED
             ) {
@@ -147,10 +138,12 @@ public final class RangingPeer {
             mStateMachine.setState(State.STOPPING);
 
             // Stop all ranging technologies.
-            synchronized (mAdapters) {
-                for (RangingTechnology technology : mAdapters.keySet()) {
-                    mAdapters.get(technology).stop();
-                }
+            for (RangingTechnology technology : mAdapters.keySet()) {
+                // Any calls to the corresponding technology stacks must be
+                // done with a clear calling identity.
+                long token = Binder.clearCallingIdentity();
+                mAdapters.get(technology).stop();
+                Binder.restoreCallingIdentity(token);
             }
         }
     }
@@ -160,66 +153,50 @@ public final class RangingPeer {
         private final RangingTechnology mTechnology;
 
         AdapterListener(RangingTechnology technology) {
-            this.mTechnology = technology;
+            mTechnology = technology;
         }
 
         @Override
         public void onStarted() {
-            synchronized (mStateMachine) {
+            synchronized (mLock) {
                 if (mStateMachine.getState() == State.STOPPED) {
                     Log.w(TAG, "Received adapter onStarted but ranging session is stopped");
                     return;
                 }
-                mFusionEngine.addDataSource(mTechnology);
-                try {
-                    mCallback.onStarted(
-                            mSessionHandle, mConfig.getDevice(), mTechnology.getValue());
-                } catch (RemoteException e) {
-                    Log.e(TAG, "onStarted failed " + e);
+                if (mStateMachine.transition(State.STARTING, State.STARTED)) {
+                    mSessionListener.onPeerStarted();
                 }
+
+                mFusionEngine.addDataSource(mTechnology);
+                mSessionListener.onTechnologyStarted(mConfig.getDevice(), mTechnology.getValue());
             }
         }
 
-        private @RangingSession.Callback.Reason int convertReason(@StoppedReason int reason) {
-            switch (reason) {
-                case StoppedReason.REQUESTED:
-                    return REASON_LOCAL_REQUEST;
-                case StoppedReason.FAILED_TO_START:
-                    return REASON_UNSUPPORTED;
-                case StoppedReason.LOST_CONNECTION:
-                case StoppedReason.SYSTEM_POLICY:
-                    return REASON_SYSTEM_POLICY;
-                default:
-                    return REASON_UNKNOWN;
-            }
-        }
 
         @Override
         public void onStopped(@StoppedReason int reason) {
-            synchronized (mStateMachine) {
+            synchronized (mLock) {
                 if (mStateMachine.getState() != State.STOPPING) {
                     mAdapters.get(mTechnology).stop();
                 }
                 mAdapters.remove(mTechnology);
                 mFusionEngine.removeDataSource(mTechnology);
+                mSessionListener.onTechnologyStopped(mConfig.getDevice(),
+                    mTechnology.getValue());
                 if (mAdapters.isEmpty()) {
+                    // The last technology has stopped, so signal that ranging has completely
+                    // stopped with this peer.
                     mStateMachine.setState(State.STOPPED);
-                    // The last technology in the session has stopped, so signal that the entire
-                    // session has stopped.
-                    try {
-                        mCallback.onClosed(
-                                mSessionHandle, mConfig.getDevice(), convertReason(reason));
-                    } catch (RemoteException e) {
-                        Log.e(TAG, "onClosed failed " + e);
-                    }
+                    mSessionListener.onPeerStopped(mConfig.getDevice(), reason);
                     mFusionEngine.stop();
                 }
+
             }
         }
 
         @Override
         public void onRangingData(RangingDevice peer, RangingData data) {
-            synchronized (mStateMachine) {
+            synchronized (mLock) {
                 if (mStateMachine.getState() != State.STOPPED) {
                     mFusionEngine.feed(data);
                 }
@@ -232,15 +209,11 @@ public final class RangingPeer {
 
         @Override
         public void onData(@NonNull RangingData data) {
-            synchronized (mStateMachine) {
+            synchronized (mLock) {
                 if (mStateMachine.getState() == State.STOPPED) {
                     return;
                 }
-                try {
-                    mCallback.onData(mSessionHandle, mConfig.getDevice(), data);
-                } catch (RemoteException e) {
-                    Log.e(TAG, "onData failed: " + e);
-                }
+                mSessionListener.onResults(mConfig.getDevice(), data);
             }
         }
     }

@@ -24,21 +24,26 @@ import androidx.annotation.NonNull;
 
 import com.android.ranging.flags.Flags;
 
+import java.time.Duration;
+
 /**
+ * Represents a range for the fastest and slowest intervals in milliseconds between
+ * successive ranging operations.
+ *
  * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 public class RangingIntervalRange implements Parcelable {
 
-    private final int mFastestRangingIntervalMs;
+    private final Duration mFastestRangingInterval;
 
-    private final int mSlowestRangingIntervalMs;
+    private final Duration mSlowestRangingInterval;
 
     private RangingIntervalRange(Builder builder) {
-        this.mFastestRangingIntervalMs = builder.mFastestRangingIntervalMs;
-        this.mSlowestRangingIntervalMs = builder.mSlowestRangingIntervalMs;
+        this.mFastestRangingInterval = builder.mFastestRangingInterval;
+        this.mSlowestRangingInterval = builder.mSlowestRangingInterval;
 
-        if (mFastestRangingIntervalMs > mSlowestRangingIntervalMs) {
+        if (mFastestRangingInterval.toMillis() > mSlowestRangingInterval.toMillis()) {
             throw new IllegalArgumentException(
                     "Fastest ranging interval cannot be greater than the slowest interval."
             );
@@ -46,10 +51,11 @@ public class RangingIntervalRange implements Parcelable {
     }
 
     protected RangingIntervalRange(Parcel in) {
-        mFastestRangingIntervalMs = in.readInt();
-        mSlowestRangingIntervalMs = in.readInt();
+        mFastestRangingInterval = Duration.ofMillis(in.readLong());
+        mSlowestRangingInterval = Duration.ofMillis(in.readLong());
     }
 
+    @NonNull
     public static final Creator<RangingIntervalRange> CREATOR =
             new Creator<RangingIntervalRange>() {
                 @Override
@@ -63,12 +69,22 @@ public class RangingIntervalRange implements Parcelable {
                 }
             };
 
-    public int getFastestRangingIntervalMs() {
-        return mFastestRangingIntervalMs;
+    /**
+     * Returns the fastest requested ranging interval in milliseconds.
+     *
+     * @return The fastest interval in milliseconds.
+     */
+    public Duration getFastestRangingInterval() {
+        return mFastestRangingInterval;
     }
 
-    public int getSlowestRangingIntervalMs() {
-        return mSlowestRangingIntervalMs;
+    /**
+     * Returns the slowest acceptable ranging interval in milliseconds.
+     *
+     * @return The slowest interval in milliseconds.
+     */
+    public Duration getSlowestRangingInterval() {
+        return mSlowestRangingInterval;
     }
 
     @Override
@@ -78,24 +94,49 @@ public class RangingIntervalRange implements Parcelable {
 
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
-        dest.writeInt(mFastestRangingIntervalMs);
-        dest.writeInt(mSlowestRangingIntervalMs);
+        dest.writeLong(mFastestRangingInterval.toMillis());
+        dest.writeLong(mSlowestRangingInterval.toMillis());
     }
 
+    /**
+     * Builder class for creating instances of {@link RangingIntervalRange}.
+     */
     public static final class Builder {
-        private int mFastestRangingIntervalMs;
-        private int mSlowestRangingIntervalMs;
+        private Duration mFastestRangingInterval = Duration.ofMillis(100);
+        private Duration mSlowestRangingInterval = Duration.ofMillis(5000);
 
-        public Builder setFastestRangingIntervalMs(int intervalMs) {
-            this.mFastestRangingIntervalMs = intervalMs;
+        /**
+         * Sets the fastest ranging interval in milliseconds.
+         *
+         * @param intervalMs The fastest interval in milliseconds.
+         *                   Defaults to 100ms
+         * @return The Builder instance, for chaining calls.
+         */
+        @NonNull
+        public Builder setFastestRangingInterval(Duration intervalMs) {
+            this.mFastestRangingInterval = intervalMs;
             return this;
         }
 
-        public Builder setSlowestRangingIntervalMs(int intervalMs) {
-            this.mSlowestRangingIntervalMs = intervalMs;
+        /**
+         * Sets the slowest ranging interval in milliseconds.
+         *
+         * @param intervalMs The slowest interval in milliseconds.
+         *                   Defaults to 5000ms
+         * @return The Builder instance, for chaining calls.
+         */
+        @NonNull
+        public Builder setSlowestRangingInterval(Duration intervalMs) {
+            this.mSlowestRangingInterval = intervalMs;
             return this;
         }
 
+        /**
+         * Builds an instance of {@link RangingIntervalRange} with the provided parameters.
+         *
+         * @return A new RangingIntervalRange instance.
+         */
+        @NonNull
         public RangingIntervalRange build() {
             return new RangingIntervalRange(this);
         }

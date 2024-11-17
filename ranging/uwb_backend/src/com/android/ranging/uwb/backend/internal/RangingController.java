@@ -360,6 +360,11 @@ public class RangingController extends RangingDevice {
                         .toBundle());
     }
 
+    @Override
+    public synchronized void handlePeerDisconnected(UwbDevice peer) {
+        mDynamicallyAddedPeers.remove(peer.getAddress());
+    }
+
     /**
      * Reconfigures ranging interval for an ongoing session
      *

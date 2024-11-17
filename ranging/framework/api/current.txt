@@ -1,1 +1,302 @@
 // Signature format: 2.0
+package android.ranging {
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class RangingCapabilities implements android.os.Parcelable {
+    method public int describeContents();
+    method @NonNull public java.util.Map<java.lang.Integer,java.lang.Integer> getTechnologyAvailability();
+    method @Nullable public android.ranging.uwb.UwbRangingCapabilities getUwbCapabilities();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.RangingCapabilities> CREATOR;
+    field public static final int DISABLED_REGULATORY = 2; // 0x2
+    field public static final int DISABLED_USER = 1; // 0x1
+    field public static final int ENABLED = 3; // 0x3
+    field public static final int NOT_SUPPORTED = 0; // 0x0
+  }
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class RangingData implements android.os.Parcelable {
+    method public int describeContents();
+    method @Nullable public android.ranging.RangingMeasurement getAzimuth();
+    method @Nullable public android.ranging.RangingMeasurement getDistance();
+    method @Nullable public android.ranging.RangingMeasurement getElevation();
+    method public int getRangingTechnology();
+    method public int getRssi();
+    method public long getTimestampMillis();
+    method public boolean hasRssi();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.RangingData> CREATOR;
+  }
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class RangingDevice implements android.os.Parcelable {
+    method public int describeContents();
+    method @NonNull public java.util.UUID getUuid();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.RangingDevice> CREATOR;
+  }
+
+  public static final class RangingDevice.Builder {
+    ctor public RangingDevice.Builder();
+    method @NonNull public android.ranging.RangingDevice build();
+    method @NonNull public android.ranging.RangingDevice.Builder setUuid(@NonNull java.util.UUID);
+  }
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class RangingManager {
+    method @Nullable public android.ranging.RangingSession createRangingSession(@NonNull java.util.concurrent.Executor, @NonNull android.ranging.RangingSession.Callback);
+    method @NonNull public void registerCapabilitiesCallback(@NonNull java.util.concurrent.Executor, @NonNull android.ranging.RangingManager.RangingCapabilitiesCallback);
+    method @NonNull public void unregisterCapabilitiesCallback(@NonNull android.ranging.RangingManager.RangingCapabilitiesCallback);
+    field public static final int BLE_CS = 1; // 0x1
+    field public static final int BLE_RSSI = 3; // 0x3
+    field public static final int UWB = 0; // 0x0
+    field public static final int WIFI_NAN_RTT = 2; // 0x2
+  }
+
+  public static interface RangingManager.RangingCapabilitiesCallback {
+    method public void onRangingCapabilities(@NonNull android.ranging.RangingCapabilities);
+  }
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class RangingMeasurement implements android.os.Parcelable {
+    method public int describeContents();
+    method public double getMeasurement();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.RangingMeasurement> CREATOR;
+  }
+
+  public static final class RangingMeasurement.Builder {
+    ctor public RangingMeasurement.Builder();
+    method @NonNull public android.ranging.RangingMeasurement build();
+    method @NonNull public android.ranging.RangingMeasurement.Builder setMeasurement(double);
+  }
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class RangingPreference implements android.os.Parcelable {
+    method public int describeContents();
+    method @NonNull public android.ranging.params.DataNotificationConfig getDataNotificationConfig();
+    method public int getDeviceRole();
+    method @Nullable public android.ranging.params.RangingParams getRangingParameters();
+    method @NonNull public android.ranging.params.SensorFusionParams getSensorFusionParameters();
+    method public boolean isAngleOfArrivalNeeded();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.RangingPreference> CREATOR;
+    field public static final int DEVICE_ROLE_INITIATOR = 1; // 0x1
+    field public static final int DEVICE_ROLE_RESPONDER = 0; // 0x0
+  }
+
+  public static final class RangingPreference.Builder {
+    ctor public RangingPreference.Builder(int);
+    method @NonNull public android.ranging.RangingPreference build();
+    method @NonNull public android.ranging.RangingPreference.Builder setAngleOfArrivalNeeded(boolean);
+    method @NonNull public android.ranging.RangingPreference.Builder setDataNotificationConfig(@NonNull android.ranging.params.DataNotificationConfig);
+    method @NonNull public android.ranging.RangingPreference.Builder setRangingParameters(@NonNull android.ranging.params.RangingParams);
+    method @NonNull public android.ranging.RangingPreference.Builder setSensorFusionParameters(@NonNull android.ranging.params.SensorFusionParams);
+  }
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class RangingSession implements java.lang.AutoCloseable {
+    method public void close();
+    method @NonNull public android.os.CancellationSignal start(@NonNull android.ranging.RangingPreference);
+    method public void stop();
+  }
+
+  public static interface RangingSession.Callback {
+    method public void onClosed(int);
+    method public void onResults(@NonNull android.ranging.RangingDevice, @NonNull android.ranging.RangingData);
+    method public void onStartFailed(int, @NonNull android.ranging.RangingDevice);
+    method public void onStarted(int);
+    method public void onStopped(@NonNull android.ranging.RangingDevice);
+    field public static final int REASON_LOCAL_REQUEST = 1; // 0x1
+    field public static final int REASON_SYSTEM_POLICY = 2; // 0x2
+    field public static final int REASON_UNKNOWN = 0; // 0x0
+    field public static final int REASON_UNSUPPORTED = 3; // 0x3
+  }
+
+}
+
+package android.ranging.params {
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class DataNotificationConfig implements android.os.Parcelable {
+    method public int describeContents();
+    method public int getNotificationConfigType();
+    method public int getProximityFarCm();
+    method public int getProximityNearCm();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.params.DataNotificationConfig> CREATOR;
+    field public static final int DISABLE = 0; // 0x0
+    field public static final int ENABLE = 1; // 0x1
+    field public static final int PROXIMITY_EDGE = 3; // 0x3
+    field public static final int PROXIMITY_LEVEL = 2; // 0x2
+  }
+
+  public static final class DataNotificationConfig.Builder {
+    ctor public DataNotificationConfig.Builder();
+    method @NonNull public android.ranging.params.DataNotificationConfig build();
+    method @NonNull public android.ranging.params.DataNotificationConfig.Builder setNotificationConfigType(int);
+    method @NonNull public android.ranging.params.DataNotificationConfig.Builder setProximityFarCm(int);
+    method @NonNull public android.ranging.params.DataNotificationConfig.Builder setProximityNearCm(int);
+  }
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public abstract class RangingParams implements android.os.Parcelable {
+    ctor public RangingParams();
+    method public int getRangingSessionType();
+    field public static final int RANGING_SESSION_OOB = 1; // 0x1
+    field public static final int RANGING_SESSION_RAW = 0; // 0x0
+  }
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class RawInitiatorRangingParams extends android.ranging.params.RangingParams implements android.os.Parcelable {
+    method public int describeContents();
+    method @NonNull public java.util.List<android.ranging.params.RawRangingDevice> getRawRangingDevices();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.params.RawInitiatorRangingParams> CREATOR;
+  }
+
+  public static final class RawInitiatorRangingParams.Builder {
+    ctor public RawInitiatorRangingParams.Builder();
+    method @NonNull public android.ranging.params.RawInitiatorRangingParams.Builder addRawRangingDevice(@NonNull android.ranging.params.RawRangingDevice);
+    method @NonNull public android.ranging.params.RawInitiatorRangingParams build();
+  }
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class RawRangingDevice implements android.os.Parcelable {
+    method public int describeContents();
+    method @NonNull public android.ranging.RangingDevice getRangingDevice();
+    method @Nullable public android.ranging.uwb.UwbRangingParams getUwbRangingParams();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.params.RawRangingDevice> CREATOR;
+    field public static final int UPDATE_RATE_FREQUENT = 3; // 0x3
+    field public static final int UPDATE_RATE_INFREQUENT = 2; // 0x2
+    field public static final int UPDATE_RATE_NORMAL = 1; // 0x1
+  }
+
+  public static final class RawRangingDevice.Builder {
+    ctor public RawRangingDevice.Builder();
+    method @NonNull public android.ranging.params.RawRangingDevice build();
+    method @NonNull public android.ranging.params.RawRangingDevice.Builder setRangingDevice(@NonNull android.ranging.RangingDevice);
+    method @NonNull public android.ranging.params.RawRangingDevice.Builder setUwbRangingParams(@NonNull android.ranging.uwb.UwbRangingParams);
+  }
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class RawResponderRangingParams extends android.ranging.params.RangingParams implements android.os.Parcelable {
+    method public int describeContents();
+    method @NonNull public android.ranging.params.RawRangingDevice getRawRangingDevice();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.params.RawResponderRangingParams> CREATOR;
+  }
+
+  public static final class RawResponderRangingParams.Builder {
+    ctor public RawResponderRangingParams.Builder();
+    method @NonNull public android.ranging.params.RawResponderRangingParams build();
+    method @NonNull public android.ranging.params.RawResponderRangingParams.Builder setRawRangingDevice(@NonNull android.ranging.params.RawRangingDevice);
+  }
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class SensorFusionParams implements android.os.Parcelable {
+    method public int describeContents();
+    method public boolean isSensorFusionEnabled();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.params.SensorFusionParams> CREATOR;
+  }
+
+  public static final class SensorFusionParams.Builder {
+    ctor public SensorFusionParams.Builder();
+    method @NonNull public android.ranging.params.SensorFusionParams build();
+    method @NonNull public android.ranging.params.SensorFusionParams.Builder setSensorFusionEnabled(boolean);
+  }
+
+}
+
+package android.ranging.uwb {
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class UwbAddress implements android.os.Parcelable {
+    method public int describeContents();
+    method @NonNull public static android.ranging.uwb.UwbAddress fromBytes(@NonNull byte[]);
+    method @NonNull public byte[] getAddressBytes();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.uwb.UwbAddress> CREATOR;
+    field public static final int EXTENDED_ADDRESS_BYTE_LENGTH = 8; // 0x8
+    field public static final int SHORT_ADDRESS_BYTE_LENGTH = 2; // 0x2
+  }
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class UwbComplexChannel implements android.os.Parcelable {
+    method public int describeContents();
+    method public int getChannel();
+    method public int getPreambleIndex();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.uwb.UwbComplexChannel> CREATOR;
+    field public static final int UWB_CHANNEL_10 = 10; // 0xa
+    field public static final int UWB_CHANNEL_12 = 12; // 0xc
+    field public static final int UWB_CHANNEL_13 = 13; // 0xd
+    field public static final int UWB_CHANNEL_14 = 14; // 0xe
+    field public static final int UWB_CHANNEL_5 = 5; // 0x5
+    field public static final int UWB_CHANNEL_6 = 6; // 0x6
+    field public static final int UWB_CHANNEL_8 = 8; // 0x8
+    field public static final int UWB_CHANNEL_9 = 9; // 0x9
+    field public static final int UWB_PREAMBLE_CODE_INDEX_10 = 10; // 0xa
+    field public static final int UWB_PREAMBLE_CODE_INDEX_11 = 11; // 0xb
+    field public static final int UWB_PREAMBLE_CODE_INDEX_12 = 12; // 0xc
+    field public static final int UWB_PREAMBLE_CODE_INDEX_25 = 25; // 0x19
+    field public static final int UWB_PREAMBLE_CODE_INDEX_26 = 26; // 0x1a
+    field public static final int UWB_PREAMBLE_CODE_INDEX_27 = 27; // 0x1b
+    field public static final int UWB_PREAMBLE_CODE_INDEX_28 = 28; // 0x1c
+    field public static final int UWB_PREAMBLE_CODE_INDEX_29 = 29; // 0x1d
+    field public static final int UWB_PREAMBLE_CODE_INDEX_30 = 30; // 0x1e
+    field public static final int UWB_PREAMBLE_CODE_INDEX_31 = 31; // 0x1f
+    field public static final int UWB_PREAMBLE_CODE_INDEX_32 = 32; // 0x20
+    field public static final int UWB_PREAMBLE_CODE_INDEX_9 = 9; // 0x9
+  }
+
+  public static final class UwbComplexChannel.Builder {
+    ctor public UwbComplexChannel.Builder();
+    method @NonNull public android.ranging.uwb.UwbComplexChannel build();
+    method @NonNull public android.ranging.uwb.UwbComplexChannel.Builder setChannel(int);
+    method @NonNull public android.ranging.uwb.UwbComplexChannel.Builder setPreambleIndex(int);
+  }
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class UwbRangingCapabilities implements android.os.Parcelable {
+    method public int describeContents();
+    method @NonNull public java.time.Duration getMinimumRangingInterval();
+    method @NonNull public java.util.List<java.lang.Integer> getSupportedChannels();
+    method @NonNull public java.util.List<java.lang.Integer> getSupportedConfigIds();
+    method @NonNull public java.util.List<java.lang.Integer> getSupportedNotificationConfigurations();
+    method @NonNull public java.util.List<java.lang.Integer> getSupportedRangingUpdateRates();
+    method @NonNull public java.util.List<java.lang.Integer> getSupportedSlotDurations();
+    method public boolean isAzimuthalAngleSupported();
+    method public boolean isBackgroundRangingSupported();
+    method public boolean isDistanceMeasurementSupported();
+    method public boolean isElevationAngleSupported();
+    method public boolean isRangingIntervalReconfigurationSupported();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.uwb.UwbRangingCapabilities> CREATOR;
+  }
+
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class UwbRangingParams implements android.os.Parcelable {
+    method public int describeContents();
+    method @NonNull public android.ranging.uwb.UwbComplexChannel getComplexChannel();
+    method public int getConfigId();
+    method @NonNull public android.ranging.uwb.UwbAddress getDeviceAddress();
+    method @NonNull public android.ranging.uwb.UwbAddress getPeerAddress();
+    method public int getRangingUpdateRate();
+    method public int getSessionId();
+    method @Nullable public byte[] getSessionKeyInfo();
+    method public int getSlotDuration();
+    method public int getSubSessionId();
+    method @Nullable public byte[] getSubSessionKeyInfo();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field public static final int CONFIG_MULTICAST_DS_TWR = 2; // 0x2
+    field public static final int CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR = 7; // 0x7
+    field public static final int CONFIG_PROVISIONED_MULTICAST_DS_TWR = 5; // 0x5
+    field public static final int CONFIG_PROVISIONED_UNICAST_DS_TWR = 4; // 0x4
+    field public static final int CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_AOA = 6; // 0x6
+    field public static final int CONFIG_UNICAST_DS_TWR = 1; // 0x1
+    field public static final int CONFIG_UNICAST_DS_TWR_NO_AOA = 3; // 0x3
+    field @NonNull public static final android.os.Parcelable.Creator<android.ranging.uwb.UwbRangingParams> CREATOR;
+    field public static final int DURATION_1_MS = 1; // 0x1
+    field public static final int DURATION_2_MS = 2; // 0x2
+    field public static final int SUB_SESSION_UNDEFINED = -1; // 0xffffffff
+  }
+
+  public static final class UwbRangingParams.Builder {
+    ctor public UwbRangingParams.Builder(int, int, @NonNull android.ranging.uwb.UwbAddress, @NonNull android.ranging.uwb.UwbAddress);
+    method @NonNull public android.ranging.uwb.UwbRangingParams build();
+    method @NonNull public android.ranging.uwb.UwbRangingParams.Builder setComplexChannel(@NonNull android.ranging.uwb.UwbComplexChannel);
+    method @NonNull public android.ranging.uwb.UwbRangingParams.Builder setRangingUpdateRate(int);
+    method @NonNull public android.ranging.uwb.UwbRangingParams.Builder setSessionKeyInfo(@NonNull byte[]);
+    method @NonNull public android.ranging.uwb.UwbRangingParams.Builder setSlotDuration(int);
+    method @NonNull public android.ranging.uwb.UwbRangingParams.Builder setSubSessionId(int);
+    method @NonNull public android.ranging.uwb.UwbRangingParams.Builder setSubSessionKeyInfo(@NonNull byte[]);
+  }
+
+}
+

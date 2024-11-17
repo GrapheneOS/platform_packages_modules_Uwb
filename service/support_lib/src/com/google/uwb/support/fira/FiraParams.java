@@ -857,7 +857,8 @@ public abstract class FiraParams extends Params {
 
     public enum SchedulingModeCapabilitiesFlag implements FlagEnum {
         HAS_CONTENTION_BASED_RANGING_SUPPORT(1),
-        HAS_TIME_SCHEDULED_RANGING_SUPPORT(1 << 1);
+        HAS_TIME_SCHEDULED_RANGING_SUPPORT(1 << 1),
+        HAS_HYBRID_SCHEDULED_RANGING_SUPPORT(1 << 2);
 
         private final long mValue;
 

@@ -15,7 +15,7 @@
   -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="multidevices.snippet.ranging">
+    package="com.google.snippet.ranging">
 
     <application>
         <!-- Add any classes that implement the Snippet interface as meta-data, whose
@@ -23,14 +23,14 @@
              of a snippet class -->
         <meta-data
             android:name="mobly-snippets"
-            android:value="multidevices.snippet.ranging.RangingSnippet" />
+            android:value="com.google.snippet.ranging.RangingSnippet" />
         <meta-data
             android:name="mobly-object-converter"
-            android:value="multidevices.snippet.ranging.RangingPreferenceConverter" />
+            android:value="com.google.snippet.ranging.RangingPreferenceConverter" />
     </application>
     <instrumentation
         android:name="com.google.android.mobly.snippet.SnippetRunner"
-        android:targetPackage="multidevices.snippet.ranging" />
+        android:targetPackage="com.google.snippet.ranging" />
 
     <uses-permission android:name="android.permissions.UWB_PRIVILEGED" />
     <!-- Add an instrumentation tag so that the app can be launched through an

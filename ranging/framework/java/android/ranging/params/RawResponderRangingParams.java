@@ -27,23 +27,23 @@ import com.android.ranging.flags.Flags;
  * Represents the parameters for a raw ranging session initiated by a responder device.
  * This class holds a {@link RawRangingDevice} object that participates in the session.
  *
- * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
-public class RawResponderRangingParams extends RangingParams implements Parcelable {
+public final class RawResponderRangingParams extends RangingParams implements Parcelable {
 
     private final RawRangingDevice mRawRangingDevice;
 
     private RawResponderRangingParams(Builder builder) {
-        mRangingSessionType = RangingParams.RANGING_SESSION_RAW;
+        setRangingSessionType(RangingParams.RANGING_SESSION_RAW);
         mRawRangingDevice = builder.mRawRangingDevice;
     }
 
-    protected RawResponderRangingParams(Parcel in) {
-        mRangingSessionType = in.readInt();
+    private RawResponderRangingParams(Parcel in) {
+        setRangingSessionType(in.readInt());
         mRawRangingDevice = in.readParcelable(RawRangingDevice.class.getClassLoader());
     }
 
+    @NonNull
     public static final Creator<RawResponderRangingParams> CREATOR =
             new Creator<RawResponderRangingParams>() {
                 @Override
@@ -74,7 +74,7 @@ public class RawResponderRangingParams extends RangingParams implements Parcelab
 
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
-        dest.writeInt(mRangingSessionType);
+        dest.writeInt(getRangingSessionType());
         dest.writeParcelable(mRawRangingDevice, flags);
     }
 

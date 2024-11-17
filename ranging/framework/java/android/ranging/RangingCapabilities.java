@@ -17,16 +17,21 @@
 package android.ranging;
 
 import android.annotation.FlaggedApi;
+import android.annotation.IntDef;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.ranging.RangingManager.RangingTechnology;
-import android.ranging.RangingManager.RangingTechnologyAvailability;
+import android.ranging.rtt.RttRangingCapabilities;
 import android.ranging.uwb.UwbRangingCapabilities;
 
 import com.android.ranging.flags.Flags;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,8 +41,6 @@ import java.util.Map;
  * <p>The {@code RangingCapabilities} class encapsulates the status of different ranging
  * technologies. It also allows querying the availability of other ranging technologies through a
  * mapping of technology identifiers to availability statuses.</p>
- *
- * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 public final class RangingCapabilities implements Parcelable {
@@ -56,12 +59,55 @@ public final class RangingCapabilities implements Parcelable {
     @Nullable
     private final UwbRangingCapabilities mUwbCapabilities;
 
-    @NonNull
-    private final HashMap<Integer, Integer> mAvailabilities;
+    @Nullable
+    private final RttRangingCapabilities mRttRangingCapabilities;
+
+    /**
+     * @hide
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @Target({ElementType.TYPE_USE})
+    @IntDef({
+            /* Ranging technology is not supported on this device. */
+            NOT_SUPPORTED,
+            /* Ranging technology is disabled. */
+            DISABLED_USER,
+            /* Ranging technology disabled due to regulation. */
+            DISABLED_REGULATORY,
+            /* Ranging technology is enabled. */
+            ENABLED,
+    })
+    public @interface RangingTechnologyAvailability {
+    }
+
+    /**
+     * Indicates that the ranging technology is not supported on the current device.
+     */
+    public static final int NOT_SUPPORTED = 0;
+
+    /**
+     * Indicates that the ranging technology is disabled by the user.
+     */
+    public static final int DISABLED_USER = 1;
+
+    /**
+     * Indicates that the ranging technology is disabled due to regulatory restrictions.
+     */
+    public static final int DISABLED_REGULATORY = 2;
+
+    /**
+     * Indicates that the ranging technology is enabled and available for use.
+     */
+    public static final int ENABLED = 3;
+
+    private final Map<@RangingManager.RangingTechnology Integer,
+            @RangingTechnologyAvailability Integer> mAvailabilities;
 
     private RangingCapabilities(Builder builder) {
         mUwbCapabilities =
                 (UwbRangingCapabilities) builder.mCapabilities.get(RangingManager.UWB);
+        mRttRangingCapabilities = (RttRangingCapabilities) builder.mCapabilities.get(
+                RangingManager.WIFI_NAN_RTT);
         mAvailabilities = builder.mAvailabilities;
     }
 
@@ -69,6 +115,8 @@ public final class RangingCapabilities implements Parcelable {
         mUwbCapabilities = in.readParcelable(
                 UwbRangingCapabilities.class.getClassLoader(),
                 UwbRangingCapabilities.class);
+        mRttRangingCapabilities = in.readParcelable(RttRangingCapabilities.class.getClassLoader(),
+                RttRangingCapabilities.class);
         int size = in.readInt();
         mAvailabilities = new HashMap<>(size);
         for (int i = 0; i < size; i++) {
@@ -98,10 +146,12 @@ public final class RangingCapabilities implements Parcelable {
      * <p>The map uses technology identifiers as keys and their respective availability
      * statuses as values.</p>
      *
-     * @return a {@link Map} containing technology availability statuses.
+     * @return a {@link Map} with key {@link RangingTechnology} and value
+     * {@link RangingTechnologyAvailability}.
      */
     @NonNull
-    public Map<Integer, Integer> getTechnologyAvailabilityMap() {
+    public Map<@RangingTechnology Integer, @RangingTechnologyAvailability Integer>
+            getTechnologyAvailability() {
         return mAvailabilities;
     }
 
@@ -116,6 +166,17 @@ public final class RangingCapabilities implements Parcelable {
     }
 
     /**
+     * Gets the WiFi NAN-RTT ranging capabilities.
+     *
+     * @return a {@link RttRangingCapabilities} object or {@code null} if not available.
+     * @hide
+     */
+    @Nullable
+    public RttRangingCapabilities getRttRangingCapabilities() {
+        return mRttRangingCapabilities;
+    }
+
+    /**
      * @hide
      */
     @Override
@@ -126,6 +187,7 @@ public final class RangingCapabilities implements Parcelable {
     @Override
     public void writeToParcel(@androidx.annotation.NonNull Parcel dest, int flags) {
         dest.writeParcelable(mUwbCapabilities, flags);
+        dest.writeParcelable(mRttRangingCapabilities, flags);
         dest.writeInt(mAvailabilities.size()); // Write map size
         for (Map.Entry<Integer, Integer> entry : mAvailabilities.entrySet()) {
             dest.writeInt(entry.getKey()); // Write the key

@@ -22,10 +22,16 @@ import android.annotation.NonNull;
 import com.android.ranging.flags.Flags;
 
 /**
- * TransportHandle is used as the Out-Of-Band (OOB) transport mechanism for GRAPI. In cases where
- * GRAPI is used in a non-bypass mode, the user shall provide an implementation of the
- * TransportHandle, allowing GRAPI to do the necessary OOB communication with a peer device using
- * the provided TransportHandle.
+ * TransportHandle is used as the Out-Of-Band (OOB) transport mechanism by ranging module.
+ * In cases where module is used in a non-raw ranging mode, the user shall provide an implementation
+ * of the TransportHandle, allowing ranging module to do the necessary OOB communication with a peer
+ * device using the provided transport handle. Some examples of OOB transport between two peer
+ * devices are:
+ * <ul>
+ *     <li>BLE GATT connection</li>
+ *     <li>Wi-Fi MDNS link</li>
+ *     <li>Internet</li>
+ * </ul>
  *
  * @hide
  */

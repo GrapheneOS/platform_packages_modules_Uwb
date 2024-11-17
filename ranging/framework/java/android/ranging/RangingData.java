@@ -16,6 +16,7 @@
 
 package android.ranging;
 
+import android.annotation.CurrentTimeMillisLong;
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
@@ -31,7 +32,6 @@ import java.util.Objects;
  * Represents ranging data, including distance, azimuth, elevation, and RSSI measurements,
  * along with the ranging technology used and a timestamp.
  *
- * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 public final class RangingData implements Parcelable {
@@ -153,7 +153,8 @@ public final class RangingData implements Parcelable {
      *
      * @return The timestamp in milliseconds.
      */
-    public long getTimestamp() {
+    @CurrentTimeMillisLong
+    public long getTimestampMillis() {
         return mTimestamp;
     }
 
@@ -174,6 +175,8 @@ public final class RangingData implements Parcelable {
 
     /**
      * Builder class for creating instances of {@link RangingData}.
+     *
+     * @hide
      */
     public static final class Builder {
         private int mRangingTechnology = Integer.MIN_VALUE;
@@ -256,7 +259,7 @@ public final class RangingData implements Parcelable {
          * @return This {@link Builder} instance.
          */
         @NonNull
-        public Builder setTimestamp(long timestamp) {
+        public Builder setTimestampMillis(long timestamp) {
             mTimestamp = timestamp;
             return this;
         }

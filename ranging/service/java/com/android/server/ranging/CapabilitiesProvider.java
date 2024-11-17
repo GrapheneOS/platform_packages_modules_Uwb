@@ -22,9 +22,10 @@ import android.os.RemoteCallbackList;
 import android.os.RemoteException;
 import android.ranging.IRangingCapabilitiesCallback;
 import android.ranging.RangingCapabilities;
+import android.ranging.RangingCapabilities.RangingTechnologyAvailability;
 import android.ranging.RangingCapabilities.TechnologyCapabilities;
 import android.ranging.RangingManager;
-import android.ranging.RangingManager.RangingTechnologyAvailability;
+import android.os.Binder;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -94,15 +95,24 @@ public class CapabilitiesProvider {
     public CapabilitiesProvider(RangingInjector rangingInjector) {
         mRangingInjector = rangingInjector;
         mCapabilityAdapters = new HashMap<>();
+    }
+
+    /**
+     * Registers an availability listener for each technology supported by the ranging API. This
+     * needs to be called after the system services for these technologies have been started, but
+     * before any capabilities callbacks are registered through the ranging api.
+     */
+    public synchronized void registerTechnologyAvailabilityListeners() {
+        Log.i(TAG, "Registering availability listeners for each technology");
         mCapabilityAdapters.put(
                 RangingManager.UWB,
                 new UwbCapabilitiesAdapter(mRangingInjector.getContext()));
         mCapabilityAdapters.put(
-                RangingManager.BT_CS,
+                RangingManager.BLE_CS,
                 new CsCapabilitiesAdapter());
         mCapabilityAdapters.put(
                 RangingManager.WIFI_NAN_RTT,
-                new RttCapabilitiesAdapter(rangingInjector.getContext())
+                new RttCapabilitiesAdapter(mRangingInjector.getContext())
         );
 
         for (@RangingManager.RangingTechnology int technology : mCapabilityAdapters.keySet()) {
@@ -133,12 +143,15 @@ public class CapabilitiesProvider {
         RangingCapabilities.Builder builder = new RangingCapabilities.Builder();
         for (@RangingManager.RangingTechnology int technology : mCapabilityAdapters.keySet()) {
             CapabilitiesAdapter adapter = mCapabilityAdapters.get(technology);
+            // Any calls to the corresponding technology stacks must be
+            // done with a clear calling identity.
+            long token = Binder.clearCallingIdentity();
             TechnologyCapabilities capabilities = adapter.getCapabilities();
-
             builder.addAvailability(technology, adapter.getAvailability());
             if (capabilities != null) {
                 builder.addCapabilities(capabilities);
             }
+            Binder.restoreCallingIdentity(token);
         }
         return builder;
     }
@@ -159,14 +172,18 @@ public class CapabilitiesProvider {
             RangingCapabilities capabilities = getCapabilities()
                     .addAvailability(mTechnology, availability)
                     .build();
-            for (int i = mCallbacks.beginBroadcast() - 1; i >= 0; i--) {
-                try {
-                    mCallbacks.getBroadcastItem(i).onRangingCapabilities(capabilities);
-                } catch (RemoteException e) {
-                    Log.w(TAG, "Failed to notify callback " + i + " of availability change");
+            synchronized (mCallbacks) {
+                int i = mCallbacks.beginBroadcast();
+                while (i > 0) {
+                    i--;
+                    try {
+                        mCallbacks.getBroadcastItem(i).onRangingCapabilities(capabilities);
+                    } catch (RemoteException e) {
+                        Log.w(TAG, "Failed to notify callback " + i + " of availability change");
+                    }
                 }
+                mCallbacks.finishBroadcast();
             }
-            mCallbacks.finishBroadcast();
         }
     }
 }

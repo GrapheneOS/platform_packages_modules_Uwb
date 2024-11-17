@@ -67,13 +67,16 @@ public class GenericDecoderTest {
     private static final byte[] TEST_GENERIC_SPECIFICATION_TLV_DATA_VER_2 =
             UwbUtil.getByteArray("C00101" // SUPPORTED_POWER_STATS_QUERY
                             + "C10103" // ANTENNA MODE CAPABILITIES
+                            + "EB0408000000" // MAX SUPPORTED SESSION COUNT
                             + FiraDecoderTest.TEST_FIRA_SPECIFICATION_TLV_STRING_VER_2
                             + TEST_CCC_SPECIFICATION_TLV_DATA_STRING
                             + TEST_RADAR_SPECIFICATION_TLV_DATA_STRING);
-    private static final int TEST_GENERIC_SPECIFICATION_TLV_NUM_PARAMS_VER_2 = 2
+    private static final int TEST_GENERIC_SPECIFICATION_TLV_NUM_PARAMS_VER_2 = 3
             + TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_2
             + TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS
             + TEST_RADAR_SPECIFICATION_TLV_NUM_PARAMS;
+
+    private static final int MAX_SUPPORTED_SESSION_COUNT = 8;
 
     @Mock private UwbInjector mUwbInjector;
     @Mock private DeviceConfigFacade mDeviceConfigFacade;
@@ -106,6 +109,8 @@ public class GenericDecoderTest {
                            PROTOCOL_VERSION_1_1);
         assertThat(genericSpecificationParams.hasPowerStatsSupport()).isTrue();
         assertThat(genericSpecificationParams.getAntennaModeCapabilities()).isEmpty();
+        assertThat(genericSpecificationParams.getMaxSupportedSessionCount())
+                .isEqualTo(GenericSpecificationParams.DEFAULT_MAX_SUPPORTED_SESSIONS_COUNT);
         FiraDecoderTest.verifyFiraSpecificationVersion1(
                 genericSpecificationParams.getFiraSpecificationParams());
         CccDecoderTest.verifyCccSpecification(
@@ -127,6 +132,8 @@ public class GenericDecoderTest {
                             PROTOCOL_VERSION_1_1);
         assertThat(genericSpecificationParams.hasPowerStatsSupport()).isTrue();
         assertThat(genericSpecificationParams.getAntennaModeCapabilities()).isEmpty();
+        assertThat(genericSpecificationParams.getMaxSupportedSessionCount())
+                .isEqualTo(GenericSpecificationParams.DEFAULT_MAX_SUPPORTED_SESSIONS_COUNT);
         FiraDecoderTest.verifyFiraSpecificationVersion1(
                 genericSpecificationParams.getFiraSpecificationParams());
         CccDecoderTest.verifyCccSpecification(
@@ -150,6 +157,8 @@ public class GenericDecoderTest {
         assertThat(genericSpecificationParams.getAntennaModeCapabilities()).containsExactly(
                 GenericParams.AntennaModeCapabilityFlag.HAS_OMNI_MODE_SUPPORT,
                 GenericParams.AntennaModeCapabilityFlag.HAS_DIRECTIONAL_MODE_SUPPORT);
+        assertThat(genericSpecificationParams.getMaxSupportedSessionCount()).isEqualTo(
+                MAX_SUPPORTED_SESSION_COUNT);
         FiraDecoderTest.verifyFiraSpecificationVersion2(
                 genericSpecificationParams.getFiraSpecificationParams());
         CccDecoderTest.verifyCccSpecification(
@@ -173,6 +182,8 @@ public class GenericDecoderTest {
         assertThat(genericSpecificationParams.getAntennaModeCapabilities()).containsExactly(
                 GenericParams.AntennaModeCapabilityFlag.HAS_OMNI_MODE_SUPPORT,
                 GenericParams.AntennaModeCapabilityFlag.HAS_DIRECTIONAL_MODE_SUPPORT);
+        assertThat(genericSpecificationParams.getMaxSupportedSessionCount()).isEqualTo(
+                MAX_SUPPORTED_SESSION_COUNT);
         FiraDecoderTest.verifyFiraSpecificationVersion2(
                 genericSpecificationParams.getFiraSpecificationParams());
         CccDecoderTest.verifyCccSpecification(
@@ -196,6 +207,8 @@ public class GenericDecoderTest {
                             PROTOCOL_VERSION_1_1);
         assertThat(genericSpecificationParams.hasPowerStatsSupport()).isFalse();
         assertThat(genericSpecificationParams.getAntennaModeCapabilities()).isEmpty();
+        assertThat(genericSpecificationParams.getMaxSupportedSessionCount())
+                .isEqualTo(GenericSpecificationParams.DEFAULT_MAX_SUPPORTED_SESSIONS_COUNT);
         FiraDecoderTest.verifyFiraSpecificationVersion1(
                 genericSpecificationParams.getFiraSpecificationParams());
         RadarDecoderTest.verifyRadarSpecification(
@@ -218,6 +231,8 @@ public class GenericDecoderTest {
                 mGenericDecoder.getParams(tlvDecoderBuffer, GenericSpecificationParams.class,
                             PROTOCOL_VERSION_1_1);
         assertThat(genericSpecificationParams.hasPowerStatsSupport()).isFalse();
+        assertThat(genericSpecificationParams.getMaxSupportedSessionCount())
+                .isEqualTo(GenericSpecificationParams.DEFAULT_MAX_SUPPORTED_SESSIONS_COUNT);
         assertThat(genericSpecificationParams.getAntennaModeCapabilities()).isEmpty();
         CccDecoderTest.verifyCccSpecification(
                 genericSpecificationParams.getCccSpecificationParams());
@@ -242,6 +257,8 @@ public class GenericDecoderTest {
                             PROTOCOL_VERSION_1_1);
         assertThat(genericSpecificationParams.hasPowerStatsSupport()).isFalse();
         assertThat(genericSpecificationParams.getAntennaModeCapabilities()).isEmpty();
+        assertThat(genericSpecificationParams.getMaxSupportedSessionCount())
+                .isEqualTo(GenericSpecificationParams.DEFAULT_MAX_SUPPORTED_SESSIONS_COUNT);
         FiraDecoderTest.verifyFiraSpecificationVersion1(
                 genericSpecificationParams.getFiraSpecificationParams());
         CccDecoderTest.verifyCccSpecification(

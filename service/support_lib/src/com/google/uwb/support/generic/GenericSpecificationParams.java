@@ -50,6 +50,7 @@ public class GenericSpecificationParams extends GenericParams {
     private final AliroSpecificationParams mAliroSpecificationParams;
     private final RadarSpecificationParams mRadarSpecificationParams;
     private final boolean mHasPowerStatsSupport;
+    private final int mMaxSupportedSessionCount;
     private final EnumSet<AntennaModeCapabilityFlag> mAntennaModeCapabilities;
 
     private static final String KEY_FIRA_SPECIFICATION_PARAMS = FiraParams.PROTOCOL_NAME;
@@ -58,6 +59,9 @@ public class GenericSpecificationParams extends GenericParams {
     private static final String KEY_RADAR_SPECIFICATION_PARAMS = RadarParams.PROTOCOL_NAME;
     private static final String KEY_POWER_STATS_QUERY_SUPPORT = "power_stats_query";
     private static final String KEY_SUPPORTED_ANTENNA_MODES = "supported_antenna_modes";
+    private static final String KEY_MAX_SUPPORTED_SESSION_COUNT = "max_supported_session_count";
+
+    public static final int DEFAULT_MAX_SUPPORTED_SESSIONS_COUNT = 5;
 
     private GenericSpecificationParams(Builder builder) {
         mFiraSpecificationParams = builder.mFiraSpecificationParams;
@@ -66,6 +70,7 @@ public class GenericSpecificationParams extends GenericParams {
         mRadarSpecificationParams = builder.mRadarSpecificationParams;
         mHasPowerStatsSupport = builder.mHasPowerStatsSupport;
         mAntennaModeCapabilities = builder.mAntennaModeCapabilities;
+        mMaxSupportedSessionCount = builder.mMaxSupportedSessionCount;
     }
 
     @Override
@@ -105,6 +110,10 @@ public class GenericSpecificationParams extends GenericParams {
         return mAntennaModeCapabilities;
     }
 
+    public int getMaxSupportedSessionCount() {
+        return mMaxSupportedSessionCount;
+    }
+
     public void setFiraSpecificationParams(FiraSpecificationParams params) {
         mFiraSpecificationParams = params;
     }
@@ -128,6 +137,7 @@ public class GenericSpecificationParams extends GenericParams {
         }
         bundle.putBoolean(KEY_POWER_STATS_QUERY_SUPPORT, mHasPowerStatsSupport);
         bundle.putInt(KEY_SUPPORTED_ANTENNA_MODES, FlagEnum.toInt(mAntennaModeCapabilities));
+        bundle.putInt(KEY_MAX_SUPPORTED_SESSION_COUNT, mMaxSupportedSessionCount);
         return bundle;
     }
 
@@ -146,6 +156,7 @@ public class GenericSpecificationParams extends GenericParams {
                 .setAntennaModeCapabilities(FlagEnum.toEnumSet(
                         bundle.getInt(KEY_SUPPORTED_ANTENNA_MODES, 0),
                         AntennaModeCapabilityFlag.values()))
+                .setMaxSupportedSessionCount(bundle.getInt(KEY_MAX_SUPPORTED_SESSION_COUNT))
                 .hasPowerStatsSupport(bundle.getBoolean(KEY_POWER_STATS_QUERY_SUPPORT));
 
         builder = builder.setFiraSpecificationParams(
@@ -183,6 +194,7 @@ public class GenericSpecificationParams extends GenericParams {
         private boolean mHasPowerStatsSupport = false;
         private EnumSet<AntennaModeCapabilityFlag> mAntennaModeCapabilities =
                 EnumSet.noneOf(AntennaModeCapabilityFlag.class);
+        private int mMaxSupportedSessionCount = DEFAULT_MAX_SUPPORTED_SESSIONS_COUNT;
 
         /**
          * Set FIRA specification params
@@ -234,6 +246,14 @@ public class GenericSpecificationParams extends GenericParams {
         public Builder setAntennaModeCapabilities(
                 Collection<AntennaModeCapabilityFlag> antennaModeCapabilities) {
             mAntennaModeCapabilities.addAll(antennaModeCapabilities);
+            return this;
+        }
+
+        /**
+         * Sets the maximum supported session count
+         */
+        public Builder setMaxSupportedSessionCount(int value) {
+            mMaxSupportedSessionCount = value;
             return this;
         }
 

@@ -18,6 +18,7 @@ package android.ranging;
 
 import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
+import android.annotation.IntRange;
 import android.annotation.NonNull;
 import android.content.AttributionSource;
 import android.os.CancellationSignal;
@@ -26,6 +27,7 @@ import android.ranging.params.DeviceHandle;
 import android.ranging.params.OobInitiatorRangingParams;
 import android.ranging.params.OobResponderRangingParams;
 import android.ranging.params.RangingParams;
+import android.ranging.params.RawResponderRangingParams;
 import android.util.Log;
 
 import com.android.ranging.flags.Flags;
@@ -49,7 +51,6 @@ import java.util.concurrent.Executor;
  * <p>This class implements {@link AutoCloseable}, ensuring that resources can be
  * automatically released when the session is closed.
  *
- * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 public final class RangingSession implements AutoCloseable {
@@ -81,9 +82,7 @@ public final class RangingSession implements AutoCloseable {
 
     /**
      * Starts the ranging session with the provided ranging preferences.
-     * <p>The {@link RangingSession.Callback#onRangingStarted(int)}
-     * (android.ranging.RangingSession)} method is called with
-     * {@link android.ranging.RangingManager.RangingTechnology}.
+     * <p>The {@link Callback#onOpened()} will be called when the session finishes starting.
      *
      * <p>The provided {@link RangingPreference} determines the configuration for the session.
      * A {@link CancellationSignal} is returned to allow the caller to cancel the session
@@ -134,6 +133,83 @@ public final class RangingSession implements AutoCloseable {
     }
 
     /**
+     * Adds a new device to an ongoing ranging session.
+     * <p>
+     * This method allows for adding a new device to an active ranging session using either
+     * raw or out-of-band (OOB) ranging parameters. Only devices represented by
+     * {@link RawResponderRangingParams} or {@link OobResponderRangingParams} are supported.
+     * If the provided {@link RangingParams} does not match one of these types, the addition fails
+     * and invokes {@link Callback#onStartFailed} with a reason of
+     * {@link Callback#REASON_UNSUPPORTED}.
+     * </p>
+     *
+     * @param deviceRangingParams the ranging parameters for the device to be added,
+     *                            which must be an instance of either
+     *                            {@link RawResponderRangingParams}
+     *                            or {@link OobResponderRangingParams}.
+     *
+     * @apiNote If the underlying ranging technology cannot support this dynamic addition, failure
+     * will be indicated via {@code Callback#onStartFailed(REASON_UNSUPPORTED, RangingDevice)}
+     *
+     * @hide
+     */
+    public void addDeviceToRangingSession(@NonNull RangingParams deviceRangingParams) {
+        try {
+            if (deviceRangingParams instanceof RawResponderRangingParams) {
+                mRangingAdapter.addRawDevice(mSessionHandle,
+                        (RawResponderRangingParams) deviceRangingParams);
+            } else if (deviceRangingParams instanceof OobResponderRangingParams) {
+                mRangingAdapter.addOobDevice(mSessionHandle,
+                        (OobResponderRangingParams) deviceRangingParams);
+            } else {
+                mCallback.onStartFailed(Callback.REASON_UNSUPPORTED, null);
+            }
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Removes a specific device from an ongoing ranging session.
+     * <p>
+     * This method removes a specified device from the active ranging session, stopping
+     * further ranging operations for that device. The operation is handled by the system
+     * server and may throw a {@link RemoteException} in case of server-side communication
+     * issues.
+     * </p>
+     *
+     * @param rangingDevice the device to be removed from the session.
+     * @apiNote Currently, this API is supported only for UWB multicast session if using
+     * {@link RangingParams#RANGING_SESSION_RAW}.
+     *
+     * @hide
+     */
+    public void removeDeviceFromRangingSession(@NonNull RangingDevice rangingDevice) {
+        try {
+            mRangingAdapter.removeDevice(mSessionHandle, rangingDevice);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Reconfigures the ranging interval for the current session by setting the interval
+     * skip count. The {@code intervalSkipCount} defines how many intervals should be skipped
+     * between successive ranging rounds. Valid values range from 0 to 255.
+     *
+     * @param intervalSkipCount the number of intervals to skip, ranging from 0 to 255.
+     *
+     * @hide
+     */
+    public void reconfigureRangingInterval(@IntRange(from = 0, to = 255) int intervalSkipCount) {
+        try {
+            mRangingAdapter.reconfigureRangingInterval(mSessionHandle, intervalSkipCount);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
      * Stops the ranging session.
      *
      * <p>This method releases any ongoing ranging operations. If the operation fails,
@@ -150,23 +226,43 @@ public final class RangingSession implements AutoCloseable {
     /**
      * @hide
      */
-    public void onRangingStarted(int technology) {
-        mExecutor.execute(() -> mCallback.onStarted(technology));
+    public void onOpened() {
+        mExecutor.execute(mCallback::onOpened);
     }
 
     /**
      * @hide
      */
-    public void onRangingClosed(int reason) {
+    public void onOpenFailed(@Callback.Reason int reason) {
+        mExecutor.execute(() -> mCallback.onOpenFailed(reason));
+    }
+
+    /**
+     * @hide
+     */
+    public void onStarted(RangingDevice peer, @RangingManager.RangingTechnology int technology) {
+        mExecutor.execute(() -> mCallback.onStarted(peer, technology));
+    }
+
+    /**
+     * @hide
+     */
+    public void onResults(RangingDevice peer, RangingData data) {
+        mExecutor.execute(() -> mCallback.onResults(peer, data));
+    }
+
+    /**
+     * @hide
+     */
+    public void onStopped(RangingDevice peer, @RangingManager.RangingTechnology int technology) {
+        mExecutor.execute(() -> mCallback.onStopped(peer, technology));
+    }
+
+    /**
+     * @hide
+     */
+    public void onClosed(@Callback.Reason int reason) {
         mExecutor.execute(() -> mCallback.onClosed(reason));
-        mTransportHandles.clear();
-    }
-
-    /**
-     * @hide
-     */
-    public void onData(RangingDevice device, RangingData data) {
-        mExecutor.execute(() -> mCallback.onResults(device, data));
     }
 
     /**
@@ -199,75 +295,119 @@ public final class RangingSession implements AutoCloseable {
         @IntDef(value = {
                 REASON_UNKNOWN,
                 REASON_LOCAL_REQUEST,
-                REASON_SYSTEM_POLICY,
                 REASON_UNSUPPORTED,
+                REASON_SYSTEM_POLICY,
+                REASON_NO_PEERS_FOUND,
         })
         @interface Reason {
         }
 
         /**
-         * Indicates that the session was closed or failed to open due to an unknown reason
+         * Indicates that the session was closed due to an unknown reason.
          */
         int REASON_UNKNOWN = 0;
 
         /**
-         * Indicates that the session was closed or failed to open because
-         * {@link AutoCloseable#close()} or {@link RangingSession#stop()} was called
+         * Indicates that the session was closed because {@link AutoCloseable#close()} or
+         * {@link RangingSession#stop()} was called.
          */
         int REASON_LOCAL_REQUEST = 1;
 
         /**
-         * Indicates that the local system policy caused the change, such
-         * as privacy policy, power management policy, permissions, and more.
+         * Indicates that the session was closed at the request of a remote peer.
+         * @hide
          */
-        int REASON_SYSTEM_POLICY = 2;
+        // TODO(shreshtabm): Add to @{link Reason} defined above once new callbacks are approved
+        int REASON_REMOTE_REQUEST = 2;
 
         /**
-         * Indicates that the requested ranging operation is not supported.
+         * Indicates that the session closed because the provided session parameters were not
+         * supported.
          */
         int REASON_UNSUPPORTED = 3;
 
+        // TODO(shreshtabm): Remove once new callbacks are approved
+        int REASON_SYSTEM_POLICY = 2;
+
         /**
-         * Called when the ranging session starts successfully.
-         *
-         * @param technology {@link android.ranging.RangingManager.RangingTechnology }
-         *                   the ranging technology used for the session.
+         * Indicates that the local system policy forced the session to close, such
+         * as privacy policy, power management policy, permissions, and more.
          * @hide
          */
-        void onStarted(@RangingManager.RangingTechnology int technology);
+        // TODO(shreshtabm): Rename to REASON_SYSTEM_POLICY once new callbacks are approved
+        int _REASON_SYSTEM_POLICY = 4;
 
         /**
-         * Called when the ranging session fails to start.
-         *
-         * @param reason the reason for the failure, limited to values defined by {@link Reason}.
+         * Indicates that the session was closed because none of the specified peers were found.
+         * @hide
          */
-        void onStartFailed(@Reason int reason, RangingDevice device);
+        int REASON_NO_PEERS_FOUND = 5;
 
         /**
-         * Called when the ranging session is closed.
+         * Called when the ranging session opens successfully.
+         * @hide
+         */
+        default void onOpened() {}
+
+        /**
+         * Called when the ranging session failed to open.
+         *
+         * @param reason the reason for the failure, limited to values defined by
+         *               {@link Reason}.
+         * @hide
+         */
+        default void onOpenFailed(@Reason int reason) {}
+
+        /**
+         * Called when ranging has started with a particular peer using a particular technology
+         * during an ongoing session.
+         *
+         * @param peer       {@link RangingDevice} the peer with which ranging has started.
+         * @param technology {@link android.ranging.RangingManager.RangingTechnology}
+         *                   the ranging technology that started.
+         * @hide
+         */
+        default void onStarted(
+                @NonNull RangingDevice peer, @RangingManager.RangingTechnology int technology) {}
+
+        /**
+         * Called when ranging data has been received from a peer.
+         *
+         * @param peer {@link RangingDevice} the peer from which ranging data was received.
+         * @param data {@link RangingData} the received.
+         */
+        void onResults(@NonNull RangingDevice peer, @NonNull RangingData data);
+
+        /**
+         * Called when ranging has stopped with a particular peer using a particular technology
+         * during an ongoing session.
+         *
+         * @param peer       {@link RangingDevice} the peer with which ranging has stopped.
+         * @param technology {@link android.ranging.RangingManager.RangingTechnology}
+         *                   the ranging technology that stopped.
+         * @hide
+         */
+        default void onStopped(
+                @NonNull RangingDevice peer, @RangingManager.RangingTechnology int technology
+        ) {}
+
+        /**
+         * Called when the ranging session has closed.
          *
          * @param reason the reason why the session was closed, limited to values
          *               defined by {@link Reason}.
          */
         void onClosed(@Reason int reason);
 
-        /*public void onRangingStarted(@NonNull RangingStartedParameters
-                params);*/
 
-        /**
-         * Called when ranging operations stop for a device.
-         *
-         * @param device the {@link RangingDevice} for which the ranging operation stopped.
-         */
-        void onRangingStopped(@NonNull RangingDevice device);
+        // TODO(shreshtabm): Remove once new callbacks are approved
+        void onStartFailed(int reason, @NonNull android.ranging.RangingDevice peer);
 
-        /**
-         * Called when ranging data is available for the ranging device.
-         *
-         * @param device the {@link RangingDevice} for which ranging data was received.
-         * @param data   the {@link RangingData} received during the ranging session.
-         */
-        void onResults(@NonNull RangingDevice device, @NonNull RangingData data);
+        // TODO(shreshtabm): Remove once new callbacks are approved
+        void onStarted(int technology);
+
+        // TODO(shreshtabm): Remove once new callbacks are approved
+        void onStopped(@NonNull android.ranging.RangingDevice peer);
     }
 
     class TransportHandleReceiveCallback implements ITransportHandle.ReceiveCallback {

@@ -16,12 +16,23 @@
 
 package com.android.server.ranging;
 
+import static android.ranging.RangingSession.Callback.REASON_LOCAL_REQUEST;
+import static android.ranging.RangingSession.Callback.REASON_NO_PEERS_FOUND;
+import static android.ranging.RangingSession.Callback.REASON_SYSTEM_POLICY;
+import static android.ranging.RangingSession.Callback.REASON_UNKNOWN;
+import static android.ranging.RangingSession.Callback.REASON_UNSUPPORTED;
+
 import android.content.AttributionSource;
+import android.os.RemoteException;
 import android.ranging.IOobSendDataListener;
 import android.ranging.IRangingCallbacks;
 import android.ranging.IRangingCapabilitiesCallback;
 import android.ranging.OobHandle;
+import android.ranging.RangingData;
+import android.ranging.RangingDevice;
+import android.ranging.RangingManager;
 import android.ranging.RangingPreference;
+import android.ranging.RangingSession.Callback;
 import android.ranging.SessionHandle;
 import android.ranging.params.RawInitiatorRangingParams;
 import android.ranging.params.RawRangingDevice;
@@ -44,6 +55,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RangingServiceManager {
     private static final String TAG = RangingServiceManager.class.getSimpleName();
@@ -85,13 +97,21 @@ public class RangingServiceManager {
 //                        .build());
 
         RangingSession session = new RangingSession(
-                mRangingInjector, handle, callbacks, mAdapterExecutor);
+                mRangingInjector,
+                new SessionListener(handle, callbacks),
+                mAdapterExecutor
+        );
         mSessions.put(handle, session);
         session.start(getPeerConfigs(preference));
     }
 
     public void stopRanging(SessionHandle handle) {
-        mSessions.remove(handle).stop();
+        RangingSession session = mSessions.get(handle);
+        if (session == null) {
+            Log.e(TAG, "stopRanging for nonexistent session");
+            return;
+        }
+        session.stop();
     }
 
     /**
@@ -170,6 +190,108 @@ public class RangingServiceManager {
         }
     }
 
+    /**
+     * Listens for peer-specific events within a session and translates them to
+     * {@link IRangingCallbacks} calls.
+     */
+    public class SessionListener {
+        private final SessionHandle mSessionHandle;
+        private final IRangingCallbacks mRangingCallbacks;
+        private final AtomicBoolean mIsSessionStarted;
+
+        SessionListener(SessionHandle sessionHandle, IRangingCallbacks callbacks) {
+            mSessionHandle = sessionHandle;
+            mRangingCallbacks = callbacks;
+            mIsSessionStarted = new AtomicBoolean(false);
+        }
+
+        public void onPeerStarted() {
+            if (!mIsSessionStarted.getAndSet(true)) {
+                try {
+                    mRangingCallbacks.onOpened(mSessionHandle);
+                } catch (RemoteException e) {
+                    Log.e(TAG, "onOpened callback failed: " + e);
+                }
+            }
+        }
+
+        /**
+         * Signals that ranging with the provided peer has stopped in this session. Called by a
+         * {@link RangingPeer} once all technologies used with that peer have stopped.
+         */
+        public void onPeerStopped(
+                @NonNull RangingDevice peer, @RangingAdapter.Callback.StoppedReason int reason
+        ) {
+            RangingSession session = mSessions.get(mSessionHandle);
+            if (session == null) {
+                Log.e(TAG, "onPeerStopped for nonexistent session");
+                return;
+            }
+
+            if (session.removePeerAndCheckEmpty(peer)) {
+                try {
+                    mSessions.remove(mSessionHandle);
+                    // If the session is empty, notify framework callback that it has closed (or
+                    // that it failed to open in the first place).
+                    if (mIsSessionStarted.get()) {
+                        mRangingCallbacks.onClosed(mSessionHandle, convertReason(reason));
+                    } else {
+                        mRangingCallbacks.onOpenFailed(mSessionHandle, convertReason(reason));
+                    }
+                } catch (RemoteException e) {
+                    Log.e(TAG, "onClosed callback failed: " + e);
+                }
+            }
+        }
+
+        public void onTechnologyStarted(
+                @NonNull RangingDevice peer, @RangingManager.RangingTechnology int technology
+        ) {
+            try {
+                mRangingCallbacks.onStarted(mSessionHandle, peer, technology);
+            } catch (RemoteException e) {
+                Log.e(TAG, "onTechnologyStarted callback failed: " + e);
+            }
+        }
+
+        public void onTechnologyStopped(
+                @NonNull RangingDevice peer, @RangingManager.RangingTechnology int technology
+        ) {
+            try {
+                mRangingCallbacks.onStopped(mSessionHandle, peer, technology);
+            } catch (RemoteException e) {
+                Log.e(TAG, "onTechnologyStopped callback failed: " + e);
+            }
+        }
+
+        public void onResults(
+                @NonNull RangingDevice peer, @NonNull RangingData data
+        ) {
+            try {
+                mRangingCallbacks.onResults(mSessionHandle, peer, data);
+            } catch (RemoteException e) {
+                Log.e(TAG, "onData callback failed: " + e);
+            }
+        }
+
+        private @Callback.Reason int convertReason(
+                @RangingAdapter.Callback.StoppedReason int reason
+        ) {
+            switch (reason) {
+                case RangingAdapter.Callback.StoppedReason.REQUESTED:
+                    return REASON_LOCAL_REQUEST;
+                case RangingAdapter.Callback.StoppedReason.FAILED_TO_START:
+                    return REASON_UNSUPPORTED;
+                case RangingAdapter.Callback.StoppedReason.LOST_CONNECTION:
+                    return REASON_NO_PEERS_FOUND;
+                case RangingAdapter.Callback.StoppedReason.SYSTEM_POLICY:
+                    return REASON_SYSTEM_POLICY;
+                default:
+                    return REASON_UNKNOWN;
+            }
+        }
+    }
+
     private @NonNull ImmutableList<RangingPeerConfig> getPeerConfigs(
             @NonNull RangingPreference preference
     ) {
@@ -193,7 +315,7 @@ public class RangingServiceManager {
                 .setDeviceRole(preference.getDeviceRole())
                 .setSensorFusionConfig(preference.getSensorFusionParameters())
                 .setDataNotificationConfig(preference.getDataNotificationConfig())
-                .setAoaNeeded(preference.isAoaNeeded())
+                .setAoaNeeded(preference.isAngleOfArrivalNeeded())
                 .build();
     }
 }

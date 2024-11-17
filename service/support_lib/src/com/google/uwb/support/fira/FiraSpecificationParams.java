@@ -654,7 +654,8 @@ public class FiraSpecificationParams extends FiraParams {
         private EnumSet<SchedulingModeCapabilitiesFlag> mSchedulingModeCapabilities =
                 EnumSet.of(
                         SchedulingModeCapabilitiesFlag.HAS_CONTENTION_BASED_RANGING_SUPPORT,
-                        SchedulingModeCapabilitiesFlag.HAS_TIME_SCHEDULED_RANGING_SUPPORT);
+                        SchedulingModeCapabilitiesFlag.HAS_TIME_SCHEDULED_RANGING_SUPPORT,
+                        SchedulingModeCapabilitiesFlag.HAS_HYBRID_SCHEDULED_RANGING_SUPPORT);
 
         private EnumSet<CcConstraintLengthCapabilitiesFlag> mCcConstraintLengthCapabilities =
                 EnumSet.of(

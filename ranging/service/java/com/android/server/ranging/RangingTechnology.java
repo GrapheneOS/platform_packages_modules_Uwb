@@ -17,6 +17,7 @@
 package com.android.server.ranging;
 
 import android.content.Context;
+import android.ranging.RangingManager;
 
 import com.android.server.ranging.cs.CsCapabilitiesAdapter;
 import com.android.server.ranging.rtt.RttCapabilitiesAdapter;
@@ -42,7 +43,7 @@ public enum RangingTechnology {
         this.value = value;
     }
 
-    public int getValue() {
+    public @RangingManager.RangingTechnology int getValue() {
         return value;
     }
 

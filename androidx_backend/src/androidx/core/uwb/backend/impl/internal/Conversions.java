@@ -29,6 +29,8 @@ import android.uwb.RangingSession;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
+import com.google.uwb.support.fira.FiraOnControleeAddRemoveParams;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -144,7 +146,7 @@ final class Conversions {
     }
 
     @RangingSessionCallback.RangingSuspendedReason
-    static int convertReason(int reason) {
+    static int toRangingSuspendedReason(int reason) {
         if (reason == RangingSession.Callback.REASON_BAD_PARAMETERS) {
             return RangingSessionCallback.REASON_WRONG_PARAMETERS;
         }
@@ -170,6 +172,16 @@ final class Conversions {
         }
 
         return RangingSessionCallback.REASON_UNKNOWN;
+    }
+
+    @RangingSessionCallback.PeerDisconnectedReason
+    static int toPeerDisconnectedReason(@FiraOnControleeAddRemoveParams.Reason int reason) {
+        switch (reason) {
+            case FiraOnControleeAddRemoveParams.Reason.LOST_CONNECTION:
+                return RangingSessionCallback.PeerDisconnectedReason.SYSTEM_POLICY;
+            default:
+                return RangingSessionCallback.PeerDisconnectedReason.UNKNOWN;
+        }
     }
 
     @UwbAvailabilityCallback.UwbStateChangeReason

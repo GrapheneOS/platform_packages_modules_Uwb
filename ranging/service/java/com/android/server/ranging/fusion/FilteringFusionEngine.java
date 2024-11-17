@@ -81,15 +81,15 @@ public class FilteringFusionEngine extends FusionEngine {
 
         UwbFilterEngine engine = mFilters.get(
                 RangingTechnology.TECHNOLOGIES.get(data.getRangingTechnology()));
-        engine.add(in, data.getTimestamp());
-        SphericalVector.Annotated out = engine.compute(data.getTimestamp());
+        engine.add(in, data.getTimestampMillis());
+        SphericalVector.Annotated out = engine.compute(data.getTimestampMillis());
         if (out == null) {
             return;
         }
 
         RangingData.Builder filteredData = new RangingData.Builder()
                 .setRangingTechnology(data.getRangingTechnology())
-                .setTimestamp(data.getTimestamp())
+                .setTimestampMillis(data.getTimestampMillis())
                 .setDistance(
                         new RangingMeasurement.Builder()
                                 .setMeasurement(out.distance)

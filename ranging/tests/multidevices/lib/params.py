@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 import dataclasses
 from enum import IntEnum
 from typing import List, Optional
-from lib.uwb import UwbRangingParams
 from lib.rtt import RttRangingParams
+from lib.uwb import UwbRangingParams
 
 
 class DeviceRole(IntEnum):

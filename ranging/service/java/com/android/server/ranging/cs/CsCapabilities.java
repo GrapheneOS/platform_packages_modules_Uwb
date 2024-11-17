@@ -29,7 +29,7 @@ public final class CsCapabilities implements RangingCapabilities.TechnologyCapab
 
     @Override
     public @RangingManager.RangingTechnology int getTechnology() {
-        return RangingManager.BT_CS;
+        return RangingManager.BLE_CS;
     }
 
     // // CS data

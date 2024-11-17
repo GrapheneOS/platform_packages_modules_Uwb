@@ -18,6 +18,7 @@ package com.android.server.uwb.params;
 
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_ANTENNA_MODES;
 import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_POWER_STATS_QUERY;
+import static com.android.server.uwb.config.CapabilityParam.SUPPORTED_MAX_SESSION_COUNT;
 
 import android.util.Log;
 
@@ -104,6 +105,14 @@ public class GenericDecoder extends TlvDecoder {
         } catch (IllegalArgumentException e) {
             // Do nothing. Mask is set to 0 by default in builder.
         }
+
+        try {
+            int maxSupportedSessionCount = tlvs.getInt(SUPPORTED_MAX_SESSION_COUNT);
+            builder.setMaxSupportedSessionCount(maxSupportedSessionCount);
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "SUPPORTED_MAX_SESSION_COUNT not found");
+        }
+
         return builder.build();
     }
 }

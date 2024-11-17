@@ -17,12 +17,17 @@
 package android.ranging.params;
 
 import android.annotation.FlaggedApi;
+import android.annotation.NonNull;
 import android.os.Parcel;
 import android.os.Parcelable;
 
 import com.android.ranging.flags.Flags;
 
 /**
+ * Represents the parameters for an Out-of-Band (OOB) responder in a ranging session.
+ * This class contains configuration and device handle information for establishing
+ * a ranging session with an initiator.
+ *
  * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
@@ -31,22 +36,23 @@ public class OobResponderRangingParams extends RangingParams implements Parcelab
     private final DeviceHandle mDeviceHandle;
 
     private OobResponderRangingParams(Builder builder) {
-        mRangingSessionType = RangingParams.RANGING_SESSION_OOB;
+        setRangingSessionType(RangingParams.RANGING_SESSION_OOB);
         mDeviceHandle = builder.mDeviceHandle;
     }
 
 
     protected OobResponderRangingParams(Parcel in) {
-        mRangingSessionType = in.readInt();
+        setRangingSessionType(in.readInt());
         mDeviceHandle = in.readParcelable(DeviceHandle.class.getClassLoader(), DeviceHandle.class);
     }
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeInt(mRangingSessionType);
+        dest.writeInt(getRangingSessionType());
         dest.writeParcelable(mDeviceHandle, flags);
     }
 
+    @NonNull
     public static final Creator<OobResponderRangingParams> CREATOR =
             new Creator<OobResponderRangingParams>() {
                 @Override
@@ -61,8 +67,11 @@ public class OobResponderRangingParams extends RangingParams implements Parcelab
             };
 
     /**
-     * Returns the device handle.
+     * Returns the DeviceHandle associated with this OOB responder.
+     *
+     * @return The DeviceHandle of the OOB responder.
      */
+    @NonNull
     public DeviceHandle getDeviceHandle() {
         return mDeviceHandle;
     }
@@ -72,15 +81,27 @@ public class OobResponderRangingParams extends RangingParams implements Parcelab
         return 0;
     }
 
-
+    /**
+     * Builder class for creating instances of {@link OobResponderRangingParams}.
+     */
     public static final class Builder {
-        private DeviceHandle mDeviceHandle;
+        private final DeviceHandle mDeviceHandle;
 
-        public Builder setDeviceHandle(DeviceHandle deviceHandle) {
+        /**
+         * Constructs a new Builder instance with the specified DeviceHandle.
+         *
+         * @param deviceHandle The DeviceHandle to associate with this OOB responder.
+         */
+        public Builder(DeviceHandle deviceHandle) {
             mDeviceHandle = deviceHandle;
-            return this;
         }
 
+        /**
+         * Builds an instance of {@link OobResponderRangingParams} with the provided parameters.
+         *
+         * @return A new OobResponderRangingParams instance.
+         */
+        @NonNull
         public OobResponderRangingParams build() {
             return new OobResponderRangingParams(this);
         }

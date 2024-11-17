@@ -16,8 +16,10 @@
 
 package com.android.server.ranging.cs;
 
+import static android.ranging.RangingCapabilities.NOT_SUPPORTED;
+
 import android.content.Context;
-import android.ranging.RangingManager.RangingTechnologyAvailability;
+import android.ranging.RangingCapabilities.RangingTechnologyAvailability;
 
 import androidx.annotation.Nullable;
 
@@ -30,7 +32,7 @@ public class CsCapabilitiesAdapter extends CapabilitiesAdapter {
 
     @Override
     public @RangingTechnologyAvailability int getAvailability() {
-        return RangingTechnologyAvailability.NOT_SUPPORTED;
+        return NOT_SUPPORTED;
     }
 
     @Override

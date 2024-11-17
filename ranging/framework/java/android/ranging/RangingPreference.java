@@ -23,6 +23,7 @@ import android.annotation.Nullable;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.ranging.params.DataNotificationConfig;
+import  android.ranging.params.RangingParams;
 import android.ranging.params.SensorFusionParams;
 
 import com.android.ranging.flags.Flags;
@@ -38,7 +39,6 @@ import java.lang.annotation.RetentionPolicy;
  * and data notification configurations. It provides a {@link Builder} to construct
  * an instance with custom configurations.</p>
  *
- * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 public final class RangingPreference implements Parcelable {
@@ -61,32 +61,32 @@ public final class RangingPreference implements Parcelable {
 
     @DeviceRole
     private final int mDeviceRole;
-    private final android.ranging.params.RangingParams mRangingParameters;
-    private final android.ranging.params.SensorFusionParams mFusionParameters;
+    private final RangingParams mRangingParameters;
+    private final SensorFusionParams mFusionParameters;
 
-    private final android.ranging.params.DataNotificationConfig mDataNotificationConfig;
-    private final boolean mIsAoaNeeded;
+    private final DataNotificationConfig mDataNotificationConfig;
+    private final boolean mIsAngleOfArrivalNeeded;
 
     private RangingPreference(Builder builder) {
         mDeviceRole = builder.mDeviceRole;
         mRangingParameters = builder.mRangingParameters;
         mDataNotificationConfig = builder.mDataNotificationConfig;
         mFusionParameters = builder.mFusionParameters;
-        mIsAoaNeeded = builder.mIsAoaNeeded;
+        mIsAngleOfArrivalNeeded = builder.mIsAngleOfArrivalNeeded;
     }
 
     private RangingPreference(Parcel in) {
         mDeviceRole = in.readInt();
         mRangingParameters = in.readParcelable(
-                android.ranging.params.RangingParams.class.getClassLoader(),
-                android.ranging.params.RangingParams.class);
+                RangingParams.class.getClassLoader(),
+                RangingParams.class);
         mFusionParameters = in.readParcelable(
-                android.ranging.params.SensorFusionParams.class.getClassLoader(),
-                android.ranging.params.SensorFusionParams.class);
+                SensorFusionParams.class.getClassLoader(),
+                SensorFusionParams.class);
         mDataNotificationConfig = in.readParcelable(
-                android.ranging.params.DataNotificationConfig.class.getClassLoader(),
-                android.ranging.params.DataNotificationConfig.class);
-        mIsAoaNeeded = in.readBoolean();
+                DataNotificationConfig.class.getClassLoader(),
+                DataNotificationConfig.class);
+        mIsAngleOfArrivalNeeded = in.readBoolean();
     }
 
     @NonNull
@@ -110,10 +110,10 @@ public final class RangingPreference implements Parcelable {
     }
 
     /**
-     * Returns whether Aoa was requested by the app.
+     * Returns whether Angle-of-arrival was requested by the app.
      */
-    public boolean isAoaNeeded() {
-        return mIsAoaNeeded;
+    public boolean isAngleOfArrivalNeeded() {
+        return mIsAngleOfArrivalNeeded;
     }
 
     /**
@@ -122,27 +122,27 @@ public final class RangingPreference implements Parcelable {
      * @return the {@link android.ranging.params.RangingParams} or {@code null} if not set.
      */
     @Nullable
-    public android.ranging.params.RangingParams getRangingParameters() {
+    public RangingParams getRangingParameters() {
         return mRangingParameters;
     }
 
     /**
      * Returns the sensor fusion parameters used for this preference.
      *
-     * @return a non-null {@link android.ranging.params.SensorFusionParams} instance.
+     * @return a non-null {@link SensorFusionParams} instance.
      */
     @NonNull
-    public android.ranging.params.SensorFusionParams getSensorFusionParameters() {
+    public SensorFusionParams getSensorFusionParameters() {
         return mFusionParameters;
     }
 
     /**
      * Returns the data notification configuration for this preference.
      *
-     * @return a non-null {@link android.ranging.params.DataNotificationConfig} instance.
+     * @return a non-null {@link DataNotificationConfig} instance.
      */
     @NonNull
-    public android.ranging.params.DataNotificationConfig getDataNotificationConfig() {
+    public DataNotificationConfig getDataNotificationConfig() {
         return mDataNotificationConfig;
     }
 
@@ -157,7 +157,7 @@ public final class RangingPreference implements Parcelable {
         dest.writeParcelable(mRangingParameters, flags);
         dest.writeParcelable(mFusionParameters, flags);
         dest.writeParcelable(mDataNotificationConfig, flags);
-        dest.writeBoolean(mIsAoaNeeded);
+        dest.writeBoolean(mIsAngleOfArrivalNeeded);
     }
 
     /**
@@ -166,34 +166,30 @@ public final class RangingPreference implements Parcelable {
     public static final class Builder {
         @DeviceRole
         private int mDeviceRole;
-        private android.ranging.params.RangingParams mRangingParameters;
-        private android.ranging.params.DataNotificationConfig mDataNotificationConfig;
-        private android.ranging.params.SensorFusionParams mFusionParameters;
-        private boolean mIsAoaNeeded = false;
+        private RangingParams mRangingParameters;
+        private DataNotificationConfig mDataNotificationConfig;
+        private SensorFusionParams mFusionParameters;
+        private boolean mIsAngleOfArrivalNeeded = false;
 
         /**
-         * Sets the role of the device within the session.
+         * Creates a Builder instance with the required device role.
          *
-         * @param role the role of the device, either {@link DEVICE_ROLE_RESPONDER or
-         *             {@link DEVICE_ROLE_INITIATOR}.
-         * @return this Builder instance.
+         * @param role the role of the device in {@link DeviceRole}
          */
-        @NonNull
-        public Builder setDeviceRole(@DeviceRole int role) {
+        public Builder(@DeviceRole int role) {
             mDeviceRole = role;
-            return this;
         }
 
         /**
          * Sets the ranging parameters for this preference.
          *
-         * @param rangingParameters the {@link android.ranging.params.RangingParams} to use.
+         * @param rangingParameters the {@link RangingParams} to use.
          * @return the builder instance.
          * @throws IllegalArgumentException if the uwbParameters is null.
          */
         @NonNull
         public Builder setRangingParameters(
-                @NonNull android.ranging.params.RangingParams rangingParameters) {
+                @NonNull RangingParams rangingParameters) {
             mRangingParameters = rangingParameters;
             return this;
         }
@@ -201,13 +197,13 @@ public final class RangingPreference implements Parcelable {
         /**
          * Sets the sensor fusion parameters for this preference.
          *
-         * @param parameters the {@link android.ranging.params.SensorFusionParams} to use.
+         * @param parameters the {@link SensorFusionParams} to use.
          * @return the builder instance.
          * @throws IllegalArgumentException if the parameters is null.
          */
         @NonNull
         public Builder setSensorFusionParameters(
-                @NonNull android.ranging.params.SensorFusionParams parameters) {
+                @NonNull SensorFusionParams parameters) {
             mFusionParameters = parameters;
             return this;
         }
@@ -215,34 +211,35 @@ public final class RangingPreference implements Parcelable {
         /**
          * Sets the data notification configuration for this preference.
          *
-         * @param config the {@link android.ranging.params.DataNotificationConfig} to use.
+         * @param config the {@link DataNotificationConfig} to use.
          * @return the builder instance for chaining.
          * @throws IllegalArgumentException if the config is null.
          */
         @NonNull
         public Builder setDataNotificationConfig(
-                @NonNull android.ranging.params.DataNotificationConfig config) {
+                @NonNull DataNotificationConfig config) {
             mDataNotificationConfig = config;
             return this;
         }
 
         /**
          * Sets whether Angle of Arrival (AoA) is required for the ranging operation.
-         *
-         * @param isAoaNeeded {@code true} if AoA data is required; {@code false} otherwise.
+         * <p> Defaults to false
+         * @param isAngleOfArrivalNeeded {@code true} if AoA data is required; {@code false}
+         *                                          otherwise.
          * @return The {@link Builder} instance.
          */
         @NonNull
-        public Builder setAoaNeeded(boolean isAoaNeeded) {
-            mIsAoaNeeded = isAoaNeeded;
+        public Builder setAngleOfArrivalNeeded(boolean isAngleOfArrivalNeeded) {
+            mIsAngleOfArrivalNeeded = isAngleOfArrivalNeeded;
             return this;
         }
 
         /**
          * Builds the {@code RangingPreference} instance.
          *
-         * <p>If the {@link android.ranging.params.DataNotificationConfig} or
-         * {@link android.ranging.params.SensorFusionParams}
+         * <p>If the {@link DataNotificationConfig} or
+         * {@link SensorFusionParams}
          * are not set, default instances will be used.</p>
          *
          * @return a new {@code RangingPreference} instance.

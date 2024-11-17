@@ -16,17 +16,22 @@
 
 package android.ranging.cs;
 
+import static android.ranging.params.RawRangingDevice.UPDATE_RATE_NORMAL;
+
 import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
 import android.annotation.NonNull;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.ranging.cs.CsRangingCapabilities.SecurityLevel;
 import android.ranging.params.RawRangingDevice;
+import android.ranging.params.RawRangingDevice.RangingUpdateRate;
 
 import com.android.ranging.flags.Flags;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.Objects;
 
 /**
  * CsRangingParams encapsulates the parameters required for a bluetooth channel sounding ranging
@@ -121,6 +126,7 @@ public final class CsRangingParams implements Parcelable {
         dest.writeInt(mSecurityLevel);
     }
 
+    @NonNull
     public static final Creator<CsRangingParams> CREATOR = new Creator<CsRangingParams>() {
         @Override
         public CsRangingParams createFromParcel(Parcel in) {
@@ -144,37 +150,41 @@ public final class CsRangingParams implements Parcelable {
     }
 
     /**
-     * Returns the reporting frequency.
+     * Returns the ranging update rate.
      *
-     * @return one of {@link RawRangingDevice.RangingUpdateRate}.
+     * @return ranging update rate.
      */
+    @RangingUpdateRate
     public int getRangingUpdateRate() {
         return mRangingUpdateRate;
     }
 
     /**
-     * Returns the duration of the ranging session in seconds.
+     * Returns the sight type for this ranging session.
      *
-     * @return the duration in seconds.
+     * @return the sight type
      */
+    @SightType
     public int getSightType() {
         return mSightType;
     }
 
     /**
-     * Returns the sight type for the ranging session.
+     * Returns the location type for the ranging session.
      *
-     * @return one of {@link SightType}.
+     * @return the location type.
      */
+    @LocationType
     public int getLocationType() {
         return mLocationType;
     }
 
     /**
-     * Returns the location type for the ranging session.
+     * Returns the security level for the ranging session.
      *
-     * @return one of {@link LocationType}.
+     * @return the security level
      */
+    @SecurityLevel
     public int getSecurityLevel() {
         return mSecurityLevel;
     }
@@ -184,32 +194,36 @@ public final class CsRangingParams implements Parcelable {
      */
     public static final class Builder {
         private byte[] mPeerBluetoothAddress;
-        @RawRangingDevice.RangingUpdateRate
-        private int mRangingUpdateRate;
+        @RangingUpdateRate
+        private int mRangingUpdateRate = UPDATE_RATE_NORMAL;
         @SightType
-        private int mSightType;
+        private int mSightType = SIGHT_TYPE_UNKNOWN;
         @LocationType
-        private int mLocationType;
-        @CsRangingCapabilities.SecurityLevel
-        private int mSecurityLevel;
+        private int mLocationType = LOCATION_TYPE_UNKNOWN;
+        @SecurityLevel
+        private int mSecurityLevel = CsRangingCapabilities.CS_SECURITY_LEVEL_ONE;
 
         /**
-         * Sets the Bluetooth address of the peer device.
+         * Constructs a new {@link Builder} for creating a channel sounding ranging session.
          *
-         * @param peerBluetoothAddress the Bluetooth address as a byte array.
-         * @return this {@link Builder} instance.
+         * <p>Valid Bluetooth hardware addresses must be upper case, in big endian byte order, and
+         * in a format such as "00:11:22:33:AA:BB". The helper
+         * {@link android.bluetooth.BluetoothAdapter#checkBluetoothAddress} is available to validate
+         * a Bluetooth address.
+         *
+         * @param peerBluetoothAddress The address of the peer device must be non-null.
+         * @throws IllegalArgumentException if {@code peerBluetoothAddress} is null.
          */
-        @NonNull
-        public Builder setPeerBluetoothAddress(@NonNull byte[] peerBluetoothAddress) {
+        public Builder(@NonNull byte[] peerBluetoothAddress) {
+            Objects.requireNonNull(peerBluetoothAddress);
             mPeerBluetoothAddress = peerBluetoothAddress;
-            return this;
         }
 
         /**
-         * Sets the update rate of the ranging session.
+         * Sets the update rate for the CS ranging session.
+         * <p>Defaults to {@link RangingUpdateRate#UPDATE_RATE_NORMAL}
          *
-         * @param updateRate the reporting frequency, one of
-         *                   {@link RawRangingDevice.RangingUpdateRate}.
+         * @param updateRate the reporting frequency.
          * @return this {@link Builder} instance.
          */
         @NonNull
@@ -220,8 +234,9 @@ public final class CsRangingParams implements Parcelable {
 
         /**
          * Sets the sight type for the ranging session.
+         * <p>Defaults to {@link #SIGHT_TYPE_UNKNOWN}
          *
-         * @param sightType the sight type, one of {@link SightType}.
+         * @param sightType the sight type.
          * @return this {@link Builder} instance.
          */
         @NonNull
@@ -232,8 +247,9 @@ public final class CsRangingParams implements Parcelable {
 
         /**
          * Sets the location type for the ranging session.
+         * <p>Defaults to {@link #LOCATION_TYPE_UNKNOWN}
          *
-         * @param locationType the location type, one of {@link LocationType}.
+         * @param locationType the location type.
          * @return this {@link Builder} instance.
          */
         @NonNull
@@ -244,6 +260,7 @@ public final class CsRangingParams implements Parcelable {
 
         /**
          * Sets the security level for the ranging session.
+         * <p>Defaults to {@link CsRangingCapabilities#CS_SECURITY_LEVEL_ONE}
          *
          * @param securityLevel the security level.
          * @return this {@link Builder} instance.

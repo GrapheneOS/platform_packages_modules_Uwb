@@ -1040,6 +1040,23 @@ public class UwbSessionManagerTest {
     }
 
     @Test
+    public void initSession_maxSessionsExceeded() throws RemoteException {
+        doReturn(GenericSpecificationParams.DEFAULT_MAX_SUPPORTED_SESSIONS_COUNT)
+                .when(mUwbSessionManager).getSessionCount();
+        doReturn(false).when(mUwbSessionManager).isExistedSession(anyInt());
+        IUwbRangingCallbacks mockRangingCallbacks = mock(IUwbRangingCallbacks.class);
+
+        mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, mock(SessionHandle.class),
+                TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME, mock(Params.class),
+                mockRangingCallbacks,
+                TEST_CHIP_ID);
+
+        verify(mockRangingCallbacks).onRangingOpenFailed(any(),
+                eq(RangingChangeReason.MAX_SESSIONS_REACHED), any());
+        assertThat(mTestLooper.nextMessage()).isNull();
+    }
+
+    @Test
     public void initSession_UwbSession_RemoteException() throws RemoteException {
         doReturn(0).when(mUwbSessionManager).getSessionCount();
         doReturn(0L).when(mUwbSessionManager).getAliroSessionCount();

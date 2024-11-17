@@ -155,7 +155,7 @@ public class RttAdapter implements RangingAdapter {
                             .setMeasurement(position.getDistance())
                             .build())
                     .setRssi(position.getRssiDbm())
-                    .setTimestamp(position.getRangingTimestampMillis());
+                    .setTimestampMillis(position.getRangingTimestampMillis());
 
             if (position.getAzimuth() != null) {
                 dataBuilder.setAzimuth(new RangingMeasurement.Builder()

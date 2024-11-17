@@ -16,6 +16,8 @@
 
 package com.android.server.ranging.uwb;
 
+import static com.android.ranging.uwb.backend.internal.RangingMeasurement.CONFIDENCE_HIGH;
+import static com.android.ranging.uwb.backend.internal.RangingMeasurement.CONFIDENCE_MEDIUM;
 import static com.android.server.ranging.uwb.UwbConfig.toBackend;
 
 import android.content.Context;
@@ -124,7 +126,7 @@ public class UwbAdapter implements RangingAdapter {
         }
         // TODO(b/376273627): Support multiple peer devices here
         mDeviceFromUwbAddress = Map.of(
-                UwbAddress.fromBytes(uwbConfig.getPeer().second.toBytes()),
+                UwbAddress.fromBytes(uwbConfig.getPeer().second.getAddressBytes()),
                 uwbConfig.getPeer().first
         );
         mUwbClient.setRangingParameters(uwbConfig.asBackendParameters());
@@ -185,7 +187,7 @@ public class UwbAdapter implements RangingAdapter {
         ) {
             return new android.ranging.RangingMeasurement.Builder()
                     .setMeasurement(measurement.getValue())
-                    .setConfidence(measurement.getConfidence())
+                    .setConfidence(convertConfidence(measurement.getConfidence()))
                     .build();
         }
 
@@ -194,7 +196,7 @@ public class UwbAdapter implements RangingAdapter {
             RangingData.Builder dataBuilder = new RangingData.Builder()
                     .setRangingTechnology((int) RangingTechnology.UWB.getValue())
                     .setDistance(convertMeasurement(position.getDistance()))
-                    .setTimestamp(position.getElapsedRealtimeNanos());
+                    .setTimestampMillis(position.getElapsedRealtimeNanos());
 
             if (position.getAzimuth() != null) {
                 dataBuilder.setAzimuth(convertMeasurement(position.getAzimuth()));
@@ -248,6 +250,17 @@ public class UwbAdapter implements RangingAdapter {
                 clear();
             }
         }
+
+        @Override
+        public void onPeerDisconnected(UwbDevice peer, @PeerDisconnectedReason int reason) {
+            // TODO(b/376273627): Use multicast sessions
+            Log.i(TAG, "onPeerDisconnected: " + reason);
+
+            synchronized (mStateMachine) {
+                mCallbacks.onStopped(Callback.StoppedReason.LOST_CONNECTION);
+                clear();
+            }
+        }
     }
 
     private void clear() {
@@ -291,6 +304,14 @@ public class UwbAdapter implements RangingAdapter {
                 mCallbacks.onStopped(Callback.StoppedReason.ERROR);
                 clear();
             }
+        };
+    }
+
+    public static int convertConfidence(int confidence) {
+        return switch (confidence) {
+            case CONFIDENCE_HIGH -> android.ranging.RangingMeasurement.CONFIDENCE_HIGH;
+            case CONFIDENCE_MEDIUM -> android.ranging.RangingMeasurement.CONFIDENCE_MEDIUM;
+            default -> android.ranging.RangingMeasurement.CONFIDENCE_LOW;
         };
     }
 }

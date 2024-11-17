@@ -163,12 +163,15 @@ public class GenericTests {
                         .build();
 
         boolean hasPowerStatsSupport = true;
+        int maxSupportedSessionCount =
+                GenericSpecificationParams.DEFAULT_MAX_SUPPORTED_SESSIONS_COUNT;
         GenericSpecificationParams genericSpecificationParams =
                 new GenericSpecificationParams.Builder()
                         .setFiraSpecificationParams(firaSpecificationParams)
                         .setCccSpecificationParams(cccSpecificationParams)
                         .setRadarSpecificationParams(radarSpecificationParams)
                         .hasPowerStatsSupport(hasPowerStatsSupport)
+                        .setMaxSupportedSessionCount(maxSupportedSessionCount)
                         .build();
         firaSpecificationParams = genericSpecificationParams.getFiraSpecificationParams();
         cccSpecificationParams = genericSpecificationParams.getCccSpecificationParams();
@@ -208,6 +211,8 @@ public class GenericTests {
         assertArrayEquals(cccSpecificationParams.getHoppingSequences().toArray(), hoppingSequences);
 
         assertEquals(hasPowerStatsSupport, genericSpecificationParams.hasPowerStatsSupport());
+        assertEquals(maxSupportedSessionCount,
+                genericSpecificationParams.getMaxSupportedSessionCount());
         assertEquals(radarSpecificationParams.getRadarCapabilities().size(), 1);
         assertTrue(
                 radarSpecificationParams

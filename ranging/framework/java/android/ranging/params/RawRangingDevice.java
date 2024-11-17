@@ -23,6 +23,7 @@ import android.annotation.Nullable;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.ranging.RangingDevice;
+import android.ranging.blerssi.BleRssiRangingParams;
 import android.ranging.cs.CsRangingParams;
 import android.ranging.rtt.RttRangingParams;
 import android.ranging.uwb.UwbRangingParams;
@@ -37,7 +38,6 @@ import java.lang.annotation.RetentionPolicy;
  * This class supports multiple ranging technologies, including UWB, CS, and RTT.
  * The configuration for each technology is provided through corresponding parameter objects.
  *
- * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 public final class RawRangingDevice implements Parcelable {
@@ -51,7 +51,7 @@ public final class RawRangingDevice implements Parcelable {
     @IntDef({
             UPDATE_RATE_NORMAL,
             UPDATE_RATE_INFREQUENT,
-            UPDATE_RATE_FAST,
+            UPDATE_RATE_FREQUENT,
     })
     public @interface RangingUpdateRate {
     }
@@ -61,11 +61,12 @@ public final class RawRangingDevice implements Parcelable {
     /** Ranging interval between 600ms - 800ms for UWB, 5 seconds for BT-CS. */
     public static final int UPDATE_RATE_INFREQUENT = 2;
     /** Ranging interval between 100ms - 200ms for UWB, 1 second for BT-CS. */
-    public static final int UPDATE_RATE_FAST = 3;
+    public static final int UPDATE_RATE_FREQUENT = 3;
     private final RangingDevice mRangingDevice;
     private final UwbRangingParams mUwbRangingParams;
     private final CsRangingParams mCsRangingParams;
     private final RttRangingParams mRttRangingParams;
+    private final BleRssiRangingParams mBleRssiRangingParams;
 
 
     private RawRangingDevice(Builder builder) {
@@ -73,6 +74,7 @@ public final class RawRangingDevice implements Parcelable {
         mUwbRangingParams = builder.mUwbRangingParams;
         mCsRangingParams = builder.mCsRangingParams;
         mRttRangingParams = builder.mRttRangingParams;
+        mBleRssiRangingParams = builder.mBleRssiRangingParams;
     }
 
 
@@ -86,16 +88,20 @@ public final class RawRangingDevice implements Parcelable {
         );
         mRttRangingParams = in.readParcelable(RttRangingParams.class.getClassLoader(),
                 RttRangingParams.class);
+        mBleRssiRangingParams = in.readParcelable(BleRssiRangingParams.class.getClassLoader(),
+                BleRssiRangingParams.class);
     }
 
     @Override
-    public void writeToParcel(Parcel dest, int flags) {
+    public void writeToParcel(@NonNull Parcel dest, int flags) {
         dest.writeParcelable(mRangingDevice, flags);
         dest.writeParcelable(mUwbRangingParams, flags);
         dest.writeParcelable(mCsRangingParams, flags);
         dest.writeParcelable(mRttRangingParams, flags);
+        dest.writeParcelable(mBleRssiRangingParams, flags);
     }
 
+    @NonNull
     public static final Creator<RawRangingDevice> CREATOR = new Creator<RawRangingDevice>() {
         @Override
         public RawRangingDevice createFromParcel(Parcel in) {
@@ -113,6 +119,7 @@ public final class RawRangingDevice implements Parcelable {
      *
      * @return the ranging device.
      */
+    @NonNull
     public RangingDevice getRangingDevice() {
         return mRangingDevice;
     }
@@ -131,6 +138,8 @@ public final class RawRangingDevice implements Parcelable {
      * Returns the CS ranging parameters, if applicable.
      *
      * @return the {@link CsRangingParams}, or {@code null} if not set.
+     *
+     * @hide
      */
     @Nullable
     public CsRangingParams getCsRangingParams() {
@@ -141,10 +150,24 @@ public final class RawRangingDevice implements Parcelable {
      * Returns the RTT ranging parameters, if applicable.
      *
      * @return the {@link RttRangingParams}, or {@code null} if not set.
+     *
+     * @hide
      */
     @Nullable
     public RttRangingParams getRttRangingParams() {
         return mRttRangingParams;
+    }
+
+    /**
+     * Returns the BLE rssi ranging parameters, if applicable.
+     *
+     * @return the {@link BleRssiRangingParams}, or {@code null} if not set.
+     *
+     * @hide
+     */
+    @Nullable
+    public BleRssiRangingParams getBleRssiRangingParams() {
+        return mBleRssiRangingParams;
     }
 
     @Override
@@ -160,6 +183,7 @@ public final class RawRangingDevice implements Parcelable {
         private UwbRangingParams mUwbRangingParams;
         private CsRangingParams mCsRangingParams;
         private RttRangingParams mRttRangingParams;
+        private BleRssiRangingParams mBleRssiRangingParams;
 
         /**
          * Sets the ranging device.
@@ -168,7 +192,7 @@ public final class RawRangingDevice implements Parcelable {
          * @return this {@link Builder} instance for chaining calls.
          */
         @NonNull
-        public Builder setRangingDevice(RangingDevice rangingDevice) {
+        public Builder setRangingDevice(@NonNull RangingDevice rangingDevice) {
             mRangingDevice = rangingDevice;
             return this;
         }
@@ -180,32 +204,50 @@ public final class RawRangingDevice implements Parcelable {
          * @return this {@link Builder} instance for chaining calls.
          */
         @NonNull
-        public Builder setUwbRangingParams(UwbRangingParams params) {
+        public Builder setUwbRangingParams(@NonNull UwbRangingParams params) {
             mUwbRangingParams = params;
             return this;
         }
 
         /**
-         * Sets the RTT ranging parameters.
+         * Sets the WiFi NAN-RTT ranging parameters.
          *
          * @param params the {@link RttRangingParams} to be set.
          * @return this {@link Builder} instance for chaining calls.
+         *
+         * @hide
          */
         @NonNull
-        public Builder setRttRangingParams(RttRangingParams params) {
+        public Builder setRttRangingParams(@NonNull RttRangingParams params) {
             mRttRangingParams = params;
             return this;
         }
 
         /**
-         * Sets the CS ranging parameters.
+         * Sets the BLE channel sounding ranging parameters.
          *
          * @param params the {@link CsRangingParams} to be set.
          * @return this {@link Builder} instance for chaining calls.
+         *
+         * @hide
          */
         @NonNull
-        public Builder setCsRangingParams(CsRangingParams params) {
+        public Builder setCsRangingParams(@NonNull CsRangingParams params) {
             mCsRangingParams = params;
+            return this;
+        }
+
+        /**
+         * Sets the BLE rssi ranging parameters.
+         *
+         * @param params the {@link CsRangingParams} to be set.
+         * @return this {@link Builder} instance for chaining calls.
+         *
+         * @hide
+         */
+        @NonNull
+        public Builder setBleRssiRangingParams(@NonNull BleRssiRangingParams params) {
+            mBleRssiRangingParams = params;
             return this;
         }
 

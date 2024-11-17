@@ -34,8 +34,10 @@ class RangingBaseTest(base_test.BaseTestClass):
         android_device, min_number=2
     )
     for ad in self.android_devices:
-      ad.load_snippet("ranging", "multidevices.snippet.ranging")
+      ad.load_snippet("ranging", "com.google.snippet.ranging")
       utils.initialize_uwb_country_code_if_necessary(ad)
+      ad.load_snippet("uwb", "com.google.snippet.uwb")
+      ad.load_snippet("bluetooth", "com.google.snippet.bluetooth")
 
   def setup_test(self):
     super().setup_test()

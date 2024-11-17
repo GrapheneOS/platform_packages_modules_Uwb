@@ -79,12 +79,11 @@ public class UwbAdapterTest {
 
     private UwbConfig.Builder generateConfig() {
         return new UwbConfig.Builder(
-                new UwbRangingParams.Builder()
-                        .setConfigId(CONFIG_UNICAST_DS_TWR)
-                        .setDeviceAddress(UwbAddress.fromBytes(new byte[]{1, 2}))
+                new UwbRangingParams.Builder(
+                        10, CONFIG_UNICAST_DS_TWR, UwbAddress.fromBytes(new byte[]{1, 2}),
+                        UwbAddress.fromBytes(new byte[]{3, 4}))
                         .setComplexChannel(new UwbComplexChannel.Builder().setChannel(
                                 9).setPreambleIndex(11).build())
-                        .setPeerAddress(UwbAddress.fromBytes(new byte[]{3, 4}))
                         .setRangingUpdateRate(UPDATE_RATE_NORMAL)
                         .build()
         )
@@ -161,6 +160,6 @@ public class UwbAdapterTest {
         Assert.assertEquals(
                 mockPosition.getDistance().getValue(),
                 data.getDistance().getMeasurement(), 0.1);
-        Assert.assertEquals(mockPosition.getElapsedRealtimeNanos(), data.getTimestamp());
+        Assert.assertEquals(mockPosition.getElapsedRealtimeNanos(), data.getTimestampMillis());
     }
 }

@@ -153,6 +153,7 @@ public class CapabilityParam {
 
     public static final int CONTENTION_BASED_RANGING = 0x1;
     public static final int TIME_SCHEDULED_RANGING = 0x2;
+    public static final int HYBRID_SCHEDULED_RANGING = 0x4;
 
     public static final int CONSTRAINT_LENGTH_3 = 0x1;
     public static final int CONSTRAINT_LENGTH_7 = 0x2;
@@ -242,6 +243,8 @@ public class CapabilityParam {
     // Protocol Agnostic
     public static final int SUPPORTED_POWER_STATS_QUERY =
             UwbVendorCapabilityTlvTypes.SUPPORTED_POWER_STATS_QUERY;
+    public static final int SUPPORTED_MAX_SESSION_COUNT =
+            UwbVendorCapabilityTlvTypes.SUPPORTED_MAX_SESSION_COUNT;
 
     public static final int SUPPORTED_ANTENNA_MODES =
             UwbVendorCapabilityTlvTypes.SUPPORTED_ANTENNA_MODES;

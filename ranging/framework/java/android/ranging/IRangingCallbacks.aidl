@@ -24,7 +24,10 @@ import android.ranging.RangingData;
 *  @hide
 */
 oneway interface IRangingCallbacks {
-    void onStarted(in SessionHandle sessionHandle, in RangingDevice peer, in int technology);
-    void onClosed(in SessionHandle sessionHandle, in RangingDevice peer, in int reason);
-    void onData(in SessionHandle sessionHandle, in RangingDevice peer, in RangingData data);
+    void onOpened(in SessionHandle session);
+    void onOpenFailed(in SessionHandle session, in int reason);
+    void onStarted(in SessionHandle session, in RangingDevice peer, in int technology);
+    void onResults(in SessionHandle session, in RangingDevice peer, in RangingData data);
+    void onStopped(in SessionHandle session, in RangingDevice peer, in int technology);
+    void onClosed(in SessionHandle session, in int reason);
 }

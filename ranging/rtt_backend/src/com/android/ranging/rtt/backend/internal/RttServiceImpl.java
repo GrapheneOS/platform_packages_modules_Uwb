@@ -35,6 +35,9 @@ public class RttServiceImpl implements RttService {
         this.mContext = context;
         if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_AWARE)) {
             mWifiAwareManager = context.getSystemService(WifiAwareManager.class);
+            if (mWifiAwareManager == null) {
+                Log.e(TAG, "Failed to get WifiAwareManager");
+            }
         }
     }
 
@@ -55,5 +58,20 @@ public class RttServiceImpl implements RttService {
             return false;
         }
         return true;
+    }
+
+    @Override
+    public boolean hasPeriodicRangingSupport() {
+        if (mWifiAwareManager == null) {
+            Log.e(TAG, "WifiAwareManager is null");
+            return false;
+        }
+        try {
+            //TODO: Uncomment when the support is added.
+                //return mWifiAwareManager.getCharacteristics().isPeriodicRangingSupported();
+        } catch (RuntimeException e) {
+            Log.e(TAG, "Failed to get WifiAwareManager#characteristics");
+        }
+        return false;
     }
 }

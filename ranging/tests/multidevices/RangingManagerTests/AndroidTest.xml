@@ -22,14 +22,16 @@
     <option name="config-descriptor:metadata" key="parameter" value="not_secondary_user" />
     <option name="config-descriptor:metadata" key="mainline-param" value="com.google.android.uwb.apex" />
 
-    <object class="com.android.tradefed.testtype.suite.module.DeviceFeatureModuleController"
-            type="module_controller">
-        <option name="required-feature" value="android.hardware.uwb" />
-    </object>
 
     <device name="device1">
         <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
             <option name="test-file-name" value="ranging_snippet.apk" />
+        </target_preparer>
+        <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+            <option name="test-file-name" value="uwb_snippet.apk" />
+        </target_preparer>
+        <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+            <option name="test-file-name" value="bluetooth_multi_devices_snippet.apk" />
         </target_preparer>
         <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
             <option name="run-command" value="input keyevent KEYCODE_WAKEUP" />
@@ -39,6 +41,12 @@
     <device name="device2">
         <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
             <option name="test-file-name" value="ranging_snippet.apk" />
+        </target_preparer>
+        <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+            <option name="test-file-name" value="uwb_snippet.apk" />
+        </target_preparer>
+        <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+            <option name="test-file-name" value="bluetooth_multi_devices_snippet.apk" />
         </target_preparer>
         <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
             <option name="run-command" value="input keyevent KEYCODE_WAKEUP" />

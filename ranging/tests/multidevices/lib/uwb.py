@@ -23,6 +23,7 @@ class SlotDuration(IntEnum):
   MILLIS_1 = 1
   MILLIS_2 = 2
 
+
 @dataclasses.dataclass(kw_only=True)
 class UwbRangingParams:
   """Class for Uwb ranging parameters."""

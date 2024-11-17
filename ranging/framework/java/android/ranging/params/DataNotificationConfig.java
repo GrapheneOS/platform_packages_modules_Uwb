@@ -32,8 +32,6 @@ import java.lang.annotation.RetentionPolicy;
  *
  * <p>This class holds the configuration settings for how notifications are sent
  * regarding the proximity of ranging devices.
- *
- * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 public final class DataNotificationConfig implements Parcelable {
@@ -90,9 +88,10 @@ public final class DataNotificationConfig implements Parcelable {
     public static final int DISABLE = 0;
     // Range data notification will be enabled (default).
     public static final int ENABLE = 1;
-    // Range data notification is enabled when peer device is in the configured range.
+    // Range data notification is enabled when peer device is in the configured range - [near, far].
     public static final int PROXIMITY_LEVEL = 2;
-    //Range data notification is enabled when peer device enters or exits the configured range.
+    //Range data notification is enabled when peer device enters or exits the configured range -
+    // [near, far].
     public static final int PROXIMITY_EDGE = 3;
 
 
@@ -107,9 +106,10 @@ public final class DataNotificationConfig implements Parcelable {
     }
 
     /**
-     * Returns the notification configuration type.
+     * Returns the configured notification configuration type.
      *
-     * @return the notification configuration type as defined in {@link NotificationConfigType}.
+     * @return the notification configuration type.
+     *
      */
     @NotificationConfigType
     public int getNotificationConfigType() {
@@ -143,6 +143,7 @@ public final class DataNotificationConfig implements Parcelable {
 
         /**
          * Sets the notification configuration type.
+         *  <p> defaults to {@link NotificationConfigType#ENABLE}
          *
          * @param config The notification configuration type to set.
          * @return this Builder instance.
@@ -155,6 +156,7 @@ public final class DataNotificationConfig implements Parcelable {
 
         /**
          * Sets the near proximity threshold in centimeters.
+         * <p> defaults to 0 cm.
          *
          * @param proximityCm The near proximity to set, in centimeters.
          * @return this Builder instance.
@@ -167,6 +169,7 @@ public final class DataNotificationConfig implements Parcelable {
 
         /**
          * Sets the far proximity threshold in centimeters.
+         * <p> defaults to 20000 cm.
          *
          * @param proximityCm The far proximity to set, in centimeters.
          * @return this Builder instance.

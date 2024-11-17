@@ -30,6 +30,7 @@ import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_DT_TAG;
 
 import static java.util.Objects.requireNonNull;
 
+import android.annotation.SuppressLint;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.PersistableBundle;
@@ -45,6 +46,7 @@ import androidx.annotation.WorkerThread;
 
 import com.google.common.hash.Hashing;
 import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
+import com.google.uwb.support.fira.FiraOnControleeAddRemoveParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.multichip.ChipInfoParams;
 
@@ -56,6 +58,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Implements start/stop ranging operations. */
+@SuppressLint("NewApi")
 public abstract class RangingDevice {
 
     public static final int SESSION_ID_UNSET = 0;
@@ -295,7 +298,7 @@ public abstract class RangingDevice {
             @Override
             public void onOpenFailed(int reason, PersistableBundle params) {
                 Log.i(TAG, String.format("Session open failed: reason %s", reason));
-                int suspendedReason = Conversions.convertReason(reason);
+                int suspendedReason = Conversions.toRangingSuspendedReason(reason);
                 if (suspendedReason == REASON_UNKNOWN) {
                     suspendedReason = REASON_FAILED_TO_START;
                 }
@@ -318,7 +321,7 @@ public abstract class RangingDevice {
             @Override
             public void onStartFailed(int reason, PersistableBundle params) {
 
-                int suspendedReason = Conversions.convertReason(reason);
+                int suspendedReason = Conversions.toRangingSuspendedReason(reason);
                 if (suspendedReason != REASON_WRONG_PARAMETERS) {
                     suspendedReason = REASON_FAILED_TO_START;
                 }
@@ -347,7 +350,7 @@ public abstract class RangingDevice {
             @WorkerThread
             @Override
             public void onStopped(int reason, PersistableBundle params) {
-                int suspendedReason = Conversions.convertReason(reason);
+                int suspendedReason = Conversions.toRangingSuspendedReason(reason);
                 UwbDevice device = getUwbDevice();
                 runOnBackendCallbackThread(
                         () -> {
@@ -412,9 +415,24 @@ public abstract class RangingDevice {
             @WorkerThread
             @Override
             public void onControleeRemoved(PersistableBundle params) {
-                if (mOpAsyncCallbackRunner.isActive()) {
-                    mOpAsyncCallbackRunner.complete(true);
-                }
+                FiraOnControleeAddRemoveParams removalParams =
+                        FiraOnControleeAddRemoveParams.fromBundle(params);
+
+                runOnBackendCallbackThread(
+                        () -> {
+                            byte[] removedAddress = removalParams.getAddress().toBytes();
+                            UwbDevice removedDevice =
+                                    UwbDevice.createForAddress(
+                                            mUwbFeatureFlags.isReversedByteOrderFiraParams()
+                                                    ? Conversions.getReverseBytes(removedAddress)
+                                                    : removedAddress);
+
+                            handlePeerDisconnected(removedDevice);
+                            callback.onPeerDisconnected(
+                                    removedDevice, Conversions.toPeerDisconnectedReason(
+                                            removalParams.getReason()));
+                        });
+                mOpAsyncCallbackRunner.completeIfActive(true);
             }
 
             @WorkerThread
@@ -600,6 +618,13 @@ public abstract class RangingDevice {
         return success && result != null && result;
     }
 
+    /**
+     * Called when a peer is disconnected from the ranging session.
+     *
+     * @param peer the peer that disconnected.
+     */
+    protected synchronized void handlePeerDisconnected(UwbDevice peer) {
+    }
 
     /**
      * Reconfigures range data notification for an ongoing session.

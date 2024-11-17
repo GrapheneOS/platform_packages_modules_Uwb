@@ -25,8 +25,11 @@ import android.ranging.IRangingAdapter;
 import android.ranging.IRangingCallbacks;
 import android.ranging.IRangingCapabilitiesCallback;
 import android.ranging.OobHandle;
+import android.ranging.RangingDevice;
 import android.ranging.RangingPreference;
 import android.ranging.SessionHandle;
+import android.ranging.params.OobResponderRangingParams;
+import android.ranging.params.RawResponderRangingParams;
 
 public class RangingServiceImpl extends IRangingAdapter.Stub {
 
@@ -57,6 +60,26 @@ public class RangingServiceImpl extends IRangingAdapter.Stub {
             RangingPreference rangingPreference, IRangingCallbacks callbacks) {
         mRangingInjector.getRangingServiceManager().startRanging(attributionSource, sessionHandle,
                 rangingPreference, callbacks);
+    }
+
+    @Override
+    public void reconfigureRangingInterval(SessionHandle sessionHandle, int intervalSkipCount) {
+        throw new IllegalArgumentException("Reconfiguring ranging interval not supported yet");
+    }
+
+    @Override
+    public void addRawDevice(SessionHandle sessionHandle, RawResponderRangingParams rangingParams) {
+        throw new IllegalArgumentException("Dynamic addition of raw peer not supported yet");
+    }
+
+    @Override
+    public void addOobDevice(SessionHandle sessionHandle, OobResponderRangingParams rangingParams) {
+        throw new IllegalArgumentException("Dynamic addition of oob peer not supported yet");
+    }
+
+    @Override
+    public void removeDevice(SessionHandle sessionHandle, RangingDevice rangingDevice) {
+        throw new IllegalArgumentException("Dynamic removal of peer not supported yet");
     }
 
     @Override

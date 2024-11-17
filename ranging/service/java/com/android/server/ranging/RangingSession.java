@@ -16,9 +16,7 @@
 
 package com.android.server.ranging;
 
-import android.ranging.IRangingCallbacks;
 import android.ranging.RangingDevice;
-import android.ranging.SessionHandle;
 
 import androidx.annotation.NonNull;
 
@@ -33,8 +31,7 @@ public class RangingSession {
     private static final String TAG = RangingSession.class.getSimpleName();
 
     private final RangingInjector mInjector;
-    private final SessionHandle mHandle;
-    private final IRangingCallbacks mCallbacks;
+    private final RangingServiceManager.SessionListener mSessionListener;
     private final ListeningExecutorService mAdapterExecutor;
 
     /** Peers in the session */
@@ -42,22 +39,19 @@ public class RangingSession {
 
     public RangingSession(
             @NonNull RangingInjector injector,
-            @NonNull SessionHandle handle,
-            @NonNull IRangingCallbacks callbacks,
+            @NonNull RangingServiceManager.SessionListener listener,
             @NonNull ListeningExecutorService adapterExecutor
     ) {
         mInjector = injector;
-        mHandle = handle;
-        mCallbacks = callbacks;
+        mSessionListener = listener;
         mAdapterExecutor = adapterExecutor;
     }
 
     /** Start ranging in this session. */
-    public void start(ImmutableList<RangingPeerConfig> peerConfigs) {
+    public void start(@NonNull ImmutableList<RangingPeerConfig> peerConfigs) {
         for (RangingPeerConfig config : peerConfigs) {
-            RangingPeer peer = new RangingPeer(
-                    mInjector, config, mCallbacks, mHandle, mAdapterExecutor
-            );
+            RangingPeer peer = new RangingPeer(mInjector, config, mSessionListener,
+                    mAdapterExecutor);
             synchronized (mPeers) {
                 mPeers.put(config.getDevice(), peer);
                 peer.start();
@@ -72,6 +66,19 @@ public class RangingSession {
                 peer.stop();
             }
             mPeers.clear();
+        }
+    }
+
+    /**
+     * Remove a peer from the session.
+     *
+     * @param peer to remove.
+     * @return whether or not the session is empty after removing the peer.
+     */
+    public boolean removePeerAndCheckEmpty(@NonNull RangingDevice peer) {
+        synchronized (mPeers) {
+            mPeers.remove(peer);
+            return mPeers.isEmpty();
         }
     }
 }
