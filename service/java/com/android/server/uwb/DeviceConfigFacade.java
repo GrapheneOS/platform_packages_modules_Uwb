@@ -103,6 +103,7 @@ public class DeviceConfigFacade {
     private boolean mHwIdleTurnOffEnabled;
     private boolean mFusedCountryCodeProviderEnabled;
     private boolean mIsAntennaModeConfigSupported;
+    private String[] mMccMncOemOverrideList;
 
     public DeviceConfigFacade(Handler handler, Context context) {
         mContext = context;
@@ -327,6 +328,10 @@ public class DeviceConfigFacade {
                 "is_antenna_mode_config_supported",
                 mContext.getResources().getBoolean(R.bool.is_antenna_mode_config_supported)
         );
+
+        // device config override with array is not supported, so just read the resource.
+        mMccMncOemOverrideList = mContext.getResources()
+                .getStringArray(R.array.mcc_mcc_oem_override_list);
 
         // A little parsing and cleanup:
         mFrontAzimuthRadiansPerSecond = (float) Math.toRadians(frontAzimuthDegreesPerSecond);
@@ -644,4 +649,12 @@ public class DeviceConfigFacade {
      * Returns whether antenna mode configuration is supported or not.
      */
     public boolean isAntennaModeConfigSupported() { return mIsAntennaModeConfigSupported; }
+
+    /**
+     * Returns array of mcc/mnc where oem override country code should be used.
+     * Empty array means no override.
+     */
+    public String[] getMccMncOemOverrideList() {
+        return mMccMncOemOverrideList;
+    }
 }

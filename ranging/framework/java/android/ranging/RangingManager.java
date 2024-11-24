@@ -21,6 +21,7 @@ import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
+import android.annotation.RequiresNoPermission;
 import android.annotation.SystemService;
 import android.content.AttributionSource;
 import android.content.Context;
@@ -109,6 +110,7 @@ public final class RangingManager {
      *                 capabilities updates. Must not be null.
      * @throws NullPointerException if the {@code executor} or {@code callback} is null.
      */
+    @RequiresNoPermission
     @NonNull
     public void registerCapabilitiesCallback(
             @NonNull @CallbackExecutor Executor executor,
@@ -125,6 +127,7 @@ public final class RangingManager {
      *                 Must not be null.
      * @throws NullPointerException if the {@code callback} is null.
      */
+    @RequiresNoPermission
     @NonNull
     public void unregisterCapabilitiesCallback(@NonNull RangingCapabilitiesCallback callback) {
         Objects.requireNonNull(callback, "Capabilities callback cannot be null");
@@ -154,6 +157,7 @@ public final class RangingManager {
      * @throws SecurityException    if the calling app does not have the necessary permissions
      *                              to create a ranging session.
      */
+    @RequiresNoPermission
     @Nullable
     public RangingSession createRangingSession(@NonNull Executor executor,
             @NonNull RangingSession.Callback callback) {

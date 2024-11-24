@@ -39,6 +39,7 @@ class RangingDecorator:
     self._event_handlers = {}
     self.log = self.ad.log
     self.uwb_address = None
+    self.bt_addr = None
 
   def start_ranging_and_assert_opened(
       self, session_handle: str, preference: RangingPreference

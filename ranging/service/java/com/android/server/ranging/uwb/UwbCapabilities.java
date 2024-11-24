@@ -209,4 +209,24 @@ public abstract class UwbCapabilities {
 
         public abstract UwbCapabilities build();
     }
+
+    @Override
+    public String toString() {
+        return "UwbCapabilities{ "
+                + "uwbAddress="
+                + getUwbAddress()
+                + ", supportedChannels="
+                + getSupportedChannels()
+                + ", supportedPreambleIndexes="
+                + getSupportedPreambleIndexes()
+                + ", supportedConfigIds="
+                + getSupportedConfigIds()
+                + ", minimumRangingIntervalMs="
+                + getMinimumRangingIntervalMs()
+                + ", minimumSlotDurationMs="
+                + getMinimumSlotDurationMs()
+                + ", supportedDeviceRole="
+                + getSupportedDeviceRole()
+                + " }";
+    }
 }

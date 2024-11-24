@@ -19,6 +19,7 @@ package com.android.server.ranging;
 import android.content.Context;
 import android.ranging.RangingManager;
 
+import com.android.server.ranging.blerssi.BleRssiCapabilitiesAdapter;
 import com.android.server.ranging.cs.CsCapabilitiesAdapter;
 import com.android.server.ranging.rtt.RttCapabilitiesAdapter;
 import com.android.server.ranging.uwb.UwbCapabilitiesAdapter;
@@ -33,7 +34,8 @@ public enum RangingTechnology {
     UWB(0), // Ultra-Wide Band
     CS(1), // Channel Sounding, formerly known as HADM
 
-    RTT(2); // Wifi RTT.
+    RTT(2), // Wifi RTT.
+    RSSI(3); // BLE RSSI.
 
     public static final ImmutableList<RangingTechnology> TECHNOLOGIES =
             ImmutableList.copyOf(RangingTechnology.values());
@@ -63,6 +65,8 @@ public enum RangingTechnology {
                 return CsCapabilitiesAdapter.isSupported(context);
             case RTT:
                 return RttCapabilitiesAdapter.isSupported(context);
+            case RSSI:
+                return BleRssiCapabilitiesAdapter.isSupported(context);
             default:
                 return false;
         }

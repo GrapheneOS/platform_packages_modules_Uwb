@@ -18,22 +18,19 @@ package com.android.server.ranging;
 
 import android.annotation.IntDef;
 import android.annotation.Nullable;
+import android.os.Binder;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
 import android.ranging.IRangingCapabilitiesCallback;
 import android.ranging.RangingCapabilities;
 import android.ranging.RangingCapabilities.RangingTechnologyAvailability;
 import android.ranging.RangingCapabilities.TechnologyCapabilities;
-import android.ranging.RangingManager;
-import android.os.Binder;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import com.android.server.ranging.cs.CsCapabilitiesAdapter;
-import com.android.server.ranging.rtt.RttCapabilitiesAdapter;
-import com.android.server.ranging.uwb.UwbCapabilitiesAdapter;
-
+import java.io.FileDescriptor;
+import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,49 +41,34 @@ public class CapabilitiesProvider {
      * stack.
      */
     public abstract static class CapabilitiesAdapter {
-        private AvailabilityCallback mAvailabilityCallback = null;
+        private TechnologyAvailabilityListener mListener;
 
-        /**
-         * Register a callback to notify when availability changes. This callback will get called
-         * once on registration with the initial availability.
-         */
-        public void registerAvailabilityCallback(@Nullable AvailabilityCallback callback) {
-            mAvailabilityCallback = callback;
-            if (mAvailabilityCallback != null) {
-                mAvailabilityCallback.onAvailabilityChange(
-                        getAvailability(),
-                        AvailabilityCallback.AvailabilityChangedReason.UNKNOWN);
-            }
+        protected CapabilitiesAdapter(@NonNull TechnologyAvailabilityListener listener) {
+            mListener = listener;
+        }
+
+        public @Nullable TechnologyAvailabilityListener getAvailabilityListener() {
+            return mListener;
         }
 
         public abstract @RangingTechnologyAvailability int getAvailability();
 
         public abstract @Nullable TechnologyCapabilities getCapabilities();
-
-        protected @Nullable AvailabilityCallback getAvailabilityCallback() {
-            return mAvailabilityCallback;
-        }
     }
 
-    public interface AvailabilityCallback {
-        @IntDef({
-                AvailabilityChangedReason.UNKNOWN,
-                AvailabilityChangedReason.SYSTEM_POLICY,
-        })
-        @interface AvailabilityChangedReason {
-            int UNKNOWN = 0;
-            int SYSTEM_POLICY = 1;
-        }
-
-        /** Indicates that the availability of the underlying technology has changed. */
-        void onAvailabilityChange(
-                @RangingTechnologyAvailability int availability,
-                @AvailabilityChangedReason int reason);
+    @IntDef({
+            AvailabilityChangedReason.UNKNOWN,
+            AvailabilityChangedReason.SYSTEM_POLICY,
+    })
+    public @interface AvailabilityChangedReason {
+        int UNKNOWN = 0;
+        int SYSTEM_POLICY = 1;
     }
 
     private static final String TAG = CapabilitiesProvider.class.getSimpleName();
     private final RangingInjector mRangingInjector;
-    private final Map<Integer, CapabilitiesAdapter> mCapabilityAdapters;
+    private final Map<RangingTechnology, CapabilitiesAdapter> mCapabilityAdapters;
+    private RangingCapabilities mCachedCapabilities;
 
     /** Callbacks provided from the framework */
     private final RemoteCallbackList<IRangingCapabilitiesCallback> mCallbacks =
@@ -95,39 +77,19 @@ public class CapabilitiesProvider {
     public CapabilitiesProvider(RangingInjector rangingInjector) {
         mRangingInjector = rangingInjector;
         mCapabilityAdapters = new HashMap<>();
-    }
-
-    /**
-     * Registers an availability listener for each technology supported by the ranging API. This
-     * needs to be called after the system services for these technologies have been started, but
-     * before any capabilities callbacks are registered through the ranging api.
-     */
-    public synchronized void registerTechnologyAvailabilityListeners() {
-        Log.i(TAG, "Registering availability listeners for each technology");
-        mCapabilityAdapters.put(
-                RangingManager.UWB,
-                new UwbCapabilitiesAdapter(mRangingInjector.getContext()));
-        mCapabilityAdapters.put(
-                RangingManager.BLE_CS,
-                new CsCapabilitiesAdapter());
-        mCapabilityAdapters.put(
-                RangingManager.WIFI_NAN_RTT,
-                new RttCapabilitiesAdapter(mRangingInjector.getContext())
-        );
-
-        for (@RangingManager.RangingTechnology int technology : mCapabilityAdapters.keySet()) {
-            mCapabilityAdapters
-                    .get(technology)
-                    .registerAvailabilityCallback(new AvailabilityListener(technology));
-        }
+        mCachedCapabilities = null;
     }
 
     public synchronized void registerCapabilitiesCallback(
             @NonNull IRangingCapabilitiesCallback callback
     ) {
         mCallbacks.register(callback);
+        if (mCachedCapabilities == null) {
+            initializeAdaptersForAllTechnologies();
+            mCachedCapabilities = getCapabilities().build();
+        }
         try {
-            callback.onRangingCapabilities(getCapabilities().build());
+            callback.onRangingCapabilities(mCachedCapabilities);
         } catch (RemoteException e) {
             Log.e(TAG, "Failed to call provided capabilities callback", e);
         }
@@ -139,15 +101,15 @@ public class CapabilitiesProvider {
         mCallbacks.unregister(callback);
     }
 
-    private RangingCapabilities.Builder getCapabilities() {
+    private synchronized RangingCapabilities.Builder getCapabilities() {
         RangingCapabilities.Builder builder = new RangingCapabilities.Builder();
-        for (@RangingManager.RangingTechnology int technology : mCapabilityAdapters.keySet()) {
+        for (RangingTechnology technology : mCapabilityAdapters.keySet()) {
             CapabilitiesAdapter adapter = mCapabilityAdapters.get(technology);
             // Any calls to the corresponding technology stacks must be
             // done with a clear calling identity.
             long token = Binder.clearCallingIdentity();
             TechnologyCapabilities capabilities = adapter.getCapabilities();
-            builder.addAvailability(technology, adapter.getAvailability());
+            builder.addAvailability(technology.getValue(), adapter.getAvailability());
             if (capabilities != null) {
                 builder.addCapabilities(capabilities);
             }
@@ -156,34 +118,64 @@ public class CapabilitiesProvider {
         return builder;
     }
 
+    private synchronized void initializeAdaptersForAllTechnologies() {
+        Log.i(TAG, "Registering availability listeners for each technology");
+        // Any calls to the corresponding technology stacks must be
+        // done with a clear calling identity.
+        long token = Binder.clearCallingIdentity();
+        for (RangingTechnology technology : RangingTechnology.TECHNOLOGIES) {
+            mCapabilityAdapters.put(
+                    technology,
+                    mRangingInjector.createCapabilitiesAdapter(
+                            technology,
+                            new TechnologyAvailabilityListener(technology)));
+        }
+        Binder.restoreCallingIdentity(token);
+    }
 
-    private class AvailabilityListener implements AvailabilityCallback {
-        private final @RangingManager.RangingTechnology int mTechnology;
+    public class TechnologyAvailabilityListener {
+        private final RangingTechnology mTechnology;
 
-        AvailabilityListener(@RangingManager.RangingTechnology int technology) {
+        TechnologyAvailabilityListener(RangingTechnology technology) {
             mTechnology = technology;
         }
 
-        @Override
         public void onAvailabilityChange(
                 @RangingTechnologyAvailability int availability,
                 @AvailabilityChangedReason int unused
         ) {
-            RangingCapabilities capabilities = getCapabilities()
-                    .addAvailability(mTechnology, availability)
-                    .build();
-            synchronized (mCallbacks) {
-                int i = mCallbacks.beginBroadcast();
-                while (i > 0) {
-                    i--;
-                    try {
-                        mCallbacks.getBroadcastItem(i).onRangingCapabilities(capabilities);
-                    } catch (RemoteException e) {
-                        Log.w(TAG, "Failed to notify callback " + i + " of availability change");
+            synchronized (CapabilitiesProvider.this) {
+                mCachedCapabilities = getCapabilities()
+                        .addAvailability(mTechnology.getValue(), availability)
+                        .build();
+                synchronized (mCallbacks) {
+                    int i = mCallbacks.beginBroadcast();
+                    while (i > 0) {
+                        i--;
+                        try {
+                            mCallbacks.getBroadcastItem(i)
+                                    .onRangingCapabilities(mCachedCapabilities);
+                        } catch (RemoteException e) {
+                            Log.w(TAG,
+                                    "Failed to notify callback " + i + " of availability change");
+                        }
                     }
+                    mCallbacks.finishBroadcast();
                 }
-                mCallbacks.finishBroadcast();
             }
         }
+    }
+
+    public void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
+        pw.println("---- Dump of CapabilitiesProvider ----");
+        for (Map.Entry<RangingTechnology, CapabilitiesAdapter> adapter :
+                mCapabilityAdapters.entrySet()
+        ) {
+            pw.println("-- Dump of CapabilitiesAdapter for technology " + adapter.getKey() + " --");
+            pw.println("Availability: " + adapter.getValue().getAvailability());
+            pw.println("Capabilities: " + adapter.getValue().getCapabilities());
+            pw.println("-- Dump of CapabilitiesAdapter for technology " + adapter.getKey() + " --");
+        }
+        pw.println("---- Dump of CapabilitiesProvider ----");
     }
 }

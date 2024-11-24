@@ -19,7 +19,7 @@ package android.ranging.cts;
 import static android.ranging.RangingCapabilities.NOT_SUPPORTED;
 import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
-import static android.ranging.params.RawRangingDevice.UPDATE_RATE_NORMAL;
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 import static android.ranging.uwb.UwbRangingParams.CONFIG_UNICAST_DS_TWR;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -39,13 +39,15 @@ import android.ranging.RangingManager;
 import android.ranging.RangingManager.RangingCapabilitiesCallback;
 import android.ranging.RangingPreference;
 import android.ranging.RangingSession;
-import android.ranging.params.RawInitiatorRangingParams;
-import android.ranging.params.RawRangingDevice;
-import android.ranging.params.RawResponderRangingParams;
-import android.ranging.rtt.RttRangingParams;
+import android.ranging.SensorFusionParams;
+import android.ranging.SessionConfiguration;
+import android.ranging.raw.RawInitiatorRangingParams;
+import android.ranging.raw.RawRangingDevice;
+import android.ranging.raw.RawResponderRangingParams;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingParams;
+import android.ranging.wifi.rtt.RttRangingParams;
 import android.uwb.UwbManager;
 
 import androidx.annotation.NonNull;
@@ -98,8 +100,8 @@ public class RangingManagerTest {
                 MoreExecutors.directExecutor(), callback);
         assertThat(rangingSession).isNotNull();
 
-        RangingPreference preference = new RangingPreference.Builder(DEVICE_ROLE_INITIATOR)
-                .setRangingParameters(new RawInitiatorRangingParams.Builder()
+        RangingPreference preference = new RangingPreference.Builder(DEVICE_ROLE_INITIATOR,
+                new RawInitiatorRangingParams.Builder()
                         .addRawRangingDevice(new RawRangingDevice.Builder()
                                 .setRangingDevice(new RangingDevice.Builder().build())
                                 .setUwbRangingParams(new UwbRangingParams.Builder(
@@ -115,6 +117,14 @@ public class RangingManagerTest {
                                         .setRangingUpdateRate(UPDATE_RATE_NORMAL)
                                         .build())
                                 .build())
+                        .build())
+                .setSessionConfiguration(new SessionConfiguration.Builder()
+                        .setRangingMeasurementsLimit(1000)
+                        .setAngleOfArrivalNeeded(true)
+                        .setSensorFusionParameters(
+                                new SensorFusionParams.Builder()
+                                        .setSensorFusionEnabled(false)
+                                        .build())
                         .build())
                 .build();
 
@@ -145,8 +155,8 @@ public class RangingManagerTest {
         RangingSession rangingSession2 = mRangingManager.createRangingSession(
                 MoreExecutors.directExecutor(), callback2);
         assertThat(rangingSession2).isNotNull();
-        RangingPreference preference1 = new RangingPreference.Builder(DEVICE_ROLE_INITIATOR)
-                .setRangingParameters(new RawInitiatorRangingParams.Builder()
+        RangingPreference preference1 = new RangingPreference.Builder(DEVICE_ROLE_INITIATOR,
+                new RawInitiatorRangingParams.Builder()
                         .addRawRangingDevice(new RawRangingDevice.Builder()
                                 .setRangingDevice(new RangingDevice.Builder().build())
                                 .setUwbRangingParams(new UwbRangingParams.Builder(sessionId,
@@ -165,8 +175,8 @@ public class RangingManagerTest {
                         .build())
                 .build();
 
-        RangingPreference preference2 = new RangingPreference.Builder(DEVICE_ROLE_INITIATOR)
-                .setRangingParameters(new RawInitiatorRangingParams.Builder()
+        RangingPreference preference2 = new RangingPreference.Builder(DEVICE_ROLE_INITIATOR,
+                new RawInitiatorRangingParams.Builder()
                         .addRawRangingDevice(new RawRangingDevice.Builder()
                                 .setRangingDevice(new RangingDevice.Builder().build())
                                 .setUwbRangingParams(new UwbRangingParams.Builder(sessionId,
@@ -233,20 +243,6 @@ public class RangingManagerTest {
             mOnClosedCalled.countDown();
         }
 
-        /* TODO(shreshtabm): Remove once new callbacks are approved. */
-        @Override
-        public void onStartFailed(int reason, @NonNull RangingDevice peer) {
-        }
-
-        /* TODO(shreshtabm): Remove once new callbacks are approved. */
-        @Override
-        public void onStarted(int technology) {
-        }
-
-        /* TODO(shreshtabm): Remove once new callbacks are approved. */
-        @Override
-        public void onStopped(@NonNull RangingDevice peer) {
-        }
     }
 
     @Test
@@ -301,8 +297,8 @@ public class RangingManagerTest {
 
         assumeTrue(capabilitiesCallback.mRangingCapabilities.getTechnologyAvailability().get(
                 RangingManager.WIFI_NAN_RTT) != NOT_SUPPORTED);
-        RangingPreference preference = new RangingPreference.Builder(DEVICE_ROLE_INITIATOR)
-                .setRangingParameters(new RawInitiatorRangingParams.Builder()
+        RangingPreference preference = new RangingPreference.Builder(DEVICE_ROLE_INITIATOR,
+                new RawInitiatorRangingParams.Builder()
                         .addRawRangingDevice(new RawRangingDevice.Builder()
                                 .setRangingDevice(new RangingDevice.Builder().build())
                                 .setRttRangingParams(new RttRangingParams.Builder("test_rtt_1")
@@ -349,8 +345,8 @@ public class RangingManagerTest {
 
         assumeTrue(capabilitiesCallback.mRangingCapabilities.getTechnologyAvailability().get(
                 RangingManager.WIFI_NAN_RTT) != NOT_SUPPORTED);
-        RangingPreference preference = new RangingPreference.Builder(DEVICE_ROLE_RESPONDER)
-                .setRangingParameters(new RawResponderRangingParams.Builder()
+        RangingPreference preference = new RangingPreference.Builder(DEVICE_ROLE_RESPONDER,
+                new RawResponderRangingParams.Builder()
                         .setRawRangingDevice(new RawRangingDevice.Builder()
                                 .setRangingDevice(new RangingDevice.Builder().build())
                                 .setRttRangingParams(new RttRangingParams.Builder("test_rtt_1")
@@ -395,8 +391,8 @@ public class RangingManagerTest {
                 RangingManager.WIFI_NAN_RTT) != NOT_SUPPORTED);
         assumeTrue(capabilitiesCallback.mRangingCapabilities.getTechnologyAvailability().get(
                 RangingManager.UWB) != NOT_SUPPORTED);
-        RangingPreference preference = new RangingPreference.Builder(DEVICE_ROLE_RESPONDER)
-                .setRangingParameters(new RawResponderRangingParams.Builder()
+        RangingPreference preference = new RangingPreference.Builder(DEVICE_ROLE_RESPONDER,
+                new RawResponderRangingParams.Builder()
                         .setRawRangingDevice(new RawRangingDevice.Builder()
                                 .setRangingDevice(new RangingDevice.Builder().build())
                                 .setRttRangingParams(new RttRangingParams.Builder("test_rtt_multi")

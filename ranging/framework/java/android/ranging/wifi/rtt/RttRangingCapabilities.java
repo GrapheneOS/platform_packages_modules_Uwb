@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.ranging.rtt;
+package android.ranging.wifi.rtt;
 
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
@@ -29,10 +29,9 @@ import com.android.ranging.flags.Flags;
  * Represents the capabilities of the WiFi Neighbor Awareness Networking Round Trip Time (NAN-RTT)
  * ranging.
  *
- * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_RTT_ENABLED)
-public class RttRangingCapabilities implements Parcelable, TechnologyCapabilities {
+public final class RttRangingCapabilities implements Parcelable, TechnologyCapabilities {
 
     private final boolean mHasPeriodicRangingHwFeature;
 
@@ -45,7 +44,7 @@ public class RttRangingCapabilities implements Parcelable, TechnologyCapabilitie
     }
 
     @Override
-    public void writeToParcel(Parcel dest, int flags) {
+    public void writeToParcel(@NonNull Parcel dest, int flags) {
         dest.writeBoolean(mHasPeriodicRangingHwFeature);
     }
 
@@ -118,4 +117,11 @@ public class RttRangingCapabilities implements Parcelable, TechnologyCapabilitie
         }
     }
 
+    @Override
+    public String toString() {
+        return "RttRangingCapabilities{ "
+                + "mHasPeriodicRangingHwFeature="
+                + mHasPeriodicRangingHwFeature
+                + " }";
+    }
 }

@@ -62,6 +62,7 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.server.uwb.data.UwbRadarData;
 import com.android.server.uwb.data.UwbRangingData;
 import com.android.server.uwb.data.UwbUciConstants;
+import com.android.server.uwb.rftest.UwbTestPeriodicTxResult;
 import com.android.uwb.flags.Flags;
 
 import com.google.uwb.support.fira.FiraOnControleeAddRemoveParams;
@@ -799,5 +800,16 @@ public class UwbSessionNotificationManagerTest {
                 argThat(p -> p.getInt("sweep_offset")
                         == testUwbRadarDataAndRadarData.second.getSweepOffset()),
                 eq(new byte[] {}));
+    }
+
+    @Test
+    public void testOnRfTestNotificationReceived() throws Exception {
+        UwbTestPeriodicTxResult periodicTxResult = new UwbTestPeriodicTxResult(0,
+                new byte[] { 0x00 });
+        mUwbSessionNotificationManager.onRfTestNotificationReceived(mUwbSession, periodicTxResult);
+
+        verify(mIOemExtensionCallback).onRangingReportReceived(any());
+
+        verify(mIUwbRangingCallbacks).onRangingResult(eq(mSessionHandle), any());
     }
 }

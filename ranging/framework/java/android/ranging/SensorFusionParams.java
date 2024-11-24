@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.ranging.params;
+package android.ranging;
 
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
@@ -101,5 +101,14 @@ public final class SensorFusionParams implements Parcelable {
             mSensorFusionEnabled = sensorFusionEnabled;
             return this;
         }
+    }
+
+    /** @hide */
+    @Override
+    public String toString() {
+        return "SensorFusionParams{ "
+                + "mSensorFusionEnabled="
+                + mSensorFusionEnabled
+                + " }";
     }
 }

@@ -20,18 +20,21 @@ import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 import static android.ranging.uwb.UwbComplexChannel.UWB_CHANNEL_9;
 import static android.ranging.uwb.UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_11;
 
+import android.ranging.DataNotificationConfig;
 import android.ranging.RangingDevice;
+import android.ranging.RangingParams;
 import android.ranging.RangingPreference;
-import android.ranging.params.DataNotificationConfig;
-import android.ranging.params.RangingParams;
-import android.ranging.params.RawInitiatorRangingParams;
-import android.ranging.params.RawRangingDevice;
-import android.ranging.params.RawResponderRangingParams;
-import android.ranging.params.SensorFusionParams;
-import android.ranging.rtt.RttRangingParams;
+import android.ranging.SensorFusionParams;
+import android.ranging.SessionConfiguration;
+import android.ranging.ble.cs.CsRangingParams;
+import android.ranging.ble.rssi.BleRssiRangingParams;
+import android.ranging.raw.RawInitiatorRangingParams;
+import android.ranging.raw.RawRangingDevice;
+import android.ranging.raw.RawResponderRangingParams;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingParams;
+import android.ranging.wifi.rtt.RttRangingParams;
 
 import com.google.android.mobly.snippet.SnippetObjectConverter;
 
@@ -53,15 +56,19 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
     public Object deserialize(JSONObject j, Type type) throws JSONException {
         if (type != RangingPreference.class) return null;
 
-        return new RangingPreference.Builder(j.getInt("device_role"))
-                .setRangingParameters(
-                        getRangingParams(j.getJSONObject("ranging_params"), j.getInt("device_role"))
-                )
-                .setSensorFusionParameters(
-                        getSensorFusionParams(j.getJSONObject("sensor_fusion_params"))
-                )
-                .setDataNotificationConfig(
-                        getDataNotificationConfig(j.getBoolean("enable_range_data_notifications"))
+        return new RangingPreference.Builder(j.getInt("device_role"),
+                getRangingParams(j.getJSONObject("ranging_params"), j.getInt("device_role")))
+                .setSessionConfiguration(
+                        new SessionConfiguration.Builder()
+                                .setSensorFusionParameters(
+                                        getSensorFusionParams(
+                                                j.getJSONObject("sensor_fusion_params"))
+                                )
+                                .setDataNotificationConfig(
+                                        getDataNotificationConfig(
+                                                j.getBoolean("enable_range_data_notifications"))
+                                )
+                                .build()
                 )
                 .build();
     }
@@ -114,10 +121,14 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
             builder.setUwbRangingParams(getUwbParams(j.getJSONObject("uwb_params")));
         }
         if (!j.isNull("cs_params")) {
-            throw new UnsupportedOperationException("cs params not implemented");
+            builder.setCsRangingParams(getCsParams(j.getJSONObject("cs_params")));
         }
         if (!j.isNull("rtt_params")) {
             builder.setRttRangingParams(getRttParams(j.getJSONObject("rtt_params")));
+        }
+        if (!j.isNull("rssi_params")) {
+            builder.setBleRssiRangingParams(getBleRssiRangingParams(
+                    j.getJSONObject("rssi_params")));
         }
         return builder.build();
     }
@@ -152,6 +163,18 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
                 .build();
     }
 
+    private BleRssiRangingParams getBleRssiRangingParams(JSONObject j) throws JSONException {
+        return new BleRssiRangingParams.Builder(j.getString("peer_address"))
+                .setRangingUpdateRate(j.getInt("ranging_update_rate"))
+                .build();
+    }
+
+    private CsRangingParams getCsParams(JSONObject j) throws JSONException {
+        return new CsRangingParams.Builder(j.getString("peer_address"))
+                .setRangingUpdateRate(j.getInt("ranging_update_rate"))
+                .setSecurityLevel(j.getInt("security_level"))
+                .build();
+    }
 
     private SensorFusionParams getSensorFusionParams(JSONObject j) throws JSONException {
         return new SensorFusionParams.Builder()

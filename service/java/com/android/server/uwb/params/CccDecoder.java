@@ -140,9 +140,21 @@ public class CccDecoder extends TlvDecoder {
             builder.addProtocolVersion(CccProtocolVersion.fromBytes(versions, i));
         }
         byte[] configs = tlvs.getByteArray(CCC_SUPPORTED_UWB_CONFIGS);
-        for (int i = 0; i < configs.length; i++) {
-            builder.addUwbConfig(configs[i]);
+        if (mUwbInjector.isCccSupportedTwoByteConfigIdLittleEndian()) {
+            if (configs.length % 2 != 0) {
+                throw new IllegalArgumentException("Invalid supported configs len "
+                        + versions.length);
+            }
+            for (int i = 0; i < configs.length; i += 2) {
+                int config = ((configs[i + 1] & 0xff) << 8) + (configs[i] & 0xff);
+                builder.addUwbConfig(config);
+            }
+        } else {
+            for (int i = 0; i < configs.length; i++) {
+                builder.addUwbConfig(configs[i]);
+            }
         }
+
         byte[] pulse_shape_combos = tlvs.getByteArray(CCC_SUPPORTED_PULSE_SHAPE_COMBOS);
         for (int i = 0; i < pulse_shape_combos.length; i++) {
             builder.addPulseShapeCombo(CccPulseShapeCombo.fromBytes(pulse_shape_combos, i));

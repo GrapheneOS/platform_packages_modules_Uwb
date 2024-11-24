@@ -22,6 +22,7 @@ import androidx.annotation.NonNull;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.time.Duration;
+import java.util.Arrays;
 
 public class RttRangingParameters {
 
@@ -126,6 +127,7 @@ public class RttRangingParameters {
         mPublisherPingDuration = builder.mPublisherPingDuration;
     }
 
+
     /**
      * Returns a builder for {@link com.android.ranging.generic.ranging.rtt.RttRangingParameters}.
      */
@@ -183,5 +185,27 @@ public class RttRangingParameters {
         public RttRangingParameters build() {
             return new RttRangingParameters(this);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "RttRangingParameters{ "
+                + "deviceRole: "
+                + mDeviceRole
+                + ", serviceId: "
+                + mServiceId
+                + ", serviceName: "
+                + mServiceName
+                + ", matchFilter: "
+                + Arrays.toString(mMatchFilter)
+                + ", maxDistanceMm: "
+                + mMaxDistanceMm
+                + ", minDistanceMm: "
+                + mMinDistanceMm
+                + ", enablePublisherRanging: "
+                + mEnablePublisherRanging
+                + ", publisherPingDuration: "
+                + mPublisherPingDuration
+                + " }";
     }
 }

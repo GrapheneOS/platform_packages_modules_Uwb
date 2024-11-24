@@ -23,6 +23,7 @@ aconfig_declarations {
     name: "ranging_aconfig_flags",
     package: "com.android.ranging.flags",
     container: "com.android.uwb",
+    exportable: true,
     srcs: ["ranging_flags.aconfig"],
     visibility: [
         "//packages/modules/Uwb/ranging:__subpackages__",
@@ -40,6 +41,16 @@ java_aconfig_library {
     defaults: ["framework-minus-apex-aconfig-java-defaults"],
     visibility: [
         "//packages/modules/Uwb/ranging:__subpackages__",
+    ],
+}
+
+java_aconfig_library {
+    name: "com.android.ranging.flags.ranging-aconfig-java-export",
+    aconfig_declarations: "ranging_aconfig_flags",
+    mode: "exported",
+    defaults: ["framework-minus-apex-aconfig-java-defaults"],
+    visibility: [
+        "//frameworks/base",
     ],
 }
 

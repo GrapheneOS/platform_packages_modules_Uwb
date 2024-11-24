@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package android.ranging.params;
+package android.ranging.oob;
 
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.ranging.RangingParams;
 
 import com.android.ranging.flags.Flags;
 
@@ -27,13 +28,11 @@ import com.android.ranging.flags.Flags;
  * Represents the parameters for an Out-of-Band (OOB) responder in a ranging session.
  * This class contains configuration and device handle information for establishing
  * a ranging session with an initiator.
- *
- * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
-public class OobResponderRangingParams extends RangingParams implements Parcelable {
+public final class OobResponderRangingParams extends RangingParams implements Parcelable {
 
-    private final DeviceHandle mDeviceHandle;
+    private final android.ranging.oob.DeviceHandle mDeviceHandle;
 
     private OobResponderRangingParams(Builder builder) {
         setRangingSessionType(RangingParams.RANGING_SESSION_OOB);
@@ -41,13 +40,14 @@ public class OobResponderRangingParams extends RangingParams implements Parcelab
     }
 
 
-    protected OobResponderRangingParams(Parcel in) {
+    private OobResponderRangingParams(Parcel in) {
         setRangingSessionType(in.readInt());
-        mDeviceHandle = in.readParcelable(DeviceHandle.class.getClassLoader(), DeviceHandle.class);
+        mDeviceHandle = in.readParcelable(
+                DeviceHandle.class.getClassLoader(), android.ranging.oob.DeviceHandle.class);
     }
 
     @Override
-    public void writeToParcel(Parcel dest, int flags) {
+    public void writeToParcel(@NonNull Parcel dest, int flags) {
         dest.writeInt(getRangingSessionType());
         dest.writeParcelable(mDeviceHandle, flags);
     }
@@ -72,7 +72,7 @@ public class OobResponderRangingParams extends RangingParams implements Parcelab
      * @return The DeviceHandle of the OOB responder.
      */
     @NonNull
-    public DeviceHandle getDeviceHandle() {
+    public android.ranging.oob.DeviceHandle getDeviceHandle() {
         return mDeviceHandle;
     }
 
@@ -85,14 +85,14 @@ public class OobResponderRangingParams extends RangingParams implements Parcelab
      * Builder class for creating instances of {@link OobResponderRangingParams}.
      */
     public static final class Builder {
-        private final DeviceHandle mDeviceHandle;
+        private final android.ranging.oob.DeviceHandle mDeviceHandle;
 
         /**
          * Constructs a new Builder instance with the specified DeviceHandle.
          *
          * @param deviceHandle The DeviceHandle to associate with this OOB responder.
          */
-        public Builder(DeviceHandle deviceHandle) {
+        public Builder(@NonNull android.ranging.oob.DeviceHandle deviceHandle) {
             mDeviceHandle = deviceHandle;
         }
 
@@ -105,5 +105,16 @@ public class OobResponderRangingParams extends RangingParams implements Parcelab
         public OobResponderRangingParams build() {
             return new OobResponderRangingParams(this);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "OobResponderRangingParams{ "
+                + "mDeviceHandle="
+                + mDeviceHandle
+                + ", "
+                + super.toString()
+                + ", "
+                + " }";
     }
 }

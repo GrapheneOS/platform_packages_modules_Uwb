@@ -20,11 +20,12 @@ import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.ranging.DataNotificationConfig.NotificationConfigType;
 import android.ranging.RangingCapabilities.TechnologyCapabilities;
 import android.ranging.RangingManager;
-import android.ranging.params.DataNotificationConfig.NotificationConfigType;
-import android.ranging.params.RawRangingDevice.RangingUpdateRate;
+import android.ranging.raw.RawRangingDevice.RangingUpdateRate;
 import android.ranging.uwb.UwbComplexChannel.UwbChannel;
+import android.ranging.uwb.UwbComplexChannel.UwbPreambleCodeIndex;
 import android.ranging.uwb.UwbRangingParams.ConfigId;
 import android.ranging.uwb.UwbRangingParams.SlotDuration;
 
@@ -54,6 +55,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
     private final List<Integer> mSupportedConfigIds;
     private final List<Integer> mSupportedSlotDurations;
     private final List<Integer> mSupportedRangingUpdateRates;
+    private final List<Integer> mSupportedPreambleIndexes;
     private final boolean mHasBackgroundRangingSupport;
 
     private UwbRangingCapabilities(Builder builder) {
@@ -67,6 +69,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         mSupportedConfigIds = builder.mSupportedConfigIds;
         mSupportedSlotDurations = builder.mSupportedSlotDurations;
         mSupportedRangingUpdateRates = builder.mSupportedRangingUpdateRates;
+        mSupportedPreambleIndexes = builder.mSupportedPreambleIndexes;
         mHasBackgroundRangingSupport = builder.mHasBackgroundRangingSupport;
     }
 
@@ -86,6 +89,8 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         in.readList(mSupportedSlotDurations, Integer.class.getClassLoader(), Integer.class);
         mSupportedRangingUpdateRates = new ArrayList<>();
         in.readList(mSupportedRangingUpdateRates, Integer.class.getClassLoader(), Integer.class);
+        mSupportedPreambleIndexes = new ArrayList<>();
+        in.readList(mSupportedPreambleIndexes, Integer.class.getClassLoader(), Integer.class);
         mHasBackgroundRangingSupport = in.readByte() != 0;
     }
 
@@ -168,6 +173,19 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         return mSupportedChannels;
     }
 
+
+    /**
+     * Gets the list of supported preamble indexes.
+     *
+     * @return a list of supported preamble indexes.
+     *
+     */
+    @NonNull
+    @UwbPreambleCodeIndex
+    public List<Integer> getSupportedPreambleIndexes() {
+        return mSupportedPreambleIndexes;
+    }
+
     /**
      * Gets the list of supported notification configurations.
      *
@@ -241,6 +259,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         dest.writeList(mSupportedConfigIds);
         dest.writeList(mSupportedSlotDurations);
         dest.writeList(mSupportedRangingUpdateRates);
+        dest.writeList(mSupportedPreambleIndexes);
         dest.writeByte((byte) (mHasBackgroundRangingSupport ? 1 : 0));
     }
 
@@ -260,6 +279,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         private List<Integer> mSupportedConfigIds;
         private List<Integer> mSupportedSlotDurations;
         private List<Integer> mSupportedRangingUpdateRates;
+        private List<Integer> mSupportedPreambleIndexes;
         private boolean mHasBackgroundRangingSupport;
 
         /**
@@ -337,6 +357,19 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         }
 
         /**
+         * Sets preamble indexes.
+         *
+         * @param supportedPreambleIndexes the supported preamble indexes
+         * @return {@link Builder} instance.
+         * @throws IllegalArgumentException if the provided list is null.
+         */
+        @NonNull
+        public Builder setSupportedPreambleIndexes(List<Integer> supportedPreambleIndexes) {
+            this.mSupportedPreambleIndexes = supportedPreambleIndexes;
+            return this;
+        }
+
+        /**
          * Sets supported ntf configs.
          *
          * @param supportedNtfConfigs the supported ntf configs
@@ -410,5 +443,35 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         public UwbRangingCapabilities build() {
             return new UwbRangingCapabilities(this);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "UwbRangingCapabilities{ "
+                + "mSupportsDistance="
+                + mSupportsDistance
+                + ", mSupportsAzimuthalAngle="
+                + mSupportsAzimuthalAngle
+                + ", mSupportsElevationAngle="
+                + mSupportsElevationAngle
+                + ", mSupportsRangingIntervalReconfigure="
+                + mSupportsRangingIntervalReconfigure
+                + ", mMinRangingInterval="
+                + mMinRangingInterval
+                + ", mSupportedChannels="
+                + mSupportedChannels
+                + ", mSupportedNtfConfigs="
+                + mSupportedNtfConfigs
+                + ", mSupportedConfigIds="
+                + mSupportedConfigIds
+                + ", mSupportedSlotDurations="
+                + mSupportedSlotDurations
+                + ", mSupportedRangingUpdateRates="
+                + mSupportedRangingUpdateRates
+                + ", mSupportedPreambleIndexes="
+                + mSupportedPreambleIndexes
+                + ", mHasBackgroundRangingSupport="
+                + mHasBackgroundRangingSupport
+                + " }";
     }
 }

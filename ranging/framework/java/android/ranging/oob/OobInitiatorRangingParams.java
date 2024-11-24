@@ -14,18 +14,21 @@
  * limitations under the License.
  */
 
-package android.ranging.params;
+package android.ranging.oob;
 
 import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
 import android.annotation.NonNull;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.ranging.RangingParams;
+import android.util.Range;
 
 import com.android.ranging.flags.Flags;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,11 +36,9 @@ import java.util.List;
  * Represents the parameters for an Out-of-Band (OOB) initiator in a ranging session.
  * This class includes configuration options such as device handles, security level,
  * ranging mode, and interval range for setting up an OOB initiator ranging session.
- *
- * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
-public class OobInitiatorRangingParams extends RangingParams implements Parcelable {
+public final class OobInitiatorRangingParams extends RangingParams implements Parcelable {
 
     /**
      * @hide
@@ -99,7 +100,7 @@ public class OobInitiatorRangingParams extends RangingParams implements Parcelab
 
     private final List<DeviceHandle> mDeviceHandles;
 
-    private final RangingIntervalRange mRangingIntervalRange;
+    private final Range<Duration> mRangingIntervalRange;
 
     @SecurityLevel
     private final int mSecurityLevel;
@@ -112,25 +113,29 @@ public class OobInitiatorRangingParams extends RangingParams implements Parcelab
         mDeviceHandles = new ArrayList<>(builder.mDeviceHandles);
         mSecurityLevel = builder.mSecurityLevel;
         mRangingMode = builder.mRangingMode;
-        mRangingIntervalRange = builder.mRangingIntervalRange;
+        mRangingIntervalRange = new Range<>(builder.mSlowestRangingInterval,
+                builder.mFastestRangingInterval);
     }
 
-    protected OobInitiatorRangingParams(Parcel in) {
+    private OobInitiatorRangingParams(Parcel in) {
         setRangingSessionType(in.readInt());
         mDeviceHandles = in.createTypedArrayList(DeviceHandle.CREATOR);
         mSecurityLevel = in.readInt();
         mRangingMode = in.readInt();
-        mRangingIntervalRange = in.readParcelable(RangingIntervalRange.class.getClassLoader(),
-                RangingIntervalRange.class);
+        Duration lower = Duration.ofMillis(in.readLong());
+        Duration upper = Duration.ofMillis(in.readLong());
+        mRangingIntervalRange = new Range<>(lower, upper);
+
     }
 
     @Override
-    public void writeToParcel(Parcel dest, int flags) {
+    public void writeToParcel(@NonNull Parcel dest, int flags) {
         dest.writeInt(getRangingSessionType());
         dest.writeTypedList(mDeviceHandles);
         dest.writeInt(mSecurityLevel);
         dest.writeInt(mRangingMode);
-        dest.writeParcelable(mRangingIntervalRange, flags);
+        dest.writeLong(mRangingIntervalRange.getLower().toMillis());
+        dest.writeLong(mRangingIntervalRange.getUpper().toMillis());
     }
 
     @Override
@@ -165,11 +170,31 @@ public class OobInitiatorRangingParams extends RangingParams implements Parcelab
     /**
      * Returns the ranging interval range configuration.
      *
-     * @return The RangingIntervalRange associated with the OOB initiator.
+     * @return The {@link Range} associated with this OOB initiator.
      */
     @NonNull
-    public RangingIntervalRange getRangingIntervalRange() {
+    public Range<Duration> getRangingIntervalRange() {
         return mRangingIntervalRange;
+    }
+
+    /**
+     * Returns the fastest requested ranging interval.
+     *
+     * @return The fastest interval.
+     */
+    @NonNull
+    public Duration getFastestRangingInterval() {
+        return mRangingIntervalRange.getLower();
+    }
+
+    /**
+     * Returns the slowest acceptable ranging.
+     *
+     * @return The slowest interval.
+     */
+    @NonNull
+    public Duration getSlowestRangingInterval() {
+        return mRangingIntervalRange.getUpper();
     }
 
     /**
@@ -206,11 +231,42 @@ public class OobInitiatorRangingParams extends RangingParams implements Parcelab
      */
     public static final class Builder {
         private final List<DeviceHandle> mDeviceHandles = new ArrayList<>();
-        private RangingIntervalRange mRangingIntervalRange;
         @SecurityLevel
         private int mSecurityLevel = SECURITY_LEVEL_BASIC;
         @RangingMode
         private int mRangingMode = RANGING_MODE_AUTO;
+
+        private Duration mFastestRangingInterval = Duration.ofMillis(100);
+        private Duration mSlowestRangingInterval = Duration.ofMillis(5000);
+
+        /**
+         * Sets the fastest ranging interval in milliseconds.
+         *
+         * @param intervalMs The fastest interval in milliseconds.
+         *                   Defaults to 100ms
+         * @return The Builder instance, for chaining calls.
+         */
+        @NonNull
+        public Builder setFastestRangingInterval(@NonNull Duration intervalMs) {
+            this.mFastestRangingInterval = intervalMs;
+            return this;
+        }
+
+        /**
+         * Sets the slowest ranging interval in milliseconds.
+         *
+         * @param intervalMs The slowest interval in milliseconds.
+         *                   Defaults to 5000ms
+         * @return The Builder instance, for chaining calls.
+         */
+        @NonNull
+        public Builder setSlowestRangingInterval(@NonNull Duration intervalMs) {
+            if (intervalMs.isNegative() || intervalMs.isZero()) {
+                throw new IllegalArgumentException("Slowest duration cannot be negative or zero");
+            }
+            this.mSlowestRangingInterval = intervalMs;
+            return this;
+        }
 
         /**
          * Adds a DeviceHandle to the list of devices for the ranging session.
@@ -218,22 +274,12 @@ public class OobInitiatorRangingParams extends RangingParams implements Parcelab
          * @param deviceHandle The DeviceHandle to add.
          * @return The Builder instance.
          */
-        public Builder addDeviceHandle(DeviceHandle deviceHandle) {
+        @NonNull
+        public Builder addDeviceHandle(@NonNull DeviceHandle deviceHandle) {
             mDeviceHandles.add(deviceHandle);
             return this;
         }
 
-        /**
-         * Sets the ranging interval range configuration for the session.
-         *
-         * @param intervalRange The RangingIntervalRange to set.
-         *                      Defaults to range [100ms, 5000ms]
-         * @return The Builder instance.
-         */
-        public Builder setRangingIntervalRange(RangingIntervalRange intervalRange) {
-            this.mRangingIntervalRange = intervalRange;
-            return this;
-        }
 
         /**
          * Sets the security level for the ranging session.
@@ -242,6 +288,7 @@ public class OobInitiatorRangingParams extends RangingParams implements Parcelab
          *                      Defaults to {@link #SECURITY_LEVEL_BASIC}
          * @return The Builder instance.
          */
+        @NonNull
         public Builder setSecurityLevel(@SecurityLevel int securityLevel) {
             this.mSecurityLevel = securityLevel;
             return this;
@@ -254,6 +301,7 @@ public class OobInitiatorRangingParams extends RangingParams implements Parcelab
          *                    Defaults to {@link #RANGING_MODE_AUTO}
          * @return The Builder instance.
          */
+        @NonNull
         public Builder setRangingMode(@RangingMode int rangingMode) {
             this.mRangingMode = rangingMode;
             return this;
@@ -264,10 +312,26 @@ public class OobInitiatorRangingParams extends RangingParams implements Parcelab
          *
          * @return A new OobInitiatorRangingParams instance.
          */
+        @NonNull
         public OobInitiatorRangingParams build() {
             return new OobInitiatorRangingParams(this);
         }
     }
 
-
+    @Override
+    public String toString() {
+        return "OobInitiatorRangingParams{ "
+                + "mDeviceHandles="
+                + mDeviceHandles
+                + ", mRangingIntervalRange="
+                + mRangingIntervalRange
+                + ", mSecurityLevel="
+                + mSecurityLevel
+                + ", mRangingMode="
+                + mRangingMode
+                + ", "
+                + super.toString()
+                + ", "
+                + " }";
+    }
 }

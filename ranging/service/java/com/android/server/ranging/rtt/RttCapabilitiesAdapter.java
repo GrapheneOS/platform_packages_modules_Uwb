@@ -21,19 +21,21 @@ import static android.ranging.RangingCapabilities.DISABLED_USER;
 import static android.ranging.RangingCapabilities.ENABLED;
 import static android.ranging.RangingCapabilities.NOT_SUPPORTED;
 
+import android.annotation.NonNull;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.ranging.RangingCapabilities.RangingTechnologyAvailability;
-import android.ranging.rtt.RttRangingCapabilities;
+import android.ranging.wifi.rtt.RttRangingCapabilities;
 
 import androidx.annotation.Nullable;
 
 import com.android.ranging.rtt.backend.internal.RttServiceImpl;
-import com.android.server.ranging.CapabilitiesProvider.AvailabilityCallback;
+import com.android.server.ranging.CapabilitiesProvider;
 import com.android.server.ranging.CapabilitiesProvider.CapabilitiesAdapter;
+import com.android.server.ranging.CapabilitiesProvider.TechnologyAvailabilityListener;
 
 public class RttCapabilitiesAdapter extends CapabilitiesAdapter {
 
@@ -45,7 +47,11 @@ public class RttCapabilitiesAdapter extends CapabilitiesAdapter {
         return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_AWARE);
     }
 
-    public RttCapabilitiesAdapter(Context context) {
+    public RttCapabilitiesAdapter(
+            @NonNull Context context,
+            @NonNull TechnologyAvailabilityListener listener
+    ) {
+        super(listener);
         mContext = context;
         if (isSupported(mContext)) {
             mRttService = new RttServiceImpl(context);
@@ -83,11 +89,11 @@ public class RttCapabilitiesAdapter extends CapabilitiesAdapter {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            AvailabilityCallback callback = getAvailabilityCallback();
-            if (callback != null) {
-                callback.onAvailabilityChange(
+            TechnologyAvailabilityListener listener = getAvailabilityListener();
+            if (listener != null) {
+                listener.onAvailabilityChange(
                         getAvailability(),
-                        AvailabilityCallback.AvailabilityChangedReason.SYSTEM_POLICY);
+                        CapabilitiesProvider.AvailabilityChangedReason.SYSTEM_POLICY);
             }
         }
     }

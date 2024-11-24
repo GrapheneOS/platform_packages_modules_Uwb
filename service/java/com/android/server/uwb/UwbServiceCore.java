@@ -83,6 +83,7 @@ import com.google.uwb.support.radar.RadarOpenSessionParams;
 import com.google.uwb.support.radar.RadarParams;
 import com.google.uwb.support.rftest.RfTestOpenSessionParams;
 import com.google.uwb.support.rftest.RfTestParams;
+import com.google.uwb.support.rftest.RfTestStartSessionParams;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
@@ -725,6 +726,8 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             startRangingParams = CccStartRangingParams.fromBundle(params);
         } else if (AliroParams.isCorrectProtocol(params)) {
             startRangingParams = AliroStartRangingParams.fromBundle(params);
+        } else if (RfTestParams.isCorrectProtocol(params)) {
+            startRangingParams = RfTestStartSessionParams.fromBundle(params);
         }
 
         if (mUwbInjector.getProfileManager().hasSession(sessionHandle)) {
@@ -1078,7 +1081,6 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                     break;
 
                 case TASK_DISABLE:
-                    mSessionManager.deinitAllSession();
                     handleDisable();
                     break;
 
@@ -1091,7 +1093,6 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                     break;
 
                 case TASK_RESTART:
-                    mSessionManager.deinitAllSession();
                     handleDisable();
                     handleEnable();
                     break;
@@ -1221,7 +1222,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                 synchronized (mUwbWakeLock) {
                     mUwbWakeLock.acquire();
                 }
-
+                mSessionManager.deInitAllSession();
                 if (!mNativeUwbManager.doDeinitialize()) {
                     Log.w(TAG, "Error disabling UWB");
                     mUwbMetrics.logUwbStateChangeEvent(false, false, false);

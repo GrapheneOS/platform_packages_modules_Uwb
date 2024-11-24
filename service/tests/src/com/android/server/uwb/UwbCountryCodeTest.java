@@ -148,13 +148,23 @@ public class UwbCountryCodeTest {
                 .thenReturn(mLocationManager);
         when(mSubscriptionManager.getActiveSubscriptionInfoList()).thenReturn(List.of(
                 new SubscriptionInfo(
-                TEST_SUBSCRIPTION_ID, "", TEST_SLOT_IDX, "", "", 0, 0, "", 0, null, "", "", "",
-                        true /* isEmbedded */, null, "", 25, false, null, false, 0, 0, 0, null,
+                TEST_SUBSCRIPTION_ID, "", TEST_SLOT_IDX, "", "", 0, 0, "", 0, null, "901", "345",
+                        "", true /* isEmbedded */, null, "", 25, false, null, false, 0, 0, 0, null,
                         null, true, 0),
                 new SubscriptionInfo(
                         TEST_SUBSCRIPTION_ID_OTHER, "", TEST_SLOT_IDX_OTHER, "", "", 0, 0, "", 0,
-                        null, "", "", "", true /* isEmbedded */, null, "", 25, false, null, false,
-                        0, 0, 0, null, null, true, 0)
+                        null, "450", "08", "", true /* isEmbedded */, null, "", 25, false, null,
+                        false, 0, 0, 0, null, null, true, 0)
+        ));
+        when(mSubscriptionManager.getCompleteActiveSubscriptionInfoList()).thenReturn(List.of(
+                new SubscriptionInfo(
+                TEST_SUBSCRIPTION_ID, "", TEST_SLOT_IDX, "", "", 0, 0, "", 0, null, "901", "345",
+                        "", true /* isEmbedded */, null, "", 25, false, null, false, 0, 0, 0, null,
+                        null, true, 0),
+                new SubscriptionInfo(
+                        TEST_SUBSCRIPTION_ID_OTHER, "", TEST_SLOT_IDX_OTHER, "", "", 0, 0, "", 0,
+                        null, "450", "08", "", true /* isEmbedded */, null, "", 25, false, null,
+                        false, 0, 0, 0, null, null, true, 0)
         ));
         when(mContext.getPackageManager()).thenReturn(mPackageManager);
         when(mLocation.getLatitude()).thenReturn(0.0);
@@ -614,5 +624,21 @@ public class UwbCountryCodeTest {
         mUwbCountryCode.clearCachedCountryCode();
 
         verify(mLocationManager).removeUpdates(mLocationListenerCaptor.capture());
+    }
+
+    @Test
+    public void testMccMncOemOverrideCountryCode() {
+        String[] mccMncList = new String[]{ "901", "45008", "45006" };
+        when(mUwbInjector.getOemDefaultCountryCode()).thenReturn(TEST_COUNTRY_CODE_OTHER);
+        when(mDeviceConfigFacade.getMccMncOemOverrideList()).thenReturn(mccMncList);
+        mUwbCountryCode.initialize();
+        clearInvocations(mNativeUwbManager, mListener);
+        verify(mContext).registerReceiver(
+                mTelephonyCountryCodeReceiverCaptor.capture(), any(), any(), any());
+        Intent intent = new Intent(TelephonyManager.ACTION_SIM_CARD_STATE_CHANGED);
+        mTelephonyCountryCodeReceiverCaptor.getValue().onReceive(mock(Context.class), intent);
+        verify(mNativeUwbManager).setCountryCode(
+                TEST_COUNTRY_CODE_OTHER.getBytes(StandardCharsets.UTF_8));
+        verify(mListener).onCountryCodeChanged(STATUS_CODE_OK, TEST_COUNTRY_CODE_OTHER);
     }
 }

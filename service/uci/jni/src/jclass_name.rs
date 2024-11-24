@@ -32,3 +32,5 @@ pub(crate) const UWB_DL_TDOA_MEASUREMENT_CLASS: &str =
     "com/android/server/uwb/data/UwbDlTDoAMeasurement";
 pub(crate) const UWB_RADAR_DATA_CLASS: &str = "com/android/server/uwb/data/UwbRadarData";
 pub(crate) const UWB_RADAR_SWEEP_DATA_CLASS: &str = "com/android/server/uwb/data/UwbRadarSweepData";
+pub(crate) const RFTEST_PERIODIC_TX_CLASS: &str =
+    "com/android/server/uwb/rftest/UwbTestPeriodicTxResult";

@@ -87,7 +87,11 @@ public final class OobHandle implements Parcelable {
 
     @Override
     public String toString() {
-        return "OobHandle{" + "mSessionHandle=" + mSessionHandle + ", mRangingDevice="
-                + mRangingDevice + '}';
+        return "OobHandle{ "
+                + "mSessionHandle="
+                + mSessionHandle
+                + ", mRangingDevice="
+                + mRangingDevice
+                + " }";
     }
 }

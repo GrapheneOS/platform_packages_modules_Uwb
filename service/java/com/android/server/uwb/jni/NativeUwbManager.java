@@ -33,6 +33,7 @@ import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.data.UwbVendorUciResponse;
 import com.android.server.uwb.info.UwbPowerStats;
 import com.android.server.uwb.multchip.UwbMultichipData;
+import com.android.server.uwb.rftest.UwbTestPeriodicTxResult;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -126,6 +127,14 @@ public class NativeUwbManager {
         Log.d(TAG, "onVendorUciNotificationReceived: " + gid + ", " + oid + ", "
                 + Arrays.toString(payload));
         mVendorListener.onVendorUciNotificationReceived(gid, oid, payload);
+    }
+
+    /**
+     * RfTestPeriodicTx callback invoked via the JNI
+     */
+    public void onPeriodicTxDataNotificationReceived(UwbTestPeriodicTxResult periodicTx) {
+        Log.d(TAG, "onPeriodicTxDataNotificationReceived : " + periodicTx);
+        mSessionListener.onRfTestNotificationReceived(periodicTx);
     }
 
     /**
@@ -314,6 +323,31 @@ public class NativeUwbManager {
         synchronized (mNativeLock) {
             return nativeSetRfTestAppConfigurations(sessionId, noOfParams, appConfigParamLen,
                     appConfigParams, chipId);
+        }
+    }
+
+    /**
+     * Starts a Periodic Tx test
+     *
+     * @param psduData : PSDU data
+     * @param chipId   : Identifier of UWB chip for multi-HAL devices
+     * @return : {@link UwbUciConstants}  Status code
+     */
+    public byte testPeriodicTx(byte[] psduData, String chipId) {
+        synchronized (mNativeLock) {
+            return nativeTestPeriodicTx(psduData, chipId);
+        }
+    }
+
+    /*
+     * Stops the ongoing Rf test session.
+     *
+     * @param chipId    : Identifier of UWB chip for multi-HAL devices
+     * @return          : {@link UwbUciConstants}  Status code
+     */
+    public byte stopRfTest(String chipId) {
+        synchronized (mNativeLock) {
+            return nativeStopRfTest(chipId);
         }
     }
 
@@ -645,4 +679,8 @@ public class NativeUwbManager {
 
     private native UwbConfigStatusData nativeSetRfTestAppConfigurations(int sessionId,
             int noOfParams, int appConfigParamLen, byte[] appConfigParams, String chipId);
+
+    private native byte nativeTestPeriodicTx(byte[] psduData, String chipId);
+
+    private native byte nativeStopRfTest(String chipId);
 }

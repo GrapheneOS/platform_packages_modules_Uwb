@@ -23,6 +23,8 @@ import androidx.annotation.NonNull;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
+import java.io.FileDescriptor;
+import java.io.PrintWriter;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -80,5 +82,14 @@ public class RangingSession {
             mPeers.remove(peer);
             return mPeers.isEmpty();
         }
+    }
+
+    public void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
+        pw.println("---- Dump of RangingSession ----");
+        pw.println("Peers:");
+        for (RangingPeer peer : mPeers.values()) {
+            pw.println(peer);
+        }
+        pw.println("---- Dump of RangingSession ----");
     }
 }

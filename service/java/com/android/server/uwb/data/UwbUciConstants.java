@@ -85,6 +85,7 @@ public class UwbUciConstants {
     public static final int REASON_ERROR_HUS_OTHERS = 0x29;
     public static final int REASON_ERROR_SESSION_KEY_NOT_FOUND = 0x2A;
     public static final int REASON_ERROR_SUB_SESSION_KEY_NOT_FOUND = 0x2B;
+    public static final int REASON_SESSION_STOPPED_DUE_TO_MAX_STS_INDEX_VALUE = 0xA2;
     /* Vendor Specific reason codes */
     public static final int REASON_REGULATION_UWB_OFF =
             UwbVendorReasonCodes.REASON_REGULATION_UWB_OFF;

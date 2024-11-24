@@ -16,10 +16,61 @@
 
 package com.android.server.ranging.cs;
 
+import android.ranging.DataNotificationConfig;
+import android.ranging.RangingDevice;
+import android.ranging.RangingPreference;
+import android.ranging.ble.cs.CsRangingParams;
+
 import com.android.server.ranging.RangingPeerConfig.TechnologyConfig;
 
 public class CsConfig implements TechnologyConfig {
-    public CsConfig() {
-        throw new UnsupportedOperationException("Not implemented!");
+    private static final String TAG = CsConfig.class.getSimpleName();
+
+    private final DataNotificationConfig mDataNotificationConfig;
+    private final CsRangingParams mRangingParams;
+
+    private final RangingDevice mPeerDevice;
+
+    @RangingPreference.DeviceRole
+    private final int mDeviceRole;
+
+    public CsConfig(int deviceRole,
+            CsRangingParams csRangingParams,
+            DataNotificationConfig dataNotificationConfig,
+            RangingDevice peerDevice) {
+        mDeviceRole = deviceRole;
+        mRangingParams = csRangingParams;
+        mDataNotificationConfig = dataNotificationConfig;
+        mPeerDevice = peerDevice;
+    }
+
+    public DataNotificationConfig getDataNotificationConfig() {
+        return mDataNotificationConfig;
+    }
+
+    public CsRangingParams getRangingParams() {
+        return mRangingParams;
+    }
+
+    public int getDeviceRole() {
+        return mDeviceRole;
+    }
+
+    public RangingDevice getPeerDevice() {
+        return mPeerDevice;
+    }
+
+    @Override
+    public String toString() {
+        return "CsConfig{ "
+                + "mDataNotificationConfig="
+                + mDataNotificationConfig
+                + ", mRangingParams="
+                + mRangingParams
+                + ", mDeviceRole="
+                + mDeviceRole
+                + ", mPeerDevice="
+                + mPeerDevice
+                + " }";
     }
 }

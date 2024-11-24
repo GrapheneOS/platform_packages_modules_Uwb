@@ -242,4 +242,18 @@ public final class RangingPeer {
         STOPPING,
         STOPPED,
     }
+
+    @Override
+    public String toString() {
+        return "RangingPeer{ "
+                + "mConfig="
+                + mConfig
+                + ", mStateMachine="
+                + mStateMachine
+                + ", mAdapters="
+                + mAdapters
+                + ", mFusionEngine="
+                + mFusionEngine
+                + " }";
+    }
 }

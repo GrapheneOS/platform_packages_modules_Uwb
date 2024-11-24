@@ -22,13 +22,13 @@ import static android.uwb.UwbManager.AdapterStateCallback.STATE_DISABLED;
 import static com.android.ranging.uwb.backend.internal.RangingCapabilities.DEFAULT_SUPPORTED_RANGING_UPDATE_RATE;
 import static com.android.ranging.uwb.backend.internal.RangingCapabilities.DEFAULT_SUPPORTED_SLOT_DURATIONS;
 import static com.android.ranging.uwb.backend.internal.RangingCapabilities.FIRA_DEFAULT_SUPPORTED_CONFIG_IDS;
-import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_DL_TDOA_DT_TAG;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_MULTICAST_DS_TWR;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR;
-import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_AOA;
-import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE_HPRF;
+import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE;
 import static com.android.ranging.uwb.backend.internal.Utils.RANGE_DATA_NTF_ENABLE;
+import static com.android.ranging.uwb.backend.internal.Utils.SUPPORTED_BPRF_PREAMBLE_INDEX;
+import static com.android.ranging.uwb.backend.internal.Utils.SUPPORTED_HPRF_PREAMBLE_INDEX;
 import static com.android.ranging.uwb.backend.internal.UwbAvailabilityCallback.REASON_UNKNOWN;
 
 import static java.util.Objects.requireNonNull;
@@ -187,6 +187,7 @@ public class UwbServiceImpl {
                     FIRA_DEFAULT_SUPPORTED_CONFIG_IDS,
                     DEFAULT_SUPPORTED_SLOT_DURATIONS,
                     DEFAULT_SUPPORTED_RANGING_UPDATE_RATE,
+                    SUPPORTED_BPRF_PREAMBLE_INDEX,
                     /* hasBackgroundRangingSupport */ false);
         }
 
@@ -224,22 +225,22 @@ public class UwbServiceImpl {
         if (stsCapabilityFlags.contains(FiraParams.StsCapabilityFlag.HAS_PROVISIONED_STS_SUPPORT)) {
             supportedConfigIds.add(CONFIG_PROVISIONED_UNICAST_DS_TWR);
             supportedConfigIds.add(CONFIG_PROVISIONED_MULTICAST_DS_TWR);
-            supportedConfigIds.add(CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_AOA);
         }
         if (stsCapabilityFlags.contains(FiraParams.StsCapabilityFlag
                 .HAS_PROVISIONED_STS_INDIVIDUAL_CONTROLEE_KEY_SUPPORT)) {
             supportedConfigIds.add(CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR);
         }
+        if (minRangingInterval <= 96) {
+            supportedConfigIds.add(CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE);
+        }
         EnumSet<FiraParams.RangingRoundCapabilityFlag> rangingRoundCapabilityFlags =
                 specificationParams.getRangingRoundCapabilities();
-        if (rangingRoundCapabilityFlags.contains(FiraParams.RangingRoundCapabilityFlag
-                .HAS_OWR_DL_TDOA_SUPPORT)) {
-            supportedConfigIds.add(CONFIG_DL_TDOA_DT_TAG);
-        }
         EnumSet<FiraParams.PrfCapabilityFlag> prfModeCapabilityFlags =
                 specificationParams.getPrfCapabilities();
+
+        List<Integer> supportedPreambleIndexes = new ArrayList<>(SUPPORTED_BPRF_PREAMBLE_INDEX);
         if (prfModeCapabilityFlags.contains(FiraParams.PrfCapabilityFlag.HAS_HPRF_SUPPORT)) {
-            supportedConfigIds.add(CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE_HPRF);
+            supportedPreambleIndexes.addAll(SUPPORTED_HPRF_PREAMBLE_INDEX);
         }
         int minSlotDurationUs = specificationParams.getMinSlotDurationUs();
         List<Integer> supportedSlotDurations = new ArrayList<>(Arrays.asList(Utils.DURATION_2_MS));
@@ -258,6 +259,7 @@ public class UwbServiceImpl {
                 ImmutableList.copyOf(supportedConfigIds),
                 ImmutableList.copyOf(supportedSlotDurations),
                 ImmutableList.copyOf(supportedRangingUpdateRates),
+                ImmutableList.copyOf(supportedPreambleIndexes),
                 specificationParams.hasBackgroundRangingSupport()
         );
     }

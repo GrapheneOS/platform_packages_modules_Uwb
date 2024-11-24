@@ -443,4 +443,9 @@ interface IUwbAdapter {
    * The maximum allowed time to configure hybrid session
    */
   const int SESSION_CONFIGURATION_THRESHOLD_MS = 3000; // Value TBD
+
+  /**
+   * The maximum allowed time for RF test
+   */
+  const int RF_TEST_OPERATION_THRESHOLD_MS = 3000; // Value TBD
 }

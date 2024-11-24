@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package android.ranging.params;
+package android.ranging.oob;
 
 import android.annotation.FlaggedApi;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.ranging.ITransportHandle;
 import android.ranging.RangingDevice;
 
 import androidx.annotation.NonNull;
@@ -32,21 +31,20 @@ import java.util.Objects;
  * Represents a handle to a ranging device, containing information about the device
  * and a transport handle for out-of-band communication.
  *
- * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
-public class DeviceHandle implements Parcelable {
+public final class DeviceHandle implements Parcelable {
 
     private final RangingDevice mRangingDevice;
 
-    private final ITransportHandle mTransportHandle;
+    private final TransportHandle mTransportHandle;
 
     private DeviceHandle(Builder builder) {
         mRangingDevice = builder.mRangingDevice;
         mTransportHandle = builder.mTransportHandle;
     }
 
-    protected DeviceHandle(Parcel in) {
+    private DeviceHandle(Parcel in) {
         mRangingDevice = in.readParcelable(RangingDevice.class.getClassLoader());
         // Not need in service layer.
         mTransportHandle = null;
@@ -78,10 +76,10 @@ public class DeviceHandle implements Parcelable {
     /**
      * Returns the transport handle, if set, for communication.
      *
-     * @return The {@link ITransportHandle} instance.
+     * @return The {@link TransportHandle} instance.
      */
     @NonNull
-    public ITransportHandle getTransportHandle() {
+    public TransportHandle getTransportHandle() {
         return mTransportHandle;
     }
 
@@ -100,18 +98,19 @@ public class DeviceHandle implements Parcelable {
      */
     public static final class Builder {
         private RangingDevice mRangingDevice;
-        private ITransportHandle mTransportHandle;
+        private TransportHandle mTransportHandle;
 
         /**
          * Constructs a new {@link Builder} with the required {@link RangingDevice}
-         * and {@link ITransportHandle}.
+         * and {@link TransportHandle}.
          *
          * @param rangingDevice the {@link RangingDevice}
-         * @param transportHandle the {@link ITransportHandle}
+         * @param transportHandle Implementation of {@link TransportHandle} for sending/receiving
+         * OOB data from peer
          * @throws NullPointerException if either parameter is {@code null}.
          */
         public Builder(@NonNull RangingDevice rangingDevice,
-                @NonNull ITransportHandle transportHandle) {
+                @NonNull TransportHandle transportHandle) {
             Objects.requireNonNull(rangingDevice);
             Objects.requireNonNull(transportHandle);
             mRangingDevice = rangingDevice;
@@ -128,5 +127,14 @@ public class DeviceHandle implements Parcelable {
         public DeviceHandle build() {
             return new DeviceHandle(this);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "DeviceHandle{ "
+                + "mRangingDevice="
+                + mRangingDevice
+                + ", mTransportHandle="
+                + mTransportHandle + " }";
     }
 }

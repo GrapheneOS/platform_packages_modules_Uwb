@@ -15,7 +15,7 @@
 //! Implementation of NotificationManagerAndroid and its builder.
 
 use crate::jclass_name::{
-    MULTICAST_LIST_UPDATE_STATUS_CLASS, UWB_DL_TDOA_MEASUREMENT_CLASS,
+    MULTICAST_LIST_UPDATE_STATUS_CLASS, RFTEST_PERIODIC_TX_CLASS, UWB_DL_TDOA_MEASUREMENT_CLASS,
     UWB_OWR_AOA_MEASUREMENT_CLASS, UWB_RADAR_DATA_CLASS, UWB_RADAR_SWEEP_DATA_CLASS,
     UWB_RANGING_DATA_CLASS, UWB_TWO_WAY_MEASUREMENT_CLASS,
 };
@@ -34,7 +34,7 @@ use uwb_core::params::{ControleeStatusList, UwbAddress};
 use uwb_core::uci::uci_manager_sync::{NotificationManager, NotificationManagerBuilder};
 use uwb_core::uci::{
     CoreNotification, DataRcvNotification, RadarDataRcvNotification, RangingMeasurements,
-    SessionNotification, SessionRangeData,
+    RfTestNotification, SessionNotification, SessionRangeData,
 };
 use uwb_uci_packets::{
     radar_bytes_per_sample_value, ExtendedAddressDlTdoaRangingMeasurement,
@@ -1008,6 +1008,35 @@ impl NotificationManagerAndroid {
             ],
         )
     }
+
+    fn on_rf_periodic_tx_notification(
+        &mut self,
+        status: u8,
+        raw_notification_data: &[u8],
+    ) -> Result<JObject, JNIError> {
+        let raw_notification_jbytearray = self.env.byte_array_from_slice(raw_notification_data)?;
+        // Safety: raw_notification_jbytearray safely instantiated above.
+        let raw_notification_jobject = unsafe { JObject::from_raw(raw_notification_jbytearray) };
+
+        let periodic_tx_jclass = NotificationManagerAndroid::find_local_class(
+            &mut self.jclass_map,
+            &self.class_loader_obj,
+            &self.env,
+            RFTEST_PERIODIC_TX_CLASS,
+        )?;
+        let method_sig = "(L".to_owned() + RFTEST_PERIODIC_TX_CLASS + ";)V";
+
+        let periodic_tx_jobject = self.env.new_object(
+            periodic_tx_jclass,
+            "(I[B)V",
+            &[JValue::Int(status as i32), JValue::Object(raw_notification_jobject)],
+        )?;
+        self.cached_jni_call(
+            "onPeriodicTxDataNotificationReceived",
+            &method_sig,
+            &[jvalue::from(JValue::Object(periodic_tx_jobject))],
+        )
+    }
 }
 
 impl NotificationManager for NotificationManagerAndroid {
@@ -1358,6 +1387,24 @@ impl NotificationManager for NotificationManagerAndroid {
         })
         .map_err(|e| {
             error!("on_radar_data_rcv_notification error: {:?}", e);
+            UwbError::ForeignFunctionInterface
+        })?;
+        Ok(())
+    }
+
+    fn on_rf_test_notification(
+        &mut self,
+        rf_test_notification: RfTestNotification,
+    ) -> UwbResult<()> {
+        debug!("UCI JNI: RF test notification callback.");
+        let env = *self.env;
+        env.with_local_frame(MAX_JAVA_OBJECTS_CAPACITY, || match rf_test_notification {
+            RfTestNotification::TestPeriodicTxNtf { status, raw_notification_data } => {
+                self.on_rf_periodic_tx_notification(u8::from(status), &raw_notification_data)
+            }
+        })
+        .map_err(|e| {
+            error!("on_rf_test_notification error: {:?}", e);
             UwbError::ForeignFunctionInterface
         })?;
         Ok(())

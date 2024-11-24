@@ -15,14 +15,16 @@
  */
 package com.android.server.ranging;
 
+import android.ranging.DataNotificationConfig;
 import android.ranging.RangingDevice;
 import android.ranging.RangingPreference;
-import android.ranging.params.DataNotificationConfig;
-import android.ranging.params.RawRangingDevice;
-import android.ranging.params.SensorFusionParams;
+import android.ranging.SensorFusionParams;
+import android.ranging.raw.RawRangingDevice;
 
 import androidx.annotation.NonNull;
 
+import com.android.server.ranging.blerssi.BleRssiConfig;
+import com.android.server.ranging.cs.CsConfig;
 import com.android.server.ranging.rtt.RttConfig;
 import com.android.server.ranging.uwb.UwbConfig;
 
@@ -57,6 +59,7 @@ public class RangingPeerConfig {
         insertUwbConfigIfSet(technologyConfigs);
         insertRttConfigIfSet(technologyConfigs);
         insertCsConfigIfSet(technologyConfigs);
+        insertBleRssiConfigIfSet(technologyConfigs);
         mTechnologyConfigs = technologyConfigs.build();
     }
 
@@ -109,9 +112,34 @@ public class RangingPeerConfig {
         );
     }
 
+    private void insertBleRssiConfigIfSet(
+            @NonNull ImmutableMap.Builder<RangingTechnology, TechnologyConfig> configs
+    ) {
+        if (mPeerDevice.getBleRssiRangingParams() == null) return;
+
+        configs.put(
+                RangingTechnology.RSSI,
+                new BleRssiConfig(
+                        mDeviceRole,
+                        mPeerDevice.getBleRssiRangingParams(),
+                        mDataNotificationConfig,
+                        mPeerDevice.getRangingDevice())
+        );
+    }
+
     private void insertCsConfigIfSet(
             @NonNull ImmutableMap.Builder<RangingTechnology, TechnologyConfig> configs
     ) {
+        if (mPeerDevice.getCsRangingParams() == null) return;
+
+        configs.put(
+                RangingTechnology.CS,
+                new CsConfig(
+                        mDeviceRole,
+                        mPeerDevice.getCsRangingParams(),
+                        mDataNotificationConfig,
+                        mPeerDevice.getRangingDevice())
+        );
     }
 
     public static class Builder {
@@ -147,5 +175,21 @@ public class RangingPeerConfig {
             mIsAoaNeeded = isAoaNeeded;
             return this;
         }
+    }
+
+    @Override
+    public String toString() {
+        return "RangingPeerConfig{ "
+                + "mPeerDevice="
+                + mPeerDevice
+                + ", mDeviceRole="
+                + mDeviceRole
+                + ", mFusionConfig="
+                + mFusionConfig
+                + ", mIsAoaNeeded="
+                + mIsAoaNeeded
+                + ", mTechnologyConfigs="
+                + mTechnologyConfigs
+                + " }";
     }
 }

@@ -16,65 +16,98 @@
 
 package com.android.server.ranging.cs;
 
-import android.ranging.RangingCapabilities;
-import android.ranging.RangingManager;
+import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.RangingUtils.Conversions;
 
-import com.google.errorprone.annotations.DoNotCall;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
+
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /** Channel Sounding Capability data send as part of CapabilityResponseMessage during Finder OOB. */
-public final class CsCapabilities implements RangingCapabilities.TechnologyCapabilities {
+@AutoValue
+public abstract class CsCapabilities {
 
-    private CsCapabilities() {
-    }
+    /** Size in bytes of all properties when serialized. */
+    private static final int EXPECTED_SIZE_BYTES = 2;
 
-    @Override
-    public @RangingManager.RangingTechnology int getTechnology() {
-        return RangingManager.BLE_CS;
-    }
+    // Size in bytes for each properties for serialization/deserialization.
+    private static final int TECHNOLOGY_ID_SIZE = 1;
+    private static final int SECURITY_LEVELS_SIZE = 4;
 
-    // // CS data
-    // // 2 byte bitmask bit 0 - standard, rest rfu
-    // private byte[] supportedFeatures;
-    // private boolean isDeviceBonded;
-    // // 16 bytes
-    // private byte[] confirmationHash;
-    // private boolean isRandmizerHashPresent;
-    // // 16 bytes if it exists
-    // private byte[] randmizerHash;
-    // // 7 bytes
-    // private byte[] deviceAddress;
-    // // 1 byte
-    // private int deviceRole;
-    // // 16 bytes
-    // private byte[] leTemporaryKey;
-    // // 2 bytes
-    // private byte[] leAppearance;
-    // private int discoveryMode;
+    private static final int SECURITY_LEVELS_SHIFT = 0;
 
     /** Returns the size of this {@link CsCapabilities} object when serialized. */
-    @DoNotCall("Always throws UnsupportedOperationException.")
     public int getSize() {
-        throw new UnsupportedOperationException("Not implemented");
+        return EXPECTED_SIZE_BYTES;
     }
 
     /**
      * Parses the given byte array and returns {@link CsCapabilities} object. Throws {@link
      * IllegalArgumentException} on invalid input.
      */
-    @DoNotCall("Always throws UnsupportedOperationException.")
     public static CsCapabilities parseBytes(byte[] csCapabilitiesBytes) {
-        throw new UnsupportedOperationException("Not implemented");
+        if (csCapabilitiesBytes.length < EXPECTED_SIZE_BYTES) {
+            throw new IllegalArgumentException("Couldn't parse CsCapabilities, invalid byte size");
+        }
+
+        int parseCursor = 0;
+        var technology = RangingTechnology.parseByte(csCapabilitiesBytes[parseCursor]);
+        if (technology.size() != 1 || technology.get(0) != RangingTechnology.CS) {
+            throw new IllegalArgumentException(
+                    "Couldn't parse CsCapabilities, invalid technology id");
+        }
+        parseCursor += TECHNOLOGY_ID_SIZE;
+
+        // Parse Supported Channels
+        ImmutableList<Integer> supportedSecurityLevels =
+                Conversions.byteArrayToIntList(
+                        Arrays.copyOfRange(csCapabilitiesBytes, parseCursor,
+                                parseCursor + SECURITY_LEVELS_SIZE),
+                        SECURITY_LEVELS_SHIFT);
+        parseCursor += SECURITY_LEVELS_SIZE;
+
+        return CsCapabilities.builder()
+                .setSupportedSecurityLevels(supportedSecurityLevels)
+                .build();
     }
 
     /** Serializes this {@link CsCapabilities} object to bytes. */
-    @DoNotCall("Always throws UnsupportedOperationException.")
-    public byte[] toBytes() {
-        throw new UnsupportedOperationException("Not implemented");
+    public final byte[] toBytes() {
+        ByteBuffer byteBuffer = ByteBuffer.allocate(EXPECTED_SIZE_BYTES);
+        byteBuffer
+                .put(RangingTechnology.CS.toByte())
+                .put(Conversions.intListToByteArrayBitmap(getSupportedSecurityLevels(),
+                        SECURITY_LEVELS_SIZE, SECURITY_LEVELS_SHIFT));
+
+        return byteBuffer.array();
+    }
+
+    /** Returns a list of supported security levels. */
+    public abstract ImmutableList<Integer> getSupportedSecurityLevels();
+
+    /** Returns a builder for {@link CsCapabilities}. */
+    public static Builder builder() {
+        return new AutoValue_CsCapabilities.Builder();
+    }
+
+    /** Builder for {@link CsCapabilities}. */
+    @AutoValue.Builder
+    public abstract static class Builder {
+        /** Returns maximum supported security level. */
+        public abstract Builder
+                setSupportedSecurityLevels(ImmutableList<Integer> supportedChannels);
+
+        /** Returns a builder for {@link CsCapabilities}. */
+        public abstract CsCapabilities build();
     }
 
     @Override
     public String toString() {
-        return "CsCapabilities{}";
+        return "CsCapabilities{ "
+                + "supportedSecurityLevels="
+                + getSupportedSecurityLevels()
+                + " }";
     }
-
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.ranging.params;
+package android.ranging;
 
 import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
@@ -28,6 +28,14 @@ import java.lang.annotation.RetentionPolicy;
 
 /**
  * Abstract class to represent type of ranging parameters.
+ *
+ * <p>Subclasses include:</p>
+ * <ul>
+ *     <li>{@link android.ranging.ble.rssi.BleRssiRangingParams}</li>
+ *     <li>{@link android.ranging.ble.cs.CsRangingParams}</li>
+ *     <li>{@link android.ranging.wifi.rtt.RttRangingParams}</li>
+ *     <li>{@link android.ranging.uwb.UwbRangingParams}</li>
+ * </ul>
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 @SuppressLint({"ParcelCreator", "ParcelNotFinal"})
@@ -42,6 +50,8 @@ public abstract class RangingParams implements Parcelable {
     })
     public @interface RangingSessionType {
     }
+
+    protected RangingParams() { }
 
     /** Ranging session with the out-of-band negotiations performed by the app. */
     public static final int RANGING_SESSION_RAW = 0;
@@ -65,5 +75,13 @@ public abstract class RangingParams implements Parcelable {
      */
     public int getRangingSessionType() {
         return mRangingSessionType;
+    }
+
+    @Override
+    public String toString() {
+        return "RangingParams{ "
+                + "mRangingSessionType="
+                + mRangingSessionType
+                + " }";
     }
 }

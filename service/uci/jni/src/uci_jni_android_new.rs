@@ -578,6 +578,46 @@ fn native_set_rf_test_app_configurations(
     uci_manager.session_set_rf_test_app_config(session_id as u32, tlvs)
 }
 
+/// Stop rf test session on a single UWB device. Return value defined by uci_packets.pdl
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeStopRfTest(
+    env: JNIEnv,
+    obj: JObject,
+    chip_id: JString,
+) -> jbyte {
+    debug!("{}: enter", function_name!());
+    byte_result_helper(native_stop_rf_test(env, obj, chip_id), function_name!())
+}
+
+fn native_stop_rf_test(env: JNIEnv, obj: JObject, chip_id: JString) -> Result<()> {
+    let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
+    uci_manager.stop_rf_test()
+}
+
+/// Test RF periodic tx test. Return value defined by uci_packets.pdl
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeTestPeriodicTx(
+    env: JNIEnv,
+    obj: JObject,
+    psdu_data: jbyteArray,
+    chip_id: JString,
+) -> jbyte {
+    debug!("{}: enter", function_name!());
+    byte_result_helper(native_rf_test_periodic_tx(env, obj, psdu_data, chip_id), function_name!())
+}
+
+fn native_rf_test_periodic_tx(
+    env: JNIEnv,
+    obj: JObject,
+    psdu_data: jbyteArray,
+    chip_id: JString,
+) -> Result<()> {
+    let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
+    let psdu_data_bytearray =
+        env.convert_byte_array(psdu_data).map_err(|_| Error::ForeignFunctionInterface)?;
+    uci_manager.rf_test_periodic_tx(psdu_data_bytearray)
+}
+
 /// Set radar app configurations on a single UWB device. Return null JObject if failed.
 #[no_mangle]
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSetRadarAppConfigurations(
@@ -1719,6 +1759,13 @@ mod tests {
             &mut self,
             _radar_data_rcv_notification: RadarDataRcvNotification,
         ) -> Result<()> {
+            Ok(())
+        }
+
+        fn on_rf_test_notification(
+            &mut self,
+            _: uwb_core::uci::RfTestNotification,
+        ) -> std::result::Result<(), uwb_core::error::Error> {
             Ok(())
         }
     }

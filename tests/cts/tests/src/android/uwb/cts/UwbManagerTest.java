@@ -264,6 +264,32 @@ public class UwbManagerTest {
         }
     }
 
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @RequiresFlagsEnabled("com.android.uwb.flags.query_timestamp_micros")
+    public void testQueryUwbsTimestampMicros() {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            assertThat(mUwbManager.elapsedRealtimeResolutionNanos() >= 0L).isTrue();
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @RequiresFlagsEnabled("com.android.uwb.flags.query_timestamp_micros")
+    public void testQueryUwbsTimestampMicrosPrivileged() {
+        try {
+            mUwbManager.elapsedRealtimeResolutionNanos();
+            // should fail if the call was successful without UWB_PRIVILEGED permission.
+            fail();
+        } catch (SecurityException e) {
+            // pass
+            Log.i(TAG, "Failed with expected security exception: " + e);
+        }
+    }
 
     @Test
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})

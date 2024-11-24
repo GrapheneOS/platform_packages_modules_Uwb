@@ -16,7 +16,7 @@
 
 package com.android.server.ranging.uwb.tests;
 
-import static android.ranging.params.RawRangingDevice.UPDATE_RATE_NORMAL;
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 import static android.ranging.uwb.UwbRangingParams.CONFIG_UNICAST_DS_TWR;
 
 import static org.mockito.ArgumentMatchers.any;

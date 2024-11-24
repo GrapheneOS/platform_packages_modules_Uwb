@@ -150,21 +150,6 @@ public class RangingSnippet implements Snippet {
             Log.d(TAG, "onClosed");
             mEventCache.postEvent(new SnippetEvent(mCallbackId, Event.CLOSED.toString()));
         }
-
-        /* TODO(shreshtabm): Remove once new callbacks are approved. */
-        @Override
-        public void onStartFailed(int reason, @NonNull RangingDevice peer) {
-        }
-
-        /* TODO(shreshtabm): Remove once new callbacks are approved. */
-        @Override
-        public void onStarted(int technology) {
-        }
-
-        /* TODO(shreshtabm): Remove once new callbacks are approved. */
-        @Override
-        public void onStopped(@NonNull RangingDevice peer) {
-        }
     }
 
     private static class RangingSessionInfo {

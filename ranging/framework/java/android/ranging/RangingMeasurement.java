@@ -50,17 +50,14 @@ public final class RangingMeasurement implements Parcelable {
 
     /** Ranging measurement with low confidence.
      *
-     * @hide
      */
     public static final int CONFIDENCE_LOW = 0;
     /** Ranging measurement with medium confidence.
      *
-     * @hide
      */
     public static final int CONFIDENCE_MEDIUM = 1;
     /** Ranging measurement with high confidence.
      *
-     * @hide
      */
     public static final int CONFIDENCE_HIGH = 2;
     private final double mMeasurement;
@@ -103,9 +100,8 @@ public final class RangingMeasurement implements Parcelable {
     }
 
     /**
-     * Returns the confidence score for this measurement - [0, 100].
+     * Returns the confidence score for this measurement.
      *
-     * @hide
      */
     @Confidence
     public int getConfidence() {
@@ -125,6 +121,8 @@ public final class RangingMeasurement implements Parcelable {
 
     /**
      * A builder class for creating instances of {@link RangingMeasurement}.
+     *
+     * @hide
      */
     public static final class Builder {
         private double mMeasurement = Double.NaN;
@@ -148,7 +146,6 @@ public final class RangingMeasurement implements Parcelable {
          *
          * @param confidence indicating confidence in the measurement.
          * @return This {@link Builder} instance.
-         * @hide
          */
         @NonNull
         public Builder setConfidence(@Confidence int confidence) {
@@ -165,5 +162,15 @@ public final class RangingMeasurement implements Parcelable {
         public RangingMeasurement build() {
             return new RangingMeasurement(this);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "RangingMeasurement{ "
+                + "mMeasurement="
+                + mMeasurement
+                + ", mConfidence="
+                + mConfidence
+                + " }";
     }
 }

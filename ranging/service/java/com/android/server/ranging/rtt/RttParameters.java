@@ -70,4 +70,9 @@ public class RttParameters extends com.android.ranging.rtt.backend.internal.RttR
             return new RttParameters(this);
         }
     }
+
+    @Override
+    public String toString() {
+        return super.toString();
+    }
 }

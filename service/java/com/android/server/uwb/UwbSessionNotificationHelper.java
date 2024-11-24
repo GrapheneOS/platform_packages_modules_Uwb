@@ -39,6 +39,7 @@ public class UwbSessionNotificationHelper {
                 rangingChangeReason = RangingChangeReason.MAX_RR_RETRY_REACHED;
                 break;
             case UwbUciConstants.REASON_MAX_NUMBER_OF_MEASUREMENTS_REACHED:
+            case UwbUciConstants.REASON_SESSION_STOPPED_DUE_TO_MAX_STS_INDEX_VALUE:
                 rangingChangeReason = RangingChangeReason.REMOTE_REQUEST;
                 break;
             case UwbUciConstants.REASON_ERROR_INSUFFICIENT_SLOTS_PER_RR:

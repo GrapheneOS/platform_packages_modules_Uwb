@@ -16,18 +16,20 @@
 
 package android.ranging;
 
+import android.Manifest;
 import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
 import android.annotation.IntRange;
 import android.annotation.NonNull;
+import android.annotation.RequiresPermission;
 import android.content.AttributionSource;
 import android.os.CancellationSignal;
 import android.os.RemoteException;
-import android.ranging.params.DeviceHandle;
-import android.ranging.params.OobInitiatorRangingParams;
-import android.ranging.params.OobResponderRangingParams;
-import android.ranging.params.RangingParams;
-import android.ranging.params.RawResponderRangingParams;
+import android.ranging.oob.DeviceHandle;
+import android.ranging.oob.OobInitiatorRangingParams;
+import android.ranging.oob.OobResponderRangingParams;
+import android.ranging.oob.TransportHandle;
+import android.ranging.raw.RawResponderRangingParams;
 import android.util.Log;
 
 import com.android.ranging.flags.Flags;
@@ -39,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 
 /**
@@ -61,7 +64,7 @@ public final class RangingSession implements AutoCloseable {
     private final RangingSessionManager mRangingSessionManager;
     private final Callback mCallback;
     private final Executor mExecutor;
-    private final Map<RangingDevice, ITransportHandle> mTransportHandles =
+    private final Map<RangingDevice, android.ranging.oob.TransportHandle> mTransportHandles =
             new ConcurrentHashMap<>();
 
 
@@ -93,6 +96,7 @@ public final class RangingSession implements AutoCloseable {
      *                          ranging session.
      * @return a {@link CancellationSignal} to close the session.
      */
+    @RequiresPermission(Manifest.permission.RANGING)
     @NonNull
     public CancellationSignal start(@NonNull RangingPreference rangingPreference) {
         //TODO : check whether this needs to be called after start, or handle when a session is
@@ -126,7 +130,8 @@ public final class RangingSession implements AutoCloseable {
         for (DeviceHandle deviceHandle : deviceHandleList) {
             TransportHandleReceiveCallback receiveCallback =
                     new TransportHandleReceiveCallback(deviceHandle.getRangingDevice());
-            deviceHandle.getTransportHandle().registerReceiveCallback(receiveCallback);
+            deviceHandle.getTransportHandle().registerReceiveCallback(
+                    Executors.newCachedThreadPool(), receiveCallback);
             mTransportHandles.put(deviceHandle.getRangingDevice(),
                     deviceHandle.getTransportHandle());
         }
@@ -139,7 +144,7 @@ public final class RangingSession implements AutoCloseable {
      * raw or out-of-band (OOB) ranging parameters. Only devices represented by
      * {@link RawResponderRangingParams} or {@link OobResponderRangingParams} are supported.
      * If the provided {@link RangingParams} does not match one of these types, the addition fails
-     * and invokes {@link Callback#onStartFailed} with a reason of
+     * and invokes {@link Callback#onOpenFailed(int)} with a reason of
      * {@link Callback#REASON_UNSUPPORTED}.
      * </p>
      *
@@ -151,8 +156,8 @@ public final class RangingSession implements AutoCloseable {
      * @apiNote If the underlying ranging technology cannot support this dynamic addition, failure
      * will be indicated via {@code Callback#onStartFailed(REASON_UNSUPPORTED, RangingDevice)}
      *
-     * @hide
      */
+    @RequiresPermission(Manifest.permission.RANGING)
     public void addDeviceToRangingSession(@NonNull RangingParams deviceRangingParams) {
         try {
             if (deviceRangingParams instanceof RawResponderRangingParams) {
@@ -162,7 +167,7 @@ public final class RangingSession implements AutoCloseable {
                 mRangingAdapter.addOobDevice(mSessionHandle,
                         (OobResponderRangingParams) deviceRangingParams);
             } else {
-                mCallback.onStartFailed(Callback.REASON_UNSUPPORTED, null);
+                mCallback.onOpenFailed(Callback.REASON_UNSUPPORTED);
             }
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();
@@ -182,8 +187,8 @@ public final class RangingSession implements AutoCloseable {
      * @apiNote Currently, this API is supported only for UWB multicast session if using
      * {@link RangingParams#RANGING_SESSION_RAW}.
      *
-     * @hide
      */
+    @RequiresPermission(Manifest.permission.RANGING)
     public void removeDeviceFromRangingSession(@NonNull RangingDevice rangingDevice) {
         try {
             mRangingAdapter.removeDevice(mSessionHandle, rangingDevice);
@@ -198,9 +203,8 @@ public final class RangingSession implements AutoCloseable {
      * between successive ranging rounds. Valid values range from 0 to 255.
      *
      * @param intervalSkipCount the number of intervals to skip, ranging from 0 to 255.
-     *
-     * @hide
      */
+    @RequiresPermission(Manifest.permission.RANGING)
     public void reconfigureRangingInterval(@IntRange(from = 0, to = 255) int intervalSkipCount) {
         try {
             mRangingAdapter.reconfigureRangingInterval(mSessionHandle, intervalSkipCount);
@@ -215,6 +219,7 @@ public final class RangingSession implements AutoCloseable {
      * <p>This method releases any ongoing ranging operations. If the operation fails,
      * it will propagate a {@link RemoteException} from the system server.
      */
+    @RequiresPermission(Manifest.permission.RANGING)
     public void stop() {
         try {
             mRangingAdapter.stopRanging(mSessionHandle);
@@ -276,9 +281,7 @@ public final class RangingSession implements AutoCloseable {
         mTransportHandles.get(toDevice).sendData(data);
     }
 
-    /**
-     * @hide
-     */
+    @RequiresPermission(Manifest.permission.RANGING)
     @Override
     public void close() {
         stop();
@@ -295,6 +298,7 @@ public final class RangingSession implements AutoCloseable {
         @IntDef(value = {
                 REASON_UNKNOWN,
                 REASON_LOCAL_REQUEST,
+                REASON_REMOTE_REQUEST,
                 REASON_UNSUPPORTED,
                 REASON_SYSTEM_POLICY,
                 REASON_NO_PEERS_FOUND,
@@ -315,9 +319,7 @@ public final class RangingSession implements AutoCloseable {
 
         /**
          * Indicates that the session was closed at the request of a remote peer.
-         * @hide
          */
-        // TODO(shreshtabm): Add to @{link Reason} defined above once new callbacks are approved
         int REASON_REMOTE_REQUEST = 2;
 
         /**
@@ -326,37 +328,29 @@ public final class RangingSession implements AutoCloseable {
          */
         int REASON_UNSUPPORTED = 3;
 
-        // TODO(shreshtabm): Remove once new callbacks are approved
-        int REASON_SYSTEM_POLICY = 2;
-
         /**
          * Indicates that the local system policy forced the session to close, such
-         * as privacy policy, power management policy, permissions, and more.
-         * @hide
+         * as power management policy, airplane mode etc.
          */
-        // TODO(shreshtabm): Rename to REASON_SYSTEM_POLICY once new callbacks are approved
-        int _REASON_SYSTEM_POLICY = 4;
+        int REASON_SYSTEM_POLICY = 4;
 
         /**
          * Indicates that the session was closed because none of the specified peers were found.
-         * @hide
          */
         int REASON_NO_PEERS_FOUND = 5;
 
         /**
          * Called when the ranging session opens successfully.
-         * @hide
          */
-        default void onOpened() {}
+        void onOpened();
 
         /**
          * Called when the ranging session failed to open.
          *
          * @param reason the reason for the failure, limited to values defined by
          *               {@link Reason}.
-         * @hide
          */
-        default void onOpenFailed(@Reason int reason) {}
+        void onOpenFailed(@Reason int reason);
 
         /**
          * Called when ranging has started with a particular peer using a particular technology
@@ -365,10 +359,9 @@ public final class RangingSession implements AutoCloseable {
          * @param peer       {@link RangingDevice} the peer with which ranging has started.
          * @param technology {@link android.ranging.RangingManager.RangingTechnology}
          *                   the ranging technology that started.
-         * @hide
          */
-        default void onStarted(
-                @NonNull RangingDevice peer, @RangingManager.RangingTechnology int technology) {}
+        void onStarted(
+                @NonNull RangingDevice peer, @RangingManager.RangingTechnology int technology);
 
         /**
          * Called when ranging data has been received from a peer.
@@ -385,11 +378,9 @@ public final class RangingSession implements AutoCloseable {
          * @param peer       {@link RangingDevice} the peer with which ranging has stopped.
          * @param technology {@link android.ranging.RangingManager.RangingTechnology}
          *                   the ranging technology that stopped.
-         * @hide
          */
-        default void onStopped(
-                @NonNull RangingDevice peer, @RangingManager.RangingTechnology int technology
-        ) {}
+        void onStopped(
+                @NonNull RangingDevice peer, @RangingManager.RangingTechnology int technology);
 
         /**
          * Called when the ranging session has closed.
@@ -399,18 +390,9 @@ public final class RangingSession implements AutoCloseable {
          */
         void onClosed(@Reason int reason);
 
-
-        // TODO(shreshtabm): Remove once new callbacks are approved
-        void onStartFailed(int reason, @NonNull android.ranging.RangingDevice peer);
-
-        // TODO(shreshtabm): Remove once new callbacks are approved
-        void onStarted(int technology);
-
-        // TODO(shreshtabm): Remove once new callbacks are approved
-        void onStopped(@NonNull android.ranging.RangingDevice peer);
     }
 
-    class TransportHandleReceiveCallback implements ITransportHandle.ReceiveCallback {
+    class TransportHandleReceiveCallback implements TransportHandle.ReceiveCallback {
 
         private final OobHandle mOobHandle;
 
@@ -421,6 +403,10 @@ public final class RangingSession implements AutoCloseable {
         @Override
         public void onReceiveData(byte[] data) {
             mRangingSessionManager.oobDataReceived(mOobHandle, data);
+        }
+
+        @Override
+        public void onSendFailed() {
         }
 
         @Override
@@ -437,5 +423,23 @@ public final class RangingSession implements AutoCloseable {
         public void onClose() {
             mRangingSessionManager.deviceOobClosed(mOobHandle);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "RangingSession{ "
+                + "mSessionHandle="
+                + mSessionHandle
+                + ", mRangingAdapter="
+                + mRangingAdapter
+                + ", mRangingSessionManager="
+                + mRangingSessionManager
+                + ", mCallback="
+                + mCallback
+                + ", mExecutor="
+                + mExecutor
+                + ", mTransportHandles="
+                + mTransportHandles
+                + " }";
     }
 }

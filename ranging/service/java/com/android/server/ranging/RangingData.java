@@ -22,6 +22,7 @@ import androidx.annotation.Nullable;
 import com.google.common.base.Preconditions;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
@@ -175,5 +176,25 @@ public class RangingData {
             mPeerAddress = peerAddress;
             return this;
         }
+    }
+
+    @Override
+    public String toString() {
+        return "RangingData{ "
+                + "mTechnology="
+                + mTechnology
+                + ", mRangeDistance="
+                + mRangeDistance
+                + ", mAzimuth="
+                + mAzimuth
+                + ", mElevation="
+                + mElevation
+                + ", mRssi="
+                + mRssi
+                + ", mTimestamp="
+                + mTimestamp
+                + ", mPeerAddress="
+                + Arrays.toString(mPeerAddress)
+                + " }";
     }
 }

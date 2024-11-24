@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,30 +14,26 @@
  * limitations under the License.
  */
 
-package android.ranging.cs;
+package android.ranging.ble.cs;
 
-import static android.ranging.params.RawRangingDevice.UPDATE_RATE_NORMAL;
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 
 import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
 import android.annotation.NonNull;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.ranging.cs.CsRangingCapabilities.SecurityLevel;
-import android.ranging.params.RawRangingDevice;
-import android.ranging.params.RawRangingDevice.RangingUpdateRate;
+import android.ranging.raw.RawRangingDevice;
+import android.ranging.raw.RawRangingDevice.RangingUpdateRate;
 
 import com.android.ranging.flags.Flags;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.util.Objects;
 
 /**
  * CsRangingParams encapsulates the parameters required for a bluetooth channel sounding ranging
  * session.
- *
- * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_CS_ENABLED)
 public final class CsRangingParams implements Parcelable {
@@ -79,19 +75,19 @@ public final class CsRangingParams implements Parcelable {
     }
 
     /**
-     * Location type is unknown.
+     * Location of the device is unknown.
      */
     public static final int LOCATION_TYPE_UNKNOWN = 0;
     /**
-     * Location of the use-case is indoor.
+     * Location of the device is indoor.
      */
     public static final int LOCATION_TYPE_INDOOR = 1;
     /**
-     * Location of the use-case is outdoor.
+     * Location of the device is outdoor.
      */
     public static final int LOCATION_TYPE_OUTDOOR = 2;
 
-    private final byte[] mPeerBluetoothAddress;
+    private final String mPeerBluetoothAddress;
     @RawRangingDevice.RangingUpdateRate
     private final int mRangingUpdateRate;
     @SightType
@@ -110,7 +106,7 @@ public final class CsRangingParams implements Parcelable {
     }
 
     private CsRangingParams(Parcel in) {
-        mPeerBluetoothAddress = in.readBlob();
+        mPeerBluetoothAddress = in.readString();
         mRangingUpdateRate = in.readInt();
         mSightType = in.readInt();
         mLocationType = in.readInt();
@@ -118,8 +114,8 @@ public final class CsRangingParams implements Parcelable {
     }
 
     @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeByteArray(mPeerBluetoothAddress);
+    public void writeToParcel(@NonNull Parcel dest, int flags) {
+        dest.writeString(mPeerBluetoothAddress);
         dest.writeInt(mRangingUpdateRate);
         dest.writeInt(mSightType);
         dest.writeInt(mLocationType);
@@ -143,9 +139,10 @@ public final class CsRangingParams implements Parcelable {
     /**
      * Returns the Bluetooth address of the peer device.
      *
-     * @return byte array representing the Bluetooth address.
+     * @return String representing the Bluetooth address.
      */
-    public byte[] getPeerBluetoothAddress() {
+    @NonNull
+    public String getPeerBluetoothAddress() {
         return mPeerBluetoothAddress;
     }
 
@@ -184,7 +181,7 @@ public final class CsRangingParams implements Parcelable {
      *
      * @return the security level
      */
-    @SecurityLevel
+    @CsRangingCapabilities.SecurityLevel
     public int getSecurityLevel() {
         return mSecurityLevel;
     }
@@ -193,14 +190,14 @@ public final class CsRangingParams implements Parcelable {
      * Builder class to create {@link CsRangingParams} instances.
      */
     public static final class Builder {
-        private byte[] mPeerBluetoothAddress;
+        private String mPeerBluetoothAddress;
         @RangingUpdateRate
         private int mRangingUpdateRate = UPDATE_RATE_NORMAL;
         @SightType
         private int mSightType = SIGHT_TYPE_UNKNOWN;
         @LocationType
         private int mLocationType = LOCATION_TYPE_UNKNOWN;
-        @SecurityLevel
+        @CsRangingCapabilities.SecurityLevel
         private int mSecurityLevel = CsRangingCapabilities.CS_SECURITY_LEVEL_ONE;
 
         /**
@@ -211,11 +208,17 @@ public final class CsRangingParams implements Parcelable {
          * {@link android.bluetooth.BluetoothAdapter#checkBluetoothAddress} is available to validate
          * a Bluetooth address.
          *
-         * @param peerBluetoothAddress The address of the peer device must be non-null.
-         * @throws IllegalArgumentException if {@code peerBluetoothAddress} is null.
+         * @param peerBluetoothAddress The address of the peer device must be non-null Bluetooth
+         *                             address.
+         * @throws IllegalArgumentException if {@code peerBluetoothAddress} is null or does not
+         * conform to "00:11:22:33:AA:BB" format.
+         * @see android.bluetooth.BluetoothDevice#getAddress()
          */
-        public Builder(@NonNull byte[] peerBluetoothAddress) {
-            Objects.requireNonNull(peerBluetoothAddress);
+        public Builder(@NonNull String peerBluetoothAddress) {
+            if (!android.bluetooth.BluetoothAdapter.checkBluetoothAddress(peerBluetoothAddress)) {
+                throw new IllegalArgumentException(
+                        "Bluetooth address is not in 00:11:22:33:AA:BB format");
+            }
             mPeerBluetoothAddress = peerBluetoothAddress;
         }
 

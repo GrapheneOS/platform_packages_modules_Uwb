@@ -510,6 +510,12 @@ public class UwbInjector {
                         com.android.uwb.resources.R.bool.is_multicast_list_update_rsp_v2_supported);
     }
 
+    public boolean isCccSupportedTwoByteConfigIdLittleEndian() {
+        return mContext.getResources().getBoolean(
+                com.android.uwb.resources.R.bool.ccc_two_byte_config_id_little_endian_supported
+        );
+    }
+
     /**
      * Gets the configured pose source, which is reference counted. If there are no references
      * to the pose source, one will be created based on the device configuration. This may

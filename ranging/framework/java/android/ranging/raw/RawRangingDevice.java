@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.ranging.params;
+package android.ranging.raw;
 
 import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
@@ -23,10 +23,10 @@ import android.annotation.Nullable;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.ranging.RangingDevice;
-import android.ranging.blerssi.BleRssiRangingParams;
-import android.ranging.cs.CsRangingParams;
-import android.ranging.rtt.RttRangingParams;
+import android.ranging.ble.cs.CsRangingParams;
+import android.ranging.ble.rssi.BleRssiRangingParams;
 import android.ranging.uwb.UwbRangingParams;
+import android.ranging.wifi.rtt.RttRangingParams;
 
 import com.android.ranging.flags.Flags;
 
@@ -35,8 +35,9 @@ import java.lang.annotation.RetentionPolicy;
 
 /**
  * Represents a device participating in ranging operations.
- * This class supports multiple ranging technologies, including UWB, CS, and RTT.
- * The configuration for each technology is provided through corresponding parameter objects.
+ * This class supports multiple ranging technologies, including UWB, BLE CS, BLE RSSI and Wi-Fi
+ * NAN-RTT. The configuration for each technology is provided through corresponding parameter
+ * objects.
  *
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
@@ -139,7 +140,6 @@ public final class RawRangingDevice implements Parcelable {
      *
      * @return the {@link CsRangingParams}, or {@code null} if not set.
      *
-     * @hide
      */
     @Nullable
     public CsRangingParams getCsRangingParams() {
@@ -151,7 +151,6 @@ public final class RawRangingDevice implements Parcelable {
      *
      * @return the {@link RttRangingParams}, or {@code null} if not set.
      *
-     * @hide
      */
     @Nullable
     public RttRangingParams getRttRangingParams() {
@@ -163,7 +162,6 @@ public final class RawRangingDevice implements Parcelable {
      *
      * @return the {@link BleRssiRangingParams}, or {@code null} if not set.
      *
-     * @hide
      */
     @Nullable
     public BleRssiRangingParams getBleRssiRangingParams() {
@@ -215,7 +213,6 @@ public final class RawRangingDevice implements Parcelable {
          * @param params the {@link RttRangingParams} to be set.
          * @return this {@link Builder} instance for chaining calls.
          *
-         * @hide
          */
         @NonNull
         public Builder setRttRangingParams(@NonNull RttRangingParams params) {
@@ -229,7 +226,6 @@ public final class RawRangingDevice implements Parcelable {
          * @param params the {@link CsRangingParams} to be set.
          * @return this {@link Builder} instance for chaining calls.
          *
-         * @hide
          */
         @NonNull
         public Builder setCsRangingParams(@NonNull CsRangingParams params) {
@@ -243,7 +239,6 @@ public final class RawRangingDevice implements Parcelable {
          * @param params the {@link CsRangingParams} to be set.
          * @return this {@link Builder} instance for chaining calls.
          *
-         * @hide
          */
         @NonNull
         public Builder setBleRssiRangingParams(@NonNull BleRssiRangingParams params) {
@@ -260,5 +255,21 @@ public final class RawRangingDevice implements Parcelable {
         public RawRangingDevice build() {
             return new RawRangingDevice(this);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "RawRangingDevice{ "
+                + "mRangingDevice="
+                + mRangingDevice
+                + ", mUwbRangingParams="
+                + mUwbRangingParams
+                + ", mCsRangingParams="
+                + mCsRangingParams
+                + ", mRttRangingParams="
+                + mRttRangingParams
+                + ", mBleRssiRangingParams="
+                + mBleRssiRangingParams
+                + " }";
     }
 }

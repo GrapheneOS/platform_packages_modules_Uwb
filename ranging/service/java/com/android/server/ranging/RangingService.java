@@ -23,25 +23,16 @@ import com.android.server.SystemService;
 
 public class RangingService extends SystemService {
     private static final String TAG = "RangingService";
-    private final RangingInjector mRangingInjector;
     private final RangingServiceImpl mRangingImpl;
 
     public RangingService(Context context) {
         super(context);
-        mRangingInjector = new RangingInjector(context);
-        mRangingImpl = new RangingServiceImpl(context, mRangingInjector);
+        mRangingImpl = new RangingServiceImpl(context, new RangingInjector(context));
     }
 
     @Override
     public void onStart() {
         Log.i(TAG, "Registering Ranging service");
         publishBinderService(Context.RANGING_SERVICE, mRangingImpl);
-    }
-
-    @Override
-    public void onBootPhase(int phase) {
-        if (phase == PHASE_BOOT_COMPLETED) {
-            mRangingInjector.getCapabilitiesProvider().registerTechnologyAvailabilityListeners();
-        }
     }
 }

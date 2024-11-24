@@ -16,13 +16,10 @@
 
 package com.android.ranging.uwb.backend.internal;
 
-import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_DL_TDOA_DT_TAG;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_MULTICAST_DS_TWR;
-import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_MULTICAST_DS_TWR_NO_AOA;
-import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_UNICAST_DS_TWR;
-import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_UNICAST_DS_TWR_NO_AOA;
 import static com.android.ranging.uwb.backend.internal.Utils.RANGE_DATA_NTF_ENABLE;
+import static com.android.ranging.uwb.backend.internal.Utils.SUPPORTED_BPRF_PREAMBLE_INDEX;
 
 import androidx.annotation.IntRange;
 
@@ -41,11 +38,7 @@ public class RangingCapabilities {
     public static final ImmutableList<Integer> FIRA_DEFAULT_SUPPORTED_CONFIG_IDS =
             ImmutableList.of(
                     CONFIG_UNICAST_DS_TWR,
-                    CONFIG_MULTICAST_DS_TWR,
-                    CONFIG_UNICAST_DS_TWR_NO_AOA,
-                    CONFIG_MULTICAST_DS_TWR_NO_AOA,
-                    CONFIG_DL_TDOA_DT_TAG,
-                    CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE);
+                    CONFIG_MULTICAST_DS_TWR);
     /** Ranging interval reconfigure is not supported if the system API doesn't provide. */
     public static final boolean DEFAULT_SUPPORTS_RANGING_INTERVAL_RECONFIGURE = false;
     /** Default supported slot duration if the system API doesn't provide it. */
@@ -66,6 +59,7 @@ public class RangingCapabilities {
     private final List<Integer> mSupportedConfigIds;
     private final List<Integer> mSupportedSlotDurations;
     private final List<Integer> mSupportedRangingUpdateRates;
+    private final List<Integer> mSupportedPreambleIndexes;
     private final boolean mHasBackgroundRangingSupport;
 
     public RangingCapabilities(
@@ -83,6 +77,7 @@ public class RangingCapabilities {
                 FIRA_DEFAULT_SUPPORTED_CONFIG_IDS,
                 DEFAULT_SUPPORTED_SLOT_DURATIONS,
                 DEFAULT_SUPPORTED_RANGING_UPDATE_RATE,
+                SUPPORTED_BPRF_PREAMBLE_INDEX,
                 false);
     }
 
@@ -97,6 +92,7 @@ public class RangingCapabilities {
             List<Integer> supportedConfigIds,
             ImmutableList<Integer> supportedSlotDurations,
             ImmutableList<Integer> supportedRangingUpdateRates,
+            ImmutableList<Integer> supportedPreambleIndexes,
             boolean hasBackgroundRangingSupport) {
         this.mSupportsDistance = supportsDistance;
         this.mSupportsAzimuthalAngle = supportsAzimuthalAngle;
@@ -108,6 +104,7 @@ public class RangingCapabilities {
         this.mSupportedConfigIds = supportedConfigIds;
         this.mSupportedSlotDurations = supportedSlotDurations;
         this.mSupportedRangingUpdateRates = supportedRangingUpdateRates;
+        this.mSupportedPreambleIndexes = supportedPreambleIndexes;
         this.mHasBackgroundRangingSupport = hasBackgroundRangingSupport;
     }
 
@@ -164,6 +161,9 @@ public class RangingCapabilities {
     /** Gets the supported ranging intervals. */
     public List<Integer> getSupportedRangingUpdateRates() {
         return mSupportedRangingUpdateRates;
+    }
+    public List<Integer> getSupportedPreambleIndexes() {
+        return mSupportedPreambleIndexes;
     }
 
     /** Whether background ranging is supported. */

@@ -34,9 +34,9 @@ import android.ranging.RangingManager;
 import android.ranging.RangingPreference;
 import android.ranging.RangingSession.Callback;
 import android.ranging.SessionHandle;
-import android.ranging.params.RawInitiatorRangingParams;
-import android.ranging.params.RawRangingDevice;
-import android.ranging.params.RawResponderRangingParams;
+import android.ranging.raw.RawInitiatorRangingParams;
+import android.ranging.raw.RawRangingDevice;
+import android.ranging.raw.RawResponderRangingParams;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -52,6 +52,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
+import java.io.FileDescriptor;
+import java.io.PrintWriter;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -313,9 +315,20 @@ public class RangingServiceManager {
     ) {
         return new RangingPeerConfig.Builder(peer)
                 .setDeviceRole(preference.getDeviceRole())
-                .setSensorFusionConfig(preference.getSensorFusionParameters())
-                .setDataNotificationConfig(preference.getDataNotificationConfig())
-                .setAoaNeeded(preference.isAngleOfArrivalNeeded())
+                .setSensorFusionConfig(
+                        preference.getSessionConfiguration().getSensorFusionParameters())
+                .setDataNotificationConfig(
+                        preference.getSessionConfiguration().getDataNotificationConfig())
+                .setAoaNeeded(preference.getSessionConfiguration().isAngleOfArrivalNeeded())
                 .build();
+    }
+
+    public void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
+        pw.println("---- Dump of RangingServiceManager ----");
+        for (RangingSession session : mSessions.values()) {
+            session.dump(fd, pw, args);
+        }
+        pw.println("---- Dump of RangingServiceManager ----");
+        mRangingInjector.getCapabilitiesProvider().dump(fd, pw, args);
     }
 }

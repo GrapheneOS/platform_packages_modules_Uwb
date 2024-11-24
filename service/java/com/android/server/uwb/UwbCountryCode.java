@@ -56,6 +56,7 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -131,6 +132,8 @@ public class UwbCountryCode {
     private String mCountryCodeUpdatedTimestamp = null;
     private String mWifiCountryTimestamp = null;
     private String mLocationCountryTimestamp = null;
+    private boolean mIsMccMncOemOverrideEnabled = false;
+    private final List<MccMnc> mMccMncOemOverrideList = new ArrayList<>();
 
     /**
      * Container class to store country code per sim slot.
@@ -189,6 +192,80 @@ public class UwbCountryCode {
         }
     }
 
+    private class MccMnc {
+        private final int mMcc;
+        private final int mMnc;
+        MccMnc(int mcc, int mnc) {
+            mMcc = mcc;
+            mMnc = mnc;
+        }
+        public int getMcc() {
+            return mMcc;
+        }
+        public int getMnc() {
+            return mMnc;
+        }
+    }
+
+    private void generateOemOverrideMccMncList() {
+        String[] mccMncOemOverrideList =
+            mUwbInjector.getDeviceConfigFacade().getMccMncOemOverrideList();
+        if (mccMncOemOverrideList == null) return;
+        for (String mccMnc : mccMncOemOverrideList) {
+            int mcc = -1;
+            int mnc = -1;
+            try {
+                mcc = Integer.valueOf(mccMnc.substring(0, 3));
+            } catch (Exception e) {
+                Log.e(TAG, "No mcc set", e);
+                continue;
+            }
+            try {
+                mnc = Integer.valueOf(mccMnc.substring(3));
+            } catch (Exception e) {
+                Log.d(TAG, "No mnc set", e);
+            }
+            mMccMncOemOverrideList.add(new MccMnc(mcc, mnc));
+        }
+    }
+
+    private boolean shouldOverrideCountryCodeForMccMncs() {
+        List<SubscriptionInfo> subscriptionInfoList =
+                mSubscriptionManager.getCompleteActiveSubscriptionInfoList();
+        if (subscriptionInfoList != null && !subscriptionInfoList.isEmpty()) {
+            for (SubscriptionInfo subscriptionInfo : subscriptionInfoList) {
+                if (shouldOverrideCountryCodeForMccMnc(
+                        subscriptionInfo.getMccString(), subscriptionInfo.getMncString())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean shouldOverrideCountryCodeForMccMnc(String mccString, String mncString) {
+        if (TextUtils.isEmpty(mccString) || TextUtils.isEmpty(mncString)) return false;
+        try {
+            int mcc = Integer.valueOf(mccString);
+            int mnc = Integer.valueOf(mncString);
+            for (MccMnc mccMnc: mMccMncOemOverrideList) {
+                if (mccMnc.getMcc() == mcc) {
+                    if (mccMnc.getMnc() == -1) {
+                        Log.i(TAG, "Override MCC meets " + mccMnc.getMcc());
+                        return true;
+                    } else if (mccMnc.getMnc() == mnc) {
+                        Log.i(TAG, "Override MCC MNC meets "
+                                + mccMnc.getMcc() + ":" + mccMnc.getMnc());
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "failed in shouldOverrideCountryCodeForMccMnc", e);
+        }
+        return false;
+    }
+
     private void setCountryCodeFromGeocodingLocation(@Nullable Location location) {
         if (location == null) return;
         Geocoder.GeocodeListener geocodeListener = (List<Address> addresses) -> {
@@ -220,24 +297,44 @@ public class UwbCountryCode {
                     UwbSettingsStore.SETTINGS_CACHED_COUNTRY_CODE);
             if (isValid(cachedCountryCode)) mCachedCountryCode = cachedCountryCode;
         }
+        IntentFilter filter = new IntentFilter(TelephonyManager.ACTION_NETWORK_COUNTRY_CHANGED);
+        generateOemOverrideMccMncList();
+        if (!mMccMncOemOverrideList.isEmpty()) {
+            filter.addAction(TelephonyManager.ACTION_SIM_CARD_STATE_CHANGED);
+        }
         mContext.registerReceiver(
                 new BroadcastReceiver() {
                     @Override
                     public void onReceive(Context context, Intent intent) {
-                        int slotIdx = intent.getIntExtra(
-                                SubscriptionManager.EXTRA_SLOT_INDEX,
-                                LAST_SIM_SLOT_INDEX);
-                        String countryCode = intent.getStringExtra(
-                                TelephonyManager.EXTRA_NETWORK_COUNTRY);
-                        String lastKnownCountryCode = intent.getStringExtra(
-                                EXTRA_LAST_KNOWN_NETWORK_COUNTRY);
-                        Log.d(TAG, "Telephony Country code changed to: " + countryCode);
-                        setTelephonyCountryCodeAndLastKnownCountryCode(
-                                slotIdx, countryCode, lastKnownCountryCode);
+                        if (intent.getAction()
+                                .equals(TelephonyManager.ACTION_NETWORK_COUNTRY_CHANGED)) {
+                            int slotIdx = intent.getIntExtra(
+                                    SubscriptionManager.EXTRA_SLOT_INDEX,
+                                    LAST_SIM_SLOT_INDEX);
+                            String countryCode = intent.getStringExtra(
+                                    TelephonyManager.EXTRA_NETWORK_COUNTRY);
+                            String lastKnownCountryCode = intent.getStringExtra(
+                                    EXTRA_LAST_KNOWN_NETWORK_COUNTRY);
+                            Log.d(TAG, "Telephony Country code changed to: " + countryCode);
+                            setTelephonyCountryCodeAndLastKnownCountryCode(
+                                    slotIdx, countryCode, lastKnownCountryCode);
+                        } else if (intent.getAction()
+                                .equals(TelephonyManager.ACTION_SIM_CARD_STATE_CHANGED)) {
+                            if (!mMccMncOemOverrideList.isEmpty()) {
+                                boolean shouldOverrideCountryCodeForMccMnc =
+                                        shouldOverrideCountryCodeForMccMncs();
+                                if (mIsMccMncOemOverrideEnabled
+                                        != shouldOverrideCountryCodeForMccMnc) {
+                                    Log.i(TAG, "OEM override for mcc mnc changed");
+                                    mIsMccMncOemOverrideEnabled =
+                                            shouldOverrideCountryCodeForMccMnc;
+                                    setCountryCode(true);
+                                }
+                            }
+                        }
                     }
                 },
-                new IntentFilter(TelephonyManager.ACTION_NETWORK_COUNTRY_CHANGED),
-                null, mHandler);
+                filter, null, mHandler);
         try {
             if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI)) {
                 mContext.getSystemService(WifiManager.class)
@@ -448,6 +545,9 @@ public class UwbCountryCode {
     private String pickCountryCode() {
         if (mOverrideCountryCode != null) {
             return mOverrideCountryCode;
+        }
+        if (mIsMccMncOemOverrideEnabled) {
+            return mUwbInjector.getOemDefaultCountryCode();
         }
         if (mTelephonyCountryCodeInfoPerSlot != null) {
             for (TelephonyCountryCodeSlotInfo telephonyCountryCodeInfoSlot :

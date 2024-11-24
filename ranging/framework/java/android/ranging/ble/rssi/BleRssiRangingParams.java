@@ -14,31 +14,27 @@
  * limitations under the License.
  */
 
-package android.ranging.blerssi;
+package android.ranging.ble.rssi;
 
 
-import static android.ranging.params.RawRangingDevice.UPDATE_RATE_NORMAL;
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.ranging.params.RawRangingDevice.RangingUpdateRate;
+import android.ranging.raw.RawRangingDevice.RangingUpdateRate;
 
 import com.android.ranging.flags.Flags;
-
-import java.util.Objects;
 
 /**
  * BleRssiRangingParams encapsulates the parameters required for a bluetooth rssi based ranging
  * session.
- *
- * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
-public class BleRssiRangingParams implements Parcelable {
+public final class BleRssiRangingParams implements Parcelable {
 
-    private final byte[] mPeerBluetoothAddress;
+    private final String mPeerBluetoothAddress;
 
     @RangingUpdateRate
     private final int mRangingUpdateRate;
@@ -49,13 +45,13 @@ public class BleRssiRangingParams implements Parcelable {
     }
 
     private BleRssiRangingParams(Parcel in) {
-        mPeerBluetoothAddress = in.readBlob();
+        mPeerBluetoothAddress = in.readString();
         mRangingUpdateRate = in.readInt();
     }
 
     @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeBlob(mPeerBluetoothAddress);
+    public void writeToParcel(@NonNull Parcel dest, int flags) {
+        dest.writeString(mPeerBluetoothAddress);
         dest.writeInt(mRangingUpdateRate);
     }
 
@@ -81,9 +77,10 @@ public class BleRssiRangingParams implements Parcelable {
     /**
      * Returns the Bluetooth address of the peer device.
      *
-     * @return byte array representing the Bluetooth address.
+     * @return String representing the Bluetooth address.
      */
-    public byte[] getPeerBluetoothAddress() {
+    @NonNull
+    public String getPeerBluetoothAddress() {
         return mPeerBluetoothAddress;
     }
 
@@ -101,7 +98,7 @@ public class BleRssiRangingParams implements Parcelable {
      * Builder class to create {@link BleRssiRangingParams} instances.
      */
     public static final class Builder {
-        private byte[] mPeerBluetoothAddress;
+        private String mPeerBluetoothAddress;
 
         @RangingUpdateRate
         private int mRangingUpdateRate = UPDATE_RATE_NORMAL;
@@ -111,15 +108,20 @@ public class BleRssiRangingParams implements Parcelable {
          *
          * <p>Valid Bluetooth hardware addresses must be upper case, in big endian byte order, and
          * in a format such as "00:11:22:33:AA:BB". The helper
-         * {@link android.bluetooth.BluetoothAdapter#checkBluetoothAddress} is available to validate
+         * {@see android.bluetooth.BluetoothAdapter#checkBluetoothAddress} is available to validate
          * a Bluetooth address.
-         * @param peerBluetoothAddress The address of the peer device must be non-null
-         * Bluetooth address.
          *
-         * @throws IllegalArgumentException if {@code peerBluetoothAddress} is null.
+         * @param peerBluetoothAddress The address of the peer device must be non-null
+         *                             Bluetooth address.
+         *  {@see android.bluetooth.BluetoothDevice#getAddress()}
+         * @throws IllegalArgumentException if {@code peerBluetoothAddress} is null or does not
+         * conform to "00:11:22:33:AA:BB" format.
          */
-        public Builder(@NonNull byte[] peerBluetoothAddress) {
-            Objects.requireNonNull(peerBluetoothAddress);
+        public Builder(@NonNull String peerBluetoothAddress) {
+            if (!android.bluetooth.BluetoothAdapter.checkBluetoothAddress(peerBluetoothAddress)) {
+                throw new IllegalArgumentException(
+                        "Bluetooth address is not in 00:11:22:33:AA:BB format");
+            }
             mPeerBluetoothAddress = peerBluetoothAddress;
         }
 

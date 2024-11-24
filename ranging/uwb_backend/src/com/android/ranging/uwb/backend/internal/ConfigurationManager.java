@@ -16,18 +16,14 @@
 
 package com.android.ranging.uwb.backend.internal;
 
-import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_DL_TDOA_DT_TAG;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_MULTICAST_DS_TWR;
-import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_MULTICAST_DS_TWR_NO_AOA;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_MULTICAST_DS_TWR;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR;
-import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_AOA;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE;
-import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE_HPRF;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_UNICAST_DS_TWR;
-import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_UNICAST_DS_TWR_NO_AOA;
 import static com.android.ranging.uwb.backend.internal.Utils.STATIC_STS_SESSION_KEY_INFO_SIZE;
+import static com.android.ranging.uwb.backend.internal.Utils.SUPPORTED_HPRF_PREAMBLE_INDEX;
 import static com.android.ranging.uwb.backend.internal.Utils.VENDOR_ID_SIZE;
 import static com.android.ranging.uwb.backend.internal.Utils.getRangingTimingParams;
 
@@ -47,7 +43,6 @@ import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_ROLE_RESPOND
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLEE;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLLER;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_DT_TAG;
-import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DL_TDOA;
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
 import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP1;
 import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_PROVISIONED;
@@ -148,42 +143,6 @@ public final class ConfigurationManager {
 
         // ID_3 properties.
         sConfigs.put(
-                CONFIG_UNICAST_DS_TWR_NO_AOA,
-                new UwbConfiguration() {
-
-                    @Override
-                    public int getConfigId() {
-                        return CONFIG_UNICAST_DS_TWR_NO_AOA;
-                    }
-
-                    @Override
-                    public int getMultiNodeMode() {
-                        return MULTI_NODE_MODE_UNICAST;
-                    }
-
-                    @Override
-                    public int getStsConfig() {
-                        return FiraParams.STS_CONFIG_STATIC;
-                    }
-
-                    @Override
-                    public int getAoaResultRequestMode() {
-                        return AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT;
-                    }
-
-                    @Override
-                    public boolean isControllerTheInitiator() {
-                        return true;
-                    }
-
-                    @Override
-                    public int getRangingRoundUsage() {
-                        return RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
-                    }
-                });
-
-        // ID_4 properties.
-        sConfigs.put(
                 CONFIG_PROVISIONED_UNICAST_DS_TWR,
                 new UwbConfiguration() {
 
@@ -218,7 +177,7 @@ public final class ConfigurationManager {
                     }
                 });
 
-        // ID_5 properties.
+        // ID_4 properties.
         sConfigs.put(
                 CONFIG_PROVISIONED_MULTICAST_DS_TWR,
                 new UwbConfiguration() {
@@ -254,42 +213,7 @@ public final class ConfigurationManager {
                     }
                 });
 
-        // ID_6 properties.
-        sConfigs.put(
-                CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_AOA,
-                new UwbConfiguration() {
-                    @Override
-                    public int getConfigId() {
-                        return CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_AOA;
-                    }
-
-                    @Override
-                    public int getMultiNodeMode() {
-                        return MULTI_NODE_MODE_UNICAST;
-                    }
-
-                    @Override
-                    public int getStsConfig() {
-                        return STS_CONFIG_PROVISIONED;
-                    }
-
-                    @Override
-                    public int getAoaResultRequestMode() {
-                        return AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT;
-                    }
-
-                    @Override
-                    public boolean isControllerTheInitiator() {
-                        return true;
-                    }
-
-                    @Override
-                    public int getRangingRoundUsage() {
-                        return RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
-                    }
-                });
-
-        // ID_7 properties.
+        // ID_5 properties.
         sConfigs.put(
                 CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR,
                 new UwbConfiguration() {
@@ -325,79 +249,7 @@ public final class ConfigurationManager {
                     }
                 });
 
-        // ID_1001 properties.
-        sConfigs.put(
-                CONFIG_DL_TDOA_DT_TAG,
-                new UwbConfiguration() {
-
-                    @Override
-                    public int getConfigId() {
-                        return CONFIG_DL_TDOA_DT_TAG;
-                    }
-
-                    @Override
-                    public int getMultiNodeMode() {
-                        return MULTI_NODE_MODE_ONE_TO_MANY;
-                    }
-
-                    @Override
-                    public int getStsConfig() {
-                        return FiraParams.STS_CONFIG_STATIC;
-                    }
-
-                    @Override
-                    public int getAoaResultRequestMode() {
-                        return FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS;
-                    }
-
-                    @Override
-                    public boolean isControllerTheInitiator() {
-                        return true;
-                    }
-
-                    @Override
-                    public int getRangingRoundUsage() {
-                        return RANGING_ROUND_USAGE_DL_TDOA;
-                    }
-                });
-
-        // ID_1000 properties.
-        sConfigs.put(
-                CONFIG_MULTICAST_DS_TWR_NO_AOA,
-                new UwbConfiguration() {
-
-                    @Override
-                    public int getConfigId() {
-                        return CONFIG_UNICAST_DS_TWR_NO_AOA;
-                    }
-
-                    @Override
-                    public int getMultiNodeMode() {
-                        return MULTI_NODE_MODE_ONE_TO_MANY;
-                    }
-
-                    @Override
-                    public int getStsConfig() {
-                        return FiraParams.STS_CONFIG_STATIC;
-                    }
-
-                    @Override
-                    public int getAoaResultRequestMode() {
-                        return AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT;
-                    }
-
-                    @Override
-                    public boolean isControllerTheInitiator() {
-                        return true;
-                    }
-
-                    @Override
-                    public int getRangingRoundUsage() {
-                        return RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
-                    }
-                });
-
-        // ID_1002 properties.
+        // ID_6 properties.
         sConfigs.put(
                 CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE,
                 new UwbConfiguration() {
@@ -405,42 +257,6 @@ public final class ConfigurationManager {
                     @Override
                     public int getConfigId() {
                         return CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE;
-                    }
-
-                    @Override
-                    public int getMultiNodeMode() {
-                        return MULTI_NODE_MODE_UNICAST;
-                    }
-
-                    @Override
-                    public int getStsConfig() {
-                        return STS_CONFIG_PROVISIONED;
-                    }
-
-                    @Override
-                    public int getAoaResultRequestMode() {
-                        return FiraParams.AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS;
-                    }
-
-                    @Override
-                    public boolean isControllerTheInitiator() {
-                        return true;
-                    }
-
-                    @Override
-                    public int getRangingRoundUsage() {
-                        return RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE;
-                    }
-                });
-
-        // ID_1003 properties.
-        sConfigs.put(
-                CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE_HPRF,
-                new UwbConfiguration() {
-
-                    @Override
-                    public int getConfigId() {
-                        return CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE_HPRF;
                     }
 
                     @Override
@@ -502,11 +318,6 @@ public final class ConfigurationManager {
             default:
                 deviceRole = RANGING_DEVICE_ROLE_RESPONDER;
                 break;
-        }
-
-        // Remove this when we add support for ranging device type Dt-TAG.
-        if (configuration.getConfigId() == CONFIG_DL_TDOA_DT_TAG) {
-            deviceRole = RANGING_DEVICE_DT_TAG;
         }
 
         FiraOpenSessionParams.Builder builder =
@@ -583,15 +394,13 @@ public final class ConfigurationManager {
         } else {
             builder.setRframeConfig(RFRAME_CONFIG_SP1);
         }
-
-        if (configuration.getConfigId()
-                == CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE_HPRF) {
+        if (SUPPORTED_HPRF_PREAMBLE_INDEX.contains(rangingParameters.getComplexChannel()
+                .getPreambleIndex())) {
             builder.setPrfMode(PRF_MODE_HPRF);
         }
 
-        if (configuration.getConfigId() == CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE
-                || configuration.getConfigId()
-                    == CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE_HPRF) {
+        if (configuration.getConfigId()
+                == CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE) {
             builder.setHasRangingResultReportMessage(false);
         }
 

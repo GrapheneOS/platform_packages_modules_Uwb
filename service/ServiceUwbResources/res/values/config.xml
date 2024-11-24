@@ -232,4 +232,13 @@
     <!-- Whether or not the antenna operation mode shall be configured by the ANTENNA_MODE vendor
     config param. If false, the FiRa-specified AOA_RESULT_REQ param is used instead. -->
     <bool name = "is_antenna_mode_config_supported">false</bool>
+
+    <!-- List of MCC/MNC where OEM default country code is used as an override.
+    This is a array of MCC/MNC values, where each value is a 3-digit string (only MCC)
+    or a 5/6-digit string (MCC + MNC). -->
+    <string-array name="mcc_mcc_oem_override_list"/>
+
+    <!-- Whether two-byte ccc config id is supported. If true, the config id should be parsed as
+    a two byte little endian value. -->
+    <bool name = "ccc_two_byte_config_id_little_endian_supported">false</bool>
 </resources>

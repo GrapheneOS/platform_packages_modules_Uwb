@@ -76,6 +76,7 @@ import com.android.server.uwb.jni.INativeUwbManager;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.params.TlvUtil;
 import com.android.server.uwb.proto.UwbStatsLog;
+import com.android.server.uwb.rftest.RfNotificationEvent;
 import com.android.server.uwb.util.ArrayUtils;
 import com.android.server.uwb.util.DataTypeConversionUtil;
 import com.android.server.uwb.util.LruList;
@@ -116,6 +117,8 @@ import com.google.uwb.support.oemextension.AdvertisePointedTarget;
 import com.google.uwb.support.oemextension.SessionConfigParams;
 import com.google.uwb.support.oemextension.SessionStatus;
 import com.google.uwb.support.rftest.RfTestParams;
+import com.google.uwb.support.rftest.RfTestSessionStatus;
+import com.google.uwb.support.rftest.RfTestStartSessionParams;
 
 import java.io.Closeable;
 import java.io.FileDescriptor;
@@ -173,6 +176,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     public static final int SESSION_SET_HUS_CONTROLEE_CONFIG = 10;
     @VisibleForTesting
     public static final int SESSION_DATA_TRANSFER_PHASE_CONFIG = 11;
+    @VisibleForTesting
+    public static final int SESSION_RF_TEST_CMD = 12;
+    @VisibleForTesting
+    public static final int SESSION_STOP_RF_TEST_SESSION = 13;
 
     // TODO: don't expose the internal field for testing.
     @VisibleForTesting
@@ -536,6 +543,17 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     }
 
     @Override
+    public void onRfTestNotificationReceived(RfNotificationEvent rfNotificationEvent) {
+        UwbSession uwbSession = getUwbSession(RfTestParams.SESSION_ID_RFTEST);
+        if (uwbSession == null) {
+            Log.d(TAG, "UwbSession doesn't exist for SESSION_ID_RFTEST");
+            return;
+        }
+
+        mSessionNotificationManager.onRfTestNotificationReceived(uwbSession, rfNotificationEvent);
+    }
+
+    @Override
     public void onSessionStatusNotificationReceived(long sessionId, int sessionToken,
             int state, int reasonCode) {
         Log.i(TAG, "onSessionStatusNotificationReceived - Session ID : " + sessionId
@@ -837,6 +855,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             } else if (uwbSession.getProtocolName().equals(FiraParams.PROTOCOL_NAME)) {
                 // Need to update session priority if it changed.
                 uwbSession.updateFiraParamsOnStartIfChanged();
+            } else if (uwbSession.getProtocolName().equals(RfTestParams.PROTOCOL_NAME)) {
+                if (params instanceof RfTestStartSessionParams) {
+                    uwbSession.setRfTestStartSessionParams((RfTestStartSessionParams) params);
+                    mEventTask.execute(SESSION_RF_TEST_CMD, uwbSession);
+                }
+                return;
             }
             mEventTask.execute(SESSION_START_RANGING, uwbSession);
         } else if (currentSessionState == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
@@ -849,6 +873,95 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     uwbSession, UwbUciConstants.STATUS_CODE_FAILED);
             mUwbMetrics.longRangingStartEvent(uwbSession, UwbUciConstants.STATUS_CODE_FAILED);
         }
+    }
+
+    private void handleRfTestCommand(UwbSession uwbSession) {
+        RfTestStartSessionParams params = uwbSession.getRfTestStartSessionParams();
+        // create task to send RF command
+        FutureTask<Integer> rfCommandTask = new FutureTask<>((Callable<Integer>) () -> {
+            int rfTestOperationType = params.getRfTestOperationType();
+            int status = UwbUciConstants.STATUS_CODE_FAILED;
+
+            synchronized (uwbSession.getWaitObj()) {
+                switch (rfTestOperationType) {
+                    case RfTestParams.TEST_PERIODIC_TX:
+                        status = mNativeUwbManager.testPeriodicTx(params.getPsduData(),
+                                uwbSession.getChipId());
+                        break;
+                    default:
+                        Log.i(TAG, "Unknown RF command: " + rfTestOperationType);
+                }
+
+                if (status != UwbUciConstants.STATUS_CODE_OK) {
+                    mSessionNotificationManager.onRangingStartFailed(uwbSession, status);
+                } else {
+                    uwbSession.getWaitObj().blockingWait();
+
+                    RfTestSessionStatus rfTestSessionStatus = new RfTestSessionStatus.Builder()
+                            .setRfTestOperationType(rfTestOperationType)
+                            .setStatusCode(status).build();
+                    mSessionNotificationManager.onRangingStarted(uwbSession,
+                            rfTestSessionStatus);
+                }
+            }
+            return status;
+        });
+
+        // Execute task
+        int status = UwbUciConstants.STATUS_CODE_FAILED;
+
+        try {
+            status = mUwbInjector.runTaskOnSingleThreadExecutor(rfCommandTask,
+                    IUwbAdapter.RF_TEST_OPERATION_THRESHOLD_MS);
+        } catch (TimeoutException e) {
+            Log.i(TAG, "Failed to send RF command: TIMEOUT");
+            mSessionNotificationManager.onRangingStartFailed(uwbSession, status);
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void handleStopRfTest(UwbSession uwbSession) {
+        Trace.beginSection("UWB#handleStopRfTest");
+        FutureTask<Integer> stopRfSessionTask = new FutureTask<>(
+                () -> {
+                    int status = UwbUciConstants.STATUS_CODE_FAILED;
+                    synchronized (uwbSession.getWaitObj()) {
+                        status = mNativeUwbManager.stopRfTest(uwbSession.getChipId());
+                        if (status != UwbUciConstants.STATUS_CODE_OK) {
+                            mSessionNotificationManager.onRangingStopFailed(uwbSession,
+                                    status);
+                            return status;
+                        }
+
+                        uwbSession.getWaitObj().blockingWait();
+                        // After stop rf test session command, UWBS will go to IDLE state
+                        if (uwbSession.getSessionState()
+                                == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
+                            mSessionNotificationManager.onRangingStopped(uwbSession,
+                                    status);
+                        } else {
+                            status = UwbUciConstants.STATUS_CODE_FAILED;
+                            mSessionNotificationManager.onRangingStopFailed(uwbSession,
+                                    status);
+                        }
+                    }
+                    return status;
+                });
+
+
+        int status = UwbUciConstants.STATUS_CODE_FAILED;
+        try {
+            status = mUwbInjector.runTaskOnSingleThreadExecutor(stopRfSessionTask,
+                    IUwbAdapter.RF_TEST_OPERATION_THRESHOLD_MS);
+        } catch (TimeoutException e) {
+            Log.i(TAG, "Failed to Stop RF test - status : TIMEOUT");
+            mSessionNotificationManager.onRangingStopFailed(
+                    uwbSession, UwbUciConstants.STATUS_CODE_FAILED);
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+        Trace.endSection();
     }
 
     private synchronized void stopRangingInternal(SessionHandle sessionHandle,
@@ -864,6 +977,24 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
         UwbSession uwbSession = getUwbSession(sessionId);
         int currentSessionState = getCurrentSessionState(sessionId);
+
+        //RF Test session
+        if (uwbSession.getProtocolName().equals(RfTestParams.PROTOCOL_NAME)) {
+            if (sessionId != RfTestParams.SESSION_ID_RFTEST) {
+                mSessionNotificationManager.onRangingStopped(uwbSession,
+                        UwbUciConstants.STATUS_CODE_REJECTED);
+            }
+
+            if (currentSessionState == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
+                mEventTask.execute(SESSION_STOP_RF_TEST_SESSION, uwbSession);
+            } else {
+                mSessionNotificationManager.onRangingStopped(uwbSession,
+                        UwbUciConstants.STATUS_CODE_REJECTED);
+                Log.i(TAG, "RF session is not in ACTIVE state");
+            }
+            return;
+        }
+
         if (currentSessionState == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
             mEventTask.execute(SESSION_STOP_RANGING, uwbSession, triggeredBySystemPolicy ? 1 : 0);
         } else if (currentSessionState == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
@@ -1021,7 +1152,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         }
     }
 
-    public synchronized void deinitAllSession() {
+    public synchronized void deInitAllSession() {
         Log.d(TAG, "deinitAllSession()");
         for (UwbSession uwbSession : mSessionTable.values()) {
             handleOnDeInit(uwbSession);
@@ -1901,6 +2032,20 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     break;
                 }
 
+                case SESSION_RF_TEST_CMD: {
+                    Log.d(TAG, "SESSION_RF_TEST_CMD");
+                    UwbSession uwbSession = (UwbSession) msg.obj;
+                    handleRfTestCommand(uwbSession);
+                    break;
+                }
+
+                case SESSION_STOP_RF_TEST_SESSION: {
+                    Log.d(TAG, "SESSION_STOP_RF_TEST_SESSION");
+                    UwbSession uwbSession = (UwbSession) msg.obj;
+                    handleStopRfTest(uwbSession);
+                    break;
+                }
+
                 default: {
                     Log.d(TAG, "EventTask : Undefined Task");
                     break;
@@ -2773,6 +2918,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         // Keeps track of all controlees in the session.
         public Map<UwbAddress, UwbControlee> mControlees;
 
+        // Keep track of RF Test start session params
+        private RfTestStartSessionParams mRfTestStartSessionParams = null;
+
         UwbSession(AttributionSource attributionSource, SessionHandle sessionHandle, int sessionId,
                 byte sessionType, String protocolName, Params params,
                 IUwbRangingCallbacks iUwbRangingCallbacks, String chipId) {
@@ -3396,6 +3544,14 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
         public void setSessionState(int state) {
             this.mSessionState = state;
+        }
+
+        public RfTestStartSessionParams getRfTestStartSessionParams() {
+            return this.mRfTestStartSessionParams;
+        }
+
+        public void setRfTestStartSessionParams(RfTestStartSessionParams params) {
+            this.mRfTestStartSessionParams = params;
         }
 
         public int getStackSessionPriority() {

@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package android.ranging.params;
+package android.ranging.raw;
 
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.ranging.RangingParams;
 
 import com.android.ranging.flags.Flags;
 
@@ -28,14 +29,14 @@ import java.util.List;
 
 /**
  * Represents the parameters for initiating a raw ranging session.
- * This class encapsulates a list of {@link RawRangingDevice} objects that participate in the
+ * This class encapsulates a list of {@link android.ranging.raw.RawRangingDevice} objects that
+ * participate in the
  * session.
- *
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 public final class RawInitiatorRangingParams extends RangingParams implements Parcelable {
 
-    private final List<RawRangingDevice> mRawRangingDevices;
+    private final List<android.ranging.raw.RawRangingDevice> mRawRangingDevices;
 
     private RawInitiatorRangingParams(Builder builder) {
         setRangingSessionType(RangingParams.RANGING_SESSION_RAW);
@@ -44,7 +45,7 @@ public final class RawInitiatorRangingParams extends RangingParams implements Pa
 
     private RawInitiatorRangingParams(Parcel in) {
         setRangingSessionType(in.readInt());
-        mRawRangingDevices = in.createTypedArrayList(RawRangingDevice.CREATOR);
+        mRawRangingDevices = in.createTypedArrayList(android.ranging.raw.RawRangingDevice.CREATOR);
     }
 
     @Override
@@ -73,7 +74,8 @@ public final class RawInitiatorRangingParams extends RangingParams implements Pa
             };
 
     /**
-     * Returns the list of {@link RawRangingDevice} objects involved in this session.
+     * Returns the list of {@link android.ranging.raw.RawRangingDevice} objects involved in this
+     * session.
      *
      * @return a list of ranging devices.
      */
@@ -86,16 +88,19 @@ public final class RawInitiatorRangingParams extends RangingParams implements Pa
      * Builder class for constructing instances of {@link RawInitiatorRangingParams}.
      */
     public static final class Builder {
-        private final List<RawRangingDevice> mRawRangingDeviceList = new ArrayList<>();
+        private final List<android.ranging.raw.RawRangingDevice> mRawRangingDeviceList =
+                new ArrayList<>();
 
         /**
-         * Adds a {@link RawRangingDevice} to the list of devices for this session.
+         * Adds a {@link android.ranging.raw.RawRangingDevice} to the list of devices for this
+         * session.
          *
          * @param rangingDevice the device to be added.
          * @return this {@link Builder} instance.
          */
         @NonNull
-        public Builder addRawRangingDevice(@NonNull RawRangingDevice rangingDevice) {
+        public Builder addRawRangingDevice(
+                @NonNull android.ranging.raw.RawRangingDevice rangingDevice) {
             mRawRangingDeviceList.add(rangingDevice);
             return this;
         }
@@ -109,5 +114,16 @@ public final class RawInitiatorRangingParams extends RangingParams implements Pa
         public RawInitiatorRangingParams build() {
             return new RawInitiatorRangingParams(this);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "RawInitiatorRangingParams{ "
+                + "mRawRangingDevices="
+                + mRawRangingDevices
+                + ", "
+                + super.toString()
+                + ", "
+                + " }";
     }
 }

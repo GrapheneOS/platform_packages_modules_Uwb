@@ -24,8 +24,8 @@ import android.ranging.OobHandle;
 import android.ranging.SessionHandle;
 import android.ranging.RangingPreference;
 import android.ranging.RangingDevice;
-import android.ranging.params.RawResponderRangingParams;
-import android.ranging.params.OobResponderRangingParams;
+import android.ranging.raw.RawResponderRangingParams;
+import android.ranging.oob.OobResponderRangingParams;
 
 /**
 *  @hide

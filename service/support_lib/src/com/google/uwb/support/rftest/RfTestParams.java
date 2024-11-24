@@ -19,6 +19,7 @@ package com.google.uwb.support.rftest;
 import android.os.PersistableBundle;
 
 import androidx.annotation.IntDef;
+import androidx.annotation.Nullable;
 
 import com.google.uwb.support.base.Params;
 
@@ -131,4 +132,29 @@ public abstract class RfTestParams extends Params {
     public static final int TEST_LOOPBACK = 3;
     public static final int TEST_SS_TWR = 4;
     public static final int TEST_SR_RX = 5;
+
+    @Nullable
+    public static byte[] intArrayToByteArray(@Nullable int[] values) {
+        if (values == null) {
+            return null;
+        }
+        byte[] bytes = new byte[values.length];
+        for (int i = 0; i < values.length; i++) {
+            bytes[i] = (byte) values[i];
+        }
+        return bytes;
+    }
+
+    @Nullable
+    public static int[] byteArrayToIntArray(@Nullable byte[] bytes) {
+        if (bytes == null) {
+            return null;
+        }
+
+        int[] values = new int[bytes.length];
+        for (int i = 0; i < values.length; i++) {
+            values[i] = bytes[i];
+        }
+        return values;
+    }
 }

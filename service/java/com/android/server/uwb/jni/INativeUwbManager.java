@@ -18,6 +18,7 @@ package com.android.server.uwb.jni;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbRadarData;
 import com.android.server.uwb.data.UwbRangingData;
+import com.android.server.uwb.rftest.RfNotificationEvent;
 
 public interface INativeUwbManager {
     /**
@@ -92,6 +93,13 @@ public interface INativeUwbManager {
          */
         void onDataTransferPhaseConfigNotificationReceived(long sessionId,
                 int dataTransferPhaseConfigStatus);
+
+        /**
+         * Interface for receiving RF test notification events
+         *
+         * @param rfNotificationEvent  : Protocol specific notification params
+         */
+        void onRfTestNotificationReceived(RfNotificationEvent rfNotificationEvent);
     }
 
     interface DeviceNotification {

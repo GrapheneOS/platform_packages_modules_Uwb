@@ -39,6 +39,7 @@ import com.android.server.uwb.data.UwbRangingData;
 import com.android.server.uwb.data.UwbTwoWayMeasurement;
 import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.params.TlvUtil;
+import com.android.server.uwb.rftest.RfNotificationEvent;
 import com.android.server.uwb.util.UwbUtil;
 
 import com.google.uwb.support.aliro.AliroParams;
@@ -53,9 +54,12 @@ import com.google.uwb.support.fira.FiraOnControleeAddRemoveParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.oemextension.RangingReportMetadata;
+import com.google.uwb.support.oemextension.RfTestNotification;
 import com.google.uwb.support.radar.RadarData;
 import com.google.uwb.support.radar.RadarParams;
 import com.google.uwb.support.radar.RadarSweepData;
+import com.google.uwb.support.rftest.RfTestParams;
+import com.google.uwb.support.rftest.RfTestSessionStatus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -162,15 +166,25 @@ public class UwbSessionNotificationManager {
         }
     }
 
-
     public void onRangingStartFailed(UwbSession uwbSession, int status) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
         try {
-            uwbRangingCallbacks.onRangingStartFailed(sessionHandle,
-                    UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(status),
-                    UwbSessionNotificationHelper.convertUciStatusToParam(
-                            uwbSession.getProtocolName(), status));
+            if (!uwbSession.getProtocolName().equals(RfTestParams.PROTOCOL_NAME)) {
+                uwbRangingCallbacks.onRangingStartFailed(sessionHandle,
+                        UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(status),
+                        UwbSessionNotificationHelper.convertUciStatusToParam(
+                                uwbSession.getProtocolName(), status));
+            } else {
+                RfTestSessionStatus rfTestSessionStatus = new RfTestSessionStatus.Builder()
+                        .setRfTestOperationType(
+                            uwbSession.getRfTestStartSessionParams().getRfTestOperationType())
+                        .setStatusCode(status).build();
+
+                uwbRangingCallbacks.onRangingStartFailed(sessionHandle,
+                        UwbSessionNotificationHelper.convertUciStatusToApiReasonCode(status),
+                        rfTestSessionStatus.toBundle());
+            }
             Log.i(TAG, "IUwbRangingCallbacks - onRangingStartFailed");
         } catch (Exception e) {
             Log.e(TAG, "IUwbRangingCallbacks - onRangingStartFailed : Failed");
@@ -199,8 +213,11 @@ public class UwbSessionNotificationManager {
             PersistableBundle params)  {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
-        mUwbInjector.finishUwbRangingPermissionForDataDelivery(uwbSession.getAttributionSource());
-        uwbSession.setDataDeliveryPermissionCheckNeeded(true);
+        if (!uwbSession.getProtocolName().equals(RfTestParams.PROTOCOL_NAME)) {
+            mUwbInjector.finishUwbRangingPermissionForDataDelivery(
+                    uwbSession.getAttributionSource());
+            uwbSession.setDataDeliveryPermissionCheckNeeded(true);
+        }
         try {
             uwbRangingCallbacks.onRangingStopped(sessionHandle, reason, params);
             Log.i(TAG, "IUwbRangingCallbacks - onRangingStopped");
@@ -610,6 +627,52 @@ public class UwbSessionNotificationManager {
             Log.e(TAG, "IUwbRangingCallbacks - onHybridSessionControleeConfigurationFailed :"
                     + "Failed");
             e.printStackTrace();
+        }
+    }
+
+    public void onRfTestNotificationReceived(UwbSession uwbSession,
+            RfNotificationEvent rfNotificationEvent) {
+        if (uwbSession == null || rfNotificationEvent == null) {
+            Log.e(TAG, "Invalid arguments: uwbSession or rfNotificationEvent is null");
+            return;
+        }
+
+        final SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        final IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+
+        // Placeholder object creation to satisfy the existing conditions in RangingMeasurement
+        final RangingMeasurement.Builder rangingMeasurementBuilder = buildRangingMeasurement(
+                new byte[] { 0x01, 0x02 }, rfNotificationEvent.getStatus(), 0x01, 0);
+
+        // Handle the OEM callback
+        if (mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
+            try {
+                RfTestNotification rfTestNotification = new RfTestNotification.Builder()
+                        .setRfTestOperationType(rfNotificationEvent.getOperationType())
+                        .setRfTestNtfData(rfNotificationEvent.getRawNotificationData())
+                        .build();
+
+                RangingReport.Builder rangingReportBuilder = new RangingReport.Builder()
+                        .addMeasurement(rangingMeasurementBuilder.build())
+                        .addRangingReportMetadata(rfTestNotification.toBundle());
+
+                mUwbInjector.getUwbServiceCore().getOemExtensionCallback()
+                        .onRangingReportReceived(rangingReportBuilder.build());
+            } catch (RemoteException e) {
+                Log.e(TAG, "Failed to send RF Test Notification via OEM callback", e);
+            }
+        }
+
+        String callbackMethodName = rfNotificationEvent.getClass().getSimpleName();
+        try {
+            RangingReport.Builder rangingReportBuilder = new RangingReport.Builder()
+                    .addMeasurement(rangingMeasurementBuilder.build())
+                    .addRangingReportMetadata(rfNotificationEvent.toBundle());
+
+            uwbRangingCallbacks.onRangingResult(sessionHandle, rangingReportBuilder.build());
+            Log.i(TAG, "Notification received for " + callbackMethodName);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to notify IUwbRangingCallbacks for " + callbackMethodName, e);
         }
     }
 

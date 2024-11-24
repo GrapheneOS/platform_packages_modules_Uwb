@@ -113,7 +113,15 @@ public final class SessionHandle implements Parcelable  {
 
     @Override
     public String toString() {
-        return "SessionHandle [id=" + mId + ", package-name: " + mPackageName
-                + ", uid: " + mUid + ", pid: " + mPid + "]";
+        return "SessionHandle{ "
+                + "mId="
+                + mId
+                + ", mPackageName='"
+                + mPackageName
+                + ", mUid="
+                + mUid
+                + ", mPid="
+                + mPid
+                + " }";
     }
 }

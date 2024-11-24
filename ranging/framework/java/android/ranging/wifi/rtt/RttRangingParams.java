@@ -14,28 +14,28 @@
  * limitations under the License.
  */
 
-package android.ranging.rtt;
+package android.ranging.wifi.rtt;
 
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.ranging.params.RawRangingDevice;
-import android.ranging.params.RawRangingDevice.RangingUpdateRate;
+import android.ranging.raw.RawRangingDevice;
+import android.ranging.raw.RawRangingDevice.RangingUpdateRate;
 
 import com.android.ranging.flags.Flags;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 /**
  * Represents the parameters required to perform Wi-Fi Round Trip Time (RTT) ranging.
  *
- * @hide
  */
 @FlaggedApi(Flags.FLAG_RANGING_RTT_ENABLED)
-public class RttRangingParams implements Parcelable {
+public final class RttRangingParams implements Parcelable {
 
     private RttRangingParams(Parcel in) {
         mServiceName = in.readString();
@@ -160,15 +160,15 @@ public class RttRangingParams implements Parcelable {
         /**
          * Sets the match filter to identify specific devices or services for RTT.
          *
-         * @param matchFilter a byte array representing the filter. If {@code null}, it will be
-         *                    ignored.
+         * @param matchFilter a byte array representing the filter.
+         *
          * @return this {@link Builder} instance.
+         * @throws NullPointerException if either parameter is {@code matchFilter} is null.
          */
         @NonNull
         public Builder setMatchFilter(@NonNull byte[] matchFilter) {
-            if (matchFilter != null) {
-                this.mMatchFilter = matchFilter.clone();
-            }
+            Objects.requireNonNull(matchFilter);
+            this.mMatchFilter = matchFilter.clone();
             return this;
         }
 
@@ -211,5 +211,19 @@ public class RttRangingParams implements Parcelable {
         public RttRangingParams build() {
             return new RttRangingParams(this);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "RttRangingParams{ "
+                + "mServiceName='"
+                + mServiceName
+                + ", mMatchFilter="
+                + Arrays.toString(mMatchFilter)
+                + ", mRangingUpdateRate="
+                + mRangingUpdateRate
+                + ", mPeriodicRangingHwFeatureEnabled="
+                + mPeriodicRangingHwFeatureEnabled
+                + " }";
     }
 }

@@ -125,4 +125,11 @@ public final class RangingDevice implements Parcelable {
             return new RangingDevice(this);
         }
     }
+
+    @Override
+    public String toString() {
+        return "RangingDevice{ "
+                + mId
+                + " }";
+    }
 }

@@ -74,6 +74,13 @@ public class RangingUtils {
             mState = to;
             return true;
         }
+
+        @Override
+        public String toString() {
+            return "StateMachine{ "
+                    + mState
+                    + "}";
+        }
     }
 
     public static class Conversions {

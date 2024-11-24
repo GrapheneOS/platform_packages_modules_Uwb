@@ -14,24 +14,25 @@
  * limitations under the License.
  */
 
-package android.ranging.params;
+package android.ranging.raw;
 
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.ranging.RangingParams;
 
 import com.android.ranging.flags.Flags;
 
 /**
  * Represents the parameters for a raw ranging session initiated by a responder device.
- * This class holds a {@link RawRangingDevice} object that participates in the session.
- *
+ * This class holds a {@link android.ranging.raw.RawRangingDevice} object that participates in the
+ * session.
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 public final class RawResponderRangingParams extends RangingParams implements Parcelable {
 
-    private final RawRangingDevice mRawRangingDevice;
+    private final android.ranging.raw.RawRangingDevice mRawRangingDevice;
 
     private RawResponderRangingParams(Builder builder) {
         setRangingSessionType(RangingParams.RANGING_SESSION_RAW);
@@ -40,7 +41,8 @@ public final class RawResponderRangingParams extends RangingParams implements Pa
 
     private RawResponderRangingParams(Parcel in) {
         setRangingSessionType(in.readInt());
-        mRawRangingDevice = in.readParcelable(RawRangingDevice.class.getClassLoader());
+        mRawRangingDevice = in.readParcelable(
+                android.ranging.raw.RawRangingDevice.class.getClassLoader());
     }
 
     @NonNull
@@ -58,12 +60,13 @@ public final class RawResponderRangingParams extends RangingParams implements Pa
             };
 
     /**
-     * Returns the {@link RawRangingDevice} participating in this session as the responder.
+     * Returns the {@link android.ranging.raw.RawRangingDevice} participating in this session as the
+     * responder.
      *
      * @return the raw ranging device.
      */
     @NonNull
-    public RawRangingDevice getRawRangingDevice() {
+    public android.ranging.raw.RawRangingDevice getRawRangingDevice() {
         return mRawRangingDevice;
     }
 
@@ -85,13 +88,14 @@ public final class RawResponderRangingParams extends RangingParams implements Pa
         private RawRangingDevice mRawRangingDevice;
 
         /**
-         * Sets the {@link RawRangingDevice} for this responder session.
+         * Sets the {@link android.ranging.raw.RawRangingDevice} for this responder session.
          *
          * @param rangingDevice the raw ranging device.
          * @return this {@link Builder} instance.
          */
         @NonNull
-        public Builder setRawRangingDevice(@NonNull RawRangingDevice rangingDevice) {
+        public Builder setRawRangingDevice(
+                @NonNull android.ranging.raw.RawRangingDevice rangingDevice) {
             mRawRangingDevice = rangingDevice;
             return this;
         }
@@ -105,6 +109,17 @@ public final class RawResponderRangingParams extends RangingParams implements Pa
         public RawResponderRangingParams build() {
             return new RawResponderRangingParams(this);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "RawResponderRangingParams{ "
+                + "mRawRangingDevice="
+                + mRawRangingDevice
+                + ", "
+                + super.toString()
+                + ", "
+                + " }";
     }
 }
 
