@@ -153,7 +153,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
     }
 
     /**
-     * Gets the minimum supported ranging interval in milliseconds.
+     * Gets the minimum supported ranging interval.
      *
      * @return the minimum ranging interval.
      */

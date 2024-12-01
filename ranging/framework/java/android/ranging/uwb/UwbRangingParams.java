@@ -126,10 +126,7 @@ public final class UwbRangingParams implements Parcelable {
      */
     public static final int CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR = 5;
 
-    /**
-     * Same as {@code CONFIG_ID_3}, fast ranging interval 96
-     * ms.
-     */
+    /** Same as {@code CONFIG_ID_3}, except fast ranging interval is 96 milliseconds. */
     public static final int CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST = 6;
 
     /** Sub session id not applicable. */
@@ -231,7 +228,8 @@ public final class UwbRangingParams implements Parcelable {
      */
     @Nullable
     public byte[] getSessionKeyInfo() {
-        return mSessionKeyInfo;
+        return mSessionKeyInfo == null ? null : Arrays.copyOf(mSessionKeyInfo,
+                mSessionKeyInfo.length);
     }
 
     /**
@@ -241,7 +239,8 @@ public final class UwbRangingParams implements Parcelable {
      */
     @Nullable
     public byte[] getSubSessionKeyInfo() {
-        return mSubSessionKeyInfo;
+        return mSubSessionKeyInfo == null ? null : Arrays.copyOf(mSubSessionKeyInfo,
+                mSubSessionKeyInfo.length);
     }
 
     /**
@@ -346,7 +345,8 @@ public final class UwbRangingParams implements Parcelable {
          */
         @NonNull
         public Builder setSessionKeyInfo(@NonNull byte[] sessionKeyInfo) {
-            mSessionKeyInfo = sessionKeyInfo;
+            Objects.requireNonNull(sessionKeyInfo);
+            mSessionKeyInfo = Arrays.copyOf(sessionKeyInfo, sessionKeyInfo.length);
             return this;
         }
 
@@ -359,7 +359,8 @@ public final class UwbRangingParams implements Parcelable {
          */
         @NonNull
         public Builder setSubSessionKeyInfo(@NonNull byte[] subSessionKeyInfo) {
-            mSubSessionKeyInfo = subSessionKeyInfo;
+            Objects.requireNonNull(subSessionKeyInfo);
+            mSubSessionKeyInfo = Arrays.copyOf(subSessionKeyInfo, subSessionKeyInfo.length);
             return this;
         }
 
@@ -379,7 +380,7 @@ public final class UwbRangingParams implements Parcelable {
 
         /**
          * Sets the ranging update rate for the session.
-         * <p> Defaults {@link RangingUpdateRate#UPDATE_RATE_NORMAL}.
+         * <p> Defaults to {@link RangingUpdateRate#UPDATE_RATE_NORMAL}.
          *
          * @param rate the ranging update rate, defined as one of the constants in
          *             {@link RangingUpdateRate}.
@@ -393,6 +394,7 @@ public final class UwbRangingParams implements Parcelable {
 
         /**
          * Sets the slot duration in milliseconds for the ranging session.
+         * <p> Defaults to {@link #DURATION_2_MS}.
          *
          * @param durationMs the slot duration {@link SlotDuration}
          * @return this Builder instance.

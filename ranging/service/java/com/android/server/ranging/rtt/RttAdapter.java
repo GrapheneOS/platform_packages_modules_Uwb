@@ -35,7 +35,7 @@ import com.android.ranging.rtt.backend.internal.RttRangingSessionCallback;
 import com.android.ranging.rtt.backend.internal.RttService;
 import com.android.ranging.rtt.backend.internal.RttServiceImpl;
 import com.android.server.ranging.RangingAdapter;
-import com.android.server.ranging.RangingPeerConfig;
+import com.android.server.ranging.RangingSessionConfig;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.StateMachine;
 
@@ -52,18 +52,16 @@ public class RttAdapter implements RangingAdapter {
     private static final String TAG = RttAdapter.class.getSimpleName();
 
     private final RttService mRttService;
-
     private final RttRangingDevice mRttClient;
-    private RangingDevice mRangingDevice;
-
     private final ListeningExecutorService mExecutorService;
     private final ExecutorResultHandlers mRttClientResultHandlers = new ExecutorResultHandlers();
-
     private final RttRangingSessionCallback mRttListener = new RttListener();
     private final StateMachine<State> mStateMachine;
 
     /** Invariant: non-null while a ranging session is active */
     private Callback mCallbacks;
+    /** Invariant: non-null while a ranging session is active */
+    private RangingDevice mPeerDevice;
 
     public RttAdapter(
             @NonNull Context context, @NonNull ListeningExecutorService executorService,
@@ -87,16 +85,18 @@ public class RttAdapter implements RangingAdapter {
 
         mExecutorService = executorService;
         mCallbacks = null;
+        mPeerDevice = null;
     }
 
     @Override
-    public RangingTechnology getType() {
+    public @NonNull RangingTechnology getTechnology() {
         return RangingTechnology.RTT;
     }
 
     @Override
-    public void start(@NonNull RangingPeerConfig.TechnologyConfig config,
-            @NonNull Callback callbacks) {
+    public void start(
+            @NonNull RangingSessionConfig.TechnologyConfig config, @NonNull Callback callbacks
+    ) {
         Log.i(TAG, "Start called.");
         if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {
             Log.v(TAG, "Attempted to start adapter when it was already started");
@@ -106,16 +106,11 @@ public class RttAdapter implements RangingAdapter {
         mCallbacks = callbacks;
         if (!(config instanceof RttConfig rttConfig)) {
             Log.w(TAG, "Tried to start adapter with invalid ranging parameters");
-            mCallbacks.onStopped(Callback.StoppedReason.FAILED_TO_START);
+            closeForReason(Callback.ClosedReason.FAILED_TO_START);
             return;
         }
-        mRttClient.setRangingParameters(
-                (rttConfig).asBackendParameters());
-        if (rttConfig.getPeerDevice() == null) {
-            Log.e(TAG, "Peer device is null");
-            return;
-        }
-        mRangingDevice = rttConfig.getPeerDevice();
+        mPeerDevice = rttConfig.getPeerDevice();
+        mRttClient.setRangingParameters(rttConfig.asBackendParameters());
 
         var future = Futures.submit(() -> {
             mRttClient.startRanging(mRttListener, Executors.newSingleThreadExecutor());
@@ -142,13 +137,13 @@ public class RttAdapter implements RangingAdapter {
             Log.i(TAG, "onRangingInitialized");
             synchronized (mStateMachine) {
                 if (mStateMachine.getState() == State.STARTED) {
-                    mCallbacks.onStarted();
+                    mCallbacks.onStarted(mPeerDevice);
                 }
             }
         }
 
         @Override
-        public void onRangingResult(RttDevice peerDevice, RttRangingPosition position) {
+        public void onRangingResult(RttDevice peer, RttRangingPosition position) {
             RangingData.Builder dataBuilder = new RangingData.Builder()
                     .setRangingTechnology(RangingManager.WIFI_NAN_RTT)
                     .setDistance(new RangingMeasurement.Builder()
@@ -169,7 +164,7 @@ public class RttAdapter implements RangingAdapter {
             }
             synchronized (mStateMachine) {
                 if (mStateMachine.getState() == State.STARTED) {
-                    mCallbacks.onRangingData(mRangingDevice, dataBuilder.build());
+                    mCallbacks.onRangingData(mPeerDevice, dataBuilder.build());
                 }
             }
         }
@@ -178,35 +173,40 @@ public class RttAdapter implements RangingAdapter {
             switch (reason) {
                 case REASON_WRONG_PARAMETERS:
                 case REASON_FAILED_TO_START:
-                    return Callback.StoppedReason.FAILED_TO_START;
+                    return Callback.ClosedReason.FAILED_TO_START;
                 case REASON_STOPPED_BY_PEER:
                 case REASON_STOP_RANGING_CALLED:
-                    return Callback.StoppedReason.REQUESTED;
+                    return Callback.ClosedReason.REQUESTED;
                 case REASON_MAX_RANGING_ROUND_RETRY_REACHED:
-                    return Callback.StoppedReason.LOST_CONNECTION;
+                    return Callback.ClosedReason.LOST_CONNECTION;
                 case REASON_SYSTEM_POLICY:
-                    return Callback.StoppedReason.SYSTEM_POLICY;
+                    return Callback.ClosedReason.SYSTEM_POLICY;
                 default:
-                    return Callback.StoppedReason.UNKNOWN;
+                    return Callback.ClosedReason.UNKNOWN;
             }
         }
 
         @Override
-        public void onRangingSuspended(RttDevice device, int reason) {
+        public void onRangingSuspended(RttDevice localDevice, int reason) {
             Log.i(TAG, "onRangingSuspended: " + reason);
+            closeForReason(convertReason(reason));
+        }
+    }
 
-            synchronized (mStateMachine) {
-                if (mStateMachine.getState() == State.STOPPED) {
-                    mCallbacks.onStopped(convertReason(reason));
-                    clear();
-                }
-            }
+    /** Close the session, disconnecting the peer and resetting internal state. */
+    private void closeForReason(@Callback.ClosedReason int reason) {
+        synchronized (mStateMachine) {
+            mStateMachine.setState(State.STOPPED);
+            mCallbacks.onStopped(mPeerDevice);
+            mCallbacks.onClosed(reason);
+            clear();
         }
     }
 
     private void clear() {
         mRttClient.stopRanging();
         mCallbacks = null;
+        mPeerDevice = null;
     }
 
     public enum State {
@@ -219,34 +219,24 @@ public class RttAdapter implements RangingAdapter {
             @Override
             public void onSuccess(Void v) {
                 Log.i(TAG, "startRanging succeeded.");
-                // TODO: check where onStarted needs to be called.
-                // On started will be called after onRangingInitialized is invoked from
-                // the RTT callback.
-                mCallbacks.onStarted();
             }
 
             @Override
             public void onFailure(@NonNull Throwable t) {
                 Log.w(TAG, "startRanging failed ", t);
-                mCallbacks.onStopped(RangingAdapter.Callback.StoppedReason.ERROR);
-                clear();
+                closeForReason(Callback.ClosedReason.ERROR);
             }
         };
 
         public final FutureCallback<Void> stopRanging = new FutureCallback<>() {
             @Override
             public void onSuccess(Void v) {
-                // On stopped will be called after onRangingSuspended is invoked from
-                // the RTT callback.
-                mCallbacks.onStopped(RangingAdapter.Callback.StoppedReason.REQUESTED);
             }
 
             @Override
             public void onFailure(@NonNull Throwable t) {
                 Log.w(TAG, "stopRanging failed ", t);
-                // We failed to stop but there's nothing else we can do.
-                mCallbacks.onStopped(RangingAdapter.Callback.StoppedReason.REQUESTED);
-                clear();
+                closeForReason(Callback.ClosedReason.ERROR);
             }
         };
     }

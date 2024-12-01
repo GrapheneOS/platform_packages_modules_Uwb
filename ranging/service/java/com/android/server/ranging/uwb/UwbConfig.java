@@ -31,30 +31,31 @@ import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingParams;
 import android.util.Log;
-import android.util.Pair;
 
 import androidx.annotation.NonNull;
 
 import com.android.ranging.uwb.backend.internal.Utils;
 import com.android.ranging.uwb.backend.internal.UwbRangeDataNtfConfig;
-import com.android.server.ranging.RangingPeerConfig.TechnologyConfig;
+import com.android.server.ranging.RangingSessionConfig;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.Conversions;
 
+import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.uwb.support.base.RequiredParam;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A complete configuration for UWB ranging. This encapsulates all information contained in a
  * configuration message sent over OOB and everything required to start a session in the underlying
  * UWB system API.
  */
-public class UwbConfig implements TechnologyConfig {
+public class UwbConfig implements RangingSessionConfig.MulticastTechnologyConfig {
     private static final String TAG = UwbConfig.class.getSimpleName();
 
     private static final int MIN_SIZE_BYTES = 20;
@@ -86,7 +87,7 @@ public class UwbConfig implements TechnologyConfig {
     private final UwbRangingParams mParameters;
     private final int mDeviceRole;
     private final boolean mIsAoaNeeded;
-    private final Pair<RangingDevice, UwbAddress> mPeer;
+    private final ImmutableBiMap<RangingDevice, UwbAddress> mPeerAddresses;
 
     private UwbConfig(Builder builder) {
         mParameters = builder.mParameters;
@@ -94,7 +95,7 @@ public class UwbConfig implements TechnologyConfig {
         mDataNotificationConfig = builder.mDataNotificationConfig;
         mDeviceRole = builder.mDeviceRole;
         mIsAoaNeeded = builder.mIsAoaNeeded;
-        mPeer = new Pair<>(builder.mPeerDevice.get(), builder.mParameters.getPeerAddress());
+        mPeerAddresses = builder.mPeerAddresses.get();
     }
 
     /**
@@ -241,6 +242,16 @@ public class UwbConfig implements TechnologyConfig {
                 .array();
     }
 
+    @Override
+    public @NonNull RangingTechnology getTechnology() {
+        return RangingTechnology.UWB;
+    }
+
+    @Override
+    public @NonNull ImmutableSet<RangingDevice> getPeerDevices() {
+        return mPeerAddresses.keySet();
+    }
+
     /** Returns the length of the session key. */
     public final int getSessionKeyInfoLength() {
         if (mParameters.getSessionKeyInfo() == null) {
@@ -270,9 +281,10 @@ public class UwbConfig implements TechnologyConfig {
         return mIsAoaNeeded;
     }
 
-    public @NonNull Pair<RangingDevice, UwbAddress> getPeer() {
-        return mPeer;
+    public @NonNull ImmutableBiMap<RangingDevice, UwbAddress> getPeerAddresses() {
+        return mPeerAddresses;
     }
+
 
     /**
      * @return the configuration converted to a
@@ -280,10 +292,13 @@ public class UwbConfig implements TechnologyConfig {
      * backend.
      */
     public com.android.ranging.uwb.backend.internal.RangingParameters asBackendParameters() {
-        List<com.android.ranging.uwb.backend.internal.UwbAddress> peerAddressList =
-                new ArrayList<>();
-        peerAddressList.add(com.android.ranging.uwb.backend.internal.UwbAddress.fromBytes(
-                mParameters.getPeerAddress().getAddressBytes()));
+        List<com.android.ranging.uwb.backend.internal.UwbAddress> peerAddresses = mPeerAddresses
+                .values()
+                .stream()
+                .map((address) ->
+                        com.android.ranging.uwb.backend.internal.UwbAddress.fromBytes(
+                                address.getAddressBytes()))
+                .collect(Collectors.toList());
         return new com.android.ranging.uwb.backend.internal.RangingParameters(
                 (int) mParameters.getConfigId(),
                 mParameters.getSessionId(),
@@ -291,7 +306,7 @@ public class UwbConfig implements TechnologyConfig {
                 mParameters.getSessionKeyInfo(),
                 mParameters.getSubSessionKeyInfo(),
                 toBackend(mParameters.getComplexChannel()),
-                peerAddressList,
+                peerAddresses,
                 (int) mParameters.getRangingUpdateRate(),
                 toBackend(getDataNotificationConfig()),
                 (int) mParameters.getSlotDuration(),
@@ -373,7 +388,8 @@ public class UwbConfig implements TechnologyConfig {
     /** Builder for {@link UwbConfig}. */
     public static class Builder {
         private final UwbRangingParams mParameters;
-        private final RequiredParam<RangingDevice> mPeerDevice = new RequiredParam<>();
+        private final RequiredParam<ImmutableBiMap<RangingDevice, UwbAddress>> mPeerAddresses =
+                new RequiredParam<>();
         private final RequiredParam<String> mCountryCode = new RequiredParam<>();
         private DataNotificationConfig mDataNotificationConfig =
                 new DataNotificationConfig.Builder().build();
@@ -389,8 +405,10 @@ public class UwbConfig implements TechnologyConfig {
             return new UwbConfig(this);
         }
 
-        public Builder setPeerDevice(@NonNull RangingDevice device) {
-            mPeerDevice.set(device);
+        public Builder setPeerAddresses(
+                @NonNull ImmutableBiMap<RangingDevice, UwbAddress> addresses
+        ) {
+            mPeerAddresses.set(addresses);
             return this;
         }
 
@@ -428,8 +446,8 @@ public class UwbConfig implements TechnologyConfig {
                 + mDeviceRole
                 + ", mIsAoaNeeded="
                 + mIsAoaNeeded
-                + ", mPeer="
-                + mPeer
+                + ", mPeerAddresses="
+                + mPeerAddresses
                 + " }";
     }
 }

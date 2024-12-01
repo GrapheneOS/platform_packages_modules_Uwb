@@ -16,17 +16,30 @@
 
 package com.android.server.ranging.rtt;
 
+import android.ranging.RangingDevice;
+
 import androidx.annotation.NonNull;
 
 import com.android.ranging.rtt.backend.internal.RttRangingParameters;
-import com.android.server.ranging.RangingPeerConfig;
+import com.android.server.ranging.RangingSessionConfig;
+import com.android.server.ranging.RangingTechnology;
 
 import java.time.Duration;
 
 public class RttParameters extends com.android.ranging.rtt.backend.internal.RttRangingParameters
-        implements RangingPeerConfig.TechnologyConfig {
+        implements RangingSessionConfig.UnicastTechnologyConfig {
     public RttParameters(Builder builder) {
         super(builder);
+    }
+
+    @Override
+    public @NonNull RangingTechnology getTechnology() {
+        return RangingTechnology.RTT;
+    }
+
+    @Override
+    public @NonNull RangingDevice getPeerDevice() {
+        throw new UnsupportedOperationException("Not implemented!");
     }
 
     public static class Builder extends RttRangingParameters.Builder {

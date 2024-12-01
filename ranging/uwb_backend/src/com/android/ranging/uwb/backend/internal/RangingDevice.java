@@ -355,6 +355,9 @@ public abstract class RangingDevice {
                             mIsRanging.set(false);
                             callback.onRangingSuspended(device, suspendedReason);
                         });
+                if (mRangingSession != null) {
+                    mRangingSession.close();
+                }
                 if (suspendedReason == REASON_STOP_RANGING_CALLED
                         && mOpAsyncCallbackRunner.isActive()) {
                     mOpAsyncCallbackRunner.complete(true);
@@ -463,11 +466,7 @@ public abstract class RangingDevice {
     }
 
     private void printStartRangingParameters(PersistableBundle parameters) {
-        Log.i(TAG, "Opens UWB session with bundle parameters:");
-        for (String key : parameters.keySet()) {
-            Log.i(TAG, String.format(
-                    "UWB parameter: %s, value: %s", key, getString(parameters.get(key))));
-        }
+        Log.i(TAG, "Opens UWB session with bundle parameters: " + parameters.toString());
     }
 
     /**

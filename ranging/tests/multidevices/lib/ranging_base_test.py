@@ -56,6 +56,17 @@ class RangingBaseTest(base_test.BaseTestClass):
   def teardown_class(self):
     super().teardown_class()
 
+  def on_fail(self, record):
+    test_name = record.test_name
+    # Single device test
+    for count, ad in enumerate(self.android_devices):
+      device_name = "initiator" if not count else "responder"
+      test_device_name = test_name + "_" + device_name
+      ad.take_bug_report(
+          test_name=test_device_name,
+          destination=self.current_test_info.output_path,
+      )
+
 
 if __name__ == "__main__":
   test_runner.main()

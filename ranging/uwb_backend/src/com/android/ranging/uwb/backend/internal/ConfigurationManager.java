@@ -20,7 +20,7 @@ import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_MULTICAST_DS
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_MULTICAST_DS_TWR;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR;
-import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE;
+import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_UNICAST_DS_TWR;
 import static com.android.ranging.uwb.backend.internal.Utils.STATIC_STS_SESSION_KEY_INFO_SIZE;
 import static com.android.ranging.uwb.backend.internal.Utils.SUPPORTED_HPRF_PREAMBLE_INDEX;
@@ -251,12 +251,12 @@ public final class ConfigurationManager {
 
         // ID_6 properties.
         sConfigs.put(
-                CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE,
+                CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST,
                 new UwbConfiguration() {
 
                     @Override
                     public int getConfigId() {
-                        return CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE;
+                        return CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST;
                     }
 
                     @Override
@@ -356,6 +356,7 @@ public final class ConfigurationManager {
                         .setInBandTerminationAttemptCount(3)
                         .setStsConfig(configuration.getStsConfig())
                         .setRangingErrorStreakTimeoutMs(10_000L)
+                        .setHasRangingResultReportMessage(false)
                         .setFilterType(FILTER_TYPE_NONE);
 
         if (configuration.getStsConfig() == FiraParams.STS_CONFIG_STATIC) {
@@ -397,11 +398,6 @@ public final class ConfigurationManager {
         if (SUPPORTED_HPRF_PREAMBLE_INDEX.contains(rangingParameters.getComplexChannel()
                 .getPreambleIndex())) {
             builder.setPrfMode(PRF_MODE_HPRF);
-        }
-
-        if (configuration.getConfigId()
-                == CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE) {
-            builder.setHasRangingResultReportMessage(false);
         }
 
         return builder.build();

@@ -16,14 +16,16 @@
 
 package com.android.server.ranging.cs;
 
+import android.annotation.NonNull;
 import android.ranging.DataNotificationConfig;
 import android.ranging.RangingDevice;
 import android.ranging.RangingPreference;
 import android.ranging.ble.cs.CsRangingParams;
 
-import com.android.server.ranging.RangingPeerConfig.TechnologyConfig;
+import com.android.server.ranging.RangingSessionConfig.UnicastTechnologyConfig;
+import com.android.server.ranging.RangingTechnology;
 
-public class CsConfig implements TechnologyConfig {
+public class CsConfig implements UnicastTechnologyConfig {
     private static final String TAG = CsConfig.class.getSimpleName();
 
     private final DataNotificationConfig mDataNotificationConfig;
@@ -37,11 +39,16 @@ public class CsConfig implements TechnologyConfig {
     public CsConfig(int deviceRole,
             CsRangingParams csRangingParams,
             DataNotificationConfig dataNotificationConfig,
-            RangingDevice peerDevice) {
+            @NonNull RangingDevice peerDevice) {
         mDeviceRole = deviceRole;
         mRangingParams = csRangingParams;
         mDataNotificationConfig = dataNotificationConfig;
         mPeerDevice = peerDevice;
+    }
+
+    @Override
+    public @NonNull RangingTechnology getTechnology() {
+        return RangingTechnology.CS;
     }
 
     public DataNotificationConfig getDataNotificationConfig() {
@@ -56,7 +63,8 @@ public class CsConfig implements TechnologyConfig {
         return mDeviceRole;
     }
 
-    public RangingDevice getPeerDevice() {
+    @Override
+    public @NonNull RangingDevice getPeerDevice() {
         return mPeerDevice;
     }
 

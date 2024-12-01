@@ -559,9 +559,6 @@ public class FiraDecoder extends TlvDecoder {
             if (isBitSet(multiNodeUci, ONE_TO_MANY)) {
                 multiNodeFlag.add(MultiNodeCapabilityFlag.HAS_ONE_TO_MANY_SUPPORT);
             }
-            if (isBitSet(multiNodeUci, MANY_TO_MANY)) {
-                multiNodeFlag.add(MultiNodeCapabilityFlag.HAS_MANY_TO_MANY_SUPPORT);
-            }
             builder.setMultiNodeCapabilities(multiNodeFlag);
 
             byte rangingTimeStructUci = tlvs.getByte(SUPPORTED_RANGING_TIME_STRUCT_VER_2_0);

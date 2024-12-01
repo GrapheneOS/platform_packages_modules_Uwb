@@ -20,12 +20,13 @@ import android.ranging.RangingData;
 import android.ranging.RangingDevice;
 
 import androidx.annotation.IntDef;
+import androidx.annotation.NonNull;
 
 /** RangingAdapter representing a common ranging class for multiple ranging technologies. */
 public interface RangingAdapter {
 
     /** Returns {@link RangingTechnology} of this adapter. */
-    RangingTechnology getType();
+    @NonNull RangingTechnology getTechnology();
 
     /**
      * Start ranging. Does nothing if the ranging technology is not enabled on device or if ranging
@@ -34,7 +35,7 @@ public interface RangingAdapter {
      * @param config for the ranging session.
      * @param callback to be called on the occurrence of ranging events.
      */
-    void start(RangingPeerConfig.TechnologyConfig config, Callback callback);
+    void start(@NonNull RangingSessionConfig.TechnologyConfig config, @NonNull Callback callback);
 
     /** Stop ranging. */
     void stop();
@@ -42,36 +43,40 @@ public interface RangingAdapter {
     /** Callback for getting notified when ranging starts or stops. */
     interface Callback {
         /**
-         * Notifies the caller that ranging has started on this device. onStarted will not be called
-         * after start if API failed to initialize, in that case onStopped with an appropriate error
-         * code will be called.
+         * Notifies the caller that ranging has started with a particular peer. onStarted will not
+         * be called after start if API failed to initialize, in that case onClosed with an
+         * appropriate error code will be called instead.
+         *
+         * @param peer that ranging was started with.
          */
-        void onStarted();
+        void onStarted(@NonNull RangingDevice peer);
+
 
         /**
-         * Notifies the caller that ranging has stopped on this device.
+         * Notifies the caller that ranging has stopped with a particular peer.
          *
-         * @param reason why ranging was stopped.
+         * @param peer that ranging was stopped with.
          */
-        void onStopped(@StoppedReason int reason);
+        void onStopped(@NonNull RangingDevice peer);
 
         /**
          * Notifies the caller on each instance of ranging data received from the ranging
          * technology.
+         *
          * @param peer device whose distance was measured.
          * @param data the distance measurement and other position-related data.
          */
-        void onRangingData(RangingDevice peer, RangingData data);
+        void onRangingData(@NonNull RangingDevice peer, @NonNull RangingData data);
 
         @IntDef({
-                StoppedReason.UNKNOWN,
-                StoppedReason.FAILED_TO_START,
-                StoppedReason.REQUESTED,
-                StoppedReason.LOST_CONNECTION,
-                StoppedReason.SYSTEM_POLICY,
-                StoppedReason.ERROR,
+                ClosedReason.UNKNOWN,
+                ClosedReason.FAILED_TO_START,
+                ClosedReason.REQUESTED,
+                ClosedReason.LOST_CONNECTION,
+                ClosedReason.SYSTEM_POLICY,
+                ClosedReason.ERROR,
         })
-        @interface StoppedReason {
+        @interface ClosedReason {
             int UNKNOWN = 0;
             int ERROR = 1;
             int FAILED_TO_START = 2;
@@ -79,5 +84,12 @@ public interface RangingAdapter {
             int LOST_CONNECTION = 4;
             int SYSTEM_POLICY = 5;
         }
+
+        /**
+         * Notifies the caller that the ranging session was closed.
+         *
+         * @param reason why the session was closed.
+         */
+        void onClosed(@ClosedReason int reason);
     }
 }

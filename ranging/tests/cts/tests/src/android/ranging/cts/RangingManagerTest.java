@@ -26,6 +26,7 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
@@ -48,6 +49,7 @@ import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingParams;
 import android.ranging.wifi.rtt.RttRangingParams;
+import android.util.Log;
 import android.uwb.UwbManager;
 
 import androidx.annotation.NonNull;
@@ -84,8 +86,76 @@ public class RangingManagerTest {
 
     @After
     public void teardown() throws Exception {
+        // Just in case if some test failed.
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        uiAutomation.dropShellPermissionIdentity();
     }
 
+    private RangingPreference getGenericRangingPreference(int deviceRole) {
+        // Generic ranging preference, Improve this method based on future needs.
+        return new RangingPreference.Builder(deviceRole,
+                new RawInitiatorRangingParams.Builder()
+                        .addRawRangingDevice(new RawRangingDevice.Builder()
+                                .setRangingDevice(new RangingDevice.Builder().build())
+                                .setUwbRangingParams(new UwbRangingParams.Builder(10,
+                                        CONFIG_UNICAST_DS_TWR,
+                                        UwbAddress.fromBytes(new byte[]{1, 2}),
+                                        UwbAddress.fromBytes(new byte[]{3, 4}))
+                                        .setComplexChannel(
+                                                new UwbComplexChannel.Builder().setChannel(
+                                                        9).setPreambleIndex(11).build())
+                                        .setSessionKeyInfo(
+                                                new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3,
+                                                        2, 1})
+                                        .setRangingUpdateRate(UPDATE_RATE_NORMAL)
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_enabled")
+    public void testStartRangingSession_WithoutPermission() throws Exception {
+        RangingSessionCallback callback = new RangingSessionCallback();
+
+        RangingSession rangingSession = mRangingManager.createRangingSession(
+                MoreExecutors.directExecutor(), callback);
+        assertThat(rangingSession).isNotNull();
+
+        RangingPreference preference = getGenericRangingPreference(DEVICE_ROLE_INITIATOR);
+
+        try {
+            rangingSession.start(preference);
+            // Caller does not hold RANGING permission, should fail if start was successful.
+            fail();
+        } catch (SecurityException e) {
+            // pass
+            Log.i(TAG, "Failed with expected security exception: " + e);
+        }
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_enabled")
+    public void testStopRangingSession_WithoutPermission() throws Exception {
+
+        RangingSessionCallback callback = new RangingSessionCallback();
+
+        RangingSession rangingSession = mRangingManager.createRangingSession(
+                MoreExecutors.directExecutor(), callback);
+        assertThat(rangingSession).isNotNull();
+
+        try {
+            rangingSession.stop();
+            // Caller does not hold RANGING permission, should fail if start was successful.
+            fail();
+        } catch (SecurityException e) {
+            // pass
+            Log.i(TAG, "Failed with expected security exception: " + e);
+        }
+    }
     @Test
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_enabled")

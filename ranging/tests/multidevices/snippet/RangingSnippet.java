@@ -214,13 +214,20 @@ public class RangingSnippet implements Snippet {
 
     @Rpc(description = "Set airplane mode")
     public void setAirplaneMode(boolean enabled) throws Throwable {
-        adoptShellPermission();
-        mConnectivityManager.setAirplaneMode(enabled);
-        dropShellPermission();
+        runWithShellPermission(() -> mConnectivityManager.setAirplaneMode(enabled));
     }
 
     @Rpc(description = "Log info level message to device logcat")
     public void logInfo(String message) {
         Log.i(TAG, message);
+    }
+
+    public void runWithShellPermission(Runnable action) throws Throwable {
+        adoptShellPermission();
+        try {
+            action.run();
+        } finally {
+            dropShellPermission();
+        }
     }
 }

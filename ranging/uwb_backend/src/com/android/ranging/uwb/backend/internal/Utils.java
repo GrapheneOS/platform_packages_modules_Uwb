@@ -42,7 +42,7 @@ public final class Utils {
         CONFIG_PROVISIONED_UNICAST_DS_TWR,
         CONFIG_PROVISIONED_MULTICAST_DS_TWR,
         CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR,
-        CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE,
+            CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST,
     })
     public @interface UwbConfigId {}
 
@@ -65,11 +65,8 @@ public final class Utils {
     /** Same as {@code CONFIG_ID_2}, except P-STS individual controlee key mode is enabled. */
     public static final int CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR = 5;
 
-    /**
-     * Same as {@code CONFIG_ID_3}, except result report phase is disabled, fast ranging interval 96
-     * ms.
-     */
-    public static final int CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE = 6;
+    /** Same as {@code CONFIG_ID_3}, except fast ranging interval is 96 milliseconds. */
+    public static final int CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST = 6;
 
 
     @IntDef({
@@ -276,7 +273,7 @@ public final class Utils {
                         /* hoppingEnabled= */ true));
 
         setRangingTimingParams(
-                CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE,
+                CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST,
                 new RangingTimingParams(
                         /* rangingIntervalNormal= */ 240,
                         /* rangingIntervalFast= */ 96,

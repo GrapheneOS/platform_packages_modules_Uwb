@@ -3,7 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.google.snippet.uwb">
 
-  <uses-permission android:name="android.permissions.UWB_PRIVILEGED" />
+  <uses-permission android:name="android.permission.UWB_PRIVILEGED" />
   <uses-permission android:name="android.permission.UWB_RANGING" />
 
   <application>

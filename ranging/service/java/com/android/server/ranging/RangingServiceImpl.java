@@ -64,32 +64,38 @@ public class RangingServiceImpl extends IRangingAdapter.Stub {
     @Override
     public void startRanging(AttributionSource attributionSource, SessionHandle sessionHandle,
             RangingPreference rangingPreference, IRangingCallbacks callbacks) {
+        mRangingInjector.enforceRangingPermissionForPreflight(attributionSource);
         mRangingInjector.getRangingServiceManager().startRanging(attributionSource, sessionHandle,
                 rangingPreference, callbacks);
     }
 
     @Override
     public void reconfigureRangingInterval(SessionHandle sessionHandle, int intervalSkipCount) {
+        enforceRangingPermission();
         throw new IllegalArgumentException("Reconfiguring ranging interval not supported yet");
     }
 
     @Override
     public void addRawDevice(SessionHandle sessionHandle, RawResponderRangingParams rangingParams) {
+        enforceRangingPermission();
         throw new IllegalArgumentException("Dynamic addition of raw peer not supported yet");
     }
 
     @Override
     public void addOobDevice(SessionHandle sessionHandle, OobResponderRangingParams rangingParams) {
+        enforceRangingPermission();
         throw new IllegalArgumentException("Dynamic addition of oob peer not supported yet");
     }
 
     @Override
     public void removeDevice(SessionHandle sessionHandle, RangingDevice rangingDevice) {
+        enforceRangingPermission();
         throw new IllegalArgumentException("Dynamic removal of peer not supported yet");
     }
 
     @Override
     public void stopRanging(SessionHandle sessionHandle) {
+        enforceRangingPermission();
         mRangingInjector.getRangingServiceManager().stopRanging(sessionHandle);
     }
 
@@ -117,6 +123,11 @@ public class RangingServiceImpl extends IRangingAdapter.Stub {
     public void registerOobSendDataListener(IOobSendDataListener oobSendDataListener) {
         mRangingInjector.getRangingServiceManager().registerOobSendDataListener(
                 oobSendDataListener);
+    }
+
+    private void enforceRangingPermission() {
+        mContext.enforceCallingOrSelfPermission(android.Manifest.permission.RANGING,
+                "RangingService");
     }
 
     @Override

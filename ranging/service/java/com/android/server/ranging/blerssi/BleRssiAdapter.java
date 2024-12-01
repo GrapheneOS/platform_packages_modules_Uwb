@@ -37,7 +37,7 @@ import android.ranging.ble.rssi.BleRssiRangingParams;
 import android.util.Log;
 
 import com.android.server.ranging.RangingAdapter;
-import com.android.server.ranging.RangingPeerConfig;
+import com.android.server.ranging.RangingSessionConfig;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.StateMachine;
 
@@ -53,6 +53,7 @@ public class BleRssiAdapter implements RangingAdapter {
     private BluetoothDevice mDeviceFromPeerBluetoothAddress;
     private RangingDevice mRangingDevice;
     private DistanceMeasurementSession mSession;
+    private BleRssiConfig mConfig;
 
     public BleRssiAdapter(@NonNull Context context) {
         if (!RangingTechnology.RSSI.isSupported(context)) {
@@ -62,15 +63,18 @@ public class BleRssiAdapter implements RangingAdapter {
         mStateMachine = new StateMachine<>(State.STOPPED);
         mCallbacks = null;
         mSession = null;
+        mConfig = null;
     }
 
     @Override
-    public RangingTechnology getType() {
+    public @NonNull RangingTechnology getTechnology() {
         return RangingTechnology.RSSI;
     }
 
     @Override
-    public void start(RangingPeerConfig.TechnologyConfig config, Callback callback) {
+    public void start(
+            @NonNull RangingSessionConfig.TechnologyConfig config, @NonNull Callback callback
+    ) {
         Log.i(TAG, "Start called.");
         if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {
             Log.v(TAG, "Attempted to start adapter when it was already started");
@@ -89,6 +93,7 @@ public class BleRssiAdapter implements RangingAdapter {
             return;
         }
 
+        mConfig = bleRssiConfig;
         mCallbacks = callback;
         mRangingDevice = bleRssiConfig.getPeerDevice();
         mDeviceFromPeerBluetoothAddress =
@@ -107,7 +112,7 @@ public class BleRssiAdapter implements RangingAdapter {
         distanceMeasurementManager.startMeasurementSession(params,
                 Executors.newSingleThreadExecutor(), mDistanceMeasurementCallback);
         // Added callback here to be consistent with other ranging technology.
-        mCallbacks.onStarted();
+        mCallbacks.onStarted(bleRssiConfig.getPeerDevice());
     }
 
     public enum State {
@@ -146,25 +151,29 @@ public class BleRssiAdapter implements RangingAdapter {
         mCallbacks = null;
     }
 
-    private DistanceMeasurementSession.Callback mDistanceMeasurementCallback =
+    private void closeForReason(@Callback.ClosedReason int reason) {
+        mCallbacks.onStopped(mConfig.getPeerDevice());
+        mCallbacks.onClosed(reason);
+        clear();
+    }
+
+    private final DistanceMeasurementSession.Callback mDistanceMeasurementCallback =
             new DistanceMeasurementSession.Callback() {
                 public void onStarted(DistanceMeasurementSession session) {
                     Log.i(TAG, "DistanceMeasurement onStarted !");
                     mSession = session;
-                    mCallbacks.onStarted();
+                    mCallbacks.onStarted(mConfig.getPeerDevice());
                 }
 
                 public void onStartFail(int reason) {
                     Log.i(TAG, "DistanceMeasurement onStartFail ! reason " + reason);
-                    mCallbacks.onStopped(Callback.StoppedReason.LOST_CONNECTION);
-                    clear();
+                    closeForReason(Callback.ClosedReason.FAILED_TO_START);
                 }
 
                 public void onStopped(DistanceMeasurementSession session, int reason) {
                     Log.i(TAG, "DistanceMeasurement onStopped ! reason " + reason);
                     // TODO: Check this.
-                    mCallbacks.onStopped(RangingAdapter.Callback.StoppedReason.REQUESTED);
-                    clear();
+                    closeForReason(Callback.ClosedReason.REQUESTED);
                 }
 
                 public void onResult(BluetoothDevice device, DistanceMeasurementResult result) {

@@ -25,7 +25,7 @@ import static com.android.ranging.uwb.backend.internal.RangingCapabilities.FIRA_
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_MULTICAST_DS_TWR;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR;
-import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE;
+import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST;
 import static com.android.ranging.uwb.backend.internal.Utils.RANGE_DATA_NTF_ENABLE;
 import static com.android.ranging.uwb.backend.internal.Utils.SUPPORTED_BPRF_PREAMBLE_INDEX;
 import static com.android.ranging.uwb.backend.internal.Utils.SUPPORTED_HPRF_PREAMBLE_INDEX;
@@ -231,7 +231,7 @@ public class UwbServiceImpl {
             supportedConfigIds.add(CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR);
         }
         if (minRangingInterval <= 96) {
-            supportedConfigIds.add(CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE);
+            supportedConfigIds.add(CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST);
         }
         EnumSet<FiraParams.RangingRoundCapabilityFlag> rangingRoundCapabilityFlags =
                 specificationParams.getRangingRoundCapabilities();
