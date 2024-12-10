@@ -36,7 +36,6 @@ import java.util.Objects;
  * required for a ranging session, including ranging parameters, sensor fusion settings,
  * and data notification configurations. It provides a {@link Builder} to construct
  * an instance with custom configurations.</p>
- *
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 public final class RangingPreference implements Parcelable {
@@ -113,7 +112,6 @@ public final class RangingPreference implements Parcelable {
      * Returns the ranging session configuration params.
      *
      * @return a non-null {@link SessionConfiguration} instance.
-     *
      */
     @NonNull
     public SessionConfiguration getSessionConfiguration() {
@@ -134,6 +132,28 @@ public final class RangingPreference implements Parcelable {
 
     /**
      * Builder for creating instances of {@code RangingPreference}.
+     *
+     * <p>This Builder class provides a flexible way to construct a {@link RangingPreference}
+     * instance by setting required and optional parameters. It ensures that all necessary
+     * parameters are specified and provides default values for optional configurations.</p>
+     *
+     * <p>Example usage:</p>
+     *
+     * <pre>{@code
+     * RangingPreference rangingPreference = new RangingPreference.Builder(DEVICE_ROLE_RESPONDER,
+     *     new RawResponderRangingParams.Builder()
+     *         .setRawRangingDevice(
+     *             new RawRangingDevice.Builder()
+     *                 .setRangingDevice(
+     *                     new RangingDevice.Builder()
+     *                         .build())
+     *                .setBleRssiRangingParams(
+     *                new BleRssiRangingParams.Builder("AA:BB:CC:00:11:22")
+     *                    .build())
+     *            .build())
+     *        build())
+     *    .build();
+     * }</pre>
      */
     public static final class Builder {
         @DeviceRole
@@ -146,9 +166,16 @@ public final class RangingPreference implements Parcelable {
          *
          * @param role the role of the device in {@link DeviceRole}
          * @param rangingParams the {@link RangingParams} to use.
+         *                      Needs to be an instance of one of the following:
+         *  <ul>
+         *     <li>{@link android.ranging.raw.RawResponderRangingParams}</li>
+         *     <li>{@link android.ranging.raw.RawInitiatorRangingParams}</li>
+         *     <li>{@link android.ranging.oob.OobResponderRangingParams}</li>
+         *     <li>{@link android.ranging.oob.OobInitiatorRangingParams}</li>
+         *  </ul>
          * @throws NullPointerException if {@code rangingParams} is null.
          */
-        public Builder(@DeviceRole int role, @NonNull  RangingParams rangingParams) {
+        public Builder(@DeviceRole int role, @NonNull RangingParams rangingParams) {
             Objects.requireNonNull(rangingParams);
             mDeviceRole = role;
             mRangingParameters = rangingParams;
@@ -163,8 +190,6 @@ public final class RangingPreference implements Parcelable {
          * @param config the {@link SessionConfiguration}.
          * @return this {@link Builder} instance.
          * @throws NullPointerException if {@code params} is null.
-         *
-         * @hide
          */
         @NonNull
         public Builder setSessionConfiguration(@NonNull SessionConfiguration config) {

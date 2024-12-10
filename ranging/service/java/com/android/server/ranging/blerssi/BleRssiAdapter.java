@@ -37,9 +37,9 @@ import android.ranging.ble.rssi.BleRssiRangingParams;
 import android.util.Log;
 
 import com.android.server.ranging.RangingAdapter;
-import com.android.server.ranging.RangingSessionConfig;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.StateMachine;
+import com.android.server.ranging.session.RangingSessionConfig;
 
 import java.util.concurrent.Executors;
 
@@ -162,7 +162,10 @@ public class BleRssiAdapter implements RangingAdapter {
                 public void onStarted(DistanceMeasurementSession session) {
                     Log.i(TAG, "DistanceMeasurement onStarted !");
                     mSession = session;
-                    mCallbacks.onStarted(mConfig.getPeerDevice());
+                    // onStarted is called right after start measurement is called, other ranging
+                    // technologies do not wait for this callback till they find the peer, if peer
+                    // is not found here, we get onStartFail.
+                    //mCallbacks.onStarted(mConfig.getPeerDevice());
                 }
 
                 public void onStartFail(int reason) {

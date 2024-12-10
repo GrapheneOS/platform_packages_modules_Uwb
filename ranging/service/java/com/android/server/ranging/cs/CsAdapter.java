@@ -23,6 +23,7 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.le.ChannelSoundingParams;
 import android.bluetooth.le.DistanceMeasurementManager;
 import android.bluetooth.le.DistanceMeasurementMethod;
 import android.bluetooth.le.DistanceMeasurementParams;
@@ -38,11 +39,9 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.android.server.ranging.RangingAdapter;
-import com.android.server.ranging.RangingSessionConfig;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.StateMachine;
-
-import com.google.common.annotations.VisibleForTesting;
+import com.android.server.ranging.session.RangingSessionConfig;
 
 import java.util.concurrent.Executors;
 
@@ -67,7 +66,6 @@ public class CsAdapter implements RangingAdapter {
     private DistanceMeasurementSession mSession;
 
     /** Injectable constructor for testing. */
-    @VisibleForTesting
     public CsAdapter(@NonNull Context context) {
         if (!RangingTechnology.CS.isSupported(context)) {
             throw new IllegalArgumentException("BT_CS system feature not found.");
@@ -117,6 +115,11 @@ public class CsAdapter implements RangingAdapter {
 
         DistanceMeasurementParams params =
                 new DistanceMeasurementParams.Builder(mDeviceFromPeerBluetoothAddress)
+                        .setChannelSoundingParams(new ChannelSoundingParams.Builder()
+                                .setLocationType(csRangingParams.getLocationType())
+                                .setCsSecurityLevel(csRangingParams.getSecurityLevel())
+                                .setSightType(csRangingParams.getSightType())
+                                .build())
                         .setDurationSeconds(duration)
                         .setFrequency(frequency)
                         .setMethodId(methodId)
@@ -124,6 +127,8 @@ public class CsAdapter implements RangingAdapter {
 
         distanceMeasurementManager.startMeasurementSession(params,
                 Executors.newSingleThreadExecutor(), mDistanceMeasurementCallback);
+        // Callback here to be consistent with other ranging technologies.
+        mCallbacks.onStarted(csConfig.getPeerDevice());
     }
 
     @Override
@@ -173,7 +178,10 @@ public class CsAdapter implements RangingAdapter {
                 public void onStarted(DistanceMeasurementSession session) {
                     Log.i(TAG, "DistanceMeasurement onStarted !");
                     mSession = session;
-                    mCallbacks.onStarted(mRangingDevice);
+                    // onStarted is called right after start measurement is called, other ranging
+                    // technologies do not wait for this callback till they find the peer, if peer
+                    // is not found here, we get onStartFail.
+                    //mCallbacks.onStarted(mRangingDevice);
                 }
 
                 public void onStartFail(int reason) {
@@ -196,14 +204,17 @@ public class CsAdapter implements RangingAdapter {
                             .setDistance(new RangingMeasurement.Builder()
                                     .setMeasurement(result.getResultMeters())
                                     .build())
-                            .setTimestampMillis(result.getMeasurementTimestampNanos() * 1000)
-                            .setAzimuth(new RangingMeasurement.Builder()
-                                    .setMeasurement(result.getAzimuthAngle())
-                                    .build())
-                            .setElevation(new RangingMeasurement.Builder()
-                                    .setMeasurement(result.getAltitudeAngle())
-                                    .build());
-
+                            .setTimestampMillis(result.getMeasurementTimestampNanos() * 1000);
+                    if (!Double.isNaN(result.getAzimuthAngle())) {
+                        dataBuilder.setAzimuth(new RangingMeasurement.Builder()
+                                .setMeasurement(result.getAzimuthAngle())
+                                .build());
+                    }
+                    if (!Double.isNaN(result.getAltitudeAngle())) {
+                        dataBuilder.setElevation(new RangingMeasurement.Builder()
+                                .setMeasurement(result.getAltitudeAngle())
+                                .build());
+                    }
                     synchronized (mStateMachine) {
                         if (mStateMachine.getState() == State.STARTED) {
                             mCallbacks.onRangingData(mRangingDevice, dataBuilder.build());

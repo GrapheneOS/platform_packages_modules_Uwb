@@ -81,6 +81,7 @@ public class CccDecoderTest {
             "a00111"
                     + "a10400000082"
                     + "a20168"
+                    + "a30103"
                     + "a4020102"
                     + "a50100"
                     + "a60112"
@@ -216,7 +217,7 @@ public class CccDecoderTest {
         TlvDecoderBuffer tlvDecoderBuffer =
                 new TlvDecoderBuffer(
                         TEST_CCC_SPECIFICATION_TLV_DATA_PRIORITIZED_CHANNELS,
-                        TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS);
+                        TEST_CCC_SPECIFICATION_TLV_DATA_UWBS_MAX_PPM_NUM_PARAMS);
         assertThat(tlvDecoderBuffer.parse()).isTrue();
 
         CccSpecificationParams cccSpecificationParams = mCccDecoder.getParams(

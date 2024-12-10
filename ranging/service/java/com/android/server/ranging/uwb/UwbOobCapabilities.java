@@ -16,32 +16,33 @@
 
 package com.android.server.ranging.uwb;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
-import com.android.ranging.uwb.backend.internal.UwbAddress;
+import android.ranging.uwb.UwbAddress;
+
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.Conversions;
+import com.android.server.ranging.oob.TechnologyHeader;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.stream.Collectors;
 
 /** Capability data for UWB sent as part of CapabilityResponseMessage. */
 @AutoValue
-public abstract class UwbCapabilities {
+public abstract class UwbOobCapabilities {
 
     /** Size in bytes of all properties when serialized. */
-    private static final int EXPECTED_SIZE_BYTES = 19;
+    private static final int EXPECTED_SIZE_BYTES = 20;
 
     // Size in bytes for each properties for serialization/deserialization.
-    private static final int TECHNOLOGY_ID_SIZE = 1;
     private static final int UWB_ADDRESS_SIZE = 2;
     private static final int CHANNELS_SIZE = 4;
     private static final int PREAMBLES_SIZE = 4;
-    private static final int CONFIG_IDS_SIZE = 2;
-    private static final int MIN_INTERVAL_SIZE = 4;
+    private static final int CONFIG_IDS_SIZE = 4;
+    private static final int MIN_INTERVAL_SIZE = 2;
     private static final int MIN_SLOT_SIZE = 1;
     private static final int DEVICE_ROLE_SIZE = 1;
 
@@ -56,25 +57,41 @@ public abstract class UwbCapabilities {
     }
 
     /**
-     * Parses the given byte array and returns {@link UwbCapabilities} object. Throws {@link
+     * Parses the given byte array and returns {@link UwbOobCapabilities} object. Throws {@link
      * IllegalArgumentException} on invalid input.
      */
-    public static UwbCapabilities parseBytes(byte[] capabilitiesBytes) {
+    public static UwbOobCapabilities parseBytes(byte[] capabilitiesBytes) {
+        TechnologyHeader header = TechnologyHeader.parseBytes(capabilitiesBytes);
+
         if (capabilitiesBytes.length < EXPECTED_SIZE_BYTES) {
-            throw new IllegalArgumentException("Couldn't parse UwbCapabilities, invalid byte size");
+            throw new IllegalArgumentException(
+                    String.format(
+                            "UwbCapabilities size is %d, expected at least %d",
+                            capabilitiesBytes.length, EXPECTED_SIZE_BYTES));
         }
 
-        int parseCursor = 0;
-        var technology = RangingTechnology.parseByte(capabilitiesBytes[parseCursor]);
-        if (technology.size() != 1 || technology.get(0) != RangingTechnology.UWB) {
+        if (capabilitiesBytes.length < header.getSize()) {
             throw new IllegalArgumentException(
-                    "Couldn't parse UwbCapabilities, invalid technology id");
+                    String.format(
+                            "UwbCapabilities header size field is %d, but the size of the array "
+                                    + "is %d",
+                            header.getSize(), capabilitiesBytes.length));
         }
-        parseCursor += TECHNOLOGY_ID_SIZE;
+
+        if (header.getRangingTechnology() != RangingTechnology.UWB) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "UwbCapabilities header technology field is %s, expected %s",
+                            header.getRangingTechnology(), RangingTechnology.UWB));
+        }
+
+        int parseCursor = header.getHeaderSize();
 
         // Parse UWB Address
-        UwbAddress uwbAddress = UwbAddress.fromBytes(
-                Arrays.copyOfRange(capabilitiesBytes, parseCursor, parseCursor + UWB_ADDRESS_SIZE));
+        UwbAddress uwbAddress =
+                UwbAddress.fromBytes(
+                        Arrays.copyOfRange(capabilitiesBytes, parseCursor,
+                                parseCursor + UWB_ADDRESS_SIZE));
         parseCursor += UWB_ADDRESS_SIZE;
 
         // Parse Supported Channels
@@ -116,30 +133,33 @@ public abstract class UwbCapabilities {
         parseCursor += MIN_SLOT_SIZE;
 
         // Parse Device Role
-        ImmutableList.Builder<Integer> deviceRoles = new ImmutableList.Builder<>();
-        for (byte role : Arrays.copyOfRange(
-                capabilitiesBytes, parseCursor, parseCursor + DEVICE_ROLE_SIZE)) {
-            deviceRoles.add(UwbConfig.fromOobDeviceRole(role));
-        }
+        ImmutableList<Integer> deviceRoles =
+                Conversions.byteArrayToIntList(
+                                Arrays.copyOfRange(capabilitiesBytes, parseCursor,
+                                        parseCursor + DEVICE_ROLE_SIZE),
+                                DEVICE_ROLE_SHIFT)
+                        .stream()
+                        .collect(toImmutableList());
         parseCursor += DEVICE_ROLE_SIZE;
 
-        return UwbCapabilities.builder()
+        return UwbOobCapabilities.builder()
                 .setUwbAddress(uwbAddress)
                 .setSupportedChannels(supportedChannels)
                 .setSupportedConfigIds(supportedConfigIds)
                 .setSupportedPreambleIndexes(supportedPreambleIndexes)
                 .setMinimumRangingIntervalMs(minimumRangingIntervalMs)
                 .setMinimumSlotDurationMs(minimumSlotDurationMs)
-                .setSupportedDeviceRole(deviceRoles.build())
+                .setSupportedDeviceRole(deviceRoles)
                 .build();
     }
 
-    /** Serializes this {@link UwbCapabilities} object to bytes. */
+    /** Serializes this {@link UwbOobCapabilities} object to bytes. */
     public final byte[] toBytes() {
         ByteBuffer byteBuffer = ByteBuffer.allocate(EXPECTED_SIZE_BYTES);
         byteBuffer
                 .put(RangingTechnology.UWB.toByte())
-                .put(getUwbAddress().toBytes())
+                .put((byte) EXPECTED_SIZE_BYTES)
+                .put(getUwbAddress().getAddressBytes())
                 .put(Conversions.intListToByteArrayBitmap(getSupportedChannels(), CHANNELS_SIZE,
                         CHANNELS_SHIFT))
                 .put(
@@ -153,8 +173,7 @@ public abstract class UwbCapabilities {
                 .put(
                         Conversions.intListToByteArrayBitmap(
                                 getSupportedDeviceRole().stream()
-                                        .map(UwbConfig::toOobDeviceRole)
-                                        .collect(Collectors.toList()),
+                                        .collect(toImmutableList()),
                                 DEVICE_ROLE_SIZE,
                                 DEVICE_ROLE_SHIFT));
 
@@ -182,12 +201,12 @@ public abstract class UwbCapabilities {
     /** Returns supported device roles. */
     public abstract ImmutableList<Integer> getSupportedDeviceRole();
 
-    /** Returns a builder for {@link UwbCapabilities}. */
+    /** Returns a builder for {@link UwbOobCapabilities}. */
     public static Builder builder() {
-        return new AutoValue_UwbCapabilities.Builder();
+        return new AutoValue_UwbOobCapabilities.Builder();
     }
 
-    /** Builder for {@link UwbCapabilities}. */
+    /** Builder for {@link UwbOobCapabilities}. */
     @AutoValue.Builder
     public abstract static class Builder {
 
@@ -207,26 +226,6 @@ public abstract class UwbCapabilities {
         public abstract Builder setSupportedDeviceRole(
                 ImmutableList<Integer> supportedDeviceRole);
 
-        public abstract UwbCapabilities build();
-    }
-
-    @Override
-    public String toString() {
-        return "UwbCapabilities{ "
-                + "uwbAddress="
-                + getUwbAddress()
-                + ", supportedChannels="
-                + getSupportedChannels()
-                + ", supportedPreambleIndexes="
-                + getSupportedPreambleIndexes()
-                + ", supportedConfigIds="
-                + getSupportedConfigIds()
-                + ", minimumRangingIntervalMs="
-                + getMinimumRangingIntervalMs()
-                + ", minimumSlotDurationMs="
-                + getMinimumSlotDurationMs()
-                + ", supportedDeviceRole="
-                + getSupportedDeviceRole()
-                + " }";
+        public abstract UwbOobCapabilities build();
     }
 }

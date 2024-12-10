@@ -35,9 +35,9 @@ import com.android.ranging.rtt.backend.internal.RttRangingSessionCallback;
 import com.android.ranging.rtt.backend.internal.RttService;
 import com.android.ranging.rtt.backend.internal.RttServiceImpl;
 import com.android.server.ranging.RangingAdapter;
-import com.android.server.ranging.RangingSessionConfig;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.StateMachine;
+import com.android.server.ranging.session.RangingSessionConfig;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;

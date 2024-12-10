@@ -17,8 +17,8 @@
 package com.android.server.ranging.oob;
 
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.cs.CsCapabilities;
-import com.android.server.ranging.uwb.UwbCapabilities;
+import com.android.server.ranging.cs.CsOobCapabilities;
+import com.android.server.ranging.uwb.UwbOobCapabilities;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
@@ -35,59 +35,60 @@ import javax.annotation.Nullable;
 public abstract class CapabilityResponseMessage {
 
     // Size of properties in bytes when serialized.
-    private static final int MIN_SIZE_BYTES = 1;
-    private static final int PROTOCOL_VERSION_SIZE = 1;
+    private static final int MIN_SIZE_BYTES = 2;
+
+    private static final int RANGING_TECHNOLOGIES_SIZE_BYTES = 2;
 
     /**
      * Parses the given byte array and returns {@link CapabilityResponseMessage} object. Throws
      * {@link
      * IllegalArgumentException} on invalid input.
      */
-    public static CapabilityResponseMessage parseBytes(byte[] capabilityResponseBytes) {
-        if (capabilityResponseBytes.length < MIN_SIZE_BYTES) {
+    public static CapabilityResponseMessage parseBytes(byte[] payload) {
+        OobHeader header = OobHeader.parseBytes(payload);
+
+        if (payload.length < header.getSize() + MIN_SIZE_BYTES) {
             throw new IllegalArgumentException(
-                    "Failed to parse Capability Response Message, Invalid size. Bytes:"
-                            + Arrays.toString(capabilityResponseBytes));
+                    String.format("CapabilityResponseMessage payload size is %d bytes",
+                            payload.length));
         }
 
-        // Parse SupportedProtocolVersion
-        int parseCursor = 0;
-        int supportedProtocolVersion = capabilityResponseBytes[parseCursor];
-        parseCursor += PROTOCOL_VERSION_SIZE;
+        int parseCursor = header.getSize();
+
+        // Parse ranging technologies bitfield
+        byte[] rangingTechnologiesBytes =
+                Arrays.copyOfRange(payload, parseCursor,
+                        parseCursor + RANGING_TECHNOLOGIES_SIZE_BYTES);
+        ImmutableList<RangingTechnology> rangingTechnologies =
+                RangingTechnology.fromBitmap(rangingTechnologiesBytes);
+        parseCursor += RANGING_TECHNOLOGIES_SIZE_BYTES;
 
         // Parse Capability data for different ranging technologies
-        UwbCapabilities uwbCapabilities = null;
-        CsCapabilities csCapabilities = null;
+        UwbOobCapabilities uwbCapabilities = null;
+        CsOobCapabilities csCapabilities = null;
         ImmutableList.Builder<RangingTechnology> rangingTechnologiesPriority =
                 ImmutableList.builder();
-        while (parseCursor < capabilityResponseBytes.length) {
-            ImmutableList<RangingTechnology> tech =
-                    RangingTechnology.parseByte(capabilityResponseBytes[parseCursor]);
-            if (tech.size() != 1) {
-                throw new IllegalArgumentException(
-                        "Failed to parse Capability Response Message, Invalid ranging technology "
-                                + "Id. Bytes:"
-                                + Arrays.toString(capabilityResponseBytes));
-            }
-            switch (tech.get(0)) {
+        int countTechsParsed = 0;
+        while (parseCursor < payload.length && countTechsParsed++ < rangingTechnologies.size()) {
+            byte[] remainingBytes = Arrays.copyOfRange(payload, parseCursor, payload.length);
+            TechnologyHeader techHeader = TechnologyHeader.parseBytes(remainingBytes);
+            switch (techHeader.getRangingTechnology()) {
                 case UWB:
-                    uwbCapabilities =
-                            UwbCapabilities.parseBytes(
-                                    Arrays.copyOfRange(
-                                            capabilityResponseBytes, parseCursor,
-                                            capabilityResponseBytes.length));
-                    parseCursor += UwbCapabilities.getSize();
+                    uwbCapabilities = UwbOobCapabilities.parseBytes(remainingBytes);
+                    parseCursor += techHeader.getSize();
                     rangingTechnologiesPriority.add(RangingTechnology.UWB);
 
                     break;
-                case CS:
-                    // rangingTechnologiesPriority.add(RangingTechnology.CS);
-                    throw new UnsupportedOperationException("Not implemented");
+                default:
+                    rangingTechnologiesPriority.add(techHeader.getRangingTechnology());
+                    parseCursor += techHeader.getSize();
+                    break;
             }
         }
 
         return CapabilityResponseMessage.builder()
-                .setSupportedProtocolVersion(supportedProtocolVersion)
+                .setHeader(header)
+                .setSupportedRangingTechnologies(rangingTechnologies)
                 .setUwbCapabilities(uwbCapabilities)
                 .setCsCapabilities(csCapabilities)
                 .setRangingTechnologiesPriority(rangingTechnologiesPriority.build())
@@ -96,32 +97,34 @@ public abstract class CapabilityResponseMessage {
 
     /** Serializes this {@link CapabilityResponseMessage} object to bytes. */
     public final byte[] toBytes() {
-        int size = MIN_SIZE_BYTES;
+        int size = MIN_SIZE_BYTES + getHeader().getSize();
         if (getUwbCapabilities() != null) {
-            size += UwbCapabilities.getSize();
+            size += UwbOobCapabilities.getSize();
         }
-        // if (csCapabilities != null) {
-        //   size += csCapabilities.getSize();
-        // }
         ByteBuffer byteBuffer = ByteBuffer.allocate(size);
-        byteBuffer.put((byte) getSupportedProtocolVersion());
+        byteBuffer
+                .put(getHeader().toBytes())
+                .put(RangingTechnology.toBitmap(getSupportedRangingTechnologies()));
         for (RangingTechnology tech : getRangingTechnologiesPriority()) {
             switch (tech) {
                 case UWB:
-                    UwbCapabilities uwbCapabilities = getUwbCapabilities();
+                    UwbOobCapabilities uwbCapabilities = getUwbCapabilities();
                     if (uwbCapabilities != null) {
                         byteBuffer.put(uwbCapabilities.toBytes());
                     }
                     break;
-                case CS:
+                default:
                     throw new UnsupportedOperationException("Not implemented");
             }
         }
         return byteBuffer.array();
     }
 
-    /** Returns the supported protocol version. */
-    public abstract int getSupportedProtocolVersion();
+    /** Returns the OOB header. */
+    public abstract OobHeader getHeader();
+
+    /** Returns the supported ranging technologies. */
+    public abstract ImmutableList<RangingTechnology> getSupportedRangingTechnologies();
 
     /**
      * Returns the priority of requested ranging technologies, with earlier items in the list being
@@ -132,11 +135,11 @@ public abstract class CapabilityResponseMessage {
 
     /** Returns an Optional of UWB capability data. */
     @Nullable
-    public abstract UwbCapabilities getUwbCapabilities();
+    public abstract UwbOobCapabilities getUwbCapabilities();
 
     /** Returns an Optional of CS capability data. */
     @Nullable
-    public abstract CsCapabilities getCsCapabilities();
+    public abstract CsOobCapabilities getCsCapabilities();
 
     /** Returns a builder for {@link CapabilityResponseMessage}. */
     public static Builder builder() {
@@ -148,14 +151,18 @@ public abstract class CapabilityResponseMessage {
     @AutoValue.Builder
     public abstract static class Builder {
 
-        public abstract Builder setSupportedProtocolVersion(int supportedProtocolVersion);
+        public abstract Builder setHeader(OobHeader header);
 
-        public abstract Builder setUwbCapabilities(@Nullable UwbCapabilities uwbCapabilities);
+        public abstract Builder setSupportedRangingTechnologies(
+                ImmutableList<RangingTechnology> rangingTechnologies);
 
-        public abstract Builder setCsCapabilities(@Nullable CsCapabilities csCapabilities);
+        public abstract Builder setUwbCapabilities(@Nullable UwbOobCapabilities uwbCapabilities);
+
+        public abstract Builder setCsCapabilities(@Nullable CsOobCapabilities csCapabilities);
 
         public abstract Builder setRangingTechnologiesPriority(
-                ImmutableList<RangingTechnology> rangingTechnologiesPriority);
+                ImmutableList<RangingTechnology> rangingTechnologiesPriority
+        );
 
         abstract CapabilityResponseMessage autoBuild();
 

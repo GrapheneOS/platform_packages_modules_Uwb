@@ -35,11 +35,12 @@ import android.util.Pair;
 
 import androidx.test.filters.SmallTest;
 
-import com.android.server.ranging.RangingSessionConfig;
-import com.android.server.ranging.RangingSessionConfig.MulticastTechnologyConfig;
-import com.android.server.ranging.RangingSessionConfig.TechnologyConfig;
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.session.RangingSessionConfig;
+import com.android.server.ranging.session.RangingSessionConfig.MulticastTechnologyConfig;
+import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 import org.junit.Assert;
@@ -49,13 +50,14 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import java.util.List;
+import java.util.Set;
 
 @SuppressWarnings("ConstantConditions")
 @RunWith(JUnit4.class)
 @SmallTest
 public class RangingSessionConfigTest {
 
-    private RangingSessionConfig.Builder mBaseConfig;
+    private RangingSessionConfig mConfig;
 
     private UwbRangingParams.Builder generateUwbParams(UwbAddress peerAddress) {
         return new UwbRangingParams.Builder(
@@ -73,11 +75,12 @@ public class RangingSessionConfigTest {
 
     @Before
     public void setup() {
-        mBaseConfig = new RangingSessionConfig.Builder()
+        mConfig = new RangingSessionConfig.Builder()
                 .setDeviceRole(DEVICE_ROLE_INITIATOR)
                 .setSensorFusionConfig(new SensorFusionParams.Builder().build())
                 .setDataNotificationConfig(new DataNotificationConfig.Builder().build())
-                .setAoaNeeded(true);
+                .setAoaNeeded(true)
+                .build();
     }
 
     @Test
@@ -86,21 +89,22 @@ public class RangingSessionConfigTest {
                 Pair.create(mock(RangingDevice.class), UwbAddress.fromBytes(new byte[]{1, 2})),
                 Pair.create(mock(RangingDevice.class), UwbAddress.fromBytes(new byte[]{3, 4})));
 
-        mBaseConfig.addPeerDeviceParams(
+        Set<RawRangingDevice> deviceParams = Set.of(
                 new RawRangingDevice.Builder()
-                    .setRangingDevice(peers.get(0).first)
-                    .setUwbRangingParams(generateUwbParams(peers.get(0).second).build())
-                    .build());
-        mBaseConfig.addPeerDeviceParams(
+                        .setRangingDevice(peers.get(0).first)
+                        .setUwbRangingParams(generateUwbParams(peers.get(0).second).build())
+                        .build(),
                 new RawRangingDevice.Builder()
-                    .setRangingDevice(peers.get(1).first)
-                    .setUwbRangingParams(generateUwbParams(peers.get(1).second).build())
-                    .build());
+                        .setRangingDevice(peers.get(1).first)
+                        .setUwbRangingParams(generateUwbParams(peers.get(1).second).build())
+                        .build()
+        );
 
-        RangingSessionConfig config = mBaseConfig.build();
-        Assert.assertEquals(1, config.getTechnologyConfigs().size());
+        ImmutableSet<TechnologyConfig> tcs = mConfig.getTechnologyConfigs(deviceParams);
 
-        TechnologyConfig tc = Iterables.getOnlyElement(config.getTechnologyConfigs());
+        Assert.assertEquals(1, tcs.size());
+
+        TechnologyConfig tc = Iterables.getOnlyElement(tcs);
 
         Assert.assertEquals(RangingTechnology.UWB, tc.getTechnology());
         Assert.assertTrue(tc instanceof MulticastTechnologyConfig);
@@ -117,27 +121,27 @@ public class RangingSessionConfigTest {
                 Pair.create(mock(RangingDevice.class), UwbAddress.fromBytes(new byte[]{1, 2})),
                 Pair.create(mock(RangingDevice.class), UwbAddress.fromBytes(new byte[]{3, 4})));
 
-        mBaseConfig.addPeerDeviceParams(
+        Set<RawRangingDevice> deviceParams = Set.of(
                 new RawRangingDevice.Builder()
                         .setRangingDevice(peers.get(0).first)
                         .setUwbRangingParams(
                                 generateUwbParams(peers.get(0).second)
                                         .setSlotDuration(DURATION_1_MS)
                                         .build())
-                        .build());
-        mBaseConfig.addPeerDeviceParams(
+                        .build(),
                 new RawRangingDevice.Builder()
                         .setRangingDevice(peers.get(1).first)
                         .setUwbRangingParams(
                                 generateUwbParams(peers.get(1).second)
                                         .setSlotDuration(DURATION_2_MS)
                                         .build())
-                        .build());
+                        .build()
+        );
 
-        RangingSessionConfig config = mBaseConfig.build();
-        Assert.assertEquals(2, config.getTechnologyConfigs().size());
+        ImmutableSet<TechnologyConfig> tcs = mConfig.getTechnologyConfigs(deviceParams);
+        Assert.assertEquals(2, tcs.size());
 
-        for (TechnologyConfig tc : config.getTechnologyConfigs()) {
+        for (TechnologyConfig tc : tcs) {
             Assert.assertEquals(RangingTechnology.UWB, tc.getTechnology());
             Assert.assertTrue(tc instanceof MulticastTechnologyConfig);
 

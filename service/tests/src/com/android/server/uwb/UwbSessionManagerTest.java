@@ -2352,7 +2352,7 @@ public class UwbSessionManagerTest {
         assertThat(alarmListenerCaptor.getValue()).isNotNull();
 
         // Now fire the timer callback.
-        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE,
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE, UwbUciConstants.UWB_SESSION_STATE_ACTIVE,
                  UwbUciConstants.UWB_SESSION_STATE_IDLE).when(uwbSession).getSessionState();
         alarmListenerCaptor.getValue().onAlarm();
 
@@ -3242,8 +3242,8 @@ public class UwbSessionManagerTest {
         verify(mAlarmManager, never()).cancel(any(AlarmManager.OnAlarmListener.class));
 
         // set up for stop ranging
-        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE, UwbUciConstants.UWB_SESSION_STATE_IDLE)
-                .when(uwbSession).getSessionState();
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE, UwbUciConstants.UWB_SESSION_STATE_ACTIVE,
+                UwbUciConstants.UWB_SESSION_STATE_IDLE).when(uwbSession).getSessionState();
         when(mNativeUwbManager.stopRanging(eq(TEST_SESSION_ID), anyString()))
                 .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
 
@@ -3285,8 +3285,8 @@ public class UwbSessionManagerTest {
         verify(mAlarmManager, never()).cancel(any(AlarmManager.OnAlarmListener.class));
 
         // set up for stop ranging
-        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE, UwbUciConstants.UWB_SESSION_STATE_IDLE)
-                .when(uwbSession).getSessionState();
+        doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE, UwbUciConstants.UWB_SESSION_STATE_ACTIVE,
+                UwbUciConstants.UWB_SESSION_STATE_IDLE).when(uwbSession).getSessionState();
         when(mNativeUwbManager.stopRanging(eq(TEST_SESSION_ID), anyString()))
                 .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
 

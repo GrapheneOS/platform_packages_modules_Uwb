@@ -24,6 +24,7 @@ package android.ranging {
 
   @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class RangingCapabilities implements android.os.Parcelable {
     method public int describeContents();
+    method @Nullable public android.ranging.ble.cs.CsRangingCapabilities getCsCapabilities();
     method @Nullable public android.ranging.wifi.rtt.RttRangingCapabilities getRttRangingCapabilities();
     method @NonNull public java.util.Map<java.lang.Integer,java.lang.Integer> getTechnologyAvailability();
     method @Nullable public android.ranging.uwb.UwbRangingCapabilities getUwbCapabilities();
@@ -31,6 +32,7 @@ package android.ranging {
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.RangingCapabilities> CREATOR;
     field public static final int DISABLED_REGULATORY = 2; // 0x2
     field public static final int DISABLED_USER = 1; // 0x1
+    field public static final int DISABLED_USER_RESTRICTIONS = 4; // 0x4
     field public static final int ENABLED = 3; // 0x3
     field public static final int NOT_SUPPORTED = 0; // 0x0
   }
@@ -107,6 +109,7 @@ package android.ranging {
   public static final class RangingPreference.Builder {
     ctor public RangingPreference.Builder(int, @NonNull android.ranging.RangingParams);
     method @NonNull public android.ranging.RangingPreference build();
+    method @NonNull public android.ranging.RangingPreference.Builder setSessionConfiguration(@NonNull android.ranging.SessionConfiguration);
   }
 
   @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class RangingSession implements java.lang.AutoCloseable {
@@ -354,6 +357,7 @@ package android.ranging.uwb {
     method public int describeContents();
     method @NonNull public static android.ranging.uwb.UwbAddress fromBytes(@NonNull byte[]);
     method @NonNull public byte[] getAddressBytes();
+    method @NonNull public static android.ranging.uwb.UwbAddress getRandomShortAddress();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.uwb.UwbAddress> CREATOR;
     field public static final int EXTENDED_ADDRESS_BYTE_LENGTH = 8; // 0x8

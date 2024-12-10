@@ -14,6 +14,16 @@
  * limitations under the License.
  */
 
-package android.ranging;
+package com.android.server.ranging.oob;
 
-parcelable OobHandle;
+import android.ranging.oob.OobHandle;
+
+public interface OobHandler {
+    void handleOobMessage(OobHandle oobHandle, byte[] data);
+
+    void handleOobDeviceDisconnected(OobHandle oobHandle);
+
+    void handleOobDeviceReconnected(OobHandle oobHandle);
+
+    void handleOobClosed(OobHandle oobHandle);
+}

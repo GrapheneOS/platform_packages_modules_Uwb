@@ -57,6 +57,7 @@ public class AliroOpenRangingParams extends AliroParams {
     private static final String KEY_NUM_RESPONDER_NODES = "num_responder_nodes";
     private static final String KEY_NUM_SLOTS_PER_ROUND = "num_slots_per_round";
     private static final String KEY_SYNC_CODE_INDEX = "sync_code_index";
+    private static final String KEY_HOP_MODE_KEY = "hop_mode_key";
     private static final String KEY_HOPPING_CONFIG_MODE = "hopping_config_mode";
     private static final String KEY_HOPPING_SEQUENCE = "hopping_sequence";
     private static final String KEY_STS_INDEX = "sts_index";
@@ -85,6 +86,7 @@ public class AliroOpenRangingParams extends AliroParams {
     private final int mNumResponderNodes;
     private final int mNumSlotsPerRound;
     @SyncCodeIndex private final int mSyncCodeIndex;
+    private final int mHopModeKey;
     @HoppingConfigMode private final int mHoppingConfigMode;
     @HoppingSequence private final int mHoppingSequence;
     private final int mStsIndex;
@@ -116,6 +118,7 @@ public class AliroOpenRangingParams extends AliroParams {
             int numResponderNodes,
             int numSlotsPerRound,
             @SyncCodeIndex int syncCodeIndex,
+            int hopModeKey,
             @HoppingConfigMode int hoppingConfigMode,
             @HoppingSequence int hoppingSequence,
             int stsIndex,
@@ -139,6 +142,7 @@ public class AliroOpenRangingParams extends AliroParams {
         mNumResponderNodes = numResponderNodes;
         mNumSlotsPerRound = numSlotsPerRound;
         mSyncCodeIndex = syncCodeIndex;
+        mHopModeKey = hopModeKey;
         mHoppingConfigMode = hoppingConfigMode;
         mHoppingSequence = hoppingSequence;
         mStsIndex = stsIndex;
@@ -172,6 +176,7 @@ public class AliroOpenRangingParams extends AliroParams {
         bundle.putInt(KEY_NUM_RESPONDER_NODES, mNumResponderNodes);
         bundle.putInt(KEY_NUM_SLOTS_PER_ROUND, mNumSlotsPerRound);
         bundle.putInt(KEY_SYNC_CODE_INDEX, mSyncCodeIndex);
+        bundle.putInt(KEY_HOP_MODE_KEY, mHopModeKey);
         bundle.putInt(KEY_HOPPING_CONFIG_MODE, mHoppingConfigMode);
         bundle.putInt(KEY_HOPPING_SEQUENCE, mHoppingSequence);
         bundle.putInt(KEY_STS_INDEX, mStsIndex);
@@ -217,6 +222,7 @@ public class AliroOpenRangingParams extends AliroParams {
                 .setNumResponderNodes(bundle.getInt(KEY_NUM_RESPONDER_NODES))
                 .setNumSlotsPerRound(bundle.getInt(KEY_NUM_SLOTS_PER_ROUND))
                 .setSyncCodeIndex(bundle.getInt(KEY_SYNC_CODE_INDEX))
+                .setHopModeKey(bundle.getInt(KEY_HOP_MODE_KEY))
                 .setHoppingConfigMode(bundle.getInt(KEY_HOPPING_CONFIG_MODE))
                 .setHoppingSequence(bundle.getInt(KEY_HOPPING_SEQUENCE))
                 .setStsIndex(bundle.getInt(KEY_STS_INDEX))
@@ -292,6 +298,10 @@ public class AliroOpenRangingParams extends AliroParams {
     @SyncCodeIndex
     public int getSyncCodeIndex() {
         return mSyncCodeIndex;
+    }
+
+    public int getHopModeKey() {
+        return mHopModeKey;
     }
 
     @HoppingConfigMode
@@ -374,6 +384,7 @@ public class AliroOpenRangingParams extends AliroParams {
         private long mInitiationTimeMs = 0;
         private long mAbsoluteInitiationTimeUs = 0;
 
+        private int mHopModeKey = 0;
         /** ALIRO default: Ranging notification disabled. */
         @RangeDataNtfConfig private int mRangeDataNtfConfig = RANGE_DATA_NTF_CONFIG_DISABLE;
 
@@ -409,6 +420,7 @@ public class AliroOpenRangingParams extends AliroParams {
             mNumResponderNodes.set(builder.mNumResponderNodes.get());
             mNumSlotsPerRound.set(builder.mNumSlotsPerRound.get());
             mSyncCodeIndex.set(builder.mSyncCodeIndex.get());
+            mHopModeKey = builder.mHopModeKey;
             mHoppingConfigMode.set(builder.mHoppingConfigMode.get());
             mHoppingSequence.set(builder.mHoppingSequence.get());
             mStsIndex = builder.mStsIndex;
@@ -435,6 +447,7 @@ public class AliroOpenRangingParams extends AliroParams {
             mNumResponderNodes.set(params.mNumResponderNodes);
             mNumSlotsPerRound.set(params.mNumSlotsPerRound);
             mSyncCodeIndex.set(params.mSyncCodeIndex);
+            mHopModeKey = params.mHopModeKey;
             mHoppingConfigMode.set(params.mHoppingConfigMode);
             mHoppingSequence.set(params.mHoppingSequence);
             mRangeDataNtfConfig = params.mRangeDataNtfConfig;
@@ -493,6 +506,12 @@ public class AliroOpenRangingParams extends AliroParams {
 
         public Builder setSyncCodeIndex(@SyncCodeIndex int syncCodeIndex) {
             mSyncCodeIndex.set(syncCodeIndex);
+            return this;
+        }
+
+        /** Sets hop mode key. */
+        public Builder setHopModeKey(int hopModeKey) {
+            mHopModeKey = hopModeKey;
             return this;
         }
 
@@ -654,6 +673,7 @@ public class AliroOpenRangingParams extends AliroParams {
                     mNumResponderNodes.get(),
                     mNumSlotsPerRound.get(),
                     mSyncCodeIndex.get(),
+                    mHopModeKey,
                     mHoppingConfigMode.get(),
                     mHoppingSequence.get(),
                     mStsIndex,

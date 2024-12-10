@@ -22,6 +22,8 @@ import android.ranging.RangingDevice;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 
+import com.android.server.ranging.session.RangingSessionConfig;
+
 /** RangingAdapter representing a common ranging class for multiple ranging technologies. */
 public interface RangingAdapter {
 

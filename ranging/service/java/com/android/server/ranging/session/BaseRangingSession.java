@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.server.ranging;
+package com.android.server.ranging.session;
 
 import android.content.AttributionSource;
 import android.os.Binder;
@@ -26,13 +26,17 @@ import android.util.Log;
 import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
 
-import com.android.server.ranging.RangingSessionConfig.MulticastTechnologyConfig;
-import com.android.server.ranging.RangingSessionConfig.TechnologyConfig;
-import com.android.server.ranging.RangingSessionConfig.UnicastTechnologyConfig;
+import com.android.server.ranging.RangingAdapter;
+import com.android.server.ranging.RangingInjector;
+import com.android.server.ranging.RangingServiceManager;
+import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.StateMachine;
 import com.android.server.ranging.fusion.DataFusers;
 import com.android.server.ranging.fusion.FilteringFusionEngine;
 import com.android.server.ranging.fusion.FusionEngine;
+import com.android.server.ranging.session.RangingSessionConfig.MulticastTechnologyConfig;
+import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
+import com.android.server.ranging.session.RangingSessionConfig.UnicastTechnologyConfig;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -45,15 +49,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /** A multi-technology ranging session in the Android generic ranging service */
-public class RangingSession {
-    private static final String TAG = RangingSession.class.getSimpleName();
+public class BaseRangingSession {
+    private static final String TAG = BaseRangingSession.class.getSimpleName();
 
     private final RangingInjector mInjector;
     private final AttributionSource mAttributionSource;
-    private final SessionHandle mSessionHandle;
-    private final RangingSessionConfig mConfig;
     private final RangingServiceManager.SessionListener mSessionListener;
     private final ListeningExecutorService mAdapterExecutor;
+
+    protected final SessionHandle mSessionHandle;
+    protected final RangingSessionConfig mConfig;
 
     /* Lock for internal state. */
     private final Object mLock = new Object();
@@ -111,7 +116,7 @@ public class RangingSession {
         }
     }
 
-    public RangingSession(
+    public BaseRangingSession(
             @NonNull AttributionSource attributionSource,
             @NonNull SessionHandle sessionHandle,
             @NonNull RangingInjector injector,
@@ -131,14 +136,14 @@ public class RangingSession {
     }
 
     /** Start ranging in this session. */
-    public void start() {
+    public void start(ImmutableSet<TechnologyConfig> technologyConfigs) {
         synchronized (mLock) {
             if (!mStateMachine.transition(State.STOPPED, State.STARTING)) {
                 Log.w(TAG, "Failed transition STOPPED -> STARTING");
                 return;
             }
 
-            for (TechnologyConfig config : mConfig.getTechnologyConfigs()) {
+            for (TechnologyConfig config : technologyConfigs) {
                 ImmutableSet<RangingDevice> peerDevices;
 
                 if (config instanceof UnicastTechnologyConfig unicastConfig) {
@@ -171,6 +176,21 @@ public class RangingSession {
                 Binder.restoreCallingIdentity(token);
             }
         }
+    }
+
+    public void addPeer(RangingDevice params) {
+        //TODO: Implement this
+        throw new IllegalArgumentException("Dynamic addition of raw peer not supported yet");
+    }
+
+    public void removePeer(RangingDevice params) {
+        //TODO: Implement this
+        throw new IllegalArgumentException("Dynamic addition of raw peer not supported yet");
+    }
+
+    public void reconfigureInterval(int intervalSkipCount) {
+        //TODO: Implement this
+        throw new IllegalArgumentException("Dynamic addition of raw peer not supported yet");
     }
 
     /** Stop ranging in this session. */

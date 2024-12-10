@@ -17,7 +17,7 @@
 package com.android.server.ranging.oob;
 
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.uwb.UwbConfig;
+import com.android.server.ranging.uwb.UwbOobConfig;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
@@ -33,63 +33,63 @@ import javax.annotation.Nullable;
 public abstract class SetConfigurationMessage {
 
     // Size in bytes of properties when serialized.
-    private static final int MIN_SIZE_BYTES = 2;
-    private static final int RANGING_TECHNOLOGIES_SET_SIZE = 1;
-    private static final int START_RANGING_LIST_SIZE = 1;
+    private static final int MIN_SIZE_BYTES = 4;
+    private static final int RANGING_TECHNOLOGIES_SET_SIZE = 2;
+    private static final int START_RANGING_LIST_SIZE = 2;
 
     /**
      * Parses the given byte array and returns {@link SetConfigurationMessage} object. Throws {@link
      * IllegalArgumentException} on invalid input.
      */
-    public static SetConfigurationMessage parseBytes(byte[] setConfigurationBytes) {
-        if (setConfigurationBytes.length < MIN_SIZE_BYTES) {
+    public static SetConfigurationMessage parseBytes(byte[] payload) {
+        OobHeader header = OobHeader.parseBytes(payload);
+
+        if (payload.length < header.getSize() + MIN_SIZE_BYTES) {
             throw new IllegalArgumentException(
-                    "Failed to parse SetConfigurationMessage, invalid size. Bytes: "
-                            + Arrays.toString(setConfigurationBytes));
+                    String.format("CapabilityResponseMessage payload size is %d bytes",
+                            payload.length));
         }
-        int parseCursor = 0;
+
+        int parseCursor = header.getSize();
 
         // Parse Ranging Technologies Set
-        var rangingTechnologiesSet = RangingTechnology.parseByte(
-                setConfigurationBytes[parseCursor]);
+        var rangingTechnologiesSet =
+                RangingTechnology.fromBitmap(
+                        Arrays.copyOfRange(payload, parseCursor,
+                                parseCursor + RANGING_TECHNOLOGIES_SET_SIZE));
         parseCursor += RANGING_TECHNOLOGIES_SET_SIZE;
 
         // Parse Start Ranging List
-        var startRangingList = RangingTechnology.parseByte(setConfigurationBytes[parseCursor]);
+        var startRangingList =
+                RangingTechnology.fromBitmap(
+                        Arrays.copyOfRange(payload, parseCursor,
+                                parseCursor + START_RANGING_LIST_SIZE));
         parseCursor += START_RANGING_LIST_SIZE;
 
         // Parse Configs for ranging technologies that are set
-        UwbConfig uwbConfig = null;
-        while (parseCursor < setConfigurationBytes.length) {
-            ImmutableList<RangingTechnology> tech =
-                    RangingTechnology.parseByte(setConfigurationBytes[parseCursor]);
-            if (tech.size() != 1) {
-                throw new IllegalArgumentException(
-                        "Failed to parse SetConfigurationMessage, Invalid ranging technology Id. "
-                                + "Bytes:"
-                                + Arrays.toString(setConfigurationBytes));
-            }
-            switch (tech.get(0)) {
+        UwbOobConfig uwbConfig = null;
+        int countTechsParsed = 0;
+        while (parseCursor < payload.length && countTechsParsed++ < rangingTechnologiesSet.size()) {
+            byte[] remainingBytes = Arrays.copyOfRange(payload, parseCursor, payload.length);
+            TechnologyHeader techHeader = TechnologyHeader.parseBytes(remainingBytes);
+            switch (techHeader.getRangingTechnology()) {
                 case UWB:
                     if (uwbConfig != null) {
                         throw new IllegalArgumentException(
                                 "Failed to parse SetConfigurationMessage, UwbConfig already set. "
                                         + "Bytes:"
-                                        + Arrays.toString(setConfigurationBytes));
+                                        + Arrays.toString(payload));
                     }
-                    uwbConfig =
-                            UwbConfig.parseBytes(
-                                    Arrays.copyOfRange(
-                                            setConfigurationBytes, parseCursor,
-                                            setConfigurationBytes.length));
+                    uwbConfig = UwbOobConfig.parseBytes(remainingBytes);
                     parseCursor += uwbConfig.getSize();
                     break;
-                case CS:
-                    throw new UnsupportedOperationException("Not implemented");
+                default:
+                    parseCursor += techHeader.getSize();
             }
         }
 
         return builder()
+                .setHeader(header)
                 .setRangingTechnologiesSet(rangingTechnologiesSet)
                 .setStartRangingList(startRangingList)
                 .setUwbConfig(uwbConfig)
@@ -98,13 +98,14 @@ public abstract class SetConfigurationMessage {
 
     /** Serializes this {@link SetConfigurationMessage} object to bytes. */
     public final byte[] toBytes() {
-        int size = MIN_SIZE_BYTES;
-        UwbConfig uwbConfig = getUwbConfig();
+        int size = MIN_SIZE_BYTES + getHeader().getSize();
+        UwbOobConfig uwbConfig = getUwbConfig();
         if (uwbConfig != null) {
             size += uwbConfig.getSize();
         }
         ByteBuffer byteBuffer = ByteBuffer.allocate(size);
         byteBuffer
+                .put(getHeader().toBytes())
                 .put(RangingTechnology.toBitmap(getRangingTechnologiesSet()))
                 .put(RangingTechnology.toBitmap(getStartRangingList()));
         if (uwbConfig != null) {
@@ -112,6 +113,9 @@ public abstract class SetConfigurationMessage {
         }
         return byteBuffer.array();
     }
+
+    /** Returns the OOB header. */
+    public abstract OobHeader getHeader();
 
     /** Returns a list of ranging technologies that are set as part of this message. */
     public abstract ImmutableList<RangingTechnology> getRangingTechnologiesSet();
@@ -124,7 +128,7 @@ public abstract class SetConfigurationMessage {
 
     /** Returns @Nullable UwbConfig data that should be used to configure UWB ranging session. */
     @Nullable
-    public abstract UwbConfig getUwbConfig();
+    public abstract UwbOobConfig getUwbConfig();
 
     /** Returns a builder for {@link SetConfigurationMessage}. */
     public static Builder builder() {
@@ -137,13 +141,15 @@ public abstract class SetConfigurationMessage {
     @AutoValue.Builder
     public abstract static class Builder {
 
+        public abstract Builder setHeader(OobHeader header);
+
         public abstract Builder setRangingTechnologiesSet(
                 ImmutableList<RangingTechnology> rangingTechnologiesSet);
 
         public abstract Builder setStartRangingList(
                 ImmutableList<RangingTechnology> startRangingList);
 
-        public abstract Builder setUwbConfig(@Nullable UwbConfig uwbConfig);
+        public abstract Builder setUwbConfig(@Nullable UwbOobConfig uwbConfig);
 
         abstract SetConfigurationMessage autoBuild();
 
@@ -155,8 +161,9 @@ public abstract class SetConfigurationMessage {
                             .containsAll(setConfigurationMessage.getStartRangingList()),
                     "startRangingList contains items that are not in rangingTechnologiesSet list.");
             Preconditions.checkArgument(
-                    setConfigurationMessage.getRangingTechnologiesSet().contains(
-                            RangingTechnology.UWB)
+                    setConfigurationMessage
+                            .getRangingTechnologiesSet()
+                            .contains(RangingTechnology.UWB)
                             == (setConfigurationMessage.getUwbConfig() != null),
                     "UwbConfig or rangingTechnologiesSet for UWB not set properly.");
             return setConfigurationMessage;

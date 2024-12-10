@@ -368,7 +368,8 @@ public final class UwbRangingParams implements Parcelable {
          * Sets the complex channel configuration for the ranging session.
          *
          * @param complexChannel a non-null {@link UwbComplexChannel} instance representing the
-         *                       channel configuration.
+         *                       channel and preamble configuration. For better performance always
+         *                       use a random preamble index for each ranging session.
          * @return this Builder instance.
          * @throws IllegalArgumentException if the provided complex channel is null.
          */

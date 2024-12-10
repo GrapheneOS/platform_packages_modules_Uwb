@@ -19,6 +19,9 @@
   "postsubmit": [
     {
       "name": "UwbFusionLibTests"
+    },
+    {
+      "name": "CtsRangingTestCases"
     }
   ]
 }

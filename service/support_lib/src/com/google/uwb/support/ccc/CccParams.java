@@ -242,4 +242,6 @@ public abstract class CccParams extends Params {
     public static final long UWB_INITIATION_TIME_MS_UNSET = 0;
 
     public static final int STS_INDEX_UNSET = 0;
+
+    public static final int HOP_MODE_KEY_UNSET = 0;
 }

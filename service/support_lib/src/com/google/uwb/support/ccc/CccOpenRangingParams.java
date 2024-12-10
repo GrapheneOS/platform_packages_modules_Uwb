@@ -59,6 +59,7 @@ public class CccOpenRangingParams extends CccParams {
     private static final String KEY_SYNC_CODE_INDEX = "sync_code_index";
     private static final String KEY_HOPPING_CONFIG_MODE = "hopping_config_mode";
     private static final String KEY_HOPPING_SEQUENCE = "hopping_sequence";
+    private static final String KEY_HOP_MODE_KEY = "hop_mode_key";
     private static final String KEY_STS_INDEX = "sts_index";
     private static final String KEY_INITIATION_TIME_MS = "initiation_time_ms";
     private static final String KEY_ABSOLUTE_INITIATION_TIME_US = "absolute_initiation_time_us";
@@ -95,6 +96,8 @@ public class CccOpenRangingParams extends CccParams {
     // FiRa 2.0: Absolute time in UWB time domain, as specified in CR-272 (in micro-seconds).
     private final long mAbsoluteInitiationTimeUs;
 
+    private final int mHopModeKey;
+
     // RANGE_DATA_NTF_CONFIG related fields.
     @RangeDataNtfConfig private final int mRangeDataNtfConfig;
     private final int mRangeDataNtfProximityNear;
@@ -116,6 +119,7 @@ public class CccOpenRangingParams extends CccParams {
             int numResponderNodes,
             int numSlotsPerRound,
             @SyncCodeIndex int syncCodeIndex,
+            int hopModeKey,
             @HoppingConfigMode int hoppingConfigMode,
             @HoppingSequence int hoppingSequence,
             int stsIndex,
@@ -134,6 +138,7 @@ public class CccOpenRangingParams extends CccParams {
         mSessionId = sessionId;
         mSessionType = sessionType;
         mRanMultiplier = ranMultiplier;
+        mHopModeKey = hopModeKey;
         mChannel = channel;
         mNumChapsPerSlot = numChapsPerSlot;
         mNumResponderNodes = numResponderNodes;
@@ -172,6 +177,7 @@ public class CccOpenRangingParams extends CccParams {
         bundle.putInt(KEY_NUM_RESPONDER_NODES, mNumResponderNodes);
         bundle.putInt(KEY_NUM_SLOTS_PER_ROUND, mNumSlotsPerRound);
         bundle.putInt(KEY_SYNC_CODE_INDEX, mSyncCodeIndex);
+        bundle.putInt(KEY_HOP_MODE_KEY, mHopModeKey);
         bundle.putInt(KEY_HOPPING_CONFIG_MODE, mHoppingConfigMode);
         bundle.putInt(KEY_HOPPING_SEQUENCE, mHoppingSequence);
         bundle.putInt(KEY_STS_INDEX, mStsIndex);
@@ -217,6 +223,7 @@ public class CccOpenRangingParams extends CccParams {
                 .setNumResponderNodes(bundle.getInt(KEY_NUM_RESPONDER_NODES))
                 .setNumSlotsPerRound(bundle.getInt(KEY_NUM_SLOTS_PER_ROUND))
                 .setSyncCodeIndex(bundle.getInt(KEY_SYNC_CODE_INDEX))
+                .setHopModeKey(bundle.getInt(KEY_HOP_MODE_KEY))
                 .setHoppingConfigMode(bundle.getInt(KEY_HOPPING_CONFIG_MODE))
                 .setHoppingSequence(bundle.getInt(KEY_HOPPING_SEQUENCE))
                 .setStsIndex(bundle.getInt(KEY_STS_INDEX))
@@ -292,6 +299,10 @@ public class CccOpenRangingParams extends CccParams {
     @SyncCodeIndex
     public int getSyncCodeIndex() {
         return mSyncCodeIndex;
+    }
+
+    public int getHopModeKey() {
+        return mHopModeKey;
     }
 
     @HoppingConfigMode
@@ -374,6 +385,8 @@ public class CccOpenRangingParams extends CccParams {
         private long mInitiationTimeMs = 0;
         private long mAbsoluteInitiationTimeUs = 0;
 
+        private int mHopModeKey = 0;
+
         /** CCC default: Ranging notification enabled. */
         @RangeDataNtfConfig private int mRangeDataNtfConfig = RANGE_DATA_NTF_CONFIG_DISABLE;
 
@@ -409,6 +422,7 @@ public class CccOpenRangingParams extends CccParams {
             mNumResponderNodes.set(builder.mNumResponderNodes.get());
             mNumSlotsPerRound.set(builder.mNumSlotsPerRound.get());
             mSyncCodeIndex.set(builder.mSyncCodeIndex.get());
+            mHopModeKey = builder.mHopModeKey;
             mHoppingConfigMode.set(builder.mHoppingConfigMode.get());
             mHoppingSequence.set(builder.mHoppingSequence.get());
             mStsIndex = builder.mStsIndex;
@@ -435,6 +449,7 @@ public class CccOpenRangingParams extends CccParams {
             mNumResponderNodes.set(params.mNumResponderNodes);
             mNumSlotsPerRound.set(params.mNumSlotsPerRound);
             mSyncCodeIndex.set(params.mSyncCodeIndex);
+            mHopModeKey = params.mHopModeKey;
             mHoppingConfigMode.set(params.mHoppingConfigMode);
             mHoppingSequence.set(params.mHoppingSequence);
             mRangeDataNtfConfig = params.mRangeDataNtfConfig;
@@ -493,6 +508,12 @@ public class CccOpenRangingParams extends CccParams {
 
         public Builder setSyncCodeIndex(@SyncCodeIndex int syncCodeIndex) {
             mSyncCodeIndex.set(syncCodeIndex);
+            return this;
+        }
+
+        /** Sets hop mode key. */
+        public Builder setHopModeKey(int hopModeKey) {
+            mHopModeKey = hopModeKey;
             return this;
         }
 
@@ -654,6 +675,7 @@ public class CccOpenRangingParams extends CccParams {
                     mNumResponderNodes.get(),
                     mNumSlotsPerRound.get(),
                     mSyncCodeIndex.get(),
+                    mHopModeKey,
                     mHoppingConfigMode.get(),
                     mHoppingSequence.get(),
                     mStsIndex,

@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package android.ranging;
+package android.ranging.oob;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.ranging.RangingDevice;
+import android.ranging.SessionHandle;
 
 import java.util.Objects;
 

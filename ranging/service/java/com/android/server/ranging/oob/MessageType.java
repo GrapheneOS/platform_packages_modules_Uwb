@@ -13,37 +13,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.android.server.ranging.oob;
 
+/** Enum representing a message type of the OOB message. */
 public enum MessageType {
-    RANGING_CAPABILITY_REQUEST(0), RANGING_CAPABILITY_RESPONSE(1), RANGING_CONFIGURATION(
-            2), START_RANGING(3), STOP_RANGING(4);
+    CAPABILITY_REQUEST(0),
+    CAPABILITY_RESPONSE(1),
+    SET_CONFIGURATION(2),
+    SET_CONFIGURATION_RESPONSE(3),
+    START_RANGING(4),
+    START_RANGING_RESPONSE(5),
+    STOP_RANGING(6),
+    STOP_RANGING_RESPONSE(7),
+    UNKNOWN(8);
 
-    private final int mMessageId;
+    private final int mValue;
 
-    MessageType(int messageId) {
-        mMessageId = messageId;
+    MessageType(int value) {
+        this.mValue = value;
     }
 
-    /**
-     * Returns a MessageType the data represents.
-     *
-     * @param data OOB data.
-     * @return MessageType
-     */
-    public static MessageType fromOobData(byte[] data) {
-        if (data.length < 1) {
-            throw new IllegalArgumentException(
-                    "Invalid OOB data length. Data length: " + data.length);
-        }
+    public int getValue() {
+        return mValue;
+    }
 
-        int value = data[0];
-        for (MessageType messageType : MessageType.values()) {
-            if (messageType.mMessageId == value) {
-                return messageType;
-            }
-        }
+    public byte toByte() {
+        return (byte) mValue;
+    }
 
-        throw new IllegalArgumentException("Unknown Message Type. Message Type value: " + value);
+    public static MessageType parseByte(byte messageId) {
+        if (messageId > 8) {
+            return UNKNOWN;
+        }
+        return MessageType.values()[messageId];
     }
 }

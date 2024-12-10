@@ -22,8 +22,8 @@ import android.ranging.RangingDevice;
 import android.ranging.RangingPreference;
 import android.ranging.ble.cs.CsRangingParams;
 
-import com.android.server.ranging.RangingSessionConfig.UnicastTechnologyConfig;
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.session.RangingSessionConfig.UnicastTechnologyConfig;
 
 public class CsConfig implements UnicastTechnologyConfig {
     private static final String TAG = CsConfig.class.getSimpleName();

@@ -21,46 +21,68 @@ import com.android.server.ranging.RangingTechnology;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+
 /** The Capability Request Message Additional Data for Finder OOB. */
 @AutoValue
 public abstract class CapabilityRequestMessage {
 
-    // Size when serialized
-    private static final int SIZE_BYTES = 1;
+    // Size of capability specific payload.
+    private static final int CAPABILITY_SIZE_BYTES = 2;
 
     /**
      * Parses the given byte array and returns {@link CapabilityRequestMessage} object. Throws
      * {@link
      * IllegalArgumentException} on invalid input.
      */
-    public static CapabilityRequestMessage parseBytes(byte[] capabilityRequestBytes) {
-        if (capabilityRequestBytes.length != SIZE_BYTES) {
-            throw new IllegalArgumentException();
-        }
-        ImmutableList<RangingTechnology> rangingTechnologies =
-                RangingTechnology.parseByte(capabilityRequestBytes[0]);
+    public static CapabilityRequestMessage parseBytes(byte[] payload) {
+        OobHeader header = OobHeader.parseBytes(payload);
 
-        return builder().setRequestedRangingTechnologies(rangingTechnologies).build();
+        if (payload.length < header.getSize() + CAPABILITY_SIZE_BYTES) {
+            throw new IllegalArgumentException(
+                    String.format("CapabilityRequestMessage payload size is %d bytes",
+                            payload.length));
+        }
+
+        int parseCursor = header.getSize();
+        byte[] capabilityBytes =
+                Arrays.copyOfRange(payload, parseCursor, parseCursor + CAPABILITY_SIZE_BYTES);
+        ImmutableList<RangingTechnology> rangingTechnologies =
+                RangingTechnology.fromBitmap(capabilityBytes);
+
+        return builder().setHeader(header).setRequestedRangingTechnologies(
+                rangingTechnologies).build();
     }
+
+    /** Serializes this {@link CapabilityRequestMessage} object to bytes. */
+    public final byte[] toBytes() {
+        int size = CAPABILITY_SIZE_BYTES + getHeader().getSize();
+        ByteBuffer byteBuffer = ByteBuffer.allocate(size);
+        byteBuffer
+                .put(getHeader().toBytes())
+                .put(RangingTechnology.toBitmap(getRequestedRangingTechnologies()));
+        return byteBuffer.array();
+    }
+
+    /** Returns the OOB header. */
+    public abstract OobHeader getHeader();
+
+    /** Returns a list of ranging technologies for which capabilities are requested. */
+    public abstract ImmutableList<RangingTechnology> getRequestedRangingTechnologies();
 
     /** Returns a builder for {@link CapabilityRequestMessage}. */
     public static Builder builder() {
         return new AutoValue_CapabilityRequestMessage.Builder();
     }
 
-    /** Serializes this {@link CapabilityRequestMessage} object to bytes. */
-    public final byte[] toBytes() {
-        return new byte[]{RangingTechnology.toBitmap(getRequestedRangingTechnologies())};
-    }
-
-    /** Returns a list of ranging technologies for which capabilities are requested. */
-    public abstract ImmutableList<RangingTechnology> getRequestedRangingTechnologies();
-
     /** Builder for {@link CapabilityRequestMessage}. */
     @AutoValue.Builder
     public abstract static class Builder {
         public abstract Builder setRequestedRangingTechnologies(
                 ImmutableList<RangingTechnology> requestedRangingTechnologies);
+
+        public abstract Builder setHeader(OobHeader header);
 
         public abstract CapabilityRequestMessage build();
     }

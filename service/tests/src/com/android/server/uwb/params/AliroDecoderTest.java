@@ -81,6 +81,7 @@ public class AliroDecoderTest {
             "a00111"
                     + "a10400000082"
                     + "a20168"
+                    + "a30103"
                     + "a4020102"
                     + "a50100"
                     + "a60112"
@@ -220,7 +221,7 @@ public class AliroDecoderTest {
         TlvDecoderBuffer tlvDecoderBuffer =
                 new TlvDecoderBuffer(
                         TEST_ALIRO_SPECIFICATION_TLV_DATA_PRIORITIZED_CHANNELS,
-                        TEST_ALIRO_SPECIFICATION_TLV_NUM_PARAMS);
+                        TEST_ALIRO_SPECIFICATION_TLV_DATA_UWBS_MAX_PPM_NUM_PARAMS);
         assertThat(tlvDecoderBuffer.parse()).isTrue();
 
         AliroSpecificationParams aliroSpecificationParams = mAliroDecoder.getParams(

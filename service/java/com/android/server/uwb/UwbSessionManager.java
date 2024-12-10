@@ -3646,7 +3646,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     Log.w(TAG, "Continuous errors or no ranging results detected for "
                             + mRangingErrorStreakTimeoutMs + " ms."
                             + " Stopping session");
-                    stopRangingInternal(mSessionHandle, true /* triggeredBySystemPolicy */);
+                    if (getSessionState() == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
+                        stopRangingInternal(mSessionHandle, true /* triggeredBySystemPolicy */);
+                    } else {
+                        Log.i(TAG, "Session is not in an active state");
+                    }
                 };
                 Log.v(TAG, "Starting error timer for "
                         + mRangingErrorStreakTimeoutMs + " ms.");
@@ -3701,7 +3705,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                         + address + " for " + mRangingErrorStreakTimeoutMs + " ms.");
                 if (mControlees.size() == 1) {
                     Log.w(TAG, "No active controlees, stopping session");
-                    stopRangingInternal(mSessionHandle, true /* triggeredBySystemPolicy */);
+                    if (getSessionState() == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
+                        stopRangingInternal(mSessionHandle, true /* triggeredBySystemPolicy */);
+                    } else {
+                        Log.i(TAG, "Session is not in an active state");
+                    }
                 } else {
                     removeControleeDueToErrorStreakTimeout(address);
                 }
@@ -3744,7 +3752,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 mNonPrivilegedBgAppTimerListener = () -> {
                     Log.w(TAG, "Non-privileged app in background for longer than timeout - "
                             + " Stopping session");
-                    stopRangingInternal(mSessionHandle, true /* triggeredBySystemPolicy */);
+                    if (getSessionState() == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
+                        stopRangingInternal(mSessionHandle, true /* triggeredBySystemPolicy */);
+                    } else {
+                        Log.i(TAG, "Session is not in an active state");
+                    }
                 };
                 mAlarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP,
                         mUwbInjector.getElapsedSinceBootMillis()

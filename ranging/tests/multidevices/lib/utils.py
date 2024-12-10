@@ -129,6 +129,25 @@ def set_uwb_state_and_verify(
   asserts.assert_true(_is_technology_state(ad, RangingTechnology.UWB, state, timeout_s=60),
                       "Uwb is not %s" % failure_msg)
 
+def reset_bt_state(
+    ad: android_device.AndroidDevice
+):
+  """Reset BT state to off and then on before each test.
+
+  Args:
+    ad: android device object.
+  """
+  ad.bluetooth.disableBluetooth()
+  time.sleep(3)
+  asserts.assert_false(ad.bluetooth.isBluetoothOn(), 'Bluetooth did not stop')
+  ad.bluetooth.enableBluetooth()
+  time.sleep(3)
+  asserts.assert_true(ad.bluetooth.isBluetoothOn(), 'Bluetooth did not stop')
+  # Check for BLE RSSI or BLE CS availability
+  asserts.assert_true(_is_technology_state(ad, RangingTechnology.BLE_RSSI, True, timeout_s=60),
+                      "BT is not enabled in ranging API")
+  ad.bluetooth.reset()
+
 
 def set_bt_state_and_verify(
     ad: android_device.AndroidDevice,
@@ -145,9 +164,11 @@ def set_bt_state_and_verify(
     ad.bluetooth.enableBluetooth()
   else:
     ad.bluetooth.disableBluetooth()
+  time.sleep(3)
+  asserts.assert_equal(ad.bluetooth.isBluetoothOn(), state, 'Bluetooth did not stop')
   # Check for BLE RSSI or BLE CS availability
-  asserts.assert_true(_is_technology_state(ad, RangingTechnology.BLE_CS, state, timeout_s=60),
-                      "BT is not %s" % failure_msg)
+  asserts.assert_true(_is_technology_state(ad, RangingTechnology.BLE_RSSI, state, timeout_s=60),
+                      "BT is not %s in ranging API" % failure_msg)
 
 
 def set_screen_rotation_landscape(
@@ -184,4 +205,18 @@ def set_snippet_foreground_state(
       "simulate-app-state-change",
       "com.google.snippet.ranging",
       "foreground" if isForeground else "background",
+  ])
+
+
+def set_screen_state(
+    ad: android_device.AndroidDevice, on: bool
+):
+  """Sets the device screen state on/off.
+
+  Args:
+    ad: android device object.
+    on: True for screen on, False for screen off.
+  """
+  ad.adb.shell([
+      "svc", "power", "stayon", "true" if on else "false",
   ])

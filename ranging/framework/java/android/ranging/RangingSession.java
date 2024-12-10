@@ -26,6 +26,7 @@ import android.content.AttributionSource;
 import android.os.CancellationSignal;
 import android.os.RemoteException;
 import android.ranging.oob.DeviceHandle;
+import android.ranging.oob.OobHandle;
 import android.ranging.oob.OobInitiatorRangingParams;
 import android.ranging.oob.OobResponderRangingParams;
 import android.ranging.oob.TransportHandle;
@@ -394,7 +395,7 @@ public final class RangingSession implements AutoCloseable {
 
     class TransportHandleReceiveCallback implements TransportHandle.ReceiveCallback {
 
-        private final OobHandle mOobHandle;
+        private final android.ranging.oob.OobHandle mOobHandle;
 
         TransportHandleReceiveCallback(RangingDevice device) {
             mOobHandle = new OobHandle(mSessionHandle, device);

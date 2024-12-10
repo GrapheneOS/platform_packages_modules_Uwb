@@ -19,6 +19,8 @@ package android.ranging;
 import android.content.AttributionSource;
 import android.os.Process;
 import android.os.RemoteException;
+import android.ranging.oob.IOobSendDataListener;
+import android.ranging.oob.OobHandle;
 import android.util.Log;
 
 import java.util.Map;

@@ -27,10 +27,17 @@ import com.android.ranging.flags.Flags;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Objects;
+import java.util.Random;
 
 /**
  * A Class representing the complex channel for UWB which comprises channel and preamble index
  * negotiated between peer devices out of band before ranging.
+ *
+ * <p> PRF (Pulse Repetition Frequency) supported:
+ * <ul>
+ *     <li> BPRF - Base Pulse Repetition Frequency.</li>
+ *     <li> HPRF - Higher Pulse Repetition Frequency.</li>
+ * </ul>
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 public final class UwbComplexChannel implements Parcelable {
@@ -96,31 +103,36 @@ public final class UwbComplexChannel implements Parcelable {
     public @interface UwbPreambleCodeIndex {
     }
 
-    /** UWB preamble code index 9 */
+    /** UWB preamble code index 9 (PRF mode - BPRF). */
     public static final int UWB_PREAMBLE_CODE_INDEX_9 = 9;
-    /** UWB preamble code index 10 */
+    /** UWB preamble code index 10 (PRF mode - BPRF). */
     public static final int UWB_PREAMBLE_CODE_INDEX_10 = 10;
-    /** UWB preamble code index 11 */
+    /** UWB preamble code index 11 (PRF mode - BPRF). */
     public static final int UWB_PREAMBLE_CODE_INDEX_11 = 11;
-    /** UWB preamble code index 12 */
+    /** UWB preamble code index 12 (PRF mode - BPRF). */
     public static final int UWB_PREAMBLE_CODE_INDEX_12 = 12;
-    /** UWB preamble code index 25 */
+    /** UWB preamble code index 25 (PRF mode - HPRF). */
     public static final int UWB_PREAMBLE_CODE_INDEX_25 = 25;
-    /** UWB preamble code index 26 */
+    /** UWB preamble code index 26 (PRF mode - HPRF). */
     public static final int UWB_PREAMBLE_CODE_INDEX_26 = 26;
-    /** UWB preamble code index 27 */
+    /** UWB preamble code index 27 (PRF mode - HPRF). */
     public static final int UWB_PREAMBLE_CODE_INDEX_27 = 27;
-    /** UWB preamble code index 28 */
+    /** UWB preamble code index 28 (PRF mode - HPRF). */
     public static final int UWB_PREAMBLE_CODE_INDEX_28 = 28;
-    /** UWB preamble code index 29 */
+    /** UWB preamble code index 29 (PRF mode - HPRF). */
     public static final int UWB_PREAMBLE_CODE_INDEX_29 = 29;
-    /** UWB preamble code index 30 */
+    /** UWB preamble code index 30 (PRF mode - HPRF). */
     public static final int UWB_PREAMBLE_CODE_INDEX_30 = 30;
-    /** UWB preamble code index 31 */
+    /** UWB preamble code index 31 (PRF mode - HPRF). */
     public static final int UWB_PREAMBLE_CODE_INDEX_31 = 31;
-    /** UWB preamble code index 32 */
+    /** UWB preamble code index 32 (PRF mode - HPRF). */
     public static final int UWB_PREAMBLE_CODE_INDEX_32 = 32;
 
+    private static final int[] PREAMBLE_INDEXES_BPRF =
+            new int[]{UWB_PREAMBLE_CODE_INDEX_9,
+                    UWB_PREAMBLE_CODE_INDEX_10,
+                    UWB_PREAMBLE_CODE_INDEX_11,
+                    UWB_PREAMBLE_CODE_INDEX_12};
     @UwbChannel
     private final int mChannel;
     @UwbPreambleCodeIndex
@@ -153,7 +165,6 @@ public final class UwbComplexChannel implements Parcelable {
      * Gets the UWB channel associated with this configuration.
      *
      * @return The channel number, which is one of the predefined UWB channels:
-     *
      */
     @UwbChannel
     public int getChannel() {
@@ -203,7 +214,8 @@ public final class UwbComplexChannel implements Parcelable {
         @UwbChannel
         private int mChannel = UWB_CHANNEL_5;
         @UwbPreambleCodeIndex
-        private int mPreambleIndex = UWB_PREAMBLE_CODE_INDEX_9;
+        private int mPreambleIndex = PREAMBLE_INDEXES_BPRF[new Random().nextInt(
+                PREAMBLE_INDEXES_BPRF.length)];
 
         /**
          * Sets the channel for the ranging device.
@@ -222,8 +234,12 @@ public final class UwbComplexChannel implements Parcelable {
          * Sets the preamble index for the ranging device as defined in
          * See <a href="https://groups.firaconsortium.org/wg/members/document/1949> FiRa UCI
          * Spec.</a>}
+         * <p> PRF (Pulse Repetition Frequency) is selected based on the preamble index set here.
          *
-         * <p> Defaults to {@link #UWB_PREAMBLE_CODE_INDEX_9}
+         * <p> Defaults to a random BPRF preamble index.
+         * One among {@link #UWB_PREAMBLE_CODE_INDEX_9}, {@link #UWB_PREAMBLE_CODE_INDEX_10},
+         * {@link #UWB_PREAMBLE_CODE_INDEX_11} or {@link #UWB_PREAMBLE_CODE_INDEX_12}.
+         * For better performance always use a random preamble index for each ranging session.
          *
          * @param preambleIndex The preamble index to be set.
          * @return This {@link Builder} instance.

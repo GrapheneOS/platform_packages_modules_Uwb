@@ -31,10 +31,10 @@ import java.lang.annotation.RetentionPolicy;
  *
  * <p>Subclasses include:</p>
  * <ul>
- *     <li>{@link android.ranging.ble.rssi.BleRssiRangingParams}</li>
- *     <li>{@link android.ranging.ble.cs.CsRangingParams}</li>
- *     <li>{@link android.ranging.wifi.rtt.RttRangingParams}</li>
- *     <li>{@link android.ranging.uwb.UwbRangingParams}</li>
+ *     <li>{@link android.ranging.raw.RawResponderRangingParams}</li>
+ *     <li>{@link android.ranging.raw.RawInitiatorRangingParams}</li>
+ *     <li>{@link android.ranging.oob.OobResponderRangingParams}</li>
+ *     <li>{@link android.ranging.oob.OobInitiatorRangingParams}</li>
  * </ul>
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)

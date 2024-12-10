@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package android.ranging;
+package android.ranging.oob;
 
-import android.ranging.OobHandle;
+import android.ranging.oob.OobHandle;
 
 /**
 * Interface for sending data over the OOB channel.

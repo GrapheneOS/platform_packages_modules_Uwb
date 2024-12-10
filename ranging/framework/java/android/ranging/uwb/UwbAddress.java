@@ -24,6 +24,7 @@ import android.os.Parcelable;
 
 import com.android.ranging.flags.Flags;
 
+import java.security.SecureRandom;
 import java.util.Arrays;
 
 /**
@@ -60,6 +61,37 @@ public final class UwbAddress implements Parcelable {
         }
         return new UwbAddress(address);
     }
+
+    /**
+     * Generates a random 2 bytes {@link UwbAddress}.
+     *
+     * @return a randomly generated {@link UwbAddress}.
+     */
+    @NonNull
+    public static UwbAddress getRandomShortAddress() {
+        SecureRandom secureRandom = new SecureRandom();
+        return fromBytes(generateRandomByteArray(SHORT_ADDRESS_BYTE_LENGTH, secureRandom));
+    }
+
+    /**
+     * Generates a random 8 bytes {@link UwbAddress}.
+     *
+     * @return a randomly generated {@link UwbAddress}.
+     *
+     * @hide Intentionally hidden.
+     */
+    @NonNull
+    public static UwbAddress getRandomExtendedAddress() {
+        SecureRandom secureRandom = new SecureRandom();
+        return fromBytes(generateRandomByteArray(EXTENDED_ADDRESS_BYTE_LENGTH, secureRandom));
+    }
+
+    private static byte[] generateRandomByteArray(int len, SecureRandom secureRandom) {
+        byte[] bytes = new byte[len];
+        secureRandom.nextBytes(bytes);
+        return bytes;
+    }
+
 
     /**
      * Get the address as a byte array

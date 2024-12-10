@@ -3,3 +3,7 @@
 rule com.android.modules.utils.** com.android.x.ranging.@0
 # Statically included ranging flags.
 rule com.android.ranging.flags.** com.android.x.ranging.@0
+# Statically included UWB support lib and guava lib.
+rule com.google.common.** com.android.x.ranging.@0
+# Included by support lib.
+rule com.android.internal.util.** com.android.x.ranging.@0

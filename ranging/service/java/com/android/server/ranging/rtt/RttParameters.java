@@ -21,8 +21,8 @@ import android.ranging.RangingDevice;
 import androidx.annotation.NonNull;
 
 import com.android.ranging.rtt.backend.internal.RttRangingParameters;
-import com.android.server.ranging.RangingSessionConfig;
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.session.RangingSessionConfig;
 
 import java.time.Duration;
 

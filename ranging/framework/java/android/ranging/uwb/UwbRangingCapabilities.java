@@ -126,7 +126,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
     }
 
     /**
-     * Checks if the device supports azimuthal angle measurement.
+     * Checks if the device hardware supports azimuthal angle measurement.
      *
      * @return {@code true} if azimuthal angle measurement is supported; {@code false} otherwise.
      */
@@ -135,7 +135,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
     }
 
     /**
-     * Checks if the device supports elevation angle measurement.
+     * Checks if the device hardware supports elevation angle measurement.
      *
      * @return {@code true} if elevation angle measurement is supported; {@code false} otherwise.
      */
@@ -170,7 +170,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
     @NonNull
     @UwbChannel
     public List<Integer> getSupportedChannels() {
-        return mSupportedChannels;
+        return List.copyOf(mSupportedChannels);
     }
 
 
@@ -183,7 +183,8 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
     @NonNull
     @UwbPreambleCodeIndex
     public List<Integer> getSupportedPreambleIndexes() {
-        return mSupportedPreambleIndexes;
+        return List.copyOf(mSupportedPreambleIndexes);
+
     }
 
     /**
@@ -194,7 +195,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
     @NonNull
     @NotificationConfigType
     public List<Integer> getSupportedNotificationConfigurations() {
-        return mSupportedNtfConfigs;
+        return List.copyOf(mSupportedNtfConfigs);
     }
 
     /**
@@ -205,7 +206,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
     @NonNull
     @ConfigId
     public List<Integer> getSupportedConfigIds() {
-        return mSupportedConfigIds;
+        return List.copyOf(mSupportedConfigIds);
     }
 
     /**
@@ -216,7 +217,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
     @NonNull
     @SlotDuration
     public List<Integer> getSupportedSlotDurations() {
-        return mSupportedSlotDurations;
+        return List.copyOf(mSupportedSlotDurations);
     }
 
     /**
@@ -227,7 +228,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
     @NonNull
     @RangingUpdateRate
     public List<Integer> getSupportedRangingUpdateRates() {
-        return mSupportedRangingUpdateRates;
+        return List.copyOf(mSupportedRangingUpdateRates);
     }
 
     /**

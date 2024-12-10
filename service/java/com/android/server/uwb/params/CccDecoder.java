@@ -213,8 +213,14 @@ public class CccDecoder extends TlvDecoder {
 
         try {
             byte[] prioritizedChannels = tlvs.getByteArray(CCC_PRIORITIZED_CHANNEL_LIST);
+            byte channels = tlvs.getByte(CCC_SUPPORTED_CHANNELS);
             for (byte prioritizedChannel : prioritizedChannels) {
-                builder.addChannel(prioritizedChannel);
+                if (isBitSet(channels, CCC_CHANNEL_5) && prioritizedChannel == UWB_CHANNEL_5) {
+                    builder.addChannel(prioritizedChannel);
+                }
+                if (isBitSet(channels, CCC_CHANNEL_9) && prioritizedChannel == UWB_CHANNEL_9) {
+                    builder.addChannel(prioritizedChannel);
+                }
             }
         } catch (IllegalArgumentException e) {
             Log.w(TAG, "CCC_PRIORITIZED_CHANNEL_LIST not found");

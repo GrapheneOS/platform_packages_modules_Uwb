@@ -23,8 +23,8 @@ import android.ranging.ble.rssi.BleRssiRangingParams;
 
 import androidx.annotation.NonNull;
 
-import com.android.server.ranging.RangingSessionConfig;
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.session.RangingSessionConfig;
 
 public class BleRssiConfig implements RangingSessionConfig.UnicastTechnologyConfig {
     private static final String TAG = BleRssiConfig.class.getSimpleName();

@@ -24,8 +24,8 @@ import android.ranging.wifi.rtt.RttRangingParams;
 import androidx.annotation.NonNull;
 
 import com.android.ranging.rtt.backend.internal.RttRangingParameters;
-import com.android.server.ranging.RangingSessionConfig;
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.session.RangingSessionConfig;
 
 public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
 

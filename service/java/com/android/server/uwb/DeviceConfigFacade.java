@@ -104,6 +104,7 @@ public class DeviceConfigFacade {
     private boolean mFusedCountryCodeProviderEnabled;
     private boolean mIsAntennaModeConfigSupported;
     private String[] mMccMncOemOverrideList;
+    private boolean mIsRandomHopmodekeySupported;
 
     public DeviceConfigFacade(Handler handler, Context context) {
         mContext = context;
@@ -332,6 +333,9 @@ public class DeviceConfigFacade {
         // device config override with array is not supported, so just read the resource.
         mMccMncOemOverrideList = mContext.getResources()
                 .getStringArray(R.array.mcc_mcc_oem_override_list);
+
+        mIsRandomHopmodekeySupported = mContext.getResources()
+                .getBoolean(R.bool.enable_random_hopmodekey);
 
         // A little parsing and cleanup:
         mFrontAzimuthRadiansPerSecond = (float) Math.toRadians(frontAzimuthDegreesPerSecond);
@@ -656,5 +660,12 @@ public class DeviceConfigFacade {
      */
     public String[] getMccMncOemOverrideList() {
         return mMccMncOemOverrideList;
+    }
+
+     /**
+     * Returns whether random hopmodekey is supported or not.
+     */
+    public boolean isRandomHopmodekeySupported() {
+        return mIsRandomHopmodekeySupported;
     }
 }

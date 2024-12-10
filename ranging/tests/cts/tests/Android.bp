@@ -44,10 +44,10 @@ custom_android_test {
     ],
     // Tag this module as a cts test artifact
     test_suites: [
-        //"cts",
+        "cts",
         "general-tests",
-        //"mts-uwb",
-        //"mcts-uwb",
+        "mts-uwb",
+        "mcts-uwb",
     ],
     libs: ["android.test.runner.stubs.system"],
     static_libs: [
@@ -57,10 +57,15 @@ custom_android_test {
         "mockito-target-minus-junit4",
         "ranging_flags_lib",
         "framework-ranging.impl",
-        "framework-uwb.impl",
+        "framework-bluetooth.stubs.module_lib",
+        "bluetooth-test-util-lib",
+        "framework-uwb.stubs.module_lib",
+        "framework-wifi.stubs.module_lib",
+        "framework-connectivity.stubs.module_lib",
+        "framework-location.stubs.module_lib",
     ],
     srcs: ["src/**/*.java"],
     platform_apis: true,
     sdk_version: "module_current",
-    min_sdk_version: "33",
+    min_sdk_version: "35",
 }

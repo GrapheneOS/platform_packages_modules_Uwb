@@ -241,4 +241,8 @@
     <!-- Whether two-byte ccc config id is supported. If true, the config id should be parsed as
     a two byte little endian value. -->
     <bool name = "ccc_two_byte_config_id_little_endian_supported">false</bool>
+
+    <!-- Whether when hopmode doesn't set, the hopmodekey shall be set randomly.
+    If false, never sets hopmodekey randomly-->
+    <bool name = "enable_random_hopmodekey">false</bool>
 </resources>

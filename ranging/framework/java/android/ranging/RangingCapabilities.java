@@ -80,6 +80,8 @@ public final class RangingCapabilities implements Parcelable {
             DISABLED_REGULATORY,
             /* Ranging technology is enabled. */
             ENABLED,
+            /* Ranging technology disabled due to admin restrictions. */
+            DISABLED_USER_RESTRICTIONS
     })
     public @interface RangingTechnologyAvailability {
     }
@@ -103,6 +105,11 @@ public final class RangingCapabilities implements Parcelable {
      * Indicates that the ranging technology is enabled and available for use.
      */
     public static final int ENABLED = 3;
+
+    /**
+     * Indicates that the ranging technology is disabled due to device usage restrictions.
+     */
+    public static final int DISABLED_USER_RESTRICTIONS = 4;
 
     private final Map<@RangingManager.RangingTechnology Integer,
             @RangingTechnologyAvailability Integer> mAvailabilities;
@@ -186,7 +193,6 @@ public final class RangingCapabilities implements Parcelable {
      * Gets the BLE channel sounding ranging capabilities.
      *
      * @return a {@link CsRangingCapabilities} object or {@code null} if not available.
-     * @hide
      */
     @Nullable
     public CsRangingCapabilities getCsCapabilities() {

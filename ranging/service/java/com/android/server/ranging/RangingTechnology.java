@@ -16,6 +16,8 @@
 
 package com.android.server.ranging;
 
+import static java.lang.Math.min;
+
 import android.content.Context;
 import android.ranging.RangingManager;
 
@@ -39,6 +41,9 @@ public enum RangingTechnology {
 
     public static final ImmutableList<RangingTechnology> TECHNOLOGIES =
             ImmutableList.copyOf(RangingTechnology.values());
+
+    private static final int BITMAP_SIZE_BYTES = 2;
+
     private final int value;
 
     RangingTechnology(int value) {
@@ -50,7 +55,7 @@ public enum RangingTechnology {
     }
 
     public byte toByte() {
-        return (byte) (1 << value);
+        return (byte) value;
     }
 
     /**
@@ -83,14 +88,31 @@ public enum RangingTechnology {
         return technologies.build();
     }
 
-    public static byte toBitmap(List<RangingTechnology> technologies) {
+    public static byte[] toBitmap(List<RangingTechnology> technologies) {
         if (technologies.isEmpty()) {
-            return 0x0;
+            return new byte[BITMAP_SIZE_BYTES];
         }
-        BitSet bitset = new BitSet();
+        BitSet bitset = new BitSet(BITMAP_SIZE_BYTES * 8);
         for (RangingTechnology technology : technologies) {
             bitset.set(technology.value);
         }
-        return bitset.toByteArray()[0];
+        byte[] bitmap = new byte[BITMAP_SIZE_BYTES];
+        System.arraycopy(
+                bitset.toByteArray(), 0, bitmap, 0,
+                min(BITMAP_SIZE_BYTES, bitset.toByteArray().length));
+        return bitmap;
+    }
+
+    public static ImmutableList<RangingTechnology> fromBitmap(byte[] technologiesBitmap) {
+        ImmutableList.Builder<RangingTechnology> techs = ImmutableList.builder();
+        BitSet bitSet = BitSet.valueOf(technologiesBitmap);
+        for (int i = 0; i < BITMAP_SIZE_BYTES * 8; i++) {
+            if (bitSet.get(i)) {
+                if (i < RangingTechnology.values().length) {
+                    techs.add(RangingTechnology.values()[i]);
+                }
+            }
+        }
+        return techs.build();
     }
 }

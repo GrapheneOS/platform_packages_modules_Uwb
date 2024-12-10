@@ -21,32 +21,51 @@ import com.android.server.ranging.RangingTechnology;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+
 /** The Start Ranging Message Additional Data for Finder OOB. */
 @AutoValue
 public abstract class StartRangingMessage {
 
     // Size in bytes when serialized
-    private static final int SIZE_IN_BYTES = 1;
+    private static final int SIZE_IN_BYTES = 2;
 
     /**
      * Parses the given byte array and returns {@link StartRangingMessage} object. Throws {@link
      * IllegalArgumentException} on invalid input.
      */
-    public static StartRangingMessage parseBytes(byte[] startRangingBytes) {
-        if (startRangingBytes.length != SIZE_IN_BYTES) {
-            throw new IllegalArgumentException();
+    public static StartRangingMessage parseBytes(byte[] payload) {
+        OobHeader header = OobHeader.parseBytes(payload);
+
+        if (payload.length < header.getSize() + SIZE_IN_BYTES) {
+            throw new IllegalArgumentException(
+                    String.format("StartRangingMessage payload size is %d bytes", payload.length));
         }
 
+        int parseCursor = header.getSize();
         ImmutableList<RangingTechnology> rangingTechnologiesToStart =
-                RangingTechnology.parseByte(startRangingBytes[0]);
+                RangingTechnology.fromBitmap(
+                        Arrays.copyOfRange(payload, parseCursor, parseCursor + SIZE_IN_BYTES));
 
-        return builder().setRangingTechnologiesToStart(rangingTechnologiesToStart).build();
+        return builder()
+                .setOobHeader(header)
+                .setRangingTechnologiesToStart(rangingTechnologiesToStart)
+                .build();
     }
 
     /** Serializes this {@link StartRangingMessage} object to bytes. */
-    public final byte toByte() {
-        return RangingTechnology.toBitmap(getRangingTechnologiesToStart());
+    public final byte[] toBytes() {
+        int size = SIZE_IN_BYTES + getOobHeader().getSize();
+        ByteBuffer byteBuffer = ByteBuffer.allocate(size);
+        byteBuffer
+                .put(getOobHeader().toBytes())
+                .put(RangingTechnology.toBitmap(getRangingTechnologiesToStart()));
+        return byteBuffer.array();
     }
+
+    /** Returns the OOB header. */
+    public abstract OobHeader getOobHeader();
 
     /** Returns a list of ranging technologies that should start ranging. */
     public abstract ImmutableList<RangingTechnology> getRangingTechnologiesToStart();
@@ -59,6 +78,8 @@ public abstract class StartRangingMessage {
     /** Builder for {@link StartRangingMessage}. */
     @AutoValue.Builder
     public abstract static class Builder {
+        public abstract Builder setOobHeader(OobHeader oobHeader);
+
         public abstract Builder setRangingTechnologiesToStart(
                 ImmutableList<RangingTechnology> rangingTechnologiesToStart);
 
