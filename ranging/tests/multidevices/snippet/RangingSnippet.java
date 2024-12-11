@@ -19,6 +19,7 @@ package com.google.snippet.ranging;
 import android.app.UiAutomation;
 import android.content.Context;
 import android.net.ConnectivityManager;
+import android.net.wifi.WifiManager;
 import android.ranging.RangingCapabilities;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
@@ -43,6 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 
 public class RangingSnippet implements Snippet {
     private static final String TAG = "GenericRangingSnippet";
@@ -52,12 +54,14 @@ public class RangingSnippet implements Snippet {
     private final Executor mExecutor = Executors.newSingleThreadExecutor();
     private final EventCache mEventCache = EventCache.getInstance();
     private final ConnectivityManager mConnectivityManager;
+    private final WifiManager mWifiManager;
     private final ConcurrentMap<String, RangingSessionInfo> mSessions;
     private final ConcurrentMap<Integer, Integer> mTechnologyAvailability;
 
     public RangingSnippet() {
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mConnectivityManager = mContext.getSystemService(ConnectivityManager.class);
+        mWifiManager = mContext.getSystemService(WifiManager.class);
         mRangingManager = mContext.getSystemService(RangingManager.class);
 
         mSessions = new ConcurrentHashMap<>();
@@ -217,6 +221,16 @@ public class RangingSnippet implements Snippet {
         runWithShellPermission(() -> mConnectivityManager.setAirplaneMode(enabled));
     }
 
+    @Rpc(description = "Set wifi mode")
+    public void setWifiEnabled(boolean enabled) throws Throwable {
+        runWithShellPermission(() -> mWifiManager.setWifiEnabled(enabled));
+    }
+
+    @Rpc(description = "Return wifi mode")
+    public boolean isWifiEnabled() throws Throwable {
+        return runWithShellPermission(() -> mWifiManager.isWifiEnabled());
+    }
+
     @Rpc(description = "Log info level message to device logcat")
     public void logInfo(String message) {
         Log.i(TAG, message);
@@ -229,5 +243,26 @@ public class RangingSnippet implements Snippet {
         } finally {
             dropShellPermission();
         }
+    }
+
+    public <T> T runWithShellPermission(ThrowingSupplier<T> action) throws Throwable {
+        adoptShellPermission();
+        try {
+            return action.get();
+        } finally {
+            dropShellPermission();
+        }
+    }
+
+    /**
+     * Similar to {@link Supplier} but has {@code throws Exception}.
+     *
+     * @param <T> type of the value produced
+     */
+    public interface ThrowingSupplier<T> {
+        /**
+         * Similar to {@link Supplier#get} but has {@code throws Exception}.
+         */
+        T get() throws Exception;
     }
 }

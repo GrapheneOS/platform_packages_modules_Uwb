@@ -138,10 +138,10 @@ def reset_bt_state(
     ad: android device object.
   """
   ad.bluetooth.disableBluetooth()
-  time.sleep(3)
+  time.sleep(2)
   asserts.assert_false(ad.bluetooth.isBluetoothOn(), 'Bluetooth did not stop')
   ad.bluetooth.enableBluetooth()
-  time.sleep(3)
+  time.sleep(2)
   asserts.assert_true(ad.bluetooth.isBluetoothOn(), 'Bluetooth did not stop')
   # Check for BLE RSSI or BLE CS availability
   asserts.assert_true(_is_technology_state(ad, RangingTechnology.BLE_RSSI, True, timeout_s=60),
@@ -164,11 +164,48 @@ def set_bt_state_and_verify(
     ad.bluetooth.enableBluetooth()
   else:
     ad.bluetooth.disableBluetooth()
-  time.sleep(3)
-  asserts.assert_equal(ad.bluetooth.isBluetoothOn(), state, 'Bluetooth did not stop')
+  time.sleep(1)
+  asserts.assert_equal(ad.bluetooth.isBluetoothOn(), state, 'Bluetooth state change failed')
   # Check for BLE RSSI or BLE CS availability
   asserts.assert_true(_is_technology_state(ad, RangingTechnology.BLE_RSSI, state, timeout_s=60),
                       "BT is not %s in ranging API" % failure_msg)
+
+
+def reset_wifi_state(
+    ad: android_device.AndroidDevice
+):
+  """Reset Wifi state to off and then on before each test.
+
+  Args:
+    ad: android device object.
+  """
+  ad.ranging.setWifiEnabled(False)
+  time.sleep(2)
+  asserts.assert_false(ad.ranging.isWifiEnabled(), 'Wifi did not stop')
+  ad.ranging.setWifiEnabled(True)
+  time.sleep(2)
+  asserts.assert_true(ad.ranging.isWifiEnabled(), 'Wifi did not stop')
+  # Check for WIFI RTT availability
+  asserts.assert_true(_is_technology_state(ad, RangingTechnology.WIFI_RTT, True, timeout_s=60),
+                      "Wifi RTT is not enabled in ranging API")
+
+def set_wifi_state_and_verify(
+    ad: android_device.AndroidDevice,
+    state: bool
+):
+  """Sets Wifi state to on or off and verifies it.
+
+  Args:
+    ad: android device object.
+    state: bool, True for BT on, False for off.
+  """
+  failure_msg = "enabled" if state else "disabled"
+  ad.ranging.setWifiEnabled(state)
+  time.sleep(1)
+  asserts.assert_equal(ad.ranging.isWifiEnabled(), state, 'Wifi state change failed')
+  # Check for WIFI RTT availability
+  asserts.assert_true(_is_technology_state(ad, RangingTechnology.WIFI_RTT, state, timeout_s=60),
+                      "Wifi RTT is not %s in ranging API" % failure_msg)
 
 
 def set_screen_rotation_landscape(
