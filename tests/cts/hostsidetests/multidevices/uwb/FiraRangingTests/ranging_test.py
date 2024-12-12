@@ -1614,6 +1614,11 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         .getSpecificationInfo()["fira"]["max_ranging_session_number"])
     max_fira_ranging_sessions = min(initiator_max_fira_ranging_sessions,
                                     responder_max_fira_ranging_sessions)
+    max_supported_session_count = (
+        self.initiator.ad.uwb
+        .getSpecificationInfo()["max_supported_session_count"])
+    max_fira_ranging_sessions = min(max_supported_session_count,
+                                    max_fira_ranging_sessions)
     initiator_params = uwb_ranging_params.UwbRangingParams(
         device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
         device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,

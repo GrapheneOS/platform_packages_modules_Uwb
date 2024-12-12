@@ -140,8 +140,8 @@ public final class RangingServiceManager {
         if (!mSessions.containsKey(handle)) {
             Log.e(TAG, "Failed to add peer. Ranging session not found");
         }
-        DynamicPeer peer = new DynamicPeer(params.getRawRangingDevice().getRangingDevice(),
-                mSessions.get(handle));
+        DynamicPeer peer = new DynamicPeer(params,
+                mSessions.get(handle), null /* Ranging device is in params*/);
         mRangingTaskManager.enqueueTask(RangingTask.TASK_ADD_DEVICE, peer);
     }
 
@@ -149,7 +149,8 @@ public final class RangingServiceManager {
         if (!mSessions.containsKey(handle)) {
             Log.e(TAG, "Failed to remove peer. Ranging session not found");
         }
-        DynamicPeer peer = new DynamicPeer(device, mSessions.get(handle));
+        DynamicPeer peer = new DynamicPeer(null /* params not needed*/, mSessions.get(handle),
+                device);
         mRangingTaskManager.enqueueTask(RangingTask.TASK_REMOVE_DEVICE, peer);
     }
 
@@ -366,11 +367,11 @@ public final class RangingServiceManager {
                 }
                 case TASK_ADD_DEVICE -> {
                     DynamicPeer peer = (DynamicPeer) msg.obj;
-                    peer.mSession.addPeer(peer.mDevice);
+                    peer.mSession.addPeer(peer.mParams);
                 }
                 case TASK_REMOVE_DEVICE -> {
                     DynamicPeer peer = (DynamicPeer) msg.obj;
-                    peer.mSession.removePeer(peer.mDevice);
+                    peer.mSession.removePeer(peer.mRangingDevice);
                 }
                 case TASK_RECONFIGURE_INTERVAL -> {
                     RangingSession session = (RangingSession) msg.obj;
@@ -435,12 +436,15 @@ public final class RangingServiceManager {
     }
 
     public static final class DynamicPeer {
-        public final RangingDevice mDevice;
+        public final RangingDevice mRangingDevice;
+        public final RawResponderRangingParams mParams;
         public final RangingSession<?> mSession;
 
-        public DynamicPeer(RangingDevice device, RangingSession<?> session) {
-            mDevice = device;
+        public DynamicPeer(RawResponderRangingParams params, RangingSession<?> session,
+                RangingDevice device) {
+            mParams = params;
             mSession = session;
+            mRangingDevice = device;
         }
     }
 

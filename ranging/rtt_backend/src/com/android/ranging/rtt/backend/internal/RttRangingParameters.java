@@ -36,6 +36,28 @@ public class RttRangingParameters {
         int SUBSCRIBER = 1;
     }
 
+    @IntDef({
+            INFREQUENT,
+            NORMAL,
+            FAST,
+    })
+    public @interface RangingUpdateRate {}
+
+    /**
+     * Requests for ranging data in 512 milliseconds
+     */
+    public static final int NORMAL = 1;
+
+    /**
+     * Requests for ranging data in 8192 milliseconds
+     */
+    public static final int INFREQUENT = 2;
+
+    /**
+     * Requests for ranging data in 256 milliseconds
+     */
+    public static final int FAST = 3;
+
     private final @DeviceRole int mDeviceRole;
     /**
      * Returns Service ID for WiFi Aware
@@ -47,6 +69,15 @@ public class RttRangingParameters {
     protected final int mMinDistanceMm;
     protected final boolean mEnablePublisherRanging;
     protected final Duration mPublisherPingDuration;
+
+    private final boolean mProximityEdgeEnabled;
+    private final int mProximityEdgeNearMm;
+    private final int mProximityEdgeFarMm;
+
+    @RangingUpdateRate
+    private final int mUpdateRate;
+
+    private final boolean mEnablePeriodicRangingHwFeature;
 
     public int getDeviceRole() {
         return mDeviceRole;
@@ -116,6 +147,26 @@ public class RttRangingParameters {
         return mPublisherPingDuration;
     }
 
+    public boolean isProximityEdgeEnabled() {
+        return mProximityEdgeEnabled;
+    }
+
+    public int getProximityEdgeNear() {
+        return mProximityEdgeNearMm;
+    }
+
+    public int getProximityEdgeFar() {
+        return mProximityEdgeFarMm;
+    }
+
+    public int getUpdateRate() {
+        return mUpdateRate;
+    }
+
+    public boolean isPeriodicRangingHwFeatureEnabled() {
+        return mEnablePeriodicRangingHwFeature;
+    }
+
     public RttRangingParameters(Builder builder) {
         mDeviceRole = builder.mDeviceRole;
         mServiceId = builder.mServiceId;
@@ -125,6 +176,11 @@ public class RttRangingParameters {
         mMinDistanceMm = builder.mMinDistanceMm;
         mEnablePublisherRanging = builder.mEnablePublisherRanging;
         mPublisherPingDuration = builder.mPublisherPingDuration;
+        mUpdateRate = builder.mRangingUpdateRate;
+        mProximityEdgeEnabled = builder.mProximityEdgeEnabled;
+        mProximityEdgeNearMm = builder.mProximityEdgeNearMm;
+        mProximityEdgeFarMm = builder.mProximityEdgeFarMm;
+        mEnablePeriodicRangingHwFeature = builder.mEnablePeriodicRangingHwFeature;
     }
 
 
@@ -138,8 +194,13 @@ public class RttRangingParameters {
         protected byte[] mMatchFilter = new byte[]{};
         protected int mMaxDistanceMm = 30 * 100 * 100;
         protected int mMinDistanceMm = 0;
-        protected boolean mEnablePublisherRanging = false;
+        protected boolean mEnablePublisherRanging = true;
         protected Duration mPublisherPingDuration = Duration.ofSeconds(10);
+        private int mRangingUpdateRate = NORMAL;
+        private boolean mProximityEdgeEnabled = false;
+        private int mProximityEdgeNearMm = 0;
+        private int mProximityEdgeFarMm = 0;
+        private boolean mEnablePeriodicRangingHwFeature = false;
 
         public Builder setDeviceRole(int deviceRole) {
             mDeviceRole = deviceRole;
@@ -182,8 +243,39 @@ public class RttRangingParameters {
             return this;
         }
 
+        public Builder setUpdateRate(int updateRate) {
+            mRangingUpdateRate = updateRate;
+            return this;
+        }
+
+        public Builder setProximityEdge(int near, int far) {
+            mProximityEdgeNearMm = near;
+            mProximityEdgeFarMm = far;
+            mProximityEdgeEnabled = true;
+            return this;
+        }
+
+        public Builder setPeriodicRangingHwFeatureEnabled(boolean enabled) {
+            mEnablePeriodicRangingHwFeature = enabled;
+            return this;
+        }
+
         public RttRangingParameters build() {
             return new RttRangingParameters(this);
+        }
+    }
+
+    public static int getIntervalMs(@NonNull RttRangingParameters rttRangingParameters) {
+        switch (rttRangingParameters.getUpdateRate()) {
+            case FAST -> {
+                return rttRangingParameters.isPeriodicRangingHwFeatureEnabled() ? 128 : 256;
+            }
+            case INFREQUENT -> {
+                return 8192;
+            }
+            default -> {
+                return rttRangingParameters.isPeriodicRangingHwFeatureEnabled() ? 256 : 512;
+            }
         }
     }
 
@@ -206,6 +298,8 @@ public class RttRangingParameters {
                 + mEnablePublisherRanging
                 + ", publisherPingDuration: "
                 + mPublisherPingDuration
+                + ", enablePeriodicRangingHwFeature: "
+                + mEnablePeriodicRangingHwFeature
                 + " }";
     }
 }

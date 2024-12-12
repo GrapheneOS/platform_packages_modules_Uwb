@@ -119,6 +119,12 @@ public class RttAdapter implements RangingAdapter {
     }
 
     @Override
+    public void reconfigureRangingInterval(int intervalSkipCount) {
+        Log.i(TAG, "Reconfigure ranging interval called");
+        mRttClient.reconfigureRangingInterval(intervalSkipCount);
+    }
+
+    @Override
     public void stop() {
         Log.i(TAG, "Stop called.");
         if (!mStateMachine.transition(State.STARTED, State.STOPPED)) {

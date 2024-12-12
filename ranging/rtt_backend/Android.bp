@@ -19,13 +19,16 @@ package {
 
 java_library {
     name: "ranging_rtt_backend",
-    sdk_version: "system_UpsideDownCake",
+    sdk_version: "system_current",
     min_sdk_version: "33",
     installable: false,
     srcs: [
         "src/**/*.java",
     ],
-    //libs: ["android-support-annotations"],
+    libs: [
+        "androidx.annotation_annotation",
+        "framework-wifi.stubs.system",
+    ],
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.concurrent_concurrent-futures",

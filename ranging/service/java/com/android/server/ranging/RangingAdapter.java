@@ -18,6 +18,7 @@ package com.android.server.ranging;
 
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
+import android.ranging.raw.RawResponderRangingParams;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
@@ -28,19 +29,32 @@ import com.android.server.ranging.session.RangingSessionConfig;
 public interface RangingAdapter {
 
     /** Returns {@link RangingTechnology} of this adapter. */
-    @NonNull RangingTechnology getTechnology();
+    @NonNull
+    RangingTechnology getTechnology();
 
     /**
      * Start ranging. Does nothing if the ranging technology is not enabled on device or if ranging
      * has already been started. In the latter case, this method will not overwrite the existing
      * callback.
-     * @param config for the ranging session.
+     *
+     * @param config   for the ranging session.
      * @param callback to be called on the occurrence of ranging events.
      */
     void start(@NonNull RangingSessionConfig.TechnologyConfig config, @NonNull Callback callback);
 
     /** Stop ranging. */
     void stop();
+
+    /** Dynamic add/remove peers. Defaults to unsupported.*/
+    default boolean isDynamicUpdatePeersSupported() {
+        return false;
+    }
+
+    default void addPeer(RawResponderRangingParams params) {}
+
+    default void removePeer(RangingDevice device) {}
+
+    default void reconfigureRangingInterval(int intervalSkipCount) {}
 
     /** Callback for getting notified when ranging starts or stops. */
     interface Callback {

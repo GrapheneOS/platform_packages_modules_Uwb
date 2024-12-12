@@ -18,6 +18,7 @@ package com.android.server.ranging.session;
 
 import android.ranging.RangingDevice;
 import android.ranging.RangingParams;
+import android.ranging.raw.RawResponderRangingParams;
 
 import androidx.annotation.NonNull;
 
@@ -29,7 +30,7 @@ public interface RangingSession<P extends RangingParams> {
 
     void stop();
 
-    void addPeer(RangingDevice params);
+    void addPeer(RawResponderRangingParams params);
 
     void removePeer(RangingDevice params);
 

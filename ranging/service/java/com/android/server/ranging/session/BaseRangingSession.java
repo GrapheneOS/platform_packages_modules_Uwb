@@ -21,6 +21,7 @@ import android.os.Binder;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
 import android.ranging.SessionHandle;
+import android.ranging.raw.RawResponderRangingParams;
 import android.util.Log;
 
 import androidx.annotation.GuardedBy;
@@ -44,6 +45,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -178,19 +180,34 @@ public class BaseRangingSession {
         }
     }
 
-    public void addPeer(RangingDevice params) {
-        //TODO: Implement this
-        throw new IllegalArgumentException("Dynamic addition of raw peer not supported yet");
+    public void addPeer(RawResponderRangingParams params) {
+        synchronized (mLock) {
+            for (Map.Entry<TechnologyConfig, RangingAdapter> entry : mAdapters.entrySet()) {
+                if (entry.getValue().isDynamicUpdatePeersSupported()) {
+                    RangingDevice peerDevice = params.getRawRangingDevice().getRangingDevice();
+                    mPeers.put(peerDevice, new Peer(peerDevice, entry.getKey().getTechnology()));
+                    entry.getValue().addPeer(params);
+                }
+            }
+        }
     }
 
-    public void removePeer(RangingDevice params) {
-        //TODO: Implement this
-        throw new IllegalArgumentException("Dynamic addition of raw peer not supported yet");
+    public void removePeer(RangingDevice device) {
+        synchronized (mLock) {
+            for (Map.Entry<TechnologyConfig, RangingAdapter> entry : mAdapters.entrySet()) {
+                if (entry.getValue().isDynamicUpdatePeersSupported()) {
+                    entry.getValue().removePeer(device);
+                }
+            }
+        }
     }
 
     public void reconfigureInterval(int intervalSkipCount) {
-        //TODO: Implement this
-        throw new IllegalArgumentException("Dynamic addition of raw peer not supported yet");
+        synchronized (mLock) {
+            for (Map.Entry<TechnologyConfig, RangingAdapter> entry : mAdapters.entrySet()) {
+                entry.getValue().reconfigureRangingInterval(intervalSkipCount);
+            }
+        }
     }
 
     /** Stop ranging in this session. */
@@ -223,6 +240,10 @@ public class BaseRangingSession {
         @Override
         public void onStarted(@NonNull RangingDevice peerDevice) {
             synchronized (mLock) {
+                if (!mPeers.containsKey(peerDevice)) {
+                    Log.w(TAG, "onStarted peer not found");
+                    return;
+                }
                 mStateMachine.transition(State.STARTING, State.STARTED);
                 mPeers.get(peerDevice).setUsingTechnology(mConfig.getTechnology());
                 mSessionListener.onTechnologyStarted(peerDevice, mConfig.getTechnology());
@@ -232,6 +253,10 @@ public class BaseRangingSession {
         @Override
         public void onStopped(@NonNull RangingDevice peerDevice) {
             synchronized (mLock) {
+                if (!mPeers.containsKey(peerDevice)) {
+                    Log.w(TAG, "onStopped peer not found");
+                    return;
+                }
                 Peer peer = mPeers.get(peerDevice);
                 peer.setNotUsingTechnology(mConfig.getTechnology());
                 mSessionListener.onTechnologyStopped(peerDevice, mConfig.getTechnology());

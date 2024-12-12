@@ -25,6 +25,7 @@ import android.ranging.RangingData;
 import android.ranging.RangingDevice;
 import android.ranging.RangingMeasurement;
 import android.ranging.RangingPreference;
+import android.ranging.raw.RawResponderRangingParams;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.util.Log;
@@ -72,7 +73,7 @@ public class UwbAdapter implements RangingAdapter {
             @NonNull Context context, @NonNull ListeningExecutorService executor,
             @RangingPreference.DeviceRole int role
     ) {
-        this(context, executor, Executors.newSingleThreadExecutor(), role);
+        this(context, executor, Executors.newCachedThreadPool(), role);
     }
 
     /** Intermediary constructor used to make an additional reference to backendExecutor. */
@@ -138,6 +139,50 @@ public class UwbAdapter implements RangingAdapter {
             mUwbClient.startRanging(mUwbListener, mBackendExecutor);
         }, mExecutorService);
         Futures.addCallback(future, mUwbClientResultHandlers.startRanging, mExecutorService);
+    }
+
+    @Override
+    public boolean isDynamicUpdatePeersSupported() {
+        return true;
+    }
+
+    @Override
+    public void addPeer(RawResponderRangingParams params) {
+        Log.i(TAG, "Add peer called");
+        if (mUwbClient instanceof RangingController) {
+            UwbAddress uwbAddress =
+                    params.getRawRangingDevice().getUwbRangingParams().getPeerAddress();
+            com.android.ranging.uwb.backend.internal.UwbAddress uwbBackendAddress =
+                    com.android.ranging.uwb.backend.internal.UwbAddress.fromBytes(
+                            uwbAddress.getAddressBytes());
+            mPeers.put(params.getRawRangingDevice().getRangingDevice(), uwbAddress);
+            var unused = Futures.submit(() -> {
+                ((RangingController) mUwbClient).addControlee(uwbBackendAddress);
+            }, mExecutorService);
+        }
+    }
+
+    @Override
+    public void removePeer(RangingDevice device) {
+        Log.i(TAG, "Remove peer called");
+        if (mUwbClient instanceof RangingController) {
+            if (mPeers.containsKey(device)) {
+                com.android.ranging.uwb.backend.internal.UwbAddress uwbBackendAddress =
+                        com.android.ranging.uwb.backend.internal.UwbAddress.fromBytes(
+                                mPeers.get(device).getAddressBytes());
+                var unused = Futures.submit(() -> {
+                    ((RangingController) mUwbClient).removeControlee(uwbBackendAddress);
+                }, mExecutorService);
+            }
+        }
+    }
+
+    @Override
+    public void reconfigureRangingInterval(int intervalSkipCount) {
+        Log.i(TAG, "Reconfigure ranging interval called");
+        if (mUwbClient instanceof RangingController) {
+            ((RangingController) mUwbClient).setBlockStriding(intervalSkipCount);
+        }
     }
 
     @Override
@@ -222,6 +267,14 @@ public class UwbAdapter implements RangingAdapter {
             }
         }
 
+        @Override
+        public void onPeerConnected(UwbDevice peer) {
+            RangingDevice device = convertPeerDevice(peer);
+            if (device != null) {
+                mCallbacks.onStarted(device);
+            }
+        }
+
         private static @Callback.ClosedReason int convertReason(
                 @RangingSessionCallback.RangingSuspendedReason int reason) {
             switch (reason) {
@@ -268,8 +321,10 @@ public class UwbAdapter implements RangingAdapter {
     private void closeForReason(@Callback.ClosedReason int reason) {
         synchronized (mStateMachine) {
             mStateMachine.setState(State.STOPPED);
-            mPeers.keySet().forEach(mCallbacks::onStopped);
-            mCallbacks.onClosed(reason);
+            if (!mPeers.isEmpty()) {
+                mPeers.keySet().forEach(mCallbacks::onStopped);
+                mCallbacks.onClosed(reason);
+            }
             clear();
         }
     }

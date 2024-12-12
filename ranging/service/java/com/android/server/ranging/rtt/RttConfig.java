@@ -70,14 +70,30 @@ public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
     }
 
     public RttRangingParameters asBackendParameters() {
-        return new RttRangingParameters.Builder()
+        RttRangingParameters.Builder builder = new RttRangingParameters.Builder()
                 .setDeviceRole(mDeviceRole)
                 .setServiceName(mRangingParams.getServiceName())
                 .setMatchFilter(mRangingParams.getMatchFilter())
-                .setMaxDistanceMm(mDataNotificationConfig.getProximityFarCm() * 100)
-                .setMinDistanceMm(mDataNotificationConfig.getProximityNearCm() * 100)
                 .setEnablePublisherRanging(true)
-                .build();
+                .setUpdateRate(mRangingParams.getRangingUpdateRate())
+                .setPeriodicRangingHwFeatureEnabled(
+                        mRangingParams.isPeriodicRangingHwFeatureEnabled());
+
+        switch (mDataNotificationConfig.getNotificationConfigType()) {
+            case DataNotificationConfig.ENABLE -> builder
+                    .setMinDistanceMm(0)
+                    .setMaxDistanceMm(50 * 100 * 100); // 50 meters.
+            case DataNotificationConfig.DISABLE -> builder.setMinDistanceMm(0)
+                    //Set to 1 millimeter to get around mMaxDistanceMm <= mMinDistanceMm
+                    .setMaxDistanceMm(1);
+            case DataNotificationConfig.PROXIMITY_LEVEL -> builder.setMinDistanceMm(
+                            mDataNotificationConfig.getProximityNearCm() * 100)
+                    .setMaxDistanceMm(mDataNotificationConfig.getProximityFarCm() * 100);
+            case DataNotificationConfig.PROXIMITY_EDGE -> builder.setProximityEdge(
+                    mDataNotificationConfig.getProximityNearCm() * 100,
+                    mDataNotificationConfig.getProximityFarCm() * 100);
+        }
+        return builder.build();
     }
 
     @Override

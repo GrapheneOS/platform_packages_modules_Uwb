@@ -16,8 +16,8 @@
 
 package com.android.ranging.uwb.backend.internal;
 
-import static com.android.ranging.uwb.backend.internal.RangingSessionCallback.REASON_FAILED_TO_START;
-import static com.android.ranging.uwb.backend.internal.RangingSessionCallback.REASON_STOP_RANGING_CALLED;
+import static com.android.ranging.uwb.backend.internal.RangingSessionCallback.PeerDisconnectedReason.FAILED_TO_ADD_CONTROLEE;
+import static com.android.ranging.uwb.backend.internal.RangingSessionCallback.PeerDisconnectedReason.LOCAL_DEVICE_REQUEST;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_INDIVIDUAL_MULTICAST_DS_TWR;
 import static com.android.ranging.uwb.backend.internal.Utils.INVALID_API_CALL;
 import static com.android.ranging.uwb.backend.internal.Utils.STATUS_OK;
@@ -189,7 +189,7 @@ public class RangingController extends RangingDevice {
             if (callback != null) {
                 runOnBackendCallbackThread(
                         () ->
-                                callback.onRangingInitialized(
+                                callback.onPeerConnected(
                                         UwbDevice.createForAddress(controleeAddress.toBytes())));
             }
             mDynamicallyAddedPeers.add(controleeAddress);
@@ -197,9 +197,9 @@ public class RangingController extends RangingDevice {
             if (callback != null) {
                 runOnBackendCallbackThread(
                         () ->
-                                callback.onRangingSuspended(
+                                callback.onPeerDisconnected(
                                         UwbDevice.createForAddress(controleeAddress.toBytes()),
-                                        REASON_FAILED_TO_START));
+                                        FAILED_TO_ADD_CONTROLEE));
             }
         }
 
@@ -245,7 +245,7 @@ public class RangingController extends RangingDevice {
             if (callback != null) {
                 runOnBackendCallbackThread(
                         () ->
-                                callback.onRangingInitialized(
+                                callback.onPeerConnected(
                                         UwbDevice.createForAddress(controleeAddress.toBytes())));
             }
             mDynamicallyAddedPeers.add(controleeAddress);
@@ -253,9 +253,9 @@ public class RangingController extends RangingDevice {
             if (callback != null) {
                 runOnBackendCallbackThread(
                         () ->
-                                callback.onRangingSuspended(
+                                callback.onPeerDisconnected(
                                         UwbDevice.createForAddress(controleeAddress.toBytes()),
-                                        REASON_FAILED_TO_START));
+                                        FAILED_TO_ADD_CONTROLEE));
             }
         }
 
@@ -324,9 +324,9 @@ public class RangingController extends RangingDevice {
         if (callback != null) {
             runOnBackendCallbackThread(
                     () ->
-                            callback.onRangingSuspended(
+                            callback.onPeerDisconnected(
                                     UwbDevice.createForAddress(controleeAddress.toBytes()),
-                                    REASON_STOP_RANGING_CALLED));
+                                    LOCAL_DEVICE_REQUEST));
         }
         mDynamicallyAddedPeers.remove(controleeAddress);
         return STATUS_OK;
