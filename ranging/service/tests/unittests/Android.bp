@@ -20,7 +20,7 @@ package {
 }
 
 android_test {
-    name: "GenericRangingTests",
+    name: "RangingServiceTests",
     srcs: ["src/**/*.java"],
     sdk_version: "34",
     certificate: "platform",

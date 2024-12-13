@@ -17,9 +17,9 @@
 package com.android.server.ranging.cs;
 
 import android.annotation.NonNull;
-import android.ranging.DataNotificationConfig;
 import android.ranging.RangingDevice;
 import android.ranging.RangingPreference;
+import android.ranging.SessionConfiguration;
 import android.ranging.ble.cs.CsRangingParams;
 
 import com.android.server.ranging.RangingTechnology;
@@ -28,7 +28,7 @@ import com.android.server.ranging.session.RangingSessionConfig.UnicastTechnology
 public class CsConfig implements UnicastTechnologyConfig {
     private static final String TAG = CsConfig.class.getSimpleName();
 
-    private final DataNotificationConfig mDataNotificationConfig;
+    private final SessionConfiguration mSessionConfig;
     private final CsRangingParams mRangingParams;
 
     private final RangingDevice mPeerDevice;
@@ -38,11 +38,11 @@ public class CsConfig implements UnicastTechnologyConfig {
 
     public CsConfig(int deviceRole,
             CsRangingParams csRangingParams,
-            DataNotificationConfig dataNotificationConfig,
+            SessionConfiguration sessionConfig,
             @NonNull RangingDevice peerDevice) {
         mDeviceRole = deviceRole;
         mRangingParams = csRangingParams;
-        mDataNotificationConfig = dataNotificationConfig;
+        mSessionConfig = sessionConfig;
         mPeerDevice = peerDevice;
     }
 
@@ -51,8 +51,8 @@ public class CsConfig implements UnicastTechnologyConfig {
         return RangingTechnology.CS;
     }
 
-    public DataNotificationConfig getDataNotificationConfig() {
-        return mDataNotificationConfig;
+    public SessionConfiguration getSessionConfig() {
+        return mSessionConfig;
     }
 
     public CsRangingParams getRangingParams() {
@@ -71,8 +71,8 @@ public class CsConfig implements UnicastTechnologyConfig {
     @Override
     public String toString() {
         return "CsConfig{ "
-                + "mDataNotificationConfig="
-                + mDataNotificationConfig
+                + "mSessionConfig="
+                + mSessionConfig
                 + ", mRangingParams="
                 + mRangingParams
                 + ", mDeviceRole="

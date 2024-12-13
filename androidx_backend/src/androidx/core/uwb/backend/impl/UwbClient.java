@@ -35,6 +35,7 @@ import androidx.core.uwb.backend.impl.internal.RangingPosition;
 import androidx.core.uwb.backend.impl.internal.RangingSessionCallback;
 import androidx.core.uwb.backend.impl.internal.UwbDevice;
 import androidx.core.uwb.backend.impl.internal.UwbRangeDataNtfConfig;
+import androidx.core.uwb.backend.impl.internal.UwbRangeLimitsConfig;
 import androidx.core.uwb.backend.impl.internal.UwbServiceImpl;
 
 import java.util.ArrayList;
@@ -118,7 +119,9 @@ public abstract class UwbClient extends IUwbClient.Stub {
                         parameters.sessionKeyInfo, parameters.subSessionKeyInfo,
                         channel, addresses, parameters.rangingUpdateRate,
                         uwbRangeDataNtfConfigBuilder.build(), duration,
-                        !mSupportsAzimuthalAngle || parameters.isAoaDisabled));
+                        !mSupportsAzimuthalAngle || parameters.isAoaDisabled,
+                // Use default in uwb backend.
+                new UwbRangeLimitsConfig.Builder().build()));
     }
 
     public void setSubscribeConsumer(Consumer<IUwbAvailabilityObserver> subscribeConsumer) {

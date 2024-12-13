@@ -19,6 +19,7 @@ package com.android.server.ranging.rtt;
 import android.ranging.DataNotificationConfig;
 import android.ranging.RangingDevice;
 import android.ranging.RangingPreference;
+import android.ranging.SessionConfiguration;
 import android.ranging.wifi.rtt.RttRangingParams;
 
 import androidx.annotation.NonNull;
@@ -29,7 +30,7 @@ import com.android.server.ranging.session.RangingSessionConfig;
 
 public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
 
-    private final DataNotificationConfig mDataNotificationConfig;
+    private final SessionConfiguration mSessionConfig;
     private final RttRangingParams mRangingParams;
     private final RangingDevice mPeerDevice;
 
@@ -38,12 +39,12 @@ public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
     public RttConfig(
             int deviceRole,
             @NonNull RttRangingParams rttRangingParams,
-            @NonNull DataNotificationConfig dataNotificationConfig,
+            @NonNull SessionConfiguration sessionConfig,
             @NonNull RangingDevice peerDevice
     ) {
         mDeviceRole = deviceRole;
         mRangingParams = rttRangingParams;
-        mDataNotificationConfig = dataNotificationConfig;
+        mSessionConfig = sessionConfig;
         mPeerDevice = peerDevice;
     }
 
@@ -52,8 +53,8 @@ public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
         return RangingTechnology.RTT;
     }
 
-    public DataNotificationConfig getDataNotificationConfig() {
-        return mDataNotificationConfig;
+    public SessionConfiguration getSessionConfig() {
+        return mSessionConfig;
     }
 
     public RttRangingParams getRangingParams() {
@@ -79,7 +80,8 @@ public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
                 .setPeriodicRangingHwFeatureEnabled(
                         mRangingParams.isPeriodicRangingHwFeatureEnabled());
 
-        switch (mDataNotificationConfig.getNotificationConfigType()) {
+        DataNotificationConfig ntfConfig = mSessionConfig.getDataNotificationConfig();
+        switch (ntfConfig.getNotificationConfigType()) {
             case DataNotificationConfig.ENABLE -> builder
                     .setMinDistanceMm(0)
                     .setMaxDistanceMm(50 * 100 * 100); // 50 meters.
@@ -87,11 +89,11 @@ public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
                     //Set to 1 millimeter to get around mMaxDistanceMm <= mMinDistanceMm
                     .setMaxDistanceMm(1);
             case DataNotificationConfig.PROXIMITY_LEVEL -> builder.setMinDistanceMm(
-                            mDataNotificationConfig.getProximityNearCm() * 100)
-                    .setMaxDistanceMm(mDataNotificationConfig.getProximityFarCm() * 100);
+                            ntfConfig.getProximityNearCm() * 100)
+                    .setMaxDistanceMm(ntfConfig.getProximityFarCm() * 100);
             case DataNotificationConfig.PROXIMITY_EDGE -> builder.setProximityEdge(
-                    mDataNotificationConfig.getProximityNearCm() * 100,
-                    mDataNotificationConfig.getProximityFarCm() * 100);
+                    ntfConfig.getProximityNearCm() * 100,
+                    ntfConfig.getProximityFarCm() * 100);
         }
         return builder.build();
     }
@@ -99,8 +101,8 @@ public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
     @Override
     public String toString() {
         return "RttConfig{ "
-                + "mDataNotificationConfig="
-                + mDataNotificationConfig
+                + "mSessionConfig="
+                + mSessionConfig
                 + ", mRangingParams="
                 + mRangingParams
                 + ", mPeerDevice="

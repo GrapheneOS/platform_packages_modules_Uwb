@@ -31,7 +31,7 @@ import androidx.annotation.NonNull;
 public class RttRangingPosition {
     private static final String TAG = RttRangingPosition.class.getName();
 
-    private int mDistanceMm;
+    private int mDistanceMeters;
     private int mDistanceStdDevMm;
     private byte[] mLci;
     private byte[] mLcr;
@@ -58,7 +58,7 @@ public class RttRangingPosition {
      * Create empty Ranging Position for RTT.
      */
     public RttRangingPosition() {
-        mDistanceMm = 0;
+        mDistanceMeters = 0;
         mDistanceStdDevMm = 0;
         mLci = null;
         mLcr = null;
@@ -77,7 +77,7 @@ public class RttRangingPosition {
      * Create Ranging Position for RTT from RangingResult
      */
     public RttRangingPosition(@NonNull RangingResult rangingResult) {
-        mDistanceMm = rangingResult.getDistanceMm();
+        mDistanceMeters = rangingResult.getDistanceMm() / 1000;
         mDistanceStdDevMm = rangingResult.getDistanceStdDevMm();
         mLci = rangingResult.getLci();
         mLcr = rangingResult.getLcr();
@@ -100,10 +100,10 @@ public class RttRangingPosition {
     }
 
     /**
-     * get Distamce(Unit : mm)
+     * get Distamce(Unit : meter)
      */
     public double getDistance() {
-        return mDistanceMm;
+        return mDistanceMeters;
     }
 
     /**

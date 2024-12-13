@@ -544,7 +544,11 @@ public final class ConfigurationManager {
                                 rangingParameters.getUwbRangeDataNtfConfig().getNtfProximityFar())
                         .setInBandTerminationAttemptCount(3)
                         .setStsConfig(configuration.getStsConfig())
-                        .setRangingErrorStreakTimeoutMs(10_000L);
+                        .setRangingErrorStreakTimeoutMs(10_000L)
+                        .setMaxNumberOfMeasurements(rangingParameters
+                                .getUwbRangeLimitsConfig().getRangeMaxNumberOfMeasurements())
+                        .setMaxRangingRoundRetries(rangingParameters
+                                .getUwbRangeLimitsConfig().getRangeMaxRangingRoundRetries());
 
         if (configuration.getStsConfig() == FiraParams.STS_CONFIG_STATIC) {
             byte[] staticStsIv =
@@ -590,7 +594,7 @@ public final class ConfigurationManager {
 
         if (configuration.getConfigId() == CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE
                 || configuration.getConfigId()
-                    == CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE_HPRF) {
+                == CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE_HPRF) {
             builder.setHasRangingResultReportMessage(false);
             builder.setFilterType(FILTER_TYPE_NONE);
         }

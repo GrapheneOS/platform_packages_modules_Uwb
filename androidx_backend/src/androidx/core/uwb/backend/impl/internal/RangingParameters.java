@@ -17,6 +17,7 @@
 package androidx.core.uwb.backend.impl.internal;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
@@ -39,6 +40,7 @@ public class RangingParameters {
     @Utils.SlotDuration
     private final int mSlotDuration;
     private final boolean mIsAoaDisabled;
+    @Nullable private final UwbRangeLimitsConfig mRangeLimitsConfig;
 
     public RangingParameters(
             @Utils.UwbConfigId int uwbConfigId,
@@ -51,7 +53,8 @@ public class RangingParameters {
             @Utils.RangingUpdateRate int rangingUpdateRate,
             @NonNull UwbRangeDataNtfConfig uwbRangeDataNtfConfig,
             @Utils.SlotDuration int slotDuration,
-            boolean isAoaDisabled) {
+            boolean isAoaDisabled,
+            @Nullable UwbRangeLimitsConfig rangeLimitsConfig) {
         mUwbConfigId = uwbConfigId;
         mSessionId = sessionId;
         mSubSessionId = subSessionId;
@@ -63,6 +66,7 @@ public class RangingParameters {
         mUwbRangeDataNtfConfig = uwbRangeDataNtfConfig;
         mSlotDuration = slotDuration;
         mIsAoaDisabled = isAoaDisabled;
+        mRangeLimitsConfig = rangeLimitsConfig;
     }
 
     public int getSessionId() {
@@ -109,5 +113,10 @@ public class RangingParameters {
 
     public boolean isAoaDisabled() {
         return mIsAoaDisabled;
+    }
+
+    @Nullable
+    public UwbRangeLimitsConfig getUwbRangeLimitsConfig() {
+        return mRangeLimitsConfig;
     }
 }

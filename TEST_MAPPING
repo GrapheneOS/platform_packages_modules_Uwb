@@ -22,6 +22,9 @@
     },
     {
       "name": "CtsRangingTestCases"
+    },
+    {
+      "name": "RangingServiceTests"
     }
   ]
 }

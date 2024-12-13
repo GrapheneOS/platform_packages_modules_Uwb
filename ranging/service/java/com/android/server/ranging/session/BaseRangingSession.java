@@ -98,7 +98,7 @@ public class BaseRangingSession {
 
         Peer(@NonNull RangingDevice device, @NonNull RangingTechnology initialTechnology) {
             technologies = Sets.newConcurrentHashSet(Set.of(initialTechnology));
-            if (mConfig.getSensorFusionConfig().isSensorFusionEnabled()) {
+            if (mConfig.getSessionConfig().getSensorFusionParameters().isSensorFusionEnabled()) {
                 fusionEngine = new FilteringFusionEngine(
                         new DataFusers.PreferentialDataFuser(RangingTechnology.UWB));
             } else {

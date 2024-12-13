@@ -196,7 +196,8 @@ public abstract class RangingDevice {
                             rangingParameters.getRangingUpdateRate(),
                             rangingParameters.getUwbRangeDataNtfConfig(),
                             rangingParameters.getSlotDuration(),
-                            rangingParameters.isAoaDisabled());
+                            rangingParameters.isAoaDisabled(),
+                            rangingParameters.getUwbRangeLimitsConfig());
         } else {
             mRangingParameters = rangingParameters;
         }

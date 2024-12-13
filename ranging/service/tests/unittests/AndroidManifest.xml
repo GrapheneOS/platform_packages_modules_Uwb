@@ -28,6 +28,6 @@
     <instrumentation
         android:name="androidx.test.runner.AndroidJUnitRunner"
         android:targetPackage="com.android.ranging.tests"
-        android:label="Generic Ranging Unit Tests" >
+        android:label="Ranging service unit tests" >
     </instrumentation>
 </manifest>

@@ -392,12 +392,7 @@ public final class RangingServiceManager {
             RangingSessionConfig config = new RangingSessionConfig.Builder()
                     .setDeviceRole(
                             args.preference.getDeviceRole())
-                    .setSensorFusionConfig(
-                            args.preference.getSessionConfiguration().getSensorFusionParameters())
-                    .setDataNotificationConfig(
-                            args.preference.getSessionConfiguration().getDataNotificationConfig())
-                    .setAoaNeeded(
-                            args.preference.getSessionConfiguration().isAngleOfArrivalNeeded())
+                    .setSessionConfig(args.preference().getSessionConfiguration())
                     .build();
 
             RangingParams baseParams = args.preference.getRangingParameters();

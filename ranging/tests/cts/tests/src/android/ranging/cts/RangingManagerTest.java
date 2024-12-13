@@ -236,6 +236,9 @@ public class RangingManagerTest {
                                         .build())
                                 .build())
                         .build())
+                .setSessionConfiguration(new SessionConfiguration.Builder()
+                        .setRangingMeasurementsLimit(100)
+                        .build())
                 .build();
     }
 
@@ -546,6 +549,7 @@ public class RangingManagerTest {
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_enabled")
     public void testCapabilitiesListener() throws InterruptedException {
+        assumeTrue(mSupportedTechnologies.contains(RangingManager.UWB));
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         uiAutomation.adoptShellPermissionIdentity();
 

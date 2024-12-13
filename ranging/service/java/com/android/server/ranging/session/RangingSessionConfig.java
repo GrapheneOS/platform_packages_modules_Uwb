@@ -16,11 +16,10 @@
 
 package com.android.server.ranging.session;
 
-import android.ranging.DataNotificationConfig;
 import android.ranging.RangingDevice;
 import android.ranging.RangingManager;
 import android.ranging.RangingPreference;
-import android.ranging.SensorFusionParams;
+import android.ranging.SessionConfiguration;
 import android.ranging.raw.RawRangingDevice;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbRangingParams;
@@ -48,18 +47,18 @@ import java.util.Set;
 
 public class RangingSessionConfig {
     private final @RangingPreference.DeviceRole int mDeviceRole;
-    private final SensorFusionParams mFusionConfig;
-    private final boolean mIsAoaNeeded;
-    private final DataNotificationConfig mDataNotificationConfig;
+    private final SessionConfiguration mSessionConfig;
 
     /** A complete configuration for a session within a specific ranging technology's stack */
     public interface TechnologyConfig {
-        @NonNull RangingTechnology getTechnology();
+        @NonNull
+        RangingTechnology getTechnology();
     }
 
     /** A config for a technology that only supports 1 peer per session. */
     public interface UnicastTechnologyConfig extends TechnologyConfig {
-        @NonNull RangingDevice getPeerDevice();
+        @NonNull
+        RangingDevice getPeerDevice();
     }
 
     /** A config for a technology that supports multiple peers per session. */
@@ -67,14 +66,13 @@ public class RangingSessionConfig {
         /**
          * @return the set of peers within this technology-specific session.
          */
-        @NonNull ImmutableSet<RangingDevice> getPeerDevices();
+        @NonNull
+        ImmutableSet<RangingDevice> getPeerDevices();
     }
 
     private RangingSessionConfig(Builder builder) {
         mDeviceRole = builder.mDeviceRole;
-        mFusionConfig = builder.mFusionConfig;
-        mIsAoaNeeded = builder.mIsAoaNeeded;
-        mDataNotificationConfig = builder.mDataNotificationConfig;
+        mSessionConfig = builder.mSessionConfig;
     }
 
     public @NonNull ImmutableSet<TechnologyConfig> getTechnologyConfigs(
@@ -99,10 +97,9 @@ public class RangingSessionConfig {
             configs.add(new UwbConfig.Builder(key.mParams)
                     .setDeviceRole(mDeviceRole)
                     .setPeerAddresses(ImmutableBiMap.copyOf(uwbPeersByParams.get(key)))
-                    .setAoaNeeded(mIsAoaNeeded)
                     // TODO(370077264): Set country code based on geolocation.
                     .setCountryCode("US")
-                    .setDataNotificationConfig(mDataNotificationConfig)
+                    .setSessionConfig(mSessionConfig)
                     .build());
         }
 
@@ -119,21 +116,21 @@ public class RangingSessionConfig {
                 configs.add(new RttConfig(
                         mDeviceRole,
                         peer.getRttRangingParams(),
-                        mDataNotificationConfig,
+                        mSessionConfig,
                         peer.getRangingDevice()));
             }
             if (peer.getBleRssiRangingParams() != null) {
                 configs.add(new BleRssiConfig(
                         mDeviceRole,
                         peer.getBleRssiRangingParams(),
-                        mDataNotificationConfig,
+                        mSessionConfig,
                         peer.getRangingDevice()));
             }
             if (peer.getCsRangingParams() != null) {
                 configs.add(new CsConfig(
                         mDeviceRole,
                         peer.getCsRangingParams(),
-                        mDataNotificationConfig,
+                        mSessionConfig,
                         peer.getRangingDevice()));
             }
         }
@@ -145,23 +142,13 @@ public class RangingSessionConfig {
         return mDeviceRole;
     }
 
-    public @NonNull SensorFusionParams getSensorFusionConfig() {
-        return mFusionConfig;
-    }
-
-    public boolean isAoaNeeded() {
-        return mIsAoaNeeded;
-    }
-
-    public @NonNull DataNotificationConfig getDataNotificationConfig() {
-        return mDataNotificationConfig;
+    public SessionConfiguration getSessionConfig() {
+        return mSessionConfig;
     }
 
     public static class Builder {
         private @RangingPreference.DeviceRole int mDeviceRole;
-        private SensorFusionParams mFusionConfig;
-        private boolean mIsAoaNeeded;
-        private DataNotificationConfig mDataNotificationConfig;
+        private SessionConfiguration mSessionConfig;
 
         public RangingSessionConfig build() {
             return new RangingSessionConfig(this);
@@ -172,20 +159,11 @@ public class RangingSessionConfig {
             return this;
         }
 
-        public Builder setSensorFusionConfig(@NonNull SensorFusionParams config) {
-            mFusionConfig = config;
+        public Builder setSessionConfig(@NonNull SessionConfiguration config) {
+            mSessionConfig = config;
             return this;
         }
 
-        public Builder setDataNotificationConfig(@NonNull DataNotificationConfig config) {
-            mDataNotificationConfig = config;
-            return this;
-        }
-
-        public Builder setAoaNeeded(boolean isAoaNeeded) {
-            mIsAoaNeeded = isAoaNeeded;
-            return this;
-        }
     }
 
     private static class PeerIgnoringParamsHasher<P> {
@@ -195,8 +173,8 @@ public class RangingSessionConfig {
          * Group together UWB peer devices that share the same params so that they can be put into a
          * a multicast session.
          */
-        public static
-        Map<PeerIgnoringParamsHasher<UwbRangingParams>, BiMap<RangingDevice, UwbAddress>>
+        public static Map<PeerIgnoringParamsHasher<UwbRangingParams>, BiMap<RangingDevice,
+                UwbAddress>>
         groupUwbPeersByParams(@NonNull Set<RawRangingDevice> peerParams) {
             Map<PeerIgnoringParamsHasher<UwbRangingParams>, BiMap<RangingDevice, UwbAddress>>
                     peersByParams = new HashMap<>();
@@ -267,11 +245,11 @@ public class RangingSessionConfig {
 
     @Override
     public String toString() {
-        return "RangingSessionConfig{" +
-                "mDeviceRole=" + mDeviceRole +
-                ", mFusionConfig=" + mFusionConfig +
-                ", mIsAoaNeeded=" + mIsAoaNeeded +
-                ", mDataNotificationConfig=" + mDataNotificationConfig +
-                '}';
+        return "RangingSessionConfig{"
+                + "mDeviceRole="
+                + mDeviceRole
+                + ", mSessionConfig="
+                + mSessionConfig
+                + '}';
     }
 }

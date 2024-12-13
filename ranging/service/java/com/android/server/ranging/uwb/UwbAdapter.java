@@ -323,8 +323,8 @@ public class UwbAdapter implements RangingAdapter {
             mStateMachine.setState(State.STOPPED);
             if (!mPeers.isEmpty()) {
                 mPeers.keySet().forEach(mCallbacks::onStopped);
-                mCallbacks.onClosed(reason);
             }
+            mCallbacks.onClosed(reason);
             clear();
         }
     }

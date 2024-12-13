@@ -174,7 +174,7 @@ public class RangingSessionTest {
 
     @Before
     public void setup() {
-        when(mMockConfig.getSensorFusionConfig()).thenReturn(
+        when(mMockConfig.getSessionConfig().getSensorFusionParameters()).thenReturn(
                 new SensorFusionParams.Builder().setSensorFusionEnabled(true).build()
         );
 

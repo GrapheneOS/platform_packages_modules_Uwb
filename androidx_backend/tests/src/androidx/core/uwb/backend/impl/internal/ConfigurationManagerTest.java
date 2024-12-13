@@ -86,7 +86,8 @@ public class ConfigurationManagerTest {
                         INFREQUENT,
                         mUwbRangeDataNtfConfig,
                         Utils.DURATION_2_MS,
-                        false);
+                        false,
+                        new UwbRangeLimitsConfig.Builder().build());
         when(mComplexChannel.getChannel()).thenReturn(1);
         when(mComplexChannel.getPreambleIndex()).thenReturn(1);
     }
@@ -117,7 +118,8 @@ public class ConfigurationManagerTest {
                         INFREQUENT,
                         mUwbRangeDataNtfConfig,
                         Utils.DURATION_2_MS,
-                        false);
+                        false,
+                        new UwbRangeLimitsConfig.Builder().build());
         FiraOpenSessionParams params =
                 ConfigurationManager.createOpenSessionParams(
                         TEST_DEVICE_TYPE, TEST_LOCAL_ADDRESS, rangingParameters,
