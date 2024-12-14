@@ -18,7 +18,7 @@ package com.android.server.ranging.blerssi;
 
 import android.ranging.RangingDevice;
 import android.ranging.RangingPreference;
-import android.ranging.SessionConfiguration;
+import android.ranging.SessionConfig;
 import android.ranging.ble.rssi.BleRssiRangingParams;
 
 import androidx.annotation.NonNull;
@@ -29,7 +29,7 @@ import com.android.server.ranging.session.RangingSessionConfig;
 public class BleRssiConfig implements RangingSessionConfig.UnicastTechnologyConfig {
     private static final String TAG = BleRssiConfig.class.getSimpleName();
 
-    private final SessionConfiguration mSessionConfig;
+    private final SessionConfig mSessionConfig;
     private final BleRssiRangingParams mRangingParams;
 
     private final RangingDevice mPeerDevice;
@@ -39,7 +39,7 @@ public class BleRssiConfig implements RangingSessionConfig.UnicastTechnologyConf
 
     public BleRssiConfig(int deviceRole,
             BleRssiRangingParams bleRssiRangingParams,
-            SessionConfiguration sessionConfig,
+            SessionConfig sessionConfig,
             RangingDevice peerDevice) {
         mDeviceRole = deviceRole;
         mRangingParams = bleRssiRangingParams;
@@ -52,7 +52,7 @@ public class BleRssiConfig implements RangingSessionConfig.UnicastTechnologyConf
         return RangingTechnology.RSSI;
     }
 
-    public SessionConfiguration getSessionConfig() {
+    public SessionConfig getSessionConfig() {
         return mSessionConfig;
     }
 

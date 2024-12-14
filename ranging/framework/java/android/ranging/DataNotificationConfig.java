@@ -18,6 +18,7 @@ package android.ranging;
 
 import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
+import android.annotation.IntRange;
 import android.annotation.NonNull;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -76,23 +77,23 @@ public final class DataNotificationConfig implements Parcelable {
      */
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({
-            DISABLE,
-            ENABLE,
-            PROXIMITY_LEVEL,
-            PROXIMITY_EDGE,
+            NOTIFICATION_CONFIG_DISABLE,
+            NOTIFICATION_CONFIG_ENABLE,
+            NOTIFICATION_CONFIG_PROXIMITY_LEVEL,
+            NOTIFICATION_CONFIG_PROXIMITY_EDGE,
     })
     public @interface NotificationConfigType {
     }
 
     // Range data notification will be disabled.
-    public static final int DISABLE = 0;
+    public static final int NOTIFICATION_CONFIG_DISABLE = 0;
     // Range data notification will be enabled (default).
-    public static final int ENABLE = 1;
+    public static final int NOTIFICATION_CONFIG_ENABLE = 1;
     // Range data notification is enabled when peer device is in the configured range - [near, far].
-    public static final int PROXIMITY_LEVEL = 2;
+    public static final int NOTIFICATION_CONFIG_PROXIMITY_LEVEL = 2;
     //Range data notification is enabled when peer device enters or exits the configured range -
     // [near, far].
-    public static final int PROXIMITY_EDGE = 3;
+    public static final int NOTIFICATION_CONFIG_PROXIMITY_EDGE = 3;
 
 
     private DataNotificationConfig(Builder builder) {
@@ -121,6 +122,7 @@ public final class DataNotificationConfig implements Parcelable {
      *
      * @return the near proximity in centimeters.
      */
+    @IntRange(from = 0, to = 20000)
     public int getProximityNearCm() {
         return mProximityNearCm;
     }
@@ -130,6 +132,7 @@ public final class DataNotificationConfig implements Parcelable {
      *
      * @return the far proximity in centimeters.
      */
+    @IntRange(from = 0, to = 20000)
     public int getProximityFarCm() {
         return mProximityFarCm;
     }
@@ -137,13 +140,13 @@ public final class DataNotificationConfig implements Parcelable {
     /** Builder for {@link DataNotificationConfig} */
     public static final class Builder {
         @NotificationConfigType
-        private int mNotificationConfigType = ENABLE;
+        private int mNotificationConfigType = NOTIFICATION_CONFIG_ENABLE;
         private int mProximityNearCm = 0;
         private int mProximityFarCm = 20_000;
 
         /**
          * Sets the notification configuration type.
-         *  <p> defaults to {@link NotificationConfigType#ENABLE}
+         *  <p> defaults to {@link NotificationConfigType#NOTIFICATION_CONFIG_ENABLE}
          *
          * @param config The notification configuration type to set.
          * @return this Builder instance.
@@ -162,7 +165,7 @@ public final class DataNotificationConfig implements Parcelable {
          * @return this Builder instance.
          */
         @NonNull
-        public Builder setProximityNearCm(int proximityCm) {
+        public Builder setProximityNearCm(@IntRange(from = 0, to = 20000) int proximityCm) {
             mProximityNearCm = proximityCm;
             return this;
         }
@@ -175,7 +178,7 @@ public final class DataNotificationConfig implements Parcelable {
          * @return this Builder instance.
          */
         @NonNull
-        public Builder setProximityFarCm(int proximityCm) {
+        public Builder setProximityFarCm(@IntRange(from = 0, to = 20000) int proximityCm) {
             mProximityFarCm = proximityCm;
             return this;
         }

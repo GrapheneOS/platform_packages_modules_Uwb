@@ -20,42 +20,42 @@ import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.ranging.RangingParams;
+import android.ranging.RangingConfig;
 
 import com.android.ranging.flags.Flags;
 
 /**
- * Represents the parameters for a raw ranging session initiated by a responder device.
+ * Represents the configuration for a raw ranging session initiated by a responder device.
  * This class holds a {@link android.ranging.raw.RawRangingDevice} object that participates in the
  * session.
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
-public final class RawResponderRangingParams extends RangingParams implements Parcelable {
+public final class RawResponderRangingConfig extends RangingConfig implements Parcelable {
 
     private final android.ranging.raw.RawRangingDevice mRawRangingDevice;
 
-    private RawResponderRangingParams(Builder builder) {
-        setRangingSessionType(RangingParams.RANGING_SESSION_RAW);
+    private RawResponderRangingConfig(Builder builder) {
+        setRangingSessionType(RangingConfig.RANGING_SESSION_RAW);
         mRawRangingDevice = builder.mRawRangingDevice;
     }
 
-    private RawResponderRangingParams(Parcel in) {
+    private RawResponderRangingConfig(Parcel in) {
         setRangingSessionType(in.readInt());
         mRawRangingDevice = in.readParcelable(
                 android.ranging.raw.RawRangingDevice.class.getClassLoader());
     }
 
     @NonNull
-    public static final Creator<RawResponderRangingParams> CREATOR =
-            new Creator<RawResponderRangingParams>() {
+    public static final Creator<RawResponderRangingConfig> CREATOR =
+            new Creator<RawResponderRangingConfig>() {
                 @Override
-                public RawResponderRangingParams createFromParcel(Parcel in) {
-                    return new RawResponderRangingParams(in);
+                public RawResponderRangingConfig createFromParcel(Parcel in) {
+                    return new RawResponderRangingConfig(in);
                 }
 
                 @Override
-                public RawResponderRangingParams[] newArray(int size) {
-                    return new RawResponderRangingParams[size];
+                public RawResponderRangingConfig[] newArray(int size) {
+                    return new RawResponderRangingConfig[size];
                 }
             };
 
@@ -106,8 +106,8 @@ public final class RawResponderRangingParams extends RangingParams implements Pa
          * @return a configured instance of {@link RawResponderRangingParams}.
          */
         @NonNull
-        public RawResponderRangingParams build() {
-            return new RawResponderRangingParams(this);
+        public RawResponderRangingConfig build() {
+            return new RawResponderRangingConfig(this);
         }
     }
 

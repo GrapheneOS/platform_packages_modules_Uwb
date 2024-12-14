@@ -19,7 +19,7 @@ package com.android.server.ranging.session;
 import android.ranging.RangingDevice;
 import android.ranging.RangingManager;
 import android.ranging.RangingPreference;
-import android.ranging.SessionConfiguration;
+import android.ranging.SessionConfig;
 import android.ranging.raw.RawRangingDevice;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbRangingParams;
@@ -47,7 +47,7 @@ import java.util.Set;
 
 public class RangingSessionConfig {
     private final @RangingPreference.DeviceRole int mDeviceRole;
-    private final SessionConfiguration mSessionConfig;
+    private final SessionConfig mSessionConfig;
 
     /** A complete configuration for a session within a specific ranging technology's stack */
     public interface TechnologyConfig {
@@ -142,13 +142,13 @@ public class RangingSessionConfig {
         return mDeviceRole;
     }
 
-    public SessionConfiguration getSessionConfig() {
+    public SessionConfig getSessionConfig() {
         return mSessionConfig;
     }
 
     public static class Builder {
         private @RangingPreference.DeviceRole int mDeviceRole;
-        private SessionConfiguration mSessionConfig;
+        private SessionConfig mSessionConfig;
 
         public RangingSessionConfig build() {
             return new RangingSessionConfig(this);
@@ -159,7 +159,7 @@ public class RangingSessionConfig {
             return this;
         }
 
-        public Builder setSessionConfig(@NonNull SessionConfiguration config) {
+        public Builder setSessionConfig(@NonNull SessionConfig config) {
             mSessionConfig = config;
             return this;
         }

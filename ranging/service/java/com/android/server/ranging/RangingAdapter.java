@@ -18,7 +18,7 @@ package com.android.server.ranging;
 
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
-import android.ranging.raw.RawResponderRangingParams;
+import android.ranging.raw.RawResponderRangingConfig;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
@@ -50,7 +50,7 @@ public interface RangingAdapter {
         return false;
     }
 
-    default void addPeer(RawResponderRangingParams params) {}
+    default void addPeer(RawResponderRangingConfig params) {}
 
     default void removePeer(RangingDevice device) {}
 

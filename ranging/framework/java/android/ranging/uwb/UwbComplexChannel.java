@@ -38,6 +38,8 @@ import java.util.Random;
  *     <li> BPRF - Base Pulse Repetition Frequency.</li>
  *     <li> HPRF - Higher Pulse Repetition Frequency.</li>
  * </ul>
+ *
+ * See <a href="https://groups.firaconsortium.org/wg/members/document/1949> FiRa UCI Spec.</a>
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 public final class UwbComplexChannel implements Parcelable {

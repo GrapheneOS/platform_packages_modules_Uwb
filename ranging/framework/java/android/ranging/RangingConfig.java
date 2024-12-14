@@ -20,6 +20,10 @@ import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
 import android.annotation.SuppressLint;
 import android.os.Parcelable;
+import android.ranging.oob.OobInitiatorRangingConfig;
+import android.ranging.oob.OobResponderRangingConfig;
+import android.ranging.raw.RawInitiatorRangingConfig;
+import android.ranging.raw.RawResponderRangingConfig;
 
 import com.android.ranging.flags.Flags;
 
@@ -27,19 +31,19 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Abstract class to represent type of ranging parameters.
+ * Abstract class to represent type of ranging configuration.
  *
  * <p>Subclasses include:</p>
  * <ul>
- *     <li>{@link android.ranging.raw.RawResponderRangingParams}</li>
- *     <li>{@link android.ranging.raw.RawInitiatorRangingParams}</li>
- *     <li>{@link android.ranging.oob.OobResponderRangingParams}</li>
- *     <li>{@link android.ranging.oob.OobInitiatorRangingParams}</li>
+ *     <li>{@link RawResponderRangingConfig}</li>
+ *     <li>{@link RawInitiatorRangingConfig}</li>
+ *     <li>{@link OobResponderRangingConfig}</li>
+ *     <li>{@link OobInitiatorRangingConfig}</li>
  * </ul>
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 @SuppressLint({"ParcelCreator", "ParcelNotFinal"})
-public abstract class RangingParams implements Parcelable {
+public abstract class RangingConfig implements Parcelable {
     /**
      * @hide
      */
@@ -51,7 +55,7 @@ public abstract class RangingParams implements Parcelable {
     public @interface RangingSessionType {
     }
 
-    protected RangingParams() { }
+    protected RangingConfig() { }
 
     /** Ranging session with the out-of-band negotiations performed by the app. */
     public static final int RANGING_SESSION_RAW = 0;

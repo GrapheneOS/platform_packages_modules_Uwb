@@ -16,21 +16,21 @@
 
 package com.android.server.ranging.session;
 
+import android.ranging.RangingConfig;
 import android.ranging.RangingDevice;
-import android.ranging.RangingParams;
-import android.ranging.raw.RawResponderRangingParams;
+import android.ranging.raw.RawResponderRangingConfig;
 
 import androidx.annotation.NonNull;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 
-public interface RangingSession<P extends RangingParams> {
+public interface RangingSession<P extends RangingConfig> {
     void start(@NonNull P params);
 
     void stop();
 
-    void addPeer(RawResponderRangingParams params);
+    void addPeer(RawResponderRangingConfig params);
 
     void removePeer(RangingDevice params);
 

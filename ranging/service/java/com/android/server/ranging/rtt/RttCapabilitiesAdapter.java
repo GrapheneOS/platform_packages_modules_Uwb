@@ -79,7 +79,7 @@ public class RttCapabilitiesAdapter extends CapabilitiesAdapter {
     public RttRangingCapabilities getCapabilities() {
         if (getAvailability() == ENABLED) {
             return new RttRangingCapabilities.Builder()
-                    .setPeriodicRangingHwFeature(mRttService.hasPeriodicRangingSupport())
+                    .setPeriodicRangingHardwareFeature(mRttService.hasPeriodicRangingSupport())
                     .build();
         }
         return null;

@@ -25,7 +25,7 @@ import android.ranging.RangingData;
 import android.ranging.RangingDevice;
 import android.ranging.RangingMeasurement;
 import android.ranging.RangingPreference;
-import android.ranging.raw.RawResponderRangingParams;
+import android.ranging.raw.RawResponderRangingConfig;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.util.Log;
@@ -147,7 +147,7 @@ public class UwbAdapter implements RangingAdapter {
     }
 
     @Override
-    public void addPeer(RawResponderRangingParams params) {
+    public void addPeer(RawResponderRangingConfig params) {
         Log.i(TAG, "Add peer called");
         if (mUwbClient instanceof RangingController) {
             UwbAddress uwbAddress =

@@ -18,7 +18,7 @@ package com.android.server.ranging.session;
 
 import android.content.AttributionSource;
 import android.ranging.SessionHandle;
-import android.ranging.raw.RawResponderRangingParams;
+import android.ranging.raw.RawResponderRangingConfig;
 
 import androidx.annotation.NonNull;
 
@@ -31,7 +31,7 @@ import java.util.Set;
 
 public class RawResponderRangingSession
         extends BaseRangingSession
-        implements RangingSession<RawResponderRangingParams> {
+        implements RangingSession<RawResponderRangingConfig> {
 
     public RawResponderRangingSession(
             @NonNull AttributionSource attributionSource,
@@ -45,7 +45,7 @@ public class RawResponderRangingSession
     }
 
     @Override
-    public void start(@NonNull RawResponderRangingParams params) {
+    public void start(@NonNull RawResponderRangingConfig params) {
         super.start(mConfig.getTechnologyConfigs(Set.of(params.getRawRangingDevice())));
     }
 }

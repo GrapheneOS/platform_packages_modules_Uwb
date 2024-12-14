@@ -20,27 +20,27 @@ import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.ranging.RangingParams;
+import android.ranging.RangingConfig;
 
 import com.android.ranging.flags.Flags;
 
 /**
- * Represents the parameters for an Out-of-Band (OOB) responder in a ranging session.
+ * Represents the configuration for an Out-of-Band (OOB) responder in a ranging session.
  * This class contains configuration and device handle information for establishing
  * a ranging session with an initiator.
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
-public final class OobResponderRangingParams extends RangingParams implements Parcelable {
+public final class OobResponderRangingConfig extends RangingConfig implements Parcelable {
 
     private final android.ranging.oob.DeviceHandle mDeviceHandle;
 
-    private OobResponderRangingParams(Builder builder) {
-        setRangingSessionType(RangingParams.RANGING_SESSION_OOB);
+    private OobResponderRangingConfig(Builder builder) {
+        setRangingSessionType(RangingConfig.RANGING_SESSION_OOB);
         mDeviceHandle = builder.mDeviceHandle;
     }
 
 
-    private OobResponderRangingParams(Parcel in) {
+    private OobResponderRangingConfig(Parcel in) {
         setRangingSessionType(in.readInt());
         mDeviceHandle = in.readParcelable(
                 DeviceHandle.class.getClassLoader(), android.ranging.oob.DeviceHandle.class);
@@ -53,16 +53,16 @@ public final class OobResponderRangingParams extends RangingParams implements Pa
     }
 
     @NonNull
-    public static final Creator<OobResponderRangingParams> CREATOR =
-            new Creator<OobResponderRangingParams>() {
+    public static final Creator<OobResponderRangingConfig> CREATOR =
+            new Creator<OobResponderRangingConfig>() {
                 @Override
-                public OobResponderRangingParams createFromParcel(Parcel in) {
-                    return new OobResponderRangingParams(in);
+                public OobResponderRangingConfig createFromParcel(Parcel in) {
+                    return new OobResponderRangingConfig(in);
                 }
 
                 @Override
-                public OobResponderRangingParams[] newArray(int size) {
-                    return new OobResponderRangingParams[size];
+                public OobResponderRangingConfig[] newArray(int size) {
+                    return new OobResponderRangingConfig[size];
                 }
             };
 
@@ -82,28 +82,28 @@ public final class OobResponderRangingParams extends RangingParams implements Pa
     }
 
     /**
-     * Builder class for creating instances of {@link OobResponderRangingParams}.
+     * Builder class for creating instances of {@link OobResponderRangingConfig}.
      */
     public static final class Builder {
-        private final android.ranging.oob.DeviceHandle mDeviceHandle;
+        private final DeviceHandle mDeviceHandle;
 
         /**
          * Constructs a new Builder instance with the specified DeviceHandle.
          *
          * @param deviceHandle The DeviceHandle to associate with this OOB responder.
          */
-        public Builder(@NonNull android.ranging.oob.DeviceHandle deviceHandle) {
+        public Builder(@NonNull DeviceHandle deviceHandle) {
             mDeviceHandle = deviceHandle;
         }
 
         /**
-         * Builds an instance of {@link OobResponderRangingParams} with the provided parameters.
+         * Builds an instance of {@link OobResponderRangingConfig} with the provided parameters.
          *
          * @return A new OobResponderRangingParams instance.
          */
         @NonNull
-        public OobResponderRangingParams build() {
-            return new OobResponderRangingParams(this);
+        public OobResponderRangingConfig build() {
+            return new OobResponderRangingConfig(this);
         }
     }
 

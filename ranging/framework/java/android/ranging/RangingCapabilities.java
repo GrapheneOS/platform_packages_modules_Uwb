@@ -23,7 +23,7 @@ import android.annotation.Nullable;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.ranging.RangingManager.RangingTechnology;
-import android.ranging.ble.cs.CsRangingCapabilities;
+import android.ranging.ble.cs.BleCsRangingCapabilities;
 import android.ranging.uwb.UwbRangingCapabilities;
 import android.ranging.wifi.rtt.RttRangingCapabilities;
 
@@ -64,7 +64,7 @@ public final class RangingCapabilities implements Parcelable {
     private final RttRangingCapabilities mRttRangingCapabilities;
 
     @Nullable
-    private final CsRangingCapabilities mCsCapabilities;
+    private final BleCsRangingCapabilities mCsCapabilities;
 
     /**
      * @hide
@@ -119,7 +119,8 @@ public final class RangingCapabilities implements Parcelable {
                 (UwbRangingCapabilities) builder.mCapabilities.get(RangingManager.UWB);
         mRttRangingCapabilities = (RttRangingCapabilities) builder.mCapabilities.get(
                 RangingManager.WIFI_NAN_RTT);
-        mCsCapabilities = (CsRangingCapabilities) builder.mCapabilities.get(RangingManager.BLE_CS);
+        mCsCapabilities = (BleCsRangingCapabilities) builder.mCapabilities.get(
+                RangingManager.BLE_CS);
         mAvailabilities = builder.mAvailabilities;
     }
 
@@ -130,7 +131,7 @@ public final class RangingCapabilities implements Parcelable {
         mRttRangingCapabilities = in.readParcelable(RttRangingCapabilities.class.getClassLoader(),
                 RttRangingCapabilities.class);
         mCsCapabilities = in.readParcelable(
-                CsRangingCapabilities.class.getClassLoader(), CsRangingCapabilities.class);
+                BleCsRangingCapabilities.class.getClassLoader(), BleCsRangingCapabilities.class);
         int size = in.readInt();
         mAvailabilities = new HashMap<>(size);
         for (int i = 0; i < size; i++) {
@@ -192,10 +193,10 @@ public final class RangingCapabilities implements Parcelable {
     /**
      * Gets the BLE channel sounding ranging capabilities.
      *
-     * @return a {@link CsRangingCapabilities} object or {@code null} if not available.
+     * @return a {@link BleCsRangingCapabilities} object or {@code null} if not available.
      */
     @Nullable
-    public CsRangingCapabilities getCsCapabilities() {
+    public BleCsRangingCapabilities getCsCapabilities() {
         return mCsCapabilities;
     }
 

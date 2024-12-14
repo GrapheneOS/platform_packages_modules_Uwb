@@ -33,7 +33,7 @@ import android.content.Context;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
 import android.ranging.RangingMeasurement;
-import android.ranging.ble.cs.CsRangingParams;
+import android.ranging.ble.cs.BleCsRangingParams;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -96,9 +96,9 @@ public class CsAdapter implements RangingAdapter {
             return;
         }
 
-        CsRangingParams csRangingParams = csConfig.getRangingParams();
+        BleCsRangingParams bleCsRangingParams = csConfig.getRangingParams();
         if ((csConfig.getPeerDevice() == null)
-                || (csRangingParams.getPeerBluetoothAddress() == null)) {
+                || (bleCsRangingParams.getPeerBluetoothAddress() == null)) {
             Log.e(TAG, "Peer device is null");
             return;
         }
@@ -106,19 +106,19 @@ public class CsAdapter implements RangingAdapter {
         mCallbacks = callback;
         mRangingDevice = csConfig.getPeerDevice();
         mDeviceFromPeerBluetoothAddress =
-                mBluetoothAdapter.getRemoteDevice(csRangingParams.getPeerBluetoothAddress());
+                mBluetoothAdapter.getRemoteDevice(bleCsRangingParams.getPeerBluetoothAddress());
         DistanceMeasurementManager distanceMeasurementManager =
                 mBluetoothAdapter.getDistanceMeasurementManager();
         int duration = DistanceMeasurementParams.getMaxDurationSeconds();
-        int frequency = getFrequency(csRangingParams.getRangingUpdateRate());
+        int frequency = getFrequency(bleCsRangingParams.getRangingUpdateRate());
         int methodId = DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_CHANNEL_SOUNDING;
 
         DistanceMeasurementParams params =
                 new DistanceMeasurementParams.Builder(mDeviceFromPeerBluetoothAddress)
                         .setChannelSoundingParams(new ChannelSoundingParams.Builder()
-                                .setLocationType(csRangingParams.getLocationType())
-                                .setCsSecurityLevel(csRangingParams.getSecurityLevel())
-                                .setSightType(csRangingParams.getSightType())
+                                .setLocationType(bleCsRangingParams.getLocationType())
+                                .setCsSecurityLevel(bleCsRangingParams.getSecurityLevel())
+                                .setSightType(bleCsRangingParams.getSightType())
                                 .build())
                         .setDurationSeconds(duration)
                         .setFrequency(frequency)

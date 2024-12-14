@@ -22,10 +22,10 @@ import android.ranging.IRangingCallbacks;
 import android.ranging.SessionHandle;
 import android.ranging.RangingPreference;
 import android.ranging.RangingDevice;
-import android.ranging.raw.RawResponderRangingParams;
+import android.ranging.raw.RawResponderRangingConfig;
 import android.ranging.oob.OobHandle;
 import android.ranging.oob.IOobSendDataListener;
-import android.ranging.oob.OobResponderRangingParams;
+import android.ranging.oob.OobResponderRangingConfig;
 
 /**
 *  @hide
@@ -37,9 +37,9 @@ interface IRangingAdapter {
 
     void reconfigureRangingInterval(in SessionHandle sessionHandle, int intervalSkipCount);
 
-    void addRawDevice(in SessionHandle sessionHandle, in RawResponderRangingParams rangingParams);
+    void addRawDevice(in SessionHandle sessionHandle, in RawResponderRangingConfig rangingConfig);
 
-    void addOobDevice(in SessionHandle sessionHandle, in OobResponderRangingParams rangingParams);
+    void addOobDevice(in SessionHandle sessionHandle, in OobResponderRangingConfig rangingConfig);
 
     void removeDevice(in SessionHandle sessionHandle, in RangingDevice rangingDevice);
 

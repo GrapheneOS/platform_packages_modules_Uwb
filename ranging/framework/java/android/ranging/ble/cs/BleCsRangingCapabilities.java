@@ -35,10 +35,9 @@ import java.util.Set;
 
 /**
  * Represents the capabilities of the Bluetooth-based Channel Sounding (CS) ranging.
- *
  */
 @FlaggedApi(Flags.FLAG_RANGING_CS_ENABLED)
-public final class CsRangingCapabilities implements Parcelable, TechnologyCapabilities {
+public final class BleCsRangingCapabilities implements Parcelable, TechnologyCapabilities {
     /**
      * @hide
      */
@@ -69,7 +68,7 @@ public final class CsRangingCapabilities implements Parcelable, TechnologyCapabi
      * Returns a list of the supported security levels.
      *
      * @return a {@link Set} of integers representing the security levels,
-     *         where each level is one of {@link SecurityLevel}.
+     * where each level is one of {@link SecurityLevel}.
      */
     @NonNull
     @SecurityLevel
@@ -77,26 +76,26 @@ public final class CsRangingCapabilities implements Parcelable, TechnologyCapabi
         return new HashSet<>(mSupportedSecurityLevels);
     }
 
-    private CsRangingCapabilities(Builder builder) {
+    private BleCsRangingCapabilities(Builder builder) {
         mSupportedSecurityLevels = builder.mSupportedSecurityLevels;
     }
 
-    private CsRangingCapabilities(Parcel in) {
+    private BleCsRangingCapabilities(Parcel in) {
         mSupportedSecurityLevels = new ArrayList<>();
         in.readList(mSupportedSecurityLevels, Integer.class.getClassLoader(), Integer.class);
     }
 
     @NonNull
-    public static final Creator<CsRangingCapabilities> CREATOR =
-            new Creator<CsRangingCapabilities>() {
+    public static final Creator<BleCsRangingCapabilities> CREATOR =
+            new Creator<BleCsRangingCapabilities>() {
                 @Override
-                public CsRangingCapabilities createFromParcel(Parcel in) {
-                    return new CsRangingCapabilities(in);
+                public BleCsRangingCapabilities createFromParcel(Parcel in) {
+                    return new BleCsRangingCapabilities(in);
                 }
 
                 @Override
-                public CsRangingCapabilities[] newArray(int size) {
-                    return new CsRangingCapabilities[size];
+                public BleCsRangingCapabilities[] newArray(int size) {
+                    return new BleCsRangingCapabilities[size];
                 }
             };
 
@@ -122,8 +121,9 @@ public final class CsRangingCapabilities implements Parcelable, TechnologyCapabi
     }
 
     /**
-     * Builder class for {@link CsRangingCapabilities}.
-     * This class provides a fluent API for constructing instances of {@link CsRangingCapabilities}.
+     * Builder class for {@link BleCsRangingCapabilities}.
+     * This class provides a fluent API for constructing instances of
+     * {@link BleCsRangingCapabilities}.
      *
      * @hide
      */
@@ -144,19 +144,19 @@ public final class CsRangingCapabilities implements Parcelable, TechnologyCapabi
         }
 
         /**
-         * Builds and returns a {@link CsRangingCapabilities} instance.
+         * Builds and returns a {@link BleCsRangingCapabilities} instance.
          *
-         * @return a new {@link CsRangingCapabilities} object.
+         * @return a new {@link BleCsRangingCapabilities} object.
          */
         @NonNull
-        public CsRangingCapabilities build() {
-            return new CsRangingCapabilities(this);
+        public BleCsRangingCapabilities build() {
+            return new BleCsRangingCapabilities(this);
         }
     }
 
     @Override
     public String toString() {
-        return "CsRangingCapabilities{ "
+        return "BleCsRangingCapabilities{ "
                 + "mSupportedSecurityLevels="
                 + mSupportedSecurityLevels
                 + " }";

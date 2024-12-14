@@ -35,7 +35,7 @@ import android.ranging.RangingDevice;
 import android.ranging.RangingMeasurement;
 import android.ranging.SensorFusionParams;
 import android.ranging.SessionHandle;
-import android.ranging.raw.RawInitiatorRangingParams;
+import android.ranging.raw.RawInitiatorRangingConfig;
 
 import androidx.test.filters.SmallTest;
 
@@ -81,7 +81,7 @@ public class RangingSessionTest {
     private @Mock SessionHandle mMockSessionHandle;
     private @Mock(answer = Answers.RETURNS_DEEP_STUBS) RangingInjector mMockInjector;
     private @Mock(answer = Answers.RETURNS_DEEP_STUBS) RangingSessionConfig mMockConfig;
-    private @Mock(answer = Answers.RETURNS_DEEP_STUBS) RawInitiatorRangingParams mMockParams;
+    private @Mock(answer = Answers.RETURNS_DEEP_STUBS) RawInitiatorRangingConfig mMockParams;
     private @Mock RangingServiceManager.SessionListener mMockSessionListener;
     private Map<TechnologyConfig, RangingAdapter> mMockAdapters;
     private RawInitiatorRangingSession mSession;
@@ -174,7 +174,7 @@ public class RangingSessionTest {
 
     @Before
     public void setup() {
-        when(mMockConfig.getSessionConfig().getSensorFusionParameters()).thenReturn(
+        when(mMockConfig.getSessionConfig().getSensorFusionParams()).thenReturn(
                 new SensorFusionParams.Builder().setSensorFusionEnabled(true).build()
         );
 

@@ -20,7 +20,7 @@ import android.content.AttributionSource;
 import android.ranging.SessionHandle;
 import android.ranging.oob.IOobSendDataListener;
 import android.ranging.oob.OobHandle;
-import android.ranging.oob.OobResponderRangingParams;
+import android.ranging.oob.OobResponderRangingConfig;
 
 import androidx.annotation.NonNull;
 
@@ -32,7 +32,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 
 public class OobResponderRangingSession
         extends BaseRangingSession
-        implements RangingSession<OobResponderRangingParams>, OobHandler {
+        implements RangingSession<OobResponderRangingConfig>, OobHandler {
 
     private final IOobSendDataListener mOobDataSender;
 
@@ -50,7 +50,7 @@ public class OobResponderRangingSession
     }
 
     @Override
-    public void start(@NonNull OobResponderRangingParams params) {
+    public void start(@NonNull OobResponderRangingConfig params) {
         // TODO
         throw new UnsupportedOperationException("Not implemented");
     }

@@ -27,10 +27,10 @@ import android.os.CancellationSignal;
 import android.os.RemoteException;
 import android.ranging.oob.DeviceHandle;
 import android.ranging.oob.OobHandle;
-import android.ranging.oob.OobInitiatorRangingParams;
-import android.ranging.oob.OobResponderRangingParams;
+import android.ranging.oob.OobInitiatorRangingConfig;
+import android.ranging.oob.OobResponderRangingConfig;
 import android.ranging.oob.TransportHandle;
-import android.ranging.raw.RawResponderRangingParams;
+import android.ranging.raw.RawResponderRangingConfig;
 import android.util.Log;
 
 import com.android.ranging.flags.Flags;
@@ -102,8 +102,8 @@ public final class RangingSession implements AutoCloseable {
     public CancellationSignal start(@NonNull RangingPreference rangingPreference) {
         //TODO : check whether this needs to be called after start, or handle when a session is
         // created in ranging service.
-        if (rangingPreference.getRangingParameters().getRangingSessionType()
-                == RangingParams.RANGING_SESSION_OOB) {
+        if (rangingPreference.getRangingParams().getRangingSessionType()
+                == RangingConfig.RANGING_SESSION_OOB) {
             mRangingSessionManager.registerOobSendDataListener();
             setupTransportHandles(rangingPreference);
         }
@@ -121,12 +121,12 @@ public final class RangingSession implements AutoCloseable {
 
     private void setupTransportHandles(RangingPreference rangingPreference) {
         List<DeviceHandle> deviceHandleList = new ArrayList<>();
-        if (rangingPreference.getRangingParameters() instanceof OobInitiatorRangingParams) {
-            deviceHandleList.addAll(((OobInitiatorRangingParams)
-                    rangingPreference.getRangingParameters()).getDeviceHandles());
-        } else if (rangingPreference.getRangingParameters() instanceof OobResponderRangingParams) {
-            deviceHandleList.add(((OobResponderRangingParams)
-                    rangingPreference.getRangingParameters()).getDeviceHandle());
+        if (rangingPreference.getRangingParams() instanceof OobInitiatorRangingConfig) {
+            deviceHandleList.addAll(((OobInitiatorRangingConfig)
+                    rangingPreference.getRangingParams()).getDeviceHandles());
+        } else if (rangingPreference.getRangingParams() instanceof OobResponderRangingConfig) {
+            deviceHandleList.add(((OobResponderRangingConfig)
+                    rangingPreference.getRangingParams()).getDeviceHandle());
         }
         for (DeviceHandle deviceHandle : deviceHandleList) {
             TransportHandleReceiveCallback receiveCallback =
@@ -143,30 +143,30 @@ public final class RangingSession implements AutoCloseable {
      * <p>
      * This method allows for adding a new device to an active ranging session using either
      * raw or out-of-band (OOB) ranging parameters. Only devices represented by
-     * {@link RawResponderRangingParams} or {@link OobResponderRangingParams} are supported.
-     * If the provided {@link RangingParams} does not match one of these types, the addition fails
+     * {@link RawResponderRangingConfig} or {@link OobResponderRangingConfig} are supported.
+     * If the provided {@link RangingConfig} does not match one of these types, the addition fails
      * and invokes {@link Callback#onOpenFailed(int)} with a reason of
      * {@link Callback#REASON_UNSUPPORTED}.
      * </p>
      *
      * @param deviceRangingParams the ranging parameters for the device to be added,
      *                            which must be an instance of either
-     *                            {@link RawResponderRangingParams}
-     *                            or {@link OobResponderRangingParams}.
+     *                            {@link RawResponderRangingConfig}
+     *                            or {@link OobResponderRangingConfig}.
      *
      * @apiNote If the underlying ranging technology cannot support this dynamic addition, failure
      * will be indicated via {@code Callback#onStartFailed(REASON_UNSUPPORTED, RangingDevice)}
      *
      */
     @RequiresPermission(Manifest.permission.RANGING)
-    public void addDeviceToRangingSession(@NonNull RangingParams deviceRangingParams) {
+    public void addDeviceToRangingSession(@NonNull RangingConfig deviceRangingParams) {
         try {
-            if (deviceRangingParams instanceof RawResponderRangingParams) {
+            if (deviceRangingParams instanceof RawResponderRangingConfig) {
                 mRangingAdapter.addRawDevice(mSessionHandle,
-                        (RawResponderRangingParams) deviceRangingParams);
-            } else if (deviceRangingParams instanceof OobResponderRangingParams) {
+                        (RawResponderRangingConfig) deviceRangingParams);
+            } else if (deviceRangingParams instanceof OobResponderRangingConfig) {
                 mRangingAdapter.addOobDevice(mSessionHandle,
-                        (OobResponderRangingParams) deviceRangingParams);
+                        (OobResponderRangingConfig) deviceRangingParams);
             } else {
                 mCallback.onOpenFailed(Callback.REASON_UNSUPPORTED);
             }
@@ -186,7 +186,7 @@ public final class RangingSession implements AutoCloseable {
      *
      * @param rangingDevice the device to be removed from the session.
      * @apiNote Currently, this API is supported only for UWB multicast session if using
-     * {@link RangingParams#RANGING_SESSION_RAW}.
+     * {@link RangingConfig#RANGING_SESSION_RAW}.
      *
      */
     @RequiresPermission(Manifest.permission.RANGING)

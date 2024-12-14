@@ -24,10 +24,8 @@ import static android.ranging.uwb.UwbRangingParams.DURATION_2_MS;
 
 import static org.mockito.Mockito.mock;
 
-import android.ranging.DataNotificationConfig;
 import android.ranging.RangingDevice;
-import android.ranging.SensorFusionParams;
-import android.ranging.SessionConfiguration;
+import android.ranging.SessionConfig;
 import android.ranging.raw.RawRangingDevice;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
@@ -78,7 +76,7 @@ public class RangingSessionConfigTest {
     public void setup() {
         mConfig = new RangingSessionConfig.Builder()
                 .setDeviceRole(DEVICE_ROLE_INITIATOR)
-                .setSessionConfig(new SessionConfiguration.Builder().build())
+                .setSessionConfig(new SessionConfig.Builder().build())
                 .build();
     }
 

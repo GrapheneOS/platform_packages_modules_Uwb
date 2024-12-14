@@ -19,7 +19,7 @@ package com.android.server.ranging.rtt;
 import android.ranging.DataNotificationConfig;
 import android.ranging.RangingDevice;
 import android.ranging.RangingPreference;
-import android.ranging.SessionConfiguration;
+import android.ranging.SessionConfig;
 import android.ranging.wifi.rtt.RttRangingParams;
 
 import androidx.annotation.NonNull;
@@ -30,7 +30,7 @@ import com.android.server.ranging.session.RangingSessionConfig;
 
 public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
 
-    private final SessionConfiguration mSessionConfig;
+    private final SessionConfig mSessionConfig;
     private final RttRangingParams mRangingParams;
     private final RangingDevice mPeerDevice;
 
@@ -39,7 +39,7 @@ public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
     public RttConfig(
             int deviceRole,
             @NonNull RttRangingParams rttRangingParams,
-            @NonNull SessionConfiguration sessionConfig,
+            @NonNull SessionConfig sessionConfig,
             @NonNull RangingDevice peerDevice
     ) {
         mDeviceRole = deviceRole;
@@ -49,11 +49,12 @@ public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
     }
 
     @Override
-    @NonNull public RangingTechnology getTechnology() {
+    @NonNull
+    public RangingTechnology getTechnology() {
         return RangingTechnology.RTT;
     }
 
-    public SessionConfiguration getSessionConfig() {
+    public SessionConfig getSessionConfig() {
         return mSessionConfig;
     }
 
@@ -82,18 +83,20 @@ public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
 
         DataNotificationConfig ntfConfig = mSessionConfig.getDataNotificationConfig();
         switch (ntfConfig.getNotificationConfigType()) {
-            case DataNotificationConfig.ENABLE -> builder
+            case DataNotificationConfig.NOTIFICATION_CONFIG_ENABLE -> builder
                     .setMinDistanceMm(0)
                     .setMaxDistanceMm(50 * 100 * 100); // 50 meters.
-            case DataNotificationConfig.DISABLE -> builder.setMinDistanceMm(0)
+            case DataNotificationConfig.NOTIFICATION_CONFIG_DISABLE -> builder.setMinDistanceMm(0)
                     //Set to 1 millimeter to get around mMaxDistanceMm <= mMinDistanceMm
                     .setMaxDistanceMm(1);
-            case DataNotificationConfig.PROXIMITY_LEVEL -> builder.setMinDistanceMm(
-                            ntfConfig.getProximityNearCm() * 100)
-                    .setMaxDistanceMm(ntfConfig.getProximityFarCm() * 100);
-            case DataNotificationConfig.PROXIMITY_EDGE -> builder.setProximityEdge(
-                    ntfConfig.getProximityNearCm() * 100,
-                    ntfConfig.getProximityFarCm() * 100);
+            case DataNotificationConfig.NOTIFICATION_CONFIG_PROXIMITY_LEVEL ->
+                    builder.setMinDistanceMm(
+                                    ntfConfig.getProximityNearCm() * 100)
+                            .setMaxDistanceMm(ntfConfig.getProximityFarCm() * 100);
+            case DataNotificationConfig.NOTIFICATION_CONFIG_PROXIMITY_EDGE ->
+                    builder.setProximityEdge(
+                            ntfConfig.getProximityNearCm() * 100,
+                            ntfConfig.getProximityFarCm() * 100);
         }
         return builder.build();
     }

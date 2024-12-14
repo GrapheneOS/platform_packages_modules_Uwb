@@ -29,7 +29,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.ranging.RangingCapabilities.RangingTechnologyAvailability;
-import android.ranging.ble.cs.CsRangingCapabilities;
+import android.ranging.ble.cs.BleCsRangingCapabilities;
 
 import androidx.annotation.Nullable;
 
@@ -64,14 +64,14 @@ public class CsCapabilitiesAdapter extends CapabilitiesAdapter {
     }
 
     @Override
-    public @Nullable CsRangingCapabilities getCapabilities() {
+    public @Nullable BleCsRangingCapabilities getCapabilities() {
         if (getAvailability() == ENABLED) {
             List<Integer> securityLevels = new ArrayList<>(
                 mContext.getSystemService(BluetoothManager.class)
                     .getAdapter()
                     .getDistanceMeasurementManager()
                     .getChannelSoundingSupportedSecurityLevels());
-            return new CsRangingCapabilities.Builder()
+            return new BleCsRangingCapabilities.Builder()
                     .setSupportedSecurityLevels(securityLevels)
                     .build();
         } else {

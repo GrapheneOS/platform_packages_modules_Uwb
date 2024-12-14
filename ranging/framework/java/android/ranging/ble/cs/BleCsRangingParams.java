@@ -32,11 +32,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * CsRangingParams encapsulates the parameters required for a bluetooth channel sounding ranging
+ * BleCsRangingParams encapsulates the parameters required for a bluetooth channel sounding ranging
  * session.
  */
 @FlaggedApi(Flags.FLAG_RANGING_CS_ENABLED)
-public final class CsRangingParams implements Parcelable {
+public final class BleCsRangingParams implements Parcelable {
 
     /**
      * @hide
@@ -94,10 +94,10 @@ public final class CsRangingParams implements Parcelable {
     private final int mSightType;
     @LocationType
     private final int mLocationType;
-    @CsRangingCapabilities.SecurityLevel
+    @BleCsRangingCapabilities.SecurityLevel
     private final int mSecurityLevel;
 
-    private CsRangingParams(Builder builder) {
+    private BleCsRangingParams(Builder builder) {
         mPeerBluetoothAddress = builder.mPeerBluetoothAddress;
         mRangingUpdateRate = builder.mRangingUpdateRate;
         mSightType = builder.mSightType;
@@ -105,7 +105,7 @@ public final class CsRangingParams implements Parcelable {
         mSecurityLevel = builder.mSecurityLevel;
     }
 
-    private CsRangingParams(Parcel in) {
+    private BleCsRangingParams(Parcel in) {
         mPeerBluetoothAddress = in.readString();
         mRangingUpdateRate = in.readInt();
         mSightType = in.readInt();
@@ -123,15 +123,15 @@ public final class CsRangingParams implements Parcelable {
     }
 
     @NonNull
-    public static final Creator<CsRangingParams> CREATOR = new Creator<CsRangingParams>() {
+    public static final Creator<BleCsRangingParams> CREATOR = new Creator<BleCsRangingParams>() {
         @Override
-        public CsRangingParams createFromParcel(Parcel in) {
-            return new CsRangingParams(in);
+        public BleCsRangingParams createFromParcel(Parcel in) {
+            return new BleCsRangingParams(in);
         }
 
         @Override
-        public CsRangingParams[] newArray(int size) {
-            return new CsRangingParams[size];
+        public BleCsRangingParams[] newArray(int size) {
+            return new BleCsRangingParams[size];
         }
     };
 
@@ -181,13 +181,13 @@ public final class CsRangingParams implements Parcelable {
      *
      * @return the security level
      */
-    @CsRangingCapabilities.SecurityLevel
+    @BleCsRangingCapabilities.SecurityLevel
     public int getSecurityLevel() {
         return mSecurityLevel;
     }
 
     /**
-     * Builder class to create {@link CsRangingParams} instances.
+     * Builder class to create {@link BleCsRangingParams} instances.
      */
     public static final class Builder {
         private String mPeerBluetoothAddress;
@@ -197,8 +197,8 @@ public final class CsRangingParams implements Parcelable {
         private int mSightType = SIGHT_TYPE_UNKNOWN;
         @LocationType
         private int mLocationType = LOCATION_TYPE_UNKNOWN;
-        @CsRangingCapabilities.SecurityLevel
-        private int mSecurityLevel = CsRangingCapabilities.CS_SECURITY_LEVEL_ONE;
+        @BleCsRangingCapabilities.SecurityLevel
+        private int mSecurityLevel = BleCsRangingCapabilities.CS_SECURITY_LEVEL_ONE;
 
         /**
          * Constructs a new {@link Builder} for creating a channel sounding ranging session.
@@ -211,7 +211,7 @@ public final class CsRangingParams implements Parcelable {
          * @param peerBluetoothAddress The address of the peer device must be non-null Bluetooth
          *                             address.
          * @throws IllegalArgumentException if {@code peerBluetoothAddress} is null or does not
-         * conform to "00:11:22:33:AA:BB" format.
+         *                                  conform to "00:11:22:33:AA:BB" format.
          * @see android.bluetooth.BluetoothDevice#getAddress()
          */
         public Builder(@NonNull String peerBluetoothAddress) {
@@ -263,25 +263,25 @@ public final class CsRangingParams implements Parcelable {
 
         /**
          * Sets the security level for the ranging session.
-         * <p>Defaults to {@link CsRangingCapabilities#CS_SECURITY_LEVEL_ONE}
+         * <p>Defaults to {@link BleCsRangingCapabilities#CS_SECURITY_LEVEL_ONE}
          *
          * @param securityLevel the security level.
          * @return this {@link Builder} instance.
          */
         @NonNull
-        public Builder setSecurityLevel(@CsRangingCapabilities.SecurityLevel int securityLevel) {
+        public Builder setSecurityLevel(@BleCsRangingCapabilities.SecurityLevel int securityLevel) {
             mSecurityLevel = securityLevel;
             return this;
         }
 
         /**
-         * Builds and returns a {@link CsRangingParams} instance.
+         * Builds and returns a {@link BleCsRangingParams} instance.
          *
-         * @return a new {@link CsRangingParams}.
+         * @return a new {@link BleCsRangingParams}.
          */
         @NonNull
-        public CsRangingParams build() {
-            return new CsRangingParams(this);
+        public BleCsRangingParams build() {
+            return new BleCsRangingParams(this);
         }
     }
 

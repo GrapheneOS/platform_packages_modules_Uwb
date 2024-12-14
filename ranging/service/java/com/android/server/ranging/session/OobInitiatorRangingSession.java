@@ -20,7 +20,7 @@ import android.content.AttributionSource;
 import android.ranging.SessionHandle;
 import android.ranging.oob.IOobSendDataListener;
 import android.ranging.oob.OobHandle;
-import android.ranging.oob.OobInitiatorRangingParams;
+import android.ranging.oob.OobInitiatorRangingConfig;
 
 import androidx.annotation.NonNull;
 
@@ -36,7 +36,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 
 public class OobInitiatorRangingSession
         extends BaseRangingSession
-        implements RangingSession<OobInitiatorRangingParams>, OobHandler {
+        implements RangingSession<OobInitiatorRangingConfig>, OobHandler {
 
     private final IOobSendDataListener mOobDataSender;
 
@@ -57,7 +57,7 @@ public class OobInitiatorRangingSession
     }
 
     @Override
-    public void start(@NonNull OobInitiatorRangingParams params) {
+    public void start(@NonNull OobInitiatorRangingConfig params) {
 
         mOobHandles = params.getDeviceHandles()
                 .stream().map((handle) -> new OobHandle(mSessionHandle, handle.getRangingDevice()))

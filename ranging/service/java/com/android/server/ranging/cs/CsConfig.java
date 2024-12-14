@@ -19,8 +19,8 @@ package com.android.server.ranging.cs;
 import android.annotation.NonNull;
 import android.ranging.RangingDevice;
 import android.ranging.RangingPreference;
-import android.ranging.SessionConfiguration;
-import android.ranging.ble.cs.CsRangingParams;
+import android.ranging.SessionConfig;
+import android.ranging.ble.cs.BleCsRangingParams;
 
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.session.RangingSessionConfig.UnicastTechnologyConfig;
@@ -28,8 +28,8 @@ import com.android.server.ranging.session.RangingSessionConfig.UnicastTechnology
 public class CsConfig implements UnicastTechnologyConfig {
     private static final String TAG = CsConfig.class.getSimpleName();
 
-    private final SessionConfiguration mSessionConfig;
-    private final CsRangingParams mRangingParams;
+    private final SessionConfig mSessionConfig;
+    private final BleCsRangingParams mRangingParams;
 
     private final RangingDevice mPeerDevice;
 
@@ -37,11 +37,11 @@ public class CsConfig implements UnicastTechnologyConfig {
     private final int mDeviceRole;
 
     public CsConfig(int deviceRole,
-            CsRangingParams csRangingParams,
-            SessionConfiguration sessionConfig,
+            BleCsRangingParams bleCsRangingParams,
+            SessionConfig sessionConfig,
             @NonNull RangingDevice peerDevice) {
         mDeviceRole = deviceRole;
-        mRangingParams = csRangingParams;
+        mRangingParams = bleCsRangingParams;
         mSessionConfig = sessionConfig;
         mPeerDevice = peerDevice;
     }
@@ -51,11 +51,11 @@ public class CsConfig implements UnicastTechnologyConfig {
         return RangingTechnology.CS;
     }
 
-    public SessionConfiguration getSessionConfig() {
+    public SessionConfig getSessionConfig() {
         return mSessionConfig;
     }
 
-    public CsRangingParams getRangingParams() {
+    public BleCsRangingParams getRangingParams() {
         return mRangingParams;
     }
 

@@ -63,12 +63,12 @@ public final class UwbAddress implements Parcelable {
     }
 
     /**
-     * Generates a random 2 bytes {@link UwbAddress}.
+     * Generates a new random 2 bytes {@link UwbAddress}.
      *
-     * @return a randomly generated {@link UwbAddress}.
+     * @return a new randomly generated {@link UwbAddress}.
      */
     @NonNull
-    public static UwbAddress getRandomShortAddress() {
+    public static UwbAddress createRandomShortAddress() {
         SecureRandom secureRandom = new SecureRandom();
         return fromBytes(generateRandomByteArray(SHORT_ADDRESS_BYTE_LENGTH, secureRandom));
     }

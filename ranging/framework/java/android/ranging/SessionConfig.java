@@ -31,22 +31,22 @@ import com.android.ranging.flags.Flags;
  *
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
-public final class SessionConfiguration implements Parcelable {
+public final class SessionConfig implements Parcelable {
 
-    private final SensorFusionParams mFusionParameters;
+    private final SensorFusionParams mFusionParams;
     private final DataNotificationConfig mDataNotificationConfig;
     private final boolean mIsAngleOfArrivalNeeded;
     private final int mRangingMeasurementsLimit;
 
-    private SessionConfiguration(Builder builder) {
-        mFusionParameters = builder.mFusionParameters;
+    private SessionConfig(Builder builder) {
+        mFusionParams = builder.mFusionParams;
         mDataNotificationConfig = builder.mDataNotificationConfig;
         mIsAngleOfArrivalNeeded = builder.mIsAngleOfArrivalNeeded;
         mRangingMeasurementsLimit = builder.mRangingMeasurementsLimit;
     }
 
-    private SessionConfiguration(Parcel in) {
-        mFusionParameters = in.readParcelable(SensorFusionParams.class.getClassLoader(),
+    private SessionConfig(Parcel in) {
+        mFusionParams = in.readParcelable(SensorFusionParams.class.getClassLoader(),
                 SensorFusionParams.class);
         mDataNotificationConfig = in.readParcelable(DataNotificationConfig.class.getClassLoader(),
                 DataNotificationConfig.class);
@@ -56,7 +56,7 @@ public final class SessionConfiguration implements Parcelable {
 
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
-        dest.writeParcelable(mFusionParameters, flags);
+        dest.writeParcelable(mFusionParams, flags);
         dest.writeParcelable(mDataNotificationConfig, flags);
         dest.writeBoolean(mIsAngleOfArrivalNeeded);
         dest.writeInt(mRangingMeasurementsLimit);
@@ -68,16 +68,16 @@ public final class SessionConfiguration implements Parcelable {
     }
 
     @NonNull
-    public static final Creator<SessionConfiguration> CREATOR =
-            new Creator<SessionConfiguration>() {
+    public static final Creator<SessionConfig> CREATOR =
+            new Creator<SessionConfig>() {
                 @Override
-                public SessionConfiguration createFromParcel(Parcel in) {
-                    return new SessionConfiguration(in);
+                public SessionConfig createFromParcel(Parcel in) {
+                    return new SessionConfig(in);
                 }
 
                 @Override
-                public SessionConfiguration[] newArray(int size) {
-                    return new SessionConfiguration[size];
+                public SessionConfig[] newArray(int size) {
+                    return new SessionConfig[size];
                 }
             };
 
@@ -87,8 +87,8 @@ public final class SessionConfiguration implements Parcelable {
      * @return a non-null {@link SensorFusionParams} instance.
      */
     @NonNull
-    public SensorFusionParams getSensorFusionParameters() {
-        return mFusionParameters;
+    public SensorFusionParams getSensorFusionParams() {
+        return mFusionParams;
     }
 
     /**
@@ -117,12 +117,12 @@ public final class SessionConfiguration implements Parcelable {
     }
 
     /**
-     * Builder for creating instances of {@link SessionConfiguration}.
+     * Builder for creating instances of {@link SessionConfig}.
      */
     public static final class Builder {
         private DataNotificationConfig mDataNotificationConfig =
                 new DataNotificationConfig.Builder().build();
-        private SensorFusionParams mFusionParameters = new SensorFusionParams.Builder().build();
+        private SensorFusionParams mFusionParams = new SensorFusionParams.Builder().build();
         private boolean mIsAngleOfArrivalNeeded = false;
         private int mRangingMeasurementsLimit = 0;
 
@@ -134,9 +134,9 @@ public final class SessionConfiguration implements Parcelable {
          * @throws IllegalArgumentException if the parameters is null.
          */
         @NonNull
-        public Builder setSensorFusionParameters(
+        public Builder setSensorFusionParams(
                 @NonNull SensorFusionParams parameters) {
-            mFusionParameters = parameters;
+            mFusionParams = parameters;
             return this;
         }
 
@@ -194,21 +194,21 @@ public final class SessionConfiguration implements Parcelable {
         }
 
         /**
-         * Builds a new {@link SessionConfiguration} instance.
+         * Builds a new {@link SessionConfig} instance.
          *
-         * @return the new {@link SessionConfiguration} instance.
+         * @return the new {@link SessionConfig} instance.
          */
         @NonNull
-        public SessionConfiguration build() {
-            return new SessionConfiguration(this);
+        public SessionConfig build() {
+            return new SessionConfig(this);
         }
     }
 
     @Override
     public String toString() {
-        return "SessionConfiguration{"
-                + "mFusionParameters="
-                + mFusionParameters
+        return "SessionConfig{"
+                + "mFusionParams="
+                + mFusionParams
                 + ", mDataNotificationConfig="
                 + mDataNotificationConfig
                 + ", mIsAngleOfArrivalNeeded="

@@ -21,7 +21,7 @@ import android.os.Binder;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
 import android.ranging.SessionHandle;
-import android.ranging.raw.RawResponderRangingParams;
+import android.ranging.raw.RawResponderRangingConfig;
 import android.util.Log;
 
 import androidx.annotation.GuardedBy;
@@ -98,7 +98,7 @@ public class BaseRangingSession {
 
         Peer(@NonNull RangingDevice device, @NonNull RangingTechnology initialTechnology) {
             technologies = Sets.newConcurrentHashSet(Set.of(initialTechnology));
-            if (mConfig.getSessionConfig().getSensorFusionParameters().isSensorFusionEnabled()) {
+            if (mConfig.getSessionConfig().getSensorFusionParams().isSensorFusionEnabled()) {
                 fusionEngine = new FilteringFusionEngine(
                         new DataFusers.PreferentialDataFuser(RangingTechnology.UWB));
             } else {
@@ -180,7 +180,7 @@ public class BaseRangingSession {
         }
     }
 
-    public void addPeer(RawResponderRangingParams params) {
+    public void addPeer(RawResponderRangingConfig params) {
         synchronized (mLock) {
             for (Map.Entry<TechnologyConfig, RangingAdapter> entry : mAdapters.entrySet()) {
                 if (entry.getValue().isDynamicUpdatePeersSupported()) {

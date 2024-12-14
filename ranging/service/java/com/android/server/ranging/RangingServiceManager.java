@@ -30,18 +30,18 @@ import android.os.Message;
 import android.os.RemoteException;
 import android.ranging.IRangingCallbacks;
 import android.ranging.IRangingCapabilitiesCallback;
+import android.ranging.RangingConfig;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
-import android.ranging.RangingParams;
 import android.ranging.RangingPreference;
 import android.ranging.RangingSession.Callback;
 import android.ranging.SessionHandle;
 import android.ranging.oob.IOobSendDataListener;
 import android.ranging.oob.OobHandle;
-import android.ranging.oob.OobInitiatorRangingParams;
-import android.ranging.oob.OobResponderRangingParams;
-import android.ranging.raw.RawInitiatorRangingParams;
-import android.ranging.raw.RawResponderRangingParams;
+import android.ranging.oob.OobInitiatorRangingConfig;
+import android.ranging.oob.OobResponderRangingConfig;
+import android.ranging.raw.RawInitiatorRangingConfig;
+import android.ranging.raw.RawResponderRangingConfig;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -136,7 +136,7 @@ public final class RangingServiceManager {
         mRangingTaskManager.enqueueTask(RangingTask.TASK_START_RANGING, args);
     }
 
-    public void addRawPeer(SessionHandle handle, RawResponderRangingParams params) {
+    public void addRawPeer(SessionHandle handle, RawResponderRangingConfig params) {
         if (!mSessions.containsKey(handle)) {
             Log.e(TAG, "Failed to add peer. Ranging session not found");
         }
@@ -392,25 +392,25 @@ public final class RangingServiceManager {
             RangingSessionConfig config = new RangingSessionConfig.Builder()
                     .setDeviceRole(
                             args.preference.getDeviceRole())
-                    .setSessionConfig(args.preference().getSessionConfiguration())
+                    .setSessionConfig(args.preference().getSessionConfig())
                     .build();
 
-            RangingParams baseParams = args.preference.getRangingParameters();
-            if (baseParams instanceof RawInitiatorRangingParams params) {
+            RangingConfig baseParams = args.preference.getRangingParams();
+            if (baseParams instanceof RawInitiatorRangingConfig params) {
                 RawInitiatorRangingSession session = new RawInitiatorRangingSession(
                         args.attributionSource, args.handle, mRangingInjector, config,
                         new SessionListener(args.handle, args.callbacks), mAdapterExecutor
                 );
                 session.start(params);
                 mSessions.put(args.handle, session);
-            } else if (baseParams instanceof RawResponderRangingParams params) {
+            } else if (baseParams instanceof RawResponderRangingConfig params) {
                 RawResponderRangingSession session = new RawResponderRangingSession(
                         args.attributionSource, args.handle, mRangingInjector, config,
                         new SessionListener(args.handle, args.callbacks), mAdapterExecutor
                 );
                 session.start(params);
                 mSessions.put(args.handle, session);
-            } else if (baseParams instanceof OobInitiatorRangingParams params) {
+            } else if (baseParams instanceof OobInitiatorRangingConfig params) {
                 OobInitiatorRangingSession session = new OobInitiatorRangingSession(
                         args.attributionSource, args.handle, mRangingInjector, config,
                         new SessionListener(args.handle, args.callbacks), mOobDataSender,
@@ -418,7 +418,7 @@ public final class RangingServiceManager {
                 );
                 session.start(params);
                 mSessions.put(args.handle, session);
-            } else if (baseParams instanceof OobResponderRangingParams params) {
+            } else if (baseParams instanceof OobResponderRangingConfig params) {
                 OobResponderRangingSession session = new OobResponderRangingSession(
                         args.attributionSource, args.handle, mRangingInjector, config,
                         new SessionListener(args.handle, args.callbacks), mOobDataSender,
@@ -432,10 +432,10 @@ public final class RangingServiceManager {
 
     public static final class DynamicPeer {
         public final RangingDevice mRangingDevice;
-        public final RawResponderRangingParams mParams;
+        public final RawResponderRangingConfig mParams;
         public final RangingSession<?> mSession;
 
-        public DynamicPeer(RawResponderRangingParams params, RangingSession<?> session,
+        public DynamicPeer(RawResponderRangingConfig params, RangingSession<?> session,
                 RangingDevice device) {
             mParams = params;
             mSession = session;

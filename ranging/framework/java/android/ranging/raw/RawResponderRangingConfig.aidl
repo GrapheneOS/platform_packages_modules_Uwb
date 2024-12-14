@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 
-package android.ranging.oob;
+package android.ranging.raw;
 
-parcelable OobResponderRangingParams;
+parcelable RawResponderRangingConfig;

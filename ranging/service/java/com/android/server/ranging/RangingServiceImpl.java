@@ -31,8 +31,8 @@ import android.ranging.RangingPreference;
 import android.ranging.SessionHandle;
 import android.ranging.oob.IOobSendDataListener;
 import android.ranging.oob.OobHandle;
-import android.ranging.oob.OobResponderRangingParams;
-import android.ranging.raw.RawResponderRangingParams;
+import android.ranging.oob.OobResponderRangingConfig;
+import android.ranging.raw.RawResponderRangingConfig;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
@@ -77,13 +77,13 @@ public class RangingServiceImpl extends IRangingAdapter.Stub {
     }
 
     @Override
-    public void addRawDevice(SessionHandle sessionHandle, RawResponderRangingParams rangingParams) {
+    public void addRawDevice(SessionHandle sessionHandle, RawResponderRangingConfig rangingParams) {
         enforceRangingPermission();
         mRangingInjector.getRangingServiceManager().addRawPeer(sessionHandle, rangingParams);
     }
 
     @Override
-    public void addOobDevice(SessionHandle sessionHandle, OobResponderRangingParams rangingParams) {
+    public void addOobDevice(SessionHandle sessionHandle, OobResponderRangingConfig rangingParams) {
         enforceRangingPermission();
         throw new IllegalArgumentException("Dynamic addition of oob peer not supported yet");
     }

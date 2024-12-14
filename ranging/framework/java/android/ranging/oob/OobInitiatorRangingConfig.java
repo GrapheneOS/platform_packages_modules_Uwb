@@ -21,7 +21,7 @@ import android.annotation.IntDef;
 import android.annotation.NonNull;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.ranging.RangingParams;
+import android.ranging.RangingConfig;
 import android.util.Range;
 
 import com.android.ranging.flags.Flags;
@@ -33,12 +33,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Represents the parameters for an Out-of-Band (OOB) initiator in a ranging session.
+ * Represents the configuration for an Out-of-Band (OOB) initiator in a ranging session.
  * This class includes configuration options such as device handles, security level,
  * ranging mode, and interval range for setting up an OOB initiator ranging session.
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
-public final class OobInitiatorRangingParams extends RangingParams implements Parcelable {
+public final class OobInitiatorRangingConfig extends RangingConfig implements Parcelable {
 
     /**
      * @hide
@@ -108,8 +108,8 @@ public final class OobInitiatorRangingParams extends RangingParams implements Pa
     @RangingMode
     private final int mRangingMode;
 
-    private OobInitiatorRangingParams(Builder builder) {
-        setRangingSessionType(RangingParams.RANGING_SESSION_OOB);
+    private OobInitiatorRangingConfig(Builder builder) {
+        setRangingSessionType(RangingConfig.RANGING_SESSION_OOB);
         mDeviceHandles = new ArrayList<>(builder.mDeviceHandles);
         mSecurityLevel = builder.mSecurityLevel;
         mRangingMode = builder.mRangingMode;
@@ -117,7 +117,7 @@ public final class OobInitiatorRangingParams extends RangingParams implements Pa
                 builder.mFastestRangingInterval);
     }
 
-    private OobInitiatorRangingParams(Parcel in) {
+    private OobInitiatorRangingConfig(Parcel in) {
         setRangingSessionType(in.readInt());
         mDeviceHandles = in.createTypedArrayList(DeviceHandle.CREATOR);
         mSecurityLevel = in.readInt();
@@ -144,16 +144,16 @@ public final class OobInitiatorRangingParams extends RangingParams implements Pa
     }
 
     @NonNull
-    public static final Creator<OobInitiatorRangingParams> CREATOR =
-            new Creator<OobInitiatorRangingParams>() {
+    public static final Creator<OobInitiatorRangingConfig> CREATOR =
+            new Creator<OobInitiatorRangingConfig>() {
                 @Override
-                public OobInitiatorRangingParams createFromParcel(Parcel in) {
-                    return new OobInitiatorRangingParams(in);
+                public OobInitiatorRangingConfig createFromParcel(Parcel in) {
+                    return new OobInitiatorRangingConfig(in);
                 }
 
                 @Override
-                public OobInitiatorRangingParams[] newArray(int size) {
-                    return new OobInitiatorRangingParams[size];
+                public OobInitiatorRangingConfig[] newArray(int size) {
+                    return new OobInitiatorRangingConfig[size];
                 }
             };
 
@@ -227,7 +227,7 @@ public final class OobInitiatorRangingParams extends RangingParams implements Pa
     }
 
     /**
-     * Builder class for creating instances of {@link OobInitiatorRangingParams}.
+     * Builder class for creating instances of {@link OobInitiatorRangingConfig}.
      */
     public static final class Builder {
         private final List<DeviceHandle> mDeviceHandles = new ArrayList<>();
@@ -280,6 +280,17 @@ public final class OobInitiatorRangingParams extends RangingParams implements Pa
             return this;
         }
 
+        /**
+         * Adds a list of DeviceHandle to the list of devices for the ranging session.
+         *
+         * @param deviceHandles The list of DeviceHandles to add.
+         * @return The Builder instance.
+         */
+        @NonNull
+        public Builder addDeviceHandles(@NonNull List<DeviceHandle> deviceHandles) {
+            mDeviceHandles.addAll(deviceHandles);
+            return this;
+        }
 
         /**
          * Sets the security level for the ranging session.
@@ -308,19 +319,19 @@ public final class OobInitiatorRangingParams extends RangingParams implements Pa
         }
 
         /**
-         * Builds an instance of {@link OobInitiatorRangingParams} with the provided parameters.
+         * Builds an instance of {@link OobInitiatorRangingConfig} with the provided parameters.
          *
-         * @return A new OobInitiatorRangingParams instance.
+         * @return A new OobInitiatorRangingConfig instance.
          */
         @NonNull
-        public OobInitiatorRangingParams build() {
-            return new OobInitiatorRangingParams(this);
+        public OobInitiatorRangingConfig build() {
+            return new OobInitiatorRangingConfig(this);
         }
     }
 
     @Override
     public String toString() {
-        return "OobInitiatorRangingParams{ "
+        return "OobInitiatorRangingConfig{ "
                 + "mDeviceHandles="
                 + mDeviceHandles
                 + ", mRangingIntervalRange="

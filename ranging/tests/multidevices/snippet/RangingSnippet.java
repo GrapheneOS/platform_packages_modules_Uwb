@@ -226,7 +226,7 @@ public class RangingSnippet implements Snippet {
         if (capabilities == null) {
             return false;
         }
-        return capabilities.getRttRangingCapabilities().hasPeriodicRangingHwFeature();
+        return capabilities.getRttRangingCapabilities().hasPeriodicRangingHardwareFeature();
     }
 
     @Rpc(description = "Set airplane mode")

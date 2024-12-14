@@ -33,19 +33,19 @@ import com.android.ranging.flags.Flags;
 @FlaggedApi(Flags.FLAG_RANGING_RTT_ENABLED)
 public final class RttRangingCapabilities implements Parcelable, TechnologyCapabilities {
 
-    private final boolean mHasPeriodicRangingHwFeature;
+    private final boolean mHasPeriodicRangingHardwareFeature;
 
     private RttRangingCapabilities(Builder builder) {
-        mHasPeriodicRangingHwFeature = builder.mHasPeriodicRangingHwFeature;
+        mHasPeriodicRangingHardwareFeature = builder.mHasPeriodicRangingHardwareFeature;
     }
 
     private RttRangingCapabilities(Parcel in) {
-        mHasPeriodicRangingHwFeature = in.readBoolean();
+        mHasPeriodicRangingHardwareFeature = in.readBoolean();
     }
 
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
-        dest.writeBoolean(mHasPeriodicRangingHwFeature);
+        dest.writeBoolean(mHasPeriodicRangingHardwareFeature);
     }
 
     @Override
@@ -80,8 +80,8 @@ public final class RttRangingCapabilities implements Parcelable, TechnologyCapab
      *
      * @return {@code true} if periodic ranging is supported; {@code false} otherwise.
      */
-    public boolean hasPeriodicRangingHwFeature() {
-        return mHasPeriodicRangingHwFeature;
+    public boolean hasPeriodicRangingHardwareFeature() {
+        return mHasPeriodicRangingHardwareFeature;
     }
 
     /**
@@ -90,7 +90,7 @@ public final class RttRangingCapabilities implements Parcelable, TechnologyCapab
      * @hide
      */
     public static class Builder {
-        private boolean mHasPeriodicRangingHwFeature = false;
+        private boolean mHasPeriodicRangingHardwareFeature = false;
 
         /**
          * Sets whether hardware supports periodic ranging feature.
@@ -100,8 +100,8 @@ public final class RttRangingCapabilities implements Parcelable, TechnologyCapab
          * @return this {@link Builder} instance for method chaining.
          */
         @NonNull
-        public Builder setPeriodicRangingHwFeature(boolean periodicRangingHwFeature) {
-            mHasPeriodicRangingHwFeature = periodicRangingHwFeature;
+        public Builder setPeriodicRangingHardwareFeature(boolean periodicRangingHwFeature) {
+            mHasPeriodicRangingHardwareFeature = periodicRangingHwFeature;
             return this;
         }
 
@@ -121,7 +121,7 @@ public final class RttRangingCapabilities implements Parcelable, TechnologyCapab
     public String toString() {
         return "RttRangingCapabilities{ "
                 + "mHasPeriodicRangingHwFeature="
-                + mHasPeriodicRangingHwFeature
+                + mHasPeriodicRangingHardwareFeature
                 + " }";
     }
 }
