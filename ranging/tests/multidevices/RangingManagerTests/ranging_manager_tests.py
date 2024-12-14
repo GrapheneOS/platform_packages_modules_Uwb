@@ -33,6 +33,7 @@ _TEST_CASES = (
     "test_one_to_one_uwb_ranging_provisioned_sts",
     "test_one_to_one_uwb_ranging_disable_range_data_ntf",
     "test_one_to_one_wifi_rtt_ranging",
+    "test_one_to_one_wifi_periodic_rtt_ranging",
     "test_one_to_one_ble_rssi_ranging",
     "test_one_to_one_ble_cs_ranging",
 )
@@ -367,7 +368,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     self.responder.stop_ranging_and_assert_closed(SESSION_HANDLE)
 
   def test_one_to_one_wifi_rtt_ranging(self):
-    """Verifies uwb ranging with peer device, devices range for 10 seconds."""
+    """Verifies wifi rtt ranging with peer device, devices range for 10 seconds."""
     SESSION_HANDLE = str(uuid4())
     TECHNOLOGIES = {RangingTechnology.WIFI_RTT}
 
@@ -426,13 +427,89 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
     # Enable when this is supported.
     # asserts.assert_true(
-    #     self.responder.verify_peer_found_with_technologies(
-    #         SESSION_HANDLE,
-    #         self.initiator.id,
-    #         TECHNOLOGIES,
-    #     ),
-    #     "Responder did not find initiator",
-    # )
+    #    self.responder.verify_received_data_from_peer_using_technologies(
+    #        SESSION_HANDLE, self.initiator.id, TECHNOLOGIES
+    #    ),
+    #    "Responder did not find initiator",
+    #)
+
+    self.initiator.stop_ranging_and_assert_closed(SESSION_HANDLE)
+    self.responder.stop_ranging_and_assert_closed(SESSION_HANDLE)
+
+  def test_one_to_one_wifi_periodic_rtt_ranging(self):
+    """Verifies wifi periodic rtt ranging with peer device, devices range for 10 seconds."""
+    SESSION_HANDLE = str(uuid4())
+    TECHNOLOGIES = {RangingTechnology.WIFI_RTT}
+
+    asserts.skip_if(
+        not self.responder.is_ranging_technology_supported(RangingTechnology.WIFI_RTT),
+        f"Wifi nan rtt not supported by responder",
+    )
+    asserts.skip_if(
+        not self.responder.ad.ranging.hasPeriodicRangingHwFeature(),
+        f"Wifi nan periodic rtt not supported by responder",
+    )
+    asserts.skip_if(
+        not self.initiator.is_ranging_technology_supported(RangingTechnology.WIFI_RTT),
+        f"Wifi nan rtt not supported by initiator",
+    )
+    asserts.skip_if(
+        not self.initiator.ad.ranging.hasPeriodicRangingHwFeature(),
+        f"Wifi nan periodic rtt not supported by initiator",
+    )
+    # TODO(rpius): Remove this once the technology is stable.
+    self._reset_wifi_state()
+
+    initiator_preference = RangingPreference(
+        device_role=DeviceRole.INITIATOR,
+        ranging_params=RawInitiatorRangingParams(
+            peer_params=[
+                DeviceParams(
+                    peer_id=self.responder.id,
+                    rtt_params=rtt.RttRangingParams(
+                        service_name="test_service_name1",
+                        enable_periodic_ranging_hw_feature=True,
+                    ),
+                )
+            ],
+        ),
+    )
+
+    responder_preference = RangingPreference(
+        device_role=DeviceRole.RESPONDER,
+        ranging_params=RawResponderRangingParams(
+            peer_params=DeviceParams(
+                peer_id=self.initiator.id,
+                rtt_params=rtt.RttRangingParams(
+                    service_name="test_service_name1",
+                    enable_periodic_ranging_hw_feature=True,
+                ),
+            ),
+        ),
+    )
+
+    # Should be able to call _start_mutual_ranging_and_assert_started once we get consistent data.
+    self.initiator.start_ranging_and_assert_opened(
+        SESSION_HANDLE, initiator_preference
+    )
+    self.responder.start_ranging_and_assert_opened(
+        SESSION_HANDLE, responder_preference
+    )
+
+    time.sleep(10)
+    asserts.assert_true(
+        self.initiator.verify_received_data_from_peer_using_technologies(
+            SESSION_HANDLE, self.responder.id, TECHNOLOGIES
+        ),
+        "Initiator did not find responder",
+    )
+
+    asserts.assert_true(
+        self.responder.verify_received_data_from_peer_using_technologies(
+            SESSION_HANDLE, self.initiator.id, TECHNOLOGIES
+        ),
+        "Responder did not find initiator",
+    )
 
     self.initiator.stop_ranging_and_assert_closed(SESSION_HANDLE)
     self.responder.stop_ranging_and_assert_closed(SESSION_HANDLE)

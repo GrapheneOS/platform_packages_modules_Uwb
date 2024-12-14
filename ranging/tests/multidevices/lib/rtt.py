@@ -16,3 +16,4 @@ class RttRangingParams:
 
   service_name: str
   ranging_update_rate: RangingUpdateRate = RangingUpdateRate.AUTOMATIC
+  enable_periodic_ranging_hw_feature: bool = False

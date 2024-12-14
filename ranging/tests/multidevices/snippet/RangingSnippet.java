@@ -40,6 +40,7 @@ import com.google.android.mobly.snippet.rpc.Rpc;
 
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
@@ -57,6 +58,8 @@ public class RangingSnippet implements Snippet {
     private final WifiManager mWifiManager;
     private final ConcurrentMap<String, RangingSessionInfo> mSessions;
     private final ConcurrentMap<Integer, Integer> mTechnologyAvailability;
+    private final AtomicReference<RangingCapabilities> mRangingCapabilities =
+            new AtomicReference<>();
 
     public RangingSnippet() {
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
@@ -179,6 +182,7 @@ public class RangingSnippet implements Snippet {
         public void onRangingCapabilities(@NonNull RangingCapabilities capabilities) {
             Map<Integer, Integer> availabilities = capabilities.getTechnologyAvailability();
             mTechnologyAvailability.putAll(availabilities);
+            mRangingCapabilities.set(capabilities);
         }
     }
 
@@ -214,6 +218,15 @@ public class RangingSnippet implements Snippet {
         Integer availability = mTechnologyAvailability.get(technology);
         return availability != null
                 && availability != RangingCapabilities.NOT_SUPPORTED;
+    }
+
+    @Rpc(description = "Check whether periodic RTT ranging technology is supported")
+    public boolean hasPeriodicRangingHwFeature() {
+        RangingCapabilities capabilities = mRangingCapabilities.get();
+        if (capabilities == null) {
+            return false;
+        }
+        return capabilities.getRttRangingCapabilities().hasPeriodicRangingHwFeature();
     }
 
     @Rpc(description = "Set airplane mode")
