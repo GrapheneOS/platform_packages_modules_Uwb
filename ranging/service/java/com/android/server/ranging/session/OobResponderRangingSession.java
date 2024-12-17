@@ -56,6 +56,12 @@ public class OobResponderRangingSession
     }
 
     @Override
+    public void appForegroundStateUpdated(boolean appInForeground) {
+        // TODO
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
     public void handleOobMessage(OobHandle oobHandle, byte[] data) {
         // TODO
         throw new UnsupportedOperationException("Not implemented");

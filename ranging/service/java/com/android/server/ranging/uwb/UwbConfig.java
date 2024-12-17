@@ -28,6 +28,7 @@ import android.ranging.uwb.UwbRangingParams;
 
 import androidx.annotation.NonNull;
 
+import com.android.ranging.uwb.backend.internal.RangingParameters;
 import com.android.ranging.uwb.backend.internal.UwbRangeDataNtfConfig;
 import com.android.ranging.uwb.backend.internal.UwbRangeLimitsConfig;
 import com.android.server.ranging.RangingTechnology;
@@ -107,7 +108,7 @@ public class UwbConfig implements RangingSessionConfig.MulticastTechnologyConfig
      * {@link androidx.core.uwb.backend.impl.internal.RangingParameters} accepted by the UWB
      * backend.
      */
-    public com.android.ranging.uwb.backend.internal.RangingParameters asBackendParameters() {
+    public RangingParameters asBackendParameters(DataNotificationConfig dataNotificationConfig) {
         List<com.android.ranging.uwb.backend.internal.UwbAddress> peerAddresses = mPeerAddresses
                 .values()
                 .stream()
@@ -115,7 +116,7 @@ public class UwbConfig implements RangingSessionConfig.MulticastTechnologyConfig
                         com.android.ranging.uwb.backend.internal.UwbAddress.fromBytes(
                                 address.getAddressBytes()))
                 .collect(Collectors.toList());
-        return new com.android.ranging.uwb.backend.internal.RangingParameters(
+        return new RangingParameters(
                 (int) mParameters.getConfigId(),
                 mParameters.getSessionId(),
                 mParameters.getSubSessionId(),
@@ -124,7 +125,7 @@ public class UwbConfig implements RangingSessionConfig.MulticastTechnologyConfig
                 toBackend(mParameters.getComplexChannel()),
                 peerAddresses,
                 (int) mParameters.getRangingUpdateRate(),
-                toBackend(mSessionConfig.getDataNotificationConfig()),
+                toBackend(dataNotificationConfig),
                 (int) mParameters.getSlotDuration(),
                 mSessionConfig.isAngleOfArrivalNeeded(),
                 new UwbRangeLimitsConfig.Builder().setRangeMaxNumberOfMeasurements(

@@ -83,7 +83,9 @@ public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
 
         DataNotificationConfig ntfConfig = mSessionConfig.getDataNotificationConfig();
         switch (ntfConfig.getNotificationConfigType()) {
-            case DataNotificationConfig.NOTIFICATION_CONFIG_ENABLE -> builder
+            case DataNotificationConfig.NOTIFICATION_CONFIG_ENABLE,
+                    // Handled in adapter.
+                    DataNotificationConfig.NOTIFICATION_CONFIG_PROXIMITY_EDGE -> builder
                     .setMinDistanceMm(0)
                     .setMaxDistanceMm(50 * 100 * 100); // 50 meters.
             case DataNotificationConfig.NOTIFICATION_CONFIG_DISABLE -> builder.setMinDistanceMm(0)
@@ -93,10 +95,6 @@ public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
                     builder.setMinDistanceMm(
                                     ntfConfig.getProximityNearCm() * 100)
                             .setMaxDistanceMm(ntfConfig.getProximityFarCm() * 100);
-            case DataNotificationConfig.NOTIFICATION_CONFIG_PROXIMITY_EDGE ->
-                    builder.setProximityEdge(
-                            ntfConfig.getProximityNearCm() * 100,
-                            ntfConfig.getProximityFarCm() * 100);
         }
         return builder.build();
     }

@@ -16,12 +16,14 @@
 
 package com.android.server.ranging;
 
+import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE;
 import static android.ranging.RangingSession.Callback.REASON_LOCAL_REQUEST;
 import static android.ranging.RangingSession.Callback.REASON_NO_PEERS_FOUND;
 import static android.ranging.RangingSession.Callback.REASON_SYSTEM_POLICY;
 import static android.ranging.RangingSession.Callback.REASON_UNKNOWN;
 import static android.ranging.RangingSession.Callback.REASON_UNSUPPORTED;
 
+import android.app.ActivityManager;
 import android.content.AttributionSource;
 import android.os.Handler;
 import android.os.IBinder;
@@ -59,12 +61,14 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public final class RangingServiceManager {
+public final class RangingServiceManager implements ActivityManager.OnUidImportanceListener{
     private static final String TAG = RangingServiceManager.class.getSimpleName();
 
     public enum RangingTask {
@@ -98,14 +102,42 @@ public final class RangingServiceManager {
     private final ListeningExecutorService mAdapterExecutor;
     private final RangingTaskManager mRangingTaskManager;
     private final Map<SessionHandle, RangingSession<?>> mSessions = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<Integer, List<RangingSession<?>>> mNonPrivilegedUidToSessionsTable =
+            new ConcurrentHashMap<>();
+
+    private final ActivityManager mActivityManager;
 
     private IOobSendDataListener mOobDataSender;
 
-    public RangingServiceManager(RangingInjector rangingInjector, Looper looper) {
+    public RangingServiceManager(RangingInjector rangingInjector, ActivityManager activityManager,
+            Looper looper) {
         mRangingInjector = rangingInjector;
+        mActivityManager = activityManager;
         mAdapterExecutor = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
         mRangingTaskManager = new RangingTaskManager(looper);
+        registerUidImportanceTransitions();
     }
+
+    @Override
+    public void onUidImportance(int uid, int importance) {
+        synchronized (mNonPrivilegedUidToSessionsTable) {
+            List<RangingSession<?>> rangingSessions = mNonPrivilegedUidToSessionsTable.get(uid);
+
+            if (rangingSessions == null) {
+                return;
+            }
+            boolean isForeground = RangingInjector.isForegroundAppOrServiceImportance(importance);
+            for (RangingSession<?> session : rangingSessions) {
+                session.appForegroundStateUpdated(isForeground);
+            }
+            // TODO: Add alarm support for timeout and cleanup the table.
+        }
+    }
+
+    private void registerUidImportanceTransitions() {
+        mActivityManager.addOnUidImportanceListener(this, IMPORTANCE_FOREGROUND_SERVICE);
+    }
+
 
     public void registerCapabilitiesCallback(IRangingCapabilitiesCallback capabilitiesCallback) {
         Log.w(TAG, "Registering ranging capabilities callback");
@@ -401,33 +433,44 @@ public final class RangingServiceManager {
                         args.attributionSource, args.handle, mRangingInjector, config,
                         new SessionListener(args.handle, args.callbacks), mAdapterExecutor
                 );
-                session.start(params);
-                mSessions.put(args.handle, session);
+                startSession(params, args, session);
             } else if (baseParams instanceof RawResponderRangingConfig params) {
                 RawResponderRangingSession session = new RawResponderRangingSession(
                         args.attributionSource, args.handle, mRangingInjector, config,
                         new SessionListener(args.handle, args.callbacks), mAdapterExecutor
                 );
-                session.start(params);
-                mSessions.put(args.handle, session);
+                startSession(params, args, session);
             } else if (baseParams instanceof OobInitiatorRangingConfig params) {
                 OobInitiatorRangingSession session = new OobInitiatorRangingSession(
                         args.attributionSource, args.handle, mRangingInjector, config,
                         new SessionListener(args.handle, args.callbacks), mOobDataSender,
                         mAdapterExecutor
                 );
-                session.start(params);
-                mSessions.put(args.handle, session);
+                startSession(params, args, session);
             } else if (baseParams instanceof OobResponderRangingConfig params) {
                 OobResponderRangingSession session = new OobResponderRangingSession(
                         args.attributionSource, args.handle, mRangingInjector, config,
                         new SessionListener(args.handle, args.callbacks), mOobDataSender,
                         mAdapterExecutor
                 );
-                session.start(params);
-                mSessions.put(args.handle, session);
+                startSession(params, args, session);
             }
         }
+    }
+
+    public void startSession(RangingConfig params, RangingTaskManager.StartRangingArgs args,
+            RangingSession<?> rangingSession) {
+        AttributionSource attributionSource = mRangingInjector
+                .getAnyNonPrivilegedAppInAttributionSource(args.attributionSource);
+        if (attributionSource != null) {
+            synchronized (mNonPrivilegedUidToSessionsTable) {
+                List<RangingSession<?>> session = mNonPrivilegedUidToSessionsTable.computeIfAbsent(
+                        attributionSource.getUid(), v -> new ArrayList<>());
+                session.add(rangingSession);
+            }
+        }
+        mSessions.put(args.handle, rangingSession);
+        ((RangingSession<RangingConfig>) rangingSession).start(params);
     }
 
     public static final class DynamicPeer {

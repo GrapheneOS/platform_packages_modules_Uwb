@@ -80,16 +80,21 @@ public class CapabilitiesProvider {
         mCachedCapabilities = null;
     }
 
-    public synchronized void registerCapabilitiesCallback(
-            @NonNull IRangingCapabilitiesCallback callback
-    ) {
-        mCallbacks.register(callback);
+    public RangingCapabilities getCachedCapabilities() {
         if (mCachedCapabilities == null) {
             initializeAdaptersForAllTechnologies();
             mCachedCapabilities = getCapabilities().build();
         }
+        return mCachedCapabilities;
+    }
+
+
+    public synchronized void registerCapabilitiesCallback(
+            @NonNull IRangingCapabilitiesCallback callback
+    ) {
+        mCallbacks.register(callback);
         try {
-            callback.onRangingCapabilities(mCachedCapabilities);
+            callback.onRangingCapabilities(getCachedCapabilities());
         } catch (RemoteException e) {
             Log.e(TAG, "Failed to call provided capabilities callback", e);
         }

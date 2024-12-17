@@ -107,6 +107,8 @@ public abstract class RangingDevice {
 
     private final HashMap<String, UwbAddress> mMultiChipMap;
 
+    private UwbRangeDataNtfConfig mLastNtfConfig;
+
     RangingDevice(UwbManager manager, Executor executor,
             OpAsyncCallbackRunner<Boolean> opAsyncCallbackRunner, UwbFeatureFlags uwbFeatureFlags) {
         mUwbManager = manager;
@@ -116,6 +118,7 @@ public abstract class RangingDevice {
         mUwbFeatureFlags = uwbFeatureFlags;
         this.mMultiChipMap = new HashMap<>();
         initializeUwbAddress();
+        mLastNtfConfig = new UwbRangeDataNtfConfig.Builder().build();
     }
 
     /** Sets the chip ID. By default, the default chip is used. */
@@ -405,7 +408,7 @@ public abstract class RangingDevice {
             @WorkerThread
             @Override
             public void onControleeAdded(PersistableBundle params) {
-                mOpAsyncCallbackRunner.complete(true);
+                mOpAsyncCallbackRunner.completeIfActive(true);
             }
 
             @WorkerThread
@@ -485,6 +488,7 @@ public abstract class RangingDevice {
             return INVALID_API_CALL;
         }
 
+        mLastNtfConfig = mRangingParameters.getUwbRangeDataNtfConfig();
         FiraOpenSessionParams openSessionParams = getOpenSessionParams();
         printStartRangingParameters(openSessionParams.toBundle());
         mBackendCallbackExecutor = backendCallbackExecutor;
@@ -638,6 +642,10 @@ public abstract class RangingDevice {
             return INVALID_API_CALL;
         }
 
+        if (mLastNtfConfig.equals(config)) {
+            return STATUS_OK;
+        }
+
         boolean success =
                 reconfigureRanging(
                         ConfigurationManager.createReconfigureParamsRangeDataNtf(
@@ -647,6 +655,7 @@ public abstract class RangingDevice {
             Log.w(TAG, "Reconfiguring range data notification config failed.");
             return UWB_RECONFIGURATION_FAILURE;
         }
+        mLastNtfConfig = config;
         return STATUS_OK;
     }
 

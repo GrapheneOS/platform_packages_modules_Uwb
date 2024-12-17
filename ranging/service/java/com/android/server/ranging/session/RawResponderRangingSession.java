@@ -48,4 +48,9 @@ public class RawResponderRangingSession
     public void start(@NonNull RawResponderRangingConfig params) {
         super.start(mConfig.getTechnologyConfigs(Set.of(params.getRawRangingDevice())));
     }
+
+    @Override
+    public void appForegroundStateUpdated(boolean appInForeground) {
+        super.appForegroundStateUpdated(appInForeground);
+    }
 }

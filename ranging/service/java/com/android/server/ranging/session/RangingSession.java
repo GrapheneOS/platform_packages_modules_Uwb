@@ -36,5 +36,7 @@ public interface RangingSession<P extends RangingConfig> {
 
     void reconfigureInterval(int intervalSkipCount);
 
+    void appForegroundStateUpdated(boolean appInForeground);
+
     void dump(FileDescriptor fd, PrintWriter pw, String[] args);
 }

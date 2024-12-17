@@ -117,7 +117,7 @@ public class RangingSessionTest {
             ArgumentCaptor<RangingAdapter.Callback> callbackCaptor =
                     ArgumentCaptor.forClass(RangingAdapter.Callback.class);
 
-            verify(mMockAdapters.get(config)).start(eq(config), callbackCaptor.capture());
+            verify(mMockAdapters.get(config)).start(eq(config), any(), callbackCaptor.capture());
 
             if (config instanceof MulticastTechnologyConfig c) {
                 c.getPeerDevices().forEach(callbackCaptor.getValue()::onStarted);
@@ -334,7 +334,7 @@ public class RangingSessionTest {
 
         ArgumentCaptor<RangingAdapter.Callback> adapterCallbacks =
                 ArgumentCaptor.forClass(RangingAdapter.Callback.class);
-        verify(mMockAdapters.get(config)).start(eq(config), adapterCallbacks.capture());
+        verify(mMockAdapters.get(config)).start(eq(config), any(), adapterCallbacks.capture());
 
         adapterCallbacks.getValue().onClosed(ClosedReason.FAILED_TO_START);
 

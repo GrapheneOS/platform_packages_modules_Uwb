@@ -20,13 +20,20 @@ import static android.Manifest.permission.RANGING;
 import static android.permission.PermissionManager.PERMISSION_GRANTED;
 
 import android.annotation.NonNull;
+import android.annotation.Nullable;
+import android.app.ActivityManager;
 import android.content.AttributionSource;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.os.Binder;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.os.Process;
+import android.os.UserHandle;
 import android.permission.PermissionManager;
 import android.ranging.RangingPreference;
+import android.util.Log;
 
 import com.android.server.ranging.CapabilitiesProvider.CapabilitiesAdapter;
 import com.android.server.ranging.blerssi.BleRssiAdapter;
@@ -41,9 +48,15 @@ import com.android.server.ranging.uwb.UwbCapabilitiesAdapter;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class RangingInjector {
 
     private static final String TAG = "RangingInjector";
+
+    private static final int APP_INFO_FLAGS_SYSTEM_APP =
+            ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP;
 
     private final Context mContext;
     private final RangingServiceManager mRangingServiceManager;
@@ -59,7 +72,9 @@ public class RangingInjector {
         mLooper = rangingHandlerThread.getLooper();
         mContext = context;
         mCapabilitiesProvider = new CapabilitiesProvider(this);
-        mRangingServiceManager = new RangingServiceManager(this, mLooper);
+        mRangingServiceManager = new RangingServiceManager(this,
+                mContext.getSystemService(ActivityManager.class),
+                mLooper);
         mPermissionManager = context.getSystemService(PermissionManager.class);
     }
 
@@ -85,13 +100,13 @@ public class RangingInjector {
     ) {
         switch (config.getTechnology()) {
             case UWB:
-                return new UwbAdapter(mContext, executor, role);
+                return new UwbAdapter(mContext, this, executor, role);
             case CS:
-                return new CsAdapter(mContext);
+                return new CsAdapter(mContext, this);
             case RTT:
-                return new RttAdapter(mContext, executor, role);
+                return new RttAdapter(mContext, this, executor, role);
             case RSSI:
-                return new BleRssiAdapter(mContext);
+                return new BleRssiAdapter(mContext, this);
             default:
                 throw new IllegalArgumentException(
                         "Adapter does not exist for technology " + config.getTechnology());
@@ -136,6 +151,112 @@ public class RangingInjector {
         int permissionCheckResult = mPermissionManager.checkPermissionForStartDataDelivery(
                 RANGING, attributionSource, message);
         return permissionCheckResult == PERMISSION_GRANTED;
+    }
+
+    /** Helper method to check if the app is a system app. */
+    public boolean isSystemApp(int uid, @NonNull String packageName) {
+        try {
+            ApplicationInfo info = createPackageContextAsUser(uid)
+                    .getPackageManager()
+                    .getApplicationInfo(packageName, 0);
+            return (info.flags & APP_INFO_FLAGS_SYSTEM_APP) != 0;
+        } catch (PackageManager.NameNotFoundException e) {
+            // In case of exception, assume unknown app (more strict checking)
+            // Note: This case will never happen since checkPackage is
+            // called to verify validity before checking App's version.
+            Log.e(TAG, "Failed to get the app info", e);
+        }
+        return false;
+    }
+
+    /**
+     * Helper method creating a context based on the app's uid (to deal with multi user scenarios)
+     */
+    @Nullable
+    private Context createPackageContextAsUser(int uid) {
+        Context userContext;
+        try {
+            userContext = mContext.createPackageContextAsUser(mContext.getPackageName(), 0,
+                    UserHandle.getUserHandleForUid(uid));
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.e(TAG, "Unknown package name");
+            return null;
+        }
+        if (userContext == null) {
+            Log.e(TAG, "Unable to retrieve user context for " + uid);
+            return null;
+        }
+        return userContext;
+    }
+
+    @Nullable
+    public AttributionSource getAnyNonPrivilegedAppInAttributionSource(AttributionSource source) {
+        // Iterate attribution source chain to ensure that there is no non-fg 3p app in the
+        // request.
+        AttributionSource attributionSource = source;
+        while (attributionSource != null) {
+            int uid = attributionSource.getUid();
+            String packageName = attributionSource.getPackageName();
+            if (!isPrivilegedApp(uid, packageName)) {
+                return attributionSource;
+            }
+            attributionSource = attributionSource.getNext();
+        }
+        return null;
+    }
+
+    /** Whether the uid is signed with the same key as the platform. */
+    public boolean isAppSignedWithPlatformKey(int uid) {
+        return mContext.getPackageManager().checkSignatures(uid, Process.SYSTEM_UID)
+                == PackageManager.SIGNATURE_MATCH;
+    }
+
+    /** Helper method to check if the app is from foreground app/service. */
+    public static boolean isForegroundAppOrServiceImportance(int importance) {
+        return importance <= ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE;
+    }
+
+    public boolean isPrivilegedApp(int uid, String packageName) {
+        return isSystemApp(uid, packageName) || isAppSignedWithPlatformKey(uid);
+    }
+
+    /** Helper method to check if the app is from foreground app/service. */
+    public boolean isForegroundAppOrService(int uid, @NonNull String packageName) {
+        long identity = Binder.clearCallingIdentity();
+        try {
+            return isForegroundAppOrServiceImportance(getPackageImportance(uid, packageName));
+        } catch (SecurityException e) {
+            Log.e(TAG, "Failed to retrieve the app importance", e);
+            return false;
+        } finally {
+            Binder.restoreCallingIdentity(identity);
+        }
+    }
+
+    /** Helper method to retrieve app importance. */
+    private int getPackageImportance(int uid, @NonNull String packageName) {
+        if (sOverridePackageImportance.containsKey(packageName)) {
+            Log.w(TAG, "Overriding package importance for testing");
+            return sOverridePackageImportance.get(packageName);
+        }
+        try {
+            return createPackageContextAsUser(uid)
+                    .getSystemService(ActivityManager.class)
+                    .getPackageImportance(packageName);
+        } catch (SecurityException e) {
+            Log.e(TAG, "Failed to retrieve the app importance", e);
+            return ActivityManager.RunningAppProcessInfo.IMPORTANCE_GONE;
+        }
+    }
+
+    private static Map<String, Integer> sOverridePackageImportance = new HashMap();
+
+    // Use this if we have adb shell command support
+    public void setOverridePackageImportance(String packageName, int importance) {
+        sOverridePackageImportance.put(packageName, importance);
+    }
+    public void resetOverridePackageImportance(String packageName) {
+        sOverridePackageImportance.remove(packageName);
     }
 
 }

@@ -42,6 +42,7 @@ import com.android.ranging.uwb.backend.internal.RangingPosition;
 import com.android.ranging.uwb.backend.internal.RangingSessionCallback;
 import com.android.ranging.uwb.backend.internal.UwbDevice;
 import com.android.server.ranging.RangingAdapter;
+import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.cs.CsConfig;
 import com.android.server.ranging.uwb.UwbAdapter;
@@ -78,9 +79,13 @@ public class UwbAdapterTest {
     private RangingController mMockUwbClient;
 
     @Mock
+    private RangingInjector mMockRangingInjector;
+
+    @Mock
     private RangingAdapter.Callback mMockCallback;
 
-    @Mock private UwbDevice mMockLocalDevice;
+    @Mock
+    private UwbDevice mMockLocalDevice;
 
     /** Class under test */
     private UwbAdapter mUwbAdapter;
@@ -108,7 +113,8 @@ public class UwbAdapterTest {
     public void setup() {
         when(mMockContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_UWB))
                 .thenReturn(true);
-        mUwbAdapter = new UwbAdapter(mMockContext, MoreExecutors.newDirectExecutorService(),
+        mUwbAdapter = new UwbAdapter(mMockContext, mMockRangingInjector,
+                MoreExecutors.newDirectExecutorService(),
                 MoreExecutors.newDirectExecutorService(), mMockUwbClient);
     }
 
@@ -119,7 +125,7 @@ public class UwbAdapterTest {
 
     @Test
     public void start_failsWhenParamsInvalid() {
-        mUwbAdapter.start(mock(CsConfig.class), mMockCallback);
+        mUwbAdapter.start(mock(CsConfig.class), null, mMockCallback);
         verify(mMockCallback, never()).onStarted(any());
         verify(mMockCallback).onClosed(eq(RangingAdapter.Callback.ClosedReason.FAILED_TO_START));
         verify(mMockCallback, never()).onStopped(any());
@@ -130,6 +136,7 @@ public class UwbAdapterTest {
         RangingDevice peer = mock(RangingDevice.class);
         mUwbAdapter.start(
                 generateConfig(Map.of(peer, UwbAddress.fromBytes(new byte[]{1, 2}))),
+                null,
                 mMockCallback);
 
         ArgumentCaptor<RangingSessionCallback> callback =
@@ -147,6 +154,7 @@ public class UwbAdapterTest {
                 generateConfig(Map.of(
                         peers.get(0), UwbAddress.fromBytes(new byte[]{1, 2}),
                         peers.get(1), UwbAddress.fromBytes(new byte[]{3, 4}))),
+                null,
                 mMockCallback);
 
         ArgumentCaptor<RangingSessionCallback> callback =
@@ -165,6 +173,7 @@ public class UwbAdapterTest {
                 generateConfig(Map.of(
                         peers.get(0), UwbAddress.fromBytes(new byte[]{1, 2}),
                         peers.get(1), UwbAddress.fromBytes(new byte[]{3, 4}))),
+                null,
                 mMockCallback);
 
         ArgumentCaptor<RangingSessionCallback> callback =
@@ -191,6 +200,7 @@ public class UwbAdapterTest {
 
         mUwbAdapter.start(
                 generateConfig(Map.of(peerDevice, UwbAddress.fromBytes(peerAddress))),
+                null,
                 mMockCallback);
 
         ArgumentCaptor<RangingSessionCallback> callback =
@@ -217,6 +227,7 @@ public class UwbAdapterTest {
 
         mUwbAdapter.start(
                 generateConfig(Map.of(peerDevice, UwbAddress.fromBytes(peerAddress))),
+                null,
                 mMockCallback);
 
         ArgumentCaptor<RangingSessionCallback> callback =

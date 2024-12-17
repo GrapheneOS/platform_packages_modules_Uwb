@@ -70,10 +70,6 @@ public class RttRangingParameters {
     protected final boolean mEnablePublisherRanging;
     protected final Duration mPublisherPingDuration;
 
-    private final boolean mProximityEdgeEnabled;
-    private final int mProximityEdgeNearMm;
-    private final int mProximityEdgeFarMm;
-
     @RangingUpdateRate
     private final int mUpdateRate;
 
@@ -147,18 +143,6 @@ public class RttRangingParameters {
         return mPublisherPingDuration;
     }
 
-    public boolean isProximityEdgeEnabled() {
-        return mProximityEdgeEnabled;
-    }
-
-    public int getProximityEdgeNear() {
-        return mProximityEdgeNearMm;
-    }
-
-    public int getProximityEdgeFar() {
-        return mProximityEdgeFarMm;
-    }
-
     public int getUpdateRate() {
         return mUpdateRate;
     }
@@ -177,9 +161,6 @@ public class RttRangingParameters {
         mEnablePublisherRanging = builder.mEnablePublisherRanging;
         mPublisherPingDuration = builder.mPublisherPingDuration;
         mUpdateRate = builder.mRangingUpdateRate;
-        mProximityEdgeEnabled = builder.mProximityEdgeEnabled;
-        mProximityEdgeNearMm = builder.mProximityEdgeNearMm;
-        mProximityEdgeFarMm = builder.mProximityEdgeFarMm;
         mEnablePeriodicRangingHwFeature = builder.mEnablePeriodicRangingHwFeature;
     }
 
@@ -197,9 +178,6 @@ public class RttRangingParameters {
         protected boolean mEnablePublisherRanging = true;
         protected Duration mPublisherPingDuration = Duration.ofSeconds(10);
         private int mRangingUpdateRate = NORMAL;
-        private boolean mProximityEdgeEnabled = false;
-        private int mProximityEdgeNearMm = 0;
-        private int mProximityEdgeFarMm = 0;
         private boolean mEnablePeriodicRangingHwFeature = false;
 
         public Builder setDeviceRole(int deviceRole) {
@@ -245,13 +223,6 @@ public class RttRangingParameters {
 
         public Builder setUpdateRate(int updateRate) {
             mRangingUpdateRate = updateRate;
-            return this;
-        }
-
-        public Builder setProximityEdge(int near, int far) {
-            mProximityEdgeNearMm = near;
-            mProximityEdgeFarMm = far;
-            mProximityEdgeEnabled = true;
             return this;
         }
 

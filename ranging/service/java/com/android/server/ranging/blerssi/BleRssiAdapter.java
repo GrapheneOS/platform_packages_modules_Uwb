@@ -20,6 +20,7 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 
 import android.annotation.NonNull;
+import android.annotation.Nullable;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -28,7 +29,9 @@ import android.bluetooth.le.DistanceMeasurementMethod;
 import android.bluetooth.le.DistanceMeasurementParams;
 import android.bluetooth.le.DistanceMeasurementResult;
 import android.bluetooth.le.DistanceMeasurementSession;
+import android.content.AttributionSource;
 import android.content.Context;
+import android.ranging.DataNotificationConfig;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
 import android.ranging.RangingManager;
@@ -37,9 +40,11 @@ import android.ranging.ble.rssi.BleRssiRangingParams;
 import android.util.Log;
 
 import com.android.server.ranging.RangingAdapter;
+import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.StateMachine;
 import com.android.server.ranging.session.RangingSessionConfig;
+import com.android.server.ranging.util.DataNotificationManager;
 
 import java.util.concurrent.Executors;
 
@@ -47,6 +52,7 @@ public class BleRssiAdapter implements RangingAdapter {
 
     private static final String TAG = BleRssiAdapter.class.getSimpleName();
 
+    private final RangingInjector mRangingInjector;
     private final BluetoothAdapter mBluetoothAdapter;
     private final StateMachine<State> mStateMachine;
     private Callback mCallbacks;
@@ -55,15 +61,23 @@ public class BleRssiAdapter implements RangingAdapter {
     private DistanceMeasurementSession mSession;
     private BleRssiConfig mConfig;
 
-    public BleRssiAdapter(@NonNull Context context) {
+    private DataNotificationManager mDataNotificationManager;
+    @Nullable private AttributionSource mNonPrivilegedAttributionSource;
+
+    public BleRssiAdapter(@NonNull Context context, RangingInjector rangingInjector) {
         if (!RangingTechnology.RSSI.isSupported(context)) {
             throw new IllegalArgumentException("BT_RSSI system feature not found.");
         }
+        mRangingInjector = rangingInjector;
         mBluetoothAdapter = context.getSystemService(BluetoothManager.class).getAdapter();
         mStateMachine = new StateMachine<>(State.STOPPED);
         mCallbacks = null;
         mSession = null;
         mConfig = null;
+        mDataNotificationManager = new DataNotificationManager(
+                new DataNotificationConfig.Builder().build(),
+                new DataNotificationConfig.Builder().build()
+        );
     }
 
     @Override
@@ -73,9 +87,19 @@ public class BleRssiAdapter implements RangingAdapter {
 
     @Override
     public void start(
-            @NonNull RangingSessionConfig.TechnologyConfig config, @NonNull Callback callback
+            @NonNull RangingSessionConfig.TechnologyConfig config,
+            @Nullable AttributionSource nonPrivilegedAttributionSource,
+            @NonNull Callback callback
     ) {
         Log.i(TAG, "Start called.");
+        mNonPrivilegedAttributionSource = nonPrivilegedAttributionSource;
+        if (mNonPrivilegedAttributionSource != null && !mRangingInjector.isForegroundAppOrService(
+                mNonPrivilegedAttributionSource.getUid(),
+                mNonPrivilegedAttributionSource.getPackageName())) {
+            Log.w(TAG, "Background ranging is not supported");
+            return;
+        }
+
         if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {
             Log.v(TAG, "Attempted to start adapter when it was already started");
             return;
@@ -108,6 +132,9 @@ public class BleRssiAdapter implements RangingAdapter {
                                 bleRssiConfig.getRangingParams().getRangingUpdateRate()))
                         .setMethodId(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
                         .build();
+        mDataNotificationManager = new DataNotificationManager(
+                bleRssiConfig.getSessionConfig().getDataNotificationConfig(),
+                bleRssiConfig.getSessionConfig().getDataNotificationConfig());
 
         distanceMeasurementManager.startMeasurementSession(params,
                 Executors.newSingleThreadExecutor(), mDistanceMeasurementCallback);
@@ -128,6 +155,27 @@ public class BleRssiAdapter implements RangingAdapter {
                 return DistanceMeasurementParams.REPORT_FREQUENCY_HIGH;
             default:
                 return DistanceMeasurementParams.REPORT_FREQUENCY_MEDIUM;
+        }
+    }
+
+    @Override
+    public void appMovedToBackground() {
+        if (mNonPrivilegedAttributionSource != null && mStateMachine.getState() != State.STOPPED) {
+            mDataNotificationManager.updateConfigAppMovedToBackground();
+        }
+    }
+
+    @Override
+    public void appMovedToForeground() {
+        if (mNonPrivilegedAttributionSource != null && mStateMachine.getState() != State.STOPPED) {
+            mDataNotificationManager.updateConfigAppMovedToForeground();
+        }
+    }
+
+    @Override
+    public void appInBackgroundTimeout() {
+        if (mNonPrivilegedAttributionSource != null && mStateMachine.getState() != State.STOPPED) {
+            stop();
         }
     }
 
@@ -180,6 +228,9 @@ public class BleRssiAdapter implements RangingAdapter {
                 }
 
                 public void onResult(BluetoothDevice device, DistanceMeasurementResult result) {
+                    if (!mDataNotificationManager.shouldSendResult(result.getResultMeters())) {
+                        return;
+                    }
                     Log.i(TAG, "DistanceMeasurement onResult ! "
                             + result.getResultMeters()
                             + ", "
