@@ -267,4 +267,7 @@ public class CapabilityParam {
     public static final int RADAR_SUPPORT = (int) UwbVendorCapabilityTlvTypes.RADAR_SUPPORT;
     public static final int RADAR_SWEEP_SAMPLES_SUPPORTED =
             (int) UwbVendorCapabilityTlvValues.RADAR_SWEEP_SAMPLES_SUPPORTED;
+
+    // Aliro specific
+    public static final int ALIRO_SUPPORTED_MAC_MODES = 0xAC;
 }

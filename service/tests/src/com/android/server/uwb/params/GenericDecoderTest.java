@@ -16,8 +16,8 @@
 
 package com.android.server.uwb.params;
 
-import static com.android.server.uwb.params.CccDecoderTest.TEST_CCC_SPECIFICATION_TLV_DATA_STRING;
-import static com.android.server.uwb.params.CccDecoderTest.TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS;
+import static com.android.server.uwb.params.AliroDecoderTest.TEST_ALIRO_SPECIFICATION_TLV_DATA_STRING;
+import static com.android.server.uwb.params.AliroDecoderTest.TEST_ALIRO_SPECIFICATION_TLV_NUM_PARAMS;
 import static com.android.server.uwb.params.FiraDecoderTest.TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_1;
 import static com.android.server.uwb.params.FiraDecoderTest.TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_2;
 import static com.android.server.uwb.params.FiraDecoderTest.TEST_FIRA_SPECIFICATION_TLV_STRING_VER_1;
@@ -57,11 +57,11 @@ public class GenericDecoderTest {
     private static final byte[] TEST_GENERIC_SPECIFICATION_TLV_DATA_VER_1 =
             UwbUtil.getByteArray("C00101" // SUPPORTED_POWER_STATS_QUERY
                             + TEST_FIRA_SPECIFICATION_TLV_STRING_VER_1
-                            + TEST_CCC_SPECIFICATION_TLV_DATA_STRING
+                            + TEST_ALIRO_SPECIFICATION_TLV_DATA_STRING
                             + TEST_RADAR_SPECIFICATION_TLV_DATA_STRING);
     private static final int TEST_GENERIC_SPECIFICATION_TLV_NUM_PARAMS_VER_1 = 1
                     + TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_1
-                    + TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS
+                    + TEST_ALIRO_SPECIFICATION_TLV_NUM_PARAMS
                     + TEST_RADAR_SPECIFICATION_TLV_NUM_PARAMS;
 
     private static final byte[] TEST_GENERIC_SPECIFICATION_TLV_DATA_VER_2 =
@@ -69,11 +69,11 @@ public class GenericDecoderTest {
                             + "C10103" // ANTENNA MODE CAPABILITIES
                             + "EB0408000000" // MAX SUPPORTED SESSION COUNT
                             + FiraDecoderTest.TEST_FIRA_SPECIFICATION_TLV_STRING_VER_2
-                            + TEST_CCC_SPECIFICATION_TLV_DATA_STRING
+                            + TEST_ALIRO_SPECIFICATION_TLV_DATA_STRING
                             + TEST_RADAR_SPECIFICATION_TLV_DATA_STRING);
     private static final int TEST_GENERIC_SPECIFICATION_TLV_NUM_PARAMS_VER_2 = 3
             + TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_2
-            + TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS
+            + TEST_ALIRO_SPECIFICATION_TLV_NUM_PARAMS
             + TEST_RADAR_SPECIFICATION_TLV_NUM_PARAMS;
 
     private static final int MAX_SUPPORTED_SESSION_COUNT = 8;
@@ -221,9 +221,9 @@ public class GenericDecoderTest {
         TlvDecoderBuffer tlvDecoderBuffer =
                 new TlvDecoderBuffer(
                         UwbUtil.getByteArray(
-                                TEST_CCC_SPECIFICATION_TLV_DATA_STRING
+                                TEST_ALIRO_SPECIFICATION_TLV_DATA_STRING
                                         + TEST_RADAR_SPECIFICATION_TLV_DATA_STRING),
-                        TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS
+                        TEST_ALIRO_SPECIFICATION_TLV_NUM_PARAMS
                                 + TEST_RADAR_SPECIFICATION_TLV_NUM_PARAMS);
         assertThat(tlvDecoderBuffer.parse()).isTrue();
 
@@ -247,9 +247,9 @@ public class GenericDecoderTest {
                 new TlvDecoderBuffer(
                         UwbUtil.getByteArray(
                                 TEST_FIRA_SPECIFICATION_TLV_STRING_VER_1
-                                        + TEST_CCC_SPECIFICATION_TLV_DATA_STRING),
+                                        + TEST_ALIRO_SPECIFICATION_TLV_DATA_STRING),
                         TEST_FIRA_SPECIFICATION_TLV_NUM_PARAMS_VER_1
-                                + TEST_CCC_SPECIFICATION_TLV_NUM_PARAMS);
+                                + TEST_ALIRO_SPECIFICATION_TLV_NUM_PARAMS);
         assertThat(tlvDecoderBuffer.parse()).isTrue();
 
         GenericSpecificationParams genericSpecificationParams =

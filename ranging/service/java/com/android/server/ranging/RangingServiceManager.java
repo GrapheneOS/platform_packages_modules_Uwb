@@ -126,11 +126,17 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
             if (rangingSessions == null) {
                 return;
             }
+
+            if (RangingInjector.isNonExistentAppOrService(importance)) {
+                mNonPrivilegedUidToSessionsTable.remove(uid);
+                return;
+            }
+
             boolean isForeground = RangingInjector.isForegroundAppOrServiceImportance(importance);
             for (RangingSession<?> session : rangingSessions) {
-                session.appForegroundStateUpdated(isForeground);
+                mRangingTaskManager.post(
+                        ()->session.appForegroundStateUpdated(isForeground));
             }
-            // TODO: Add alarm support for timeout and cleanup the table.
         }
     }
 

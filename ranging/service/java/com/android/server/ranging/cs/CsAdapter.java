@@ -21,6 +21,7 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 
 import android.annotation.Nullable;
+import android.app.AlarmManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -44,6 +45,7 @@ import androidx.annotation.NonNull;
 import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.RangingUtils;
 import com.android.server.ranging.RangingUtils.StateMachine;
 import com.android.server.ranging.session.RangingSessionConfig;
 import com.android.server.ranging.util.DataNotificationManager;
@@ -57,6 +59,7 @@ import java.util.concurrent.Executors;
 public class CsAdapter implements RangingAdapter {
     private static final String TAG = CsAdapter.class.getSimpleName();
 
+    private final Context mContext;
     private final RangingInjector mRangingInjector;
     private final BluetoothAdapter mBluetoothAdapter;
     private final StateMachine<State> mStateMachine;
@@ -70,14 +73,19 @@ public class CsAdapter implements RangingAdapter {
 
     /** Invariant: non-null while a ranging session is active */
     private DistanceMeasurementSession mSession;
+    private CsConfig mConfig;
     private DataNotificationManager mDataNotificationManager;
     private AttributionSource mNonPrivilegedAttributionSource;
+
+    private final AlarmManager mAlarmManager;
+    private final AlarmManager.OnAlarmListener mMeasurementLimitListener;
 
     /** Injectable constructor for testing. */
     public CsAdapter(@NonNull Context context, RangingInjector rangingInjector) {
         if (!RangingTechnology.CS.isSupported(context)) {
             throw new IllegalArgumentException("BT_CS system feature not found.");
         }
+        mContext = context;
         mBluetoothAdapter = context.getSystemService(BluetoothManager.class).getAdapter();
         mStateMachine = new StateMachine<>(State.STOPPED);
         mCallbacks = null;
@@ -87,6 +95,11 @@ public class CsAdapter implements RangingAdapter {
                 new DataNotificationConfig.Builder().build(),
                 new DataNotificationConfig.Builder().build()
         );
+        mAlarmManager = mContext.getSystemService(AlarmManager.class);
+        mMeasurementLimitListener = () -> {
+            Log.i(TAG, "Measurements limit exceeded. Stopping the session");
+            Executors.newCachedThreadPool().execute(this::stop);
+        };
     }
 
     @Override
@@ -103,7 +116,7 @@ public class CsAdapter implements RangingAdapter {
         Log.i(TAG, "Start called.");
         mNonPrivilegedAttributionSource = nonPrivilegedAttributionSource;
         if (mNonPrivilegedAttributionSource != null && !mRangingInjector.isForegroundAppOrService(
-                        mNonPrivilegedAttributionSource.getUid(),
+                mNonPrivilegedAttributionSource.getUid(),
                 mNonPrivilegedAttributionSource.getPackageName())) {
             Log.e(TAG, "Background ranging is not supported");
             return;
@@ -117,6 +130,7 @@ public class CsAdapter implements RangingAdapter {
             Log.w(TAG, "Tried to start adapter with invalid ranging parameters");
             return;
         }
+        mConfig = csConfig;
 
         BleCsRangingParams bleCsRangingParams = csConfig.getRangingParams();
         if ((csConfig.getPeerDevice() == null)
@@ -155,6 +169,13 @@ public class CsAdapter implements RangingAdapter {
                 Executors.newSingleThreadExecutor(), mDistanceMeasurementCallback);
         // Callback here to be consistent with other ranging technologies.
         mCallbacks.onStarted(csConfig.getPeerDevice());
+        if (mConfig.getSessionConfig().getRangingMeasurementsLimit() > 0) {
+            RangingUtils.setMeasurementsLimitTimeout(
+                    mAlarmManager,
+                    mMeasurementLimitListener,
+                    mConfig.getSessionConfig().getRangingMeasurementsLimit(),
+                    getIntervalInMs(mConfig.getRangingParams().getRangingUpdateRate()));
+        }
     }
 
     @Override
@@ -204,6 +225,20 @@ public class CsAdapter implements RangingAdapter {
         return DistanceMeasurementParams.REPORT_FREQUENCY_LOW;
     }
 
+    public static int getIntervalInMs(int updateRate) {
+        switch (updateRate) {
+            case UPDATE_RATE_FREQUENT -> {
+                return 200;
+            }
+            case UPDATE_RATE_INFREQUENT -> {
+                return 5000;
+            }
+            default -> {
+                return 3000;
+            }
+        }
+    }
+
     private void closeForReason(@Callback.ClosedReason int reason) {
         mCallbacks.onStopped(mRangingDevice);
         mCallbacks.onClosed(reason);
@@ -211,8 +246,12 @@ public class CsAdapter implements RangingAdapter {
     }
 
     private void clear() {
+        if (mConfig.getSessionConfig().getRangingMeasurementsLimit() > 0) {
+            mAlarmManager.cancel(mMeasurementLimitListener);
+        }
         mSession = null;
         mCallbacks = null;
+        mConfig = null;
     }
 
     public enum State {

@@ -56,6 +56,8 @@ public class AliroSpecificationParams extends AliroParams {
     @HoppingConfigMode private final List<Integer> mHoppingConfigModes;
     @HoppingSequence private final List<Integer> mHoppingSequences;
     private final int mUwbsMaxPPM;
+    @MacModeRound
+    private final List<Integer> mMacModes;
 
     private static final String KEY_PROTOCOL_VERSIONS = "protocol_versions";
     private static final String KEY_UWB_CONFIGS = "uwb_configs";
@@ -69,6 +71,7 @@ public class AliroSpecificationParams extends AliroParams {
     private static final String KEY_HOPPING_CONFIGS = "hopping_config_modes";
     private static final String KEY_HOPPING_SEQUENCES = "hopping_sequences";
     private static final String KEY_UWBS_MAX_PPM = "uwbs_max_ppm";
+    private static final String KEY_MAC_MODES = "mac_modes";
 
     public static final int DEFAULT_MAX_RANGING_SESSIONS_NUMBER = 1;
 
@@ -84,7 +87,8 @@ public class AliroSpecificationParams extends AliroParams {
             @Channel List<Integer> channels,
             @HoppingConfigMode List<Integer> hoppingConfigModes,
             @HoppingSequence List<Integer> hoppingSequences,
-            int uwbsMaxPPM) {
+            int uwbsMaxPPM,
+            @MacModeRound List<Integer> macModes) {
         mProtocolVersions = protocolVersions;
         mUwbConfigs = uwbConfigs;
         mPulseShapeCombos = pulseShapeCombos;
@@ -97,6 +101,7 @@ public class AliroSpecificationParams extends AliroParams {
         mHoppingConfigModes = hoppingConfigModes;
         mHoppingSequences = hoppingSequences;
         mUwbsMaxPPM = uwbsMaxPPM;
+        mMacModes = macModes;
     }
 
     @Override
@@ -127,6 +132,7 @@ public class AliroSpecificationParams extends AliroParams {
         bundle.putIntArray(KEY_HOPPING_CONFIGS, toIntArray(mHoppingConfigModes));
         bundle.putIntArray(KEY_HOPPING_SEQUENCES, toIntArray(mHoppingSequences));
         bundle.putInt(KEY_UWBS_MAX_PPM, mUwbsMaxPPM);
+        bundle.putIntArray(KEY_MAC_MODES, toIntArray(mMacModes));
         return bundle;
     }
 
@@ -195,6 +201,10 @@ public class AliroSpecificationParams extends AliroParams {
             builder.setUwbsMaxPPM(bundle.getInt(KEY_UWBS_MAX_PPM));
         }
 
+        for (int mode : checkNotNull(bundle.getIntArray(KEY_MAC_MODES))) {
+            builder.addMacMode(mode);
+        }
+
         return builder.build();
     }
 
@@ -261,6 +271,12 @@ public class AliroSpecificationParams extends AliroParams {
         return mUwbsMaxPPM;
     }
 
+
+    @MacModeRound
+    public List<Integer> getMacModes() {
+        return mMacModes;
+    }
+
     @Override
     public boolean equals(@Nullable Object other) {
         if (other instanceof AliroSpecificationParams) {
@@ -276,7 +292,8 @@ public class AliroSpecificationParams extends AliroParams {
                 && otherSpecificationParams.mChannels.equals(mChannels)
                 && otherSpecificationParams.mHoppingConfigModes.equals(mHoppingConfigModes)
                 && otherSpecificationParams.mHoppingSequences.equals(mHoppingSequences)
-                && otherSpecificationParams.mUwbsMaxPPM == mUwbsMaxPPM;
+                && otherSpecificationParams.mUwbsMaxPPM == mUwbsMaxPPM
+                && otherSpecificationParams.mMacModes.equals(mMacModes);
         }
         return false;
     }
@@ -297,6 +314,7 @@ public class AliroSpecificationParams extends AliroParams {
                 mHoppingConfigModes.hashCode(),
                 mHoppingSequences.hashCode(),
                 mUwbsMaxPPM,
+                mMacModes.hashCode(),
             });
     }
 
@@ -314,6 +332,8 @@ public class AliroSpecificationParams extends AliroParams {
         @HoppingSequence private List<Integer> mHoppingSequences = new ArrayList<>();
         @HoppingConfigMode private List<Integer> mHoppingConfigModes = new ArrayList<>();
         private int mUwbsMaxPPM = 0;
+        @MacModeRound
+        private List<Integer> mMacModes = new ArrayList<>();
 
         public Builder addProtocolVersion(@NonNull AliroProtocolVersion version) {
             mProtocolVersions.add(version);
@@ -394,6 +414,16 @@ public class AliroSpecificationParams extends AliroParams {
             return this;
         }
 
+        /** Add supported mac mode round.
+         * @param macMode the mac mode round number defined in
+         * {@link com.google.uwb.support.aliro.AliroParams.MacModeRound}
+         * @return AliroSpecificationParams builder
+         */
+        public Builder addMacMode(@MacModeRound int macMode) {
+            mMacModes.add(macMode);
+            return this;
+        }
+
         public AliroSpecificationParams build() {
             if (mProtocolVersions.size() == 0) {
                 throw new IllegalStateException("No protocol versions set");
@@ -435,7 +465,8 @@ public class AliroSpecificationParams extends AliroParams {
                     mChannels,
                     mHoppingConfigModes,
                     mHoppingSequences,
-                    mUwbsMaxPPM);
+                    mUwbsMaxPPM,
+                    mMacModes);
         }
     }
 }

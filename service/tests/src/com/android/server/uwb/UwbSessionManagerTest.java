@@ -253,6 +253,10 @@ public class UwbSessionManagerTest {
                     .setSyncCodeIndex(1)
                     .setHoppingConfigMode(AliroParams.HOPPING_CONFIG_MODE_NONE)
                     .setHoppingSequence(AliroParams.HOPPING_SEQUENCE_DEFAULT)
+                    .setMacModeRound(AliroParams.MAC_MODE_ROUND_1)
+                    .setMacModeOffset(0)
+                    .setSessionKey(new byte[]{0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5,
+                            0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78})
                     .build();
     private static final CccOpenRangingParams CCC_OPEN_RANGING_PARAMS_DEFAULT =
             new CccOpenRangingParams.Builder()
@@ -367,6 +371,9 @@ public class UwbSessionManagerTest {
         when(mUwbMultichipData.getDefaultChipId()).thenReturn("default");
         when(mDeviceConfigFacade.isBackgroundRangingEnabled()).thenReturn(false);
         when(mDeviceConfigFacade.isRangingErrorStreakTimerEnabled()).thenReturn(true);
+        when(mAliroSpecificationParams.getMacModes()).thenReturn(Arrays.asList(
+                AliroParams.MAC_MODE_ROUND_1,
+                AliroParams.MAC_MODE_ROUND_2));
 
         // TODO: Don't use spy.
         mUwbSessionManager = spy(new UwbSessionManager(

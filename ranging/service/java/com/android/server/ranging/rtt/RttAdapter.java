@@ -19,6 +19,7 @@ package com.android.server.ranging.rtt;
 import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 
 import android.annotation.Nullable;
+import android.app.AlarmManager;
 import android.content.AttributionSource;
 import android.content.Context;
 import android.ranging.DataNotificationConfig;
@@ -33,6 +34,7 @@ import androidx.annotation.NonNull;
 
 import com.android.ranging.rtt.backend.internal.RttDevice;
 import com.android.ranging.rtt.backend.internal.RttRangingDevice;
+import com.android.ranging.rtt.backend.internal.RttRangingParameters;
 import com.android.ranging.rtt.backend.internal.RttRangingPosition;
 import com.android.ranging.rtt.backend.internal.RttRangingSessionCallback;
 import com.android.ranging.rtt.backend.internal.RttService;
@@ -40,6 +42,7 @@ import com.android.ranging.rtt.backend.internal.RttServiceImpl;
 import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.RangingUtils;
 import com.android.server.ranging.RangingUtils.StateMachine;
 import com.android.server.ranging.session.RangingSessionConfig;
 import com.android.server.ranging.util.DataNotificationManager;
@@ -56,6 +59,7 @@ public class RttAdapter implements RangingAdapter {
 
     private static final String TAG = RttAdapter.class.getSimpleName();
 
+    private final Context mContext;
     private final RangingInjector mRangingInjector;
     private final RttService mRttService;
     private final RttRangingDevice mRttClient;
@@ -68,9 +72,13 @@ public class RttAdapter implements RangingAdapter {
     private Callback mCallbacks;
     /** Invariant: non-null while a ranging session is active */
     private RangingDevice mPeerDevice;
+    private RttConfig mConfig;
 
     private DataNotificationManager mDataNotificationManager;
+    @Nullable
     private AttributionSource mNonPrivilegedAttributionSource;
+    private final AlarmManager mAlarmManager;
+    private final AlarmManager.OnAlarmListener mMeasurementLimitListener;
 
     public RttAdapter(
             @NonNull Context context,
@@ -90,6 +98,7 @@ public class RttAdapter implements RangingAdapter {
         if (!RttCapabilitiesAdapter.isSupported(context)) {
             throw new IllegalArgumentException("WiFi RTT system feature not found.");
         }
+        mContext = context;
         mRangingInjector = rangingInjector;
         mStateMachine = new StateMachine<>(State.STOPPED);
         mRttService = rttService;
@@ -104,6 +113,11 @@ public class RttAdapter implements RangingAdapter {
                 new DataNotificationConfig.Builder().build(),
                 new DataNotificationConfig.Builder().build()
         );
+        mAlarmManager = mContext.getSystemService(AlarmManager.class);
+        mMeasurementLimitListener = () -> {
+            Log.i(TAG, "Measurements limit exceeded. Stopping the session");
+            Executors.newCachedThreadPool().execute(this::stop);
+        };
     }
 
     @Override
@@ -137,6 +151,7 @@ public class RttAdapter implements RangingAdapter {
             closeForReason(Callback.ClosedReason.FAILED_TO_START);
             return;
         }
+        mConfig = rttConfig;
         mPeerDevice = rttConfig.getPeerDevice();
         mRttClient.setRangingParameters(rttConfig.asBackendParameters());
         mDataNotificationManager = new DataNotificationManager(
@@ -147,6 +162,13 @@ public class RttAdapter implements RangingAdapter {
             mRttClient.startRanging(mRttListener, Executors.newSingleThreadExecutor());
         }, mExecutorService);
         Futures.addCallback(future, mRttClientResultHandlers.startRanging, mExecutorService);
+        if (mConfig.getSessionConfig().getRangingMeasurementsLimit() > 0) {
+            RangingUtils.setMeasurementsLimitTimeout(
+                    mAlarmManager,
+                    mMeasurementLimitListener,
+                    mConfig.getSessionConfig().getRangingMeasurementsLimit(),
+                    RttRangingParameters.getIntervalMs(mRttClient.getRttRangingParameters()));
+        }
     }
 
     @Override
@@ -265,6 +287,9 @@ public class RttAdapter implements RangingAdapter {
     }
 
     private void clear() {
+        if (mConfig.getSessionConfig().getRangingMeasurementsLimit() > 0) {
+            mAlarmManager.cancel(mMeasurementLimitListener);
+        }
         mRttClient.stopRanging();
         mCallbacks = null;
         mPeerDevice = null;

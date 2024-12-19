@@ -21,6 +21,7 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 
 import android.annotation.NonNull;
 import android.annotation.Nullable;
+import android.app.AlarmManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -42,6 +43,7 @@ import android.util.Log;
 import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.RangingUtils;
 import com.android.server.ranging.RangingUtils.StateMachine;
 import com.android.server.ranging.session.RangingSessionConfig;
 import com.android.server.ranging.util.DataNotificationManager;
@@ -52,6 +54,7 @@ public class BleRssiAdapter implements RangingAdapter {
 
     private static final String TAG = BleRssiAdapter.class.getSimpleName();
 
+    private final Context mContext;
     private final RangingInjector mRangingInjector;
     private final BluetoothAdapter mBluetoothAdapter;
     private final StateMachine<State> mStateMachine;
@@ -62,12 +65,18 @@ public class BleRssiAdapter implements RangingAdapter {
     private BleRssiConfig mConfig;
 
     private DataNotificationManager mDataNotificationManager;
-    @Nullable private AttributionSource mNonPrivilegedAttributionSource;
+    @Nullable
+    private AttributionSource mNonPrivilegedAttributionSource;
+
+    private final AlarmManager mAlarmManager;
+
+    private final AlarmManager.OnAlarmListener mMeasurementLimitListener;
 
     public BleRssiAdapter(@NonNull Context context, RangingInjector rangingInjector) {
         if (!RangingTechnology.RSSI.isSupported(context)) {
             throw new IllegalArgumentException("BT_RSSI system feature not found.");
         }
+        mContext = context;
         mRangingInjector = rangingInjector;
         mBluetoothAdapter = context.getSystemService(BluetoothManager.class).getAdapter();
         mStateMachine = new StateMachine<>(State.STOPPED);
@@ -78,6 +87,11 @@ public class BleRssiAdapter implements RangingAdapter {
                 new DataNotificationConfig.Builder().build(),
                 new DataNotificationConfig.Builder().build()
         );
+        mAlarmManager = mContext.getSystemService(AlarmManager.class);
+        mMeasurementLimitListener = () -> {
+            Log.i(TAG, "Measurements limit exceeded. Stopping the session");
+            Executors.newCachedThreadPool().execute(this::stop);
+        };
     }
 
     @Override
@@ -140,6 +154,13 @@ public class BleRssiAdapter implements RangingAdapter {
                 Executors.newSingleThreadExecutor(), mDistanceMeasurementCallback);
         // Added callback here to be consistent with other ranging technology.
         mCallbacks.onStarted(bleRssiConfig.getPeerDevice());
+        if (mConfig.getSessionConfig().getRangingMeasurementsLimit() > 0) {
+            RangingUtils.setMeasurementsLimitTimeout(
+                    mAlarmManager,
+                    mMeasurementLimitListener,
+                    mConfig.getSessionConfig().getRangingMeasurementsLimit(),
+                    getIntervalInMs(mConfig.getRangingParams().getRangingUpdateRate()));
+        }
     }
 
     public enum State {
@@ -155,6 +176,20 @@ public class BleRssiAdapter implements RangingAdapter {
                 return DistanceMeasurementParams.REPORT_FREQUENCY_HIGH;
             default:
                 return DistanceMeasurementParams.REPORT_FREQUENCY_MEDIUM;
+        }
+    }
+
+    public static int getIntervalInMs(int updateRate) {
+        switch (updateRate) {
+            case UPDATE_RATE_FREQUENT -> {
+                return 500;
+            }
+            case UPDATE_RATE_INFREQUENT -> {
+                return 3000;
+            }
+            default -> {
+                return 1000;
+            }
         }
     }
 
@@ -195,8 +230,12 @@ public class BleRssiAdapter implements RangingAdapter {
     }
 
     private void clear() {
+        if (mConfig.getSessionConfig().getRangingMeasurementsLimit() > 0) {
+            mAlarmManager.cancel(mMeasurementLimitListener);
+        }
         mSession = null;
         mCallbacks = null;
+        mConfig = null;
     }
 
     private void closeForReason(@Callback.ClosedReason int reason) {

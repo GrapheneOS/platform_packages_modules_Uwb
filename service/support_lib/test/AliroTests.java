@@ -25,7 +25,6 @@ import android.os.PersistableBundle;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
-import com.google.uwb.support.base.Params;
 import com.google.uwb.support.aliro.AliroOpenRangingParams;
 import com.google.uwb.support.aliro.AliroParams;
 import com.google.uwb.support.aliro.AliroProtocolVersion;
@@ -35,6 +34,7 @@ import com.google.uwb.support.aliro.AliroRangingReconfiguredParams;
 import com.google.uwb.support.aliro.AliroRangingStartedParams;
 import com.google.uwb.support.aliro.AliroSpecificationParams;
 import com.google.uwb.support.aliro.AliroStartRangingParams;
+import com.google.uwb.support.base.Params;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -78,6 +78,8 @@ public class AliroTests {
             };
     private static final Integer[] HOPPING_SEQUENCES =
             new Integer[] {AliroParams.HOPPING_SEQUENCE_AES, AliroParams.HOPPING_SEQUENCE_DEFAULT};
+    private static final  Integer[] MAC_MODES =
+            new Integer[] {AliroParams.MAC_MODE_ROUND_1, AliroParams.MAC_MODE_ROUND_2};
 
     @Test
     public void testOpenRangingParams() {
@@ -105,6 +107,10 @@ public class AliroTests {
         double rangeDataNtfAoaAzimuthUpper = +1.3;
         double rangeDataNtfAoaElevationLower = -1.1;
         double rangeDataNtfAoaElevationUpper = +1.2;
+        @AliroParams.MacModeRound int macModeRound = AliroParams.MAC_MODE_ROUND_1;
+        int macModeOffset = 0;
+        byte[] sessionKey = new byte[] {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
 
         AliroOpenRangingParams params =
                 new AliroOpenRangingParams.Builder()
@@ -128,6 +134,9 @@ public class AliroTests {
                         .setRangeDataNtfAoaAzimuthUpper(rangeDataNtfAoaAzimuthUpper)
                         .setRangeDataNtfAoaElevationLower(rangeDataNtfAoaElevationLower)
                         .setRangeDataNtfAoaElevationUpper(rangeDataNtfAoaElevationUpper)
+                        .setSessionKey(sessionKey)
+                        .setMacModeRound(macModeRound)
+                        .setMacModeOffset(macModeOffset)
                         .build();
 
         assertEquals(params.getProtocolVersion(), protocolVersion);
@@ -147,6 +156,9 @@ public class AliroTests {
         assertEquals(params.getHoppingConfigMode(), hoppingConfigMode);
         assertEquals(params.getHoppingSequence(), hoppingSequence);
         assertEquals(params.getAbsoluteInitiationTimeUs(), absoluteInitiationTimeUs);
+        assertEquals(params.getMacModeRound(), macModeRound);
+        assertEquals(params.getMacModeOffset(), macModeOffset);
+        assertArrayEquals(params.getSessionKey(), sessionKey);
 
         AliroOpenRangingParams fromBundle = AliroOpenRangingParams.fromBundle(params.toBundle());
         assertEquals(fromBundle.getProtocolVersion(), protocolVersion);
@@ -176,9 +188,11 @@ public class AliroTests {
                 fromBundle.getRangeDataNtfAoaElevationLower(), rangeDataNtfAoaElevationLower, 0.1d);
         assertEquals(
                 fromBundle.getRangeDataNtfAoaElevationUpper(), rangeDataNtfAoaElevationUpper, 0.1d);
+        assertEquals(fromBundle.getMacModeRound(), macModeRound);
+        assertEquals(fromBundle.getMacModeOffset(), macModeOffset);
+        assertArrayEquals(fromBundle.getSessionKey(), sessionKey);
 
         verifyProtocolPresent(params);
-        verifyBundlesEqual(params, fromBundle);
     }
 
     @Test
@@ -310,6 +324,9 @@ public class AliroTests {
         for (int hoppingSequence : HOPPING_SEQUENCES) {
             paramsBuilder.addHoppingSequence(hoppingSequence);
         }
+        for (int macMode : MAC_MODES) {
+            paramsBuilder.addMacMode(macMode);
+        }
 
         AliroSpecificationParams params = paramsBuilder.build();
         assertArrayEquals(params.getProtocolVersions().toArray(), PROTOCOL_VERSIONS);
@@ -321,6 +338,7 @@ public class AliroTests {
         assertArrayEquals(params.getChannels().toArray(), CHANNELS);
         assertArrayEquals(params.getHoppingConfigModes().toArray(), HOPPING_CONFIG_MODES);
         assertArrayEquals(params.getHoppingSequences().toArray(), HOPPING_SEQUENCES);
+        assertArrayEquals(params.getMacModes().toArray(), MAC_MODES);
 
         AliroSpecificationParams fromBundle =
                 AliroSpecificationParams.fromBundle(params.toBundle());
@@ -333,6 +351,7 @@ public class AliroTests {
         assertArrayEquals(fromBundle.getChannels().toArray(), CHANNELS);
         assertArrayEquals(fromBundle.getHoppingConfigModes().toArray(), HOPPING_CONFIG_MODES);
         assertArrayEquals(fromBundle.getHoppingSequences().toArray(), HOPPING_SEQUENCES);
+        assertArrayEquals(fromBundle.getMacModes().toArray(), MAC_MODES);
 
         verifyProtocolPresent(params);
         assertTrue(params.equals(fromBundle));
@@ -369,6 +388,9 @@ public class AliroTests {
         }
         for (int hoppingSequence : HOPPING_SEQUENCES) {
             paramsBuilder.addHoppingSequence(hoppingSequence);
+        }
+        for (int macMode : MAC_MODES) {
+            paramsBuilder.addMacMode(macMode);
         }
         AliroSpecificationParams params = paramsBuilder.build();
         assertEquals(List.of(), params.getChannels());

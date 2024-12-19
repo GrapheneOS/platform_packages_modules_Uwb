@@ -109,7 +109,11 @@ public class AliroEncoder extends TlvEncoder {
                 .putShort(ConfigParam.SLOT_DURATION,
                         (short) (params.getNumChapsPerSlot() * 400)) // SLOT_DURATION
                 .putByte(ConfigParam.PREAMBLE_CODE_INDEX,
-                        (byte) params.getSyncCodeIndex()); // PREAMBLE_CODE_INDEX
+                        (byte) params.getSyncCodeIndex()) // PREAMBLE_CODE_INDEX
+                .putByte(ConfigParam.ALIRO_MAC_MODE,
+                        (byte) (params.getMacModeRound() << 6
+                                | params.getMacModeOffset())) // MAC_MODE
+                .putByteArray(ConfigParam.SESSION_KEY, params.getSessionKey()); // SESSION_KEY
         if (params.getStsIndex() != AliroParams.STS_INDEX_UNSET) {
             tlvBufferBuilder.putInt(ConfigParam.STS_INDEX, params.getStsIndex());
         }

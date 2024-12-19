@@ -71,7 +71,11 @@ public class AliroEncoderTest {
                     .setSyncCodeIndex(1)
                     .setHoppingConfigMode(HOPPING_CONFIG_MODE_NONE)
                     .setHoppingSequence(HOPPING_SEQUENCE_DEFAULT)
-                    .setInitiationTimeMs(1);
+                    .setInitiationTimeMs(1)
+                    .setMacModeRound(AliroParams.MAC_MODE_ROUND_1)
+                    .setMacModeOffset(0)
+                    .setSessionKey(new byte[]{0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5,
+                            0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78});
 
     private static final String RANGE_DATA_NTF_CONFIG_DISABLED_TLV = "0E0100";
     private static final String RANGE_DATA_NTF_CONFIG_ENABLED_TLV = "0E0101";
@@ -83,7 +87,7 @@ public class AliroEncoderTest {
     private static final String TEST_ALIRO_OPEN_RANGING_TLV =
             "00010102010104010905010109048001000011010103010"
                     + "11B01062C0100A3020001A4020000A50100A602D0020802B004140101"
-                    + "2B080100000000000000";
+                    + "A901004510057805780578057805780578057805782B080100000000000000";
     private static final String TEST_ALIRO_OPEN_RANGING_TLV_DEFAULT =
             TEST_ALIRO_OPEN_RANGING_TLV + RANGE_DATA_NTF_CONFIG_DISABLED_TLV;
     private static final byte[] TEST_ALIRO_OPEN_RANGING_TLV_DATA =
@@ -109,7 +113,7 @@ public class AliroEncoderTest {
         AliroOpenRangingParams params = TEST_ALIRO_OPEN_RANGING_PARAMS.build();
         TlvBuffer tlvs = mAliroEncoder.getTlvBuffer(params, AliroParams.PROTOCOL_VERSION_1_0);
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(17);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(19);
         assertThat(tlvs.getByteArray()).isEqualTo(TEST_ALIRO_OPEN_RANGING_TLV_DATA);
     }
 
@@ -119,7 +123,7 @@ public class AliroEncoderTest {
         TlvBuffer tlvs = TlvEncoder.getEncoder(AliroParams.PROTOCOL_NAME, mUwbInjector)
                 .getTlvBuffer(params, AliroParams.PROTOCOL_VERSION_1_0);
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(17);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(19);
         assertThat(tlvs.getByteArray()).isEqualTo(TEST_ALIRO_OPEN_RANGING_TLV_DATA);
     }
 
@@ -135,9 +139,9 @@ public class AliroEncoderTest {
         byte[] testAliroOpenRangingAbsoluteInitiationTimeTlvData =
                 UwbUtil.getByteArray("00010102010104010905010109048001000011010103010"
                         + "11B01062C0100A3020001A4020000A50100A602D0020802B004140101"
-                        + "2B0810270000000000000E0100");
+                        + "A901004510057805780578057805780578057805782B0810270000000000000E0100");
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(17);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(19);
         assertThat(tlvs.getByteArray()).isEqualTo(
                 testAliroOpenRangingAbsoluteInitiationTimeTlvData);
     }
@@ -159,7 +163,7 @@ public class AliroEncoderTest {
                 + RANGE_DATA_NTF_PROXIMITY_NEAR_DEFAULT_TLV
                 + RANGE_DATA_NTF_PROXIMITY_FAR_DEFAULT_TLV;
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(19);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(21);
         assertThat(tlvs.getByteArray()).isEqualTo(UwbUtil.getByteArray(expectedTlvStr));
     }
 
@@ -183,7 +187,7 @@ public class AliroEncoderTest {
                 + RANGE_DATA_NTF_PROXIMITY_NEAR_DEFAULT_TLV
                 + RANGE_DATA_NTF_PROXIMITY_FAR_DEFAULT_TLV;
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(19);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(21);
         assertThat(tlvs.getByteArray()).isEqualTo(UwbUtil.getByteArray(expectedTlvStr));
     }
 
@@ -209,7 +213,7 @@ public class AliroEncoderTest {
                 + RANGE_DATA_NTF_PROXIMITY_NEAR_TLV
                 + RANGE_DATA_NTF_PROXIMITY_FAR_TLV;
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(19);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(21);
         assertThat(tlvs.getByteArray()).isEqualTo(UwbUtil.getByteArray(expectedTlvStr));
     }
 }

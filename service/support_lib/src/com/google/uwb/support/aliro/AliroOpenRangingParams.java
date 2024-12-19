@@ -18,12 +18,6 @@ package com.google.uwb.support.aliro;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.uwb.support.aliro.AliroParams.RANGE_DATA_NTF_PROXIMITY_NEAR_DEFAULT;
-import static com.google.uwb.support.aliro.AliroParams.RANGE_DATA_NTF_PROXIMITY_FAR_DEFAULT;
-import static com.google.uwb.support.aliro.AliroParams.RANGE_DATA_NTF_AOA_AZIMUTH_LOWER_DEFAULT;
-import static com.google.uwb.support.aliro.AliroParams.RANGE_DATA_NTF_AOA_AZIMUTH_UPPER_DEFAULT;
-import static com.google.uwb.support.aliro.AliroParams.RANGE_DATA_NTF_AOA_ELEVATION_LOWER_DEFAULT;
-import static com.google.uwb.support.aliro.AliroParams.RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT;
 
 import android.os.Build.VERSION_CODES;
 import android.os.PersistableBundle;
@@ -74,6 +68,9 @@ public class AliroOpenRangingParams extends AliroParams {
             "range_data_ntf_aoa_elevation_lower";
     private static final String KEY_RANGE_DATA_NTF_AOA_ELEVATION_UPPER =
             "range_data_ntf_aoa_elevation_upper";
+    private static final String KEY_SESSION_KEY = "session_key";
+    private static final String KEY_MAC_MODE_ROUND = "mac_mode_round";
+    private static final String KEY_MAC_MODE_OFFSET = "mac_mode_offset";
 
     private final AliroProtocolVersion mProtocolVersion;
     @UwbConfig private final int mUwbConfig;
@@ -105,6 +102,9 @@ public class AliroOpenRangingParams extends AliroParams {
     private double mRangeDataNtfAoaAzimuthUpper;
     private double mRangeDataNtfAoaElevationLower;
     private double mRangeDataNtfAoaElevationUpper;
+    private final byte[] mSessionKey;
+    private @MacModeRound int mMacModeRound = MAC_MODE_ROUND_DEFAULT;
+    private final int mMacModeOffset;
 
     private AliroOpenRangingParams(
             AliroProtocolVersion protocolVersion,
@@ -130,7 +130,10 @@ public class AliroOpenRangingParams extends AliroParams {
             double rangeDataNtfAoaAzimuthLower,
             double rangeDataNtfAoaAzimuthUpper,
             double rangeDataNtfAoaElevationLower,
-            double rangeDataNtfAoaElevationUpper) {
+            double rangeDataNtfAoaElevationUpper,
+            byte[] sessionKey,
+            @MacModeRound int macModeRound,
+            int macModeOffset) {
         mProtocolVersion = protocolVersion;
         mUwbConfig = uwbConfig;
         mPulseShapeCombo = pulseShapeCombo;
@@ -155,11 +158,37 @@ public class AliroOpenRangingParams extends AliroParams {
         mRangeDataNtfAoaAzimuthUpper = rangeDataNtfAoaAzimuthUpper;
         mRangeDataNtfAoaElevationLower = rangeDataNtfAoaElevationLower;
         mRangeDataNtfAoaElevationUpper = rangeDataNtfAoaElevationUpper;
+        mSessionKey = sessionKey;
+        mMacModeRound = macModeRound;
+        mMacModeOffset = macModeOffset;
     }
 
     @Override
     protected int getBundleVersion() {
         return BUNDLE_VERSION_CURRENT;
+    }
+
+    private static int[] byteArrayToIntArray(byte[] bytes) {
+        if (bytes == null) {
+            return null;
+        }
+
+        int[] values = new int[bytes.length];
+        for (int i = 0; i < values.length; i++) {
+            values[i] = bytes[i];
+        }
+        return values;
+    }
+
+    private static byte[] intArrayToByteArray(int[] values) {
+        if (values == null) {
+            return null;
+        }
+        byte[] bytes = new byte[values.length];
+        for (int i = 0; i < values.length; i++) {
+            bytes[i] = (byte) values[i];
+        }
+        return bytes;
     }
 
     @Override
@@ -189,6 +218,9 @@ public class AliroOpenRangingParams extends AliroParams {
         bundle.putDouble(KEY_RANGE_DATA_NTF_AOA_AZIMUTH_UPPER, mRangeDataNtfAoaAzimuthUpper);
         bundle.putDouble(KEY_RANGE_DATA_NTF_AOA_ELEVATION_LOWER, mRangeDataNtfAoaElevationLower);
         bundle.putDouble(KEY_RANGE_DATA_NTF_AOA_ELEVATION_UPPER, mRangeDataNtfAoaElevationUpper);
+        bundle.putIntArray(KEY_SESSION_KEY, byteArrayToIntArray(mSessionKey));
+        bundle.putInt(KEY_MAC_MODE_ROUND, mMacModeRound);
+        bundle.putInt(KEY_MAC_MODE_OFFSET, mMacModeOffset);
         return bundle;
     }
 
@@ -248,6 +280,9 @@ public class AliroOpenRangingParams extends AliroParams {
                 .setRangeDataNtfAoaElevationUpper(
                         bundle.getDouble(KEY_RANGE_DATA_NTF_AOA_ELEVATION_UPPER,
                                 RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT))
+                .setSessionKey(intArrayToByteArray(bundle.getIntArray(KEY_SESSION_KEY)))
+                .setMacModeRound(bundle.getInt(KEY_MAC_MODE_ROUND, MAC_MODE_ROUND_DEFAULT))
+                .setMacModeOffset(bundle.getInt(KEY_MAC_MODE_OFFSET, MAC_MODE_OFFSET_DEFAULT))
                 .build();
     }
 
@@ -360,6 +395,19 @@ public class AliroOpenRangingParams extends AliroParams {
         return new AliroOpenRangingParams.Builder(this);
     }
 
+    public byte[] getSessionKey() {
+        return mSessionKey;
+    }
+
+    public @MacModeRound int getMacModeRound() {
+        return mMacModeRound;
+    }
+
+    public int getMacModeOffset() {
+        return mMacModeOffset;
+    }
+
+
     /** Builder */
     public static final class Builder {
         private RequiredParam<AliroProtocolVersion> mProtocolVersion = new RequiredParam<>();
@@ -405,6 +453,11 @@ public class AliroOpenRangingParams extends AliroParams {
 
         /** UCI spec default: +90 (No upper-bound filtering) */
         private double mRangeDataNtfAoaElevationUpper = RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT;
+        /** Similar to PROVISIONED STS only. 128-bit or 256-bit long */
+        private byte[] mSessionKey = null;
+        private @MacModeRound int mMacModeRound = MAC_MODE_ROUND_DEFAULT;
+        private int mMacModeOffset = 0;
+
 
         public Builder() {}
 
@@ -433,6 +486,9 @@ public class AliroOpenRangingParams extends AliroParams {
             mRangeDataNtfAoaAzimuthUpper = builder.mRangeDataNtfAoaAzimuthUpper;
             mRangeDataNtfAoaElevationLower = builder.mRangeDataNtfAoaElevationLower;
             mRangeDataNtfAoaElevationUpper = builder.mRangeDataNtfAoaElevationUpper;
+            mSessionKey = builder.mSessionKey;
+            mMacModeRound = builder.mMacModeRound;
+            mMacModeOffset = builder.mMacModeOffset;
         }
 
         public Builder(@NonNull AliroOpenRangingParams params) {
@@ -457,6 +513,9 @@ public class AliroOpenRangingParams extends AliroParams {
             mRangeDataNtfAoaAzimuthUpper = params.mRangeDataNtfAoaAzimuthUpper;
             mRangeDataNtfAoaElevationLower = params.mRangeDataNtfAoaElevationLower;
             mRangeDataNtfAoaElevationUpper = params.mRangeDataNtfAoaElevationUpper;
+            mSessionKey = params.mSessionKey;
+            mMacModeRound = params.mMacModeRound;
+            mMacModeOffset = params.mMacModeOffset;
         }
 
         public Builder setProtocolVersion(AliroProtocolVersion version) {
@@ -601,6 +660,24 @@ public class AliroOpenRangingParams extends AliroParams {
             return this;
         }
 
+        /** set session key */
+        public Builder setSessionKey(byte[] sessionKey) {
+            mSessionKey = sessionKey;
+            return this;
+        }
+
+        /** set mac mode round */
+        public Builder setMacModeRound(@MacModeRound int macModeRound) {
+            mMacModeRound = macModeRound;
+            return this;
+        }
+
+        /** set mac mode offset */
+        public Builder setMacModeOffset(int macModeOffset) {
+            mMacModeOffset = macModeOffset;
+            return this;
+        }
+
         private void checkRangeDataNtfConfig() {
             if (mRangeDataNtfConfig == RANGE_DATA_NTF_CONFIG_DISABLE) {
                 checkArgument(mRangeDataNtfProximityNear
@@ -661,6 +738,10 @@ public class AliroOpenRangingParams extends AliroParams {
 
         public AliroOpenRangingParams build() {
             checkRangeDataNtfConfig();
+            checkArgument(mSessionKey != null
+                              && (mSessionKey.length == 16 || mSessionKey.length == 32));
+            checkArgument(mMacModeRound == MAC_MODE_ROUND_1 || mMacModeRound == MAC_MODE_ROUND_2);
+            checkArgument(mMacModeOffset == 0 ^ mMacModeRound == MAC_MODE_ROUND_2);
             return new AliroOpenRangingParams(
                     mProtocolVersion.get(),
                     mUwbConfig.get(),
@@ -685,7 +766,10 @@ public class AliroOpenRangingParams extends AliroParams {
                     mRangeDataNtfAoaAzimuthLower,
                     mRangeDataNtfAoaAzimuthUpper,
                     mRangeDataNtfAoaElevationLower,
-                    mRangeDataNtfAoaElevationUpper);
+                    mRangeDataNtfAoaElevationUpper,
+                    mSessionKey,
+                    mMacModeRound,
+                    mMacModeOffset);
         }
     }
 }

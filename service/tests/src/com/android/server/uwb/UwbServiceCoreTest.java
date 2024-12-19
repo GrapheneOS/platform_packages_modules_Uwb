@@ -195,7 +195,11 @@ public class UwbServiceCoreTest {
                     .setNumSlotsPerRound(AliroParams.SLOTS_PER_ROUND_6)
                     .setSyncCodeIndex(1)
                     .setHoppingConfigMode(AliroParams.HOPPING_CONFIG_MODE_NONE)
-                    .setHoppingSequence(AliroParams.HOPPING_SEQUENCE_DEFAULT);
+                    .setHoppingSequence(AliroParams.HOPPING_SEQUENCE_DEFAULT)
+                    .setMacModeRound(AliroParams.MAC_MODE_ROUND_1)
+                    .setMacModeOffset(0)
+                    .setSessionKey(new byte[]{0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5,
+                            0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78});
     @VisibleForTesting
     private static final CccOpenRangingParams.Builder TEST_CCC_OPEN_RANGING_PARAMS =
             new CccOpenRangingParams.Builder()
@@ -2089,6 +2093,8 @@ public class UwbServiceCoreTest {
                 };
 
         Integer[] uwbConfigs = new Integer[] {AliroParams.UWB_CONFIG_0, AliroParams.UWB_CONFIG_1};
+        Integer[] macModes = new Integer[] {AliroParams.MAC_MODE_ROUND_1,
+                AliroParams.MAC_MODE_ROUND_2};
         AliroPulseShapeCombo[] pulseShapeCombos =
                 new AliroPulseShapeCombo[] {
                         new AliroPulseShapeCombo(
@@ -2149,6 +2155,9 @@ public class UwbServiceCoreTest {
 
         for (int hoppingSequence : hoppingSequences) {
             paramsBuilder.addHoppingSequence(hoppingSequence);
+        }
+        for (int macMode : macModes) {
+            paramsBuilder.addMacMode(macMode);
         }
         return paramsBuilder.build();
     }

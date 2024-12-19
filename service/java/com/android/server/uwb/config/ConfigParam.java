@@ -158,6 +158,9 @@ public class ConfigParam {
     public static final int NUMBER_OF_BURSTS_KEY = NUMBER_OF_BURSTS;
     public static final int RADAR_DATA_TYPE_KEY = RADAR_DATA_TYPE;
 
+    // Aliro
+    public static final int ALIRO_MAC_MODE = 0xA9;
+
     //Rf test related config IDs
     public static final int NUMBER_OF_PACKETS = 0x00;
     public static final int T_GAP = 0x01;

@@ -18,6 +18,9 @@ package com.android.server.ranging;
 
 import static java.lang.Math.min;
 
+import android.app.AlarmManager;
+import android.os.SystemClock;
+
 import com.google.common.collect.ImmutableList;
 
 import java.nio.ByteBuffer;
@@ -29,6 +32,8 @@ import java.util.List;
  * Utilities for {@link com.android.ranging}.
  */
 public class RangingUtils {
+
+    private static final String MEASUREMENT_TIME_LIMIT_EXCEEDED = "measurementTimeLimitExceeded";
     /**
      * A basic synchronized state machine.
      * @param <E> enum representing the different states of the machine.
@@ -132,5 +137,21 @@ public class RangingUtils {
             buffer.put(byteArray).rewind();
             return buffer.getInt();
         }
+    }
+
+    public static void setMeasurementsLimitTimeout(
+            AlarmManager alarmManager,
+            AlarmManager.OnAlarmListener measurementLimitListener,
+            int measurementsLimit, int rangingIntervalMs) {
+        if (alarmManager == null) {
+            return;
+        }
+        alarmManager.setExact(
+                AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                SystemClock.elapsedRealtime() + ((long) measurementsLimit * rangingIntervalMs),
+                MEASUREMENT_TIME_LIMIT_EXCEEDED,
+                measurementLimitListener,
+                null
+        );
     }
 }

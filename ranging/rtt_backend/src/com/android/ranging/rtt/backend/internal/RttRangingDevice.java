@@ -70,6 +70,10 @@ public class RttRangingDevice {
     private boolean mProximityEdgeEnabled;
     private boolean mCheckProximityEdgeFlag = true;
 
+    public RttRangingParameters getRttRangingParameters() {
+        return mRttRangingParameters;
+    }
+
     /** Listener for range results. */
     private RttRangerListener mRttRangingListener = new RttRangerListener() {
         @Override

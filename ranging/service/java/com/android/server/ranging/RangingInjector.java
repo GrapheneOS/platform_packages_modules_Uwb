@@ -27,6 +27,7 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Binder;
+import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Process;
@@ -66,6 +67,8 @@ public class RangingInjector {
 
     private final Looper mLooper;
 
+    private final Handler mAlarmHandler;
+
     public RangingInjector(@NonNull Context context) {
         HandlerThread rangingHandlerThread = new HandlerThread("RangingServiceHandler");
         rangingHandlerThread.start();
@@ -76,6 +79,7 @@ public class RangingInjector {
                 mContext.getSystemService(ActivityManager.class),
                 mLooper);
         mPermissionManager = context.getSystemService(PermissionManager.class);
+        mAlarmHandler = new Handler(mLooper);
     }
 
     public Context getContext() {
@@ -88,6 +92,10 @@ public class RangingInjector {
 
     public RangingServiceManager getRangingServiceManager() {
         return mRangingServiceManager;
+    }
+
+    public Handler getAlarmHandler() {
+        return mAlarmHandler;
     }
 
     /**
@@ -214,6 +222,11 @@ public class RangingInjector {
     /** Helper method to check if the app is from foreground app/service. */
     public static boolean isForegroundAppOrServiceImportance(int importance) {
         return importance <= ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE;
+    }
+
+    /** Helper method to check if the app or service is no longer running. */
+    public static boolean isNonExistentAppOrService(int importance) {
+        return importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_GONE;
     }
 
     public boolean isPrivilegedApp(int uid, String packageName) {
