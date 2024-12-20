@@ -44,26 +44,31 @@ public abstract class SetConfigurationMessage {
     public static SetConfigurationMessage parseBytes(byte[] payload) {
         OobHeader header = OobHeader.parseBytes(payload);
 
+        if (header.getMessageType() != MessageType.SET_CONFIGURATION) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Invalid message type: %s, expected %s",
+                            header.getMessageType(), MessageType.SET_CONFIGURATION));
+        }
+
         if (payload.length < header.getSize() + MIN_SIZE_BYTES) {
             throw new IllegalArgumentException(
-                    String.format("CapabilityResponseMessage payload size is %d bytes",
-                            payload.length));
+                    String.format(
+                            "CapabilityResponseMessage payload size is %d bytes", payload.length));
         }
 
         int parseCursor = header.getSize();
 
         // Parse Ranging Technologies Set
         var rangingTechnologiesSet =
-                RangingTechnology.fromBitmap(
-                        Arrays.copyOfRange(payload, parseCursor,
-                                parseCursor + RANGING_TECHNOLOGIES_SET_SIZE));
+                RangingTechnology.fromBitmap(Arrays.copyOfRange(
+                        payload, parseCursor, parseCursor + RANGING_TECHNOLOGIES_SET_SIZE));
         parseCursor += RANGING_TECHNOLOGIES_SET_SIZE;
 
         // Parse Start Ranging List
         var startRangingList =
-                RangingTechnology.fromBitmap(
-                        Arrays.copyOfRange(payload, parseCursor,
-                                parseCursor + START_RANGING_LIST_SIZE));
+                RangingTechnology.fromBitmap(Arrays.copyOfRange(
+                        payload, parseCursor, parseCursor + START_RANGING_LIST_SIZE));
         parseCursor += START_RANGING_LIST_SIZE;
 
         // Parse Configs for ranging technologies that are set
@@ -77,8 +82,7 @@ public abstract class SetConfigurationMessage {
                     if (uwbConfig != null) {
                         throw new IllegalArgumentException(
                                 "Failed to parse SetConfigurationMessage, UwbConfig already set. "
-                                        + "Bytes:"
-                                        + Arrays.toString(payload));
+                                        + "Bytes: " + Arrays.toString(payload));
                     }
                     uwbConfig = UwbOobConfig.parseBytes(remainingBytes);
                     parseCursor += uwbConfig.getSize();
@@ -147,7 +151,8 @@ public abstract class SetConfigurationMessage {
                 ImmutableList<RangingTechnology> rangingTechnologiesSet);
 
         public abstract Builder setStartRangingList(
-                ImmutableList<RangingTechnology> startRangingList);
+                ImmutableList<RangingTechnology> startRangingList
+        );
 
         public abstract Builder setUwbConfig(@Nullable UwbOobConfig uwbConfig);
 

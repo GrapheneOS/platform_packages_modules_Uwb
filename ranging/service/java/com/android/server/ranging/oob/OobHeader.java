@@ -16,11 +16,20 @@
 
 package com.android.server.ranging.oob;
 
+import android.annotation.IntDef;
+
 import com.google.auto.value.AutoValue;
 
 /** Header for OOB messages. */
 @AutoValue
 public abstract class OobHeader {
+
+    @IntDef({
+            OobVersion.CURRENT,
+    })
+    public @interface OobVersion {
+        int CURRENT = 0;
+    }
 
     private static final int SIZE_BYTES = 2;
 

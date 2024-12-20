@@ -1,13 +1,17 @@
 import copy
 import dataclasses
 from enum import IntEnum, StrEnum
-from typing import Set
+from typing import Set, Dict
 from uuid import uuid4
 from lib.params import RangingPreference
-from mobly.controllers import android_device
+from mobly.controllers.android_device import AndroidDevice
+from mobly.controllers.android_device_lib.callback_handler_v2 import (
+    CallbackHandlerV2,
+)
+from mobly.snippet.callback_event import CallbackEvent
 
 
-CALLBACK_WAIT_TIME_SEC = 5
+CALLBACK_WAIT_TIME_SEC = 5.0
 
 
 class RangingTechnology(IntEnum):
@@ -24,11 +28,16 @@ class Event(StrEnum):
   DATA = "DATA"
   STOPPED = "STOPPED"
   CLOSED = "CLOSED"
+  OOB_SEND_CAPABILITIES_REQUEST = "OOB_SEND_CAPABILITIES_REQUEST",
+  OOB_SEND_CAPABILITIES_RESPONSE = "OOB_SEND_CAPABILITIES_RESPONSE",
+  OOB_SEND_SET_CONFIGURATION = "OOB_SEND_SET_CONFIGURATION",
+  OOB_SEND_UNKNOWN = "OOB_SEND_UNKNOWN",
+  OOB_CLOSED = "OOB_CLOSED"
 
 
 class RangingDecorator:
 
-  def __init__(self, ad: android_device.AndroidDevice):
+  def __init__(self, ad: AndroidDevice):
     """Initialize the ranging device.
 
     Args:
@@ -36,10 +45,19 @@ class RangingDecorator:
     """
     self.id = str(uuid4())
     self.ad = ad
-    self._event_handlers = {}
+    self._callback_events: Dict[str, CallbackHandlerV2] = {}
     self.log = self.ad.log
     self.uwb_address = None
     self.bt_addr = None
+
+  def start_ranging(
+      self, session_handle: str, preference: RangingPreference
+  ):
+    """Start ranging with the specified preference. """
+    handler = self.ad.ranging.startRanging(
+        session_handle, dataclasses.asdict(preference)
+    )
+    self._callback_events[session_handle] = handler
 
   def start_ranging_and_assert_opened(
       self, session_handle: str, preference: RangingPreference
@@ -49,17 +67,14 @@ class RangingDecorator:
     Throws:
       CallbackHandlerTimeoutError if ranging does not successfully start.
     """
-    handler = self.ad.ranging.startRanging(
-        session_handle, dataclasses.asdict(preference)
-    )
-    self._event_handlers[session_handle] = handler
+    self.start_ranging(session_handle, preference)
     self.assert_ranging_event_received(session_handle, Event.OPENED)
 
-  def is_ranging_technology_supported(self, ranging_technology : RangingTechnology) -> bool:
-
+  def is_ranging_technology_supported(
+      self, ranging_technology: RangingTechnology
+  ) -> bool:
     """Checks whether a specific ranging technology is supported by the device"""
     return self.ad.ranging.isTechnologySupported(ranging_technology)
-
 
   def stop_ranging_and_assert_closed(self, session_handle: str):
     """Stop ranging and wait for onStopped event.
@@ -69,14 +84,14 @@ class RangingDecorator:
     """
     self.ad.ranging.stopRanging(session_handle)
     self.assert_ranging_event_received(session_handle, Event.CLOSED)
-    self._event_handlers.pop(session_handle)
+    self._callback_events.pop(session_handle)
 
   def assert_ranging_event_received(
       self,
       session_handle: str,
       event: Event,
-      timeout_s: int = CALLBACK_WAIT_TIME_SEC,
-  ):
+      timeout_s: float = CALLBACK_WAIT_TIME_SEC,
+  ) -> CallbackEvent:
     """Asserts that the expected event is received before a timeout.
 
     Args:
@@ -84,18 +99,21 @@ class RangingDecorator:
       event: expected ranging event.
       timeout_s: timeout in seconds.
 
+    Returns:
+      The event
+
     Throws:
       CallbackHandlerTimeoutError if the expected event was not received.
     """
-    handler = self._event_handlers[session_handle]
-    handler.waitAndGet(event, timeout=timeout_s)
+    handler = self._callback_events[session_handle]
+    return handler.waitAndGet(event, timeout=timeout_s)
 
   def verify_received_data_from_peer_using_technologies(
       self,
       session_handle: str,
       peer_id: str,
       technologies: Set[RangingTechnology],
-      timeout_s: int = CALLBACK_WAIT_TIME_SEC,
+      timeout_s: float = CALLBACK_WAIT_TIME_SEC,
   ) -> bool:
     """Verifies that the peer sends us data from all provided technologies before a timeout.
 
@@ -112,17 +130,16 @@ class RangingDecorator:
     remaining_technologies = copy.deepcopy(technologies)
 
     def predicate(event):
-      peer = event.data["peer"]
       technology = event.data["technology"]
 
-      if peer == peer_id and technology in copy.deepcopy(
+      if event.data["peer_id"] == peer_id and technology in copy.deepcopy(
           remaining_technologies
       ):
         remaining_technologies.remove(technology)
 
       return not bool(remaining_technologies)
 
-    handler = self._event_handlers[session_handle]
+    handler = self._callback_events[session_handle]
     try:
       handler.waitForEvent(Event.DATA, predicate, timeout=timeout_s)
       return True
@@ -133,7 +150,7 @@ class RangingDecorator:
       self,
       session_handle: str,
       peer_id: str,
-      timeout_s: int = CALLBACK_WAIT_TIME_SEC,
+      timeout_s: float = CALLBACK_WAIT_TIME_SEC,
   ) -> bool:
     """Verifies that the peer sends us data using any technology before a timeout.
 
@@ -147,9 +164,9 @@ class RangingDecorator:
     """
 
     def predicate(event):
-      return event.data["peer"] == peer_id
+      return event.data["peer_id"] == peer_id
 
-    handler = self._event_handlers[session_handle]
+    handler = self._callback_events[session_handle]
     try:
       handler.waitForEvent(Event.DATA, predicate, timeout=timeout_s)
       return True
@@ -158,7 +175,12 @@ class RangingDecorator:
 
   def clear_ranging_sessions(self):
     """Stop all ranging sessions and clear callback events"""
-    for session_handle in self._event_handlers.keys():
+    for session_handle in self._callback_events.keys():
       self.ad.ranging.stopRanging(session_handle)
 
-    self._event_handlers.clear()
+    self._callback_events.clear()
+
+  def get_callback_handler(self, session_handle: str) -> CallbackHandlerV2:
+    """Get the mobly CallbackHandler associated with the provided session"""
+    return self._callback_events.get(session_handle, None)
+

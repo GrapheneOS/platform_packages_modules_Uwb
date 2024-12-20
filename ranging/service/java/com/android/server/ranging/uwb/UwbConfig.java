@@ -90,7 +90,7 @@ public class UwbConfig implements RangingSessionConfig.MulticastTechnologyConfig
         return mCountryCode;
     }
 
-    public int getDeviceRole() {
+    public @RangingPreference.DeviceRole int getDeviceRole() {
         return mDeviceRole;
     }
 

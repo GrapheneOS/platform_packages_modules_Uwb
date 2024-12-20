@@ -83,7 +83,7 @@ public class CapabilitiesProvider {
     public RangingCapabilities getCachedCapabilities() {
         if (mCachedCapabilities == null) {
             initializeAdaptersForAllTechnologies();
-            mCachedCapabilities = getCapabilities().build();
+            mCachedCapabilities = queryAdaptersForCapabilities().build();
         }
         return mCachedCapabilities;
     }
@@ -106,7 +106,15 @@ public class CapabilitiesProvider {
         mCallbacks.unregister(callback);
     }
 
-    private synchronized RangingCapabilities.Builder getCapabilities() {
+    public synchronized @NonNull RangingCapabilities getCapabilities() {
+        if (mCachedCapabilities == null) {
+            initializeAdaptersForAllTechnologies();
+            mCachedCapabilities = queryAdaptersForCapabilities().build();
+        }
+        return mCachedCapabilities;
+    }
+
+    private synchronized RangingCapabilities.Builder queryAdaptersForCapabilities() {
         RangingCapabilities.Builder builder = new RangingCapabilities.Builder();
         for (RangingTechnology technology : mCapabilityAdapters.keySet()) {
             CapabilitiesAdapter adapter = mCapabilityAdapters.get(technology);
@@ -150,7 +158,7 @@ public class CapabilitiesProvider {
                 @AvailabilityChangedReason int unused
         ) {
             synchronized (CapabilitiesProvider.this) {
-                mCachedCapabilities = getCapabilities()
+                mCachedCapabilities = queryAdaptersForCapabilities()
                         .addAvailability(mTechnology.getValue(), availability)
                         .build();
                 synchronized (mCallbacks) {

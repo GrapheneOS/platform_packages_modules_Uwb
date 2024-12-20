@@ -113,8 +113,8 @@ public final class OobInitiatorRangingConfig extends RangingConfig implements Pa
         mDeviceHandles = new ArrayList<>(builder.mDeviceHandles);
         mSecurityLevel = builder.mSecurityLevel;
         mRangingMode = builder.mRangingMode;
-        mRangingIntervalRange = new Range<>(builder.mSlowestRangingInterval,
-                builder.mFastestRangingInterval);
+        mRangingIntervalRange = new Range<>(builder.mFastestRangingInterval,
+                builder.mSlowestRangingInterval);
     }
 
     private OobInitiatorRangingConfig(Parcel in) {

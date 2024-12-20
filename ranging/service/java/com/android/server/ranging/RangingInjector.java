@@ -41,6 +41,7 @@ import com.android.server.ranging.blerssi.BleRssiAdapter;
 import com.android.server.ranging.blerssi.BleRssiCapabilitiesAdapter;
 import com.android.server.ranging.cs.CsAdapter;
 import com.android.server.ranging.cs.CsCapabilitiesAdapter;
+import com.android.server.ranging.oob.OobController;
 import com.android.server.ranging.rtt.RttAdapter;
 import com.android.server.ranging.rtt.RttCapabilitiesAdapter;
 import com.android.server.ranging.session.RangingSessionConfig;
@@ -61,6 +62,7 @@ public class RangingInjector {
 
     private final Context mContext;
     private final RangingServiceManager mRangingServiceManager;
+    private final OobController mOobController;
 
     private final CapabilitiesProvider mCapabilitiesProvider;
     private final PermissionManager mPermissionManager;
@@ -78,6 +80,7 @@ public class RangingInjector {
         mRangingServiceManager = new RangingServiceManager(this,
                 mContext.getSystemService(ActivityManager.class),
                 mLooper);
+        mOobController = new OobController();
         mPermissionManager = context.getSystemService(PermissionManager.class);
         mAlarmHandler = new Handler(mLooper);
     }
@@ -92,6 +95,10 @@ public class RangingInjector {
 
     public RangingServiceManager getRangingServiceManager() {
         return mRangingServiceManager;
+    }
+
+    public OobController getOobController() {
+        return mOobController;
     }
 
     public Handler getAlarmHandler() {

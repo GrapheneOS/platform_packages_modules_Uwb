@@ -18,7 +18,6 @@ package com.android.server.ranging.uwb;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
-import android.annotation.IntDef;
 import android.ranging.uwb.UwbAddress;
 
 import com.android.server.ranging.RangingTechnology;
@@ -35,29 +34,7 @@ import java.util.Arrays;
 @AutoValue
 public abstract class UwbOobConfig {
 
-    @IntDef({
-            OobDeviceMode.UNKNOWN,
-            OobDeviceMode.CONTROLLER,
-            OobDeviceMode.CONTROLEE,
-    })
-    public @interface OobDeviceMode {
-        int UNKNOWN = 0;
-        int CONTROLLER = 1;
-        int CONTROLEE = 2;
-    }
-
-    @IntDef({
-            OobDeviceRole.UNKNOWN,
-            OobDeviceRole.INITIATOR,
-            OobDeviceRole.RESPONDER,
-    })
-    public @interface OobDeviceRole {
-        int UNKNOWN = 0;
-        int INITIATOR = 1;
-        int RESPONDER = 2;
-    }
-
-    private static final int MIN_SIZE_BYTES = 20;
+    private static final int MIN_SIZE_BYTES = 19;
 
     // Size in bytes for properties when serialized.
     private static final int UWB_ADDRESS_SIZE = 2;
@@ -81,7 +58,7 @@ public abstract class UwbOobConfig {
     }
 
     /**
-     * Parses the given byte array and returns {@link UwbOobConfig} object. Throws {@link
+     * Parses the given byte array and returns {@link UwbConfig} object. Throws {@link
      * IllegalArgumentException} on invalid input.
      */
     public static UwbOobConfig parseBytes(byte[] uwbConfigBytes) {
@@ -89,9 +66,8 @@ public abstract class UwbOobConfig {
 
         if (uwbConfigBytes.length < MIN_SIZE_BYTES) {
             throw new IllegalArgumentException(
-                    String.format(
-                            "UwbConfig size is %d, expected at least %d", uwbConfigBytes.length,
-                            MIN_SIZE_BYTES));
+                    String.format("UwbConfig size is %d, expected at least %d",
+                            uwbConfigBytes.length, MIN_SIZE_BYTES));
         }
 
         if (uwbConfigBytes.length < header.getSize()) {
@@ -112,16 +88,14 @@ public abstract class UwbOobConfig {
 
         // Parse Uwb Address
         UwbAddress uwbAddress =
-                UwbAddress.fromBytes(
-                        Arrays.copyOfRange(uwbConfigBytes, parseCursor,
-                                parseCursor + UWB_ADDRESS_SIZE));
+                UwbAddress.fromBytes(Arrays.copyOfRange(
+                        uwbConfigBytes, parseCursor, parseCursor + UWB_ADDRESS_SIZE));
         parseCursor += UWB_ADDRESS_SIZE;
 
         // Parse Session Id
         int sessionId =
-                Conversions.byteArrayToInt(
-                        Arrays.copyOfRange(uwbConfigBytes, parseCursor,
-                                parseCursor + SESSION_ID_SIZE));
+                Conversions.byteArrayToInt(Arrays.copyOfRange(
+                        uwbConfigBytes, parseCursor, parseCursor + SESSION_ID_SIZE));
         parseCursor += SESSION_ID_SIZE;
 
         // Parse Config Id
@@ -138,9 +112,8 @@ public abstract class UwbOobConfig {
 
         // Parse Ranging Interval Ms
         int rangingIntervalMs =
-                Conversions.byteArrayToInt(
-                        Arrays.copyOfRange(uwbConfigBytes, parseCursor,
-                                parseCursor + RANGING_INTERVAL_SIZE));
+                Conversions.byteArrayToInt(Arrays.copyOfRange(
+                        uwbConfigBytes, parseCursor, parseCursor + RANGING_INTERVAL_SIZE));
         parseCursor += RANGING_INTERVAL_SIZE;
 
         // Parse Slot Duration
@@ -153,26 +126,25 @@ public abstract class UwbOobConfig {
 
         if (uwbConfigBytes.length < MIN_SIZE_BYTES + sessionKeyLength) {
             throw new IllegalArgumentException(
-                    "Failed to parse UwbConfig, invalid size. Bytes: " + Arrays.toString(
-                            uwbConfigBytes));
+                    "Failed to parse UwbConfig, invalid size. Bytes: "
+                            + Arrays.toString(uwbConfigBytes));
         }
-        byte[] sessionKey = Arrays.copyOfRange(
-                uwbConfigBytes, parseCursor, parseCursor + sessionKeyLength);
+        byte[] sessionKey =
+                Arrays.copyOfRange(uwbConfigBytes, parseCursor, parseCursor + sessionKeyLength);
         parseCursor += sessionKeyLength;
 
         // Parse Country Code
         String countryCode =
-                new String(
-                        Arrays.copyOfRange(uwbConfigBytes, parseCursor,
-                                parseCursor + COUNTRY_CODE_SIZE));
+                new String(Arrays.copyOfRange(
+                        uwbConfigBytes, parseCursor, parseCursor + COUNTRY_CODE_SIZE));
         parseCursor += COUNTRY_CODE_SIZE;
 
         // Parse Device Role
-        @OobDeviceRole int deviceRole = uwbConfigBytes[parseCursor];
+        int deviceRole = uwbConfigBytes[parseCursor];
         parseCursor += DEVICE_ROLE_SIZE;
 
         // Parse Device Mode
-        @OobDeviceMode int deviceMode = uwbConfigBytes[parseCursor];
+        int deviceMode = uwbConfigBytes[parseCursor];
         parseCursor += DEVICE_MODE_SIZE;
 
         return builder()
@@ -190,20 +162,19 @@ public abstract class UwbOobConfig {
                 .build();
     }
 
-    /** Serializes this {@link UwbOobConfig} object to bytes. */
+    /** Serializes this {@link UwbConfig} object to bytes. */
     public final byte[] toBytes() {
         int size = MIN_SIZE_BYTES + getSessionKeyLength();
         return ByteBuffer.allocate(size)
                 .put(RangingTechnology.UWB.toByte())
                 .put((byte) size)
-                .put(RangingTechnology.UWB.toByte())
                 .put(getUwbAddress().getAddressBytes())
                 .put(Conversions.intToByteArray(getSessionId(), SESSION_ID_SIZE))
                 .put(Conversions.intToByteArray(getSelectedConfigId(), CONFIG_ID_SIZE))
                 .put(Conversions.intToByteArray(getSelectedChannel(), CHANNEL_SIZE))
                 .put(Conversions.intToByteArray(getSelectedPreambleIndex(), PREAMBLE_INDEX_SIZE))
-                .put(Conversions.intToByteArray(getSelectedRangingIntervalMs(),
-                        RANGING_INTERVAL_SIZE))
+                .put(Conversions.intToByteArray(
+                        getSelectedRangingIntervalMs(), RANGING_INTERVAL_SIZE))
                 .put(Conversions.intToByteArray(getSelectedSlotDurationMs(), SLOT_DURATION_SIZE))
                 .put(Conversions.intToByteArray(getSessionKeyLength(), SESSION_KEY_LENGTH_SIZE))
                 .put(getSessionKey())
@@ -242,8 +213,7 @@ public abstract class UwbOobConfig {
     /**
      * Returns the session key bytes. If S-STS is used then first two bytes are VENDOR ID and
      * following 6 bytes are STATIC STS IV. If P-STS is used then this is either a 16 byte or 32
-     * byte
-     * session key.
+     * byte session key.
      */
     @SuppressWarnings("mutable")
     public abstract byte[] getSessionKey();
@@ -257,12 +227,24 @@ public abstract class UwbOobConfig {
     /** Returns Device Mode. */
     public abstract @OobDeviceMode int getDeviceMode();
 
-    /** Returns a builder for {@link UwbOobConfig}. */
+    /** Returns a builder for {@link UwbConfig}. */
     public static Builder builder() {
-        return new AutoValue_UwbOobConfig.Builder().setSessionKey(new byte[]{});
+        return new AutoValue_UwbOobConfig.Builder().setSessionKey(new byte[] {});
     }
 
-    /** Builder for {@link UwbOobConfig}. */
+    public @interface OobDeviceMode {
+        int UNKNOWN = 0;
+        int CONTROLLER = 1;
+        int CONTROLEE = 2;
+    }
+
+    public @interface OobDeviceRole {
+        int UNKNOWN = 0;
+        int INITIATOR = 1;
+        int RESPONDER = 2;
+    }
+
+    /** Builder for {@link UwbConfig}. */
     @AutoValue.Builder
     public abstract static class Builder {
         public abstract Builder setUwbAddress(UwbAddress uwbAddress);

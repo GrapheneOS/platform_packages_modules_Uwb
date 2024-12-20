@@ -31,6 +31,15 @@ class DeviceParams:
 class RangingParams(ABC):
   session_type: RangingSessionType
 
+@dataclasses.dataclass(kw_only=True, frozen=True)
+class OobInitiatorRangingParams(RangingParams):
+  session_type: RangingSessionType = RangingSessionType.OOB
+  peer_ids: List[str]
+
+@dataclasses.dataclass(kw_only=True, frozen=True)
+class OobResponderRangingParams(RangingParams):
+  session_type: RangingSessionType = RangingSessionType.OOB
+  peer_id: str
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class RawInitiatorRangingParams(RangingParams):
