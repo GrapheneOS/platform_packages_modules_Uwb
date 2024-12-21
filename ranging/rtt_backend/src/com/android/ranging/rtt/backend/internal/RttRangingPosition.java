@@ -79,6 +79,7 @@ public class RttRangingPosition {
     public RttRangingPosition(@NonNull RangingResult rangingResult) {
         mDistanceMeters = rangingResult.getDistanceMm() / 1000;
         mDistanceStdDevMm = rangingResult.getDistanceStdDevMm();
+        mRssi = rangingResult.getRssi();
         mLci = rangingResult.getLci();
         mLcr = rangingResult.getLcr();
         mMacAddress = rangingResult.getMacAddress();

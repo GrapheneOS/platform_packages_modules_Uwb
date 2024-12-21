@@ -206,13 +206,12 @@ public class RttRangingDevice {
     }
 
     public void stopRanging() {
-        Log.i(TAG, "Closing WiFi aware session");
-
         synchronized (mLock) {
             if (!mIsRunning) {
                 Log.w(TAG, "This client has stopped ranging already");
                 return;
             }
+            Log.i(TAG, "Closing WiFi aware session");
             mIsRunning = false;
             mRttRanger.stopRanging();
             mHandler.removeCallbacks(mRunnablePingPublisher);

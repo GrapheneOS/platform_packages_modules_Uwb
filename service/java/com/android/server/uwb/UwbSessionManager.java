@@ -59,6 +59,7 @@ import android.uwb.RangingChangeReason;
 import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
 
+import androidx.annotation.GuardedBy;
 import androidx.annotation.VisibleForTesting;
 
 import com.android.modules.utils.build.SdkLevel;
@@ -85,6 +86,7 @@ import com.android.uwb.fusion.UwbFilterEngine;
 import com.android.uwb.fusion.pose.ApplicationPoseSource;
 import com.android.uwb.fusion.pose.IPoseSource;
 
+import com.google.common.collect.Sets;
 import com.google.uwb.support.aliro.AliroOpenRangingParams;
 import com.google.uwb.support.aliro.AliroParams;
 import com.google.uwb.support.aliro.AliroRangingStartedParams;
@@ -2915,8 +2917,20 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         // reasonCode from the last received SESSION_STATUS_NTF for this session.
         private int mLastSessionStatusNtfReasonCode = -1;
 
-        // Keeps track of all controlees in the session.
+        /**
+         * Acquire to synchronized changes in controlee count
+         * Guards mControlees and mControleesPendingDisconnection
+         */
+        private final Object mControleeCountLock = new Object();
+
+        /**
+         * Keeps track of all controlees in the session.
+         */
         public Map<UwbAddress, UwbControlee> mControlees;
+
+        /** Number of controlees pending disconnection due to error streak timeout */
+        @GuardedBy("mControleeCountLock")
+        private final Set<UwbAddress> mControleesPendingDisconnection;
 
         // Keep track of RF Test start session params
         private RfTestStartSessionParams mRfTestStartSessionParams = null;
@@ -2940,6 +2954,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     getAnyNonPrivilegedAppInAttributionSourceInternal();
             this.mStackSessionPriority = calculateSessionPriority();
             this.mControlees = new ConcurrentHashMap<>();
+            this.mControleesPendingDisconnection = Sets.newConcurrentHashSet();
 
             if (params instanceof FiraOpenSessionParams) {
                 FiraOpenSessionParams firaParams = (FiraOpenSessionParams) params;
@@ -3174,7 +3189,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             if (mControlees.containsKey(address)) {
                 return;
             }
-            mControlees.put(address, new UwbControlee(address, createFilterEngine(), mUwbInjector));
+            synchronized (mControleeCountLock) {
+                mControlees.put(address,
+                        new UwbControlee(address, createFilterEngine(), mUwbInjector));
+            }
         }
 
         /**
@@ -3208,7 +3226,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             Log.d(TAG, "Removing controlee.");
             stopRangingResultErrorStreakTimerIfSet(address);
             mControlees.get(address).close();
-            mControlees.remove(address);
+
+            synchronized (mControleeCountLock) {
+                mControlees.remove(address);
+                mControleesPendingDisconnection.remove(address);
+            }
         }
 
         public AttributionSource getAttributionSource() {
@@ -3703,15 +3725,19 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             AlarmManager.OnAlarmListener onAlarm = () -> {
                 Log.w(TAG, "Continuous errors or no ranging results detected from controlee "
                         + address + " for " + mRangingErrorStreakTimeoutMs + " ms.");
-                if (mControlees.size() == 1) {
-                    Log.w(TAG, "No active controlees, stopping session");
-                    if (getSessionState() == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
-                        stopRangingInternal(mSessionHandle, true /* triggeredBySystemPolicy */);
+
+                synchronized (mControleeCountLock) {
+                    if (mControlees.size() - mControleesPendingDisconnection.size() == 1) {
+                        Log.w(TAG, "Last controlee in session has disconnected, stopping session");
+                        if (getSessionState() == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
+                            stopRangingInternal(mSessionHandle, true /* triggeredBySystemPolicy */);
+                        } else {
+                            Log.i(TAG, "Session is not in an active state");
+                        }
                     } else {
-                        Log.i(TAG, "Session is not in an active state");
+                        mControleesPendingDisconnection.add(address);
+                        removeControleeDueToErrorStreakTimeout(address);
                     }
-                } else {
-                    removeControleeDueToErrorStreakTimeout(address);
                 }
             };
 
@@ -3886,7 +3912,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 for (UwbControlee controlee : mControlees.values()) {
                     controlee.close();
                 }
-                mControlees.clear();
+                synchronized (mControleeCountLock) {
+                    mControlees.clear();
+                    mControleesPendingDisconnection.clear();
+                }
 
                 this.mAcquiredDefaultPose = false;
                 mUwbInjector.releasePoseSource();

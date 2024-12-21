@@ -24,6 +24,7 @@ python_defaults {
     ],
     test_suites: [
         "cts",
+	"cts-interactive",
         "general-tests",
         "mts-uwb",
         "mcts-uwb",

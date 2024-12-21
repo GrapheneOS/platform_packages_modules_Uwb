@@ -23,8 +23,11 @@ python_defaults {
         "mobly",
     ],
     test_suites: [
-        //"cts",
+        "cts",
+	"cts-interactive",
         "general-tests",
+        "mts-uwb",
+        "mcts-uwb",
     ],
     version: {
         py3: {

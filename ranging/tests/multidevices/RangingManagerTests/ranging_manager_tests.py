@@ -27,6 +27,7 @@ from lib.ranging_decorator import *
 from mobly import asserts
 from mobly import config_parser
 from mobly import suite_runner
+from mobly.controllers import android_device
 
 
 _TEST_CASES = [
@@ -60,6 +61,10 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     """
     super().__init__(configs)
     self.tests = _TEST_CASES
+
+  def _is_cuttlefish_device(self, ad: android_device.AndroidDevice) -> bool:
+    product_name = ad.adb.getprop("ro.product.name")
+    return "cf_x86" in product_name
 
   def setup_class(self):
     super().setup_class()
@@ -372,6 +377,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
   def test_one_to_one_wifi_rtt_ranging(self):
     """Verifies wifi rtt ranging with peer device, devices range for 10 seconds."""
+    asserts.skip_if(self._is_cuttlefish_device(self.initiator.ad),
+                    "Skipping WiFi RTT test on Cuttlefish")
     SESSION_HANDLE = str(uuid4())
     TECHNOLOGIES = {RangingTechnology.WIFI_RTT}
 
@@ -441,6 +448,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
   def test_one_to_one_wifi_periodic_rtt_ranging(self):
     """Verifies wifi periodic rtt ranging with peer device, devices range for 10 seconds."""
+    asserts.skip_if(self._is_cuttlefish_device(self.initiator.ad),
+                    "Skipping WiFi periodic RTT test on Cuttlefish")
     SESSION_HANDLE = str(uuid4())
     TECHNOLOGIES = {RangingTechnology.WIFI_RTT}
 
@@ -519,6 +528,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
   def test_one_to_one_ble_rssi_ranging(self):
     """Verifies cs ranging with peer device, devices range for 10 seconds."""
+    asserts.skip_if(self._is_cuttlefish_device(self.initiator.ad),
+                    "Skipping BLE RSSI test on Cuttlefish")
     SESSION_HANDLE = str(uuid4())
     TECHNOLOGIES = {RangingTechnology.BLE_RSSI}
 
@@ -597,6 +608,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     Verifies cs ranging with peer device, devices range for 10 seconds.
     This test is only one way since we don't test if responder also can simultaneously get the data.
     """
+    asserts.skip_if(self._is_cuttlefish_device(self.initiator.ad),
+                    "Skipping BLE CS test on Cuttlefish")
     SESSION_HANDLE = str(uuid4())
     TECHNOLOGIES = {RangingTechnology.BLE_CS}
 

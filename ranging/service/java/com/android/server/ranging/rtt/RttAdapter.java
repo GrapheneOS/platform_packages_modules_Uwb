@@ -148,7 +148,6 @@ public class RttAdapter implements RangingAdapter {
         mCallbacks = callbacks;
         if (!(config instanceof RttConfig rttConfig)) {
             Log.w(TAG, "Tried to start adapter with invalid ranging parameters");
-            closeForReason(Callback.ClosedReason.FAILED_TO_START);
             return;
         }
         mConfig = rttConfig;
@@ -201,7 +200,7 @@ public class RttAdapter implements RangingAdapter {
     @Override
     public void stop() {
         Log.i(TAG, "Stop called.");
-        if (!mStateMachine.transition(State.STARTED, State.STOPPED)) {
+        if (mStateMachine.getState() == State.STOPPED) {
             Log.v(TAG, "Attempted to stop adapter when it was already stopped");
             return;
         }
@@ -279,9 +278,14 @@ public class RttAdapter implements RangingAdapter {
     /** Close the session, disconnecting the peer and resetting internal state. */
     private void closeForReason(@Callback.ClosedReason int reason) {
         synchronized (mStateMachine) {
+            if (mStateMachine.getState() == State.STOPPED) {
+                return;
+            }
             mStateMachine.setState(State.STOPPED);
-            mCallbacks.onStopped(mPeerDevice);
-            mCallbacks.onClosed(reason);
+            if (mCallbacks != null) {
+                mCallbacks.onStopped(mPeerDevice);
+                mCallbacks.onClosed(reason);
+            }
             clear();
         }
     }
@@ -290,7 +294,6 @@ public class RttAdapter implements RangingAdapter {
         if (mConfig.getSessionConfig().getRangingMeasurementsLimit() > 0) {
             mAlarmManager.cancel(mMeasurementLimitListener);
         }
-        mRttClient.stopRanging();
         mCallbacks = null;
         mPeerDevice = null;
     }

@@ -29,7 +29,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import android.app.AlarmManager;
 import android.content.AttributionSource;
+import android.content.Context;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
 import android.ranging.RangingMeasurement;
@@ -85,6 +87,8 @@ public class RangingSessionTest {
     private @Mock RangingServiceManager.SessionListener mMockSessionListener;
     private Map<TechnologyConfig, RangingAdapter> mMockAdapters;
     private RawInitiatorRangingSession mSession;
+    private @Mock Context mMockContext;
+    private @Mock AlarmManager mMockAlarmManager;
 
     private void configureSession(Set<TechnologyConfig> technologyConfigs) {
         // Create some mock adapters for this session.
@@ -177,6 +181,8 @@ public class RangingSessionTest {
         when(mMockConfig.getSessionConfig().getSensorFusionParams()).thenReturn(
                 new SensorFusionParams.Builder().setSensorFusionEnabled(true).build()
         );
+        when(mMockInjector.getContext()).thenReturn(mMockContext);
+        when(mMockContext.getSystemService(AlarmManager.class)).thenReturn(mMockAlarmManager);
 
         mSession = new RawInitiatorRangingSession(
                 mMockAttributionSource, mMockSessionHandle, mMockInjector, mMockConfig,
