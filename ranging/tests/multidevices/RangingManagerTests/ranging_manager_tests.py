@@ -28,6 +28,7 @@ from mobly import asserts
 from mobly import config_parser
 from mobly import suite_runner
 from mobly.controllers import android_device
+from android.platform.test.annotations import ApiTest
 
 
 _TEST_CASES = [
@@ -176,6 +177,22 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
   ### Test Cases ###
 
+  @ApiTest(apis=[
+    'android.ranging.RangingData#getDistance',
+    'android.ranging.RangingData#getAzimuth',
+    'android.ranging.RangingData#getElevation',
+    'android.ranging.RangingData#getRangingTechnology',
+    'android.ranging.RangingData#getRssi',
+    'android.ranging.RangingData#hasRssi',
+    'android.ranging.RangingData#getTimestampMillis',
+    'android.ranging.RangingMeasurement#getMeasurement',
+    'android.ranging.RangingMeasurement#getConfidence',
+    'android.ranging.RangingSession.Callback#onOpened(int)',
+    'android.ranging.RangingSession.Callback#onClosed(int)',
+    'android.ranging.RangingSession.Callback#onResults(android.ranging.RangingDevice, android.ranging.RangingData)',
+    'android.ranging.RangingSession.Callback#onStarted(android.ranging.RangingDevice, int)',
+    'android.ranging.RangingSession.Callback#onStopped(android.ranging.RangingDevice, int)',
+  ])
   def test_one_to_one_uwb_ranging(self):
     """Verifies uwb ranging with peer device, devices range for 10 seconds."""
     SESSION_HANDLE = str(uuid4())

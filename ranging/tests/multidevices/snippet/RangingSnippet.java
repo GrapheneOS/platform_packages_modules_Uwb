@@ -25,6 +25,7 @@ import android.ranging.RangingData;
 import android.ranging.RangingDevice;
 import android.ranging.RangingManager;
 import android.ranging.RangingManager.RangingTechnology;
+import android.ranging.RangingMeasurement;
 import android.ranging.RangingPreference;
 import android.ranging.RangingSession;
 import android.ranging.oob.DeviceHandle;
@@ -147,7 +148,20 @@ public class RangingSnippet implements Snippet {
 
         @Override
         public void onResults(@NonNull RangingDevice peer, @NonNull RangingData data) {
-            Log.d(TAG, "onData");
+            Log.d(TAG, "onData { peer: " + peer.getUuid()
+                    + " Distance: " + data.getDistance()
+                    + " Azimuth: " + data.getAzimuth()
+                    + " Elevation: " + data.getElevation()
+                    + " RangingTechnology: " + data.getRangingTechnology()
+                    + " Timestamp: " + data.getTimestampMillis()
+                    + " hasRssi: " + data.hasRssi()
+                    + " getRssi: " + (data.hasRssi() ? data.getRssi() : "null")
+                    + " }");
+            RangingMeasurement distance = data.getDistance();
+            if (distance != null) {
+                Log.d(TAG, " Distance: " + distance.getMeasurement()
+                        + "  Confidence: " + distance.getConfidence());
+            }
             SnippetEvent event = new SnippetEvent(mCallbackId, Event.DATA.toString());
             event.getData().putString("peer_id", peer.getUuid().toString());
             event.getData().putInt("technology", data.getRangingTechnology());

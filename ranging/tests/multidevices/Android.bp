@@ -21,6 +21,7 @@ python_defaults {
     name: "RangingMultiDevicePythonDefaults",
     libs: [
         "mobly",
+        "platform-test-py-annotations",
     ],
     test_suites: [
         "cts",
