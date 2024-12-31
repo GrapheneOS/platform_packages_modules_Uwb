@@ -241,6 +241,11 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
          */
         public AttributionSourceHolder getOrCreate(
                 AttributionSource attributionSource, IBinder binder) {
+            // Check if attribution source is chained and has a 3p app in it, if so then
+            // use that attribution source to check for hw enable state.
+            AttributionSource nonPrivilegedAppAttrSource =
+                    mUwbInjector.getAnyNonPrivilegedAppInAttributionSource(attributionSource);
+            if (nonPrivilegedAppAttrSource != null) attributionSource = nonPrivilegedAppAttrSource;
             for (AttributionSourceHolder k : mMap.keySet()) {
                 if (Objects.equals(k.getAttributionSource(), attributionSource)) {
                     return k;

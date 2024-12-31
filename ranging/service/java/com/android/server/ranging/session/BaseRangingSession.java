@@ -184,7 +184,7 @@ public class BaseRangingSession {
                 // done with a clear calling identity.
                 long token = Binder.clearCallingIdentity();
                 RangingAdapter adapter = mInjector.createAdapter(
-                        config, mConfig.getDeviceRole(), mAdapterExecutor);
+                        mAttributionSource, config, mConfig.getDeviceRole(), mAdapterExecutor);
                 mAdapters.put(config, adapter);
                 adapter.start(config, nonPrivilegedAttributionSource, new AdapterListener(config));
                 Binder.restoreCallingIdentity(token);

@@ -516,6 +516,30 @@ public class UwbInjector {
         );
     }
 
+    private boolean isPrivilegedApp(int uid, String packageName) {
+        return isSystemApp(uid, packageName) || isAppSignedWithPlatformKey(uid);
+    }
+
+    /**
+     * Check the attribution source chain to check if there are any 3p apps.
+     * @return AttributionSource of first non-system app found in the chain, null otherwise.
+     */
+    @Nullable
+    public AttributionSource getAnyNonPrivilegedAppInAttributionSource(
+            AttributionSource attributionSource) {
+        // Iterate attribution source chain to ensure that there is no non-fg 3p app in the
+        // request.
+        while (attributionSource != null) {
+            int uid = attributionSource.getUid();
+            String packageName = attributionSource.getPackageName();
+            if (!isPrivilegedApp(uid, packageName)) {
+                return attributionSource;
+            }
+            attributionSource = attributionSource.getNext();
+        }
+        return null;
+    }
+
     /**
      * Gets the configured pose source, which is reference counted. If there are no references
      * to the pose source, one will be created based on the device configuration. This may

@@ -108,6 +108,7 @@ public abstract class RangingDevice {
     private final HashMap<String, UwbAddress> mMultiChipMap;
 
     private UwbRangeDataNtfConfig mLastNtfConfig;
+    private final boolean mIsHwTurnOffEnabled;
 
     RangingDevice(UwbManager manager, Executor executor,
             OpAsyncCallbackRunner<Boolean> opAsyncCallbackRunner, UwbFeatureFlags uwbFeatureFlags) {
@@ -119,6 +120,15 @@ public abstract class RangingDevice {
         this.mMultiChipMap = new HashMap<>();
         initializeUwbAddress();
         mLastNtfConfig = new UwbRangeDataNtfConfig.Builder().build();
+        if (VERSION.SDK_INT < VERSION_CODES.VANILLA_ICE_CREAM) {
+            mIsHwTurnOffEnabled = false;
+        } else {
+            mIsHwTurnOffEnabled = manager.isUwbHwIdleTurnOffEnabled();
+        }
+    }
+
+    public boolean isHwTurnOffEnabled() {
+        return mIsHwTurnOffEnabled;
     }
 
     /** Sets the chip ID. By default, the default chip is used. */

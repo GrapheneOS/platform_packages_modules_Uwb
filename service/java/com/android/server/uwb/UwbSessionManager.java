@@ -2951,7 +2951,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             this.mProfileType = convertProtolNameToProfileType(protocolName);
             this.mChipId = chipId;
             this.mNonPrivilegedAppInAttributionSource =
-                    getAnyNonPrivilegedAppInAttributionSourceInternal();
+                    mUwbInjector.getAnyNonPrivilegedAppInAttributionSource(mAttributionSource);
             this.mStackSessionPriority = calculateSessionPriority();
             this.mControlees = new ConcurrentHashMap<>();
             this.mControleesPendingDisconnection = Sets.newConcurrentHashSet();
@@ -3038,31 +3038,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 return FG_SESSION_PRIORITY;
             }
             return BG_SESSION_PRIORITY;
-        }
-
-        private boolean isPrivilegedApp(int uid, String packageName) {
-            return mUwbInjector.isSystemApp(uid, packageName)
-                    || mUwbInjector.isAppSignedWithPlatformKey(uid);
-        }
-
-        /**
-         * Check the attribution source chain to check if there are any 3p apps.
-         * @return AttributionSource of first non-system app found in the chain, null otherwise.
-         */
-        @Nullable
-        private AttributionSource getAnyNonPrivilegedAppInAttributionSourceInternal() {
-            // Iterate attribution source chain to ensure that there is no non-fg 3p app in the
-            // request.
-            AttributionSource attributionSource = mAttributionSource;
-            while (attributionSource != null) {
-                int uid = attributionSource.getUid();
-                String packageName = attributionSource.getPackageName();
-                if (!isPrivilegedApp(uid, packageName)) {
-                    return attributionSource;
-                }
-                attributionSource = attributionSource.getNext();
-            }
-            return null;
         }
 
         /**

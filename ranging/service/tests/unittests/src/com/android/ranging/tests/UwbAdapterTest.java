@@ -28,6 +28,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import android.content.AttributionSource;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.ranging.RangingDevice;
@@ -79,6 +80,9 @@ public class UwbAdapterTest {
     private RangingController mMockUwbClient;
 
     @Mock
+    private AttributionSource mMockAttributionSource;
+
+    @Mock
     private RangingInjector mMockRangingInjector;
 
     @Mock
@@ -113,7 +117,7 @@ public class UwbAdapterTest {
     public void setup() {
         when(mMockContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_UWB))
                 .thenReturn(true);
-        mUwbAdapter = new UwbAdapter(mMockContext, mMockRangingInjector,
+        mUwbAdapter = new UwbAdapter(mMockContext, mMockRangingInjector, mMockAttributionSource,
                 MoreExecutors.newDirectExecutorService(),
                 MoreExecutors.newDirectExecutorService(), mMockUwbClient);
     }

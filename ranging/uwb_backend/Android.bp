@@ -19,7 +19,7 @@ package {
 
 java_library {
     name: "ranging_uwb_backend",
-    sdk_version: "system_UpsideDownCake",
+    sdk_version: "system_current",
     min_sdk_version: "33",
     installable: false,
     srcs: [

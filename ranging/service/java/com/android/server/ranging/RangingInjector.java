@@ -109,13 +109,14 @@ public class RangingInjector {
      * Create a new adapter for a technology.
      */
     public @NonNull RangingAdapter createAdapter(
+            @NonNull AttributionSource attributionSource,
             @NonNull RangingSessionConfig.TechnologyConfig config,
             @RangingPreference.DeviceRole int role,
             @NonNull ListeningExecutorService executor
     ) {
         switch (config.getTechnology()) {
             case UWB:
-                return new UwbAdapter(mContext, this, executor, role);
+                return new UwbAdapter(mContext, this, attributionSource, executor, role);
             case CS:
                 return new CsAdapter(mContext, this);
             case RTT:

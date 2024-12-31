@@ -95,7 +95,8 @@ public class RangingSessionTest {
         for (TechnologyConfig config : technologyConfigs) {
             RangingAdapter adapter = mock(RangingAdapter.class);
             mMockAdapters.put(config, adapter);
-            when(mMockInjector.createAdapter(eq(config), anyInt(), any())).thenReturn(adapter);
+            when(mMockInjector.createAdapter(any(), eq(config), anyInt(), any())).thenReturn(
+                    adapter);
         }
 
         // Start the session

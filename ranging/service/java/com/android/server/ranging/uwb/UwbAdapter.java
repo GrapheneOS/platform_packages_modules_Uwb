@@ -42,6 +42,7 @@ import com.android.ranging.uwb.backend.internal.RangingPosition;
 import com.android.ranging.uwb.backend.internal.RangingSessionCallback;
 import com.android.ranging.uwb.backend.internal.Utils;
 import com.android.ranging.uwb.backend.internal.UwbDevice;
+import com.android.ranging.uwb.backend.internal.UwbHwSwitchHelper;
 import com.android.ranging.uwb.backend.internal.UwbServiceImpl;
 import com.android.server.ranging.CapabilitiesProvider;
 import com.android.server.ranging.RangingAdapter;
@@ -65,6 +66,7 @@ import java.util.concurrent.Executors;
 /** Ranging adapter for Ultra-wideband (UWB). */
 public class UwbAdapter implements RangingAdapter {
     private static final String TAG = UwbAdapter.class.getSimpleName();
+    private final Context mContext;
     private final RangingInjector mRangingInjector;
     private final com.android.ranging.uwb.backend.internal.RangingDevice mUwbClient;
     private final ListeningExecutorService mExecutorService;
@@ -82,24 +84,27 @@ public class UwbAdapter implements RangingAdapter {
     private AttributionSource mNonPrivilegedAttributionSource;
     boolean mIsBackgroundRangingSupported;
 
+    private final AttributionSource mAttributionSource;
 
     public UwbAdapter(
             @NonNull Context context,
             RangingInjector injector,
+            AttributionSource attributionSource,
             @NonNull ListeningExecutorService executor,
             @RangingPreference.DeviceRole int role
     ) {
-        this(context, injector, executor, Executors.newCachedThreadPool(), role);
+        this(context, injector, attributionSource, executor, Executors.newCachedThreadPool(), role);
     }
 
     /** Intermediary constructor used to make an additional reference to backendExecutor. */
     private UwbAdapter(
             @NonNull Context context,
             RangingInjector injector,
+            AttributionSource attributionSource,
             @NonNull ListeningExecutorService executor,
             @NonNull ExecutorService backendExecutor, @RangingPreference.DeviceRole int role
     ) {
-        this(context, injector, executor, backendExecutor,
+        this(context, injector, attributionSource, executor, backendExecutor,
                 role == RangingPreference.DEVICE_ROLE_INITIATOR
                         ? UwbServiceImpl.getController(context, backendExecutor)
                         : UwbServiceImpl.getControlee(context, backendExecutor));
@@ -110,6 +115,7 @@ public class UwbAdapter implements RangingAdapter {
     public UwbAdapter(
             @NonNull Context context,
             RangingInjector injector,
+            AttributionSource attributionSource,
             @NonNull ListeningExecutorService executor,
             @NonNull ExecutorService backendExecutor,
             @NonNull com.android.ranging.uwb.backend.internal.RangingDevice uwbClient
@@ -117,6 +123,7 @@ public class UwbAdapter implements RangingAdapter {
         if (!RangingTechnology.UWB.isSupported(context)) {
             throw new IllegalArgumentException("UWB system feature not found.");
         }
+        mContext = context;
         mRangingInjector = injector;
         mStateMachine = new StateMachine<>(State.STOPPED);
         mUwbClient = uwbClient;
@@ -134,6 +141,7 @@ public class UwbAdapter implements RangingAdapter {
                 .map(RangingCapabilities::getUwbCapabilities)
                 .map(UwbRangingCapabilities::isBackgroundRangingSupported)
                 .orElse(true); // Defaults to true;
+        mAttributionSource = attributionSource;
     }
 
     @Override
@@ -183,7 +191,12 @@ public class UwbAdapter implements RangingAdapter {
             controller.setComplexChannel(
                     toBackend(uwbConfig.getParameters().getComplexChannel()));
         }
-
+        if (mUwbClient.isHwTurnOffEnabled()) {
+            if (!UwbHwSwitchHelper.enable(mContext, mAttributionSource)) {
+                Log.e(TAG, "Failed enabling UWB Hardware");
+                return;
+            }
+        }
         var future = Futures.submit(() -> {
             mUwbClient.startRanging(mUwbListener, mBackendExecutor);
         }, mExecutorService);
@@ -266,9 +279,9 @@ public class UwbAdapter implements RangingAdapter {
             Log.v(TAG, "Attempted to stop adapter when it was already stopped");
             return;
         }
-
         var future = Futures.submit(mUwbClient::stopRanging, mExecutorService);
         Futures.addCallback(future, mUwbClientResultHandlers.stopRanging, mExecutorService);
+
     }
 
     public @Nullable UwbComplexChannel getComplexChannel() {
@@ -325,6 +338,10 @@ public class UwbAdapter implements RangingAdapter {
         @Override
         public void onRangingSuspended(UwbDevice localDevice, @RangingSuspendedReason int reason) {
             Log.i(TAG, "onRangingSuspended: " + reason);
+            if (reason != REASON_STOP_RANGING_CALLED && mUwbClient.isHwTurnOffEnabled()) {
+                mBackendExecutor.execute(() -> UwbHwSwitchHelper.disable(mContext,
+                        mAttributionSource));
+            }
             closeForReason(convertReason(reason));
         }
 
@@ -430,6 +447,9 @@ public class UwbAdapter implements RangingAdapter {
         public final FutureCallback<Integer> stopRanging = new FutureCallback<>() {
             @Override
             public void onSuccess(@Utils.UwbStatusCodes Integer status) {
+                if (mUwbClient.isHwTurnOffEnabled()) {
+                    UwbHwSwitchHelper.disable(mContext, mAttributionSource);
+                }
             }
 
             @Override

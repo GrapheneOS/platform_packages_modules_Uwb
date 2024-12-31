@@ -1127,7 +1127,7 @@ public class UwbSessionManagerTest {
     }
 
     @Test
-    public void initSessionMaxSessions_lowestPrioritySessionReplaced() throws RemoteException {
+    public void initSessionMaxSessions_lowestPrioritySessionReplaced() throws Exception {
         doReturn(false).when(mUwbInjector).isSystemApp(UID, PACKAGE_NAME);
         doReturn(true).when(mUwbInjector).isSystemApp(UID_2, PACKAGE_NAME_2);
         doReturn(1L).when(mUwbSessionManager).getMaxFiraSessionsNumber(TEST_CHIP_ID);
@@ -1142,9 +1142,14 @@ public class UwbSessionManagerTest {
         when(mUwbConfigurationManager.setAppConfigurations(anyInt(), any(), anyString(), any()))
                 .thenReturn(UwbUciConstants.STATUS_CODE_OK);
 
+        AttributionSource attributionSourceLowPriority = new AttributionSource.Builder(UID)
+                .setPackageName(PACKAGE_NAME).build();
+
+        when(mUwbInjector.getAnyNonPrivilegedAppInAttributionSource(attributionSourceLowPriority))
+                .thenReturn(attributionSourceLowPriority);
         // Init session for 3rd party FG app
         UwbSession lowPrioUwbSession = spy(
-                mUwbSessionManager.new UwbSession(ATTRIBUTION_SOURCE, SESSION_HANDLE,
+                mUwbSessionManager.new UwbSession(attributionSourceLowPriority, SESSION_HANDLE,
                         TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME, mockParams,
                         mockRangingCallbacks, TEST_CHIP_ID));
         doReturn(lowPrioUwbSession).when(mUwbSessionManager).createUwbSession(any(), any(),
@@ -1266,6 +1271,8 @@ public class UwbSessionManagerTest {
                 .thenReturn(true);
         AttributionSource attributionSourceNonSystemApp =
                 new AttributionSource.Builder(UID).setPackageName(nonSystemPackageName).build();
+        when(mUwbInjector.getAnyNonPrivilegedAppInAttributionSource(any()))
+                .thenReturn(attributionSourceNonSystemApp);
         UwbSession nonSystemFgUwbSession =
                 mUwbSessionManager.new UwbSession(attributionSourceNonSystemApp, mockSessionHandle,
                         TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME,
@@ -2228,7 +2235,8 @@ public class UwbSessionManagerTest {
     public void testInitSessionWithNonSystemAppNotInFg() throws Exception {
         when(mUwbInjector.isSystemApp(UID, PACKAGE_NAME)).thenReturn(false);
         when(mUwbInjector.isForegroundAppOrService(UID, PACKAGE_NAME)).thenReturn(false);
-
+        when(mUwbInjector.getAnyNonPrivilegedAppInAttributionSource(any()))
+                .thenReturn(ATTRIBUTION_SOURCE);
         UwbSession uwbSession = setUpUwbSessionForExecution(ATTRIBUTION_SOURCE);
         mUwbSessionManager.initSession(ATTRIBUTION_SOURCE, uwbSession.getSessionHandle(),
                 TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME,
@@ -2278,6 +2286,8 @@ public class UwbSessionManagerTest {
                         .setPackageName(PACKAGE_NAME_2)
                         .build());
         AttributionSource attributionSource = builder.build();
+        when(mUwbInjector.getAnyNonPrivilegedAppInAttributionSource(any()))
+                .thenReturn(attributionSource.getNext());
 
         UwbSession uwbSession = setUpUwbSessionForExecution(attributionSource);
         mUwbSessionManager.initSession(attributionSource, uwbSession.getSessionHandle(),
@@ -2299,6 +2309,8 @@ public class UwbSessionManagerTest {
                         .build())
                 .build();
 
+        when(mUwbInjector.getAnyNonPrivilegedAppInAttributionSource(any()))
+                .thenReturn(attributionSource.getNext());
         UwbSession uwbSession = setUpUwbSessionForExecution(attributionSource);
         mUwbSessionManager.initSession(attributionSource, uwbSession.getSessionHandle(),
                 TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME,
@@ -2374,6 +2386,8 @@ public class UwbSessionManagerTest {
     public void
             testOpenRangingWithNonSystemAppInFgInChain_MoveToBgAndStayThere_WhenBgRangingEnabled()
             throws Exception {
+        when(mUwbInjector.getAnyNonPrivilegedAppInAttributionSource(
+                any())).thenReturn(ATTRIBUTION_SOURCE);
         when(mDeviceConfigFacade.isBackgroundRangingEnabled()).thenReturn(true);
         UwbSession uwbSession = initUwbSessionForNonSystemAppInFgInChain();
 
@@ -2521,6 +2535,8 @@ public class UwbSessionManagerTest {
                         .setPackageName(PACKAGE_NAME_2)
                         .build());
         AttributionSource attributionSource = builder.build();
+        when(mUwbInjector.getAnyNonPrivilegedAppInAttributionSource(any()))
+                .thenReturn(attributionSource.getNext());
         UwbSession uwbSession = setUpUwbSessionForExecution(attributionSource);
         mUwbSessionManager.initSession(attributionSource, uwbSession.getSessionHandle(),
                 TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME,
