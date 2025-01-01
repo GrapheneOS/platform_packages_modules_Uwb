@@ -32,6 +32,7 @@ import android.bluetooth.le.DistanceMeasurementResult;
 import android.bluetooth.le.DistanceMeasurementSession;
 import android.content.AttributionSource;
 import android.content.Context;
+import android.os.SystemClock;
 import android.ranging.DataNotificationConfig;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
@@ -40,6 +41,7 @@ import android.ranging.RangingMeasurement;
 import android.ranging.ble.rssi.BleRssiRangingParams;
 import android.util.Log;
 
+import com.android.internal.annotations.VisibleForTesting;
 import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
@@ -92,6 +94,15 @@ public class BleRssiAdapter implements RangingAdapter {
             Log.i(TAG, "Measurements limit exceeded. Stopping the session");
             Executors.newCachedThreadPool().execute(this::stop);
         };
+    }
+
+    public DataNotificationManager getDataNotificationManager() {
+        return mDataNotificationManager;
+    }
+
+    @VisibleForTesting
+    public void setSession(DistanceMeasurementSession session) {
+        mSession = session;
     }
 
     @Override
@@ -244,7 +255,8 @@ public class BleRssiAdapter implements RangingAdapter {
         clear();
     }
 
-    private final DistanceMeasurementSession.Callback mDistanceMeasurementCallback =
+    @VisibleForTesting
+    public final DistanceMeasurementSession.Callback mDistanceMeasurementCallback =
             new DistanceMeasurementSession.Callback() {
                 public void onStarted(DistanceMeasurementSession session) {
                     Log.i(TAG, "DistanceMeasurement onStarted !");
@@ -279,7 +291,10 @@ public class BleRssiAdapter implements RangingAdapter {
                             .setDistance(new RangingMeasurement.Builder()
                                     .setMeasurement(result.getResultMeters())
                                     .build())
-                            .setTimestampMillis(result.getMeasurementTimestampNanos() * 1000);
+                            // DistanceMeasurementResult#getMeasurementTimestampNanos is flagged
+                            // with FLAG_CHANNEL_SOUNDING_25Q2_APIS, check whether we can use that
+                            // instead.
+                            .setTimestampMillis(SystemClock.elapsedRealtime());
                     if (!Double.isNaN(result.getAzimuthAngle())) {
                         dataBuilder.setAzimuth(new RangingMeasurement.Builder()
                                 .setMeasurement(result.getAzimuthAngle())
