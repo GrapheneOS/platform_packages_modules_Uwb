@@ -1,0 +1,14 @@
+1. prepare the device
+adb root
+adb remount -R
+2. build the app
+make RangingTestApp
+3. load the app
+adb root
+adb remount
+adb push RangingTestApp.apk /system/priv-app/RangingTestApp/RangingTestApp.apk
+adb reboot
+4. run test
+pair devices from settings;
+launch APk
+one device works as 'Initiator', another device works as 'Responder';

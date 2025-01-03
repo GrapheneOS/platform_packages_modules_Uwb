@@ -1,0 +1,9 @@
+<resources>
+  <string name="app_name">RangingTestApp</string>
+  <string name="action_settings">Settings</string>
+  <!-- Strings used for fragments for navigation -->
+  <string name="role_selection_fragment_label">Role Selection Fragment</string>
+  <string name="initiator_fragment_label">Initiator Fragment</string>
+  <string name="responder_fragment_label">Responder Fragment</string>
+
+</resources>

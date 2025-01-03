@@ -47,10 +47,15 @@ public abstract class CapabilityResponseMessage {
     public static CapabilityResponseMessage parseBytes(byte[] payload) {
         OobHeader header = OobHeader.parseBytes(payload);
 
-        if (payload.length < header.getSize() + MIN_SIZE_BYTES) {
+        if (header.getMessageType() != MessageType.CAPABILITY_RESPONSE) {
             throw new IllegalArgumentException(
-                    String.format("CapabilityResponseMessage payload size is %d bytes",
-                            payload.length));
+                    String.format("Invalid message type: %s, expected %s",
+                            header.getMessageType(), MessageType.CAPABILITY_RESPONSE));
+        }
+
+        if (payload.length < header.getSize() + MIN_SIZE_BYTES) {
+            throw new IllegalArgumentException(String.format(
+                    "CapabilityResponseMessage payload size is %d bytes", payload.length));
         }
 
         int parseCursor = header.getSize();

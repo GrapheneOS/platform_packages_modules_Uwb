@@ -23,7 +23,7 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.SettableFuture;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -74,10 +74,10 @@ public class OobController {
         mOobDataSender = oobDataSender;
     }
 
-    public ListenableFuture<ReceivedMessage> registerMessageListener(OobHandle handle) {
+    public FluentFuture<ReceivedMessage> registerMessageListener(OobHandle handle) {
         SettableFuture<ReceivedMessage> future = SettableFuture.create();
         mActiveConnections.put(handle, new OobConnection(future));
-        return future;
+        return FluentFuture.from(future);
     }
 
     public void sendMessage(OobHandle handle, byte[] message) {

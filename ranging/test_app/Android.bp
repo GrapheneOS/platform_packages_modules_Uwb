@@ -1,0 +1,24 @@
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+android_app {
+    name: "RangingTestApp",
+    certificate: "platform",
+    min_sdk_version: "35",
+    sdk_version: "current",
+    srcs: ["app/src/main/**/*.java"],
+    resource_dirs: ["app/src/main/res"],
+    manifest: "app/src/main/AndroidManifest.xml",
+
+    static_libs: [
+        "androidx-constraintlayout_constraintlayout",
+        "androidx.appcompat_appcompat",
+        "androidx.lifecycle_lifecycle-extensions",
+        "androidx.navigation_navigation-fragment",
+        "androidx.navigation_navigation-runtime",
+        "androidx.navigation_navigation-ui",
+        "com.google.android.material_material",
+        "truth",
+    ],
+}

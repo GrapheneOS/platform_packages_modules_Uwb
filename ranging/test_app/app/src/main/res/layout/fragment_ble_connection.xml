@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/ble_connection_fragment"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".BleConnectionFragment"
+    tools:ignore="HardcodedText">
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <TextView
+            android:id="@+id/peripheral_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Peripheral"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+        <Button
+            android:id="@+id/btn_advertising"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Start Advertising"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.498"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/peripheral_text" />
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/guideline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            app:layout_constraintGuide_begin="75dp" />
+        <TextView
+            android:id="@+id/central_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Central"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/guideline" />
+        <Spinner
+            android:id="@+id/spinner_bt_address"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:padding="5dp"
+            app:layout_constraintEnd_toStartOf="@id/btn_update_devices"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/central_text" />
+        <Button
+            android:id="@+id/btn_update_devices"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:padding="5dp"
+            android:text="Update Targets"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/spinner_bt_address"
+            app:layout_constraintTop_toBottomOf="@id/central_text" />
+        <Button
+            android:id="@+id/btn_connect_gatt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:padding="5dp"
+            android:text="Connect Gatt"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.498"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/btn_update_devices" />
+        <Button
+            android:id="@+id/btn_scan_connect"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:layout_marginTop="12dp"
+            android:padding="5dp"
+            android:text="scan and connect"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/btn_connect_gatt" />
+        <View
+            android:id="@+id/divider"
+            android:layout_width="wrap_content"
+            android:layout_height="2dp"
+            android:background="?android:attr/listDivider"
+            android:foreground="@color/design_default_color_error"
+            app:layout_constraintBottom_toTopOf="@+id/guideline"
+            app:layout_constraintTop_toBottomOf="@+id/btn_advertising"
+            tools:layout_editor_absoluteX="1dp" />
+        <View
+            android:id="@+id/divider2"
+            android:layout_width="wrap_content"
+            android:layout_height="1dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="2dp"
+            android:background="?android:attr/listDivider"
+            android:foreground="@color/material_dynamic_primary40"
+            app:layout_constraintBottom_toTopOf="@+id/btn_scan_connect"
+            app:layout_constraintTop_toBottomOf="@+id/btn_connect_gatt"
+            tools:layout_editor_absoluteX="1dp" />
+        <View
+            android:id="@+id/divider3"
+            android:layout_width="wrap_content"
+            android:layout_height="2dp"
+            android:background="?android:attr/listDivider"
+            android:foreground="@color/design_default_color_error"
+            app:layout_constraintTop_toBottomOf="@+id/btn_scan_connect"
+            tools:layout_editor_absoluteX="1dp" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</FrameLayout>

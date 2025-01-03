@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    tools:context=".InitiatorFragment"
+    tools:ignore="HardcodedText">
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="5dp">
+        <FrameLayout
+            android:id="@+id/init_ble_connection_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            app:layout_constraintBottom_toTopOf="@id/layout_methods"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <LinearLayout android:id="@+id/layout_methods"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/init_ble_connection_container"
+            app:layout_constraintBottom_toTopOf="@id/layout_parameters"
+            android:weightSum="4"
+            android:orientation="horizontal">
+            <TextView
+                android:id="@+id/dm_method_label"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.6"
+                android:text= "Method"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/spinner_dm_method"
+                />
+            <Spinner
+                android:id="@+id/spinner_dm_method"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.4"
+                android:padding="10dp"
+                app:layout_constraintStart_toEndOf="@id/dm_method_label"
+                app:layout_constraintEnd_toEndOf="parent"
+                />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/layout_parameters"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/layout_methods"
+            app:layout_constraintBottom_toTopOf="@id/btn_cs"
+            android:weightSum="4"
+            android:orientation="horizontal">
+            <TextView
+                android:id="@+id/freq_label"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.6"
+                android:text= "Freq"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/spinner_freq"
+                />
+            <Spinner
+                android:id="@+id/spinner_freq"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.4"
+                android:padding="10dp"
+                app:layout_constraintStart_toEndOf="@id/freq_label"
+                app:layout_constraintEnd_toStartOf="@id/duration_label"
+                />
+            <TextView
+                android:id="@+id/duration_label"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.7"
+                android:text= "Duration (s)"
+                app:layout_constraintStart_toEndOf="@id/spinner_freq"
+                app:layout_constraintEnd_toStartOf="@id/spinner_duration"
+                />
+            <Spinner
+                android:id="@+id/spinner_duration"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.3"
+                android:padding="10dp"
+                app:layout_constraintStart_toEndOf="@id/duration_label"
+                app:layout_constraintEnd_toEndOf="parent"
+                />
+        </LinearLayout>
+        <Button
+            android:id="@+id/btn_cs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:layout_marginTop="84dp"
+            android:padding="10dp"
+            android:text="Start Distance Measurement"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layout_parameters" />
+        <TextView
+            android:id="@+id/text_log"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="10dp"
+            android:paddingBottom="20dp"
+            android:text="Test log: "
+            android:textSize="18sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/btn_cs"/>
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="2"
+            android:fillViewport="true"
+            android:paddingTop="20dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/text_log">
+
+            <LinearLayout
+                android:id="@+id/layout_distance_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"></LinearLayout>
+        </ScrollView>
+
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.core.widget.NestedScrollView>

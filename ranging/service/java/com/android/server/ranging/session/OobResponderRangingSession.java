@@ -34,11 +34,13 @@ import androidx.annotation.NonNull;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingServiceManager;
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.oob.CapabilityRequestMessage;
 import com.android.server.ranging.oob.CapabilityResponseMessage;
 import com.android.server.ranging.oob.MessageType;
 import com.android.server.ranging.oob.OobController.ReceivedMessage;
 import com.android.server.ranging.oob.OobHeader;
 import com.android.server.ranging.oob.SetConfigurationMessage;
+import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
 import com.android.server.ranging.uwb.UwbConfig;
 import com.android.server.ranging.uwb.UwbOobCapabilities;
 import com.android.server.ranging.uwb.UwbOobConfig;
@@ -46,6 +48,7 @@ import com.android.server.ranging.uwb.UwbOobConfig;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -61,6 +64,9 @@ public class OobResponderRangingSession
 
     private final ScheduledExecutorService mOobExecutor;
 
+    private OobHandle mPeer;
+    private UwbAddress mMyUwbAddress;
+
     public OobResponderRangingSession(
             @NonNull AttributionSource attributionSource,
             @NonNull SessionHandle sessionHandle,
@@ -75,120 +81,105 @@ public class OobResponderRangingSession
 
     @Override
     public void start(@NonNull OobResponderRangingConfig config) {
-        ListenableFuture<ReceivedMessage> future =
-                mInjector.getOobController().registerMessageListener(
-                        new OobHandle(mSessionHandle, config.getDeviceHandle().getRangingDevice()));
+        mPeer = new OobHandle(mSessionHandle, config.getDeviceHandle().getRangingDevice());
+        mMyUwbAddress = UwbAddress.createRandomShortAddress();
+        FluentFuture<ReceivedMessage> capabilitiesRequestFuture =
+                mInjector.getOobController().registerMessageListener(mPeer);
 
-        Futures.addCallback(future, new CapabilitiesRequestHandler(), mOobExecutor);
+        capabilitiesRequestFuture
+                .transformAsync(this::handleCapabilitiesRequest, mOobExecutor)
+                .transformAsync(this::handleSetConfiguration, mOobExecutor)
+                .addCallback(new FutureCallback<>() {
+                    @Override
+                    public void onSuccess(ImmutableSet<TechnologyConfig> configs) {
+                        // TODO: Only start for technologies who have the start ranging immediately
+                        //  bit set. Otherwise we need to wait for the start ranging message
+                        OobResponderRangingSession.super.start(configs);
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Throwable t) {
+                        Log.e(TAG, "Oob failed: ", t);
+                    }
+                }, mOobExecutor);
     }
 
-    private class CapabilitiesRequestHandler implements FutureCallback<ReceivedMessage> {
+    private ListenableFuture<ReceivedMessage> handleCapabilitiesRequest(ReceivedMessage message) {
+        Log.i(TAG, "Received capabilities request message");
+        CapabilityResponseMessage response = getCapabilitiesResponse(
+                CapabilityRequestMessage.parseBytes(message.asBytes()));
 
-        @Override
-        public void onSuccess(ReceivedMessage request) {
-            OobHandle peer = request.getOobHandle();
-            byte[] bytes = request.asBytes();
+        ListenableFuture<ReceivedMessage> setConfigurationFuture =
+                mInjector.getOobController().registerMessageListener(mPeer);
 
-            OobHeader header = OobHeader.parseBytes(bytes);
-            if (header.getMessageType() != MessageType.CAPABILITY_REQUEST) {
-                Log.e(TAG, "OOB with handle " + peer + " failed: expected message with type "
-                        + MessageType.CAPABILITY_REQUEST + " but got " + header.getMessageType()
-                        + " instead");
-                return;
-            }
-            RangingCapabilities myCapabilities = mInjector
-                    .getCapabilitiesProvider()
-                    .getCapabilities();
-
-            // TODO: Use other technologies
-            UwbRangingCapabilities uwbCapabilities = myCapabilities.getUwbCapabilities();
-            CapabilityResponseMessage response = CapabilityResponseMessage.builder()
-                    .setHeader(OobHeader.builder()
-                            .setMessageType(MessageType.CAPABILITY_RESPONSE)
-                            .setVersion(OobHeader.OobVersion.CURRENT)
-                            .build())
-                    .setRangingTechnologiesPriority(ImmutableList.of(RangingTechnology.UWB))
-                    .setSupportedRangingTechnologies(ImmutableList.of(RangingTechnology.UWB))
-                    .setUwbCapabilities(UwbOobCapabilities.builder()
-                            .setUwbAddress(UwbAddress.fromBytes(new byte[]{3, 4}))
-                            .setSupportedChannels(
-                                    ImmutableList.copyOf(
-                                            uwbCapabilities.getSupportedChannels()))
-                            .setSupportedPreambleIndexes(
-                                    ImmutableList.copyOf(
-                                            uwbCapabilities.getSupportedPreambleIndexes()))
-                            .setSupportedConfigIds(
-                                    ImmutableList.copyOf(uwbCapabilities.getSupportedConfigIds()))
-                            .setMinimumRangingIntervalMs(
-                                    (int) uwbCapabilities.getMinimumRangingInterval().toMillis())
-                            .setMinimumSlotDurationMs(uwbCapabilities
-                                    .getSupportedSlotDurations()
-                                    .stream()
-                                    .min(Integer::compare)
-                                    .get())
-                            .setSupportedDeviceRole(
-                                    ImmutableList.of(UwbOobConfig.OobDeviceRole.RESPONDER))
-                            .build())
-                    .build();
-
-            ListenableFuture<ReceivedMessage> future =
-                    mInjector.getOobController().registerMessageListener(peer);
-            Futures.addCallback(future, new SetConfigurationHandler(), mOobExecutor);
-            mInjector.getOobController().sendMessage(peer, response.toBytes());
-        }
-
-
-        @Override
-        public void onFailure(@NonNull Throwable t) {
-            Log.e(TAG, "Failed to receive capabilities request over OOB", t);
-        }
+        mInjector.getOobController().sendMessage(message.getOobHandle(), response.toBytes());
+        return setConfigurationFuture;
     }
 
-    private class SetConfigurationHandler implements FutureCallback<ReceivedMessage> {
+    private CapabilityResponseMessage getCapabilitiesResponse(CapabilityRequestMessage request) {
+        RangingCapabilities myCapabilities = mInjector
+                .getCapabilitiesProvider()
+                .getCapabilities();
 
-        @Override
-        public void onSuccess(ReceivedMessage request) {
-            OobHandle peer = request.getOobHandle();
-            byte[] bytes = request.asBytes();
+        // TODO: Use other technologies
+        UwbRangingCapabilities uwbCapabilities = myCapabilities.getUwbCapabilities();
+        return CapabilityResponseMessage.builder()
+                .setHeader(OobHeader.builder()
+                        .setMessageType(MessageType.CAPABILITY_RESPONSE)
+                        .setVersion(OobHeader.OobVersion.CURRENT)
+                        .build())
+                .setRangingTechnologiesPriority(ImmutableList.of(RangingTechnology.UWB))
+                .setSupportedRangingTechnologies(ImmutableList.of(RangingTechnology.UWB))
+                .setUwbCapabilities(UwbOobCapabilities.builder()
+                        .setUwbAddress(mMyUwbAddress)
+                        .setSupportedChannels(
+                                ImmutableList.copyOf(
+                                        uwbCapabilities.getSupportedChannels()))
+                        .setSupportedPreambleIndexes(
+                                ImmutableList.copyOf(
+                                        uwbCapabilities.getSupportedPreambleIndexes()))
+                        .setSupportedConfigIds(
+                                ImmutableList.copyOf(uwbCapabilities.getSupportedConfigIds()))
+                        .setMinimumRangingIntervalMs(
+                                (int) uwbCapabilities.getMinimumRangingInterval().toMillis())
+                        .setMinimumSlotDurationMs(uwbCapabilities
+                                .getSupportedSlotDurations()
+                                .stream()
+                                .min(Integer::compare)
+                                .get())
+                        .setSupportedDeviceRole(
+                                ImmutableList.of(UwbOobConfig.OobDeviceRole.RESPONDER))
+                        .build())
+                .build();
+    }
 
-            OobHeader header = OobHeader.parseBytes(bytes);
-            if (header.getMessageType() != MessageType.SET_CONFIGURATION) {
-                Log.e(TAG, "OOB with handle " + peer + " failed: expected message with type "
-                        + MessageType.SET_CONFIGURATION + " but got " + header.getMessageType()
-                        + " instead");
-                return;
-            }
+    private ListenableFuture<ImmutableSet<TechnologyConfig>> handleSetConfiguration(
+            ReceivedMessage message
+    ) {
+        Log.i(TAG, "Received set configuration message");
+        SetConfigurationMessage body = SetConfigurationMessage.parseBytes(message.asBytes());
+        UwbOobConfig uwbConfig = body.getUwbConfig();
 
-            UwbOobConfig message = SetConfigurationMessage.parseBytes(bytes).getUwbConfig();
+        UwbConfig config = new UwbConfig.Builder(
+                new UwbRangingParams.Builder(
+                        uwbConfig.getSessionId(),
+                        uwbConfig.getSelectedConfigId(),
+                        mMyUwbAddress,
+                        uwbConfig.getUwbAddress())
+                        .setSessionKeyInfo(uwbConfig.getSessionKey())
+                        .setComplexChannel(new UwbComplexChannel.Builder()
+                                .setChannel(uwbConfig.getSelectedChannel())
+                                .setPreambleIndex(uwbConfig.getSelectedPreambleIndex())
+                                .build())
+                        .setRangingUpdateRate(uwbConfig.getSelectedRangingIntervalMs())
+                        .setSlotDuration(uwbConfig.getSelectedSlotDurationMs())
+                        .build())
+                .setPeerAddresses(
+                        ImmutableBiMap.of(mPeer.getRangingDevice(), uwbConfig.getUwbAddress()))
+                .setCountryCode(uwbConfig.getCountryCode())
+                .setDeviceRole(DEVICE_ROLE_RESPONDER)
+                .build();
 
-            UwbConfig config = new UwbConfig.Builder(
-                    new UwbRangingParams.Builder(
-                            message.getSessionId(),
-                            message.getSelectedConfigId(),
-                            UwbAddress.fromBytes(new byte[]{3, 4}),
-                            message.getUwbAddress())
-                            .setSessionKeyInfo(message.getSessionKey())
-                            .setComplexChannel(new UwbComplexChannel.Builder()
-                                    .setChannel(message.getSelectedChannel())
-                                    .setPreambleIndex(message.getSelectedPreambleIndex())
-                                    .build())
-                            .setRangingUpdateRate(message.getSelectedRangingIntervalMs())
-                            .setSlotDuration(message.getSelectedSlotDurationMs())
-                            .build())
-                    .setPeerAddresses(
-                            ImmutableBiMap.of(peer.getRangingDevice(), message.getUwbAddress()))
-                    .setCountryCode(message.getCountryCode())
-                    .setDeviceRole(DEVICE_ROLE_RESPONDER)
-                    .build();
-
-            // TODO: Only start for technologies who have the start ranging immediately bit set.
-            //  Otherwise we need to wait for the start ranging message
-            OobResponderRangingSession.super.start(ImmutableSet.of(config));
-        }
-
-        @Override
-        public void onFailure(@NonNull Throwable t) {
-            Log.e(TAG, "Failed to receive set configuration message over OOB", t);
-        }
+        return Futures.immediateFuture(ImmutableSet.of(config));
     }
 }
