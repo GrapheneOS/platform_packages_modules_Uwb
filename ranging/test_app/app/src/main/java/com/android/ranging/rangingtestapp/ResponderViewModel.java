@@ -45,7 +45,7 @@ public class ResponderViewModel extends AndroidViewModel {
                         application,
                         mDistanceMeasurementCallback,
                         log -> {
-                            mLogText.postValue("BT LOG: " + log);
+                            mLogText.postValue("LOG: " + log);
                         });
     }
 

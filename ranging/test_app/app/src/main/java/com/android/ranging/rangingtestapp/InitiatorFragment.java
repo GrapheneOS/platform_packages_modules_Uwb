@@ -54,14 +54,14 @@ public class InitiatorFragment extends Fragment {
     private LinearLayout mDistanceViewLayout;
     private TextView mLogText;
 
-    private BleConnectionViewModel mBleConnectionViewModel;
+    private BleConnectionViewModelCentral mBleConnectionViewModel;
     private InitiatorViewModel mInitiatorViewModel;
 
     @Override
     public View onCreateView(
             @NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_initiator, container, false);
-        Fragment bleConnectionFragment = new BleConnectionFragment();
+        Fragment bleConnectionFragment = new BleConnectionFragmentCentral();
         FragmentTransaction transaction = getChildFragmentManager().beginTransaction();
         transaction.replace(R.id.init_ble_connection_container, bleConnectionFragment).commit();
 
@@ -104,7 +104,8 @@ public class InitiatorFragment extends Fragment {
         mSpinnerDuration.setAdapter(mDurationArrayAdapter);
 
         mInitiatorViewModel = new ViewModelProvider(this).get(InitiatorViewModel.class);
-        mBleConnectionViewModel = new ViewModelProvider(this).get(BleConnectionViewModel.class);
+        mBleConnectionViewModel =
+                new ViewModelProvider(this).get(BleConnectionViewModelCentral.class);
         mBleConnectionViewModel
                 .getLogText()
                 .observe(

@@ -19,13 +19,12 @@ package com.android.ranging.rangingtestapp;
 import java.util.UUID;
 
 abstract class Constants {
-    static final UUID CS_TEST_SERVICE_UUID =
+    static final UUID RANGING_TEST_SERVICE_UUID =
             UUID.fromString("f81d4fae-7ccc-eeee-a765-00aaaaaaaaaa");
 
     enum GattState {
         DISCONNECTED,
         SCANNING,
-        CONNECTED_DIRECT,
-        CONNECTED_SCAN,
+        CONNECTED,
     }
 }

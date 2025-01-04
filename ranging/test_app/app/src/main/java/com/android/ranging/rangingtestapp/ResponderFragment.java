@@ -54,14 +54,14 @@ public class ResponderFragment extends Fragment {
     private LinearLayout mDistanceViewLayout;
     private TextView mLogText;
 
-    private BleConnectionViewModel mBleConnectionViewModel;
+    private BleConnectionViewModelPeripheral mBleConnectionViewModel;
     private ResponderViewModel mResponderViewModel;
 
     @Override
     public View onCreateView(
             @NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_initiator, container, false);
-        Fragment bleConnectionFragment = new BleConnectionFragment();
+        Fragment bleConnectionFragment = new BleConnectionFragmentPeripheral();
         FragmentTransaction transaction = getChildFragmentManager().beginTransaction();
         transaction.replace(R.id.init_ble_connection_container, bleConnectionFragment).commit();
 
@@ -104,7 +104,8 @@ public class ResponderFragment extends Fragment {
         mSpinnerDuration.setAdapter(mDurationArrayAdapter);
 
         mResponderViewModel = new ViewModelProvider(this).get(ResponderViewModel.class);
-        mBleConnectionViewModel = new ViewModelProvider(this).get(BleConnectionViewModel.class);
+        mBleConnectionViewModel =
+                new ViewModelProvider(this).get(BleConnectionViewModelPeripheral.class);
         mBleConnectionViewModel
                 .getLogText()
                 .observe(

@@ -16,25 +16,19 @@
 
 package com.android.ranging.rangingtestapp;
 
-import static android.ranging.RangingSession.*;
-
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.os.CancellationSignal;
 import android.ranging.RangingCapabilities;
-import android.ranging.RangingConfig;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
 import android.ranging.RangingManager;
-import android.ranging.RangingPreference;
 import android.ranging.RangingSession;
-import android.ranging.SessionConfig;
-import android.ranging.raw.RawInitiatorRangingConfig;
-import android.ranging.raw.RawRangingDevice;
-import android.util.Pair;
 
 import androidx.annotation.Nullable;
+
+import com.android.ranging.rangingtestapp.RangingParameters.Technology;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -74,6 +68,9 @@ class DistanceMeasurementInitiator {
 
     void setTargetDevice(BluetoothDevice targetDevice) {
         mTargetDevice = targetDevice;
+        if (mTargetDevice == null) {
+            stopDistanceMeasurement();
+        }
     }
 
     private void printLog(String log) {
@@ -81,7 +78,7 @@ class DistanceMeasurementInitiator {
     }
 
     private String getRangingTechnologyName(int technology) {
-        for (RangingParameters.Technology tech: RangingParameters.Technology.values()) {
+        for (Technology tech: Technology.values()) {
             if (tech.getTechnology() == technology) {
                 return tech.toString();
             }
@@ -90,7 +87,7 @@ class DistanceMeasurementInitiator {
     }
 
     private int getRangingTechnologyId(String technology) {
-        for (RangingParameters.Technology tech: RangingParameters.Technology.values()) {
+        for (Technology tech: Technology.values()) {
             if (tech.toString().equals(technology)) {
                 return tech.getTechnology();
             }
@@ -133,6 +130,12 @@ class DistanceMeasurementInitiator {
         if (mTargetDevice == null) {
             printLog("Please connect the device over Gatt first");
             return;
+        }
+        if (Technology.fromName(rangingTechnologyName).equals(Technology.BLE_CS)) {
+            if (mTargetDevice.getBondState() != BluetoothDevice.BOND_BONDED) {
+                printLog("Please bond the devices for channel sounding");
+                return;
+            }
         }
         printLog("Start ranging with device: " + mTargetDevice.getName());
         mSession = mRangingManager.createRangingSession(
@@ -181,7 +184,8 @@ class DistanceMeasurementInitiator {
                 public void onResults(RangingDevice peer, RangingData data) {
                     printLog(
                             "DistanceMeasurement onResults ! " + peer + ": " + data);
-                    mDistanceMeasurementCallback.onDistanceResult(data.getDistance().getMeasurement());
+                    mDistanceMeasurementCallback.onDistanceResult(
+                            data.getDistance().getMeasurement());
                 }
             };
 

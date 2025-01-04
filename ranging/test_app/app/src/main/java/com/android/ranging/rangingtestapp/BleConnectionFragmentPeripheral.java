@@ -36,19 +36,16 @@ import java.util.ArrayList;
 
 /** Child fragment to handle BLE GATT connection. */
 @SuppressWarnings("SetTextI18n")
-public class BleConnectionFragment extends Fragment {
+public class BleConnectionFragmentPeripheral extends Fragment {
 
-    private BleConnectionViewModel mViewModel;
+    private BleConnectionViewModelPeripheral mViewModel;
     private Button mBtnAdvertising;
 
-    private ArrayAdapter<String> mBondedBtDevicesArrayAdapter;
-    private Button mButtonUpdate;
-    private Button mButtonGatt;
-    private Button mButtonScanConnect;
-    private Spinner mSpinnerBtAddress;
+    private ArrayAdapter<String> mConnectedBtDevicesArrayAdapterPeripheral;
+    private Spinner mSpinnerBtAddressPeripheral;
 
-    public static BleConnectionFragment newInstance() {
-        return new BleConnectionFragment();
+    public static BleConnectionFragmentPeripheral newInstance() {
+        return new BleConnectionFragmentPeripheral();
     }
 
     @Override
@@ -57,12 +54,9 @@ public class BleConnectionFragment extends Fragment {
             @Nullable ViewGroup container,
             @Nullable Bundle savedInstanceState) {
 
-        View root = inflater.inflate(R.layout.fragment_ble_connection, container, false);
+        View root = inflater.inflate(R.layout.fragment_ble_connection_peripheral, container, false);
         mBtnAdvertising = root.findViewById(R.id.btn_advertising);
-        mButtonUpdate = (Button) root.findViewById(R.id.btn_update_devices);
-        mButtonGatt = (Button) root.findViewById(R.id.btn_connect_gatt);
-        mButtonScanConnect = (Button) root.findViewById(R.id.btn_scan_connect);
-        mSpinnerBtAddress = (Spinner) root.findViewById(R.id.spinner_bt_address);
+        mSpinnerBtAddressPeripheral = (Spinner) root.findViewById(R.id.spinner_bt_address_peripheral);
         return root;
     }
 
@@ -70,74 +64,41 @@ public class BleConnectionFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        mBondedBtDevicesArrayAdapter =
+        mConnectedBtDevicesArrayAdapterPeripheral =
                 new ArrayAdapter<String>(
                         getContext(), android.R.layout.simple_spinner_item, new ArrayList<>());
-        mBondedBtDevicesArrayAdapter.setDropDownViewResource(
+        mConnectedBtDevicesArrayAdapterPeripheral.setDropDownViewResource(
                 android.R.layout.simple_spinner_dropdown_item);
-        mSpinnerBtAddress.setAdapter(mBondedBtDevicesArrayAdapter);
+        mSpinnerBtAddressPeripheral.setAdapter(mConnectedBtDevicesArrayAdapterPeripheral);
 
         mViewModel =
-                new ViewModelProvider(requireParentFragment()).get(BleConnectionViewModel.class);
+                new ViewModelProvider(requireParentFragment()).get(BleConnectionViewModelPeripheral.class);
         mViewModel
-                .getGattState()
-                .observe(
-                        getActivity(),
-                        gattSate -> {
-                            switch (gattSate) {
-                                case CONNECTED_DIRECT:
-                                    mButtonGatt.setText("Disconnect Gatt");
-                                    break;
-                                case SCANNING:
-                                    mButtonScanConnect.setText("Stop Scan");
-                                    break;
-                                case CONNECTED_SCAN:
-                                    mButtonScanConnect.setText("Disconnect Gatt");
-                                    break;
-                                case DISCONNECTED:
-                                default:
-                                    mButtonGatt.setText("Connect Gatt");
-                                    mButtonScanConnect.setText("Scan and Connect");
-                            }
-                        });
-        mButtonUpdate.setOnClickListener(
-                v -> {
-                    mViewModel.updateBondedDevices();
-                });
-        mViewModel
-                .getBondedBtDeviceAddresses()
+                .getConnectedDeviceAddresses()
                 .observe(
                         getActivity(),
                         deviceList -> {
-                            mBondedBtDevicesArrayAdapter.clear();
-                            mBondedBtDevicesArrayAdapter.addAll(deviceList);
-                            if (mSpinnerBtAddress.getSelectedItem() != null) {
+                            mConnectedBtDevicesArrayAdapterPeripheral.clear();
+                            mConnectedBtDevicesArrayAdapterPeripheral.addAll(deviceList);
+                            if (mSpinnerBtAddressPeripheral.getSelectedItem() != null) {
                                 String selectedBtAddress =
-                                        mSpinnerBtAddress.getSelectedItem().toString();
-                                mViewModel.setCsTargetAddress(selectedBtAddress);
+                                        mSpinnerBtAddressPeripheral.getSelectedItem().toString();
+                                mViewModel.setTargetDevice(selectedBtAddress);
                             }
                         });
-        mSpinnerBtAddress.setOnItemSelectedListener(
+        mSpinnerBtAddressPeripheral.setOnItemSelectedListener(
                 new OnItemSelectedListener() {
                     @Override
                     public void onItemSelected(
                             AdapterView<?> adapterView, View view, int i, long l) {
-                        String btAddress = mSpinnerBtAddress.getSelectedItem().toString();
-                        mViewModel.setCsTargetAddress(btAddress);
+                        String btAddress = mSpinnerBtAddressPeripheral.getSelectedItem().toString();
+                        mViewModel.setTargetDevice(btAddress);
                     }
 
                     @Override
                     public void onNothingSelected(AdapterView<?> adapterView) {
-                        mViewModel.setCsTargetAddress("");
+                        mViewModel.setTargetDevice("");
                     }
-                });
-        mButtonGatt.setOnClickListener(
-                v -> {
-                    mViewModel.toggleGattConnection();
-                });
-        mButtonScanConnect.setOnClickListener(
-                v -> {
-                    mViewModel.toggleScanConnect();
                 });
         mViewModel
                 .getIsAdvertising()

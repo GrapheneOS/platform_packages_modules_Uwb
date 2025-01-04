@@ -33,7 +33,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="0.6"
-                android:text= "Method"
+                android:text= "Tech"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toStartOf="@id/spinner_dm_method"
                 />
@@ -77,7 +77,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="0.7"
-                android:text= "Duration (s)"
+                android:text= "Duration"
                 app:layout_constraintStart_toEndOf="@id/spinner_freq"
                 app:layout_constraintEnd_toStartOf="@id/spinner_duration"
                 />
