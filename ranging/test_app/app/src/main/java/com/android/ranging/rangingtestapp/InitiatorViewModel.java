@@ -23,6 +23,8 @@ import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
 
 import java.util.List;
 
@@ -37,12 +39,31 @@ public class InitiatorViewModel extends AndroidViewModel {
     private final DistanceMeasurementInitiator
             mDistanceMeasurementInitiator; // mDistanceMeasurementInitiator;
 
-    public InitiatorViewModel(@NonNull Application application) {
+    public static class Factory implements ViewModelProvider.Factory {
+        private Application mApplication;
+        private BleConnectionViewModelCentral mBleConnectionViewModelCentral;
+
+        public Factory(Application application,
+                BleConnectionViewModelCentral bleConnectionViewModelCentral) {
+            mApplication = application;
+            mBleConnectionViewModelCentral = bleConnectionViewModelCentral;
+        }
+
+
+        @Override
+        public <T extends ViewModel> T create(Class<T> modelClass) {
+            return (T) new InitiatorViewModel(mApplication, mBleConnectionViewModelCentral);
+        }
+    }
+
+    public InitiatorViewModel(@NonNull Application application,
+            BleConnectionViewModelCentral bleConnectionViewModelCentral) {
         super(application);
 
         mDistanceMeasurementInitiator =
                 new DistanceMeasurementInitiator(
                         application,
+                        bleConnectionViewModelCentral,
                         mDistanceMeasurementCallback,
                         log -> {
                             mLogText.postValue("LOG: " + log);

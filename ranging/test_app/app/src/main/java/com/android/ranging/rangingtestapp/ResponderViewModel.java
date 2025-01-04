@@ -23,6 +23,8 @@ import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
 
 import java.util.List;
 
@@ -37,12 +39,31 @@ public class ResponderViewModel extends AndroidViewModel {
     private final DistanceMeasurementResponder
             mDistanceMeasurementResponder; // mDistanceMeasurementResponder;
 
-    public ResponderViewModel(@NonNull Application application) {
+    public static class Factory implements ViewModelProvider.Factory {
+        private Application mApplication;
+        private BleConnectionViewModelPeripheral mBleConnectionViewModelPeripheral;
+
+        public Factory(Application application,
+                BleConnectionViewModelPeripheral bleConnectionViewModelPeripheral) {
+            mApplication = application;
+            mBleConnectionViewModelPeripheral = bleConnectionViewModelPeripheral;
+        }
+
+
+        @Override
+        public <T extends ViewModel> T create(Class<T> modelClass) {
+            return (T) new ResponderViewModel(mApplication, mBleConnectionViewModelPeripheral);
+        }
+    }
+
+    public ResponderViewModel(@NonNull Application application,
+            BleConnectionViewModelPeripheral bleConnectionViewModelPeripheral) {
         super(application);
 
         mDistanceMeasurementResponder =
                 new DistanceMeasurementResponder(
                         application,
+                        bleConnectionViewModelPeripheral,
                         mDistanceMeasurementCallback,
                         log -> {
                             mLogText.postValue("LOG: " + log);

@@ -18,6 +18,7 @@ package com.android.ranging.rangingtestapp;
 
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -103,15 +104,20 @@ public class InitiatorFragment extends Fragment {
                 android.R.layout.simple_spinner_dropdown_item);
         mSpinnerDuration.setAdapter(mDurationArrayAdapter);
 
-        mInitiatorViewModel = new ViewModelProvider(this).get(InitiatorViewModel.class);
         mBleConnectionViewModel =
                 new ViewModelProvider(this).get(BleConnectionViewModelCentral.class);
+        mInitiatorViewModel = new ViewModelProvider(
+                this,
+                new InitiatorViewModel.Factory(
+                        getActivity().getApplication(), mBleConnectionViewModel))
+                .get(InitiatorViewModel.class);
         mBleConnectionViewModel
                 .getLogText()
                 .observe(
                         getActivity(),
                         log -> {
                             mLogText.setText(log);
+                            Log.i("Initiator", log);
                         });
         mBleConnectionViewModel
                 .getTargetDevice()
@@ -139,6 +145,7 @@ public class InitiatorFragment extends Fragment {
                         getActivity(),
                         log -> {
                             mLogText.setText(log);
+                            Log.i("Initiator", log);
                         });
 
         mInitiatorViewModel

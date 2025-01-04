@@ -21,21 +21,18 @@ import android.app.Application;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattServer;
 import android.bluetooth.BluetoothGattServerCallback;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
+import android.bluetooth.BluetoothStatusCodes;
 import android.bluetooth.le.AdvertiseData;
 import android.bluetooth.le.AdvertisingSet;
 import android.bluetooth.le.AdvertisingSetCallback;
 import android.bluetooth.le.AdvertisingSetParameters;
 import android.bluetooth.le.BluetoothLeAdvertiser;
-import android.bluetooth.le.BluetoothLeScanner;
-import android.bluetooth.le.ScanCallback;
-import android.bluetooth.le.ScanFilter;
-import android.bluetooth.le.ScanResult;
-import android.bluetooth.le.ScanSettings;
 import android.os.ParcelUuid;
 import android.text.TextUtils;
 import android.util.ArraySet;
@@ -46,9 +43,7 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
-import com.android.ranging.rangingtestapp.Constants.GattState;
-
-import java.util.ArrayList;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -66,6 +61,7 @@ public class BleConnectionViewModelPeripheral extends AndroidViewModel {
     // scanner
     private final MutableLiveData<List<String>> mConnectedDeviceAddresses = new MutableLiveData<>();
     private String mTargetBtAddress = "";
+    private int mPsm = -1;
 
     /** Constructor */
     public BleConnectionViewModelPeripheral(@NonNull Application application) {
@@ -107,6 +103,20 @@ public class BleConnectionViewModelPeripheral extends AndroidViewModel {
         } else {
             mTargetBtAddress = "";
             mTargetDevice.postValue(null);
+        }
+    }
+
+    public void notifyPsm(int psm) {
+        mPsm = psm;
+        printLog("Notify PSM characteristic change");
+        BluetoothGattCharacteristic characteristic =
+                mBluetoothGattServer.getService(Constants.OOB_SERVICE)
+                        .getCharacteristic(Constants.OOB_PSM_CHARACTERISTICS);
+        int status = mBluetoothGattServer.notifyCharacteristicChanged(
+                mTargetDevice.getValue(), characteristic, true,
+                ByteBuffer.allocate(4).putInt(mPsm).array());
+        if (status != BluetoothStatusCodes.SUCCESS) {
+            printLog("Failed to notify PSM characteristics change");
         }
     }
 
@@ -185,11 +195,47 @@ public class BleConnectionViewModelPeripheral extends AndroidViewModel {
                         }
                         updateConnectedDevices();
                     }
+
+                    @Override
+                    public void onServiceAdded(int status, BluetoothGattService service) {
+                        if (status == BluetoothGatt.GATT_SUCCESS) {
+                            printLog("Service added: " + service);
+                        } else {
+                            printLog("Service add failed: " + status);
+                        }
+
+                    }
+
+                    @Override
+                    public void onCharacteristicReadRequest(
+                            BluetoothDevice device, int requestId, int offset,
+                            BluetoothGattCharacteristic characteristic) {
+                        printLog("Characteristics read request: " + characteristic + " from "
+                                + device);
+                        if (characteristic.getUuid().equals(Constants.OOB_PSM_CHARACTERISTICS)) {
+                            printLog("Sending PSM value: " + mPsm);
+                            boolean sendStatus = mBluetoothGattServer.sendResponse(
+                                    device, requestId, BluetoothGatt.GATT_SUCCESS, offset,
+                                    ByteBuffer.allocate(4).putInt(mPsm).array());
+                            if (!sendStatus) printLog("Failed to send characteristics value");
+                        }
+                    }
                 };
 
         mBluetoothGattServer =
                 mBluetoothManager.openGattServer(
                         getApplication().getApplicationContext(), gattServerCallback);
+        BluetoothGattService bluetoothGattService =
+                new BluetoothGattService(
+                        Constants.OOB_SERVICE, BluetoothGattService.SERVICE_TYPE_PRIMARY);
+        boolean success = bluetoothGattService.addCharacteristic(
+                new BluetoothGattCharacteristic(
+                        Constants.OOB_PSM_CHARACTERISTICS,
+                        BluetoothGattCharacteristic.PROPERTY_READ
+                                | BluetoothGattCharacteristic.PROPERTY_NOTIFY,
+                        BluetoothGattCharacteristic.PERMISSION_READ));
+        if (!success) printLog("Failed to add PSM characteristc");
+        mBluetoothGattServer.addService(bluetoothGattService);
         AdvertiseData advertiseData =
                 new AdvertiseData.Builder()
                         .setIncludeDeviceName(true)
@@ -209,6 +255,6 @@ public class BleConnectionViewModelPeripheral extends AndroidViewModel {
     }
 
     private void printLog(@NonNull String logMsg) {
-        mLogText.postValue("BT Log: " + logMsg);
+        mLogText.postValue("BT Peripheral Log: " + logMsg);
     }
 }

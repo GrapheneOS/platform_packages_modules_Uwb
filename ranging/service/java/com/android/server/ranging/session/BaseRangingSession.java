@@ -401,6 +401,7 @@ public class BaseRangingSession {
         pw.println("---- Dump of RangingSession ----");
         pw.println("Session handle: " + mSessionHandle);
         pw.println("Attribution source: " + mAttributionSource);
+        pw.println("Config: " + mConfig);
         pw.println("Adapters:");
         for (RangingAdapter adapter : mAdapters.values()) {
             pw.println(adapter);

@@ -22,15 +22,10 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
-import android.bluetooth.BluetoothGattServer;
-import android.bluetooth.BluetoothGattServerCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
-import android.bluetooth.le.AdvertiseData;
-import android.bluetooth.le.AdvertisingSet;
-import android.bluetooth.le.AdvertisingSetCallback;
-import android.bluetooth.le.AdvertisingSetParameters;
-import android.bluetooth.le.BluetoothLeAdvertiser;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
@@ -48,9 +43,13 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.android.ranging.rangingtestapp.Constants.GattState;
 
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /** The ViewModel for the BLE GATT connection. */
@@ -67,6 +66,8 @@ public class BleConnectionViewModelCentral extends AndroidViewModel {
     private final MutableLiveData<List<String>> mConnectedDeviceAddresses = new MutableLiveData<>();
     private final MutableLiveData<GattState> mGattState = new MutableLiveData<>(GattState.DISCONNECTED);
     private String mTargetBtAddress = "";
+    private CountDownLatch mPsmCountDownLatch = new CountDownLatch(1);
+    private int mPsm = -1;
 
     /** Constructor */
     public BleConnectionViewModelCentral(@NonNull Application application) {
@@ -111,6 +112,17 @@ public class BleConnectionViewModelCentral extends AndroidViewModel {
         }
     }
 
+    public int waitForPsm() {
+        boolean success = false;
+        try {
+            success = mPsmCountDownLatch.await(1, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            printLog("Failed to wait for PSM" + e);
+        }
+        if (!success) printLog("Timed out waiting for PSM");
+        return mPsm;
+    }
+
     void toggleScanConnect() {
         if (mGattState.getValue() == GattState.DISCONNECTED) {
             connectGattByScanning();
@@ -130,6 +142,7 @@ public class BleConnectionViewModelCentral extends AndroidViewModel {
                     if (newState == BluetoothProfile.STATE_CONNECTED) {
                         printLog(device.getName() + " is connected");
                         gatt.requestMtu(GATT_MTU_SIZE);
+                        gatt.discoverServices();
                         if (mTargetBtAddress.equals(device.getAddress())) {
                             mTargetDevice.postValue(device);
                         }
@@ -151,11 +164,45 @@ public class BleConnectionViewModelCentral extends AndroidViewModel {
                     updateConnectedDevices();
                 }
 
+                @Override
                 public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
                     if (status == BluetoothGatt.GATT_SUCCESS) {
                         printLog("MTU changed to: " + mtu);
                     } else {
                         printLog("MTU change failed: " + status);
+                    }
+                }
+
+                @Override
+                public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+                    if (status == BluetoothGatt.GATT_SUCCESS) {
+                        for (BluetoothGattService service : gatt.getServices()) {
+                            if (service.getUuid().equals(Constants.OOB_SERVICE)) {
+                                printLog("Listening for PSM characteristics change");
+                                BluetoothGattCharacteristic characteristic =
+                                        service.getCharacteristic(
+                                                Constants.OOB_PSM_CHARACTERISTICS);
+                                if (characteristic == null) {
+                                    printLog("Failed to get PSM characteristic");
+                                    return;
+                                }
+                                gatt.setCharacteristicNotification(characteristic, true);
+                            }
+                        }
+                    } else {
+                        printLog("Service discovery failed: " + status);
+                    }
+                }
+
+                @Override
+                public void onCharacteristicChanged(BluetoothGatt gatt,
+                        BluetoothGattCharacteristic characteristic, byte[] data) {
+                    printLog("GATT characteristics changed: " + characteristic + ", data: "
+                                 + Arrays.toString(data));
+                    if (characteristic.getUuid().equals(Constants.OOB_PSM_CHARACTERISTICS)) {
+                        mPsm = ByteBuffer.wrap(data).getInt();
+                        printLog("Received PSM value " + mPsm);
+                        mPsmCountDownLatch.countDown();
                     }
                 }
             };
@@ -191,8 +238,7 @@ public class BleConnectionViewModelCentral extends AndroidViewModel {
         ScanFilter filter =
                 new ScanFilter.Builder()
                         .setServiceUuid(
-                                new ParcelUuid(
-                                        Constants.RANGING_TEST_SERVICE_UUID)) // Filter by service UUID
+                                new ParcelUuid(Constants.RANGING_TEST_SERVICE_UUID))
                         .build();
         filters.add(filter);
 
@@ -227,6 +273,6 @@ public class BleConnectionViewModelCentral extends AndroidViewModel {
     }
 
     private void printLog(@NonNull String logMsg) {
-        mLogText.postValue("BT Log: " + logMsg);
+        mLogText.postValue("BT Central Log: " + logMsg);
     }
 }

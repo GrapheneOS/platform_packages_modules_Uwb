@@ -18,6 +18,7 @@ package com.android.ranging.rangingtestapp;
 
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -103,15 +104,20 @@ public class ResponderFragment extends Fragment {
                 android.R.layout.simple_spinner_dropdown_item);
         mSpinnerDuration.setAdapter(mDurationArrayAdapter);
 
-        mResponderViewModel = new ViewModelProvider(this).get(ResponderViewModel.class);
         mBleConnectionViewModel =
                 new ViewModelProvider(this).get(BleConnectionViewModelPeripheral.class);
+        mResponderViewModel = new ViewModelProvider(
+                this,
+                new ResponderViewModel.Factory(
+                        getActivity().getApplication(), mBleConnectionViewModel))
+                .get(ResponderViewModel.class);
         mBleConnectionViewModel
                 .getLogText()
                 .observe(
                         getActivity(),
                         log -> {
                             mLogText.setText(log);
+                            Log.i("Responder", log);
                         });
         mBleConnectionViewModel
                 .getTargetDevice()
@@ -139,6 +145,7 @@ public class ResponderFragment extends Fragment {
                         getActivity(),
                         log -> {
                             mLogText.setText(log);
+                            Log.i("Responder", log);
                         });
 
         mResponderViewModel

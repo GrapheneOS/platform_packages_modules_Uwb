@@ -27,4 +27,9 @@ abstract class Constants {
         SCANNING,
         CONNECTED,
     }
+
+    static final UUID OOB_SERVICE =
+            UUID.fromString("f81d4fae-7ccc-eeee-a765-aaaaaaaaaaaa");
+    static final UUID OOB_PSM_CHARACTERISTICS =
+            UUID.fromString("f81d4fae-7ccc-eeee-a765-0aaaaaaaaaaa");
 }

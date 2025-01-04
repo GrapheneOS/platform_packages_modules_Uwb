@@ -24,6 +24,7 @@ import android.ranging.RangingCapabilities;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
 import android.ranging.RangingManager;
+import android.ranging.RangingPreference;
 import android.ranging.RangingSession;
 
 import androidx.annotation.Nullable;
@@ -33,8 +34,10 @@ import com.android.ranging.rangingtestapp.RangingParameters.Technology;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 class DistanceMeasurementInitiator {
@@ -42,19 +45,23 @@ class DistanceMeasurementInitiator {
     private final LoggingListener mLoggingListener;
 
     private final Context mApplicationContext;
+    private final BleConnectionViewModelCentral mBleConnectionViewModelCentral;
     private final Executor mExecutor;
     private final DistanceMeasurementCallback mDistanceMeasurementCallback;
     @Nullable private RangingSession mSession = null;
     @Nullable private CancellationSignal mCancellationSignal = null;
+    private CountDownLatch mCapabilitiesCountDownLatch = new CountDownLatch(1);
     @Nullable private AtomicReference<RangingCapabilities> mRangingCapabilities =
             new AtomicReference<>();
     @Nullable private BluetoothDevice mTargetDevice = null;
 
     DistanceMeasurementInitiator(
             Context applicationContext,
+            BleConnectionViewModelCentral bleConnectionViewModelCentral,
             DistanceMeasurementCallback distanceMeasurementCallback,
             com.android.ranging.rangingtestapp.LoggingListener loggingListener) {
         mApplicationContext = applicationContext;
+        mBleConnectionViewModelCentral = bleConnectionViewModelCentral;
         mDistanceMeasurementCallback = distanceMeasurementCallback;
         mLoggingListener = loggingListener;
 
@@ -63,6 +70,7 @@ class DistanceMeasurementInitiator {
 
         mRangingManager.registerCapabilitiesCallback(mExecutor, (capabilities -> {
             mRangingCapabilities.set(capabilities);
+            mCapabilitiesCountDownLatch.countDown();
         }));
     }
 
@@ -86,32 +94,30 @@ class DistanceMeasurementInitiator {
         throw new IllegalArgumentException("unknown technology " + technology);
     }
 
-    private int getRangingTechnologyId(String technology) {
-        for (Technology tech: Technology.values()) {
-            if (tech.toString().equals(technology)) {
-                return tech.getTechnology();
-            }
-        }
-        throw new IllegalArgumentException("unknown technology " + technology);
-    }
-
     @SuppressLint("MissingPermission") // permissions are checked upfront
     List<String> getSupportedTechnologies() {
-        List<String> methods = new ArrayList<>();
-        if (mRangingCapabilities.get() == null) return methods;
+        List<String> techs = new ArrayList<>();
+        try {
+            mCapabilitiesCountDownLatch.await(2, TimeUnit.SECONDS);
+        } catch (InterruptedException e) { }
+        if (mRangingCapabilities.get() == null) return techs;
         Map<Integer, Integer> technologyAvailability =
                 mRangingCapabilities.get().getTechnologyAvailability();
 
-        StringBuilder dbgMessage = new StringBuilder("getRangingTechnologys: ");
+        StringBuilder dbgMessage = new StringBuilder("getRangingTechnologies: ");
         for (Map.Entry<Integer, Integer> techAvailability : technologyAvailability.entrySet()) {
             if (techAvailability.getValue().equals(RangingCapabilities.ENABLED)) {
-                String methodName = getRangingTechnologyName(techAvailability.getKey());
-                dbgMessage.append(methodName).append(", ");
-                methods.add(methodName);
+                String techName = getRangingTechnologyName(techAvailability.getKey());
+                dbgMessage.append(techName).append(", ");
+                techs.add(techName);
             }
         }
+        // Always add OOB
+        String techName = Technology.OOB.toString();
+        dbgMessage.append(techName).append(", ");
+        techs.add(techName);
         printLog(dbgMessage.toString());
-        return methods;
+        return techs;
     }
 
     List<String> getMeasurementFreqs() {
@@ -140,9 +146,14 @@ class DistanceMeasurementInitiator {
         printLog("Start ranging with device: " + mTargetDevice.getName());
         mSession = mRangingManager.createRangingSession(
                 Executors.newSingleThreadExecutor(), mRangingSessionCallback);
-        mCancellationSignal = mSession.start(
-                RangingParameters.createInitiatorRangingPreference(
-                        rangingTechnologyName, freqName, duration, mTargetDevice));
+        RangingPreference rangingPreference = RangingParameters.createInitiatorRangingPreference(
+                mApplicationContext, mBleConnectionViewModelCentral, mLoggingListener,
+                rangingTechnologyName, freqName, duration, mTargetDevice);
+        if (rangingPreference == null) {
+            printLog("Failed to start ranging session");
+            return;
+        }
+        mCancellationSignal = mSession.start(rangingPreference);
     }
 
     void stopDistanceMeasurement() {
