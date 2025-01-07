@@ -54,7 +54,7 @@ import java.util.stream.Collectors;
 
 /** The ViewModel for the BLE GATT connection. */
 @SuppressLint("MissingPermission") // permissions are checked upfront
-public class BleConnectionViewModelCentral extends AndroidViewModel {
+public class BleConnectionCentralViewModel extends AndroidViewModel {
     private static final int GATT_MTU_SIZE = 512;
     private final BluetoothAdapter mBluetoothAdapter;
     private final BluetoothManager mBluetoothManager;
@@ -70,7 +70,7 @@ public class BleConnectionViewModelCentral extends AndroidViewModel {
     private int mPsm = -1;
 
     /** Constructor */
-    public BleConnectionViewModelCentral(@NonNull Application application) {
+    public BleConnectionCentralViewModel(@NonNull Application application) {
         super(application);
         mBluetoothManager = application.getSystemService(BluetoothManager.class);
         mBluetoothAdapter = mBluetoothManager.getAdapter();

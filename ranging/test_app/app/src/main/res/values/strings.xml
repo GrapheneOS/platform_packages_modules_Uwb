@@ -1,9 +1,13 @@
 <resources>
   <string name="app_name">RangingTestApp</string>
-  <string name="action_settings">Settings</string>
-  <!-- Strings used for fragments for navigation -->
-  <string name="role_selection_fragment_label">Role Selection Fragment</string>
+  <string name="initiator">Initiator</string>
+  <string name="responder">Responder</string>
   <string name="initiator_fragment_label">Initiator Fragment</string>
   <string name="responder_fragment_label">Responder Fragment</string>
-
+  <string name="ble_central">BLE Central</string>
+  <string name="ble_peripheral">BLE Peripheral</string>
+  <string name="stop_measurement">Stop Distance Measurement</string>
+  <string name="start_measurement">Start Distance Measurement</string>
+  <string name="starting_measurement">Starting...</string>
+  <string name="stopping_measurement">Stopping...</string>
 </resources>

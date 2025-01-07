@@ -32,7 +32,8 @@ import java.util.List;
 public class InitiatorViewModel extends AndroidViewModel {
 
     private final MutableLiveData<String> mLogText = new MutableLiveData<>();
-    private final MutableLiveData<Boolean> mStarted = new MutableLiveData<>(false);
+    private final MutableLiveData<Constants.RangeSessionState> mSessionState =
+            new MutableLiveData<>(Constants.RangeSessionState.STOPPED);
 
     private final MutableLiveData<Double> mDistanceResult = new MutableLiveData<>();
 
@@ -41,29 +42,29 @@ public class InitiatorViewModel extends AndroidViewModel {
 
     public static class Factory implements ViewModelProvider.Factory {
         private Application mApplication;
-        private BleConnectionViewModelCentral mBleConnectionViewModelCentral;
+        private BleConnectionCentralViewModel mBleConnectionCentralViewModel;
 
         public Factory(Application application,
-                BleConnectionViewModelCentral bleConnectionViewModelCentral) {
+                BleConnectionCentralViewModel bleConnectionCentralViewModel) {
             mApplication = application;
-            mBleConnectionViewModelCentral = bleConnectionViewModelCentral;
+            mBleConnectionCentralViewModel = bleConnectionCentralViewModel;
         }
 
 
         @Override
         public <T extends ViewModel> T create(Class<T> modelClass) {
-            return (T) new InitiatorViewModel(mApplication, mBleConnectionViewModelCentral);
+            return (T) new InitiatorViewModel(mApplication, mBleConnectionCentralViewModel);
         }
     }
 
     public InitiatorViewModel(@NonNull Application application,
-            BleConnectionViewModelCentral bleConnectionViewModelCentral) {
+            BleConnectionCentralViewModel bleConnectionCentralViewModel) {
         super(application);
 
         mDistanceMeasurementInitiator =
                 new DistanceMeasurementInitiator(
                         application,
-                        bleConnectionViewModelCentral,
+                        bleConnectionCentralViewModel,
                         mDistanceMeasurementCallback,
                         log -> {
                             mLogText.postValue("LOG: " + log);
@@ -78,8 +79,8 @@ public class InitiatorViewModel extends AndroidViewModel {
         return mLogText;
     }
 
-    LiveData<Boolean> getStarted() {
-        return mStarted;
+    LiveData<Constants.RangeSessionState> getSessionState() {
+        return mSessionState;
     }
 
     LiveData<Double> getDistanceResult() {
@@ -99,10 +100,18 @@ public class InitiatorViewModel extends AndroidViewModel {
     }
 
     void toggleStartStop(String technology, String freq, int duration) {
-        if (!mStarted.getValue()) {
-            mDistanceMeasurementInitiator.startDistanceMeasurement(technology, freq, duration);
+        if (mSessionState.getValue() == Constants.RangeSessionState.STOPPED) {
+            boolean success =
+                    mDistanceMeasurementInitiator.startDistanceMeasurement(
+                            technology, freq, duration);
+            if (success) {
+                mSessionState.postValue(Constants.RangeSessionState.STARTING);
+            } else {
+                mSessionState.postValue(Constants.RangeSessionState.STOPPED);
+            }
         } else {
             mDistanceMeasurementInitiator.stopDistanceMeasurement();
+            mSessionState.postValue(Constants.RangeSessionState.STOPPING);
         }
     }
 
@@ -110,16 +119,19 @@ public class InitiatorViewModel extends AndroidViewModel {
             new DistanceMeasurementInitiator.DistanceMeasurementCallback() {
                 @Override
                 public void onStartSuccess() {
-                    mStarted.postValue(true);
+                    mSessionState.postValue(Constants.RangeSessionState.STARTED);
                 }
 
                 @Override
-                public void onStartFail() {}
+                public void onStartFail() {
+                    mSessionState.postValue(Constants.RangeSessionState.STOPPED);
+                }
 
                 @Override
                 public void onStop() {
-                    mStarted.postValue(false);
+                    mSessionState.postValue(Constants.RangeSessionState.STOPPED);
                 }
+
 
                 @Override
                 public void onDistanceResult(double distanceMeters) {

@@ -45,11 +45,12 @@ class DistanceMeasurementInitiator {
     private final LoggingListener mLoggingListener;
 
     private final Context mApplicationContext;
-    private final BleConnectionViewModelCentral mBleConnectionViewModelCentral;
+    private final BleConnectionCentralViewModel mBleConnectionCentralViewModel;
     private final Executor mExecutor;
     private final DistanceMeasurementCallback mDistanceMeasurementCallback;
     @Nullable private RangingSession mSession = null;
-    @Nullable private CancellationSignal mCancellationSignal = null;
+    private AtomicReference<CancellationSignal> mCancellationSignal =
+            new AtomicReference<>(null);
     private CountDownLatch mCapabilitiesCountDownLatch = new CountDownLatch(1);
     @Nullable private AtomicReference<RangingCapabilities> mRangingCapabilities =
             new AtomicReference<>();
@@ -57,11 +58,11 @@ class DistanceMeasurementInitiator {
 
     DistanceMeasurementInitiator(
             Context applicationContext,
-            BleConnectionViewModelCentral bleConnectionViewModelCentral,
+            BleConnectionCentralViewModel bleConnectionCentralViewModel,
             DistanceMeasurementCallback distanceMeasurementCallback,
             com.android.ranging.rangingtestapp.LoggingListener loggingListener) {
         mApplicationContext = applicationContext;
-        mBleConnectionViewModelCentral = bleConnectionViewModelCentral;
+        mBleConnectionCentralViewModel = bleConnectionCentralViewModel;
         mDistanceMeasurementCallback = distanceMeasurementCallback;
         mLoggingListener = loggingListener;
 
@@ -131,36 +132,43 @@ class DistanceMeasurementInitiator {
     }
 
     @SuppressLint("MissingPermission") // permissions are checked upfront
-    void startDistanceMeasurement(
+    boolean startDistanceMeasurement(
             String rangingTechnologyName, String freqName, int duration) {
         if (mTargetDevice == null) {
             printLog("Please connect the device over Gatt first");
-            return;
+            return false;
         }
         if (Technology.fromName(rangingTechnologyName).equals(Technology.BLE_CS)) {
             if (mTargetDevice.getBondState() != BluetoothDevice.BOND_BONDED) {
                 printLog("Please bond the devices for channel sounding");
-                return;
+                return false;
             }
         }
         printLog("Start ranging with device: " + mTargetDevice.getName());
         mSession = mRangingManager.createRangingSession(
                 Executors.newSingleThreadExecutor(), mRangingSessionCallback);
-        RangingPreference rangingPreference = RangingParameters.createInitiatorRangingPreference(
-                mApplicationContext, mBleConnectionViewModelCentral, mLoggingListener,
-                rangingTechnologyName, freqName, duration, mTargetDevice);
-        if (rangingPreference == null) {
-            printLog("Failed to start ranging session");
-            return;
-        }
-        mCancellationSignal = mSession.start(rangingPreference);
+        // Don't block here to avoid making the UX unresponsive (especially for OOB handshaking)
+        Executor executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            RangingPreference rangingPreference =
+                    RangingParameters.createInitiatorRangingPreference(
+                            mApplicationContext, mBleConnectionCentralViewModel, mLoggingListener,
+                            rangingTechnologyName, freqName, duration, mTargetDevice);
+            if (rangingPreference == null) {
+                printLog("Failed to start ranging session");
+                mDistanceMeasurementCallback.onStartFail();
+                return;
+            }
+            mCancellationSignal.set(mSession.start(rangingPreference));
+        });
+        return true;
     }
 
     void stopDistanceMeasurement() {
-        if (mSession == null || mCancellationSignal == null) {
+        if (mSession == null || mCancellationSignal.get() == null) {
             return;
         }
-        mCancellationSignal.cancel();
+        mCancellationSignal.get().cancel();
         mSession = null;
         mCancellationSignal = null;
     }

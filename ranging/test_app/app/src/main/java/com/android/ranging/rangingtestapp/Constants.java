@@ -32,4 +32,11 @@ abstract class Constants {
             UUID.fromString("f81d4fae-7ccc-eeee-a765-aaaaaaaaaaaa");
     static final UUID OOB_PSM_CHARACTERISTICS =
             UUID.fromString("f81d4fae-7ccc-eeee-a765-0aaaaaaaaaaa");
+
+    enum RangeSessionState {
+        STARTING,
+        STARTED,
+        STOPPING,
+        STOPPED
+    }
 }

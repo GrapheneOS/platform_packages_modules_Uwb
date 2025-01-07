@@ -22,6 +22,7 @@ import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST;
 import static com.android.ranging.uwb.backend.internal.Utils.CONFIG_UNICAST_DS_TWR;
+import static com.android.ranging.uwb.backend.internal.Utils.RANGE_DATA_NTF_DISABLE;
 import static com.android.ranging.uwb.backend.internal.Utils.STATIC_STS_SESSION_KEY_INFO_SIZE;
 import static com.android.ranging.uwb.backend.internal.Utils.SUPPORTED_HPRF_PREAMBLE_INDEX;
 import static com.android.ranging.uwb.backend.internal.Utils.VENDOR_ID_SIZE;
@@ -356,12 +357,17 @@ public final class ConfigurationManager {
                         .setInBandTerminationAttemptCount(3)
                         .setStsConfig(configuration.getStsConfig())
                         .setRangingErrorStreakTimeoutMs(10_000L)
-                        .setHasRangingResultReportMessage(false)
                         .setFilterType(FILTER_TYPE_NONE)
                         .setMaxNumberOfMeasurements(rangingParameters
                                 .getUwbRangeLimitsConfig().getRangeMaxNumberOfMeasurements())
                         .setMaxRangingRoundRetries(rangingParameters
                                 .getUwbRangeLimitsConfig().getRangeMaxRangingRoundRetries());
+        // Turn off RRRM if the client does not want data notification.
+        if (rangingParameters
+                .getUwbRangeDataNtfConfig()
+                .getRangeDataNtfConfigType() == RANGE_DATA_NTF_DISABLE) {
+             builder.setHasRangingResultReportMessage(false);
+        }
 
         if (configuration.getStsConfig() == FiraParams.STS_CONFIG_STATIC) {
             byte[] staticStsIv =

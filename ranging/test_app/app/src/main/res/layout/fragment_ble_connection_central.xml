@@ -3,9 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/ble_connection_fragment_central"
+    android:layout_marginTop="?attr/actionBarSize"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".BleConnectionFragmentCentral"
+    tools:context=".BleConnectionCentralFragment"
     tools:ignore="HardcodedText">
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -14,10 +15,10 @@
             android:id="@+id/central_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Central"
+            android:text="@string/ble_central"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btn_advertising" />
+            app:layout_constraintTop_toTopOf="parent" />
         <Spinner
             android:id="@+id/spinner_bt_address_central"
             android:layout_width="0dp"

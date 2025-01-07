@@ -4,12 +4,12 @@ plugins {
 
 android {
   namespace = "com.android.ranging.rangingtestapp"
-  compileSdk = 36
+  compileSdkVersion = "android-Baklava"
 
   defaultConfig {
     applicationId = "com.android.ranging.rangingtestapp"
-    minSdk = 36
-    targetSdk = 36
+    minSdk = 35
+    targetSdk = 35
     versionCode = 1
     versionName = "1.0"
 
@@ -29,6 +29,7 @@ android {
   buildFeatures {
     viewBinding = true
   }
+  buildToolsVersion = "35.0.0"
 }
 
 dependencies {

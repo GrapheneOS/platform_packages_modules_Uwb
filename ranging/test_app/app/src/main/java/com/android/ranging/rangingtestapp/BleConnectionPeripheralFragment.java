@@ -36,16 +36,16 @@ import java.util.ArrayList;
 
 /** Child fragment to handle BLE GATT connection. */
 @SuppressWarnings("SetTextI18n")
-public class BleConnectionFragmentPeripheral extends Fragment {
+public class BleConnectionPeripheralFragment extends Fragment {
 
-    private BleConnectionViewModelPeripheral mViewModel;
+    private BleConnectionPeripheralViewModel mViewModel;
     private Button mBtnAdvertising;
 
     private ArrayAdapter<String> mConnectedBtDevicesArrayAdapterPeripheral;
     private Spinner mSpinnerBtAddressPeripheral;
 
-    public static BleConnectionFragmentPeripheral newInstance() {
-        return new BleConnectionFragmentPeripheral();
+    public static BleConnectionPeripheralFragment newInstance() {
+        return new BleConnectionPeripheralFragment();
     }
 
     @Override
@@ -72,7 +72,7 @@ public class BleConnectionFragmentPeripheral extends Fragment {
         mSpinnerBtAddressPeripheral.setAdapter(mConnectedBtDevicesArrayAdapterPeripheral);
 
         mViewModel =
-                new ViewModelProvider(requireParentFragment()).get(BleConnectionViewModelPeripheral.class);
+                new ViewModelProvider(requireParentFragment()).get(BleConnectionPeripheralViewModel.class);
         mViewModel
                 .getConnectedDeviceAddresses()
                 .observe(

@@ -19,7 +19,6 @@ package com.android.ranging.rangingtestapp;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
@@ -36,15 +35,15 @@ import java.util.ArrayList;
 
 /** Child fragment to handle BLE GATT connection. */
 @SuppressWarnings("SetTextI18n")
-public class BleConnectionFragmentCentral extends Fragment {
+public class BleConnectionCentralFragment extends Fragment {
 
-    private BleConnectionViewModelCentral mViewModel;
+    private BleConnectionCentralViewModel mViewModel;
     private ArrayAdapter<String> mConnectedBtDevicesArrayAdapterCentral;
     private Button mButtonScanConnect;
     private Spinner mSpinnerBtAddressCentral;
 
-    public static BleConnectionFragmentCentral newInstance() {
-        return new BleConnectionFragmentCentral();
+    public static BleConnectionCentralFragment newInstance() {
+        return new BleConnectionCentralFragment();
     }
 
     @Override
@@ -71,7 +70,7 @@ public class BleConnectionFragmentCentral extends Fragment {
         mSpinnerBtAddressCentral.setAdapter(mConnectedBtDevicesArrayAdapterCentral);
 
         mViewModel =
-                new ViewModelProvider(requireParentFragment()).get(BleConnectionViewModelCentral.class);
+                new ViewModelProvider(requireParentFragment()).get(BleConnectionCentralViewModel.class);
         mViewModel
                 .getGattState()
                 .observe(

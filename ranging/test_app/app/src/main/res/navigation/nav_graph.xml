@@ -3,40 +3,17 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/role_selection_fragment">
+    app:startDestination="@id/navigation_initiator">
 
   <fragment
-      android:id="@+id/role_selection_fragment"
-      android:name="com.android.ranging.rangingtestapp.RoleSelectionFragment"
-      android:label="Role Selection"
-      tools:layout="@layout/fragment_role_selection">
-
-    <action
-        android:id="@+id/action_RoleSelectionFragment_to_InitiatorFragment"
-        app:destination="@id/initiator_fragment" />
-      <action
-          android:id="@+id/action_RoleSelectionFragment_to_ResponderFragment"
-          app:destination="@id/responder_fragment" />
-  </fragment>
-  <fragment
-      android:id="@+id/initiator_fragment"
+      android:id="@+id/navigation_initiator"
       android:name="com.android.ranging.rangingtestapp.InitiatorFragment"
       android:label="Initiator"
-      tools:layout="@layout/fragment_initiator">
+      tools:layout="@layout/fragment_initiator" />
 
-    <action
-        android:id="@+id/action_InitiatorFragment_to_RoleSelectionFragment"
-        app:destination="@id/role_selection_fragment" />
-  </fragment>
-    <fragment
-        android:id="@+id/responder_fragment"
-        android:name="com.android.ranging.rangingtestapp.ResponderFragment"
-        android:label="Responder"
-        tools:layout="@layout/fragment_responder">
-
-        <action
-            android:id="@+id/action_ResponderFragment_to_RoleSelectionFragment"
-            app:destination="@id/role_selection_fragment" />
-    </fragment>
-
+  <fragment
+      android:id="@+id/navigation_responder"
+      android:name="com.android.ranging.rangingtestapp.ResponderFragment"
+      android:label="Responder"
+      tools:layout="@layout/fragment_responder" />
 </navigation>

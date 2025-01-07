@@ -187,10 +187,10 @@ public class RangingParameters {
     }
 
     private static OobInitiatorRangingConfig createOobInitiatorConfig(
-            Context context, BleConnectionViewModelCentral bleConnectionViewModelCentral,
+            Context context, BleConnectionCentralViewModel bleConnectionCentralViewModel,
             LoggingListener loggingListener, String freqName, BluetoothDevice targetBtDevice) {
         OobBleClient oobBleClient =
-                new OobBleClient(context, bleConnectionViewModelCentral, targetBtDevice,
+                new OobBleClient(context, bleConnectionCentralViewModel, targetBtDevice,
                         loggingListener);
         if (!oobBleClient.waitForSocketCreation()) {
             oobBleClient.close();
@@ -207,13 +207,13 @@ public class RangingParameters {
     }
 
     public static RangingPreference createInitiatorRangingPreference(
-            Context context, BleConnectionViewModelCentral bleConnectionViewModelCentral,
+            Context context, BleConnectionCentralViewModel bleConnectionCentralViewModel,
             LoggingListener loggingListener, String rangingTechnologyName, String freqName,
             int duration, BluetoothDevice targetBtDevice) {
         RangingConfig initiatorRangingConfig = null;
         if (Technology.fromName(rangingTechnologyName).equals(Technology.OOB)) {
             initiatorRangingConfig =
-                    createOobInitiatorConfig(context, bleConnectionViewModelCentral,
+                    createOobInitiatorConfig(context, bleConnectionCentralViewModel,
                             loggingListener, freqName, targetBtDevice);
         } else {
             initiatorRangingConfig =
@@ -261,10 +261,10 @@ public class RangingParameters {
     }
 
     private static OobResponderRangingConfig createOobResponderConfig(
-            Context context, BleConnectionViewModelPeripheral bleConnectionViewModelPeripheral,
+            Context context, BleConnectionPeripheralViewModel bleConnectionPeripheralViewModel,
             LoggingListener loggingListener, String freqName, BluetoothDevice targetBtDevice) {
         OobBleServer oobBleServer =
-                new OobBleServer(context, bleConnectionViewModelPeripheral, targetBtDevice,
+                new OobBleServer(context, bleConnectionPeripheralViewModel, targetBtDevice,
                         loggingListener);
         if (!oobBleServer.waitForSocketCreation()) {
             oobBleServer.close();
@@ -276,13 +276,13 @@ public class RangingParameters {
     }
 
     public static RangingPreference createResponderRangingPreference(
-            Context context, BleConnectionViewModelPeripheral bleConnectionViewModelPeripheral,
+            Context context, BleConnectionPeripheralViewModel bleConnectionPeripheralViewModel,
             LoggingListener loggingListener, String rangingTechnologyName, String freqName,
             int duration, BluetoothDevice targetBtDevice) {
         RangingConfig responderRangingConfig = null;
         if (Technology.fromName(rangingTechnologyName).equals(Technology.OOB)) {
             responderRangingConfig =
-                    createOobResponderConfig(context, bleConnectionViewModelPeripheral,
+                    createOobResponderConfig(context, bleConnectionPeripheralViewModel,
                             loggingListener, freqName, targetBtDevice);
         } else {
             responderRangingConfig =
