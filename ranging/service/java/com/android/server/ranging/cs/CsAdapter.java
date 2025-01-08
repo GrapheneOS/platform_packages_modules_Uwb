@@ -42,6 +42,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.android.internal.annotations.VisibleForTesting;
 import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
@@ -105,6 +106,15 @@ public class CsAdapter implements RangingAdapter {
     @Override
     public @NonNull RangingTechnology getTechnology() {
         return RangingTechnology.CS;
+    }
+
+    public DataNotificationManager getDataNotificationManager() {
+        return mDataNotificationManager;
+    }
+
+    @VisibleForTesting
+    public void setSession(DistanceMeasurementSession session) {
+        mSession = session;
     }
 
     @Override
@@ -259,7 +269,8 @@ public class CsAdapter implements RangingAdapter {
         STOPPED,
     }
 
-    private DistanceMeasurementSession.Callback mDistanceMeasurementCallback =
+    @VisibleForTesting
+    public DistanceMeasurementSession.Callback mDistanceMeasurementCallback =
             new DistanceMeasurementSession.Callback() {
                 public void onStarted(DistanceMeasurementSession session) {
                     Log.i(TAG, "DistanceMeasurement onStarted !");
