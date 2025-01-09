@@ -161,6 +161,6 @@ public class OobBleServer implements TransportHandle {
     }
 
     private void printLog(String log) {
-        mLoggingListener.onLog(log);
+        mLoggingListener.log(log);
     }
 }

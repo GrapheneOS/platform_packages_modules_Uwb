@@ -16,11 +16,11 @@
   -->
 <configuration description="Tests for the generic ranging UWB backend">
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
-        <option name="test-file-name" value="GenericRangingUwbBackendTests.apk" />
+        <option name="test-file-name" value="RangingUwbBackendTests.apk" />
     </target_preparer>
 
     <option name="test-suite-tag" value="apct" />
-    <option name="test-tag" value="GenericRangingUwbBackendTests" />
+    <option name="test-tag" value="RangingUwbBackendTests" />
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="com.android.ranging.uwb.backend" />
         <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />

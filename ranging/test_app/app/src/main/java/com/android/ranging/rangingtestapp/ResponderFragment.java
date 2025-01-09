@@ -57,6 +57,7 @@ public class ResponderFragment extends Fragment {
 
     private BleConnectionPeripheralViewModel mBleConnectionViewModel;
     private ResponderViewModel mResponderViewModel;
+    private LoggingListener mLoggingListener;
 
     @Override
     public View onCreateView(
@@ -79,6 +80,7 @@ public class ResponderFragment extends Fragment {
         mDistanceCanvasView = new CanvasView(getContext(), "Distance");
         mDistanceViewLayout.addView(mDistanceCanvasView);
         mDistanceViewLayout.setPadding(0, 0, 0, 600);
+        mLoggingListener = new LoggingListener(getActivity().getApplicationContext(), true);
         mLogText = (TextView) root.findViewById(R.id.text_log);
         return root;
     }
@@ -103,22 +105,23 @@ public class ResponderFragment extends Fragment {
         mDurationArrayAdapter.setDropDownViewResource(
                 android.R.layout.simple_spinner_dropdown_item);
         mSpinnerDuration.setAdapter(mDurationArrayAdapter);
-
-        mBleConnectionViewModel =
-                new ViewModelProvider(this).get(BleConnectionPeripheralViewModel.class);
-        mResponderViewModel = new ViewModelProvider(
-                this,
-                new ResponderViewModel.Factory(
-                        getActivity().getApplication(), mBleConnectionViewModel))
-                .get(ResponderViewModel.class);
-        mBleConnectionViewModel
+        mLoggingListener
                 .getLogText()
                 .observe(
                         getActivity(),
                         log -> {
                             mLogText.setText(log);
-                            Log.i("Responder", log);
                         });
+        mBleConnectionViewModel =
+                new ViewModelProvider(this,
+                        new BleConnectionPeripheralViewModel.Factory(
+                                getActivity().getApplication(), mLoggingListener))
+                        .get(BleConnectionPeripheralViewModel.class);
+        mResponderViewModel = new ViewModelProvider(
+                this,
+                new ResponderViewModel.Factory(
+                        getActivity().getApplication(), mBleConnectionViewModel, mLoggingListener))
+                .get(ResponderViewModel.class);
         mBleConnectionViewModel
                 .getTargetDevice()
                 .observe(
@@ -126,7 +129,6 @@ public class ResponderFragment extends Fragment {
                         targetDevice -> {
                             mResponderViewModel.setTargetDevice(targetDevice);
                         });
-
         mResponderViewModel
                 .getSessionState()
                 .observe(
@@ -152,15 +154,6 @@ public class ResponderFragment extends Fragment {
                                     break;
                             }
                         });
-        mResponderViewModel
-                .getLogText()
-                .observe(
-                        getActivity(),
-                        log -> {
-                            mLogText.setText(log);
-                            Log.i("Responder", log);
-                        });
-
         mResponderViewModel
                 .getDistanceResult()
                 .observe(
@@ -189,7 +182,7 @@ public class ResponderFragment extends Fragment {
     }
 
     private void printLog(String logMessage) {
-        mLogText.setText("LOG: " + logMessage);
+        mLoggingListener.log(logMessage);
     }
 
     @Override

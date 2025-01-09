@@ -16,6 +16,7 @@
 
 package com.android.ranging.uwb.backend.internal;
 
+import static com.android.ranging.uwb.backend.internal.RangingSessionCallback.PeerDisconnectedReason.LOCAL_DEVICE_REQUEST;
 import static com.android.ranging.uwb.backend.internal.RangingSessionCallback.REASON_FAILED_TO_START;
 import static com.android.ranging.uwb.backend.internal.RangingSessionCallback.REASON_STOP_RANGING_CALLED;
 import static com.android.ranging.uwb.backend.internal.RangingSessionCallback.REASON_UNKNOWN;
@@ -350,7 +351,11 @@ public class RangingControllerTest {
                 .close();
 
         mRangingController.startRanging(rangingSessionCallback, mBackendCallbackExecutor);
-        assertEquals(mRangingController.stopRanging(), STATUS_OK);
+        verify(mUwbManager).openRangingSession(any(), any(), any());
+        verify(pfRangingSession).start(any());
+        verify(rangingSessionCallback)
+                .onRangingInitialized(UwbDevice.createForAddress(deviceAddress.toBytes()));
+        mRangingController.stopRanging();
         verify(pfRangingSession).stop();
         verify(pfRangingSession).close();
         verify(rangingSessionCallback)
@@ -402,7 +407,7 @@ public class RangingControllerTest {
                         peerAddress, 0, null)), STATUS_OK);
         verify(pfRangingSession).addControlee(any(PersistableBundle.class));
         verify(rangingSessionCallback)
-                .onRangingInitialized(UwbDevice.createForAddress(peerAddress.toBytes()));
+                .onPeerConnected(UwbDevice.createForAddress(peerAddress.toBytes()));
     }
 
     @Test
@@ -453,16 +458,19 @@ public class RangingControllerTest {
         mRangingController.startRanging(rangingSessionCallback, mBackendCallbackExecutor);
         mRangingController.addControleeWithSessionParams(
                 new RangingControleeParameters(peerAddress, 0, null));
+        verify(rangingSessionCallback)
+                .onPeerConnected(UwbDevice.createForAddress(peerAddress.toBytes()));
+
         assertEquals(mRangingController.removeControlee(peerAddress), STATUS_OK);
+        verify(rangingSessionCallback)
+                .onPeerDisconnected(
+                        UwbDevice.createForAddress(peerAddress.toBytes()),
+                        LOCAL_DEVICE_REQUEST);
         assertEquals(mRangingController.removeControlee(mRangingParamsKnownPeerAddress), STATUS_OK);
         assertEquals(mRangingController.removeControlee(UwbAddress.getRandomizedShortAddress()),
                 INVALID_API_CALL);
         verify(pfRangingSession, times(1)).addControlee(any(PersistableBundle.class));
         verify(pfRangingSession, times(2)).removeControlee(any(PersistableBundle.class));
-        verify(rangingSessionCallback)
-                .onRangingSuspended(
-                        UwbDevice.createForAddress(peerAddress.toBytes()),
-                        REASON_STOP_RANGING_CALLED);
     }
 
     @Test

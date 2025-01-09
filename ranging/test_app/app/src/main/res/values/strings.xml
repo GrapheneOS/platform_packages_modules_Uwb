@@ -10,4 +10,5 @@
   <string name="start_measurement">Start Distance Measurement</string>
   <string name="starting_measurement">Starting...</string>
   <string name="stopping_measurement">Stopping...</string>
+  <string name="configuration">Configuration</string>
 </resources>

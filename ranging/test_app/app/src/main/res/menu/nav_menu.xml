@@ -1,9 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-     <item android:id="@+id/navigation_initiator"
-          android:icon="@drawable/ic_controller"
-          android:title="@string/initiator"/>
-     <item android:id="@+id/navigation_responder"
-          android:icon="@drawable/ic_controlee"
-          android:title="@string/responder" />
+     <item android:title="@string/initiator">
+          <menu>
+               <item android:id="@+id/navigation_initiator"
+                   android:icon="@drawable/ic_controller"
+                   android:title="@string/initiator"/>
+               <item android:id="@+id/navigation_initiator_configuration"
+                   android:icon="@drawable/ic_configuration"
+                   android:title="@string/configuration"/>
+          </menu>
+     </item>
+     <item android:title="@string/responder">
+          <menu>
+               <item android:id="@+id/navigation_responder"
+                   android:icon="@drawable/ic_controlee"
+                   android:title="@string/responder" />
+               <item android:id="@+id/navigation_responder_configuration"
+                   android:icon="@drawable/ic_configuration"
+                   android:title="@string/configuration"/>
+          </menu>
+     </item>
 </menu>

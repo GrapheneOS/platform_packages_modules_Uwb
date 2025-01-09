@@ -125,6 +125,9 @@ public class RttAdapter implements RangingAdapter {
         return RangingTechnology.RTT;
     }
 
+    public DataNotificationManager getDataNotificationManager() {
+        return mDataNotificationManager;
+    }
     @Override
     public void start(
             @NonNull RangingSessionConfig.TechnologyConfig config,

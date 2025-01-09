@@ -18,12 +18,15 @@ package android.ranging.cts;
 
 import static android.ranging.DataNotificationConfig.NOTIFICATION_CONFIG_PROXIMITY_LEVEL;
 import static android.ranging.RangingCapabilities.ENABLED;
+import static android.ranging.RangingConfig.RANGING_SESSION_OOB;
 import static android.ranging.RangingConfig.RANGING_SESSION_RAW;
 import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
 import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_ONE;
 import static android.ranging.ble.cs.BleCsRangingParams.LOCATION_TYPE_INDOOR;
 import static android.ranging.ble.cs.BleCsRangingParams.SIGHT_TYPE_LINE_OF_SIGHT;
+import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_AUTO;
+import static android.ranging.oob.OobInitiatorRangingConfig.SECURITY_LEVEL_BASIC;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 import static android.ranging.uwb.UwbRangingParams.CONFIG_MULTICAST_DS_TWR;
@@ -70,6 +73,10 @@ import android.ranging.SessionConfig;
 import android.ranging.ble.cs.BleCsRangingCapabilities;
 import android.ranging.ble.cs.BleCsRangingParams;
 import android.ranging.ble.rssi.BleRssiRangingParams;
+import android.ranging.oob.DeviceHandle;
+import android.ranging.oob.OobInitiatorRangingConfig;
+import android.ranging.oob.OobResponderRangingConfig;
+import android.ranging.oob.TransportHandle;
 import android.ranging.raw.RawInitiatorRangingConfig;
 import android.ranging.raw.RawRangingDevice;
 import android.ranging.raw.RawResponderRangingConfig;
@@ -97,12 +104,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -1043,6 +1052,76 @@ public class RangingManagerTest {
         uiAutomation.dropShellPermissionIdentity();
     }
 
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_enabled")
+    public void testStartOobInitiatorRangingSession() throws InterruptedException {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        uiAutomation.adoptShellPermissionIdentity();
+
+        RangingSession session = mRangingManager.createRangingSession(
+                MoreExecutors.directExecutor(), new RangingSessionCallback());
+        assertThat(session).isNotNull();
+
+        OobTransport oobTransport = new OobTransport();
+
+        List<DeviceHandle> deviceHandles = List.of(
+                new DeviceHandle.Builder(
+                        new RangingDevice.Builder().build(), oobTransport).build(),
+                new DeviceHandle.Builder(
+                        new RangingDevice.Builder().build(), oobTransport).build(),
+                new DeviceHandle.Builder(
+                        new RangingDevice.Builder().build(), oobTransport).build());
+
+        OobInitiatorRangingConfig config = new OobInitiatorRangingConfig.Builder()
+                .setFastestRangingInterval(Duration.ofMillis(100))
+                .setSlowestRangingInterval(Duration.ofMillis(5000))
+                .setRangingMode(RANGING_MODE_AUTO)
+                .setSecurityLevel(SECURITY_LEVEL_BASIC)
+                .addDeviceHandle(deviceHandles.get(0))
+                .addDeviceHandles(deviceHandles.subList(1, deviceHandles.size()))
+                .build();
+
+        assertEquals(Duration.ofMillis(100), config.getFastestRangingInterval());
+        assertEquals(Duration.ofMillis(5000), config.getSlowestRangingInterval());
+        assertEquals(RANGING_MODE_AUTO, config.getRangingMode());
+        assertEquals(SECURITY_LEVEL_BASIC, config.getSecurityLevel());
+        assertThat(
+                config.getDeviceHandles().stream().map(DeviceHandle::getRangingDevice)
+        ).containsExactlyElementsIn(
+                deviceHandles.stream().map(DeviceHandle::getRangingDevice).toList()
+        );
+
+        RangingPreference preference =
+                new RangingPreference.Builder(DEVICE_ROLE_INITIATOR, config).build();
+
+        assertEquals(RANGING_SESSION_OOB, preference.getRangingParams().getRangingSessionType());
+
+        session.start(preference);
+        assertThat(oobTransport.mSendDataCalled.await(2, TimeUnit.SECONDS)).isTrue();
+
+        session.stop();
+        uiAutomation.dropShellPermissionIdentity();
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_enabled")
+    public void testConfigureOobResponderRangingSession() {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        uiAutomation.adoptShellPermissionIdentity();
+
+        OobTransport oobTransport = new OobTransport();
+
+        DeviceHandle handle = new DeviceHandle.Builder(
+                new RangingDevice.Builder().build(), oobTransport).build();
+
+        OobResponderRangingConfig config = new OobResponderRangingConfig.Builder(handle).build();
+
+        assertEquals(handle.getRangingDevice(), config.getDeviceHandle().getRangingDevice());
+
+        uiAutomation.dropShellPermissionIdentity();
+    }
 
     private static class CapabilitiesCallback implements RangingCapabilitiesCallback {
 
@@ -1117,6 +1196,27 @@ public class RangingManagerTest {
                 blocker = mBlocker;
             }
             return blocker.await(10, TimeUnit.SECONDS);
+        }
+    }
+
+    private static class OobTransport implements TransportHandle {
+        private final CountDownLatch mSendDataCalled = new CountDownLatch(1);
+
+        @Override
+        public void sendData(@NonNull byte[] data) {
+            mSendDataCalled.countDown();
+        }
+
+        @Override
+        public void registerReceiveCallback(
+                @NonNull Executor executor, @NonNull ReceiveCallback callback
+        ) {
+
+        }
+
+        @Override
+        public void close() throws Exception {
+
         }
     }
 

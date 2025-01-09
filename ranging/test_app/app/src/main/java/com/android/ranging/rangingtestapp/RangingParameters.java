@@ -25,6 +25,7 @@ import android.ranging.RangingConfig;
 import android.ranging.RangingDevice;
 import android.ranging.RangingManager;
 import android.ranging.RangingPreference;
+import android.ranging.SensorFusionParams;
 import android.ranging.SessionConfig;
 import android.ranging.ble.cs.BleCsRangingParams;
 import android.ranging.ble.rssi.BleRssiRangingParams;
@@ -121,54 +122,35 @@ public class RangingParameters {
         }
     }
 
-    public static RangingDevice INITIATOR_DEVICE = new RangingDevice.Builder()
-            .setUuid(UUID.nameUUIDFromBytes("initiator".getBytes()))
-            .build();
-    public static RangingDevice RESPONDER_DEVICE = new RangingDevice.Builder()
-            .setUuid(UUID.nameUUIDFromBytes("responder".getBytes()))
-            .build();
-    private static final byte[] UWB_SESSION_KEY = new byte[] {
-            0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8,
-            0x8, 0x7, 0x6, 0x5, 0x4, 0x3, 0x2, 0x1
-    };
-    private static final int UWB_SESSION_ID = 5;
-    private static final int UWB_CONFIG_ID = UwbRangingParams.CONFIG_PROVISIONED_MULTICAST_DS_TWR;
-    private static final UwbAddress UWB_INITIATOR_ADDRESS =
-            UwbAddress.fromBytes(new byte[]{0x5, 0x6});
-    private static final UwbAddress UWB_RESPONDER_ADDRESS =
-            UwbAddress.fromBytes(new byte[]{0x6, 0x5});
-    private static final UwbRangingParams.Builder UWB_INITIATOR_PARAMS_BUILDER =
-            new UwbRangingParams.Builder(UWB_SESSION_ID, UWB_CONFIG_ID,
-                    UWB_INITIATOR_ADDRESS, UWB_RESPONDER_ADDRESS)
-                    .setComplexChannel(new UwbComplexChannel.Builder()
-                            .setChannel(UWB_CHANNEL_9)
-                            .setPreambleIndex(UWB_PREAMBLE_CODE_INDEX_11)
-                            .build())
-                    .setSessionKeyInfo(UWB_SESSION_KEY);
-    private static final UwbRangingParams.Builder UWB_RESPONDER_PARAMS_BUILDER =
-            new UwbRangingParams.Builder(UWB_SESSION_ID, UWB_CONFIG_ID,
-                    UWB_RESPONDER_ADDRESS, UWB_INITIATOR_ADDRESS)
-                    .setComplexChannel(new UwbComplexChannel.Builder()
-                            .setChannel(UWB_CHANNEL_9)
-                            .setPreambleIndex(UWB_PREAMBLE_CODE_INDEX_11)
-                            .build())
-                    .setSessionKeyInfo(UWB_SESSION_KEY);
-
-    private static final String WIFI_NAN_RTT_SERVICE_NAME = "ranging_service";
-
     private static RawInitiatorRangingConfig createRawInitiatorConfig(
-            String rangingTechnologyName, String freqName, BluetoothDevice targetBtDevice) {
+            String rangingTechnologyName, String freqName,
+            ConfigurationParameters configParams,
+            BluetoothDevice targetBtDevice) {
         RawRangingDevice.Builder rawRangingDeviceBuilder = new RawRangingDevice.Builder()
-                .setRangingDevice(RangingParameters.RESPONDER_DEVICE);
+                .setRangingDevice(
+                        new RangingDevice.Builder()
+                                .setUuid(UUID.nameUUIDFromBytes(
+                                        targetBtDevice.getAddress().getBytes()))
+                                .build());
         if (Technology.fromName(rangingTechnologyName).equals(Technology.UWB)) {
             rawRangingDeviceBuilder.setUwbRangingParams(
-                    RangingParameters.UWB_INITIATOR_PARAMS_BUILDER
+                    new UwbRangingParams.Builder(
+                            configParams.uwb.sessionId,
+                            configParams.uwb.configId,
+                            configParams.uwb.deviceAddress,
+                            configParams.uwb.peerDeviceAddress)
+                            .setComplexChannel(new UwbComplexChannel.Builder()
+                                    .setChannel(configParams.uwb.channel)
+                                    .setPreambleIndex(configParams.uwb.preamble)
+                                    .build())
                             .setRangingUpdateRate(Freq.fromName(freqName).freq)
+                            .setSessionKeyInfo(configParams.uwb.sessionKey)
                             .build());
         } else if (Technology.fromName(rangingTechnologyName).equals(Technology.BLE_CS)) {
             rawRangingDeviceBuilder.setCsRangingParams(
                     new BleCsRangingParams.Builder(targetBtDevice.getAddress())
                             .setRangingUpdateRate(Freq.fromName(freqName).freq)
+                            .setSecurityLevel(configParams.bleCs.securityLevel)
                             .build());
         } else if (Technology.fromName(rangingTechnologyName).equals(Technology.BLE_RSSI)) {
             rawRangingDeviceBuilder.setBleRssiRangingParams(
@@ -177,8 +159,10 @@ public class RangingParameters {
                             .build());
         } else if (Technology.fromName(rangingTechnologyName).equals(Technology.WIFI_NAN_RTT)) {
             rawRangingDeviceBuilder.setRttRangingParams(
-                    new RttRangingParams.Builder(WIFI_NAN_RTT_SERVICE_NAME)
+                    new RttRangingParams.Builder(configParams.wifiNanRtt.serviceName)
                             .setRangingUpdateRate(Freq.fromName(freqName).freq)
+                            .setPeriodicRangingHwFeatureEnabled(
+                                    configParams.wifiNanRtt.isPeriodicRangingEnabled)
                             .build());
         }
         return new RawInitiatorRangingConfig.Builder()
@@ -188,7 +172,9 @@ public class RangingParameters {
 
     private static OobInitiatorRangingConfig createOobInitiatorConfig(
             Context context, BleConnectionCentralViewModel bleConnectionCentralViewModel,
-            LoggingListener loggingListener, String freqName, BluetoothDevice targetBtDevice) {
+            LoggingListener loggingListener, String freqName,
+            ConfigurationParameters configParams,
+            BluetoothDevice targetBtDevice) {
         OobBleClient oobBleClient =
                 new OobBleClient(context, bleConnectionCentralViewModel, targetBtDevice,
                         loggingListener);
@@ -198,9 +184,15 @@ public class RangingParameters {
         }
         return new OobInitiatorRangingConfig.Builder()
             .addDeviceHandle(
-                new DeviceHandle.Builder(RESPONDER_DEVICE, oobBleClient)
+                new DeviceHandle.Builder(
+                        new RangingDevice.Builder()
+                                .setUuid(UUID.nameUUIDFromBytes(
+                                        targetBtDevice.getAddress().getBytes()))
+                                .build(),
+                        oobBleClient)
                     .build())
-            .setSecurityLevel(OobInitiatorRangingConfig.SECURITY_LEVEL_SECURE)
+            .setSecurityLevel(configParams.oob.securityLevel)
+            .setRangingMode(configParams.oob.mode)
             .setSlowestRangingInterval(Freq.fromName(freqName).getSlowestIntervalDuration())
             .setFastestRangingInterval(Freq.fromName(freqName).getFastestIntervalDuration())
             .build();
@@ -209,18 +201,22 @@ public class RangingParameters {
     public static RangingPreference createInitiatorRangingPreference(
             Context context, BleConnectionCentralViewModel bleConnectionCentralViewModel,
             LoggingListener loggingListener, String rangingTechnologyName, String freqName,
-            int duration, BluetoothDevice targetBtDevice) {
+            ConfigurationParameters configParams, int duration, BluetoothDevice targetBtDevice) {
         RangingConfig initiatorRangingConfig = null;
         if (Technology.fromName(rangingTechnologyName).equals(Technology.OOB)) {
             initiatorRangingConfig =
                     createOobInitiatorConfig(context, bleConnectionCentralViewModel,
-                            loggingListener, freqName, targetBtDevice);
+                            loggingListener, freqName, configParams, targetBtDevice);
         } else {
             initiatorRangingConfig =
-                createRawInitiatorConfig(rangingTechnologyName, freqName, targetBtDevice);
+                createRawInitiatorConfig(
+                        rangingTechnologyName, freqName, configParams, targetBtDevice);
         }
         if (initiatorRangingConfig == null) return null;
         SessionConfig sessionConfig = new SessionConfig.Builder()
+                .setSensorFusionParams(new SensorFusionParams.Builder()
+                        .setSensorFusionEnabled(configParams.global.sensorFusionEnabled)
+                        .build())
                 .setRangingMeasurementsLimit(duration)
                 .build();
         RangingPreference rangingPreference = new RangingPreference.Builder(
@@ -231,18 +227,34 @@ public class RangingParameters {
     }
 
     private static RawResponderRangingConfig createRawResponderConfig(
-            String rangingTechnologyName, String freqName, BluetoothDevice targetBtDevice) {
+            String rangingTechnologyName, String freqName,
+            ConfigurationParameters configParams,
+            BluetoothDevice targetBtDevice) {
         RawRangingDevice.Builder rawRangingDeviceBuilder = new RawRangingDevice.Builder()
-                .setRangingDevice(RangingParameters.INITIATOR_DEVICE);
+                .setRangingDevice(
+                        new RangingDevice.Builder()
+                                .setUuid(UUID.nameUUIDFromBytes(
+                                        targetBtDevice.getAddress().getBytes()))
+                                .build());
         if (Technology.fromName(rangingTechnologyName).equals(Technology.UWB)) {
             rawRangingDeviceBuilder.setUwbRangingParams(
-                    RangingParameters.UWB_RESPONDER_PARAMS_BUILDER
+                    new UwbRangingParams.Builder(
+                            configParams.uwb.sessionId,
+                            configParams.uwb.configId,
+                            configParams.uwb.deviceAddress,
+                            configParams.uwb.peerDeviceAddress)
+                            .setComplexChannel(new UwbComplexChannel.Builder()
+                                    .setChannel(configParams.uwb.channel)
+                                    .setPreambleIndex(configParams.uwb.preamble)
+                                    .build())
                             .setRangingUpdateRate(Freq.fromName(freqName).freq)
+                            .setSessionKeyInfo(configParams.uwb.sessionKey)
                             .build());
         } else if (Technology.fromName(rangingTechnologyName).equals(Technology.BLE_CS)) {
             rawRangingDeviceBuilder.setCsRangingParams(
                     new BleCsRangingParams.Builder(targetBtDevice.getAddress())
                             .setRangingUpdateRate(Freq.fromName(freqName).freq)
+                            .setSecurityLevel(configParams.bleCs.securityLevel)
                             .build());
         } else if (Technology.fromName(rangingTechnologyName).equals(Technology.BLE_RSSI)) {
             rawRangingDeviceBuilder.setBleRssiRangingParams(
@@ -251,8 +263,10 @@ public class RangingParameters {
                             .build());
         } else if (Technology.fromName(rangingTechnologyName).equals(Technology.WIFI_NAN_RTT)) {
             rawRangingDeviceBuilder.setRttRangingParams(
-                    new RttRangingParams.Builder(WIFI_NAN_RTT_SERVICE_NAME)
+                    new RttRangingParams.Builder(configParams.wifiNanRtt.serviceName)
                             .setRangingUpdateRate(Freq.fromName(freqName).freq)
+                            .setPeriodicRangingHwFeatureEnabled(
+                                    configParams.wifiNanRtt.isPeriodicRangingEnabled)
                             .build());
         }
         return new RawResponderRangingConfig.Builder()
@@ -262,7 +276,9 @@ public class RangingParameters {
 
     private static OobResponderRangingConfig createOobResponderConfig(
             Context context, BleConnectionPeripheralViewModel bleConnectionPeripheralViewModel,
-            LoggingListener loggingListener, String freqName, BluetoothDevice targetBtDevice) {
+            LoggingListener loggingListener, String freqName,
+            ConfigurationParameters configParams,
+            BluetoothDevice targetBtDevice) {
         OobBleServer oobBleServer =
                 new OobBleServer(context, bleConnectionPeripheralViewModel, targetBtDevice,
                         loggingListener);
@@ -271,25 +287,33 @@ public class RangingParameters {
             return null;
         }
         return new OobResponderRangingConfig.Builder(
-                new DeviceHandle.Builder(INITIATOR_DEVICE, oobBleServer).build())
+                new DeviceHandle.Builder(
+                        new RangingDevice.Builder()
+                                .setUuid(UUID.nameUUIDFromBytes(
+                                        targetBtDevice.getAddress().getBytes()))
+                                .build(),
+                        oobBleServer).build())
             .build();
     }
 
     public static RangingPreference createResponderRangingPreference(
             Context context, BleConnectionPeripheralViewModel bleConnectionPeripheralViewModel,
             LoggingListener loggingListener, String rangingTechnologyName, String freqName,
-            int duration, BluetoothDevice targetBtDevice) {
+            ConfigurationParameters configParams, int duration, BluetoothDevice targetBtDevice) {
         RangingConfig responderRangingConfig = null;
         if (Technology.fromName(rangingTechnologyName).equals(Technology.OOB)) {
             responderRangingConfig =
                     createOobResponderConfig(context, bleConnectionPeripheralViewModel,
-                            loggingListener, freqName, targetBtDevice);
+                            loggingListener, freqName, configParams, targetBtDevice);
         } else {
             responderRangingConfig =
-                createRawResponderConfig(rangingTechnologyName, freqName, targetBtDevice);
+                createRawResponderConfig(rangingTechnologyName, freqName, configParams, targetBtDevice);
         }
         if (responderRangingConfig == null) return null;
         SessionConfig sessionConfig = new SessionConfig.Builder()
+                .setSensorFusionParams(new SensorFusionParams.Builder()
+                        .setSensorFusionEnabled(configParams.global.sensorFusionEnabled)
+                        .build())
                 .setRangingMeasurementsLimit(duration)
                 .build();
         RangingPreference rangingPreference = new RangingPreference.Builder(

@@ -25,8 +25,10 @@ android_test {
     sdk_version: "system_server_current",
     certificate: "platform",
     static_libs: [
+        "truth",
         "service-ranging-pre-jarjar",
         "framework-bluetooth.stubs.module_lib",
+        "framework-wifi.stubs.module_lib",
         "framework-uwb.stubs.module_lib",
         "androidx.test.rules",
         "androidx.test.ext.junit",

@@ -18,6 +18,7 @@ package com.android.ranging.rangingtestapp;
 
 import android.app.Application;
 import android.bluetooth.BluetoothDevice;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
@@ -31,7 +32,6 @@ import java.util.List;
 /** ViewModel for the Responder. */
 public class ResponderViewModel extends AndroidViewModel {
 
-    private final MutableLiveData<String> mLogText = new MutableLiveData<>();
     private final MutableLiveData<Constants.RangeSessionState> mSessionState =
             new MutableLiveData<>(Constants.RangeSessionState.STOPPED);
 
@@ -43,22 +43,27 @@ public class ResponderViewModel extends AndroidViewModel {
     public static class Factory implements ViewModelProvider.Factory {
         private Application mApplication;
         private BleConnectionPeripheralViewModel mBleConnectionPeripheralViewModel;
+        private LoggingListener mLoggingListener;
 
         public Factory(Application application,
-                BleConnectionPeripheralViewModel bleConnectionPeripheralViewModel) {
+                       BleConnectionPeripheralViewModel bleConnectionPeripheralViewModel,
+                       LoggingListener loggingListener) {
             mApplication = application;
             mBleConnectionPeripheralViewModel = bleConnectionPeripheralViewModel;
+            mLoggingListener = loggingListener;
         }
 
 
         @Override
         public <T extends ViewModel> T create(Class<T> modelClass) {
-            return (T) new ResponderViewModel(mApplication, mBleConnectionPeripheralViewModel);
+            return (T) new ResponderViewModel(
+                    mApplication, mBleConnectionPeripheralViewModel, mLoggingListener);
         }
     }
 
     public ResponderViewModel(@NonNull Application application,
-            BleConnectionPeripheralViewModel bleConnectionPeripheralViewModel) {
+                              BleConnectionPeripheralViewModel bleConnectionPeripheralViewModel,
+                              LoggingListener loggingListener) {
         super(application);
 
         mDistanceMeasurementResponder =
@@ -66,17 +71,11 @@ public class ResponderViewModel extends AndroidViewModel {
                         application,
                         bleConnectionPeripheralViewModel,
                         mDistanceMeasurementCallback,
-                        log -> {
-                            mLogText.postValue("LOG: " + log);
-                        });
+                        loggingListener);
     }
 
     void setTargetDevice(BluetoothDevice targetDevice) {
         mDistanceMeasurementResponder.setTargetDevice(targetDevice);
-    }
-
-    LiveData<String> getLogText() {
-        return mLogText;
     }
 
     LiveData<Constants.RangeSessionState> getSessionState() {

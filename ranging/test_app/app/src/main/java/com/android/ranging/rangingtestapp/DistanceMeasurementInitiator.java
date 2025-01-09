@@ -18,6 +18,7 @@ package com.android.ranging.rangingtestapp;
 
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.os.CancellationSignal;
 import android.ranging.RangingCapabilities;
@@ -83,7 +84,7 @@ class DistanceMeasurementInitiator {
     }
 
     private void printLog(String log) {
-        mLoggingListener.onLog(log);
+        mLoggingListener.log(log);
     }
 
     private String getRangingTechnologyName(int technology) {
@@ -143,17 +144,19 @@ class DistanceMeasurementInitiator {
                 printLog("Please bond the devices for channel sounding");
                 return false;
             }
+            printLog("Bonded Devices: " + mApplicationContext.getSystemService(BluetoothManager.class).getAdapter().getBondedDevices());
         }
         printLog("Start ranging with device: " + mTargetDevice.getName());
         mSession = mRangingManager.createRangingSession(
                 Executors.newSingleThreadExecutor(), mRangingSessionCallback);
         // Don't block here to avoid making the UX unresponsive (especially for OOB handshaking)
-        Executor executor = Executors.newSingleThreadExecutor();
-        executor.execute(() -> {
+        mExecutor.execute(() -> {
             RangingPreference rangingPreference =
                     RangingParameters.createInitiatorRangingPreference(
                             mApplicationContext, mBleConnectionCentralViewModel, mLoggingListener,
-                            rangingTechnologyName, freqName, duration, mTargetDevice);
+                            rangingTechnologyName, freqName,
+                            ConfigurationParameters.restoreInstance(mApplicationContext, false),
+                            duration, mTargetDevice);
             if (rangingPreference == null) {
                 printLog("Failed to start ranging session");
                 mDistanceMeasurementCallback.onStartFail();
@@ -170,7 +173,7 @@ class DistanceMeasurementInitiator {
         }
         mCancellationSignal.get().cancel();
         mSession = null;
-        mCancellationSignal = null;
+        mCancellationSignal.set(null);
     }
 
     private RangingSession.Callback mRangingSessionCallback =

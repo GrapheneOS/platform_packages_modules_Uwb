@@ -20,7 +20,7 @@ package {
 }
 
 android_test {
-    name: "GenericRangingUwbBackendTests",
+    name: "RangingUwbBackendTests",
 
     srcs: [
         "**/*.java",

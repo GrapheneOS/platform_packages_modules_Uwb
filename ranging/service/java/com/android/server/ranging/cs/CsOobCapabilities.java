@@ -16,56 +16,151 @@
 
 package com.android.server.ranging.cs;
 
-import com.google.errorprone.annotations.DoNotCall;
+import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.RangingUtils.Conversions;
+import com.android.server.ranging.cs.CsOobConfig.CsLeFlag;
+import com.android.server.ranging.cs.CsOobConfig.CsSecurityType;
+import com.android.server.ranging.oob.TechnologyHeader;
 
-/** Channel Sounding Capability data send as part of CapabilityResponseMessage during Finder OOB. */
-public final class CsOobCapabilities {
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
 
-    private CsOobCapabilities() {
-    }
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
-    // // CS data
-    // // 2 byte bitmask bit 0 - standard, rest rfu
-    // private byte[] supportedFeatures;
-    // private boolean isDeviceBonded;
-    // // 16 bytes
-    // private byte[] confirmationHash;
-    // private boolean isRandmizerHashPresent;
-    // // 16 bytes if it exists
-    // private byte[] randmizerHash;
-    // // 7 bytes
-    // private byte[] deviceAddress;
-    // // 1 byte
-    // private int deviceRole;
-    // // 16 bytes
-    // private byte[] leTemporaryKey;
-    // // 2 bytes
-    // private byte[] leAppearance;
-    // private int discoveryMode;
+/** Capability data for CS sent as part of CapabilityResponseMessage. */
+@AutoValue
+public abstract class CsOobCapabilities {
 
-    /** Returns the size of this {@link CsOobCapabilities} object when serialized. */
-    @DoNotCall("Always throws UnsupportedOperationException.")
-    public int getSize() {
-        throw new UnsupportedOperationException("Not implemented");
+    /** Size in bytes of all properties when serialized. */
+    private static final int EXPECTED_SIZE_BYTES = 10;
+
+    // Size in bytes of properties for serialization/deserialization.
+    private static final int SECURITY_TYPE_SIZE = 1;
+    private static final int BLUETOOTH_ADDRESS_SIZE = 6;
+    private static final int LE_FLAG_SIZE = 1;
+
+    private static final int SECURITY_TYPE_SHIFT = 0;
+
+    /** Returns the size of the object in bytes when serialized. */
+    public static int getSize() {
+        return EXPECTED_SIZE_BYTES;
     }
 
     /**
      * Parses the given byte array and returns {@link CsOobCapabilities} object. Throws {@link
      * IllegalArgumentException} on invalid input.
      */
-    @DoNotCall("Always throws UnsupportedOperationException.")
-    public static CsOobCapabilities parseBytes(byte[] csCapabilitiesBytes) {
-        throw new UnsupportedOperationException("Not implemented");
+    public static CsOobCapabilities parseBytes(byte[] capabilitiesBytes) {
+        TechnologyHeader header = TechnologyHeader.parseBytes(capabilitiesBytes);
+
+        if (capabilitiesBytes.length < EXPECTED_SIZE_BYTES) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "CsOobCapabilities size is %d, expected at least %d",
+                            capabilitiesBytes.length, EXPECTED_SIZE_BYTES));
+        }
+
+        if (capabilitiesBytes.length < header.getSize()) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "CsOobCapabilities header size field is %d, but the size of the array"
+                                    + " is"
+                                    + " %d",
+                            header.getSize(), capabilitiesBytes.length));
+        }
+
+        if (header.getRangingTechnology() != RangingTechnology.CS) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "CsOobCapabilities header technology field is %s, expected %s",
+                            header.getRangingTechnology(), RangingTechnology.CS));
+        }
+
+        int parseCursor = header.getHeaderSize();
+
+        // Supported security type
+        ImmutableList<CsSecurityType> securityTypes =
+                Conversions.byteArrayToIntList(
+                                Arrays.copyOfRange(
+                                        capabilitiesBytes, parseCursor,
+                                        parseCursor + SECURITY_TYPE_SIZE),
+                                SECURITY_TYPE_SHIFT)
+                        .stream()
+                        .map(CsSecurityType::fromValue)
+                        .collect(ImmutableList.toImmutableList());
+        parseCursor += SECURITY_TYPE_SIZE;
+
+        // CS Address
+        String bluetoothAddress =
+                Conversions.macAddressToString(
+                        Arrays.copyOfRange(
+                                capabilitiesBytes, parseCursor,
+                                parseCursor + BLUETOOTH_ADDRESS_SIZE));
+        parseCursor += BLUETOOTH_ADDRESS_SIZE;
+
+        // LE Flag
+        CsLeFlag leFlag = CsLeFlag.parseByte(capabilitiesBytes[parseCursor]);
+        parseCursor += LE_FLAG_SIZE;
+
+        return CsOobCapabilities.builder()
+                .setSupportedSecurityTypes(securityTypes)
+                .setBluetoothAddress(bluetoothAddress)
+                .setLeFlag(leFlag)
+                .build();
     }
 
     /** Serializes this {@link CsOobCapabilities} object to bytes. */
-    @DoNotCall("Always throws UnsupportedOperationException.")
-    public byte[] toBytes() {
-        throw new UnsupportedOperationException("Not implemented");
+    public final byte[] toBytes() {
+        ByteBuffer byteBuffer = ByteBuffer.allocate(EXPECTED_SIZE_BYTES);
+        byteBuffer
+                .put(RangingTechnology.CS.toByte())
+                .put((byte) EXPECTED_SIZE_BYTES)
+                .put(
+                        Conversions.intListToByteArrayBitmap(
+                                getSupportedSecurityTypes().stream()
+                                        .map(CsSecurityType::getValue)
+                                        .collect(ImmutableList.toImmutableList()),
+                                SECURITY_TYPE_SIZE,
+                                SECURITY_TYPE_SHIFT))
+                .put(Conversions.macAddressToBytes(getBluetoothAddress()))
+                .put(getLeFlag().toByte());
+
+        return byteBuffer.array();
     }
 
-    @Override
-    public String toString() {
-        return "CsCapabilities{}";
+    /** Returns the security type for CS. */
+    public abstract ImmutableList<CsSecurityType> getSupportedSecurityTypes();
+
+    /** Returns the Bluetooth address of the device. */
+    public abstract String getBluetoothAddress();
+
+    /** Returns the LE flag for CS. */
+    public abstract CsLeFlag getLeFlag();
+
+    /** Returns a builder for {@link CsOobCapabilities}. */
+    public static Builder builder() {
+        return new AutoValue_CsOobCapabilities.Builder();
+    }
+
+    /** Builder for {@link CsOobCapabilities}. */
+    @AutoValue.Builder
+    public abstract static class Builder {
+
+        public abstract Builder setSupportedSecurityTypes(
+                ImmutableList<CsSecurityType> securityTypes);
+
+        public abstract Builder setBluetoothAddress(String bluetoothAddress);
+
+        public abstract Builder setLeFlag(CsLeFlag leFlag);
+
+        public abstract CsOobCapabilities autoBuild();
+
+        public CsOobCapabilities build() {
+            CsOobCapabilities csCapabilities = autoBuild();
+            // Validate Bluetooth Address, will throw if invalid.
+            var unused = Conversions.macAddressToBytes(csCapabilities.getBluetoothAddress());
+            return csCapabilities;
+        }
     }
 }

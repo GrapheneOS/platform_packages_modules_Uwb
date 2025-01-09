@@ -18,6 +18,7 @@ package com.android.ranging.rangingtestapp;
 
 import android.app.Application;
 import android.bluetooth.BluetoothDevice;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
@@ -31,7 +32,6 @@ import java.util.List;
 /** ViewModel for the Initiator. */
 public class InitiatorViewModel extends AndroidViewModel {
 
-    private final MutableLiveData<String> mLogText = new MutableLiveData<>();
     private final MutableLiveData<Constants.RangeSessionState> mSessionState =
             new MutableLiveData<>(Constants.RangeSessionState.STOPPED);
 
@@ -43,22 +43,27 @@ public class InitiatorViewModel extends AndroidViewModel {
     public static class Factory implements ViewModelProvider.Factory {
         private Application mApplication;
         private BleConnectionCentralViewModel mBleConnectionCentralViewModel;
+        private LoggingListener mLoggingListener;
 
         public Factory(Application application,
-                BleConnectionCentralViewModel bleConnectionCentralViewModel) {
+                       BleConnectionCentralViewModel bleConnectionCentralViewModel,
+                       LoggingListener loggingListener) {
             mApplication = application;
             mBleConnectionCentralViewModel = bleConnectionCentralViewModel;
+            mLoggingListener = loggingListener;
         }
 
 
         @Override
         public <T extends ViewModel> T create(Class<T> modelClass) {
-            return (T) new InitiatorViewModel(mApplication, mBleConnectionCentralViewModel);
+            return (T) new InitiatorViewModel(
+                    mApplication, mBleConnectionCentralViewModel, mLoggingListener);
         }
     }
 
     public InitiatorViewModel(@NonNull Application application,
-            BleConnectionCentralViewModel bleConnectionCentralViewModel) {
+                              BleConnectionCentralViewModel bleConnectionCentralViewModel,
+                              LoggingListener loggingListener) {
         super(application);
 
         mDistanceMeasurementInitiator =
@@ -66,17 +71,11 @@ public class InitiatorViewModel extends AndroidViewModel {
                         application,
                         bleConnectionCentralViewModel,
                         mDistanceMeasurementCallback,
-                        log -> {
-                            mLogText.postValue("LOG: " + log);
-                        });
+                        loggingListener);
     }
 
     void setTargetDevice(BluetoothDevice targetDevice) {
         mDistanceMeasurementInitiator.setTargetDevice(targetDevice);
-    }
-
-    LiveData<String> getLogText() {
-        return mLogText;
     }
 
     LiveData<Constants.RangeSessionState> getSessionState() {

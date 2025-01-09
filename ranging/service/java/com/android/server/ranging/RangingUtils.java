@@ -21,6 +21,8 @@ import static java.lang.Math.min;
 import android.app.AlarmManager;
 import android.os.SystemClock;
 
+import com.google.common.base.Ascii;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 
 import java.nio.ByteBuffer;
@@ -136,6 +138,48 @@ public class RangingUtils {
             ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
             buffer.put(byteArray).rewind();
             return buffer.getInt();
+        }
+
+        /**
+         * Converts a Bluetooth MAC address from byte array to string format. Throws if input byte
+         * array is not of correct format.
+         *
+         * <p>e.g. {-84, 55, 67, -68, -87, 40} -> "AC:37:43:BC:A9:28".
+         */
+        public static String macAddressToString(byte[] macAddress) {
+            if (macAddress == null || macAddress.length != 6) {
+                throw new IllegalArgumentException("Invalid mac address byte array");
+            }
+            StringBuilder sb = new StringBuilder(18);
+            for (byte b : macAddress) {
+                if (sb.length() > 0) {
+                    sb.append(':');
+                }
+                sb.append(String.format("%02x", b));
+            }
+            return Ascii.toUpperCase(sb.toString());
+        }
+
+        /**
+         * Convert a Bluetooth MAC address from string to byte array format. Throws if input string
+         * is not of correct format.
+         *
+         * <p>e.g. "AC:37:43:BC:A9:28" -> {-84, 55, 67, -68, -87, 40}.
+         */
+        public static byte[] macAddressToBytes(String macAddress) {
+            if (macAddress.isEmpty()) {
+                throw new IllegalArgumentException("MAC address cannot be empty");
+            }
+
+            byte[] bytes = new byte[6];
+            List<String> address = Splitter.on(':').splitToList(macAddress);
+            if (address.size() != 6) {
+                throw new IllegalArgumentException("Invalid MAC address format");
+            }
+            for (int i = 0; i < 6; i++) {
+                bytes[i] = Integer.decode("0x" + address.get(i)).byteValue();
+            }
+            return bytes;
         }
     }
 

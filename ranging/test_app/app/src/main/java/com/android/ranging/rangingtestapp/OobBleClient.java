@@ -135,6 +135,6 @@ public class OobBleClient implements TransportHandle {
     }
 
     private void printLog(String log) {
-        mLoggingListener.onLog(log);
+        mLoggingListener.log(log);
     }
 }

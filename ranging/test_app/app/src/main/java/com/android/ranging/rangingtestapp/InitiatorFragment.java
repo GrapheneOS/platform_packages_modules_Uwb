@@ -57,6 +57,7 @@ public class InitiatorFragment extends Fragment {
 
     private BleConnectionCentralViewModel mBleConnectionViewModel;
     private InitiatorViewModel mInitiatorViewModel;
+    private LoggingListener mLoggingListener;
 
     @Override
     public View onCreateView(
@@ -79,6 +80,7 @@ public class InitiatorFragment extends Fragment {
         mDistanceCanvasView = new CanvasView(getContext(), "Distance");
         mDistanceViewLayout.addView(mDistanceCanvasView);
         mDistanceViewLayout.setPadding(0, 0, 0, 600);
+        mLoggingListener = new LoggingListener(getActivity().getApplicationContext(), false);
         mLogText = (TextView) root.findViewById(R.id.text_log);
         return root;
     }
@@ -103,22 +105,23 @@ public class InitiatorFragment extends Fragment {
         mDurationArrayAdapter.setDropDownViewResource(
                 android.R.layout.simple_spinner_dropdown_item);
         mSpinnerDuration.setAdapter(mDurationArrayAdapter);
-
-        mBleConnectionViewModel =
-                new ViewModelProvider(this).get(BleConnectionCentralViewModel.class);
-        mInitiatorViewModel = new ViewModelProvider(
-                this,
-                new InitiatorViewModel.Factory(
-                        getActivity().getApplication(), mBleConnectionViewModel))
-                .get(InitiatorViewModel.class);
-        mBleConnectionViewModel
+        mLoggingListener
                 .getLogText()
                 .observe(
                         getActivity(),
                         log -> {
                             mLogText.setText(log);
-                            Log.i("Initiator", log);
                         });
+        mBleConnectionViewModel =
+                new ViewModelProvider(this,
+                        new BleConnectionCentralViewModel.Factory(
+                                getActivity().getApplication(), mLoggingListener))
+                        .get(BleConnectionCentralViewModel.class);
+        mInitiatorViewModel = new ViewModelProvider(
+                this,
+                new InitiatorViewModel.Factory(
+                        getActivity().getApplication(), mBleConnectionViewModel, mLoggingListener))
+                .get(InitiatorViewModel.class);
         mBleConnectionViewModel
                 .getTargetDevice()
                 .observe(
@@ -153,15 +156,6 @@ public class InitiatorFragment extends Fragment {
                             }
                         });
         mInitiatorViewModel
-                .getLogText()
-                .observe(
-                        getActivity(),
-                        log -> {
-                            mLogText.setText(log);
-                            Log.i("Initiator", log);
-                        });
-
-        mInitiatorViewModel
                 .getDistanceResult()
                 .observe(
                         getActivity(),
@@ -189,7 +183,7 @@ public class InitiatorFragment extends Fragment {
     }
 
     private void printLog(String logMessage) {
-        mLogText.setText("LOG: " + logMessage);
+        mLoggingListener.log(logMessage);
     }
 
     @Override

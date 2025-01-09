@@ -318,7 +318,11 @@ public class RangingControleeTest {
                 .close();
 
         mRangingControlee.startRanging(rangingSessionCallback, mBackendCallbackExecutor);
-        assertEquals(mRangingControlee.stopRanging(), STATUS_OK);
+        verify(mUwbManager).openRangingSession(any(), any(), any());
+        verify(pfRangingSession).start(any());
+        verify(rangingSessionCallback)
+                .onRangingInitialized(UwbDevice.createForAddress(deviceAddress.toBytes()));
+        mRangingControlee.stopRanging();
         verify(pfRangingSession).stop();
         verify(pfRangingSession).close();
         verify(rangingSessionCallback)

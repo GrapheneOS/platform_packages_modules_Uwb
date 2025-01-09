@@ -40,6 +40,8 @@ import androidx.annotation.Nullable;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.android.ranging.rangingtestapp.Constants.GattState;
 
@@ -58,9 +60,9 @@ public class BleConnectionCentralViewModel extends AndroidViewModel {
     private static final int GATT_MTU_SIZE = 512;
     private final BluetoothAdapter mBluetoothAdapter;
     private final BluetoothManager mBluetoothManager;
+    private final LoggingListener mLoggingListener;
     @Nullable private Set<BluetoothDevice> mConnectedDevices = new ArraySet<>();
     @Nullable private Set<BluetoothGatt> mConnectedGatts = new ArraySet<>();
-    private MutableLiveData<String> mLogText = new MutableLiveData<>();
     private MutableLiveData<BluetoothDevice> mTargetDevice = new MutableLiveData<>();
     // scanner
     private final MutableLiveData<List<String>> mConnectedDeviceAddresses = new MutableLiveData<>();
@@ -69,15 +71,31 @@ public class BleConnectionCentralViewModel extends AndroidViewModel {
     private CountDownLatch mPsmCountDownLatch = new CountDownLatch(1);
     private int mPsm = -1;
 
+    public static class Factory implements ViewModelProvider.Factory {
+        private Application mApplication;
+        private LoggingListener mLoggingListener;
+
+        public Factory(Application application,
+                       LoggingListener loggingListener) {
+            mApplication = application;
+            mLoggingListener = loggingListener;
+        }
+
+
+        @Override
+        public <T extends ViewModel> T create(Class<T> modelClass) {
+            return (T) new BleConnectionCentralViewModel(
+                    mApplication, mLoggingListener);
+        }
+    }
+
     /** Constructor */
-    public BleConnectionCentralViewModel(@NonNull Application application) {
+    public BleConnectionCentralViewModel(@NonNull Application application,
+                                         LoggingListener loggingListener) {
         super(application);
         mBluetoothManager = application.getSystemService(BluetoothManager.class);
         mBluetoothAdapter = mBluetoothManager.getAdapter();
-    }
-
-    LiveData<String> getLogText() {
-        return mLogText;
+        mLoggingListener = loggingListener;
     }
 
     LiveData<GattState> getGattState() {
@@ -273,6 +291,6 @@ public class BleConnectionCentralViewModel extends AndroidViewModel {
     }
 
     private void printLog(@NonNull String logMsg) {
-        mLogText.postValue("BT Central Log: " + logMsg);
+        mLoggingListener.log(logMsg);
     }
 }

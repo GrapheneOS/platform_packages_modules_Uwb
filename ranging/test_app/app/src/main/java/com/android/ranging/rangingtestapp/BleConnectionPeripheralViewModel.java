@@ -42,6 +42,8 @@ import androidx.annotation.Nullable;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
 
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -53,29 +55,45 @@ import java.util.stream.Collectors;
 public class BleConnectionPeripheralViewModel extends AndroidViewModel {
     private final BluetoothAdapter mBluetoothAdapter;
     private final BluetoothManager mBluetoothManager;
+    private final LoggingListener mLoggingListener;
     @Nullable private Set<BluetoothDevice> mConnectedDevices = new ArraySet<>();
     private BluetoothGattServer mBluetoothGattServer = null;
     private MutableLiveData<Boolean> mIsAdvertising = new MutableLiveData<>(false);
-    private MutableLiveData<String> mLogText = new MutableLiveData<>();
     private MutableLiveData<BluetoothDevice> mTargetDevice = new MutableLiveData<>();
     // scanner
     private final MutableLiveData<List<String>> mConnectedDeviceAddresses = new MutableLiveData<>();
     private String mTargetBtAddress = "";
     private int mPsm = -1;
 
+    public static class Factory implements ViewModelProvider.Factory {
+        private Application mApplication;
+        private LoggingListener mLoggingListener;
+
+        public Factory(Application application,
+                       LoggingListener loggingListener) {
+            mApplication = application;
+            mLoggingListener = loggingListener;
+        }
+
+
+        @Override
+        public <T extends ViewModel> T create(Class<T> modelClass) {
+            return (T) new BleConnectionPeripheralViewModel(
+                    mApplication, mLoggingListener);
+        }
+    }
+
     /** Constructor */
-    public BleConnectionPeripheralViewModel(@NonNull Application application) {
+    public BleConnectionPeripheralViewModel(@NonNull Application application,
+                                            LoggingListener loggingListener) {
         super(application);
         mBluetoothManager = application.getSystemService(BluetoothManager.class);
         mBluetoothAdapter = mBluetoothManager.getAdapter();
+        mLoggingListener = loggingListener;
     }
 
     LiveData<Boolean> getIsAdvertising() {
         return mIsAdvertising;
-    }
-
-    LiveData<String> getLogText() {
-        return mLogText;
     }
 
     LiveData<List<String>> getConnectedDeviceAddresses() {
@@ -255,6 +273,6 @@ public class BleConnectionPeripheralViewModel extends AndroidViewModel {
     }
 
     private void printLog(@NonNull String logMsg) {
-        mLogText.postValue("BT Peripheral Log: " + logMsg);
+        mLoggingListener.log(logMsg);
     }
 }
