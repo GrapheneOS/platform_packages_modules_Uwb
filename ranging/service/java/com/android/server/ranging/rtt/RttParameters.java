@@ -20,13 +20,11 @@ import android.ranging.RangingDevice;
 
 import androidx.annotation.NonNull;
 
-import com.android.ranging.rtt.backend.internal.RttRangingParameters;
+import com.android.ranging.rtt.backend.RttRangingParameters;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.session.RangingSessionConfig;
 
-import java.time.Duration;
-
-public class RttParameters extends com.android.ranging.rtt.backend.internal.RttRangingParameters
+public class RttParameters extends RttRangingParameters
         implements RangingSessionConfig.UnicastTechnologyConfig {
     public RttParameters(Builder builder) {
         super(builder);
@@ -61,16 +59,6 @@ public class RttParameters extends com.android.ranging.rtt.backend.internal.RttR
 
         public Builder setMinDistanceMm(int minDistanceMm) {
             mMinDistanceMm = minDistanceMm;
-            return this;
-        }
-
-        public Builder setEnablePublisherRanging(boolean enablePublisherRange) {
-            mEnablePublisherRanging = enablePublisherRange;
-            return this;
-        }
-
-        public Builder setPublisherPingDuration(@NonNull Duration ping) {
-            mPublisherPingDuration = ping;
             return this;
         }
 

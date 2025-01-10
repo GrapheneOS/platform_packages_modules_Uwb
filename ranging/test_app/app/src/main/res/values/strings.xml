@@ -10,5 +10,10 @@
   <string name="start_measurement">Start Distance Measurement</string>
   <string name="starting_measurement">Starting...</string>
   <string name="stopping_measurement">Stopping...</string>
-  <string name="configuration">Configuration</string>
+  <string name="initiator_configuration">Initiator Config</string>
+  <string name="responder_configuration">Responder Config</string>
+  <string name="bond_title">Devices are not bonded</string>
+  <string name="bond_message">Devices should be bonded for Channel Sounding</string>
+  <string name="bond_create">Create bond</string>
+  <string name="bond_ignore">Ignore</string>
 </resources>

@@ -719,9 +719,6 @@ public class UwbManagerSnippet implements Snippet {
         if (j.has("rangeDataNtfConfig")) {
             builder.setRangeDataNtfConfig(j.getInt("rangeDataNtfConfig"));
         }
-        if (j.has("errorStreakTimeoutInMs")) {
-            builder.setRangingErrorStreakTimeoutMs(j.getInt("errorStreakTimeoutInMs"));
-        }
         if (j.has("hasRangingResultReportMessage")) {
             builder.setHasRangingResultReportMessage(j.getBoolean("hasRangingResultReportMessage"));
         }
@@ -734,11 +731,11 @@ public class UwbManagerSnippet implements Snippet {
         if (j.has("keyRotationRate")) {
             builder.setKeyRotationRate(j.getInt("keyRotationRate"));
         }
-        if (j.has("hasRangingResultReportMessage")) {
-            builder.setHasRangingResultReportMessage(j.getBoolean("hasRangingResultReportMessage"));
-        }
         if (j.has("prfMode")) {
             builder.setPrfMode(j.getInt("prfMode"));
+            if (j.getInt("prfMode") == FiraParams.PRF_MODE_HPRF) {
+                builder.setPsduDataRate(FiraParams.PSDU_DATA_RATE_6M81);
+            }
         }
 
         return builder.build();

@@ -131,7 +131,7 @@ public class UwbAdapterTest {
     public void start_failsWhenParamsInvalid() {
         mUwbAdapter.start(mock(CsConfig.class), null, mMockCallback);
         verify(mMockCallback, never()).onStarted(any());
-        verify(mMockCallback).onClosed(eq(RangingAdapter.Callback.ClosedReason.FAILED_TO_START));
+        verify(mMockCallback).onClosed(eq(RangingAdapter.Callback.ClosedReason.ERROR));
         verify(mMockCallback, never()).onStopped(any());
     }
 

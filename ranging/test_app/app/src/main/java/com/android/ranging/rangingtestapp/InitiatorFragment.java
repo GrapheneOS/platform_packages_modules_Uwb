@@ -56,7 +56,7 @@ public class InitiatorFragment extends Fragment {
     private TextView mLogText;
 
     private BleConnectionCentralViewModel mBleConnectionViewModel;
-    private InitiatorViewModel mInitiatorViewModel;
+    private DistanceMeasurementViewModel mDistanceMeasurementViewModel;
     private LoggingListener mLoggingListener;
 
     @Override
@@ -117,20 +117,21 @@ public class InitiatorFragment extends Fragment {
                         new BleConnectionCentralViewModel.Factory(
                                 getActivity().getApplication(), mLoggingListener))
                         .get(BleConnectionCentralViewModel.class);
-        mInitiatorViewModel = new ViewModelProvider(
+        mDistanceMeasurementViewModel = new ViewModelProvider(
                 this,
-                new InitiatorViewModel.Factory(
-                        getActivity().getApplication(), mBleConnectionViewModel, mLoggingListener))
-                .get(InitiatorViewModel.class);
+                new DistanceMeasurementViewModel.Factory(
+                        getActivity(), mBleConnectionViewModel,
+                        mLoggingListener, false))
+                .get(DistanceMeasurementViewModel.class);
         mBleConnectionViewModel
                 .getTargetDevice()
                 .observe(
                         getActivity(),
                         targetDevice -> {
-                            mInitiatorViewModel.setTargetDevice(targetDevice);
+                            mDistanceMeasurementViewModel.setTargetDevice(targetDevice);
                         });
 
-        mInitiatorViewModel
+        mDistanceMeasurementViewModel
                 .getSessionState()
                 .observe(
                         getActivity(),
@@ -155,7 +156,7 @@ public class InitiatorFragment extends Fragment {
                                     break;
                             }
                         });
-        mInitiatorViewModel
+        mDistanceMeasurementViewModel
                 .getDistanceResult()
                 .observe(
                         getActivity(),
@@ -165,9 +166,9 @@ public class InitiatorFragment extends Fragment {
                                     DISTANCE_DECIMAL_FMT.format(distanceMeters) + " m");
                         });
 
-        mTechnologyArrayAdapter.addAll(mInitiatorViewModel.getSupportedTechnologies());
-        mFreqArrayAdapter.addAll(mInitiatorViewModel.getMeasurementFreqs());
-        mDurationArrayAdapter.addAll(mInitiatorViewModel.getMeasurementDurations());
+        mTechnologyArrayAdapter.addAll(mDistanceMeasurementViewModel.getSupportedTechnologies());
+        mFreqArrayAdapter.addAll(mDistanceMeasurementViewModel.getMeasurementFreqs());
+        mDurationArrayAdapter.addAll(mDistanceMeasurementViewModel.getMeasurementDurations());
         mButton.setOnClickListener(
                 v -> {
                     String methodName = mSpinnerTechnology.getSelectedItem().toString();
@@ -178,7 +179,7 @@ public class InitiatorFragment extends Fragment {
                         printLog("the device doesn't support any distance measurement methods.");
                     }
 
-                    mInitiatorViewModel.toggleStartStop(methodName, freq, duration);
+                    mDistanceMeasurementViewModel.toggleStartStop(methodName, freq, duration);
                 });
     }
 

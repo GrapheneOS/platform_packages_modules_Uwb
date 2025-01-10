@@ -18,7 +18,6 @@ package com.android.server.ranging.cs;
 
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.Conversions;
-import com.android.server.ranging.cs.CsOobConfig.CsLeFlag;
 import com.android.server.ranging.cs.CsOobConfig.CsSecurityType;
 import com.android.server.ranging.oob.TechnologyHeader;
 
@@ -33,12 +32,11 @@ import java.util.Arrays;
 public abstract class CsOobCapabilities {
 
     /** Size in bytes of all properties when serialized. */
-    private static final int EXPECTED_SIZE_BYTES = 10;
+    private static final int EXPECTED_SIZE_BYTES = 9;
 
     // Size in bytes of properties for serialization/deserialization.
     private static final int SECURITY_TYPE_SIZE = 1;
     private static final int BLUETOOTH_ADDRESS_SIZE = 6;
-    private static final int LE_FLAG_SIZE = 1;
 
     private static final int SECURITY_TYPE_SHIFT = 0;
 
@@ -99,14 +97,9 @@ public abstract class CsOobCapabilities {
                                 parseCursor + BLUETOOTH_ADDRESS_SIZE));
         parseCursor += BLUETOOTH_ADDRESS_SIZE;
 
-        // LE Flag
-        CsLeFlag leFlag = CsLeFlag.parseByte(capabilitiesBytes[parseCursor]);
-        parseCursor += LE_FLAG_SIZE;
-
         return CsOobCapabilities.builder()
                 .setSupportedSecurityTypes(securityTypes)
                 .setBluetoothAddress(bluetoothAddress)
-                .setLeFlag(leFlag)
                 .build();
     }
 
@@ -123,8 +116,7 @@ public abstract class CsOobCapabilities {
                                         .collect(ImmutableList.toImmutableList()),
                                 SECURITY_TYPE_SIZE,
                                 SECURITY_TYPE_SHIFT))
-                .put(Conversions.macAddressToBytes(getBluetoothAddress()))
-                .put(getLeFlag().toByte());
+                .put(Conversions.macAddressToBytes(getBluetoothAddress()));
 
         return byteBuffer.array();
     }
@@ -134,9 +126,6 @@ public abstract class CsOobCapabilities {
 
     /** Returns the Bluetooth address of the device. */
     public abstract String getBluetoothAddress();
-
-    /** Returns the LE flag for CS. */
-    public abstract CsLeFlag getLeFlag();
 
     /** Returns a builder for {@link CsOobCapabilities}. */
     public static Builder builder() {
@@ -151,8 +140,6 @@ public abstract class CsOobCapabilities {
                 ImmutableList<CsSecurityType> securityTypes);
 
         public abstract Builder setBluetoothAddress(String bluetoothAddress);
-
-        public abstract Builder setLeFlag(CsLeFlag leFlag);
 
         public abstract CsOobCapabilities autoBuild();
 

@@ -27,10 +27,7 @@ import java.nio.ByteBuffer;
 @AutoValue
 public abstract class CsOobConfig {
 
-    private static final int EXPECTED_SIZE_BYTES = 3;
-
-    // Size in bytes for properties when serialized.
-    private static final int SECURITY_TYPE_SIZE = 1;
+    private static final int EXPECTED_SIZE_BYTES = 2;
 
     /** Returns the size of the object in bytes when serialized. */
     public final int getSize() {
@@ -111,11 +108,7 @@ public abstract class CsOobConfig {
 
         int parseCursor = header.getHeaderSize();
 
-        // Parse Security Type
-        CsSecurityType securityType = CsSecurityType.fromValue(csConfigBytes[parseCursor]);
-        parseCursor += SECURITY_TYPE_SIZE;
-
-        return builder().setSecurityType(securityType).build();
+        return builder().build();
     }
 
     /** Serializes this {@link CsOobConfig} object to bytes. */
@@ -123,12 +116,8 @@ public abstract class CsOobConfig {
         return ByteBuffer.allocate(EXPECTED_SIZE_BYTES)
                 .put(RangingTechnology.CS.toByte())
                 .put((byte) EXPECTED_SIZE_BYTES)
-                .put((byte) getSecurityType().getValue())
                 .array();
     }
-
-    /** Get the security type of CS. */
-    public abstract CsSecurityType getSecurityType();
 
     /** Returns a builder for {@link CsOobConfig}. */
     public static Builder builder() {
@@ -138,8 +127,6 @@ public abstract class CsOobConfig {
     /** Builder for {@link CsOobConfig}. */
     @AutoValue.Builder
     public abstract static class Builder {
-        public abstract Builder setSecurityType(CsSecurityType securityType);
-
         public abstract CsOobConfig build();
     }
 }

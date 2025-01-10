@@ -56,7 +56,7 @@ public class ResponderFragment extends Fragment {
     private TextView mLogText;
 
     private BleConnectionPeripheralViewModel mBleConnectionViewModel;
-    private ResponderViewModel mResponderViewModel;
+    private DistanceMeasurementViewModel mDistanceMeasurementViewModel;
     private LoggingListener mLoggingListener;
 
     @Override
@@ -117,19 +117,20 @@ public class ResponderFragment extends Fragment {
                         new BleConnectionPeripheralViewModel.Factory(
                                 getActivity().getApplication(), mLoggingListener))
                         .get(BleConnectionPeripheralViewModel.class);
-        mResponderViewModel = new ViewModelProvider(
+        mDistanceMeasurementViewModel = new ViewModelProvider(
                 this,
-                new ResponderViewModel.Factory(
-                        getActivity().getApplication(), mBleConnectionViewModel, mLoggingListener))
-                .get(ResponderViewModel.class);
+                new DistanceMeasurementViewModel.Factory(
+                        getActivity(), mBleConnectionViewModel,
+                        mLoggingListener, true))
+                .get(DistanceMeasurementViewModel.class);
         mBleConnectionViewModel
                 .getTargetDevice()
                 .observe(
                         getActivity(),
                         targetDevice -> {
-                            mResponderViewModel.setTargetDevice(targetDevice);
+                            mDistanceMeasurementViewModel.setTargetDevice(targetDevice);
                         });
-        mResponderViewModel
+        mDistanceMeasurementViewModel
                 .getSessionState()
                 .observe(
                         getActivity(),
@@ -154,7 +155,7 @@ public class ResponderFragment extends Fragment {
                                     break;
                             }
                         });
-        mResponderViewModel
+        mDistanceMeasurementViewModel
                 .getDistanceResult()
                 .observe(
                         getActivity(),
@@ -164,9 +165,9 @@ public class ResponderFragment extends Fragment {
                                     DISTANCE_DECIMAL_FMT.format(distanceMeters) + " m");
                         });
 
-        mTechnologyArrayAdapter.addAll(mResponderViewModel.getSupportedTechnologies());
-        mFreqArrayAdapter.addAll(mResponderViewModel.getMeasurementFreqs());
-        mDurationArrayAdapter.addAll(mResponderViewModel.getMeasurementDurations());
+        mTechnologyArrayAdapter.addAll(mDistanceMeasurementViewModel.getSupportedTechnologies());
+        mFreqArrayAdapter.addAll(mDistanceMeasurementViewModel.getMeasurementFreqs());
+        mDurationArrayAdapter.addAll(mDistanceMeasurementViewModel.getMeasurementDurations());
         mButton.setOnClickListener(
                 v -> {
                     String methodName = mSpinnerTechnology.getSelectedItem().toString();
@@ -177,7 +178,7 @@ public class ResponderFragment extends Fragment {
                         printLog("the device doesn't support any distance measurement methods.");
                     }
 
-                    mResponderViewModel.toggleStartStop(methodName, freq, duration);
+                    mDistanceMeasurementViewModel.toggleStartStop(methodName, freq, duration);
                 });
     }
 

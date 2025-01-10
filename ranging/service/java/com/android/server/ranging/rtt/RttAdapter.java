@@ -18,6 +18,10 @@ package com.android.server.ranging.rtt;
 
 import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 
+import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.ERROR;
+import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.FAILED_TO_START;
+import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.SYSTEM_POLICY;
+
 import android.annotation.Nullable;
 import android.app.AlarmManager;
 import android.content.AttributionSource;
@@ -32,13 +36,13 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import com.android.ranging.rtt.backend.internal.RttDevice;
-import com.android.ranging.rtt.backend.internal.RttRangingDevice;
-import com.android.ranging.rtt.backend.internal.RttRangingParameters;
-import com.android.ranging.rtt.backend.internal.RttRangingPosition;
-import com.android.ranging.rtt.backend.internal.RttRangingSessionCallback;
-import com.android.ranging.rtt.backend.internal.RttService;
-import com.android.ranging.rtt.backend.internal.RttServiceImpl;
+import com.android.ranging.rtt.backend.RttDevice;
+import com.android.ranging.rtt.backend.RttRangingDevice;
+import com.android.ranging.rtt.backend.RttRangingParameters;
+import com.android.ranging.rtt.backend.RttRangingPosition;
+import com.android.ranging.rtt.backend.RttRangingSessionCallback;
+import com.android.ranging.rtt.backend.RttService;
+import com.android.ranging.rtt.backend.RttServiceImpl;
 import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
@@ -136,21 +140,22 @@ public class RttAdapter implements RangingAdapter {
     ) {
         Log.i(TAG, "Start called.");
         mNonPrivilegedAttributionSource = nonPrivilegedAttributionSource;
+        mCallbacks = callbacks;
         if (mNonPrivilegedAttributionSource != null && !mRangingInjector.isForegroundAppOrService(
                 mNonPrivilegedAttributionSource.getUid(),
                 mNonPrivilegedAttributionSource.getPackageName())) {
             Log.w(TAG, "Background ranging is not supported");
+            closeForReason(SYSTEM_POLICY);
             return;
         }
-
-        if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {
-            Log.v(TAG, "Attempted to start adapter when it was already started");
-            return;
-        }
-
-        mCallbacks = callbacks;
         if (!(config instanceof RttConfig rttConfig)) {
             Log.w(TAG, "Tried to start adapter with invalid ranging parameters");
+            closeForReason(ERROR);
+            return;
+        }
+        if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {
+            Log.v(TAG, "Attempted to start adapter when it was already started");
+            closeForReason(FAILED_TO_START);
             return;
         }
         mConfig = rttConfig;
@@ -281,9 +286,6 @@ public class RttAdapter implements RangingAdapter {
     /** Close the session, disconnecting the peer and resetting internal state. */
     private void closeForReason(@Callback.ClosedReason int reason) {
         synchronized (mStateMachine) {
-            if (mStateMachine.getState() == State.STOPPED) {
-                return;
-            }
             mStateMachine.setState(State.STOPPED);
             if (mCallbacks != null) {
                 mCallbacks.onStopped(mPeerDevice);
@@ -316,7 +318,7 @@ public class RttAdapter implements RangingAdapter {
             @Override
             public void onFailure(@NonNull Throwable t) {
                 Log.w(TAG, "startRanging failed ", t);
-                closeForReason(Callback.ClosedReason.ERROR);
+                closeForReason(ERROR);
             }
         };
 
@@ -328,7 +330,7 @@ public class RttAdapter implements RangingAdapter {
             @Override
             public void onFailure(@NonNull Throwable t) {
                 Log.w(TAG, "stopRanging failed ", t);
-                closeForReason(Callback.ClosedReason.ERROR);
+                closeForReason(ERROR);
             }
         };
     }

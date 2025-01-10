@@ -47,6 +47,7 @@ android_test {
         "android.test.base.stubs.system",
         "android.test.mock.stubs.system",
         "framework-annotations-lib",
+        "framework-wifi.stubs.module_lib",
     ],
 
     jni_libs: [
@@ -60,5 +61,6 @@ android_test {
 
     test_suites: [
         "general-tests",
+        "mts-uwb",
     ],
 }

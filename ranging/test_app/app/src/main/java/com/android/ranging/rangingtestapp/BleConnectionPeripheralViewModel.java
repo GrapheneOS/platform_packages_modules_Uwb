@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 
 /** The ViewModel for the BLE GATT connection. */
 @SuppressLint("MissingPermission") // permissions are checked upfront
-public class BleConnectionPeripheralViewModel extends AndroidViewModel {
+public class BleConnectionPeripheralViewModel extends AndroidViewModel implements BleConnection {
     private final BluetoothAdapter mBluetoothAdapter;
     private final BluetoothManager mBluetoothManager;
     private final LoggingListener mLoggingListener;
@@ -124,6 +124,7 @@ public class BleConnectionPeripheralViewModel extends AndroidViewModel {
         }
     }
 
+    @Override
     public void notifyPsm(int psm) {
         mPsm = psm;
         printLog("Notify PSM characteristic change");

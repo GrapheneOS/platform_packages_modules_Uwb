@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.ranging.rtt.backend.internal;
+package com.android.ranging.rtt.backend;
 
-import static com.android.ranging.rtt.backend.internal.RttRangingSessionCallback.REASON_STOP_RANGING_CALLED;
+import static com.android.ranging.rtt.backend.RttRangingSessionCallback.REASON_STOP_RANGING_CALLED;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -39,7 +39,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import com.android.ranging.rtt.backend.internal.RttRanger.RttRangerListener;
+import com.android.ranging.rtt.backend.RttRanger.RttRangerListener;
 
 import java.util.Collections;
 import java.util.List;
@@ -67,8 +67,6 @@ public class RttRangingDevice {
     private boolean mIsRunning;
     private final Object mLock = new Object();
     private final WifiRttManager mWifiRttManager;
-    private boolean mProximityEdgeEnabled;
-    private boolean mCheckProximityEdgeFlag = true;
 
     public RttRangingParameters getRttRangingParameters() {
         return mRttRangingParameters;
@@ -79,14 +77,9 @@ public class RttRangingDevice {
         @Override
         public void onRangingFailure(int code) {
             switch (code) {
-                case STATUS_CODE_FAIL:
-                    Log.w(TAG, "Failed to range");
-                    break;
-
-                case STATUS_CODE_FAIL_RESULT_EMPTY:
-                    Log.i(TAG, "Range results are empty");
-                    break;
-                case STATUS_CODE_FAIL_RTT_NOT_AVAILABLE:
+                case STATUS_CODE_FAIL -> Log.w(TAG, "Failed to range");
+                case STATUS_CODE_FAIL_RESULT_EMPTY -> Log.i(TAG, "Range results are empty");
+                case STATUS_CODE_FAIL_RTT_NOT_AVAILABLE -> {
                     Log.w(TAG, "RTT Not Available");
                     synchronized (mLock) {
                         if (mRttListener != null) {
@@ -95,7 +88,7 @@ public class RttRangingDevice {
                         }
                         stopRanging();
                     }
-                    break;
+                }
             }
         }
 
@@ -117,6 +110,7 @@ public class RttRangingDevice {
                 return;
             } else if (status == RangingResult.STATUS_FAIL) {
                 onRangingFailure(RttRangerListener.STATUS_CODE_FAIL_RESULT_FAIL);
+                return;
             }
             if (!mIsRunning) {
                 Log.w(TAG, "onRangingResult - ranging has stopped already.");
@@ -136,22 +130,6 @@ public class RttRangingDevice {
             } else {
                 Log.i(TAG, "Received PeerHandle is unknown. lastPeerHandle = " + mPeerHandle
                         + ", gotPeerHandle = " + peerHandle);
-            }
-        }
-    };
-
-    private Runnable mRunnablePingPublisher = new Runnable() {
-        @Override
-        public void run() {
-            synchronized (mLock) {
-                if (!mIsRunning) {
-                    Log.w(TAG, "RttRangingDevice is not running");
-                    return;
-                }
-                if (mRttListener != null) {
-                    mRttListener.onRangingResult(mRttDevice, new RttRangingPosition());
-                }
-                pingPublisher();
             }
         }
     };
@@ -192,8 +170,8 @@ public class RttRangingDevice {
             }
             mIsRunning = true;
             mRttListener = rttListener;
-            mWifiAwareManager.attach(new AwareAttachCallback(mDeviceType, mRttRangingParameters),
-                    mHandler);
+            executorService.execute(() -> mWifiAwareManager.attach(
+                    new AwareAttachCallback(mDeviceType, mRttRangingParameters), mHandler));
         }
     }
 
@@ -214,7 +192,6 @@ public class RttRangingDevice {
             Log.i(TAG, "Closing WiFi aware session");
             mIsRunning = false;
             mRttRanger.stopRanging();
-            mHandler.removeCallbacks(mRunnablePingPublisher);
 
             if (mWifiAwareSession != null) {
                 mWifiAwareSession.close();
@@ -235,12 +212,6 @@ public class RttRangingDevice {
             mCurrentSubscribeDiscoverySession.sendMessage(peerHandle, GRAPI_RTT_MESSAGE_ID,
                     message);
         }
-    }
-
-    private void pingPublisher() {
-//        Log.i(TAG, "Publisher ping");
-//        mHandler.postDelayed(mRunnablePingPublisher,
-//                mRttRangingParameters.getPublisherPingDuration().toMillis());
     }
 
     private DiscoverySessionCallback createPublishDiscoverySessionCallback() {
@@ -266,13 +237,9 @@ public class RttRangingDevice {
                 }
 
                 int updateRateMs = RttRangingParameters.getIntervalMs(mRttRangingParameters);
-                if (mRttRangingParameters.getEnablePublisherRanging()) {
-                    mRttListener.onRangingInitialized(mRttDevice);
-                    if (!mRttRangingParameters.isPeriodicRangingHwFeatureEnabled()) {
-                        mRttRanger.startRanging(peerHandle, mRttRangingListener, updateRateMs);
-                    }
-                } else {
-                    pingPublisher();
+                mRttListener.onRangingInitialized(mRttDevice);
+                if (!mRttRangingParameters.isPeriodicRangingHwFeatureEnabled()) {
+                    mRttRanger.startRanging(peerHandle, mRttRangingListener, updateRateMs);
                 }
             }
 

@@ -20,6 +20,10 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 
+import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.ERROR;
+import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.FAILED_TO_START;
+import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.SYSTEM_POLICY;
+
 import android.annotation.Nullable;
 import android.app.AlarmManager;
 import android.bluetooth.BluetoothAdapter;
@@ -33,6 +37,7 @@ import android.bluetooth.le.DistanceMeasurementResult;
 import android.bluetooth.le.DistanceMeasurementSession;
 import android.content.AttributionSource;
 import android.content.Context;
+import android.os.CancellationSignal;
 import android.ranging.DataNotificationConfig;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
@@ -73,6 +78,7 @@ public class CsAdapter implements RangingAdapter {
     private RangingDevice mRangingDevice;
 
     /** Invariant: non-null while a ranging session is active */
+    private CancellationSignal mStartCancellationSignal;
     private DistanceMeasurementSession mSession;
     private CsConfig mConfig;
     private DataNotificationManager mDataNotificationManager;
@@ -124,32 +130,33 @@ public class CsAdapter implements RangingAdapter {
             @NonNull Callback callback
     ) {
         Log.i(TAG, "Start called.");
+        mCallbacks = callback;
         mNonPrivilegedAttributionSource = nonPrivilegedAttributionSource;
         if (mNonPrivilegedAttributionSource != null && !mRangingInjector.isForegroundAppOrService(
                 mNonPrivilegedAttributionSource.getUid(),
                 mNonPrivilegedAttributionSource.getPackageName())) {
             Log.e(TAG, "Background ranging is not supported");
+            closeForReason(SYSTEM_POLICY);
             return;
         }
-        if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {
-            Log.v(TAG, "Attempted to start adapter when it was already started");
-            return;
-        }
-
         if (!(config instanceof CsConfig csConfig)) {
             Log.w(TAG, "Tried to start adapter with invalid ranging parameters");
+            closeForReason(ERROR);
             return;
         }
-        mConfig = csConfig;
-
         BleCsRangingParams bleCsRangingParams = csConfig.getRangingParams();
         if ((csConfig.getPeerDevice() == null)
                 || (bleCsRangingParams.getPeerBluetoothAddress() == null)) {
             Log.e(TAG, "Peer device is null");
+            closeForReason(ERROR);
             return;
         }
-
-        mCallbacks = callback;
+        if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {
+            Log.v(TAG, "Attempted to start adapter when it was already started");
+            closeForReason(FAILED_TO_START);
+            return;
+        }
+        mConfig = csConfig;
         mRangingDevice = csConfig.getPeerDevice();
         mDeviceFromPeerBluetoothAddress =
                 mBluetoothAdapter.getRemoteDevice(bleCsRangingParams.getPeerBluetoothAddress());
@@ -175,8 +182,14 @@ public class CsAdapter implements RangingAdapter {
                 csConfig.getSessionConfig().getDataNotificationConfig(),
                 csConfig.getSessionConfig().getDataNotificationConfig());
 
-        distanceMeasurementManager.startMeasurementSession(params,
-                Executors.newSingleThreadExecutor(), mDistanceMeasurementCallback);
+        try {
+            mStartCancellationSignal = distanceMeasurementManager.startMeasurementSession(params,
+                    Executors.newSingleThreadExecutor(), mDistanceMeasurementCallback);
+        } catch (IllegalStateException e) {
+            Log.e(TAG, "Error starting CS session", e);
+            closeForReason(FAILED_TO_START);
+            return;
+        }
         // Callback here to be consistent with other ranging technologies.
         mCallbacks.onStarted(csConfig.getPeerDevice());
         if (mConfig.getSessionConfig().getRangingMeasurementsLimit() > 0) {
@@ -216,12 +229,15 @@ public class CsAdapter implements RangingAdapter {
             Log.v(TAG, "Attempted to stop adapter when it was already stopped");
             return;
         }
-
-        if (mSession == null) {
+        if (mStartCancellationSignal == null && mSession == null) {
             Log.v(TAG, "Attempted to stop adapter when ranging session was already stopped");
             return;
         }
-        mSession.stopSession();
+        if (mSession == null) {
+            mStartCancellationSignal.cancel(); // In the middle of starting.
+        } else {
+            mSession.stopSession();
+        }
     }
 
     private int getFrequency(int updateRate) {
@@ -250,16 +266,19 @@ public class CsAdapter implements RangingAdapter {
     }
 
     private void closeForReason(@Callback.ClosedReason int reason) {
-        mCallbacks.onStopped(mRangingDevice);
+        if (mRangingDevice != null) {
+            mCallbacks.onStopped(mRangingDevice);
+        }
         mCallbacks.onClosed(reason);
         clear();
     }
 
     private void clear() {
-        if (mConfig.getSessionConfig().getRangingMeasurementsLimit() > 0) {
+        if (mConfig != null && mConfig.getSessionConfig().getRangingMeasurementsLimit() > 0) {
             mAlarmManager.cancel(mMeasurementLimitListener);
         }
         mSession = null;
+        mStartCancellationSignal = null;
         mCallbacks = null;
         mConfig = null;
     }
@@ -304,7 +323,8 @@ public class CsAdapter implements RangingAdapter {
                             .setDistance(new RangingMeasurement.Builder()
                                     .setMeasurement(result.getResultMeters())
                                     .build())
-                            .setTimestampMillis(result.getMeasurementTimestampNanos() * 1000);
+                            .setTimestampMillis(RangingUtils.convertNanosToMillis(
+                                    result.getMeasurementTimestampNanos()));
                     if (!Double.isNaN(result.getAzimuthAngle())) {
                         dataBuilder.setAzimuth(new RangingMeasurement.Builder()
                                 .setMeasurement(result.getAzimuthAngle())

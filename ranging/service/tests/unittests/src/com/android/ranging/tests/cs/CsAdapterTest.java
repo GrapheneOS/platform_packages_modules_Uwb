@@ -40,6 +40,7 @@ import android.bluetooth.le.DistanceMeasurementSession;
 import android.content.AttributionSource;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.CancellationSignal;
 import android.ranging.DataNotificationConfig;
 import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
@@ -98,6 +99,8 @@ public class CsAdapterTest {
     private SessionConfig mMockSessionConfig;
     @Mock
     private BleCsRangingParams mMockRangingParams;
+    @Mock
+    private CancellationSignal mCancellationSignal;
 
     private final DataNotificationConfig mDataNotificationConfig =
             new DataNotificationConfig.Builder().build();
@@ -113,6 +116,8 @@ public class CsAdapterTest {
                 mMockBluetoothAdapter);
         when(mMockBluetoothAdapter.getDistanceMeasurementManager()).thenReturn(
                 mMockDistanceMeasurementManager);
+        when(mMockDistanceMeasurementManager.startMeasurementSession(any(), any(), any()))
+                .thenReturn(mCancellationSignal);
         when(mMockContext.getSystemService(AlarmManager.class)).thenReturn(mMockAlarmManager);
         when(mMockContext.getSystemService(PackageManager.class)).thenReturn(mMockPackageManager);
         when(mMockContext.getPackageManager()).thenReturn(mMockPackageManager);
@@ -144,6 +149,21 @@ public class CsAdapterTest {
         mCsAdapter.stop();
 
         verify(mMockDistanceMeasurementSession, times(1)).stopSession();
+        verify(mCancellationSignal, never()).cancel();
+    }
+
+    @Test
+    public void testStartStopWhenStarting_ValidConfig() {
+        mCsAdapter.start(mMockCsConfig, null, mMockCallback);
+
+        verify(mMockDistanceMeasurementManager, times(1)).startMeasurementSession(any(), any(),
+                any());
+        verify(mMockCallback, times(1)).onStarted(mMockRangingDevice);
+
+        mCsAdapter.stop();
+
+        verify(mCancellationSignal, times(1)).cancel();
+        verify(mMockDistanceMeasurementSession, never()).stopSession();
     }
 
     @Test

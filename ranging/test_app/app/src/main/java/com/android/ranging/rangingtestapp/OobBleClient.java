@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class OobBleClient implements TransportHandle {
     private static final String TAG = "OobBleClient";
-    private final BleConnectionCentralViewModel mBleConnectionCentralViewModel;
+    private final BleConnection mBleConnection;
     private final LoggingListener mLoggingListener;
     private final BluetoothDevice mBluetoothDevice;
     private final BluetoothManager mBluetoothManager;
@@ -46,9 +46,9 @@ public class OobBleClient implements TransportHandle {
     private Executor mReceiveExecutor;
 
     public OobBleClient(
-            Context context, BleConnectionCentralViewModel bleConnectionCentralViewModel,
+            Context context, BleConnection bleConnection,
             BluetoothDevice device, LoggingListener loggingListener) {
-        mBleConnectionCentralViewModel = bleConnectionCentralViewModel;
+        mBleConnection = bleConnection;
         mLoggingListener = loggingListener;
         mBluetoothDevice = device;
         mBluetoothManager = context.getSystemService(BluetoothManager.class);
@@ -91,7 +91,7 @@ public class OobBleClient implements TransportHandle {
         @Override
         public void run() {
             try {
-                int psm = mBleConnectionCentralViewModel.waitForPsm();
+                int psm = mBleConnection.waitForPsm();
                 if (psm == -1) return;
                 printLog("Creating L2cap socket on " + psm);
                 OobBleClient.this.mSocket =

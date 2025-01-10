@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.ranging.rtt.backend.internal;
+package com.android.ranging.rtt.backend;
 
-import android.net.MacAddress;
-import android.net.wifi.aware.PeerHandle;
 import android.net.wifi.rtt.RangingResult;
-import android.net.wifi.rtt.ResponderLocation;
-import android.os.Build;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -32,72 +28,20 @@ public class RttRangingPosition {
     private static final String TAG = RttRangingPosition.class.getName();
 
     private int mDistanceMeters;
-    private int mDistanceStdDevMm;
-    private byte[] mLci;
-    private byte[] mLcr;
-    private MacAddress mMacAddress;
-    //    private long mMaxTimeBetweenNtbMeasurementsMicros;
-    private int mMeasurementBandwidth;
-    private int mMeasurementChannelFrequencyMHz;
-    //    private long mMinTimeBetweenNtbMeasurementsMicros;
-    private int mNumAttemptedMeasurements;
-    private int mNumSuccessfulMeasurements;
-    private PeerHandle mPeerHandle;
     private long mRangingTimestampMillis;
     private int mRssi;
-    private int mStatus;
-    private ResponderLocation mUnverifiedResponderLocation;
-    boolean mIs80211azNtbMeasurement;
-    boolean mIs80211mcMeasurement;
-
     Azimuth mAzimuth;
     Elevation mElevation;
-
-
-    /**
-     * Create empty Ranging Position for RTT.
-     */
-    public RttRangingPosition() {
-        mDistanceMeters = 0;
-        mDistanceStdDevMm = 0;
-        mLci = null;
-        mLcr = null;
-        mMacAddress = null;
-        mMeasurementBandwidth = 0;
-        mMeasurementChannelFrequencyMHz = 0;
-        mNumAttemptedMeasurements = 0;
-        mNumSuccessfulMeasurements = 0;
-        mPeerHandle = null;
-        mAzimuth = null;
-        mElevation = null;
-        mRangingTimestampMillis = System.currentTimeMillis();
-    }
 
     /**
      * Create Ranging Position for RTT from RangingResult
      */
     public RttRangingPosition(@NonNull RangingResult rangingResult) {
         mDistanceMeters = rangingResult.getDistanceMm() / 1000;
-        mDistanceStdDevMm = rangingResult.getDistanceStdDevMm();
         mRssi = rangingResult.getRssi();
-        mLci = rangingResult.getLci();
-        mLcr = rangingResult.getLcr();
-        mMacAddress = rangingResult.getMacAddress();
-//        mMaxTimeBetweenNtbMeasurementsMicros = rangingResult
-//        .getMaxTimeBetweenNtbMeasurementsMicros();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            mMeasurementBandwidth = rangingResult.getMeasurementBandwidth();
-            mMeasurementChannelFrequencyMHz = rangingResult.getMeasurementChannelFrequencyMHz();
-        }
-//        mMinTimeBetweenNtbMeasurementsMicros = rangingResult
-//        .getMinTimeBetweenNtbMeasurementsMicros();
-        mNumAttemptedMeasurements = rangingResult.getNumAttemptedMeasurements();
-        mNumSuccessfulMeasurements = rangingResult.getNumSuccessfulMeasurements();
-        mPeerHandle = rangingResult.getPeerHandle();
         mAzimuth = null;
         mElevation = null;
         mRangingTimestampMillis = rangingResult.getRangingTimestampMillis();
-
     }
 
     /**

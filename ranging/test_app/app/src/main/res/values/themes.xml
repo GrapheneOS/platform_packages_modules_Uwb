@@ -2,7 +2,7 @@
   <!-- Base application theme. -->
   <style name="Base.Theme.RangingTestApp" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
     <!-- Customize your light theme here. -->
-    <item name="colorPrimary">@color/purple_500</item>
+    <item name="colorPrimary">@color/purple_200</item>
     <item name="colorPrimaryVariant">@color/purple_700</item>
     <item name="colorOnPrimary">@color/white</item>
     <!-- Secondary brand color. -->
@@ -14,4 +14,10 @@
   </style>
 
   <style name="Theme.RangingTestApp" parent="Base.Theme.RangingTestApp" />
+  <style name="MaterialAlertDialog_rounded" parent="@style/ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+    <item name="shapeAppearanceOverlay">@style/DialogCorners</item>
+  </style>
+  <style name="DialogCorners">
+    <item name="cornerFamily">rounded</item>
+  </style>
 </resources>

@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class OobBleServer implements TransportHandle {
     private static final String TAG = "OobBleServer";
-    private final BleConnectionPeripheralViewModel mBleConnectionPeripheralViewModel;
+    private final BleConnection mBleConnection;
     private final LoggingListener mLoggingListener;
     private final BluetoothDevice mBluetoothDevice;
     private final BluetoothManager mBluetoothManager;
@@ -47,9 +47,9 @@ public class OobBleServer implements TransportHandle {
     private Executor mReceiveExecutor;
 
     public OobBleServer(
-            Context context, BleConnectionPeripheralViewModel bleConnectionPeripheralViewModel,
+            Context context, BleConnection bleConnection,
             BluetoothDevice device, LoggingListener loggingListener) {
-        mBleConnectionPeripheralViewModel = bleConnectionPeripheralViewModel;
+        mBleConnection = bleConnection;
         mLoggingListener = loggingListener;
         mBluetoothDevice = device;
         mBluetoothManager = context.getSystemService(BluetoothManager.class);
@@ -102,7 +102,7 @@ public class OobBleServer implements TransportHandle {
                             + OobBleServer.this.mBluetoothDevice.getAddress()
                             + " on "
                             + mServerSocket.getPsm());
-                    mBleConnectionPeripheralViewModel.notifyPsm(mServerSocket.getPsm());
+                    mBleConnection.notifyPsm(mServerSocket.getPsm());
                     BluetoothSocket socket = mServerSocket.accept();
                     printLog("Accepted connection from " + socket.getRemoteDevice().getAddress());
                     if (OobBleServer.this.mBluetoothDevice.equals(socket.getRemoteDevice())) {

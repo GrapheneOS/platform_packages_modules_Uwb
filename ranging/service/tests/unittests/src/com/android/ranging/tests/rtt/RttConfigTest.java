@@ -28,7 +28,7 @@ import android.ranging.wifi.rtt.RttRangingParams;
 
 import androidx.test.filters.SmallTest;
 
-import com.android.ranging.rtt.backend.internal.RttRangingParameters;
+import com.android.ranging.rtt.backend.RttRangingParameters;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.rtt.RttConfig;
 

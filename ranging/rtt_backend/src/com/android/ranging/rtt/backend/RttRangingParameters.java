@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package com.android.ranging.rtt.backend.internal;
+package com.android.ranging.rtt.backend;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.time.Duration;
 import java.util.Arrays;
 
 public class RttRangingParameters {
@@ -67,8 +66,6 @@ public class RttRangingParameters {
     protected final String mServiceName;
     protected final int mMaxDistanceMm;
     protected final int mMinDistanceMm;
-    protected final boolean mEnablePublisherRanging;
-    protected final Duration mPublisherPingDuration;
 
     @RangingUpdateRate
     private final int mUpdateRate;
@@ -124,25 +121,6 @@ public class RttRangingParameters {
         return mMinDistanceMm;
     }
 
-    /**
-     * If it is a publisher type, get whether a publisher will range.
-     *
-     * @return whether a publisher will range.
-     */
-    public boolean getEnablePublisherRanging() {
-        return mEnablePublisherRanging;
-    }
-
-    /**
-     * If it is a publisher type, get whether to return a empty ping value by itself to maintain
-     * connection.
-     *
-     * @return whether to return a empty ping value by itself to maintain connection.
-     */
-    public Duration getPublisherPingDuration() {
-        return mPublisherPingDuration;
-    }
-
     public int getUpdateRate() {
         return mUpdateRate;
     }
@@ -158,8 +136,6 @@ public class RttRangingParameters {
         mMatchFilter = builder.mMatchFilter;
         mMaxDistanceMm = builder.mMaxDistanceMm;
         mMinDistanceMm = builder.mMinDistanceMm;
-        mEnablePublisherRanging = builder.mEnablePublisherRanging;
-        mPublisherPingDuration = builder.mPublisherPingDuration;
         mUpdateRate = builder.mRangingUpdateRate;
         mEnablePeriodicRangingHwFeature = builder.mEnablePeriodicRangingHwFeature;
     }
@@ -175,8 +151,6 @@ public class RttRangingParameters {
         protected byte[] mMatchFilter = new byte[]{};
         protected int mMaxDistanceMm = 30 * 100 * 100;
         protected int mMinDistanceMm = 0;
-        protected boolean mEnablePublisherRanging = true;
-        protected Duration mPublisherPingDuration = Duration.ofSeconds(10);
         private int mRangingUpdateRate = NORMAL;
         private boolean mEnablePeriodicRangingHwFeature = false;
 
@@ -203,16 +177,6 @@ public class RttRangingParameters {
 
         public Builder setMinDistanceMm(int minDistanceMm) {
             mMinDistanceMm = minDistanceMm;
-            return this;
-        }
-
-        public Builder setEnablePublisherRanging(boolean enablePublisherRanging) {
-            mEnablePublisherRanging = enablePublisherRanging;
-            return this;
-        }
-
-        public Builder setPublisherPingDuration(@NonNull Duration ping) {
-            mPublisherPingDuration = ping;
             return this;
         }
 
@@ -265,10 +229,6 @@ public class RttRangingParameters {
                 + mMaxDistanceMm
                 + ", minDistanceMm: "
                 + mMinDistanceMm
-                + ", enablePublisherRanging: "
-                + mEnablePublisherRanging
-                + ", publisherPingDuration: "
-                + mPublisherPingDuration
                 + ", enablePeriodicRangingHwFeature: "
                 + mEnablePeriodicRangingHwFeature
                 + " }";

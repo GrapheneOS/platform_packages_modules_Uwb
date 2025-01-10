@@ -14,8 +14,8 @@
   <fragment
       android:id="@+id/navigation_initiator_configuration"
       android:name="com.android.ranging.rangingtestapp.InitiatorConfigurationFragment"
-      android:label="@string/configuration"
-      tools:layout="@layout/fragment_initiator_configuration" />
+      android:label="@string/initiator_configuration"
+      tools:layout="@layout/fragment_configuration" />
 
   <fragment
       android:id="@+id/navigation_responder"
@@ -26,6 +26,6 @@
   <fragment
       android:id="@+id/navigation_responder_configuration"
       android:name="com.android.ranging.rangingtestapp.ResponderConfigurationFragment"
-      android:label="@string/configuration"
+      android:label="@string/responder_configuration"
       tools:layout="@layout/fragment_configuration" />
 </navigation>

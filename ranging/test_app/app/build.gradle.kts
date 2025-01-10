@@ -16,10 +16,25 @@ android {
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
+  signingConfigs {
+    create("config") {
+      storeFile = file("com.android.ranging.rangingtestapp.keystore")
+      storePassword =  "RangingTestApp"
+      keyAlias = "com.android.ranging.rangingtestapp"
+      keyPassword = "RangingTestApp"
+    }
+  }
+
   buildTypes {
     release {
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+      signingConfig = signingConfigs.findByName("config")
+    }
+    debug {
+      isMinifyEnabled = false
+      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+      signingConfig = signingConfigs.findByName("config")
     }
   }
   compileOptions {

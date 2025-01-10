@@ -32,7 +32,7 @@ import android.ranging.wifi.rtt.RttRangingCapabilities;
 
 import androidx.annotation.Nullable;
 
-import com.android.ranging.rtt.backend.internal.RttServiceImpl;
+import com.android.ranging.rtt.backend.RttServiceImpl;
 import com.android.server.ranging.CapabilitiesProvider;
 import com.android.server.ranging.CapabilitiesProvider.CapabilitiesAdapter;
 import com.android.server.ranging.CapabilitiesProvider.TechnologyAvailabilityListener;

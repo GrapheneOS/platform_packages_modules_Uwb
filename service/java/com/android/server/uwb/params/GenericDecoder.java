@@ -88,7 +88,7 @@ public class GenericDecoder extends TlvDecoder {
                             .getParams(tlvs, RadarSpecificationParams.class, protocolVersion);
             builder.setRadarSpecificationParams(radarSpecificationParams);
         } catch (IllegalArgumentException e) {
-            Log.v(TAG, "Failed to decode Radar capabilities", e);
+            Log.v(TAG, "Failed to decode Radar capabilities");
         }
         try {
             byte supported_power_stats_query = tlvs.getByte(SUPPORTED_POWER_STATS_QUERY);

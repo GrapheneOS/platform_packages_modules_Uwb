@@ -183,6 +183,10 @@ public class RangingUtils {
         }
     }
 
+    public static long convertNanosToMillis(long timestampNanos) {
+        return timestampNanos / 1_000_000L;
+    }
+
     public static void setMeasurementsLimitTimeout(
             AlarmManager alarmManager,
             AlarmManager.OnAlarmListener measurementLimitListener,

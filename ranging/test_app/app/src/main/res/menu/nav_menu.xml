@@ -7,7 +7,7 @@
                    android:title="@string/initiator"/>
                <item android:id="@+id/navigation_initiator_configuration"
                    android:icon="@drawable/ic_configuration"
-                   android:title="@string/configuration"/>
+                   android:title="@string/initiator_configuration"/>
           </menu>
      </item>
      <item android:title="@string/responder">
@@ -17,7 +17,7 @@
                    android:title="@string/responder" />
                <item android:id="@+id/navigation_responder_configuration"
                    android:icon="@drawable/ic_configuration"
-                   android:title="@string/configuration"/>
+                   android:title="@string/responder_configuration"/>
           </menu>
      </item>
 </menu>

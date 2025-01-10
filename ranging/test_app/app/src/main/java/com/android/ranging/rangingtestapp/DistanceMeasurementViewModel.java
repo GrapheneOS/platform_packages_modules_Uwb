@@ -16,7 +16,7 @@
 
 package com.android.ranging.rangingtestapp;
 
-import android.app.Application;
+import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 
@@ -29,53 +29,57 @@ import androidx.lifecycle.ViewModelProvider;
 
 import java.util.List;
 
-/** ViewModel for the Responder. */
-public class ResponderViewModel extends AndroidViewModel {
+/** ViewModel for the Initiator/Responder. */
+public class DistanceMeasurementViewModel extends AndroidViewModel {
 
     private final MutableLiveData<Constants.RangeSessionState> mSessionState =
             new MutableLiveData<>(Constants.RangeSessionState.STOPPED);
 
     private final MutableLiveData<Double> mDistanceResult = new MutableLiveData<>();
 
-    private final DistanceMeasurementResponder
-            mDistanceMeasurementResponder; // mDistanceMeasurementResponder;
+    private final DistanceMeasurementManager
+            mDistanceMeasurementManager; // mDistanceMeasurementManager;
 
     public static class Factory implements ViewModelProvider.Factory {
-        private Application mApplication;
-        private BleConnectionPeripheralViewModel mBleConnectionPeripheralViewModel;
+        private Activity mActivity;
+        private BleConnection mBleConnection;
         private LoggingListener mLoggingListener;
+        private boolean mIsResponder;
 
-        public Factory(Application application,
-                       BleConnectionPeripheralViewModel bleConnectionPeripheralViewModel,
-                       LoggingListener loggingListener) {
-            mApplication = application;
-            mBleConnectionPeripheralViewModel = bleConnectionPeripheralViewModel;
+        public Factory(Activity activity,
+                       BleConnection bleConnection,
+                       LoggingListener loggingListener,
+                       boolean isResponder) {
+            mActivity = activity;
+            mBleConnection = bleConnection;
             mLoggingListener = loggingListener;
+            mIsResponder = isResponder;
         }
 
 
         @Override
         public <T extends ViewModel> T create(Class<T> modelClass) {
-            return (T) new ResponderViewModel(
-                    mApplication, mBleConnectionPeripheralViewModel, mLoggingListener);
+            return (T) new DistanceMeasurementViewModel(
+                    mActivity, mBleConnection, mLoggingListener, mIsResponder);
         }
     }
 
-    public ResponderViewModel(@NonNull Application application,
-                              BleConnectionPeripheralViewModel bleConnectionPeripheralViewModel,
-                              LoggingListener loggingListener) {
-        super(application);
-
-        mDistanceMeasurementResponder =
-                new DistanceMeasurementResponder(
-                        application,
-                        bleConnectionPeripheralViewModel,
-                        mDistanceMeasurementCallback,
-                        loggingListener);
+    public DistanceMeasurementViewModel(@NonNull Activity activity,
+                                        BleConnection bleConnection,
+                                        LoggingListener loggingListener,
+                                        boolean isResponder) {
+        super(activity.getApplication());
+        mDistanceMeasurementManager =
+                new DistanceMeasurementManager(
+                        activity,
+                        bleConnection,
+                        mCallback,
+                        loggingListener,
+                        isResponder);
     }
 
     void setTargetDevice(BluetoothDevice targetDevice) {
-        mDistanceMeasurementResponder.setTargetDevice(targetDevice);
+        mDistanceMeasurementManager.setTargetDevice(targetDevice);
     }
 
     LiveData<Constants.RangeSessionState> getSessionState() {
@@ -87,21 +91,21 @@ public class ResponderViewModel extends AndroidViewModel {
     }
 
     List<String> getSupportedTechnologies() {
-        return mDistanceMeasurementResponder.getSupportedTechnologies();
+        return mDistanceMeasurementManager.getSupportedTechnologies();
     }
 
     List<String> getMeasurementFreqs() {
-        return mDistanceMeasurementResponder.getMeasurementFreqs();
+        return mDistanceMeasurementManager.getMeasurementFreqs();
     }
 
     List<String> getMeasurementDurations() {
-        return mDistanceMeasurementResponder.getMeasureDurationsInIntervalRounds();
+        return mDistanceMeasurementManager.getMeasureDurationsInIntervalRounds();
     }
 
     void toggleStartStop(String technology, String freq, int duration) {
         if (mSessionState.getValue() == Constants.RangeSessionState.STOPPED) {
             boolean success =
-                    mDistanceMeasurementResponder.startDistanceMeasurement(
+                    mDistanceMeasurementManager.start(
                             technology, freq, duration);
             if (success) {
                 mSessionState.postValue(Constants.RangeSessionState.STARTING);
@@ -109,13 +113,13 @@ public class ResponderViewModel extends AndroidViewModel {
                 mSessionState.postValue(Constants.RangeSessionState.STOPPED);
             }
         } else {
-            mDistanceMeasurementResponder.stopDistanceMeasurement();
+            mDistanceMeasurementManager.stop();
             mSessionState.postValue(Constants.RangeSessionState.STOPPING);
         }
     }
 
-    private DistanceMeasurementResponder.DistanceMeasurementCallback mDistanceMeasurementCallback =
-            new DistanceMeasurementResponder.DistanceMeasurementCallback() {
+    private DistanceMeasurementManager.Callback mCallback =
+            new DistanceMeasurementManager.Callback() {
                 @Override
                 public void onStartSuccess() {
                     mSessionState.postValue(Constants.RangeSessionState.STARTED);

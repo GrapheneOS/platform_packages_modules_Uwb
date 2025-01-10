@@ -16,6 +16,8 @@
 
 package com.android.ranging.rangingtestapp;
 
+import static android.view.View.INVISIBLE;
+
 import android.os.Bundle;
 import android.ranging.ble.cs.BleCsRangingCapabilities;
 import android.ranging.oob.OobInitiatorRangingConfig;
@@ -67,6 +69,10 @@ public class ConfigurationFragment extends Fragment {
     public View onCreateView(
             @NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_configuration, container, false);
+        if (mIsResponder) {
+            View oobView = root.findViewById(R.id.layout_oob);
+            oobView.setVisibility(INVISIBLE);
+        }
         mGlobalSensorFusionSpinner = (Spinner) root.findViewById(R.id.global_sensor_fusion_spinner);
         mUwbChannelSpinner = (Spinner) root.findViewById(R.id.uwb_channel_spinner);
         mUwbPreambleSpinner = (Spinner) root.findViewById(R.id.uwb_preamble_spinner);

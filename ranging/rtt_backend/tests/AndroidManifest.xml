@@ -16,7 +16,7 @@
   -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.android.ranging.rtt.backend">
+    package="com.android.ranging.tests.rtt.backend">
 
     <application android:debuggable="true"
          android:largeHeap="true">
@@ -33,7 +33,7 @@
 
     <!-- This is a self-instrumenting test package. -->
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
-        android:targetPackage="com.android.ranging.rtt.backend"
+        android:targetPackage="com.android.ranging.tests.rtt.backend"
         android:label="Tests for the generic ranging Rtt backend">
     </instrumentation>
 

@@ -1,14 +1,9 @@
-1. prepare the device
-adb root
-adb remount -R
-2. build the app
+1. Build the app
 make RangingTestApp
-3. load the app
-adb root
-adb remount
-adb push RangingTestApp.apk /system/priv-app/RangingTestApp/RangingTestApp.apk
-adb reboot
-4. run test
-pair devices from settings;
-launch APk
-one device works as 'Initiator', another device works as 'Responder';
+2. Load the app
+adb install -r -g ${ANDROID_PRODUCT_OUT}/system/app/RangingTestApp.apk
+3. Launch APK and Run tests
+
+Note:
+1. If you want to use channel sounding, pair devices from settings.
+2. One device works as 'Initiator', Another device works as 'Responder'.
