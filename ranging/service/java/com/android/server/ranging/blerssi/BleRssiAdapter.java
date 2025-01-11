@@ -22,6 +22,7 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.ERROR;
 import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.FAILED_TO_START;
 import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.SYSTEM_POLICY;
+import static com.android.server.ranging.RangingUtils.convertBluetoothReasonCode;
 
 import android.annotation.NonNull;
 import android.annotation.Nullable;
@@ -281,8 +282,7 @@ public class BleRssiAdapter implements RangingAdapter {
 
                 public void onStopped(DistanceMeasurementSession session, int reason) {
                     Log.i(TAG, "DistanceMeasurement onStopped ! reason " + reason);
-                    // TODO: Check this.
-                    closeForReason(Callback.ClosedReason.REQUESTED);
+                    closeForReason(convertBluetoothReasonCode(reason));
                 }
 
                 public void onResult(BluetoothDevice device, DistanceMeasurementResult result) {

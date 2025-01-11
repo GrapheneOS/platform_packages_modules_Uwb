@@ -187,7 +187,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     'android.ranging.RangingData#getTimestampMillis',
     'android.ranging.RangingMeasurement#getMeasurement',
     'android.ranging.RangingMeasurement#getConfidence',
-    'android.ranging.RangingSession.Callback#onOpened(int)',
+    'android.ranging.RangingSession.Callback#onOpened()',
     'android.ranging.RangingSession.Callback#onClosed(int)',
     'android.ranging.RangingSession.Callback#onResults(android.ranging.RangingDevice, android.ranging.RangingData)',
     'android.ranging.RangingSession.Callback#onStarted(android.ranging.RangingDevice, int)',

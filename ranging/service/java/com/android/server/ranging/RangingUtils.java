@@ -16,9 +16,16 @@
 
 package com.android.server.ranging;
 
+import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.ERROR;
+import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.LOST_CONNECTION;
+import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.REQUESTED;
+import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.SYSTEM_POLICY;
+import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.UNKNOWN;
+
 import static java.lang.Math.min;
 
 import android.app.AlarmManager;
+import android.bluetooth.BluetoothStatusCodes;
 import android.os.SystemClock;
 
 import com.google.common.base.Ascii;
@@ -36,8 +43,10 @@ import java.util.List;
 public class RangingUtils {
 
     private static final String MEASUREMENT_TIME_LIMIT_EXCEEDED = "measurementTimeLimitExceeded";
+
     /**
      * A basic synchronized state machine.
+     *
      * @param <E> enum representing the different states of the machine.
      */
     public static class StateMachine<E extends Enum<E>> {
@@ -59,6 +68,7 @@ public class RangingUtils {
 
         /**
          * Sets the current state.
+         *
          * @return true if the state was successfully changed, false if the current state is
          * already {@code state}.
          */
@@ -72,6 +82,7 @@ public class RangingUtils {
 
         /**
          * If the current state is {@code from}, sets it to {@code to}.
+         *
          * @return true if the current state is {@code from}, false otherwise.
          */
         public synchronized boolean transition(E from, E to) {
@@ -201,5 +212,22 @@ public class RangingUtils {
                 measurementLimitListener,
                 null
         );
+    }
+
+    /**
+     * Covert bluetooth reason code to ranging reason code.
+     */
+    public static int convertBluetoothReasonCode(int bluetoothReasonCode) {
+        return switch (bluetoothReasonCode) {
+            case BluetoothStatusCodes.REASON_LOCAL_APP_REQUEST,
+                    BluetoothStatusCodes.REASON_REMOTE_REQUEST ->
+                    REQUESTED;
+            case BluetoothStatusCodes.ERROR_TIMEOUT,
+                    BluetoothStatusCodes.ERROR_REMOTE_OPERATION_NOT_SUPPORTED ->
+                    SYSTEM_POLICY;
+            case BluetoothStatusCodes.ERROR_NO_LE_CONNECTION -> LOST_CONNECTION;
+            case BluetoothStatusCodes.ERROR_BAD_PARAMETERS -> ERROR;
+            default -> UNKNOWN;
+        };
     }
 }

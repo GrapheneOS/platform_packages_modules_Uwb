@@ -20,6 +20,7 @@ import static com.android.ranging.rtt.backend.RttRangingSessionCallback.REASON_S
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.net.wifi.aware.AttachCallback;
 import android.net.wifi.aware.DiscoverySessionCallback;
@@ -312,6 +313,7 @@ public class RttRangingDevice {
         };
     }
 
+    @SuppressLint("NewApi") // FLAG_RANGING_RTT_ENABLED will be enabled from Android 16.
     private class AwareAttachCallback extends AttachCallback {
         private final PublishConfig mPublishConfig;
         private final SubscribeConfig mSubscribeConfig;

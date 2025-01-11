@@ -23,6 +23,7 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.ERROR;
 import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.FAILED_TO_START;
 import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.SYSTEM_POLICY;
+import static com.android.server.ranging.RangingUtils.convertBluetoothReasonCode;
 
 import android.annotation.Nullable;
 import android.app.AlarmManager;
@@ -307,7 +308,7 @@ public class CsAdapter implements RangingAdapter {
 
                 public void onStopped(DistanceMeasurementSession session, int reason) {
                     Log.i(TAG, "DistanceMeasurement onStopped ! reason " + reason);
-                    closeForReason(Callback.ClosedReason.REQUESTED);
+                    closeForReason(convertBluetoothReasonCode(reason));
                 }
 
                 public void onResult(BluetoothDevice device, DistanceMeasurementResult result) {
