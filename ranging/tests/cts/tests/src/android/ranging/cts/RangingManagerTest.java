@@ -87,6 +87,7 @@ import android.ranging.uwb.UwbRangingParams;
 import android.ranging.wifi.rtt.RttRangingCapabilities;
 import android.ranging.wifi.rtt.RttRangingParams;
 import android.util.Log;
+import android.util.Range;
 import android.uwb.UwbManager;
 
 import androidx.annotation.NonNull;
@@ -582,6 +583,7 @@ public class RangingManagerTest {
         private CountDownLatch mOnClosedCalled = new CountDownLatch(1);
         private CountDownLatch mOnPeerAdded = new CountDownLatch(1);
         private CountDownLatch mOnPeerRemoved = new CountDownLatch(1);
+        private CountDownLatch mOnOpenFailed = new CountDownLatch(1);
 
         public void replaceOnPeerAddedLatch(CountDownLatch countDownLatch) {
             mOnPeerAdded = countDownLatch;
@@ -602,6 +604,7 @@ public class RangingManagerTest {
 
         @Override
         public void onOpenFailed(int reason) {
+            mOnOpenFailed.countDown();
         }
 
         @Override
@@ -991,6 +994,50 @@ public class RangingManagerTest {
 
     @Test
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_enabled")
+    public void testBleRssiRangingSession_whenDisabled() throws Exception {
+        assumeTrue(mSupportedTechnologies.contains(RangingManager.BLE_RSSI));
+        BluetoothAdapter adapter = BlockingBluetoothAdapter.getAdapter();
+        assertThat(adapter).isNotNull();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        uiAutomation.adoptShellPermissionIdentity();
+
+        RangingSessionCallback callback = new RangingSessionCallback();
+
+        RangingSession rangingSession = mRangingManager.createRangingSession(
+                MoreExecutors.directExecutor(), callback);
+        assertThat(rangingSession).isNotNull();
+
+        RangingPreference preference = new RangingPreference.Builder(DEVICE_ROLE_INITIATOR,
+                new RawInitiatorRangingConfig.Builder()
+                        .addRawRangingDevice(new RawRangingDevice.Builder()
+                                .setRangingDevice(new RangingDevice.Builder().build())
+                                .setBleRssiRangingParams(
+                                        new BleRssiRangingParams.Builder("00:11:22:33:AA:BB")
+                                                .setRangingUpdateRate(UPDATE_RATE_NORMAL)
+                                                .build())
+                                .build())
+                        .build())
+                .build();
+
+        assertThat(preference.getRangingParams() instanceof RawInitiatorRangingConfig).isTrue();
+        RawInitiatorRangingConfig config =
+                (RawInitiatorRangingConfig) preference.getRangingParams();
+        RawRangingDevice device = config.getRawRangingDevices().get(0);
+        assertThat(device.getBleRssiRangingParams()).isNotNull();
+        assertThat(device.getBleRssiRangingParams().getPeerBluetoothAddress()).isNotNull();
+        assertThat(device.getBleRssiRangingParams().getRangingUpdateRate()).isEqualTo(
+                UPDATE_RATE_NORMAL);
+
+        rangingSession.start(preference);
+        assertThat(callback.mOnOpenFailed.await(1, TimeUnit.SECONDS)).isTrue();
+
+        uiAutomation.dropShellPermissionIdentity();
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_cs_enabled")
     public void testBleCsRangingSession() throws Exception {
         assumeTrue(mSupportedTechnologies.contains(RangingManager.BLE_CS));
@@ -1084,6 +1131,8 @@ public class RangingManagerTest {
 
         assertEquals(Duration.ofMillis(100), config.getFastestRangingInterval());
         assertEquals(Duration.ofMillis(5000), config.getSlowestRangingInterval());
+        assertEquals(Range.create(Duration.ofMillis(100), Duration.ofMillis(5000)),
+                config.getRangingIntervalRange());
         assertEquals(RANGING_MODE_AUTO, config.getRangingMode());
         assertEquals(SECURITY_LEVEL_BASIC, config.getSecurityLevel());
         assertThat(
@@ -1211,12 +1260,10 @@ public class RangingManagerTest {
         public void registerReceiveCallback(
                 @NonNull Executor executor, @NonNull ReceiveCallback callback
         ) {
-
         }
 
         @Override
         public void close() throws Exception {
-
         }
     }
 

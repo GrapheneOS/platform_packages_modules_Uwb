@@ -152,6 +152,11 @@ public class CsAdapter implements RangingAdapter {
             closeForReason(ERROR);
             return;
         }
+        if (mBluetoothAdapter.getState() == BluetoothAdapter.STATE_OFF) {
+            Log.e(TAG, "Failed to start ranging, Bluetooth is turned off!");
+            closeForReason(FAILED_TO_START);
+            return;
+        }
         if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {
             Log.v(TAG, "Attempted to start adapter when it was already started");
             closeForReason(FAILED_TO_START);

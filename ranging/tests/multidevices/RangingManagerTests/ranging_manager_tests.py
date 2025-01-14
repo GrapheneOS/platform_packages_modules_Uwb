@@ -679,6 +679,10 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
       self._ble_unbond()
 
+  @ApiTest(apis=[
+    'android.ranging.oob.TransportHandle#sendData',
+    'android.ranging.oob.TransportHandle#registerReceiveCallback',
+  ])
   def test_one_to_one_ranging_with_oob(self):
     asserts.skip_if(
         not self.responder.is_ranging_technology_supported(RangingTechnology.UWB),
