@@ -368,7 +368,7 @@ public class RangingManagerTest {
         rangingSession.start(preference);
         assertThat(callback.mOnOpenedCalled.await(4, TimeUnit.SECONDS)).isTrue();
 
-        rangingSession.stop();
+        rangingSession.close();
         assertThat(callback.mOnClosedCalled.await(2, TimeUnit.SECONDS)).isTrue();
 
         uiAutomation.dropShellPermissionIdentity();
