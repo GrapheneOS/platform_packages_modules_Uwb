@@ -418,6 +418,10 @@ public class UwbAdapter implements RangingAdapter {
     private void closeForReason(@Callback.ClosedReason int reason) {
         synchronized (mStateMachine) {
             mStateMachine.setState(State.STOPPED);
+            if (mCallbacks == null) {
+                Log.i(TAG, "Callback is empty.");
+                return;
+            }
             if (!mPeers.isEmpty()) {
                 mPeers.keySet().forEach(mCallbacks::onStopped);
             }

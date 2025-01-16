@@ -121,6 +121,12 @@ custom_bootclasspath_fragment {
         split_packages: [
             "android.uwb",
             "android.ranging",
+            "android.ranging.ble.cs",
+            "android.ranging.ble.rssi",
+            "android.ranging.oob",
+            "android.ranging.raw",
+            "android.ranging.uwb",
+            "android.ranging.wifi.rtt",
         ],
 
         // The following packages and all their subpackages currently only
