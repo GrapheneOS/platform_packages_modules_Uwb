@@ -151,7 +151,7 @@ pub(crate) struct GuardedUciManager<'a> {
     chip_id: String,
 }
 
-impl<'a> Deref for GuardedUciManager<'a> {
+impl Deref for GuardedUciManager<'_> {
     type Target = UciManagerSync<UciManagerImpl>;
     fn deref(&self) -> &Self::Target {
         // Unwrap GuardedUciManager will not panic since content is checked at creation.
@@ -189,7 +189,7 @@ impl<'a> GuardedDispatcher<'a> {
     }
 }
 
-impl<'a> Deref for GuardedDispatcher<'a> {
+impl Deref for GuardedDispatcher<'_> {
     type Target = Dispatcher;
     fn deref(&self) -> &Self::Target {
         // Unwrap GuardedDispatcher will not panic since content is checked at creation.

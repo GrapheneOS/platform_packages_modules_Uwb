@@ -39,6 +39,7 @@ pub(crate) fn set_once(jvm: JavaVM) -> Result<()> {
     Ok(())
 }
 /// Gets a `'static` reference to the unique JavaVM. Returns `None` if [`set_once`] was never called.
+#[allow(static_mut_refs)]
 pub(crate) fn get_static_ref() -> Option<&'static Arc<JavaVM>> {
     // Safety: follows [this pattern](https://doc.rust-lang.org/std/sync/struct.Once.html).
     // Modification to static mut is nested inside call_once.

@@ -32,8 +32,9 @@ from android.platform.test.annotations import ApiTest
 
 
 _TEST_CASES = [
-    "test_one_to_one_uwb_ranging",
-    "test_one_to_one_uwb_ranging_provisioned_sts",
+    "test_one_to_one_uwb_ranging_unicast_static_sts",
+    "test_one_to_one_uwb_ranging_multicast_provisioned_sts",
+    "test_one_to_one_uwb_ranging_unicast_provisioned_sts",
     "test_one_to_one_uwb_ranging_disable_range_data_ntf",
     "test_one_to_one_wifi_rtt_ranging",
     "test_one_to_one_wifi_periodic_rtt_ranging",
@@ -193,133 +194,93 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     'android.ranging.RangingSession.Callback#onStarted(android.ranging.RangingDevice, int)',
     'android.ranging.RangingSession.Callback#onStopped(android.ranging.RangingDevice, int)',
   ])
-  def test_one_to_one_uwb_ranging(self):
-    """Verifies uwb ranging with peer device, devices range for 10 seconds."""
-    SESSION_HANDLE = str(uuid4())
-    UWB_SESSION_ID = 5
-    TECHNOLOGIES = {RangingTechnology.UWB}
 
-    asserts.skip_if(
-        not self.responder.is_ranging_technology_supported(RangingTechnology.UWB),
-        f"UWB not supported by responder",
-    )
-    asserts.skip_if(
-        not self.initiator.is_ranging_technology_supported(RangingTechnology.UWB),
-        f"UWB not supported by initiator",
-    )
+  def _test_one_to_one_uwb_ranging(self, config_id: int):
+      """Verifies uwb ranging with peer device, devices range for 10 seconds."""
+      SESSION_HANDLE = str(uuid4())
+      UWB_SESSION_ID = 5
+      TECHNOLOGIES = {RangingTechnology.UWB}
 
-    initiator_preference = RangingPreference(
-        device_role=DeviceRole.INITIATOR,
-        ranging_params=RawInitiatorRangingParams(
-            peer_params=[
-                DeviceParams(
-                    peer_id=self.responder.id,
-                    uwb_params=uwb.UwbRangingParams(
-                        session_id=UWB_SESSION_ID,
-                        config_id=uwb.ConfigId.UNICAST_DS_TWR,
-                        device_address=self.initiator.uwb_address,
-                        peer_address=self.responder.uwb_address,
-                    ),
-                )
-            ],
-        ),
-    )
+      asserts.skip_if(
+          not self.responder.is_ranging_technology_supported(RangingTechnology.UWB),
+          f"UWB not supported by responder",
+      )
+      asserts.skip_if(
+          not self.initiator.is_ranging_technology_supported(RangingTechnology.UWB),
+          f"UWB not supported by initiator",
+      )
 
-    responder_preference = RangingPreference(
-        device_role=DeviceRole.RESPONDER,
-        ranging_params=RawResponderRangingParams(
-            peer_params=DeviceParams(
-                peer_id=self.initiator.id,
-                uwb_params=uwb.UwbRangingParams(
-                    session_id=UWB_SESSION_ID,
-                    config_id=uwb.ConfigId.UNICAST_DS_TWR,
-                    device_address=self.responder.uwb_address,
-                    peer_address=self.initiator.uwb_address,
-                ),
-            ),
-        ),
-    )
+      initiator_preference = RangingPreference(
+          device_role=DeviceRole.INITIATOR,
+          ranging_params=RawInitiatorRangingParams(
+              peer_params=[
+                  DeviceParams(
+                      peer_id=self.responder.id,
+                      uwb_params=uwb.UwbRangingParams(
+                          session_id=UWB_SESSION_ID,
+                          config_id=uwb.ConfigId.UNICAST_DS_TWR,
+                          device_address=self.initiator.uwb_address,
+                          peer_address=self.responder.uwb_address,
+                      ),
+                  )
+              ],
+          ),
+      )
 
-    self._start_mutual_ranging_and_assert_started(
-        SESSION_HANDLE,
-        initiator_preference,
-        responder_preference,
-        TECHNOLOGIES,
-    )
+      responder_preference = RangingPreference(
+          device_role=DeviceRole.RESPONDER,
+          ranging_params=RawResponderRangingParams(
+              peer_params=DeviceParams(
+                  peer_id=self.initiator.id,
+                  uwb_params=uwb.UwbRangingParams(
+                      session_id=UWB_SESSION_ID,
+                      config_id=uwb.ConfigId.UNICAST_DS_TWR,
+                      device_address=self.responder.uwb_address,
+                      peer_address=self.initiator.uwb_address,
+                      ranging_update_rate=uwb.RangingUpdateRate.FREQUENT
+                  ),
+              ),
+          ),
+      )
 
-    time.sleep(10)
+      self._start_mutual_ranging_and_assert_started(
+          SESSION_HANDLE,
+          initiator_preference,
+          responder_preference,
+          TECHNOLOGIES,
+      )
 
-    asserts.assert_true(
-        self.initiator.verify_received_data_from_peer_using_technologies(
-            SESSION_HANDLE, self.responder.id, TECHNOLOGIES
-        ),
-        "Initiator did not find responder",
-    )
-    asserts.assert_true(
-        self.responder.verify_received_data_from_peer_using_technologies(
-            SESSION_HANDLE,
-            self.initiator.id,
-            TECHNOLOGIES,
-        ),
-        "Responder did not find initiator",
-    )
+      time.sleep(10)
 
-    self.initiator.stop_ranging_and_assert_closed(SESSION_HANDLE)
-    self.responder.stop_ranging_and_assert_closed(SESSION_HANDLE)
+      asserts.assert_true(
+          self.initiator.verify_received_data_from_peer_using_technologies(
+              SESSION_HANDLE, self.responder.id, TECHNOLOGIES
+          ),
+          "Initiator did not find responder",
+      )
+      asserts.assert_true(
+          self.responder.verify_received_data_from_peer_using_technologies(
+              SESSION_HANDLE,
+              self.initiator.id,
+              TECHNOLOGIES,
+          ),
+          "Responder did not find initiator",
+      )
 
-  def test_one_to_one_uwb_ranging_provisioned_sts(self):
-    """Verifies uwb ranging with peer device using provisioned sts"""
-    SESSION_HANDLE = str(uuid4())
-    UWB_SESSION_ID = 5
-    TECHNOLOGIES = {RangingTechnology.UWB}
+      self.initiator.stop_ranging_and_assert_closed(SESSION_HANDLE)
+      self.responder.stop_ranging_and_assert_closed(SESSION_HANDLE)
 
-    asserts.skip_if(
-        not self.responder.is_ranging_technology_supported(RangingTechnology.UWB),
-        f"UWB not supported by responder",
-    )
-    asserts.skip_if(
-      not self.initiator.is_ranging_technology_supported(RangingTechnology.UWB),
-      f"UWB not supported by initiator",
-  )
+  def test_one_to_one_uwb_ranging_unicast_static_sts(self):
+    """Verifies uwb ranging with peer device using unicast static sts"""
+    self._test_one_to_one_uwb_ranging(uwb.ConfigId.UNICAST_DS_TWR)
 
-    initiator_preference = RangingPreference(
-        device_role=DeviceRole.INITIATOR,
-        ranging_params=RawInitiatorRangingParams(
-            peer_params=[
-                DeviceParams(
-                    peer_id=self.responder.id,
-                    uwb_params=uwb.UwbRangingParams(
-                        session_id=UWB_SESSION_ID,
-                        config_id=uwb.ConfigId.PROVISIONED_UNICAST_DS_TWR,
-                        device_address=self.initiator.uwb_address,
-                        peer_address=self.responder.uwb_address,
-                    ),
-                )
-            ],
-        ),
-    )
+  def test_one_to_one_uwb_ranging_multicast_provisioned_sts(self):
+    """Verifies uwb ranging with peer device using multicast provisioned sts"""
+    self._test_one_to_one_uwb_ranging(uwb.ConfigId.PROVISIONED_MULTICAST_DS_TWR)
 
-    responder_preference = RangingPreference(
-        device_role=DeviceRole.RESPONDER,
-        ranging_params=RawResponderRangingParams(
-            peer_params=DeviceParams(
-                peer_id=self.initiator.id,
-                uwb_params=uwb.UwbRangingParams(
-                    session_id=UWB_SESSION_ID,
-                    config_id=uwb.ConfigId.PROVISIONED_UNICAST_DS_TWR,
-                    device_address=self.responder.uwb_address,
-                    peer_address=self.initiator.uwb_address,
-                ),
-            ),
-        ),
-    )
-
-    self._start_mutual_ranging_and_assert_started(
-        SESSION_HANDLE, initiator_preference, responder_preference, TECHNOLOGIES
-    )
-
-    self.initiator.stop_ranging_and_assert_closed(SESSION_HANDLE)
-    self.responder.stop_ranging_and_assert_closed(SESSION_HANDLE)
+  def test_one_to_one_uwb_ranging_unicast_provisioned_sts(self):
+      """Verifies uwb ranging with peer device using unicast provisioned sts"""
+      self._test_one_to_one_uwb_ranging(uwb.ConfigId.PROVISIONED_UNICAST_DS_TWR)
 
   def test_one_to_one_uwb_ranging_disable_range_data_ntf(self):
     """Verifies device does not receive range data after disabling range data notifications"""
@@ -341,7 +302,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
                     peer_id=self.responder.id,
                     uwb_params=uwb.UwbRangingParams(
                         session_id=UWB_SESSION_ID,
-                        config_id=uwb.ConfigId.UNICAST_DS_TWR,
+                        config_id=uwb.ConfigId.MULTICAST_DS_TWR,
                         device_address=self.initiator.uwb_address,
                         peer_address=self.responder.uwb_address,
                     ),
@@ -358,7 +319,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
                 peer_id=self.initiator.id,
                 uwb_params=uwb.UwbRangingParams(
                     session_id=UWB_SESSION_ID,
-                    config_id=uwb.ConfigId.UNICAST_DS_TWR,
+                    config_id=uwb.ConfigId.MULTICAST_DS_TWR,
                     device_address=self.responder.uwb_address,
                     peer_address=self.initiator.uwb_address,
                 ),
