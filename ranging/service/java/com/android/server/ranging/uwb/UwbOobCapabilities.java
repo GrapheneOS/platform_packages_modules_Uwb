@@ -188,7 +188,7 @@ public abstract class UwbOobCapabilities implements RangingCapabilities.Technolo
         return byteBuffer.array();
     }
 
-    public static UwbOobCapabilities fromUwbCapabilities(
+    public static UwbOobCapabilities fromRangingCapabilities(
             UwbRangingCapabilities capabilities, UwbAddress address
     ) {
         return UwbOobCapabilities.builder()

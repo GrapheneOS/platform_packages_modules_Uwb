@@ -26,8 +26,10 @@ import android.ranging.RangingManager;
 
 import com.android.ranging.flags.Flags;
 
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -42,6 +44,7 @@ public final class BleCsRangingCapabilities implements Parcelable, TechnologyCap
      * @hide
      */
     @Retention(RetentionPolicy.SOURCE)
+    @Target({ElementType.TYPE_USE})
     @IntDef({
             CS_SECURITY_LEVEL_ONE,
             CS_SECURITY_LEVEL_FOUR,

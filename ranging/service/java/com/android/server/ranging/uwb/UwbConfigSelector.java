@@ -173,6 +173,10 @@ public class UwbConfigSelector {
         }
     }
 
+    public boolean hasPeersToConfigure() {
+        return !mPeerAddresses.isEmpty();
+    }
+
     public @NonNull SelectedUwbConfig selectConfig() throws ConfigSelectionException {
         return new SelectedUwbConfig();
     }

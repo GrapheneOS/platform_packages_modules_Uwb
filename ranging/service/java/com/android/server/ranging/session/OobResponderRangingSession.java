@@ -128,7 +128,7 @@ public class OobResponderRangingSession
             if (uwbCapabilities != null) {
                 supportedTechnologies.add(RangingTechnology.UWB);
                 response.setUwbCapabilities(
-                        UwbOobCapabilities.fromUwbCapabilities(uwbCapabilities, mMyUwbAddress));
+                        UwbOobCapabilities.fromRangingCapabilities(uwbCapabilities, mMyUwbAddress));
             }
         }
         // TODO: Other technologies

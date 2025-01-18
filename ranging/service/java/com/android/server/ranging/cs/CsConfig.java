@@ -16,17 +16,34 @@
 
 package com.android.server.ranging.cs;
 
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
+
 import android.annotation.NonNull;
 import android.ranging.RangingDevice;
 import android.ranging.RangingPreference;
 import android.ranging.SessionConfig;
 import android.ranging.ble.cs.BleCsRangingParams;
+import android.ranging.raw.RawRangingDevice;
 
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.session.RangingSessionConfig.UnicastTechnologyConfig;
 
+import com.google.common.collect.ImmutableMap;
+
+import java.time.Duration;
+
 public class CsConfig implements UnicastTechnologyConfig {
     private static final String TAG = CsConfig.class.getSimpleName();
+
+    // TODO(390665219): Update this once we decide on a set of measurement intervals for channel
+    //  sounding.
+    public static final ImmutableMap<@RawRangingDevice.RangingUpdateRate Integer, Duration>
+            CS_UPDATE_RATE_DURATIONS = ImmutableMap.of(
+                    UPDATE_RATE_NORMAL, Duration.ofSeconds(3),
+                    UPDATE_RATE_INFREQUENT, Duration.ofSeconds(5),
+                    UPDATE_RATE_FREQUENT, Duration.ofMillis(200));
 
     private final SessionConfig mSessionConfig;
     private final BleCsRangingParams mRangingParams;

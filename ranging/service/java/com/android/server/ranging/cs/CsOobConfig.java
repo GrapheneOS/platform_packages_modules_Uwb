@@ -20,6 +20,7 @@ import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.oob.TechnologyHeader;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
 
 import java.nio.ByteBuffer;
 
@@ -41,6 +42,9 @@ public abstract class CsOobConfig {
         LEVEL_TWO(2),
         LEVEL_THREE(3),
         LEVEL_FOUR(4);
+
+        public static final ImmutableList<CsSecurityType> SECURITY_TYPES =
+                ImmutableList.copyOf(CsSecurityType.values());
 
         private final int mValue;
 

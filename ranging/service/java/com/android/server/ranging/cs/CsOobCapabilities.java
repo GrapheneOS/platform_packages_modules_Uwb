@@ -16,6 +16,8 @@
 
 package com.android.server.ranging.cs;
 
+import android.ranging.ble.cs.BleCsRangingCapabilities;
+
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.Conversions;
 import com.android.server.ranging.cs.CsOobConfig.CsSecurityType;
@@ -119,6 +121,17 @@ public abstract class CsOobCapabilities {
                 .put(Conversions.macAddressToBytes(getBluetoothAddress()));
 
         return byteBuffer.array();
+    }
+
+    public static CsOobCapabilities fromRangingCapabilities(
+            BleCsRangingCapabilities capabilities, String address
+    ) {
+        return CsOobCapabilities.builder()
+                .setBluetoothAddress(address)
+                .setSupportedSecurityTypes(capabilities.getSupportedSecurityLevels().stream()
+                        .map(CsSecurityType.SECURITY_TYPES::get)
+                        .collect(ImmutableList.toImmutableList()))
+                .build();
     }
 
     /** Returns the security type for CS. */

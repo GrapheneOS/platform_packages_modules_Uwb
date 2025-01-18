@@ -17,6 +17,7 @@
 package com.android.server.ranging.oob;
 
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.cs.CsOobConfig;
 import com.android.server.ranging.uwb.UwbOobConfig;
 
 import com.google.auto.value.AutoValue;
@@ -73,6 +74,7 @@ public abstract class SetConfigurationMessage {
 
         // Parse Configs for ranging technologies that are set
         UwbOobConfig uwbConfig = null;
+        CsOobConfig csConfig = null;
         int countTechsParsed = 0;
         while (parseCursor < payload.length && countTechsParsed++ < rangingTechnologiesSet.size()) {
             byte[] remainingBytes = Arrays.copyOfRange(payload, parseCursor, payload.length);
@@ -86,6 +88,15 @@ public abstract class SetConfigurationMessage {
                     }
                     uwbConfig = UwbOobConfig.parseBytes(remainingBytes);
                     parseCursor += uwbConfig.getSize();
+                    break;
+                case CS:
+                    if (csConfig != null) {
+                        throw new IllegalArgumentException(
+                                "Failed to parse SetConfigurationMessage, CsConfig already set. "
+                                        + "Bytes: " + Arrays.toString(payload));
+                    }
+                    csConfig = CsOobConfig.parseBytes(remainingBytes);
+                    parseCursor += csConfig.getSize();
                     break;
                 default:
                     parseCursor += techHeader.getSize();
@@ -134,6 +145,10 @@ public abstract class SetConfigurationMessage {
     @Nullable
     public abstract UwbOobConfig getUwbConfig();
 
+    /** Returns @Nullable CsConfig data that should be used to configure CS ranging session. */
+    @Nullable
+    public abstract CsOobConfig getCsConfig();
+
     /** Returns a builder for {@link SetConfigurationMessage}. */
     public static Builder builder() {
         return new AutoValue_SetConfigurationMessage.Builder()
@@ -156,6 +171,8 @@ public abstract class SetConfigurationMessage {
 
         public abstract Builder setUwbConfig(@Nullable UwbOobConfig uwbConfig);
 
+        public abstract Builder setCsConfig(@Nullable CsOobConfig csConfig);
+
         abstract SetConfigurationMessage autoBuild();
 
         public SetConfigurationMessage build() {
@@ -171,6 +188,12 @@ public abstract class SetConfigurationMessage {
                             .contains(RangingTechnology.UWB)
                             == (setConfigurationMessage.getUwbConfig() != null),
                     "UwbConfig or rangingTechnologiesSet for UWB not set properly.");
+            Preconditions.checkArgument(
+                    setConfigurationMessage
+                            .getRangingTechnologiesSet()
+                            .contains(RangingTechnology.CS)
+                            == (setConfigurationMessage.getCsConfig() != null),
+                    "csConfig or rangingTechnologiesSet for CS not set properly.");
             return setConfigurationMessage;
         }
     }

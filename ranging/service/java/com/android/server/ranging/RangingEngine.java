@@ -25,12 +25,17 @@ import android.ranging.RangingCapabilities;
 import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
 import android.ranging.SessionHandle;
+import android.ranging.ble.cs.BleCsRangingCapabilities;
 import android.ranging.oob.OobInitiatorRangingConfig;
 import android.ranging.uwb.UwbRangingCapabilities;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.android.server.ranging.cs.CsConfigSelector;
+import com.android.server.ranging.cs.CsConfigSelector.SelectedCsConfig;
+import com.android.server.ranging.cs.CsOobCapabilities;
+import com.android.server.ranging.cs.CsOobConfig;
 import com.android.server.ranging.oob.CapabilityResponseMessage;
 import com.android.server.ranging.oob.MessageType;
 import com.android.server.ranging.oob.OobHeader;
@@ -57,7 +62,8 @@ public class RangingEngine {
     private final EnumSet<RangingTechnology> mRequestedTechnologies;
     private final Map<RangingDevice, EnumSet<RangingTechnology>> mPeerTechnologies;
 
-    private final @Nullable UwbConfigSelector mUwbConfigSelector;
+    private @Nullable UwbConfigSelector mUwbConfigSelector = null;
+    private @Nullable CsConfigSelector mCsConfigSelector = null;
 
     public static class ConfigSelectionException extends Exception {
         public ConfigSelectionException(String message) {
@@ -102,12 +108,14 @@ public class RangingEngine {
             mRequestedTechnologies.add(RangingTechnology.UWB);
             mUwbConfigSelector = new UwbConfigSelector(
                     sessionConfig, oobConfig, uwbCapabilities, sessionHandle);
-        } else {
-            mUwbConfigSelector = null;
         }
 
         if (oobConfig.getRangingMode() != RANGING_MODE_HIGH_ACCURACY) {
-            // TODO: Other technologies
+            BleCsRangingCapabilities csCapabilities = localCapabilities.getCsCapabilities();
+            if (CsConfigSelector.isCapableOfConfig(oobConfig, csCapabilities)) {
+                mRequestedTechnologies.add(RangingTechnology.CS);
+                mCsConfigSelector = new CsConfigSelector(sessionConfig, oobConfig);
+            }
         }
 
         if (mRequestedTechnologies.isEmpty()) {
@@ -126,14 +134,21 @@ public class RangingEngine {
 
         EnumSet<RangingTechnology> selectedTechnologies =
                 selectTechnologiesToUseWithPeer(capabilities);
+
         UwbOobCapabilities uwbCapabilities = capabilities.getUwbCapabilities();
+        CsOobCapabilities csCapabilities = capabilities.getCsCapabilities();
+
         for (RangingTechnology technology : selectedTechnologies) {
-            // TODO: Other technologies
             if (technology == RangingTechnology.UWB
                     && uwbCapabilities != null
                     && mUwbConfigSelector != null
             ) {
                 mUwbConfigSelector.restrictConfigToCapabilities(device, uwbCapabilities);
+            } else if (technology == RangingTechnology.CS
+                    && csCapabilities != null
+                    && mCsConfigSelector != null
+            ) {
+                mCsConfigSelector.restrictConfigToCapabilities(device, csCapabilities);
             } else {
                 Log.e(TAG, "Technology " + technology + " was selected by us and peer " + device
                         + ", but one of us does not actually support it");
@@ -146,33 +161,42 @@ public class RangingEngine {
 
     public SelectedConfig selectConfigs() throws ConfigSelectionException {
         ImmutableSet.Builder<TechnologyConfig> localConfigs = ImmutableSet.builder();
-        ImmutableMap.Builder<RangingDevice, SetConfigurationMessage> peerConfigs =
+        ImmutableMap.Builder<RangingDevice, SetConfigurationMessage> configMessages =
                 ImmutableMap.builder();
 
         Map<RangingDevice, UwbOobConfig> uwbConfigsByPeer = new HashMap<>();
-        if (mUwbConfigSelector != null) {
+        if (mUwbConfigSelector != null && mUwbConfigSelector.hasPeersToConfigure()) {
             SelectedUwbConfig uwbConfig = mUwbConfigSelector.selectConfig();
             localConfigs.add(uwbConfig.getLocalConfig());
             uwbConfigsByPeer.putAll(uwbConfig.getPeerConfigs());
         }
 
+        Map<RangingDevice, CsOobConfig> csConfigsByPeer = new HashMap<>();
+        if (mCsConfigSelector != null && mCsConfigSelector.hasPeersToConfigure()) {
+            SelectedCsConfig csConfig = mCsConfigSelector.selectConfig();
+            localConfigs.addAll(csConfig.getLocalConfigs());
+            csConfigsByPeer.putAll(csConfig.getPeerConfigs());
+        }
+
         for (RangingDevice peer : mPeerTechnologies.keySet()) {
+            ImmutableList<RangingTechnology> peerTechnologies =
+                    ImmutableList.copyOf(mPeerTechnologies.get(peer));
+
             SetConfigurationMessage.Builder configMessage = SetConfigurationMessage.builder()
                     .setHeader(OobHeader.builder()
                             .setMessageType(MessageType.SET_CONFIGURATION)
                             .setVersion(OobHeader.OobVersion.CURRENT)
                             .build())
-                    .setRangingTechnologiesSet(ImmutableList.copyOf(mRequestedTechnologies))
-                    .setStartRangingList(ImmutableList.copyOf(mRequestedTechnologies));
+                    .setRangingTechnologiesSet(peerTechnologies)
+                    .setStartRangingList(peerTechnologies);
 
-            if (uwbConfigsByPeer.containsKey(peer)) {
-                configMessage.setUwbConfig(uwbConfigsByPeer.get(peer));
-            }
+            configMessage.setUwbConfig(uwbConfigsByPeer.get(peer));
+            configMessage.setCsConfig(csConfigsByPeer.get(peer));
 
-            peerConfigs.put(peer, configMessage.build());
+            configMessages.put(peer, configMessage.build());
         }
 
-        return new SelectedConfig(localConfigs.build(), peerConfigs.build());
+        return new SelectedConfig(localConfigs.build(), configMessages.build());
     }
 
     private EnumSet<RangingTechnology> selectTechnologiesToUseWithPeer(

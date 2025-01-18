@@ -56,7 +56,7 @@ public class RttRangingPositionTest {
 
         mRttRangingPosition = new RttRangingPosition(mMockRangingResult);
 
-        assertEquals(mRttRangingPosition.getDistance(), 10, 0);
+        assertEquals(mRttRangingPosition.getDistanceMeters(), 10, 0);
         assertEquals(mRttRangingPosition.getRssiDbm(), 50);
         assertEquals(mRttRangingPosition.getRangingTimestampMillis(), 50_000L);
         assertThat(mRttRangingPosition.getAzimuth()).isNull();

@@ -231,13 +231,13 @@ public class RttAdapter implements RangingAdapter {
 
         @Override
         public void onRangingResult(RttDevice peer, RttRangingPosition position) {
-            if (!mDataNotificationManager.shouldSendResult(position.getDistance())) {
+            if (!mDataNotificationManager.shouldSendResult(position.getDistanceMeters())) {
                 return;
             }
             RangingData.Builder dataBuilder = new RangingData.Builder()
                     .setRangingTechnology(RangingManager.WIFI_NAN_RTT)
                     .setDistance(new RangingMeasurement.Builder()
-                            .setMeasurement(position.getDistance())
+                            .setMeasurement(position.getDistanceMeters())
                             .build())
                     .setRssi(position.getRssiDbm())
                     .setTimestampMillis(position.getRangingTimestampMillis());

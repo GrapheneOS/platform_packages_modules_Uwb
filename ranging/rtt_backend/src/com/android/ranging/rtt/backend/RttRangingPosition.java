@@ -27,7 +27,7 @@ import androidx.annotation.NonNull;
 public class RttRangingPosition {
     private static final String TAG = RttRangingPosition.class.getName();
 
-    private int mDistanceMeters;
+    private double mDistanceMeters;
     private long mRangingTimestampMillis;
     private int mRssi;
     Azimuth mAzimuth;
@@ -37,7 +37,7 @@ public class RttRangingPosition {
      * Create Ranging Position for RTT from RangingResult
      */
     public RttRangingPosition(@NonNull RangingResult rangingResult) {
-        mDistanceMeters = rangingResult.getDistanceMm() / 1000;
+        mDistanceMeters = rangingResult.getDistanceMm() / 1000.0;
         mRssi = rangingResult.getRssi();
         mAzimuth = null;
         mElevation = null;
@@ -45,9 +45,9 @@ public class RttRangingPosition {
     }
 
     /**
-     * get Distamce(Unit : meter)
+     * Gets distance in meter.
      */
-    public double getDistance() {
+    public double getDistanceMeters() {
         return mDistanceMeters;
     }
 
