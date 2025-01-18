@@ -30,6 +30,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.ranging.RangingCapabilities.RangingTechnologyAvailability;
 import android.ranging.ble.cs.BleCsRangingCapabilities;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 
@@ -41,6 +42,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CsCapabilitiesAdapter extends CapabilitiesAdapter {
+
+    private static final String TAG = CsCapabilitiesAdapter.class.getSimpleName();
 
     private final Context mContext;
 
@@ -66,14 +69,19 @@ public class CsCapabilitiesAdapter extends CapabilitiesAdapter {
     @Override
     public @Nullable BleCsRangingCapabilities getCapabilities() {
         if (getAvailability() == ENABLED) {
-            List<Integer> securityLevels = new ArrayList<>(
-                mContext.getSystemService(BluetoothManager.class)
-                    .getAdapter()
-                    .getDistanceMeasurementManager()
-                    .getChannelSoundingSupportedSecurityLevels());
-            return new BleCsRangingCapabilities.Builder()
-                    .setSupportedSecurityLevels(securityLevels)
-                    .build();
+            try {
+                List<Integer> securityLevels = new ArrayList<>(
+                        mContext.getSystemService(BluetoothManager.class)
+                                .getAdapter()
+                                .getDistanceMeasurementManager()
+                                .getChannelSoundingSupportedSecurityLevels());
+                return new BleCsRangingCapabilities.Builder()
+                        .setSupportedSecurityLevels(securityLevels)
+                        .build();
+            } catch (UnsupportedOperationException e) {
+                Log.e(TAG, "Failed to get channel sounding security levels, " + e);
+                return null;
+            }
         } else {
             return null;
         }

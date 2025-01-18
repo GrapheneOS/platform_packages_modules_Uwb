@@ -16,12 +16,19 @@
 
 package com.android.server.ranging.session;
 
+import static android.ranging.RangingSession.Callback.REASON_LOCAL_REQUEST;
+import static android.ranging.RangingSession.Callback.REASON_NO_PEERS_FOUND;
+import static android.ranging.RangingSession.Callback.REASON_SYSTEM_POLICY;
+import static android.ranging.RangingSession.Callback.REASON_UNKNOWN;
+import static android.ranging.RangingSession.Callback.REASON_UNSUPPORTED;
+
 import android.app.AlarmManager;
 import android.content.AttributionSource;
 import android.os.Binder;
 import android.os.SystemClock;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
+import android.ranging.RangingSession;
 import android.ranging.SessionHandle;
 import android.ranging.raw.RawResponderRangingConfig;
 import android.util.Log;
@@ -61,12 +68,12 @@ public class BaseRangingSession {
     public static final String NON_PRIVILEGED_RANGING_BG_APP_TIMER_TAG =
             "RangingSessionNonPrivilegedBgAppTimeout";
     private final AttributionSource mAttributionSource;
-    private final RangingServiceManager.SessionListener mSessionListener;
     private final ListeningExecutorService mAdapterExecutor;
 
     protected final RangingInjector mInjector;
     protected final SessionHandle mSessionHandle;
     protected final RangingSessionConfig mConfig;
+    protected final RangingServiceManager.SessionListener mSessionListener;
 
     private final AlarmManager mAlarmManager;
     private AlarmManager.OnAlarmListener mNonPrivilegedBgAppTimerListener;
@@ -167,8 +174,7 @@ public class BaseRangingSession {
                 } else {
                     Log.e(TAG,
                             "Received unsupported config for technology " + config.getTechnology());
-                    mSessionListener.onSessionStopped(
-                            RangingAdapter.Callback.ClosedReason.FAILED_TO_START);
+                    mSessionListener.onSessionStopped(REASON_UNSUPPORTED);
                     return;
                 }
 
@@ -345,10 +351,28 @@ public class BaseRangingSession {
                 mAdapters.remove(mConfig);
                 if (mAdapters.isEmpty()) {
                     mStateMachine.setState(State.STOPPED);
-                    mSessionListener.onSessionStopped(reason);
+                    mSessionListener.onSessionStopped(convertReason(reason));
                 }
             }
         }
+
+        private @RangingSession.Callback.Reason int convertReason(
+                @RangingAdapter.Callback.ClosedReason int reason
+        ) {
+            switch (reason) {
+                case RangingAdapter.Callback.ClosedReason.REQUESTED:
+                    return REASON_LOCAL_REQUEST;
+                case RangingAdapter.Callback.ClosedReason.FAILED_TO_START:
+                    return REASON_UNSUPPORTED;
+                case RangingAdapter.Callback.ClosedReason.LOST_CONNECTION:
+                    return REASON_NO_PEERS_FOUND;
+                case RangingAdapter.Callback.ClosedReason.SYSTEM_POLICY:
+                    return REASON_SYSTEM_POLICY;
+                default:
+                    return REASON_UNKNOWN;
+            }
+        }
+
     }
 
     /** Listens for fusion engine events. */

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import dataclasses
 from enum import IntEnum
-from typing import List, Optional
+from typing import Tuple, List, Optional
 from lib.cs import CsRangingParams
 from lib.rtt import RttRangingParams
 from lib.uwb import UwbRangingParams
@@ -17,6 +17,15 @@ class RangingSessionType(IntEnum):
   RAW = 0
   OOB = 1
 
+class SecurityLevel(IntEnum):
+  BASIC = 0
+  SECURE = 1
+
+class RangingMode(IntEnum):
+  AUTO = 0
+  HIGH_ACCURACY = 1
+  HIGH_ACCURACY_PREFERRED = 2
+  FUSED = 3
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class DeviceParams:
@@ -34,6 +43,9 @@ class RangingParams(ABC):
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class OobInitiatorRangingParams(RangingParams):
   session_type: RangingSessionType = RangingSessionType.OOB
+  ranging_interval_ms: Tuple[int, int] = (100, 5000)
+  security_level: SecurityLevel = SecurityLevel.BASIC
+  ranging_mode: RangingMode = RangingMode.AUTO
   peer_ids: List[str]
 
 @dataclasses.dataclass(kw_only=True, frozen=True)

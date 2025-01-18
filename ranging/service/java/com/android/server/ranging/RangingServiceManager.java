@@ -17,11 +17,6 @@
 package com.android.server.ranging;
 
 import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE;
-import static android.ranging.RangingSession.Callback.REASON_LOCAL_REQUEST;
-import static android.ranging.RangingSession.Callback.REASON_NO_PEERS_FOUND;
-import static android.ranging.RangingSession.Callback.REASON_SYSTEM_POLICY;
-import static android.ranging.RangingSession.Callback.REASON_UNKNOWN;
-import static android.ranging.RangingSession.Callback.REASON_UNSUPPORTED;
 
 import android.app.ActivityManager;
 import android.content.AttributionSource;
@@ -229,7 +224,7 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
     }
 
     /**
-     * Device reconnected to the OOB channel
+     * Device reconnected to the OOB channe:l
      *
      * @param oobHandle unique session/device pair identifier.
      */
@@ -323,39 +318,23 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
          * Signals that ranging in the session has stopped. Called by a {@link RangingSession} once
          * all of its constituent technology-specific sessions have stopped.
          */
-        public void onSessionStopped(@RangingAdapter.Callback.ClosedReason int reason) {
+        public void onSessionStopped(@Callback.Reason int reason) {
             mSessions.remove(mSessionHandle);
             if (mIsSessionStarted.get()) {
                 try {
-                    mRangingCallbacks.onClosed(mSessionHandle, convertReason(reason));
+                    mRangingCallbacks.onClosed(mSessionHandle, reason);
                 } catch (RemoteException e) {
                     Log.e(TAG, "onClosed callback failed: " + e);
                 }
             } else {
                 try {
-                    mRangingCallbacks.onOpenFailed(mSessionHandle, convertReason(reason));
+                    mRangingCallbacks.onOpenFailed(mSessionHandle, reason);
                 } catch (RemoteException e) {
                     Log.e(TAG, "onOpenFailed callback failed: " + e);
                 }
             }
         }
 
-        private @Callback.Reason int convertReason(
-                @RangingAdapter.Callback.ClosedReason int reason
-        ) {
-            switch (reason) {
-                case RangingAdapter.Callback.ClosedReason.REQUESTED:
-                    return REASON_LOCAL_REQUEST;
-                case RangingAdapter.Callback.ClosedReason.FAILED_TO_START:
-                    return REASON_UNSUPPORTED;
-                case RangingAdapter.Callback.ClosedReason.LOST_CONNECTION:
-                    return REASON_NO_PEERS_FOUND;
-                case RangingAdapter.Callback.ClosedReason.SYSTEM_POLICY:
-                    return REASON_SYSTEM_POLICY;
-                default:
-                    return REASON_UNKNOWN;
-            }
-        }
     }
 
     private class RangingTaskManager extends Handler {

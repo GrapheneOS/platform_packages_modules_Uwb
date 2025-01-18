@@ -18,7 +18,10 @@ package com.android.server.ranging.uwb;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
+import android.ranging.RangingCapabilities;
+import android.ranging.RangingManager;
 import android.ranging.uwb.UwbAddress;
+import android.ranging.uwb.UwbRangingCapabilities;
 
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.Conversions;
@@ -32,7 +35,7 @@ import java.util.Arrays;
 
 /** Capability data for UWB sent as part of CapabilityResponseMessage. */
 @AutoValue
-public abstract class UwbOobCapabilities {
+public abstract class UwbOobCapabilities implements RangingCapabilities.TechnologyCapabilities {
 
     /** Size in bytes of all properties when serialized. */
     private static final int EXPECTED_SIZE_BYTES = 20;
@@ -54,6 +57,11 @@ public abstract class UwbOobCapabilities {
     /** Returns the size of the object in bytes when serialized. */
     public static int getSize() {
         return EXPECTED_SIZE_BYTES;
+    }
+
+    @Override
+    public @RangingManager.RangingTechnology int getTechnology() {
+        return RangingTechnology.UWB.getValue();
     }
 
     /**
@@ -178,6 +186,27 @@ public abstract class UwbOobCapabilities {
                                 DEVICE_ROLE_SHIFT));
 
         return byteBuffer.array();
+    }
+
+    public static UwbOobCapabilities fromUwbCapabilities(
+            UwbRangingCapabilities capabilities, UwbAddress address
+    ) {
+        return UwbOobCapabilities.builder()
+                .setUwbAddress(address)
+                .setSupportedChannels(
+                        ImmutableList.copyOf(capabilities.getSupportedChannels()))
+                .setSupportedPreambleIndexes(
+                        ImmutableList.copyOf(capabilities.getSupportedPreambleIndexes()))
+                .setSupportedConfigIds(
+                        ImmutableList.copyOf(capabilities.getSupportedConfigIds()))
+                .setMinimumRangingIntervalMs(
+                        (int) capabilities.getMinimumRangingInterval().toMillis())
+                .setMinimumSlotDurationMs(capabilities.getSupportedSlotDurations()
+                        .stream().min(Integer::compare).get())
+                .setSupportedDeviceRole(ImmutableList.of(
+                        UwbOobConfig.OobDeviceRole.INITIATOR,
+                        UwbOobConfig.OobDeviceRole.RESPONDER))
+                .build();
     }
 
     /** Returns the {@link UwbAddress} of the device. */

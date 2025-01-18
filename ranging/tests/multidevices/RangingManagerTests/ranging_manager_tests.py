@@ -178,23 +178,6 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
   ### Test Cases ###
 
-  @ApiTest(apis=[
-    'android.ranging.RangingData#getDistance',
-    'android.ranging.RangingData#getAzimuth',
-    'android.ranging.RangingData#getElevation',
-    'android.ranging.RangingData#getRangingTechnology',
-    'android.ranging.RangingData#getRssi',
-    'android.ranging.RangingData#hasRssi',
-    'android.ranging.RangingData#getTimestampMillis',
-    'android.ranging.RangingMeasurement#getMeasurement',
-    'android.ranging.RangingMeasurement#getConfidence',
-    'android.ranging.RangingSession.Callback#onOpened()',
-    'android.ranging.RangingSession.Callback#onClosed(int)',
-    'android.ranging.RangingSession.Callback#onResults(android.ranging.RangingDevice, android.ranging.RangingData)',
-    'android.ranging.RangingSession.Callback#onStarted(android.ranging.RangingDevice, int)',
-    'android.ranging.RangingSession.Callback#onStopped(android.ranging.RangingDevice, int)',
-  ])
-
   def _test_one_to_one_uwb_ranging(self, config_id: int):
       """Verifies uwb ranging with peer device, devices range for 10 seconds."""
       SESSION_HANDLE = str(uuid4())
@@ -270,6 +253,24 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       self.initiator.stop_ranging_and_assert_closed(SESSION_HANDLE)
       self.responder.stop_ranging_and_assert_closed(SESSION_HANDLE)
 
+
+  @ApiTest(apis=[
+    'android.ranging.RangingData#getDistance',
+    'android.ranging.RangingData#getAzimuth',
+    'android.ranging.RangingData#getElevation',
+    'android.ranging.RangingData#getRangingTechnology',
+    'android.ranging.RangingData#getRssi',
+    'android.ranging.RangingData#hasRssi',
+    'android.ranging.RangingData#getTimestampMillis',
+    'android.ranging.RangingMeasurement#getMeasurement',
+    'android.ranging.RangingMeasurement#getConfidence',
+    'android.ranging.RangingSession.Callback#onOpened()',
+    'android.ranging.RangingSession.Callback#onOpenFailed(int)',
+    'android.ranging.RangingSession.Callback#onClosed(int)',
+    'android.ranging.RangingSession.Callback#onResults(android.ranging.RangingDevice, android.ranging.RangingData)',
+    'android.ranging.RangingSession.Callback#onStarted(android.ranging.RangingDevice, int)',
+    'android.ranging.RangingSession.Callback#onStopped(android.ranging.RangingDevice, int)',
+  ])
   def test_one_to_one_uwb_ranging_unicast_static_sts(self):
     """Verifies uwb ranging with peer device using unicast static sts"""
     self._test_one_to_one_uwb_ranging(uwb.ConfigId.UNICAST_DS_TWR)
@@ -641,8 +642,9 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       self._ble_unbond()
 
   @ApiTest(apis=[
-    'android.ranging.oob.TransportHandle#sendData',
-    'android.ranging.oob.TransportHandle#registerReceiveCallback',
+    'android.ranging.oob.TransportHandle#sendData(byte[])',
+    'android.ranging.oob.TransportHandle#registerReceiveCallback(java.util.concurrent.Executor, android.ranging.oob.TransportHandle.ReceiveCallback)',
+    'android.ranging.oob.TransportHandle.ReceiveCallback#onSendFailed()',
   ])
   def test_one_to_one_ranging_with_oob(self):
     asserts.skip_if(

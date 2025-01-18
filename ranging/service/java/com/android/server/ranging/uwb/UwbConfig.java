@@ -32,7 +32,7 @@ import com.android.ranging.uwb.backend.internal.RangingParameters;
 import com.android.ranging.uwb.backend.internal.UwbRangeDataNtfConfig;
 import com.android.ranging.uwb.backend.internal.UwbRangeLimitsConfig;
 import com.android.server.ranging.RangingTechnology;
-import com.android.server.ranging.session.RangingSessionConfig;
+import com.android.server.ranging.session.RangingSessionConfig.MulticastTechnologyConfig;
 
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableSet;
@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
  * configuration message sent over OOB and everything required to start a session in the underlying
  * UWB system API.
  */
-public class UwbConfig implements RangingSessionConfig.MulticastTechnologyConfig {
+public class UwbConfig implements MulticastTechnologyConfig {
     private static final String TAG = UwbConfig.class.getSimpleName();
 
     private final String mCountryCode;

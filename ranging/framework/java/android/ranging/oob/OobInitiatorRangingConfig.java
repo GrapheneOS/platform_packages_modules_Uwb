@@ -81,16 +81,16 @@ public final class OobInitiatorRangingConfig extends RangingConfig implements Pa
     }
 
     /**
-     * Automatic ranging mode, allows the system to choose the best mode.
+     * Automatic ranging mode. Allows the system to choose the best mode.
      */
     public static final int RANGING_MODE_AUTO = 0;
     /**
-     * High accuracy ranging mode. Fallback to ranging technologies if high accuracy ranging is not
-     * supported
+     * High accuracy ranging mode. No fallback allowed.
      */
     public static final int RANGING_MODE_HIGH_ACCURACY = 1;
     /**
-     * High accuracy ranging mode. No fallback allowed.
+     * High accuracy ranging mode. Fallback to lower accuracy if high accuracy ranging is not
+     * supported by all devices.
      */
     public static final int RANGING_MODE_HIGH_ACCURACY_PREFERRED = 2;
     /**

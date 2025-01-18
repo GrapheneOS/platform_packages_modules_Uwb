@@ -16,17 +16,13 @@
 
 package com.android.server.ranging.session;
 
-import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
-
 import android.content.AttributionSource;
 import android.ranging.RangingCapabilities;
 import android.ranging.SessionHandle;
 import android.ranging.oob.OobHandle;
 import android.ranging.oob.OobResponderRangingConfig;
 import android.ranging.uwb.UwbAddress;
-import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingCapabilities;
-import android.ranging.uwb.UwbRangingParams;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -41,11 +37,9 @@ import com.android.server.ranging.oob.OobController.ReceivedMessage;
 import com.android.server.ranging.oob.OobHeader;
 import com.android.server.ranging.oob.SetConfigurationMessage;
 import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
-import com.android.server.ranging.uwb.UwbConfig;
 import com.android.server.ranging.uwb.UwbOobCapabilities;
 import com.android.server.ranging.uwb.UwbOobConfig;
 
-import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.FluentFuture;
@@ -121,35 +115,27 @@ public class OobResponderRangingSession
                 .getCapabilitiesProvider()
                 .getCapabilities();
 
-        // TODO: Use other technologies
-        UwbRangingCapabilities uwbCapabilities = myCapabilities.getUwbCapabilities();
-        return CapabilityResponseMessage.builder()
+        CapabilityResponseMessage.Builder response = CapabilityResponseMessage.builder()
                 .setHeader(OobHeader.builder()
                         .setMessageType(MessageType.CAPABILITY_RESPONSE)
                         .setVersion(OobHeader.OobVersion.CURRENT)
-                        .build())
-                .setRangingTechnologiesPriority(ImmutableList.of(RangingTechnology.UWB))
-                .setSupportedRangingTechnologies(ImmutableList.of(RangingTechnology.UWB))
-                .setUwbCapabilities(UwbOobCapabilities.builder()
-                        .setUwbAddress(mMyUwbAddress)
-                        .setSupportedChannels(
-                                ImmutableList.copyOf(
-                                        uwbCapabilities.getSupportedChannels()))
-                        .setSupportedPreambleIndexes(
-                                ImmutableList.copyOf(
-                                        uwbCapabilities.getSupportedPreambleIndexes()))
-                        .setSupportedConfigIds(
-                                ImmutableList.copyOf(uwbCapabilities.getSupportedConfigIds()))
-                        .setMinimumRangingIntervalMs(
-                                (int) uwbCapabilities.getMinimumRangingInterval().toMillis())
-                        .setMinimumSlotDurationMs(uwbCapabilities
-                                .getSupportedSlotDurations()
-                                .stream()
-                                .min(Integer::compare)
-                                .get())
-                        .setSupportedDeviceRole(
-                                ImmutableList.of(UwbOobConfig.OobDeviceRole.RESPONDER))
-                        .build())
+                        .build());
+
+        ImmutableList.Builder<RangingTechnology> supportedTechnologies = ImmutableList.builder();
+
+        if (request.getRequestedRangingTechnologies().contains(RangingTechnology.UWB)) {
+            UwbRangingCapabilities uwbCapabilities = myCapabilities.getUwbCapabilities();
+            if (uwbCapabilities != null) {
+                supportedTechnologies.add(RangingTechnology.UWB);
+                response.setUwbCapabilities(
+                        UwbOobCapabilities.fromUwbCapabilities(uwbCapabilities, mMyUwbAddress));
+            }
+        }
+        // TODO: Other technologies
+
+        return response
+                .setRangingTechnologiesPriority(supportedTechnologies.build())
+                .setSupportedRangingTechnologies(supportedTechnologies.build())
                 .build();
     }
 
@@ -157,29 +143,15 @@ public class OobResponderRangingSession
             ReceivedMessage message
     ) {
         Log.i(TAG, "Received set configuration message");
+
+        ImmutableSet.Builder<TechnologyConfig> configs = ImmutableSet.builder();
         SetConfigurationMessage body = SetConfigurationMessage.parseBytes(message.asBytes());
+
         UwbOobConfig uwbConfig = body.getUwbConfig();
+        if (uwbConfig != null) {
+            configs.add(uwbConfig.toTechnologyConfig(mMyUwbAddress, mPeer.getRangingDevice()));
+        }
 
-        UwbConfig config = new UwbConfig.Builder(
-                new UwbRangingParams.Builder(
-                        uwbConfig.getSessionId(),
-                        uwbConfig.getSelectedConfigId(),
-                        mMyUwbAddress,
-                        uwbConfig.getUwbAddress())
-                        .setSessionKeyInfo(uwbConfig.getSessionKey())
-                        .setComplexChannel(new UwbComplexChannel.Builder()
-                                .setChannel(uwbConfig.getSelectedChannel())
-                                .setPreambleIndex(uwbConfig.getSelectedPreambleIndex())
-                                .build())
-                        .setRangingUpdateRate(uwbConfig.getSelectedRangingIntervalMs())
-                        .setSlotDuration(uwbConfig.getSelectedSlotDurationMs())
-                        .build())
-                .setPeerAddresses(
-                        ImmutableBiMap.of(mPeer.getRangingDevice(), uwbConfig.getUwbAddress()))
-                .setCountryCode(uwbConfig.getCountryCode())
-                .setDeviceRole(DEVICE_ROLE_RESPONDER)
-                .build();
-
-        return Futures.immediateFuture(ImmutableSet.of(config));
+        return Futures.immediateFuture(configs.build());
     }
 }

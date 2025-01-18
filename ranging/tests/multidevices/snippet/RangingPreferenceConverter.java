@@ -49,6 +49,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.lang.reflect.Type;
+import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 
@@ -114,7 +115,14 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
             builder.addDeviceHandle(
                     new DeviceHandle.Builder(device, new DummyTransportHandle()).build());
         }
-        return builder.build();
+        return builder
+                .setFastestRangingInterval(
+                        Duration.ofMillis(j.getJSONArray("ranging_interval_ms").getInt(0)))
+                .setSlowestRangingInterval(
+                        Duration.ofMillis(j.getJSONArray("ranging_interval_ms").getInt(1)))
+                .setSecurityLevel(j.getInt("security_level"))
+                .setRangingMode(j.getInt("ranging_mode"))
+                .build();
     }
 
     private OobResponderRangingConfig getOobResponderRangingConfig(

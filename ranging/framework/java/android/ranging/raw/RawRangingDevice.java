@@ -32,8 +32,10 @@ import android.ranging.wifi.rtt.RttRangingParams;
 
 import com.android.ranging.flags.Flags;
 
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * Represents a device participating in ranging operations.
@@ -50,6 +52,7 @@ public final class RawRangingDevice implements Parcelable {
      * @hide
      */
     @Retention(RetentionPolicy.SOURCE)
+    @Target({ElementType.TYPE_USE})
     @IntDef({
             UPDATE_RATE_NORMAL,
             UPDATE_RATE_INFREQUENT,

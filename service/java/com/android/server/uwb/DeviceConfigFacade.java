@@ -105,6 +105,7 @@ public class DeviceConfigFacade {
     private boolean mIsAntennaModeConfigSupported;
     private String[] mMccMncOemOverrideList;
     private boolean mIsRandomHopmodekeySupported;
+    private boolean mFiraExtensionForCCCSupported;
 
     public DeviceConfigFacade(Handler handler, Context context) {
         mContext = context;
@@ -350,6 +351,10 @@ public class DeviceConfigFacade {
                     + "overlay file is invalid. Defaulting to " + mPoseSourceType.name());
         }
         mEnablePrimerFov = mPrimerFovDegree > 0 && mPrimerFovDegree < MAX_FOV;
+
+        // device config override with array is not supported, so just read the resource.
+        mFiraExtensionForCCCSupported = mContext.getResources()
+                .getBoolean(R.bool.fira_supported_extension_ccc);
     }
 
     /**
@@ -667,5 +672,12 @@ public class DeviceConfigFacade {
      */
     public boolean isRandomHopmodekeySupported() {
         return mIsRandomHopmodekeySupported;
+    }
+
+    /**
+     * Returns whether FiRa CCC capability UCI Specification applied or not.
+     */
+    public boolean isFiraSupportedExtensionForCCC() {
+        return mFiraExtensionForCCCSupported;
     }
 }

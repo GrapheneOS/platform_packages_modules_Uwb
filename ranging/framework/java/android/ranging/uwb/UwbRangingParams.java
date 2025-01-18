@@ -28,8 +28,10 @@ import android.ranging.raw.RawRangingDevice.RangingUpdateRate;
 
 import com.android.ranging.flags.Flags;
 
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -94,6 +96,7 @@ public final class UwbRangingParams implements Parcelable {
      * @hide
      */
     @Retention(RetentionPolicy.SOURCE)
+    @Target({ElementType.TYPE_USE})
     @IntDef({
             CONFIG_UNICAST_DS_TWR,
             CONFIG_MULTICAST_DS_TWR,

@@ -24,8 +24,10 @@ import android.os.Parcelable;
 
 import com.android.ranging.flags.Flags;
 
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.Objects;
 import java.util.Random;
 
@@ -50,6 +52,7 @@ public final class UwbComplexChannel implements Parcelable {
      * @hide
      */
     @Retention(RetentionPolicy.SOURCE)
+    @Target({ElementType.TYPE_USE})
     @IntDef(
             value = {
                     UWB_CHANNEL_5,
@@ -87,6 +90,7 @@ public final class UwbComplexChannel implements Parcelable {
      * @hide
      */
     @Retention(RetentionPolicy.SOURCE)
+    @Target({ElementType.TYPE_USE})
     @IntDef(
             value = {
                     UWB_PREAMBLE_CODE_INDEX_9,
