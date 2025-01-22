@@ -35,8 +35,14 @@ public abstract class TechnologyHeader {
         }
 
         int parseCursor = 0;
-        RangingTechnology rangingTechnology =
-                RangingTechnology.TECHNOLOGIES.get(payload[parseCursor++]);
+        byte technologyId = payload[parseCursor++];
+        RangingTechnology rangingTechnology;
+        try {
+            rangingTechnology = RangingTechnology.TECHNOLOGIES.get(technologyId);
+        } catch (IndexOutOfBoundsException e) {
+            throw new IllegalArgumentException(
+                    "Attempted to parse unknown technology with id" + technologyId);
+        }
         int size = payload[parseCursor++];
 
         return builder().setRangingTechnology(rangingTechnology).setSize(size).build();

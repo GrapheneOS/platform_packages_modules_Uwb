@@ -108,8 +108,10 @@ public enum RangingTechnology {
         BitSet bitSet = BitSet.valueOf(technologiesBitmap);
         for (int i = 0; i < BITMAP_SIZE_BYTES * 8; i++) {
             if (bitSet.get(i)) {
-                if (i < RangingTechnology.values().length) {
-                    techs.add(RangingTechnology.values()[i]);
+                try {
+                    techs.add(RangingTechnology.TECHNOLOGIES.get(i));
+                } catch (IndexOutOfBoundsException e) {
+                    throw new IllegalArgumentException("Unknown technology " + i);
                 }
             }
         }

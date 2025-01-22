@@ -38,6 +38,13 @@ public abstract class StopRangingMessage {
     public static StopRangingMessage parseBytes(byte[] payload) {
         OobHeader header = OobHeader.parseBytes(payload);
 
+        if (header.getMessageType() != MessageType.STOP_RANGING) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Invalid message type: %s, expected %s",
+                            header.getMessageType(), MessageType.STOP_RANGING));
+        }
+
         if (payload.length < header.getSize() + SIZE_IN_BYTES) {
             throw new IllegalArgumentException(
                     String.format("StopRangingMessage payload size is %d bytes", payload.length));

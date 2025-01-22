@@ -39,6 +39,13 @@ public abstract class CapabilityRequestMessage {
     public static CapabilityRequestMessage parseBytes(byte[] payload) {
         OobHeader header = OobHeader.parseBytes(payload);
 
+        if (header.getMessageType() != MessageType.CAPABILITY_REQUEST) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Invalid message type: %s, expected %s",
+                            header.getMessageType(), MessageType.CAPABILITY_REQUEST));
+        }
+
         if (payload.length < header.getSize() + CAPABILITY_SIZE_BYTES) {
             throw new IllegalArgumentException(
                     String.format("CapabilityRequestMessage payload size is %d bytes",

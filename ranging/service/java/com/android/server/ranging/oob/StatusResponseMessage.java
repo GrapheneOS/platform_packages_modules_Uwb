@@ -41,6 +41,15 @@ public abstract class StatusResponseMessage {
     public static StatusResponseMessage parseBytes(byte[] payload) {
         OobHeader header = OobHeader.parseBytes(payload);
 
+        if (header.getMessageType() != MessageType.SET_CONFIGURATION_RESPONSE
+                && header.getMessageType() != MessageType.START_RANGING_RESPONSE
+                && header.getMessageType() != MessageType.STOP_RANGING_RESPONSE) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Invalid message type: %s, expected status response type",
+                            header.getMessageType()));
+        }
+
         if (payload.length < header.getSize() + SIZE_IN_BYTES) {
             throw new IllegalArgumentException(
                     String.format("StatusResponseMessage payload size is %d bytes",
