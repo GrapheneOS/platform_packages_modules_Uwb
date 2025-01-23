@@ -14,8 +14,15 @@
  * limitations under the License.
  */
 
-package com.android.server.ranging.tests;
+package com.android.server.ranging.tests.session;
 
+import static android.ranging.RangingSession.Callback.REASON_LOCAL_REQUEST;
+import static android.ranging.RangingSession.Callback.REASON_NO_PEERS_FOUND;
+import static android.ranging.RangingSession.Callback.REASON_UNSUPPORTED;
+
+import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.FAILED_TO_START;
+import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.LOST_CONNECTION;
+import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.REQUESTED;
 import static com.android.server.ranging.RangingTechnology.CS;
 import static com.android.server.ranging.RangingTechnology.RTT;
 import static com.android.server.ranging.RangingTechnology.UWB;
@@ -24,6 +31,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -37,15 +45,17 @@ import android.ranging.RangingDevice;
 import android.ranging.RangingMeasurement;
 import android.ranging.SensorFusionParams;
 import android.ranging.SessionHandle;
-import android.ranging.raw.RawInitiatorRangingConfig;
+import android.ranging.raw.RawRangingDevice;
+import android.ranging.raw.RawResponderRangingConfig;
+import android.ranging.uwb.UwbRangingParams;
 
 import androidx.test.filters.SmallTest;
 
 import com.android.server.ranging.RangingAdapter;
-import com.android.server.ranging.RangingAdapter.Callback.ClosedReason;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingServiceManager;
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.session.BaseRangingSession;
 import com.android.server.ranging.session.RangingSessionConfig;
 import com.android.server.ranging.session.RangingSessionConfig.MulticastTechnologyConfig;
 import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
@@ -75,7 +85,7 @@ import java.util.Set;
 @SuppressWarnings("ConstantConditions")
 @RunWith(JUnit4.class)
 @SmallTest
-public class RangingSessionTest {
+public class BaseRangingSessionTest {
     @Rule
     public final MockitoRule mMockito = MockitoJUnit.rule();
 
@@ -83,10 +93,9 @@ public class RangingSessionTest {
     private @Mock SessionHandle mMockSessionHandle;
     private @Mock(answer = Answers.RETURNS_DEEP_STUBS) RangingInjector mMockInjector;
     private @Mock(answer = Answers.RETURNS_DEEP_STUBS) RangingSessionConfig mMockConfig;
-    private @Mock(answer = Answers.RETURNS_DEEP_STUBS) RawInitiatorRangingConfig mMockParams;
     private @Mock RangingServiceManager.SessionListener mMockSessionListener;
     private Map<TechnologyConfig, RangingAdapter> mMockAdapters;
-    private RawInitiatorRangingSession mSession;
+    private BaseRangingSession mSession;
     private @Mock Context mMockContext;
     private @Mock AlarmManager mMockAlarmManager;
 
@@ -94,6 +103,7 @@ public class RangingSessionTest {
         // Create some mock adapters for this session.
         for (TechnologyConfig config : technologyConfigs) {
             RangingAdapter adapter = mock(RangingAdapter.class);
+            when(adapter.isDynamicUpdatePeersSupported()).thenReturn(true);
             mMockAdapters.put(config, adapter);
             when(mMockInjector.createAdapter(any(), eq(config), anyInt(), any())).thenReturn(
                     adapter);
@@ -140,7 +150,7 @@ public class RangingSessionTest {
         for (TechnologyConfig config : callbacks.keySet()) {
             verify(mMockAdapters.get(config)).stop();
 
-            callbacks.get(config).onClosed(ClosedReason.REQUESTED);
+            callbacks.get(config).onClosed(REQUESTED);
             if (config instanceof MulticastTechnologyConfig c) {
                 c.getPeerDevices().forEach(callbacks.get(config)::onStopped);
             } else if (config instanceof UnicastTechnologyConfig c) {
@@ -195,10 +205,10 @@ public class RangingSessionTest {
     @Test
     public void start_startsUnicastTechnology() {
         RangingDevice peer = mock(RangingDevice.class);
-        Set<TechnologyConfig> configs = Set.of(mockTechnologyConfig(UWB, peer));
+        ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(mockTechnologyConfig(UWB, peer));
 
         configureSession(configs);
-        mSession.start(mMockParams);
+        mSession.start(configs);
         mockStartAdapters(configs);
 
         verify(mMockSessionListener).onTechnologyStarted(eq(peer), eq(UWB));
@@ -207,12 +217,12 @@ public class RangingSessionTest {
     @Test
     public void start_startsMultipleUnicastTechnologies() {
         RangingDevice peer = mock(RangingDevice.class);
-        Set<TechnologyConfig> configs = Set.of(
+        ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(
                 mockTechnologyConfig(UWB, peer),
                 mockTechnologyConfig(RTT, peer));
 
         configureSession(configs);
-        mSession.start(mMockParams);
+        mSession.start(configs);
         mockStartAdapters(configs);
 
         verify(mMockSessionListener).onTechnologyStarted(eq(peer), eq(UWB));
@@ -222,12 +232,12 @@ public class RangingSessionTest {
     @Test
     public void start_startsMultipleOfTheSameTechnology() {
         List<RangingDevice> peers = List.of(mock(RangingDevice.class), mock(RangingDevice.class));
-        Set<TechnologyConfig> configs = Set.of(
+        ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(
                 mockTechnologyConfig(UWB, peers.get(0)),
                 mockTechnologyConfig(UWB, peers.get(1)));
 
         configureSession(configs);
-        mSession.start(mMockParams);
+        mSession.start(configs);
         mockStartAdapters(configs);
 
         verify(mMockSessionListener).onTechnologyStarted(eq(peers.get(0)), eq(UWB));
@@ -237,10 +247,11 @@ public class RangingSessionTest {
     @Test
     public void start_startsMulticastTechnology() {
         List<RangingDevice> peers = List.of(mock(RangingDevice.class), mock(RangingDevice.class));
-        Set<TechnologyConfig> configs = Set.of(mockTechnologyConfig(UWB, Set.copyOf(peers)));
+        ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(
+                mockTechnologyConfig(UWB, Set.copyOf(peers)));
 
         configureSession(configs);
-        mSession.start(mMockParams);
+        mSession.start(configs);
         mockStartAdapters(configs);
 
         verify(mMockSessionListener).onTechnologyStarted(eq(peers.get(0)), eq(UWB));
@@ -249,11 +260,11 @@ public class RangingSessionTest {
 
     @Test
     public void start_doesNotStartUnusedTechnology() {
-        Set<TechnologyConfig> configs = Set.of(
+        ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(
                 mockTechnologyConfig(UWB, mock(RangingDevice.class)));
 
         configureSession(configs);
-        mSession.start(mMockParams);
+        mSession.start(configs);
         mockStartAdapters(configs);
 
         verify(mMockSessionListener, never()).onTechnologyStarted(any(), eq(CS));
@@ -262,10 +273,10 @@ public class RangingSessionTest {
     @Test
     public void stop_stopsUnicastTechnology() {
         RangingDevice peer = mock(RangingDevice.class);
-        Set<TechnologyConfig> configs = Set.of(mockTechnologyConfig(UWB, peer));
+        ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(mockTechnologyConfig(UWB, peer));
 
         configureSession(configs);
-        mSession.start(mMockParams);
+        mSession.start(configs);
         Map<TechnologyConfig, RangingAdapter.Callback> adapterCallbacks =
                 mockStartAdapters(configs);
 
@@ -273,18 +284,18 @@ public class RangingSessionTest {
         mockStopAdapters(adapterCallbacks);
 
         verify(mMockSessionListener).onTechnologyStopped(eq(peer), eq(UWB));
-        verify(mMockSessionListener).onSessionStopped(ClosedReason.REQUESTED);
+        verify(mMockSessionListener).onSessionStopped(REASON_LOCAL_REQUEST);
     }
 
     @Test
     public void stop_stopsMultipleUnicastTechnologies() {
         RangingDevice peer = mock(RangingDevice.class);
-        Set<TechnologyConfig> configs = Set.of(
+        ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(
                 mockTechnologyConfig(UWB, peer),
                 mockTechnologyConfig(RTT, peer));
 
         configureSession(configs);
-        mSession.start(mMockParams);
+        mSession.start(configs);
         Map<TechnologyConfig, RangingAdapter.Callback> adapterCallbacks =
                 mockStartAdapters(configs);
 
@@ -293,16 +304,17 @@ public class RangingSessionTest {
 
         verify(mMockSessionListener).onTechnologyStopped(eq(peer), eq(UWB));
         verify(mMockSessionListener).onTechnologyStopped(eq(peer), eq(UWB));
-        verify(mMockSessionListener).onSessionStopped(eq(ClosedReason.REQUESTED));
+        verify(mMockSessionListener).onSessionStopped(eq(REASON_LOCAL_REQUEST));
     }
 
     @Test
     public void stop_stopsMulticastTechnology() {
         List<RangingDevice> peers = List.of(mock(RangingDevice.class), mock(RangingDevice.class));
-        Set<TechnologyConfig> configs = Set.of(mockTechnologyConfig(UWB, Set.copyOf(peers)));
+        ImmutableSet<TechnologyConfig> configs =
+                ImmutableSet.of(mockTechnologyConfig(UWB, Set.copyOf(peers)));
 
         configureSession(configs);
-        mSession.start(mMockParams);
+        mSession.start(configs);
         Map<TechnologyConfig, RangingAdapter.Callback> adapterCallbacks =
                 mockStartAdapters(configs);
 
@@ -311,41 +323,43 @@ public class RangingSessionTest {
 
         verify(mMockSessionListener).onTechnologyStopped(eq(peers.get(0)), eq(UWB));
         verify(mMockSessionListener).onTechnologyStopped(eq(peers.get(1)), eq(UWB));
-        verify(mMockSessionListener).onSessionStopped(eq(ClosedReason.REQUESTED));
+        verify(mMockSessionListener).onSessionStopped(eq(REASON_LOCAL_REQUEST));
     }
 
     @Test
     public void shouldStop_whenTechnologyStops() {
         RangingDevice peer = mock(RangingDevice.class);
         UnicastTechnologyConfig config = mockTechnologyConfig(UWB, peer);
+        ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(config);
 
-        configureSession(Set.of(config));
-        mSession.start(mMockParams);
+        configureSession(configs);
+        mSession.start(configs);
         Map<TechnologyConfig, RangingAdapter.Callback> adapterCallbacks =
-                mockStartAdapters(Set.of(config));
+                mockStartAdapters(configs);
 
         adapterCallbacks.get(config).onStopped(peer);
-        adapterCallbacks.get(config).onClosed(ClosedReason.LOST_CONNECTION);
+        adapterCallbacks.get(config).onClosed(LOST_CONNECTION);
 
         verify(mMockSessionListener).onTechnologyStopped(eq(peer), eq(UWB));
-        verify(mMockSessionListener).onSessionStopped(eq(ClosedReason.LOST_CONNECTION));
+        verify(mMockSessionListener).onSessionStopped(eq(REASON_NO_PEERS_FOUND));
     }
 
     @Test
     public void shouldStop_whenTechnologyFailsToStart() {
         RangingDevice peer = mock(RangingDevice.class);
         UnicastTechnologyConfig config = mockTechnologyConfig(UWB, peer);
+        ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(config);
 
-        configureSession(Set.of(config));
-        mSession.start(mMockParams);
+        configureSession(configs);
+        mSession.start(configs);
 
         ArgumentCaptor<RangingAdapter.Callback> adapterCallbacks =
                 ArgumentCaptor.forClass(RangingAdapter.Callback.class);
         verify(mMockAdapters.get(config)).start(eq(config), any(), adapterCallbacks.capture());
 
-        adapterCallbacks.getValue().onClosed(ClosedReason.FAILED_TO_START);
+        adapterCallbacks.getValue().onClosed(FAILED_TO_START);
 
-        verify(mMockSessionListener).onSessionStopped(eq(ClosedReason.FAILED_TO_START));
+        verify(mMockSessionListener).onSessionStopped(eq(REASON_UNSUPPORTED));
     }
 
     @Test
@@ -354,11 +368,12 @@ public class RangingSessionTest {
         RangingData data = generateData(UWB);
 
         UnicastTechnologyConfig config = mockTechnologyConfig(UWB, peer);
+        ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(config);
 
-        configureSession(Set.of(config));
-        mSession.start(mMockParams);
+        configureSession(configs);
+        mSession.start(configs);
         Map<TechnologyConfig, RangingAdapter.Callback> adapterCallbacks =
-                mockStartAdapters(Set.of(config));
+                mockStartAdapters(configs);
 
         adapterCallbacks.get(config).onRangingData(peer, data);
         verify(mMockSessionListener).onResults(
@@ -366,5 +381,56 @@ public class RangingSessionTest {
                 argThat((arg) -> arg.getRangingTechnology() == UWB.getValue())
         );
         verify(mMockSessionListener).onTechnologyStarted(eq(peer), eq(UWB));
+    }
+
+    @Test
+    public void dynamicAddOrRemovePeer_callsAdapterAddOrRemovePeer() {
+        RangingDevice peer = mock(RangingDevice.class);
+        UnicastTechnologyConfig config = mockTechnologyConfig(UWB, peer);
+        ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(config);
+
+        configureSession(configs);
+        mSession.start(configs);
+        verify(mMockAdapters.get(config)).start(eq(config), any(), any());
+
+        RangingDevice peerToAdd = mock(RangingDevice.class);
+        RawResponderRangingConfig configToAdd = mock(RawResponderRangingConfig.class);
+        when(configToAdd.getRawRangingDevice()).thenReturn(
+                new RawRangingDevice.Builder()
+                        .setRangingDevice(peerToAdd)
+                        .setUwbRangingParams(mock(UwbRangingParams.class, RETURNS_DEEP_STUBS))
+                        .build());
+
+        mSession.addPeer(configToAdd);
+        verify(mMockAdapters.get(config)).addPeer(eq(configToAdd));
+
+        mSession.removePeer(peerToAdd);
+        verify(mMockAdapters.get(config)).removePeer(peerToAdd);
+
+        mSession.stop();
+        verify(mMockAdapters.get(config)).stop();
+    }
+
+    @Test
+    public void fgStateUpdate_callsAdapterFgStateUpdate() {
+        RangingDevice peer = mock(RangingDevice.class);
+        UnicastTechnologyConfig config = mockTechnologyConfig(UWB, peer);
+        ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(config);
+
+        configureSession(configs);
+        mSession.start(configs);
+        verify(mMockAdapters.get(config)).start(eq(config), any(), any());
+
+        mSession.appForegroundStateUpdated(true);
+        verify(mMockAdapters.get(config)).appForegroundStateUpdated(eq(true));
+
+        mSession.appForegroundStateUpdated(false);
+        verify(mMockAdapters.get(config)).appForegroundStateUpdated(eq(false));
+
+        mSession.appInBackgroundTimeout();
+        verify(mMockAdapters.get(config)).appInBackgroundTimeout();
+
+        mSession.stop();
+        verify(mMockAdapters.get(config)).stop();
     }
 }

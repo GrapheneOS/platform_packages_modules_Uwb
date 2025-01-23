@@ -116,7 +116,8 @@ public class BaseRangingSession {
             technologies = Sets.newConcurrentHashSet(Set.of(initialTechnology));
             if (mConfig.getSessionConfig().getSensorFusionParams().isSensorFusionEnabled()) {
                 fusionEngine = new FilteringFusionEngine(
-                        new DataFusers.PreferentialDataFuser(RangingTechnology.UWB));
+                        new DataFusers.PreferentialDataFuser(RangingTechnology.UWB),
+                        mConfig.getSessionConfig().isAngleOfArrivalNeeded(), mInjector);
             } else {
                 fusionEngine = new NoOpFusionEngine(device);
             }
@@ -156,6 +157,7 @@ public class BaseRangingSession {
 
     /** Start ranging in this session. */
     public void start(ImmutableSet<TechnologyConfig> technologyConfigs) {
+        Log.v(TAG, "Starting session");
         synchronized (mLock) {
             if (!mStateMachine.transition(State.STOPPED, State.STARTING)) {
                 Log.w(TAG, "Failed transition STOPPED -> STARTING");
@@ -278,6 +280,7 @@ public class BaseRangingSession {
 
     /** Stop ranging in this session. */
     public void stop() {
+        Log.v(TAG, "Stopping session");
         synchronized (mLock) {
             if (mStateMachine.getState() == State.STOPPING
                     || mStateMachine.getState() == State.STOPPED) {

@@ -21,9 +21,17 @@ import android.ranging.RangingMeasurement;
 
 import androidx.annotation.NonNull;
 
+import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
 import com.android.uwb.fusion.UwbFilterEngine;
+import com.android.uwb.fusion.filtering.MedAvgFilter;
+import com.android.uwb.fusion.filtering.MedAvgRotationFilter;
+import com.android.uwb.fusion.filtering.PositionFilterImpl;
 import com.android.uwb.fusion.math.SphericalVector;
+import com.android.uwb.fusion.pose.RotationPoseSource;
+import com.android.uwb.fusion.primers.AoaPrimer;
+import com.android.uwb.fusion.primers.BackAzimuthPrimer;
+import com.android.uwb.fusion.primers.FovPrimer;
 
 import java.util.EnumMap;
 import java.util.Optional;
@@ -36,19 +44,77 @@ public class FilteringFusionEngine extends FusionEngine {
 
     private static final String TAG = FilteringFusionEngine.class.getSimpleName();
 
+    /**
+     * Documented at
+     * {@code packages/modules/Uwb/service/ServiceUwbResources/res/values/config.xml}
+     */
+    private static class FilterConfig {
+        private static final float DISTANCE_INLIERS_FACTOR = 0f / 100f;
+        private static final int DISTANCE_WINDOW = 3;
+
+        private static final float ANGLE_INLIERS_FACTOR = 50f / 100f;
+        private static final int ANGLE_WINDOW = 5;
+
+        private static final float PRIMER_FOV_RADS = (float) Math.toRadians(60);
+
+        private static final int POSE_UPDATE_INTERVAL_MS = 100;
+
+        private static final float FRONT_AZIMUTH_RADS_PER_SEC = (float) Math.toRadians(12);
+        private static final float BACK_AZIMUTH_RADS_PER_SEC = (float) Math.toRadians(10);
+        private static final int BACK_AZIMUTH_DETECTION_WINDOW = 5;
+        private static final boolean ENABLE_BACK_AZIMUTH_MASKING = true;
+        private static final float MIRROR_SCORE_STD_RADS = (float) Math.toRadians(8);
+        private static final float BACK_AZIMUTH_NOISE_COEFF = 8f / 100f;
+    }
+
+
+    private final RangingInjector mInjector;
+    private final boolean mUseAoa;
     private final EnumMap<RangingTechnology, UwbFilterEngine> mFilters;
 
-    public FilteringFusionEngine(@NonNull DataFuser fuser) {
+    public FilteringFusionEngine(
+            @NonNull DataFuser fuser, boolean useAoa, RangingInjector injector
+    ) {
         super(fuser);
+        mInjector = injector;
         mFilters = new EnumMap<>(RangingTechnology.class);
+        mUseAoa = useAoa;
     }
 
     /**
      * Construct a filter engine configured for the provided technology.
+     * Config forked from
+     * {@code packages/modules/Uwb/service/java/com/android/server/uwb/UwbInjector.java}
      */
-    private @NonNull UwbFilterEngine newFilter(@NonNull RangingTechnology unused) {
-        // TODO(365631954): Build a properly configured filter depending on the technology.
-        return new UwbFilterEngine.Builder().build();
+    private @NonNull UwbFilterEngine createFilter(@NonNull RangingTechnology technology) {
+
+        UwbFilterEngine.Builder builder = new UwbFilterEngine.Builder()
+                .setFilter(
+                        new PositionFilterImpl(
+                                new MedAvgRotationFilter(
+                                        FilterConfig.ANGLE_WINDOW,
+                                        FilterConfig.ANGLE_INLIERS_FACTOR),
+                                new MedAvgRotationFilter(
+                                        FilterConfig.ANGLE_WINDOW,
+                                        FilterConfig.ANGLE_INLIERS_FACTOR),
+                                new MedAvgFilter(
+                                        FilterConfig.DISTANCE_WINDOW,
+                                        FilterConfig.DISTANCE_INLIERS_FACTOR)));
+
+        if (mUseAoa && technology == RangingTechnology.UWB) {
+            builder.setPoseSource(new RotationPoseSource(
+                    mInjector.getContext(), FilterConfig.POSE_UPDATE_INTERVAL_MS));
+
+            builder.addPrimer(new AoaPrimer());
+            builder.addPrimer(new FovPrimer(FilterConfig.PRIMER_FOV_RADS));
+            builder.addPrimer(new BackAzimuthPrimer(
+                    FilterConfig.FRONT_AZIMUTH_RADS_PER_SEC, FilterConfig.BACK_AZIMUTH_RADS_PER_SEC,
+                    FilterConfig.BACK_AZIMUTH_DETECTION_WINDOW,
+                    FilterConfig.ENABLE_BACK_AZIMUTH_MASKING,
+                    FilterConfig.MIRROR_SCORE_STD_RADS, FilterConfig.BACK_AZIMUTH_NOISE_COEFF));
+        }
+
+        return builder.build();
     }
 
     @Override
@@ -96,18 +162,22 @@ public class FilteringFusionEngine extends FusionEngine {
                                 .setConfidence(data.getDistance().getConfidence())
                                 .build()
                 );
-        azimuth.ifPresent(azimuthMeasure -> filteredData.setAzimuth(
-                new RangingMeasurement.Builder()
-                        .setMeasurement(out.azimuth)
-                        .setConfidence(azimuthMeasure.getConfidence())
-                        .build()
-        ));
-        elevation.ifPresent(elevationMeasure -> filteredData.setElevation(
-                new RangingMeasurement.Builder()
-                        .setMeasurement(out.elevation)
-                        .setConfidence(elevationMeasure.getConfidence())
-                        .build()
-        ));
+
+        if (mUseAoa && data.getRangingTechnology() == RangingTechnology.UWB.getValue()) {
+            azimuth.ifPresent(azimuthMeasure -> filteredData.setAzimuth(
+                    new RangingMeasurement.Builder()
+                            .setMeasurement(out.azimuth)
+                            .setConfidence(azimuthMeasure.getConfidence())
+                            .build()
+            ));
+            elevation.ifPresent(elevationMeasure -> filteredData.setElevation(
+                    new RangingMeasurement.Builder()
+                            .setMeasurement(out.elevation)
+                            .setConfidence(elevationMeasure.getConfidence())
+                            .build()
+            ));
+        }
+
         if (data.hasRssi()) {
             filteredData.setRssi(data.getRssi());
         }
@@ -123,7 +193,7 @@ public class FilteringFusionEngine extends FusionEngine {
     @Override
     public void addDataSource(@NonNull RangingTechnology technology) {
         if (!mFilters.containsKey(technology)) {
-            mFilters.put(technology, newFilter(technology));
+            mFilters.put(technology, createFilter(technology));
         }
     }
 
