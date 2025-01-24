@@ -31,7 +31,6 @@ import android.ranging.ble.rssi.BleRssiRangingParams;
 import android.ranging.oob.DeviceHandle;
 import android.ranging.oob.OobInitiatorRangingConfig;
 import android.ranging.oob.OobResponderRangingConfig;
-import android.ranging.oob.TransportHandle;
 import android.ranging.raw.RawInitiatorRangingConfig;
 import android.ranging.raw.RawRangingDevice;
 import android.ranging.raw.RawResponderRangingConfig;
@@ -39,8 +38,6 @@ import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingParams;
 import android.ranging.wifi.rtt.RttRangingParams;
-
-import androidx.annotation.NonNull;
 
 import com.google.android.mobly.snippet.SnippetObjectConverter;
 
@@ -51,9 +48,14 @@ import org.json.JSONObject;
 import java.lang.reflect.Type;
 import java.time.Duration;
 import java.util.UUID;
-import java.util.concurrent.Executor;
 
 public class RangingPreferenceConverter implements SnippetObjectConverter {
+
+    RangingSnippet.OobTransportFactory mTransportHandleFactory;
+
+    RangingPreferenceConverter(RangingSnippet.OobTransportFactory transportHandleFactory) {
+        mTransportHandleFactory = transportHandleFactory;
+    }
 
     @Override
     public JSONObject serialize(Object object) {
@@ -61,7 +63,7 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
     }
 
     @Override
-    public Object deserialize(JSONObject j, Type type) throws JSONException {
+    public RangingPreference deserialize(JSONObject j, Type type) throws JSONException {
         if (type != RangingPreference.class) return null;
 
         return new RangingPreference.Builder(j.getInt("device_role"),
@@ -112,8 +114,10 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
             RangingDevice device = new RangingDevice.Builder()
                     .setUuid(UUID.fromString(jPeers.getString(i)))
                     .build();
-            builder.addDeviceHandle(
-                    new DeviceHandle.Builder(device, new DummyTransportHandle()).build());
+            builder.addDeviceHandle(new DeviceHandle.Builder(
+                    device,
+                    mTransportHandleFactory.createOobTransport(device)
+            ).build());
         }
         return builder
                 .setFastestRangingInterval(
@@ -132,7 +136,9 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
                 .setUuid(UUID.fromString(j.getString("peer_id")))
                 .build();
         return new OobResponderRangingConfig.Builder(
-                new DeviceHandle.Builder(device, new DummyTransportHandle()).build()).build();
+                new DeviceHandle.Builder(
+                        device, mTransportHandleFactory.createOobTransport(device)).build())
+                .build();
     }
 
     private RawInitiatorRangingConfig getRawInitiatorRangingConfig(
@@ -245,28 +251,5 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
             bArray[i] = (byte) jArray.getInt(i);
         }
         return bArray;
-    }
-
-    /**
-     * TransportHandle needs to be implemented in the RangingSnippet class itself because it needs
-     * to send events to mobly. However, RangingPreferenceConverter needs to produce a complete
-     * {@link RangingPreference} which might contain TransportHandle instances. To fix this, we
-     * build the preference with a DummyTransportHandle, then replace it with the real
-     * implementation using reflection in the snippet.
-     */
-    private static class DummyTransportHandle implements TransportHandle {
-        @Override
-        public void sendData(@NonNull byte[] data) {
-        }
-
-        @Override
-        public void registerReceiveCallback(
-                @NonNull Executor executor, @NonNull ReceiveCallback callback
-        ) {
-        }
-
-        @Override
-        public void close() throws Exception {
-        }
     }
 }

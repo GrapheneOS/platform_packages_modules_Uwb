@@ -27,6 +27,9 @@
       "name": "RangingServiceTests"
     },
     {
+      "name": "RangingFrameworkTests"
+    },
+    {
       "name": "RangingUwbBackendTests"
     }
   ]

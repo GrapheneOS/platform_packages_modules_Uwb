@@ -28,9 +28,6 @@ import android.ranging.RangingManager.RangingTechnology;
 import android.ranging.RangingMeasurement;
 import android.ranging.RangingPreference;
 import android.ranging.RangingSession;
-import android.ranging.oob.DeviceHandle;
-import android.ranging.oob.OobInitiatorRangingConfig;
-import android.ranging.oob.OobResponderRangingConfig;
 import android.ranging.oob.TransportHandle;
 import android.util.Log;
 
@@ -43,7 +40,9 @@ import com.google.android.mobly.snippet.event.SnippetEvent;
 import com.google.android.mobly.snippet.rpc.AsyncRpc;
 import com.google.android.mobly.snippet.rpc.Rpc;
 
-import java.lang.reflect.Field;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.UUID;
@@ -184,7 +183,7 @@ public class RangingSnippet implements Snippet {
         }
     }
 
-    private static class RangingSessionInfo {
+    static class RangingSessionInfo {
         private final RangingSession mSession;
         private final RangingSessionCallback mCallback;
         private final ConcurrentMap<RangingDevice, OobTransportImpl> mOobTransports;
@@ -214,8 +213,24 @@ public class RangingSnippet implements Snippet {
         }
     }
 
-    private class OobTransportImpl implements TransportHandle {
 
+    class OobTransportFactory {
+        private final String mCallbackId;
+        private final RangingSessionInfo mSessionInfo;
+
+        OobTransportFactory(String callbackId, RangingSessionInfo sessionInfo) {
+            mCallbackId = callbackId;
+            mSessionInfo = sessionInfo;
+        }
+
+        public OobTransportImpl createOobTransport(RangingDevice peer) {
+            OobTransportImpl transport = new OobTransportImpl(mCallbackId, peer);
+            mSessionInfo.mOobTransports.put(peer, transport);
+            return transport;
+        }
+    }
+
+    class OobTransportImpl implements TransportHandle {
         private final String mCallbackId;
         private final RangingDevice mPeer;
         private ReceiveCallback mReceiveCallback;
@@ -272,14 +287,18 @@ public class RangingSnippet implements Snippet {
 
     @AsyncRpc(description = "Start a ranging session")
     public void startRanging(
-            String callbackId, String sessionHandle, RangingPreference preference
-    ) {
+            String callbackId, String sessionHandle, JSONObject j
+    ) throws JSONException {
+
         RangingSessionCallback callback = new RangingSessionCallback(callbackId);
         RangingSession session = mRangingManager.createRangingSession(mExecutor, callback);
         RangingSessionInfo sessionInfo = new RangingSessionInfo(session, callback);
         mSessions.put(sessionHandle, sessionInfo);
 
-        createTransportHandlesIfUsingOob(preference, sessionInfo, callbackId);
+        RangingPreference preference =
+                new RangingPreferenceConverter(new OobTransportFactory(callbackId, sessionInfo))
+                        .deserialize(j, RangingPreference.class);
+
         session.start(preference);
     }
 
@@ -399,40 +418,5 @@ public class RangingSnippet implements Snippet {
          * Similar to {@link Supplier#get} but has {@code throws Exception}.
          */
         T get() throws Exception;
-    }
-
-
-    private void createTransportHandlesIfUsingOob(
-            RangingPreference preference, RangingSessionInfo sessionInfo, String callbackId
-    ) {
-        if (preference.getRangingParams() instanceof OobInitiatorRangingConfig config) {
-            for (DeviceHandle deviceHandle : config.getDeviceHandles()) {
-                OobTransportImpl transportHandle =
-                        new OobTransportImpl(callbackId, deviceHandle.getRangingDevice());
-                sessionInfo.mOobTransports.put(deviceHandle.getRangingDevice(), transportHandle);
-                assignTransportHandleUsingReflection(deviceHandle, transportHandle);
-            }
-        } else if (preference.getRangingParams() instanceof OobResponderRangingConfig config) {
-            OobTransportImpl transportHandle = new OobTransportImpl(
-                    callbackId, config.getDeviceHandle().getRangingDevice());
-            sessionInfo.mOobTransports.put(
-                    config.getDeviceHandle().getRangingDevice(),
-                    transportHandle);
-            assignTransportHandleUsingReflection(config.getDeviceHandle(), transportHandle);
-        }
-    }
-
-    private void assignTransportHandleUsingReflection(
-            DeviceHandle deviceHandle, TransportHandle transportHandle
-    ) {
-        try {
-            Field f = deviceHandle.getClass().getDeclaredField("mTransportHandle");
-            f.setAccessible(true);
-            f.set(deviceHandle, transportHandle);
-            f.setAccessible(false);
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to set transport handle: " + e);
-            throw new RuntimeException(e);
-        }
     }
 }

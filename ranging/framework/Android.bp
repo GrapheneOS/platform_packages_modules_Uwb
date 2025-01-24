@@ -19,7 +19,7 @@ package {
 
 java_defaults {
     name: "ranging-module-sdk-version-defaults",
-    min_sdk_version: "current",
+    min_sdk_version: "35",
 }
 
 filegroup {
@@ -119,10 +119,10 @@ java_defaults {
     libs: [
         "framework-ranging.impl",
     ],
-    //defaults_visibility: [
-    // "//packages/modules/Uwb/framework/tests:__subpackages__",
-    // "//packages/modules/Uwb/service/tests:__subpackages__",
-    //],
+    defaults_visibility: [
+        "//packages/modules/Uwb/ranging/framework/tests:__subpackages__",
+        "//packages/modules/Uwb/ranging/service/tests:__subpackages__",
+    ],
 }
 
 filegroup {

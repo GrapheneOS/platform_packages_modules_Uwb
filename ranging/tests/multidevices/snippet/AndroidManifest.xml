@@ -24,9 +24,6 @@
         <meta-data
             android:name="mobly-snippets"
             android:value="com.google.snippet.ranging.RangingSnippet" />
-        <meta-data
-            android:name="mobly-object-converter"
-            android:value="com.google.snippet.ranging.RangingPreferenceConverter" />
     </application>
     <instrumentation
         android:name="com.google.android.mobly.snippet.SnippetRunner"
