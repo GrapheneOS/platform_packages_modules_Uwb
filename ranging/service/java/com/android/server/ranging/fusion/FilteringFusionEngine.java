@@ -20,6 +20,7 @@ import android.ranging.RangingData;
 import android.ranging.RangingMeasurement;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
@@ -86,8 +87,8 @@ public class FilteringFusionEngine extends FusionEngine {
      * Config forked from
      * {@code packages/modules/Uwb/service/java/com/android/server/uwb/UwbInjector.java}
      */
-    private @NonNull UwbFilterEngine createFilter(@NonNull RangingTechnology technology) {
-
+    @VisibleForTesting
+    public @NonNull UwbFilterEngine createFilter(@NonNull RangingTechnology technology) {
         UwbFilterEngine.Builder builder = new UwbFilterEngine.Builder()
                 .setFilter(
                         new PositionFilterImpl(
@@ -186,7 +187,7 @@ public class FilteringFusionEngine extends FusionEngine {
     }
 
     @Override
-    protected @NonNull Set<RangingTechnology> getDataSources() {
+    public @NonNull Set<RangingTechnology> getDataSources() {
         return mFilters.keySet();
     }
 

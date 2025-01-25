@@ -60,7 +60,8 @@ public class BleRssiConfig implements RangingSessionConfig.UnicastTechnologyConf
         return mRangingParams;
     }
 
-    public int getDeviceRole() {
+    @Override
+    public @RangingPreference.DeviceRole int getDeviceRole() {
         return mDeviceRole;
     }
 

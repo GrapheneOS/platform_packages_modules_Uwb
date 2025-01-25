@@ -118,6 +118,9 @@ public class UwbUciConstants {
     public static final int DEVICE_TYPE_CONTROLEE = FiraParams.RANGING_DEVICE_TYPE_CONTROLEE;
     public static final int DEVICE_TYPE_CONTROLLER = FiraParams.RANGING_DEVICE_TYPE_CONTROLLER;
 
+
+    public static final int CCC_DEVICE_TYPE_CONTROLLER = 0XA0;
+
     public static final int ROUND_USAGE_SS_TWR_DEFERRED_MODE =
             FiraParams.RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE;
     public static final int ROUND_USAGE_DS_TWR_DEFERRED_MODE =

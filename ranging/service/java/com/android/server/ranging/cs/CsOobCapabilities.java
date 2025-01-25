@@ -124,10 +124,10 @@ public abstract class CsOobCapabilities {
     }
 
     public static CsOobCapabilities fromRangingCapabilities(
-            BleCsRangingCapabilities capabilities, String address
+            BleCsRangingCapabilities capabilities
     ) {
         return CsOobCapabilities.builder()
-                .setBluetoothAddress(address)
+                .setBluetoothAddress(capabilities.getBluetoothAddress())
                 .setSupportedSecurityTypes(capabilities.getSupportedSecurityLevels().stream()
                         .map(CsSecurityType.SECURITY_TYPES::get)
                         .collect(ImmutableList.toImmutableList()))

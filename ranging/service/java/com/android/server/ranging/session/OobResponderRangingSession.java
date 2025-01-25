@@ -19,6 +19,7 @@ package com.android.server.ranging.session;
 import android.content.AttributionSource;
 import android.ranging.RangingCapabilities;
 import android.ranging.SessionHandle;
+import android.ranging.ble.cs.BleCsRangingCapabilities;
 import android.ranging.oob.OobHandle;
 import android.ranging.oob.OobResponderRangingConfig;
 import android.ranging.uwb.UwbAddress;
@@ -27,9 +28,11 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.android.server.ranging.RangingEngine;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingServiceManager;
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.cs.CsOobCapabilities;
 import com.android.server.ranging.oob.CapabilityRequestMessage;
 import com.android.server.ranging.oob.CapabilityResponseMessage;
 import com.android.server.ranging.oob.MessageType;
@@ -131,6 +134,14 @@ public class OobResponderRangingSession
                         UwbOobCapabilities.fromRangingCapabilities(uwbCapabilities, mMyUwbAddress));
             }
         }
+        if (request.getRequestedRangingTechnologies().contains(RangingTechnology.CS)) {
+            BleCsRangingCapabilities csCapabilities = myCapabilities.getCsCapabilities();
+            if (csCapabilities != null) {
+                supportedTechnologies.add(RangingTechnology.CS);
+                response.setCsCapabilities(
+                        CsOobCapabilities.fromRangingCapabilities(csCapabilities));
+            }
+        }
         // TODO: Other technologies
 
         return response
@@ -141,7 +152,7 @@ public class OobResponderRangingSession
 
     private ListenableFuture<ImmutableSet<TechnologyConfig>> handleSetConfiguration(
             ReceivedMessage message
-    ) {
+    ) throws RangingEngine.ConfigSelectionException {
         Log.i(TAG, "Received set configuration message");
 
         ImmutableSet.Builder<TechnologyConfig> configs = ImmutableSet.builder();
@@ -151,6 +162,7 @@ public class OobResponderRangingSession
         if (uwbConfig != null) {
             configs.add(uwbConfig.toTechnologyConfig(mMyUwbAddress, mPeer.getRangingDevice()));
         }
+        // Skip CS because the CS responder side does not need to be configured.
 
         return Futures.immediateFuture(configs.build());
     }

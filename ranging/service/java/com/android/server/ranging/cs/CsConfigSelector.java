@@ -16,7 +16,6 @@
 
 package com.android.server.ranging.cs;
 
-import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_FOUR;
 import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_ONE;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
@@ -131,7 +130,6 @@ public class CsConfigSelector {
         public @NonNull ImmutableSet<CsConfig> getLocalConfigs() {
             return mPeerAddresses.entrySet().stream()
                     .map((entry) -> new CsConfig(
-                            DEVICE_ROLE_INITIATOR,
                             new BleCsRangingParams.Builder(entry.getValue())
                                     .setRangingUpdateRate(mRangingUpdateRate)
                                     .setSecurityLevel(mPeerSecurityLevels.get(entry.getKey()))

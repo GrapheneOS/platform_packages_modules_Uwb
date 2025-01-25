@@ -16,7 +16,7 @@
 
 package com.android.server.ranging.tests.cs;
 
-import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
+import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_FOUR;
 import static android.ranging.ble.cs.BleCsRangingParams.LOCATION_TYPE_INDOOR;
 import static android.ranging.ble.cs.BleCsRangingParams.SIGHT_TYPE_LINE_OF_SIGHT;
@@ -50,12 +50,12 @@ public class CsConfigTest {
         SessionConfig sessionConfig = new SessionConfig.Builder().build();
         RangingDevice rangingDevice = new RangingDevice.Builder().build();
 
-        CsConfig config = new CsConfig(DEVICE_ROLE_RESPONDER,
+        CsConfig config = new CsConfig(
                 bleCsRangingParams,
                 sessionConfig,
                 rangingDevice);
 
-        assertEquals(config.getDeviceRole(), DEVICE_ROLE_RESPONDER);
+        assertEquals(config.getDeviceRole(), DEVICE_ROLE_INITIATOR);
         assertEquals(config.getRangingParams(), bleCsRangingParams);
         assertEquals(config.getSessionConfig(), sessionConfig);
         assertEquals(config.getPeerDevice(), rangingDevice);

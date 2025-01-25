@@ -192,8 +192,9 @@ public class BaseRangingSession {
                 // done with a clear calling identity.
                 long token = Binder.clearCallingIdentity();
                 RangingAdapter adapter = mInjector.createAdapter(
-                        mAttributionSource, config, mConfig.getDeviceRole(), mAdapterExecutor);
+                        mAttributionSource, config, mAdapterExecutor);
                 mAdapters.put(config, adapter);
+                Log.v(TAG, "Starting ranging with technology : " + config.getTechnology());
                 adapter.start(config, nonPrivilegedAttributionSource, new AdapterListener(config));
                 Binder.restoreCallingIdentity(token);
             }
@@ -280,7 +281,7 @@ public class BaseRangingSession {
 
     /** Stop ranging in this session. */
     public void stop() {
-        Log.v(TAG, "Stopping session");
+        Log.v(TAG, "Stop ranging, stopping all adapters");
         synchronized (mLock) {
             if (mStateMachine.getState() == State.STOPPING
                     || mStateMachine.getState() == State.STOPPED) {

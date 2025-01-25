@@ -100,13 +100,12 @@ public final class RangingSession implements AutoCloseable {
     @RequiresPermission(Manifest.permission.RANGING)
     @NonNull
     public CancellationSignal start(@NonNull RangingPreference rangingPreference) {
-        //TODO : check whether this needs to be called after start, or handle when a session is
-        // created in ranging service.
         if (rangingPreference.getRangingParams().getRangingSessionType()
                 == RangingConfig.RANGING_SESSION_OOB) {
             mRangingSessionManager.registerOobSendDataListener();
             setupTransportHandles(rangingPreference);
         }
+        Log.v(TAG, "Start ranging - " + mSessionHandle);
         try {
             mRangingAdapter.startRanging(mAttributionSource, mSessionHandle, rangingPreference,
                     mRangingSessionManager);
@@ -160,6 +159,7 @@ public final class RangingSession implements AutoCloseable {
      */
     @RequiresPermission(Manifest.permission.RANGING)
     public void addDeviceToRangingSession(@NonNull RangingConfig deviceRangingParams) {
+        Log.v(TAG, " Add device - " + mSessionHandle);
         try {
             if (deviceRangingParams instanceof RawResponderRangingConfig) {
                 mRangingAdapter.addRawDevice(mSessionHandle,
@@ -191,6 +191,7 @@ public final class RangingSession implements AutoCloseable {
      */
     @RequiresPermission(Manifest.permission.RANGING)
     public void removeDeviceFromRangingSession(@NonNull RangingDevice rangingDevice) {
+        Log.v(TAG, " Remove device - " + mSessionHandle);
         try {
             mRangingAdapter.removeDevice(mSessionHandle, rangingDevice);
         } catch (RemoteException e) {
@@ -207,6 +208,7 @@ public final class RangingSession implements AutoCloseable {
      */
     @RequiresPermission(Manifest.permission.RANGING)
     public void reconfigureRangingInterval(@IntRange(from = 0, to = 255) int intervalSkipCount) {
+        Log.v(TAG, " Reconfiguring ranging interval - " + mSessionHandle);
         try {
             mRangingAdapter.reconfigureRangingInterval(mSessionHandle, intervalSkipCount);
         } catch (RemoteException e) {
@@ -222,6 +224,7 @@ public final class RangingSession implements AutoCloseable {
      */
     @RequiresPermission(Manifest.permission.RANGING)
     public void stop() {
+        Log.v(TAG, "Stop ranging - " + mSessionHandle);
         try {
             mRangingAdapter.stopRanging(mSessionHandle);
         } catch (RemoteException e) {

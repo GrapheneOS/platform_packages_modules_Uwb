@@ -28,7 +28,6 @@ import static com.android.server.ranging.RangingTechnology.RTT;
 import static com.android.server.ranging.RangingTechnology.UWB;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
@@ -105,7 +104,7 @@ public class BaseRangingSessionTest {
             RangingAdapter adapter = mock(RangingAdapter.class);
             when(adapter.isDynamicUpdatePeersSupported()).thenReturn(true);
             mMockAdapters.put(config, adapter);
-            when(mMockInjector.createAdapter(any(), eq(config), anyInt(), any())).thenReturn(
+            when(mMockInjector.createAdapter(any(), eq(config), any())).thenReturn(
                     adapter);
         }
 

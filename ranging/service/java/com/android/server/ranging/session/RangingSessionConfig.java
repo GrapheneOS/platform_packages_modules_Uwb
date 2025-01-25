@@ -16,6 +16,8 @@
 
 package com.android.server.ranging.session;
 
+import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
+
 import android.ranging.RangingDevice;
 import android.ranging.RangingManager;
 import android.ranging.RangingPreference;
@@ -53,6 +55,8 @@ public class RangingSessionConfig {
     public interface TechnologyConfig {
         @NonNull
         RangingTechnology getTechnology();
+
+        @RangingPreference.DeviceRole int getDeviceRole();
     }
 
     /** A config for a technology that only supports 1 peer per session. */
@@ -126,9 +130,9 @@ public class RangingSessionConfig {
                         mSessionConfig,
                         peer.getRangingDevice()));
             }
-            if (peer.getCsRangingParams() != null) {
+            // Only CS initiator needs to be configured.
+            if (peer.getCsRangingParams() != null && mDeviceRole == DEVICE_ROLE_INITIATOR) {
                 configs.add(new CsConfig(
-                        mDeviceRole,
                         peer.getCsRangingParams(),
                         mSessionConfig,
                         peer.getRangingDevice()));

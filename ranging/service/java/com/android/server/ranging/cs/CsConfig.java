@@ -16,6 +16,7 @@
 
 package com.android.server.ranging.cs;
 
+import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
@@ -34,6 +35,10 @@ import com.google.common.collect.ImmutableMap;
 
 import java.time.Duration;
 
+/**
+ * Only the CS initiator needs to be configured. The responder does not need to call into any API
+ * and therefore has no configuration or adapter.
+ */
 public class CsConfig implements UnicastTechnologyConfig {
     private static final String TAG = CsConfig.class.getSimpleName();
 
@@ -50,14 +55,10 @@ public class CsConfig implements UnicastTechnologyConfig {
 
     private final RangingDevice mPeerDevice;
 
-    @RangingPreference.DeviceRole
-    private final int mDeviceRole;
-
-    public CsConfig(int deviceRole,
+    public CsConfig(
             BleCsRangingParams bleCsRangingParams,
             SessionConfig sessionConfig,
             @NonNull RangingDevice peerDevice) {
-        mDeviceRole = deviceRole;
         mRangingParams = bleCsRangingParams;
         mSessionConfig = sessionConfig;
         mPeerDevice = peerDevice;
@@ -76,8 +77,9 @@ public class CsConfig implements UnicastTechnologyConfig {
         return mRangingParams;
     }
 
-    public int getDeviceRole() {
-        return mDeviceRole;
+    @Override
+    public @RangingPreference.DeviceRole int getDeviceRole() {
+        return DEVICE_ROLE_INITIATOR;
     }
 
     @Override
@@ -92,8 +94,6 @@ public class CsConfig implements UnicastTechnologyConfig {
                 + mSessionConfig
                 + ", mRangingParams="
                 + mRangingParams
-                + ", mDeviceRole="
-                + mDeviceRole
                 + ", mPeerDevice="
                 + mPeerDevice
                 + " }";

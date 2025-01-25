@@ -38,7 +38,6 @@ import com.android.server.ranging.CapabilitiesProvider;
 import com.android.server.ranging.CapabilitiesProvider.CapabilitiesAdapter;
 import com.android.server.ranging.CapabilitiesProvider.TechnologyAvailabilityListener;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class CsCapabilitiesAdapter extends CapabilitiesAdapter {
@@ -70,16 +69,17 @@ public class CsCapabilitiesAdapter extends CapabilitiesAdapter {
     public @Nullable BleCsRangingCapabilities getCapabilities() {
         if (getAvailability() == ENABLED) {
             try {
-                List<Integer> securityLevels = new ArrayList<>(
-                        mContext.getSystemService(BluetoothManager.class)
-                                .getAdapter()
-                                .getDistanceMeasurementManager()
-                                .getChannelSoundingSupportedSecurityLevels());
+                BluetoothAdapter btAdapter = mContext
+                        .getSystemService(BluetoothManager.class).getAdapter();
+
                 return new BleCsRangingCapabilities.Builder()
-                        .setSupportedSecurityLevels(securityLevels)
+                        .setBluetoothAddress(btAdapter.getAddress())
+                        .setSupportedSecurityLevels(List.copyOf(btAdapter
+                                .getDistanceMeasurementManager()
+                                .getChannelSoundingSupportedSecurityLevels()))
                         .build();
             } catch (UnsupportedOperationException e) {
-                Log.e(TAG, "Failed to get channel sounding security levels, " + e);
+                Log.e(TAG, "Failed to get channel sounding capabilities: " + e);
                 return null;
             }
         } else {

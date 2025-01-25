@@ -155,13 +155,6 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
             AttributionSource attributionSource, SessionHandle handle, RangingPreference preference,
             IRangingCallbacks callbacks
     ) {
-        // TODO android.permission.RANGING permission check here
-//        Context context = mRangingInjector.getContext()
-//                .createContext(new ContextParams
-//                        .Builder()
-//                        .setNextAttributionSource(attributionSource)
-//                        .build());
-
         RangingTaskManager.StartRangingArgs args = new RangingTaskManager.StartRangingArgs(
                 attributionSource, handle, preference, callbacks);
         mRangingTaskManager.enqueueTask(RangingTask.TASK_START_RANGING, args);

@@ -17,6 +17,7 @@
 package com.android.server.ranging.rtt;
 
 import android.ranging.RangingDevice;
+import android.ranging.RangingPreference;
 
 import androidx.annotation.NonNull;
 
@@ -38,6 +39,11 @@ public class RttParameters extends RttRangingParameters
     @Override
     public @NonNull RangingDevice getPeerDevice() {
         throw new UnsupportedOperationException("Not implemented!");
+    }
+
+    @Override
+    public @RangingPreference.DeviceRole int getDeviceRole() {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     public static class Builder extends RttRangingParameters.Builder {

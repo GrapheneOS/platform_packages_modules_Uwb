@@ -16,7 +16,7 @@
 
 package com.android.server.ranging.uwb;
 
-import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
+import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
 import static android.ranging.oob.OobInitiatorRangingConfig.SECURITY_LEVEL_BASIC;
 import static android.ranging.oob.OobInitiatorRangingConfig.SECURITY_LEVEL_SECURE;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
@@ -54,6 +54,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import java.time.Duration;
@@ -203,24 +204,29 @@ public class UwbConfigSelector {
             mCountryCode = "US";
         }
 
-        public @NonNull UwbConfig getLocalConfig() {
-            return new UwbConfig.Builder(
-                    new UwbRangingParams.Builder(
-                            mSessionId, mConfigId, mLocalAddress,
-                            mPeerAddresses.values().iterator().next())
-                            .setSessionKeyInfo(mSessionKeyInfo)
-                            .setComplexChannel(new UwbComplexChannel.Builder()
-                                    .setChannel(mChannel)
-                                    .setPreambleIndex(mPreambleIndex)
+        // For now, each GRAPI responder will be a UWB initiator for a unicast session. In the
+        // future we can look into combining these into a single multicast session somehow.
+
+        public @NonNull ImmutableSet<UwbConfig> getLocalConfigs() {
+            return mPeerAddresses.keySet().stream().map(
+                    (device) -> new UwbConfig.Builder(
+                            new UwbRangingParams.Builder(
+                                    mSessionId, mConfigId, mLocalAddress,
+                                    mPeerAddresses.get(device))
+                                    .setSessionKeyInfo(mSessionKeyInfo)
+                                    .setComplexChannel(new UwbComplexChannel.Builder()
+                                            .setChannel(mChannel)
+                                            .setPreambleIndex(mPreambleIndex)
+                                            .build())
+                                    .setRangingUpdateRate(mRangingUpdateRate)
+                                    .setSlotDuration(mMinSlotDurationMs)
                                     .build())
-                            .setRangingUpdateRate(mRangingUpdateRate)
-                            .setSlotDuration(mMinSlotDurationMs)
+                            .setSessionConfig(mSessionConfig)
+                            .setDeviceRole(DEVICE_ROLE_RESPONDER)
+                            .setCountryCode(mCountryCode)
+                            .setPeerAddresses(ImmutableBiMap.of(device, mPeerAddresses.get(device)))
                             .build())
-                    .setSessionConfig(mSessionConfig)
-                    .setDeviceRole(DEVICE_ROLE_INITIATOR)
-                    .setCountryCode(mCountryCode)
-                    .setPeerAddresses(ImmutableBiMap.copyOf(mPeerAddresses))
-                    .build();
+                    .collect(ImmutableSet.toImmutableSet());
         }
 
         public @NonNull ImmutableMap<RangingDevice, UwbOobConfig> getPeerConfigs() {
@@ -230,12 +236,13 @@ public class UwbConfigSelector {
                     .setSelectedConfigId(mConfigId)
                     .setSelectedChannel(mChannel)
                     .setSelectedPreambleIndex(mPreambleIndex)
-                    .setSelectedRangingIntervalMs(mRangingUpdateRate)
+                    .setSelectedRangingIntervalMs(Utils.getRangingTimingParams((int) mConfigId)
+                            .getRangingInterval((int) mRangingUpdateRate))
                     .setSelectedSlotDurationMs(mMinSlotDurationMs)
                     .setSessionKey(mSessionKeyInfo)
                     .setCountryCode(mCountryCode)
-                    .setDeviceRole(UwbOobConfig.OobDeviceRole.RESPONDER)
-                    .setDeviceMode(UwbOobConfig.OobDeviceMode.CONTROLEE)
+                    .setDeviceRole(UwbOobConfig.OobDeviceRole.INITIATOR)
+                    .setDeviceMode(UwbOobConfig.OobDeviceMode.CONTROLLER)
                     .build();
 
             return mPeerAddresses.keySet().stream()
@@ -244,37 +251,19 @@ public class UwbConfigSelector {
     }
 
     private @UwbRangingParams.ConfigId int selectConfigId() throws ConfigSelectionException {
-
-        boolean isMulticast = mPeerAddresses.size() > 1;
-
-        // Fastest update rate (96 ms) is a special case because it requires its own config id.
-        boolean supportsVeryFastConfigId =
-                mOobConfig.getSecurityLevel() == SECURITY_LEVEL_SECURE
-                        && !isMulticast
-                        && mRangingIntervals.contains(Duration.ofMillis(
-                        Utils.getRangingTimingParams(
-                                        (int) CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST)
-                                .getRangingIntervalFast()))
-                        && mConfigIds.contains(CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST);
-        if (supportsVeryFastConfigId) {
-            return CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST;
-        }
-
-        int configId;
         if (mOobConfig.getSecurityLevel() == SECURITY_LEVEL_BASIC) {
-            configId = isMulticast
-                    ? CONFIG_MULTICAST_DS_TWR
-                    : CONFIG_UNICAST_DS_TWR;
-        } else {
-            configId = isMulticast
-                    ? CONFIG_PROVISIONED_MULTICAST_DS_TWR
-                    : CONFIG_PROVISIONED_UNICAST_DS_TWR;
+            if (mConfigIds.contains(CONFIG_UNICAST_DS_TWR)) {
+                return CONFIG_UNICAST_DS_TWR;
+            }
+        } else if (mOobConfig.getSecurityLevel() == SECURITY_LEVEL_SECURE) {
+            if (mConfigIds.contains(CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST)) {
+                return CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST;
+            } else if (mConfigIds.contains(CONFIG_PROVISIONED_UNICAST_DS_TWR)) {
+                return CONFIG_PROVISIONED_UNICAST_DS_TWR;
+            }
         }
-        if (!mConfigIds.contains(configId)) {
-            throw new ConfigSelectionException(
-                    "Not all peers support configured uwb config id " + configId);
-        }
-        return configId;
+
+        throw new ConfigSelectionException("Failed to find agreeable config id");
     }
 
     private byte[] selectSessionKeyInfo() {

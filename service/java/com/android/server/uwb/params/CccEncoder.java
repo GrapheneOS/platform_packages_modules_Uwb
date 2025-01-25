@@ -57,31 +57,52 @@ public class CccEncoder extends TlvEncoder {
         CccOpenRangingParams params = (CccOpenRangingParams) baseParam;
         int hoppingConfig = params.getHoppingConfigMode();
         int hoppingSequence = params.getHoppingSequence();
-
-        int hoppingMode = CccParams.HOPPING_CONFIG_MODE_NONE;
+        boolean isFiraExtensionSupported =
+                mUwbInjector.getDeviceConfigFacade().isFiraSupportedExtensionForCCC();
+        int hoppingMode = isFiraExtensionSupported
+                ? UwbCccConstants.CCC_EXTENSION_HOPPING_CONFIG_MODE_NONE :
+                CccParams.HOPPING_CONFIG_MODE_NONE;
         byte[] protocolVer = params.getProtocolVersion().toBytes();
 
         switch (hoppingConfig) {
 
             case CccParams.HOPPING_CONFIG_MODE_CONTINUOUS:
                 if (hoppingSequence == CccParams.HOPPING_SEQUENCE_DEFAULT) {
-                    hoppingMode = UwbCccConstants.HOPPING_CONFIG_MODE_CONTINUOUS_DEFAULT;
+                    hoppingMode =
+                            isFiraExtensionSupported
+                                    ? UwbCccConstants
+                                            .CCC_EXTENSION_HOPPING_CONFIG_MODE_CONTINUOUS_DEFAULT :
+                                    UwbCccConstants.HOPPING_CONFIG_MODE_CONTINUOUS_DEFAULT;
                 } else {
-                    hoppingMode = UwbCccConstants.HOPPING_CONFIG_MODE_CONTINUOUS_AES;
+                    hoppingMode =
+                            isFiraExtensionSupported
+                                    ? UwbCccConstants
+                                            .CCC_EXTENSION_HOPPING_CONFIG_MODE_CONTINUOUS_AES :
+                                    UwbCccConstants.HOPPING_CONFIG_MODE_CONTINUOUS_AES;
                 }
                 break;
             case CccParams.HOPPING_CONFIG_MODE_ADAPTIVE:
                 if (hoppingSequence == CccParams.HOPPING_SEQUENCE_DEFAULT) {
-                    hoppingMode = UwbCccConstants.HOPPING_CONFIG_MODE_MODE_ADAPTIVE_DEFAULT;
+                    hoppingMode =
+                            isFiraExtensionSupported
+                                    ? UwbCccConstants
+                                            .CCC_EXTENSION_HOPPING_CONFIG_MODE_ADAPTIVE_DEFAULT :
+                                    UwbCccConstants.HOPPING_CONFIG_MODE_MODE_ADAPTIVE_DEFAULT;
                 } else {
-                    hoppingMode = UwbCccConstants.HOPPING_CONFIG_MODE_MODE_ADAPTIVE_AES;
+                    hoppingMode =
+                            isFiraExtensionSupported
+                                    ? UwbCccConstants
+                                            .CCC_EXTENSION_HOPPING_CONFIG_MODE_ADAPTIVE_AES :
+                                    UwbCccConstants.HOPPING_CONFIG_MODE_MODE_ADAPTIVE_AES;
                 }
                 break;
         }
 
         TlvBuffer.Builder tlvBufferBuilder = new TlvBuffer.Builder()
                 .putByte(ConfigParam.DEVICE_TYPE,
-                        (byte) UwbUciConstants.DEVICE_TYPE_CONTROLLER) // DEVICE_TYPE
+                        mUwbInjector.getDeviceConfigFacade().isFiraSupportedExtensionForCCC()
+                                ? (byte) UwbUciConstants.CCC_DEVICE_TYPE_CONTROLLER :
+                                (byte) UwbUciConstants.DEVICE_TYPE_CONTROLLER) // DEVICE_TYPE
                 .putByte(ConfigParam.STS_CONFIG,
                         (byte) UwbUciConstants.STS_MODE_DYNAMIC) // STS_CONFIG
                 .putByte(ConfigParam.CHANNEL_NUMBER, (byte) params.getChannel()) // CHANNEL_ID

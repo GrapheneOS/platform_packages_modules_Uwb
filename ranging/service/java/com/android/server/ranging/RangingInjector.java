@@ -33,7 +33,6 @@ import android.os.Looper;
 import android.os.Process;
 import android.os.UserHandle;
 import android.permission.PermissionManager;
-import android.ranging.RangingPreference;
 import android.util.Log;
 
 import com.android.server.ranging.CapabilitiesProvider.CapabilitiesAdapter;
@@ -111,16 +110,16 @@ public class RangingInjector {
     public @NonNull RangingAdapter createAdapter(
             @NonNull AttributionSource attributionSource,
             @NonNull RangingSessionConfig.TechnologyConfig config,
-            @RangingPreference.DeviceRole int role,
             @NonNull ListeningExecutorService executor
     ) {
         switch (config.getTechnology()) {
             case UWB:
-                return new UwbAdapter(mContext, this, attributionSource, executor, role);
+                return new UwbAdapter(
+                        mContext, this, attributionSource, executor, config.getDeviceRole());
             case CS:
                 return new CsAdapter(mContext, this);
             case RTT:
-                return new RttAdapter(mContext, this, executor, role);
+                return new RttAdapter(mContext, this, executor, config.getDeviceRole());
             case RSSI:
                 return new BleRssiAdapter(mContext, this);
             default:

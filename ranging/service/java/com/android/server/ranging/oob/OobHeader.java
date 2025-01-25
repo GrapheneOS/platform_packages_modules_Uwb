@@ -28,7 +28,7 @@ public abstract class OobHeader {
             OobVersion.CURRENT,
     })
     public @interface OobVersion {
-        int CURRENT = 0;
+        int CURRENT = 1;
     }
 
     private static final int SIZE_BYTES = 2;

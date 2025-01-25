@@ -167,7 +167,7 @@ public class RangingEngine {
         Map<RangingDevice, UwbOobConfig> uwbConfigsByPeer = new HashMap<>();
         if (mUwbConfigSelector != null && mUwbConfigSelector.hasPeersToConfigure()) {
             SelectedUwbConfig uwbConfig = mUwbConfigSelector.selectConfig();
-            localConfigs.add(uwbConfig.getLocalConfig());
+            localConfigs.addAll(uwbConfig.getLocalConfigs());
             uwbConfigsByPeer.putAll(uwbConfig.getPeerConfigs());
         }
 

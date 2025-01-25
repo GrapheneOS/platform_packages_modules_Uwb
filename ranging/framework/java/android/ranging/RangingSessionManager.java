@@ -60,6 +60,7 @@ public final class RangingSessionManager extends IRangingCallbacks.Stub {
             RangingSession.Callback callback, Executor executor) {
         SessionHandle sessionHandle = new SessionHandle(sSessionIdCounter++, attributionSource,
                 Process.myPid());
+        Log.v(TAG, "Create ranging session - sessionHandle: " + sessionHandle);
         RangingSession rangingSession = new RangingSession(this, attributionSource, sessionHandle,
                 mRangingAdapter, callback, executor);
         mSessions.put(sessionHandle, rangingSession);
@@ -68,6 +69,7 @@ public final class RangingSessionManager extends IRangingCallbacks.Stub {
 
     @Override
     public void onOpened(SessionHandle session) {
+        Log.v(TAG, "onOpened - sessionHandle: " + session);
         if (!mSessions.containsKey(session)) {
             Log.e(TAG, "SessionHandle not found");
             return;
@@ -77,6 +79,7 @@ public final class RangingSessionManager extends IRangingCallbacks.Stub {
 
     @Override
     public void onOpenFailed(SessionHandle session, int reason) {
+        Log.v(TAG, "onOpenFailed - sessionHandle: " + session + " reason: " + reason);
         if (!mSessions.containsKey(session)) {
             Log.e(TAG, "SessionHandle not found");
             return;
@@ -86,6 +89,7 @@ public final class RangingSessionManager extends IRangingCallbacks.Stub {
 
     @Override
     public void onStarted(SessionHandle session, RangingDevice peer, int technology) {
+        Log.v(TAG, "onStarted - sessionHandle: " + session + " technology: " + technology);
         if (!mSessions.containsKey(session)) {
             Log.e(TAG, "SessionHandle not found");
             return;
@@ -95,6 +99,7 @@ public final class RangingSessionManager extends IRangingCallbacks.Stub {
 
     @Override
     public void onResults(SessionHandle session, RangingDevice peer, RangingData data) {
+        Log.v(TAG, "onResults - sessionHandle: " + session + " peer: " + peer.toString());
         if (!mSessions.containsKey(session)) {
             Log.e(TAG, "SessionHandle not found");
             return;
@@ -104,6 +109,7 @@ public final class RangingSessionManager extends IRangingCallbacks.Stub {
 
     @Override
     public void onStopped(SessionHandle session, RangingDevice peer, int technology) {
+        Log.v(TAG, "onStopped - sessionHandle: " + session + " technology: " + technology);
         if (!mSessions.containsKey(session)) {
             Log.e(TAG, "SessionHandle not found");
             return;
@@ -113,6 +119,7 @@ public final class RangingSessionManager extends IRangingCallbacks.Stub {
 
     @Override
     public void onClosed(SessionHandle session, int reason) {
+        Log.v(TAG, "onClosed - sessionHandle: " + session + " reason: " + reason);
         if (!mSessions.containsKey(session)) {
             Log.e(TAG, "SessionHandle not found");
             return;
@@ -127,6 +134,7 @@ public final class RangingSessionManager extends IRangingCallbacks.Stub {
      * @param data      payload
      */
     public void oobDataReceived(OobHandle oobHandle, byte[] data) {
+        Log.v(TAG, "oobDataReceived - " + oobHandle);
         try {
             mRangingAdapter.oobDataReceived(oobHandle, data);
         } catch (RemoteException e) {
@@ -140,6 +148,7 @@ public final class RangingSessionManager extends IRangingCallbacks.Stub {
      * @param oobHandle uniquely identifiers a session/device pair for OOB communication.
      */
     public void deviceOobReconnected(OobHandle oobHandle) {
+        Log.v(TAG, "deviceOobReconnected - " + oobHandle);
         try {
             mRangingAdapter.deviceOobReconnected(oobHandle);
         } catch (RemoteException e) {
@@ -153,6 +162,7 @@ public final class RangingSessionManager extends IRangingCallbacks.Stub {
      * @param oobHandle uniquely identifiers a session/device pair for OOB communication.
      */
     public void deviceOobDisconnected(OobHandle oobHandle) {
+        Log.v(TAG, "deviceOobReconnected - " + oobHandle);
         try {
             mRangingAdapter.deviceOobDisconnected(oobHandle);
         } catch (RemoteException e) {
@@ -167,6 +177,7 @@ public final class RangingSessionManager extends IRangingCallbacks.Stub {
      * @param oobHandle uniquely identifiers a session/device pair for OOB communication.
      */
     public void deviceOobClosed(OobHandle oobHandle) {
+        Log.v(TAG, "deviceOobClosed - " + oobHandle);
         try {
             mRangingAdapter.deviceOobClosed(oobHandle);
         } catch (RemoteException e) {

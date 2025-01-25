@@ -41,6 +41,8 @@ _TEST_CASES = [
     "test_one_to_one_ble_rssi_ranging",
     "test_one_to_one_ble_cs_ranging",
     "test_one_to_one_ranging_with_oob",
+    "test_uwb_ranging_measurement_limit",
+    "test_ble_rssi_ranging_measurement_limit",
 ]
 
 
@@ -353,6 +355,106 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
     self.initiator.stop_ranging_and_assert_closed(SESSION_HANDLE)
     self.responder.stop_ranging_and_assert_closed(SESSION_HANDLE)
+
+  def test_uwb_ranging_measurement_limit(self):
+      """Verifies device does not receive range data after measurement limit"""
+      SESSION_HANDLE = str(uuid4())
+      UWB_SESSION_ID = 5
+      asserts.skip_if(
+          not self.responder.is_ranging_technology_supported(RangingTechnology.UWB),
+          f"UWB not supported by responder",
+      )
+      asserts.skip_if(
+          not self.initiator.is_ranging_technology_supported(RangingTechnology.UWB),
+          f"UWB not supported by initiator",
+      )
+      initiator_preference = RangingPreference(
+          device_role=DeviceRole.INITIATOR,
+          ranging_params=RawInitiatorRangingParams(
+              peer_params=[
+                  DeviceParams(
+                      peer_id=self.responder.id,
+                      uwb_params=uwb.UwbRangingParams(
+                          session_id=UWB_SESSION_ID,
+                          config_id=uwb.ConfigId.MULTICAST_DS_TWR,
+                          device_address=self.initiator.uwb_address,
+                          peer_address=self.responder.uwb_address,
+                      ),
+                  )
+              ],
+          ),
+          measurement_limit=2,
+      )
+
+      responder_preference = RangingPreference(
+          device_role=DeviceRole.RESPONDER,
+          ranging_params=RawResponderRangingParams(
+              peer_params=DeviceParams(
+                  peer_id=self.initiator.id,
+                  uwb_params=uwb.UwbRangingParams(
+                      session_id=UWB_SESSION_ID,
+                      config_id=uwb.ConfigId.MULTICAST_DS_TWR,
+                      device_address=self.responder.uwb_address,
+                      peer_address=self.initiator.uwb_address,
+                  ),
+              ),
+          ),
+          measurement_limit=2,
+      )
+
+      self.initiator.start_ranging_and_assert_opened(
+          SESSION_HANDLE, initiator_preference
+      )
+      self.responder.start_ranging_and_assert_opened(
+          SESSION_HANDLE, responder_preference
+      )
+
+      time.sleep(2)
+
+      self.initiator.assert_close_ranging_event_received(SESSION_HANDLE)
+      self.responder.assert_close_ranging_event_received(SESSION_HANDLE)
+
+  def test_ble_rssi_ranging_measurement_limit(self):
+      """Verifies ble rssi ranging with measurement limit."""
+      asserts.skip_if(self._is_cuttlefish_device(self.initiator.ad),
+                      "Skipping BLE RSSI test on Cuttlefish")
+      SESSION_HANDLE = str(uuid4())
+
+      asserts.skip_if(
+          not self.responder.is_ranging_technology_supported(RangingTechnology.BLE_RSSI),
+          f"BLE RSSI not supported by responder",
+      )
+      asserts.skip_if(
+          not self.initiator.is_ranging_technology_supported(RangingTechnology.BLE_RSSI),
+          f"BLE RSSI not supported by initiator",
+      )
+      # TODO(rpius): Remove this once the technology is stable.
+      self._reset_bt_state()
+
+      try:
+          self._ble_connect()
+          initiator_preference = RangingPreference(
+              device_role=DeviceRole.INITIATOR,
+              ranging_params=RawInitiatorRangingParams(
+                  peer_params=[
+                      DeviceParams(
+                          peer_id=self.responder.id,
+                          rssi_params=rssi.BleRssiRangingParams(
+                              peer_address=self.responder.bt_addr,
+                              ranging_update_rate=rssi.RangingUpdateRate.FREQUENT,
+                          ),
+                      )
+                  ],
+              ),
+              measurement_limit=1,
+          )
+          self.initiator.start_ranging_and_assert_opened(
+              SESSION_HANDLE, initiator_preference
+          )
+          self.initiator.assert_close_ranging_event_received(SESSION_HANDLE)
+
+      finally:
+          self._ble_disconnect()
 
   def test_one_to_one_wifi_rtt_ranging(self):
     """Verifies wifi rtt ranging with peer device, devices range for 10 seconds."""

@@ -19,6 +19,7 @@ package android.ranging.ble.cs;
 import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
 import android.annotation.NonNull;
+import android.bluetooth.BluetoothAdapter;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.ranging.RangingCapabilities.TechnologyCapabilities;
@@ -66,6 +67,7 @@ public final class BleCsRangingCapabilities implements Parcelable, TechnologyCap
     public static final int CS_SECURITY_LEVEL_FOUR = 4;
 
     private final List<Integer> mSupportedSecurityLevels;
+    private final String mBluetoothAddress;
 
     /**
      * Returns a list of the supported security levels.
@@ -81,11 +83,13 @@ public final class BleCsRangingCapabilities implements Parcelable, TechnologyCap
 
     private BleCsRangingCapabilities(Builder builder) {
         mSupportedSecurityLevels = builder.mSupportedSecurityLevels;
+        mBluetoothAddress = builder.mBluetoothAddress;
     }
 
     private BleCsRangingCapabilities(Parcel in) {
         mSupportedSecurityLevels = new ArrayList<>();
         in.readList(mSupportedSecurityLevels, Integer.class.getClassLoader(), Integer.class);
+        mBluetoothAddress = in.readString();
     }
 
     @NonNull
@@ -101,6 +105,18 @@ public final class BleCsRangingCapabilities implements Parcelable, TechnologyCap
                     return new BleCsRangingCapabilities[size];
                 }
             };
+
+    /**
+     * Get the device's bluetooth address.
+     * Internal usage only. Clients of the ranging API should use
+     * {@link BluetoothAdapter#getAddress()} instead.
+     *
+     * @hide
+     */
+    @NonNull
+    public String getBluetoothAddress() {
+        return mBluetoothAddress;
+    }
 
     /**
      * @hide
@@ -121,6 +137,7 @@ public final class BleCsRangingCapabilities implements Parcelable, TechnologyCap
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
         dest.writeList(mSupportedSecurityLevels);
+        dest.writeString(mBluetoothAddress);
     }
 
     /**
@@ -132,6 +149,7 @@ public final class BleCsRangingCapabilities implements Parcelable, TechnologyCap
      */
     public static final class Builder {
         private List<Integer> mSupportedSecurityLevels;
+        private String mBluetoothAddress;
 
         /**
          * Set supported security levels to the capabilities.
@@ -143,6 +161,18 @@ public final class BleCsRangingCapabilities implements Parcelable, TechnologyCap
         @NonNull
         public Builder setSupportedSecurityLevels(List<Integer> supportedSecurityLevels) {
             this.mSupportedSecurityLevels = supportedSecurityLevels;
+            return this;
+        }
+
+        /**
+         * Set the device's bluetooth address.
+         *
+         * @param address of the device.
+         * @return this {@link Builder} instance for chaining calls.
+         */
+        @NonNull
+        public Builder setBluetoothAddress(String address) {
+            this.mBluetoothAddress = address;
             return this;
         }
 
@@ -160,7 +190,9 @@ public final class BleCsRangingCapabilities implements Parcelable, TechnologyCap
     @Override
     public String toString() {
         return "BleCsRangingCapabilities{ "
-                + "mSupportedSecurityLevels="
+                + "mBluetoothAddress="
+                + mBluetoothAddress
+                + ", mSupportedSecurityLevels="
                 + mSupportedSecurityLevels
                 + " }";
     }

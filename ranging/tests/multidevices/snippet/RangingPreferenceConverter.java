@@ -78,6 +78,7 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
                                         getDataNotificationConfig(
                                                 j.getBoolean("enable_range_data_notifications"))
                                 )
+                                .setRangingMeasurementsLimit(j.getInt("measurement_limit"))
                                 .build()
                 )
                 .build();

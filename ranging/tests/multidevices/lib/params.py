@@ -78,3 +78,4 @@ class RangingPreference:
       default_factory=SensorFusionParams
   )
   enable_range_data_notifications: bool = True
+  measurement_limit: int = 0

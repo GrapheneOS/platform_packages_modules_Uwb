@@ -90,6 +90,7 @@ public class UwbConfig implements MulticastTechnologyConfig {
         return mCountryCode;
     }
 
+    @Override
     public @RangingPreference.DeviceRole int getDeviceRole() {
         return mDeviceRole;
     }
