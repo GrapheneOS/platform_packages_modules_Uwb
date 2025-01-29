@@ -129,14 +129,13 @@ public class RangingManagerTest {
     @Before
     public void setup() throws Exception {
         assumeTrue(Flags.rangingStackEnabled());
-        mRangingManager = mContext.getSystemService(RangingManager.class);
-        assertThat(mRangingManager).isNotNull();
         PackageManager packageManager = mContext.getPackageManager();
         assertThat(packageManager).isNotNull();
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_UWB)) {
             mSupportedTechnologies.add(RangingManager.UWB);
         }
-        if (packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_AWARE)) {
+        if (packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_AWARE)
+                && packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_RTT)) {
             mSupportedTechnologies.add(RangingManager.WIFI_NAN_RTT);
         }
         if (packageManager.hasSystemFeature(
@@ -146,6 +145,9 @@ public class RangingManagerTest {
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             mSupportedTechnologies.add(RangingManager.BLE_RSSI);
         }
+        assumeTrue(!mSupportedTechnologies.isEmpty());
+        mRangingManager = mContext.getSystemService(RangingManager.class);
+        assertThat(mRangingManager).isNotNull();
     }
 
     @After

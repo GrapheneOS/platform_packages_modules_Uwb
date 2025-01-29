@@ -2503,7 +2503,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                         i++;
                                     }
                                     if (getUwbsFiraProtocolVersion(uwbSession.getChipId())
-                                                .getMajor() != FIRA_VERSION_MAJOR_2
+                                                .getMajor() < FIRA_VERSION_MAJOR_2
                                             || (uwbSession.getSessionState()
                                                 == UwbUciConstants.UWB_SESSION_STATE_IDLE)
                                             || (multicastListUpdateStatus.getNumOfControlee()
@@ -2514,7 +2514,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                 //Fira 2.0
                                 if (getUwbsFiraProtocolVersion(
                                         uwbSession.getChipId()).getMajor()
-                                            == FIRA_VERSION_MAJOR_2) {
+                                            >= FIRA_VERSION_MAJOR_2) {
                                     // Action - Add, Status - STATUS_OK
                                     if (isMulticastActionAdd(action)) {
                                         for (UwbAddress address : addrList) {

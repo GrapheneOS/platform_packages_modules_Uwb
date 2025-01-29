@@ -207,6 +207,20 @@ public abstract class CccParams extends Params {
             value = {SESSION_TYPE_CCC})
     public @interface SessionType {}
 
+    public static final int SESSION_TYPE_CCC = 0xA0;
+
+    /** Device type */
+    @IntDef(
+            value = {
+                    CCC_DEVICE_TYPE_CONTROLLER,
+                    CCC_DEVICE_TYPE_CONTROLEE,
+            })
+    public @interface CccDeviceType {}
+
+    public static final int CCC_DEVICE_TYPE_CONTROLLER = 0xA0;
+
+    public static final int CCC_DEVICE_TYPE_CONTROLEE = 0xA1;
+
     /** Range Data Notification Config */
     @IntDef(
             value = {
@@ -236,8 +250,6 @@ public abstract class CccParams extends Params {
     public static final double RANGE_DATA_NTF_AOA_AZIMUTH_UPPER_DEFAULT = Math.PI;
     public static final double RANGE_DATA_NTF_AOA_ELEVATION_LOWER_DEFAULT = -Math.PI / 2;
     public static final double RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT = Math.PI / 2;
-
-    public static final int SESSION_TYPE_CCC = 160;
 
     public static final long UWB_INITIATION_TIME_MS_UNSET = 0;
 

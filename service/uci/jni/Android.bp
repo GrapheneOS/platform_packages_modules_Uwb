@@ -23,6 +23,7 @@ rust_defaults {
     prefer_rlib: true,
     apex_available: [
         "com.android.uwb",
+        "//apex_available:platform",
     ],
 }
 

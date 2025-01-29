@@ -255,11 +255,11 @@ public class CapabilityParam {
             (int) UwbVendorCapabilityTlvValues.ANTENNA_MODE_DIRECTIONAL;
 
     /* Fira Extension Device Capability Parameters */
-    public static final int CCC_EXTENSION_HOPPING_SEQUENCE_AES_BITMASK = 0X01;
-    public static final int CCC_EXTENSION_HOPPING_SEQUENCE_DEFAULT_BITMASK = 0X02;
-    public static final int CCC_EXTENSION_HOPPING_MODE_ADAPTIVE_BITMASK = 0X04;
-    public static final int CCC_EXTENSION_HOPPING_MODE_CONTINUOUS_BITMASK = 0X08;
-    public static final int CCC_EXTENSION_HOPPING_MODE_NONE_BITMASK = 0X16;
+    public static final int CCC_EXTENSION_HOPPING_SEQUENCE_AES_BITMASK = 1;
+    public static final int CCC_EXTENSION_HOPPING_SEQUENCE_DEFAULT_BITMASK = 2;
+    public static final int CCC_EXTENSION_HOPPING_MODE_ADAPTIVE_BITMASK = 4;
+    public static final int CCC_EXTENSION_HOPPING_MODE_CONTINUOUS_BITMASK = 8;
+    public static final int CCC_EXTENSION_HOPPING_MODE_NONE_BITMASK = 16;
 
     public static final int RANGE_DATA_NTF_CONFIG_ENABLE = 1 << 0;
     public static final int RANGE_DATA_NTF_CONFIG_DISABLE = 1 << 1;
