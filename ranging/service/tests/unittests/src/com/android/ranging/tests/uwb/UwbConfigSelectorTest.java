@@ -134,7 +134,7 @@ public class UwbConfigSelectorTest {
                 .setMinimumRangingIntervalMs(0)
                 .setMinimumSlotDurationMs(DEFAULT_SUPPORTED_SLOT_DURATIONS
                         .stream().min(Integer::compareTo).get())
-                .setSupportedDeviceRole(ImmutableList.of(UwbOobConfig.OobDeviceRole.RESPONDER));
+                .setSupportedDeviceRole(ImmutableList.of(UwbOobConfig.OobDeviceRole.INITIATOR));
     }
 
     @Before
@@ -182,7 +182,7 @@ public class UwbConfigSelectorTest {
     }
 
     @Test(expected = ConfigSelectionException.class)
-    public void restrictConfigToCapabilities_failsWhenPeerIncapableOfResponderRole()
+    public void restrictConfigToCapabilities_failsWhenPeerIncapableOfInitiatorRole()
             throws ConfigSelectionException {
 
         UwbConfigSelector configSelector = createConfigSelector();
@@ -191,7 +191,7 @@ public class UwbConfigSelectorTest {
                 new RangingDevice.Builder().build(),
                 createPeerCapabilities()
                         .setSupportedDeviceRole(
-                                ImmutableList.of(UwbOobConfig.OobDeviceRole.INITIATOR))
+                                ImmutableList.of(UwbOobConfig.OobDeviceRole.RESPONDER))
                         .build());
     }
 

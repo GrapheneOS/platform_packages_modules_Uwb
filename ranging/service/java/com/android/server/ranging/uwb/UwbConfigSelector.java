@@ -154,8 +154,8 @@ public class UwbConfigSelector {
     public void restrictConfigToCapabilities(
             @NonNull RangingDevice peer, @NonNull UwbOobCapabilities capabilities
     ) throws ConfigSelectionException {
-        if (!capabilities.getSupportedDeviceRole().contains(UwbOobConfig.OobDeviceRole.RESPONDER)) {
-            throw new ConfigSelectionException("Peer does not support responder role");
+        if (!capabilities.getSupportedDeviceRole().contains(UwbOobConfig.OobDeviceRole.INITIATOR)) {
+            throw new ConfigSelectionException("Peer does not support initiator role");
         }
 
         mPeerAddresses.put(peer, capabilities.getUwbAddress());
