@@ -59,6 +59,7 @@ import com.android.server.ranging.util.DataNotificationManager;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -134,7 +135,7 @@ public class UwbAdapter implements RangingAdapter {
         mExecutorService = executor;
         mBackendExecutor = backendExecutor;
         mCallbacks = null;
-        mPeers = HashBiMap.create();
+        mPeers = Maps.synchronizedBiMap(HashBiMap.create());
         mDataNotificationManager = new DataNotificationManager(
                 new DataNotificationConfig.Builder().build(),
                 new DataNotificationConfig.Builder().build()
@@ -233,13 +234,15 @@ public class UwbAdapter implements RangingAdapter {
     public void removePeer(RangingDevice device) {
         Log.i(TAG, "Remove peer called");
         if (mUwbClient instanceof RangingController) {
-            if (mPeers.containsKey(device)) {
-                com.android.ranging.uwb.backend.internal.UwbAddress uwbBackendAddress =
-                        com.android.ranging.uwb.backend.internal.UwbAddress.fromBytes(
-                                mPeers.get(device).getAddressBytes());
-                var unused = Futures.submit(() -> {
-                    ((RangingController) mUwbClient).removeControlee(uwbBackendAddress);
-                }, mExecutorService);
+            synchronized (mPeers) {
+                if (mPeers.containsKey(device)) {
+                    com.android.ranging.uwb.backend.internal.UwbAddress uwbBackendAddress =
+                            com.android.ranging.uwb.backend.internal.UwbAddress.fromBytes(
+                                    mPeers.get(device).getAddressBytes());
+                    var unused = Futures.submit(() -> {
+                        ((RangingController) mUwbClient).removeControlee(uwbBackendAddress);
+                    }, mExecutorService);
+                }
             }
         }
     }
@@ -422,9 +425,7 @@ public class UwbAdapter implements RangingAdapter {
                 Log.i(TAG, "Callback is empty.");
                 return;
             }
-            if (!mPeers.isEmpty()) {
-                mPeers.keySet().forEach(mCallbacks::onStopped);
-            }
+            mPeers.keySet().forEach(mCallbacks::onStopped);
             mCallbacks.onClosed(reason);
             clear();
         }
