@@ -34,4 +34,8 @@ android_test {
         "com.uwb.support.multichip",
     ],
     min_sdk_version: "31",
+    visibility: [
+        "//packages/modules/Uwb:__subpackages__",
+        "//platform_testing:__subpackages__",
+    ],
 }

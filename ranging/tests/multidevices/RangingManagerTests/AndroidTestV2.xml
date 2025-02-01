@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (C) 2025 The Android Open Source Project
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<configuration description="CTS UWB multi-device tests for Ranging APIs.">
+    <option name="test-suite-tag" value="cts-v-host" />
+    <option name="config-descriptor:metadata" key="component" value="uwb" />
+    <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
+    <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
+    <option name="config-descriptor:metadata" key="parameter" value="not_secondary_user" />
+    <option name="config-descriptor:metadata" key="mainline-param" value="com.google.android.uwb.apex" />
+
+    <device name="AndroidDevice">
+        <target_preparer class="AndroidDeviceFeaturesCheckDecorator">
+            <option name="required_feature" value="android.hardware.uwb" />
+        </target_preparer>
+        <target_preparer class="AndroidMainlineModulesCheckDecorator">
+            <option name="mainline_module_package_name" value="com.google.android.uwb" />
+        </target_preparer>
+        <target_preparer class="AndroidInstallAppsDecorator" />
+    </device>
+    <device name="AndroidDevice">
+        <target_preparer class="AndroidDeviceFeaturesCheckDecorator">
+            <option name="required_feature" value="android.hardware.uwb" />
+        </target_preparer>
+        <target_preparer class="AndroidMainlineModulesCheckDecorator">
+            <option name="mainline_module_package_name" value="com.google.android.uwb" />
+        </target_preparer>
+        <target_preparer class="AndroidInstallAppsDecorator" />
+    </device>
+
+    <test class="MoblyAospPackageTest" />
+
+    <option name="mobly_pkg" key="file" value="CtsUwbMultiDeviceRangingManagerTests" />
+    <option name="build_apk" key="file" value="ranging_snippet.apk" />
+    <option name="build_apk" key="file" value="uwb_snippet.apk" />
+    <option name="build_apk" key="file" value="bluetooth_multi_devices_snippet.apk" />
+</configuration>

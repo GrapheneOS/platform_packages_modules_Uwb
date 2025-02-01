@@ -111,6 +111,8 @@ public class RttAdapterTest {
         when(mMockContext.getPackageManager()).thenReturn(mMockPackageManager);
         when(mMockPackageManager.hasSystemFeature(
                 PackageManager.FEATURE_WIFI_AWARE)).thenReturn(true);
+        when(mMockPackageManager.hasSystemFeature(
+                PackageManager.FEATURE_WIFI_RTT)).thenReturn(true);
         when(mMockContext.getSystemService(WifiAwareManager.class)).thenReturn(
                 mMockWifiAwareManager);
         when(mMockSessionConfig.getDataNotificationConfig()).thenReturn(mDataNotificationConfig);

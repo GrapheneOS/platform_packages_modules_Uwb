@@ -25,7 +25,6 @@ python_defaults {
     ],
     test_suites: [
         "cts",
-        "cts-v-host",
         "general-tests",
         "mts-uwb",
         "mcts-uwb",
@@ -46,6 +45,32 @@ python_test_host {
     ],
     test_config: "RangingManagerTests/AndroidTest.xml",
     test_options: {
+        unit_test: false,
+    },
+    device_common_data: [
+        // Package the snippet with the mobly test
+        ":bluetooth_multi_devices_snippet",
+        ":ranging_snippet",
+        ":uwb_snippet",
+        "README.md",
+    ],
+    defaults: ["RangingMultiDevicePythonDefaults"],
+}
+
+// Modules for CTS-Verifier (cts-v-host)
+python_test_host {
+    name: "CtsUwbMultiDeviceRangingManagerTests",
+    main: "RangingManagerTests/ranging_manager_tests.py",
+    srcs: [
+        "RangingManagerTests/ranging_manager_tests.py",
+        "lib/*.py",
+    ],
+    test_suites: [
+        "cts-v-host",
+    ],
+    test_config: "RangingManagerTests/AndroidTestV2.xml",
+    test_options: {
+        runner: "mobly",
         unit_test: false,
     },
     device_common_data: [

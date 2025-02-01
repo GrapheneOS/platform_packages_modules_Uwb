@@ -24,7 +24,6 @@ python_defaults {
     ],
     test_suites: [
         "cts",
-        "cts-v-host",
         "general-tests",
         "mts-uwb",
         "mcts-uwb",
@@ -70,6 +69,59 @@ python_test_host {
     ],
     test_config: "FiraRangingTests/AndroidTest.xml",
     test_options: {
+        unit_test: false,
+    },
+    device_common_data: [
+        // Package the snippet with the mobly test
+        ":uwb_snippet",
+        "README.md",
+    ],
+    defaults: ["CtsUwbMultiDevicePythonDefaults"],
+}
+
+// Modules for CTS-Verifier (cts-v-host)
+python_test_host {
+    name: "CtsUwbMultiDeviceUwbManagerTests",
+    main: "UwbManagerTests/uwb_manager_test.py",
+    srcs: [
+        "UwbManagerTests/uwb_manager_test.py",
+        "lib/uwb_base_test.py",
+        "lib/uwb_ranging_decorator.py",
+        "lib/uwb_ranging_params.py",
+        "test_utils/uwb_test_utils.py",
+    ],
+    test_suites: [
+        "cts-v-host",
+    ],
+    test_config: "UwbManagerTests/AndroidTestV2.xml",
+    test_options: {
+        runner: "mobly",
+        unit_test: false,
+    },
+    device_common_data: [
+        // Package the snippet with the mobly test
+        ":uwb_snippet",
+        "README.md",
+    ],
+    defaults: ["CtsUwbMultiDevicePythonDefaults"],
+}
+
+python_test_host {
+    name: "CtsUwbMultiDeviceFiraRangingTests",
+    main: "FiraRangingTests/ranging_test.py",
+    srcs: [
+        "FiraRangingTests/ranging_test.py",
+        "lib/uwb_base_test.py",
+        "lib/uwb_ranging_decorator.py",
+        "lib/uwb_ranging_params.py",
+        "test_utils/uwb_test_utils.py",
+    ],
+    test_suites: [
+        "cts-v-host",
+    ],
+    test_config: "FiraRangingTests/AndroidTestV2.xml",
+    test_options: {
+        runner: "mobly",
         unit_test: false,
     },
     device_common_data: [

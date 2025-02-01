@@ -84,6 +84,11 @@ public abstract class CapabilityResponseMessage {
                     rangingTechnologiesPriority.add(RangingTechnology.UWB);
 
                     break;
+                case CS:
+                    csCapabilities = CsOobCapabilities.parseBytes(remainingBytes);
+                    parseCursor += techHeader.getSize();
+                    rangingTechnologiesPriority.add(RangingTechnology.CS);
+                    break;
                 default:
                     rangingTechnologiesPriority.add(techHeader.getRangingTechnology());
                     parseCursor += techHeader.getSize();
@@ -118,6 +123,11 @@ public abstract class CapabilityResponseMessage {
                         byteBuffer.put(uwbCapabilities.toBytes());
                     }
                     break;
+                case CS:
+                    CsOobCapabilities csCapabilities = getCsCapabilities();
+                    if (csCapabilities != null) {
+                        byteBuffer.put(csCapabilities.toBytes());
+                    }
                 default:
                     throw new UnsupportedOperationException("Not implemented");
             }

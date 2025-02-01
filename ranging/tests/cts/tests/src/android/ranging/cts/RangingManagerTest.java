@@ -25,7 +25,7 @@ import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
 import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_ONE;
 import static android.ranging.ble.cs.BleCsRangingParams.LOCATION_TYPE_INDOOR;
 import static android.ranging.ble.cs.BleCsRangingParams.SIGHT_TYPE_LINE_OF_SIGHT;
-import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_AUTO;
+import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_FUSED;
 import static android.ranging.oob.OobInitiatorRangingConfig.SECURITY_LEVEL_BASIC;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
@@ -1108,6 +1108,13 @@ public class RangingManagerTest {
     @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_enabled")
     public void testStartOobInitiatorRangingSession() throws InterruptedException {
+        assumeTrue(mSupportedTechnologies.contains(RangingManager.UWB)
+                || mSupportedTechnologies.contains(RangingManager.BLE_CS));
+
+        if (mSupportedTechnologies.contains(RangingManager.BLE_CS)) {
+            enableBluetooth();
+        }
+
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         uiAutomation.adoptShellPermissionIdentity();
 
@@ -1128,7 +1135,7 @@ public class RangingManagerTest {
         OobInitiatorRangingConfig config = new OobInitiatorRangingConfig.Builder()
                 .setFastestRangingInterval(Duration.ofMillis(100))
                 .setSlowestRangingInterval(Duration.ofMillis(5000))
-                .setRangingMode(RANGING_MODE_AUTO)
+                .setRangingMode(RANGING_MODE_FUSED)
                 .setSecurityLevel(SECURITY_LEVEL_BASIC)
                 .addDeviceHandle(deviceHandles.get(0))
                 .addDeviceHandles(deviceHandles.subList(1, deviceHandles.size()))
@@ -1138,7 +1145,7 @@ public class RangingManagerTest {
         assertEquals(Duration.ofMillis(5000), config.getSlowestRangingInterval());
         assertEquals(Range.create(Duration.ofMillis(100), Duration.ofMillis(5000)),
                 config.getRangingIntervalRange());
-        assertEquals(RANGING_MODE_AUTO, config.getRangingMode());
+        assertEquals(RANGING_MODE_FUSED, config.getRangingMode());
         assertEquals(SECURITY_LEVEL_BASIC, config.getSecurityLevel());
         assertThat(
                 config.getDeviceHandles().stream().map(DeviceHandle::getRangingDevice)
