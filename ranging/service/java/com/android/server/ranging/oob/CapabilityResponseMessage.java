@@ -18,6 +18,7 @@ package com.android.server.ranging.oob;
 
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.cs.CsOobCapabilities;
+import com.android.server.ranging.rtt.RttOobCapabilities;
 import com.android.server.ranging.uwb.UwbOobCapabilities;
 
 import com.google.auto.value.AutoValue;
@@ -71,6 +72,7 @@ public abstract class CapabilityResponseMessage {
         // Parse Capability data for different ranging technologies
         UwbOobCapabilities uwbCapabilities = null;
         CsOobCapabilities csCapabilities = null;
+        RttOobCapabilities rttCapabilities = null;
         ImmutableList.Builder<RangingTechnology> rangingTechnologiesPriority =
                 ImmutableList.builder();
         int countTechsParsed = 0;
@@ -89,6 +91,12 @@ public abstract class CapabilityResponseMessage {
                     parseCursor += techHeader.getSize();
                     rangingTechnologiesPriority.add(RangingTechnology.CS);
                     break;
+                case RTT:
+                    rttCapabilities = RttOobCapabilities.parseBytes(remainingBytes);
+                    parseCursor += techHeader.getSize();
+                    rangingTechnologiesPriority.add(RangingTechnology.RTT);
+                    break;
+
                 default:
                     rangingTechnologiesPriority.add(techHeader.getRangingTechnology());
                     parseCursor += techHeader.getSize();
@@ -101,6 +109,7 @@ public abstract class CapabilityResponseMessage {
                 .setSupportedRangingTechnologies(rangingTechnologies)
                 .setUwbCapabilities(uwbCapabilities)
                 .setCsCapabilities(csCapabilities)
+                .setRttCapabilities(rttCapabilities)
                 .setRangingTechnologiesPriority(rangingTechnologiesPriority.build())
                 .build();
     }
@@ -110,6 +119,9 @@ public abstract class CapabilityResponseMessage {
         int size = MIN_SIZE_BYTES + getHeader().getSize();
         if (getUwbCapabilities() != null) {
             size += UwbOobCapabilities.getSize();
+        }
+        if (getRttCapabilities() != null) {
+            size += getRttCapabilities().toBytes().length;
         }
         ByteBuffer byteBuffer = ByteBuffer.allocate(size);
         byteBuffer
@@ -128,6 +140,13 @@ public abstract class CapabilityResponseMessage {
                     if (csCapabilities != null) {
                         byteBuffer.put(csCapabilities.toBytes());
                     }
+                    break;
+                case RTT:
+                    RttOobCapabilities rttCapabilities = getRttCapabilities();
+                    if (rttCapabilities != null) {
+                        byteBuffer.put(rttCapabilities.toBytes());
+                    }
+                    break;
                 default:
                     throw new UnsupportedOperationException("Not implemented");
             }
@@ -156,6 +175,9 @@ public abstract class CapabilityResponseMessage {
     @Nullable
     public abstract CsOobCapabilities getCsCapabilities();
 
+    @Nullable
+    public abstract RttOobCapabilities getRttCapabilities();
+
     /** Returns a builder for {@link CapabilityResponseMessage}. */
     public static Builder builder() {
         return new AutoValue_CapabilityResponseMessage.Builder()
@@ -174,6 +196,8 @@ public abstract class CapabilityResponseMessage {
         public abstract Builder setUwbCapabilities(@Nullable UwbOobCapabilities uwbCapabilities);
 
         public abstract Builder setCsCapabilities(@Nullable CsOobCapabilities csCapabilities);
+
+        public abstract Builder setRttCapabilities(@Nullable RttOobCapabilities rttCapabilities);
 
         public abstract Builder setRangingTechnologiesPriority(
                 ImmutableList<RangingTechnology> rangingTechnologiesPriority

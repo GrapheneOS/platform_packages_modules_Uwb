@@ -40,6 +40,9 @@ import com.android.server.ranging.oob.CapabilityResponseMessage;
 import com.android.server.ranging.oob.MessageType;
 import com.android.server.ranging.oob.OobHeader;
 import com.android.server.ranging.oob.SetConfigurationMessage;
+import com.android.server.ranging.rtt.RttConfigSelector;
+import com.android.server.ranging.rtt.RttOobCapabilities;
+import com.android.server.ranging.rtt.RttOobConfig;
 import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
 import com.android.server.ranging.uwb.UwbConfigSelector;
 import com.android.server.ranging.uwb.UwbConfigSelector.SelectedUwbConfig;
@@ -64,6 +67,7 @@ public class RangingEngine {
 
     private @Nullable UwbConfigSelector mUwbConfigSelector = null;
     private @Nullable CsConfigSelector mCsConfigSelector = null;
+    private @Nullable RttConfigSelector mRttConfigSelector = null;
 
     public static class ConfigSelectionException extends Exception {
         public ConfigSelectionException(String message) {
@@ -116,6 +120,11 @@ public class RangingEngine {
                 mRequestedTechnologies.add(RangingTechnology.CS);
                 mCsConfigSelector = new CsConfigSelector(sessionConfig, oobConfig);
             }
+            if (RttConfigSelector.isCapableOfConfig(oobConfig,
+                    localCapabilities.getRttRangingCapabilities())) {
+                mRequestedTechnologies.add(RangingTechnology.RTT);
+                mRttConfigSelector = new RttConfigSelector(sessionConfig, oobConfig);
+            }
         }
 
         if (mRequestedTechnologies.isEmpty()) {
@@ -137,6 +146,7 @@ public class RangingEngine {
 
         UwbOobCapabilities uwbCapabilities = capabilities.getUwbCapabilities();
         CsOobCapabilities csCapabilities = capabilities.getCsCapabilities();
+        RttOobCapabilities rttCapabilities = capabilities.getRttCapabilities();
 
         for (RangingTechnology technology : selectedTechnologies) {
             if (technology == RangingTechnology.UWB
@@ -149,6 +159,9 @@ public class RangingEngine {
                     && mCsConfigSelector != null
             ) {
                 mCsConfigSelector.restrictConfigToCapabilities(device, csCapabilities);
+            } else if (technology == RangingTechnology.RTT && rttCapabilities != null
+                    && mRttConfigSelector != null) {
+                mRttConfigSelector.restrictConfigToCapabilities(device, rttCapabilities);
             } else {
                 Log.e(TAG, "Technology " + technology + " was selected by us and peer " + device
                         + ", but one of us does not actually support it");
@@ -178,6 +191,13 @@ public class RangingEngine {
             csConfigsByPeer.putAll(csConfig.getPeerConfigs());
         }
 
+        Map<RangingDevice, RttOobConfig> rttConfigByPeer = new HashMap<>();
+        if (mRttConfigSelector != null && mRttConfigSelector.hasPeersToConfigure()) {
+            RttConfigSelector.SelectedRttConfig rttConfig = mRttConfigSelector.selectConfig();
+            localConfigs.addAll(rttConfig.getLocalConfigs());
+            rttConfigByPeer.putAll(rttConfig.getPeerConfigs());
+        }
+
         for (RangingDevice peer : mPeerTechnologies.keySet()) {
             ImmutableList<RangingTechnology> peerTechnologies =
                     ImmutableList.copyOf(mPeerTechnologies.get(peer));
@@ -192,6 +212,7 @@ public class RangingEngine {
 
             configMessage.setUwbConfig(uwbConfigsByPeer.get(peer));
             configMessage.setCsConfig(csConfigsByPeer.get(peer));
+            configMessage.setRttConfig(rttConfigByPeer.get(peer));
 
             configMessages.put(peer, configMessage.build());
         }

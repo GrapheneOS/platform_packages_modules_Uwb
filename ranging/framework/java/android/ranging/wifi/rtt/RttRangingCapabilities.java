@@ -16,6 +16,8 @@
 
 package android.ranging.wifi.rtt;
 
+import static android.net.wifi.rtt.ResponderConfig.CHANNEL_WIDTH_20MHZ;
+
 import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
 import android.os.Parcel;
@@ -35,17 +37,27 @@ public final class RttRangingCapabilities implements Parcelable, TechnologyCapab
 
     private final boolean mHasPeriodicRangingHardwareFeature;
 
+    private final int mMaxSupportedBandwidth;
+
+    private final int mMaxSupportedRxChain;
+
     private RttRangingCapabilities(Builder builder) {
         mHasPeriodicRangingHardwareFeature = builder.mHasPeriodicRangingHardwareFeature;
+        mMaxSupportedBandwidth = builder.mMaxSupportedBandwidth;
+        mMaxSupportedRxChain = builder.mMaxSupportedRxChain;
     }
 
     private RttRangingCapabilities(Parcel in) {
         mHasPeriodicRangingHardwareFeature = in.readBoolean();
+        mMaxSupportedBandwidth = in.readInt();
+        mMaxSupportedRxChain = in.readInt();
     }
 
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
         dest.writeBoolean(mHasPeriodicRangingHardwareFeature);
+        dest.writeInt(mMaxSupportedBandwidth);
+        dest.writeInt(mMaxSupportedRxChain);
     }
 
     @Override
@@ -85,12 +97,41 @@ public final class RttRangingCapabilities implements Parcelable, TechnologyCapab
     }
 
     /**
+     * @hide
+     */
+    public int getMaxSupportedBandwidth() {
+        return mMaxSupportedBandwidth;
+    }
+
+    /**
+     * @hide
+     */
+    public int getMaxSupportedRxChain() {
+        return mMaxSupportedRxChain;
+    }
+
+    /**
      * Builder for {@link RttRangingCapabilities}
      *
      * @hide
      */
     public static class Builder {
         private boolean mHasPeriodicRangingHardwareFeature = false;
+        private int mMaxSupportedBandwidth = CHANNEL_WIDTH_20MHZ;
+
+        private int mMaxSupportedRxChain = 0;
+
+        @NonNull
+        public Builder setMaxSupportedBandwidth(int maxSupportedBandwidth) {
+            mMaxSupportedBandwidth = maxSupportedBandwidth;
+            return this;
+        }
+
+        @NonNull
+        public Builder setMaxSupportedRxChain(int maxSupportedRxChain) {
+            mMaxSupportedRxChain = maxSupportedRxChain;
+            return this;
+        }
 
         /**
          * Sets whether hardware supports periodic ranging feature.

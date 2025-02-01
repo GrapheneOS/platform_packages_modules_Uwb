@@ -62,6 +62,7 @@ java_defaults {
     libs: [
         "androidx.annotation_annotation",
         "framework-bluetooth.stubs.module_lib",
+        "framework-wifi.stubs.module_lib",
         "unsupportedappusage", // for android.compat.annotation.UnsupportedAppUsage
     ],
     srcs: [

@@ -81,6 +81,8 @@ public class RttCapabilitiesAdapter extends CapabilitiesAdapter {
         if (getAvailability() == ENABLED) {
             return new RttRangingCapabilities.Builder()
                     .setPeriodicRangingHardwareFeature(mRttService.hasPeriodicRangingSupport())
+                    .setMaxSupportedBandwidth(mRttService.getMaxSupportedBandwidth())
+                    .setMaxSupportedRxChain(mRttService.getMaxSupportedRxChains())
                     .build();
         }
         return null;

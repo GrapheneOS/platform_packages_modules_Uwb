@@ -26,4 +26,9 @@ public interface RttService {
     boolean isAvailable();
 
     boolean hasPeriodicRangingSupport();
+
+    int getMaxSupportedBandwidth();
+
+    int getMaxSupportedRxChains();
+
 }

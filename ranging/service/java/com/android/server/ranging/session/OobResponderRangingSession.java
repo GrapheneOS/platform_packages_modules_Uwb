@@ -16,6 +16,8 @@
 
 package com.android.server.ranging.session;
 
+import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
+
 import android.content.AttributionSource;
 import android.ranging.RangingCapabilities;
 import android.ranging.SessionHandle;
@@ -24,6 +26,7 @@ import android.ranging.oob.OobHandle;
 import android.ranging.oob.OobResponderRangingConfig;
 import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbRangingCapabilities;
+import android.ranging.wifi.rtt.RttRangingCapabilities;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -39,6 +42,8 @@ import com.android.server.ranging.oob.MessageType;
 import com.android.server.ranging.oob.OobController.ReceivedMessage;
 import com.android.server.ranging.oob.OobHeader;
 import com.android.server.ranging.oob.SetConfigurationMessage;
+import com.android.server.ranging.rtt.RttOobCapabilities;
+import com.android.server.ranging.rtt.RttOobConfig;
 import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
 import com.android.server.ranging.uwb.UwbOobCapabilities;
 import com.android.server.ranging.uwb.UwbOobConfig;
@@ -142,6 +147,16 @@ public class OobResponderRangingSession
                         CsOobCapabilities.fromRangingCapabilities(csCapabilities));
             }
         }
+
+        if (request.getRequestedRangingTechnologies().contains(RangingTechnology.RTT)) {
+            RttRangingCapabilities rttRangingCapabilities =
+                    myCapabilities.getRttRangingCapabilities();
+            if (rttRangingCapabilities != null) {
+                supportedTechnologies.add(RangingTechnology.RTT);
+                response.setRttCapabilities(
+                        RttOobCapabilities.fromRangingCapabilities(rttRangingCapabilities));
+            }
+        }
         // TODO: Other technologies
 
         return response
@@ -161,6 +176,11 @@ public class OobResponderRangingSession
         UwbOobConfig uwbConfig = body.getUwbConfig();
         if (uwbConfig != null) {
             configs.add(uwbConfig.toTechnologyConfig(mMyUwbAddress, mPeer.getRangingDevice()));
+        }
+        RttOobConfig rttOobConfig = body.getRttConfig();
+        if (rttOobConfig != null) {
+            configs.add(rttOobConfig.toTechnologyConfig(mPeer.getRangingDevice(),
+                    DEVICE_ROLE_RESPONDER));
         }
         // Skip CS because the CS responder side does not need to be configured.
 
