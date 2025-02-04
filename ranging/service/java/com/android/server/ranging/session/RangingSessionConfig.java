@@ -101,8 +101,6 @@ public class RangingSessionConfig {
             configs.add(new UwbConfig.Builder(key.mParams)
                     .setDeviceRole(mDeviceRole)
                     .setPeerAddresses(ImmutableBiMap.copyOf(uwbPeersByParams.get(key)))
-                    // TODO(370077264): Set country code based on geolocation.
-                    .setCountryCode("US")
                     .setSessionConfig(mSessionConfig)
                     .build());
         }

@@ -301,6 +301,25 @@ public class BaseRangingSession {
         }
     }
 
+    protected ImmutableSet<RangingTechnology> getTechnologiesUsedByPeer(RangingDevice peer) {
+        synchronized (mLock) {
+            return ImmutableSet.copyOf(mPeers.get(peer).technologies);
+        }
+    }
+
+    protected void stopTechnologies(Set<RangingTechnology> technologies) {
+        Log.v(TAG, "Stop ranging with technologies " + technologies);
+        synchronized (mLock) {
+            long token = Binder.clearCallingIdentity();
+            for (RangingAdapter adapter : mAdapters.values()) {
+                if (technologies.contains(adapter.getTechnology())) {
+                    adapter.stop();
+                }
+            }
+            Binder.restoreCallingIdentity(token);
+        }
+    }
+
     private class AdapterListener implements RangingAdapter.Callback {
         private final TechnologyConfig mConfig;
 

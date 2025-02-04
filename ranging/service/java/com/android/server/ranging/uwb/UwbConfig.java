@@ -49,7 +49,6 @@ import java.util.stream.Collectors;
 public class UwbConfig implements MulticastTechnologyConfig {
     private static final String TAG = UwbConfig.class.getSimpleName();
 
-    private final String mCountryCode;
     private final SessionConfig mSessionConfig;
     private final UwbRangingParams mParameters;
     private final int mDeviceRole;
@@ -57,7 +56,6 @@ public class UwbConfig implements MulticastTechnologyConfig {
 
     private UwbConfig(Builder builder) {
         mParameters = builder.mParameters;
-        mCountryCode = builder.mCountryCode.get();
         mSessionConfig = builder.mSessionConfig;
         mDeviceRole = builder.mDeviceRole;
         mPeerAddresses = builder.mPeerAddresses.get();
@@ -84,10 +82,6 @@ public class UwbConfig implements MulticastTechnologyConfig {
 
     public @NonNull UwbRangingParams getParameters() {
         return mParameters;
-    }
-
-    public @NonNull String getCountryCode() {
-        return mCountryCode;
     }
 
     @Override
@@ -166,7 +160,6 @@ public class UwbConfig implements MulticastTechnologyConfig {
         private final UwbRangingParams mParameters;
         private final RequiredParam<ImmutableBiMap<RangingDevice, UwbAddress>> mPeerAddresses =
                 new RequiredParam<>();
-        private final RequiredParam<String> mCountryCode = new RequiredParam<>();
         private SessionConfig mSessionConfig = new SessionConfig.Builder().build();
 
         private int mDeviceRole = DEVICE_ROLE_RESPONDER;
@@ -187,11 +180,6 @@ public class UwbConfig implements MulticastTechnologyConfig {
             return this;
         }
 
-        public Builder setCountryCode(@NonNull String countryCode) {
-            mCountryCode.set(countryCode);
-            return this;
-        }
-
         public Builder setDeviceRole(@RangingPreference.DeviceRole int deviceRole) {
             mDeviceRole = deviceRole;
             return this;
@@ -208,8 +196,6 @@ public class UwbConfig implements MulticastTechnologyConfig {
         return "UwbConfig{"
                 + "mParameters="
                 + mParameters
-                + ", mCountryCode='"
-                + mCountryCode
                 + ", mSessionConfig="
                 + mSessionConfig
                 + ", mDeviceRole="

@@ -81,6 +81,8 @@ public class AliroEncoder extends TlvEncoder {
 
         TlvBuffer.Builder tlvBufferBuilder = new TlvBuffer.Builder()
                 .putByte(ConfigParam.DEVICE_TYPE,
+                        mUwbInjector.getDeviceConfigFacade().isFiraSupportedExtensionForCCC()
+                        ? (byte) UwbUciConstants.CCC_DEVICE_TYPE_CONTROLLER :
                         (byte) UwbUciConstants.DEVICE_TYPE_CONTROLLER) // DEVICE_TYPE
                 .putByte(ConfigParam.STS_CONFIG,
                         (byte) UwbUciConstants.STS_MODE_DYNAMIC) // STS_CONFIG

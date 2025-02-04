@@ -26,6 +26,11 @@ import static com.android.server.uwb.config.CapabilityParam.CCC_CHAPS_PER_SLOT_4
 import static com.android.server.uwb.config.CapabilityParam.CCC_CHAPS_PER_SLOT_6;
 import static com.android.server.uwb.config.CapabilityParam.CCC_CHAPS_PER_SLOT_8;
 import static com.android.server.uwb.config.CapabilityParam.CCC_CHAPS_PER_SLOT_9;
+import static com.android.server.uwb.config.CapabilityParam.CCC_EXTENSION_HOPPING_MODE_ADAPTIVE_BITMASK;
+import static com.android.server.uwb.config.CapabilityParam.CCC_EXTENSION_HOPPING_MODE_CONTINUOUS_BITMASK;
+import static com.android.server.uwb.config.CapabilityParam.CCC_EXTENSION_HOPPING_MODE_NONE_BITMASK;
+import static com.android.server.uwb.config.CapabilityParam.CCC_EXTENSION_HOPPING_SEQUENCE_AES_BITMASK;
+import static com.android.server.uwb.config.CapabilityParam.CCC_EXTENSION_HOPPING_SEQUENCE_DEFAULT_BITMASK;
 import static com.android.server.uwb.config.CapabilityParam.CCC_HOPPING_CONFIG_MODE_ADAPTIVE;
 import static com.android.server.uwb.config.CapabilityParam.CCC_HOPPING_CONFIG_MODE_CONTINUOUS;
 import static com.android.server.uwb.config.CapabilityParam.CCC_HOPPING_CONFIG_MODE_NONE;
@@ -215,21 +220,39 @@ public class AliroDecoder extends TlvDecoder {
                 builder.addChannel(UWB_CHANNEL_9);
             }
         }
+
+        boolean isFiraExtensionSupported =
+                mUwbInjector.getDeviceConfigFacade().isFiraSupportedExtensionForCCC();
         byte hoppingConfigModesAndSequences =
                 tlvs.getByte(CCC_SUPPORTED_HOPPING_CONFIG_MODES_AND_SEQUENCES);
-        if (isBitSet(hoppingConfigModesAndSequences, CCC_HOPPING_CONFIG_MODE_NONE)) {
+        if (isBitSet(hoppingConfigModesAndSequences,
+                isFiraExtensionSupported
+                        ? CCC_EXTENSION_HOPPING_MODE_NONE_BITMASK :
+                        CCC_HOPPING_CONFIG_MODE_NONE)) {
             builder.addHoppingConfigMode(HOPPING_CONFIG_MODE_NONE);
         }
-        if (isBitSet(hoppingConfigModesAndSequences, CCC_HOPPING_CONFIG_MODE_CONTINUOUS)) {
+        if (isBitSet(hoppingConfigModesAndSequences,
+                isFiraExtensionSupported
+                        ? CCC_EXTENSION_HOPPING_MODE_CONTINUOUS_BITMASK :
+                        CCC_HOPPING_CONFIG_MODE_CONTINUOUS)) {
             builder.addHoppingConfigMode(HOPPING_CONFIG_MODE_CONTINUOUS);
         }
-        if (isBitSet(hoppingConfigModesAndSequences, CCC_HOPPING_CONFIG_MODE_ADAPTIVE)) {
+        if (isBitSet(hoppingConfigModesAndSequences,
+                isFiraExtensionSupported
+                        ? CCC_EXTENSION_HOPPING_MODE_ADAPTIVE_BITMASK :
+                        CCC_HOPPING_CONFIG_MODE_ADAPTIVE)) {
             builder.addHoppingConfigMode(HOPPING_CONFIG_MODE_ADAPTIVE);
         }
-        if (isBitSet(hoppingConfigModesAndSequences, CCC_HOPPING_SEQUENCE_AES)) {
+        if (isBitSet(hoppingConfigModesAndSequences,
+                isFiraExtensionSupported
+                        ? CCC_EXTENSION_HOPPING_SEQUENCE_AES_BITMASK :
+                        CCC_HOPPING_SEQUENCE_AES)) {
             builder.addHoppingSequence(HOPPING_SEQUENCE_AES);
         }
-        if (isBitSet(hoppingConfigModesAndSequences, CCC_HOPPING_SEQUENCE_DEFAULT)) {
+        if (isBitSet(hoppingConfigModesAndSequences,
+                isFiraExtensionSupported
+                        ? CCC_EXTENSION_HOPPING_SEQUENCE_DEFAULT_BITMASK :
+                        CCC_HOPPING_SEQUENCE_DEFAULT)) {
             builder.addHoppingSequence(HOPPING_SEQUENCE_DEFAULT);
         }
 

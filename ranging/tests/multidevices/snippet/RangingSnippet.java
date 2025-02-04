@@ -112,6 +112,7 @@ public class RangingSnippet implements Snippet {
         OOB_SEND_CAPABILITIES_REQUEST,
         OOB_SEND_CAPABILITIES_RESPONSE,
         OOB_SEND_SET_CONFIGURATION,
+        OOB_SEND_STOP_RANGING,
         OOB_SEND_UNKNOWN,
         OOB_CLOSED
     }
@@ -255,6 +256,10 @@ public class RangingSnippet implements Snippet {
                     return new SnippetEvent(
                             mCallbackId,
                             Event.OOB_SEND_SET_CONFIGURATION.toString());
+                case 6:
+                    return new SnippetEvent(
+                            mCallbackId,
+                            Event.OOB_SEND_STOP_RANGING.toString());
                 default:
                     return new SnippetEvent(
                             mCallbackId,

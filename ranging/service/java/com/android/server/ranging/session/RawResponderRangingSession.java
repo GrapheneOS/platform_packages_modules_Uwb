@@ -53,4 +53,7 @@ public class RawResponderRangingSession
     public void appForegroundStateUpdated(boolean appInForeground) {
         super.appForegroundStateUpdated(appInForeground);
     }
+
+    @Override
+    public void close() { }
 }

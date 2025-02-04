@@ -108,7 +108,6 @@ public class UwbAdapterTest {
                                         .build())
                         .setRangingUpdateRate(UPDATE_RATE_NORMAL)
                         .build())
-                .setCountryCode("US")
                 .setPeerAddresses(ImmutableBiMap.copyOf(peers))
                 .build();
     }

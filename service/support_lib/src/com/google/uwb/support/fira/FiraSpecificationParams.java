@@ -113,6 +113,8 @@ public class FiraSpecificationParams extends FiraParams {
 
     private final boolean mHasPsduLengthSupport;
 
+    private final String mCountryCode;
+
     private final int mUciVersion;
 
     private static final String KEY_MIN_PHY_VERSION = "min_phy_version";
@@ -167,6 +169,8 @@ public class FiraSpecificationParams extends FiraParams {
 
     public static final String KEY_PSDU_LENGTH_SUPPORT = "psdu_length_support";
 
+    public static final String KEY_COUNTRY_CODE = "country_code";
+
     public static final String KEY_UCI_VERSION = "uci_version";
 
     public static final int DEFAULT_MAX_RANGING_SESSIONS_NUMBER = 5;
@@ -206,6 +210,7 @@ public class FiraSpecificationParams extends FiraParams {
             int deviceType, boolean suspendRangingSupport, int sessionKeyLength,
             int dtTagMaxActiveRr, boolean hasBackgroundRangingSupport,
             boolean hasDtTagBlockSkippingSupport, boolean hasPsduLengthSupport,
+            String countryCode,
             int uciVersion) {
         mMinPhyVersionSupported = minPhyVersionSupported;
         mMaxPhyVersionSupported = maxPhyVersionSupported;
@@ -245,6 +250,7 @@ public class FiraSpecificationParams extends FiraParams {
         mHasBackgroundRangingSupport = hasBackgroundRangingSupport;
         mHasDtTagBlockSkippingSupport = hasDtTagBlockSkippingSupport;
         mHasPsduLengthSupport = hasPsduLengthSupport;
+        mCountryCode = countryCode;
         mUciVersion = uciVersion;
     }
 
@@ -407,6 +413,10 @@ public class FiraSpecificationParams extends FiraParams {
         return mHasPsduLengthSupport;
     }
 
+    public String getCountryCode() {
+        return mCountryCode;
+    }
+
     public int getUciVersionSupported() {
         return mUciVersion;
     }
@@ -466,6 +476,7 @@ public class FiraSpecificationParams extends FiraParams {
         bundle.putBoolean(KEY_BACKGROUND_RANGING_SUPPORT, mHasBackgroundRangingSupport);
         bundle.putBoolean(KEY_DT_TAG_BLOCK_SKIPPING_SUPPORT, mHasDtTagBlockSkippingSupport);
         bundle.putBoolean(KEY_PSDU_LENGTH_SUPPORT, mHasPsduLengthSupport);
+        bundle.putString(KEY_COUNTRY_CODE, mCountryCode);
         bundle.putInt(KEY_UCI_VERSION, mUciVersion);
         return bundle;
     }
@@ -503,6 +514,7 @@ public class FiraSpecificationParams extends FiraParams {
         builder.setDtTagBlockSkippingSupport(bundle.getBoolean(KEY_DT_TAG_BLOCK_SKIPPING_SUPPORT));
         builder.setPsduLengthSupport(bundle.getBoolean(KEY_PSDU_LENGTH_SUPPORT));
         builder.setUciVersionSupported(bundle.getInt(KEY_UCI_VERSION, 1));
+        builder.setCountryCode(bundle.getString(KEY_COUNTRY_CODE));
         return builder;
     }
 
@@ -639,6 +651,8 @@ public class FiraSpecificationParams extends FiraParams {
         private int mMinSlotDurationUs = -1;
 
         private int mMaxRangingSessionNumber = DEFAULT_MAX_RANGING_SESSIONS_NUMBER;
+
+        private String mCountryCode = null;
 
         private int mUciVersion = 1;
 
@@ -940,6 +954,11 @@ public class FiraSpecificationParams extends FiraParams {
             return this;
         }
 
+        public FiraSpecificationParams.Builder setCountryCode(String value) {
+            mCountryCode = value;
+            return this;
+        }
+
         public FiraSpecificationParams.Builder setUciVersionSupported(
                 int uciVersion) {
             mUciVersion = uciVersion;
@@ -987,6 +1006,7 @@ public class FiraSpecificationParams extends FiraParams {
             mHasBackgroundRangingSupport = params.mHasBackgroundRangingSupport;
             mHasDtTagBlockSkippingSupport = params.mHasDtTagBlockSkippingSupport;
             mHasPsduLengthSupport = params.mHasPsduLengthSupport;
+            mCountryCode = params.mCountryCode;
         }
 
         public FiraSpecificationParams build() {
@@ -1029,6 +1049,7 @@ public class FiraSpecificationParams extends FiraParams {
                     mHasBackgroundRangingSupport,
                     mHasDtTagBlockSkippingSupport,
                     mHasPsduLengthSupport,
+                    mCountryCode,
                     mUciVersion);
         }
     }

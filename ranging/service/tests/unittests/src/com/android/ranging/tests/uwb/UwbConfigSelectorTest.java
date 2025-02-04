@@ -155,6 +155,7 @@ public class UwbConfigSelectorTest {
         when(mMockLocalCapabilities.getSupportedSlotDurations())
                 .thenReturn(DEFAULT_SUPPORTED_SLOT_DURATIONS);
         when(mMockLocalCapabilities.isAzimuthalAngleSupported()).thenReturn(true);
+        when(mMockLocalCapabilities.getCountryCode()).thenReturn("US");
     }
 
     @Test

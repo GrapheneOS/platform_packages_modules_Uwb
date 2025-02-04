@@ -79,7 +79,7 @@ public class RangingInjector {
         mRangingServiceManager = new RangingServiceManager(this,
                 mContext.getSystemService(ActivityManager.class),
                 mLooper);
-        mOobController = new OobController();
+        mOobController = new OobController(this);
         mPermissionManager = context.getSystemService(PermissionManager.class);
         mAlarmHandler = new Handler(mLooper);
     }

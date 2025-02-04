@@ -213,7 +213,6 @@ public abstract class UwbOobConfig {
                         .setSlotDuration(getSelectedSlotDurationMs())
                         .build())
                 .setPeerAddresses(ImmutableBiMap.of(peer, getUwbAddress()))
-                .setCountryCode(getCountryCode())
                 .setDeviceRole(getDeviceRole())
                 .build();
     }

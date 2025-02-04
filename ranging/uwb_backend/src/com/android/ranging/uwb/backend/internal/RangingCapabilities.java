@@ -61,11 +61,13 @@ public class RangingCapabilities {
     private final List<Integer> mSupportedRangingUpdateRates;
     private final List<Integer> mSupportedPreambleIndexes;
     private final boolean mHasBackgroundRangingSupport;
+    private final String mCountryCode;
 
     public RangingCapabilities(
             boolean supportsDistance,
             boolean supportsAzimuthalAngle,
-            boolean supportsElevationAngle) {
+            boolean supportsElevationAngle,
+            String countryCode) {
         this(
                 supportsDistance,
                 supportsAzimuthalAngle,
@@ -78,7 +80,8 @@ public class RangingCapabilities {
                 DEFAULT_SUPPORTED_SLOT_DURATIONS,
                 DEFAULT_SUPPORTED_RANGING_UPDATE_RATE,
                 SUPPORTED_BPRF_PREAMBLE_INDEX,
-                false);
+                false,
+                countryCode);
     }
 
     public RangingCapabilities(
@@ -93,7 +96,8 @@ public class RangingCapabilities {
             ImmutableList<Integer> supportedSlotDurations,
             ImmutableList<Integer> supportedRangingUpdateRates,
             ImmutableList<Integer> supportedPreambleIndexes,
-            boolean hasBackgroundRangingSupport) {
+            boolean hasBackgroundRangingSupport,
+            String countryCode) {
         this.mSupportsDistance = supportsDistance;
         this.mSupportsAzimuthalAngle = supportsAzimuthalAngle;
         this.mSupportsElevationAngle = supportsElevationAngle;
@@ -106,6 +110,7 @@ public class RangingCapabilities {
         this.mSupportedRangingUpdateRates = supportedRangingUpdateRates;
         this.mSupportedPreambleIndexes = supportedPreambleIndexes;
         this.mHasBackgroundRangingSupport = hasBackgroundRangingSupport;
+        this.mCountryCode = countryCode;
     }
 
     /** Whether distance ranging is supported. */
@@ -169,5 +174,10 @@ public class RangingCapabilities {
     /** Whether background ranging is supported. */
     public boolean hasBackgroundRangingSupport() {
         return mHasBackgroundRangingSupport;
+    }
+
+    /** 2-letter ISO 3166 country code currently being used */
+    public String getCountryCode() {
+        return mCountryCode;
     }
 }

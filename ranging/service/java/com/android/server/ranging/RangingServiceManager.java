@@ -312,7 +312,7 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
          * all of its constituent technology-specific sessions have stopped.
          */
         public void onSessionStopped(@Callback.Reason int reason) {
-            mSessions.remove(mSessionHandle);
+            mSessions.remove(mSessionHandle).close();
             if (mIsSessionStarted.get()) {
                 try {
                     mRangingCallbacks.onClosed(mSessionHandle, reason);

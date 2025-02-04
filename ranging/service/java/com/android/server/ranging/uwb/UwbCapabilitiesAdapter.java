@@ -103,6 +103,7 @@ public class UwbCapabilitiesAdapter extends CapabilitiesAdapter {
                 .setSupportedPreambleIndexes(capabilities.getSupportedPreambleIndexes())
                 .setHasBackgroundRangingSupport(
                         capabilities.hasBackgroundRangingSupport())
+                .setCountryCode(capabilities.getCountryCode())
                 .build();
     }
 

@@ -774,7 +774,6 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
     session.start_and_assert_opened()
     session.assert_exchanged_data()
-    # TODO(jmes): Send Stop Ranging message instead of manually closing both devices
     session.stop_and_assert_closed()
 
 if __name__ == "__main__":

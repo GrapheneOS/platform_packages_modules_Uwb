@@ -64,6 +64,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /** Selects a {@link UwbConfig} from local and peer device capabilities */
@@ -71,10 +72,9 @@ public class UwbConfigSelector {
     private static final String TAG = UwbConfigSelector.class.getSimpleName();
 
     private static final Set<@UwbComplexChannel.UwbPreambleCodeIndex Integer> HPRF_INDEXES =
-            Set.copyOf(
-                    IntStream.rangeClosed(UWB_PREAMBLE_CODE_INDEX_25, UWB_PREAMBLE_CODE_INDEX_32)
-                            .boxed()
-                            .toList());
+            IntStream.rangeClosed(UWB_PREAMBLE_CODE_INDEX_25, UWB_PREAMBLE_CODE_INDEX_32)
+                        .boxed()
+                        .collect(Collectors.toSet());
 
     private final SessionConfig mSessionConfig;
     private final OobInitiatorRangingConfig mOobConfig;
@@ -86,6 +86,7 @@ public class UwbConfigSelector {
     private final Set<@UwbComplexChannel.UwbPreambleCodeIndex Integer> mPreambleIndexes;
     private @UwbRangingParams.SlotDuration int mMinSlotDurationMs;
     private Range<Duration> mRangingIntervals;
+    private final String mCountryCode;
 
     public static boolean isCapableOfConfig(
             @NonNull SessionConfig sessionConfig, @NonNull OobInitiatorRangingConfig oobConfig,
@@ -145,6 +146,7 @@ public class UwbConfigSelector {
         mRangingIntervals = mOobConfig.getRangingIntervalRange().intersect(
                 capabilities.getMinimumRangingInterval(),
                 mOobConfig.getSlowestRangingInterval());
+        mCountryCode = capabilities.getCountryCode();
     }
 
     /**
@@ -190,7 +192,6 @@ public class UwbConfigSelector {
         private final @UwbComplexChannel.UwbPreambleCodeIndex int mPreambleIndex;
         private final @RawRangingDevice.RangingUpdateRate int mRangingUpdateRate;
         private final byte[] mSessionKeyInfo;
-        private final String mCountryCode;
 
         SelectedUwbConfig() throws ConfigSelectionException {
             mSessionId = mSessionHandle.hashCode();
@@ -200,8 +201,6 @@ public class UwbConfigSelector {
             mPreambleIndex = selectPreambleIndex();
             mRangingUpdateRate = selectRangingUpdateRate();
             mSessionKeyInfo = selectSessionKeyInfo();
-            // TODO: Set based on geolocation
-            mCountryCode = "US";
         }
 
         // For now, each GRAPI responder will be a UWB initiator for a unicast session. In the
@@ -223,7 +222,6 @@ public class UwbConfigSelector {
                                     .build())
                             .setSessionConfig(mSessionConfig)
                             .setDeviceRole(DEVICE_ROLE_RESPONDER)
-                            .setCountryCode(mCountryCode)
                             .setPeerAddresses(ImmutableBiMap.of(device, mPeerAddresses.get(device)))
                             .build())
                     .collect(ImmutableSet.toImmutableSet());

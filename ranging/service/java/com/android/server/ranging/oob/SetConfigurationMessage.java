@@ -127,9 +127,13 @@ public abstract class SetConfigurationMessage {
     public final byte[] toBytes() {
         int size = MIN_SIZE_BYTES + getHeader().getSize();
         UwbOobConfig uwbConfig = getUwbConfig();
+        CsOobConfig csConfig = getCsConfig();
         RttOobConfig rttConfig = getRttConfig();
         if (uwbConfig != null) {
             size += uwbConfig.getSize();
+        }
+        if (csConfig != null) {
+            size += csConfig.getSize();
         }
         if (rttConfig != null) {
             size += rttConfig.getSize();
@@ -141,6 +145,9 @@ public abstract class SetConfigurationMessage {
                 .put(RangingTechnology.toBitmap(getStartRangingList()));
         if (uwbConfig != null) {
             byteBuffer.put(uwbConfig.toBytes());
+        }
+        if (csConfig != null) {
+            byteBuffer.put(csConfig.toBytes());
         }
         if (rttConfig != null) {
             byteBuffer.put(rttConfig.toBytes());

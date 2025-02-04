@@ -57,6 +57,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
     private final List<Integer> mSupportedRangingUpdateRates;
     private final List<Integer> mSupportedPreambleIndexes;
     private final boolean mHasBackgroundRangingSupport;
+    private final String mCountryCode;
 
     private UwbRangingCapabilities(Builder builder) {
         mSupportsDistance = builder.mSupportsDistance;
@@ -71,6 +72,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         mSupportedRangingUpdateRates = builder.mSupportedRangingUpdateRates;
         mSupportedPreambleIndexes = builder.mSupportedPreambleIndexes;
         mHasBackgroundRangingSupport = builder.mHasBackgroundRangingSupport;
+        mCountryCode = builder.mCountryCode;
     }
 
     private UwbRangingCapabilities(Parcel in) {
@@ -92,6 +94,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         mSupportedPreambleIndexes = new ArrayList<>();
         in.readList(mSupportedPreambleIndexes, Integer.class.getClassLoader(), Integer.class);
         mHasBackgroundRangingSupport = in.readByte() != 0;
+        mCountryCode = in.readString();
     }
 
     @NonNull
@@ -241,6 +244,16 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
     }
 
     /**
+     * Get the 2-letter ISO 3166 country code.
+     *
+     * @hide
+     */
+    @NonNull
+    public String getCountryCode() {
+        return mCountryCode;
+    }
+
+    /**
      * @hide
      */
     @Override
@@ -262,6 +275,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         dest.writeList(mSupportedRangingUpdateRates);
         dest.writeList(mSupportedPreambleIndexes);
         dest.writeByte((byte) (mHasBackgroundRangingSupport ? 1 : 0));
+        dest.writeString(mCountryCode);
     }
 
     /**
@@ -282,6 +296,7 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         private List<Integer> mSupportedRangingUpdateRates;
         private List<Integer> mSupportedPreambleIndexes;
         private boolean mHasBackgroundRangingSupport;
+        private String mCountryCode;
 
         /**
          * Sets supports distance.
@@ -436,6 +451,16 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
         }
 
         /**
+         * @param countryCode ISO 3166 country code.
+         * @return this builder instance for method chaining.
+         */
+        @NonNull
+        public Builder setCountryCode(String countryCode) {
+            this.mCountryCode = countryCode;
+            return this;
+        }
+
+        /**
          * Build uwb ranging capabilities.
          *
          * @return the uwb ranging capabilities
@@ -473,6 +498,8 @@ public final class UwbRangingCapabilities implements Parcelable, TechnologyCapab
                 + mSupportedPreambleIndexes
                 + ", mHasBackgroundRangingSupport="
                 + mHasBackgroundRangingSupport
+                + ", mCountryCode="
+                + mCountryCode
                 + " }";
     }
 }

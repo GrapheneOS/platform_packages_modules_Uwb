@@ -17,6 +17,7 @@
 package com.android.server.ranging.session;
 
 import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
+import static android.ranging.RangingSession.Callback.REASON_UNSUPPORTED;
 
 import android.content.AttributionSource;
 import android.ranging.RangingCapabilities;
@@ -39,9 +40,10 @@ import com.android.server.ranging.cs.CsOobCapabilities;
 import com.android.server.ranging.oob.CapabilityRequestMessage;
 import com.android.server.ranging.oob.CapabilityResponseMessage;
 import com.android.server.ranging.oob.MessageType;
-import com.android.server.ranging.oob.OobController.ReceivedMessage;
+import com.android.server.ranging.oob.OobController;
 import com.android.server.ranging.oob.OobHeader;
 import com.android.server.ranging.oob.SetConfigurationMessage;
+import com.android.server.ranging.oob.StopRangingMessage;
 import com.android.server.ranging.rtt.RttOobCapabilities;
 import com.android.server.ranging.rtt.RttOobConfig;
 import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
@@ -56,6 +58,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class OobResponderRangingSession
@@ -65,8 +68,10 @@ public class OobResponderRangingSession
     private static final String TAG = OobResponderRangingSession.class.getSimpleName();
 
     private final ScheduledExecutorService mOobExecutor;
+    private final StopRangingListener mStopRangingListener;
 
     private OobHandle mPeer;
+    private OobController.OobConnection mOobConnection;
     private UwbAddress mMyUwbAddress;
 
     public OobResponderRangingSession(
@@ -79,16 +84,16 @@ public class OobResponderRangingSession
     ) {
         super(attributionSource, sessionHandle, injector, config, listener, executor);
         mOobExecutor = executor;
+        mStopRangingListener = new StopRangingListener();
     }
 
     @Override
     public void start(@NonNull OobResponderRangingConfig config) {
         mPeer = new OobHandle(mSessionHandle, config.getDeviceHandle().getRangingDevice());
+        mOobConnection = mInjector.getOobController().createConnection(mPeer);
         mMyUwbAddress = UwbAddress.createRandomShortAddress();
-        FluentFuture<ReceivedMessage> capabilitiesRequestFuture =
-                mInjector.getOobController().registerMessageListener(mPeer);
 
-        capabilitiesRequestFuture
+        mOobConnection.receiveData()
                 .transformAsync(this::handleCapabilitiesRequest, mOobExecutor)
                 .transformAsync(this::handleSetConfiguration, mOobExecutor)
                 .addCallback(new FutureCallback<>() {
@@ -97,25 +102,50 @@ public class OobResponderRangingSession
                         // TODO: Only start for technologies who have the start ranging immediately
                         //  bit set. Otherwise we need to wait for the start ranging message
                         OobResponderRangingSession.super.start(configs);
+                        mOobConnection
+                                .receiveData()
+                                .addCallback(mStopRangingListener, mOobExecutor);
                     }
 
                     @Override
                     public void onFailure(@NonNull Throwable t) {
                         Log.e(TAG, "Oob failed: ", t);
+                        mOobConnection.close();
+                        mSessionListener.onSessionStopped(REASON_UNSUPPORTED);
                     }
                 }, mOobExecutor);
     }
 
-    private ListenableFuture<ReceivedMessage> handleCapabilitiesRequest(ReceivedMessage message) {
+    private FluentFuture<byte[]> handleCapabilitiesRequest(byte[] data) {
         Log.i(TAG, "Received capabilities request message");
-        CapabilityResponseMessage response = getCapabilitiesResponse(
-                CapabilityRequestMessage.parseBytes(message.asBytes()));
+        CapabilityResponseMessage response =
+                getCapabilitiesResponse(CapabilityRequestMessage.parseBytes(data));
 
-        ListenableFuture<ReceivedMessage> setConfigurationFuture =
-                mInjector.getOobController().registerMessageListener(mPeer);
+        return mOobConnection
+                .sendData(response.toBytes())
+                .transformAsync((unused) -> mOobConnection.receiveData(), mOobExecutor);
+    }
 
-        mInjector.getOobController().sendMessage(message.getOobHandle(), response.toBytes());
-        return setConfigurationFuture;
+    private ListenableFuture<ImmutableSet<TechnologyConfig>> handleSetConfiguration(
+            byte[] data
+    ) throws RangingEngine.ConfigSelectionException {
+        Log.i(TAG, "Received set configuration message");
+
+        ImmutableSet.Builder<TechnologyConfig> configs = ImmutableSet.builder();
+        SetConfigurationMessage setConfigMessage = SetConfigurationMessage.parseBytes(data);
+
+        UwbOobConfig uwbConfig = setConfigMessage.getUwbConfig();
+        if (uwbConfig != null) {
+            configs.add(uwbConfig.toTechnologyConfig(mMyUwbAddress, mPeer.getRangingDevice()));
+        }
+        // Skip CS because the CS responder side does not need to be configured.
+        RttOobConfig rttOobConfig = setConfigMessage.getRttConfig();
+        if (rttOobConfig != null) {
+            configs.add(rttOobConfig.toTechnologyConfig(mPeer.getRangingDevice(),
+                    DEVICE_ROLE_RESPONDER));
+        }
+
+        return Futures.immediateFuture(configs.build());
     }
 
     private CapabilityResponseMessage getCapabilitiesResponse(CapabilityRequestMessage request) {
@@ -165,25 +195,28 @@ public class OobResponderRangingSession
                 .build();
     }
 
-    private ListenableFuture<ImmutableSet<TechnologyConfig>> handleSetConfiguration(
-            ReceivedMessage message
-    ) throws RangingEngine.ConfigSelectionException {
-        Log.i(TAG, "Received set configuration message");
+    @Override
+    public void close() {
+        mOobConnection.close();
+    }
 
-        ImmutableSet.Builder<TechnologyConfig> configs = ImmutableSet.builder();
-        SetConfigurationMessage body = SetConfigurationMessage.parseBytes(message.asBytes());
+    /**
+     * Continuously listens for stop ranging messages during an ongoing ranging session until the
+     * underlying oob connection closes.
+     */
+    private class StopRangingListener implements FutureCallback<byte[]> {
 
-        UwbOobConfig uwbConfig = body.getUwbConfig();
-        if (uwbConfig != null) {
-            configs.add(uwbConfig.toTechnologyConfig(mMyUwbAddress, mPeer.getRangingDevice()));
+        @Override
+        public void onSuccess(byte[] data) {
+            StopRangingMessage message = StopRangingMessage.parseBytes(data);
+            OobResponderRangingSession.super
+                    .stopTechnologies(Set.copyOf(message.getRangingTechnologiesToStop()));
+            mOobConnection.receiveData().addCallback(mStopRangingListener, mOobExecutor);
         }
-        RttOobConfig rttOobConfig = body.getRttConfig();
-        if (rttOobConfig != null) {
-            configs.add(rttOobConfig.toTechnologyConfig(mPeer.getRangingDevice(),
-                    DEVICE_ROLE_RESPONDER));
-        }
-        // Skip CS because the CS responder side does not need to be configured.
 
-        return Futures.immediateFuture(configs.build());
+        @Override
+        public void onFailure(Throwable t) {
+            Log.i(TAG, "Oob connection closed, no longer listening for stop ranging messages");
+        }
     }
 }

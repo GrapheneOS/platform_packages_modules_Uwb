@@ -38,6 +38,7 @@ import android.content.Context;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.PersistableBundle;
+import android.util.Log;
 import android.uwb.UwbManager;
 
 import androidx.annotation.NonNull;
@@ -60,6 +61,7 @@ import java.util.concurrent.Executors;
 
 /** Implements UWB session creation, adaptor state tracking and ranging capability reporting. */
 public class UwbServiceImpl {
+    private static final String TAG = UwbServiceImpl.class.getSimpleName();
 
     private static final String FIRA_SPECIFICATION_BUNDLE_KEY = "fira";
 
@@ -176,6 +178,8 @@ public class UwbServiceImpl {
             bundle = mUwbManager.getSpecificationInfo();
         }
         if (bundle.isEmpty()) {
+            Log.e(TAG, "Received empty bundle from uwb framework get specification info. Setting "
+                    + "capabilities to default that may be incomplete/incorrect");
             return new RangingCapabilities(
                     /* supportsDistance= */ true,
                     mUwbFeatureFlags.hasAzimuthSupport(),
@@ -188,7 +192,8 @@ public class UwbServiceImpl {
                     DEFAULT_SUPPORTED_SLOT_DURATIONS,
                     DEFAULT_SUPPORTED_RANGING_UPDATE_RATE,
                     SUPPORTED_BPRF_PREAMBLE_INDEX,
-                    /* hasBackgroundRangingSupport */ false);
+                    /* hasBackgroundRangingSupport */ false,
+                    "00");
         }
 
         if (bundle.keySet().contains(FIRA_SPECIFICATION_BUNDLE_KEY)) {
@@ -260,7 +265,8 @@ public class UwbServiceImpl {
                 ImmutableList.copyOf(supportedSlotDurations),
                 ImmutableList.copyOf(supportedRangingUpdateRates),
                 ImmutableList.copyOf(supportedPreambleIndexes),
-                specificationParams.hasBackgroundRangingSupport()
+                specificationParams.hasBackgroundRangingSupport(),
+                specificationParams.getCountryCode()
         );
     }
 

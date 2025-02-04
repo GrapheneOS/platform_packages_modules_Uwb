@@ -25,7 +25,7 @@ import androidx.annotation.NonNull;
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 
-public interface RangingSession<P extends RangingConfig> {
+public interface RangingSession<P extends RangingConfig> extends AutoCloseable {
     void start(@NonNull P params);
 
     void stop();
@@ -37,6 +37,9 @@ public interface RangingSession<P extends RangingConfig> {
     void reconfigureInterval(int intervalSkipCount);
 
     void appForegroundStateUpdated(boolean appInForeground);
+
+    @Override
+    void close();
 
     void dump(FileDescriptor fd, PrintWriter pw, String[] args);
 }

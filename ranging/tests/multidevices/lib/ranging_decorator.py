@@ -31,6 +31,7 @@ class Event(StrEnum):
   OOB_SEND_CAPABILITIES_REQUEST = "OOB_SEND_CAPABILITIES_REQUEST",
   OOB_SEND_CAPABILITIES_RESPONSE = "OOB_SEND_CAPABILITIES_RESPONSE",
   OOB_SEND_SET_CONFIGURATION = "OOB_SEND_SET_CONFIGURATION",
+  OOB_SEND_STOP_RANGING = "OOB_SEND_STOP_RANGING",
   OOB_SEND_UNKNOWN = "OOB_SEND_UNKNOWN",
   OOB_CLOSED = "OOB_CLOSED"
 
@@ -76,19 +77,24 @@ class RangingDecorator:
     """Checks whether a specific ranging technology is supported by the device"""
     return self.ad.ranging.isTechnologySupported(ranging_technology)
 
+  def stop_ranging(self, session_handle: str):
+    self.ad.ranging.stopRanging(session_handle)
+
+  def assert_closed(self, session_handle: str):
+    self.assert_close_ranging_event_received(session_handle)
+    self._callback_events.pop(session_handle)
+
   def stop_ranging_and_assert_closed(self, session_handle: str):
     """Stop ranging and wait for onStopped event.
 
     Throws:
       CallbackHandlerTimeoutError if ranging was not successfully stopped.
     """
-    self.ad.ranging.stopRanging(session_handle)
-    self.assert_close_ranging_event_received(session_handle)
-    self._callback_events.pop(session_handle)
+    self.stop_ranging(session_handle)
+    self.assert_closed()
 
   def assert_close_ranging_event_received(self, session_handle: str):
     self.assert_ranging_event_received(session_handle, Event.CLOSED)
-
 
   def assert_ranging_event_received(
       self,
