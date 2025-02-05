@@ -16,18 +16,33 @@
 
 package com.android.server.ranging.blerssi;
 
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
+
 import android.ranging.RangingDevice;
 import android.ranging.RangingPreference;
 import android.ranging.SessionConfig;
 import android.ranging.ble.rssi.BleRssiRangingParams;
+import android.ranging.raw.RawRangingDevice;
 
 import androidx.annotation.NonNull;
 
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.session.RangingSessionConfig;
 
+import com.google.common.collect.ImmutableMap;
+
+import java.time.Duration;
+
 public class BleRssiConfig implements RangingSessionConfig.UnicastTechnologyConfig {
     private static final String TAG = BleRssiConfig.class.getSimpleName();
+
+    public static final ImmutableMap<@RawRangingDevice.RangingUpdateRate Integer, Duration>
+            BLE_RSSI_UPDATE_RATE_DURATIONS = ImmutableMap.of(
+            UPDATE_RATE_NORMAL, Duration.ofSeconds(1),
+            UPDATE_RATE_INFREQUENT, Duration.ofSeconds(3),
+            UPDATE_RATE_FREQUENT, Duration.ofMillis(500));
 
     private final SessionConfig mSessionConfig;
     private final BleRssiRangingParams mRangingParams;

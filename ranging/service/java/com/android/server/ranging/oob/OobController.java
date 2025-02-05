@@ -115,6 +115,23 @@ public class OobController {
             mConnections.remove(mHandle);
         }
 
+        /**
+         * @return true if the connection is connected. A connection in this state may eventually be
+         * re-established. Data sent while disconnected will be queued up for when the connection
+         * re-establishes.
+         */
+        public boolean isConnected() {
+            return mStateMachine.getState() == State.CONNECTED;
+        }
+
+        /**
+         * @return true if the connection is closed. A closed connection cannot be reopened. Sending
+         * or receiving data on a closed connection will result in an error.
+         */
+        public boolean isClosed() {
+            return mStateMachine.getState() == State.CLOSED;
+        }
+
         private void handleReceiveData(byte[] data) {
             if (mPendingReceivers.isEmpty()) {
                 mReceivedData.offer(data);

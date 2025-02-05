@@ -16,6 +16,10 @@
 
 package com.android.server.ranging;
 
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
+import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
+
 import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.ERROR;
 import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.LOST_CONNECTION;
 import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.REQUESTED;
@@ -27,15 +31,20 @@ import static java.lang.Math.min;
 import android.app.AlarmManager;
 import android.bluetooth.BluetoothStatusCodes;
 import android.os.SystemClock;
+import android.ranging.raw.RawRangingDevice;
+import android.util.Range;
 
 import com.google.common.base.Ascii;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.time.Duration;
 import java.util.BitSet;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Utilities for {@link com.android.ranging}.
@@ -252,4 +261,20 @@ public class RangingUtils {
             default -> UNKNOWN;
         };
     }
+
+    public static Optional<@RawRangingDevice.RangingUpdateRate Integer> getDurationFromUpdateRate(
+            Range<Duration> allowedRates,
+            ImmutableMap<@RawRangingDevice.RangingUpdateRate Integer, Duration> durations
+    ) {
+        if (allowedRates.contains(durations.get(UPDATE_RATE_FREQUENT))) {
+            return Optional.of(UPDATE_RATE_FREQUENT);
+        } else if (allowedRates.contains(durations.get(UPDATE_RATE_NORMAL))) {
+            return Optional.of(UPDATE_RATE_NORMAL);
+        } else if (allowedRates.contains(durations.get(UPDATE_RATE_INFREQUENT))) {
+            return Optional.of(UPDATE_RATE_INFREQUENT);
+        } else {
+            return Optional.empty();
+        }
+    }
+
 }

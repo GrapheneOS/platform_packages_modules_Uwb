@@ -16,6 +16,8 @@
 
 package com.android.server.ranging.blerssi;
 
+import android.ranging.ble.rssi.BleRssiRangingCapabilities;
+
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.Conversions;
 import com.android.server.ranging.oob.TechnologyHeader;
@@ -80,6 +82,13 @@ public abstract class BleRssiOobCapabilities {
                 .put(Conversions.macAddressToBytes(getBluetoothAddress()));
 
         return buffer.array();
+    }
+
+    public static BleRssiOobCapabilities fromRangingCapabilities(
+            BleRssiRangingCapabilities capabilities) {
+        return BleRssiOobCapabilities.builder()
+                .setBluetoothAddress(capabilities.getBluetoothAddress())
+                .build();
     }
 
     /** Returns the Bluetooth address of the device. */

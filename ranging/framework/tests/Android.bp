@@ -24,7 +24,6 @@ android_test {
     name: "RangingFrameworkTests",
     defaults: ["framework-ranging-test-defaults"],
     sdk_version: "system_server_current",
-    min_sdk_version: "35",
     certificate: "platform",
     srcs: ["**/*.java"],
 

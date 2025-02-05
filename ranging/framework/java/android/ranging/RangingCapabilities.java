@@ -24,6 +24,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.ranging.RangingManager.RangingTechnology;
 import android.ranging.ble.cs.BleCsRangingCapabilities;
+import android.ranging.ble.rssi.BleRssiRangingCapabilities;
 import android.ranging.uwb.UwbRangingCapabilities;
 import android.ranging.wifi.rtt.RttRangingCapabilities;
 
@@ -65,6 +66,9 @@ public final class RangingCapabilities implements Parcelable {
 
     @Nullable
     private final BleCsRangingCapabilities mCsCapabilities;
+
+    @Nullable
+    private final BleRssiRangingCapabilities mBleRssiCapabilities;
 
     /**
      * @hide
@@ -121,6 +125,8 @@ public final class RangingCapabilities implements Parcelable {
                 RangingManager.WIFI_NAN_RTT);
         mCsCapabilities = (BleCsRangingCapabilities) builder.mCapabilities.get(
                 RangingManager.BLE_CS);
+        mBleRssiCapabilities = (BleRssiRangingCapabilities) builder.mCapabilities.get(
+                RangingManager.BLE_RSSI);
         mAvailabilities = builder.mAvailabilities;
     }
 
@@ -132,6 +138,9 @@ public final class RangingCapabilities implements Parcelable {
                 RttRangingCapabilities.class);
         mCsCapabilities = in.readParcelable(
                 BleCsRangingCapabilities.class.getClassLoader(), BleCsRangingCapabilities.class);
+        mBleRssiCapabilities = in.readParcelable(
+                BleRssiRangingCapabilities.class.getClassLoader(),
+                BleRssiRangingCapabilities.class);
         int size = in.readInt();
         mAvailabilities = new HashMap<>(size);
         for (int i = 0; i < size; i++) {
@@ -200,6 +209,17 @@ public final class RangingCapabilities implements Parcelable {
         return mCsCapabilities;
     }
 
+    /**
+     * Gets the BLE RSSI ranging capabilities.
+     * This method is for internal use only-- BLE RSSI has no non-trivial capabilities.
+     *
+     * @hide
+     */
+    @Nullable
+    public BleRssiRangingCapabilities getBleRssiCapabilities() {
+        return mBleRssiCapabilities;
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -210,6 +230,7 @@ public final class RangingCapabilities implements Parcelable {
         dest.writeParcelable(mUwbCapabilities, flags);
         dest.writeParcelable(mRttRangingCapabilities, flags);
         dest.writeParcelable(mCsCapabilities, flags);
+        dest.writeParcelable(mBleRssiCapabilities, flags);
         dest.writeInt(mAvailabilities.size()); // Write map size
         for (Map.Entry<Integer, Integer> entry : mAvailabilities.entrySet()) {
             dest.writeInt(entry.getKey()); // Write the key
@@ -252,6 +273,8 @@ public final class RangingCapabilities implements Parcelable {
                 + mRttRangingCapabilities
                 + ", mCsCapabilities="
                 + mCsCapabilities
+                + ", mBleRssiCapabilities="
+                + mBleRssiCapabilities
                 + ", mAvailabilities="
                 + mAvailabilities
                 + " }";

@@ -27,11 +27,14 @@ import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.ranging.RangingCapabilities;
+import android.ranging.ble.rssi.BleRssiRangingCapabilities;
+import android.util.Log;
 
 import com.android.server.ranging.CapabilitiesProvider;
 import com.android.server.ranging.CapabilitiesProvider.TechnologyAvailabilityListener;
 
 public class BleRssiCapabilitiesAdapter extends CapabilitiesProvider.CapabilitiesAdapter {
+    private static final String TAG = BleRssiCapabilitiesAdapter.class.getSimpleName();
 
     private final Context mContext;
     private final BluetoothManager mBluetoothManager;
@@ -70,8 +73,17 @@ public class BleRssiCapabilitiesAdapter extends CapabilitiesProvider.Capabilitie
 
     @Nullable
     @Override
-    public RangingCapabilities.TechnologyCapabilities getCapabilities() {
-        // No special capabilities.
-        return null;
+    public BleRssiRangingCapabilities getCapabilities() {
+        if (getAvailability() != ENABLED) return null;
+
+        try {
+            return new BleRssiRangingCapabilities(
+                    ((BluetoothManager) mContext.getSystemService(BluetoothManager.class))
+                            .getAdapter()
+                            .getAddress());
+        } catch (UnsupportedOperationException e) {
+            Log.e(TAG, "Failed to get ble rssi capabilities: " + e);
+            return null;
+        }
     }
 }

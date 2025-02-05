@@ -17,6 +17,7 @@
 package com.android.server.ranging.oob;
 
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.blerssi.BleRssiOobCapabilities;
 import com.android.server.ranging.cs.CsOobCapabilities;
 import com.android.server.ranging.rtt.RttOobCapabilities;
 import com.android.server.ranging.uwb.UwbOobCapabilities;
@@ -73,6 +74,7 @@ public abstract class CapabilityResponseMessage {
         UwbOobCapabilities uwbCapabilities = null;
         CsOobCapabilities csCapabilities = null;
         RttOobCapabilities rttCapabilities = null;
+        BleRssiOobCapabilities bleRssiCapabilities = null;
         ImmutableList.Builder<RangingTechnology> rangingTechnologiesPriority =
                 ImmutableList.builder();
         int countTechsParsed = 0;
@@ -96,7 +98,11 @@ public abstract class CapabilityResponseMessage {
                     parseCursor += techHeader.getSize();
                     rangingTechnologiesPriority.add(RangingTechnology.RTT);
                     break;
-
+                case RSSI:
+                    bleRssiCapabilities = BleRssiOobCapabilities.parseBytes(remainingBytes);
+                    parseCursor += techHeader.getSize();
+                    rangingTechnologiesPriority.add(RangingTechnology.RSSI);
+                    break;
                 default:
                     rangingTechnologiesPriority.add(techHeader.getRangingTechnology());
                     parseCursor += techHeader.getSize();
@@ -110,6 +116,7 @@ public abstract class CapabilityResponseMessage {
                 .setUwbCapabilities(uwbCapabilities)
                 .setCsCapabilities(csCapabilities)
                 .setRttCapabilities(rttCapabilities)
+                .setBleRssiCapabilities(bleRssiCapabilities)
                 .setRangingTechnologiesPriority(rangingTechnologiesPriority.build())
                 .build();
     }
@@ -120,8 +127,14 @@ public abstract class CapabilityResponseMessage {
         if (getUwbCapabilities() != null) {
             size += UwbOobCapabilities.getSize();
         }
+        if (getCsCapabilities() != null) {
+            size += CsOobCapabilities.getSize();
+        }
         if (getRttCapabilities() != null) {
             size += getRttCapabilities().toBytes().length;
+        }
+        if (getBleRssiCapabilities() != null) {
+            size += BleRssiOobCapabilities.getSize();
         }
         ByteBuffer byteBuffer = ByteBuffer.allocate(size);
         byteBuffer
@@ -145,6 +158,12 @@ public abstract class CapabilityResponseMessage {
                     RttOobCapabilities rttCapabilities = getRttCapabilities();
                     if (rttCapabilities != null) {
                         byteBuffer.put(rttCapabilities.toBytes());
+                    }
+                    break;
+                case RSSI:
+                    BleRssiOobCapabilities rssiOobCapabilities = getBleRssiCapabilities();
+                    if (rssiOobCapabilities != null) {
+                        byteBuffer.put(rssiOobCapabilities.toBytes());
                     }
                     break;
                 default:
@@ -178,6 +197,9 @@ public abstract class CapabilityResponseMessage {
     @Nullable
     public abstract RttOobCapabilities getRttCapabilities();
 
+    @Nullable
+    public abstract BleRssiOobCapabilities getBleRssiCapabilities();
+
     /** Returns a builder for {@link CapabilityResponseMessage}. */
     public static Builder builder() {
         return new AutoValue_CapabilityResponseMessage.Builder()
@@ -198,6 +220,9 @@ public abstract class CapabilityResponseMessage {
         public abstract Builder setCsCapabilities(@Nullable CsOobCapabilities csCapabilities);
 
         public abstract Builder setRttCapabilities(@Nullable RttOobCapabilities rttCapabilities);
+
+        public abstract Builder setBleRssiCapabilities(
+                @Nullable BleRssiOobCapabilities bleRssiCapabilities);
 
         public abstract Builder setRangingTechnologiesPriority(
                 ImmutableList<RangingTechnology> rangingTechnologiesPriority

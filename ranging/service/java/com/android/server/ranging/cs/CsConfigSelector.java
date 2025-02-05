@@ -18,10 +18,8 @@ package com.android.server.ranging.cs;
 
 import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_FOUR;
 import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_ONE;
-import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
-import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
-import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 
+import static com.android.server.ranging.RangingUtils.getDurationFromUpdateRate;
 import static com.android.server.ranging.cs.CsConfig.CS_UPDATE_RATE_DURATIONS;
 
 import android.ranging.RangingDevice;
@@ -30,7 +28,6 @@ import android.ranging.ble.cs.BleCsRangingCapabilities;
 import android.ranging.ble.cs.BleCsRangingParams;
 import android.ranging.oob.OobInitiatorRangingConfig;
 import android.ranging.raw.RawRangingDevice;
-import android.util.Range;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -42,10 +39,8 @@ import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
 public class CsConfigSelector {
@@ -65,7 +60,9 @@ public class CsConfigSelector {
                 || capabilities.getSupportedSecurityLevels().contains(CS_SECURITY_LEVEL_FOUR))
         ) return false;
 
-        if (getDurationFromUpdateRate(oobConfig.getRangingIntervalRange()).isEmpty()) return false;
+        if (getDurationFromUpdateRate(
+                oobConfig.getRangingIntervalRange(), CS_UPDATE_RATE_DURATIONS).isEmpty()
+        ) return false;
 
         return true;
     }
@@ -149,23 +146,9 @@ public class CsConfigSelector {
     private @RawRangingDevice.RangingUpdateRate int selectRangingUpdateRate()
             throws ConfigSelectionException {
 
-        return getDurationFromUpdateRate(mOobConfig.getRangingIntervalRange())
+        return getDurationFromUpdateRate(
+                mOobConfig.getRangingIntervalRange(), CS_UPDATE_RATE_DURATIONS)
                 .orElseThrow(() -> new ConfigSelectionException(
                         "Configured ranging interval range is incompatible with BLE CS"));
-    }
-
-
-    private static Optional<@RawRangingDevice.RangingUpdateRate Integer> getDurationFromUpdateRate(
-            Range<Duration> configuredRates
-    ) {
-        if (configuredRates.contains(CS_UPDATE_RATE_DURATIONS.get(UPDATE_RATE_FREQUENT))) {
-            return Optional.of(UPDATE_RATE_FREQUENT);
-        } else if (configuredRates.contains(CS_UPDATE_RATE_DURATIONS.get(UPDATE_RATE_NORMAL))) {
-            return Optional.of(UPDATE_RATE_NORMAL);
-        } else if (configuredRates.contains(CS_UPDATE_RATE_DURATIONS.get(UPDATE_RATE_INFREQUENT))) {
-            return Optional.of(UPDATE_RATE_INFREQUENT);
-        } else {
-            return Optional.empty();
-        }
     }
 }

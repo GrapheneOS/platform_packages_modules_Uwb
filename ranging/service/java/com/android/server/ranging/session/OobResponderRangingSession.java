@@ -23,6 +23,7 @@ import android.content.AttributionSource;
 import android.ranging.RangingCapabilities;
 import android.ranging.SessionHandle;
 import android.ranging.ble.cs.BleCsRangingCapabilities;
+import android.ranging.ble.rssi.BleRssiRangingCapabilities;
 import android.ranging.oob.OobHandle;
 import android.ranging.oob.OobResponderRangingConfig;
 import android.ranging.uwb.UwbAddress;
@@ -36,6 +37,7 @@ import com.android.server.ranging.RangingEngine;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingServiceManager;
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.blerssi.BleRssiOobCapabilities;
 import com.android.server.ranging.cs.CsOobCapabilities;
 import com.android.server.ranging.oob.CapabilityRequestMessage;
 import com.android.server.ranging.oob.CapabilityResponseMessage;
@@ -177,7 +179,6 @@ public class OobResponderRangingSession
                         CsOobCapabilities.fromRangingCapabilities(csCapabilities));
             }
         }
-
         if (request.getRequestedRangingTechnologies().contains(RangingTechnology.RTT)) {
             RttRangingCapabilities rttRangingCapabilities =
                     myCapabilities.getRttRangingCapabilities();
@@ -187,7 +188,15 @@ public class OobResponderRangingSession
                         RttOobCapabilities.fromRangingCapabilities(rttRangingCapabilities));
             }
         }
-        // TODO: Other technologies
+        if (request.getRequestedRangingTechnologies().contains(RangingTechnology.RSSI)) {
+            BleRssiRangingCapabilities bleRssiCapabilities =
+                    myCapabilities.getBleRssiCapabilities();
+            if (bleRssiCapabilities != null) {
+                supportedTechnologies.add(RangingTechnology.RSSI);
+                response.setBleRssiCapabilities(
+                        BleRssiOobCapabilities.fromRangingCapabilities(bleRssiCapabilities));
+            }
+        }
 
         return response
                 .setRangingTechnologiesPriority(supportedTechnologies.build())

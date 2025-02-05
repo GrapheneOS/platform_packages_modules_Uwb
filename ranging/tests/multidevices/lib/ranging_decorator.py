@@ -91,7 +91,7 @@ class RangingDecorator:
       CallbackHandlerTimeoutError if ranging was not successfully stopped.
     """
     self.stop_ranging(session_handle)
-    self.assert_closed()
+    self.assert_closed(session_handle)
 
   def assert_close_ranging_event_received(self, session_handle: str):
     self.assert_ranging_event_received(session_handle, Event.CLOSED)

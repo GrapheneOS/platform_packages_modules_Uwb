@@ -26,12 +26,16 @@ import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
 import android.ranging.SessionHandle;
 import android.ranging.ble.cs.BleCsRangingCapabilities;
+import android.ranging.ble.rssi.BleRssiRangingCapabilities;
 import android.ranging.oob.OobInitiatorRangingConfig;
 import android.ranging.uwb.UwbRangingCapabilities;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.android.server.ranging.blerssi.BleRssiConfigSelector;
+import com.android.server.ranging.blerssi.BleRssiOobCapabilities;
+import com.android.server.ranging.blerssi.BleRssiOobConfig;
 import com.android.server.ranging.cs.CsConfigSelector;
 import com.android.server.ranging.cs.CsConfigSelector.SelectedCsConfig;
 import com.android.server.ranging.cs.CsOobCapabilities;
@@ -68,6 +72,7 @@ public class RangingEngine {
     private @Nullable UwbConfigSelector mUwbConfigSelector = null;
     private @Nullable CsConfigSelector mCsConfigSelector = null;
     private @Nullable RttConfigSelector mRttConfigSelector = null;
+    private @Nullable BleRssiConfigSelector mBleRssiConfigSelector = null;
 
     public static class ConfigSelectionException extends Exception {
         public ConfigSelectionException(String message) {
@@ -125,6 +130,13 @@ public class RangingEngine {
                 mRequestedTechnologies.add(RangingTechnology.RTT);
                 mRttConfigSelector = new RttConfigSelector(sessionConfig, oobConfig);
             }
+            BleRssiRangingCapabilities bleRssiCapabilities =
+                    localCapabilities.getBleRssiCapabilities();
+            if (BleRssiConfigSelector.isCapableOfConfig(oobConfig, bleRssiCapabilities)) {
+                mRequestedTechnologies.add(RangingTechnology.RSSI);
+                mBleRssiConfigSelector = new BleRssiConfigSelector(
+                        sessionConfig, oobConfig, bleRssiCapabilities);
+            }
         }
 
         if (mRequestedTechnologies.isEmpty()) {
@@ -147,6 +159,7 @@ public class RangingEngine {
         UwbOobCapabilities uwbCapabilities = capabilities.getUwbCapabilities();
         CsOobCapabilities csCapabilities = capabilities.getCsCapabilities();
         RttOobCapabilities rttCapabilities = capabilities.getRttCapabilities();
+        BleRssiOobCapabilities bleRssiCapabilities = capabilities.getBleRssiCapabilities();
 
         for (RangingTechnology technology : selectedTechnologies) {
             if (technology == RangingTechnology.UWB
@@ -162,6 +175,11 @@ public class RangingEngine {
             } else if (technology == RangingTechnology.RTT && rttCapabilities != null
                     && mRttConfigSelector != null) {
                 mRttConfigSelector.restrictConfigToCapabilities(device, rttCapabilities);
+            } else if (technology == RangingTechnology.RSSI
+                    && bleRssiCapabilities != null
+                    && mBleRssiConfigSelector != null
+            ) {
+                mBleRssiConfigSelector.restrictConfigToCapabilities(device, bleRssiCapabilities);
             } else {
                 Log.e(TAG, "Technology " + technology + " was selected by us and peer " + device
                         + ", but one of us does not actually support it");
@@ -198,6 +216,14 @@ public class RangingEngine {
             rttConfigByPeer.putAll(rttConfig.getPeerConfigs());
         }
 
+        Map<RangingDevice, BleRssiOobConfig> bleRssiConfigsByPeer = new HashMap<>();
+        if (mBleRssiConfigSelector != null && mBleRssiConfigSelector.hasPeersToConfigure()) {
+            BleRssiConfigSelector.SelectedBleRssiConfig bleRssiConfig =
+                    mBleRssiConfigSelector.selectConfig();
+            localConfigs.addAll(bleRssiConfig.getLocalConfigs());
+            bleRssiConfigsByPeer.putAll(bleRssiConfig.getPeerConfigs());
+        }
+
         for (RangingDevice peer : mPeerTechnologies.keySet()) {
             ImmutableList<RangingTechnology> peerTechnologies =
                     ImmutableList.copyOf(mPeerTechnologies.get(peer));
@@ -213,6 +239,7 @@ public class RangingEngine {
             configMessage.setUwbConfig(uwbConfigsByPeer.get(peer));
             configMessage.setCsConfig(csConfigsByPeer.get(peer));
             configMessage.setRttConfig(rttConfigByPeer.get(peer));
+            configMessage.setBleRssiConfig(bleRssiConfigsByPeer.get(peer));
 
             configMessages.put(peer, configMessage.build());
         }
