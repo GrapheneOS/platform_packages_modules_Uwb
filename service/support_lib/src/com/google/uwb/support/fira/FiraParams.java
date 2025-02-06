@@ -1169,6 +1169,26 @@ public abstract class FiraParams extends Params {
     /** The patch antenna is used for both Tx and Rx. **/
     public static final int ANTENNA_MODE_DIRECTIONAL = 1;
 
+    private static final byte[] sShortForbiddenUwbAddress = {(byte) 0xFF, (byte) 0xFF};
+    private static final byte[] sExtendedForbiddenUwbAddress = {
+            (byte) 0xFF,
+            (byte) 0xFF,
+            (byte) 0xFF,
+            (byte) 0xFF,
+            (byte) 0xFF,
+            (byte) 0xFF,
+            (byte) 0xFF,
+            (byte) 0xFF
+    };
+
+    public static byte[] getShortForbiddenAddress() {
+        return sShortForbiddenUwbAddress;
+    }
+
+    public static byte[] getExtendedForbiddenAddress() {
+        return sExtendedForbiddenUwbAddress;
+    }
+
     /** Helper function to covert long value to UwbAddress. */
     public static UwbAddress longToUwbAddress(long value, int length) {
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);

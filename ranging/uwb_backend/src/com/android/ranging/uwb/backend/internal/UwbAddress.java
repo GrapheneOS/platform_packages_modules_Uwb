@@ -22,6 +22,7 @@ import androidx.annotation.Nullable;
 import com.google.common.base.Objects;
 import com.google.common.primitives.Longs;
 import com.google.common.primitives.Shorts;
+import com.google.uwb.support.fira.FiraParams;
 
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -96,7 +97,9 @@ public class UwbAddress {
 
     private static byte[] generateRandomByteArray(int len, SecureRandom secureRandom) {
         byte[] bytes = new byte[len];
-        secureRandom.nextBytes(bytes);
+        do {
+            secureRandom.nextBytes(bytes);
+        } while (isForbiddenAddress(bytes));
         return bytes;
     }
 
@@ -110,6 +113,14 @@ public class UwbAddress {
     public static UwbAddress getRandomizedExtendedAddress() {
         SecureRandom secureRandom = new SecureRandom();
         return fromBytes(generateRandomByteArray(EXTENDED_ADDRESS_LENGTH, secureRandom));
+    }
+
+    private static boolean isForbiddenAddress(byte[] address) {
+        if (address.length == SHORT_ADDRESS_LENGTH) {
+            return Arrays.equals(address, FiraParams.getShortForbiddenAddress());
+        } else {
+            return Arrays.equals(address, FiraParams.getExtendedForbiddenAddress());
+        }
     }
 
     public AddressingMode getAddressingMode() {

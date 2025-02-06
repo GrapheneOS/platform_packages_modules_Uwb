@@ -35,6 +35,9 @@ def initialize_uwb_country_code_if_necessary(ad: android_device.AndroidDevice):
   # Wait to see if UWB state is reported as enabled. If not, this could be
   # because the country code is not set. Try forcing the country code in that
   # case.
+  if not ad.ranging.isTechnologySupported(RangingTechnology.UWB):
+    return
+
   if is_technology_enabled(ad, RangingTechnology.UWB, timeout_s=60):
     return
 

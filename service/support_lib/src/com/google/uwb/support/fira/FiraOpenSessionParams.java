@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import static java.util.Objects.requireNonNull;
 
+import android.annotation.SuppressLint;
 import android.os.PersistableBundle;
 import android.uwb.UwbAddress;
 import android.uwb.UwbManager;
@@ -36,6 +37,7 @@ import com.google.uwb.support.base.RequiredParam;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -2099,6 +2101,7 @@ public class FiraOpenSessionParams extends FiraParams {
             return this;
         }
 
+        @SuppressLint("NewApi") // UwbManager#toBytes is supported from API 31.
         private void checkAddress() {
             checkArgument(
                     mMacAddressMode == MAC_ADDRESS_MODE_2_BYTES
@@ -2116,6 +2119,25 @@ public class FiraOpenSessionParams extends FiraParams {
                 for (UwbAddress destAddress : mDestAddressList) {
                     checkArgument(destAddress != null
                             && destAddress.size() == addressByteLength);
+                }
+            }
+
+            if (mMacAddressMode == MAC_ADDRESS_MODE_8_BYTES) {
+                checkArgument(!Arrays.equals(mDeviceAddress.toBytes(),
+                        getExtendedForbiddenAddress()));
+                if (isTimeScheduledTwrSession()) {
+                    for (UwbAddress destAddress : mDestAddressList) {
+                        checkArgument(!Arrays.equals(destAddress.toBytes(),
+                                getExtendedForbiddenAddress()));
+                    }
+                }
+            } else {
+                checkArgument(!Arrays.equals(mDeviceAddress.toBytes(), getShortForbiddenAddress()));
+                if (isTimeScheduledTwrSession()) {
+                    for (UwbAddress destAddress : mDestAddressList) {
+                        checkArgument(!Arrays.equals(destAddress.toBytes(),
+                                getShortForbiddenAddress()));
+                    }
                 }
             }
         }

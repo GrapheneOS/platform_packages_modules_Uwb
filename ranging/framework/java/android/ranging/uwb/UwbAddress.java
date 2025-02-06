@@ -35,6 +35,18 @@ public final class UwbAddress implements Parcelable {
     public static final int SHORT_ADDRESS_BYTE_LENGTH = 2;
     public static final int EXTENDED_ADDRESS_BYTE_LENGTH = 8;
 
+    private static final byte[] sShortForbiddenUwbAddress = {(byte) 0xFF, (byte) 0xFF};
+    private static final byte[] sExtendedForbiddenUwbAddress = {
+            (byte) 0xFF,
+            (byte) 0xFF,
+            (byte) 0xFF,
+            (byte) 0xFF,
+            (byte) 0xFF,
+            (byte) 0xFF,
+            (byte) 0xFF,
+            (byte) 0xFF
+    };
+
     private final byte[] mAddressBytes;
 
     private UwbAddress(byte[] address) {
@@ -88,8 +100,18 @@ public final class UwbAddress implements Parcelable {
 
     private static byte[] generateRandomByteArray(int len, SecureRandom secureRandom) {
         byte[] bytes = new byte[len];
-        secureRandom.nextBytes(bytes);
+        do {
+            secureRandom.nextBytes(bytes);
+        } while (isForbiddenAddress(bytes));
         return bytes;
+    }
+
+    private static boolean isForbiddenAddress(byte[] address) {
+        if (address.length == SHORT_ADDRESS_BYTE_LENGTH) {
+            return Arrays.equals(address, sShortForbiddenUwbAddress);
+        } else {
+            return Arrays.equals(address, sExtendedForbiddenUwbAddress);
+        }
     }
 
 

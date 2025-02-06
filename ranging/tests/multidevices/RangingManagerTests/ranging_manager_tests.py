@@ -84,7 +84,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       utils.set_airplane_mode(device.ad, state=False)
       if device.is_ranging_technology_supported(RangingTechnology.UWB):
         utils.set_uwb_state_and_verify(device.ad, state=True)
-      utils.set_snippet_foreground_state(device.ad, isForeground=True)
+        utils.set_snippet_foreground_state(device.ad, isForeground=True)
       utils.set_screen_state(device.ad, on=True)
 
   def teardown_test(self):
