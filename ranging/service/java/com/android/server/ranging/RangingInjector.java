@@ -153,7 +153,6 @@ public class RangingInjector {
         }
     }
 
-
     public void enforceRangingPermissionForPreflight(
             @NonNull AttributionSource attributionSource) {
         if (!attributionSource.checkCallingUid()) {

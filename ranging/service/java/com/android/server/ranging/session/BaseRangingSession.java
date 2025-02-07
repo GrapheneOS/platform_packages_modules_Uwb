@@ -152,15 +152,18 @@ public class BaseRangingSession {
         mStateMachine = new StateMachine<>(State.STOPPED);
         mPeers = new ConcurrentHashMap<>();
         mAdapters = new ConcurrentHashMap<>();
-        mAlarmManager = injector.getContext().getSystemService(AlarmManager.class);
+        mAlarmManager = mInjector.getContext().getSystemService(AlarmManager.class);
     }
 
     /** Start ranging in this session. */
     public void start(ImmutableSet<TechnologyConfig> technologyConfigs) {
         Log.v(TAG, "Starting session");
         synchronized (mLock) {
+            mSessionListener.onConfigurationComplete(technologyConfigs);
+
             if (!mStateMachine.transition(State.STOPPED, State.STARTING)) {
                 Log.w(TAG, "Failed transition STOPPED -> STARTING");
+                mSessionListener.onSessionStopped(REASON_UNKNOWN);
                 return;
             }
             AttributionSource nonPrivilegedAttributionSource =
