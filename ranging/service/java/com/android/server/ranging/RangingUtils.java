@@ -31,7 +31,7 @@ import static java.lang.Math.min;
 import android.app.AlarmManager;
 import android.bluetooth.BluetoothStatusCodes;
 import android.os.SystemClock;
-import android.ranging.raw.RawRangingDevice;
+import android.ranging.raw.RawRangingDevice.RangingUpdateRate;
 import android.util.Range;
 
 import com.google.common.base.Ascii;
@@ -262,19 +262,27 @@ public class RangingUtils {
         };
     }
 
-    public static Optional<@RawRangingDevice.RangingUpdateRate Integer> getDurationFromUpdateRate(
-            Range<Duration> allowedRates,
-            ImmutableMap<@RawRangingDevice.RangingUpdateRate Integer, Duration> durations
+    public static Optional<@RangingUpdateRate Integer> getUpdateRateFromDurationRange(
+            Range<Duration> preferred,
+            ImmutableMap<@RangingUpdateRate Integer, Duration> allowed
     ) {
-        if (allowedRates.contains(durations.get(UPDATE_RATE_FREQUENT))) {
+        if (preferred.getLower().compareTo(allowed.get(UPDATE_RATE_INFREQUENT)) > 0) {
+            // Range of preferred durations lies entirely above allowed durations
+            return Optional.of(UPDATE_RATE_INFREQUENT);
+        }
+        if (preferred.getUpper().compareTo(allowed.get(UPDATE_RATE_FREQUENT)) < 0) {
+            // Range of preferred durations lies entirely below allowed durations
             return Optional.of(UPDATE_RATE_FREQUENT);
-        } else if (allowedRates.contains(durations.get(UPDATE_RATE_NORMAL))) {
+        }
+        // Otherwise, the intervals overlap. Pick fastest we can.
+        if (preferred.contains(allowed.get(UPDATE_RATE_FREQUENT))) {
+            return Optional.of(UPDATE_RATE_FREQUENT);
+        } else if (preferred.contains(allowed.get(UPDATE_RATE_NORMAL))) {
             return Optional.of(UPDATE_RATE_NORMAL);
-        } else if (allowedRates.contains(durations.get(UPDATE_RATE_INFREQUENT))) {
+        } else if (preferred.contains(allowed.get(UPDATE_RATE_INFREQUENT))) {
             return Optional.of(UPDATE_RATE_INFREQUENT);
         } else {
             return Optional.empty();
         }
     }
-
 }

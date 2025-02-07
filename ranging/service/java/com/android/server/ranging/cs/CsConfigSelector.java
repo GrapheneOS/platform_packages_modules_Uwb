@@ -19,7 +19,7 @@ package com.android.server.ranging.cs;
 import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_FOUR;
 import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_ONE;
 
-import static com.android.server.ranging.RangingUtils.getDurationFromUpdateRate;
+import static com.android.server.ranging.RangingUtils.getUpdateRateFromDurationRange;
 import static com.android.server.ranging.cs.CsConfig.CS_UPDATE_RATE_DURATIONS;
 
 import android.ranging.RangingDevice;
@@ -60,7 +60,7 @@ public class CsConfigSelector {
                 || capabilities.getSupportedSecurityLevels().contains(CS_SECURITY_LEVEL_FOUR))
         ) return false;
 
-        if (getDurationFromUpdateRate(
+        if (getUpdateRateFromDurationRange(
                 oobConfig.getRangingIntervalRange(), CS_UPDATE_RATE_DURATIONS).isEmpty()
         ) return false;
 
@@ -146,7 +146,7 @@ public class CsConfigSelector {
     private @RawRangingDevice.RangingUpdateRate int selectRangingUpdateRate()
             throws ConfigSelectionException {
 
-        return getDurationFromUpdateRate(
+        return getUpdateRateFromDurationRange(
                 mOobConfig.getRangingIntervalRange(), CS_UPDATE_RATE_DURATIONS)
                 .orElseThrow(() -> new ConfigSelectionException(
                         "Configured ranging interval range is incompatible with BLE CS"));

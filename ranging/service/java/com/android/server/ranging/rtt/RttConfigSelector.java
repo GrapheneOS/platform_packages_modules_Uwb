@@ -22,6 +22,8 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 
+import static com.android.server.ranging.RangingUtils.getUpdateRateFromDurationRange;
+
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.ranging.RangingDevice;
@@ -30,7 +32,6 @@ import android.ranging.oob.OobInitiatorRangingConfig;
 import android.ranging.raw.RawRangingDevice;
 import android.ranging.wifi.rtt.RttRangingCapabilities;
 import android.ranging.wifi.rtt.RttRangingParams;
-import android.util.Range;
 
 import com.android.server.ranging.RangingEngine;
 
@@ -39,7 +40,6 @@ import com.google.common.collect.ImmutableSet;
 
 import java.time.Duration;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RttConfigSelector {
@@ -76,7 +76,9 @@ public class RttConfigSelector {
             getLazyUpdateRate();
         }
 
-        if (getDurationFromUpdateRate(oobConfig.getRangingIntervalRange()).isEmpty()) return false;
+        if (getUpdateRateFromDurationRange(
+                oobConfig.getRangingIntervalRange(), RTT_UPDATE_RATE_DURATIONS).isEmpty()
+        ) return false;
 
         return true;
     }
@@ -96,9 +98,9 @@ public class RttConfigSelector {
         private final @RawRangingDevice.RangingUpdateRate int mRangingUpdateRate;
 
         SelectedRttConfig() throws RangingEngine.ConfigSelectionException {
-            mRangingUpdateRate = getDurationFromUpdateRate(
-                    mOobConfig.getRangingIntervalRange()).orElseThrow(
-                        () -> new RangingEngine.ConfigSelectionException(
+            mRangingUpdateRate = getUpdateRateFromDurationRange(
+                    mOobConfig.getRangingIntervalRange(), RTT_UPDATE_RATE_DURATIONS)
+                    .orElseThrow(() -> new RangingEngine.ConfigSelectionException(
                             "Configured ranging interval range is incompatible with Wifi RTT"));
         }
 
@@ -126,21 +128,6 @@ public class RttConfigSelector {
                                     .setUsePeriodicRanging(
                                             entry.getValue().mUsePeriodicRangingFeature)
                                     .build()));
-        }
-    }
-
-    private static Optional<@RawRangingDevice.RangingUpdateRate Integer> getDurationFromUpdateRate(
-            Range<Duration> configuredRates
-    ) {
-        if (configuredRates.contains(RTT_UPDATE_RATE_DURATIONS.get(UPDATE_RATE_FREQUENT))) {
-            return Optional.of(UPDATE_RATE_FREQUENT);
-        } else if (configuredRates.contains(RTT_UPDATE_RATE_DURATIONS.get(UPDATE_RATE_NORMAL))) {
-            return Optional.of(UPDATE_RATE_NORMAL);
-        } else if (configuredRates.contains(
-                RTT_UPDATE_RATE_DURATIONS.get(UPDATE_RATE_INFREQUENT))) {
-            return Optional.of(UPDATE_RATE_INFREQUENT);
-        } else {
-            return Optional.empty();
         }
     }
 

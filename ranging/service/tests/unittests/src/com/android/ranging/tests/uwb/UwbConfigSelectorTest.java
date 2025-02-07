@@ -169,19 +169,6 @@ public class UwbConfigSelectorTest {
                 mMockSessionConfig, mMockOobConfig, mMockLocalCapabilities)).isFalse();
     }
 
-    @Test
-    public void isCapableOfConfig_returnsFalseWhenRangeIncompatible() {
-        Range<Duration> configuredRange = Range.create(
-                Duration.ofMillis(100),
-                Duration.ofMillis(200));
-        mockConfiguredRangingIntervalRange(configuredRange);
-
-        when(mMockLocalCapabilities.getMinimumRangingInterval()).thenReturn(Duration.ofMillis(300));
-
-        assertThat(UwbConfigSelector.isCapableOfConfig(
-                mMockSessionConfig, mMockOobConfig, mMockLocalCapabilities)).isFalse();
-    }
-
     @Test(expected = ConfigSelectionException.class)
     public void restrictConfigToCapabilities_failsWhenPeerIncapableOfInitiatorRole()
             throws ConfigSelectionException {
@@ -194,22 +181,6 @@ public class UwbConfigSelectorTest {
                         .setSupportedDeviceRole(
                                 ImmutableList.of(UwbOobConfig.OobDeviceRole.RESPONDER))
                         .build());
-    }
-
-    @Test(expected = ConfigSelectionException.class)
-    public void restrictConfigToCapabilities_failsWhenIntervalsDontOverlap()
-            throws ConfigSelectionException {
-
-        Range<Duration> configuredRange = Range.create(
-                Duration.ofMillis(500), Duration.ofMillis(600));
-        mockConfiguredRangingIntervalRange(configuredRange);
-
-        when(mMockLocalCapabilities.getMinimumRangingInterval()).thenReturn(Duration.ofMillis(550));
-
-        UwbConfigSelector configSelector = createConfigSelector();
-        configSelector.restrictConfigToCapabilities(
-                new RangingDevice.Builder().build(),
-                createPeerCapabilities().setMinimumRangingIntervalMs(700).build());
     }
 
     @Test
@@ -319,7 +290,8 @@ public class UwbConfigSelectorTest {
     }
 
     @Test
-    public void shouldPrioritizeFastestUpdateRate() throws ConfigSelectionException {
+    public void shouldSelectFastestUpdateRate_whenConfiguredIntervalOverlapsCapabilities()
+            throws ConfigSelectionException {
         UwbConfigSelector configSelector = createConfigSelector();
         configSelector.restrictConfigToCapabilities(
                 new RangingDevice.Builder().build(),
@@ -353,6 +325,72 @@ public class UwbConfigSelectorTest {
             assertThat(peerConfig.getSelectedRangingIntervalMs())
                     .isEqualTo(Utils.getRangingTimingParams(CONFIG_UNICAST_DS_TWR)
                             .getRangingIntervalNormal());
+        }
+    }
+
+    @Test
+    public void shouldSelectInfrequentUpdateRate_whenConfiguredIntervalSlowerThanCapabilities()
+            throws ConfigSelectionException {
+
+        mockConfiguredRangingIntervalRange(Range.create(Duration.ofDays(1), Duration.ofDays(2)));
+        when(mMockLocalCapabilities.getMinimumRangingInterval()).thenReturn(Duration.ofMillis(3));
+
+        UwbConfigSelector configSelector = createConfigSelector();
+        configSelector.restrictConfigToCapabilities(
+                new RangingDevice.Builder().build(),
+                createPeerCapabilities()
+                        .setMinimumRangingIntervalMs(4)
+                        .build());
+
+        UwbConfigSelector.SelectedUwbConfig config = configSelector.selectConfig();
+        for (UwbConfig localConfig : config.getLocalConfigs()) {
+            assertThat(localConfig.getParameters().getRangingUpdateRate())
+                    .isEqualTo(UPDATE_RATE_INFREQUENT);
+        }
+        for (UwbOobConfig peerConfig : config.getPeerConfigs().values()) {
+            assertThat(peerConfig.getSelectedRangingIntervalMs())
+                    .isEqualTo(Utils.getRangingTimingParams(CONFIG_UNICAST_DS_TWR)
+                            .getRangingIntervalInfrequent());
+        }
+    }
+
+    @Test
+    public void shouldSelectFastestUpdateRate_whenConfiguredIntervalFasterThanCapabilities()
+            throws ConfigSelectionException {
+
+        mockConfiguredRangingIntervalRange(Range.create(Duration.ofNanos(1), Duration.ofNanos(2)));
+        when(mMockLocalCapabilities.getMinimumRangingInterval())
+                .thenReturn(Duration.ofMillis(Utils.getRangingTimingParams(CONFIG_UNICAST_DS_TWR)
+                        .getRangingIntervalInfrequent()));
+
+        UwbConfigSelector configSelector = createConfigSelector();
+
+        configSelector.restrictConfigToCapabilities(
+                new RangingDevice.Builder().build(),
+                createPeerCapabilities()
+                        .setMinimumRangingIntervalMs(
+                                Utils.getRangingTimingParams(CONFIG_UNICAST_DS_TWR)
+                                        .getRangingIntervalFast())
+                        .build());
+        configSelector.restrictConfigToCapabilities(
+                new RangingDevice.Builder().build(),
+                createPeerCapabilities()
+                        .setMinimumRangingIntervalMs(
+                                Utils.getRangingTimingParams(
+                                                CONFIG_PROVISIONED_UNICAST_DS_TWR_VERY_FAST)
+                                        .getRangingIntervalFast())
+                        .build());
+
+
+        UwbConfigSelector.SelectedUwbConfig config = configSelector.selectConfig();
+        for (UwbConfig localConfig : config.getLocalConfigs()) {
+            assertThat(localConfig.getParameters().getRangingUpdateRate())
+                    .isEqualTo(UPDATE_RATE_INFREQUENT);
+        }
+        for (UwbOobConfig peerConfig : config.getPeerConfigs().values()) {
+            assertThat(peerConfig.getSelectedRangingIntervalMs())
+                    .isEqualTo(Utils.getRangingTimingParams(CONFIG_UNICAST_DS_TWR)
+                            .getRangingIntervalInfrequent());
         }
     }
 

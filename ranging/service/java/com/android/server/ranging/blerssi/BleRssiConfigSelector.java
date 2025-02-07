@@ -18,7 +18,7 @@ package com.android.server.ranging.blerssi;
 
 import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 
-import static com.android.server.ranging.RangingUtils.getDurationFromUpdateRate;
+import static com.android.server.ranging.RangingUtils.getUpdateRateFromDurationRange;
 import static com.android.server.ranging.blerssi.BleRssiConfig.BLE_RSSI_UPDATE_RATE_DURATIONS;
 
 import android.ranging.RangingDevice;
@@ -49,7 +49,7 @@ public class BleRssiConfigSelector {
             @NonNull OobInitiatorRangingConfig oobConfig, BleRssiRangingCapabilities capabilities
     ) {
         if (capabilities == null) return false;
-        return getDurationFromUpdateRate(
+        return getUpdateRateFromDurationRange(
                 oobConfig.getRangingIntervalRange(), BLE_RSSI_UPDATE_RATE_DURATIONS).isPresent();
     }
 
@@ -109,7 +109,7 @@ public class BleRssiConfigSelector {
     private @RawRangingDevice.RangingUpdateRate int selectRangingUpdateRate()
             throws ConfigSelectionException {
 
-        return getDurationFromUpdateRate(
+        return getUpdateRateFromDurationRange(
                 mOobConfig.getRangingIntervalRange(), BLE_RSSI_UPDATE_RATE_DURATIONS)
                 .orElseThrow(() -> new ConfigSelectionException(
                         "Configured ranging interval range is incompatible with BLE CS"));
