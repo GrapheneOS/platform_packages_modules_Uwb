@@ -69,6 +69,7 @@ public class RangingInjector {
     private final Looper mLooper;
 
     private final Handler mAlarmHandler;
+    private final DeviceConfigFacade mDeviceConfigFacade;
 
     public RangingInjector(@NonNull Context context) {
         HandlerThread rangingHandlerThread = new HandlerThread("RangingServiceHandler");
@@ -82,6 +83,7 @@ public class RangingInjector {
         mOobController = new OobController(this);
         mPermissionManager = context.getSystemService(PermissionManager.class);
         mAlarmHandler = new Handler(mLooper);
+        mDeviceConfigFacade = new DeviceConfigFacade(new Handler(mLooper), mContext);
     }
 
     public Context getContext() {
@@ -102,6 +104,10 @@ public class RangingInjector {
 
     public Handler getAlarmHandler() {
         return mAlarmHandler;
+    }
+
+    public DeviceConfigFacade getDeviceConfigFacade() {
+        return mDeviceConfigFacade;
     }
 
     /**

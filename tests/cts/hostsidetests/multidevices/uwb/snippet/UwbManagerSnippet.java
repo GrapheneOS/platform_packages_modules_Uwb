@@ -482,6 +482,8 @@ public class UwbManagerSnippet implements Snippet {
             return null;
         }
         FiraRangingReconfigureParams.Builder builder = new FiraRangingReconfigureParams.Builder();
+
+        // keep-sorted start block=yes
         if (j.has("action")) {
             builder.setAction(j.getInt("action"));
         }
@@ -493,6 +495,9 @@ public class UwbManagerSnippet implements Snippet {
                         convertJSONArrayToByteArray(jArray.getJSONArray(i))));
             }
             builder.setAddressList(addressList);
+        }
+        if (j.has("blockStrideLength")) {
+            builder.setBlockStrideLength(j.getInt("blockStrideLength"));
         }
         if (j.has("subSessionIdList")) {
             JSONArray jArray = j.getJSONArray("subSessionIdList");
@@ -506,9 +511,7 @@ public class UwbManagerSnippet implements Snippet {
             JSONArray jSubSessionKeyListArray = j.getJSONArray("subSessionKeyList");
             builder.setSubSessionKeyList(convertJSONArrayToByteArray(jSubSessionKeyListArray));
         }
-        if (j.has("blockStrideLength")) {
-            builder.setBlockStrideLength(j.getInt("blockStrideLength"));
-        }
+        // keep-sorted end
         return builder.build();
     }
 
@@ -517,6 +520,7 @@ public class UwbManagerSnippet implements Snippet {
             return null;
         }
         FiraControleeParams.Builder builder = new FiraControleeParams.Builder();
+        // keep-sorted start block=yes
         if (j.has("action")) {
             builder.setAction(j.getInt("action"));
         }
@@ -541,6 +545,7 @@ public class UwbManagerSnippet implements Snippet {
             JSONArray jSubSessionKeyListArray = j.getJSONArray("subSessionKeyList");
             builder.setSubSessionKeyList(convertJSONArrayToByteArray(jSubSessionKeyListArray));
         }
+        // keep-sorted end
         return builder.build();
     }
 
@@ -550,21 +555,23 @@ public class UwbManagerSnippet implements Snippet {
             return null;
         }
         CccRangingStartedParams.Builder builder = new CccRangingStartedParams.Builder();
-        if (j.has("stsIndex")) {
-            builder.setStartingStsIndex(j.getInt("stsIndex"));
-        }
-        if (j.has("uwbTime")) {
-            builder.setUwbTime0(j.getInt("uwbTime"));
-        }
+        // keep-sorted start block=yes
         if (j.has("hopModeKey")) {
             builder.setHopModeKey(j.getInt("hopModeKey"));
-        }
-        if (j.has("syncCodeIndex")) {
-            builder.setSyncCodeIndex(j.getInt("syncCodeIndex"));
         }
         if (j.has("ranMultiplier")) {
             builder.setRanMultiplier(j.getInt("ranMultiplier"));
         }
+        if (j.has("stsIndex")) {
+            builder.setStartingStsIndex(j.getInt("stsIndex"));
+        }
+        if (j.has("syncCodeIndex")) {
+            builder.setSyncCodeIndex(j.getInt("syncCodeIndex"));
+        }
+        if (j.has("uwbTime")) {
+            builder.setUwbTime0(j.getInt("uwbTime"));
+        }
+        // keep-sorted end
 
         return builder.build();
     }
@@ -575,26 +582,12 @@ public class UwbManagerSnippet implements Snippet {
         }
         CccOpenRangingParams.Builder builder = new CccOpenRangingParams.Builder();
         builder.setProtocolVersion(CccParams.PROTOCOL_VERSION_1_0);
-        if (j.has("sessionId")) {
-            builder.setSessionId(j.getInt("sessionId"));
-        }
-        if (j.has("uwbConfig")) {
-            builder.setUwbConfig(j.getInt("uwbConfig"));
-        }
-        if (j.has("ranMultiplier")) {
-            builder.setRanMultiplier(j.getInt("ranMultiplier"));
-        }
+        // keep-sorted start block=yes
         if (j.has("channel")) {
             builder.setChannel(j.getInt("channel"));
         }
         if (j.has("chapsPerSlot")) {
             builder.setNumChapsPerSlot(j.getInt("chapsPerSlot"));
-        }
-        if (j.has("responderNodes")) {
-            builder.setNumResponderNodes(j.getInt("responderNodes"));
-        }
-        if (j.has("slotsPerRound")) {
-            builder.setNumSlotsPerRound(j.getInt("slotsPerRound"));
         }
         if (j.has("hoppingMode")) {
             builder.setHoppingConfigMode(j.getInt("hoppingMode"));
@@ -602,15 +595,31 @@ public class UwbManagerSnippet implements Snippet {
         if (j.has("hoppingSequence")) {
             builder.setHoppingSequence(j.getInt("hoppingSequence"));
         }
-        if (j.has("syncCodeIndex")) {
-            builder.setSyncCodeIndex(j.getInt("syncCodeIndex"));
-        }
         if (j.has("pulseShapeCombo")) {
             JSONObject pulseShapeCombo = j.getJSONObject("pulseShapeCombo");
             builder.setPulseShapeCombo(new CccPulseShapeCombo(
                     pulseShapeCombo.getInt("pulseShapeComboTx"),
                     pulseShapeCombo.getInt("pulseShapeComboRx")));
         }
+        if (j.has("ranMultiplier")) {
+            builder.setRanMultiplier(j.getInt("ranMultiplier"));
+        }
+        if (j.has("responderNodes")) {
+            builder.setNumResponderNodes(j.getInt("responderNodes"));
+        }
+        if (j.has("sessionId")) {
+            builder.setSessionId(j.getInt("sessionId"));
+        }
+        if (j.has("slotsPerRound")) {
+            builder.setNumSlotsPerRound(j.getInt("slotsPerRound"));
+        }
+        if (j.has("syncCodeIndex")) {
+            builder.setSyncCodeIndex(j.getInt("syncCodeIndex"));
+        }
+        if (j.has("uwbConfig")) {
+            builder.setUwbConfig(j.getInt("uwbConfig"));
+        }
+        // keep-sorted end
 
         return builder.build();
     }
@@ -621,26 +630,16 @@ public class UwbManagerSnippet implements Snippet {
         }
         FiraOpenSessionParams.Builder builder = new FiraOpenSessionParams.Builder();
         builder.setProtocolVersion(FiraParams.PROTOCOL_VERSION_1_1);
-        if (j.has("sessionId")) {
-            builder.setSessionId(j.getInt("sessionId"));
+
+        // keep-sorted start block=yes
+        if (j.has("aoaResultRequest")) {
+            builder.setAoaResultRequest(j.getInt("aoaResultRequest"));
         }
-        if (j.has("deviceType")) {
-            builder.setDeviceType(j.getInt("deviceType"));
+        if (j.has("blockStrideLength")) {
+            builder.setBlockStrideLength(j.getInt("blockStrideLength"));
         }
-        if (j.has("deviceRole")) {
-            builder.setDeviceRole(j.getInt("deviceRole"));
-        }
-        if (j.has("rangingRoundUsage")) {
-            builder.setRangingRoundUsage(j.getInt("rangingRoundUsage"));
-        }
-        if (j.has("multiNodeMode")) {
-            builder.setMultiNodeMode(j.getInt("multiNodeMode"));
-        }
-        if (j.has("deviceAddress")) {
-            JSONArray jArray = j.getJSONArray("deviceAddress");
-            byte[] bArray = convertJSONArrayToByteArray(jArray);
-            UwbAddress deviceAddress = getComputedMacAddress(UwbAddress.fromBytes(bArray));
-            builder.setDeviceAddress(deviceAddress);
+        if (j.has("channel")) {
+            builder.setChannelNumber(j.getInt("channel"));
         }
         if (j.has("destinationAddresses")) {
             JSONArray jArray = j.getJSONArray("destinationAddresses");
@@ -651,79 +650,32 @@ public class UwbManagerSnippet implements Snippet {
             }
             builder.setDestAddressList(Arrays.asList(destinationUwbAddresses));
         }
-        if (j.has("initiationTimeMs")) {
-            builder.setInitiationTime(j.getInt("initiationTimeMs"));
+        if (j.has("deviceAddress")) {
+            JSONArray jArray = j.getJSONArray("deviceAddress");
+            byte[] bArray = convertJSONArrayToByteArray(jArray);
+            UwbAddress deviceAddress = getComputedMacAddress(UwbAddress.fromBytes(bArray));
+            builder.setDeviceAddress(deviceAddress);
         }
-        if (j.has("slotDurationRstu")) {
-            builder.setSlotDurationRstu(j.getInt("slotDurationRstu"));
+        if (j.has("deviceRole")) {
+            builder.setDeviceRole(j.getInt("deviceRole"));
         }
-        if (j.has("slotsPerRangingRound")) {
-            builder.setSlotsPerRangingRound(j.getInt("slotsPerRangingRound"));
-        }
-        if (j.has("rangingIntervalMs")) {
-            builder.setRangingIntervalMs(j.getInt("rangingIntervalMs"));
-        }
-        if (j.has("blockStrideLength")) {
-            builder.setBlockStrideLength(j.getInt("blockStrideLength"));
-        }
-        if (j.has("hoppingMode")) {
-            builder.setHoppingMode(j.getInt("hoppingMode"));
-        }
-        if (j.has("maxRangingRoundRetries")) {
-            builder.setMaxRangingRoundRetries(j.getInt("maxRangingRoundRetries"));
-        }
-        if (j.has("maxNumberOfMeasurements")) {
-            builder.setMaxNumberOfMeasurements(j.getInt("maxNumberOfMeasurements"));
-        }
-        if (j.has("sessionPriority")) {
-            builder.setSessionPriority(j.getInt("sessionPriority"));
-        }
-        if (j.has("macAddressMode")) {
-            builder.setMacAddressMode(j.getInt("macAddressMode"));
-        }
-        if (j.has("inBandTerminationAttemptCount")) {
-            builder.setInBandTerminationAttemptCount(j.getInt("inBandTerminationAttemptCount"));
-        }
-        if (j.has("channel")) {
-            builder.setChannelNumber(j.getInt("channel"));
-        }
-        if (j.has("preamble")) {
-            builder.setPreambleCodeIndex(j.getInt("preamble"));
-        }
-        if (j.getInt("stsConfig") == FiraParams.STS_CONFIG_STATIC) {
-            JSONArray jVendorIdArray = j.getJSONArray("vendorId");
-            builder.setVendorId(getComputedVendorId(convertJSONArrayToByteArray(jVendorIdArray)));
-            JSONArray jStatisStsIVArray = j.getJSONArray("staticStsIV");
-            builder.setStaticStsIV(convertJSONArrayToByteArray(jStatisStsIVArray));
-        } else if (j.getInt("stsConfig") == FiraParams.STS_CONFIG_PROVISIONED) {
-            builder.setStsConfig(j.getInt("stsConfig"));
-            JSONArray jSessionKeyArray = j.getJSONArray("sessionKey");
-            builder.setSessionKey(convertJSONArrayToByteArray(jSessionKeyArray));
-        } else if (j.getInt(
-                "stsConfig") == FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
-            builder.setStsConfig(j.getInt("stsConfig"));
-            JSONArray jSessionKeyArray = j.getJSONArray("sessionKey");
-            builder.setSessionKey(convertJSONArrayToByteArray(jSessionKeyArray));
-            if (j.getInt("deviceType") == FiraParams.RANGING_DEVICE_TYPE_CONTROLEE) {
-                JSONArray jSubSessionKeyArray = j.getJSONArray("subSessionKey");
-                builder.setSubsessionKey(convertJSONArrayToByteArray(jSubSessionKeyArray));
-                builder.setSubSessionId(j.getInt("subSessionId"));
-            }
-        }
-        if (j.has("aoaResultRequest")) {
-            builder.setAoaResultRequest(j.getInt("aoaResultRequest"));
+        if (j.has("deviceType")) {
+            builder.setDeviceType(j.getInt("deviceType"));
         }
         if (j.has("filterType")) {
             builder.setFilterType(j.getInt("filterType"));
         }
-        if (j.has("rangeDataNtfConfig")) {
-            builder.setRangeDataNtfConfig(j.getInt("rangeDataNtfConfig"));
-        }
         if (j.has("hasRangingResultReportMessage")) {
             builder.setHasRangingResultReportMessage(j.getBoolean("hasRangingResultReportMessage"));
         }
-        if (j.has("rangingErrorStreakTimeoutMs")) {
-            builder.setRangingErrorStreakTimeoutMs(j.getLong("rangingErrorStreakTimeoutMs"));
+        if (j.has("hoppingMode")) {
+            builder.setHoppingMode(j.getInt("hoppingMode"));
+        }
+        if (j.has("inBandTerminationAttemptCount")) {
+            builder.setInBandTerminationAttemptCount(j.getInt("inBandTerminationAttemptCount"));
+        }
+        if (j.has("initiationTimeMs")) {
+            builder.setInitiationTime(j.getInt("initiationTimeMs"));
         }
         if (j.has("isKeyRotationEnabled")) {
             builder.setIsKeyRotationEnabled(j.getBoolean("isKeyRotationEnabled"));
@@ -731,12 +683,75 @@ public class UwbManagerSnippet implements Snippet {
         if (j.has("keyRotationRate")) {
             builder.setKeyRotationRate(j.getInt("keyRotationRate"));
         }
+        if (j.has("macAddressMode")) {
+            builder.setMacAddressMode(j.getInt("macAddressMode"));
+        }
+        if (j.has("maxNumberOfMeasurements")) {
+            builder.setMaxNumberOfMeasurements(j.getInt("maxNumberOfMeasurements"));
+        }
+        if (j.has("maxRangingRoundRetries")) {
+            builder.setMaxRangingRoundRetries(j.getInt("maxRangingRoundRetries"));
+        }
+        if (j.has("multiNodeMode")) {
+            builder.setMultiNodeMode(j.getInt("multiNodeMode"));
+        }
+        if (j.has("preamble")) {
+            builder.setPreambleCodeIndex(j.getInt("preamble"));
+        }
         if (j.has("prfMode")) {
             builder.setPrfMode(j.getInt("prfMode"));
             if (j.getInt("prfMode") == FiraParams.PRF_MODE_HPRF) {
                 builder.setPsduDataRate(FiraParams.PSDU_DATA_RATE_6M81);
             }
         }
+        if (j.has("rangeDataNtfConfig")) {
+            builder.setRangeDataNtfConfig(j.getInt("rangeDataNtfConfig"));
+        }
+        if (j.has("rangingErrorStreakTimeoutMs")) {
+            builder.setRangingErrorStreakTimeoutMs(j.getLong("rangingErrorStreakTimeoutMs"));
+        }
+        if (j.has("rangingIntervalMs")) {
+            builder.setRangingIntervalMs(j.getInt("rangingIntervalMs"));
+        }
+        if (j.has("rangingRoundUsage")) {
+            builder.setRangingRoundUsage(j.getInt("rangingRoundUsage"));
+        }
+        if (j.has("sessionId")) {
+            builder.setSessionId(j.getInt("sessionId"));
+        }
+        if (j.has("sessionPriority")) {
+            builder.setSessionPriority(j.getInt("sessionPriority"));
+        }
+        if (j.has("slotDurationRstu")) {
+            builder.setSlotDurationRstu(j.getInt("slotDurationRstu"));
+        }
+        if (j.has("slotsPerRangingRound")) {
+            builder.setSlotsPerRangingRound(j.getInt("slotsPerRangingRound"));
+        }
+        if (j.has("stsConfig")) {
+            if (j.getInt("stsConfig") == FiraParams.STS_CONFIG_PROVISIONED) {
+                builder.setStsConfig(j.getInt("stsConfig"));
+                JSONArray jSessionKeyArray = j.getJSONArray("sessionKey");
+                builder.setSessionKey(convertJSONArrayToByteArray(jSessionKeyArray));
+            } else if (j.getInt("stsConfig")
+                       == FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
+                builder.setStsConfig(j.getInt("stsConfig"));
+                JSONArray jSessionKeyArray = j.getJSONArray("sessionKey");
+                builder.setSessionKey(convertJSONArrayToByteArray(jSessionKeyArray));
+                if (j.getInt("deviceType") == FiraParams.RANGING_DEVICE_TYPE_CONTROLEE) {
+                    JSONArray jSubSessionKeyArray = j.getJSONArray("subSessionKey");
+                    builder.setSubsessionKey(convertJSONArrayToByteArray(jSubSessionKeyArray));
+                    builder.setSubSessionId(j.getInt("subSessionId"));
+                }
+            } else if (j.getInt("stsConfig") == FiraParams.STS_CONFIG_STATIC) {
+                JSONArray jVendorIdArray = j.getJSONArray("vendorId");
+                builder.setVendorId(
+                        getComputedVendorId(convertJSONArrayToByteArray(jVendorIdArray)));
+                JSONArray jStatisStsIVArray = j.getJSONArray("staticStsIV");
+                builder.setStaticStsIV(convertJSONArrayToByteArray(jStatisStsIVArray));
+            }
+        }
+        // keep-sorted end
 
         return builder.build();
     }

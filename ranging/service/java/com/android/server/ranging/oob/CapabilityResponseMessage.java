@@ -86,7 +86,6 @@ public abstract class CapabilityResponseMessage {
                     uwbCapabilities = UwbOobCapabilities.parseBytes(remainingBytes);
                     parseCursor += techHeader.getSize();
                     rangingTechnologiesPriority.add(RangingTechnology.UWB);
-
                     break;
                 case CS:
                     csCapabilities = CsOobCapabilities.parseBytes(remainingBytes);

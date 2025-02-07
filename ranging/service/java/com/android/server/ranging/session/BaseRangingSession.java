@@ -301,9 +301,14 @@ public class BaseRangingSession {
         }
     }
 
-    protected ImmutableSet<RangingTechnology> getTechnologiesUsedByPeer(RangingDevice peer) {
+    protected ImmutableSet<RangingTechnology> getTechnologiesUsedByPeer(RangingDevice device) {
         synchronized (mLock) {
-            return ImmutableSet.copyOf(mPeers.get(peer).technologies);
+            Peer peer = mPeers.get(device);
+            if (peer == null) {
+                return ImmutableSet.of();
+            } else {
+                return ImmutableSet.copyOf(peer.technologies);
+            }
         }
     }
 

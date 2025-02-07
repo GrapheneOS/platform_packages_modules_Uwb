@@ -30,6 +30,7 @@ filegroup {
     name: "service-ranging-srcs",
     srcs: [
         "java/**/*.java",
+        ":service-uwb-shared-with-ranging-srcs",
     ],
 }
 
@@ -54,6 +55,7 @@ java_library {
         "framework-wifi.stubs.module_lib",
         "framework-bluetooth.stubs.module_lib",
         "framework-location.stubs.module_lib",
+        "ServiceUwbResources",
     ],
 
     static_libs: [

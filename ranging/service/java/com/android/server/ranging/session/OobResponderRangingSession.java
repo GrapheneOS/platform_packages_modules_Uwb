@@ -136,6 +136,8 @@ public class OobResponderRangingSession
         ImmutableSet.Builder<TechnologyConfig> configs = ImmutableSet.builder();
         SetConfigurationMessage setConfigMessage = SetConfigurationMessage.parseBytes(data);
 
+        Log.v(TAG, "Configured ranging for technologies "
+                + setConfigMessage.getRangingTechnologiesSet());
         UwbOobConfig uwbConfig = setConfigMessage.getUwbConfig();
         if (uwbConfig != null) {
             configs.add(uwbConfig.toTechnologyConfig(mMyUwbAddress, mPeer.getRangingDevice()));

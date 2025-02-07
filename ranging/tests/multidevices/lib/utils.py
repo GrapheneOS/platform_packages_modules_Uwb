@@ -21,7 +21,7 @@ from mobly.controllers import android_device
 WAIT_TIME_SEC = 3
 
 
-def initialize_uwb_country_code_if_necessary(ad: android_device.AndroidDevice):
+def initialize_uwb_country_code_and_verify(ad: android_device.AndroidDevice):
   """Sets UWB country code to US if the device does not have it set.
 
   Note: This intentionally relies on an unstable API (shell command) since we
@@ -32,13 +32,7 @@ def initialize_uwb_country_code_if_necessary(ad: android_device.AndroidDevice):
     ad: android device object.
     handler: callback handler.
   """
-  # Wait to see if UWB state is reported as enabled. If not, this could be
-  # because the country code is not set. Try forcing the country code in that
-  # case.
   if not ad.ranging.isTechnologySupported(RangingTechnology.UWB):
-    return
-
-  if is_technology_enabled(ad, RangingTechnology.UWB, timeout_s=60):
     return
 
   try:
@@ -129,7 +123,7 @@ def set_uwb_state_and_verify(
   """
   failure_msg = "enabled" if state else "disabled"
   ad.uwb.setUwbEnabled(state)
-  asserts.assert_true(_is_technology_state(ad, RangingTechnology.UWB, state, timeout_s=60),
+  asserts.assert_true(_is_technology_state(ad, RangingTechnology.UWB, state, timeout_s=30),
                       "Uwb is not %s" % failure_msg)
 
 def reset_bt_state(

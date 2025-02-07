@@ -117,4 +117,14 @@ public enum RangingTechnology {
         }
         return techs.build();
     }
+
+    @Override
+    public String toString() {
+        return name();
+    }
+
+    /** Create enum from string */
+    public static RangingTechnology fromName(String name) {
+        return RangingTechnology.valueOf(name);
+    }
 }

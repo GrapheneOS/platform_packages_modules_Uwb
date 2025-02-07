@@ -20,6 +20,7 @@ import android.content.Context;
 import android.util.Log;
 
 import com.android.server.SystemService;
+import com.android.server.uwb.UwbContext;
 
 public class RangingService extends SystemService {
     private static final String TAG = "RangingService";
@@ -27,7 +28,8 @@ public class RangingService extends SystemService {
 
     public RangingService(Context context) {
         super(context);
-        mRangingImpl = new RangingServiceImpl(context, new RangingInjector(context));
+        mRangingImpl = new RangingServiceImpl(
+                context, new RangingInjector(new UwbContext(context)));
     }
 
     @Override

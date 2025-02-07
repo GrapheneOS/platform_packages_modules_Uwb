@@ -40,7 +40,8 @@ _TEST_CASES = [
     "test_one_to_one_wifi_periodic_rtt_ranging",
     "test_one_to_one_ble_rssi_ranging",
     "test_one_to_one_ble_cs_ranging",
-    "test_one_to_one_ranging_with_oob",
+    "test_one_to_one_uwb_ranging_with_oob",
+    "test_one_to_one_ble_cs_ranging_with_oob",
     "test_uwb_ranging_measurement_limit",
     "test_ble_rssi_ranging_measurement_limit",
 ]
@@ -74,6 +75,16 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     super().setup_class()
     self.devices = [RangingDecorator(ad) for ad in self.android_devices]
     self.initiator, self.responder = self.devices
+
+    for device in self.devices:
+      if device.is_ranging_technology_supported(RangingTechnology.UWB):
+        try:
+          utils.set_uwb_state_and_verify(device.ad, state=True)
+        except Exception:
+          # If UWB state can't be enabled, it could could be because the country code
+          # is not set. Try forcing the country code in that case.
+          device.ad.ranging.logInfo("Device supports UWB but we failed to enable it. Forcing country code to US and retrying...")
+          utils.initialize_uwb_country_code_and_verify(device.ad)
 
     self.initiator.uwb_address = [1, 2]
     self.responder.uwb_address = [3, 4]
@@ -748,7 +759,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     'android.ranging.oob.TransportHandle#registerReceiveCallback(java.util.concurrent.Executor, android.ranging.oob.TransportHandle.ReceiveCallback)',
     'android.ranging.oob.TransportHandle.ReceiveCallback#onSendFailed()',
   ])
-  def test_one_to_one_ranging_with_oob(self):
+  def test_one_to_one_uwb_ranging_with_oob(self):
     asserts.skip_if(
         not self.responder.is_ranging_technology_supported(RangingTechnology.UWB),
         f"UWB not supported by responder",
@@ -760,7 +771,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
     initiator_preference = RangingPreference(
         device_role=DeviceRole.INITIATOR,
-        ranging_params=OobInitiatorRangingParams(peer_ids=[self.responder.id]),
+        ranging_params=OobInitiatorRangingParams(peer_ids=[self.responder.id], ranging_mode=RangingMode.HIGH_ACCURACY),
     )
 
     responder_preference = RangingPreference(
@@ -773,8 +784,52 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     session.add_responder(self.responder, responder_preference)
 
     session.start_and_assert_opened()
-    session.assert_exchanged_data()
+    session.assert_received_data()
     session.stop_and_assert_closed()
+
+  def test_one_to_one_ble_cs_ranging_with_oob(self):
+    asserts.skip_if(
+        not self.responder.is_ranging_technology_supported(RangingTechnology.BLE_CS),
+        f"BLE_CS not supported by responder",
+    )
+    asserts.skip_if(
+        not self.initiator.is_ranging_technology_supported(RangingTechnology.BLE_CS),
+        f"BLE_CS not supported by initiator",
+    )
+
+    if self.initiator.is_ranging_technology_supported(RangingTechnology.UWB):
+      utils.set_uwb_state_and_verify(self.initiator.ad, state=False)
+    if self.responder.is_ranging_technology_supported(RangingTechnology.UWB):
+      utils.set_uwb_state_and_verify(self.responder.ad, state=False)
+
+    initiator_preference = RangingPreference(
+        device_role=DeviceRole.INITIATOR,
+        ranging_params=OobInitiatorRangingParams(
+          peer_ids=[self.responder.id],
+          # HIGH_ACCURACY_PREFERRED mode with UWB disabled should fallback to CS
+          ranging_mode=RangingMode.HIGH_ACCURACY_PREFERRED
+        ),
+    )
+
+    responder_preference = RangingPreference(
+        device_role=DeviceRole.RESPONDER,
+        ranging_params=OobResponderRangingParams(peer_id=self.initiator.id),
+    )
+
+    session = RangingSession()
+    session.set_initiator(self.initiator, initiator_preference)
+    session.add_responder(self.responder, responder_preference)
+
+    # TODO(rpius): Remove this once the technology is stable.
+    self._reset_bt_state()
+
+    try:
+      self._ble_bond()
+      session.start_and_assert_opened(check_responders=False)
+      session.assert_received_data(technologies=[RangingTechnology.BLE_CS], check_responders=False)
+    finally:
+      session.stop_and_assert_closed(check_responders=False)
+      self._ble_unbond()
 
 if __name__ == "__main__":
   if "--" in sys.argv:

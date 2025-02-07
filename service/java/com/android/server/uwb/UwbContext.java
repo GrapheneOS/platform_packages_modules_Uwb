@@ -20,12 +20,14 @@ import android.annotation.NonNull;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.util.Log;
 
+import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -41,6 +43,13 @@ public class UwbContext extends ContextWrapper {
 
     /** Since service-uwb runs within system_server, its package name is "android". */
     private static final String SERVICE_UWB_PACKAGE_NAME = "android";
+    private static final String UWB_APEX_NAME = "com.android.uwb";
+    /**
+     * The path where the Uwb apex is mounted.
+     * Current value = "/apex/com.android.uwb"
+     */
+    private static final String UWB_APEX_PATH =
+            new File("/apex", UWB_APEX_NAME).getAbsolutePath();
 
     private String mUwbOverlayApkPkgName;
 
@@ -51,6 +60,14 @@ public class UwbContext extends ContextWrapper {
 
     public UwbContext(@NonNull Context contextBase) {
         super(contextBase);
+    }
+
+    /**
+     * Returns true if the app is in the Uwb apex, false otherwise.
+     * Checks if the app's path starts with "/apex/com.android.uwb".
+     */
+    private static boolean isAppInUwbApex(ApplicationInfo appInfo) {
+        return appInfo.sourceDir.startsWith(UWB_APEX_PATH);
     }
 
     /** Get the package name of ServiceUwbResources.apk */
@@ -65,7 +82,7 @@ public class UwbContext extends ContextWrapper {
 
         // remove apps that don't live in the Uwb apex
         resolveInfos.removeIf(info ->
-                !UwbInjector.isAppInUwbApex(info.activityInfo.applicationInfo));
+                !isAppInUwbApex(info.activityInfo.applicationInfo));
 
         if (resolveInfos.isEmpty()) {
             // Resource APK not loaded yet, print a stack trace to see where this is called from

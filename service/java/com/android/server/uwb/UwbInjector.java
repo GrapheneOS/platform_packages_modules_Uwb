@@ -88,13 +88,6 @@ public class UwbInjector {
     private static final String APEX_NAME = "com.android.uwb";
     private static final String VENDOR_SERVICE_NAME = "uwb_vendor";
     private static final String BOOT_DEFAULT_UWB_COUNTRY_CODE = "ro.boot.uwbcountrycode";
-
-    /**
-     * The path where the Uwb apex is mounted.
-     * Current value = "/apex/com.android.uwb"
-     */
-    private static final String UWB_APEX_PATH =
-            new File("/apex", APEX_NAME).getAbsolutePath();
     private static final int APP_INFO_FLAGS_SYSTEM_APP =
             ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP;
 
@@ -345,14 +338,6 @@ public class UwbInjector {
     public static File getCredentialProtectedDataDirForUser(int userId) {
         return ApexEnvironment.getApexEnvironment(APEX_NAME)
                 .getCredentialProtectedDataDirForUser(UserHandle.of(userId));
-    }
-
-    /**
-     * Returns true if the app is in the Uwb apex, false otherwise.
-     * Checks if the app's path starts with "/apex/com.android.uwb".
-     */
-    public static boolean isAppInUwbApex(ApplicationInfo appInfo) {
-        return appInfo.sourceDir.startsWith(UWB_APEX_PATH);
     }
 
     /**

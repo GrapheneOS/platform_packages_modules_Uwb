@@ -20,6 +20,7 @@
         <policy type="product|system|vendor">
 
           <!-- Params from config.xml that can be overlaid -->
+          <!-- ===== Start of UWB stack overlay definitions ===== -->
             <item name="config_isMultichip" type="bool" />
             <item name="config_multichipConfigPath" type="string" />
             <item name="enable_filters" type="bool" />
@@ -64,6 +65,12 @@
             <item name="ccc_two_byte_config_id_little_endian_supported" type="bool" />
             <item name="enable_random_hopmodekey" type="bool" />
             <item name="fira_supported_extension_ccc" type="bool" />
+          <!-- ===== End of UWB stack overlay definitions ===== -->
+
+          <!-- ===== Start of ranging stack overlay definitions ===== -->
+          <item name="technology_preference_list" type="array" />
+          <!-- ===== End of ranging stack overlay definitions ===== -->
+
           <!-- Params from config.xml that can be overlaid -->
 
           <!-- Params from strings.xml that can be overlaid -->

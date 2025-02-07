@@ -130,6 +130,7 @@ public abstract class SetConfigurationMessage {
                 .setRangingTechnologiesSet(rangingTechnologiesSet)
                 .setStartRangingList(startRangingList)
                 .setUwbConfig(uwbConfig)
+                .setCsConfig(csConfig)
                 .setRttConfig(rttConfig)
                 .setBleRssiConfig(bleRssiConfig)
                 .build();

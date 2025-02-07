@@ -21,6 +21,7 @@
      entries do not follow the convention, but all new entries should. -->
 
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- ===== Start of UWB stack overlay definitions ===== -->
     <!-- boolean indicating whether or not the system supports multiple UWB chips -->
     <bool name="config_isMultichip">false</bool>
 
@@ -249,4 +250,15 @@
     <!-- Whether FIRa CCC capability UCI Specification applied or not.
     If enabled, FIRa CCC capability UCI Specification used -->
     <bool name = "fira_supported_extension_ccc">false</bool>
+    <!-- ===== End of UWB stack overlay definitions ===== -->
+
+    <!-- ===== Start of ranging stack overlay definitions ===== -->
+    <!-- Priority list of ranging technologies on a device -->
+    <string-array name="technology_preference_list">
+        <item>UWB</item>
+        <item>CS</item>
+        <item>RTT</item>
+        <item>RSSI</item>
+    </string-array>
+    <!-- ===== End of ranging stack overlay definitions ===== -->
 </resources>

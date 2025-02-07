@@ -35,6 +35,13 @@ filegroup {
     ],
 }
 
+filegroup {
+    name: "service-uwb-shared-with-ranging-srcs",
+    srcs: [
+        "java/com/android/server/uwb/UwbContext.java",
+    ],
+}
+
 // pre-jarjar version of service-uwb that builds against pre-jarjar version of framework-uwb
 java_library {
     name: "service-uwb-pre-jarjar",

@@ -5,8 +5,8 @@ package {
 android_app {
     name: "RangingTestApp",
     certificate: ":com.android.ranging.rangingtestapp.certificate",
-    min_sdk_version: "35",
-    target_sdk_version: "35",
+    min_sdk_version: "36",
+    target_sdk_version: "36",
     sdk_version: "current",
     srcs: ["app/src/main/**/*.java"],
     resource_dirs: ["app/src/main/res"],

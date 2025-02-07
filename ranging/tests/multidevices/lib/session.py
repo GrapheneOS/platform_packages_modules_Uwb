@@ -44,7 +44,7 @@ class RangingSession:
     self.preferences[responder.id] = preference
     return self
 
-  def start_and_assert_opened(self):
+  def start_and_assert_opened(self, check_responders: bool = True):
     ids = self.responder_ids.union({self.initiator_id})
     for id in ids:
       self.devices[id].start_ranging(self.handle, self.preferences[id])
@@ -52,20 +52,23 @@ class RangingSession:
     if self._is_using_oob():
       self._handle_oob_start_ranging()
 
-    for id in ids:
-      self.devices[id].assert_ranging_event_received(self.handle, Event.OPENED)
-
-    return self
-
-  def assert_exchanged_data(self, technologies: Set[RangingTechnology] = None):
-    if technologies is None:
-      self._assert_exchanged_data_using_any_technologies()
+    if check_responders:
+      for id in ids:
+        self.devices[id].assert_ranging_event_received(self.handle, Event.OPENED)
     else:
-      self._assert_exchanged_data_using_technologies(technologies)
+      self.devices[self.initiator_id].assert_ranging_event_received(self.handle, Event.OPENED)
 
     return self
 
-  def stop_and_assert_closed(self):
+  def assert_received_data(self, technologies: Set[RangingTechnology] = None, check_responders: bool = True):
+    if technologies is None:
+      self._assert_received_data_using_any_technologies(check_responders)
+    else:
+      self._assert_received_data_using_technologies(technologies, check_responders)
+
+    return self
+
+  def stop_and_assert_closed(self, check_responders: bool = True):
     self.devices[self.initiator_id].stop_ranging(self.handle)
 
     if self._is_using_oob():
@@ -74,20 +77,24 @@ class RangingSession:
       for id in self.responder_ids:
         self.devices[id].stop_ranging(self.handle)
 
-    for id in self.responder_ids.union({self.initiator_id}):
-      self.devices[id].assert_closed(self.handle)
+    if check_responders:
+      for id in self.responder_ids.union({self.initiator_id}):
+        self.devices[id].assert_closed(self.handle)
+    else:
+      self.devices[self.initiator_id].assert_closed(self.handle)
 
-  def _assert_exchanged_data_using_any_technologies(self):
+  def _assert_received_data_using_any_technologies(self, check_responders: bool = True):
     for responder_id in self.responder_ids:
       self.devices[self.initiator_id].verify_received_data_from_peer(
           self.handle, responder_id
       )
-      self.devices[responder_id].verify_received_data_from_peer(
-          self.handle, self.initiator_id
-      )
+      if check_responders:
+        self.devices[responder_id].verify_received_data_from_peer(
+            self.handle, self.initiator_id
+        )
 
-  def _assert_exchanged_data_using_technologies(
-      self, technologies: Set[RangingTechnology] = None
+  def _assert_received_data_using_technologies(
+      self, technologies: Set[RangingTechnology] = None, check_responders: bool = True
   ):
     for responder_id in self.responder_ids:
       self.devices[
@@ -95,11 +102,12 @@ class RangingSession:
       ].verify_received_data_from_peer_using_technologies(
           self.handle, responder_id, technologies
       )
-      self.devices[
-          responder_id
-      ].verify_received_data_from_peer_using_technologies(
-          self.handle, self.initiator_id, technologies
-      )
+      if check_responders:
+        self.devices[
+            responder_id
+        ].verify_received_data_from_peer_using_technologies(
+            self.handle, self.initiator_id, technologies
+        )
 
   def _is_using_oob(self):
     return (
