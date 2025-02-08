@@ -193,7 +193,7 @@ public class UwbAdapterTest {
                 RangingSessionCallback.REASON_STOP_RANGING_CALLED);
         verify(mMockCallback).onStopped(eq(peers.get(0)));
         verify(mMockCallback).onStopped(eq(peers.get(1)));
-        verify(mMockCallback).onClosed(RangingAdapter.Callback.ClosedReason.REQUESTED);
+        verify(mMockCallback).onClosed(RangingAdapter.Callback.ClosedReason.LOCAL_REQUEST);
     }
 
     @Test

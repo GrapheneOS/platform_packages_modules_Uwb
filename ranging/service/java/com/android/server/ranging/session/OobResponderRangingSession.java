@@ -17,6 +17,7 @@
 package com.android.server.ranging.session;
 
 import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
+import static android.ranging.RangingSession.Callback.REASON_REMOTE_REQUEST;
 import static android.ranging.RangingSession.Callback.REASON_UNSUPPORTED;
 
 import android.content.AttributionSource;
@@ -221,7 +222,9 @@ public class OobResponderRangingSession
         public void onSuccess(byte[] data) {
             StopRangingMessage message = StopRangingMessage.parseBytes(data);
             OobResponderRangingSession.super
-                    .stopTechnologies(Set.copyOf(message.getRangingTechnologiesToStop()));
+                    .stopTechnologies(
+                            Set.copyOf(message.getRangingTechnologiesToStop()),
+                            REASON_REMOTE_REQUEST);
             mOobConnection.receiveData().addCallback(mStopRangingListener, mOobExecutor);
         }
 

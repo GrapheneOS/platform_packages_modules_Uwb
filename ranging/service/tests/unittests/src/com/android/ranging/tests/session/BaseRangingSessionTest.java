@@ -21,8 +21,8 @@ import static android.ranging.RangingSession.Callback.REASON_NO_PEERS_FOUND;
 import static android.ranging.RangingSession.Callback.REASON_UNSUPPORTED;
 
 import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.FAILED_TO_START;
+import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.LOCAL_REQUEST;
 import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.LOST_CONNECTION;
-import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.REQUESTED;
 import static com.android.server.ranging.RangingTechnology.CS;
 import static com.android.server.ranging.RangingTechnology.RTT;
 import static com.android.server.ranging.RangingTechnology.UWB;
@@ -149,7 +149,7 @@ public class BaseRangingSessionTest {
         for (TechnologyConfig config : callbacks.keySet()) {
             verify(mMockAdapters.get(config)).stop();
 
-            callbacks.get(config).onClosed(REQUESTED);
+            callbacks.get(config).onClosed(LOCAL_REQUEST);
             if (config instanceof MulticastTechnologyConfig c) {
                 c.getPeerDevices().forEach(callbacks.get(config)::onStopped);
             } else if (config instanceof UnicastTechnologyConfig c) {

@@ -103,19 +103,21 @@ public interface RangingAdapter {
 
         @IntDef({
                 ClosedReason.UNKNOWN,
+                ClosedReason.ERROR,
                 ClosedReason.FAILED_TO_START,
-                ClosedReason.REQUESTED,
+                ClosedReason.LOCAL_REQUEST,
+                ClosedReason.REMOTE_REQUEST,
                 ClosedReason.LOST_CONNECTION,
                 ClosedReason.SYSTEM_POLICY,
-                ClosedReason.ERROR,
         })
         @interface ClosedReason {
             int UNKNOWN = 0;
             int ERROR = 1;
             int FAILED_TO_START = 2;
-            int REQUESTED = 3;
-            int LOST_CONNECTION = 4;
-            int SYSTEM_POLICY = 5;
+            int LOCAL_REQUEST = 3;
+            int REMOTE_REQUEST = 4;
+            int LOST_CONNECTION = 5;
+            int SYSTEM_POLICY = 6;
         }
 
         /**
