@@ -18,6 +18,7 @@ package com.android.server.ranging.session;
 
 import static android.ranging.RangingSession.Callback.REASON_LOCAL_REQUEST;
 import static android.ranging.RangingSession.Callback.REASON_NO_PEERS_FOUND;
+import static android.ranging.RangingSession.Callback.REASON_REMOTE_REQUEST;
 import static android.ranging.RangingSession.Callback.REASON_SYSTEM_POLICY;
 import static android.ranging.RangingSession.Callback.REASON_UNKNOWN;
 import static android.ranging.RangingSession.Callback.REASON_UNSUPPORTED;
@@ -55,6 +56,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -100,6 +102,9 @@ public class BaseRangingSession {
      */
     @GuardedBy("mLock")
     private final ConcurrentMap<TechnologyConfig, RangingAdapter> mAdapters;
+    @GuardedBy("mLock")
+    private final ConcurrentMap<TechnologyConfig, @RangingSession.Callback.Reason Integer>
+            mStateChangeReasonOverride;
 
     /** State of all peers in the session */
     @GuardedBy("mLock")
@@ -152,6 +157,7 @@ public class BaseRangingSession {
         mStateMachine = new StateMachine<>(State.STOPPED);
         mPeers = new ConcurrentHashMap<>();
         mAdapters = new ConcurrentHashMap<>();
+        mStateChangeReasonOverride = new ConcurrentHashMap<>();
         mAlarmManager = mInjector.getContext().getSystemService(AlarmManager.class);
     }
 
@@ -315,13 +321,16 @@ public class BaseRangingSession {
         }
     }
 
-    protected void stopTechnologies(Set<RangingTechnology> technologies) {
+    protected void stopTechnologies(
+            Set<RangingTechnology> technologies, @RangingSession.Callback.Reason int reason
+    ) {
         Log.v(TAG, "Stop ranging with technologies " + technologies);
         synchronized (mLock) {
             long token = Binder.clearCallingIdentity();
-            for (RangingAdapter adapter : mAdapters.values()) {
-                if (technologies.contains(adapter.getTechnology())) {
-                    adapter.stop();
+            for (TechnologyConfig config : mAdapters.keySet()) {
+                if (technologies.contains(config.getTechnology())) {
+                    mStateChangeReasonOverride.put(config, reason);
+                    mAdapters.get(config).stop();
                 }
             }
             Binder.restoreCallingIdentity(token);
@@ -380,28 +389,26 @@ public class BaseRangingSession {
         public void onClosed(@ClosedReason int reason) {
             synchronized (mLock) {
                 mAdapters.remove(mConfig);
+                @RangingSession.Callback.Reason Integer reasonOverride =
+                        mStateChangeReasonOverride.remove(mConfig);
                 if (mAdapters.isEmpty()) {
                     mStateMachine.setState(State.STOPPED);
-                    mSessionListener.onSessionStopped(convertReason(reason));
+                    mSessionListener.onSessionStopped(
+                            Optional.ofNullable(reasonOverride).orElse(convertReason(reason)));
                 }
             }
         }
 
-        private @RangingSession.Callback.Reason int convertReason(
-                @RangingAdapter.Callback.ClosedReason int reason
-        ) {
-            switch (reason) {
-                case RangingAdapter.Callback.ClosedReason.REQUESTED:
-                    return REASON_LOCAL_REQUEST;
-                case RangingAdapter.Callback.ClosedReason.FAILED_TO_START:
-                    return REASON_UNSUPPORTED;
-                case RangingAdapter.Callback.ClosedReason.LOST_CONNECTION:
-                    return REASON_NO_PEERS_FOUND;
-                case RangingAdapter.Callback.ClosedReason.SYSTEM_POLICY:
-                    return REASON_SYSTEM_POLICY;
-                default:
-                    return REASON_UNKNOWN;
-            }
+        private @RangingSession.Callback.Reason int convertReason(@ClosedReason int reason) {
+            return switch (reason) {
+                case ClosedReason.LOCAL_REQUEST -> REASON_LOCAL_REQUEST;
+                case ClosedReason.REMOTE_REQUEST -> REASON_REMOTE_REQUEST;
+                case ClosedReason.FAILED_TO_START -> REASON_UNSUPPORTED;
+                case ClosedReason.LOST_CONNECTION -> REASON_NO_PEERS_FOUND;
+                case ClosedReason.SYSTEM_POLICY -> REASON_SYSTEM_POLICY;
+                case ClosedReason.UNKNOWN, ClosedReason.ERROR -> REASON_UNKNOWN;
+                default -> REASON_UNKNOWN;
+            };
         }
 
     }

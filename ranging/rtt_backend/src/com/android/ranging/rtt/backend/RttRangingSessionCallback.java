@@ -16,6 +16,8 @@
 
 package com.android.ranging.rtt.backend;
 
+import androidx.annotation.IntDef;
+
 /**
  * Callbacks used by startRanging.
  */
@@ -30,6 +32,18 @@ public interface RttRangingSessionCallback {
     int REASON_SYSTEM_POLICY = 6;
     int REASON_RTT_NOT_AVAILABLE = 7;
 
+    @IntDef({
+            REASON_UNKNOWN,
+            REASON_WRONG_PARAMETERS,
+            REASON_FAILED_TO_START,
+            REASON_STOPPED_BY_PEER,
+            REASON_STOP_RANGING_CALLED,
+            REASON_MAX_RANGING_ROUND_RETRY_REACHED,
+            REASON_SYSTEM_POLICY,
+            REASON_RTT_NOT_AVAILABLE,
+    })
+    @interface RttSuspendedReason {}
+
     /**
      * Callback when a ranging session has been initiated.
      */
@@ -43,6 +57,6 @@ public interface RttRangingSessionCallback {
     /**
      * Callback when a session has been suspended.
      */
-    void onRangingSuspended(RttDevice device, int reason);
+    void onRangingSuspended(RttDevice device, @RttSuspendedReason int reason);
 
 }

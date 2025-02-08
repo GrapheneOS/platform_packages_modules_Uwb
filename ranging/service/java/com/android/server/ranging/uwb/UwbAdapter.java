@@ -289,7 +289,6 @@ public class UwbAdapter implements RangingAdapter {
         }
         var future = Futures.submit(mUwbClient::stopRanging, mExecutorService);
         Futures.addCallback(future, mUwbClientResultHandlers.stopRanging, mExecutorService);
-
     }
 
     public @Nullable UwbComplexChannel getComplexChannel() {
@@ -382,8 +381,9 @@ public class UwbAdapter implements RangingAdapter {
                 case REASON_FAILED_TO_START:
                     return FAILED_TO_START;
                 case REASON_STOPPED_BY_PEER:
+                    return Callback.ClosedReason.REMOTE_REQUEST;
                 case REASON_STOP_RANGING_CALLED:
-                    return Callback.ClosedReason.REQUESTED;
+                    return Callback.ClosedReason.LOCAL_REQUEST;
                 case REASON_MAX_RANGING_ROUND_RETRY_REACHED:
                     return Callback.ClosedReason.LOST_CONNECTION;
                 case REASON_SYSTEM_POLICY:
@@ -417,7 +417,10 @@ public class UwbAdapter implements RangingAdapter {
         }
     }
 
-    /** Close the session, disconnecting all peers and resetting internal state. */
+    /**
+     * Informs callbacks that all peers disconnected and the session closed. Resets internal
+     * state.
+     */
     private void closeForReason(@Callback.ClosedReason int reason) {
         synchronized (mStateMachine) {
             mStateMachine.setState(State.STOPPED);

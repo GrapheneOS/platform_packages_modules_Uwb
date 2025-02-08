@@ -35,8 +35,10 @@ import android.util.Log;
 
 import com.android.ranging.flags.Flags;
 
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -293,6 +295,7 @@ public final class RangingSession implements AutoCloseable {
          * @hide
          */
         @Retention(RetentionPolicy.SOURCE)
+        @Target({ElementType.TYPE_USE})
         @IntDef(value = {
                 REASON_UNKNOWN,
                 REASON_LOCAL_REQUEST,

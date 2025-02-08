@@ -259,14 +259,15 @@ public class RttAdapter implements RangingAdapter {
             }
         }
 
-        private static int convertReason(int reason) {
+        private static @Callback.ClosedReason int convertReason(@RttSuspendedReason int reason) {
             switch (reason) {
                 case REASON_WRONG_PARAMETERS:
                 case REASON_FAILED_TO_START:
                     return Callback.ClosedReason.FAILED_TO_START;
                 case REASON_STOPPED_BY_PEER:
+                    return Callback.ClosedReason.REMOTE_REQUEST;
                 case REASON_STOP_RANGING_CALLED:
-                    return Callback.ClosedReason.REQUESTED;
+                    return Callback.ClosedReason.LOCAL_REQUEST;
                 case REASON_MAX_RANGING_ROUND_RETRY_REACHED:
                     return Callback.ClosedReason.LOST_CONNECTION;
                 case REASON_SYSTEM_POLICY:

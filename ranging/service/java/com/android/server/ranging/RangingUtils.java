@@ -21,8 +21,9 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 
 import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.ERROR;
+import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.LOCAL_REQUEST;
 import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.LOST_CONNECTION;
-import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.REQUESTED;
+import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.REMOTE_REQUEST;
 import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.SYSTEM_POLICY;
 import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.UNKNOWN;
 
@@ -250,9 +251,8 @@ public class RangingUtils {
      */
     public static int convertBluetoothReasonCode(int bluetoothReasonCode) {
         return switch (bluetoothReasonCode) {
-            case BluetoothStatusCodes.REASON_LOCAL_APP_REQUEST,
-                    BluetoothStatusCodes.REASON_REMOTE_REQUEST ->
-                    REQUESTED;
+            case BluetoothStatusCodes.REASON_LOCAL_APP_REQUEST -> LOCAL_REQUEST;
+            case BluetoothStatusCodes.REASON_REMOTE_REQUEST -> REMOTE_REQUEST;
             case BluetoothStatusCodes.ERROR_TIMEOUT,
                     BluetoothStatusCodes.ERROR_REMOTE_OPERATION_NOT_SUPPORTED ->
                     SYSTEM_POLICY;
