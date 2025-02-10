@@ -25,6 +25,7 @@ import static junit.framework.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -52,6 +53,8 @@ import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.blerssi.BleRssiAdapter;
 import com.android.server.ranging.blerssi.BleRssiConfig;
 import com.android.server.ranging.session.RangingSessionConfig;
+
+import com.google.common.collect.ImmutableSet;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -138,7 +141,7 @@ public class BleRssiAdapterTest {
 
         verify(mMockDistanceMeasurementManager, times(1)).startMeasurementSession(any(), any(),
                 any());
-        verify(mMockCallback, times(1)).onStarted(mMockRangingDevice);
+        verify(mMockCallback, times(1)).onStarted(ImmutableSet.of(mMockRangingDevice));
 
         mBleRssiAdapter.setSession(mMockDistanceMeasurementSession);
         mBleRssiAdapter.stop();
@@ -177,7 +180,7 @@ public class BleRssiAdapterTest {
         assertEquals(mBleRssiAdapter.getDataNotificationManager().getCurrentConfig()
                 .getNotificationConfigType(), NOTIFICATION_CONFIG_ENABLE);
 
-        verify(mMockCallback, times(1)).onStarted(mMockRangingDevice);
+        verify(mMockCallback, times(1)).onStarted(eq(ImmutableSet.of(mMockRangingDevice)));
 
         mBleRssiAdapter.appMovedToBackground();
 
@@ -198,7 +201,7 @@ public class BleRssiAdapterTest {
         mBleRssiAdapter.start(mMockBleRssiConfig, mMockAttributionSource, mMockCallback);
         mBleRssiAdapter.setSession(mMockDistanceMeasurementSession);
 
-        verify(mMockCallback, times(1)).onStarted(mMockRangingDevice);
+        verify(mMockCallback, times(1)).onStarted(eq(ImmutableSet.of(mMockRangingDevice)));
         // When
         mBleRssiAdapter.appInBackgroundTimeout();
 

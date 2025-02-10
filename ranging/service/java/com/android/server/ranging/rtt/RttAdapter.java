@@ -52,6 +52,7 @@ import com.android.server.ranging.session.RangingSessionConfig;
 import com.android.server.ranging.util.DataNotificationManager;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -224,7 +225,7 @@ public class RttAdapter implements RangingAdapter {
             Log.i(TAG, "onRangingInitialized");
             synchronized (mStateMachine) {
                 if (mStateMachine.getState() == State.STARTED) {
-                    mCallbacks.onStarted(mPeerDevice);
+                    mCallbacks.onStarted(ImmutableSet.of(mPeerDevice));
                 }
             }
         }
@@ -289,7 +290,7 @@ public class RttAdapter implements RangingAdapter {
         synchronized (mStateMachine) {
             mStateMachine.setState(State.STOPPED);
             if (mCallbacks != null) {
-                mCallbacks.onStopped(mPeerDevice);
+                mCallbacks.onStopped(ImmutableSet.of(mPeerDevice));
                 mCallbacks.onClosed(reason);
             }
             clear();

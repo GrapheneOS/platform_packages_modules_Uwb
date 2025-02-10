@@ -53,6 +53,8 @@ import com.android.server.ranging.cs.CsAdapter;
 import com.android.server.ranging.cs.CsConfig;
 import com.android.server.ranging.session.RangingSessionConfig;
 
+import com.google.common.collect.ImmutableSet;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -143,7 +145,7 @@ public class CsAdapterTest {
 
         verify(mMockDistanceMeasurementManager, times(1)).startMeasurementSession(any(), any(),
                 any());
-        verify(mMockCallback, times(1)).onStarted(mMockRangingDevice);
+        verify(mMockCallback, times(1)).onStarted(ImmutableSet.of(mMockRangingDevice));
 
         mCsAdapter.setSession(mMockDistanceMeasurementSession);
         mCsAdapter.stop();
@@ -158,7 +160,7 @@ public class CsAdapterTest {
 
         verify(mMockDistanceMeasurementManager, times(1)).startMeasurementSession(any(), any(),
                 any());
-        verify(mMockCallback, times(1)).onStarted(mMockRangingDevice);
+        verify(mMockCallback, times(1)).onStarted(ImmutableSet.of(mMockRangingDevice));
 
         mCsAdapter.stop();
 
@@ -189,7 +191,7 @@ public class CsAdapterTest {
         assertEquals(mCsAdapter.getDataNotificationManager().getCurrentConfig()
                 .getNotificationConfigType(), NOTIFICATION_CONFIG_ENABLE);
 
-        verify(mMockCallback, times(1)).onStarted(mMockRangingDevice);
+        verify(mMockCallback, times(1)).onStarted(ImmutableSet.of(mMockRangingDevice));
 
         mCsAdapter.appMovedToBackground();
 
@@ -209,7 +211,7 @@ public class CsAdapterTest {
         mCsAdapter.start(mMockCsConfig, mMockAttributionSource, mMockCallback);
         mCsAdapter.setSession(mMockDistanceMeasurementSession);
 
-        verify(mMockCallback, times(1)).onStarted(mMockRangingDevice);
+        verify(mMockCallback, times(1)).onStarted(ImmutableSet.of(mMockRangingDevice));
 
         mCsAdapter.appInBackgroundTimeout();
         verify(mMockDistanceMeasurementSession, times(1)).stopSession();

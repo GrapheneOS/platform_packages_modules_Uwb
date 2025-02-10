@@ -345,32 +345,36 @@ public class BaseRangingSession {
         }
 
         @Override
-        public void onStarted(@NonNull RangingDevice peerDevice) {
+        public void onStarted(@NonNull ImmutableSet<RangingDevice> peerDevices) {
             synchronized (mLock) {
-                if (!mPeers.containsKey(peerDevice)) {
-                    Log.w(TAG, "onStarted peer not found");
-                    return;
+                for (RangingDevice peerDevice : peerDevices) {
+                    if (!mPeers.containsKey(peerDevice)) {
+                        Log.w(TAG, "onStarted peer not found");
+                        continue;
+                    }
+                    mStateMachine.transition(State.STARTING, State.STARTED);
+                    mPeers.get(peerDevice).setUsingTechnology(mConfig.getTechnology());
                 }
-                mStateMachine.transition(State.STARTING, State.STARTED);
-                mPeers.get(peerDevice).setUsingTechnology(mConfig.getTechnology());
-                mSessionListener.onTechnologyStarted(peerDevice, mConfig.getTechnology());
+                mSessionListener.onTechnologyStarted(mConfig.getTechnology(), peerDevices);
             }
         }
 
         @Override
-        public void onStopped(@NonNull RangingDevice peerDevice) {
+        public void onStopped(@NonNull ImmutableSet<RangingDevice> peerDevices) {
             synchronized (mLock) {
-                if (!mPeers.containsKey(peerDevice)) {
-                    Log.w(TAG, "onStopped peer not found");
-                    return;
+                for (RangingDevice peerDevice : peerDevices) {
+                    Peer peer = mPeers.get(peerDevice);
+                    if (peer == null) {
+                        Log.w(TAG, "onStopped peer not found");
+                        continue;
+                    }
+                    peer.setNotUsingTechnology(mConfig.getTechnology());
+                    if (peer.technologies.isEmpty()) {
+                        peer.fusionEngine.stop();
+                        mPeers.remove(peerDevice);
+                    }
                 }
-                Peer peer = mPeers.get(peerDevice);
-                peer.setNotUsingTechnology(mConfig.getTechnology());
-                mSessionListener.onTechnologyStopped(peerDevice, mConfig.getTechnology());
-                if (peer.technologies.isEmpty()) {
-                    peer.fusionEngine.stop();
-                    mPeers.remove(peerDevice);
-                }
+                mSessionListener.onTechnologyStopped(mConfig.getTechnology(), peerDevices);
             }
         }
 
