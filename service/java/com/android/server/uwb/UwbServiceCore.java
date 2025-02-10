@@ -609,13 +609,14 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             return new PersistableBundle();
         }
         if (specificationParams.second.getFiraSpecificationParams() != null) {
+            int uciVersion = Objects.requireNonNull(getCachedDeviceInfoResponse(
+                    mUwbInjector.getMultichipData().getDefaultChipId())).mUciVersion;
             FiraSpecificationParams firaSpecificationParams =
                     new FiraSpecificationParams.Builder(
                             specificationParams.second.getFiraSpecificationParams())
                             .setBackgroundRangingSupport(mUwbInjector.getDeviceConfigFacade()
                                     .isBackgroundRangingEnabled())
-                            .setUciVersionSupported(getCachedDeviceInfoResponse(
-                                    mUwbInjector.getMultichipData().getDefaultChipId()).mUciVersion)
+                            .setUciVersionSupported(uciVersion > 100 ? 1 : uciVersion)
                             .setCountryCode(mUwbCountryCode.getCountryCode())
                             .build();
             specificationParams.second.setFiraSpecificationParams(firaSpecificationParams);
