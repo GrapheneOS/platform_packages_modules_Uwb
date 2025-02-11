@@ -360,7 +360,9 @@ public class BaseRangingSession {
         }
 
         @Override
-        public void onStopped(@NonNull ImmutableSet<RangingDevice> peerDevices) {
+        public void onStopped(
+                @NonNull ImmutableSet<RangingDevice> peerDevices, @Reason int reason
+        ) {
             synchronized (mLock) {
                 for (RangingDevice peerDevice : peerDevices) {
                     Peer peer = mPeers.get(peerDevice);
@@ -374,7 +376,8 @@ public class BaseRangingSession {
                         mPeers.remove(peerDevice);
                     }
                 }
-                mSessionListener.onTechnologyStopped(mConfig.getTechnology(), peerDevices);
+                mSessionListener.onTechnologyStopped(
+                        mConfig.getTechnology(), peerDevices, convertReason(reason));
             }
         }
 
@@ -390,7 +393,7 @@ public class BaseRangingSession {
         }
 
         @Override
-        public void onClosed(@ClosedReason int reason) {
+        public void onClosed(@Reason int reason) {
             synchronized (mLock) {
                 mAdapters.remove(mConfig);
                 @RangingSession.Callback.Reason Integer reasonOverride =
@@ -403,14 +406,14 @@ public class BaseRangingSession {
             }
         }
 
-        private @RangingSession.Callback.Reason int convertReason(@ClosedReason int reason) {
+        private @RangingSession.Callback.Reason int convertReason(@Reason int reason) {
             return switch (reason) {
-                case ClosedReason.LOCAL_REQUEST -> REASON_LOCAL_REQUEST;
-                case ClosedReason.REMOTE_REQUEST -> REASON_REMOTE_REQUEST;
-                case ClosedReason.FAILED_TO_START -> REASON_UNSUPPORTED;
-                case ClosedReason.LOST_CONNECTION -> REASON_NO_PEERS_FOUND;
-                case ClosedReason.SYSTEM_POLICY -> REASON_SYSTEM_POLICY;
-                case ClosedReason.UNKNOWN, ClosedReason.ERROR -> REASON_UNKNOWN;
+                case Reason.LOCAL_REQUEST -> REASON_LOCAL_REQUEST;
+                case Reason.REMOTE_REQUEST -> REASON_REMOTE_REQUEST;
+                case Reason.FAILED_TO_START -> REASON_UNSUPPORTED;
+                case Reason.LOST_CONNECTION -> REASON_NO_PEERS_FOUND;
+                case Reason.SYSTEM_POLICY -> REASON_SYSTEM_POLICY;
+                case Reason.UNKNOWN, Reason.ERROR -> REASON_UNKNOWN;
                 default -> REASON_UNKNOWN;
             };
         }

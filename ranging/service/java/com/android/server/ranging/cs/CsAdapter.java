@@ -20,9 +20,9 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 
-import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.ERROR;
-import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.FAILED_TO_START;
-import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.SYSTEM_POLICY;
+import static com.android.server.ranging.RangingAdapter.Callback.Reason.ERROR;
+import static com.android.server.ranging.RangingAdapter.Callback.Reason.FAILED_TO_START;
+import static com.android.server.ranging.RangingAdapter.Callback.Reason.SYSTEM_POLICY;
 import static com.android.server.ranging.RangingUtils.convertBluetoothReasonCode;
 
 import android.annotation.Nullable;
@@ -273,9 +273,9 @@ public class CsAdapter implements RangingAdapter {
         }
     }
 
-    private void closeForReason(@Callback.ClosedReason int reason) {
+    private void closeForReason(@Callback.Reason int reason) {
         if (mRangingDevice != null) {
-            mCallbacks.onStopped(ImmutableSet.of(mRangingDevice));
+            mCallbacks.onStopped(ImmutableSet.of(mRangingDevice), reason);
         }
         mCallbacks.onClosed(reason);
         clear();
@@ -310,7 +310,7 @@ public class CsAdapter implements RangingAdapter {
 
                 public void onStartFail(int reason) {
                     Log.i(TAG, "DistanceMeasurement onStartFail ! reason " + reason);
-                    closeForReason(Callback.ClosedReason.FAILED_TO_START);
+                    closeForReason(Callback.Reason.FAILED_TO_START);
                 }
 
                 public void onStopped(DistanceMeasurementSession session, int reason) {

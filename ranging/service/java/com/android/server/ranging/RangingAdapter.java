@@ -93,8 +93,9 @@ public interface RangingAdapter {
          *
          * @param peers that ranging was stopped with. Must be non-empty. Multicast technologies
          *              may stop ranging with multiple peers at once.
+         * @param reason why ranging was stopped.
          */
-        void onStopped(@NonNull ImmutableSet<RangingDevice> peers);
+        void onStopped(@NonNull ImmutableSet<RangingDevice> peers, @Reason int reason);
 
         /**
          * Notifies the caller on each instance of ranging data received from the ranging
@@ -106,15 +107,15 @@ public interface RangingAdapter {
         void onRangingData(@NonNull RangingDevice peer, @NonNull RangingData data);
 
         @IntDef({
-                ClosedReason.UNKNOWN,
-                ClosedReason.ERROR,
-                ClosedReason.FAILED_TO_START,
-                ClosedReason.LOCAL_REQUEST,
-                ClosedReason.REMOTE_REQUEST,
-                ClosedReason.LOST_CONNECTION,
-                ClosedReason.SYSTEM_POLICY,
+                Reason.UNKNOWN,
+                Reason.ERROR,
+                Reason.FAILED_TO_START,
+                Reason.LOCAL_REQUEST,
+                Reason.REMOTE_REQUEST,
+                Reason.LOST_CONNECTION,
+                Reason.SYSTEM_POLICY,
         })
-        @interface ClosedReason {
+        @interface Reason {
             int UNKNOWN = 0;
             int ERROR = 1;
             int FAILED_TO_START = 2;
@@ -129,6 +130,6 @@ public interface RangingAdapter {
          *
          * @param reason why the session was closed.
          */
-        void onClosed(@ClosedReason int reason);
+        void onClosed(@Reason int reason);
     }
 }

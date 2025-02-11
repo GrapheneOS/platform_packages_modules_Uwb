@@ -18,9 +18,9 @@ package com.android.server.ranging.rtt;
 
 import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 
-import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.ERROR;
-import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.FAILED_TO_START;
-import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.SYSTEM_POLICY;
+import static com.android.server.ranging.RangingAdapter.Callback.Reason.ERROR;
+import static com.android.server.ranging.RangingAdapter.Callback.Reason.FAILED_TO_START;
+import static com.android.server.ranging.RangingAdapter.Callback.Reason.SYSTEM_POLICY;
 
 import android.annotation.Nullable;
 import android.app.AlarmManager;
@@ -260,21 +260,21 @@ public class RttAdapter implements RangingAdapter {
             }
         }
 
-        private static @Callback.ClosedReason int convertReason(@RttSuspendedReason int reason) {
+        private static @Callback.Reason int convertReason(@RttSuspendedReason int reason) {
             switch (reason) {
                 case REASON_WRONG_PARAMETERS:
                 case REASON_FAILED_TO_START:
-                    return Callback.ClosedReason.FAILED_TO_START;
+                    return Callback.Reason.FAILED_TO_START;
                 case REASON_STOPPED_BY_PEER:
-                    return Callback.ClosedReason.REMOTE_REQUEST;
+                    return Callback.Reason.REMOTE_REQUEST;
                 case REASON_STOP_RANGING_CALLED:
-                    return Callback.ClosedReason.LOCAL_REQUEST;
+                    return Callback.Reason.LOCAL_REQUEST;
                 case REASON_MAX_RANGING_ROUND_RETRY_REACHED:
-                    return Callback.ClosedReason.LOST_CONNECTION;
+                    return Callback.Reason.LOST_CONNECTION;
                 case REASON_SYSTEM_POLICY:
-                    return Callback.ClosedReason.SYSTEM_POLICY;
+                    return Callback.Reason.SYSTEM_POLICY;
                 default:
-                    return Callback.ClosedReason.UNKNOWN;
+                    return Callback.Reason.UNKNOWN;
             }
         }
 
@@ -286,11 +286,11 @@ public class RttAdapter implements RangingAdapter {
     }
 
     /** Close the session, disconnecting the peer and resetting internal state. */
-    private void closeForReason(@Callback.ClosedReason int reason) {
+    private void closeForReason(@Callback.Reason int reason) {
         synchronized (mStateMachine) {
             mStateMachine.setState(State.STOPPED);
             if (mCallbacks != null) {
-                mCallbacks.onStopped(ImmutableSet.of(mPeerDevice));
+                mCallbacks.onStopped(ImmutableSet.of(mPeerDevice), reason);
                 mCallbacks.onClosed(reason);
             }
             clear();

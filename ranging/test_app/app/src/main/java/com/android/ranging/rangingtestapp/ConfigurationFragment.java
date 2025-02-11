@@ -262,6 +262,17 @@ public class ConfigurationFragment extends Fragment {
                     public void onNothingSelected(AdapterView<?> adapterView) {
                     }
                 });
+        mOobModeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                mConfigurationParameters.get().oob.mode = (int) mOobModeSpinner.getItemAtPosition(
+                        position);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
         mButtonSave.setOnClickListener(
                 v -> {
                     mConfigurationParameters.get().saveInstance(getContext());

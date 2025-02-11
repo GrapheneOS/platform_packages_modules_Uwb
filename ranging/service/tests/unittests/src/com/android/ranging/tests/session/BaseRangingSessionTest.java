@@ -20,9 +20,9 @@ import static android.ranging.RangingSession.Callback.REASON_LOCAL_REQUEST;
 import static android.ranging.RangingSession.Callback.REASON_NO_PEERS_FOUND;
 import static android.ranging.RangingSession.Callback.REASON_UNSUPPORTED;
 
-import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.FAILED_TO_START;
-import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.LOCAL_REQUEST;
-import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.LOST_CONNECTION;
+import static com.android.server.ranging.RangingAdapter.Callback.Reason.FAILED_TO_START;
+import static com.android.server.ranging.RangingAdapter.Callback.Reason.LOCAL_REQUEST;
+import static com.android.server.ranging.RangingAdapter.Callback.Reason.LOST_CONNECTION;
 import static com.android.server.ranging.RangingTechnology.CS;
 import static com.android.server.ranging.RangingTechnology.RTT;
 import static com.android.server.ranging.RangingTechnology.UWB;
@@ -151,9 +151,9 @@ public class BaseRangingSessionTest {
 
             callbacks.get(config).onClosed(LOCAL_REQUEST);
             if (config instanceof MulticastTechnologyConfig c) {
-                callbacks.get(config).onStopped(c.getPeerDevices());
+                callbacks.get(config).onStopped(c.getPeerDevices(), LOCAL_REQUEST);
             } else if (config instanceof UnicastTechnologyConfig c) {
-                callbacks.get(config).onStopped(ImmutableSet.of(c.getPeerDevice()));
+                callbacks.get(config).onStopped(ImmutableSet.of(c.getPeerDevice()), LOCAL_REQUEST);
             }
         }
     }
@@ -281,7 +281,8 @@ public class BaseRangingSessionTest {
         mSession.stop();
         mockStopAdapters(adapterCallbacks);
 
-        verify(mMockSessionListener).onTechnologyStopped(eq(UWB), eq(Set.of(peer)));
+        verify(mMockSessionListener).onTechnologyStopped(
+                eq(UWB), eq(Set.of(peer)), eq(REASON_LOCAL_REQUEST));
         verify(mMockSessionListener).onSessionStopped(REASON_LOCAL_REQUEST);
     }
 
@@ -300,8 +301,10 @@ public class BaseRangingSessionTest {
         mSession.stop();
         mockStopAdapters(adapterCallbacks);
 
-        verify(mMockSessionListener).onTechnologyStopped(eq(UWB), eq(Set.of(peer)));
-        verify(mMockSessionListener).onTechnologyStopped(eq(UWB), eq(Set.of(peer)));
+        verify(mMockSessionListener).onTechnologyStopped(
+                eq(UWB), eq(Set.of(peer)), eq(REASON_LOCAL_REQUEST));
+        verify(mMockSessionListener).onTechnologyStopped(
+                eq(UWB), eq(Set.of(peer)), eq(REASON_LOCAL_REQUEST));
         verify(mMockSessionListener).onSessionStopped(eq(REASON_LOCAL_REQUEST));
     }
 
@@ -318,7 +321,8 @@ public class BaseRangingSessionTest {
         mSession.stop();
         mockStopAdapters(adapterCallbacks);
 
-        verify(mMockSessionListener).onTechnologyStopped(eq(UWB), eq(peers));
+        verify(mMockSessionListener).onTechnologyStopped(
+                eq(UWB), eq(peers), eq(REASON_LOCAL_REQUEST));
         verify(mMockSessionListener).onSessionStopped(eq(REASON_LOCAL_REQUEST));
     }
 
@@ -333,10 +337,11 @@ public class BaseRangingSessionTest {
         Map<TechnologyConfig, RangingAdapter.Callback> adapterCallbacks =
                 mockStartAdapters(configs);
 
-        adapterCallbacks.get(config).onStopped(ImmutableSet.of(peer));
+        adapterCallbacks.get(config).onStopped(ImmutableSet.of(peer), LOST_CONNECTION);
         adapterCallbacks.get(config).onClosed(LOST_CONNECTION);
 
-        verify(mMockSessionListener).onTechnologyStopped(eq(UWB), eq(Set.of(peer)));
+        verify(mMockSessionListener).onTechnologyStopped(
+                eq(UWB), eq(Set.of(peer)), eq(REASON_NO_PEERS_FOUND));
         verify(mMockSessionListener).onSessionStopped(eq(REASON_NO_PEERS_FOUND));
     }
 

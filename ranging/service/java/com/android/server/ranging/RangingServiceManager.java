@@ -294,6 +294,7 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
                     Log.e(TAG, "onOpened callback failed: " + e);
                 }
             }
+            mMetricsLogger.logTechnologyStarted(technology, peers.size());
             peers.forEach((peer) -> {
                 try {
                     mRangingCallbacks.onStarted(mSessionHandle, peer, technology.getValue());
@@ -304,8 +305,10 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
         }
 
         public void onTechnologyStopped(
-                @NonNull RangingTechnology technology, @NonNull Set<RangingDevice> peers
+                @NonNull RangingTechnology technology, @NonNull Set<RangingDevice> peers,
+                @Callback.Reason int reason
         ) {
+            mMetricsLogger.logTechnologyStopped(technology, peers.size(), reason);
             peers.forEach((peer) -> {
                 try {
                     mRangingCallbacks.onStopped(mSessionHandle, peer, technology.getValue());
@@ -410,7 +413,7 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
             RangingConfig baseParams = args.preference.getRangingParams();
             SessionListener listener = new SessionListener(
                     args.handle, args.callbacks,
-                    new SessionMetricsLogger(
+                    SessionMetricsLogger.startLogging(
                             args.handle,
                             config.getDeviceRole(),
                             baseParams.getRangingSessionType()));
