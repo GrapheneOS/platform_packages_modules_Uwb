@@ -61,6 +61,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -283,7 +284,7 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
         }
 
         public void onTechnologyStarted(
-                @NonNull RangingDevice peer, @NonNull RangingTechnology technology
+                @NonNull RangingTechnology technology, @NonNull Set<RangingDevice> peers
         ) {
             if (!mIsSessionStarted.getAndSet(true)) {
                 mMetricsLogger.logSessionStarted();
@@ -293,21 +294,25 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
                     Log.e(TAG, "onOpened callback failed: " + e);
                 }
             }
-            try {
-                mRangingCallbacks.onStarted(mSessionHandle, peer, technology.getValue());
-            } catch (RemoteException e) {
-                Log.e(TAG, "onTechnologyStarted callback failed: " + e);
-            }
+            peers.forEach((peer) -> {
+                try {
+                    mRangingCallbacks.onStarted(mSessionHandle, peer, technology.getValue());
+                } catch (RemoteException e) {
+                    Log.e(TAG, "onTechnologyStarted callback failed: " + e);
+                }
+            });
         }
 
         public void onTechnologyStopped(
-                @NonNull RangingDevice peer, @NonNull RangingTechnology technology
+                @NonNull RangingTechnology technology, @NonNull Set<RangingDevice> peers
         ) {
-            try {
-                mRangingCallbacks.onStopped(mSessionHandle, peer, technology.getValue());
-            } catch (RemoteException e) {
-                Log.e(TAG, "onTechnologyStopped callback failed: " + e);
-            }
+            peers.forEach((peer) -> {
+                try {
+                    mRangingCallbacks.onStopped(mSessionHandle, peer, technology.getValue());
+                } catch (RemoteException e) {
+                    Log.e(TAG, "onTechnologyStopped callback failed: " + e);
+                }
+            });
         }
 
         public void onResults(

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uwb;
+package com.android.server.ranging.tests.uwb;
 
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 import static android.ranging.uwb.UwbRangingParams.CONFIG_MULTICAST_DS_TWR;
@@ -50,6 +50,7 @@ import com.android.server.ranging.uwb.UwbAdapter;
 import com.android.server.ranging.uwb.UwbConfig;
 
 import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import org.junit.Assert;
@@ -147,7 +148,7 @@ public class UwbAdapterTest {
         verify(mMockUwbClient).startRanging(callback.capture(), any());
 
         callback.getValue().onRangingInitialized(mMockLocalDevice);
-        verify(mMockCallback).onStarted(eq(peer));
+        verify(mMockCallback).onStarted(eq(ImmutableSet.of(peer)));
     }
 
     @Test
@@ -165,8 +166,7 @@ public class UwbAdapterTest {
         verify(mMockUwbClient).startRanging(callback.capture(), any());
 
         callback.getValue().onRangingInitialized(mMockLocalDevice);
-        verify(mMockCallback).onStarted(eq(peers.get(0)));
-        verify(mMockCallback).onStarted(eq(peers.get(1)));
+        verify(mMockCallback).onStarted(eq(ImmutableSet.copyOf(peers)));
     }
 
     @Test
@@ -191,9 +191,8 @@ public class UwbAdapterTest {
         callback.getValue().onRangingSuspended(
                 mMockLocalDevice,
                 RangingSessionCallback.REASON_STOP_RANGING_CALLED);
-        verify(mMockCallback).onStopped(eq(peers.get(0)));
-        verify(mMockCallback).onStopped(eq(peers.get(1)));
-        verify(mMockCallback).onClosed(RangingAdapter.Callback.ClosedReason.LOCAL_REQUEST);
+        verify(mMockCallback).onStopped(eq(ImmutableSet.copyOf(peers)));
+        verify(mMockCallback).onClosed(eq(RangingAdapter.Callback.ClosedReason.LOCAL_REQUEST));
     }
 
     @Test
@@ -219,7 +218,7 @@ public class UwbAdapterTest {
                 UwbDevice.createForAddress(peerAddress),
                 RangingSessionCallback.REASON_MAX_RANGING_ROUND_RETRY_REACHED);
 
-        verify(mMockCallback).onStopped(eq(peerDevice));
+        verify(mMockCallback).onStopped(eq(ImmutableSet.of(peerDevice)));
         verify(mMockCallback).onClosed(eq(RangingAdapter.Callback.ClosedReason.LOST_CONNECTION));
     }
 

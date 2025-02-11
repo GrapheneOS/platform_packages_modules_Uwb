@@ -359,7 +359,8 @@ public class RangingFrameworkTest {
                         .build())
                 .build());
 
-        verify(mMockRangingAdapter, times(1)).addOobDevice(any(), any());
+        // Dynamic addition of responder is not yet supported for OOB.
+        verify(mMockRangingAdapter, times(0)).addOobDevice(any(), any());
     }
 
     @Test

@@ -55,6 +55,8 @@ import com.android.server.ranging.RangingUtils.StateMachine;
 import com.android.server.ranging.session.RangingSessionConfig;
 import com.android.server.ranging.util.DataNotificationManager;
 
+import com.google.common.collect.ImmutableSet;
+
 import java.util.concurrent.Executors;
 
 public class BleRssiAdapter implements RangingAdapter {
@@ -175,7 +177,7 @@ public class BleRssiAdapter implements RangingAdapter {
         distanceMeasurementManager.startMeasurementSession(params,
                 Executors.newSingleThreadExecutor(), mDistanceMeasurementCallback);
         // Added callback here to be consistent with other ranging technology.
-        mCallbacks.onStarted(bleRssiConfig.getPeerDevice());
+        mCallbacks.onStarted(ImmutableSet.of(bleRssiConfig.getPeerDevice()));
         if (mConfig.getSessionConfig().getRangingMeasurementsLimit() > 0) {
             RangingUtils.setMeasurementsLimitTimeout(
                     mAlarmManager,
@@ -262,7 +264,7 @@ public class BleRssiAdapter implements RangingAdapter {
 
     private void closeForReason(@Callback.ClosedReason int reason) {
         if (mRangingDevice != null) {
-            mCallbacks.onStopped(mRangingDevice);
+            mCallbacks.onStopped(ImmutableSet.of(mRangingDevice));
         }
         mCallbacks.onClosed(reason);
         clear();

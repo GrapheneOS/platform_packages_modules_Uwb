@@ -57,6 +57,8 @@ import com.android.server.ranging.RangingUtils.StateMachine;
 import com.android.server.ranging.session.RangingSessionConfig;
 import com.android.server.ranging.util.DataNotificationManager;
 
+import com.google.common.collect.ImmutableSet;
+
 import java.util.concurrent.Executors;
 
 /**
@@ -197,7 +199,7 @@ public class CsAdapter implements RangingAdapter {
             return;
         }
         // Callback here to be consistent with other ranging technologies.
-        mCallbacks.onStarted(csConfig.getPeerDevice());
+        mCallbacks.onStarted(ImmutableSet.of(csConfig.getPeerDevice()));
         if (mConfig.getSessionConfig().getRangingMeasurementsLimit() > 0) {
             RangingUtils.setMeasurementsLimitTimeout(
                     mAlarmManager,
@@ -273,7 +275,7 @@ public class CsAdapter implements RangingAdapter {
 
     private void closeForReason(@Callback.ClosedReason int reason) {
         if (mRangingDevice != null) {
-            mCallbacks.onStopped(mRangingDevice);
+            mCallbacks.onStopped(ImmutableSet.of(mRangingDevice));
         }
         mCallbacks.onClosed(reason);
         clear();

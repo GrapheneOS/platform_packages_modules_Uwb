@@ -59,6 +59,7 @@ import com.android.server.ranging.util.DataNotificationManager;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -309,8 +310,8 @@ public class UwbAdapter implements RangingAdapter {
         public void onRangingInitialized(UwbDevice localDevice) {
             Log.i(TAG, "onRangingInitialized");
             synchronized (mStateMachine) {
-                if (mStateMachine.getState() == State.STARTED) {
-                    mPeers.keySet().forEach(mCallbacks::onStarted);
+                if (mStateMachine.getState() == State.STARTED && !mPeers.isEmpty()) {
+                    mCallbacks.onStarted(ImmutableSet.copyOf(mPeers.keySet()));
                 }
             }
         }
@@ -361,7 +362,7 @@ public class UwbAdapter implements RangingAdapter {
                 RangingDevice device = convertPeerDevice(peer);
                 if (device != null) {
                     mPeers.remove(device);
-                    mCallbacks.onStopped(device);
+                    mCallbacks.onStopped(ImmutableSet.of(device));
                 }
             }
         }
@@ -370,7 +371,7 @@ public class UwbAdapter implements RangingAdapter {
         public void onPeerConnected(UwbDevice peer) {
             RangingDevice device = convertPeerDevice(peer);
             if (device != null) {
-                mCallbacks.onStarted(device);
+                mCallbacks.onStarted(ImmutableSet.of(device));
             }
         }
 
@@ -428,7 +429,9 @@ public class UwbAdapter implements RangingAdapter {
                 Log.i(TAG, "Callback is empty.");
                 return;
             }
-            mPeers.keySet().forEach(mCallbacks::onStopped);
+            if (!mPeers.isEmpty()) {
+                mCallbacks.onStopped(ImmutableSet.copyOf(mPeers.keySet()));
+            }
             mCallbacks.onClosed(reason);
             clear();
         }

@@ -134,9 +134,9 @@ public class BaseRangingSessionTest {
             verify(mMockAdapters.get(config)).start(eq(config), any(), callbackCaptor.capture());
 
             if (config instanceof MulticastTechnologyConfig c) {
-                c.getPeerDevices().forEach(callbackCaptor.getValue()::onStarted);
+                callbackCaptor.getValue().onStarted(c.getPeerDevices());
             } else if (config instanceof UnicastTechnologyConfig c) {
-                callbackCaptor.getValue().onStarted(c.getPeerDevice());
+                callbackCaptor.getValue().onStarted(ImmutableSet.of(c.getPeerDevice()));
             }
 
             adapterCallbacks.put(config, callbackCaptor.getValue());
@@ -151,9 +151,9 @@ public class BaseRangingSessionTest {
 
             callbacks.get(config).onClosed(LOCAL_REQUEST);
             if (config instanceof MulticastTechnologyConfig c) {
-                c.getPeerDevices().forEach(callbacks.get(config)::onStopped);
+                callbacks.get(config).onStopped(c.getPeerDevices());
             } else if (config instanceof UnicastTechnologyConfig c) {
-                callbacks.get(config).onStopped(c.getPeerDevice());
+                callbacks.get(config).onStopped(ImmutableSet.of(c.getPeerDevice()));
             }
         }
     }
@@ -210,7 +210,7 @@ public class BaseRangingSessionTest {
         mSession.start(configs);
         mockStartAdapters(configs);
 
-        verify(mMockSessionListener).onTechnologyStarted(eq(peer), eq(UWB));
+        verify(mMockSessionListener).onTechnologyStarted(eq(UWB), eq(Set.of(peer)));
     }
 
     @Test
@@ -224,8 +224,8 @@ public class BaseRangingSessionTest {
         mSession.start(configs);
         mockStartAdapters(configs);
 
-        verify(mMockSessionListener).onTechnologyStarted(eq(peer), eq(UWB));
-        verify(mMockSessionListener).onTechnologyStarted(eq(peer), eq(RTT));
+        verify(mMockSessionListener).onTechnologyStarted(eq(UWB), eq(Set.of(peer)));
+        verify(mMockSessionListener).onTechnologyStarted(eq(RTT), eq(Set.of(peer)));
     }
 
     @Test
@@ -239,22 +239,21 @@ public class BaseRangingSessionTest {
         mSession.start(configs);
         mockStartAdapters(configs);
 
-        verify(mMockSessionListener).onTechnologyStarted(eq(peers.get(0)), eq(UWB));
-        verify(mMockSessionListener).onTechnologyStarted(eq(peers.get(1)), eq(UWB));
+        verify(mMockSessionListener).onTechnologyStarted(eq(UWB), eq(Set.of(peers.get(0))));
+        verify(mMockSessionListener).onTechnologyStarted(eq(UWB), eq(Set.of(peers.get(1))));
     }
 
     @Test
     public void start_startsMulticastTechnology() {
-        List<RangingDevice> peers = List.of(mock(RangingDevice.class), mock(RangingDevice.class));
+        Set<RangingDevice> peers = Set.of(mock(RangingDevice.class), mock(RangingDevice.class));
         ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(
-                mockTechnologyConfig(UWB, Set.copyOf(peers)));
+                mockTechnologyConfig(UWB, peers));
 
         configureSession(configs);
         mSession.start(configs);
         mockStartAdapters(configs);
 
-        verify(mMockSessionListener).onTechnologyStarted(eq(peers.get(0)), eq(UWB));
-        verify(mMockSessionListener).onTechnologyStarted(eq(peers.get(1)), eq(UWB));
+        verify(mMockSessionListener).onTechnologyStarted(eq(UWB), eq(peers));
     }
 
     @Test
@@ -266,7 +265,7 @@ public class BaseRangingSessionTest {
         mSession.start(configs);
         mockStartAdapters(configs);
 
-        verify(mMockSessionListener, never()).onTechnologyStarted(any(), eq(CS));
+        verify(mMockSessionListener, never()).onTechnologyStarted(eq(CS), any());
     }
 
     @Test
@@ -282,7 +281,7 @@ public class BaseRangingSessionTest {
         mSession.stop();
         mockStopAdapters(adapterCallbacks);
 
-        verify(mMockSessionListener).onTechnologyStopped(eq(peer), eq(UWB));
+        verify(mMockSessionListener).onTechnologyStopped(eq(UWB), eq(Set.of(peer)));
         verify(mMockSessionListener).onSessionStopped(REASON_LOCAL_REQUEST);
     }
 
@@ -301,16 +300,15 @@ public class BaseRangingSessionTest {
         mSession.stop();
         mockStopAdapters(adapterCallbacks);
 
-        verify(mMockSessionListener).onTechnologyStopped(eq(peer), eq(UWB));
-        verify(mMockSessionListener).onTechnologyStopped(eq(peer), eq(UWB));
+        verify(mMockSessionListener).onTechnologyStopped(eq(UWB), eq(Set.of(peer)));
+        verify(mMockSessionListener).onTechnologyStopped(eq(UWB), eq(Set.of(peer)));
         verify(mMockSessionListener).onSessionStopped(eq(REASON_LOCAL_REQUEST));
     }
 
     @Test
     public void stop_stopsMulticastTechnology() {
-        List<RangingDevice> peers = List.of(mock(RangingDevice.class), mock(RangingDevice.class));
-        ImmutableSet<TechnologyConfig> configs =
-                ImmutableSet.of(mockTechnologyConfig(UWB, Set.copyOf(peers)));
+        Set<RangingDevice> peers = Set.of(mock(RangingDevice.class), mock(RangingDevice.class));
+        ImmutableSet<TechnologyConfig> configs = ImmutableSet.of(mockTechnologyConfig(UWB, peers));
 
         configureSession(configs);
         mSession.start(configs);
@@ -320,8 +318,7 @@ public class BaseRangingSessionTest {
         mSession.stop();
         mockStopAdapters(adapterCallbacks);
 
-        verify(mMockSessionListener).onTechnologyStopped(eq(peers.get(0)), eq(UWB));
-        verify(mMockSessionListener).onTechnologyStopped(eq(peers.get(1)), eq(UWB));
+        verify(mMockSessionListener).onTechnologyStopped(eq(UWB), eq(peers));
         verify(mMockSessionListener).onSessionStopped(eq(REASON_LOCAL_REQUEST));
     }
 
@@ -336,10 +333,10 @@ public class BaseRangingSessionTest {
         Map<TechnologyConfig, RangingAdapter.Callback> adapterCallbacks =
                 mockStartAdapters(configs);
 
-        adapterCallbacks.get(config).onStopped(peer);
+        adapterCallbacks.get(config).onStopped(ImmutableSet.of(peer));
         adapterCallbacks.get(config).onClosed(LOST_CONNECTION);
 
-        verify(mMockSessionListener).onTechnologyStopped(eq(peer), eq(UWB));
+        verify(mMockSessionListener).onTechnologyStopped(eq(UWB), eq(Set.of(peer)));
         verify(mMockSessionListener).onSessionStopped(eq(REASON_NO_PEERS_FOUND));
     }
 
@@ -379,7 +376,7 @@ public class BaseRangingSessionTest {
                 eq(peer),
                 argThat((arg) -> arg.getRangingTechnology() == UWB.getValue())
         );
-        verify(mMockSessionListener).onTechnologyStarted(eq(peer), eq(UWB));
+        verify(mMockSessionListener).onTechnologyStarted(eq(UWB), eq(Set.of(peer)));
     }
 
     @Test
