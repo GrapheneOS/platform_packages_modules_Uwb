@@ -350,9 +350,8 @@ public class UwbAdapter implements RangingAdapter {
         @Override
         public void onRangingSuspended(UwbDevice localDevice, @RangingSuspendedReason int reason) {
             Log.i(TAG, "onRangingSuspended: " + reason);
-            if (reason != REASON_STOP_RANGING_CALLED && mUwbClient.isHwTurnOffEnabled()) {
-                mBackendExecutor.execute(() -> UwbHwSwitchHelper.disable(mContext,
-                        mAttributionSource));
+            if (mUwbClient.isHwTurnOffEnabled()) {
+                UwbHwSwitchHelper.disable(mContext, mAttributionSource);
             }
             closeForReason(convertClosedReason(reason));
         }
@@ -481,9 +480,6 @@ public class UwbAdapter implements RangingAdapter {
         public final FutureCallback<Integer> stopRanging = new FutureCallback<>() {
             @Override
             public void onSuccess(@Utils.UwbStatusCodes Integer status) {
-                if (mUwbClient.isHwTurnOffEnabled()) {
-                    UwbHwSwitchHelper.disable(mContext, mAttributionSource);
-                }
             }
 
             @Override
