@@ -469,6 +469,7 @@ impl<U: UciManager> UciManagerSync<U> {
     }
 
     /// Send UCI command for session data transfer phase config
+    #[allow(clippy::too_many_arguments)]
     pub fn session_data_transfer_phase_config(
         &self,
         session_id: SessionId,
@@ -477,6 +478,7 @@ impl<U: UciManager> UciManagerSync<U> {
         dtpml_size: u8,
         mac_address: Vec<u8>,
         slot_bitmap: Vec<u8>,
+        stop_data_transfer: Vec<u8>,
     ) -> Result<()> {
         self.runtime_handle.block_on(self.uci_manager.session_data_transfer_phase_config(
             session_id,
@@ -485,6 +487,7 @@ impl<U: UciManager> UciManagerSync<U> {
             dtpml_size,
             mac_address,
             slot_bitmap,
+            stop_data_transfer,
         ))
     }
 

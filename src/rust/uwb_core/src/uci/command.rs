@@ -105,6 +105,7 @@ pub enum UciCommand {
         dtpml_size: u8,
         mac_address: Vec<u8>,
         slot_bitmap: Vec<u8>,
+        stop_data_transfer: Vec<u8>,
     },
     AndroidSetCountryCode {
         country_code: CountryCode,
@@ -278,6 +279,7 @@ impl TryFrom<UciCommand> for uwb_uci_packets::UciControlPacket {
                 dtpml_size,
                 mac_address,
                 slot_bitmap,
+                stop_data_transfer,
             } => build_data_transfer_phase_config_cmd(
                 session_token,
                 dtpcm_repetition,
@@ -285,6 +287,7 @@ impl TryFrom<UciCommand> for uwb_uci_packets::UciControlPacket {
                 dtpml_size,
                 mac_address,
                 slot_bitmap,
+                stop_data_transfer,
             )
             .map_err(|_| Error::BadParameters)?
             .into(),
@@ -591,6 +594,7 @@ mod tests {
             dtpml_size: 1,
             mac_address: vec![0, 1],
             slot_bitmap: vec![2, 3],
+            stop_data_transfer: vec![0],
         };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd).unwrap();
         assert_eq!(
@@ -600,7 +604,7 @@ mod tests {
                 dtpcm_repetition: 0,
                 data_transfer_control: 2,
                 dtpml_size: 1,
-                payload: Some(vec![0x00, 0x01, 0x02, 0x03].into()),
+                payload: Some(vec![0x00, 0x01, 0x02, 0x03, 0x00].into()),
             }
             .build()
             .into()

@@ -509,6 +509,7 @@ impl MockUciManager {
         expected_dtpml_size: u8,
         expected_mac_address: Vec<u8>,
         expected_slot_bitmap: Vec<u8>,
+        expected_stop_data_transfer: Vec<u8>,
         out: Result<()>,
     ) {
         self.expected_calls.lock().unwrap().push_back(
@@ -519,6 +520,7 @@ impl MockUciManager {
                 expected_dtpml_size,
                 expected_mac_address,
                 expected_slot_bitmap,
+                expected_stop_data_transfer,
                 out,
             },
         );
@@ -931,6 +933,7 @@ impl UciManager for MockUciManager {
         dtpml_size: u8,
         mac_address: Vec<u8>,
         slot_bitmap: Vec<u8>,
+        stop_data_transfer: Vec<u8>,
     ) -> Result<()> {
         let mut expected_calls = self.expected_calls.lock().unwrap();
         match expected_calls.pop_front() {
@@ -941,13 +944,15 @@ impl UciManager for MockUciManager {
                 expected_dtpml_size,
                 expected_mac_address,
                 expected_slot_bitmap,
+                expected_stop_data_transfer,
                 out,
             }) if expected_session_id == session_id
                 && expected_dtpcm_repetition == dtpcm_repetition
                 && expected_data_transfer_control == data_transfer_control
                 && expected_dtpml_size == dtpml_size
                 && expected_mac_address == mac_address
-                && expected_slot_bitmap == slot_bitmap =>
+                && expected_slot_bitmap == slot_bitmap
+                && expected_stop_data_transfer == stop_data_transfer =>
             {
                 self.expect_call_consumed.notify_one();
                 out
@@ -1469,6 +1474,7 @@ enum ExpectedCall {
         expected_dtpml_size: u8,
         expected_mac_address: Vec<u8>,
         expected_slot_bitmap: Vec<u8>,
+        expected_stop_data_transfer: Vec<u8>,
         out: Result<()>,
     },
     SessionSetRfTestConfig {

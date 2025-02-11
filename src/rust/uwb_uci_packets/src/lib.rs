@@ -920,6 +920,7 @@ pub fn build_data_transfer_phase_config_cmd(
     dtpml_size: u8,
     mac_address: Vec<u8>,
     slot_bitmap: Vec<u8>,
+    stop_data_transfer: Vec<u8>,
 ) -> Result<SessionDataTransferPhaseConfigCmd, DecodeError> {
     let mut dtpml_buffer = BytesMut::new();
 
@@ -949,10 +950,19 @@ pub fn build_data_transfer_phase_config_cmd(
         return Err(DecodeError::InvalidPacketError);
     }
 
+    // Prepare segmented vectors for stop_data_transfer
+    let stop_data_transfer_vector: Vec<_> =
+        stop_data_transfer.chunks(1).map(|chunk| chunk.to_owned()).collect();
+
     // Combine segmented vectors into dtpml_buffer
-    for (elem1, elem2) in mac_address_vec.into_iter().zip(slot_bitmap_vec.into_iter()) {
+    for ((elem1, elem2), elem3) in mac_address_vec
+        .into_iter()
+        .zip(slot_bitmap_vec.into_iter())
+        .zip(stop_data_transfer.into_iter())
+    {
         dtpml_buffer.extend_from_slice(&elem1);
         dtpml_buffer.extend_from_slice(&elem2);
+        dtpml_buffer.extend_from_slice(&[elem3]);
     }
 
     Ok(SessionDataTransferPhaseConfigCmdBuilder {
@@ -1419,19 +1429,27 @@ mod tests {
 
     #[test]
     fn test_build_data_transfer_phase_config_cmd() {
-        let packet: UciControlPacket =
-            build_data_transfer_phase_config_cmd(0x1234_5678, 0x0, 0x2, 1, vec![0, 1], vec![2, 3])
-                .unwrap()
-                .into();
+        let packet: UciControlPacket = build_data_transfer_phase_config_cmd(
+            0x1234_5678,
+            0x0,
+            0x2,
+            1,
+            vec![0, 1],
+            vec![2, 3],
+            vec![0x00],
+        )
+        .unwrap()
+        .into();
         let packet_fragments: Vec<UciControlPacketHal> = packet.into();
         let uci_packet = packet_fragments[0].encode_to_vec();
         assert_eq!(
             uci_packet,
             Ok(vec![
-                0x21, 0x0e, 0x00, 0x0b, // 2(packet info), RFU, payload length(11)
+                0x21, 0x0e, 0x00, 0x0c, // 2(packet info), RFU, payload length(12)
                 0x78, 0x56, 0x34, 0x12, // 4(session id (LE))
                 0x00, 0x02, 0x01, // dtpcm_repetition, data_transfer_control, dtpml_size
                 0x00, 0x01, 0x02, 0x03, // payload
+                0x00, //stop_data_transfer
             ])
         );
     }

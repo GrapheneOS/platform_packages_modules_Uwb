@@ -176,6 +176,7 @@ pub trait UciManager: 'static + Send + Sync + Clone {
     ) -> Result<()>;
 
     // set Data transfer phase config
+    #[allow(clippy::too_many_arguments)]
     async fn session_data_transfer_phase_config(
         &self,
         session_id: SessionId,
@@ -184,6 +185,7 @@ pub trait UciManager: 'static + Send + Sync + Clone {
         dtpml_size: u8,
         mac_address: Vec<u8>,
         slot_bitmap: Vec<u8>,
+        stop_data_transfer: Vec<u8>,
     ) -> Result<()>;
 
     // Get Session token from session id
@@ -678,6 +680,7 @@ impl UciManager for UciManagerImpl {
         dtpml_size: u8,
         mac_address: Vec<u8>,
         slot_bitmap: Vec<u8>,
+        stop_data_transfer: Vec<u8>,
     ) -> Result<()> {
         let cmd = UciCommand::SessionDataTransferPhaseConfig {
             session_token: self.get_session_token(&session_id).await?,
@@ -686,6 +689,7 @@ impl UciManager for UciManagerImpl {
             dtpml_size,
             mac_address,
             slot_bitmap,
+            stop_data_transfer,
         };
 
         match self.send_cmd(UciManagerCmd::SendUciCommand { cmd }).await {
@@ -2601,8 +2605,10 @@ mod tests {
         let dtpml_size = 0x02;
         let mac_address = vec![0x22, 0x11, 0x44, 0x33];
         let slot_bitmap = vec![0xF0, 0x0F];
+        let stop_data_transfer = vec![0x00, 0x01];
         let mac_address_clone = mac_address.clone();
         let slot_bitmap_clone = slot_bitmap.clone();
+        let stop_data_transfer_clone = stop_data_transfer.clone();
 
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_session_active(
             |mut hal| async move {
@@ -2613,6 +2619,7 @@ mod tests {
                     dtpml_size,
                     mac_address,
                     slot_bitmap,
+                    stop_data_transfer,
                 };
                 let resp = into_uci_hal_packets(
                     uwb_uci_packets::SessionDataTransferPhaseConfigRspBuilder {
@@ -2637,6 +2644,7 @@ mod tests {
                 dtpml_size,
                 mac_address_clone,
                 slot_bitmap_clone,
+                stop_data_transfer_clone,
             )
             .await;
         assert!(result.is_ok());
