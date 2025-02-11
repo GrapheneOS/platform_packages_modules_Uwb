@@ -496,10 +496,10 @@ public class NativeUwbManager {
      */
     public byte setDataTransferPhaseConfig(int sessionId, byte dtpcmRepetition,
             byte dataTransferControl, byte dtpmlSize, byte[] macAddress, byte[] slotBitmap,
-            String chipId) {
+                    byte[] stopDataTransfer, String chipId) {
         synchronized (mNativeLock) {
             return nativeSessionDataTransferPhaseConfig(sessionId, dtpcmRepetition,
-                dataTransferControl, dtpmlSize, macAddress, slotBitmap, chipId);
+                dataTransferControl, dtpmlSize, macAddress, slotBitmap, stopDataTransfer, chipId);
         }
     }
 
@@ -608,7 +608,7 @@ public class NativeUwbManager {
 
     private native byte nativeSessionDataTransferPhaseConfig(int sessionId, byte dtpcmRepetition,
             byte dataTransferControl, byte dtpmlSize, byte[] macAddress, byte[] slotBitmap,
-            String chipId);
+            byte[] stopDataTransfer, String chipId);
 
     private native long nativeDispatcherNew(Object[] chipIds);
 

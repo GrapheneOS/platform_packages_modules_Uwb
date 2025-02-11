@@ -1547,6 +1547,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
     dtpml_size: jbyte,
     mac_address: jbyteArray,
     slot_bitmap: jbyteArray,
+    stop_data_transfer: jbyteArray,
     chip_id: JString,
 ) -> jbyte {
     debug!("{}: enter", function_name!());
@@ -1560,6 +1561,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
             dtpml_size,
             mac_address,
             slot_bitmap,
+            stop_data_transfer,
             chip_id,
         ),
         function_name!(),
@@ -1576,6 +1578,7 @@ fn native_session_data_transfer_phase_config(
     dtpml_size: jbyte,
     mac_address: jbyteArray,
     slot_bitmap: jbyteArray,
+    stop_data_transfer: jbyteArray,
     chip_id: JString,
 ) -> Result<()> {
     let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)
@@ -1587,6 +1590,7 @@ fn native_session_data_transfer_phase_config(
         dtpml_size as u8,
         env.convert_byte_array(mac_address).map_err(|_| Error::ForeignFunctionInterface)?,
         env.convert_byte_array(slot_bitmap).map_err(|_| Error::ForeignFunctionInterface)?,
+        env.convert_byte_array(stop_data_transfer).map_err(|_| Error::ForeignFunctionInterface)?,
     )
 }
 
