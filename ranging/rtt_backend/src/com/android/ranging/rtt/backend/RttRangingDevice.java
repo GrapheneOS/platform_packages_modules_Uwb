@@ -239,7 +239,8 @@ public class RttRangingDevice {
 
                 int updateRateMs = RttRangingParameters.getIntervalMs(mRttRangingParameters);
                 mRttListener.onRangingInitialized(mRttDevice);
-                if (!mRttRangingParameters.isPeriodicRangingHwFeatureEnabled()) {
+                if (!mRttRangingParameters.isPeriodicRangingHwFeatureEnabled()
+                        && !mRttRangingParameters.isRangeDataNtfDisabled()) {
                     mRttRanger.startRanging(peerHandle, mRttRangingListener, updateRateMs);
                 }
             }

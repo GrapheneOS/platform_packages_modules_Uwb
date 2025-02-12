@@ -72,6 +72,8 @@ public class RttRangingParameters {
 
     private final boolean mEnablePeriodicRangingHwFeature;
 
+    private final boolean mRangeDataNtfDisabled;
+
     public int getDeviceRole() {
         return mDeviceRole;
     }
@@ -129,6 +131,10 @@ public class RttRangingParameters {
         return mEnablePeriodicRangingHwFeature;
     }
 
+    public boolean isRangeDataNtfDisabled() {
+        return mRangeDataNtfDisabled;
+    }
+
     public RttRangingParameters(Builder builder) {
         mDeviceRole = builder.mDeviceRole;
         mServiceId = builder.mServiceId;
@@ -138,6 +144,7 @@ public class RttRangingParameters {
         mMinDistanceMm = builder.mMinDistanceMm;
         mUpdateRate = builder.mRangingUpdateRate;
         mEnablePeriodicRangingHwFeature = builder.mEnablePeriodicRangingHwFeature;
+        mRangeDataNtfDisabled = builder.mRangeDataNtfDisabled;
     }
 
 
@@ -153,6 +160,7 @@ public class RttRangingParameters {
         protected int mMinDistanceMm = 0;
         private int mRangingUpdateRate = NORMAL;
         private boolean mEnablePeriodicRangingHwFeature = false;
+        private boolean mRangeDataNtfDisabled = false;
 
         public Builder setDeviceRole(int deviceRole) {
             mDeviceRole = deviceRole;
@@ -195,6 +203,11 @@ public class RttRangingParameters {
             return this;
         }
 
+        public Builder setRangeDataNtfDisabled(boolean rangeDataNtfDisabled) {
+            mRangeDataNtfDisabled = rangeDataNtfDisabled;
+            return this;
+        }
+
         public RttRangingParameters build() {
             return new RttRangingParameters(this);
         }
@@ -231,6 +244,8 @@ public class RttRangingParameters {
                 + mMinDistanceMm
                 + ", enablePeriodicRangingHwFeature: "
                 + mEnablePeriodicRangingHwFeature
+                + ", rangeDataNtfDisabled: "
+                + mRangeDataNtfDisabled
                 + " }";
     }
 }
