@@ -1758,11 +1758,18 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         UwbSession uwbSession = getUwbSession(sessionHandle);
 
         int sessionType = uwbSession.getSessionType();
-        if (sessionType != FiraParams.SESSION_TYPE_RANGING_AND_IN_BAND_DATA
-                && sessionType != FiraParams.SESSION_TYPE_DATA_TRANSFER
-                && sessionType !=  FiraParams.SESSION_TYPE_IN_BAND_DATA_PHASE) {
-            Log.e(TAG, "SetDataTransferPhaseConfig not applicable for session type: "
-                    + sessionType);
+        int deviceType = uwbSession.getDeviceType();
+        int sessionState = uwbSession.getSessionState();
+        if (UwbUciConstants.DEVICE_TYPE_CONTROLLER != deviceType
+                || (sessionType != FiraParams.SESSION_TYPE_DATA_TRANSFER
+                        && sessionType !=  FiraParams.SESSION_TYPE_IN_BAND_DATA_PHASE)
+                || (sessionState != UwbUciConstants.UWB_SESSION_STATE_IDLE
+                        && sessionState != UwbUciConstants.UWB_SESSION_STATE_ACTIVE)) {
+            Log.e(TAG, "SetDataTransferPhaseConfig failed: session type:" + sessionType
+                    + " device type:" + deviceType + " sessionState:" + sessionState);
+
+            mSessionNotificationManager.onDataTransferPhaseConfigFailed(uwbSession,
+                    UwbUciConstants.STATUS_CODE_REJECTED);
             return;
         }
 
@@ -1779,6 +1786,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         ByteBuffer slotBitmapByteBuffer = ByteBuffer.allocate(dataTransferManagementListSize
                 * slotBitmapSizeInBytes);
         slotBitmapByteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer stopDataTransferByteBuffer = ByteBuffer.allocate(dataTransferManagementListSize);
 
         int addressByteLength = ((dataTransferControl & 0x01)
                        == UwbUciConstants.SHORT_MAC_ADDRESS)
@@ -1788,10 +1796,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 mDataTransferPhaseManagementList) {
             UwbAddress uwbAddress = dataTransferPhaseManagementList.getUwbAddress();
             byte[] slotBitMap = dataTransferPhaseManagementList.getSlotBitMap();
+            byte stopDataTransfer = dataTransferPhaseManagementList.getStopDataTransfer();
+
             if (uwbAddress != null && uwbAddress.size() == addressByteLength
                     && slotBitMap.length == slotBitmapSizeInBytes) {
                 macAddressList.add(getComputedMacAddress(uwbAddress));
                 slotBitmapByteBuffer.put(slotBitMap);
+                stopDataTransferByteBuffer.put(stopDataTransfer);
             } else {
                 Log.e(TAG, "handleSetDataTransferPhaseConfig: slot bitmap size "
                             + "or address is not matching");
@@ -1819,6 +1830,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                 (byte) dataTransferManagementListSize,
                                 ArrayUtils.toPrimitive(macAddressList),
                                 slotBitmapByteBuffer.array(),
+                                stopDataTransferByteBuffer.array(),
                                 uwbSession.getChipId());
                     }
                     return status;

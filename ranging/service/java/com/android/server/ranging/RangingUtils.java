@@ -20,12 +20,12 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 
-import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.ERROR;
-import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.LOCAL_REQUEST;
-import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.LOST_CONNECTION;
-import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.REMOTE_REQUEST;
-import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.SYSTEM_POLICY;
-import static com.android.server.ranging.RangingAdapter.Callback.ClosedReason.UNKNOWN;
+import static com.android.server.ranging.RangingAdapter.Callback.Reason.ERROR;
+import static com.android.server.ranging.RangingAdapter.Callback.Reason.LOCAL_REQUEST;
+import static com.android.server.ranging.RangingAdapter.Callback.Reason.LOST_CONNECTION;
+import static com.android.server.ranging.RangingAdapter.Callback.Reason.REMOTE_REQUEST;
+import static com.android.server.ranging.RangingAdapter.Callback.Reason.SYSTEM_POLICY;
+import static com.android.server.ranging.RangingAdapter.Callback.Reason.UNKNOWN;
 
 import static java.lang.Math.min;
 

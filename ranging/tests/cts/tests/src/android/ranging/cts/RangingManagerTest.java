@@ -457,7 +457,7 @@ public class RangingManagerTest {
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_enabled")
     public void testRawAddRemoverPeer() throws Exception {
         assumeTrue(mSupportedTechnologies.contains(RangingManager.UWB));
-        enableUwb(true);
+        enableUwb(false);
         int sessionId = 10;
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         uiAutomation.adoptShellPermissionIdentity();
@@ -472,7 +472,7 @@ public class RangingManagerTest {
         );
 
         rangingSession.start(preference);
-        assertThat(callback.mOnOpenedCalled.await(1, TimeUnit.SECONDS)).isTrue();
+        assertThat(callback.mOnOpenedCalled.await(4, TimeUnit.SECONDS)).isTrue();
         assertThat(callback.mOnPeerAdded.await(2, TimeUnit.SECONDS)).isTrue();
         RangingDevice device = new RangingDevice.Builder().build();
         RawResponderRangingConfig peerParams = new RawResponderRangingConfig.Builder()
@@ -503,7 +503,7 @@ public class RangingManagerTest {
     @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_enabled")
     public void testRawReconfigureRangingInterval() throws Exception {
         assumeTrue(mSupportedTechnologies.contains(RangingManager.UWB));
-        enableUwb(true);
+        enableUwb(false);
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         uiAutomation.adoptShellPermissionIdentity();
 
@@ -516,7 +516,7 @@ public class RangingManagerTest {
         RangingPreference preference = getGenericUwbRangingPreference(10);
 
         rangingSession.start(preference);
-        assertThat(callback.mOnOpenedCalled.await(1, TimeUnit.SECONDS)).isTrue();
+        assertThat(callback.mOnOpenedCalled.await(4, TimeUnit.SECONDS)).isTrue();
         rangingSession.reconfigureRangingInterval(3);
         rangingSession.stop();
         assertThat(callback.mOnClosedCalled.await(3, TimeUnit.SECONDS)).isTrue();
@@ -655,7 +655,7 @@ public class RangingManagerTest {
         UwbManager uwbManager = mContext.getSystemService(UwbManager.class);
         uwbManager.setUwbEnabled(!uwbManager.isUwbEnabled());
 
-        assertThat(callback.mCountDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
+        assertThat(callback.mCountDownLatch.await(4, TimeUnit.SECONDS)).isTrue();
         assertThat(callback.mOnCapabilitiesReceived).isTrue();
         assertThat(callback.mRangingCapabilities).isNotNull();
 

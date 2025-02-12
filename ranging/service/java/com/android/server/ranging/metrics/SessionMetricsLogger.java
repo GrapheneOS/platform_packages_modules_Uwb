@@ -23,6 +23,7 @@ import android.ranging.RangingPreference;
 import android.ranging.RangingSession;
 import android.ranging.SessionHandle;
 
+import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.StateMachine;
 
 public class SessionMetricsLogger {
@@ -33,7 +34,15 @@ public class SessionMetricsLogger {
 
     private long mLastStateChangeTimestampMs;
 
-    public SessionMetricsLogger(
+    public static SessionMetricsLogger startLogging(
+            SessionHandle sessionHandle,
+            @RangingPreference.DeviceRole int deviceRole,
+            @RangingConfig.RangingSessionType int sessionType
+    ) {
+        return new SessionMetricsLogger(sessionHandle, deviceRole, sessionType);
+    }
+
+    private SessionMetricsLogger(
             SessionHandle sessionHandle,
             @RangingPreference.DeviceRole int deviceRole,
             @RangingConfig.RangingSessionType int sessionType
@@ -70,6 +79,30 @@ public class SessionMetricsLogger {
                 System.currentTimeMillis() - mLastStateChangeTimestampMs);
         mLastStateChangeTimestampMs = System.currentTimeMillis();
         mStateMachine.setState(State.RANGING);
+    }
+
+    public synchronized void logTechnologyStarted(RangingTechnology technology, int numPeers) {
+        RangingStatsLog.write(
+                RangingStatsLog.RANGING_TECHNOLOGY_STARTED,
+                mSessionHandle.hashCode(),
+                coerceUnknownEnumValueToZero(
+                        technology.getValue(), RangingTechnology.TECHNOLOGIES.size()),
+                numPeers);
+    }
+
+    public synchronized void logTechnologyStopped(
+            RangingTechnology technology, int numPeers,
+            @RangingSession.Callback.Reason int reason
+    ) {
+        RangingStatsLog.write(
+                RangingStatsLog.RANGING_TECHNOLOGY_STOPPED,
+                mSessionHandle.hashCode(),
+                coerceUnknownEnumValueToZero(
+                        technology.getValue(), RangingTechnology.TECHNOLOGIES.size()),
+                coerceUnknownEnumValueToZero(
+                        mStateMachine.getState().toInt(), State.values().length),
+                reason,
+                numPeers);
     }
 
     public synchronized void logSessionClosed(@RangingSession.Callback.Reason int reason) {
