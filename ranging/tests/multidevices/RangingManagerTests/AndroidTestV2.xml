@@ -43,7 +43,7 @@
 
     <test class="MoblyAospPackageTest" />
 
-    <option name="mobly_pkg" key="file" value="CtsUwbMultiDeviceRangingManagerTests" />
+    <option name="mobly_pkg" key="file" value="CtsMultiDeviceGenericRangingTests" />
     <option name="build_apk" key="file" value="ranging_snippet.apk" />
     <option name="build_apk" key="file" value="uwb_snippet.apk" />
     <option name="build_apk" key="file" value="bluetooth_multi_devices_snippet.apk" />
