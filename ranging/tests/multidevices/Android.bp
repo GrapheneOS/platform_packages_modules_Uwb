@@ -59,7 +59,7 @@ python_test_host {
 
 // Modules for CTS-Verifier (cts-v-host)
 python_test_host {
-    name: "CtsUwbMultiDeviceRangingManagerTests",
+    name: "CtsMultiDeviceGenericRangingTests",
     main: "RangingManagerTests/ranging_manager_tests.py",
     srcs: [
         "RangingManagerTests/ranging_manager_tests.py",
