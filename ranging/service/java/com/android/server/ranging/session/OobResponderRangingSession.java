@@ -17,8 +17,8 @@
 package com.android.server.ranging.session;
 
 import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
+import static android.ranging.RangingSession.Callback.REASON_NO_PEERS_FOUND;
 import static android.ranging.RangingSession.Callback.REASON_REMOTE_REQUEST;
-import static android.ranging.RangingSession.Callback.REASON_UNSUPPORTED;
 
 import android.content.AttributionSource;
 import android.ranging.RangingCapabilities;
@@ -113,9 +113,9 @@ public class OobResponderRangingSession
 
                     @Override
                     public void onFailure(@NonNull Throwable t) {
-                        Log.e(TAG, "Oob failed: ", t);
+                        Log.i(TAG, "Oob failed: ", t);
                         mOobConnection.close();
-                        mSessionListener.onSessionStopped(REASON_UNSUPPORTED);
+                        mSessionListener.onSessionStopped(REASON_NO_PEERS_FOUND);
                     }
                 }, mOobExecutor);
     }

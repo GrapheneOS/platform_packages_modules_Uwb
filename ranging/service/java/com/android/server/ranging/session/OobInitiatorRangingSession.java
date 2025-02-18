@@ -36,6 +36,7 @@ import com.android.server.ranging.oob.CapabilityRequestMessage;
 import com.android.server.ranging.oob.CapabilityResponseMessage;
 import com.android.server.ranging.oob.MessageType;
 import com.android.server.ranging.oob.OobController;
+import com.android.server.ranging.oob.OobController.OobConnection;
 import com.android.server.ranging.oob.OobHeader;
 import com.android.server.ranging.oob.SetConfigurationMessage;
 import com.android.server.ranging.oob.StopRangingMessage;
@@ -64,7 +65,7 @@ public class OobInitiatorRangingSession
     private static final long MESSAGE_TIMEOUT_MS = 4000;
 
     private final ScheduledExecutorService mOobExecutor;
-    private final ConcurrentHashMap<OobHandle, OobController.OobConnection> mOobConnections;
+    private final ConcurrentHashMap<OobHandle, OobConnection> mOobConnections;
 
     private RangingEngine mRangingEngine;
 
@@ -94,7 +95,7 @@ public class OobInitiatorRangingSession
         }
 
         sendCapabilityRequestMessages(config.getDeviceHandles())
-                .transformAsync((unused) -> this.sendSetConfigMessages(), mOobExecutor)
+                .transformAsync((unused) -> sendSetConfigMessages(), mOobExecutor)
                 .addCallback(new FutureCallback<>() {
                     @Override
                     public void onSuccess(ImmutableSet<TechnologyConfig> localConfigs) {
@@ -105,7 +106,8 @@ public class OobInitiatorRangingSession
 
                     @Override
                     public void onFailure(@NonNull Throwable t) {
-                        Log.e(TAG, "Failed to negotiate config over oob", t);
+                        Log.i(TAG, "Oob failed: ", t);
+                        mOobConnections.values().forEach(OobConnection::close);
                         mSessionListener.onSessionStopped(REASON_NO_PEERS_FOUND);
                     }
                 }, mOobExecutor);
