@@ -25,7 +25,8 @@ android_test {
     srcs: [
         "**/*.java",
     ],
-
+    sdk_version: "system_server_current",
+    min_sdk_version: "36",
     dxflags: ["--multi-dex"],
 
     java_version: "1.9",
@@ -56,8 +57,6 @@ android_test {
         "libstaticjvmtiagent",
     ],
     compile_multilib: "both",
-
-    min_sdk_version: "Tiramisu",
 
     test_suites: [
         "general-tests",
