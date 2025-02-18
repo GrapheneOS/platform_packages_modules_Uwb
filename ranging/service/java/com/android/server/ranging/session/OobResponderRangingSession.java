@@ -59,7 +59,7 @@ import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.ListeningExecutorService;
 
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
@@ -83,10 +83,11 @@ public class OobResponderRangingSession
             @NonNull RangingInjector injector,
             @NonNull RangingSessionConfig config,
             @NonNull RangingServiceManager.SessionListener listener,
-            @NonNull ListeningScheduledExecutorService executor
+            @NonNull ListeningExecutorService adapterExecutor,
+            @NonNull ScheduledExecutorService oobExecutor
     ) {
-        super(attributionSource, sessionHandle, injector, config, listener, executor);
-        mOobExecutor = executor;
+        super(attributionSource, sessionHandle, injector, config, listener, adapterExecutor);
+        mOobExecutor = oobExecutor;
         mStopRangingListener = new StopRangingListener();
     }
 

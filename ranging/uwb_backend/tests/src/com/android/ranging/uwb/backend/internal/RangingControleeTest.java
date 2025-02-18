@@ -43,6 +43,7 @@ import android.uwb.UwbManager;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 
@@ -75,15 +76,6 @@ public class RangingControleeTest {
     private ArgumentCaptor<PersistableBundle> mBundleArgumentCaptor;
     private RangingControlee mRangingControlee;
 
-    private static Executor getExecutor() {
-        return new Executor() {
-            @Override
-            public void execute(Runnable command) {
-                command.run();
-            }
-        };
-    }
-
     private static class Mutable<E> {
         public E value;
     }
@@ -102,8 +94,8 @@ public class RangingControleeTest {
                 .execute(any(Runnable.class));
 
         mRangingControlee =
-                new RangingControlee(mUwbManager, getExecutor(), mOpAsyncCallbackRunner,
-                        new UwbFeatureFlags.Builder().build());
+                new RangingControlee(mUwbManager, MoreExecutors.newDirectExecutorService(),
+                        mOpAsyncCallbackRunner, new UwbFeatureFlags.Builder().build());
         UwbRangeDataNtfConfig uwbRangeDataNtfConfig =
                 new UwbRangeDataNtfConfig.Builder()
                         .setRangeDataConfigType(RANGE_DATA_NTF_DISABLE)
@@ -149,7 +141,7 @@ public class RangingControleeTest {
         mRangingControlee.setRangingParameters(rangingParameters);
 
         final RangingSessionCallback rangingSessionCallback = mock(RangingSessionCallback.class);
-        mRangingControlee.startRanging(rangingSessionCallback, mBackendCallbackExecutor);
+        mRangingControlee.startRanging(rangingSessionCallback);
 
         verify(mUwbManager).openRangingSession(mBundleArgumentCaptor.capture(), any(), any());
         assertEquals(
@@ -194,7 +186,7 @@ public class RangingControleeTest {
                 .start(any(PersistableBundle.class));
 
         assertEquals(
-                mRangingControlee.startRanging(rangingSessionCallback, mBackendCallbackExecutor),
+                mRangingControlee.startRanging(rangingSessionCallback),
                 STATUS_OK);
         verify(mUwbManager).openRangingSession(any(), any(), any());
         verify(pfRangingSession).start(any());
@@ -223,7 +215,7 @@ public class RangingControleeTest {
                         any(RangingSession.Callback.class));
 
         assertEquals(
-                mRangingControlee.startRanging(rangingSessionCallback, mBackendCallbackExecutor),
+                mRangingControlee.startRanging(rangingSessionCallback),
                 STATUS_OK);
         verify(rangingSessionCallback)
                 .onRangingSuspended(UwbDevice.createForAddress(deviceAddress.toBytes()),
@@ -260,7 +252,7 @@ public class RangingControleeTest {
                 .start(any(PersistableBundle.class));
 
         assertEquals(
-                mRangingControlee.startRanging(rangingSessionCallback, mBackendCallbackExecutor),
+                mRangingControlee.startRanging(rangingSessionCallback),
                 STATUS_OK);
         verify(mUwbManager).openRangingSession(any(), any(), any());
         verify(pfRangingSession).start(any());
@@ -317,7 +309,7 @@ public class RangingControleeTest {
                 .when(pfRangingSession)
                 .close();
 
-        mRangingControlee.startRanging(rangingSessionCallback, mBackendCallbackExecutor);
+        mRangingControlee.startRanging(rangingSessionCallback);
         verify(mUwbManager).openRangingSession(any(), any(), any());
         verify(pfRangingSession).start(any());
         verify(rangingSessionCallback)
@@ -365,7 +357,7 @@ public class RangingControleeTest {
                 .when(pfRangingSession)
                 .reconfigure(any(PersistableBundle.class));
 
-        mRangingControlee.startRanging(rangingSessionCallback, mBackendCallbackExecutor);
+        mRangingControlee.startRanging(rangingSessionCallback);
         UwbRangeDataNtfConfig params = new UwbRangeDataNtfConfig.Builder()
                 .setRangeDataConfigType(RANGE_DATA_NTF_ENABLE_PROXIMITY_EDGE_TRIG)
                 .setNtfProximityNear(50)

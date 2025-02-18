@@ -53,7 +53,7 @@ import com.android.server.ranging.session.RawInitiatorRangingSession;
 import com.android.server.ranging.session.RawResponderRangingSession;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import java.io.FileDescriptor;
@@ -64,6 +64,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class RangingServiceManager implements ActivityManager.OnUidImportanceListener{
@@ -97,7 +98,8 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
     }
 
     private final RangingInjector mRangingInjector;
-    private final ListeningScheduledExecutorService mSessionExecutor;
+    private final ListeningExecutorService mAdapterExecutor;
+    private final ScheduledExecutorService mOobExecutor;
     private final RangingTaskManager mRangingTaskManager;
     private final Map<SessionHandle, RangingSession<?>> mSessions = new ConcurrentHashMap<>();
     final ConcurrentHashMap<Integer, List<RangingSession<?>>> mNonPrivilegedUidToSessionsTable =
@@ -109,8 +111,8 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
             Looper looper) {
         mRangingInjector = rangingInjector;
         mActivityManager = activityManager;
-        mSessionExecutor =
-                MoreExecutors.listeningDecorator(Executors.newSingleThreadScheduledExecutor());
+        mAdapterExecutor = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
+        mOobExecutor = Executors.newSingleThreadScheduledExecutor();
         mRangingTaskManager = new RangingTaskManager(looper);
         registerUidImportanceTransitions();
     }
@@ -420,25 +422,25 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
             if (baseParams instanceof RawInitiatorRangingConfig params) {
                 RawInitiatorRangingSession session = new RawInitiatorRangingSession(
                         args.attributionSource, args.handle, mRangingInjector, config,
-                        listener, mSessionExecutor
+                        listener, mAdapterExecutor
                 );
                 startSession(params, args, session);
             } else if (baseParams instanceof RawResponderRangingConfig params) {
                 RawResponderRangingSession session = new RawResponderRangingSession(
                         args.attributionSource, args.handle, mRangingInjector, config,
-                        listener, mSessionExecutor
+                        listener, mAdapterExecutor
                 );
                 startSession(params, args, session);
             } else if (baseParams instanceof OobInitiatorRangingConfig params) {
                 OobInitiatorRangingSession session = new OobInitiatorRangingSession(
                         args.attributionSource, args.handle, mRangingInjector, config,
-                        listener, mSessionExecutor
+                        listener, mAdapterExecutor, mOobExecutor
                 );
                 startSession(params, args, session);
             } else if (baseParams instanceof OobResponderRangingConfig params) {
                 OobResponderRangingSession session = new OobResponderRangingSession(
                         args.attributionSource, args.handle, mRangingInjector, config,
-                        listener, mSessionExecutor
+                        listener, mAdapterExecutor, mOobExecutor
                 );
                 startSession(params, args, session);
             }

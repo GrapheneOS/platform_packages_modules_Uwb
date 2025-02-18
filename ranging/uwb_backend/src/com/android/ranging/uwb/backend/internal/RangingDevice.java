@@ -79,11 +79,10 @@ public abstract class RangingDevice {
     protected RangingParameters mRangingParameters;
 
     /** A serial thread used by System API to handle session callbacks. */
-    private Executor mSystemCallbackExecutor;
+    private final Executor mSystemCallbackExecutor;
 
     /** A serial thread used in system API callbacks to handle Backend callbacks */
-    @Nullable
-    private ExecutorService mBackendCallbackExecutor;
+    private final ExecutorService mBackendCallbackExecutor;
 
     /** NotNull when session opening is successful. Set to Null when session is closed. */
     @Nullable
@@ -110,12 +109,13 @@ public abstract class RangingDevice {
     private UwbRangeDataNtfConfig mLastNtfConfig;
     private final boolean mIsHwTurnOffEnabled;
 
-    RangingDevice(UwbManager manager, Executor executor,
+    RangingDevice(UwbManager manager, ExecutorService executor,
             OpAsyncCallbackRunner<Boolean> opAsyncCallbackRunner, UwbFeatureFlags uwbFeatureFlags) {
         mUwbManager = manager;
         this.mSystemCallbackExecutor = executor;
         mOpAsyncCallbackRunner = opAsyncCallbackRunner;
         mOpAsyncCallbackRunner.setOperationTimeoutMillis(RANGING_START_TIMEOUT_MILLIS);
+        mBackendCallbackExecutor = executor;
         mUwbFeatureFlags = uwbFeatureFlags;
         this.mMultiChipMap = new HashMap<>();
         initializeUwbAddress();
@@ -488,8 +488,7 @@ public abstract class RangingDevice {
      * RangingSessionCallback#REASON_FAILED_TO_START}
      */
     @Utils.UwbStatusCodes
-    public synchronized int startRanging(
-            RangingSessionCallback callback, ExecutorService backendCallbackExecutor) {
+    public synchronized int startRanging(RangingSessionCallback callback) {
         if (isAlive()) {
             return RANGING_ALREADY_STARTED;
         }
@@ -501,7 +500,6 @@ public abstract class RangingDevice {
         mLastNtfConfig = mRangingParameters.getUwbRangeDataNtfConfig();
         FiraOpenSessionParams openSessionParams = getOpenSessionParams();
         printStartRangingParameters(openSessionParams.toBundle());
-        mBackendCallbackExecutor = backendCallbackExecutor;
         boolean success =
                 mOpAsyncCallbackRunner.execOperation(
                         () -> {
@@ -522,9 +520,6 @@ public abstract class RangingDevice {
 
         Boolean result = mOpAsyncCallbackRunner.getResult();
         if (!success || result == null || !result) {
-            requireNonNull(mBackendCallbackExecutor);
-            mBackendCallbackExecutor.shutdown();
-            mBackendCallbackExecutor = null;
             // onRangingSuspended should have been called in the callback.
             return STATUS_OK;
         }
@@ -550,11 +545,7 @@ public abstract class RangingDevice {
                         () -> mRangingSession.start(new PersistableBundle()), "Start ranging");
 
         result = mOpAsyncCallbackRunner.getResult();
-        requireNonNull(mBackendCallbackExecutor);
-        if (!success || result == null || !result) {
-            mBackendCallbackExecutor.shutdown();
-            mBackendCallbackExecutor = null;
-        } else {
+        if (success && result != null && result) {
             mRangingReportedAllowed = true;
         }
         return STATUS_OK;
@@ -578,10 +569,6 @@ public abstract class RangingDevice {
                 mOpAsyncCallbackRunner.execOperation(
                         () -> requireNonNull(mRangingSession).close(), "Close Session");
 
-        if (mBackendCallbackExecutor != null) {
-            mBackendCallbackExecutor.shutdown();
-            mBackendCallbackExecutor = null;
-        }
         mLocalAddress = null;
         mComplexChannel = null;
         Boolean result = mOpAsyncCallbackRunner.getResult();
@@ -679,10 +666,5 @@ public abstract class RangingDevice {
     public void setRangingRoundFailureCallback(
             @Nullable RangingRoundFailureCallback rangingRoundFailureCallback) {
         this.mRangingRoundFailureCallback = rangingRoundFailureCallback;
-    }
-
-    /** Sets the system callback executor. */
-    public void setSystemCallbackExecutor(Executor executor) {
-        this.mSystemCallbackExecutor = executor;
     }
 }

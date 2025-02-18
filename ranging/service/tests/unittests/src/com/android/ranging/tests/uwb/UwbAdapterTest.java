@@ -119,7 +119,6 @@ public class UwbAdapterTest {
         when(mMockContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_UWB))
                 .thenReturn(true);
         mUwbAdapter = new UwbAdapter(mMockContext, mMockRangingInjector, mMockAttributionSource,
-                MoreExecutors.newDirectExecutorService(),
                 MoreExecutors.newDirectExecutorService(), mMockUwbClient);
     }
 
@@ -146,7 +145,7 @@ public class UwbAdapterTest {
 
         ArgumentCaptor<RangingSessionCallback> callback =
                 ArgumentCaptor.forClass(RangingSessionCallback.class);
-        verify(mMockUwbClient).startRanging(callback.capture(), any());
+        verify(mMockUwbClient).startRanging(callback.capture());
 
         callback.getValue().onRangingInitialized(mMockLocalDevice);
         verify(mMockCallback).onStarted(eq(ImmutableSet.of(peer)));
@@ -164,7 +163,7 @@ public class UwbAdapterTest {
 
         ArgumentCaptor<RangingSessionCallback> callback =
                 ArgumentCaptor.forClass(RangingSessionCallback.class);
-        verify(mMockUwbClient).startRanging(callback.capture(), any());
+        verify(mMockUwbClient).startRanging(callback.capture());
 
         callback.getValue().onRangingInitialized(mMockLocalDevice);
         verify(mMockCallback).onStarted(eq(ImmutableSet.copyOf(peers)));
@@ -182,7 +181,7 @@ public class UwbAdapterTest {
 
         ArgumentCaptor<RangingSessionCallback> callback =
                 ArgumentCaptor.forClass(RangingSessionCallback.class);
-        verify(mMockUwbClient).startRanging(callback.capture(), any());
+        verify(mMockUwbClient).startRanging(callback.capture());
 
         callback.getValue().onRangingInitialized(mMockLocalDevice);
 
@@ -210,7 +209,7 @@ public class UwbAdapterTest {
 
         ArgumentCaptor<RangingSessionCallback> callback =
                 ArgumentCaptor.forClass(RangingSessionCallback.class);
-        verify(mMockUwbClient).startRanging(callback.capture(), any());
+        verify(mMockUwbClient).startRanging(callback.capture());
 
         callback.getValue().onRangingInitialized(mMockLocalDevice);
         callback.getValue().onPeerDisconnected(
@@ -239,7 +238,7 @@ public class UwbAdapterTest {
 
         ArgumentCaptor<RangingSessionCallback> callback =
                 ArgumentCaptor.forClass(RangingSessionCallback.class);
-        verify(mMockUwbClient).startRanging(callback.capture(), any());
+        verify(mMockUwbClient).startRanging(callback.capture());
 
         callback.getValue().onRangingInitialized(mMockLocalDevice);
 
