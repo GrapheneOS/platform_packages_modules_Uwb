@@ -45,6 +45,7 @@ import android.uwb.UwbManager;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 
@@ -79,15 +80,6 @@ public class RangingControllerTest {
 
     private RangingController mRangingController;
     private UwbAddress mRangingParamsKnownPeerAddress;
-
-    private static Executor getExecutor() {
-        return new Executor() {
-            @Override
-            public void execute(Runnable command) {
-                command.run();
-            }
-        };
-    }
 
     private static class Mutable<E> {
         public E value;
@@ -126,8 +118,8 @@ public class RangingControllerTest {
                         false,
                         new UwbRangeLimitsConfig.Builder().build());
         mRangingController =
-                new RangingController(mUwbManager, getExecutor(), mOpAsyncCallbackRunner,
-                        new UwbFeatureFlags.Builder().build());
+                new RangingController(mUwbManager, MoreExecutors.newDirectExecutorService(),
+                        mOpAsyncCallbackRunner, new UwbFeatureFlags.Builder().build());
         mRangingController.setRangingParameters(rangingParameters);
         mRangingController.setForTesting(true);
     }
@@ -179,7 +171,7 @@ public class RangingControllerTest {
         mRangingController.setRangingParameters(rangingParameters);
 
         final RangingSessionCallback rangingSessionCallback = mock(RangingSessionCallback.class);
-        mRangingController.startRanging(rangingSessionCallback, mBackendCallbackExecutor);
+        mRangingController.startRanging(rangingSessionCallback);
 
         verify(mUwbManager).openRangingSession(mBundleArgumentCaptor.capture(), any(), any());
         assertEquals(
@@ -223,7 +215,7 @@ public class RangingControllerTest {
                 .start(any(PersistableBundle.class));
 
         assertEquals(
-                mRangingController.startRanging(rangingSessionCallback, mBackendCallbackExecutor),
+                mRangingController.startRanging(rangingSessionCallback),
                 STATUS_OK);
         verify(mUwbManager).openRangingSession(any(), any(), any());
         verify(pfRangingSession).start(any());
@@ -253,7 +245,7 @@ public class RangingControllerTest {
                         any(RangingSession.Callback.class));
 
         assertEquals(
-                mRangingController.startRanging(rangingSessionCallback, mBackendCallbackExecutor),
+                mRangingController.startRanging(rangingSessionCallback),
                 STATUS_OK);
         verify(rangingSessionCallback)
                 .onRangingSuspended(UwbDevice.createForAddress(deviceAddress.toBytes()),
@@ -291,7 +283,7 @@ public class RangingControllerTest {
                 .start(any(PersistableBundle.class));
 
         assertEquals(
-                mRangingController.startRanging(rangingSessionCallback, mBackendCallbackExecutor),
+                mRangingController.startRanging(rangingSessionCallback),
                 STATUS_OK);
         verify(mUwbManager).openRangingSession(any(), any(), any());
         verify(pfRangingSession).start(any());
@@ -350,7 +342,7 @@ public class RangingControllerTest {
                 .when(pfRangingSession)
                 .close();
 
-        mRangingController.startRanging(rangingSessionCallback, mBackendCallbackExecutor);
+        mRangingController.startRanging(rangingSessionCallback);
         verify(mUwbManager).openRangingSession(any(), any(), any());
         verify(pfRangingSession).start(any());
         verify(rangingSessionCallback)
@@ -401,7 +393,7 @@ public class RangingControllerTest {
                 .when(pfRangingSession)
                 .addControlee(any(PersistableBundle.class));
 
-        mRangingController.startRanging(rangingSessionCallback, mBackendCallbackExecutor);
+        mRangingController.startRanging(rangingSessionCallback);
         assertEquals(mRangingController.addControleeWithSessionParams(
                 new RangingControleeParameters(
                         peerAddress, 0, null)), STATUS_OK);
@@ -455,7 +447,7 @@ public class RangingControllerTest {
                 .when(pfRangingSession)
                 .removeControlee(any(PersistableBundle.class));
 
-        mRangingController.startRanging(rangingSessionCallback, mBackendCallbackExecutor);
+        mRangingController.startRanging(rangingSessionCallback);
         mRangingController.addControleeWithSessionParams(
                 new RangingControleeParameters(peerAddress, 0, null));
         verify(rangingSessionCallback)
@@ -509,7 +501,7 @@ public class RangingControllerTest {
                 .when(pfRangingSession)
                 .reconfigure(any(PersistableBundle.class));
 
-        mRangingController.startRanging(rangingSessionCallback, mBackendCallbackExecutor);
+        mRangingController.startRanging(rangingSessionCallback);
         assertEquals(mRangingController.setBlockStriding(5), STATUS_OK);
 
         verify(pfRangingSession, times(1)).reconfigure(any(PersistableBundle.class));
@@ -551,7 +543,7 @@ public class RangingControllerTest {
                 .when(pfRangingSession)
                 .reconfigure(any(PersistableBundle.class));
 
-        mRangingController.startRanging(rangingSessionCallback, mBackendCallbackExecutor);
+        mRangingController.startRanging(rangingSessionCallback);
         UwbRangeDataNtfConfig params = new UwbRangeDataNtfConfig.Builder()
                 .setRangeDataConfigType(RANGE_DATA_NTF_ENABLE_PROXIMITY_EDGE_TRIG)
                 .setNtfProximityNear(50)

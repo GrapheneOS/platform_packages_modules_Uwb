@@ -45,7 +45,6 @@ import com.google.uwb.support.fira.FiraParams;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
 /** Represents a UWB ranging controller */
@@ -57,7 +56,7 @@ public class RangingController extends RangingDevice {
     @Nullable
     private RangingSessionCallback mRangingSessionCallback;
 
-    RangingController(UwbManager manager, Executor executor,
+    RangingController(UwbManager manager, ExecutorService executor,
             OpAsyncCallbackRunner<Boolean> opAsyncCallbackRunner, UwbFeatureFlags uwbFeatureFlags) {
         super(manager, executor, opAsyncCallbackRunner, uwbFeatureFlags);
     }
@@ -118,8 +117,7 @@ public class RangingController extends RangingDevice {
     }
 
     @Override
-    public synchronized int startRanging(
-            RangingSessionCallback callback, ExecutorService backendCallbackExecutor) {
+    public synchronized int startRanging(RangingSessionCallback callback) {
         requireNonNull(mRangingParameters);
         if (mComplexChannel == null) {
             Log.w(TAG, "Need to call getComplexChannel() first");
@@ -136,7 +134,7 @@ public class RangingController extends RangingDevice {
             return INVALID_API_CALL;
         }
 
-        int status = super.startRanging(callback, backendCallbackExecutor);
+        int status = super.startRanging(callback);
         if (isAlive()) {
             mRangingSessionCallback = callback;
         }

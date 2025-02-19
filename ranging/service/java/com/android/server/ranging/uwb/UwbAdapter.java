@@ -69,8 +69,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /** Ranging adapter for Ultra-wideband (UWB). */
 public class UwbAdapter implements RangingAdapter {
@@ -79,7 +77,6 @@ public class UwbAdapter implements RangingAdapter {
     private final RangingInjector mRangingInjector;
     private final com.android.ranging.uwb.backend.internal.RangingDevice mUwbClient;
     private final ListeningExecutorService mExecutorService;
-    private final ExecutorService mBackendExecutor;
     private final ExecutorResultHandlers mUwbClientResultHandlers = new ExecutorResultHandlers();
     private final RangingSessionCallback mUwbListener = new UwbListener();
     private final StateMachine<State> mStateMachine;
@@ -102,21 +99,10 @@ public class UwbAdapter implements RangingAdapter {
             @NonNull ListeningExecutorService executor,
             @RangingPreference.DeviceRole int role
     ) {
-        this(context, injector, attributionSource, executor, Executors.newCachedThreadPool(), role);
-    }
-
-    /** Intermediary constructor used to make an additional reference to backendExecutor. */
-    private UwbAdapter(
-            @NonNull Context context,
-            RangingInjector injector,
-            AttributionSource attributionSource,
-            @NonNull ListeningExecutorService executor,
-            @NonNull ExecutorService backendExecutor, @RangingPreference.DeviceRole int role
-    ) {
-        this(context, injector, attributionSource, executor, backendExecutor,
+        this(context, injector, attributionSource, executor,
                 role == RangingPreference.DEVICE_ROLE_INITIATOR
-                        ? UwbServiceImpl.getController(context, backendExecutor)
-                        : UwbServiceImpl.getControlee(context, backendExecutor));
+                        ? UwbServiceImpl.getController(context, executor)
+                        : UwbServiceImpl.getControlee(context, executor));
     }
 
     /** Injectable constructor for testing. */
@@ -126,7 +112,6 @@ public class UwbAdapter implements RangingAdapter {
             RangingInjector injector,
             AttributionSource attributionSource,
             @NonNull ListeningExecutorService executor,
-            @NonNull ExecutorService backendExecutor,
             @NonNull com.android.ranging.uwb.backend.internal.RangingDevice uwbClient
     ) {
         if (!RangingTechnology.UWB.isSupported(context)) {
@@ -137,7 +122,6 @@ public class UwbAdapter implements RangingAdapter {
         mStateMachine = new StateMachine<>(State.STOPPED);
         mUwbClient = uwbClient;
         mExecutorService = executor;
-        mBackendExecutor = backendExecutor;
         mCallbacks = null;
         mPeers = Maps.synchronizedBiMap(HashBiMap.create());
         mDataNotificationManager = new DataNotificationManager(
@@ -207,9 +191,7 @@ public class UwbAdapter implements RangingAdapter {
                 return;
             }
         }
-        var future = Futures.submit(() -> {
-            mUwbClient.startRanging(mUwbListener, mBackendExecutor);
-        }, mExecutorService);
+        var future = Futures.submit(() -> mUwbClient.startRanging(mUwbListener), mExecutorService);
         Futures.addCallback(future, mUwbClientResultHandlers.startRanging, mExecutorService);
     }
 
@@ -228,9 +210,9 @@ public class UwbAdapter implements RangingAdapter {
                     com.android.ranging.uwb.backend.internal.UwbAddress.fromBytes(
                             uwbAddress.getAddressBytes());
             mPeers.put(params.getRawRangingDevice().getRangingDevice(), uwbAddress);
-            var unused = Futures.submit(() -> {
-                ((RangingController) mUwbClient).addControlee(uwbBackendAddress);
-            }, mExecutorService);
+            var unused = Futures.submit(
+                    () -> ((RangingController) mUwbClient).addControlee(uwbBackendAddress),
+                    mExecutorService);
         }
     }
 
@@ -243,9 +225,10 @@ public class UwbAdapter implements RangingAdapter {
                     com.android.ranging.uwb.backend.internal.UwbAddress uwbBackendAddress =
                             com.android.ranging.uwb.backend.internal.UwbAddress.fromBytes(
                                     mPeers.get(device).getAddressBytes());
-                    var unused = Futures.submit(() -> {
-                        ((RangingController) mUwbClient).removeControlee(uwbBackendAddress);
-                    }, mExecutorService);
+                    var unused = Futures.submit(
+                            () -> ((RangingController) mUwbClient)
+                                    .removeControlee(uwbBackendAddress),
+                            mExecutorService);
                 }
             }
         }
@@ -263,8 +246,10 @@ public class UwbAdapter implements RangingAdapter {
     public void appMovedToBackground() {
         if (mNonPrivilegedAttributionSource != null && mDataNotificationManager != null) {
             mDataNotificationManager.updateConfigAppMovedToBackground();
-            mBackendExecutor.execute(() -> mUwbClient.reconfigureRangeDataNtfConfig(
-                    UwbConfig.toBackend(mDataNotificationManager.getCurrentConfig())));
+            var unused = Futures.submit(
+                    () -> mUwbClient.reconfigureRangeDataNtfConfig(
+                            UwbConfig.toBackend(mDataNotificationManager.getCurrentConfig())),
+                    mExecutorService);
         }
     }
 
@@ -272,8 +257,10 @@ public class UwbAdapter implements RangingAdapter {
     public void appMovedToForeground() {
         if (mNonPrivilegedAttributionSource != null && mDataNotificationManager != null) {
             mDataNotificationManager.updateConfigAppMovedToForeground();
-            mBackendExecutor.execute(() -> mUwbClient.reconfigureRangeDataNtfConfig(
-                    UwbConfig.toBackend(mDataNotificationManager.getCurrentConfig())));
+            var unused = Futures.submit(
+                    () -> mUwbClient.reconfigureRangeDataNtfConfig(
+                            UwbConfig.toBackend(mDataNotificationManager.getCurrentConfig())),
+                    mExecutorService);
         }
     }
 
@@ -464,15 +451,19 @@ public class UwbAdapter implements RangingAdapter {
     }
 
     private class ExecutorResultHandlers {
-        public final FutureCallback<Void> startRanging = new FutureCallback<>() {
+        public final FutureCallback<Integer> startRanging = new FutureCallback<>() {
             @Override
-            public void onSuccess(Void v) {
+            public void onSuccess(Integer status) {
+                if (status != Utils.STATUS_OK) {
+                    Log.e(TAG, "startRainging failed with status " + status);
+                    closeForReason(convertStatus(status));
+                }
                 Log.i(TAG, "startRanging succeeded.");
             }
 
             @Override
             public void onFailure(@NonNull Throwable t) {
-                Log.w(TAG, "startRanging failed ", t);
+                Log.e(TAG, "startRanging failed ", t);
                 closeForReason(ERROR);
             }
         };
@@ -480,14 +471,29 @@ public class UwbAdapter implements RangingAdapter {
         public final FutureCallback<Integer> stopRanging = new FutureCallback<>() {
             @Override
             public void onSuccess(@Utils.UwbStatusCodes Integer status) {
+                if (status != Utils.STATUS_OK) {
+                    Log.e(TAG, "stopRanging failed with status " + status);
+                }
             }
 
             @Override
             public void onFailure(@NonNull Throwable t) {
-                Log.w(TAG, "stopRanging failed ", t);
+                Log.e(TAG, "stopRanging failed ", t);
                 // We failed to stop but there's nothing else we can do.
                 closeForReason(ERROR);
             }
+        };
+    }
+
+    public static @Callback.Reason int convertStatus(@Utils.UwbStatusCodes int status) {
+        return switch (status) {
+            case Utils.STATUS_OK -> UNKNOWN;
+            case Utils.STATUS_ERROR,
+                 Utils.INVALID_API_CALL,
+                 Utils.MISSING_PERMISSION_UWB_RANGING,
+                 Utils.UWB_SYSTEM_CALLBACK_FAILURE -> ERROR;
+            case Utils.RANGING_ALREADY_STARTED -> FAILED_TO_START;
+            default -> UNKNOWN;
         };
     }
 
