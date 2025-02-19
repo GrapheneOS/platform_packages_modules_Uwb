@@ -27,9 +27,9 @@ java_library {
     ],
     libs: [
         "androidx.annotation_annotation",
-        "androidx.concurrent_concurrent-futures",
     ],
     static_libs: [
+        "androidx.concurrent_concurrent-futures",
         "com.uwb.support.fira",
         "com.uwb.support.multichip",
         "com.uwb.support.dltdoa",
