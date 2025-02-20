@@ -416,9 +416,8 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
             SessionListener listener = new SessionListener(
                     args.handle, args.callbacks,
                     SessionMetricsLogger.startLogging(
-                            args.handle,
-                            config.getDeviceRole(),
-                            baseParams.getRangingSessionType()));
+                            args.handle, config.getDeviceRole(), baseParams.getRangingSessionType(),
+                            args.attributionSource, mRangingInjector));
             if (baseParams instanceof RawInitiatorRangingConfig params) {
                 RawInitiatorRangingSession session = new RawInitiatorRangingSession(
                         args.attributionSource, args.handle, mRangingInjector, config,
