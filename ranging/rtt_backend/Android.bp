@@ -30,8 +30,6 @@ java_library {
         "framework-wifi.stubs.system",
     ],
     static_libs: [
-        "androidx.annotation_annotation",
-        "androidx.concurrent_concurrent-futures",
         "guava",
     ],
     apex_available: [

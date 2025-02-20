@@ -465,7 +465,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
                       )
                   ],
               ),
-              measurement_limit=1,
+              measurement_limit=4,
           )
           self.initiator.start_ranging_and_assert_opened(
               SESSION_HANDLE, initiator_preference

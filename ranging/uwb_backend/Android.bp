@@ -25,9 +25,11 @@ java_library {
     srcs: [
         "src/**/*.java",
     ],
-    static_libs: [
+    libs: [
         "androidx.annotation_annotation",
         "androidx.concurrent_concurrent-futures",
+    ],
+    static_libs: [
         "com.uwb.support.fira",
         "com.uwb.support.multichip",
         "com.uwb.support.dltdoa",
