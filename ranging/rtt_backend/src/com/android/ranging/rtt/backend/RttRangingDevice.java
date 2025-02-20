@@ -337,18 +337,22 @@ public class RttRangingDevice {
                         .build();
                 mSubscribeConfig = null;
             } else if (deviceType == DeviceType.SUBSCRIBER) {
-                mSubscribeConfig = new SubscribeConfig.Builder()
+                SubscribeConfig.Builder builder = new SubscribeConfig.Builder()
                         .setMatchFilter(
                                 Collections.singletonList(rttRangingParameters.getMatchFilter()))
                         .setServiceName(rttRangingParameters.getServiceName())
-                        .setMaxDistanceMm(rttRangingParameters.getMaxDistanceMm())
-                        .setMinDistanceMm(rttRangingParameters.getMinDistanceMm())
-                        .setTerminateNotificationEnabled(true)
-                        .setPeriodicRangingInterval(
-                                RttRangingParameters.getIntervalMs(rttRangingParameters))
-                        .setPeriodicRangingEnabled(
-                                rttRangingParameters.isPeriodicRangingHwFeatureEnabled())
-                        .build();
+                        .setTerminateNotificationEnabled(true);
+
+                if (rttRangingParameters.isPeriodicRangingHwFeatureEnabled()) {
+                    builder.setPeriodicRangingInterval(
+                                    RttRangingParameters.getIntervalMs(rttRangingParameters))
+                            .setPeriodicRangingEnabled(true);
+                } else {
+                    // Geofence is not supported when using rtt periodic ranging.
+                    builder.setMaxDistanceMm(rttRangingParameters.getMaxDistanceMm())
+                            .setMinDistanceMm(rttRangingParameters.getMinDistanceMm());
+                }
+                mSubscribeConfig = builder.build();
                 mPublishConfig = null;
             } else {
                 Log.w(TAG, "Unknown deviceType");
