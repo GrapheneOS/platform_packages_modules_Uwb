@@ -18,12 +18,6 @@ package com.android.server.ranging.uwb;
 
 import static com.android.ranging.uwb.backend.internal.RangingMeasurement.CONFIDENCE_HIGH;
 import static com.android.ranging.uwb.backend.internal.RangingMeasurement.CONFIDENCE_MEDIUM;
-import static com.android.server.ranging.RangingAdapter.Callback.Reason.ERROR;
-import static com.android.server.ranging.RangingAdapter.Callback.Reason.FAILED_TO_START;
-import static com.android.server.ranging.RangingAdapter.Callback.Reason.LOCAL_REQUEST;
-import static com.android.server.ranging.RangingAdapter.Callback.Reason.LOST_CONNECTION;
-import static com.android.server.ranging.RangingAdapter.Callback.Reason.SYSTEM_POLICY;
-import static com.android.server.ranging.RangingAdapter.Callback.Reason.UNKNOWN;
 import static com.android.server.ranging.uwb.UwbConfig.toBackend;
 
 import android.content.AttributionSource;
@@ -55,6 +49,7 @@ import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils;
+import com.android.server.ranging.RangingUtils.InternalReason;
 import com.android.server.ranging.RangingUtils.StateMachine;
 import com.android.server.ranging.session.RangingSessionConfig;
 import com.android.server.ranging.util.DataNotificationManager;
@@ -153,12 +148,12 @@ public class UwbAdapter implements RangingAdapter {
         mNonPrivilegedAttributionSource = nonPrivilegedAttributionSource;
         if (!(config instanceof UwbConfig uwbConfig)) {
             Log.w(TAG, "Tried to start adapter with invalid ranging parameters");
-            closeForReason(ERROR);
+            closeForReason(InternalReason.INTERNAL_ERROR);
             return;
         }
         if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {
             Log.v(TAG, "Attempted to start adapter when it was already started");
-            closeForReason(FAILED_TO_START);
+            closeForReason(InternalReason.INTERNAL_ERROR);
             return;
         }
         mDataNotificationManager = new DataNotificationManager(
@@ -169,8 +164,7 @@ public class UwbAdapter implements RangingAdapter {
                 mNonPrivilegedAttributionSource.getPackageName())) {
             if (!mIsBackgroundRangingSupported) {
                 Log.w(TAG, "Background ranging is not supported");
-                mStateMachine.transition(State.STARTED, State.STOPPED);
-                closeForReason(SYSTEM_POLICY);
+                closeForReason(InternalReason.BACKGROUND_RANGING_POLICY);
                 return;
             }
             mDataNotificationManager.updateConfigAppMovedToBackground();
@@ -187,7 +181,7 @@ public class UwbAdapter implements RangingAdapter {
         if (mUwbClient.isHwTurnOffEnabled()) {
             if (!UwbHwSwitchHelper.enable(mContext, mAttributionSource)) {
                 Log.e(TAG, "Failed enabling UWB Hardware");
-                closeForReason(FAILED_TO_START);
+                closeForReason(InternalReason.UNSUPPORTED);
                 return;
             }
         }
@@ -366,35 +360,30 @@ public class UwbAdapter implements RangingAdapter {
         }
 
 
-        private static @Callback.Reason int convertDisconnectedReason(
+        private static @InternalReason int convertDisconnectedReason(
                 @PeerDisconnectedReason int reason
         ) {
             return switch (reason) {
-                case PeerDisconnectedReason.UNKNOWN -> UNKNOWN;
-                case PeerDisconnectedReason.LOCAL_DEVICE_REQUEST -> LOCAL_REQUEST;
-                case PeerDisconnectedReason.SYSTEM_POLICY -> SYSTEM_POLICY;
-                case PeerDisconnectedReason.FAILED_TO_ADD_CONTROLEE -> LOST_CONNECTION;
-                default -> UNKNOWN;
+                case PeerDisconnectedReason.UNKNOWN -> InternalReason.UNKNOWN;
+                case PeerDisconnectedReason.LOCAL_DEVICE_REQUEST -> InternalReason.LOCAL_REQUEST;
+                case PeerDisconnectedReason.SYSTEM_POLICY -> InternalReason.SYSTEM_POLICY;
+                case PeerDisconnectedReason.FAILED_TO_ADD_CONTROLEE ->
+                        InternalReason.NO_PEERS_FOUND;
+                default -> InternalReason.UNKNOWN;
             };
         }
 
-        private static @Callback.Reason int convertClosedReason(
+        private static @InternalReason int convertClosedReason(
                 @RangingSessionCallback.RangingSuspendedReason int reason) {
-            switch (reason) {
-                case REASON_WRONG_PARAMETERS:
-                case REASON_FAILED_TO_START:
-                    return FAILED_TO_START;
-                case REASON_STOPPED_BY_PEER:
-                    return Callback.Reason.REMOTE_REQUEST;
-                case REASON_STOP_RANGING_CALLED:
-                    return Callback.Reason.LOCAL_REQUEST;
-                case REASON_MAX_RANGING_ROUND_RETRY_REACHED:
-                    return Callback.Reason.LOST_CONNECTION;
-                case REASON_SYSTEM_POLICY:
-                    return Callback.Reason.SYSTEM_POLICY;
-                default:
-                    return Callback.Reason.UNKNOWN;
-            }
+            return switch (reason) {
+                case REASON_UNKNOWN -> InternalReason.UNKNOWN;
+                case REASON_WRONG_PARAMETERS, REASON_FAILED_TO_START -> InternalReason.UNSUPPORTED;
+                case REASON_STOPPED_BY_PEER -> InternalReason.REMOTE_REQUEST;
+                case REASON_STOP_RANGING_CALLED -> InternalReason.LOCAL_REQUEST;
+                case REASON_MAX_RANGING_ROUND_RETRY_REACHED -> InternalReason.NO_PEERS_FOUND;
+                case REASON_SYSTEM_POLICY -> InternalReason.SYSTEM_POLICY;
+                default -> InternalReason.UNKNOWN;
+            };
         }
 
         private @Nullable RangingDevice convertPeerDevice(
@@ -425,7 +414,7 @@ public class UwbAdapter implements RangingAdapter {
      * Informs callbacks that all peers disconnected and the session closed. Resets internal
      * state.
      */
-    private void closeForReason(@Callback.Reason int reason) {
+    private void closeForReason(@InternalReason int reason) {
         synchronized (mStateMachine) {
             mStateMachine.setState(State.STOPPED);
             if (mCallbacks == null) {
@@ -464,7 +453,7 @@ public class UwbAdapter implements RangingAdapter {
             @Override
             public void onFailure(@NonNull Throwable t) {
                 Log.e(TAG, "startRanging failed ", t);
-                closeForReason(ERROR);
+                closeForReason(InternalReason.INTERNAL_ERROR);
             }
         };
 
@@ -480,20 +469,20 @@ public class UwbAdapter implements RangingAdapter {
             public void onFailure(@NonNull Throwable t) {
                 Log.e(TAG, "stopRanging failed ", t);
                 // We failed to stop but there's nothing else we can do.
-                closeForReason(ERROR);
+                closeForReason(InternalReason.INTERNAL_ERROR);
             }
         };
     }
 
-    public static @Callback.Reason int convertStatus(@Utils.UwbStatusCodes int status) {
+    public static @InternalReason int convertStatus(@Utils.UwbStatusCodes int status) {
         return switch (status) {
-            case Utils.STATUS_OK -> UNKNOWN;
+            case Utils.STATUS_OK -> InternalReason.UNKNOWN;
             case Utils.STATUS_ERROR,
                  Utils.INVALID_API_CALL,
                  Utils.MISSING_PERMISSION_UWB_RANGING,
-                 Utils.UWB_SYSTEM_CALLBACK_FAILURE -> ERROR;
-            case Utils.RANGING_ALREADY_STARTED -> FAILED_TO_START;
-            default -> UNKNOWN;
+                 Utils.UWB_SYSTEM_CALLBACK_FAILURE,
+                 Utils.RANGING_ALREADY_STARTED -> InternalReason.INTERNAL_ERROR;
+            default -> InternalReason.UNKNOWN;
         };
     }
 

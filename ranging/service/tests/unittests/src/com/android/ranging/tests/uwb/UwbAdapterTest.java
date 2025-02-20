@@ -46,6 +46,7 @@ import com.android.ranging.uwb.backend.internal.UwbDevice;
 import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.RangingUtils.InternalReason;
 import com.android.server.ranging.cs.CsConfig;
 import com.android.server.ranging.uwb.UwbAdapter;
 import com.android.server.ranging.uwb.UwbConfig;
@@ -131,7 +132,7 @@ public class UwbAdapterTest {
     public void start_failsWhenParamsInvalid() {
         mUwbAdapter.start(mock(CsConfig.class), null, mMockCallback);
         verify(mMockCallback, never()).onStarted(any());
-        verify(mMockCallback).onClosed(eq(RangingAdapter.Callback.Reason.ERROR));
+        verify(mMockCallback).onClosed(eq(InternalReason.INTERNAL_ERROR));
         verify(mMockCallback, never()).onStopped(any(), anyInt());
     }
 
@@ -193,8 +194,8 @@ public class UwbAdapterTest {
                 RangingSessionCallback.REASON_STOP_RANGING_CALLED);
         verify(mMockCallback).onStopped(
                 eq(ImmutableSet.copyOf(peers)),
-                eq(RangingAdapter.Callback.Reason.LOCAL_REQUEST));
-        verify(mMockCallback).onClosed(eq(RangingAdapter.Callback.Reason.LOCAL_REQUEST));
+                eq(InternalReason.LOCAL_REQUEST));
+        verify(mMockCallback).onClosed(eq(InternalReason.LOCAL_REQUEST));
     }
 
     @Test
@@ -222,8 +223,8 @@ public class UwbAdapterTest {
 
         verify(mMockCallback).onStopped(
                 eq(ImmutableSet.of(peerDevice)),
-                eq(RangingAdapter.Callback.Reason.SYSTEM_POLICY));
-        verify(mMockCallback).onClosed(eq(RangingAdapter.Callback.Reason.LOST_CONNECTION));
+                eq(InternalReason.SYSTEM_POLICY));
+        verify(mMockCallback).onClosed(eq(InternalReason.NO_PEERS_FOUND));
     }
 
     @Test

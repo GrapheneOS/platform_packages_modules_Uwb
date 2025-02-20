@@ -19,9 +19,6 @@ package com.android.server.ranging.blerssi;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 
-import static com.android.server.ranging.RangingAdapter.Callback.Reason.ERROR;
-import static com.android.server.ranging.RangingAdapter.Callback.Reason.FAILED_TO_START;
-import static com.android.server.ranging.RangingAdapter.Callback.Reason.SYSTEM_POLICY;
 import static com.android.server.ranging.RangingUtils.convertBluetoothReasonCode;
 
 import android.annotation.NonNull;
@@ -51,6 +48,7 @@ import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils;
+import com.android.server.ranging.RangingUtils.InternalReason;
 import com.android.server.ranging.RangingUtils.StateMachine;
 import com.android.server.ranging.session.RangingSessionConfig;
 import com.android.server.ranging.util.DataNotificationManager;
@@ -130,29 +128,29 @@ public class BleRssiAdapter implements RangingAdapter {
                 mNonPrivilegedAttributionSource.getUid(),
                 mNonPrivilegedAttributionSource.getPackageName())) {
             Log.w(TAG, "Background ranging is not supported");
-            closeForReason(SYSTEM_POLICY);
+            closeForReason(InternalReason.BACKGROUND_RANGING_POLICY);
             return;
         }
         if (!(config instanceof BleRssiConfig bleRssiConfig)) {
             Log.w(TAG, "Tried to start adapter with invalid ranging parameters");
-            closeForReason(ERROR);
+            closeForReason(InternalReason.INTERNAL_ERROR);
             return;
         }
         BleRssiRangingParams bleRssiRangingParams = bleRssiConfig.getRangingParams();
         if ((bleRssiConfig.getPeerDevice() == null)
                 || (bleRssiRangingParams.getPeerBluetoothAddress() == null)) {
             Log.e(TAG, "Peer device is null");
-            closeForReason(ERROR);
+            closeForReason(InternalReason.INTERNAL_ERROR);
             return;
         }
         if (mBluetoothAdapter.getState() == BluetoothAdapter.STATE_OFF) {
             Log.e(TAG, "Failed to start ranging, Bluetooth is turned off!");
-            closeForReason(FAILED_TO_START);
+            closeForReason(InternalReason.UNSUPPORTED);
             return;
         }
         if (!mStateMachine.transition(State.STOPPED, State.STARTED)) {
             Log.v(TAG, "Attempted to start adapter when it was already started");
-            closeForReason(FAILED_TO_START);
+            closeForReason(InternalReason.INTERNAL_ERROR);
             return;
         }
 
@@ -262,7 +260,7 @@ public class BleRssiAdapter implements RangingAdapter {
         mConfig = null;
     }
 
-    private void closeForReason(@Callback.Reason int reason) {
+    private void closeForReason(@InternalReason int reason) {
         if (mRangingDevice != null) {
             mCallbacks.onStopped(ImmutableSet.of(mRangingDevice), reason);
         }
@@ -284,7 +282,7 @@ public class BleRssiAdapter implements RangingAdapter {
 
                 public void onStartFail(int reason) {
                     Log.i(TAG, "DistanceMeasurement onStartFail ! reason " + reason);
-                    closeForReason(Callback.Reason.FAILED_TO_START);
+                    closeForReason(convertBluetoothReasonCode(reason));
                 }
 
                 public void onStopped(DistanceMeasurementSession session, int reason) {

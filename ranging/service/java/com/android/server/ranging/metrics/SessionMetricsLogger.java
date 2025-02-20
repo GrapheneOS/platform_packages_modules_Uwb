@@ -21,11 +21,11 @@ import static android.ranging.RangingConfig.RANGING_SESSION_RAW;
 import android.content.AttributionSource;
 import android.ranging.RangingConfig;
 import android.ranging.RangingPreference;
-import android.ranging.RangingSession;
 import android.ranging.SessionHandle;
 
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.RangingUtils.InternalReason;
 import com.android.server.ranging.RangingUtils.StateMachine;
 
 public class SessionMetricsLogger {
@@ -105,8 +105,7 @@ public class SessionMetricsLogger {
     }
 
     public synchronized void logTechnologyStopped(
-            RangingTechnology technology, int numPeers,
-            @RangingSession.Callback.Reason int reason
+            RangingTechnology technology, int numPeers, @InternalReason int reason
     ) {
         RangingStatsLog.write(
                 RangingStatsLog.RANGING_TECHNOLOGY_STOPPED,
@@ -119,7 +118,7 @@ public class SessionMetricsLogger {
                 numPeers);
     }
 
-    public synchronized void logSessionClosed(@RangingSession.Callback.Reason int reason) {
+    public synchronized void logSessionClosed(@InternalReason int reason) {
         RangingStatsLog.write(
                 RangingStatsLog.RANGING_SESSION_CLOSED,
                 mSessionHandle.hashCode(),
