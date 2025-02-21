@@ -17,11 +17,13 @@
 package com.android.server.ranging;
 
 import static android.Manifest.permission.RANGING;
+import static android.bluetooth.BluetoothDevice.BOND_BONDED;
 import static android.permission.PermissionManager.PERMISSION_GRANTED;
 
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.app.ActivityManager;
+import android.bluetooth.BluetoothManager;
 import android.content.AttributionSource;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
@@ -284,4 +286,19 @@ public class RangingInjector {
         sOverridePackageImportance.remove(packageName);
     }
 
+    /**
+     * Valid Bluetooth hardware addresses must be upper case, in big endian byte order, and in a
+     * format such as "00:11:22:33:AA:BB".
+     */
+    public boolean isRemoteDeviceBluetoothBonded(String btAddress) {
+        long identity = Binder.clearCallingIdentity();
+        try {
+            return mContext.getSystemService(BluetoothManager.class)
+                    .getAdapter()
+                    .getRemoteDevice(btAddress)
+                    .getBondState() == BOND_BONDED;
+        } finally {
+            Binder.restoreCallingIdentity(identity);
+        }
+    }
 }
