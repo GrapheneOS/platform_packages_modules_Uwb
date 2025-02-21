@@ -22,6 +22,10 @@
     <option name="config-descriptor:metadata" key="parameter" value="not_secondary_user" />
     <option name="config-descriptor:metadata" key="mainline-param" value="com.google.android.uwb.apex" />
 
+    <!-- Do not run the tests on automotive variant-->
+    <object type="module_controller" class="com.android.tradefed.testtype.suite.module.DeviceFeatureModuleController">
+        <option name="forbidden-feature" value="android.hardware.type.automotive"/>
+    </object>
 
     <device name="device1">
         <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
