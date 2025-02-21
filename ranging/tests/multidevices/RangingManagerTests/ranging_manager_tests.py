@@ -97,6 +97,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
         utils.set_uwb_state_and_verify(device.ad, state=True)
         utils.set_snippet_foreground_state(device.ad, isForeground=True)
       utils.set_screen_state(device.ad, on=True)
+    self.initiator.bt_addr = None
+    self.responder.bt_addr = None
 
   def teardown_test(self):
     super().teardown_test()
@@ -165,8 +167,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     self.initiator.bt_addr = connected_devices[0]
 
   def _ble_disconnect(self):
-    if self.initiator.ad.bluetooth.disconnectGatt(SERVICE_UUID) is False:
-        logging.error("Server did not disconnect %s", self.initiator.bt_addr)
+    if self.responder.bt_addr and self.initiator.ad.bluetooth.disconnectGatt(SERVICE_UUID) is False:
+            logging.error("Server did not disconnect %s", self.initiator.bt_addr)
 
   def _ble_bond(self):
     """Create BLE GATT connection and bonding between initiator and responder.
@@ -184,9 +186,9 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     self.initiator.bt_addr = connected_devices[0]
 
   def _ble_unbond(self):
-    if self.initiator.ad.bluetooth.removeBond(self.responder.bt_addr) is False:
+    if self.responder.bt_addr and self.initiator.ad.bluetooth.removeBond(self.responder.bt_addr) is False:
         logging.error("Server not unbonded %s", self.responder.bt_addr)
-    if self.responder.ad.bluetooth.removeBond(self.initiator.bt_addr) is False:
+    if self.initiator.bt_addr and self.responder.ad.bluetooth.removeBond(self.initiator.bt_addr) is False:
         logging.error("Client not unbonded %s", self.initiator.bt_addr)
 
   ### Test Cases ###
