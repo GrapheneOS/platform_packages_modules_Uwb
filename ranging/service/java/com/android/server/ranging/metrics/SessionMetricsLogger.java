@@ -18,12 +18,14 @@ package com.android.server.ranging.metrics;
 
 import static android.ranging.RangingConfig.RANGING_SESSION_RAW;
 
+import android.content.AttributionSource;
 import android.ranging.RangingConfig;
 import android.ranging.RangingPreference;
-import android.ranging.RangingSession;
 import android.ranging.SessionHandle;
 
+import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.RangingUtils.InternalReason;
 import com.android.server.ranging.RangingUtils.StateMachine;
 
 public class SessionMetricsLogger {
@@ -31,21 +33,28 @@ public class SessionMetricsLogger {
     private final @RangingPreference.DeviceRole int mDeviceRole;
     private final @RangingConfig.RangingSessionType int mSessionType;
     private final StateMachine<State> mStateMachine;
+    private final AttributionSource mAttributionSource;
+    private final RangingInjector mInjector;
 
     private long mLastStateChangeTimestampMs;
 
     public static SessionMetricsLogger startLogging(
             SessionHandle sessionHandle,
             @RangingPreference.DeviceRole int deviceRole,
-            @RangingConfig.RangingSessionType int sessionType
+            @RangingConfig.RangingSessionType int sessionType,
+            AttributionSource attributionSource,
+            RangingInjector injector
     ) {
-        return new SessionMetricsLogger(sessionHandle, deviceRole, sessionType);
+        return new SessionMetricsLogger(sessionHandle, deviceRole, sessionType, attributionSource,
+                injector);
     }
 
     private SessionMetricsLogger(
             SessionHandle sessionHandle,
             @RangingPreference.DeviceRole int deviceRole,
-            @RangingConfig.RangingSessionType int sessionType
+            @RangingConfig.RangingSessionType int sessionType,
+            AttributionSource attributionSource,
+            RangingInjector injector
     ) {
         mSessionHandle = sessionHandle;
         mDeviceRole = deviceRole;
@@ -55,6 +64,8 @@ public class SessionMetricsLogger {
                         ? State.STARTING
                         : State.OOB);
         mLastStateChangeTimestampMs = System.currentTimeMillis();
+        mAttributionSource = attributionSource;
+        mInjector = injector;
     }
 
     public synchronized void logSessionConfigured(int numPeers) {
@@ -75,8 +86,11 @@ public class SessionMetricsLogger {
         RangingStatsLog.write(
                 RangingStatsLog.RANGING_SESSION_STARTED,
                 mSessionHandle.hashCode(),
-                mSessionHandle.getUid(),
-                System.currentTimeMillis() - mLastStateChangeTimestampMs);
+                mAttributionSource.getUid(),
+                System.currentTimeMillis() - mLastStateChangeTimestampMs,
+                mInjector.isPrivilegedApp(
+                        mAttributionSource.getUid(),
+                        mAttributionSource.getPackageName()));
         mLastStateChangeTimestampMs = System.currentTimeMillis();
         mStateMachine.setState(State.RANGING);
     }
@@ -91,8 +105,7 @@ public class SessionMetricsLogger {
     }
 
     public synchronized void logTechnologyStopped(
-            RangingTechnology technology, int numPeers,
-            @RangingSession.Callback.Reason int reason
+            RangingTechnology technology, int numPeers, @InternalReason int reason
     ) {
         RangingStatsLog.write(
                 RangingStatsLog.RANGING_TECHNOLOGY_STOPPED,
@@ -105,7 +118,7 @@ public class SessionMetricsLogger {
                 numPeers);
     }
 
-    public synchronized void logSessionClosed(@RangingSession.Callback.Reason int reason) {
+    public synchronized void logSessionClosed(@InternalReason int reason) {
         RangingStatsLog.write(
                 RangingStatsLog.RANGING_SESSION_CLOSED,
                 mSessionHandle.hashCode(),

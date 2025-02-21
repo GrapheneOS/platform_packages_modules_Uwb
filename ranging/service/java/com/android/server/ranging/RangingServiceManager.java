@@ -43,6 +43,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.android.server.ranging.RangingUtils.InternalReason;
 import com.android.server.ranging.metrics.SessionMetricsLogger;
 import com.android.server.ranging.session.OobInitiatorRangingSession;
 import com.android.server.ranging.session.OobResponderRangingSession;
@@ -308,7 +309,7 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
 
         public void onTechnologyStopped(
                 @NonNull RangingTechnology technology, @NonNull Set<RangingDevice> peers,
-                @Callback.Reason int reason
+                @InternalReason int reason
         ) {
             mMetricsLogger.logTechnologyStopped(technology, peers.size(), reason);
             peers.forEach((peer) -> {
@@ -334,7 +335,7 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
          * Signals that ranging in the session has stopped. Called by a {@link RangingSession} once
          * all of its constituent technology-specific sessions have stopped.
          */
-        public void onSessionStopped(@Callback.Reason int reason) {
+        public void onSessionStopped(@InternalReason int reason) {
             mSessions.remove(mSessionHandle).close();
             mMetricsLogger.logSessionClosed(reason);
             if (mIsSessionStarted.get()) {
@@ -352,6 +353,17 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
             }
         }
 
+        private @Callback.Reason int convertReason(@InternalReason int reason) {
+            return switch (reason) {
+                case InternalReason.UNKNOWN, InternalReason.LOCAL_REQUEST,
+                     InternalReason.REMOTE_REQUEST, InternalReason.UNSUPPORTED,
+                     InternalReason.SYSTEM_POLICY, InternalReason.NO_PEERS_FOUND -> reason;
+                case InternalReason.INTERNAL_ERROR -> Callback.REASON_UNKNOWN;
+                case InternalReason.BACKGROUND_RANGING_POLICY -> Callback.REASON_SYSTEM_POLICY;
+                case InternalReason.PEER_CAPABILITIES_MISMATCH -> Callback.REASON_UNSUPPORTED;
+                default -> Callback.REASON_UNKNOWN;
+            };
+        }
     }
 
     private class RangingTaskManager extends Handler {
@@ -416,9 +428,8 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
             SessionListener listener = new SessionListener(
                     args.handle, args.callbacks,
                     SessionMetricsLogger.startLogging(
-                            args.handle,
-                            config.getDeviceRole(),
-                            baseParams.getRangingSessionType()));
+                            args.handle, config.getDeviceRole(), baseParams.getRangingSessionType(),
+                            args.attributionSource, mRangingInjector));
             if (baseParams instanceof RawInitiatorRangingConfig params) {
                 RawInitiatorRangingSession session = new RawInitiatorRangingSession(
                         args.attributionSource, args.handle, mRangingInjector, config,

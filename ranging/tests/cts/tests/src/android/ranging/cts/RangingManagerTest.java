@@ -856,7 +856,7 @@ public class RangingManagerTest {
                                 .build())
                         .build())
                 .setSessionConfig(
-                        new SessionConfig.Builder().setRangingMeasurementsLimit(2).build())
+                        new SessionConfig.Builder().setRangingMeasurementsLimit(6).build())
                 .build();
 
         RangingSessionCallback callback = new RangingSessionCallback();
@@ -868,7 +868,7 @@ public class RangingManagerTest {
         assertThat(callback.mOnOpenedCalled.await(2, TimeUnit.SECONDS)).isTrue();
 
         // Session should close after measurement limit.
-        assertThat(callback.mOnClosedCalled.await(2, TimeUnit.SECONDS)).isTrue();
+        assertThat(callback.mOnClosedCalled.await(4, TimeUnit.SECONDS)).isTrue();
 
         mRangingManager.unregisterCapabilitiesCallback(capabilitiesCallback);
         uiAutomation.dropShellPermissionIdentity();

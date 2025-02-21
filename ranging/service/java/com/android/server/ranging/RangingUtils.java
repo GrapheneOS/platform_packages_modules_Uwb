@@ -20,15 +20,9 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 
-import static com.android.server.ranging.RangingAdapter.Callback.Reason.ERROR;
-import static com.android.server.ranging.RangingAdapter.Callback.Reason.LOCAL_REQUEST;
-import static com.android.server.ranging.RangingAdapter.Callback.Reason.LOST_CONNECTION;
-import static com.android.server.ranging.RangingAdapter.Callback.Reason.REMOTE_REQUEST;
-import static com.android.server.ranging.RangingAdapter.Callback.Reason.SYSTEM_POLICY;
-import static com.android.server.ranging.RangingAdapter.Callback.Reason.UNKNOWN;
-
 import static java.lang.Math.min;
 
+import android.annotation.IntDef;
 import android.app.AlarmManager;
 import android.bluetooth.BluetoothStatusCodes;
 import android.os.SystemClock;
@@ -249,16 +243,41 @@ public class RangingUtils {
     /**
      * Covert bluetooth reason code to ranging reason code.
      */
-    public static int convertBluetoothReasonCode(int bluetoothReasonCode) {
+    public static @InternalReason int convertBluetoothReasonCode(int bluetoothReasonCode) {
         return switch (bluetoothReasonCode) {
-            case BluetoothStatusCodes.REASON_LOCAL_APP_REQUEST -> LOCAL_REQUEST;
-            case BluetoothStatusCodes.REASON_REMOTE_REQUEST -> REMOTE_REQUEST;
+            case BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED,
+                 BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ALLOWED,
+                 BluetoothStatusCodes.ERROR_DEVICE_NOT_BONDED,
+                 BluetoothStatusCodes.FEATURE_NOT_SUPPORTED,
+                 BluetoothStatusCodes.ERROR_BAD_PARAMETERS -> InternalReason.UNSUPPORTED;
+
+            case BluetoothStatusCodes.ERROR_MISSING_BLUETOOTH_CONNECT_PERMISSION,
+                 BluetoothStatusCodes.ERROR_PROFILE_SERVICE_NOT_BOUND,
+                 BluetoothStatusCodes.ERROR_NOT_ACTIVE_DEVICE,
+                 BluetoothStatusCodes.ERROR_NO_ACTIVE_DEVICES,
+                 BluetoothStatusCodes.ERROR_PROFILE_NOT_CONNECTED,
+                 BluetoothStatusCodes.ERROR_HARDWARE_GENERIC,
+                 BluetoothStatusCodes.ERROR_LOCAL_NOT_ENOUGH_RESOURCES,
+                 BluetoothStatusCodes.ERROR_REMOTE_NOT_ENOUGH_RESOURCES,
+                 BluetoothStatusCodes.ERROR_REMOTE_OPERATION_REJECTED,
+                 BluetoothStatusCodes.ERROR_ALREADY_IN_TARGET_STATE,
+                 BluetoothStatusCodes.ERROR_CALLBACK_NOT_REGISTERED,
+                 BluetoothStatusCodes.ERROR_ANOTHER_ACTIVE_REQUEST,
+                 BluetoothStatusCodes.ERROR_REMOTE_OPERATION_NOT_SUPPORTED ->
+                    InternalReason.INTERNAL_ERROR;
+
             case BluetoothStatusCodes.ERROR_TIMEOUT,
-                    BluetoothStatusCodes.ERROR_REMOTE_OPERATION_NOT_SUPPORTED ->
-                    SYSTEM_POLICY;
-            case BluetoothStatusCodes.ERROR_NO_LE_CONNECTION -> LOST_CONNECTION;
-            case BluetoothStatusCodes.ERROR_BAD_PARAMETERS -> ERROR;
-            default -> UNKNOWN;
+                 BluetoothStatusCodes.ERROR_REMOTE_LINK_ERROR,
+                 BluetoothStatusCodes.ERROR_NO_LE_CONNECTION -> InternalReason.NO_PEERS_FOUND;
+
+            case BluetoothStatusCodes.REASON_LOCAL_APP_REQUEST -> InternalReason.LOCAL_REQUEST;
+
+            case BluetoothStatusCodes.REASON_REMOTE_REQUEST -> InternalReason.REMOTE_REQUEST;
+
+            case BluetoothStatusCodes.REASON_LOCAL_STACK_REQUEST,
+                 BluetoothStatusCodes.REASON_SYSTEM_POLICY -> InternalReason.SYSTEM_POLICY;
+
+            default -> InternalReason.UNKNOWN;
         };
     }
 
@@ -284,5 +303,28 @@ public class RangingUtils {
         } else {
             return Optional.empty();
         }
+    }
+
+    @IntDef(value = {
+            InternalReason.UNKNOWN,
+            InternalReason.LOCAL_REQUEST,
+            InternalReason.REMOTE_REQUEST,
+            InternalReason.UNSUPPORTED,
+            InternalReason.SYSTEM_POLICY,
+            InternalReason.NO_PEERS_FOUND,
+            InternalReason.INTERNAL_ERROR,
+            InternalReason.BACKGROUND_RANGING_POLICY,
+            InternalReason.PEER_CAPABILITIES_MISMATCH,
+    })
+    public @interface InternalReason {
+        int UNKNOWN = 0;
+        int LOCAL_REQUEST = 1;
+        int REMOTE_REQUEST = 2;
+        int UNSUPPORTED = 3;
+        int SYSTEM_POLICY = 4;
+        int NO_PEERS_FOUND = 5;
+        int INTERNAL_ERROR = 6;
+        int BACKGROUND_RANGING_POLICY = 7;
+        int PEER_CAPABILITIES_MISMATCH = 8;
     }
 }
