@@ -62,7 +62,6 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class RangingEngine {
@@ -71,7 +70,7 @@ public class RangingEngine {
     private final OobInitiatorRangingConfig mOobConfig;
     private final EnumSet<RangingTechnology> mRequestedTechnologies;
     private final Map<RangingDevice, EnumSet<RangingTechnology>> mPeerTechnologies;
-    private final DeviceConfigFacade mDeviceConfigFacade;
+    private final RangingInjector mInjector;
 
     private @Nullable UwbConfigSelector mUwbConfigSelector = null;
     private @Nullable CsConfigSelector mCsConfigSelector = null;
@@ -112,7 +111,7 @@ public class RangingEngine {
         mOobConfig = oobConfig;
         mPeerTechnologies = new HashMap<>();
         mRequestedTechnologies = EnumSet.noneOf(RangingTechnology.class);
-        mDeviceConfigFacade = injector.getDeviceConfigFacade();
+        mInjector = injector;
 
         RangingCapabilities localCapabilities = injector.getCapabilitiesProvider()
                 .getCapabilities();
@@ -254,7 +253,9 @@ public class RangingEngine {
     }
 
     private List<RangingTechnology> getPreferredTechnologyList() {
-        String[] prefTechnologiesStringArray = mDeviceConfigFacade.getTechnologyPreferenceList();
+        String[] prefTechnologiesStringArray = mInjector
+                .getDeviceConfigFacade()
+                .getTechnologyPreferenceList();
         return Arrays.stream(prefTechnologiesStringArray)
                 .map(str -> RangingTechnology.fromName(str))
                 .collect(Collectors.toUnmodifiableList());
@@ -263,35 +264,46 @@ public class RangingEngine {
     private EnumSet<RangingTechnology> selectTechnologiesToUseWithPeer(
             CapabilityResponseMessage peerCapabilities
     ) throws ConfigSelectionException {
-        Set<RangingTechnology> technologiesSupportedByPeer =
-                Set.copyOf(peerCapabilities.getSupportedRangingTechnologies());
+        EnumSet<RangingTechnology> selectable = EnumSet.copyOf(
+                peerCapabilities.getSupportedRangingTechnologies());
+        EnumSet<RangingTechnology> selected = EnumSet.noneOf(RangingTechnology.class);
 
-        EnumSet<RangingTechnology> technologies = EnumSet.noneOf(RangingTechnology.class);
+        // Skip CS if supported by the remote device but no Bluetooth bond is established.
+        if (selectable.contains(RangingTechnology.CS)
+                && peerCapabilities.getCsCapabilities() != null
+                && !mInjector.isRemoteDeviceBluetoothBonded(
+                        peerCapabilities.getCsCapabilities().getBluetoothAddress())
+        ) {
+            Log.v(TAG, RangingTechnology.CS + " is mutually supported, but skipping it because no "
+                    + "Bluetooth bond exists with peer");
+            selectable.remove(RangingTechnology.CS);
+        }
+
         switch (mOobConfig.getRangingMode()) {
             case RANGING_MODE_AUTO:
             case RANGING_MODE_HIGH_ACCURACY_PREFERRED: {
                 getPreferredTechnologyList()
                         .stream()
-                        .filter(technologiesSupportedByPeer::contains)
+                        .filter(selectable::contains)
                         .findFirst()
-                        .ifPresent(technologies::add);
+                        .ifPresent(selected::add);
                 break;
             }
             case RANGING_MODE_HIGH_ACCURACY: {
-                if (technologiesSupportedByPeer.contains(RangingTechnology.UWB)) {
-                    technologies.add(RangingTechnology.UWB);
+                if (selectable.contains(RangingTechnology.UWB)) {
+                    selected.add(RangingTechnology.UWB);
                 }
                 break;
             }
             case RANGING_MODE_FUSED: {
-                technologies.addAll(technologiesSupportedByPeer);
+                selected.addAll(selectable);
                 break;
             }
         }
 
-        if (technologies.isEmpty()) {
+        if (selected.isEmpty()) {
             throw new ConfigSelectionException("Peer does not support any selected technologies");
         }
-        return technologies;
+        return selected;
     }
 }
