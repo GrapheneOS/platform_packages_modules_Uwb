@@ -24,3 +24,11 @@ flag {
     description: "This flags controls channel sounding in generic ranging"
     bug: "331206299"
 }
+
+flag {
+    name: "ranging_stack_updates_25q4"
+    is_exported: true
+    namespace: "uwb"
+    description: "This flags controls updates to ranging stack for 25Q4"
+    bug: "398835649"
+}
