@@ -235,7 +235,6 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
                       config_id=uwb.ConfigId.UNICAST_DS_TWR,
                       device_address=self.responder.uwb_address,
                       peer_address=self.initiator.uwb_address,
-                      ranging_update_rate=uwb.RangingUpdateRate.FREQUENT
                   ),
               ),
           ),
