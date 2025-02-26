@@ -57,24 +57,44 @@ public class AliroEncoder extends TlvEncoder {
         AliroOpenRangingParams params = (AliroOpenRangingParams) baseParam;
         int hoppingConfig = params.getHoppingConfigMode();
         int hoppingSequence = params.getHoppingSequence();
-
-        int hoppingMode = AliroParams.HOPPING_CONFIG_MODE_NONE;
+        boolean isFiraExtensionSupported =
+                mUwbInjector.getDeviceConfigFacade().isFiraSupportedExtensionForCCC();
+        int hoppingMode = isFiraExtensionSupported
+                ? UwbAliroConstants.ALIRO_EXTENSION_HOPPING_CONFIG_MODE_NONE :
+                AliroParams.HOPPING_CONFIG_MODE_NONE;
         byte[] protocolVer = params.getProtocolVersion().toBytes();
 
         switch (hoppingConfig) {
 
             case AliroParams.HOPPING_CONFIG_MODE_CONTINUOUS:
                 if (hoppingSequence == AliroParams.HOPPING_SEQUENCE_DEFAULT) {
-                    hoppingMode = UwbAliroConstants.HOPPING_CONFIG_MODE_CONTINUOUS_DEFAULT;
+                    hoppingMode =
+                            isFiraExtensionSupported
+                                    ? UwbAliroConstants
+                                    .ALIRO_EXTENSION_HOPPING_CONFIG_MODE_CONTINUOUS_DEFAULT :
+                                    UwbAliroConstants.HOPPING_CONFIG_MODE_CONTINUOUS_DEFAULT;
+
                 } else {
-                    hoppingMode = UwbAliroConstants.HOPPING_CONFIG_MODE_CONTINUOUS_AES;
+                    hoppingMode =
+                            isFiraExtensionSupported
+                                    ? UwbAliroConstants
+                                    .ALIRO_EXTENSION_HOPPING_CONFIG_MODE_CONTINUOUS_AES :
+                                    UwbAliroConstants.HOPPING_CONFIG_MODE_CONTINUOUS_AES;
                 }
                 break;
             case AliroParams.HOPPING_CONFIG_MODE_ADAPTIVE:
                 if (hoppingSequence == AliroParams.HOPPING_SEQUENCE_DEFAULT) {
-                    hoppingMode = UwbAliroConstants.HOPPING_CONFIG_MODE_MODE_ADAPTIVE_DEFAULT;
+                    hoppingMode =
+                            isFiraExtensionSupported
+                                    ? UwbAliroConstants
+                                    .ALIRO_EXTENSION_HOPPING_CONFIG_MODE_ADAPTIVE_DEFAULT :
+                                    UwbAliroConstants.HOPPING_CONFIG_MODE_MODE_ADAPTIVE_DEFAULT;
                 } else {
-                    hoppingMode = UwbAliroConstants.HOPPING_CONFIG_MODE_MODE_ADAPTIVE_AES;
+                    hoppingMode =
+                            isFiraExtensionSupported
+                                    ? UwbAliroConstants
+                                    .ALIRO_EXTENSION_HOPPING_CONFIG_MODE_ADAPTIVE_DEFAULT :
+                                    UwbAliroConstants.HOPPING_CONFIG_MODE_MODE_ADAPTIVE_DEFAULT;
                 }
                 break;
         }
