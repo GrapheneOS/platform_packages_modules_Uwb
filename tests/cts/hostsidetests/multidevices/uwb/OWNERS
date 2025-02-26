@@ -4,4 +4,3 @@ include platform/packages/modules/Uwb:/OWNERS
 # Engprod - Not owner of the test but help maintaining the module as an example
 jdesprez@google.com
 frankfeng@google.com
-murj@google.com
