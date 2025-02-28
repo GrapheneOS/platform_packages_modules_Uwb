@@ -145,9 +145,9 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
             f"Responder did not find initiator",
         )
 
-  def _reset_bt_state(self):
-    utils.reset_bt_state(self.initiator.ad)
-    utils.reset_bt_state(self.responder.ad)
+  def _enable_bt(self):
+    utils.set_bt_state_and_verify(self.initiator.ad, True)
+    utils.set_bt_state_and_verify(self.responder.ad, True)
 
   def _reset_wifi_state(self):
     utils.reset_wifi_state(self.initiator.ad)
@@ -448,8 +448,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
           not self.initiator.is_ranging_technology_supported(RangingTechnology.BLE_RSSI),
           f"BLE RSSI not supported by initiator",
       )
-      # TODO(rpius): Remove this once the technology is stable.
-      self._reset_bt_state()
+      self._enable_bt()
 
       try:
           self._ble_connect()
@@ -642,8 +641,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
         not self.initiator.is_ranging_technology_supported(RangingTechnology.BLE_RSSI),
         f"BLE RSSI not supported by initiator",
     )
-    # TODO(rpius): Remove this once the technology is stable.
-    self._reset_bt_state()
+    self._enable_bt()
 
     try:
       self._ble_connect()
@@ -722,8 +720,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
         not self.initiator.is_ranging_technology_supported(RangingTechnology.BLE_CS),
         f"BLE CS not supported by initiator",
     )
-    # TODO(rpius): Remove this once the technology is stable.
-    self._reset_bt_state()
+    self._enable_bt()
 
     try:
       self._ble_bond()
@@ -829,8 +826,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     session.set_initiator(self.initiator, initiator_preference)
     session.add_responder(self.responder, responder_preference)
 
-    # TODO(rpius): Remove this once the technology is stable.
-    self._reset_bt_state()
+    self._enable_bt()
 
     try:
       self._ble_bond()
