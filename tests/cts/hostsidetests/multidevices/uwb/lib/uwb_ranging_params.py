@@ -79,6 +79,11 @@ class FiraParamEnums:
   STS_CONFIG_PROVISIONED = 3
   STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY = 4
 
+  # rfrmae config
+  RFRAME_CONFIG_SP0 = 0
+  RFRAME_CONFIG_SP1 = 1
+  RFRAME_CONFIG_SP3 = 3
+
 
 @dataclasses.dataclass
 class UwbRangingReconfigureParams():
@@ -240,6 +245,7 @@ class UwbRangingParams():
   )
   sub_session_id: Optional[int] = None
   sub_session_key: Optional[List[int]] = None
+  rframe_config: int = FiraParamEnums.RFRAME_CONFIG_SP3
 
   def to_dict(self) -> Dict[str, Any]:
     """Returns UWB ranging parameters in dictionary for sl4a.
@@ -261,6 +267,7 @@ class UwbRangingParams():
         "slotsPerRangingRound": self.slots_per_ranging_round,
         "rangingIntervalMs": self.ranging_interval_ms,
         "hoppingMode": self.hopping_mode,
+        "rframeConfig": self.rframe_config,
         "maxRangingRoundRetries": self.max_ranging_round_retries,
         "inBandTerminationAttemptCount": self.in_band_termination_attempt_count,
         "aoaResultRequest": self.aoa_result_request,

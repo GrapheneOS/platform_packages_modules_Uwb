@@ -280,9 +280,20 @@ public class RttRangingDevice {
                     List<byte[]> matchFilter,
                     int distanceMm) {
                 Log.i(TAG,
-                        "onServiceDiscovered, peerHandle= " + peerHandle + ", initial distanceMm= "
-                                + distanceMm);
+                        "onServiceDiscoveredWithinRange, peerHandle= " + peerHandle
+                                + ", initial distanceMm= " + distanceMm);
+                onPeerHandleReceived(peerHandle);
+            }
 
+            @Override
+            public void onServiceDiscovered(PeerHandle peerHandle,
+                    byte[] serviceSpecificInfo, List<byte[]> matchFilter) {
+                Log.i(TAG,
+                        "onServiceDiscovered, peerHandle= " + peerHandle);
+                onPeerHandleReceived(peerHandle);
+            }
+
+            private void onPeerHandleReceived(PeerHandle peerHandle) {
                 mPeerHandle = peerHandle;
                 notifyPeer(peerHandle, Build.MODEL.getBytes(UTF_8));
 
