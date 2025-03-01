@@ -280,9 +280,20 @@ public class RttRangingDevice {
                     List<byte[]> matchFilter,
                     int distanceMm) {
                 Log.i(TAG,
-                        "onServiceDiscovered, peerHandle= " + peerHandle + ", initial distanceMm= "
-                                + distanceMm);
+                        "onServiceDiscoveredWithinRange, peerHandle= " + peerHandle
+                                + ", initial distanceMm= " + distanceMm);
+                onPeerHandleReceived(peerHandle);
+            }
 
+            @Override
+            public void onServiceDiscovered(PeerHandle peerHandle,
+                    byte[] serviceSpecificInfo, List<byte[]> matchFilter) {
+                Log.i(TAG,
+                        "onServiceDiscovered, peerHandle= " + peerHandle);
+                onPeerHandleReceived(peerHandle);
+            }
+
+            private void onPeerHandleReceived(PeerHandle peerHandle) {
                 mPeerHandle = peerHandle;
                 notifyPeer(peerHandle, Build.MODEL.getBytes(UTF_8));
 
@@ -337,18 +348,22 @@ public class RttRangingDevice {
                         .build();
                 mSubscribeConfig = null;
             } else if (deviceType == DeviceType.SUBSCRIBER) {
-                mSubscribeConfig = new SubscribeConfig.Builder()
+                SubscribeConfig.Builder builder = new SubscribeConfig.Builder()
                         .setMatchFilter(
                                 Collections.singletonList(rttRangingParameters.getMatchFilter()))
                         .setServiceName(rttRangingParameters.getServiceName())
-                        .setMaxDistanceMm(rttRangingParameters.getMaxDistanceMm())
-                        .setMinDistanceMm(rttRangingParameters.getMinDistanceMm())
-                        .setTerminateNotificationEnabled(true)
-                        .setPeriodicRangingInterval(
-                                RttRangingParameters.getIntervalMs(rttRangingParameters))
-                        .setPeriodicRangingEnabled(
-                                rttRangingParameters.isPeriodicRangingHwFeatureEnabled())
-                        .build();
+                        .setTerminateNotificationEnabled(true);
+
+                if (rttRangingParameters.isPeriodicRangingHwFeatureEnabled()) {
+                    builder.setPeriodicRangingInterval(
+                                    RttRangingParameters.getIntervalMs(rttRangingParameters))
+                            .setPeriodicRangingEnabled(true);
+                } else {
+                    // Geofence is not supported when using rtt periodic ranging.
+                    builder.setMaxDistanceMm(rttRangingParameters.getMaxDistanceMm())
+                            .setMinDistanceMm(rttRangingParameters.getMinDistanceMm());
+                }
+                mSubscribeConfig = builder.build();
                 mPublishConfig = null;
             } else {
                 Log.w(TAG, "Unknown deviceType");

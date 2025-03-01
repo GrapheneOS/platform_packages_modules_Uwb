@@ -716,6 +716,9 @@ public class UwbManagerSnippet implements Snippet {
         if (j.has("rangingRoundUsage")) {
             builder.setRangingRoundUsage(j.getInt("rangingRoundUsage"));
         }
+        if (j.has("rframeConfig")) {
+            builder.setRframeConfig(j.getInt("rframeConfig"));
+        }
         if (j.has("sessionId")) {
             builder.setSessionId(j.getInt("sessionId"));
         }

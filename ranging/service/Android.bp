@@ -65,12 +65,7 @@ java_library {
         "modules-utils-handlerexecutor",
         // TODO: migrate away from auto value if possible.
         "auto_value_annotations",
-        //"modules-utils-preconditions",
-        //"modules-utils-build",
         "framework-ranging-pre-jarjar",
-        "androidx.annotation_annotation",
-        "androidx.concurrent_concurrent-futures",
-        "androidx.concurrent_concurrent-futures",
         "com.uwb.fusion",
         "ranging_rtt_backend",
         "ranging_uwb_backend",

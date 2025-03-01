@@ -28,11 +28,6 @@ python_defaults {
         "mts-uwb",
         "mcts-uwb",
     ],
-    version: {
-        py3: {
-            embedded_launcher: true,
-        },
-    },
 }
 
 python_test_host {

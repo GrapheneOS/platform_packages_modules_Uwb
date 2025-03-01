@@ -55,7 +55,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -117,14 +116,14 @@ public class UwbServiceImpl {
     }
 
     /** Gets a Ranging Controller session with given context. */
-    public static RangingController getController(Context context, Executor executor) {
+    public static RangingController getController(Context context, ExecutorService executor) {
         UwbManager uwbManagerWithContext = context.getSystemService(UwbManager.class);
         return new RangingController(uwbManagerWithContext, executor,
                 new OpAsyncCallbackRunner<>(), FEATURE_FLAGS);
     }
 
     /** Gets a Ranging Controlee session with given context. */
-    public static RangingControlee getControlee(Context context, Executor executor) {
+    public static RangingControlee getControlee(Context context, ExecutorService executor) {
         UwbManager uwbManagerWithContext = context.getSystemService(UwbManager.class);
         return new RangingControlee(uwbManagerWithContext, executor,
                 new OpAsyncCallbackRunner<>(), FEATURE_FLAGS);
@@ -268,14 +267,5 @@ public class UwbServiceImpl {
                 specificationParams.hasBackgroundRangingSupport(),
                 specificationParams.getCountryCode()
         );
-    }
-
-    /**
-     * Update the callback executor of the given ranging device.
-     *
-     * <p>If previous service is shut down, the ranging device may hold a stale serial executor.
-     */
-    public void updateRangingDevice(RangingDevice device) {
-        device.setSystemCallbackExecutor(mSerialExecutor);
     }
 }

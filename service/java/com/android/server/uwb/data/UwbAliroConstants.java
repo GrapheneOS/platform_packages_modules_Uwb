@@ -25,6 +25,12 @@ public class UwbAliroConstants {
     public static final int HOPPING_CONFIG_MODE_MODE_ADAPTIVE_DEFAULT = 0X02;
     public static final int HOPPING_CONFIG_MODE_MODE_ADAPTIVE_AES = 0X04;
 
+    /* Fira Extension Application Configuration Parameters*/
+    public static final int ALIRO_EXTENSION_HOPPING_CONFIG_MODE_NONE = 0X00;
+    public static final int ALIRO_EXTENSION_HOPPING_CONFIG_MODE_CONTINUOUS_AES = 0XA0;
+    public static final int ALIRO_EXTENSION_HOPPING_CONFIG_MODE_CONTINUOUS_DEFAULT = 0XA1;
+    public static final int ALIRO_EXTENSION_HOPPING_CONFIG_MODE_ADAPTIVE_AES = 0XA2;
+    public static final int ALIRO_EXTENSION_HOPPING_CONFIG_MODE_ADAPTIVE_DEFAULT = 0XA3;
 
     public static final String KEY_STARTING_STS_INDEX = "starting_sts_index";
     public static final String KEY_UWB_TIME_0 = "uwb_time_0";
