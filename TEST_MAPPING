@@ -14,11 +14,6 @@
     },
     {
       "name": "libuwb_uci_jni_rust_tests"
-    }
-  ],
-  "postsubmit": [
-    {
-      "name": "UwbFusionLibTests"
     },
     {
       "name": "CtsRangingTestCases"
@@ -31,6 +26,14 @@
     },
     {
       "name": "RangingUwbBackendTests"
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "UwbFusionLibTests"
+    },
+    {
+      "name": "RangingRttBackendTests"
     }
   ]
 }

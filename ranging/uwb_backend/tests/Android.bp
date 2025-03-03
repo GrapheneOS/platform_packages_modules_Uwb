@@ -25,7 +25,8 @@ android_test {
     srcs: [
         "**/*.java",
     ],
-
+    sdk_version: "system_server_current",
+    min_sdk_version: "36",
     dxflags: ["--multi-dex"],
 
     java_version: "1.9",
@@ -42,6 +43,7 @@ android_test {
         "com.uwb.support.multichip",
         "guava",
         "ranging_uwb_backend",
+        "framework-uwb.stubs.module_lib",
     ],
 
     libs: [
@@ -57,8 +59,6 @@ android_test {
         "libstaticjvmtiagent",
     ],
     compile_multilib: "both",
-
-    min_sdk_version: "Tiramisu",
 
     test_suites: [
         "general-tests",

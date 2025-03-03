@@ -43,6 +43,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.android.server.ranging.RangingUtils.InternalReason;
 import com.android.server.ranging.metrics.SessionMetricsLogger;
 import com.android.server.ranging.session.OobInitiatorRangingSession;
 import com.android.server.ranging.session.OobResponderRangingSession;
@@ -53,7 +54,7 @@ import com.android.server.ranging.session.RawInitiatorRangingSession;
 import com.android.server.ranging.session.RawResponderRangingSession;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import java.io.FileDescriptor;
@@ -64,6 +65,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class RangingServiceManager implements ActivityManager.OnUidImportanceListener{
@@ -97,7 +99,8 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
     }
 
     private final RangingInjector mRangingInjector;
-    private final ListeningScheduledExecutorService mSessionExecutor;
+    private final ListeningExecutorService mAdapterExecutor;
+    private final ScheduledExecutorService mOobExecutor;
     private final RangingTaskManager mRangingTaskManager;
     private final Map<SessionHandle, RangingSession<?>> mSessions = new ConcurrentHashMap<>();
     final ConcurrentHashMap<Integer, List<RangingSession<?>>> mNonPrivilegedUidToSessionsTable =
@@ -109,8 +112,8 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
             Looper looper) {
         mRangingInjector = rangingInjector;
         mActivityManager = activityManager;
-        mSessionExecutor =
-                MoreExecutors.listeningDecorator(Executors.newSingleThreadScheduledExecutor());
+        mAdapterExecutor = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
+        mOobExecutor = Executors.newSingleThreadScheduledExecutor();
         mRangingTaskManager = new RangingTaskManager(looper);
         registerUidImportanceTransitions();
     }
@@ -306,7 +309,7 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
 
         public void onTechnologyStopped(
                 @NonNull RangingTechnology technology, @NonNull Set<RangingDevice> peers,
-                @Callback.Reason int reason
+                @InternalReason int reason
         ) {
             mMetricsLogger.logTechnologyStopped(technology, peers.size(), reason);
             peers.forEach((peer) -> {
@@ -332,7 +335,7 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
          * Signals that ranging in the session has stopped. Called by a {@link RangingSession} once
          * all of its constituent technology-specific sessions have stopped.
          */
-        public void onSessionStopped(@Callback.Reason int reason) {
+        public void onSessionStopped(@InternalReason int reason) {
             mSessions.remove(mSessionHandle).close();
             mMetricsLogger.logSessionClosed(reason);
             if (mIsSessionStarted.get()) {
@@ -350,6 +353,17 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
             }
         }
 
+        private @Callback.Reason int convertReason(@InternalReason int reason) {
+            return switch (reason) {
+                case InternalReason.UNKNOWN, InternalReason.LOCAL_REQUEST,
+                     InternalReason.REMOTE_REQUEST, InternalReason.UNSUPPORTED,
+                     InternalReason.SYSTEM_POLICY, InternalReason.NO_PEERS_FOUND -> reason;
+                case InternalReason.INTERNAL_ERROR -> Callback.REASON_UNKNOWN;
+                case InternalReason.BACKGROUND_RANGING_POLICY -> Callback.REASON_SYSTEM_POLICY;
+                case InternalReason.PEER_CAPABILITIES_MISMATCH -> Callback.REASON_UNSUPPORTED;
+                default -> Callback.REASON_UNKNOWN;
+            };
+        }
     }
 
     private class RangingTaskManager extends Handler {
@@ -414,31 +428,30 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
             SessionListener listener = new SessionListener(
                     args.handle, args.callbacks,
                     SessionMetricsLogger.startLogging(
-                            args.handle,
-                            config.getDeviceRole(),
-                            baseParams.getRangingSessionType()));
+                            args.handle, config.getDeviceRole(), baseParams.getRangingSessionType(),
+                            args.attributionSource, mRangingInjector));
             if (baseParams instanceof RawInitiatorRangingConfig params) {
                 RawInitiatorRangingSession session = new RawInitiatorRangingSession(
                         args.attributionSource, args.handle, mRangingInjector, config,
-                        listener, mSessionExecutor
+                        listener, mAdapterExecutor
                 );
                 startSession(params, args, session);
             } else if (baseParams instanceof RawResponderRangingConfig params) {
                 RawResponderRangingSession session = new RawResponderRangingSession(
                         args.attributionSource, args.handle, mRangingInjector, config,
-                        listener, mSessionExecutor
+                        listener, mAdapterExecutor
                 );
                 startSession(params, args, session);
             } else if (baseParams instanceof OobInitiatorRangingConfig params) {
                 OobInitiatorRangingSession session = new OobInitiatorRangingSession(
                         args.attributionSource, args.handle, mRangingInjector, config,
-                        listener, mSessionExecutor
+                        listener, mAdapterExecutor, mOobExecutor
                 );
                 startSession(params, args, session);
             } else if (baseParams instanceof OobResponderRangingConfig params) {
                 OobResponderRangingSession session = new OobResponderRangingSession(
                         args.attributionSource, args.handle, mRangingInjector, config,
-                        listener, mSessionExecutor
+                        listener, mAdapterExecutor, mOobExecutor
                 );
                 startSession(params, args, session);
             }

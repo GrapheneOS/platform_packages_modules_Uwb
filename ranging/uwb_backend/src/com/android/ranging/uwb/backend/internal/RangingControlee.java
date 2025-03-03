@@ -26,13 +26,13 @@ import androidx.annotation.RequiresApi;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 /** Represents a UWB ranging controlee. */
 @RequiresApi(api = VERSION_CODES.S)
 public class RangingControlee extends RangingDevice {
 
-    RangingControlee(UwbManager manager, Executor executor,
+    RangingControlee(UwbManager manager, ExecutorService executor,
             OpAsyncCallbackRunner<Boolean> opAsyncCallbackRunner, UwbFeatureFlags uwbFeatureFlags) {
         super(manager, executor, opAsyncCallbackRunner, uwbFeatureFlags);
     }

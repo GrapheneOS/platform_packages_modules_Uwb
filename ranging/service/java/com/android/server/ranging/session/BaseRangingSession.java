@@ -16,13 +16,6 @@
 
 package com.android.server.ranging.session;
 
-import static android.ranging.RangingSession.Callback.REASON_LOCAL_REQUEST;
-import static android.ranging.RangingSession.Callback.REASON_NO_PEERS_FOUND;
-import static android.ranging.RangingSession.Callback.REASON_REMOTE_REQUEST;
-import static android.ranging.RangingSession.Callback.REASON_SYSTEM_POLICY;
-import static android.ranging.RangingSession.Callback.REASON_UNKNOWN;
-import static android.ranging.RangingSession.Callback.REASON_UNSUPPORTED;
-
 import android.app.AlarmManager;
 import android.content.AttributionSource;
 import android.os.Binder;
@@ -39,8 +32,9 @@ import androidx.annotation.NonNull;
 
 import com.android.server.ranging.RangingAdapter;
 import com.android.server.ranging.RangingInjector;
-import com.android.server.ranging.RangingServiceManager;
+import com.android.server.ranging.RangingServiceManager.SessionListener;
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.RangingUtils.InternalReason;
 import com.android.server.ranging.RangingUtils.StateMachine;
 import com.android.server.ranging.fusion.DataFusers;
 import com.android.server.ranging.fusion.FilteringFusionEngine;
@@ -75,7 +69,7 @@ public class BaseRangingSession {
     protected final RangingInjector mInjector;
     protected final SessionHandle mSessionHandle;
     protected final RangingSessionConfig mConfig;
-    protected final RangingServiceManager.SessionListener mSessionListener;
+    protected final SessionListener mSessionListener;
 
     private final AlarmManager mAlarmManager;
     private AlarmManager.OnAlarmListener mNonPrivilegedBgAppTimerListener;
@@ -145,7 +139,7 @@ public class BaseRangingSession {
             @NonNull SessionHandle sessionHandle,
             @NonNull RangingInjector injector,
             @NonNull RangingSessionConfig config,
-            @NonNull RangingServiceManager.SessionListener listener,
+            @NonNull SessionListener listener,
             @NonNull ListeningExecutorService adapterExecutor
     ) {
         mInjector = injector;
@@ -169,7 +163,7 @@ public class BaseRangingSession {
 
             if (!mStateMachine.transition(State.STOPPED, State.STARTING)) {
                 Log.w(TAG, "Failed transition STOPPED -> STARTING");
-                mSessionListener.onSessionStopped(REASON_UNKNOWN);
+                mSessionListener.onSessionStopped(InternalReason.INTERNAL_ERROR);
                 return;
             }
             AttributionSource nonPrivilegedAttributionSource =
@@ -185,7 +179,7 @@ public class BaseRangingSession {
                 } else {
                     Log.e(TAG,
                             "Received unsupported config for technology " + config.getTechnology());
-                    mSessionListener.onSessionStopped(REASON_UNSUPPORTED);
+                    mSessionListener.onSessionStopped(InternalReason.UNSUPPORTED);
                     return;
                 }
 
@@ -361,7 +355,7 @@ public class BaseRangingSession {
 
         @Override
         public void onStopped(
-                @NonNull ImmutableSet<RangingDevice> peerDevices, @Reason int reason
+                @NonNull ImmutableSet<RangingDevice> peerDevices, @InternalReason int reason
         ) {
             synchronized (mLock) {
                 for (RangingDevice peerDevice : peerDevices) {
@@ -376,8 +370,7 @@ public class BaseRangingSession {
                         mPeers.remove(peerDevice);
                     }
                 }
-                mSessionListener.onTechnologyStopped(
-                        mConfig.getTechnology(), peerDevices, convertReason(reason));
+                mSessionListener.onTechnologyStopped(mConfig.getTechnology(), peerDevices, reason);
             }
         }
 
@@ -393,7 +386,7 @@ public class BaseRangingSession {
         }
 
         @Override
-        public void onClosed(@Reason int reason) {
+        public void onClosed(@InternalReason int reason) {
             synchronized (mLock) {
                 mAdapters.remove(mConfig);
                 @RangingSession.Callback.Reason Integer reasonOverride =
@@ -401,23 +394,10 @@ public class BaseRangingSession {
                 if (mAdapters.isEmpty()) {
                     mStateMachine.setState(State.STOPPED);
                     mSessionListener.onSessionStopped(
-                            Optional.ofNullable(reasonOverride).orElse(convertReason(reason)));
+                            Optional.ofNullable(reasonOverride).orElse(reason));
                 }
             }
         }
-
-        private @RangingSession.Callback.Reason int convertReason(@Reason int reason) {
-            return switch (reason) {
-                case Reason.LOCAL_REQUEST -> REASON_LOCAL_REQUEST;
-                case Reason.REMOTE_REQUEST -> REASON_REMOTE_REQUEST;
-                case Reason.FAILED_TO_START -> REASON_UNSUPPORTED;
-                case Reason.LOST_CONNECTION -> REASON_NO_PEERS_FOUND;
-                case Reason.SYSTEM_POLICY -> REASON_SYSTEM_POLICY;
-                case Reason.UNKNOWN, Reason.ERROR -> REASON_UNKNOWN;
-                default -> REASON_UNKNOWN;
-            };
-        }
-
     }
 
     /** Listens for fusion engine events. */
