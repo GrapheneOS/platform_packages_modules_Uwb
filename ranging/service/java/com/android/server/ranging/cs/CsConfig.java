@@ -46,9 +46,9 @@ public class CsConfig implements UnicastTechnologyConfig {
     //  sounding.
     public static final ImmutableMap<@RawRangingDevice.RangingUpdateRate Integer, Duration>
             CS_UPDATE_RATE_DURATIONS = ImmutableMap.of(
-                    UPDATE_RATE_NORMAL, Duration.ofSeconds(3),
+                    UPDATE_RATE_NORMAL, Duration.ofMillis(200),
                     UPDATE_RATE_INFREQUENT, Duration.ofSeconds(5),
-                    UPDATE_RATE_FREQUENT, Duration.ofMillis(200));
+                    UPDATE_RATE_FREQUENT, Duration.ofMillis(100));
 
     private final SessionConfig mSessionConfig;
     private final BleCsRangingParams mRangingParams;
