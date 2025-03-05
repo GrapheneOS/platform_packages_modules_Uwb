@@ -67,5 +67,4 @@ custom_android_test {
     srcs: ["src/**/*.java"],
     platform_apis: true,
     sdk_version: "module_current",
-    min_sdk_version: "36",
 }
