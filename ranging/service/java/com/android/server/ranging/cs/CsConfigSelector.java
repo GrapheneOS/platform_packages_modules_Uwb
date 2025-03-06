@@ -44,16 +44,15 @@ import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 public class CsConfigSelector implements RangingEngine.ConfigSelector {
     private final SessionConfig mSessionConfig;
     private final OobInitiatorRangingConfig mOobConfig;
     private final BiMap<RangingDevice, String> mPeerAddresses;
-    private final Map<RangingDevice, @BleCsRangingCapabilities.SecurityLevel Integer>
-            mPeerSecurityLevels;
+
+    private final Set<@BleCsRangingCapabilities.SecurityLevel Integer> mSecurityLevels;
 
     private static boolean isCapableOfConfig(
             @NonNull OobInitiatorRangingConfig oobConfig,
@@ -84,7 +83,7 @@ public class CsConfigSelector implements RangingEngine.ConfigSelector {
         mSessionConfig = sessionConfig;
         mOobConfig = oobConfig;
         mPeerAddresses = HashBiMap.create();
-        mPeerSecurityLevels = new HashMap<>();
+        mSecurityLevels = capabilities.getSupportedSecurityLevels();
     }
 
     @Override
@@ -96,32 +95,6 @@ public class CsConfigSelector implements RangingEngine.ConfigSelector {
                 "Peer " + peer + " does not support CS");
 
         mPeerAddresses.put(peer, capabilities.getBluetoothAddress());
-
-        if (mOobConfig.getSecurityLevel() == OobInitiatorRangingConfig.SECURITY_LEVEL_BASIC) {
-            if (capabilities.getSupportedSecurityTypes()
-                    .contains(CsOobConfig.CsSecurityType.LEVEL_ONE)
-            ) {
-                mPeerSecurityLevels.put(peer, CS_SECURITY_LEVEL_ONE);
-            } else {
-                throw new ConfigSelectionException("Configured security level "
-                        + OobInitiatorRangingConfig.SECURITY_LEVEL_BASIC + " but " + peer
-                        + " only supports " + capabilities.getSupportedSecurityTypes());
-            }
-        } else {
-            if (capabilities.getSupportedSecurityTypes()
-                    .contains(CsOobConfig.CsSecurityType.LEVEL_FOUR)
-            ) {
-                mPeerSecurityLevels.put(peer, CS_SECURITY_LEVEL_FOUR);
-            } else if (capabilities.getSupportedSecurityTypes()
-                    .contains(CsOobConfig.CsSecurityType.LEVEL_ONE)
-            ) {
-                mPeerSecurityLevels.put(peer, CS_SECURITY_LEVEL_ONE);
-            } else {
-                throw new ConfigSelectionException("Configured security level "
-                        + OobInitiatorRangingConfig.SECURITY_LEVEL_SECURE + " but " + peer
-                        + " only supports " + capabilities.getSupportedSecurityTypes());
-            }
-        }
     }
 
     @Override
@@ -140,9 +113,11 @@ public class CsConfigSelector implements RangingEngine.ConfigSelector {
 
     private class SelectedCsConfig {
         private final @RawRangingDevice.RangingUpdateRate int mRangingUpdateRate;
+        private final @BleCsRangingCapabilities.SecurityLevel int mSecurityLevel;
 
         SelectedCsConfig() throws ConfigSelectionException {
             mRangingUpdateRate = selectRangingUpdateRate();
+            mSecurityLevel = selectSecurityLevel();
         }
 
         public @NonNull ImmutableSet<TechnologyConfig> getLocalConfigs() {
@@ -150,7 +125,7 @@ public class CsConfigSelector implements RangingEngine.ConfigSelector {
                     .map((entry) -> new CsConfig(
                             new BleCsRangingParams.Builder(entry.getValue())
                                     .setRangingUpdateRate(mRangingUpdateRate)
-                                    .setSecurityLevel(mPeerSecurityLevels.get(entry.getKey()))
+                                    .setSecurityLevel(mSecurityLevel)
                                     .build(),
                             mSessionConfig,
                             entry.getKey()))
@@ -162,6 +137,14 @@ public class CsConfigSelector implements RangingEngine.ConfigSelector {
             return mPeerAddresses.keySet().stream()
                     .collect(ImmutableMap.toImmutableMap(Function.identity(), (unused) -> config));
         }
+    }
+
+    private @BleCsRangingCapabilities.SecurityLevel int selectSecurityLevel() {
+        if (mOobConfig.getSecurityLevel() == OobInitiatorRangingConfig.SECURITY_LEVEL_SECURE
+                && mSecurityLevels.contains(CS_SECURITY_LEVEL_FOUR)
+        ) return CS_SECURITY_LEVEL_FOUR;
+
+        return CS_SECURITY_LEVEL_ONE;
     }
 
     private @RawRangingDevice.RangingUpdateRate int selectRangingUpdateRate()
