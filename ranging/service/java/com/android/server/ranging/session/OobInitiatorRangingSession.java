@@ -16,9 +16,6 @@
 
 package com.android.server.ranging.session;
 
-import static android.ranging.RangingSession.Callback.REASON_NO_PEERS_FOUND;
-import static android.ranging.RangingSession.Callback.REASON_UNSUPPORTED;
-
 import android.content.AttributionSource;
 import android.ranging.SessionHandle;
 import android.ranging.oob.DeviceHandle;
@@ -32,6 +29,7 @@ import com.android.server.ranging.RangingEngine;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingServiceManager;
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.RangingUtils.InternalReason;
 import com.android.server.ranging.oob.CapabilityRequestMessage;
 import com.android.server.ranging.oob.CapabilityResponseMessage;
 import com.android.server.ranging.oob.MessageType;
@@ -55,6 +53,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class OobInitiatorRangingSession
         extends BaseRangingSession
@@ -90,7 +89,7 @@ public class OobInitiatorRangingSession
                     mConfig.getSessionConfig(), config, mSessionHandle, mInjector);
         } catch (RangingEngine.ConfigSelectionException e) {
             Log.w(TAG, "Provided config incompatible with local capabilities: ", e);
-            mSessionListener.onSessionStopped(REASON_UNSUPPORTED);
+            mSessionListener.onSessionStopped(InternalReason.UNSUPPORTED);
             return;
         }
 
@@ -107,8 +106,16 @@ public class OobInitiatorRangingSession
                     @Override
                     public void onFailure(@NonNull Throwable t) {
                         Log.i(TAG, "Oob failed: ", t);
-                        mOobConnections.values().forEach(OobConnection::close);
-                        mSessionListener.onSessionStopped(REASON_NO_PEERS_FOUND);
+                        switch (t) {
+                            case RangingEngine.ConfigSelectionException e ->
+                                    mSessionListener.onSessionStopped(e.getReason());
+                            case TimeoutException unused ->
+                                    mSessionListener.onSessionStopped(
+                                            InternalReason.NO_PEERS_FOUND);
+                            default ->
+                                    mSessionListener.onSessionStopped(
+                                            InternalReason.INTERNAL_ERROR);
+                        }
                     }
                 }, mOobExecutor);
     }

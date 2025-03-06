@@ -28,11 +28,16 @@ import android.ranging.ble.cs.BleCsRangingCapabilities;
 import android.ranging.ble.cs.BleCsRangingParams;
 import android.ranging.oob.OobInitiatorRangingConfig;
 import android.ranging.raw.RawRangingDevice;
+import android.util.Pair;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.android.server.ranging.RangingEngine;
 import com.android.server.ranging.RangingEngine.ConfigSelectionException;
+import com.android.server.ranging.oob.CapabilityResponseMessage;
+import com.android.server.ranging.oob.SetConfigurationMessage.TechnologyOobConfig;
+import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -43,14 +48,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-public class CsConfigSelector {
+public class CsConfigSelector implements RangingEngine.ConfigSelector {
     private final SessionConfig mSessionConfig;
     private final OobInitiatorRangingConfig mOobConfig;
     private final BiMap<RangingDevice, String> mPeerAddresses;
     private final Map<RangingDevice, @BleCsRangingCapabilities.SecurityLevel Integer>
             mPeerSecurityLevels;
 
-    public static boolean isCapableOfConfig(
+    private static boolean isCapableOfConfig(
             @NonNull OobInitiatorRangingConfig oobConfig,
             @Nullable BleCsRangingCapabilities capabilities
     ) {
@@ -69,17 +74,27 @@ public class CsConfigSelector {
 
     public CsConfigSelector(
             @NonNull SessionConfig sessionConfig,
-            @NonNull OobInitiatorRangingConfig oobConfig
-    ) {
+            @NonNull OobInitiatorRangingConfig oobConfig,
+            @Nullable BleCsRangingCapabilities capabilities
+    ) throws ConfigSelectionException {
+        if (!isCapableOfConfig(oobConfig, capabilities)) {
+            throw new ConfigSelectionException(
+                    "Local device CS capabilities is incompatible with provided config");
+        }
         mSessionConfig = sessionConfig;
         mOobConfig = oobConfig;
         mPeerAddresses = HashBiMap.create();
         mPeerSecurityLevels = new HashMap<>();
     }
 
-    public void restrictConfigToCapabilities(
-            @NonNull RangingDevice peer, @NonNull CsOobCapabilities capabilities
+    @Override
+    public void addPeerCapabilities(
+            @NonNull RangingDevice peer, @NonNull CapabilityResponseMessage response
     ) throws ConfigSelectionException {
+        CsOobCapabilities capabilities = response.getCsCapabilities();
+        if (capabilities == null) throw new ConfigSelectionException(
+                "Peer " + peer + " does not support CS");
+
         mPeerAddresses.put(peer, capabilities.getBluetoothAddress());
 
         if (mOobConfig.getSecurityLevel() == OobInitiatorRangingConfig.SECURITY_LEVEL_BASIC) {
@@ -109,22 +124,28 @@ public class CsConfigSelector {
         }
     }
 
+    @Override
     public boolean hasPeersToConfigure() {
         return !mPeerAddresses.isEmpty();
     }
 
-    public @NonNull SelectedCsConfig selectConfig() throws ConfigSelectionException {
-        return new SelectedCsConfig();
+    @Override
+    public @NonNull Pair<
+            ImmutableSet<TechnologyConfig>,
+            ImmutableMap<RangingDevice, TechnologyOobConfig>
+    > selectConfigs() throws ConfigSelectionException {
+        SelectedCsConfig configs = new SelectedCsConfig();
+        return Pair.create(configs.getLocalConfigs(), configs.getPeerConfigs());
     }
 
-    public class SelectedCsConfig {
+    private class SelectedCsConfig {
         private final @RawRangingDevice.RangingUpdateRate int mRangingUpdateRate;
 
         SelectedCsConfig() throws ConfigSelectionException {
             mRangingUpdateRate = selectRangingUpdateRate();
         }
 
-        public @NonNull ImmutableSet<CsConfig> getLocalConfigs() {
+        public @NonNull ImmutableSet<TechnologyConfig> getLocalConfigs() {
             return mPeerAddresses.entrySet().stream()
                     .map((entry) -> new CsConfig(
                             new BleCsRangingParams.Builder(entry.getValue())
@@ -136,7 +157,7 @@ public class CsConfigSelector {
                     .collect(ImmutableSet.toImmutableSet());
         }
 
-        public @NonNull ImmutableMap<RangingDevice, CsOobConfig> getPeerConfigs() {
+        public @NonNull ImmutableMap<RangingDevice, TechnologyOobConfig> getPeerConfigs() {
             CsOobConfig config = CsOobConfig.builder().build();
             return mPeerAddresses.keySet().stream()
                     .collect(ImmutableMap.toImmutableMap(Function.identity(), (unused) -> config));

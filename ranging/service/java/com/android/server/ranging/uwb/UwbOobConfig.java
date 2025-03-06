@@ -35,6 +35,7 @@ import com.android.ranging.uwb.backend.internal.Utils;
 import com.android.server.ranging.RangingEngine;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.Conversions;
+import com.android.server.ranging.oob.SetConfigurationMessage;
 import com.android.server.ranging.oob.TechnologyHeader;
 
 import com.google.auto.value.AutoValue;
@@ -46,7 +47,7 @@ import java.util.Arrays;
 
 /** Configuration for UWB sent as part SetConfigurationMessage for Finder OOB. */
 @AutoValue
-public abstract class UwbOobConfig {
+public abstract class UwbOobConfig implements SetConfigurationMessage.TechnologyOobConfig {
 
     private static final int MIN_SIZE_BYTES = 19;
 

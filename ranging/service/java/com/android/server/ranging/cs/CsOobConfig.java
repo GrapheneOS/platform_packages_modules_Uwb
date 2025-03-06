@@ -17,6 +17,7 @@
 package com.android.server.ranging.cs;
 
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.oob.SetConfigurationMessage;
 import com.android.server.ranging.oob.TechnologyHeader;
 
 import com.google.auto.value.AutoValue;
@@ -26,7 +27,7 @@ import java.nio.ByteBuffer;
 
 /** Configuration for UWB sent as part SetConfigurationMessage for Finder OOB. */
 @AutoValue
-public abstract class CsOobConfig {
+public abstract class CsOobConfig implements SetConfigurationMessage.TechnologyOobConfig {
 
     private static final int EXPECTED_SIZE_BYTES = 2;
 

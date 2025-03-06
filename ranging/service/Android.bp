@@ -24,6 +24,7 @@ java_defaults {
     errorprone: {
         javacflags: ["-Xep:CheckReturnValue:ERROR"],
     },
+    java_version: "21",
 }
 
 filegroup {

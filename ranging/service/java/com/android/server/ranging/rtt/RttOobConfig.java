@@ -21,6 +21,7 @@ import android.ranging.SessionConfig;
 import android.ranging.wifi.rtt.RttRangingParams;
 
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.oob.SetConfigurationMessage;
 import com.android.server.ranging.oob.TechnologyHeader;
 
 import com.google.auto.value.AutoValue;
@@ -30,7 +31,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 @AutoValue
-public abstract class RttOobConfig {
+public abstract class RttOobConfig implements SetConfigurationMessage.TechnologyOobConfig {
 
     private static final int MIN_SIZE_BYTES = 6;
 

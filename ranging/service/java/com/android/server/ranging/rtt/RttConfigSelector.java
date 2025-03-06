@@ -32,8 +32,13 @@ import android.ranging.oob.OobInitiatorRangingConfig;
 import android.ranging.raw.RawRangingDevice;
 import android.ranging.wifi.rtt.RttRangingCapabilities;
 import android.ranging.wifi.rtt.RttRangingParams;
+import android.util.Pair;
 
 import com.android.server.ranging.RangingEngine;
+import com.android.server.ranging.RangingEngine.ConfigSelectionException;
+import com.android.server.ranging.oob.CapabilityResponseMessage;
+import com.android.server.ranging.oob.SetConfigurationMessage.TechnologyOobConfig;
+import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -42,7 +47,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class RttConfigSelector {
+public class RttConfigSelector implements RangingEngine.ConfigSelector {
 
     public static int RTT_SUFFIX_SIZE = 6;
     private static boolean sLocalPeriodicRangingSupport = false;
@@ -56,16 +61,7 @@ public class RttConfigSelector {
     public static ImmutableMap<@RawRangingDevice.RangingUpdateRate Integer, Duration>
             RTT_UPDATE_RATE_DURATIONS;
 
-    public RttConfigSelector(SessionConfig sessionConfig, OobInitiatorRangingConfig oobConfig) {
-        mSessionConfig = sessionConfig;
-        mOobConfig = oobConfig;
-    }
-
-    public boolean hasPeersToConfigure() {
-        return !mRangingDevices.isEmpty();
-    }
-
-    public static boolean isCapableOfConfig(
+    private static boolean isCapableOfConfig(
             @NonNull OobInitiatorRangingConfig oobConfig,
             @Nullable RttRangingCapabilities capabilities) {
 
@@ -83,17 +79,47 @@ public class RttConfigSelector {
         return true;
     }
 
-    public void restrictConfigToCapabilities(@androidx.annotation.NonNull RangingDevice peer,
-            @androidx.annotation.NonNull RttOobCapabilities capabilities) {
+    public RttConfigSelector(
+            @NonNull SessionConfig sessionConfig,
+            @NonNull OobInitiatorRangingConfig oobConfig,
+            @Nullable RttRangingCapabilities capabilities
+    ) throws ConfigSelectionException {
+        if (!isCapableOfConfig(oobConfig, capabilities)) {
+            throw new ConfigSelectionException("Local device is incapable of provided RTT config");
+        }
+
+        mSessionConfig = sessionConfig;
+        mOobConfig = oobConfig;
+    }
+
+    @Override
+    public boolean hasPeersToConfigure() {
+        return !mRangingDevices.isEmpty();
+    }
+
+
+    @Override
+    public void addPeerCapabilities(
+            @NonNull RangingDevice peer, @NonNull CapabilityResponseMessage response
+    ) throws ConfigSelectionException {
+        RttOobCapabilities capabilities = response.getRttCapabilities();
+        if (capabilities == null) throw new ConfigSelectionException(
+                "Peer " + peer + " does not support RTT");
+
         mRangingDevices.put(peer, new RttDeviceConfig(getServiceName(peer),
                 capabilities.hasPeriodicRangingSupport() && sLocalPeriodicRangingSupport));
     }
 
-    public @NonNull SelectedRttConfig selectConfig() throws RangingEngine.ConfigSelectionException {
-        return new SelectedRttConfig();
+    @Override
+    public @NonNull Pair<
+            ImmutableSet<TechnologyConfig>,
+            ImmutableMap<RangingDevice, TechnologyOobConfig>
+    > selectConfigs() throws ConfigSelectionException {
+        SelectedRttConfig configs = new SelectedRttConfig();
+        return Pair.create(configs.getLocalConfigs(), configs.getPeerConfigs());
     }
 
-    public class SelectedRttConfig {
+    private class SelectedRttConfig {
         // TODO: Check whether this needs to be added to OOB.
         private final @RawRangingDevice.RangingUpdateRate int mRangingUpdateRate;
 
@@ -105,7 +131,7 @@ public class RttConfigSelector {
         }
 
         @NonNull
-        public ImmutableSet<RttConfig> getLocalConfigs() {
+        public ImmutableSet<TechnologyConfig> getLocalConfigs() {
             return mRangingDevices.entrySet().stream()
                     .map((entry -> new RttConfig(DEVICE_ROLE_INITIATOR,
                             new RttRangingParams.Builder(entry.getValue().mServiceName)
@@ -118,7 +144,7 @@ public class RttConfigSelector {
         }
 
         @NonNull
-        public ImmutableMap<RangingDevice, RttOobConfig> getPeerConfigs() {
+        public ImmutableMap<RangingDevice, TechnologyOobConfig> getPeerConfigs() {
             return mRangingDevices.entrySet().stream()
                     .collect(ImmutableMap.toImmutableMap(
                             Map.Entry::getKey,
