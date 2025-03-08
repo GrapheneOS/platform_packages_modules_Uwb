@@ -130,6 +130,7 @@ public class RttAdapter implements RangingAdapter {
     public DataNotificationManager getDataNotificationManager() {
         return mDataNotificationManager;
     }
+
     @Override
     public void start(
             @NonNull RangingSessionConfig.TechnologyConfig config,
@@ -159,6 +160,8 @@ public class RttAdapter implements RangingAdapter {
         mConfig = rttConfig;
         mPeerDevice = rttConfig.getPeerDevice();
         mRttClient.setRangingParameters(rttConfig.asBackendParameters());
+        mRttClient.setRangingRequestDelay(
+                mRangingInjector.getDeviceConfigFacade().getRttRangingRequestDelay());
         mDataNotificationManager = new DataNotificationManager(
                 rttConfig.getSessionConfig().getDataNotificationConfig(),
                 rttConfig.getSessionConfig().getDataNotificationConfig());
@@ -261,8 +264,8 @@ public class RttAdapter implements RangingAdapter {
             return switch (reason) {
                 case REASON_UNKNOWN -> InternalReason.UNKNOWN;
                 case REASON_WRONG_PARAMETERS,
-                     REASON_FAILED_TO_START,
-                     REASON_RTT_NOT_AVAILABLE -> InternalReason.UNSUPPORTED;
+                        REASON_FAILED_TO_START,
+                        REASON_RTT_NOT_AVAILABLE -> InternalReason.UNSUPPORTED;
                 case REASON_STOPPED_BY_PEER -> InternalReason.REMOTE_REQUEST;
                 case REASON_STOP_RANGING_CALLED -> InternalReason.LOCAL_REQUEST;
                 case REASON_MAX_RANGING_ROUND_RETRY_REACHED -> InternalReason.NO_PEERS_FOUND;
