@@ -22,8 +22,6 @@ import android.provider.DeviceConfig;
 
 import com.android.uwb.resources.R;
 
-import java.util.Arrays;
-
 /**
  * This class allows getting all configurable flags from DeviceConfig.
  */
@@ -32,6 +30,7 @@ public class DeviceConfigFacade {
 
     // Cached values of fields updated via updateDeviceConfigFlags()
     private String[] mTechnologyPreferenceList;
+    private int mRttRangingRequestDelay;
 
     public DeviceConfigFacade(Handler handler, Context context) {
         mContext = context;
@@ -59,9 +58,16 @@ public class DeviceConfigFacade {
                 "technology_preference_list",
                 mContext.getResources().getStringArray(R.array.technology_preference_list)
         );
+        mRttRangingRequestDelay = DeviceConfig.getInt(DeviceConfig.NAMESPACE_UWB,
+                "rtt_ranging_request_delay",
+                mContext.getResources().getInteger(R.integer.rtt_ranging_request_delay));
     }
 
     public String[] getTechnologyPreferenceList() {
         return mTechnologyPreferenceList;
+    }
+
+    public int getRttRangingRequestDelay() {
+        return mRttRangingRequestDelay;
     }
 }

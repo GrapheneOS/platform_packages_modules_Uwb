@@ -46,6 +46,7 @@ import androidx.test.filters.SmallTest;
 import com.android.ranging.rtt.backend.RttRangingDevice;
 import com.android.ranging.rtt.backend.RttRangingParameters;
 import com.android.ranging.rtt.backend.RttService;
+import com.android.server.ranging.DeviceConfigFacade;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.rtt.RttAdapter;
 import com.android.server.ranging.rtt.RttConfig;
@@ -98,6 +99,9 @@ public class RttAdapterTest {
     @Mock
     private RttRangingParameters mMockRttRangingParameters;
 
+    @Mock
+    private DeviceConfigFacade mMockDeviceConfigFacade;
+
     private final DataNotificationConfig mDataNotificationConfig =
             new DataNotificationConfig.Builder().build();
 
@@ -121,6 +125,8 @@ public class RttAdapterTest {
         when(mMockRangingInjector.isForegroundAppOrService(anyInt(), anyString())).thenReturn(true);
         when(mMockRttService.getPublisher(mMockContext)).thenReturn(mMockRttRangingDevice);
         when(mMockRttService.getSubscriber(mMockContext)).thenReturn(mMockRttRangingDevice);
+        when(mMockRangingInjector.getDeviceConfigFacade()).thenReturn(mMockDeviceConfigFacade);
+        when(mMockDeviceConfigFacade.getRttRangingRequestDelay()).thenReturn(0);
         mRttAdapter = new RttAdapter(mMockContext, mMockRangingInjector,
                 MoreExecutors.newDirectExecutorService(),
                 mMockRttService, DEVICE_ROLE_INITIATOR);

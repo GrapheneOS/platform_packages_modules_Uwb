@@ -69,6 +69,7 @@
 
           <!-- ===== Start of ranging stack overlay definitions ===== -->
           <item name="technology_preference_list" type="array" />
+          <item name="rtt_ranging_request_delay" type="integer" />
           <!-- ===== End of ranging stack overlay definitions ===== -->
 
           <!-- Params from config.xml that can be overlaid -->

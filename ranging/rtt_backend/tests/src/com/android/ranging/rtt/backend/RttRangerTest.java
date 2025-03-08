@@ -71,7 +71,7 @@ public class RttRangerTest {
 
     @Test
     public void testStartStopRanging() {
-        mRttRanger.startRanging(mMockPeerHandle, mMockListener, 200);
+        mRttRanger.startRanging(mMockPeerHandle, mMockListener, 200, 0);
 
         verify(mMockRttManager, times(1)).startRanging(any(), any(), any());
 
@@ -82,7 +82,7 @@ public class RttRangerTest {
     @Test
     public void testStartRanging_whenDisabled() {
         when(mMockRttManager.isAvailable()).thenReturn(false);
-        mRttRanger.startRanging(mMockPeerHandle, mMockListener, 200);
+        mRttRanger.startRanging(mMockPeerHandle, mMockListener, 200, 0);
 
         verify(mMockRttManager, times(0)).startRanging(any(), any(), any());
         verify(mMockListener).onRangingFailure(
