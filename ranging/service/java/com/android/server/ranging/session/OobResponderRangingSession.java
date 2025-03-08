@@ -17,7 +17,6 @@
 package com.android.server.ranging.session;
 
 import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
-import static android.ranging.RangingSession.Callback.REASON_NO_PEERS_FOUND;
 import static android.ranging.RangingSession.Callback.REASON_REMOTE_REQUEST;
 
 import android.content.AttributionSource;
@@ -38,6 +37,7 @@ import com.android.server.ranging.RangingEngine;
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingServiceManager;
 import com.android.server.ranging.RangingTechnology;
+import com.android.server.ranging.RangingUtils.InternalReason;
 import com.android.server.ranging.blerssi.BleRssiOobCapabilities;
 import com.android.server.ranging.cs.CsOobCapabilities;
 import com.android.server.ranging.oob.CapabilityRequestMessage;
@@ -63,6 +63,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeoutException;
 
 public class OobResponderRangingSession
         extends BaseRangingSession
@@ -114,8 +115,16 @@ public class OobResponderRangingSession
                     @Override
                     public void onFailure(@NonNull Throwable t) {
                         Log.i(TAG, "Oob failed: ", t);
-                        mOobConnection.close();
-                        mSessionListener.onSessionStopped(REASON_NO_PEERS_FOUND);
+                        switch (t) {
+                            case RangingEngine.ConfigSelectionException e ->
+                                    mSessionListener.onSessionStopped(e.getReason());
+                            case TimeoutException unused ->
+                                    mSessionListener.onSessionStopped(
+                                            InternalReason.NO_PEERS_FOUND);
+                            default ->
+                                    mSessionListener.onSessionStopped(
+                                            InternalReason.INTERNAL_ERROR);
+                        }
                     }
                 }, mOobExecutor);
     }

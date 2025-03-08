@@ -44,6 +44,8 @@ _TEST_CASES = [
     "test_one_to_one_ble_cs_ranging_with_oob",
     "test_uwb_ranging_measurement_limit",
     "test_ble_rssi_ranging_measurement_limit",
+    "test_one_to_one_wifi_rtt_ranging_with_oob",
+    "test_one_to_one_ble_rssi_ranging_with_oob",
 ]
 
 
@@ -149,9 +151,17 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     utils.set_bt_state_and_verify(self.initiator.ad, True)
     utils.set_bt_state_and_verify(self.responder.ad, True)
 
+  def _disable_bt(self):
+    utils.set_bt_state_and_verify(self.initiator.ad, False)
+    utils.set_bt_state_and_verify(self.responder.ad, False)
+
   def _reset_wifi_state(self):
     utils.reset_wifi_state(self.initiator.ad)
     utils.reset_wifi_state(self.responder.ad)
+
+  def _disable_wifi(self):
+      utils.set_wifi_state_and_verify(self.initiator.ad, False)
+      utils.set_wifi_state_and_verify(self.responder.ad, False)
 
   def _ble_connect(self):
     """Create BLE GATT connection between initiator and responder.
@@ -835,6 +845,93 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     finally:
       session.stop_and_assert_closed(check_responders=False)
       self._ble_unbond()
+
+  def test_one_to_one_wifi_rtt_ranging_with_oob(self):
+      asserts.skip_if(
+          not self.responder.is_ranging_technology_supported(RangingTechnology.WIFI_RTT),
+          f"WIFI_RTT not supported by responder",
+      )
+      asserts.skip_if(
+          not self.initiator.is_ranging_technology_supported(RangingTechnology.WIFI_RTT),
+          f"WIFI_RTT not supported by initiator",
+      )
+
+      if self.initiator.is_ranging_technology_supported(RangingTechnology.UWB):
+          utils.set_uwb_state_and_verify(self.initiator.ad, state=False)
+      if self.responder.is_ranging_technology_supported(RangingTechnology.UWB):
+          utils.set_uwb_state_and_verify(self.responder.ad, state=False)
+
+      if self.initiator.is_ranging_technology_supported(RangingTechnology.BLE_CS) and \
+             self.responder.is_ranging_technology_supported(RangingTechnology.BLE_CS):
+          self._disable_bt()
+
+      self._reset_wifi_state()
+
+      initiator_preference = RangingPreference(
+          device_role=DeviceRole.INITIATOR,
+          ranging_params=OobInitiatorRangingParams(
+              peer_ids=[self.responder.id],
+              # HIGH_ACCURACY_PREFERRED mode with UWB and CS disabled should fallback to RTT
+              ranging_mode=RangingMode.HIGH_ACCURACY_PREFERRED
+          ),
+      )
+
+      responder_preference = RangingPreference(
+          device_role=DeviceRole.RESPONDER,
+          ranging_params=OobResponderRangingParams(peer_id=self.initiator.id),
+      )
+
+      session = RangingSession()
+      session.set_initiator(self.initiator, initiator_preference)
+      session.add_responder(self.responder, responder_preference)
+
+      session.start_and_assert_opened(check_responders=False)
+      session.assert_received_data(technologies=[RangingTechnology.WIFI_RTT], check_responders=False)
+
+  def test_one_to_one_ble_rssi_ranging_with_oob(self):
+
+    """ Skip if BLE CS is supported by both devices. """
+    asserts.skip_if(
+        self.initiator.is_ranging_technology_supported(RangingTechnology.BLE_CS) and
+        self.responder.is_ranging_technology_supported(RangingTechnology.BLE_CS),
+        f"BLE_CS is supported, skip running BLE_RSSI tests",
+    )
+
+    if self.initiator.is_ranging_technology_supported(RangingTechnology.UWB):
+        utils.set_uwb_state_and_verify(self.initiator.ad, state=False)
+    if self.responder.is_ranging_technology_supported(RangingTechnology.UWB):
+        utils.set_uwb_state_and_verify(self.responder.ad, state=False)
+
+    if self.initiator.is_ranging_technology_supported(RangingTechnology.WIFI_RTT) and \
+        self.responder.is_ranging_technology_supported(RangingTechnology.WIFI_RTT):
+      self._disable_wifi()
+
+    self._enable_bt()
+
+    try:
+      self._ble_connect()
+      initiator_preference = RangingPreference(
+          device_role=DeviceRole.INITIATOR,
+          ranging_params=OobInitiatorRangingParams(
+            peer_ids=[self.responder.id],
+            ranging_mode=RangingMode.AUTO
+          ),
+      )
+
+      responder_preference = RangingPreference(
+          device_role=DeviceRole.RESPONDER,
+          ranging_params=OobResponderRangingParams(peer_id=self.initiator.id),
+      )
+
+      session = RangingSession()
+      session.set_initiator(self.initiator, initiator_preference)
+      session.add_responder(self.responder, responder_preference)
+
+      session.start_and_assert_opened(check_responders=False)
+      session.assert_received_data(technologies=[RangingTechnology.BLE_RSSI], check_responders=False)
+
+    finally:
+        self._ble_disconnect()
 
 if __name__ == "__main__":
   if "--" in sys.argv:

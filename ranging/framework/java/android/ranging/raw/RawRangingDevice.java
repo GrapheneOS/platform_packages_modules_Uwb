@@ -67,7 +67,7 @@ public final class RawRangingDevice implements Parcelable {
      *     <li> UWB - 200 milliseconds for config ids {@link UwbRangingParams#getConfigId()} with
      *     multicast ranging, 240 milliseconds for unicast. </li>
      *     <li> BLE RSSI - 1 second. </li>
-     *     <li> BLE CS - 3 seconds. </li>
+     *     <li> BLE CS - 200 ms. </li>
      *     <li> WiFi Rtt - 256 milliseconds if
      *     {@link RttRangingCapabilities#hasPeriodicRangingHardwareFeature()} is true, 512
      *     milliseconds otherwise. </li>
@@ -94,7 +94,7 @@ public final class RawRangingDevice implements Parcelable {
      *     otherwise. See {@link UwbRangingCapabilities#getSupportedRangingUpdateRates()} to verify
      *     Frequent update rate is supported. </li>
      *     <li> BLE RSSI - 500 milliseconds. </li>
-     *     <li> BLE CS - 200 milliseconds. </li>
+     *     <li> BLE CS - 100 milliseconds. </li>
      *     <li> WiFi Rtt - 128 milliseconds if
      *     {@link RttRangingCapabilities#hasPeriodicRangingHardwareFeature()} is true, 256
      *     milliseconds otherwise. </li>
