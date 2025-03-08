@@ -125,7 +125,7 @@ public class UwbAdapter implements RangingAdapter {
         );
         mIsBackgroundRangingSupported = Optional.ofNullable(mRangingInjector)
                 .map(RangingInjector::getCapabilitiesProvider)
-                .map(CapabilitiesProvider::getCachedCapabilities)
+                .map(CapabilitiesProvider::getCapabilities)
                 .map(RangingCapabilities::getUwbCapabilities)
                 .map(UwbRangingCapabilities::isBackgroundRangingSupported)
                 .orElse(true); // Defaults to true;

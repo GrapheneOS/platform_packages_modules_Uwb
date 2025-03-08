@@ -18,6 +18,7 @@ package com.android.server.ranging.blerssi;
 
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.Conversions;
+import com.android.server.ranging.oob.SetConfigurationMessage;
 import com.android.server.ranging.oob.TechnologyHeader;
 
 import com.google.auto.value.AutoValue;
@@ -26,7 +27,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 @AutoValue
-public abstract class BleRssiOobConfig {
+public abstract class BleRssiOobConfig implements SetConfigurationMessage.TechnologyOobConfig {
     /** Size in bytes of all properties when serialized. */
     private static final int EXPECTED_SIZE_BYTES = 8;
 

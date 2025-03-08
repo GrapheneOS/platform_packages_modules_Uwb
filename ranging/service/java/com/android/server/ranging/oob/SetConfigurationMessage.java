@@ -35,6 +35,8 @@ import javax.annotation.Nullable;
 @AutoValue
 public abstract class SetConfigurationMessage {
 
+    public interface TechnologyOobConfig { }
+
     // Size in bytes of properties when serialized.
     private static final int MIN_SIZE_BYTES = 4;
     private static final int RANGING_TECHNOLOGIES_SET_SIZE = 2;
@@ -228,6 +230,16 @@ public abstract class SetConfigurationMessage {
         public abstract Builder setRttConfig(@Nullable RttOobConfig rttConfig);
 
         public abstract Builder setBleRssiConfig(@Nullable BleRssiOobConfig bleRssiConfig);
+
+        public Builder setTechnologyConfig(@Nullable TechnologyOobConfig config) {
+            return switch (config) {
+                case UwbOobConfig c -> setUwbConfig(c);
+                case CsOobConfig c -> setCsConfig(c);
+                case RttOobConfig c -> setRttConfig(c);
+                case BleRssiOobConfig c -> setBleRssiConfig(c);
+                default -> this;
+            };
+        }
 
         abstract SetConfigurationMessage autoBuild();
 

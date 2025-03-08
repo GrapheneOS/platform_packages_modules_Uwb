@@ -27,10 +27,16 @@ import android.ranging.ble.rssi.BleRssiRangingCapabilities;
 import android.ranging.ble.rssi.BleRssiRangingParams;
 import android.ranging.oob.OobInitiatorRangingConfig;
 import android.ranging.raw.RawRangingDevice;
+import android.util.Pair;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
+import com.android.server.ranging.RangingEngine;
 import com.android.server.ranging.RangingEngine.ConfigSelectionException;
+import com.android.server.ranging.oob.CapabilityResponseMessage;
+import com.android.server.ranging.oob.SetConfigurationMessage.TechnologyOobConfig;
+import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -39,13 +45,13 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.function.Function;
 
-public class BleRssiConfigSelector {
+public class BleRssiConfigSelector implements RangingEngine.ConfigSelector {
     private final SessionConfig mSessionConfig;
     private final OobInitiatorRangingConfig mOobConfig;
     private final String mLocalAddress;
     private final BiMap<RangingDevice, String> mPeerAddresses;
 
-    public static boolean isCapableOfConfig(
+    private static boolean isCapableOfConfig(
             @NonNull OobInitiatorRangingConfig oobConfig, BleRssiRangingCapabilities capabilities
     ) {
         if (capabilities == null) return false;
@@ -56,36 +62,50 @@ public class BleRssiConfigSelector {
     public BleRssiConfigSelector(
             @NonNull SessionConfig sessionConfig,
             @NonNull OobInitiatorRangingConfig oobConfig,
-            @NonNull BleRssiRangingCapabilities capabilities
-    ) {
+            @Nullable BleRssiRangingCapabilities capabilities
+    ) throws ConfigSelectionException {
+        if (!isCapableOfConfig(oobConfig, capabilities)) {
+            throw new ConfigSelectionException(
+                    "Local device is incapable of provided BLE RSSI config");
+        }
         mSessionConfig = sessionConfig;
         mOobConfig = oobConfig;
         mLocalAddress = capabilities.getBluetoothAddress();
         mPeerAddresses = HashBiMap.create();
     }
 
-    public void restrictConfigToCapabilities(
-            @NonNull RangingDevice peer, @NonNull BleRssiOobCapabilities capabilities
-    ) {
+    public void addPeerCapabilities(
+            @NonNull RangingDevice peer, @NonNull CapabilityResponseMessage response
+    ) throws ConfigSelectionException {
+        BleRssiOobCapabilities capabilities = response.getBleRssiCapabilities();
+        if (capabilities == null) throw new ConfigSelectionException(
+                "Peer " + peer + " does not support UWB");
+
         mPeerAddresses.put(peer, capabilities.getBluetoothAddress());
     }
 
+    @Override
     public boolean hasPeersToConfigure() {
         return !mPeerAddresses.isEmpty();
     }
 
-    public @NonNull SelectedBleRssiConfig selectConfig() throws ConfigSelectionException {
-        return new SelectedBleRssiConfig();
+    @Override
+    public @NonNull Pair<
+            ImmutableSet<TechnologyConfig>,
+            ImmutableMap<RangingDevice, TechnologyOobConfig>
+    > selectConfigs() throws ConfigSelectionException {
+        SelectedBleRssiConfig configs = new SelectedBleRssiConfig();
+        return Pair.create(configs.getLocalConfigs(), configs.getPeerConfigs());
     }
 
-    public class SelectedBleRssiConfig {
+    private class SelectedBleRssiConfig {
         private final @RawRangingDevice.RangingUpdateRate int mRangingUpdateRate;
 
         SelectedBleRssiConfig() throws ConfigSelectionException {
             mRangingUpdateRate = selectRangingUpdateRate();
         }
 
-        public @NonNull ImmutableSet<BleRssiConfig> getLocalConfigs() {
+        public @NonNull ImmutableSet<TechnologyConfig> getLocalConfigs() {
             return mPeerAddresses.entrySet().stream()
                     .map((entry) -> new BleRssiConfig(
                             DEVICE_ROLE_INITIATOR,
@@ -97,7 +117,7 @@ public class BleRssiConfigSelector {
                     .collect(ImmutableSet.toImmutableSet());
         }
 
-        public @NonNull ImmutableMap<RangingDevice, BleRssiOobConfig> getPeerConfigs() {
+        public @NonNull ImmutableMap<RangingDevice, TechnologyOobConfig> getPeerConfigs() {
             BleRssiOobConfig config = BleRssiOobConfig.builder()
                     .setBluetoothAddress(mLocalAddress)
                     .build();
