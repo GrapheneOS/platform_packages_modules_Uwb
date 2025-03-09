@@ -23,7 +23,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
@@ -133,13 +132,13 @@ public class TransportProviderTest {
         mTransportProvider.onMessageReceived(SECID, MESSAGE);
 
         verify(mMockDataReceiver, times(1)).onDataReceived(MESSAGE_PAYLOAD);
-        verifyZeroInteractions(mMockDataReceiver2);
+        verifyNoMoreInteractions(mMockDataReceiver2);
 
         mTransportProvider.unregisterDataReceiver();
         mTransportProvider.onMessageReceived(SECID, MESSAGE);
 
         verifyNoMoreInteractions(mMockDataReceiver);
-        verifyZeroInteractions(mMockDataReceiver2);
+        verifyNoMoreInteractions(mMockDataReceiver2);
 
         mTransportProvider.registerDataReceiver(mMockDataReceiver2);
         mTransportProvider.onMessageReceived(SECID, MESSAGE);
@@ -183,7 +182,7 @@ public class TransportProviderTest {
         mTransportProvider.registerDataReceiver(mMockDataReceiver);
         mTransportProvider.onMessageReceived(SECID2, MESSAGE);
 
-        verifyZeroInteractions(mMockDataReceiver);
+        verifyNoMoreInteractions(mMockDataReceiver);
     }
 
     private void verifyAdminErrorMessageReceive(ErrorType errorType, TerminationReason reason) {

@@ -24,7 +24,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import android.bluetooth.BluetoothAdapter;
@@ -223,7 +223,7 @@ public class BleDiscoveryScanProviderTest {
 
         assertThat(mBleDiscoveryScanProvider.start()).isTrue();
         verify(mMockBluetoothLeScanner, times(1)).startScan(any(), any(), any(ScanCallback.class));
-        verifyZeroInteractions(mMockDiscoveryScanCallback);
+        verifyNoMoreInteractions(mMockDiscoveryScanCallback);
     }
 
     private static ScanRecord parseScanRecord(byte[] bytes) {
@@ -287,7 +287,7 @@ public class BleDiscoveryScanProviderTest {
 
         testBleScanResult(scanResult);
         verify(mMockBluetoothLeScanner, times(1)).startScan(any(), any(), any(ScanCallback.class));
-        verifyZeroInteractions(mMockDiscoveryScanCallback);
+        verifyNoMoreInteractions(mMockDiscoveryScanCallback);
     }
 
     @Test
@@ -327,7 +327,7 @@ public class BleDiscoveryScanProviderTest {
 
         testBleScanResult(scanResult);
         verify(mMockBluetoothLeScanner, times(1)).startScan(any(), any(), any(ScanCallback.class));
-        verifyZeroInteractions(mMockDiscoveryScanCallback);
+        verifyNoMoreInteractions(mMockDiscoveryScanCallback);
     }
 
     @Test
@@ -367,7 +367,7 @@ public class BleDiscoveryScanProviderTest {
                         /*timestampNanos=*/ 0);
         testBleScanResult(scanResult);
         verify(mMockBluetoothLeScanner, times(1)).startScan(any(), any(), any(ScanCallback.class));
-        verifyZeroInteractions(mMockDiscoveryScanCallback);
+        verifyNoMoreInteractions(mMockDiscoveryScanCallback);
     }
 
     @Test

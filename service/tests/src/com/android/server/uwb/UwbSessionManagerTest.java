@@ -84,7 +84,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import android.annotation.NonNull;
@@ -706,7 +705,7 @@ public class UwbSessionManagerTest {
         // Next call onRangeDataNotificationReceived() to process the RANGE_DATA_NTF.
         mUwbSessionManager.onRangeDataNotificationReceived(uwbRangingData);
 
-        verifyZeroInteractions(mUwbAdvertiseManager, mUwbSessionNotificationManager, mUwbMetrics);
+        verifyNoMoreInteractions(mUwbAdvertiseManager, mUwbSessionNotificationManager, mUwbMetrics);
     }
 
     @Test
@@ -731,7 +730,7 @@ public class UwbSessionManagerTest {
 
         verify(mUwbSessionNotificationManager)
                 .onRangingResult(eq(mockUwbSession), eq(uwbRangingData));
-        verifyZeroInteractions(mUwbAdvertiseManager);
+        verifyNoMoreInteractions(mUwbAdvertiseManager);
     }
 
     @Test
@@ -760,7 +759,7 @@ public class UwbSessionManagerTest {
 
         verify(mUwbSessionNotificationManager)
                 .onRangingResult(eq(mockUwbSession), eq(uwbRangingData));
-        verifyZeroInteractions(mUwbAdvertiseManager);
+        verifyNoMoreInteractions(mUwbAdvertiseManager);
     }
 
     @Test
@@ -788,7 +787,7 @@ public class UwbSessionManagerTest {
 
         verify(mUwbSessionNotificationManager)
                 .onRangingResult(eq(mockUwbSession), eq(uwbRangingData));
-        verifyZeroInteractions(mUwbAdvertiseManager);
+        verifyNoMoreInteractions(mUwbAdvertiseManager);
     }
 
     @Test
@@ -815,7 +814,7 @@ public class UwbSessionManagerTest {
         verify(mUwbSessionNotificationManager)
                 .onRangingResult(eq(mockUwbSession), eq(uwbRangingData));
         verify(mUwbAdvertiseManager).updateAdvertiseTarget(uwbRangingData.mRangingOwrAoaMeasure);
-        verifyZeroInteractions(mUwbSessionNotificationManager);
+        verifyNoMoreInteractions(mUwbSessionNotificationManager);
         verify(mUwbMetrics, never()).logDataToUpperLayer(eq(mockUwbSession), anyInt());
     }
 
@@ -849,7 +848,7 @@ public class UwbSessionManagerTest {
         verify(mUwbSessionNotificationManager)
                 .onRangingResult(eq(mockUwbSession), eq(uwbRangingData));
         verify(mUwbAdvertiseManager).updateAdvertiseTarget(uwbRangingData.mRangingOwrAoaMeasure);
-        verifyZeroInteractions(mUwbSessionNotificationManager);
+        verifyNoMoreInteractions(mUwbSessionNotificationManager);
         verify(mUwbMetrics, never()).logDataToUpperLayer(eq(mockUwbSession), anyInt());
     }
 
@@ -890,7 +889,7 @@ public class UwbSessionManagerTest {
         verify(mUwbSessionNotificationManager)
                 .onRangingResult(eq(mockUwbSession), eq(uwbRangingData));
         verify(mUwbAdvertiseManager).updateAdvertiseTarget(uwbRangingData.mRangingOwrAoaMeasure);
-        verifyZeroInteractions(mUwbSessionNotificationManager);
+        verifyNoMoreInteractions(mUwbSessionNotificationManager);
         verify(mUwbMetrics, never()).logDataToUpperLayer(eq(mockUwbSession), anyInt());
     }
 
@@ -917,7 +916,7 @@ public class UwbSessionManagerTest {
         verify(mUwbSessionNotificationManager)
                 .onRangingResult(eq(mockUwbSession), eq(uwbRangingData));
         verify(mUwbAdvertiseManager, never()).removeAdvertiseTarget(isA(Long.class));
-        verifyZeroInteractions(mUwbSessionNotificationManager);
+        verifyNoMoreInteractions(mUwbSessionNotificationManager);
     }
 
     @Test
@@ -5393,7 +5392,7 @@ public class UwbSessionManagerTest {
 
         assertThat(mTestLooper.nextMessage().what).isEqualTo(5); // SESSION_DEINIT
 
-        verifyZeroInteractions(mUwbAdvertiseManager);
+        verifyNoMoreInteractions(mUwbAdvertiseManager);
     }
 
     @Test
@@ -5452,7 +5451,7 @@ public class UwbSessionManagerTest {
         assertThat(mUwbSessionManager.getAliroSessionCount()).isEqualTo(0L);
         assertThat(mUwbSessionManager.getCccSessionCount()).isEqualTo(0L);
         assertThat(mUwbSessionManager.getFiraSessionCount()).isEqualTo(0L);
-        verifyZeroInteractions(mUwbAdvertiseManager);
+        verifyNoMoreInteractions(mUwbAdvertiseManager);
     }
 
     @Test
@@ -5473,7 +5472,7 @@ public class UwbSessionManagerTest {
         assertThat(mUwbSessionManager.getAliroSessionCount()).isEqualTo(0L);
         assertThat(mUwbSessionManager.getCccSessionCount()).isEqualTo(0L);
         assertThat(mUwbSessionManager.getFiraSessionCount()).isEqualTo(0L);
-        verifyZeroInteractions(mUwbAdvertiseManager);
+        verifyNoMoreInteractions(mUwbAdvertiseManager);
     }
 
     @Test
@@ -5499,7 +5498,7 @@ public class UwbSessionManagerTest {
         assertThat(mUwbSessionManager.getAliroSessionCount()).isEqualTo(0L);
         assertThat(mUwbSessionManager.getCccSessionCount()).isEqualTo(0L);
         assertThat(mUwbSessionManager.getFiraSessionCount()).isEqualTo(0L);
-        verifyZeroInteractions(mUwbAdvertiseManager);
+        verifyNoMoreInteractions(mUwbAdvertiseManager);
     }
 
     @Test
