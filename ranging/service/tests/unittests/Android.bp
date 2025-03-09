@@ -23,7 +23,6 @@ android_test {
     name: "RangingServiceTests",
     srcs: ["src/**/*.java"],
     sdk_version: "system_server_current",
-    min_sdk_version: "36",
     certificate: "platform",
     static_libs: [
         "truth",

@@ -30,6 +30,7 @@ import androidx.annotation.NonNull;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Ranges to a given WiFi Aware Peer handle.
@@ -51,16 +52,20 @@ public class RttRanger {
     private int mBaseUpdateRateMs = 512;
     private int mCurrentUpdateRateMs = 512;
     private AlarmManager.OnAlarmListener mAlarmListener;
+    private int mRangingRequestDelay = 500;
+    private AtomicLong mLastRangingRequestTimestamp;
 
     public RttRanger(WifiRttManager wiFiRttManager, Executor executor, Context context) {
         this.mExecutor = executor;
         this.mWifiRttManager = wiFiRttManager;
         mAlarmManager = context.getSystemService(AlarmManager.class);
+        mLastRangingRequestTimestamp = new AtomicLong(SystemClock.elapsedRealtime());
         Objects.requireNonNull(mAlarmManager);
     }
 
     public void startRanging(@NonNull PeerHandle peerHandle,
-            @NonNull RttRangerListener rttRangerListener, int updateRateMs) {
+            @NonNull RttRangerListener rttRangerListener, int updateRateMs,
+            int rangingRequestDelay) {
         if (mIsRunning) {
             Log.w(TAG, "startRanging - already running");
             return;
@@ -70,7 +75,8 @@ public class RttRanger {
         this.mRttRangerListener = rttRangerListener;
         mBaseUpdateRateMs = updateRateMs;
         mCurrentUpdateRateMs = mBaseUpdateRateMs;
-        startRangingInternal();
+        mRangingRequestDelay = rangingRequestDelay;
+        setPeriodicAlarm(rangingRequestDelay);
     }
 
     public void reconfigureInterval(int intervalSkipCount) {
@@ -85,14 +91,14 @@ public class RttRanger {
                     RttRangerListener.STATUS_CODE_FAIL_RTT_NOT_AVAILABLE);
             return;
         }
-        setPeriodicAlarm();
+        mLastRangingRequestTimestamp = new AtomicLong(SystemClock.elapsedRealtime());
         mWifiRttManager.startRanging(
                 new RangingRequest.Builder().addWifiAwarePeer(mPeerHandle).build(),
                 mExecutor,
                 mRangingResultCallback);
     }
 
-    private void setPeriodicAlarm() {
+    private void setPeriodicAlarm(long nextRequestTime) {
         if (mAlarmListener != null) {
             mAlarmManager.cancel(mAlarmListener);
         }
@@ -101,7 +107,7 @@ public class RttRanger {
         };
         mAlarmManager.setExact(
                 AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                SystemClock.elapsedRealtime() + mCurrentUpdateRateMs,
+                SystemClock.elapsedRealtime() + nextRequestTime,
                 "RttRangingInterval",
                 mAlarmListener,
                 null
@@ -125,6 +131,9 @@ public class RttRanger {
 
         @Override
         public void onRangingResults(List<RangingResult> results) {
+            setPeriodicAlarm(Math.max(mRangingRequestDelay,
+                    mCurrentUpdateRateMs - (SystemClock.elapsedRealtime()
+                            - mLastRangingRequestTimestamp.get())));
             Log.i(TAG, "RTT ranging results: " + results);
             if (mRttRangerListener == null) {
                 Log.w(TAG, "Rtt Ranging Listener is null");
@@ -140,6 +149,7 @@ public class RttRanger {
         int STATUS_CODE_FAIL_RTT_NOT_AVAILABLE = 2;
         int STATUS_CODE_FAIL_RESULT_EMPTY = 3;
         int STATUS_CODE_FAIL_RESULT_FAIL = 4;
+        int STATUS_CODE_ERROR_STREAK_TIMEOUT = 5;
 
         void onRangingFailure(int code);
 
