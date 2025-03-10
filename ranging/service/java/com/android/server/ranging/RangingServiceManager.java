@@ -340,13 +340,13 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
             mMetricsLogger.logSessionClosed(reason);
             if (mIsSessionStarted.get()) {
                 try {
-                    mRangingCallbacks.onClosed(mSessionHandle, reason);
+                    mRangingCallbacks.onClosed(mSessionHandle, convertReason(reason));
                 } catch (RemoteException e) {
                     Log.e(TAG, "onClosed callback failed: " + e);
                 }
             } else {
                 try {
-                    mRangingCallbacks.onOpenFailed(mSessionHandle, reason);
+                    mRangingCallbacks.onOpenFailed(mSessionHandle, convertReason(reason));
                 } catch (RemoteException e) {
                     Log.e(TAG, "onOpenFailed callback failed: " + e);
                 }

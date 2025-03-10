@@ -515,6 +515,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
                 )
             ],
         ),
+        enable_range_data_notifications=True,
     )
 
     responder_preference = RangingPreference(
@@ -527,6 +528,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
                 ),
             ),
         ),
+        enable_range_data_notifications=False,
     )
 
     # Should be able to call _start_mutual_ranging_and_assert_started once we get consistent data.
@@ -589,12 +591,13 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
                 DeviceParams(
                     peer_id=self.responder.id,
                     rtt_params=rtt.RttRangingParams(
-                        service_name="test_service_name1",
+                        service_name="test_periodic_rtt",
                         enable_periodic_ranging_hw_feature=True,
                     ),
                 )
             ],
         ),
+        enable_range_data_notifications=True,
     )
 
     responder_preference = RangingPreference(
@@ -603,11 +606,12 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
             peer_params=DeviceParams(
                 peer_id=self.initiator.id,
                 rtt_params=rtt.RttRangingParams(
-                    service_name="test_service_name1",
+                    service_name="test_periodic_rtt",
                     enable_periodic_ranging_hw_feature=True,
                 ),
             ),
         ),
+        enable_range_data_notifications=False,
     )
 
     # Should be able to call _start_mutual_ranging_and_assert_started once we get consistent data.
@@ -874,11 +878,13 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
               # HIGH_ACCURACY_PREFERRED mode with UWB and CS disabled should fallback to RTT
               ranging_mode=RangingMode.HIGH_ACCURACY_PREFERRED
           ),
+          enable_range_data_notifications=True,
       )
 
       responder_preference = RangingPreference(
           device_role=DeviceRole.RESPONDER,
           ranging_params=OobResponderRangingParams(peer_id=self.initiator.id),
+          enable_range_data_notifications=False,
       )
 
       session = RangingSession()
