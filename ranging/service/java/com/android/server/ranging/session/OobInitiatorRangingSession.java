@@ -105,7 +105,7 @@ public class OobInitiatorRangingSession
 
                     @Override
                     public void onFailure(@NonNull Throwable t) {
-                        Log.i(TAG, "Oob failed: ", t);
+                        Log.w(TAG, "Oob failed: ", t);
                         switch (t) {
                             case RangingEngine.ConfigSelectionException e ->
                                     mSessionListener.onSessionStopped(e.getReason());
@@ -211,7 +211,10 @@ public class OobInitiatorRangingSession
                 pendingSends.put(
                         oobHandle,
                         FluentFuture.from(Futures.immediateFailedFuture(
-                                new RangingEngine.ConfigSelectionException("No config selected"))));
+                                new RangingEngine.ConfigSelectionException(
+                                        "No set configuration message was selected to send on "
+                                                + "handle " + oobHandle,
+                                        InternalReason.NO_PEERS_FOUND))));
             } else {
                 pendingSends.put(
                         oobHandle,

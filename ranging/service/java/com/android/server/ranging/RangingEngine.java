@@ -73,11 +73,6 @@ public class RangingEngine {
     public static class ConfigSelectionException extends Exception {
         private final @InternalReason int mReason;
 
-        public ConfigSelectionException(String message) {
-            super(message);
-            mReason = InternalReason.UNSUPPORTED;
-        }
-
         public ConfigSelectionException(String message, @InternalReason int reason) {
             super(message);
             mReason = reason;
@@ -143,7 +138,8 @@ public class RangingEngine {
         mRequestedTechnologies = toRequest.build();
         if (mRequestedTechnologies.isEmpty()) {
             throw new ConfigSelectionException(
-                    "No locally supported technologies are compatible with the provided config");
+                    "No locally supported technologies are compatible with the provided config",
+                    InternalReason.UNSUPPORTED);
         }
     }
 
@@ -275,7 +271,8 @@ public class RangingEngine {
         }
 
         if (selectable.isEmpty()) {
-            throw new ConfigSelectionException("Peer does not support any requested technologies");
+            throw new ConfigSelectionException("Peer does not support any requested technologies",
+                    InternalReason.PEER_CAPABILITIES_MISMATCH);
         }
 
         selectable = selectable

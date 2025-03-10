@@ -151,7 +151,12 @@ public class OobResponderRangingSession
                 + setConfigMessage.getRangingTechnologiesSet());
         UwbOobConfig uwbConfig = setConfigMessage.getUwbConfig();
         if (uwbConfig != null) {
-            configs.add(uwbConfig.toTechnologyConfig(mMyUwbAddress, mPeer.getRangingDevice()));
+            try {
+                configs.add(uwbConfig.toTechnologyConfig(mMyUwbAddress, mPeer.getRangingDevice()));
+            } catch (IllegalArgumentException e) {
+                throw new RangingEngine.ConfigSelectionException(e.getMessage(),
+                        InternalReason.PEER_CAPABILITIES_MISMATCH);
+            }
         }
         // Skip CS because the CS responder side does not need to be configured.
         RttOobConfig rttOobConfig = setConfigMessage.getRttConfig();
@@ -239,7 +244,7 @@ public class OobResponderRangingSession
         }
 
         @Override
-        public void onFailure(Throwable t) {
+        public void onFailure(@NonNull Throwable unused) {
             Log.i(TAG, "Oob connection closed, no longer listening for stop ranging messages");
         }
     }
