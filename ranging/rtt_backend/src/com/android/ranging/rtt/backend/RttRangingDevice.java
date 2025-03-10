@@ -384,7 +384,7 @@ public class RttRangingDevice {
                         .setMatchFilter(
                                 Collections.singletonList(rttRangingParameters.getMatchFilter()))
                         .setServiceName(rttRangingParameters.getServiceName())
-                        .setRangingEnabled(!rttRangingParameters.isRangeDataNtfDisabled())
+                        .setRangingEnabled(true)
                         .setTerminateNotificationEnabled(true)
                         // Uncommented in goog/main.
                         // .setPeriodicRangingResultsEnabled(
