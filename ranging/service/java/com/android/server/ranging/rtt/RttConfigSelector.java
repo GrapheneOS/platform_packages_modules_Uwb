@@ -36,6 +36,7 @@ import android.util.Pair;
 
 import com.android.server.ranging.RangingEngine;
 import com.android.server.ranging.RangingEngine.ConfigSelectionException;
+import com.android.server.ranging.RangingUtils.InternalReason;
 import com.android.server.ranging.oob.CapabilityResponseMessage;
 import com.android.server.ranging.oob.SetConfigurationMessage.TechnologyOobConfig;
 import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
@@ -85,7 +86,9 @@ public class RttConfigSelector implements RangingEngine.ConfigSelector {
             @Nullable RttRangingCapabilities capabilities
     ) throws ConfigSelectionException {
         if (!isCapableOfConfig(oobConfig, capabilities)) {
-            throw new ConfigSelectionException("Local device is incapable of provided RTT config");
+            throw new ConfigSelectionException(
+                    "Local device is incapable of provided RTT config",
+                    InternalReason.UNSUPPORTED);
         }
 
         mSessionConfig = sessionConfig;
@@ -103,8 +106,11 @@ public class RttConfigSelector implements RangingEngine.ConfigSelector {
             @NonNull RangingDevice peer, @NonNull CapabilityResponseMessage response
     ) throws ConfigSelectionException {
         RttOobCapabilities capabilities = response.getRttCapabilities();
-        if (capabilities == null) throw new ConfigSelectionException(
-                "Peer " + peer + " does not support RTT");
+        if (capabilities == null) {
+            throw new ConfigSelectionException(
+                    "Peer " + peer + " does not support Wifi RTT",
+                    InternalReason.PEER_CAPABILITIES_MISMATCH);
+        }
 
         mRangingDevices.put(peer, new RttDeviceConfig(getServiceName(peer),
                 capabilities.hasPeriodicRangingSupport() && sLocalPeriodicRangingSupport));
@@ -127,7 +133,8 @@ public class RttConfigSelector implements RangingEngine.ConfigSelector {
             mRangingUpdateRate = getUpdateRateFromDurationRange(
                     mOobConfig.getRangingIntervalRange(), RTT_UPDATE_RATE_DURATIONS)
                     .orElseThrow(() -> new RangingEngine.ConfigSelectionException(
-                            "Configured ranging interval range is incompatible with Wifi RTT"));
+                            "Configured ranging interval range is incompatible with Wifi RTT",
+                            InternalReason.UNSUPPORTED));
         }
 
         @NonNull

@@ -34,6 +34,7 @@ import androidx.annotation.Nullable;
 
 import com.android.server.ranging.RangingEngine;
 import com.android.server.ranging.RangingEngine.ConfigSelectionException;
+import com.android.server.ranging.RangingUtils.InternalReason;
 import com.android.server.ranging.oob.CapabilityResponseMessage;
 import com.android.server.ranging.oob.SetConfigurationMessage.TechnologyOobConfig;
 import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
@@ -66,7 +67,8 @@ public class BleRssiConfigSelector implements RangingEngine.ConfigSelector {
     ) throws ConfigSelectionException {
         if (!isCapableOfConfig(oobConfig, capabilities)) {
             throw new ConfigSelectionException(
-                    "Local device is incapable of provided BLE RSSI config");
+                    "Local device is incapable of provided BLE RSSI config",
+                    InternalReason.UNSUPPORTED);
         }
         mSessionConfig = sessionConfig;
         mOobConfig = oobConfig;
@@ -78,8 +80,10 @@ public class BleRssiConfigSelector implements RangingEngine.ConfigSelector {
             @NonNull RangingDevice peer, @NonNull CapabilityResponseMessage response
     ) throws ConfigSelectionException {
         BleRssiOobCapabilities capabilities = response.getBleRssiCapabilities();
-        if (capabilities == null) throw new ConfigSelectionException(
-                "Peer " + peer + " does not support UWB");
+        if (capabilities == null) {
+            throw new ConfigSelectionException("Peer " + peer + " does not support BLE RSSI",
+                    InternalReason.PEER_CAPABILITIES_MISMATCH);
+        }
 
         mPeerAddresses.put(peer, capabilities.getBluetoothAddress());
     }
@@ -132,6 +136,7 @@ public class BleRssiConfigSelector implements RangingEngine.ConfigSelector {
         return getUpdateRateFromDurationRange(
                 mOobConfig.getRangingIntervalRange(), BLE_RSSI_UPDATE_RATE_DURATIONS)
                 .orElseThrow(() -> new ConfigSelectionException(
-                        "Configured ranging interval range is incompatible with BLE CS"));
+                        "Configured ranging interval range is incompatible with BLE RSSI",
+                        InternalReason.UNSUPPORTED));
     }
 }
