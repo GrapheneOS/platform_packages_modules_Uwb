@@ -92,8 +92,8 @@ public abstract class RttOobCapabilities {
         byteBuffer
                 .put(RangingTechnology.RTT.toByte())
                 .put((byte) EXPECTED_SIZE_BYTES)
-                .put((byte) (hasPeriodicRangingSupport() ? 1 : 0))
                 .put((byte) 1) // TODO: how to check for 11mc or 11az support
+                .put((byte) (hasPeriodicRangingSupport() ? 1 : 0))
                 .put((byte) maxSupportedBandwidth())
                 .put((byte) maxSupportedRxChain());
 
