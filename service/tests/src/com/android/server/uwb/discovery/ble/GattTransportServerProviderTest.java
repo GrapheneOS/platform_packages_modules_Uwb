@@ -26,7 +26,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import android.bluetooth.BluetoothAdapter;
@@ -314,8 +314,8 @@ public class GattTransportServerProviderTest {
                         BluetoothGattCharacteristic.PROPERTY_READ,
                         BluetoothGattCharacteristic.PERMISSION_READ));
 
-        verifyZeroInteractions(mMockBluetoothGattServer);
-        verifyZeroInteractions(mMockTransportServerCallback);
+        verifyNoMoreInteractions(mMockBluetoothGattServer);
+        verifyNoMoreInteractions(mMockTransportServerCallback);
     }
 
     private void setupOutCharactersticRead() {
@@ -441,8 +441,8 @@ public class GattTransportServerProviderTest {
                 /*responseNeeded=*/ true,
                 /*offset=*/ 0,
                 DATA_PACKET.toBytes());
-        verifyZeroInteractions(mMockBluetoothGattServer);
-        verifyZeroInteractions(mMockTransportServerCallback);
+        verifyNoMoreInteractions(mMockBluetoothGattServer);
+        verifyNoMoreInteractions(mMockTransportServerCallback);
     }
 
     @Test
@@ -463,7 +463,7 @@ public class GattTransportServerProviderTest {
                         BluetoothGatt.GATT_FAILURE,
                         /*offset=*/ 0,
                         /*value=*/ null);
-        verifyZeroInteractions(mMockTransportServerCallback);
+        verifyNoMoreInteractions(mMockTransportServerCallback);
     }
 
     @Test
