@@ -137,10 +137,10 @@ def set_bt_state_and_verify(
     state: bool, True for BT on, False for off.
   """
   failure_msg = "enabled" if state else "disabled"
-  if state and not ad.bluetooth.isBluetoothOn:
+  if state and not ad.bluetooth.isBluetoothOn():
     ad.bluetooth.enableBluetooth()
     time.sleep(3)
-  elif not state and ad.bluetooth.isBluetoothOn :
+  elif not state and ad.bluetooth.isBluetoothOn() :
     ad.bluetooth.disableBluetooth()
     time.sleep(3)
   asserts.assert_equal(ad.bluetooth.isBluetoothOn(), state, 'Bluetooth state change failed')
