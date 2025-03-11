@@ -938,26 +938,22 @@ public class UwbSessionNotificationManager {
     private static AngleOfArrivalMeasurement computeAngleOfArrivalMeasurement(
             boolean isAoaAzimuthEnabled, boolean isAoaElevationEnabled, float aoaAzimuth,
             int aoaAzimuthFom, float aoaElevation, int aoaElevationFom) {
-        // Azimuth is required field (and elevation is an optional field), to build the
-        // AngleOfArrivalMeasurement.
-        if (isAoaAzimuthEnabled) {
-            AngleMeasurement azimuthAngleMeasurement = new AngleMeasurement(
-                    UwbUtil.degreeToRadian(aoaAzimuth), 0, aoaAzimuthFom / (double) 100);
-            // AngleOfArrivalMeasurement
-            AngleOfArrivalMeasurement.Builder angleOfArrivalMeasurementBuilder =
-                    new AngleOfArrivalMeasurement.Builder(azimuthAngleMeasurement);
-
-            // Elevation is optional field, to build the AngleOfArrivalMeasurement.
-            if (isAoaElevationEnabled) {
-                AngleMeasurement altitudeAngleMeasurement = new AngleMeasurement(
-                        UwbUtil.degreeToRadian(aoaElevation), 0, aoaElevationFom / (double) 100);
-                angleOfArrivalMeasurementBuilder.setAltitude(altitudeAngleMeasurement);
-            }
-
-            return angleOfArrivalMeasurementBuilder.build();
+        if (!isAoaAzimuthEnabled && !isAoaElevationEnabled) {
+            return null;
+        }
+        AngleMeasurement azimuthAngleMeasurement = isAoaAzimuthEnabled
+                ? new AngleMeasurement(UwbUtil.degreeToRadian(aoaAzimuth), 0,
+                        aoaAzimuthFom / (double) 100)
+                : new AngleMeasurement(0, 0, 0);
+        AngleOfArrivalMeasurement.Builder angleOfArrivalMeasurementBuilder =
+                new AngleOfArrivalMeasurement.Builder(azimuthAngleMeasurement);
+        if (isAoaElevationEnabled) {
+            AngleMeasurement altitudeAngleMeasurement = new AngleMeasurement(
+                    UwbUtil.degreeToRadian(aoaElevation), 0, aoaElevationFom / (double) 100);
+            angleOfArrivalMeasurementBuilder.setAltitude(altitudeAngleMeasurement);
         }
 
-        return null;
+        return angleOfArrivalMeasurementBuilder.build();
     }
 
     private static RangingMeasurement.Builder buildRangingMeasurement(
