@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
+import random
 import sys
 import time
 import logging
@@ -502,7 +504,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     )
     # TODO(rpius): Remove this once the technology is stable.
     self._reset_wifi_state()
-
+    test_service_name = "test_service_name" + str(random.randint(1,100))
     initiator_preference = RangingPreference(
         device_role=DeviceRole.INITIATOR,
         ranging_params=RawInitiatorRangingParams(
@@ -510,7 +512,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
                 DeviceParams(
                     peer_id=self.responder.id,
                     rtt_params=rtt.RttRangingParams(
-                        service_name="test_service_name1",
+                        service_name=test_service_name,
                     ),
                 )
             ],
@@ -524,7 +526,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
             peer_params=DeviceParams(
                 peer_id=self.initiator.id,
                 rtt_params=rtt.RttRangingParams(
-                    service_name="test_service_name1",
+                    service_name=test_service_name,
                 ),
             ),
         ),
@@ -584,6 +586,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     # TODO(rpius): Remove this once the technology is stable.
     self._reset_wifi_state()
 
+    test_service_name = "test_periodic_service_name" + str(random.randint(1,100))
     initiator_preference = RangingPreference(
         device_role=DeviceRole.INITIATOR,
         ranging_params=RawInitiatorRangingParams(
@@ -591,7 +594,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
                 DeviceParams(
                     peer_id=self.responder.id,
                     rtt_params=rtt.RttRangingParams(
-                        service_name="test_periodic_rtt",
+                        service_name=test_service_name,
                         enable_periodic_ranging_hw_feature=True,
                     ),
                 )
@@ -606,7 +609,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
             peer_params=DeviceParams(
                 peer_id=self.initiator.id,
                 rtt_params=rtt.RttRangingParams(
-                    service_name="test_periodic_rtt",
+                    service_name=test_service_name,
                     enable_periodic_ranging_hw_feature=True,
                 ),
             ),
