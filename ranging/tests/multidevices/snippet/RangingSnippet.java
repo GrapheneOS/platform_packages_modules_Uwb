@@ -208,6 +208,7 @@ public class RangingSnippet implements Snippet {
     private class AvailabilityListener implements RangingManager.RangingCapabilitiesCallback {
         @Override
         public void onRangingCapabilities(@NonNull RangingCapabilities capabilities) {
+            Log.d(TAG, " Ranging capabilities " + capabilities);
             Map<Integer, Integer> availabilities = capabilities.getTechnologyAvailability();
             mTechnologyAvailability.putAll(availabilities);
             mRangingCapabilities.set(capabilities);
