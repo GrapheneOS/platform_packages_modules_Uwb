@@ -81,22 +81,24 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     self.initiator, self.responder = self.devices
 
     for device in self.devices:
+      utils.set_airplane_mode(device.ad, state=False)
+      time.sleep(1)
       if device.is_ranging_technology_supported(RangingTechnology.UWB):
-        try:
-          utils.set_uwb_state_and_verify(device.ad, state=True)
-        except Exception:
-          # If UWB state can't be enabled, it could could be because the country code
-          # is not set. Try forcing the country code in that case.
-          device.ad.ranging.logInfo("Device supports UWB but we failed to enable it. Forcing country code to US and retrying...")
-          utils.initialize_uwb_country_code_and_verify(device.ad)
+        utils.initialize_uwb_country_code(device.ad)
+        utils.request_hw_idle_vote(device.ad, True)
 
     self.initiator.uwb_address = [1, 2]
     self.responder.uwb_address = [3, 4]
 
+  def teardown_class(self):
+      super().teardown_class()
+      for device in self.devices:
+        if device.is_ranging_technology_supported(RangingTechnology.UWB):
+            utils.request_hw_idle_vote(device.ad, False)
+
   def setup_test(self):
     super().setup_test()
     for device in self.devices:
-      utils.set_airplane_mode(device.ad, state=False)
       if device.is_ranging_technology_supported(RangingTechnology.UWB):
         utils.set_uwb_state_and_verify(device.ad, state=True)
         utils.set_snippet_foreground_state(device.ad, isForeground=True)

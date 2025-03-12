@@ -21,7 +21,7 @@ from mobly.controllers import android_device
 WAIT_TIME_SEC = 3
 
 
-def initialize_uwb_country_code_and_verify(ad: android_device.AndroidDevice):
+def initialize_uwb_country_code(ad: android_device.AndroidDevice):
   """Sets UWB country code to US if the device does not have it set.
 
   Note: This intentionally relies on an unstable API (shell command) since we
@@ -40,11 +40,13 @@ def initialize_uwb_country_code_and_verify(ad: android_device.AndroidDevice):
   except ad.adb.AdbError:
     ad.log.warning("Unable to force uwb country code")
 
-  # Unable to get UWB enabled even after setting country code, abort!
-  asserts.assert_true(
-      is_technology_enabled(ad, RangingTechnology.UWB, timeout_s=60),
-      "Uwb was not enabled after setting country code",
-  )
+  #For Wear OS, this call will not enable uwb. So ignore verification whether the stack was enabled.
+  time.sleep(1)
+
+
+def request_hw_idle_vote(ad: android_device.AndroidDevice, enabled : bool):
+  if ad.uwb.isUwbHwIdleTurnOffEnabled():
+    ad.uwb.requestUwbHwEnabled(enabled)
 
 def _is_technology_state(
     ad: android_device.AndroidDevice,
@@ -123,7 +125,7 @@ def set_uwb_state_and_verify(
   """
   failure_msg = "enabled" if state else "disabled"
   ad.uwb.setUwbEnabled(state)
-  asserts.assert_true(_is_technology_state(ad, RangingTechnology.UWB, state, timeout_s=30),
+  asserts.assert_true(_is_technology_state(ad, RangingTechnology.UWB, state, timeout_s=10),
                       "Uwb is not %s" % failure_msg)
 
 def set_bt_state_and_verify(

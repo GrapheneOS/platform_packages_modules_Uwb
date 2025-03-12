@@ -18,6 +18,7 @@ package com.android.ranging.uwb.backend.internal;
 
 import static android.uwb.UwbManager.AdapterStateCallback.STATE_ENABLED_HW_IDLE;
 
+import android.annotation.SuppressLint;
 import android.content.AttributionSource;
 import android.content.Context;
 import android.content.ContextParams;
@@ -27,6 +28,7 @@ import android.util.Log;
 import android.uwb.UwbManager;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -45,6 +47,8 @@ public final class UwbHwSwitchHelper {
 
     private static final String TAG = UwbHwSwitchHelper.class.getSimpleName();
     private static final long TIMEOUT_MS = 2_000;
+
+    private static ExecutorService sHwToggleExecutorService;
 
     /**
      * Requests UWB hardware to be enabled.
@@ -92,8 +96,12 @@ public final class UwbHwSwitchHelper {
         }
     }
 
+    @SuppressLint("MissingPermission")
     private static boolean toggleUwbHw(Context context, AttributionSource attributionSource,
-                                       boolean enable) {
+            boolean enable) {
+        if (sHwToggleExecutorService == null) {
+            sHwToggleExecutorService = Executors.newSingleThreadExecutor();
+        }
         // TODO: Remove after updating min version to 35
         if (VERSION.SDK_INT < VERSION_CODES.VANILLA_ICE_CREAM) {
             return true;
@@ -101,8 +109,8 @@ public final class UwbHwSwitchHelper {
         Context contextWithAttrSource =
                 context.createContext(
                         new ContextParams.Builder()
-                            .setNextAttributionSource(attributionSource)
-                            .build());
+                                .setNextAttributionSource(attributionSource)
+                                .build());
         UwbManager uwbManagerWithAttrSource =
                 contextWithAttrSource.getSystemService(UwbManager.class);
         int prevState = uwbManagerWithAttrSource.getAdapterState();
@@ -126,7 +134,7 @@ public final class UwbHwSwitchHelper {
                                 countDownLatch,
                                 UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE);
                 uwbManagerWithAttrSource.registerAdapterStateCallback(
-                        Executors.newSingleThreadExecutor(), adapterStateCallback);
+                        sHwToggleExecutorService, adapterStateCallback);
             }
             uwbManagerWithAttrSource.requestUwbHwEnabled(enable);
             if (prevState == STATE_ENABLED_HW_IDLE) {
@@ -141,7 +149,10 @@ public final class UwbHwSwitchHelper {
             return false;
         } finally {
             if (prevState == STATE_ENABLED_HW_IDLE) {
-                uwbManagerWithAttrSource.unregisterAdapterStateCallback(adapterStateCallback);
+                final AdapterStateCallback finalAdapterStateCb = adapterStateCallback;
+                sHwToggleExecutorService.execute(() ->
+                        uwbManagerWithAttrSource.unregisterAdapterStateCallback(
+                                finalAdapterStateCb));
             }
         }
         return true;
