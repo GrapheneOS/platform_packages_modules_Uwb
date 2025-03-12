@@ -38,6 +38,8 @@ import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTIO
 import static com.google.uwb.support.fira.FiraParams.PROTOCOL_NAME;
 import static com.google.uwb.support.fira.FiraParams.P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_16_BYTE;
 import static com.google.uwb.support.fira.FiraParams.P_STS_MULTICAST_LIST_UPDATE_ACTION_ADD_32_BYTE;
+import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_EDGE_TRIG;
+import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG;
 
 import android.annotation.NonNull;
 import android.annotation.Nullable;
@@ -3804,9 +3806,14 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             // If app is in fg, use the configured ntf control, else disable.
             if (mHasNonPrivilegedFgAppOrService) {
                 FiraOpenSessionParams params = (FiraOpenSessionParams) mParams;
-                builder.setRangeDataNtfConfig(params.getRangeDataNtfConfig())
+                int rangeDataNtfConfig = params.getRangeDataNtfConfig();
+                builder.setRangeDataNtfConfig(rangeDataNtfConfig);
+                if (rangeDataNtfConfig == RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG
+                        || rangeDataNtfConfig == RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_EDGE_TRIG) {
+                    builder
                         .setRangeDataProximityNear(params.getRangeDataNtfProximityNear())
                         .setRangeDataProximityFar(params.getRangeDataNtfProximityFar());
+                }
             } else {
                 builder.setRangeDataNtfConfig(FiraParams.RANGE_DATA_NTF_CONFIG_DISABLE);
             }
