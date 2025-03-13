@@ -17,6 +17,7 @@
 package android.ranging;
 
 import android.annotation.FlaggedApi;
+import android.annotation.FloatRange;
 import android.annotation.IntDef;
 import android.annotation.NonNull;
 import android.os.Parcel;
@@ -63,6 +64,8 @@ public final class RangingMeasurement implements Parcelable {
     private final double mMeasurement;
     @Confidence
     private final int mConfidence;
+    private final double mRawConfidence;
+    private final double mError;
 
     private RangingMeasurement(Builder builder) {
         if (Double.isNaN(builder.mMeasurement)) {
@@ -70,11 +73,15 @@ public final class RangingMeasurement implements Parcelable {
         }
         mMeasurement = builder.mMeasurement;
         mConfidence = builder.mConfidence;
+        mRawConfidence = builder.mRawConfidence;
+        mError = builder.mError;
     }
 
     private RangingMeasurement(@NonNull Parcel in) {
         mMeasurement = in.readDouble();
         mConfidence = in.readInt();
+        mRawConfidence = in.readDouble();
+        mError = in.readDouble();
     }
 
     @NonNull
@@ -108,6 +115,50 @@ public final class RangingMeasurement implements Parcelable {
         return mConfidence;
     }
 
+    /**
+     * Check if the measurement has a reported raw confidence value.
+     *
+     * @return True if a floating-point confidence is part of this measurement, false if it is not.
+     * @hide
+     */
+    public boolean hasRawConfidence() {
+        return !Double.isNaN(mRawConfidence);
+    }
+
+    /**
+     * Get the raw confidence value of this measurement.
+     *
+     * @return The confidence as a floating-point value in [0, 1], or NaN if it was not set.
+     * @hide
+     */
+    public double getRawConfidence() {
+        return mRawConfidence;
+    }
+
+    /**
+     * Check if the measurement has a reported error value.
+
+     * @return True if an error value was record as part of this measurement, false if it was not.
+     * @hide
+     */
+    public boolean hasError() {
+        return !Double.isNaN(mError);
+    }
+
+    /**
+     * Get the error of this measurement, specifying that the underlying value being measured could
+     * fall within the range [value - error, value + error].
+     * <ul>
+     *     <li>Units are the same as the value returned by {@code this.getMeasurement()}</li>
+     *     <li>Returned value will be positive if it exists</li>
+     * </ul>
+     * @return The error, or NaN if it was not set.
+     * @hide
+     */
+    public double getError() {
+        return mError;
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -127,6 +178,8 @@ public final class RangingMeasurement implements Parcelable {
     public static final class Builder {
         private double mMeasurement = Double.NaN;
         @Confidence private int mConfidence = CONFIDENCE_MEDIUM;
+        private double mRawConfidence = Double.NaN;
+        private double mError = Double.NaN;
 
         /**
          * Sets the measurement value.
@@ -154,6 +207,46 @@ public final class RangingMeasurement implements Parcelable {
         }
 
         /**
+         * Sets the raw confidence value for the measurement.
+         *
+         * @param confidence The confidence in this measurement as a floating-point value in [0, 1].
+         * @return This {@link Builder} instance.
+         * @throws IllegalArgumentException if the provided {@param confidence} is not in
+         *                                  [0.0, 1.0].
+         * @hide
+         */
+        @NonNull
+        public Builder setRawConfidence(@FloatRange(from = 0.0, to = 1.0) double confidence) {
+            if (confidence < 0.0 || confidence > 1.0) {
+                throw new IllegalArgumentException(
+                        "Provided raw confidence value must be in [0.0, 1.0]");
+            }
+            mRawConfidence = confidence;
+            return this;
+        }
+
+        /**
+         * Set the error of this measurement, specifying that the underlying value being measured
+         * could fall within the range [value - error, value + error].
+         * <ul>
+         *     <li>Must be the same units as the value itself</li>
+         *     <li>Must be >= 0</li>
+         * </ul>
+         * @param error The error.
+         * @return This {@link Builder} instance.
+         * @throws IllegalArgumentException if the provided value is not positive.
+         * @hide
+         */
+        @NonNull
+        public Builder setError(double error) {
+            if (error < 0) {
+                throw new IllegalArgumentException("Provided error must be positive");
+            }
+            mError = error;
+            return this;
+        }
+
+        /**
          * Builds a new {@link RangingMeasurement} instance with the specified parameters.
          *
          * @return A new {@link RangingMeasurement} object.
@@ -166,11 +259,11 @@ public final class RangingMeasurement implements Parcelable {
 
     @Override
     public String toString() {
-        return "RangingMeasurement{ "
-                + "mMeasurement="
-                + mMeasurement
-                + ", mConfidence="
-                + mConfidence
-                + " }";
+        return "RangingMeasurement{"
+                + "mMeasurement=" + mMeasurement
+                + ", mConfidence=" + mConfidence
+                + ", mRawConfidence=" + mRawConfidence
+                + ", mError=" + mError
+                + '}';
     }
 }
