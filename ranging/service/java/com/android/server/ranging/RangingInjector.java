@@ -22,6 +22,7 @@ import static android.permission.PermissionManager.PERMISSION_GRANTED;
 
 import android.annotation.NonNull;
 import android.annotation.Nullable;
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.bluetooth.BluetoothManager;
 import android.content.AttributionSource;
@@ -37,6 +38,7 @@ import android.os.UserHandle;
 import android.permission.PermissionManager;
 import android.util.Log;
 
+import com.android.internal.annotations.VisibleForTesting;
 import com.android.server.ranging.CapabilitiesProvider.CapabilitiesAdapter;
 import com.android.server.ranging.blerssi.BleRssiAdapter;
 import com.android.server.ranging.blerssi.BleRssiCapabilitiesAdapter;
@@ -51,8 +53,10 @@ import com.android.server.ranging.uwb.UwbCapabilitiesAdapter;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class RangingInjector {
 
@@ -73,6 +77,9 @@ public class RangingInjector {
     private final Handler mAlarmHandler;
     private final DeviceConfigFacade mDeviceConfigFacade;
 
+    @SuppressLint("StaticFieldLeak")
+    private static RangingInjector sInstance;
+
     public RangingInjector(@NonNull Context context) {
         HandlerThread rangingHandlerThread = new HandlerThread("RangingServiceHandler");
         rangingHandlerThread.start();
@@ -86,6 +93,16 @@ public class RangingInjector {
         mPermissionManager = context.getSystemService(PermissionManager.class);
         mAlarmHandler = new Handler(mLooper);
         mDeviceConfigFacade = new DeviceConfigFacade(new Handler(mLooper), mContext);
+        sInstance = this;
+    }
+
+     public static RangingInjector getInstance() {
+        return Objects.requireNonNull(sInstance);
+    }
+
+    @VisibleForTesting
+    public  static void setInstance(RangingInjector rangingInjector) {
+        sInstance = rangingInjector;
     }
 
     public Context getContext() {
@@ -300,5 +317,11 @@ public class RangingInjector {
         } finally {
             Binder.restoreCallingIdentity(identity);
         }
+    }
+
+    public boolean isRangingTechnologyEnabled(RangingTechnology rangingTechnology) {
+        return Arrays.asList(getDeviceConfigFacade().getTechnologyPreferenceList()).contains(
+                rangingTechnology.toString()
+        );
     }
 }
