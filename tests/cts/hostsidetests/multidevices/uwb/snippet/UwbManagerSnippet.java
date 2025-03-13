@@ -731,6 +731,9 @@ public class UwbManagerSnippet implements Snippet {
         if (j.has("slotsPerRangingRound")) {
             builder.setSlotsPerRangingRound(j.getInt("slotsPerRangingRound"));
         }
+        if (j.has("rangeDataNtfConfig")) {
+            builder.setRangeDataNtfConfig(j.getInt("rangeDataNtfConfig"));
+        }
         if (j.has("stsConfig")) {
             if (j.getInt("stsConfig") == FiraParams.STS_CONFIG_PROVISIONED) {
                 builder.setStsConfig(j.getInt("stsConfig"));
