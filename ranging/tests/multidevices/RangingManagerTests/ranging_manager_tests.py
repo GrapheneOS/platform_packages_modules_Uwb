@@ -929,6 +929,12 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
         f"BLE_CS is supported, skip running BLE_RSSI tests",
     )
 
+    asserts.skip_if(
+        self.initiator.is_ranging_technology_supported(RangingTechnology.BLE_RSSI) or
+        self.responder.is_ranging_technology_supported(RangingTechnology.BLE_RSSI),
+        f"BLE_RSSI is not supported",
+        )
+
     if self.initiator.is_ranging_technology_supported(RangingTechnology.UWB):
         utils.set_uwb_state_and_verify(self.initiator.ad, state=False)
     if self.responder.is_ranging_technology_supported(RangingTechnology.UWB):

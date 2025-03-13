@@ -132,6 +132,8 @@ public class BleRssiAdapterTest {
         when(mMockAttributionSource.getUid()).thenReturn(100);
         when(mMockAttributionSource.getPackageName()).thenReturn("TestPkgName");
         when(mMockRangingInjector.isForegroundAppOrService(anyInt(), anyString())).thenReturn(true);
+        RangingInjector.setInstance(mMockRangingInjector);
+        when(mMockRangingInjector.isRangingTechnologyEnabled(any())).thenReturn(true);
         mBleRssiAdapter = new BleRssiAdapter(mMockContext, mMockRangingInjector);
     }
 

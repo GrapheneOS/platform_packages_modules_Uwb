@@ -253,11 +253,13 @@
     <!-- ===== End of UWB stack overlay definitions ===== -->
 
     <!-- ===== Start of ranging stack overlay definitions ===== -->
-    <!-- Priority list of ranging technologies on a device -->
+    <!-- Priority list of ranging technologies on a device. OEM can add, remove or modify the order
+     of technology in device specific overlay.-->
     <string-array name="technology_preference_list">
         <item>UWB</item>
         <item>CS</item>
-        <item>RTT</item>
+        <!-- RTT is disabled by default, OEM should copy the full list and uncomment RTT too add.-->
+        <!--item>RTT</item-->
         <item>RSSI</item>
     </string-array>
 

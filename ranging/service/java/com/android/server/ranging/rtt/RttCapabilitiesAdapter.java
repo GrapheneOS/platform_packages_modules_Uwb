@@ -36,6 +36,8 @@ import com.android.ranging.rtt.backend.RttServiceImpl;
 import com.android.server.ranging.CapabilitiesProvider;
 import com.android.server.ranging.CapabilitiesProvider.CapabilitiesAdapter;
 import com.android.server.ranging.CapabilitiesProvider.TechnologyAvailabilityListener;
+import com.android.server.ranging.RangingInjector;
+import com.android.server.ranging.RangingTechnology;
 
 public class RttCapabilitiesAdapter extends CapabilitiesAdapter {
 
@@ -45,7 +47,8 @@ public class RttCapabilitiesAdapter extends CapabilitiesAdapter {
     /** @return true if WiFi RTT is supported in the provided context, false otherwise */
     public static boolean isSupported(Context context) {
         return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_AWARE)
-                && context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_RTT);
+                && context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_RTT)
+                && RangingInjector.getInstance().isRangingTechnologyEnabled(RangingTechnology.RTT);
     }
 
     public RttCapabilitiesAdapter(

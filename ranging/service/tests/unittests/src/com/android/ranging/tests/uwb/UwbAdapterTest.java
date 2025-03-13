@@ -119,6 +119,8 @@ public class UwbAdapterTest {
     public void setup() {
         when(mMockContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_UWB))
                 .thenReturn(true);
+        RangingInjector.setInstance(mMockRangingInjector);
+        when(mMockRangingInjector.isRangingTechnologyEnabled(any())).thenReturn(true);
         mUwbAdapter = new UwbAdapter(mMockContext, mMockRangingInjector, mMockAttributionSource,
                 MoreExecutors.newDirectExecutorService(), mMockUwbClient);
     }

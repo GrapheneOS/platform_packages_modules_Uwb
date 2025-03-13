@@ -32,6 +32,8 @@ import android.util.Log;
 
 import com.android.server.ranging.CapabilitiesProvider;
 import com.android.server.ranging.CapabilitiesProvider.TechnologyAvailabilityListener;
+import com.android.server.ranging.RangingInjector;
+import com.android.server.ranging.RangingTechnology;
 
 public class BleRssiCapabilitiesAdapter extends CapabilitiesProvider.CapabilitiesAdapter {
     private static final String TAG = BleRssiCapabilitiesAdapter.class.getSimpleName();
@@ -53,7 +55,8 @@ public class BleRssiCapabilitiesAdapter extends CapabilitiesProvider.Capabilitie
     }
 
     public static boolean isSupported(Context context) {
-        return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE);
+        return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)
+                && RangingInjector.getInstance().isRangingTechnologyEnabled(RangingTechnology.RSSI);
     }
 
     @Override
