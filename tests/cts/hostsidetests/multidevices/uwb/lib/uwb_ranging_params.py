@@ -84,6 +84,9 @@ class FiraParamEnums:
   RFRAME_CONFIG_SP1 = 1
   RFRAME_CONFIG_SP3 = 3
 
+  # ranging ntf config
+  RANGE_DATA_NTF_CONFIG_DISABLE = 0
+  RANGE_DATA_NTF_CONFIG_ENABLE = 1
 
 @dataclasses.dataclass
 class UwbRangingReconfigureParams():
@@ -184,6 +187,7 @@ class UwbRangingParams():
     session_key: Provisioned sts session key.
     sub_session_id: Ranging sub session ID.
     sub_session_key: Ranging sub session key.
+    range_data_ntf_config: Range data ntf config.
 
   Example:
       An example of UWB ranging parameters passed to sl4a is below.
@@ -246,6 +250,7 @@ class UwbRangingParams():
   sub_session_id: Optional[int] = None
   sub_session_key: Optional[List[int]] = None
   rframe_config: int = FiraParamEnums.RFRAME_CONFIG_SP3
+  range_data_ntf_config: int = FiraParamEnums.RANGE_DATA_NTF_CONFIG_ENABLE
 
   def to_dict(self) -> Dict[str, Any]:
     """Returns UWB ranging parameters in dictionary for sl4a.
@@ -278,6 +283,7 @@ class UwbRangingParams():
         "staticStsIV": self.static_sts_iv,
         "stsConfig": self.sts_config,
         "sessionKey": self.session_key,
+        "rangeDataNtfConfig": self.range_data_ntf_config,
     }
     if self.sub_session_id is not None:
       dict["subSessionId"] = self.sub_session_id
