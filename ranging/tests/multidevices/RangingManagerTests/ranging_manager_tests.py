@@ -96,6 +96,11 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       for device in self.devices:
         if device.is_ranging_technology_supported(RangingTechnology.UWB):
             utils.request_hw_idle_vote(device.ad, False)
+        if device.is_ranging_technology_supported(RangingTechnology.WIFI_RTT):
+            utils.set_wifi_state_and_verify(device.ad, True)
+        if device.is_ranging_technology_supported(RangingTechnology.BLE_CS) or \
+            device.is_ranging_technology_supported(RangingTechnology.BLE_RSSI):
+            utils.set_bt_state_and_verify(device.ad, True)
 
   def setup_test(self):
     super().setup_test()
