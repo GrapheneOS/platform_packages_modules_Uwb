@@ -29,7 +29,7 @@ use crate::params::uci_packets::{
     RadarConfigTlvType, RawUciMessage, ResetConfig, RfTestConfigResponse, RfTestConfigTlv,
     SessionId, SessionState, SessionToken, SessionType, SessionUpdateControllerMulticastResponse,
     SessionUpdateDtTagRangingRoundsResponse, SetAppConfigResponse, UciDataPacket, UciDataPacketHal,
-    UpdateMulticastListAction, UpdateTime,
+    UpdateMulticastListAction,
 };
 use crate::params::utils::{bytes_to_u16, bytes_to_u64};
 use crate::params::UCIMajorVersion;
@@ -47,8 +47,8 @@ use crate::utils::{clean_mpsc_receiver, PinSleep};
 use pdl_runtime::Packet;
 use std::collections::{HashMap, VecDeque};
 use uwb_uci_packets::{
-    fragment_data_msg_send, ControleePhaseList, PhaseList, RawUciControlPacket, UciDataSnd,
-    UciDefragPacket,
+    fragment_data_msg_send, ControleePhaseList, ControllerPhaseList, RawUciControlPacket,
+    UciDataSnd, UciDefragPacket,
 };
 
 const UCI_TIMEOUT_MS: u64 = 2000;
@@ -198,10 +198,8 @@ pub trait UciManager: 'static + Send + Sync + Clone {
     async fn session_set_hybrid_controller_config(
         &self,
         session_id: SessionId,
-        message_control: u8,
         number_of_phases: u8,
-        update_time: UpdateTime,
-        phase_list: PhaseList,
+        phase_list: Vec<ControllerPhaseList>,
     ) -> Result<()>;
 
     /// Send UCI command for setting hybrid controlee config
@@ -711,16 +709,12 @@ impl UciManager for UciManagerImpl {
     async fn session_set_hybrid_controller_config(
         &self,
         session_id: SessionId,
-        message_control: u8,
         number_of_phases: u8,
-        update_time: UpdateTime,
-        phase_list: PhaseList,
+        phase_list: Vec<ControllerPhaseList>,
     ) -> Result<()> {
         let cmd = UciCommand::SessionSetHybridControllerConfig {
             session_token: self.get_session_token(&session_id).await?,
-            message_control,
             number_of_phases,
-            update_time,
             phase_list,
         };
         match self.send_cmd(UciManagerCmd::SendUciCommand { cmd }).await {
@@ -1569,6 +1563,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                     session_token: self.get_session_id(&session_range_data.session_token).await?,
                     current_ranging_interval_ms: session_range_data.current_ranging_interval_ms,
                     ranging_measurement_type: session_range_data.ranging_measurement_type,
+                    hus_primary_session_id: session_range_data.hus_primary_session_id,
                     ranging_measurements: session_range_data.ranging_measurements,
                     rcr_indicator: session_range_data.rcr_indicator,
                     raw_ranging_data: session_range_data.raw_ranging_data,
@@ -2444,54 +2439,49 @@ mod tests {
     #[tokio::test]
     async fn test_session_set_hybrid_controller_config_ok() {
         let session_id = 0x123;
-        let message_control = 0x00;
-        let message_control_extended = 0x01;
         let session_token = 0x123;
         let number_of_phases = 0x02;
-        let update_time = UpdateTime::new(&[0x0; 8]).unwrap();
-        let phase_list_short_mac_address = PhaseList::ShortMacAddress(vec![
-            uwb_uci_packets::PhaseListShortMacAddress {
+        let phase_list_short_mac_address = vec![
+            uwb_uci_packets::ControllerPhaseList {
                 session_token: 0x11,
                 start_slot_index: 0x12,
                 end_slot_index: 0x13,
-                phase_participation: 0x01,
-                mac_address: [0x11, 0x22],
+                control: 0x01,
+                mac_address: [0x11, 0x22].to_vec(),
             },
-            uwb_uci_packets::PhaseListShortMacAddress {
+            uwb_uci_packets::ControllerPhaseList {
                 session_token: 0x21,
                 start_slot_index: 0x22,
                 end_slot_index: 0x23,
-                phase_participation: 0x01,
-                mac_address: [0x11, 0x33],
+                control: 0x01,
+                mac_address: [0x11, 0x33].to_vec(),
             },
-        ]);
-        let phase_list_extended_mac_address = PhaseList::ExtendedMacAddress(vec![
-            uwb_uci_packets::PhaseListExtendedMacAddress {
+        ];
+        let phase_list_extended_mac_address = vec![
+            uwb_uci_packets::ControllerPhaseList {
                 session_token: 0x11,
                 start_slot_index: 0x12,
                 end_slot_index: 0x13,
-                phase_participation: 0x01,
-                mac_address: [0x11, 0x22, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38],
+                control: 0x01,
+                mac_address: [0x11, 0x22, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38].to_vec(),
             },
-            uwb_uci_packets::PhaseListExtendedMacAddress {
+            uwb_uci_packets::ControllerPhaseList {
                 session_token: 0x21,
                 start_slot_index: 0x22,
                 end_slot_index: 0x23,
-                phase_participation: 0x01,
-                mac_address: [0x11, 0x22, 0x33, 0x34, 0x35, 0x36, 0x37, 0x39],
+                control: 0x01,
+                mac_address: [0x11, 0x22, 0x33, 0x34, 0x35, 0x36, 0x37, 0x39].to_vec(),
             },
-        ]);
-        let mut phase_list_clone = phase_list_short_mac_address.clone();
+        ];
+        let phase_list_clone_short = phase_list_short_mac_address.clone();
 
         // short mac address
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_session_active(
             |mut hal| async move {
                 let cmd = UciCommand::SessionSetHybridControllerConfig {
                     session_token,
-                    message_control,
                     number_of_phases,
-                    update_time,
-                    phase_list: phase_list_clone,
+                    phase_list: phase_list_clone_short,
                 };
                 let resp = into_uci_hal_packets(
                     uwb_uci_packets::SessionSetHybridControllerConfigRspBuilder {
@@ -2511,9 +2501,7 @@ mod tests {
         let result = uci_manager
             .session_set_hybrid_controller_config(
                 session_token,
-                message_control,
                 number_of_phases,
-                update_time,
                 phase_list_short_mac_address,
             )
             .await;
@@ -2521,15 +2509,14 @@ mod tests {
         assert!(mock_hal.wait_expected_calls_done().await);
 
         // extended mac address
-        phase_list_clone = phase_list_extended_mac_address.clone();
+        let phase_list_clone_extended = phase_list_extended_mac_address.clone();
+        //phase_list_clone.clone_from(&phase_list_extended_mac_address);
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_session_active(
             |mut hal| async move {
                 let cmd = UciCommand::SessionSetHybridControllerConfig {
                     session_token,
-                    message_control: message_control_extended,
                     number_of_phases,
-                    update_time,
-                    phase_list: phase_list_clone,
+                    phase_list: phase_list_clone_extended,
                 };
                 let resp = into_uci_hal_packets(
                     uwb_uci_packets::SessionSetHybridControllerConfigRspBuilder {
@@ -2549,9 +2536,7 @@ mod tests {
         let result = uci_manager
             .session_set_hybrid_controller_config(
                 session_token,
-                message_control_extended,
                 number_of_phases,
-                update_time,
                 phase_list_extended_mac_address,
             )
             .await;
@@ -2564,8 +2549,8 @@ mod tests {
         let session_id = 0x123;
         let session_token = 0x123;
         let phase_list = vec![
-            ControleePhaseList { session_token: 0x12, phase_participation: 0x01 },
-            ControleePhaseList { session_token: 0x14, phase_participation: 0x01 },
+            ControleePhaseList { session_token: 0x12 },
+            ControleePhaseList { session_token: 0x14 },
         ];
         let phase_list_clone = phase_list.clone();
 

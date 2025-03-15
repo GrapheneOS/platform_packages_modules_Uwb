@@ -24,13 +24,13 @@ use num_derive::{FromPrimitive, ToPrimitive};
 pub use uwb_uci_packets::{
     AppConfigStatus, AppConfigTlv as RawAppConfigTlv, AppConfigTlvType, BitsPerSample, CapTlv,
     CapTlvType, Controlee, ControleePhaseList, ControleeStatusV1, ControleeStatusV2, Controlees,
-    CreditAvailability, DataRcvStatusCode, DataTransferNtfStatusCode,
+    ControllerPhaseList, CreditAvailability, DataRcvStatusCode, DataTransferNtfStatusCode,
     DataTransferPhaseConfigUpdateStatusCode, DeviceConfigId, DeviceConfigStatus, DeviceConfigTlv,
     DeviceState, ExtendedAddressDlTdoaRangingMeasurement, ExtendedAddressOwrAoaRangingMeasurement,
     ExtendedAddressTwoWayRangingMeasurement, GroupId, MacAddressIndicator, MessageType,
-    MulticastUpdateStatusCode, PhaseList, PowerStats, RadarConfigStatus, RadarConfigTlv,
-    RadarConfigTlvType, RadarDataType, RangingMeasurementType, ReasonCode, ResetConfig,
-    RfTestConfigStatus, RfTestConfigTlv, RfTestConfigTlvType, SessionState, SessionType,
+    MulticastUpdateStatusCode, PowerStats, RadarConfigStatus, RadarConfigTlv, RadarConfigTlvType,
+    RadarDataType, RangingMeasurementType, ReasonCode, ResetConfig, RfTestConfigStatus,
+    RfTestConfigTlv, RfTestConfigTlvType, SessionState, SessionType,
     SessionUpdateControllerMulticastListNtfV1Payload,
     SessionUpdateControllerMulticastListNtfV2Payload,
     SessionUpdateControllerMulticastListRspV1Payload,
@@ -263,23 +263,6 @@ impl TryFrom<String> for CountryCode {
     fn try_from(item: String) -> Result<Self, Self::Error> {
         let code = item.as_bytes().try_into().map_err(|_| Error::BadParameters)?;
         Self::new(code).ok_or(Error::BadParameters)
-    }
-}
-
-/// absolute time in UWBS Time domain(ms) when this configuration applies
-#[derive(Debug, Clone, PartialEq, Copy)]
-pub struct UpdateTime([u8; 8]);
-
-impl UpdateTime {
-    /// Create a UpdateTime instance.
-    pub fn new(update_time: &[u8; 8]) -> Option<Self> {
-        Some(Self(*update_time))
-    }
-}
-
-impl From<UpdateTime> for [u8; 8] {
-    fn from(item: UpdateTime) -> [u8; 8] {
-        item.0
     }
 }
 

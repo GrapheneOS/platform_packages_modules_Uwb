@@ -21,12 +21,11 @@ use crate::error::{Error, Result};
 use crate::params::uci_packets::{
     AppConfigTlv, AppConfigTlvType, Controlees, CountryCode, DeviceConfigId, DeviceConfigTlv,
     RadarConfigTlv, RadarConfigTlvType, ResetConfig, RfTestConfigTlv, SessionId, SessionToken,
-    SessionType, UpdateMulticastListAction, UpdateTime,
+    SessionType, UpdateMulticastListAction,
 };
 use uwb_uci_packets::{
-    build_data_transfer_phase_config_cmd, build_session_set_hybrid_controller_config_cmd,
-    build_session_update_controller_multicast_list_cmd, ControleePhaseList, GroupId, MessageType,
-    PhaseList,
+    build_data_transfer_phase_config_cmd, build_session_update_controller_multicast_list_cmd,
+    ControleePhaseList, ControllerPhaseList, GroupId, MessageType,
 };
 
 /// The enum to represent the UCI commands. The definition of each field should follow UCI spec.
@@ -89,10 +88,8 @@ pub enum UciCommand {
     },
     SessionSetHybridControllerConfig {
         session_token: SessionToken,
-        message_control: u8,
         number_of_phases: u8,
-        update_time: UpdateTime,
-        phase_list: PhaseList,
+        phase_list: Vec<ControllerPhaseList>,
     },
     SessionSetHybridControleeConfig {
         session_token: SessionToken,
@@ -251,18 +248,14 @@ impl TryFrom<UciCommand> for uwb_uci_packets::UciControlPacket {
             }
             UciCommand::SessionSetHybridControllerConfig {
                 session_token,
-                message_control,
                 number_of_phases,
-                update_time,
                 phase_list,
-            } => build_session_set_hybrid_controller_config_cmd(
+            } => uwb_uci_packets::SessionSetHybridControllerConfigCmdBuilder {
                 session_token,
-                message_control,
                 number_of_phases,
-                update_time.into(),
                 phase_list,
-            )
-            .map_err(|_| Error::BadParameters)?
+            }
+            .build()
             .into(),
             UciCommand::SessionSetHybridControleeConfig { session_token, controlee_phase_list } => {
                 uwb_uci_packets::SessionSetHybridControleeConfigCmdBuilder {
@@ -337,7 +330,6 @@ fn build_raw_uci_cmd_packet(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use uwb_uci_packets::PhaseListShortMacAddress;
 
     #[test]
     fn test_build_raw_uci_cmd() {
@@ -535,38 +527,32 @@ mod tests {
                 .expect("Failed to build raw cmd packet.")
         );
 
-        let phase_list_short_mac_address = PhaseListShortMacAddress {
+        let phase_list_short_mac_address = vec![uwb_uci_packets::ControllerPhaseList {
             session_token: 0x1324_3546,
             start_slot_index: 0x1111,
             end_slot_index: 0x1121,
-            phase_participation: 0x0,
-            mac_address: [0x1, 0x2],
-        };
+            control: 0x01,
+            mac_address: [0x1, 0x2].to_vec(),
+        }];
         cmd = UciCommand::SessionSetHybridControllerConfig {
             session_token: 1,
-            message_control: 0,
             number_of_phases: 0,
-            update_time: UpdateTime::new(&[1; 8]).unwrap(),
-            phase_list: PhaseList::ShortMacAddress(vec![phase_list_short_mac_address]),
+            phase_list: vec![uwb_uci_packets::ControllerPhaseList {
+                session_token: 0x1324_3546,
+                start_slot_index: 0x1111,
+                end_slot_index: 0x1121,
+                control: 0x01,
+                mac_address: [0x1, 0x2].to_vec(),
+            }],
         };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd).unwrap();
+        let phase_list_clone = phase_list_short_mac_address.clone();
         assert_eq!(
             packet,
             uwb_uci_packets::SessionSetHybridControllerConfigCmdBuilder {
-                message_control: 0,
-                number_of_phases: 0,
                 session_token: 1,
-                update_time: [1; 8],
-                payload: Some(
-                    vec![
-                        0x46, 0x35, 0x24, 0x13, // session id (LE)
-                        0x11, 0x11, // start slot index (LE)
-                        0x21, 0x11, // end slot index (LE)
-                        0x00, // phase_participation
-                        0x01, 0x02
-                    ]
-                    .into()
-                )
+                number_of_phases: 0,
+                phase_list: phase_list_clone,
             }
             .build()
             .into()

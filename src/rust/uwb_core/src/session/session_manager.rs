@@ -534,6 +534,7 @@ pub(crate) mod test_utils {
             session_token: session_id,
             current_ranging_interval_ms: 3,
             ranging_measurement_type: RangingMeasurementType::TwoWay,
+            hus_primary_session_id: 0,
             ranging_measurements: RangingMeasurements::ShortAddressTwoWay(vec![
                 ShortAddressTwoWayRangingMeasurement {
                     mac_address: 0x123,
