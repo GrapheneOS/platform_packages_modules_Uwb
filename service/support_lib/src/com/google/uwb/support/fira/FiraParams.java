@@ -185,6 +185,7 @@ public abstract class FiraParams extends Params {
                 RANGING_ROUND_USAGE_OWR_AOA_MEASUREMENT,
                 RANGING_ROUND_USAGE_DL_TDOA,
                 RANGING_ROUND_USAGE_DATA_TRANSFER_MODE,
+                RANGING_ROUND_USAGE_HYBRID_RANGING_MODE,
             })
     public @interface RangingRoundUsage {}
 
@@ -211,6 +212,9 @@ public abstract class FiraParams extends Params {
 
     /** Data transfer mode */
     public static final int RANGING_ROUND_USAGE_DATA_TRANSFER_MODE = 9;
+
+    /** Hybrid ranging mode */
+    public static final int RANGING_ROUND_USAGE_HYBRID_RANGING_MODE = 0x0A;
 
     /** Multi-Node mode */
     @IntDef(
@@ -1116,6 +1120,7 @@ public abstract class FiraParams extends Params {
                     SESSION_TYPE_RANGING_ONLY_PHASE,
                     SESSION_TYPE_IN_BAND_DATA_PHASE,
                     SESSION_TYPE_RANGING_WITH_DATA_PHASE,
+                    SESSION_TYPE_HUS_PRIMARY_SESSION,
                     SESSION_TYPE_DEVICE_TEST_MODE,
             })
     public @interface SessionType{}
@@ -1126,6 +1131,7 @@ public abstract class FiraParams extends Params {
     public static final int SESSION_TYPE_RANGING_ONLY_PHASE = 3;
     public static final int SESSION_TYPE_IN_BAND_DATA_PHASE = 4;
     public static final int SESSION_TYPE_RANGING_WITH_DATA_PHASE = 5;
+    public static final int SESSION_TYPE_HUS_PRIMARY_SESSION = 0x9F;
     public static final int SESSION_TYPE_DEVICE_TEST_MODE = 0xD0;
 
     /** Which type of filter to use for filtering AoA/distance readings. */
