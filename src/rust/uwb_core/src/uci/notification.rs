@@ -144,6 +144,9 @@ pub struct SessionRangeData {
     /// The ranging measurement type.
     pub ranging_measurement_type: RangingMeasurementType,
 
+    /// Hus primary session Session Id
+    pub hus_primary_session_id: SessionToken,
+
     /// The ranging measurement data.
     pub ranging_measurements: RangingMeasurements,
 
@@ -606,6 +609,7 @@ impl TryFrom<uwb_uci_packets::SessionInfoNtf> for SessionNotification {
             session_token: evt.get_session_token(),
             current_ranging_interval_ms: evt.get_current_ranging_interval(),
             ranging_measurement_type: evt.get_ranging_measurement_type(),
+            hus_primary_session_id: evt.get_hus_primary_session_id(),
             ranging_measurements,
             rcr_indicator: evt.get_rcr_indicator(),
             raw_ranging_data,
@@ -797,6 +801,7 @@ mod tests {
                 session_token: 0x11,
                 rcr_indicator: 0x12,
                 current_ranging_interval: 0x13,
+                hus_primary_session_id: 0x00,
                 two_way_ranging_measurements: vec![extended_measurement.clone()],
                 vendor_data: vec![],
             }
@@ -815,6 +820,7 @@ mod tests {
                 sequence_number: 0x10,
                 session_token: 0x11,
                 ranging_measurement_type: uwb_uci_packets::RangingMeasurementType::TwoWay,
+                hus_primary_session_id: 0x00,
                 current_ranging_interval_ms: 0x13,
                 ranging_measurements: RangingMeasurements::ExtendedAddressTwoWay(vec![
                     extended_measurement
@@ -848,6 +854,7 @@ mod tests {
             session_token: 0x11,
             rcr_indicator: 0x12,
             current_ranging_interval: 0x13,
+            hus_primary_session_id: 0x00,
             two_way_ranging_measurements: vec![short_measurement.clone()],
             vendor_data: vec![0x02, 0x01],
         }
@@ -866,6 +873,7 @@ mod tests {
                 sequence_number: 0x10,
                 session_token: 0x11,
                 ranging_measurement_type: uwb_uci_packets::RangingMeasurementType::TwoWay,
+                hus_primary_session_id: 0x00,
                 current_ranging_interval_ms: 0x13,
                 ranging_measurements: RangingMeasurements::ShortAddressTwoWay(vec![
                     short_measurement
@@ -895,6 +903,7 @@ mod tests {
                 session_token: 0x11,
                 rcr_indicator: 0x12,
                 current_ranging_interval: 0x13,
+                hus_primary_session_id: 0x00,
                 owr_aoa_ranging_measurements: vec![extended_measurement.clone()],
                 vendor_data: vec![],
             }
@@ -913,6 +922,7 @@ mod tests {
                 sequence_number: 0x10,
                 session_token: 0x11,
                 ranging_measurement_type: uwb_uci_packets::RangingMeasurementType::OwrAoa,
+                hus_primary_session_id: 0x00,
                 current_ranging_interval_ms: 0x13,
                 ranging_measurements: RangingMeasurements::ExtendedAddressOwrAoa(
                     extended_measurement
@@ -941,6 +951,7 @@ mod tests {
             session_token: 0x11,
             rcr_indicator: 0x12,
             current_ranging_interval: 0x13,
+            hus_primary_session_id: 0x00,
             owr_aoa_ranging_measurements: vec![short_measurement.clone()],
             vendor_data: vec![],
         }
@@ -959,6 +970,7 @@ mod tests {
                 sequence_number: 0x10,
                 session_token: 0x11,
                 ranging_measurement_type: uwb_uci_packets::RangingMeasurementType::OwrAoa,
+                hus_primary_session_id: 0x00,
                 current_ranging_interval_ms: 0x13,
                 ranging_measurements: RangingMeasurements::ShortAddressOwrAoa(short_measurement),
                 rcr_indicator: 0x12,
@@ -1252,6 +1264,7 @@ mod tests {
         let short_mac_dl_tdoa_session_info_ntf =
             uwb_uci_packets::ShortMacDlTDoASessionInfoNtfBuilder {
                 current_ranging_interval: 0x13,
+                hus_primary_session_id: 0x00,
                 dl_tdoa_measurements: dl_tdoa_measurements.clone(),
                 no_of_ranging_measurements: 1,
                 rcr_indicator: 0x12,
@@ -1277,6 +1290,7 @@ mod tests {
                 session_token: 0x11,
                 ranging_measurement_type: uwb_uci_packets::RangingMeasurementType::DlTdoa,
                 current_ranging_interval_ms: 0x13,
+                hus_primary_session_id: 0x00,
                 ranging_measurements: RangingMeasurements::ShortAddressDltdoa(short_measurement),
                 rcr_indicator: 0x12,
                 raw_ranging_data,
@@ -1306,6 +1320,7 @@ mod tests {
         let extended_mac_dl_tdoa_session_info_ntf =
             uwb_uci_packets::ExtendedMacDlTDoASessionInfoNtfBuilder {
                 current_ranging_interval: 0x13,
+                hus_primary_session_id: 0x00,
                 dl_tdoa_measurements: dl_tdoa_measurements.clone(),
                 no_of_ranging_measurements: 1,
                 rcr_indicator: 0x12,
@@ -1332,6 +1347,7 @@ mod tests {
                 session_token: 0x11,
                 ranging_measurement_type: uwb_uci_packets::RangingMeasurementType::DlTdoa,
                 current_ranging_interval_ms: 0x13,
+                hus_primary_session_id: 0x00,
                 ranging_measurements: RangingMeasurements::ExtendedAddressDltdoa(short_measurement),
                 rcr_indicator: 0x12,
                 raw_ranging_data,

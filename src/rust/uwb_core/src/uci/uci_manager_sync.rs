@@ -31,7 +31,7 @@ use crate::params::{
     RadarConfigTlv, RadarConfigTlvType, RawUciMessage, ResetConfig, RfTestConfigResponse,
     RfTestConfigTlv, SessionId, SessionState, SessionType,
     SessionUpdateControllerMulticastResponse, SessionUpdateDtTagRangingRoundsResponse,
-    SetAppConfigResponse, UpdateMulticastListAction, UpdateTime,
+    SetAppConfigResponse, UpdateMulticastListAction,
 };
 #[cfg(any(test, feature = "mock-utils"))]
 use crate::uci::mock_uci_manager::MockUciManager;
@@ -42,7 +42,7 @@ use crate::uci::notification::{
 use crate::uci::uci_hal::UciHal;
 use crate::uci::uci_logger::{UciLogger, UciLoggerMode};
 use crate::uci::uci_manager::{UciManager, UciManagerImpl};
-use uwb_uci_packets::{ControleePhaseList, Controlees, PhaseList};
+use uwb_uci_packets::{ControleePhaseList, Controlees, ControllerPhaseList};
 
 /// The NotificationManager processes UciNotification relayed from UciManagerSync in a sync fashion.
 /// The UciManagerSync assumes the NotificationManager takes the responsibility to properly handle
@@ -443,16 +443,12 @@ impl<U: UciManager> UciManagerSync<U> {
     pub fn session_set_hybrid_controller_config(
         &self,
         session_id: SessionId,
-        message_control: u8,
         number_of_phases: u8,
-        update_time: UpdateTime,
-        phase_list: PhaseList,
+        phase_list: Vec<ControllerPhaseList>,
     ) -> Result<()> {
         self.runtime_handle.block_on(self.uci_manager.session_set_hybrid_controller_config(
             session_id,
-            message_control,
             number_of_phases,
-            update_time,
             phase_list,
         ))
     }

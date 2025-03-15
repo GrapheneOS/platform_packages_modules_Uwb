@@ -490,6 +490,7 @@ enum SessionType: 8 {
     FIRA_RANGING_ONLY_PHASE = 0x03,
     FIRA_IN_BAND_DATA_PHASE = 0x04,
     FIRA_RANGING_WITH_DATA_PHASE = 0x05,
+    FIRA_HUS_PRIMARY_SESSION = 0x9F,
     CCC = 0xA0,
     RADAR_SESSION = 0xA1,
     ALIRO = 0xA2,
@@ -1135,28 +1136,18 @@ test SessionDataTransferPhaseConfigNtf {
     "\x61\x0E\x00\x05\x00\x00\x00\x00\x00"
 }
 
-struct PhaseListShortMacAddress {
+struct ControllerPhaseList {
     session_token: 32,
     start_slot_index: 16,
     end_slot_index: 16,
-    phase_participation: 8,
-    mac_address: 8[2],
-}
-
-struct PhaseListExtendedMacAddress {
-    session_token: 32,
-    start_slot_index: 16,
-    end_slot_index: 16,
-    phase_participation: 8,
-    mac_address: 8[8],
+    control: 8,
+    mac_address: 8[],
 }
 
 packet SessionSetHybridControllerConfigCmd : SessionConfigCommand (opcode = 0x0C) { //SESSION_SET_HUS_CONTROLLER_CONFIG
     session_token: 32,
-    message_control: 8,
     number_of_phases: 8,
-    update_time: 8[8],
-    _payload_,
+    phase_list: ControllerPhaseList[],
 }
 
 test SessionSetHybridControllerConfigCmd {
@@ -1173,7 +1164,6 @@ test SessionSetHybridControllerConfigRsp {
 
 struct ControleePhaseList {
     session_token: 32,
-    phase_participation: 8,
 }
 
 packet SessionSetHybridControleeConfigCmd : SessionConfigCommand (opcode = 0x0D) { //SESSION_SET_HUS_CONTROLEE_CONFIG
@@ -1289,7 +1279,8 @@ packet SessionInfoNtf : SessionControlNotification (opcode = 0x0) { // SESSION_I
     ranging_measurement_type: RangingMeasurementType,
     _reserved_: 8,
     mac_address_indicator: MacAddressIndicator,
-    _reserved_: 64,
+    hus_primary_session_id: 32,
+    _reserved_: 32,
     _body_,
 }
 

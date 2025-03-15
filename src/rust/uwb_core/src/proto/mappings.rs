@@ -545,6 +545,7 @@ enum_mapping! {
     FIRA_RANGING_ONLY_PHASE => FiraRangingOnlyPhase,
     FIRA_IN_BAND_DATA_PHASE => FiraInBandDataPhase,
     FIRA_RANGING_WITH_DATA_PHASE => FiraRangingWithDataPhase,
+    FIRA_HUS_PRIMARY_SESSION => FiraHusPrimarySession,
     CCC => Ccc,
     RADAR_SESSION => RadarSession,
     ALIRO => Aliro,
