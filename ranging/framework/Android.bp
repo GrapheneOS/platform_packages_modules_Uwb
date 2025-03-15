@@ -111,6 +111,7 @@ java_sdk_library {
         // Created by jarjar rules.
         "com.android.x.ranging",
     ],
+    min_sdk_version: "36",
 }
 
 // defaults for tests that need to build against framework-ranging's @hide APIs

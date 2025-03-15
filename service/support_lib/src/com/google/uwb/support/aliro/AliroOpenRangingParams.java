@@ -738,8 +738,8 @@ public class AliroOpenRangingParams extends AliroParams {
 
         public AliroOpenRangingParams build() {
             checkRangeDataNtfConfig();
-            checkArgument(mSessionKey != null
-                              && (mSessionKey.length == 16 || mSessionKey.length == 32));
+            checkArgument(mSessionKey == null
+                            || (mSessionKey.length == 16 || mSessionKey.length == 32));
             checkArgument(mMacModeRound == MAC_MODE_ROUND_1 || mMacModeRound == MAC_MODE_ROUND_2);
             checkArgument(mMacModeOffset == 0 ^ mMacModeRound == MAC_MODE_ROUND_2);
             return new AliroOpenRangingParams(

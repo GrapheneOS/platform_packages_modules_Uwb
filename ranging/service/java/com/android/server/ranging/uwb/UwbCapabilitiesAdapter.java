@@ -35,6 +35,8 @@ import com.android.ranging.uwb.backend.internal.UwbServiceImpl;
 import com.android.server.ranging.CapabilitiesProvider.AvailabilityChangedReason;
 import com.android.server.ranging.CapabilitiesProvider.CapabilitiesAdapter;
 import com.android.server.ranging.CapabilitiesProvider.TechnologyAvailabilityListener;
+import com.android.server.ranging.RangingInjector;
+import com.android.server.ranging.RangingTechnology;
 
 import java.time.Duration;
 
@@ -47,7 +49,8 @@ public class UwbCapabilitiesAdapter extends CapabilitiesAdapter {
 
     /** @return true if UWB is supported in the provided context, false otherwise */
     public static boolean isSupported(Context context) {
-        return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_UWB);
+        return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_UWB)
+                && RangingInjector.getInstance().isRangingTechnologyEnabled(RangingTechnology.UWB);
     }
 
     public UwbCapabilitiesAdapter(
