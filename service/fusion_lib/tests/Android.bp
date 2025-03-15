@@ -22,6 +22,7 @@ package {
 android_test {
     name: "UwbFusionLibTests",
     srcs: ["**/*.java"],
+    sdk_version: "system_server_current",
     certificate: "platform",
     static_libs: [
         "com.uwb.fusion",
@@ -32,5 +33,8 @@ android_test {
         "truth",
         "platform-test-annotations",
     ],
-    test_suites: ["device-tests"],
+    test_suites: [
+        "general-tests",
+        "mts-uwb",
+    ],
 }
