@@ -35,6 +35,7 @@ import androidx.annotation.Nullable;
 
 import com.android.server.ranging.RangingEngine;
 import com.android.server.ranging.RangingEngine.ConfigSelectionException;
+import com.android.server.ranging.RangingUtils.InternalReason;
 import com.android.server.ranging.oob.CapabilityResponseMessage;
 import com.android.server.ranging.oob.SetConfigurationMessage.TechnologyOobConfig;
 import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
@@ -78,7 +79,8 @@ public class CsConfigSelector implements RangingEngine.ConfigSelector {
     ) throws ConfigSelectionException {
         if (!isCapableOfConfig(oobConfig, capabilities)) {
             throw new ConfigSelectionException(
-                    "Local device CS capabilities is incompatible with provided config");
+                    "Local device CS capabilities is incompatible with provided config",
+                    InternalReason.UNSUPPORTED);
         }
         mSessionConfig = sessionConfig;
         mOobConfig = oobConfig;
@@ -91,8 +93,10 @@ public class CsConfigSelector implements RangingEngine.ConfigSelector {
             @NonNull RangingDevice peer, @NonNull CapabilityResponseMessage response
     ) throws ConfigSelectionException {
         CsOobCapabilities capabilities = response.getCsCapabilities();
-        if (capabilities == null) throw new ConfigSelectionException(
-                "Peer " + peer + " does not support CS");
+        if (capabilities == null) {
+            throw new ConfigSelectionException("Peer " + peer + " does not support CS",
+                    InternalReason.PEER_CAPABILITIES_MISMATCH);
+        }
 
         mPeerAddresses.put(peer, capabilities.getBluetoothAddress());
     }
@@ -153,6 +157,7 @@ public class CsConfigSelector implements RangingEngine.ConfigSelector {
         return getUpdateRateFromDurationRange(
                 mOobConfig.getRangingIntervalRange(), CS_UPDATE_RATE_DURATIONS)
                 .orElseThrow(() -> new ConfigSelectionException(
-                        "Configured ranging interval range is incompatible with BLE CS"));
+                        "Configured ranging interval range is incompatible with BLE CS",
+                        InternalReason.UNSUPPORTED));
     }
 }

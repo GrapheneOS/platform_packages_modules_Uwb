@@ -49,6 +49,8 @@ public class UwbUciConstants {
             FiraParams.SESSION_TYPE_RANGING_AND_IN_BAND_DATA;
     public static final byte SESSION_TYPE_ALIRO = (byte) AliroParams.SESSION_TYPE_ALIRO;
     public static final byte SESSION_TYPE_CCC = (byte) CccParams.SESSION_TYPE_CCC;
+    public static final byte SESSION_TYPE_HUS_PRIMARY_SESSION =
+            (byte) FiraParams.SESSION_TYPE_HUS_PRIMARY_SESSION;
     public static final byte SESSION_TYPE_DEVICE_TEST_MODE =
             (byte) FiraParams.SESSION_TYPE_DEVICE_TEST_MODE;
 
@@ -118,7 +120,6 @@ public class UwbUciConstants {
     public static final int DEVICE_TYPE_CONTROLEE = FiraParams.RANGING_DEVICE_TYPE_CONTROLEE;
     public static final int DEVICE_TYPE_CONTROLLER = FiraParams.RANGING_DEVICE_TYPE_CONTROLLER;
 
-
     public static final int CCC_DEVICE_TYPE_CONTROLLER = CccParams.CCC_DEVICE_TYPE_CONTROLLER;
 
     public static final int ROUND_USAGE_SS_TWR_DEFERRED_MODE =
@@ -141,8 +142,7 @@ public class UwbUciConstants {
 
     public static final int CONTENTION_BASED_RANGING = FiraParams.CONTENTION_BASED_RANGING;
     public static final int TIME_SCHEDULED_RANGING = FiraParams.TIME_SCHEDULED_RANGING;
-    public static final int HYBRID_SCHEDULED_RANGING =
-            FiraParams.HYBRID_SCHEDULED_RANGING;
+    public static final int HYBRID_SCHEDULED_RANGING = FiraParams.HYBRID_SCHEDULED_RANGING;
 
     public static final int CONSTRAINT_LENGTH_3 = FiraParams.CONSTRAINT_LENGTH_3;
     public static final int CONSTRAINT_LENGTH_7 = FiraParams.CONSTRAINT_LENGTH_7;

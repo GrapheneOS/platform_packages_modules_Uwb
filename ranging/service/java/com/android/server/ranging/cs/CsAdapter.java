@@ -325,20 +325,29 @@ public class CsAdapter implements RangingAdapter {
                             + ", "
                             + result.getErrorMeters());
                     RangingData.Builder dataBuilder = new RangingData.Builder()
-                            .setRangingTechnology((int) RangingTechnology.CS.getValue())
+                            .setRangingTechnology(RangingTechnology.CS.getValue())
                             .setDistance(new RangingMeasurement.Builder()
                                     .setMeasurement(result.getResultMeters())
+                                    .setConfidence(
+                                            (int) Math.round(result.getConfidenceLevel() * 2.0))
+                                    .setRawConfidence(result.getConfidenceLevel())
+                                    .setError(result.getErrorMeters())
                                     .build())
                             .setTimestampMillis(RangingUtils.convertNanosToMillis(
-                                    result.getMeasurementTimestampNanos()));
+                                    result.getMeasurementTimestampNanos()))
+                            .setDelaySpreadMeters(result.getDelaySpreadMeters())
+                            .setDetectedAttackLevel((byte) result.getDetectedAttackLevel())
+                            .setVelocityMetersPerSec(result.getVelocityMetersPerSecond());
                     if (!Double.isNaN(result.getAzimuthAngle())) {
                         dataBuilder.setAzimuth(new RangingMeasurement.Builder()
                                 .setMeasurement(result.getAzimuthAngle())
+                                .setError(result.getErrorAzimuthAngle())
                                 .build());
                     }
                     if (!Double.isNaN(result.getAltitudeAngle())) {
                         dataBuilder.setElevation(new RangingMeasurement.Builder()
                                 .setMeasurement(result.getAltitudeAngle())
+                                .setError(result.getErrorAltitudeAngle())
                                 .build());
                     }
                     synchronized (mStateMachine) {

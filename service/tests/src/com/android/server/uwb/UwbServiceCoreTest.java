@@ -57,7 +57,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.validateMockitoUsage;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import android.content.AttributionSource;
@@ -1932,7 +1931,7 @@ public class UwbServiceCoreTest {
 
         mUwbServiceCore.unregisterVendorExtensionCallback(vendorCb);
         mUwbServiceCore.onVendorUciNotificationReceived(gid, oid, payload);
-        verifyZeroInteractions(vendorCb);
+        verifyNoMoreInteractions(vendorCb);
     }
 
     @Test

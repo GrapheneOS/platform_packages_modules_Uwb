@@ -127,6 +127,8 @@ public class RttAdapterTest {
         when(mMockRttService.getSubscriber(mMockContext)).thenReturn(mMockRttRangingDevice);
         when(mMockRangingInjector.getDeviceConfigFacade()).thenReturn(mMockDeviceConfigFacade);
         when(mMockDeviceConfigFacade.getRttRangingRequestDelay()).thenReturn(0);
+        RangingInjector.setInstance(mMockRangingInjector);
+        when(mMockRangingInjector.isRangingTechnologyEnabled(any())).thenReturn(true);
         mRttAdapter = new RttAdapter(mMockContext, mMockRangingInjector,
                 MoreExecutors.newDirectExecutorService(),
                 mMockRttService, DEVICE_ROLE_INITIATOR);

@@ -43,6 +43,9 @@ public final class RangingData implements Parcelable {
     @Nullable private final RangingMeasurement mElevation;
     private final int mRssi;
     private final long mTimestamp;
+    private final double mDelaySpreadMeters;
+    private final /* @android.bluetooth.le.Nadm */ byte mDetectedAttackLevel;
+    private final double mVelocityMetersPerSec;
 
     private RangingData(Builder builder) {
         if (builder.mDistance == null) {
@@ -60,6 +63,9 @@ public final class RangingData implements Parcelable {
         mElevation = builder.mElevation;
         mRssi = builder.mRssi;
         mTimestamp = builder.mTimestamp;
+        mDelaySpreadMeters = builder.mDelaySpreadMeters;
+        mDetectedAttackLevel = builder.mDetectedAttackLevel;
+        mVelocityMetersPerSec = builder.mVelocityMetersPerSec;
     }
 
     private RangingData(Parcel in) {
@@ -73,6 +79,9 @@ public final class RangingData implements Parcelable {
                 RangingMeasurement.class.getClassLoader(), RangingMeasurement.class);
         mRssi = in.readInt();
         mTimestamp = in.readLong();
+        mDelaySpreadMeters = in.readDouble();
+        mDetectedAttackLevel = in.readByte();
+        mVelocityMetersPerSec = in.readDouble();
     }
 
     public static final @NonNull Creator<RangingData> CREATOR = new Creator<>() {
@@ -149,6 +158,71 @@ public final class RangingData implements Parcelable {
     }
 
     /**
+     * Check if the delay spread was set.
+     *
+     * @return True if a delay spread value was set, false if it was not.
+     * @hide
+     */
+    public boolean hasDelaySpread() {
+        return !Double.isNaN(mDelaySpreadMeters);
+    }
+
+    /**
+     * Get estimated delay spread in meters of the measured channel. This is a measure of the
+     * multipath richness of the channel.
+     *
+     * <p>Returned value will be positive if it exists</p>
+     *
+     * @return The delay spread in meters, or NaN if it was not set.
+     * @hide
+     */
+    public double getDelaySpreadMeters() {
+        return mDelaySpreadMeters;
+    }
+
+    /**
+     * Check if the NADM value for the ranging data has been set.
+     *
+     * @return True if a NADM value was set, false if not.
+     * @hide
+     */
+    public boolean hasDetectedAttackLevel() {
+        return Byte.compareUnsigned(mDetectedAttackLevel, (byte) 0xff) != 0;
+    }
+
+    /**
+     * Get the detected Normalized Attack Detector (NADM) value for the ranging data. This
+     * represents the probability of a malicious attack being underway to the application layer.
+     *
+     * @return The NADM value, or 0xFF if the value is unknown.
+     * @hide
+     */
+    public /* @android.bluetooth.le.Nadm */ byte getDetectedAttackLevel() {
+        return mDetectedAttackLevel;
+    }
+
+    /**
+     * Check if a velocity value is included in this ranging data.
+     *
+     * @return True if a velocity was set, false if not.
+     * @hide
+     */
+    public boolean hasVelocity() {
+        return !Double.isNaN(mVelocityMetersPerSec);
+    }
+
+    /**
+     * Get the estimated relative velocity along the direction of shortest distance between the
+     * devices in meters/second.
+     *
+     * @return the velocity in meters/second, or NaN if it was not set.
+     * @hide
+     */
+    public double getVelocityMetersPerSec() {
+        return mVelocityMetersPerSec;
+    }
+
+    /**
      * Returns the timestamp of when the ranging data was collected.
      *
      * @return The timestamp in milliseconds.
@@ -185,6 +259,9 @@ public final class RangingData implements Parcelable {
         private RangingMeasurement mElevation = null;
         private int mRssi = Integer.MIN_VALUE;
         private long mTimestamp = Long.MIN_VALUE;
+        private double mDelaySpreadMeters = Double.NaN;
+        private /* @android.bluetooth.le.Nadm */ byte mDetectedAttackLevel = (byte) 0xff;
+        private double mVelocityMetersPerSec = Double.NaN;
 
         /**
          * Sets the ranging technology.
@@ -261,6 +338,56 @@ public final class RangingData implements Parcelable {
         @NonNull
         public Builder setTimestampMillis(long timestamp) {
             mTimestamp = timestamp;
+            return this;
+        }
+
+        /**
+         * Sets the estimated delay spread in meters. This is a measure of the multipath richness
+         * of the channel.
+         *
+         * <p>Must be positive.</p>
+         *
+         * @param delaySpread The estinamted delay spread in meters.
+         * @return This {@link Builder} instance.
+         * @throws IllegalArgumentException if the provided value is < 0.
+         * @hide
+         */
+        @NonNull
+        public Builder setDelaySpreadMeters(double delaySpread) {
+            if (delaySpread < 0) {
+                throw new IllegalArgumentException("Delay spread meters must be >= 0");
+            }
+            mDelaySpreadMeters = delaySpread;
+            return this;
+        }
+
+        /**
+         * Set the detected Normalized Attack Detector (NADM) value for the ranging data. This
+         * represents the probability of a malicious attack being underway to the application layer.
+         *
+         * @param detectedAttackLevel The NADM value for this measurement.
+         * @return This {@link Builder} instance.
+         * @throws IllegalArgumentException If the provided NADM value is invalid.
+         * @hide
+         */
+        @NonNull
+        public Builder setDetectedAttackLevel(
+                /* @android.bluetooth.le.Nadm */ byte detectedAttackLevel) {
+            mDetectedAttackLevel = detectedAttackLevel;
+            return this;
+        }
+
+        /**
+         * Set the estimated relative velocity along the direction of shortest distance between the
+         * devices in meters/second.
+         *
+         * @param velocity The estimated velocity in meters.
+         * @return This {@link Builder} instance.
+         * @hide
+         */
+        @NonNull
+        public Builder setVelocityMetersPerSec(double velocity) {
+            mVelocityMetersPerSec = velocity;
             return this;
         }
 

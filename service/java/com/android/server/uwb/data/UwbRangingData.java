@@ -23,6 +23,7 @@ public class UwbRangingData {
     public int mRcrIndication;
     public long mCurrRangingInterval;
     public int mRangingMeasuresType;
+    public long mHusPrimarySessionId;
     public int mMacAddressMode;
     public int mNoOfRangingMeasures;
     public UwbTwoWayMeasurement[] mRangingTwoWayMeasures;
@@ -31,14 +32,15 @@ public class UwbRangingData {
     public UwbDlTDoAMeasurement[] mUwbDlTDoAMeasurements;
 
     public UwbRangingData(long seqCounter, long sessionId, int rcrIndication,
-            long currRangingInterval, int rangingMeasuresType, int macAddressMode,
-            int noOfRangingMeasures, UwbTwoWayMeasurement[] rangingTwoWayMeasures,
-            byte[] rawNtfData) {
+            long currRangingInterval, int rangingMeasuresType, long husPrimarySessionId,
+            int macAddressMode, int noOfRangingMeasures,
+            UwbTwoWayMeasurement[] rangingTwoWayMeasures, byte[] rawNtfData) {
         this.mSeqCounter = seqCounter;
         this.mSessionId = sessionId;
         this.mRcrIndication = rcrIndication;
         this.mCurrRangingInterval = currRangingInterval;
         this.mRangingMeasuresType = rangingMeasuresType;
+        this.mHusPrimarySessionId = husPrimarySessionId;
         this.mMacAddressMode = macAddressMode;
         this.mNoOfRangingMeasures = noOfRangingMeasures;
         this.mRangingTwoWayMeasures = rangingTwoWayMeasures;
@@ -46,14 +48,15 @@ public class UwbRangingData {
     }
 
     public UwbRangingData(long seqCounter, long sessionId, int rcrIndication,
-            long currRangingInterval, int rangingMeasuresType, int macAddressMode,
-            int noOfRangingMeasures, UwbOwrAoaMeasurement rangingOwrAoaMeasure,
+            long currRangingInterval, int rangingMeasuresType, long husPrimarySessionId,
+            int macAddressMode, int noOfRangingMeasures, UwbOwrAoaMeasurement rangingOwrAoaMeasure,
             byte[] rawNtfData) {
         this.mSeqCounter = seqCounter;
         this.mSessionId = sessionId;
         this.mRcrIndication = rcrIndication;
         this.mCurrRangingInterval = currRangingInterval;
         this.mRangingMeasuresType = rangingMeasuresType;
+        this.mHusPrimarySessionId = husPrimarySessionId;
         this.mMacAddressMode = macAddressMode;
         this.mNoOfRangingMeasures = noOfRangingMeasures;
         this.mRangingOwrAoaMeasure = rangingOwrAoaMeasure;
@@ -61,14 +64,15 @@ public class UwbRangingData {
     }
 
     public UwbRangingData(long seqCounter, long sessionId, int rcrIndication,
-            long currRangingInterval, int rangingMeasuresType, int macAddressMode,
-            int noOfRangingMeasures, UwbDlTDoAMeasurement[] uwbDlTDoAMeasurements,
-            byte[] rawNtfData) {
+            long currRangingInterval, int rangingMeasuresType, long husPrimarySessionId,
+            int macAddressMode, int noOfRangingMeasures,
+            UwbDlTDoAMeasurement[] uwbDlTDoAMeasurements, byte[] rawNtfData) {
         this.mSeqCounter = seqCounter;
         this.mSessionId = sessionId;
         this.mRcrIndication = rcrIndication;
         this.mCurrRangingInterval = currRangingInterval;
         this.mRangingMeasuresType = rangingMeasuresType;
+        this.mHusPrimarySessionId = husPrimarySessionId;
         this.mMacAddressMode = macAddressMode;
         this.mNoOfRangingMeasures = noOfRangingMeasures;
         this.mUwbDlTDoAMeasurements = uwbDlTDoAMeasurements;
@@ -93,6 +97,10 @@ public class UwbRangingData {
 
     public int getRangingMeasuresType() {
         return mRangingMeasuresType;
+    }
+
+    public long getHusPrimarySessionId() {
+        return mHusPrimarySessionId;
     }
 
     public int getMacAddressMode() {
@@ -127,6 +135,7 @@ public class UwbRangingData {
                     + ", RcrIndication = " + mRcrIndication
                     + ", CurrRangingInterval = " + mCurrRangingInterval
                     + ", RangingMeasuresType = " + mRangingMeasuresType
+                    + ", HusPrimarySessionId = " + mHusPrimarySessionId
                     + ", MacAddressMode = " + mMacAddressMode
                     + ", NoOfRangingMeasures = " + mNoOfRangingMeasures
                     + ", RangingTwoWayMeasures = " + Arrays.toString(mRangingTwoWayMeasures)
@@ -139,6 +148,7 @@ public class UwbRangingData {
                     + ", RcrIndication = " + mRcrIndication
                     + ", CurrRangingInterval = " + mCurrRangingInterval
                     + ", RangingMeasuresType = " + mRangingMeasuresType
+                    + ", HusPrimarySessionId = " + mHusPrimarySessionId
                     + ", MacAddressMode = " + mMacAddressMode
                     + ", NoOfRangingMeasures = " + mNoOfRangingMeasures
                     + ", RangingOwrAoaMeasure = " + mRangingOwrAoaMeasure.toString()
@@ -151,6 +161,7 @@ public class UwbRangingData {
                     + ", RcrIndication = " + mRcrIndication
                     + ", CurrRangingInterval = " + mCurrRangingInterval
                     + ", RangingMeasuresType = " + mRangingMeasuresType
+                    + ", HusPrimarySessionId = " + mHusPrimarySessionId
                     + ", MacAddressMode = " + mMacAddressMode
                     + ", NoOfRangingMeasures = " + mNoOfRangingMeasures
                     + ", RangingDlTDoAMeasure = " + Arrays.toString(mUwbDlTDoAMeasurements)

@@ -51,6 +51,7 @@ import com.android.ranging.uwb.backend.internal.RangingTimingParams;
 import com.android.ranging.uwb.backend.internal.Utils;
 import com.android.server.ranging.RangingEngine;
 import com.android.server.ranging.RangingEngine.ConfigSelectionException;
+import com.android.server.ranging.RangingUtils.InternalReason;
 import com.android.server.ranging.oob.CapabilityResponseMessage;
 import com.android.server.ranging.oob.SetConfigurationMessage.TechnologyOobConfig;
 import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
@@ -136,7 +137,8 @@ public class UwbConfigSelector implements RangingEngine.ConfigSelector {
             @Nullable UwbRangingCapabilities capabilities
     ) throws ConfigSelectionException {
         if (!isCapableOfConfig(sessionConfig, oobConfig, capabilities)) {
-            throw new ConfigSelectionException("Local device is incapable of provided UWB config");
+            throw new ConfigSelectionException("Local device is incapable of provided UWB config",
+                    InternalReason.UNSUPPORTED);
         }
 
         mSessionConfig = sessionConfig;
@@ -160,11 +162,13 @@ public class UwbConfigSelector implements RangingEngine.ConfigSelector {
             @NonNull RangingDevice peer, @NonNull CapabilityResponseMessage response
     ) throws ConfigSelectionException {
         UwbOobCapabilities capabilities = response.getUwbCapabilities();
-        if (capabilities == null) throw new ConfigSelectionException(
-                "Peer " + peer + " does not support UWB");
-
+        if (capabilities == null) {
+            throw new ConfigSelectionException("Peer " + peer + " does not support UWB",
+                    InternalReason.PEER_CAPABILITIES_MISMATCH);
+        }
         if (!capabilities.getSupportedDeviceRole().contains(UwbOobConfig.OobDeviceRole.INITIATOR)) {
-            throw new ConfigSelectionException("Peer does not support initiator role");
+            throw new ConfigSelectionException("Peer does not support initiator role",
+                    InternalReason.PEER_CAPABILITIES_MISMATCH);
         }
 
         mPeerAddresses.put(peer, capabilities.getUwbAddress());
@@ -268,7 +272,8 @@ public class UwbConfigSelector implements RangingEngine.ConfigSelector {
             }
         }
 
-        throw new ConfigSelectionException("Failed to find agreeable config id");
+        throw new ConfigSelectionException("Failed to find agreeable config id",
+                InternalReason.PEER_CAPABILITIES_MISMATCH);
     }
 
     private byte[] selectSessionKeyInfo() {
@@ -288,7 +293,8 @@ public class UwbConfigSelector implements RangingEngine.ConfigSelector {
         } else if (mChannels.contains(UWB_CHANNEL_5)) {
             return UWB_CHANNEL_5;
         } else {
-            throw new ConfigSelectionException("Not all peers support uwb channel 9 or 5 ");
+            throw new ConfigSelectionException("Not all peers support uwb channel 9 or 5",
+                    InternalReason.PEER_CAPABILITIES_MISMATCH);
         }
     }
 
@@ -297,7 +303,8 @@ public class UwbConfigSelector implements RangingEngine.ConfigSelector {
 
         if (mPreambleIndexes.isEmpty()) {
             throw new ConfigSelectionException(
-                    "Peers do not share support for any uwb preamble indexes");
+                    "Peers do not share support for any uwb preamble indexes",
+                    InternalReason.PEER_CAPABILITIES_MISMATCH);
         }
         Set<@UwbComplexChannel.UwbPreambleCodeIndex Integer> supportedHprfIndexes =
                 Sets.intersection(mPreambleIndexes, HPRF_INDEXES);
@@ -325,7 +332,8 @@ public class UwbConfigSelector implements RangingEngine.ConfigSelector {
                     (long) timings.getRangingIntervalInfrequent());
         } catch (IllegalArgumentException unused) {
             throw new ConfigSelectionException("Timings supported by selected config id " + configId
-                    + " are incompatible with local or peer ranging interval capabilities");
+                    + " are incompatible with local or peer ranging interval capabilities",
+                    InternalReason.PEER_CAPABILITIES_MISMATCH);
         }
 
         // The code below is a little hard to read, but there are 3 cases:
@@ -360,7 +368,8 @@ public class UwbConfigSelector implements RangingEngine.ConfigSelector {
         } else {
             throw new ConfigSelectionException(
                     "Could not find update rate within the "
-                            + "requested range that satisfies all peer capabilities");
+                            + "requested range that satisfies all peer capabilities",
+                    InternalReason.PEER_CAPABILITIES_MISMATCH);
         }
     }
 }

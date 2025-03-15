@@ -102,6 +102,10 @@ public class RttRanger {
         if (mAlarmListener != null) {
             mAlarmManager.cancel(mAlarmListener);
         }
+        if (nextRequestTime == 0) {
+            startRangingInternal();
+            return;
+        }
         mAlarmListener = () -> {
             mExecutor.execute(this::startRangingInternal);
         };

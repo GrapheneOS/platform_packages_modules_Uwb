@@ -92,7 +92,6 @@ public class FiraHybridSessionControleeConfig extends FiraParams {
         buffer.order(ByteOrder.LITTLE_ENDIAN);
         for (FiraHybridSessionPhaseList phaseList : mPhaseList) {
             buffer.putInt(phaseList.getSessionHandle());
-            buffer.putInt(phaseList.getPhaseParticipation());
         }
 
         bundle.putIntArray(KEY_PHASE_LIST, byteArrayToIntArray(buffer.array()));
@@ -121,8 +120,7 @@ public class FiraHybridSessionControleeConfig extends FiraParams {
 
         for (int i = 0; i < numberOfPhases; i++) {
             FiraHybridSessionPhaseList mFiraHybridSessionPhaseList = new FiraHybridSessionPhaseList(
-                    buffer.getInt(),
-                    (byte) buffer.getInt());
+                    buffer.getInt());
             builder.addPhaseList(mFiraHybridSessionPhaseList);
         }
         return builder.build();
@@ -157,19 +155,13 @@ public class FiraHybridSessionControleeConfig extends FiraParams {
     /** Defines parameters for hybrid session's secondary phase list */
     public static class FiraHybridSessionPhaseList {
         private final int mSessionHandle;
-        private final byte mPhaseParticipation;
 
-        public FiraHybridSessionPhaseList(int sessionHandle, byte phaseParticipation) {
+        public FiraHybridSessionPhaseList(int sessionHandle) {
             mSessionHandle = sessionHandle;
-            mPhaseParticipation = phaseParticipation;
         }
 
         public int getSessionHandle() {
             return mSessionHandle;
-        }
-
-        public byte getPhaseParticipation() {
-            return mPhaseParticipation;
         }
     }
 }
