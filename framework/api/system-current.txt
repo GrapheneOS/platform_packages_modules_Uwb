@@ -48,6 +48,7 @@ package android.uwb {
     method @Nullable public android.uwb.AngleOfArrivalMeasurement getDestinationAngleOfArrivalMeasurement();
     method @Nullable public android.uwb.DistanceMeasurement getDistanceMeasurement();
     method public long getElapsedRealtimeNanos();
+    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public long getHusPrimarySessionId();
     method public int getLineOfSight();
     method public int getMeasurementFocus();
     method @NonNull public android.os.PersistableBundle getRangingMeasurementMetadata();
@@ -63,6 +64,7 @@ package android.uwb {
     field public static final int MEASUREMENT_FOCUS_NONE = 0; // 0x0
     field public static final int MEASUREMENT_FOCUS_RANGE = 1; // 0x1
     field public static final int NLOS = 1; // 0x1
+    field @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public static final int NON_HYBRID_UWB_SESSION_ID = 0; // 0x0
     field public static final int RANGING_STATUS_FAILURE_OUT_OF_RANGE = 1; // 0x1
     field public static final int RANGING_STATUS_FAILURE_UNKNOWN_ERROR = -1; // 0xffffffff
     field public static final int RANGING_STATUS_SUCCESS = 0; // 0x0
@@ -78,6 +80,7 @@ package android.uwb {
     method @NonNull public android.uwb.RangingMeasurement.Builder setDestinationAngleOfArrivalMeasurement(@NonNull android.uwb.AngleOfArrivalMeasurement);
     method @NonNull public android.uwb.RangingMeasurement.Builder setDistanceMeasurement(@NonNull android.uwb.DistanceMeasurement);
     method @NonNull public android.uwb.RangingMeasurement.Builder setElapsedRealtimeNanos(long);
+    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") @NonNull public android.uwb.RangingMeasurement.Builder setHusPrimarySessionId(long);
     method @NonNull public android.uwb.RangingMeasurement.Builder setLineOfSight(int);
     method @NonNull public android.uwb.RangingMeasurement.Builder setMeasurementFocus(int);
     method @NonNull public android.uwb.RangingMeasurement.Builder setRangingMeasurementMetadata(@NonNull android.os.PersistableBundle);

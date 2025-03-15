@@ -16,6 +16,7 @@
 
 package android.uwb;
 
+import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
 import android.annotation.IntRange;
 import android.annotation.NonNull;
@@ -27,6 +28,8 @@ import android.os.Parcelable;
 import android.os.PersistableBundle;
 import android.os.SystemClock;
 import android.uwb.util.PersistableBundleUtils;
+
+import com.android.uwb.flags.Flags;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -43,6 +46,9 @@ public final class RangingMeasurement implements Parcelable {
     public static final int RSSI_MIN = -127;
     public static final int RSSI_MAX = -1;
 
+    @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public static final int NON_HYBRID_UWB_SESSION_ID = 0;
+
     private final UwbAddress mRemoteDeviceAddress;
     private final @Status int mStatus;
     private final long mElapsedRealtimeNanos;
@@ -52,6 +58,7 @@ public final class RangingMeasurement implements Parcelable {
     private final @LineOfSight int mLineOfSight;
     private final @MeasurementFocus int mMeasurementFocus;
     private final int mRssiDbm;
+    private final long mHusPrimarySessionId;
     private final PersistableBundle mRangingMeasurementMetadata;
 
     private RangingMeasurement(@NonNull UwbAddress remoteDeviceAddress, @Status int status,
@@ -60,6 +67,7 @@ public final class RangingMeasurement implements Parcelable {
             @Nullable AngleOfArrivalMeasurement destinationAngleOfArrivalMeasurement,
             @LineOfSight int lineOfSight, @MeasurementFocus int measurementFocus,
             @IntRange(from = RSSI_UNKNOWN, to = RSSI_MAX) int rssiDbm,
+            long husPrimarySessionId,
             PersistableBundle rangingMeasurementMetadata) {
         mRemoteDeviceAddress = remoteDeviceAddress;
         mStatus = status;
@@ -70,6 +78,7 @@ public final class RangingMeasurement implements Parcelable {
         mLineOfSight = lineOfSight;
         mMeasurementFocus = measurementFocus;
         mRssiDbm = rssiDbm;
+        mHusPrimarySessionId = husPrimarySessionId;
         mRangingMeasurementMetadata = rangingMeasurementMetadata;
     }
 
@@ -209,6 +218,25 @@ public final class RangingMeasurement implements Parcelable {
     }
 
     /**
+     * Gets the Hybrid UWB Session(HUS) Primary Session ID.
+     *
+     * <p>This API is only available on FIRA 3.0 compatible devices.</p>
+     *
+     * <p>This field contains the Session ID of the HUS Primary Session. It is applicable only
+     * if the session type is part of Hybrid UWB Scheduling (HUS).</p>
+     *
+     * <p>If the UWB session is <b>not</b> part of Hybrid UWB Scheduling, this field will be
+     * {@link #NON_HYBRID_UWB_SESSION_ID}.</p>
+     *
+     * @return The primary session ID for the Hybrid UWB Session (HUS).
+     * @see Flags#FLAG_UWB_FIRA_3_0_25Q4
+     */
+    @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public long getHusPrimarySessionId() {
+        return mHusPrimarySessionId;
+    }
+
+    /**
      * @hide
      */
     @Retention(RetentionPolicy.SOURCE)
@@ -272,6 +300,9 @@ public final class RangingMeasurement implements Parcelable {
 
         if (obj instanceof RangingMeasurement) {
             RangingMeasurement other = (RangingMeasurement) obj;
+            boolean isHusPrimarySessionIdEqual = !Flags.uwbFira3025q4()
+                    || (mHusPrimarySessionId == other.getHusPrimarySessionId());
+
             return Objects.equals(mRemoteDeviceAddress, other.getRemoteDeviceAddress())
                     && mStatus == other.getStatus()
                     && mElapsedRealtimeNanos == other.getElapsedRealtimeNanos()
@@ -284,6 +315,7 @@ public final class RangingMeasurement implements Parcelable {
                     && mLineOfSight == other.getLineOfSight()
                     && mMeasurementFocus == other.getMeasurementFocus()
                     && mRssiDbm == other.getRssiDbm()
+                    && isHusPrimarySessionIdEqual
                     && PersistableBundleUtils.isEqual(mRangingMeasurementMetadata,
                     other.mRangingMeasurementMetadata);
         }
@@ -298,7 +330,8 @@ public final class RangingMeasurement implements Parcelable {
         return Objects.hash(mRemoteDeviceAddress, mStatus, mElapsedRealtimeNanos,
                 mDistanceMeasurement, mAngleOfArrivalMeasurement,
                 mDestinationAngleOfArrivalMeasurement, mLineOfSight, mMeasurementFocus, mRssiDbm,
-                PersistableBundleUtils.getHashCode(mRangingMeasurementMetadata));
+                mHusPrimarySessionId, PersistableBundleUtils.getHashCode(
+                    mRangingMeasurementMetadata));
     }
 
     @Override
@@ -317,6 +350,7 @@ public final class RangingMeasurement implements Parcelable {
         dest.writeInt(mLineOfSight);
         dest.writeInt(mMeasurementFocus);
         dest.writeInt(mRssiDbm);
+        dest.writeLong(mHusPrimarySessionId);
         dest.writePersistableBundle(mRangingMeasurementMetadata);
     }
 
@@ -338,6 +372,7 @@ public final class RangingMeasurement implements Parcelable {
                     builder.setLineOfSight(in.readInt());
                     builder.setMeasurementFocus(in.readInt());
                     builder.setRssiDbm(in.readInt());
+                    builder.setHusPrimarySessionId(in.readLong());
                     PersistableBundle metadata =
                             in.readPersistableBundle(getClass().getClassLoader());
                     if (metadata != null) builder.setRangingMeasurementMetadata(metadata);
@@ -361,6 +396,7 @@ public final class RangingMeasurement implements Parcelable {
                 + ", lineOfSight: " + mLineOfSight
                 + ", measurementFocus: " + mMeasurementFocus
                 + ", rssiDbm: " + mRssiDbm
+                + ", husPrimarySessionId: " + mHusPrimarySessionId
                 + ", ranging measurement metadata: " + mRangingMeasurementMetadata
                 + ", elapsed real time nanos: " + mElapsedRealtimeNanos
                 + ", status: " + mStatus
@@ -380,6 +416,7 @@ public final class RangingMeasurement implements Parcelable {
         private @LineOfSight int mLineOfSight = LOS_UNDETERMINED;
         private @MeasurementFocus int mMeasurementFocus = MEASUREMENT_FOCUS_NONE;
         private int mRssiDbm = RSSI_UNKNOWN;
+        private long mHusPrimarySessionId = NON_HYBRID_UWB_SESSION_ID;
         private PersistableBundle mRangingMeasurementMetadata = null;
 
         /**
@@ -492,6 +529,28 @@ public final class RangingMeasurement implements Parcelable {
         }
 
         /**
+         * Sets the Hybrid UWB Session (HUS) Primary Session ID.
+         *
+         * <p>This API is only available on FIRA 3.0 compatible devices.</p>
+         *
+         * <p>This field represents the Session ID of the HUS Primary Session and is applicable
+         * only when the session type is part of a Hybrid UWB Session.</p>
+         *
+         * <p>If the UWB session is <b>not</b> part of Hybrid UWB Scheduling, this field is set to
+         * {@link #NON_HYBRID_UWB_SESSION_ID}.</p>
+         *
+         * @param husPrimarySessionId The primary session ID for the Hybrid UWB Session (HUS).
+         * @return The updated {@link Builder} instance.
+         * @see Flags#FLAG_UWB_FIRA_3_0_25Q4
+         */
+        @NonNull
+        @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+        public Builder setHusPrimarySessionId(long husPrimarySessionId) {
+            mHusPrimarySessionId = husPrimarySessionId;
+            return this;
+        }
+
+        /**
          * Set Ranging measurement metadata
          *
          * @param rangingMeasurementMetadata vendor data per ranging measurement
@@ -544,7 +603,7 @@ public final class RangingMeasurement implements Parcelable {
             return new RangingMeasurement(mRemoteDeviceAddress, mStatus, mElapsedRealtimeNanos,
                     mDistanceMeasurement, mAngleOfArrivalMeasurement,
                     mDestinationAngleOfArrivalMeasurement, mLineOfSight, mMeasurementFocus,
-                    mRssiDbm, mRangingMeasurementMetadata);
+                    mRssiDbm, mHusPrimarySessionId, mRangingMeasurementMetadata);
         }
     }
 }
