@@ -809,6 +809,8 @@ public class UwbSessionNotificationManager {
                     rangingMeasurementBuilder.setRssiDbm(rssi);
                 }
 
+                rangingMeasurementBuilder.setHusPrimarySessionId(
+                        rangingData.getHusPrimarySessionId());
                 if (uwbTwoWayMeasurement[i].isStatusCodeOk()) {
                     // Distance measurement is mandatory
                     rangingMeasurementBuilder.setDistanceMeasurement(

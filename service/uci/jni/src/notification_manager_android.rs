@@ -637,7 +637,7 @@ impl NotificationManagerAndroid {
             UWB_RANGING_DATA_CLASS,
         )?;
 
-        let method_sig = "(JJIJIII[L".to_owned() + UWB_DL_TDOA_MEASUREMENT_CLASS + ";[B)V";
+        let method_sig = "(JJIJIJII[L".to_owned() + UWB_DL_TDOA_MEASUREMENT_CLASS + ";[B)V";
 
         // Safety: measurements_jobjectarray is safely instantiated above.
         let measurements_jobject = unsafe { JObject::from_raw(measurements_jobjectarray) };
@@ -656,6 +656,7 @@ impl NotificationManagerAndroid {
                     JValue::Int(range_data.rcr_indicator as i32),
                     JValue::Long(range_data.current_ranging_interval_ms as i64),
                     JValue::Int(range_data.ranging_measurement_type as i32),
+                    JValue::Long(range_data.hus_primary_session_id as i64),
                     JValue::Int(mac_indicator as i32),
                     JValue::Int(measurement_count),
                     JValue::Object(measurements_jobject),
@@ -847,7 +848,7 @@ impl NotificationManagerAndroid {
             &self.env,
             UWB_RANGING_DATA_CLASS,
         )?;
-        let method_sig = "(JJIJIIIL".to_owned() + UWB_OWR_AOA_MEASUREMENT_CLASS + ";[B)V";
+        let method_sig = "(JJIJIJIIL".to_owned() + UWB_OWR_AOA_MEASUREMENT_CLASS + ";[B)V";
 
         // Safety: raw_notification_jobject is safely instantiated above.
         let raw_notification_jobject = unsafe { JObject::from_raw(raw_notification_jbytearray) };
@@ -864,6 +865,7 @@ impl NotificationManagerAndroid {
                     JValue::Int(range_data.rcr_indicator as i32),
                     JValue::Long(range_data.current_ranging_interval_ms as i64),
                     JValue::Int(range_data.ranging_measurement_type as i32),
+                    JValue::Long(range_data.hus_primary_session_id as i64),
                     JValue::Int(mac_indicator as i32),
                     JValue::Int(1), // measurement_count
                     JValue::Object(measurement_jobject),
@@ -939,7 +941,7 @@ impl NotificationManagerAndroid {
             &self.env,
             UWB_RANGING_DATA_CLASS,
         )?;
-        let method_sig = "(JJIJIII[L".to_owned() + UWB_TWO_WAY_MEASUREMENT_CLASS + ";[B)V";
+        let method_sig = "(JJIJIJII[L".to_owned() + UWB_TWO_WAY_MEASUREMENT_CLASS + ";[B)V";
 
         // Safety: measurements_jobjectarray is safely instantiated above.
         let measurements_jobject = unsafe { JObject::from_raw(measurements_jobjectarray) };
@@ -957,6 +959,7 @@ impl NotificationManagerAndroid {
                     JValue::Int(range_data.rcr_indicator as i32),
                     JValue::Long(range_data.current_ranging_interval_ms as i64),
                     JValue::Int(range_data.ranging_measurement_type as i32),
+                    JValue::Long(range_data.hus_primary_session_id as i64),
                     JValue::Int(mac_indicator as i32),
                     JValue::Int(measurement_count),
                     JValue::Object(measurements_jobject),

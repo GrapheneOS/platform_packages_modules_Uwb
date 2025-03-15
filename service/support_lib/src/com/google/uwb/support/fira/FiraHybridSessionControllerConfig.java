@@ -38,8 +38,6 @@ public class FiraHybridSessionControllerConfig extends FiraParams {
     private static final int PHASE_LIST_SIZE = 20;
 
     private final int mNumberOfPhases;
-    private final byte[] mUpdateTime;
-    private final byte mMessageControl;
     private final List<FiraHybridSessionPhaseList> mPhaseList;
 
     public static final String KEY_BUNDLE_VERSION = "bundle_version";
@@ -57,23 +55,13 @@ public class FiraHybridSessionControllerConfig extends FiraParams {
         return mNumberOfPhases;
     }
 
-    public byte[] getUpdateTime() {
-        return mUpdateTime;
-    }
-
-    public byte getMessageControl() {
-        return mMessageControl;
-    }
-
     public List<FiraHybridSessionPhaseList> getPhaseList() {
         return mPhaseList;
     }
 
-    private FiraHybridSessionControllerConfig(int numberOfPhases, byte[] updateTime,
-            byte messageControl, List<FiraHybridSessionPhaseList> phaseList) {
+    private FiraHybridSessionControllerConfig(int numberOfPhases,
+            List<FiraHybridSessionPhaseList> phaseList) {
         mNumberOfPhases = numberOfPhases;
-        mUpdateTime = updateTime;
-        mMessageControl = messageControl;
         mPhaseList = phaseList;
     }
 
@@ -106,17 +94,15 @@ public class FiraHybridSessionControllerConfig extends FiraParams {
     public PersistableBundle toBundle() {
         PersistableBundle bundle = super.toBundle();
         bundle.putInt(KEY_BUNDLE_VERSION, getBundleVersion());
-        bundle.putInt(KEY_MESSAGE_CONTROL, mMessageControl);
         bundle.putInt(KEY_NUMBER_OF_PHASES, mNumberOfPhases);
-        bundle.putIntArray(KEY_UPDATE_TIME, byteArrayToIntArray(mUpdateTime));
 
         ByteBuffer buffer = ByteBuffer.allocate(mNumberOfPhases * PHASE_LIST_SIZE);
         buffer.order(ByteOrder.LITTLE_ENDIAN);
         for (FiraHybridSessionPhaseList phaseList : mPhaseList) {
-            buffer.putInt(phaseList.getSessionHandle());
+            buffer.putInt(phaseList.getSessionId());
             buffer.putShort(phaseList.getStartSlotIndex());
             buffer.putShort(phaseList.getEndSlotIndex());
-            buffer.putInt(phaseList.getPhaseParticipation());
+            buffer.putInt(phaseList.getMessageControl());
             buffer.putLong(uwbAddressToLong(phaseList.getMacAddress()));
         }
 
@@ -139,25 +125,28 @@ public class FiraHybridSessionControllerConfig extends FiraParams {
 
         int numberOfPhases = bundle.getInt(KEY_NUMBER_OF_PHASES);
         builder.setNumberOfPhases(numberOfPhases);
-        builder.setUpdateTime(intArrayToByteArray(bundle.getIntArray(KEY_UPDATE_TIME)));
-        int messageControl = bundle.getInt(KEY_MESSAGE_CONTROL);
-        byte macAddressMode = (byte) (messageControl & 0x01);
-        builder.setMacAddressMode(macAddressMode);
 
         byte[] phaseByteArray = intArrayToByteArray(bundle.getIntArray(KEY_PHASE_LIST));
         ByteBuffer buffer = ByteBuffer.wrap(phaseByteArray);
         buffer.order(ByteOrder.LITTLE_ENDIAN);
 
         for (int i = 0; i < numberOfPhases; i++) {
+            final int sessionId = buffer.getInt();
+            final short startSlotIndex = buffer.getShort();
+            final short endSlotIndex = buffer.getShort();
+            final byte messageControl = (byte) buffer.getInt();
+            final int addressLength =  ((messageControl & 0x01) == SHORT_MAC_ADDRESS)
+                    ? UwbAddress.SHORT_ADDRESS_BYTE_LENGTH
+                    : UwbAddress.EXTENDED_ADDRESS_BYTE_LENGTH;
+
             FiraHybridSessionPhaseList mFiraHybridSessionPhaseList = new FiraHybridSessionPhaseList(
-                    buffer.getInt(),
-                    buffer.getShort(),
-                    buffer.getShort(),
-                    (byte) buffer.getInt(),
-                    longToUwbAddress(buffer.getLong(),
-                        (macAddressMode == SHORT_MAC_ADDRESS
-                        ? UwbAddress.SHORT_ADDRESS_BYTE_LENGTH
-                                    : UwbAddress.EXTENDED_ADDRESS_BYTE_LENGTH)));
+                    sessionId,
+                    startSlotIndex,
+                    endSlotIndex,
+                    messageControl,
+                    longToUwbAddress(buffer.getLong(), addressLength)
+            );
+
             builder.addPhaseList(mFiraHybridSessionPhaseList);
         }
         return builder.build();
@@ -166,22 +155,10 @@ public class FiraHybridSessionControllerConfig extends FiraParams {
     /** Builder */
     public static class Builder {
         private int mNumberOfPhases;
-        private byte[] mUpdateTime;
-        private byte mMacAddressMode;
         private final List<FiraHybridSessionPhaseList> mPhaseList = new ArrayList<>();
 
         public FiraHybridSessionControllerConfig.Builder setNumberOfPhases(int numberOfPhases) {
             mNumberOfPhases = numberOfPhases;
-            return this;
-        }
-
-        public FiraHybridSessionControllerConfig.Builder setUpdateTime(byte[] updateTime) {
-            mUpdateTime = updateTime;
-            return this;
-        }
-
-        public FiraHybridSessionControllerConfig.Builder setMacAddressMode(byte macAddressMode) {
-            mMacAddressMode = macAddressMode;
             return this;
         }
 
@@ -197,38 +174,36 @@ public class FiraHybridSessionControllerConfig extends FiraParams {
             }
             return new FiraHybridSessionControllerConfig(
                     mNumberOfPhases,
-                    mUpdateTime,
-                    (byte) (mMacAddressMode & 0x01),
                     mPhaseList);
         }
     }
 
     /** Defines parameters for hybrid session's secondary phase list */
     public static class FiraHybridSessionPhaseList {
-        private final int mSessionHandle;
+        private final int mSessionId;
 
         @IntRange(from = 1, to = 32767)
         private final short mStartSlotIndex;
 
         @IntRange(from = 1, to = 32767)
         private final short mEndSlotIndex;
-        private final byte mPhaseParticipation;
+        private final byte mMessageControl;
         private final UwbAddress mMacAddress;
 
-        public FiraHybridSessionPhaseList(int sessionHandle,
+        public FiraHybridSessionPhaseList(int sessionId,
                 @IntRange(from = 1, to = 32767) short startSlotIndex,
                 @IntRange(from = 1, to = 32767) short endSlotIndex,
-                @PhaseParticipationHybridSessionController byte phaseParticipation,
+                byte messageControl,
                 UwbAddress macAddress) {
-            mSessionHandle = sessionHandle;
+            mSessionId = sessionId;
             mStartSlotIndex = startSlotIndex;
             mEndSlotIndex = endSlotIndex;
-            mPhaseParticipation = phaseParticipation;
+            mMessageControl = messageControl;
             mMacAddress = macAddress;
         }
 
-        public int getSessionHandle() {
-            return mSessionHandle;
+        public int getSessionId() {
+            return mSessionId;
         }
 
         @IntRange(from = 1, to = 32767)
@@ -241,9 +216,8 @@ public class FiraHybridSessionControllerConfig extends FiraParams {
             return mEndSlotIndex;
         }
 
-        @PhaseParticipationHybridSessionController
-        public byte getPhaseParticipation() {
-            return mPhaseParticipation;
+        public byte getMessageControl() {
+            return mMessageControl;
         }
 
         public UwbAddress getMacAddress() {

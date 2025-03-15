@@ -87,6 +87,7 @@ public class UwbTestUtils {
     private static final int TEST_RCR_INDICATION = 7;
     private static final long TEST_CURR_RANGING_INTERVAL = 100;
     private static final int TEST_RANGING_MEASURES_TYPE = RANGING_MEASUREMENT_TYPE_TWO_WAY;
+    private static final long TEST_HUS_PRIMARY_SESSION_ID = 0;
     private static final int TEST_MAC_ADDRESS_MODE = 1;
     public static final int TEST_STATUS = FiraParams.STATUS_CODE_OK;
     private static final int TEST_LOS = 0;
@@ -165,8 +166,8 @@ public class UwbTestUtils {
                 TEST_AOA_DEST_ELEVATION_FOM, TEST_SLOT_IDX, TEST_RSSI);
         return new UwbRangingData(TEST_SEQ_COUNTER, TEST_SESSION_ID,
                 TEST_RCR_INDICATION, TEST_CURR_RANGING_INTERVAL, RANGING_MEASUREMENT_TYPE_TWO_WAY,
-                TEST_MAC_ADDRESS_MODE, noOfRangingMeasures, uwbTwoWayMeasurements,
-                TEST_RAW_NTF_DATA);
+                TEST_HUS_PRIMARY_SESSION_ID, TEST_MAC_ADDRESS_MODE, noOfRangingMeasures,
+                uwbTwoWayMeasurements, TEST_RAW_NTF_DATA);
     }
 
     private static UwbRangingData generateOwrAoaMeasurementRangingData(
@@ -179,8 +180,8 @@ public class UwbTestUtils {
                 convertFloatToQFormat(TEST_AOA_ELEVATION, 9, 7), TEST_AOA_ELEVATION_FOM);
         return new UwbRangingData(TEST_SEQ_COUNTER, TEST_SESSION_ID,
                 TEST_RCR_INDICATION, TEST_CURR_RANGING_INTERVAL, RANGING_MEASUREMENT_TYPE_OWR_AOA,
-                macAddressingMode, noOfRangingMeasures, uwbOwrAoaMeasurement,
-                TEST_RAW_NTF_DATA);
+                TEST_HUS_PRIMARY_SESSION_ID, macAddressingMode, noOfRangingMeasures,
+                uwbOwrAoaMeasurement, TEST_RAW_NTF_DATA);
     }
 
     /** Generate an OWR ranging data with a bad AoA Azimuth FOM */
@@ -194,8 +195,8 @@ public class UwbTestUtils {
                 convertFloatToQFormat(TEST_AOA_ELEVATION, 9, 7), TEST_AOA_ELEVATION_FOM);
         return new UwbRangingData(TEST_SEQ_COUNTER, TEST_SESSION_ID,
                 TEST_RCR_INDICATION, TEST_CURR_RANGING_INTERVAL, RANGING_MEASUREMENT_TYPE_OWR_AOA,
-                macAddressingMode, noOfRangingMeasures, uwbOwrAoaMeasurement,
-                TEST_RAW_NTF_DATA);
+                TEST_HUS_PRIMARY_SESSION_ID, macAddressingMode, noOfRangingMeasures,
+                uwbOwrAoaMeasurement, TEST_RAW_NTF_DATA);
     }
 
     private static UwbRangingData generateDlTDoAMeasurementRangingData(
@@ -217,8 +218,8 @@ public class UwbTestUtils {
 
         return new UwbRangingData(TEST_SEQ_COUNTER, TEST_SESSION_ID,
                 TEST_RCR_INDICATION, TEST_CURR_RANGING_INTERVAL, RANGING_MEASUREMENT_TYPE_DL_TDOA,
-                macAddressingMode, noOfRangingMeasures, uwbDlTDoAMeasurements,
-                TEST_RAW_NTF_DATA);
+                TEST_HUS_PRIMARY_SESSION_ID, macAddressingMode, noOfRangingMeasures,
+                uwbDlTDoAMeasurements, TEST_RAW_NTF_DATA);
     }
 
     // Create a UwbRangingData with no measurements, for negative test cases (example: incorrect
@@ -229,8 +230,8 @@ public class UwbTestUtils {
                 new UwbTwoWayMeasurement[noOfRangingMeasures];
         return new UwbRangingData(TEST_SEQ_COUNTER, TEST_SESSION_ID,
                 TEST_RCR_INDICATION, TEST_CURR_RANGING_INTERVAL, RANGING_MEASUREMENT_TYPE_UNDEFINED,
-                TEST_MAC_ADDRESS_MODE, noOfRangingMeasures, uwbEmptyTwoWayMeasurements,
-                TEST_RAW_NTF_DATA);
+                TEST_HUS_PRIMARY_SESSION_ID, TEST_MAC_ADDRESS_MODE, noOfRangingMeasures,
+                uwbEmptyTwoWayMeasurements, TEST_RAW_NTF_DATA);
     }
 
     // Helper method to generate a UwbRangingData instance and corresponding RangingMeasurement
