@@ -376,7 +376,7 @@ public final class Utils {
     // Preamble index used by HPRF (high pulse repetition frequency) mode. HPRF supports bitrate up
     // to 31.2 Mbps.
     public static final ImmutableList<Integer> SUPPORTED_HPRF_PREAMBLE_INDEX =
-            ImmutableList.of(25, 26, 27, 28, 19, 30, 31, 32);
+            ImmutableList.of(25, 26, 27, 28, 29, 30, 31, 32);
 
     /** Converts millisecond to RSTU. */
     public static int convertMsToRstu(int value) {

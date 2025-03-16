@@ -24,7 +24,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import android.bluetooth.BluetoothAdapter;
@@ -213,13 +213,13 @@ public class BleDiscoveryAdvertiseProviderTest {
     @Test
     public void teststartAdvertisingSet_success() {
         teststartAdvertisingSet(AdvertisingSetCallback.ADVERTISE_SUCCESS);
-        verifyZeroInteractions(mMockDiscoveryAdvertiseCallback);
+        verifyNoMoreInteractions(mMockDiscoveryAdvertiseCallback);
     }
 
     @Test
     public void teststartAdvertisingSet_failedAlreadyStarted() {
         teststartAdvertisingSet(AdvertisingSetCallback.ADVERTISE_FAILED_ALREADY_STARTED);
-        verifyZeroInteractions(mMockDiscoveryAdvertiseCallback);
+        verifyNoMoreInteractions(mMockDiscoveryAdvertiseCallback);
     }
 
     @Test
@@ -261,7 +261,7 @@ public class BleDiscoveryAdvertiseProviderTest {
     @Test
     public void testStopAdvertise_failedBTUnavailable() {
         teststartAdvertisingSet(AdvertisingSetCallback.ADVERTISE_SUCCESS);
-        verifyZeroInteractions(mMockDiscoveryAdvertiseCallback);
+        verifyNoMoreInteractions(mMockDiscoveryAdvertiseCallback);
 
         when(mMockBluetoothManager.getAdapter()).thenReturn(null);
 
@@ -273,7 +273,7 @@ public class BleDiscoveryAdvertiseProviderTest {
     @Test
     public void testStopAdvertise_failedBTDisabled() {
         teststartAdvertisingSet(AdvertisingSetCallback.ADVERTISE_SUCCESS);
-        verifyZeroInteractions(mMockDiscoveryAdvertiseCallback);
+        verifyNoMoreInteractions(mMockDiscoveryAdvertiseCallback);
 
         when(mMockBluetoothManager.getAdapter()).thenReturn(mMockBluetoothAdapter);
         when(mMockBluetoothAdapter.getBluetoothLeAdvertiser()).thenReturn(null);
@@ -286,7 +286,7 @@ public class BleDiscoveryAdvertiseProviderTest {
     @Test
     public void testStopAdvertise_success() {
         teststartAdvertisingSet(AdvertisingSetCallback.ADVERTISE_SUCCESS);
-        verifyZeroInteractions(mMockDiscoveryAdvertiseCallback);
+        verifyNoMoreInteractions(mMockDiscoveryAdvertiseCallback);
 
         assertThat(mBleDiscoveryAdvertiseProvider.stop()).isTrue();
         verify(mMockBluetoothLeAdvertiser, times(1))

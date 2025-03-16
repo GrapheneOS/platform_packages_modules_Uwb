@@ -37,6 +37,8 @@ import androidx.annotation.Nullable;
 import com.android.server.ranging.CapabilitiesProvider;
 import com.android.server.ranging.CapabilitiesProvider.CapabilitiesAdapter;
 import com.android.server.ranging.CapabilitiesProvider.TechnologyAvailabilityListener;
+import com.android.server.ranging.RangingInjector;
+import com.android.server.ranging.RangingTechnology;
 
 import java.util.List;
 
@@ -51,7 +53,8 @@ public class CsCapabilitiesAdapter extends CapabilitiesAdapter {
     /** @return true if CS is supported in the provided context, false otherwise */
     public static boolean isSupported(Context context) {
         return context.getPackageManager()
-                .hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE_CHANNEL_SOUNDING);
+                .hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE_CHANNEL_SOUNDING)
+                && RangingInjector.getInstance().isRangingTechnologyEnabled(RangingTechnology.CS);
     }
 
     @Override

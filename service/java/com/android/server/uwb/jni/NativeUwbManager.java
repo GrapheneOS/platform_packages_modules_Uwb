@@ -572,17 +572,16 @@ public class NativeUwbManager {
      *
      * @param sessionId : Primary session ID
      * @param numberOfPhases : Number of secondary sessions
-     * @param updateTime : Absolute time in UWBS Time domain
      * @param phaseList : list of secondary sessions which have been previously initialized and
      *                  configured
      * @param chipId : Identifier of UWB chip for multi-HAL devices
      * @return Byte representing the status of the operation
      */
-    public byte setHybridSessionControllerConfiguration(int sessionId, byte messageControl,
-            int numberOfPhases, byte[] updateTime, byte[] phaseList, String chipId) {
+    public byte setHybridSessionControllerConfiguration(int sessionId, int numberOfPhases,
+                byte[] phaseList, String chipId) {
         synchronized (mNativeLock) {
-            return nativeSetHybridSessionControllerConfigurations(sessionId, messageControl,
-                numberOfPhases, updateTime, phaseList, chipId);
+            return nativeSetHybridSessionControllerConfigurations(sessionId, numberOfPhases,
+                phaseList, chipId);
         }
     }
 
@@ -671,8 +670,7 @@ public class NativeUwbManager {
     private native int nativeGetSessionToken(int sessionId, String chipId);
 
     private native byte nativeSetHybridSessionControllerConfigurations(int sessionId,
-            byte messageControl, int noOfPhases, byte[] updateTime, byte[] phaseList,
-                String chipId);
+            int noOfPhases, byte[] phaseList, String chipId);
 
     private native byte nativeSetHybridSessionControleeConfigurations(int sessionId,
             int noOfPhases, byte[] phaseList, String chipId);

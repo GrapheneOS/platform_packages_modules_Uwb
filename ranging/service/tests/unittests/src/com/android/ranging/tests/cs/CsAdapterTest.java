@@ -136,6 +136,8 @@ public class CsAdapterTest {
         when(mMockAttributionSource.getUid()).thenReturn(100);
         when(mMockAttributionSource.getPackageName()).thenReturn("TestPkgName");
         when(mMockRangingInjector.isForegroundAppOrService(anyInt(), anyString())).thenReturn(true);
+        RangingInjector.setInstance(mMockRangingInjector);
+        when(mMockRangingInjector.isRangingTechnologyEnabled(any())).thenReturn(true);
         mCsAdapter = new CsAdapter(mMockContext, mMockRangingInjector);
     }
 

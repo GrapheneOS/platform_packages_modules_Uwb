@@ -18,6 +18,7 @@ package android.ranging.cts;
 
 import static android.ranging.DataNotificationConfig.NOTIFICATION_CONFIG_PROXIMITY_LEVEL;
 import static android.ranging.RangingCapabilities.ENABLED;
+import static android.ranging.RangingCapabilities.NOT_SUPPORTED;
 import static android.ranging.RangingConfig.RANGING_SESSION_OOB;
 import static android.ranging.RangingConfig.RANGING_SESSION_RAW;
 import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
@@ -131,23 +132,33 @@ public class RangingManagerTest {
         assumeTrue(Flags.rangingStackEnabled());
         PackageManager packageManager = mContext.getPackageManager();
         assertThat(packageManager).isNotNull();
-        if (packageManager.hasSystemFeature(PackageManager.FEATURE_UWB)) {
+        mRangingManager = mContext.getSystemService(RangingManager.class);
+        assertThat(mRangingManager).isNotNull();
+        CapabilitiesCallback callback = new CapabilitiesCallback(new CountDownLatch(1));
+        mRangingManager.registerCapabilitiesCallback(Executors.newSingleThreadExecutor(),
+                callback);
+
+        assertThat(callback.mCountDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
+        assertThat(callback.mOnCapabilitiesReceived).isTrue();
+        assertThat(callback.mRangingCapabilities).isNotNull();
+
+        if (callback.mRangingCapabilities.getTechnologyAvailability().get(RangingManager.UWB)
+                != NOT_SUPPORTED) {
             mSupportedTechnologies.add(RangingManager.UWB);
         }
-        if (packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_AWARE)
-                && packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_RTT)) {
+        if (callback.mRangingCapabilities.getTechnologyAvailability().get(
+                RangingManager.WIFI_NAN_RTT) != NOT_SUPPORTED) {
             mSupportedTechnologies.add(RangingManager.WIFI_NAN_RTT);
         }
-        if (packageManager.hasSystemFeature(
-                PackageManager.FEATURE_BLUETOOTH_LE_CHANNEL_SOUNDING)) {
+        if (callback.mRangingCapabilities.getTechnologyAvailability().get(RangingManager.BLE_CS)
+                != NOT_SUPPORTED) {
             mSupportedTechnologies.add(RangingManager.BLE_CS);
         }
-        if (packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
+        if (callback.mRangingCapabilities.getTechnologyAvailability().get(RangingManager.BLE_RSSI)
+                != NOT_SUPPORTED) {
             mSupportedTechnologies.add(RangingManager.BLE_RSSI);
         }
         assumeTrue(!mSupportedTechnologies.isEmpty());
-        mRangingManager = mContext.getSystemService(RangingManager.class);
-        assertThat(mRangingManager).isNotNull();
     }
 
     @After

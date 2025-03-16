@@ -25,7 +25,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 import android.os.RemoteException;
 import android.uwb.UwbManager.UwbVendorUciCallback;
@@ -140,7 +139,7 @@ public class UwbVendorUciCallbackListenerTest {
         // Register first callback
         mUwbVendorUciCallbackListener.register(EXECUTOR, mUwbVendorUciCallback);
         verify(mUwbVendorUciCallback, times(1)).onVendorUciResponse(GID, OID, PAYLOAD);
-        verifyZeroInteractions(mUwbVendorUciCallback2);
+        verifyNoMoreInteractions(mUwbVendorUciCallback2);
         // Register second callback
         mUwbVendorUciCallbackListener.register(EXECUTOR, mUwbVendorUciCallback2);
         verify(mUwbVendorUciCallback, times(1)).onVendorUciResponse(GID, OID, PAYLOAD);
@@ -191,7 +190,7 @@ public class UwbVendorUciCallbackListenerTest {
         // Register first callback
         mUwbVendorUciCallbackListener.register(EXECUTOR, mUwbVendorUciCallback);
         verify(mUwbVendorUciCallback, times(1)).onVendorUciNotification(GID, OID, PAYLOAD);
-        verifyZeroInteractions(mUwbVendorUciCallback2);
+        verifyNoMoreInteractions(mUwbVendorUciCallback2);
         // Register second callback
         mUwbVendorUciCallbackListener.register(EXECUTOR, mUwbVendorUciCallback2);
         verify(mUwbVendorUciCallback, times(1)).onVendorUciNotification(GID, OID, PAYLOAD);

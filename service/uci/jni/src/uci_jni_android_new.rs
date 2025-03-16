@@ -36,16 +36,15 @@ use jni::JNIEnv;
 use log::{debug, error};
 use uwb_core::error::{Error, Result};
 use uwb_core::params::{
-    AndroidRadarConfigResponse, AppConfigTlv, CountryCode, GetDeviceInfoResponse, PhaseList,
-    RadarConfigTlv, RawAppConfigTlv, RawUciMessage, RfTestConfigResponse, RfTestConfigTlv,
-    SessionUpdateControllerMulticastResponse, SessionUpdateDtTagRangingRoundsResponse,
-    SetAppConfigResponse, UpdateTime,
+    AndroidRadarConfigResponse, AppConfigTlv, ControllerPhaseList, CountryCode,
+    GetDeviceInfoResponse, RadarConfigTlv, RawAppConfigTlv, RawUciMessage, RfTestConfigResponse,
+    RfTestConfigTlv, SessionUpdateControllerMulticastResponse,
+    SessionUpdateDtTagRangingRoundsResponse, SetAppConfigResponse,
 };
 use uwb_uci_packets::{
     AppConfigTlvType, CapTlv, Controlee, ControleePhaseList, Controlee_V2_0_16_Byte_Version,
-    Controlee_V2_0_32_Byte_Version, Controlees, MacAddressIndicator, PhaseListExtendedMacAddress,
-    PhaseListShortMacAddress, PowerStats, ResetConfig, SessionState, SessionType, StatusCode,
-    UpdateMulticastListAction,
+    Controlee_V2_0_32_Byte_Version, Controlees, MacAddressIndicator, PowerStats, ResetConfig,
+    SessionState, SessionType, StatusCode, UpdateMulticastListAction,
 };
 
 /// Macro capturing the name of the function calling this macro.
@@ -667,80 +666,63 @@ fn native_set_radar_app_configurations(
 
 fn parse_hybrid_controller_config_phase_list(
     number_of_phases: usize,
-    message_control: u8,
     byte_array: &[u8],
-) -> Result<PhaseList> {
-    const MAC_ADDRESS_BIT_MASK: u8 = 0x01;
-    let phase_list = match MacAddressIndicator::try_from(message_control & MAC_ADDRESS_BIT_MASK)
-        .map_err(|_| Error::BadParameters)?
-    {
-        MacAddressIndicator::ShortAddress => {
-            const PHASE_LIST_SHORT_ADDRESS_SIZE: usize = 11;
+) -> Result<Vec<ControllerPhaseList>> {
+    let mut controller_phase_list: Vec<ControllerPhaseList> = vec![];
+    let mut i = 0;
+    while i < byte_array.len() {
+        let session_token = u32::from_le_bytes(byte_array[i..(i + 4)].try_into().unwrap());
+        let start_slot_index = u16::from_le_bytes(byte_array[(i + 4)..(i + 6)].try_into().unwrap());
+        let end_slot_index = u16::from_le_bytes(byte_array[(i + 6)..(i + 8)].try_into().unwrap());
+        let control = byte_array[i + 8];
+        const MAC_ADDRESS_BIT_MASK: u8 = 0x01;
 
-            let phase_list_short = byte_array
-                .chunks(PHASE_LIST_SHORT_ADDRESS_SIZE)
-                .filter(|chunk| chunk.len() == PHASE_LIST_SHORT_ADDRESS_SIZE)
-                .map(|chunk| {
-                    let session_token = u32::from_le_bytes(chunk[0..4].try_into().unwrap());
-                    let start_slot_index = u16::from_le_bytes(chunk[4..6].try_into().unwrap());
-                    let end_slot_index = u16::from_le_bytes(chunk[6..8].try_into().unwrap());
-                    let phase_participation = chunk[8];
-                    let mac_address = [chunk[9], chunk[10]];
-                    PhaseListShortMacAddress {
-                        session_token,
-                        start_slot_index,
-                        end_slot_index,
-                        phase_participation,
-                        mac_address,
-                    }
-                })
-                .collect::<Vec<PhaseListShortMacAddress>>();
-            if phase_list_short.len() != number_of_phases {
-                return Err(Error::BadParameters);
+        match MacAddressIndicator::try_from(control & MAC_ADDRESS_BIT_MASK)
+            .map_err(|_| Error::BadParameters)?
+        {
+            MacAddressIndicator::ShortAddress => {
+                let mut short_mac_address = [0; 2];
+                const PHASE_LIST_SHORT_ADDRESS_SIZE: usize = 11;
+                short_mac_address.copy_from_slice(&byte_array[(i + 9)..(i + 11)]);
+                let phase_list = ControllerPhaseList {
+                    session_token,
+                    start_slot_index,
+                    end_slot_index,
+                    control,
+                    mac_address: short_mac_address.to_vec(),
+                };
+                i += PHASE_LIST_SHORT_ADDRESS_SIZE;
+                controller_phase_list.push(phase_list);
             }
-            PhaseList::ShortMacAddress(phase_list_short)
-        }
-        MacAddressIndicator::ExtendedAddress => {
-            const PHASE_LIST_EXTENDED_ADDRESS_SIZE: usize = 17;
-            let phase_list_extended = byte_array
-                .chunks(PHASE_LIST_EXTENDED_ADDRESS_SIZE)
-                .filter(|chunk| chunk.len() == PHASE_LIST_EXTENDED_ADDRESS_SIZE)
-                .map(|chunk| {
-                    let session_token = u32::from_le_bytes(chunk[0..4].try_into().unwrap());
-                    let start_slot_index = u16::from_le_bytes(chunk[4..6].try_into().unwrap());
-                    let end_slot_index = u16::from_le_bytes(chunk[6..8].try_into().unwrap());
-                    let phase_participation = chunk[8];
-                    let mut mac_address = [0; 8];
-                    mac_address.copy_from_slice(&chunk[9..17]);
-                    PhaseListExtendedMacAddress {
-                        session_token,
-                        start_slot_index,
-                        end_slot_index,
-                        phase_participation,
-                        mac_address,
-                    }
-                })
-                .collect::<Vec<PhaseListExtendedMacAddress>>();
-            if phase_list_extended.len() != number_of_phases {
-                return Err(Error::BadParameters);
+            MacAddressIndicator::ExtendedAddress => {
+                let mut extended_mac_address = [0; 8];
+                const PHASE_LIST_EXTENDED_ADDRESS_SIZE: usize = 17;
+                extended_mac_address.copy_from_slice(&byte_array[(i + 9)..(i + 17)]);
+                let phase_list = ControllerPhaseList {
+                    session_token,
+                    start_slot_index,
+                    end_slot_index,
+                    control,
+                    mac_address: extended_mac_address.to_vec(),
+                };
+                i += PHASE_LIST_EXTENDED_ADDRESS_SIZE;
+                controller_phase_list.push(phase_list);
             }
-            PhaseList::ExtendedMacAddress(phase_list_extended)
-        }
-    };
-
-    Ok(phase_list)
+        };
+    }
+    if controller_phase_list.len() != number_of_phases {
+        return Err(Error::BadParameters);
+    }
+    Ok(controller_phase_list)
 }
 
 /// Set hybrid session controller configurations. Return null JObject if failed.
 #[no_mangle]
-#[allow(clippy::too_many_arguments)]
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSetHybridSessionControllerConfigurations(
     env: JNIEnv,
     obj: JObject,
     session_id: jint,
-    message_control: jbyte,
     number_of_phases: jint,
-    update_time: jbyteArray,
     phase_list: jbyteArray,
     chip_id: JString,
 ) -> jbyte {
@@ -750,9 +732,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
             env,
             obj,
             session_id,
-            message_control,
             number_of_phases,
-            update_time,
             phase_list,
             chip_id,
         ),
@@ -760,36 +740,23 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
     )
 }
 
-#[allow(clippy::too_many_arguments)]
 fn native_set_hybrid_session_controller_configurations(
     env: JNIEnv,
     obj: JObject,
     session_id: jint,
-    message_control: jbyte,
     number_of_phases: jint,
-    update_time: jbyteArray,
     phase_list: jbyteArray,
     chip_id: JString,
 ) -> Result<()> {
     let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
     let phase_list_bytes =
         env.convert_byte_array(phase_list).map_err(|_| Error::ForeignFunctionInterface)?;
-    let phase_list = parse_hybrid_controller_config_phase_list(
-        number_of_phases as usize,
-        message_control as u8,
-        &phase_list_bytes,
-    )?;
-
-    let update_time_bytes =
-        env.convert_byte_array(update_time).map_err(|_| Error::ForeignFunctionInterface)?;
-    let update_time_array: [u8; 8] =
-        TryFrom::try_from(&update_time_bytes[..]).map_err(|_| Error::BadParameters)?;
+    let phase_list =
+        parse_hybrid_controller_config_phase_list(number_of_phases as usize, &phase_list_bytes)?;
 
     uci_manager.session_set_hybrid_controller_config(
         session_id as u32,
-        message_control as u8,
         number_of_phases as u8,
-        UpdateTime::new(&update_time_array).unwrap(),
         phase_list,
     )
 }
@@ -798,14 +765,13 @@ fn parse_hybrid_controlee_config_phase_list(
     number_of_phases: usize,
     byte_array: &[u8],
 ) -> Result<Vec<ControleePhaseList>> {
-    const CONTROLEE_PHASE_LIST_SIZE: usize = 5;
+    const CONTROLEE_PHASE_LIST_SIZE: usize = 4;
     let controlee_phase_list = byte_array
         .chunks(CONTROLEE_PHASE_LIST_SIZE)
         .filter(|chunk| chunk.len() == CONTROLEE_PHASE_LIST_SIZE)
         .map(|chunk| {
             let session_token = u32::from_le_bytes(chunk[0..4].try_into().unwrap());
-            let phase_participation = chunk[4];
-            ControleePhaseList { session_token, phase_participation }
+            ControleePhaseList { session_token }
         })
         .collect::<Vec<ControleePhaseList>>();
     if controlee_phase_list.len() != number_of_phases {
@@ -1849,20 +1815,20 @@ mod tests {
             0x1, 0x0, 0x0, 0x0, // session token
             0x1, 0x0, // start slot index
             0x2, 0x0, // end slot index
-            0x1, // phase participation
+            0x0, //control
             0x1, 0x2, // mac address
         ];
         let mut phase_list =
-            parse_hybrid_controller_config_phase_list(1, 0, &raw_controller_config_phase_list)
+            parse_hybrid_controller_config_phase_list(1, &raw_controller_config_phase_list)
                 .unwrap();
         assert_eq!(
-            PhaseList::ShortMacAddress(vec![PhaseListShortMacAddress {
+            vec![uwb_uci_packets::ControllerPhaseList {
                 session_token: 1,
                 start_slot_index: 1,
                 end_slot_index: 2,
-                phase_participation: 1,
-                mac_address: [0x1, 0x2]
-            }]),
+                control: 0,
+                mac_address: [0x1, 0x2].to_vec()
+            }],
             phase_list
         );
 
@@ -1870,20 +1836,20 @@ mod tests {
             0x1, 0x0, 0x0, 0x0, // session token
             0x1, 0x0, // start slot index
             0x2, 0x0, // end slot index
-            0x1, // phase participation
+            0x1, //control
             0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, // mac address
         ];
         phase_list =
-            parse_hybrid_controller_config_phase_list(1, 1, &raw_controller_config_phase_list)
+            parse_hybrid_controller_config_phase_list(1, &raw_controller_config_phase_list)
                 .unwrap();
         assert_eq!(
-            PhaseList::ExtendedMacAddress(vec![PhaseListExtendedMacAddress {
+            vec![uwb_uci_packets::ControllerPhaseList {
                 session_token: 1,
                 start_slot_index: 1,
                 end_slot_index: 2,
-                phase_participation: 1,
-                mac_address: [0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8]
-            }]),
+                control: 1,
+                mac_address: [0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8].to_vec()
+            }],
             phase_list
         );
     }
@@ -1892,13 +1858,9 @@ mod tests {
     fn test_parse_hybrid_controlee_config_phase_list() {
         let raw_controlee_config_phase_list = vec![
             0x1, 0x0, 0x0, 0x0, // session token
-            0x1, // phase participation
         ];
         let phase_list =
             parse_hybrid_controlee_config_phase_list(1, &raw_controlee_config_phase_list).unwrap();
-        assert_eq!(
-            vec![ControleePhaseList { session_token: 1, phase_participation: 1 }],
-            phase_list
-        );
+        assert_eq!(vec![ControleePhaseList { session_token: 1 }], phase_list);
     }
 }

@@ -134,8 +134,13 @@ public class AliroEncoder extends TlvEncoder {
                         (byte) params.getSyncCodeIndex()) // PREAMBLE_CODE_INDEX
                 .putByte(ConfigParam.ALIRO_MAC_MODE,
                         (byte) (params.getMacModeRound() << 6
-                                | params.getMacModeOffset())) // MAC_MODE
-                .putByteArray(ConfigParam.SESSION_KEY, params.getSessionKey()); // SESSION_KEY
+                                | params.getMacModeOffset())); // MAC_MODE
+
+        byte[] sessionKey = params.getSessionKey();
+        if (sessionKey != null) {
+            tlvBufferBuilder.putByteArray(ConfigParam.SESSION_KEY, sessionKey);
+        }
+
         if (params.getStsIndex() != AliroParams.STS_INDEX_UNSET) {
             tlvBufferBuilder.putInt(ConfigParam.STS_INDEX, params.getStsIndex());
         }

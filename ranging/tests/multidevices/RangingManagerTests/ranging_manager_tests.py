@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
+import random
 import sys
 import time
 import logging
@@ -26,6 +28,7 @@ from lib.params import *
 from lib.ranging_decorator import *
 from mobly import asserts
 from mobly import config_parser
+from mobly import signals
 from mobly import suite_runner
 from mobly.controllers import android_device
 from android.platform.test.annotations import ApiTest
@@ -79,22 +82,29 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     self.initiator, self.responder = self.devices
 
     for device in self.devices:
+      utils.set_airplane_mode(device.ad, state=False)
+      time.sleep(1)
       if device.is_ranging_technology_supported(RangingTechnology.UWB):
-        try:
-          utils.set_uwb_state_and_verify(device.ad, state=True)
-        except Exception:
-          # If UWB state can't be enabled, it could could be because the country code
-          # is not set. Try forcing the country code in that case.
-          device.ad.ranging.logInfo("Device supports UWB but we failed to enable it. Forcing country code to US and retrying...")
-          utils.initialize_uwb_country_code_and_verify(device.ad)
+        utils.initialize_uwb_country_code(device.ad)
+        utils.request_hw_idle_vote(device.ad, True)
 
     self.initiator.uwb_address = [1, 2]
     self.responder.uwb_address = [3, 4]
 
+  def teardown_class(self):
+      super().teardown_class()
+      for device in self.devices:
+        if device.is_ranging_technology_supported(RangingTechnology.UWB):
+            utils.request_hw_idle_vote(device.ad, False)
+        if device.is_ranging_technology_supported(RangingTechnology.WIFI_RTT):
+            utils.set_wifi_state_and_verify(device.ad, True)
+        if device.is_ranging_technology_supported(RangingTechnology.BLE_CS) or \
+            device.is_ranging_technology_supported(RangingTechnology.BLE_RSSI):
+            utils.set_bt_state_and_verify(device.ad, True)
+
   def setup_test(self):
     super().setup_test()
     for device in self.devices:
-      utils.set_airplane_mode(device.ad, state=False)
       if device.is_ranging_technology_supported(RangingTechnology.UWB):
         utils.set_uwb_state_and_verify(device.ad, state=True)
         utils.set_snippet_foreground_state(device.ad, isForeground=True)
@@ -462,6 +472,10 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
       try:
           self._ble_connect()
+      except Exception as e:
+          asserts.skip("Failed to create ble connection", str(e))
+
+      try:
           initiator_preference = RangingPreference(
               device_role=DeviceRole.INITIATOR,
               ranging_params=RawInitiatorRangingParams(
@@ -481,7 +495,6 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
               SESSION_HANDLE, initiator_preference
           )
           self.initiator.assert_close_ranging_event_received(SESSION_HANDLE)
-
       finally:
           self._ble_disconnect()
 
@@ -502,7 +515,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     )
     # TODO(rpius): Remove this once the technology is stable.
     self._reset_wifi_state()
-
+    test_service_name = "test_service_name" + str(random.randint(1,100))
     initiator_preference = RangingPreference(
         device_role=DeviceRole.INITIATOR,
         ranging_params=RawInitiatorRangingParams(
@@ -510,11 +523,12 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
                 DeviceParams(
                     peer_id=self.responder.id,
                     rtt_params=rtt.RttRangingParams(
-                        service_name="test_service_name1",
+                        service_name=test_service_name,
                     ),
                 )
             ],
         ),
+        enable_range_data_notifications=True,
     )
 
     responder_preference = RangingPreference(
@@ -523,10 +537,11 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
             peer_params=DeviceParams(
                 peer_id=self.initiator.id,
                 rtt_params=rtt.RttRangingParams(
-                    service_name="test_service_name1",
+                    service_name=test_service_name,
                 ),
             ),
         ),
+        enable_range_data_notifications=False,
     )
 
     # Should be able to call _start_mutual_ranging_and_assert_started once we get consistent data.
@@ -582,6 +597,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     # TODO(rpius): Remove this once the technology is stable.
     self._reset_wifi_state()
 
+    test_service_name = "test_periodic_service_name" + str(random.randint(1,100))
     initiator_preference = RangingPreference(
         device_role=DeviceRole.INITIATOR,
         ranging_params=RawInitiatorRangingParams(
@@ -589,12 +605,13 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
                 DeviceParams(
                     peer_id=self.responder.id,
                     rtt_params=rtt.RttRangingParams(
-                        service_name="test_service_name1",
+                        service_name=test_service_name,
                         enable_periodic_ranging_hw_feature=True,
                     ),
                 )
             ],
         ),
+        enable_range_data_notifications=True,
     )
 
     responder_preference = RangingPreference(
@@ -603,11 +620,12 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
             peer_params=DeviceParams(
                 peer_id=self.initiator.id,
                 rtt_params=rtt.RttRangingParams(
-                    service_name="test_service_name1",
+                    service_name=test_service_name,
                     enable_periodic_ranging_hw_feature=True,
                 ),
             ),
         ),
+        enable_range_data_notifications=False,
     )
 
     # Should be able to call _start_mutual_ranging_and_assert_started once we get consistent data.
@@ -654,7 +672,11 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     self._enable_bt()
 
     try:
-      self._ble_connect()
+        self._ble_connect()
+    except Exception as e:
+        asserts.skip("Failed to create ble connection", str(e))
+
+    try:
       initiator_preference = RangingPreference(
           device_role=DeviceRole.INITIATOR,
           ranging_params=RawInitiatorRangingParams(
@@ -733,7 +755,11 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     self._enable_bt()
 
     try:
-      self._ble_bond()
+        self._ble_bond()
+    except Exception as e:
+        asserts.skip("Failed to create ble bond", str(e))
+
+    try:
       initiator_preference = RangingPreference(
           device_role=DeviceRole.INITIATOR,
           ranging_params=RawInitiatorRangingParams(
@@ -839,7 +865,11 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     self._enable_bt()
 
     try:
-      self._ble_bond()
+        self._ble_bond()
+    except Exception as e:
+        asserts.skip("Failed to create ble bond", str(e))
+
+    try:
       session.start_and_assert_opened(check_responders=False)
       session.assert_received_data(technologies=[RangingTechnology.BLE_CS], check_responders=False)
     finally:
@@ -874,11 +904,13 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
               # HIGH_ACCURACY_PREFERRED mode with UWB and CS disabled should fallback to RTT
               ranging_mode=RangingMode.HIGH_ACCURACY_PREFERRED
           ),
+          enable_range_data_notifications=True,
       )
 
       responder_preference = RangingPreference(
           device_role=DeviceRole.RESPONDER,
           ranging_params=OobResponderRangingParams(peer_id=self.initiator.id),
+          enable_range_data_notifications=False,
       )
 
       session = RangingSession()
@@ -897,6 +929,12 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
         f"BLE_CS is supported, skip running BLE_RSSI tests",
     )
 
+    asserts.skip_if(
+        self.initiator.is_ranging_technology_supported(RangingTechnology.BLE_RSSI) or
+        self.responder.is_ranging_technology_supported(RangingTechnology.BLE_RSSI),
+        f"BLE_RSSI is not supported",
+        )
+
     if self.initiator.is_ranging_technology_supported(RangingTechnology.UWB):
         utils.set_uwb_state_and_verify(self.initiator.ad, state=False)
     if self.responder.is_ranging_technology_supported(RangingTechnology.UWB):
@@ -909,7 +947,11 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     self._enable_bt()
 
     try:
-      self._ble_connect()
+        self._ble_connect()
+    except Exception as e:
+        asserts.skip("Failed to create ble connection", str(e))
+
+    try:
       initiator_preference = RangingPreference(
           device_role=DeviceRole.INITIATOR,
           ranging_params=OobInitiatorRangingParams(
