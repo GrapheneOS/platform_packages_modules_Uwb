@@ -22,8 +22,8 @@ public class UwbAliroConstants {
     public static final int HOPPING_CONFIG_MODE_CONTINUOUS_DEFAULT = 0X03;
     public static final int HOPPING_CONFIG_MODE_CONTINUOUS_AES = 0X05;
 
-    public static final int HOPPING_CONFIG_MODE_MODE_ADAPTIVE_DEFAULT = 0X02;
-    public static final int HOPPING_CONFIG_MODE_MODE_ADAPTIVE_AES = 0X04;
+    public static final int HOPPING_CONFIG_MODE_ADAPTIVE_DEFAULT = 0X02;
+    public static final int HOPPING_CONFIG_MODE_ADAPTIVE_AES = 0X04;
 
     /* Fira Extension Application Configuration Parameters*/
     public static final int ALIRO_EXTENSION_HOPPING_CONFIG_MODE_NONE = 0X00;
