@@ -1683,6 +1683,31 @@ public class FiraOpenSessionParams extends FiraParams {
             return this;
         }
 
+        /**
+         * Sets the session priority for the UWB session.
+         *
+         * <p>Once assigned, the priority remains fixed for the session's duration, as UWBS does not
+         * support dynamic updates. Priority updates take effect only when the session is restarted.
+         * </p>
+         *
+         * <p>If the configured priority {@link #setSessionPriority(int)} is same as the UCI default
+         * value {@link FiraOpenSessionParams.Builder#mSessionPriority}, the system uses the
+         * precomputed stack priority.</p>
+         *
+         * Possible values are defined in UwbSessionManager.UwbSession:
+         *  <ul>
+         *    <li>CCC_SESSION_PRIORITY - Highest priority</li>
+         *    <li>ALIRO_SESSION_PRIORITY - Aliro sessions</li>
+         *    <li>SYSTEM_APP_SESSION_PRIORITY - System apps/services</li>
+         *    <li>FG_SESSION_PRIORITY - Foreground apps/services</li>
+         *    <li>BG_SESSION_PRIORITY - Lowest priority</li>
+         *  </ul>
+         *
+         * <p>Otherwise, it overrides the default stack-calculated priority.</p>
+         *
+         * @param sessionPriority The priority level to assign.
+         *
+         */
         public FiraOpenSessionParams.Builder setSessionPriority(int sessionPriority) {
             mSessionPriority = sessionPriority;
             return this;

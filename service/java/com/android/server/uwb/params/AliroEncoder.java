@@ -88,13 +88,13 @@ public class AliroEncoder extends TlvEncoder {
                             isFiraExtensionSupported
                                     ? UwbAliroConstants
                                     .ALIRO_EXTENSION_HOPPING_CONFIG_MODE_ADAPTIVE_DEFAULT :
-                                    UwbAliroConstants.HOPPING_CONFIG_MODE_MODE_ADAPTIVE_DEFAULT;
+                                    UwbAliroConstants.HOPPING_CONFIG_MODE_ADAPTIVE_DEFAULT;
                 } else {
                     hoppingMode =
                             isFiraExtensionSupported
                                     ? UwbAliroConstants
-                                    .ALIRO_EXTENSION_HOPPING_CONFIG_MODE_ADAPTIVE_DEFAULT :
-                                    UwbAliroConstants.HOPPING_CONFIG_MODE_MODE_ADAPTIVE_DEFAULT;
+                                    .ALIRO_EXTENSION_HOPPING_CONFIG_MODE_ADAPTIVE_AES :
+                                    UwbAliroConstants.HOPPING_CONFIG_MODE_ADAPTIVE_AES;
                 }
                 break;
         }
