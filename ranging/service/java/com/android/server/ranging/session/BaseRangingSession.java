@@ -154,7 +154,10 @@ public class BaseRangingSession {
         mAlarmManager = mInjector.getContext().getSystemService(AlarmManager.class);
     }
 
-    /** Start ranging in this session. */
+    /**
+     * Start ranging in this session.
+     * Send {@code onSessionClosed(INTERNAL_ERROR)} if this session is already active.
+     */
     public void start(ImmutableSet<TechnologyConfig> technologyConfigs) {
         Log.v(TAG, "Starting session");
         synchronized (mLock) {
@@ -199,6 +202,28 @@ public class BaseRangingSession {
                 Log.v(TAG, "Starting ranging with technology : " + config.getTechnology());
                 adapter.start(config, nonPrivilegedAttributionSource, new AdapterListener(config));
                 Binder.restoreCallingIdentity(token);
+            }
+        }
+    }
+
+    /**
+     * <ul>
+     *     <li>If this session currently active with a different configuration from the one
+     *     provided, return false.</li>
+     *     <li>If this session is currently active with the same configuration as the one provided,
+     *     return true.</li>
+     *     <li>If this session is not currently active, start it with the provided configuration and
+     *     return true.</li>
+     * </ul>
+     */
+    protected boolean startOrReAttach(ImmutableSet<TechnologyConfig> technologyConfigs) {
+        synchronized (mLock) {
+            if (mStateMachine.getState() == State.STARTING
+                    || mStateMachine.getState() == State.STARTED) {
+                return Sets.difference(technologyConfigs, mAdapters.keySet()).isEmpty();
+            } else {
+                start(technologyConfigs);
+                return true;
             }
         }
     }
@@ -351,7 +376,15 @@ public class BaseRangingSession {
         }
     }
 
-    /** Let subclasses override onSessionClosed behavior. */
+    /** Let subclasses override how onTechnologyStopped gets called. */
+    protected void onTechnologyStopped(
+            @NonNull RangingTechnology technology, @NonNull Set<RangingDevice> peers,
+            @InternalReason int reason
+    ) {
+        mSessionListener.onTechnologyStopped(technology, peers, reason);
+    }
+
+    /** Let subclasses override how onSessionClosed gets called. */
     protected void onSessionClosed(@InternalReason int reason) {
         mSessionListener.onSessionClosed(reason);
     }
@@ -395,8 +428,7 @@ public class BaseRangingSession {
                         mPeers.remove(peerDevice);
                     }
                 }
-                mSessionListener.onTechnologyStopped(
-                        mConfig.getTechnology(), peerDevices, maybeOverridden(reason));
+                onTechnologyStopped(mConfig.getTechnology(), peerDevices, maybeOverridden(reason));
             }
         }
 

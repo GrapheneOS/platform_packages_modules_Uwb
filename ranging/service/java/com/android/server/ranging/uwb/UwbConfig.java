@@ -39,6 +39,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.uwb.support.base.RequiredParam;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -203,5 +204,20 @@ public class UwbConfig implements MulticastTechnologyConfig {
                 + ", mPeerAddresses="
                 + mPeerAddresses
                 + " }";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof UwbConfig uwbConfig)) return false;
+        return mDeviceRole == uwbConfig.mDeviceRole && Objects.equals(mSessionConfig,
+                uwbConfig.mSessionConfig) && Objects.equals(mParameters,
+                uwbConfig.mParameters) && Objects.equals(mPeerAddresses,
+                uwbConfig.mPeerAddresses);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(mSessionConfig, mParameters, mDeviceRole, mPeerAddresses);
     }
 }

@@ -21,6 +21,7 @@ import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
 import android.content.AttributionSource;
 import android.ranging.RangingCapabilities;
 import android.ranging.RangingConfig;
+import android.ranging.RangingDevice;
 import android.ranging.SessionHandle;
 import android.ranging.ble.cs.BleCsRangingCapabilities;
 import android.ranging.ble.rssi.BleRssiRangingCapabilities;
@@ -62,6 +63,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * OOB responder session. For this session, the callbacks have different semantics:
@@ -82,7 +84,8 @@ public class OobResponderRangingSession extends BaseRangingSession implements Ra
 
     private OobHandle mPeer;
     private OobController.OobConnection mOobConnection;
-    private AtomicBoolean mSessionKeepAliveFlag;
+    private AtomicReference<ImmutableSet<TechnologyConfig>> mRestartingWithConfigs;
+    private AtomicBoolean mKeepAliveFlag;
     private UwbAddress mMyUwbAddress;
 
     public OobResponderRangingSession(
@@ -110,7 +113,8 @@ public class OobResponderRangingSession extends BaseRangingSession implements Ra
 
         mPeer = new OobHandle(mSessionHandle, config.getDeviceHandle().getRangingDevice());
         mOobConnection = mInjector.getOobController().createConnection(mPeer);
-        mSessionKeepAliveFlag = new AtomicBoolean(true);
+        mRestartingWithConfigs = new AtomicReference<>(null);
+        mKeepAliveFlag = new AtomicBoolean(true);
         mMyUwbAddress = UwbAddress.createRandomShortAddress();
 
         mOobConnection.receiveData().addCallback(mOobConnectionListener, mOobExecutor);
@@ -122,9 +126,26 @@ public class OobResponderRangingSession extends BaseRangingSession implements Ra
         stopSessionForReason(InternalReason.LOCAL_REQUEST);
     }
 
+
+    @Override
+    protected void onTechnologyStopped(
+            @NonNull RangingTechnology technology, @NonNull Set<RangingDevice> peers,
+            @InternalReason int reason
+    ) {
+        // Don't send onTechnologyStopped if the technologies stopped due to a restart.
+        if (mRestartingWithConfigs.get() == null) {
+            mSessionListener.onTechnologyStopped(technology, peers, reason);
+        }
+    }
+
     @Override
     protected void onSessionClosed(@InternalReason int reason) {
-        if (!mSessionKeepAliveFlag.getAndSet(true)) mSessionListener.onSessionClosed(reason);
+        ImmutableSet<TechnologyConfig> configsForRestart = mRestartingWithConfigs.getAndSet(null);
+        if (configsForRestart != null) {
+            super.start(configsForRestart);
+        } else if (!mKeepAliveFlag.getAndSet(true)) {
+            mSessionListener.onSessionClosed(reason);
+        }
     }
 
     private class OobConnectionListener implements FutureCallback<byte[]> {
@@ -157,7 +178,7 @@ public class OobResponderRangingSession extends BaseRangingSession implements Ra
             switch (t) {
                 case ConnectionClosedException e
                     when e.getReason() == ConnectionClosedException.Reason.REQUESTED ->
-                        Log.i(TAG, "No longer listening for OOB messages-- OOB connection closed by"
+                        Log.i(TAG, "No longer listening for OOB messages- OOB connection closed by"
                                 + " local request");
                 case ConnectionClosedException e -> {
                     Log.w(TAG, "Stopping session due to unexpected OOB connection closure with "
@@ -206,7 +227,15 @@ public class OobResponderRangingSession extends BaseRangingSession implements Ra
 
         // TODO: Only start for technologies who have the start ranging immediately
         //  bit set. Otherwise we need to wait for the start ranging message
-        OobResponderRangingSession.super.start(configs.build());
+
+        ImmutableSet<TechnologyConfig> technologyConfigs = configs.build();
+        boolean sessionAlreadyActive = !super.startOrReAttach(technologyConfigs);
+        if (sessionAlreadyActive) {
+            Log.w(TAG, "Session already exists with active ranging. Restarting it with newly "
+                    + "provided config...");
+            mRestartingWithConfigs.set(technologyConfigs);
+            super.stop(InternalReason.SYSTEM_POLICY);
+        }
     }
 
     private void handleStopRanging(byte[] data) {
@@ -279,7 +308,7 @@ public class OobResponderRangingSession extends BaseRangingSession implements Ra
     }
 
     private void stopSessionForReason(@InternalReason int reason) {
-        mSessionKeepAliveFlag.set(false);
+        mKeepAliveFlag.set(false);
         boolean existsAdaptersWithActiveRanging = super.stop(reason);
         // We want to trigger onSessionClosed even if there are no active adapters to close.
         if (!existsAdaptersWithActiveRanging) onSessionClosed(reason);
