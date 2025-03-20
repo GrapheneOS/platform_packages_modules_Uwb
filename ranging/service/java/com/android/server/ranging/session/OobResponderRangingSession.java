@@ -17,10 +17,11 @@
 package com.android.server.ranging.session;
 
 import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
-import static android.ranging.RangingSession.Callback.REASON_REMOTE_REQUEST;
 
 import android.content.AttributionSource;
 import android.ranging.RangingCapabilities;
+import android.ranging.RangingConfig;
+import android.ranging.RangingDevice;
 import android.ranging.SessionHandle;
 import android.ranging.ble.cs.BleCsRangingCapabilities;
 import android.ranging.ble.rssi.BleRssiRangingCapabilities;
@@ -33,9 +34,8 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import com.android.server.ranging.RangingEngine;
 import com.android.server.ranging.RangingInjector;
-import com.android.server.ranging.RangingServiceManager;
+import com.android.server.ranging.RangingServiceManager.SessionListener;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.RangingUtils.InternalReason;
 import com.android.server.ranging.blerssi.BleRssiOobCapabilities;
@@ -44,6 +44,7 @@ import com.android.server.ranging.oob.CapabilityRequestMessage;
 import com.android.server.ranging.oob.CapabilityResponseMessage;
 import com.android.server.ranging.oob.MessageType;
 import com.android.server.ranging.oob.OobController;
+import com.android.server.ranging.oob.OobController.ConnectionClosedException;
 import com.android.server.ranging.oob.OobHeader;
 import com.android.server.ranging.oob.SetConfigurationMessage;
 import com.android.server.ranging.oob.StopRangingMessage;
@@ -57,25 +58,34 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
-public class OobResponderRangingSession
-        extends BaseRangingSession
-        implements RangingSession<OobResponderRangingConfig> {
-
+/**
+ * OOB responder session. For this session, the callbacks have different semantics:
+ * <ul>
+ *     <li>{@link SessionListener#onSessionOpened()} indicates that the session has
+ *     started listening for OOB messages. This will be called before ranging actually starts.</li>
+ *     <li>{@link SessionListener#onSessionClosed(int)} indicates that the session
+ *     is no longer listening for OOB messages. This will only be called if the session is stopped
+ *     explicitly via {@code stop()} or if the underlying OOB transport closes.</li>
+ * </ul>
+ *
+ */
+public class OobResponderRangingSession extends BaseRangingSession implements RangingSession {
     private static final String TAG = OobResponderRangingSession.class.getSimpleName();
 
     private final ScheduledExecutorService mOobExecutor;
-    private final StopRangingListener mStopRangingListener;
+    private final OobConnectionListener mOobConnectionListener;
 
     private OobHandle mPeer;
     private OobController.OobConnection mOobConnection;
+    private AtomicReference<ImmutableSet<TechnologyConfig>> mRestartingWithConfigs;
+    private AtomicBoolean mKeepAliveFlag;
     private UwbAddress mMyUwbAddress;
 
     public OobResponderRangingSession(
@@ -83,65 +93,116 @@ public class OobResponderRangingSession
             @NonNull SessionHandle sessionHandle,
             @NonNull RangingInjector injector,
             @NonNull RangingSessionConfig config,
-            @NonNull RangingServiceManager.SessionListener listener,
+            @NonNull SessionListener listener,
             @NonNull ListeningExecutorService adapterExecutor,
             @NonNull ScheduledExecutorService oobExecutor
     ) {
         super(attributionSource, sessionHandle, injector, config, listener, adapterExecutor);
         mOobExecutor = oobExecutor;
-        mStopRangingListener = new StopRangingListener();
+        mOobConnectionListener = new OobConnectionListener();
     }
 
     @Override
-    public void start(@NonNull OobResponderRangingConfig config) {
+    public void start(@NonNull RangingConfig rangingConfig) {
+        if (!(rangingConfig instanceof OobResponderRangingConfig config)) {
+            Log.e(TAG, "Unexpected configuration object for oob responder session "
+                    + rangingConfig.getClass());
+            mSessionListener.onSessionClosed(InternalReason.INTERNAL_ERROR);
+            return;
+        }
+
         mPeer = new OobHandle(mSessionHandle, config.getDeviceHandle().getRangingDevice());
         mOobConnection = mInjector.getOobController().createConnection(mPeer);
+        mRestartingWithConfigs = new AtomicReference<>(null);
+        mKeepAliveFlag = new AtomicBoolean(true);
         mMyUwbAddress = UwbAddress.createRandomShortAddress();
 
-        mOobConnection.receiveData()
-                .transformAsync(this::handleCapabilitiesRequest, mOobExecutor)
-                .transformAsync(this::handleSetConfiguration, mOobExecutor)
-                .addCallback(new FutureCallback<>() {
-                    @Override
-                    public void onSuccess(ImmutableSet<TechnologyConfig> configs) {
-                        // TODO: Only start for technologies who have the start ranging immediately
-                        //  bit set. Otherwise we need to wait for the start ranging message
-                        OobResponderRangingSession.super.start(configs);
-                        mOobConnection
-                                .receiveData()
-                                .addCallback(mStopRangingListener, mOobExecutor);
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull Throwable t) {
-                        Log.i(TAG, "Oob failed: ", t);
-                        switch (t) {
-                            case RangingEngine.ConfigSelectionException e ->
-                                    mSessionListener.onSessionStopped(e.getReason());
-                            case TimeoutException unused ->
-                                    mSessionListener.onSessionStopped(
-                                            InternalReason.NO_PEERS_FOUND);
-                            default ->
-                                    mSessionListener.onSessionStopped(
-                                            InternalReason.INTERNAL_ERROR);
-                        }
-                    }
-                }, mOobExecutor);
+        mOobConnection.receiveData().addCallback(mOobConnectionListener, mOobExecutor);
+        mSessionListener.onSessionOpened();
     }
 
-    private FluentFuture<byte[]> handleCapabilitiesRequest(byte[] data) {
+    @Override
+    public void stop() {
+        stopSessionForReason(InternalReason.LOCAL_REQUEST);
+    }
+
+
+    @Override
+    protected void onTechnologyStopped(
+            @NonNull RangingTechnology technology, @NonNull Set<RangingDevice> peers,
+            @InternalReason int reason
+    ) {
+        // Don't send onTechnologyStopped if the technologies stopped due to a restart.
+        if (mRestartingWithConfigs.get() == null) {
+            mSessionListener.onTechnologyStopped(technology, peers, reason);
+        }
+    }
+
+    @Override
+    protected void onSessionClosed(@InternalReason int reason) {
+        ImmutableSet<TechnologyConfig> configsForRestart = mRestartingWithConfigs.getAndSet(null);
+        if (configsForRestart != null) {
+            super.start(configsForRestart);
+        } else if (!mKeepAliveFlag.getAndSet(true)) {
+            mSessionListener.onSessionClosed(reason);
+        }
+    }
+
+    private class OobConnectionListener implements FutureCallback<byte[]> {
+        @Override
+        public void onSuccess(byte[] data) {
+            OobHeader header = OobHeader.parseBytes(data);
+            (switch (header.getMessageType()) {
+                case CAPABILITY_REQUEST ->
+                        sendCapabilityResponse(data)
+                                .transformAsync(unused ->
+                                        mOobConnection.receiveData(), mOobExecutor);
+                case SET_CONFIGURATION -> {
+                    handleSetConfig(data);
+                    yield mOobConnection.receiveData();
+                }
+                case STOP_RANGING -> {
+                    handleStopRanging(data);
+                    yield mOobConnection.receiveData();
+                }
+                default -> {
+                    Log.e(TAG, "Received unexpected OOB message with type "
+                            + header.getMessageType());
+                    yield mOobConnection.receiveData();
+                }
+            }).addCallback(mOobConnectionListener, mOobExecutor);
+        }
+
+        @Override
+        public void onFailure(Throwable t) {
+            switch (t) {
+                case ConnectionClosedException e
+                    when e.getReason() == ConnectionClosedException.Reason.REQUESTED ->
+                        Log.i(TAG, "No longer listening for OOB messages- OOB connection closed by"
+                                + " local request");
+                case ConnectionClosedException e -> {
+                    Log.w(TAG, "Stopping session due to unexpected OOB connection closure with "
+                            + "reason " + e.getReason());
+                    stopSessionForReason(InternalReason.NO_PEERS_FOUND);
+                }
+                default -> {
+                    Log.e(TAG, "Stopping session due to OOB connection failure " + t);
+                    stopSessionForReason(InternalReason.INTERNAL_ERROR);
+                }
+            }
+        }
+    }
+
+    private FluentFuture<Void> sendCapabilityResponse(byte[] data) {
         Log.i(TAG, "Received capabilities request message");
-        CapabilityResponseMessage response =
-                getCapabilitiesResponse(CapabilityRequestMessage.parseBytes(data));
 
-        return mOobConnection
-                .sendData(response.toBytes())
-                .transformAsync((unused) -> mOobConnection.receiveData(), mOobExecutor);
+        CapabilityResponseMessage response =
+                getCapabilityResponseForRequest(CapabilityRequestMessage.parseBytes(data));
+
+        return mOobConnection.sendData(response.toBytes());
     }
 
-    private ListenableFuture<ImmutableSet<TechnologyConfig>> handleSetConfiguration(
-            byte[] data
-    ) throws RangingEngine.ConfigSelectionException {
+    private void handleSetConfig(byte[] data) {
         Log.i(TAG, "Received set configuration message");
 
         ImmutableSet.Builder<TechnologyConfig> configs = ImmutableSet.builder();
@@ -154,21 +215,40 @@ public class OobResponderRangingSession
             try {
                 configs.add(uwbConfig.toTechnologyConfig(mMyUwbAddress, mPeer.getRangingDevice()));
             } catch (IllegalArgumentException e) {
-                throw new RangingEngine.ConfigSelectionException(e.getMessage(),
-                        InternalReason.PEER_CAPABILITIES_MISMATCH);
+                Log.e(TAG, "Failed to convert uwb set config message to local uwb config");
             }
         }
         // Skip CS because the CS responder side does not need to be configured.
         RttOobConfig rttOobConfig = setConfigMessage.getRttConfig();
         if (rttOobConfig != null) {
-            configs.add(rttOobConfig.toTechnologyConfig(mPeer.getRangingDevice(),
-                    DEVICE_ROLE_RESPONDER));
+            configs.add(rttOobConfig.toTechnologyConfig(
+                    mPeer.getRangingDevice(), DEVICE_ROLE_RESPONDER));
         }
 
-        return Futures.immediateFuture(configs.build());
+        // TODO: Only start for technologies who have the start ranging immediately
+        //  bit set. Otherwise we need to wait for the start ranging message
+
+        ImmutableSet<TechnologyConfig> technologyConfigs = configs.build();
+        boolean sessionAlreadyActive = !super.startOrReAttach(technologyConfigs);
+        if (sessionAlreadyActive) {
+            Log.w(TAG, "Session already exists with active ranging. Restarting it with newly "
+                    + "provided config...");
+            mRestartingWithConfigs.set(technologyConfigs);
+            super.stop(InternalReason.SYSTEM_POLICY);
+        }
     }
 
-    private CapabilityResponseMessage getCapabilitiesResponse(CapabilityRequestMessage request) {
+    private void handleStopRanging(byte[] data) {
+        StopRangingMessage message = StopRangingMessage.parseBytes(data);
+        OobResponderRangingSession.super
+                .stopTechnologies(
+                        Set.copyOf(message.getRangingTechnologiesToStop()),
+                        InternalReason.REMOTE_REQUEST);
+    }
+
+    private CapabilityResponseMessage getCapabilityResponseForRequest(
+            CapabilityRequestMessage request) {
+
         RangingCapabilities myCapabilities = mInjector
                 .getCapabilitiesProvider()
                 .getCapabilities();
@@ -227,25 +307,10 @@ public class OobResponderRangingSession
         mOobConnection.close();
     }
 
-    /**
-     * Continuously listens for stop ranging messages during an ongoing ranging session until the
-     * underlying oob connection closes.
-     */
-    private class StopRangingListener implements FutureCallback<byte[]> {
-
-        @Override
-        public void onSuccess(byte[] data) {
-            StopRangingMessage message = StopRangingMessage.parseBytes(data);
-            OobResponderRangingSession.super
-                    .stopTechnologies(
-                            Set.copyOf(message.getRangingTechnologiesToStop()),
-                            REASON_REMOTE_REQUEST);
-            mOobConnection.receiveData().addCallback(mStopRangingListener, mOobExecutor);
-        }
-
-        @Override
-        public void onFailure(@NonNull Throwable unused) {
-            Log.i(TAG, "Oob connection closed, no longer listening for stop ranging messages");
-        }
+    private void stopSessionForReason(@InternalReason int reason) {
+        mKeepAliveFlag.set(false);
+        boolean existsAdaptersWithActiveRanging = super.stop(reason);
+        // We want to trigger onSessionClosed even if there are no active adapters to close.
+        if (!existsAdaptersWithActiveRanging) onSessionClosed(reason);
     }
 }

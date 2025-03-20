@@ -30,6 +30,7 @@ import com.android.ranging.flags.Flags;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.Objects;
 
 /**
  * BleCsRangingParams encapsulates the parameters required for a bluetooth channel sounding ranging
@@ -290,5 +291,25 @@ public final class BleCsRangingParams implements Parcelable {
         return 0;
     }
 
+    /**
+     * @hide
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof BleCsRangingParams that)) return false;
+        return mRangingUpdateRate == that.mRangingUpdateRate && mSightType == that.mSightType
+                && mLocationType == that.mLocationType && mSecurityLevel == that.mSecurityLevel
+                && Objects.equals(mPeerBluetoothAddress, that.mPeerBluetoothAddress);
+    }
+
+    /**
+     * @hide
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(mPeerBluetoothAddress, mRangingUpdateRate, mSightType, mLocationType,
+                mSecurityLevel);
+    }
 }
 

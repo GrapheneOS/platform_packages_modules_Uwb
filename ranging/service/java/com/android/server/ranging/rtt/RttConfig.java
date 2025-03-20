@@ -28,6 +28,8 @@ import com.android.ranging.rtt.backend.RttRangingParameters;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.session.RangingSessionConfig;
 
+import java.util.Objects;
+
 public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
 
     private final SessionConfig mSessionConfig;
@@ -110,5 +112,20 @@ public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
                 + ", mDeviceRole="
                 + mDeviceRole
                 + " }";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof RttConfig rttConfig)) return false;
+        return mDeviceRole == rttConfig.mDeviceRole && Objects.equals(mSessionConfig,
+                rttConfig.mSessionConfig) && Objects.equals(mRangingParams,
+                rttConfig.mRangingParams) && Objects.equals(mPeerDevice,
+                rttConfig.mPeerDevice);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(mSessionConfig, mRangingParams, mPeerDevice, mDeviceRole);
     }
 }

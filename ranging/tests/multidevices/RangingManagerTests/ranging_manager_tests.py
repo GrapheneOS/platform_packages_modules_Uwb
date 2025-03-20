@@ -49,6 +49,7 @@ _TEST_CASES = [
     "test_ble_rssi_ranging_measurement_limit",
     "test_one_to_one_wifi_rtt_ranging_with_oob",
     "test_one_to_one_ble_rssi_ranging_with_oob",
+    "test_oob_responder_persists_until_explicitly_stopped",
 ]
 
 
@@ -974,6 +975,41 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
     finally:
         self._ble_disconnect()
+
+
+  def test_oob_responder_persists_until_explicitly_stopped(self):
+    asserts.skip_if(
+        not self.responder.is_ranging_technology_supported(RangingTechnology.UWB),
+        f"UWB not supported by responder",
+    )
+    asserts.skip_if(
+        not self.initiator.is_ranging_technology_supported(RangingTechnology.UWB),
+        f"UWB not supported by initiator",
+    )
+
+    initiator_preference = RangingPreference(
+        device_role=DeviceRole.INITIATOR,
+        ranging_params=OobInitiatorRangingParams(peer_ids=[self.responder.id], ranging_mode=RangingMode.HIGH_ACCURACY),
+    )
+
+    responder_preference = RangingPreference(
+        device_role=DeviceRole.RESPONDER,
+        ranging_params=OobResponderRangingParams(peer_id=self.initiator.id),
+    )
+
+    session = RangingSession()
+    session.set_initiator(self.initiator, initiator_preference)
+    session.add_responder(self.responder, responder_preference)
+
+    session.start_and_assert_opened()
+    session.assert_received_data()
+    session.stop_and_assert_closed(stop_responders=False, check_responders=False)
+
+    time.sleep(1)
+
+    session.start_and_assert_opened(start_responders=False, check_responders=False)
+    session.assert_received_data()
+    session.stop_and_assert_closed()
 
 if __name__ == "__main__":
   if "--" in sys.argv:

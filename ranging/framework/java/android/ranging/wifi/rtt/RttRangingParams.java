@@ -226,4 +226,26 @@ public final class RttRangingParams implements Parcelable {
                 + mPeriodicRangingHwFeatureEnabled
                 + " }";
     }
+
+    /**
+     * @hide
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof RttRangingParams that)) return false;
+        return mRangingUpdateRate == that.mRangingUpdateRate
+                && mPeriodicRangingHwFeatureEnabled == that.mPeriodicRangingHwFeatureEnabled
+                && Objects.equals(mServiceName, that.mServiceName)
+                && Objects.deepEquals(mMatchFilter, that.mMatchFilter);
+    }
+
+    /**
+     * @hide
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(mServiceName, Arrays.hashCode(mMatchFilter), mRangingUpdateRate,
+                mPeriodicRangingHwFeatureEnabled);
+    }
 }
