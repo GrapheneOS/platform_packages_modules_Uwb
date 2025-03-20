@@ -278,7 +278,7 @@ public class BaseRangingSessionTest {
 
         verify(mMockSessionListener).onTechnologyStopped(
                 eq(UWB), eq(Set.of(peer)), eq(InternalReason.LOCAL_REQUEST));
-        verify(mMockSessionListener).onSessionStopped(InternalReason.LOCAL_REQUEST);
+        verify(mMockSessionListener).onSessionClosed(InternalReason.LOCAL_REQUEST);
     }
 
     @Test
@@ -300,7 +300,7 @@ public class BaseRangingSessionTest {
                 eq(UWB), eq(Set.of(peer)), eq(InternalReason.LOCAL_REQUEST));
         verify(mMockSessionListener).onTechnologyStopped(
                 eq(UWB), eq(Set.of(peer)), eq(InternalReason.LOCAL_REQUEST));
-        verify(mMockSessionListener).onSessionStopped(eq(InternalReason.LOCAL_REQUEST));
+        verify(mMockSessionListener).onSessionClosed(eq(InternalReason.LOCAL_REQUEST));
     }
 
     @Test
@@ -318,7 +318,7 @@ public class BaseRangingSessionTest {
 
         verify(mMockSessionListener).onTechnologyStopped(
                 eq(UWB), eq(peers), eq(InternalReason.LOCAL_REQUEST));
-        verify(mMockSessionListener).onSessionStopped(eq(InternalReason.LOCAL_REQUEST));
+        verify(mMockSessionListener).onSessionClosed(eq(InternalReason.LOCAL_REQUEST));
     }
 
     @Test
@@ -338,7 +338,7 @@ public class BaseRangingSessionTest {
 
         verify(mMockSessionListener).onTechnologyStopped(
                 eq(UWB), eq(Set.of(peer)), eq(InternalReason.NO_PEERS_FOUND));
-        verify(mMockSessionListener).onSessionStopped(eq(InternalReason.NO_PEERS_FOUND));
+        verify(mMockSessionListener).onSessionClosed(eq(InternalReason.NO_PEERS_FOUND));
     }
 
     @Test
@@ -356,7 +356,7 @@ public class BaseRangingSessionTest {
 
         adapterCallbacks.getValue().onClosed(InternalReason.UNSUPPORTED);
 
-        verify(mMockSessionListener).onSessionStopped(eq(InternalReason.UNSUPPORTED));
+        verify(mMockSessionListener).onSessionClosed(eq(InternalReason.UNSUPPORTED));
     }
 
     @Test

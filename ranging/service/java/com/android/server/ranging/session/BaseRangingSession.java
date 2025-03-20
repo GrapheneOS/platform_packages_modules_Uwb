@@ -22,7 +22,6 @@ import android.os.Binder;
 import android.os.SystemClock;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
-import android.ranging.RangingSession;
 import android.ranging.SessionHandle;
 import android.ranging.raw.RawResponderRangingConfig;
 import android.util.Log;
@@ -68,7 +67,7 @@ public class BaseRangingSession {
 
     protected final RangingInjector mInjector;
     protected final SessionHandle mSessionHandle;
-    protected final RangingSessionConfig mConfig;
+    protected final RangingSessionConfig mSessionConfig;
     protected final SessionListener mSessionListener;
 
     private final AlarmManager mAlarmManager;
@@ -97,8 +96,8 @@ public class BaseRangingSession {
     @GuardedBy("mLock")
     private final ConcurrentMap<TechnologyConfig, RangingAdapter> mAdapters;
     @GuardedBy("mLock")
-    private final ConcurrentMap<TechnologyConfig, @RangingSession.Callback.Reason Integer>
-            mStateChangeReasonOverride;
+    private final ConcurrentMap<TechnologyConfig, @InternalReason Integer>
+            mStopReasonOverride;
 
     /** State of all peers in the session */
     @GuardedBy("mLock")
@@ -113,10 +112,10 @@ public class BaseRangingSession {
 
         Peer(@NonNull RangingDevice device, @NonNull RangingTechnology initialTechnology) {
             technologies = Sets.newConcurrentHashSet(Set.of(initialTechnology));
-            if (mConfig.getSessionConfig().getSensorFusionParams().isSensorFusionEnabled()) {
+            if (mSessionConfig.getSessionConfig().getSensorFusionParams().isSensorFusionEnabled()) {
                 fusionEngine = new FilteringFusionEngine(
                         new DataFusers.PreferentialDataFuser(RangingTechnology.UWB),
-                        mConfig.getSessionConfig().isAngleOfArrivalNeeded(), mInjector);
+                        mSessionConfig.getSessionConfig().isAngleOfArrivalNeeded(), mInjector);
             } else {
                 fusionEngine = new NoOpFusionEngine(device);
             }
@@ -145,13 +144,13 @@ public class BaseRangingSession {
         mInjector = injector;
         mAttributionSource = attributionSource;
         mSessionHandle = sessionHandle;
-        mConfig = config;
+        mSessionConfig = config;
         mSessionListener = listener;
         mAdapterExecutor = adapterExecutor;
         mStateMachine = new StateMachine<>(State.STOPPED);
         mPeers = new ConcurrentHashMap<>();
         mAdapters = new ConcurrentHashMap<>();
-        mStateChangeReasonOverride = new ConcurrentHashMap<>();
+        mStopReasonOverride = new ConcurrentHashMap<>();
         mAlarmManager = mInjector.getContext().getSystemService(AlarmManager.class);
     }
 
@@ -163,7 +162,7 @@ public class BaseRangingSession {
 
             if (!mStateMachine.transition(State.STOPPED, State.STARTING)) {
                 Log.w(TAG, "Failed transition STOPPED -> STARTING");
-                mSessionListener.onSessionStopped(InternalReason.INTERNAL_ERROR);
+                onSessionClosed(InternalReason.INTERNAL_ERROR);
                 return;
             }
             AttributionSource nonPrivilegedAttributionSource =
@@ -177,9 +176,9 @@ public class BaseRangingSession {
                 } else if (config instanceof MulticastTechnologyConfig multicastConfig) {
                     peerDevices = multicastConfig.getPeerDevices();
                 } else {
-                    Log.e(TAG,
-                            "Received unsupported config for technology " + config.getTechnology());
-                    mSessionListener.onSessionStopped(InternalReason.UNSUPPORTED);
+                    Log.e(TAG, "Received unknown RangingTechnology subclass "
+                            + config.getClass());
+                    onSessionClosed(InternalReason.INTERNAL_ERROR);
                     return;
                 }
 
@@ -284,12 +283,23 @@ public class BaseRangingSession {
 
     /** Stop ranging in this session. */
     public void stop() {
+        stop(InternalReason.LOCAL_REQUEST);
+    }
+
+    /**
+     * Stop all adapters in the session.
+     * @param reason When we receive the
+     * {@link RangingAdapter.Callback#onStopped(ImmutableSet, int)} callback for each of these
+     * adapters, override the reason code provided in the callback with this one.
+     * @return true if there are currently any active adapters in the session.
+     */
+    protected boolean stop(@InternalReason int reason) {
         Log.v(TAG, "Stop ranging, stopping all adapters");
         synchronized (mLock) {
             if (mStateMachine.getState() == State.STOPPING
                     || mStateMachine.getState() == State.STOPPED) {
                 Log.v(TAG, "Ranging already stopping or stopped, skipping");
-                return;
+                return false;
             }
             stopNonPrivilegedBgAppTimerIfSet();
             mStateMachine.setState(State.STOPPING);
@@ -297,8 +307,34 @@ public class BaseRangingSession {
             // Any calls to the corresponding technology stacks must be
             // done with a clear calling identity.
             long token = Binder.clearCallingIdentity();
-            for (RangingAdapter adapter : mAdapters.values()) {
-                adapter.stop();
+            boolean existsAdaptersWithActiveRanging = !mAdapters.isEmpty();
+            for (TechnologyConfig config : mAdapters.keySet()) {
+                if (reason != InternalReason.LOCAL_REQUEST) mStopReasonOverride.put(config, reason);
+                mAdapters.get(config).stop();
+            }
+            Binder.restoreCallingIdentity(token);
+            return existsAdaptersWithActiveRanging;
+        }
+    }
+
+    /**
+     * Stop all adapters associated with the provided {@code technologies}. When we receive the
+     * {@link RangingAdapter.Callback#onStopped(ImmutableSet, int)} callback for each of these
+     * adapters, override the reason code provided in the callback with the {@code reason} given
+     * here.
+     */
+    protected void stopTechnologies(
+            Set<RangingTechnology> technologies, @InternalReason int reason) {
+        Log.v(TAG, "Stop ranging with technologies " + technologies);
+        synchronized (mLock) {
+            long token = Binder.clearCallingIdentity();
+            for (TechnologyConfig config : mAdapters.keySet()) {
+                if (technologies.contains(config.getTechnology())) {
+                    if (reason != InternalReason.LOCAL_REQUEST) {
+                        mStopReasonOverride.put(config, reason);
+                    }
+                    mAdapters.get(config).stop();
+                }
             }
             Binder.restoreCallingIdentity(token);
         }
@@ -315,20 +351,9 @@ public class BaseRangingSession {
         }
     }
 
-    protected void stopTechnologies(
-            Set<RangingTechnology> technologies, @RangingSession.Callback.Reason int reason
-    ) {
-        Log.v(TAG, "Stop ranging with technologies " + technologies);
-        synchronized (mLock) {
-            long token = Binder.clearCallingIdentity();
-            for (TechnologyConfig config : mAdapters.keySet()) {
-                if (technologies.contains(config.getTechnology())) {
-                    mStateChangeReasonOverride.put(config, reason);
-                    mAdapters.get(config).stop();
-                }
-            }
-            Binder.restoreCallingIdentity(token);
-        }
+    /** Let subclasses override onSessionClosed behavior. */
+    protected void onSessionClosed(@InternalReason int reason) {
+        mSessionListener.onSessionClosed(reason);
     }
 
     private class AdapterListener implements RangingAdapter.Callback {
@@ -370,7 +395,8 @@ public class BaseRangingSession {
                         mPeers.remove(peerDevice);
                     }
                 }
-                mSessionListener.onTechnologyStopped(mConfig.getTechnology(), peerDevices, reason);
+                mSessionListener.onTechnologyStopped(
+                        mConfig.getTechnology(), peerDevices, maybeOverridden(reason));
             }
         }
 
@@ -389,13 +415,21 @@ public class BaseRangingSession {
         public void onClosed(@InternalReason int reason) {
             synchronized (mLock) {
                 mAdapters.remove(mConfig);
-                @RangingSession.Callback.Reason Integer reasonOverride =
-                        mStateChangeReasonOverride.remove(mConfig);
                 if (mAdapters.isEmpty()) {
                     mStateMachine.setState(State.STOPPED);
-                    mSessionListener.onSessionStopped(
-                            Optional.ofNullable(reasonOverride).orElse(reason));
+                    onSessionClosed(maybeOverridden(reason));
                 }
+                mStopReasonOverride.remove(mConfig);
+            }
+        }
+
+        /** @return the (possibly overriding) reason code for the last state change. */
+        @GuardedBy("mLock")
+        private @InternalReason int maybeOverridden(@InternalReason int reason) {
+            if (reason == InternalReason.LOCAL_REQUEST) {
+                return Optional.ofNullable(mStopReasonOverride.get(mConfig)).orElse(reason);
+            } else {
+                return reason;
             }
         }
     }
@@ -450,7 +484,7 @@ public class BaseRangingSession {
         pw.println("---- Dump of RangingSession ----");
         pw.println("Session handle: " + mSessionHandle);
         pw.println("Attribution source: " + mAttributionSource);
-        pw.println("Config: " + mConfig);
+        pw.println("Config: " + mSessionConfig);
         pw.println("Adapters:");
         for (RangingAdapter adapter : mAdapters.values()) {
             pw.println(adapter);

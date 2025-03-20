@@ -256,8 +256,8 @@ public class RangingEngine {
     private EnumSet<RangingTechnology> selectTechnologiesToUseWithPeer(
             CapabilityResponseMessage peerCapabilities
     ) throws ConfigSelectionException {
-        EnumSet<RangingTechnology> selectable = EnumSet.copyOf(
-                peerCapabilities.getSupportedRangingTechnologies());
+        EnumSet<RangingTechnology> selectable = EnumSet.noneOf(RangingTechnology.class);
+        selectable.addAll(peerCapabilities.getSupportedRangingTechnologies());
 
         // Skip CS if supported by the remote device but no Bluetooth bond is established.
         if (selectable.contains(RangingTechnology.CS)

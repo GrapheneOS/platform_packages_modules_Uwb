@@ -68,20 +68,21 @@ class RangingSession:
 
     return self
 
-  def stop_and_assert_closed(self, check_responders: bool = True):
+  def stop_and_assert_closed(self, stop_responders: bool = True, check_responders: bool = True):
     self.devices[self.initiator_id].stop_ranging(self.handle)
 
     if self._is_using_oob():
       self._handle_oob_stop_ranging()
-    else:
+
+    if stop_responders:
       for id in self.responder_ids:
         self.devices[id].stop_ranging(self.handle)
 
+
+    self.devices[self.initiator_id].assert_closed(self.handle)
     if check_responders:
-      for id in self.responder_ids.union({self.initiator_id}):
-        self.devices[id].assert_closed(self.handle)
-    else:
-      self.devices[self.initiator_id].assert_closed(self.handle)
+      for responder_id in self.responder_ids:
+        self.devices[responder_id].assert_closed(self.handle)
 
   def _assert_received_data_using_any_technologies(self, check_responders: bool = True):
     for responder_id in self.responder_ids:
