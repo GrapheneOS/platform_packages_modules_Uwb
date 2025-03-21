@@ -207,11 +207,8 @@ public class UwbServiceImpl {
             supportedRangingUpdateRates.add(Utils.FAST);
         }
 
-        if (supportedChannels == null) {
-            supportedChannels = new ArrayList<>();
-        }
-        if (supportedChannels.isEmpty()) {
-            supportedChannels.add(RangingCapabilities.FIRA_DEFAULT_SUPPORTED_CHANNEL);
+        if (supportedChannels == null || supportedChannels.isEmpty()) {
+            supportedChannels = List.of(RangingCapabilities.FIRA_DEFAULT_SUPPORTED_CHANNEL);
         }
 
         Set<Integer> supportedNtfConfigsSet = new TreeSet<>();
