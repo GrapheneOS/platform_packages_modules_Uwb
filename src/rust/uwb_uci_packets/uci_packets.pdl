@@ -95,9 +95,13 @@ enum AndroidOpCode : 6 {
 }
 
 enum TestOpCode : 6 {
-    RF_TEST_CONFIG_SET_COMMAND  = 0x0,
-    RF_TEST_CONFIG_GET_COMMAND  = 0x1,
-    RF_TEST_PERIODIC_TX_CMD = 0x2,
+    RF_TEST_CONFIG_SET  = 0x0,
+    RF_TEST_CONFIG_GET  = 0x1,
+    RF_TEST_PERIODIC_TX = 0x2,
+    RF_TEST_PER_RX = 0x3,
+    RF_TEST_RX = 0x5,
+    RF_TEST_LOOPBACK = 0x6,
+    RF_TEST_STOP_SESSION = 0x07,
 }
 
 enum StatusCode : 8 {
@@ -1657,7 +1661,7 @@ struct RfTestConfigTlv {
     v: 8[],
 }
 
-packet SessionSetRfTestConfigCmd : TestCommand (opcode = 0x00) {
+packet SessionSetRfTestConfigCmd : TestCommand (opcode = 0x00) {  // RF_TEST_CONFIG_SET
     session_token: 32, // Session ID or Session Handle (based on UWBS version)
     _count_(tlvs): 8,
     tlvs: RfTestConfigTlv[]
@@ -1672,7 +1676,7 @@ struct RfTestConfigStatus {
     status: StatusCode,
 }
 
-packet SessionSetRfTestConfigRsp : TestResponse (opcode = 0x00) {
+packet SessionSetRfTestConfigRsp : TestResponse (opcode = 0x00) { // RF_TEST_CONFIG_SET
     status: StatusCode,
     _count_(cfg_status): 8,
     cfg_status: RfTestConfigStatus[],
@@ -1682,7 +1686,7 @@ test SessionSetRfTestConfigRsp {
     "\x4D\x00\x00\x02\x00\x00",
 }
 
-packet TestPeriodicTxCmd : TestCommand (opcode = 0x02) {
+packet TestPeriodicTxCmd : TestCommand (opcode = 0x02) { // RF_TEST_PERIODIC_TX
     psdu_data : 8[],
 }
 
@@ -1690,7 +1694,7 @@ test TestPeriodicTxCmd {
     "\x2D\x02\x00\x0a\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09",
 }
 
-packet TestPeriodicTxRsp : TestResponse (opcode = 0x02) {
+packet TestPeriodicTxRsp : TestResponse (opcode = 0x02) { // RF_TEST_PERIODIC_TX
     status: StatusCode,
 }
 
@@ -1698,7 +1702,7 @@ test TestPeriodicTxRsp {
     "\x4D\x02\x00\x01\x00",
 }
 
-packet TestPeriodicTxNtf : TestNotification (opcode = 0x02) {
+packet TestPeriodicTxNtf : TestNotification (opcode = 0x02) { // RF_TEST_PERIODIC_TX
     status: StatusCode,
     vendor_data: 8[],
 }
@@ -1707,12 +1711,122 @@ test TestPeriodicTxNtf {
     "\x6D\x02\x00\x01\x00",
 }
 
-packet StopRfTestCmd : TestCommand (opcode = 0x07) { }
+packet TestPerRxCmd : TestCommand (opcode = 0x03) { // RF_TEST_PER_RX
+    psdu_data : 8[],
+}
 
-test StopRfTestCmd { "\x2D\x07\x00\x00", }
+test TestPerRxCmd {
+    "\x2D\x03\x00\x0a\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09",
+}
 
-packet StopRfTestRsp : TestResponse (opcode = 0x07) {
+packet TestPerRxRsp : TestResponse (opcode = 0x03) { // RF_TEST_PER_RX
     status: StatusCode,
 }
 
-test StopRfTestRsp { "\x4D\x07\x00\x01\x00", }
+test TestPerRxRsp {
+    "\x4D\x03\x00\x01\x00",
+}
+
+packet TestPerRxNtf : TestNotification (opcode = 0x03) { // RF_TEST_PER_RX
+    status: StatusCode,
+    attempts: 32,
+    acq_detect: 32,
+    acq_reject: 32,
+    rx_fail: 32,
+    sync_cir_ready: 32,
+    sfd_fail: 32,
+    sfd_found: 32,
+    phr_dec_error: 32,
+    phr_bit_error: 32,
+    psdu_dec_error: 32,
+    psdu_bit_error: 32,
+    sts_found: 32,
+    eof: 32,
+    vendor_data: 8[],
+}
+
+test TestPerRxNtf {
+    "\x6D\x03\x00\x35\x00\xE8\x03\x00\x00\x0C\x04\x00\x00\x24\x00\x00\x00\x00\x00\x00\x00\xE8\x03\x00\x00\x00\x00\xE8\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xE8\x03\x00\x00"
+}
+
+packet TestRxCmd : TestCommand (opcode = 0x05) { // RF_TEST_RX
+    psdu_data : 8[],
+}
+
+test TestRxCmd {
+    "\x2D\x05\x00\x0a\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09",
+}
+
+packet TestRxRsp : TestResponse (opcode = 0x05) { // RF_TEST_RX
+    status: StatusCode,
+}
+
+test TestRxRsp {
+    "\x4D\x05\x00\x01\x00",
+}
+
+packet TestRxNtf : TestNotification (opcode = 0x05) { // RF_TEST_RX
+    status: StatusCode,
+    rx_done_ts_int: 32,
+    rx_done_ts_frac: 16,
+    aoa_azimuth: 16,
+    aoa_elevation: 16,
+    toa_gap: 8,
+    phr: 16,
+    _count_(psdu_data): 16,
+    psdu_data: 8[],
+    vendor_data: 8[],
+}
+
+test TestRxNtf {
+    "\x6D\x05\x00\x14\x00\x52\x21\x00\x00\x00\x00\x00\x00\x00\x00\x0F\x12\x0A\x04\x00\xAB\xCD\xAB\xCD"
+}
+
+packet TestLoopbackCmd : TestCommand (opcode = 0x06) { // RF_TEST_LOOPBACK
+    psdu_data : 8[],
+}
+
+test TestLoopbackCmd {
+    "\x2D\x06\x00\x0a\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09",
+}
+
+packet TestLoopbackRsp : TestResponse (opcode = 0x06) { // RF_TEST_LOOPBACK
+    status: StatusCode,
+}
+
+test TestLoopbackRsp {
+    "\x4D\x06\x00\x01\x00",
+}
+
+packet TestLoopbackNtf : TestNotification (opcode = 0x06) { // RF_TEST_LOOPBACK
+    status: StatusCode,
+    tx_ts_int: 32,
+    tx_ts_frac: 16,
+    rx_ts_int: 32,
+    rx_ts_frac: 16,
+    aoa_azimuth: 16,
+    aoa_elevation: 16,
+    phr: 16,
+    _count_(psdu_data): 16,
+    psdu_data: 8[],
+    vendor_data: 8[],
+}
+
+test TestLoopbackNtf {
+    "\x6D\x06\x00\x19\x00\x00\x00\x00\x00\x00\x00\x52\x21\x05\x00\x25\x00\x00\x00\x00\x00\x12\x0A\x04\x00\xAB\xCD\xAB\xCD"
+}
+
+packet StopRfTestCmd : TestCommand (opcode = 0x07) { // RF_TEST_STOP_SESSION
+}
+
+test StopRfTestCmd {
+    "\x2D\x07\x00\x00",
+}
+
+packet StopRfTestRsp : TestResponse (opcode = 0x07) {  // RF_TEST_STOP_SESSION
+    status: StatusCode,
+}
+
+test StopRfTestRsp {
+    "\x4D\x07\x00\x01\x00",
+}

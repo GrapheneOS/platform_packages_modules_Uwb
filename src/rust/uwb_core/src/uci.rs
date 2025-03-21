@@ -42,7 +42,7 @@ pub mod mock_uci_manager;
 pub use command::UciCommand;
 pub use notification::{
     CoreNotification, DataRcvNotification, RadarDataRcvNotification, RadarSweepData,
-    RangingMeasurements, RfTestNotification, SessionNotification, SessionRangeData,
+    RangingMeasurements, RfTestNotification, RfTestPerRxData, SessionNotification, SessionRangeData,
     UciNotification,
 };
 pub use uci_hal::{NopUciHal, UciHal, UciHalPacket};

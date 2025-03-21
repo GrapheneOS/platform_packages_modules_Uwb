@@ -502,6 +502,11 @@ impl<U: UciManager> UciManagerSync<U> {
         self.runtime_handle.block_on(self.uci_manager.rf_test_periodic_tx(psdu_data))
     }
 
+    /// Test Per rx command
+    pub fn rf_test_per_rx(&self, psdu_data: Vec<u8>) -> Result<()> {
+        self.runtime_handle.block_on(self.uci_manager.rf_test_per_rx(psdu_data))
+    }
+
     /// Test stop rf test command
     pub fn stop_rf_test(&self) -> Result<()> {
         self.runtime_handle.block_on(self.uci_manager.stop_rf_test())
