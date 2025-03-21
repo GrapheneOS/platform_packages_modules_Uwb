@@ -617,6 +617,30 @@ fn native_rf_test_periodic_tx(
     uci_manager.rf_test_periodic_tx(psdu_data_bytearray)
 }
 
+/// Test RF per rx test. Return value defined by uci_packets.pdl
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeTestPerRx(
+    env: JNIEnv,
+    obj: JObject,
+    psdu_data: jbyteArray,
+    chip_id: JString,
+) -> jbyte {
+    debug!("{}: enter", function_name!());
+    byte_result_helper(native_rf_test_per_rx(env, obj, psdu_data, chip_id), function_name!())
+}
+
+fn native_rf_test_per_rx(
+    env: JNIEnv,
+    obj: JObject,
+    psdu_data: jbyteArray,
+    chip_id: JString,
+) -> Result<()> {
+    let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
+    let psdu_data_bytearray =
+        env.convert_byte_array(psdu_data).map_err(|_| Error::ForeignFunctionInterface)?;
+    uci_manager.rf_test_per_rx(psdu_data_bytearray)
+}
+
 /// Set radar app configurations on a single UWB device. Return null JObject if failed.
 #[no_mangle]
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSetRadarAppConfigurations(
