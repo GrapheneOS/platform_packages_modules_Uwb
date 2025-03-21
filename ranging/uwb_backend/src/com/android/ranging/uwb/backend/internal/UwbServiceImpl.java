@@ -185,8 +185,8 @@ public class UwbServiceImpl {
                     mUwbFeatureFlags.hasElevationSupport(),
                     /* supportsRangingIntervalReconfigure */ false,
                     /* minRangingInterval= */ RangingCapabilities.FIRA_DEFAULT_RANGING_INTERVAL_MS,
-                    new ArrayList<Integer>(RangingCapabilities.FIRA_DEFAULT_SUPPORTED_CHANNEL),
-                    new ArrayList<>(RANGE_DATA_NTF_ENABLE),
+                    List.of(RangingCapabilities.FIRA_DEFAULT_SUPPORTED_CHANNEL),
+                    List.of(RANGE_DATA_NTF_ENABLE),
                     FIRA_DEFAULT_SUPPORTED_CONFIG_IDS,
                     DEFAULT_SUPPORTED_SLOT_DURATIONS,
                     DEFAULT_SUPPORTED_RANGING_UPDATE_RATE,
@@ -211,9 +211,12 @@ public class UwbServiceImpl {
         if (minRangingInterval <= 120) {
             supportedRangingUpdateRates.add(Utils.FAST);
         }
-        if (supportedChannels == null || supportedChannels.isEmpty()) {
-            supportedChannels =
-                    new ArrayList<>(RangingCapabilities.FIRA_DEFAULT_SUPPORTED_CHANNEL);
+
+        if (supportedChannels == null) {
+            supportedChannels = new ArrayList<>();
+        }
+        if (supportedChannels.isEmpty()) {
+            supportedChannels.add(RangingCapabilities.FIRA_DEFAULT_SUPPORTED_CHANNEL);
         }
 
         Set<Integer> supportedNtfConfigsSet = new TreeSet<>();
