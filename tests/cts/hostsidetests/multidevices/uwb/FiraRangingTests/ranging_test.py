@@ -14,6 +14,7 @@ from mobly import config_parser
 from mobly import signals
 from mobly import suite_runner
 from test_utils import uwb_test_utils
+from android.platform.test.annotations import ApiTest
 
 RESPONDER_STOP_CALLBACK_TIMEOUT = 60
 
@@ -489,6 +490,14 @@ class RangingTest(uwb_base_test.UwbBaseTest):
 
   ### Test Cases ###
 
+  @ApiTest(apis=[
+      'android.content.AttributionSource#checkCallingUid',
+      'android.os.Parcel#readPersistableBundle(java.lang.ClassLoader)',
+      'android.os.Parcel#writeBlob(byte[])',
+      'android.app.AlarmManager#setInexactRepeating(int, long, long, android.app.PendingIntent)',
+      'java.util#copyOf(byte[], int)',
+      'java.util#copyOfRange(byte[], int, int)',
+  ])
   def test_ranging_device_tracker_profile_default(self):
     """Verifies ranging with device tracker profile default values."""
     initiator_params = uwb_ranging_params.UwbRangingParams(

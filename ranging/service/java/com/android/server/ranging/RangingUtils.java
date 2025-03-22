@@ -34,6 +34,8 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.time.Duration;
@@ -95,6 +97,17 @@ public class RangingUtils {
             }
             mState = to;
             return true;
+        }
+
+        /**
+         * Atomically get the current state before setting it to a new one.
+         *
+         * @return the previous state before it was set to the provided one.
+         */
+        public synchronized E getAndSet(E state) {
+            E previousState = mState;
+            mState = state;
+            return previousState;
         }
 
         @Override
@@ -316,6 +329,7 @@ public class RangingUtils {
             InternalReason.BACKGROUND_RANGING_POLICY,
             InternalReason.PEER_CAPABILITIES_MISMATCH,
     })
+    @Target({ElementType.TYPE_USE})
     public @interface InternalReason {
         int UNKNOWN = 0;
         int LOCAL_REQUEST = 1;

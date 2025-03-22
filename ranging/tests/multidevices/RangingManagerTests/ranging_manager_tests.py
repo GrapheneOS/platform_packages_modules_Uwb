@@ -49,6 +49,7 @@ _TEST_CASES = [
     "test_ble_rssi_ranging_measurement_limit",
     "test_one_to_one_wifi_rtt_ranging_with_oob",
     "test_one_to_one_ble_rssi_ranging_with_oob",
+    "test_oob_responder_persists_until_explicitly_stopped",
 ]
 
 
@@ -304,6 +305,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     'android.ranging.RangingSession.Callback#onResults(android.ranging.RangingDevice, android.ranging.RangingData)',
     'android.ranging.RangingSession.Callback#onStarted(android.ranging.RangingDevice, int)',
     'android.ranging.RangingSession.Callback#onStopped(android.ranging.RangingDevice, int)',
+    'android.os.Parcel#writeBlob(byte[])',
   ])
   def test_one_to_one_uwb_ranging_unicast_static_sts(self):
     """Verifies uwb ranging with peer device using unicast static sts"""
@@ -654,6 +656,12 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     self.initiator.stop_ranging_and_assert_closed(SESSION_HANDLE)
     self.responder.stop_ranging_and_assert_closed(SESSION_HANDLE)
 
+  @ApiTest(apis=[
+      'android.bluetooth.le.DistanceMeasurementSession#stopSession',
+      'android.content.AttributionSource#checkCallingUid',
+      'java.util#copyOf(byte[], int)',
+      'java.util#copyOfRange(byte[], int, int)',
+  ])
   def test_one_to_one_ble_rssi_ranging(self):
     """Verifies cs ranging with peer device, devices range for 10 seconds."""
     asserts.skip_if(self._is_cuttlefish_device(self.initiator.ad),
@@ -734,6 +742,10 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
       self._ble_disconnect()
 
+  @ApiTest(apis=[
+      'android.bluetooth.le.DistanceMeasurementSession#stopSession',
+      'android.bluetooth.le.DistanceMeasurementParams#getMaxDurationSeconds',
+  ])
   def test_one_to_one_ble_cs_ranging(self):
     """
     Verifies cs ranging with peer device, devices range for 10 seconds.
@@ -974,6 +986,41 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
     finally:
         self._ble_disconnect()
+
+
+  def test_oob_responder_persists_until_explicitly_stopped(self):
+    asserts.skip_if(
+        not self.responder.is_ranging_technology_supported(RangingTechnology.UWB),
+        f"UWB not supported by responder",
+    )
+    asserts.skip_if(
+        not self.initiator.is_ranging_technology_supported(RangingTechnology.UWB),
+        f"UWB not supported by initiator",
+    )
+
+    initiator_preference = RangingPreference(
+        device_role=DeviceRole.INITIATOR,
+        ranging_params=OobInitiatorRangingParams(peer_ids=[self.responder.id], ranging_mode=RangingMode.HIGH_ACCURACY),
+    )
+
+    responder_preference = RangingPreference(
+        device_role=DeviceRole.RESPONDER,
+        ranging_params=OobResponderRangingParams(peer_id=self.initiator.id),
+    )
+
+    session = RangingSession()
+    session.set_initiator(self.initiator, initiator_preference)
+    session.add_responder(self.responder, responder_preference)
+
+    session.start_and_assert_opened()
+    session.assert_received_data()
+    session.stop_and_assert_closed(stop_responders=False, check_responders=False)
+
+    time.sleep(1)
+
+    session.start_and_assert_opened(start_responders=False, check_responders=False)
+    session.assert_received_data()
+    session.stop_and_assert_closed()
 
 if __name__ == "__main__":
   if "--" in sys.argv:

@@ -177,8 +177,8 @@ def initialize_uwb_country_code_if_not_set(
     logging.warning("Unable to force country code")
 
   # Unable to get UWB enabled even after setting country code, abort!
-  asserts.fail(
-      not verify_uwb_state_callback(
+  asserts.assert_true(
+      verify_uwb_state_callback(
           ad=ad, uwb_event="Inactive", handler=handler, timeout=120
       ),
       "Uwb is not enabled",

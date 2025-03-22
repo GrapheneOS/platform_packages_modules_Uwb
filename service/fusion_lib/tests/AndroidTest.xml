@@ -19,6 +19,11 @@
 <configuration description="Configuration for UWB Fusion Lib unit tests">
     <option name="test-suite-tag" value="apct" />
     <option name="test-suite-tag" value="apct-instrumentation" />
+    <option name="config-descriptor:metadata" key="parameter" value="instant_app" />
+    <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
+    <option name="config-descriptor:metadata" key="mainline-param" value="com.google.android.uwb.apex" />
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
@@ -32,4 +37,8 @@
         <option name="hidden-api-checks" value="false"/>
         <option name="runner" value="androidx.test.runner.AndroidJUnitRunner"/>
     </test>
+    <object type="module_controller" class="com.android.tradefed.testtype.suite.module.MainlineTestModuleController">
+        <option name="mainline-module-package-name" value="com.google.android.uwb" />
+    </object>
+    <object type="module_controller" class="com.android.tradefed.testtype.suite.module.Sdk36ModuleController" />
 </configuration>

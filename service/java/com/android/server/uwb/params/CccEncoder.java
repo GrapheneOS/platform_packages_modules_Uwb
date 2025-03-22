@@ -87,13 +87,13 @@ public class CccEncoder extends TlvEncoder {
                             isFiraExtensionSupported
                                     ? UwbCccConstants
                                             .CCC_EXTENSION_HOPPING_CONFIG_MODE_ADAPTIVE_DEFAULT :
-                                    UwbCccConstants.HOPPING_CONFIG_MODE_MODE_ADAPTIVE_DEFAULT;
+                                    UwbCccConstants.HOPPING_CONFIG_MODE_ADAPTIVE_DEFAULT;
                 } else {
                     hoppingMode =
                             isFiraExtensionSupported
                                     ? UwbCccConstants
                                             .CCC_EXTENSION_HOPPING_CONFIG_MODE_ADAPTIVE_AES :
-                                    UwbCccConstants.HOPPING_CONFIG_MODE_MODE_ADAPTIVE_AES;
+                                    UwbCccConstants.HOPPING_CONFIG_MODE_ADAPTIVE_AES;
                 }
                 break;
         }

@@ -447,4 +447,31 @@ public final class UwbRangingParams implements Parcelable {
                 + mSlotDurationMillis
                 + " }";
     }
+
+    /**
+     * @hide
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof UwbRangingParams that)) return false;
+        return mSessionId == that.mSessionId && mSubSessionId == that.mSubSessionId
+                && mConfigId == that.mConfigId && mRangingUpdateRate == that.mRangingUpdateRate
+                && mSlotDurationMillis == that.mSlotDurationMillis && Objects.equals(
+                mDeviceAddress, that.mDeviceAddress) && Objects.deepEquals(mSessionKeyInfo,
+                that.mSessionKeyInfo) && Objects.deepEquals(mSubSessionKeyInfo,
+                that.mSubSessionKeyInfo) && Objects.equals(mComplexChannel,
+                that.mComplexChannel) && Objects.equals(mPeerAddress, that.mPeerAddress);
+    }
+
+    /**
+     * @hide
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(mSessionId, mSubSessionId, mConfigId, mDeviceAddress,
+                Arrays.hashCode(mSessionKeyInfo), Arrays.hashCode(mSubSessionKeyInfo),
+                mComplexChannel,
+                mPeerAddress, mRangingUpdateRate, mSlotDurationMillis);
+    }
 }
