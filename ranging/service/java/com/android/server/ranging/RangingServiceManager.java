@@ -342,22 +342,21 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
             }
         }
 
-        public void onSessionClosed(@InternalReason int reason) {
+        public synchronized void onSessionClosed(@InternalReason int reason) {
             Log.v(TAG, "onSessionClosed reason " + reason);
             mSessions.remove(mSessionHandle).close();
             mMetricsLogger.logSessionClosed(reason);
-            if (mStateMachine.getState() == State.CLOSED) {
-                try {
-                    mRangingCallbacks.onOpenFailed(mSessionHandle, convertReason(reason));
-                } catch (RemoteException e) {
-                    Log.e(TAG, "onOpenFailed callback failed: " + e);
-                }
-            } else {
-                mStateMachine.setState(State.CLOSED);
+            if (mStateMachine.getAndSet(State.CLOSED) == State.ACTIVE) {
                 try {
                     mRangingCallbacks.onClosed(mSessionHandle, convertReason(reason));
                 } catch (RemoteException e) {
                     Log.e(TAG, "onClosed callback failed: " + e);
+                }
+            } else {
+                try {
+                    mRangingCallbacks.onOpenFailed(mSessionHandle, convertReason(reason));
+                } catch (RemoteException e) {
+                    Log.e(TAG, "onOpenFailed callback failed: " + e);
                 }
             }
         }

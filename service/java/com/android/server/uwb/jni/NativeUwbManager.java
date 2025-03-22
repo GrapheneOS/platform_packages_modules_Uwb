@@ -33,6 +33,7 @@ import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.data.UwbVendorUciResponse;
 import com.android.server.uwb.info.UwbPowerStats;
 import com.android.server.uwb.multchip.UwbMultichipData;
+import com.android.server.uwb.rftest.UwbTestPerRxResult;
 import com.android.server.uwb.rftest.UwbTestPeriodicTxResult;
 
 import java.util.Arrays;
@@ -135,6 +136,11 @@ public class NativeUwbManager {
     public void onPeriodicTxDataNotificationReceived(UwbTestPeriodicTxResult periodicTx) {
         Log.d(TAG, "onPeriodicTxDataNotificationReceived : " + periodicTx);
         mSessionListener.onRfTestNotificationReceived(periodicTx);
+    }
+
+    public void onPerRxDataNotificationReceived(UwbTestPerRxResult perRxResult) {
+        Log.d(TAG, "onPerRxDataNotificationReceived : " + perRxResult);
+        mSessionListener.onRfTestNotificationReceived(perRxResult);
     }
 
     /**
@@ -336,6 +342,19 @@ public class NativeUwbManager {
     public byte testPeriodicTx(byte[] psduData, String chipId) {
         synchronized (mNativeLock) {
             return nativeTestPeriodicTx(psduData, chipId);
+        }
+    }
+
+    /**
+     * Starts a Per Rx test
+     *
+     * @param psduData : PSDU data
+     * @param chipId   : Identifier of UWB chip for multi-HAL devices
+     * @return : {@link UwbUciConstants}  Status code
+     */
+    public byte testPerRx(byte[] psduData, String chipId) {
+        synchronized (mNativeLock) {
+            return nativeTestPerRx(psduData, chipId);
         }
     }
 
@@ -679,6 +698,8 @@ public class NativeUwbManager {
             int noOfParams, int appConfigParamLen, byte[] appConfigParams, String chipId);
 
     private native byte nativeTestPeriodicTx(byte[] psduData, String chipId);
+
+    private native byte nativeTestPerRx(byte[] psduData, String chipId);
 
     private native byte nativeStopRfTest(String chipId);
 }

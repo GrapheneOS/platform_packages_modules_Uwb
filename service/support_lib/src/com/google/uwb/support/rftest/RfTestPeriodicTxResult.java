@@ -24,12 +24,15 @@ public final class RfTestPeriodicTxResult  extends RfTestParams {
     private static final int BUNDLE_VERSION_1 = 1;
     private static final int BUNDLE_VERSION_CURRENT = BUNDLE_VERSION_1;
     private static final String KEY_STATUS_CODE = "status_code";
+    public static final String RAW_NTF_DATA = "raw_ntf_data";
     private static final String KEY_RF_OPERATION_TYPE = "rf_operation_type";
     private final int mRfTestOperationType;
     private final int mStatus;
+    private final byte[] mRawNtfData;
 
-    private RfTestPeriodicTxResult(int status, int rfTestOperationType) {
+    private RfTestPeriodicTxResult(int status, byte[] rawNtfData, int rfTestOperationType) {
         this.mStatus = status;
+        this.mRawNtfData = rawNtfData;
         this.mRfTestOperationType = rfTestOperationType;
     }
 
@@ -42,6 +45,7 @@ public final class RfTestPeriodicTxResult  extends RfTestParams {
     public PersistableBundle toBundle() {
         PersistableBundle bundle = super.toBundle();
         bundle.putInt(KEY_STATUS_CODE, mStatus);
+        bundle.putIntArray(RAW_NTF_DATA, byteArrayToIntArray(mRawNtfData));
         bundle.putInt(KEY_RF_OPERATION_TYPE, mRfTestOperationType);
         return bundle;
     }
@@ -64,6 +68,7 @@ public final class RfTestPeriodicTxResult  extends RfTestParams {
     private static RfTestPeriodicTxResult parseBundleVersion1(PersistableBundle bundle) {
         RfTestPeriodicTxResult.Builder builder = new RfTestPeriodicTxResult.Builder()
                 .setStatus(bundle.getInt(KEY_STATUS_CODE))
+                .setRawNtfData(intArrayToByteArray(bundle.getIntArray(RAW_NTF_DATA)))
                 .setOperationType(bundle.getInt(KEY_RF_OPERATION_TYPE));
         return builder.build();
     }
@@ -94,9 +99,15 @@ public final class RfTestPeriodicTxResult  extends RfTestParams {
     public static final class Builder {
         private RequiredParam<Integer> mRfTestOperationType = new RequiredParam<Integer>();
         private int mStatus;
+        private byte[] mRawNtfData;
 
         public Builder setStatus(int status) {
             mStatus = status;
+            return this;
+        }
+
+        public Builder setRawNtfData(byte[] rawNtfData) {
+            mRawNtfData = rawNtfData;
             return this;
         }
 
@@ -109,7 +120,7 @@ public final class RfTestPeriodicTxResult  extends RfTestParams {
          * Build the {@link RfTestPeriodicTxResult} object
          */
         public RfTestPeriodicTxResult build() {
-            return new RfTestPeriodicTxResult(mStatus, mRfTestOperationType.get());
+            return new RfTestPeriodicTxResult(mStatus, mRawNtfData, mRfTestOperationType.get());
         }
     }
 }

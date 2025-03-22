@@ -99,6 +99,17 @@ public class RangingUtils {
             return true;
         }
 
+        /**
+         * Atomically get the current state before setting it to a new one.
+         *
+         * @return the previous state before it was set to the provided one.
+         */
+        public synchronized E getAndSet(E state) {
+            E previousState = mState;
+            mState = state;
+            return previousState;
+        }
+
         @Override
         public String toString() {
             return "StateMachine{ "

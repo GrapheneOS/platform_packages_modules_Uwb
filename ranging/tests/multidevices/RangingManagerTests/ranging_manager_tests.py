@@ -305,6 +305,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     'android.ranging.RangingSession.Callback#onResults(android.ranging.RangingDevice, android.ranging.RangingData)',
     'android.ranging.RangingSession.Callback#onStarted(android.ranging.RangingDevice, int)',
     'android.ranging.RangingSession.Callback#onStopped(android.ranging.RangingDevice, int)',
+    'android.os.Parcel#writeBlob(byte[])',
   ])
   def test_one_to_one_uwb_ranging_unicast_static_sts(self):
     """Verifies uwb ranging with peer device using unicast static sts"""
@@ -655,6 +656,12 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     self.initiator.stop_ranging_and_assert_closed(SESSION_HANDLE)
     self.responder.stop_ranging_and_assert_closed(SESSION_HANDLE)
 
+  @ApiTest(apis=[
+      'android.bluetooth.le.DistanceMeasurementSession#stopSession',
+      'android.content.AttributionSource#checkCallingUid',
+      'java.util#copyOf(byte[], int)',
+      'java.util#copyOfRange(byte[], int, int)',
+  ])
   def test_one_to_one_ble_rssi_ranging(self):
     """Verifies cs ranging with peer device, devices range for 10 seconds."""
     asserts.skip_if(self._is_cuttlefish_device(self.initiator.ad),
@@ -735,6 +742,10 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
       self._ble_disconnect()
 
+  @ApiTest(apis=[
+      'android.bluetooth.le.DistanceMeasurementSession#stopSession',
+      'android.bluetooth.le.DistanceMeasurementParams#getMaxDurationSeconds',
+  ])
   def test_one_to_one_ble_cs_ranging(self):
     """
     Verifies cs ranging with peer device, devices range for 10 seconds.

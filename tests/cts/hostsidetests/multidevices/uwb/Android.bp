@@ -21,6 +21,7 @@ python_defaults {
     name: "CtsUwbMultiDevicePythonDefaults",
     libs: [
         "mobly",
+        "platform-test-py-annotations",
     ],
     test_suites: [
         "cts",

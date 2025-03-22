@@ -51,6 +51,7 @@ public class UwbTestPeriodicTxResult implements RfNotificationEvent {
     public PersistableBundle toBundle() {
         RfTestPeriodicTxResult.Builder periodicRxResult = new RfTestPeriodicTxResult.Builder()
                 .setOperationType(getOperationType())
+                .setRawNtfData(mRawNotificationData)
                 .setStatus(mStatus);
 
         return periodicRxResult.build().toBundle();
