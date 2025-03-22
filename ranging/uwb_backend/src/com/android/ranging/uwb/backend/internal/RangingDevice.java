@@ -303,7 +303,7 @@ public abstract class RangingDevice {
             @Override
             public void onOpened(RangingSession session) {
                 mRangingSession = session;
-                mOpAsyncCallbackRunner.complete(true);
+                mOpAsyncCallbackRunner.completeIfActive(true);
             }
 
             @WorkerThread
