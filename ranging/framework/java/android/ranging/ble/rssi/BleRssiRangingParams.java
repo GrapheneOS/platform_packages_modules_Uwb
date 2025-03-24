@@ -27,6 +27,8 @@ import android.ranging.raw.RawRangingDevice.RangingUpdateRate;
 
 import com.android.ranging.flags.Flags;
 
+import java.util.Objects;
+
 /**
  * BleRssiRangingParams encapsulates the parameters required for a bluetooth rssi based ranging
  * session.
@@ -147,5 +149,24 @@ public final class BleRssiRangingParams implements Parcelable {
         public BleRssiRangingParams build() {
             return new BleRssiRangingParams(this);
         }
+    }
+
+    /**
+     * @hide
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof BleRssiRangingParams that)) return false;
+        return mRangingUpdateRate == that.mRangingUpdateRate && Objects.equals(
+                mPeerBluetoothAddress, that.mPeerBluetoothAddress);
+    }
+
+    /**
+     * @hide
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(mPeerBluetoothAddress, mRangingUpdateRate);
     }
 }

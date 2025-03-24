@@ -27,6 +27,7 @@ import com.android.ranging.flags.Flags;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.Objects;
 
 /**
  * Represents the configuration for data notifications in ranging operations.
@@ -205,5 +206,25 @@ public final class DataNotificationConfig implements Parcelable {
                 + ", mProximityFarCm="
                 + mProximityFarCm
                 + " }";
+    }
+
+    /**
+     * @hide
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof DataNotificationConfig that)) return false;
+        return mNotificationConfigType == that.mNotificationConfigType
+                && mProximityNearCm == that.mProximityNearCm
+                && mProximityFarCm == that.mProximityFarCm;
+    }
+
+    /**
+     * @hide
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(mNotificationConfigType, mProximityNearCm, mProximityFarCm);
     }
 }

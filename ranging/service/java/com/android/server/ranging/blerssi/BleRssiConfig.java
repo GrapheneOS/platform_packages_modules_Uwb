@@ -34,6 +34,7 @@ import com.android.server.ranging.session.RangingSessionConfig;
 import com.google.common.collect.ImmutableMap;
 
 import java.time.Duration;
+import java.util.Objects;
 
 public class BleRssiConfig implements RangingSessionConfig.UnicastTechnologyConfig {
     private static final String TAG = BleRssiConfig.class.getSimpleName();
@@ -97,5 +98,19 @@ public class BleRssiConfig implements RangingSessionConfig.UnicastTechnologyConf
                 + ", mPeerDevice="
                 + mPeerDevice
                 + " }";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof BleRssiConfig that)) return false;
+        return mDeviceRole == that.mDeviceRole && Objects.equals(mSessionConfig,
+                that.mSessionConfig) && Objects.equals(mRangingParams, that.mRangingParams)
+                && Objects.equals(mPeerDevice, that.mPeerDevice);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(mSessionConfig, mRangingParams, mPeerDevice, mDeviceRole);
     }
 }

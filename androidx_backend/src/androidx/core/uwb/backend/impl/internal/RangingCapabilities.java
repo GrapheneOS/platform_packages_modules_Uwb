@@ -19,16 +19,15 @@ package androidx.core.uwb.backend.impl.internal;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_DL_TDOA_DT_TAG;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_MULTICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_MULTICAST_DS_TWR_NO_AOA;
+import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_UNICAST_DS_TWR;
 import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_UNICAST_DS_TWR_NO_AOA;
-import static androidx.core.uwb.backend.impl.internal.Utils.CONFIG_PROVISIONED_UNICAST_DS_TWR_NO_RESULT_REPORT_PHASE;
 import static androidx.core.uwb.backend.impl.internal.Utils.RANGE_DATA_NTF_ENABLE;
 
 import androidx.annotation.IntRange;
 
 import com.google.common.collect.ImmutableList;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /** Describes UWB ranging capabilities for the current device. */
@@ -78,8 +77,8 @@ public class RangingCapabilities {
                 supportsElevationAngle,
                 DEFAULT_SUPPORTS_RANGING_INTERVAL_RECONFIGURE,
                 FIRA_DEFAULT_RANGING_INTERVAL_MS,
-                new ArrayList<>(FIRA_DEFAULT_SUPPORTED_CHANNEL),
-                new ArrayList<>(RANGE_DATA_NTF_ENABLE),
+                List.of(FIRA_DEFAULT_SUPPORTED_CHANNEL),
+                List.of(RANGE_DATA_NTF_ENABLE),
                 FIRA_DEFAULT_SUPPORTED_CONFIG_IDS,
                 DEFAULT_SUPPORTED_SLOT_DURATIONS,
                 DEFAULT_SUPPORTED_RANGING_UPDATE_RATE,

@@ -24,6 +24,8 @@ import android.os.Parcelable;
 
 import com.android.ranging.flags.Flags;
 
+import java.util.Objects;
+
 /**
  * Defines the ranging session configurations.
  *
@@ -32,7 +34,6 @@ import com.android.ranging.flags.Flags;
  */
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 public final class SessionConfig implements Parcelable {
-
     private final SensorFusionParams mFusionParams;
     private final DataNotificationConfig mDataNotificationConfig;
     private final boolean mIsAngleOfArrivalNeeded;
@@ -216,5 +217,27 @@ public final class SessionConfig implements Parcelable {
                 + ", mRangingMeasurementsLimit="
                 + mRangingMeasurementsLimit
                 + "}";
+    }
+
+    /**
+     * @hide
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof SessionConfig that)) return false;
+        return mIsAngleOfArrivalNeeded == that.mIsAngleOfArrivalNeeded
+                && mRangingMeasurementsLimit == that.mRangingMeasurementsLimit
+                && Objects.equals(mFusionParams, that.mFusionParams)
+                && Objects.equals(mDataNotificationConfig, that.mDataNotificationConfig);
+    }
+
+    /**
+     * @hide
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(mFusionParams, mDataNotificationConfig, mIsAngleOfArrivalNeeded,
+                mRangingMeasurementsLimit);
     }
 }

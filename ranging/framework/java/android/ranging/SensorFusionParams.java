@@ -23,6 +23,8 @@ import android.os.Parcelable;
 
 import com.android.ranging.flags.Flags;
 
+import java.util.Objects;
+
 /**
  * Represents the parameters for sensor fusion in ranging operations. Uses IMU sensors to correct
  * HW AOA measurements. Adds a moving average filter for distance measurements to remove outliers.
@@ -110,5 +112,23 @@ public final class SensorFusionParams implements Parcelable {
                 + "mSensorFusionEnabled="
                 + mSensorFusionEnabled
                 + " }";
+    }
+
+    /**
+     * @hide
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof SensorFusionParams that)) return false;
+        return mSensorFusionEnabled == that.mSensorFusionEnabled;
+    }
+
+    /**
+     * @hide
+     */
+    @Override
+    public int hashCode() {
+        return Boolean.hashCode(mSensorFusionEnabled);
     }
 }

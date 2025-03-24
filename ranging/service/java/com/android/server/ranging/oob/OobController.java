@@ -16,6 +16,7 @@
 
 package com.android.server.ranging.oob;
 
+import android.annotation.IntDef;
 import android.app.AlarmManager;
 import android.os.RemoteException;
 import android.os.SystemClock;
@@ -34,6 +35,8 @@ import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.SettableFuture;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -49,9 +52,28 @@ public class OobController {
 
     private @Nullable IOobSendDataListener mOobDataSender = null;
 
-    public static class OobException extends Exception {
-        public OobException(String message) {
-            super(message);
+    public static class ConnectionClosedException extends Exception {
+        @IntDef(value = {
+                Reason.REQUESTED,
+                Reason.TRANSPORT_CLOSED,
+                Reason.TRANSPORT_TIMEOUT,
+        })
+        @Target({ElementType.TYPE_USE})
+        public @interface Reason {
+            int REQUESTED = 0;
+            int TRANSPORT_CLOSED = 1;
+            int TRANSPORT_TIMEOUT = 2;
+        }
+
+        private final @Reason int mReason;
+
+        public ConnectionClosedException(@Reason int reason) {
+            super("OOB connection closed");
+            mReason = reason;
+        }
+
+        public @Reason int getReason() {
+            return mReason;
         }
     }
 
@@ -66,6 +88,9 @@ public class OobController {
         private final ConcurrentLinkedQueue<SettableFuture<byte[]>> mPendingReceivers;
         private final ConcurrentLinkedQueue<byte[]> mReceivedData;
         private final StateMachine<State> mStateMachine = new StateMachine<>(State.CONNECTED);
+
+        /** Invariant: Non-null iff {@code mStateMachine.getState() == State.CLOSED} */
+        private ConnectionClosedException mClosedException = null;
 
         OobConnection(OobHandle handle) {
             mHandle = handle;
@@ -83,8 +108,7 @@ public class OobController {
 
         public FluentFuture<byte[]> receiveData() {
             if (mStateMachine.getState() == State.CLOSED) {
-                return FluentFuture.from(Futures.immediateFailedFuture(new OobException(
-                        "Attempted to receive oob message on closed connection " + mHandle)));
+                return FluentFuture.from(Futures.immediateFailedFuture(mClosedException));
             }
 
             if (mReceivedData.isEmpty()) {
@@ -98,17 +122,20 @@ public class OobController {
 
         @Override
         public void close() {
+            close(ConnectionClosedException.Reason.REQUESTED);
+        }
+
+        private void close(@ConnectionClosedException.Reason int reason) {
             synchronized (mStateMachine) {
                 if (mStateMachine.getState() == State.CLOSED) return;
                 mStateMachine.setState(State.CLOSED);
+                mClosedException = new ConnectionClosedException(reason);
             }
 
-            mPendingDataSends.forEach((sender) ->
-                    sender.second.setException(new OobException("Oob connection closed")));
+            mPendingDataSends.forEach((sender) -> sender.second.setException(mClosedException));
             mPendingDataSends.clear();
 
-            mPendingReceivers.forEach((receiver) ->
-                    receiver.setException(new OobException("Oob connection closed")));
+            mPendingReceivers.forEach((receiver) -> receiver.setException(mClosedException));
             mPendingReceivers.clear();
 
             mReceivedData.clear();
@@ -166,14 +193,13 @@ public class OobController {
 
         private void setDataSendFuture(byte[] data, SettableFuture<Void> future) {
             if (mOobDataSender == null) {
-                future.setException(new OobException(
+                future.setException(new IllegalStateException(
                         "Attempted to send oob message with no data sender registered"));
                 return;
             }
             switch (mStateMachine.getState()) {
                 case CLOSED: {
-                    future.setException(new OobException(
-                            "Attempted to send oob message on closed session " + mHandle));
+                    future.setException(mClosedException);
                     return;
                 }
                 case CONNECTED: {
@@ -181,8 +207,7 @@ public class OobController {
                         mOobDataSender.sendOobData(mHandle, data);
                         future.setFuture(Futures.immediateVoidFuture());
                     } catch (RemoteException e) {
-                        future.setException(new OobException(
-                                "Failed to send oob message over binder: " + e));
+                        future.setException(e);
                     }
                     return;
                 }
@@ -198,7 +223,7 @@ public class OobController {
 
             Log.w(TAG, "Oob connection in disconnected state for longer than timeout of "
                     + OOB_DISCONNECT_TIMEOUT_MS + " ms. Closing...");
-            close();
+            close(ConnectionClosedException.Reason.TRANSPORT_TIMEOUT);
         };
     }
 
@@ -255,7 +280,7 @@ public class OobController {
         if (connection == null) {
             Log.w(TAG, "Attempted to close unknown oob connection " + oobHandle + ". Ignoring...");
         } else {
-            connection.close();
+            connection.close(ConnectionClosedException.Reason.TRANSPORT_CLOSED);
         }
     }
 

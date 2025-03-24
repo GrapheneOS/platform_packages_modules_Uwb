@@ -17,6 +17,7 @@
 package com.android.server.ranging.session;
 
 import android.content.AttributionSource;
+import android.ranging.RangingConfig;
 import android.ranging.SessionHandle;
 import android.ranging.oob.DeviceHandle;
 import android.ranging.oob.OobHandle;
@@ -55,10 +56,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class OobInitiatorRangingSession
-        extends BaseRangingSession
-        implements RangingSession<OobInitiatorRangingConfig> {
-
+public class OobInitiatorRangingSession extends BaseRangingSession implements RangingSession {
     private static final String TAG = OobInitiatorRangingSession.class.getSimpleName();
 
     private static final long MESSAGE_TIMEOUT_MS = 4000;
@@ -83,13 +81,20 @@ public class OobInitiatorRangingSession
     }
 
     @Override
-    public void start(@NonNull OobInitiatorRangingConfig config) {
+    public void start(@NonNull RangingConfig rangingConfig) {
+        if (!(rangingConfig instanceof OobInitiatorRangingConfig config)) {
+            Log.e(TAG, "Unexpected configuration object for oob initiator session "
+                    + rangingConfig.getClass());
+            mSessionListener.onSessionClosed(InternalReason.INTERNAL_ERROR);
+            return;
+        }
+
         try {
             mRangingEngine = new RangingEngine(
-                    mConfig.getSessionConfig(), config, mSessionHandle, mInjector);
+                    mSessionConfig.getSessionConfig(), config, mSessionHandle, mInjector);
         } catch (RangingEngine.ConfigSelectionException e) {
             Log.w(TAG, "Provided config incompatible with local capabilities: ", e);
-            mSessionListener.onSessionStopped(InternalReason.UNSUPPORTED);
+            mSessionListener.onSessionClosed(InternalReason.UNSUPPORTED);
             return;
         }
 
@@ -108,13 +113,13 @@ public class OobInitiatorRangingSession
                         Log.w(TAG, "Oob failed: ", t);
                         switch (t) {
                             case RangingEngine.ConfigSelectionException e ->
-                                    mSessionListener.onSessionStopped(e.getReason());
+                                    mSessionListener.onSessionClosed(e.getReason());
+                            case OobController.ConnectionClosedException e ->
+                                    mSessionListener.onSessionClosed(InternalReason.NO_PEERS_FOUND);
                             case TimeoutException unused ->
-                                    mSessionListener.onSessionStopped(
-                                            InternalReason.NO_PEERS_FOUND);
+                                    mSessionListener.onSessionClosed(InternalReason.NO_PEERS_FOUND);
                             default ->
-                                    mSessionListener.onSessionStopped(
-                                            InternalReason.INTERNAL_ERROR);
+                                    mSessionListener.onSessionClosed(InternalReason.INTERNAL_ERROR);
                         }
                     }
                 }, mOobExecutor);
@@ -142,12 +147,13 @@ public class OobInitiatorRangingSession
                             .toBytes()));
         });
 
-        FluentFuture.from(
-                        Futures.whenAllComplete(pendingSends.values())
-                                .call(() -> handleFailedFutures(pendingSends), mOobExecutor))
+        FluentFuture.from(Futures
+                        .whenAllComplete(pendingSends.values())
+                        .call(() -> handleFailedFutures(pendingSends), mOobExecutor))
                 .addCallback(new FutureCallback<>() {
                     @Override
                     public void onSuccess(Map<OobHandle, Void> result) {
+                        Log.i(TAG, "Sent stop ranging on OOB handles " + result.keySet());
                         OobInitiatorRangingSession.super.stop();
                     }
 

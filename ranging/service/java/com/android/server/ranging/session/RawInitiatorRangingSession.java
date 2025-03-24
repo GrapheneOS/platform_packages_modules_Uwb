@@ -17,21 +17,23 @@
 package com.android.server.ranging.session;
 
 import android.content.AttributionSource;
+import android.ranging.RangingConfig;
 import android.ranging.SessionHandle;
 import android.ranging.raw.RawInitiatorRangingConfig;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
 import com.android.server.ranging.RangingInjector;
 import com.android.server.ranging.RangingServiceManager;
+import com.android.server.ranging.RangingUtils;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 import java.util.Set;
 
-public class RawInitiatorRangingSession
-        extends BaseRangingSession
-        implements RangingSession<RawInitiatorRangingConfig> {
+public class RawInitiatorRangingSession extends BaseRangingSession implements RangingSession {
+    private static final String TAG = RawInitiatorRangingSession.class.getSimpleName();
 
     public RawInitiatorRangingSession(
             @NonNull AttributionSource attributionSource,
@@ -45,8 +47,15 @@ public class RawInitiatorRangingSession
     }
 
     @Override
-    public void start(@NonNull RawInitiatorRangingConfig params) {
-        super.start(mConfig.getTechnologyConfigs(Set.copyOf(params.getRawRangingDevices())));
+    public void start(@NonNull RangingConfig rangingConfig) {
+        if (!(rangingConfig instanceof RawInitiatorRangingConfig config)) {
+            Log.e(TAG, "Unexpected configuration object for raw initiator session "
+                    + rangingConfig.getClass());
+            mSessionListener.onSessionClosed(RangingUtils.InternalReason.INTERNAL_ERROR);
+            return;
+        }
+
+        super.start(mSessionConfig.getTechnologyConfigs(Set.copyOf(config.getRawRangingDevices())));
     }
 
     @Override

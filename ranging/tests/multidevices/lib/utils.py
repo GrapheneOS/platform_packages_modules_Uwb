@@ -32,12 +32,13 @@ def initialize_uwb_country_code(ad: android_device.AndroidDevice):
     ad: android device object.
     handler: callback handler.
   """
-  if not ad.ranging.isTechnologySupported(RangingTechnology.UWB):
+  if not ad.ranging.isTechnologySupported(RangingTechnology.UWB) and \
+    ad.ranging.isTechnologyEnabled(RangingTechnology.UWB):
     return
 
   try:
     ad.adb.shell(["cmd", "uwb", "force-country-code", "enabled", "US"])
-  except ad.adb.AdbError:
+  except Exception as e:
     ad.log.warning("Unable to force uwb country code")
 
   #For Wear OS, this call will not enable uwb. So ignore verification whether the stack was enabled.

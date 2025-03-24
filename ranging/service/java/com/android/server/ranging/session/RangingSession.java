@@ -25,8 +25,8 @@ import androidx.annotation.NonNull;
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 
-public interface RangingSession<P extends RangingConfig> extends AutoCloseable {
-    void start(@NonNull P params);
+public interface RangingSession extends AutoCloseable {
+    void start(@NonNull RangingConfig params);
 
     void stop();
 

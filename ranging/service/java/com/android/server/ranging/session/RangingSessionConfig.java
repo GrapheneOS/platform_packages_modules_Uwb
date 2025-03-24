@@ -18,6 +18,7 @@ package com.android.server.ranging.session;
 
 import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 
+import android.ranging.RangingConfig;
 import android.ranging.RangingDevice;
 import android.ranging.RangingManager;
 import android.ranging.RangingPreference;
@@ -49,6 +50,7 @@ import java.util.Set;
 
 public class RangingSessionConfig {
     private final @RangingPreference.DeviceRole int mDeviceRole;
+    private final @RangingConfig.RangingSessionType int mSessionType;
     private final SessionConfig mSessionConfig;
 
     /** A complete configuration for a session within a specific ranging technology's stack */
@@ -76,6 +78,7 @@ public class RangingSessionConfig {
 
     private RangingSessionConfig(Builder builder) {
         mDeviceRole = builder.mDeviceRole;
+        mSessionType = builder.mSessionType;
         mSessionConfig = builder.mSessionConfig;
     }
 
@@ -144,12 +147,17 @@ public class RangingSessionConfig {
         return mDeviceRole;
     }
 
+    public @RangingConfig.RangingSessionType int getSessionType() {
+        return mSessionType;
+    }
+
     public SessionConfig getSessionConfig() {
         return mSessionConfig;
     }
 
     public static class Builder {
         private @RangingPreference.DeviceRole int mDeviceRole;
+        private @RangingConfig.RangingSessionType int mSessionType;
         private SessionConfig mSessionConfig;
 
         public RangingSessionConfig build() {
@@ -161,11 +169,15 @@ public class RangingSessionConfig {
             return this;
         }
 
+        public Builder setSessionType(@RangingConfig.RangingSessionType int type) {
+            mSessionType = type;
+            return this;
+        }
+
         public Builder setSessionConfig(@NonNull SessionConfig config) {
             mSessionConfig = config;
             return this;
         }
-
     }
 
     private static class PeerIgnoringParamsHasher<P> {
