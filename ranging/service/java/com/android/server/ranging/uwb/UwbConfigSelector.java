@@ -41,6 +41,7 @@ import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingCapabilities;
 import android.ranging.uwb.UwbRangingParams;
+import android.util.Log;
 import android.util.Pair;
 import android.util.Range;
 
@@ -146,6 +147,8 @@ public class UwbConfigSelector implements RangingEngine.ConfigSelector {
         mSessionHandle = sessionHandle;
         mPeerAddresses = HashBiMap.create();
         mConfigIds = new HashSet<>(capabilities.getSupportedConfigIds());
+        // TODO(406020462): Temporary debug log
+        Log.d(TAG, "Locally supported channels: " + capabilities.getSupportedChannels());
         mChannels = new HashSet<>(capabilities.getSupportedChannels());
         mPreambleIndexes = new HashSet<>(capabilities.getSupportedPreambleIndexes());
         mMinSlotDurationMs = Collections.min(capabilities.getSupportedSlotDurations());
@@ -174,6 +177,9 @@ public class UwbConfigSelector implements RangingEngine.ConfigSelector {
         mPeerAddresses.put(peer, capabilities.getUwbAddress());
         mConfigIds.retainAll(capabilities.getSupportedConfigIds());
         mChannels.retainAll(capabilities.getSupportedChannels());
+        // TODO(406020462): Temporary debug log
+        Log.d(TAG, "Add peer with supported channels " + capabilities.getSupportedChannels()
+                + " set of selectable channels updated to " + mChannels);
         mPreambleIndexes.retainAll(capabilities.getSupportedPreambleIndexes());
         mMinSlotDurationMs = Math.max(
                 mMinSlotDurationMs, capabilities.getMinimumSlotDurationMs());
@@ -293,8 +299,13 @@ public class UwbConfigSelector implements RangingEngine.ConfigSelector {
         } else if (mChannels.contains(UWB_CHANNEL_5)) {
             return UWB_CHANNEL_5;
         } else {
-            throw new ConfigSelectionException("Not all peers support uwb channel 9 or 5",
-                    InternalReason.PEER_CAPABILITIES_MISMATCH);
+            // TODO(b/406020462): This is a temporary workaround for the 25Q2 release. Undo this
+            //  change once release snapshot is taken so we can continue to debug the failure.
+            Log.e(TAG, "Not all peers support uwb channel 9 or 5, if you see this, please attach "
+                    + "logcat to b/406020462");
+            return UWB_CHANNEL_9;
+            // throw new ConfigSelectionException("Not all peers support uwb channel 9 or 5",
+            //         InternalReason.PEER_CAPABILITIES_MISMATCH);
         }
     }
 
