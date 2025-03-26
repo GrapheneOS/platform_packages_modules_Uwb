@@ -158,11 +158,13 @@ public class RangingSnippet implements Snippet {
                     + " getRssi: " + (data.hasRssi() ? data.getRssi() : "null")
                     + " }");
             RangingMeasurement distance = data.getDistance();
+            SnippetEvent event = new SnippetEvent(mCallbackId, Event.DATA.toString());
             if (distance != null) {
                 Log.d(TAG, " Distance: " + distance.getMeasurement()
                         + "  Confidence: " + distance.getConfidence());
+                event.getData().putDouble("distance", distance.getMeasurement());
+                event.getData().putInt("confidence", distance.getConfidence());
             }
-            SnippetEvent event = new SnippetEvent(mCallbackId, Event.DATA.toString());
             event.getData().putString("peer_id", peer.getUuid().toString());
             event.getData().putInt("technology", data.getRangingTechnology());
             mEventCache.postEvent(event);
