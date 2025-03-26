@@ -55,6 +55,9 @@ import java.util.function.Supplier;
 
 public class RangingSnippet implements Snippet {
     private static final String TAG = "GenericRangingSnippet";
+    private static final String LISTENER_CALLBACK_ID = "availabilityListenerCallbackId";
+    private static final String LISTENER_CALLBACK_KEY = "availabilityListenerIsRegistered";
+    private boolean isAvailabilityListenerRegistered = false;
 
     private final Context mContext;
     private final RangingManager mRangingManager;
@@ -214,6 +217,7 @@ public class RangingSnippet implements Snippet {
             Map<Integer, Integer> availabilities = capabilities.getTechnologyAvailability();
             mTechnologyAvailability.putAll(availabilities);
             mRangingCapabilities.set(capabilities);
+            mEventCache.postEvent(new SnippetEvent(LISTENER_CALLBACK_ID, LISTENER_CALLBACK_KEY));
         }
     }
 
@@ -356,14 +360,22 @@ public class RangingSnippet implements Snippet {
     }
 
     @Rpc(description = "Check whether the provided ranging technology is enabled")
-    public boolean isTechnologyEnabled(int technology) {
+    public boolean isTechnologyEnabled(int technology) throws Throwable {
+        if (!isAvailabilityListenerRegistered) {
+            Utils.waitForSnippetEvent(LISTENER_CALLBACK_ID, LISTENER_CALLBACK_KEY, 5_000);
+            isAvailabilityListenerRegistered = true;
+        }
         Integer availability = mTechnologyAvailability.get(technology);
         return availability != null
                 && availability == RangingCapabilities.ENABLED;
     }
 
     @Rpc(description = "Check whether the provided ranging technology is supported")
-    public boolean isTechnologySupported(int technology) {
+    public boolean isTechnologySupported(int technology) throws Throwable {
+        if (!isAvailabilityListenerRegistered) {
+            Utils.waitForSnippetEvent(LISTENER_CALLBACK_ID, LISTENER_CALLBACK_KEY, 5_000);
+            isAvailabilityListenerRegistered = true;
+        }
         Integer availability = mTechnologyAvailability.get(technology);
         return availability != null
                 && availability != RangingCapabilities.NOT_SUPPORTED;
