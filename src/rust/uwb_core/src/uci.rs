@@ -41,9 +41,9 @@ pub mod mock_uci_manager;
 // Re-export the public elements.
 pub use command::UciCommand;
 pub use notification::{
-    CoreNotification, DataRcvNotification, RadarDataRcvNotification, RadarSweepData,
-    RangingMeasurements, RfTestNotification, RfTestPerRxData, RfTestLoopbackData, SessionNotification, SessionRangeData,
-    UciNotification,
+    BypassModeData, CoreNotification, DataRcvNotification, LogicalLinkModeData,
+    RadarDataRcvNotification, RadarSweepData, RangingMeasurements, RfTestLoopbackData,
+    RfTestNotification, RfTestPerRxData, SessionNotification, SessionRangeData, UciNotification,
 };
 pub use uci_hal::{NopUciHal, UciHal, UciHalPacket};
 pub use uci_logger_factory::{NopUciLoggerFactory, UciLoggerFactory};

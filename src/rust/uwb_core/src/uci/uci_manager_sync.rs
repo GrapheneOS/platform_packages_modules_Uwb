@@ -26,12 +26,12 @@ use tokio::task;
 
 use crate::error::{Error, Result};
 use crate::params::{
-    AndroidRadarConfigResponse, AppConfigTlv, AppConfigTlvType, CapTlv, CoreSetConfigResponse,
-    CountryCode, DeviceConfigId, DeviceConfigTlv, GetDeviceInfoResponse, PowerStats,
-    RadarConfigTlv, RadarConfigTlvType, RawUciMessage, ResetConfig, RfTestConfigResponse,
-    RfTestConfigTlv, SessionId, SessionState, SessionType,
-    SessionUpdateControllerMulticastResponse, SessionUpdateDtTagRangingRoundsResponse,
-    SetAppConfigResponse, UpdateMulticastListAction,
+    AndroidRadarConfigResponse, AppConfigTlv, AppConfigTlvType, CapTlv, ConnectId,
+    CoreSetConfigResponse, CountryCode, CreateLogicalLinkResponse, DeviceConfigId, DeviceConfigTlv,
+    GetDeviceInfoResponse, GetLogicalLinkParamResponse, PowerStats, RadarConfigTlv,
+    RadarConfigTlvType, RawUciMessage, ResetConfig, RfTestConfigResponse, RfTestConfigTlv,
+    SessionId, SessionState, SessionType, SessionUpdateControllerMulticastResponse,
+    SessionUpdateDtTagRangingRoundsResponse, SetAppConfigResponse, UpdateMulticastListAction,
 };
 #[cfg(any(test, feature = "mock-utils"))]
 use crate::uci::mock_uci_manager::MockUciManager;
@@ -253,6 +253,15 @@ impl<U: UciManager> UciManagerSync<U> {
         self.runtime_handle.block_on(self.uci_manager.close_hal(force))
     }
 
+    // The Host shall use the get logical link param command to get the Logical Link parameters
+    /// associated with the LL_CONNECT_ID
+    pub fn get_logical_link_params(
+        &self,
+        connect_id: ConnectId,
+    ) -> Result<GetLogicalLinkParamResponse> {
+        self.runtime_handle.block_on(self.uci_manager.get_logical_link_params(connect_id))
+    }
+
     // Methods for sending UCI commands. Functions are blocked until UCI response is received.
     /// Send UCI command for device reset.
     pub fn device_reset(&self, reset_config: ResetConfig) -> Result<()> {
@@ -357,9 +366,9 @@ impl<U: UciManager> UciManagerSync<U> {
         )
     }
 
-    /// Send UCI command for getting max data size for session.
-    pub fn session_query_max_data_size(&self, session_id: SessionId) -> Result<u16> {
-        self.runtime_handle.block_on(self.uci_manager.session_query_max_data_size(session_id))
+    /// Send UCI command for getting max data size for session or logical link connect ID.
+    pub fn session_query_max_data_size(&self, connect_id: ConnectId) -> Result<u16> {
+        self.runtime_handle.block_on(self.uci_manager.session_query_max_data_size(connect_id))
     }
 
     /// Send UCI command for starting ranging of the session.
@@ -421,13 +430,15 @@ impl<U: UciManager> UciManagerSync<U> {
     /// Send a data packet
     pub fn send_data_packet(
         &self,
-        session_id: SessionId,
+        connect_id: ConnectId,
+        link_layer_mode: u8,
         address: Vec<u8>,
         uci_sequence_num: u16,
         app_payload_data: Vec<u8>,
     ) -> Result<()> {
         self.runtime_handle.block_on(self.uci_manager.send_data_packet(
-            session_id,
+            connect_id,
+            link_layer_mode,
             address,
             uci_sequence_num,
             app_payload_data,
@@ -485,6 +496,27 @@ impl<U: UciManager> UciManagerSync<U> {
             slot_bitmap,
             stop_data_transfer,
         ))
+    }
+
+    /// Send UCI command for creating logical link layer
+    pub fn create_logical_link_layer(
+        &self,
+        session_id: SessionId,
+        link_layer_mode: u8,
+        dest_mac_address_bytes: Vec<u8>,
+        logical_link_class_len: u8,
+    ) -> Result<CreateLogicalLinkResponse> {
+        self.runtime_handle.block_on(self.uci_manager.create_logical_link_layer(
+            session_id,
+            link_layer_mode,
+            dest_mac_address_bytes,
+            logical_link_class_len,
+        ))
+    }
+
+    /// Send UCI command for closing the logical link using connect_id.
+    pub fn close_logical_link(&self, connect_id: ConnectId) -> Result<()> {
+        self.runtime_handle.block_on(self.uci_manager.close_logical_link(connect_id))
     }
 
     /// Set rf test config.

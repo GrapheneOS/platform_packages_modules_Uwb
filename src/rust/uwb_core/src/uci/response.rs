@@ -18,9 +18,10 @@ use log::error;
 
 use crate::error::{Error, Result};
 use crate::params::uci_packets::{
-    AndroidRadarConfigResponse, AppConfigTlv, CapTlv, CoreSetConfigResponse, DeviceConfigTlv,
-    GetDeviceInfoResponse, PowerStats, RadarConfigTlv, RawUciMessage, RfTestConfigResponse,
-    SessionHandle, SessionState, SessionUpdateControllerMulticastListRspV1Payload,
+    AndroidRadarConfigResponse, AppConfigTlv, CapTlv, CoreSetConfigResponse,
+    CreateLogicalLinkResponse, DeviceConfigTlv, GetDeviceInfoResponse, GetLogicalLinkParamResponse,
+    PowerStats, RadarConfigTlv, RawUciMessage, RfTestConfigResponse, SessionHandle, SessionState,
+    SessionUpdateControllerMulticastListRspV1Payload,
     SessionUpdateControllerMulticastListRspV2Payload, SessionUpdateControllerMulticastResponse,
     SessionUpdateDtTagRangingRoundsResponse, SetAppConfigResponse, StatusCode, UCIMajorVersion,
     UciControlPacket,
@@ -62,6 +63,9 @@ pub(super) enum UciResponse {
     SessionDataTransferPhaseConfig(Result<()>),
     SessionSetRfTestConfig(RfTestConfigResponse),
     RfTest(Result<()>),
+    CreateLogicalLink(Result<CreateLogicalLinkResponse>),
+    GetLogicalLinkParams(Result<GetLogicalLinkParamResponse>),
+    CloseLogicalLink(Result<()>),
 }
 
 impl UciResponse {
@@ -101,6 +105,9 @@ impl UciResponse {
             Self::RfTest(result) => Self::matches_result_retry(result),
             // TODO(b/273376343): Implement retry logic for Data packet send.
             Self::SendUciData(_result) => false,
+            Self::CreateLogicalLink(result) => Self::matches_result_retry(result),
+            Self::GetLogicalLinkParams(result) => Self::matches_result_retry(result),
+            Self::CloseLogicalLink(result) => Self::matches_result_retry(result),
         }
     }
 
@@ -320,6 +327,24 @@ impl TryFrom<uwb_uci_packets::SessionControlResponse> for UciResponse {
                 Ok(UciResponse::SessionGetRangingCount(
                     status_code_to_result(evt.get_status()).map(|_| evt.get_count() as usize),
                 ))
+            }
+            SessionControlResponseChild::CreateLogicalLinkRsp(evt) => {
+                Ok(UciResponse::CreateLogicalLink(Ok(CreateLogicalLinkResponse {
+                    status: evt.get_status(),
+                    connect_id: evt.get_connect_id(),
+                })))
+            }
+            SessionControlResponseChild::CloseLogicalLinkRsp(evt) => {
+                Ok(UciResponse::CloseLogicalLink(status_code_to_result(evt.get_status())))
+            }
+            SessionControlResponseChild::GetLogicalLinkParamsRsp(evt) => {
+                Ok(UciResponse::GetLogicalLinkParams(status_code_to_result(evt.get_status()).map(
+                    |_| GetLogicalLinkParamResponse {
+                        status: evt.get_status(),
+                        control_field: evt.get_control_field(),
+                        logical_link_params: evt.get_logical_link_params().to_vec(),
+                    },
+                )))
             }
             _ => Err(Error::Unknown),
         }

@@ -28,12 +28,13 @@ use tokio::time::timeout;
 use crate::error::{Error, Result};
 use crate::params::uci_packets::{
     app_config_tlvs_eq, device_config_tlvs_eq, radar_config_tlvs_eq, rf_test_config_tlvs_eq,
-    AndroidRadarConfigResponse, AppConfigTlv, AppConfigTlvType, CapTlv, ControleePhaseList,
-    Controlees, ControllerPhaseList, CoreSetConfigResponse, CountryCode, DeviceConfigId,
-    DeviceConfigTlv, GetDeviceInfoResponse, PowerStats, RadarConfigTlv, RadarConfigTlvType,
-    RawUciMessage, ResetConfig, RfTestConfigResponse, RfTestConfigTlv, SessionId, SessionState,
-    SessionToken, SessionType, SessionUpdateControllerMulticastResponse,
-    SessionUpdateDtTagRangingRoundsResponse, SetAppConfigResponse, UpdateMulticastListAction,
+    AndroidRadarConfigResponse, AppConfigTlv, AppConfigTlvType, CapTlv, ConnectId,
+    ControleePhaseList, Controlees, ControllerPhaseList, CoreSetConfigResponse, CountryCode,
+    CreateLogicalLinkResponse, DeviceConfigId, DeviceConfigTlv, GetDeviceInfoResponse,
+    GetLogicalLinkParamResponse, PowerStats, RadarConfigTlv, RadarConfigTlvType, RawUciMessage,
+    ResetConfig, RfTestConfigResponse, RfTestConfigTlv, SessionId, SessionState, SessionToken,
+    SessionType, SessionUpdateControllerMulticastResponse, SessionUpdateDtTagRangingRoundsResponse,
+    SetAppConfigResponse, UpdateMulticastListAction,
 };
 use crate::uci::notification::{
     CoreNotification, DataRcvNotification, RadarDataRcvNotification, RfTestNotification,
@@ -103,6 +104,21 @@ impl MockUciManager {
             .lock()
             .unwrap()
             .push_back(ExpectedCall::CloseHal { expected_force, out });
+    }
+
+    /// The Host shall use the get logical link param command to get the Logical Link parameters
+    /// associated with the LL_CONNECT_ID
+    ///
+    /// MockUciManager expects call, returns out as response, followed by notfs sent.
+    pub fn expect_get_logical_link_params(
+        &mut self,
+        expected_connect_id: ConnectId,
+        out: Result<GetLogicalLinkParamResponse>,
+    ) {
+        self.expected_calls
+            .lock()
+            .unwrap()
+            .push_back(ExpectedCall::GetLogicalLinkParams { expected_connect_id, out });
     }
 
     /// Prepare Mock to expect device_reset.
@@ -302,13 +318,13 @@ impl MockUciManager {
     /// MockUciManager expects call, returns out as response.
     pub fn expect_session_query_max_data_size(
         &mut self,
-        expected_session_id: SessionId,
+        expected_connect_id: ConnectId,
         out: Result<u16>,
     ) {
         self.expected_calls
             .lock()
             .unwrap()
-            .push_back(ExpectedCall::SessionQueryMaxDataSize { expected_session_id, out });
+            .push_back(ExpectedCall::SessionQueryMaxDataSize { expected_connect_id, out });
     }
 
     /// Prepare Mock to expect range_start.
@@ -440,14 +456,16 @@ impl MockUciManager {
     /// MockUciManager expects call with parameters, returns out as response.
     pub fn expect_send_data_packet(
         &mut self,
-        expected_session_id: SessionId,
+        expected_connect_id: ConnectId,
+        expected_link_layer_mode: u8,
         expected_address: Vec<u8>,
         expected_uci_sequence_num: u16,
         expected_app_payload_data: Vec<u8>,
         out: Result<()>,
     ) {
         self.expected_calls.lock().unwrap().push_back(ExpectedCall::SendDataPacket {
-            expected_session_id,
+            expected_connect_id,
+            expected_link_layer_mode,
             expected_address,
             expected_uci_sequence_num,
             expected_app_payload_data,
@@ -598,6 +616,36 @@ impl MockUciManager {
         self.expected_calls.lock().unwrap().push_back(ExpectedCall::StopRfTest { out });
     }
 
+    /// Prepare Mock to expect create_logical_link_layer.
+    ///
+    /// MockUciManager expects call with parameters, returns out as response.
+    pub fn expect_create_logical_link_layer(
+        &mut self,
+        expected_session_id: SessionId,
+        expected_link_layer_mode: u8,
+        expected_dest_address: Vec<u8>,
+        expected_logical_link_class_len: u8,
+        out: Result<CreateLogicalLinkResponse>,
+    ) {
+        self.expected_calls.lock().unwrap().push_back(ExpectedCall::CreateLogicalLink {
+            expected_session_id,
+            expected_link_layer_mode,
+            expected_dest_address,
+            expected_logical_link_class_len,
+            out,
+        });
+    }
+
+    /// Prepare Mock to expect logical_link_close.
+    ///
+    /// MockUciManager expects call with parameters, returns out as response.
+    pub fn expect_close_logical_link(&mut self, expected_connect_id: ConnectId, out: Result<()>) {
+        self.expected_calls
+            .lock()
+            .unwrap()
+            .push_back(ExpectedCall::CloseLogicalLink { expected_connect_id, out });
+    }
+
     /// Call Mock to send notifications.
     fn send_notifications(&self, notfs: Vec<UciNotification>) {
         for notf in notfs.into_iter() {
@@ -688,6 +736,26 @@ impl UciManager for MockUciManager {
         let mut expected_calls = self.expected_calls.lock().unwrap();
         match expected_calls.pop_front() {
             Some(ExpectedCall::CloseHal { expected_force, out }) if expected_force == force => {
+                self.expect_call_consumed.notify_one();
+                out
+            }
+            Some(call) => {
+                expected_calls.push_front(call);
+                Err(Error::MockUndefined)
+            }
+            None => Err(Error::MockUndefined),
+        }
+    }
+
+    async fn get_logical_link_params(
+        &self,
+        connect_id: ConnectId,
+    ) -> Result<GetLogicalLinkParamResponse> {
+        let mut expected_calls = self.expected_calls.lock().unwrap();
+        match expected_calls.pop_front() {
+            Some(ExpectedCall::GetLogicalLinkParams { expected_connect_id, out })
+                if expected_connect_id == connect_id =>
+            {
                 self.expect_call_consumed.notify_one();
                 out
             }
@@ -1019,11 +1087,11 @@ impl UciManager for MockUciManager {
         }
     }
 
-    async fn session_query_max_data_size(&self, session_id: SessionId) -> Result<u16> {
+    async fn session_query_max_data_size(&self, connect_id: ConnectId) -> Result<u16> {
         let mut expected_calls = self.expected_calls.lock().unwrap();
         match expected_calls.pop_front() {
-            Some(ExpectedCall::SessionQueryMaxDataSize { expected_session_id, out })
-                if expected_session_id == session_id =>
+            Some(ExpectedCall::SessionQueryMaxDataSize { expected_connect_id, out })
+                if expected_connect_id == connect_id =>
             {
                 self.expect_call_consumed.notify_one();
                 out
@@ -1204,7 +1272,8 @@ impl UciManager for MockUciManager {
 
     async fn send_data_packet(
         &self,
-        session_id: SessionId,
+        connect_id: ConnectId,
+        link_layer_mode: u8,
         address: Vec<u8>,
         uci_sequence_num: u16,
         app_payload_data: Vec<u8>,
@@ -1212,12 +1281,14 @@ impl UciManager for MockUciManager {
         let mut expected_calls = self.expected_calls.lock().unwrap();
         match expected_calls.pop_front() {
             Some(ExpectedCall::SendDataPacket {
-                expected_session_id,
+                expected_connect_id,
+                expected_link_layer_mode,
                 expected_address,
                 expected_uci_sequence_num,
                 expected_app_payload_data,
                 out,
-            }) if expected_session_id == session_id
+            }) if expected_connect_id == connect_id
+                && expected_link_layer_mode == link_layer_mode
                 && expected_address == address
                 && expected_uci_sequence_num == uci_sequence_num
                 && expected_app_payload_data == app_payload_data =>
@@ -1294,6 +1365,37 @@ impl UciManager for MockUciManager {
         }
     }
 
+    async fn create_logical_link_layer(
+        &self,
+        session_id: u32,
+        link_layer_mode: u8,
+        dest_address: Vec<u8>,
+        logical_link_class_len: u8,
+    ) -> Result<CreateLogicalLinkResponse> {
+        let mut expected_calls = self.expected_calls.lock().unwrap();
+        match expected_calls.pop_front() {
+            Some(ExpectedCall::CreateLogicalLink {
+                expected_session_id,
+                expected_link_layer_mode,
+                expected_dest_address,
+                expected_logical_link_class_len,
+                out,
+            }) if expected_session_id == session_id
+                && expected_dest_address == dest_address
+                && expected_link_layer_mode == link_layer_mode
+                && expected_logical_link_class_len == logical_link_class_len =>
+            {
+                self.expect_call_consumed.notify_one();
+                out
+            }
+            Some(call) => {
+                expected_calls.push_front(call);
+                Err(Error::MockUndefined)
+            }
+            None => Err(Error::MockUndefined),
+        }
+    }
+
     async fn session_set_rf_test_config(
         &self,
         session_id: SessionId,
@@ -1343,12 +1445,12 @@ impl UciManager for MockUciManager {
         let mut expected_calls = self.expected_calls.lock().unwrap();
         match expected_calls.pop_front() {
             Some(ExpectedCall::TestPerRx { expected_psdu_data, notfs, out })
-            if expected_psdu_data == psdu_data =>
-                {
-                    self.expect_call_consumed.notify_one();
-                    self.send_notifications(notfs);
-                    out
-                }
+                if expected_psdu_data == psdu_data =>
+            {
+                self.expect_call_consumed.notify_one();
+                self.send_notifications(notfs);
+                out
+            }
             Some(call) => {
                 expected_calls.push_front(call);
                 Err(Error::MockUndefined)
@@ -1361,12 +1463,12 @@ impl UciManager for MockUciManager {
         let mut expected_calls = self.expected_calls.lock().unwrap();
         match expected_calls.pop_front() {
             Some(ExpectedCall::TestLoopback { expected_psdu_data, notfs, out })
-            if expected_psdu_data == psdu_data =>
-                {
-                    self.expect_call_consumed.notify_one();
-                    self.send_notifications(notfs);
-                    out
-                }
+                if expected_psdu_data == psdu_data =>
+            {
+                self.expect_call_consumed.notify_one();
+                self.send_notifications(notfs);
+                out
+            }
             Some(call) => {
                 expected_calls.push_front(call);
                 Err(Error::MockUndefined)
@@ -1379,6 +1481,23 @@ impl UciManager for MockUciManager {
         let mut expected_calls = self.expected_calls.lock().unwrap();
         match expected_calls.pop_front() {
             Some(ExpectedCall::StopRfTest { out }) => {
+                self.expect_call_consumed.notify_one();
+                out
+            }
+            Some(call) => {
+                expected_calls.push_front(call);
+                Err(Error::MockUndefined)
+            }
+            None => Err(Error::MockUndefined),
+        }
+    }
+
+    async fn close_logical_link(&self, connect_id: ConnectId) -> Result<()> {
+        let mut expected_calls = self.expected_calls.lock().unwrap();
+        match expected_calls.pop_front() {
+            Some(ExpectedCall::CloseLogicalLink { expected_connect_id, out })
+                if expected_connect_id == connect_id =>
+            {
                 self.expect_call_consumed.notify_one();
                 out
             }
@@ -1464,7 +1583,7 @@ enum ExpectedCall {
         out: Result<SessionUpdateDtTagRangingRoundsResponse>,
     },
     SessionQueryMaxDataSize {
-        expected_session_id: SessionId,
+        expected_connect_id: ConnectId,
         out: Result<u16>,
     },
     RangeStart {
@@ -1507,7 +1626,8 @@ enum ExpectedCall {
         out: Result<RawUciMessage>,
     },
     SendDataPacket {
-        expected_session_id: SessionId,
+        expected_connect_id: ConnectId,
+        expected_link_layer_mode: u8,
         expected_address: Vec<u8>,
         expected_uci_sequence_num: u16,
         expected_app_payload_data: Vec<u8>,
@@ -1557,5 +1677,20 @@ enum ExpectedCall {
     },
     StopRfTest {
         out: Result<()>,
+    },
+    CreateLogicalLink {
+        expected_session_id: u32,
+        expected_link_layer_mode: u8,
+        expected_dest_address: Vec<u8>,
+        expected_logical_link_class_len: u8,
+        out: Result<CreateLogicalLinkResponse>,
+    },
+    CloseLogicalLink {
+        expected_connect_id: ConnectId,
+        out: Result<()>,
+    },
+    GetLogicalLinkParams {
+        expected_connect_id: ConnectId,
+        out: Result<GetLogicalLinkParamResponse>,
     },
 }

@@ -24,13 +24,14 @@ use num_derive::{FromPrimitive, ToPrimitive};
 pub use uwb_uci_packets::{
     AppConfigStatus, AppConfigTlv as RawAppConfigTlv, AppConfigTlvType, BitsPerSample, CapTlv,
     CapTlvType, Controlee, ControleePhaseList, ControleeStatusV1, ControleeStatusV2, Controlees,
-    ControllerPhaseList, CreditAvailability, DataRcvStatusCode, DataTransferNtfStatusCode,
-    DataTransferPhaseConfigUpdateStatusCode, DeviceConfigId, DeviceConfigStatus, DeviceConfigTlv,
-    DeviceState, ExtendedAddressDlTdoaRangingMeasurement, ExtendedAddressOwrAoaRangingMeasurement,
-    ExtendedAddressTwoWayRangingMeasurement, GroupId, MacAddressIndicator, MessageType,
-    MulticastUpdateStatusCode, PowerStats, RadarConfigStatus, RadarConfigTlv, RadarConfigTlvType,
-    RadarDataType, RangingMeasurementType, ReasonCode, ResetConfig, RfTestConfigStatus,
-    RfTestConfigTlv, RfTestConfigTlvType, SessionState, SessionType,
+    ControllerPhaseList, CreateLogicalLinkNtfStatusCode, CreditAvailability, DataRcvStatusCode,
+    DataTransferNtfStatusCode, DataTransferPhaseConfigUpdateStatusCode, DeviceConfigId,
+    DeviceConfigStatus, DeviceConfigTlv, DeviceState, ExtendedAddressDlTdoaRangingMeasurement,
+    ExtendedAddressOwrAoaRangingMeasurement, ExtendedAddressTwoWayRangingMeasurement, GroupId,
+    LogicalLinkCloseStatus, MacAddressIndicator, MessageType, MulticastUpdateStatusCode,
+    PowerStats, RadarConfigStatus, RadarConfigTlv, RadarConfigTlvType, RadarDataType,
+    RangingMeasurementType, ReasonCode, ResetConfig, RfTestConfigStatus, RfTestConfigTlv,
+    RfTestConfigTlvType, SessionState, SessionType,
     SessionUpdateControllerMulticastListNtfV1Payload,
     SessionUpdateControllerMulticastListNtfV2Payload,
     SessionUpdateControllerMulticastListRspV1Payload,
@@ -50,6 +51,8 @@ pub type SubSessionId = u32;
 pub type SessionHandle = u32;
 /// Generic type used to represent either a session id or session handle.
 pub type SessionToken = u32;
+/// Generic type used to represent either a session id or session handle or logical link connect ID.
+pub type ConnectId = u32;
 
 /// Wrap the original AppConfigTlv type to redact the PII fields when logging.
 #[derive(Clone, PartialEq)]
@@ -233,6 +236,15 @@ pub struct RfTestConfigResponse {
     pub config_status: Vec<RfTestConfigStatus>,
 }
 
+/// The response from UciManager::create_logical_link_layer() method.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CreateLogicalLinkResponse {
+    /// The status code of the response.
+    pub status: StatusCode,
+    /// logical link connect id
+    pub connect_id: u32,
+}
+
 /// The country code struct that contains 2 uppercase ASCII characters.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CountryCode([u8; 2]);
@@ -281,6 +293,17 @@ pub struct GetDeviceInfoResponse {
     pub uci_test_version: u16,
     /// The vendor spec info.
     pub vendor_spec_info: Vec<u8>,
+}
+
+/// The response of the UciManager::get_logical_link_params() method.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GetLogicalLinkParamResponse {
+    /// Status
+    pub status: StatusCode,
+    /// The Control field
+    pub control_field: u16,
+    /// The logical link parameters.
+    pub logical_link_params: Vec<u8>,
 }
 
 /// The raw UCI message for the vendor commands.

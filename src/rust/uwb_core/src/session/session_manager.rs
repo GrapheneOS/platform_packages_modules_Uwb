@@ -393,12 +393,12 @@ impl<T: UciManager> SessionManagerActor<T> {
                 }
             }
             UciSessionNotification::DataTransferStatus {
-                session_token,
+                connect_id,
                 uci_sequence_number: _,
                 status: _,
                 tx_count: _,
             } => {
-                match self.active_sessions.get(&session_token) {
+                match self.active_sessions.get(&connect_id) {
                     Some(_) => {
                         /*
                          * TODO(b/270443790): Handle the DataTransferStatus notification in the
@@ -408,7 +408,7 @@ impl<T: UciManager> SessionManagerActor<T> {
                     None => {
                         warn!(
                             "Received a Data Transfer Status notification for unknown Session {}",
-                            session_token
+                            connect_id
                         );
                     }
                 }
@@ -425,6 +425,59 @@ impl<T: UciManager> SessionManagerActor<T> {
                             "Received data transfer phase configuration notification of the unknown
                             Session {:?}",
                             status
+                        );
+                    }
+                }
+            }
+            UciSessionNotification::CreateLogicalLink { connect_id, status: _ } => {
+                match self.active_sessions.get(&connect_id) {
+                    Some(_) => {
+                        /*
+                         * TODO(b/270443790): Handle the CreateLogicalLink notification in the
+                         * new code flow.
+                         */
+                    }
+                    None => {
+                        warn!(
+                            "Received a Create Logical Link Status notification for unknown Session {}",
+                            connect_id
+                        );
+                    }
+                }
+            }
+            UciSessionNotification::LogicalLinkUwbsClose { connect_id, status: _ } => {
+                match self.active_sessions.get(&connect_id) {
+                    Some(_) => {
+                        /*
+                         * TODO(b/270443790): Handle the LogicalLinkUwbsClose notification in the
+                         * new code flow.
+                         */
+                    }
+                    None => {
+                        warn!(
+                            "Received a Controlle Logical Link Closed Status notification for unknown Session {}",
+                            connect_id
+                        );
+                    }
+                }
+            }
+            UciSessionNotification::LogicalLinkUwbsCreate {
+                session_token,
+                connect_id: _,
+                link_layer_mode: _,
+                source_mac_address: _,
+            } => {
+                match self.active_sessions.get(&session_token) {
+                    Some(_) => {
+                        /*
+                         * TODO(b/270443790): Handle the LogicalLinkUwbsCreate notification in the
+                         * new code flow.
+                         */
+                    }
+                    None => {
+                        warn!(
+                            "Received a Controlee Logical Link Created notification for unknown Session {}",
+                            session_token
                         );
                     }
                 }
