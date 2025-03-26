@@ -91,16 +91,10 @@ public class UwbServiceImpl {
         this.mAdapterStateCallback =
                 (newState, reason) -> {
                     mLastStateChangeReason = Conversions.convertAdapterStateReason(reason);
-                    // Send update only if old or new state is disabled, ignore if state
-                    // changed from active
-                    // to inactive and vice-versa.
-                    int oldState = mAdapterState;
                     mAdapterState = newState;
-                    if (newState == STATE_DISABLED || oldState == STATE_DISABLED) {
-                        mSerialExecutor.execute(
-                                () -> mUwbAvailabilityCallback.onUwbAvailabilityChanged(
-                                        isAvailable(), mLastStateChangeReason));
-                    }
+                    mSerialExecutor.execute(
+                            () -> mUwbAvailabilityCallback.onUwbAvailabilityChanged(
+                                    isAvailable(), mLastStateChangeReason));
                 };
         if (mHasUwbFeature) {
             mUwbManager = context.getSystemService(UwbManager.class);
