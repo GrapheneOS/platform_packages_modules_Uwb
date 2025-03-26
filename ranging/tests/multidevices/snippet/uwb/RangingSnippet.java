@@ -323,6 +323,14 @@ public class RangingSnippet implements Snippet {
         }
     }
 
+    @Rpc(description = "Stop all active ranging sessions.")
+    public void stopAllActiveRanging() {
+        for (RangingSessionInfo sessionInfo : mSessions.values()) {
+            sessionInfo.getSession().stop();
+        }
+        mSessions.clear();
+    }
+
     @Rpc(description = "Handle data received from a peer via OOB")
     public void handleOobDataReceived(String sessionHandle, String peerId, byte[] data) {
         mSessions.get(sessionHandle)
@@ -438,5 +446,10 @@ public class RangingSnippet implements Snippet {
          * Similar to {@link Supplier#get} but has {@code throws Exception}.
          */
         T get() throws Exception;
+    }
+
+    @Override
+    public void shutdown() {
+        stopAllActiveRanging();
     }
 }
