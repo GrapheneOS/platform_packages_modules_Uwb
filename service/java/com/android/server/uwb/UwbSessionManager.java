@@ -1338,6 +1338,39 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         return true;
     }
 
+    /**
+     * Ignore multicast deletes on peers that are already pending removal. This is to prevent the
+     * race condition caused when, for example, a peer is removed due to an error streak timeout
+     * and then removed again explicitly by the app before the app is notified of the original
+     * removal via a callback.
+     */
+    private @Nullable List<UwbAddress> getDeletedControleesNotPendingRemoval(
+            @Nullable FiraRangingReconfigureParams params, UwbSession session
+    ) {
+        if (params == null) return null;
+        Integer action = params.getAction();
+        UwbAddress[] addresses = params.getAddressList();
+        if (action == null || addresses == null) return null;
+
+        List<UwbAddress> filteredAddresses = null;
+        if (action == MULTICAST_LIST_UPDATE_ACTION_DELETE) {
+            filteredAddresses = new ArrayList<>(addresses.length);
+            synchronized (session.mControlees) {
+                // Remove any controlees that are already pending disconnection.
+                for (int i = 0; i < addresses.length; i++) {
+                    if (session.mControleesPendingDisconnection.contains(addresses[i])) {
+                        Log.i(TAG, "Ignoring multicast list delete for peer " + addresses[i]
+                                + " that is already pending removal");
+                    } else {
+                        filteredAddresses.add(addresses[i]);
+                        session.mControleesPendingDisconnection.add(addresses[i]);
+                    }
+                }
+            }
+        }
+        return filteredAddresses;
+    }
+
     private synchronized int reconfigureInternal(SessionHandle sessionHandle,
             @Nullable Params params, Reconfiguration.Reason reason) {
         int status = UwbUciConstants.STATUS_CODE_ERROR_SESSION_NOT_EXIST;
@@ -1346,14 +1379,14 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             return status;
         }
         int sessionId = getSessionId(sessionHandle);
+        List<UwbAddress> addressListOverride = null;
         Log.i(TAG, "reconfigure() - Session ID : " + sessionId);
         UwbSession uwbSession = getUwbSession(sessionId);
         if (uwbSession.getProtocolName().equals(FiraParams.PROTOCOL_NAME)
                 && params instanceof FiraRangingReconfigureParams) {
             FiraRangingReconfigureParams rangingReconfigureParams =
                     (FiraRangingReconfigureParams) params;
-            Log.i(TAG, "reconfigure() - update reconfigure params: "
-                    + rangingReconfigureParams);
+            Log.i(TAG, "reconfigure() - update reconfigure params: " + rangingReconfigureParams);
             // suspendRangingPreconditionCheck only on suspend ranging reconfigure
             if ((rangingReconfigureParams.getSuspendRangingRounds() != null) &&
                     (!suspendRangingPreconditionCheck(uwbSession))) {
@@ -1371,6 +1404,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             if (reason != Reconfiguration.Reason.FG_STATE_CHANGE) {
                 uwbSession.updateFiraParamsOnReconfigure(rangingReconfigureParams);
             }
+
+            addressListOverride = getDeletedControleesNotPendingRemoval(
+                    rangingReconfigureParams, uwbSession);
+            if (addressListOverride != null && addressListOverride.isEmpty()) {
+                Log.i(TAG, "Skipping reconfigure: all provided peers are already pending removal");
+                return STATUS_CODE_OK;
+            }
         } else if (uwbSession.getProtocolName().equals(CccParams.PROTOCOL_NAME)
                 && params instanceof CccRangingReconfiguredParams) {
             CccRangingReconfiguredParams rangingReconfigureParams =
@@ -1381,7 +1421,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             }
         }
         mEventTask.execute(SESSION_RECONFIG_RANGING,
-                new Reconfiguration(uwbSession, params, reason));
+                new Reconfiguration(uwbSession, params, addressListOverride, reason));
         return 0;
     }
 
@@ -1930,6 +1970,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     private static class Reconfiguration {
         public final UwbSession mUwbSession;
         public final Params mParams;
+        public final List<UwbAddress> mAddressListOverride;
         public final Reason mReason;
 
         /**
@@ -1956,9 +1997,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             }
         }
 
-        Reconfiguration(UwbSession uwbSession, Params params, Reason reason) {
+        Reconfiguration(UwbSession uwbSession, Params params, List<UwbAddress> addressListOverride,
+                Reason reason) {
             mUwbSession = uwbSession;
             mParams = params;
+            mAddressListOverride = addressListOverride;
             mReason = reason;
         }
 
@@ -1997,7 +2040,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     Log.d(TAG, "SESSION_RECONFIG_RANGING");
                     Reconfiguration reconfiguration = (Reconfiguration) msg.obj;
                     handleReconfigure(reconfiguration.mUwbSession, reconfiguration.mParams,
-                            reconfiguration.mReason);
+                            reconfiguration.mAddressListOverride, reconfiguration.mReason);
                     break;
                 }
 
@@ -2417,7 +2460,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         }
 
         private void handleReconfigure(UwbSession uwbSession, @Nullable Params param,
-                Reconfiguration.Reason reason) {
+                @Nullable List<UwbAddress> addressListOverride, Reconfiguration.Reason reason) {
             if (!(param instanceof FiraRangingReconfigureParams
                     || param instanceof CccRangingReconfiguredParams)) {
                 Log.e(TAG, "Invalid reconfigure params: " + param);
@@ -2437,23 +2480,23 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                         int ntfStatus = UwbUciConstants.STATUS_CODE_OK;
                         synchronized (uwbSession.getWaitObj()) {
                             // Handle SESSION_UPDATE_CONTROLLER_MULTICAST_LIST_CMD
-                            UwbAddress[] addrList = null;
-                            Integer action = null;
-
-                            if (rangingReconfigureParams != null) {
-                                addrList = rangingReconfigureParams.getAddressList();
-                                action = rangingReconfigureParams.getAction();
+                            if (rangingReconfigureParams == null) {
+                                Log.e(TAG, "Reconfigure with null params");
+                                return status;
                             }
+                            Integer action = rangingReconfigureParams.getAction();
                             uwbSession.setOperationType(SESSION_RECONFIG_RANGING);
                             // Action will indicate if this is a controlee add/remove.
                             //  if null, it's a session configuration change.
                             if (action != null) {
-                                if (addrList == null) {
-                                    Log.e(TAG,
-                                            "Multicast update missing the address list.");
+                                if (rangingReconfigureParams.getAddressList() == null) {
+                                    Log.e(TAG, "Multicast update missing the address list.");
                                     return status;
                                 }
-                                int dstAddressListSize = addrList.length;
+                                List<UwbAddress> addrList = Optional.ofNullable(addressListOverride)
+                                        .orElse(Arrays.asList(
+                                                rangingReconfigureParams.getAddressList()));
+                                int dstAddressListSize = addrList.size();
                                 List<byte[]> dstAddressList = new ArrayList<>();
                                 for (UwbAddress address : addrList) {
                                     dstAddressList.add(getComputedMacAddress(address));
@@ -2933,18 +2976,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         private int mLastSessionStatusNtfReasonCode = -1;
 
         /**
-         * Acquire to synchronized changes in controlee count
-         * Guards mControlees and mControleesPendingDisconnection
-         */
-        private final Object mControleeCountLock = new Object();
-
-        /**
          * Keeps track of all controlees in the session.
          */
-        public Map<UwbAddress, UwbControlee> mControlees;
+        private final Map<UwbAddress, UwbControlee> mControlees;
 
         /** Number of controlees pending disconnection due to error streak timeout */
-        @GuardedBy("mControleeCountLock")
+        @GuardedBy("mControlees")
         private final Set<UwbAddress> mControleesPendingDisconnection;
 
         // Keep track of RF Test start session params
@@ -3080,14 +3117,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         }
 
         /**
-         * Must be public for testing.
-         * @return The list of controlee addresses that have active ranging error streak timers.
-         */
-        public List<UwbAddress> getControleesWithOngoingRangingErrorStreak() {
-            return new ArrayList<>(mMulticastRangingErrorStreakTimerListeners.keySet());
-        }
-
-        /**
          * Store a ReceivedDataInfo for the UwbSession. If we already have stored data from the
          * same advertiser and with the same sequence number, this is a no-op.
          */
@@ -3176,10 +3205,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
          * @param address The UWB address of the Controlee to add.
          */
         public void addControlee(UwbAddress address) {
-            if (mControlees.containsKey(address)) {
-                return;
-            }
-            synchronized (mControleeCountLock) {
+            synchronized (mControlees) {
+                if (mControlees.containsKey(address)) {
+                    return;
+                }
                 mControlees.put(address,
                         new UwbControlee(address, createFilterEngine(), mUwbInjector));
             }
@@ -3191,15 +3220,17 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
          * @return The matching {@link UwbControlee}, or null if not found.
          */
         public UwbControlee getControlee(UwbAddress address) {
-            if (mControlees == null || mControlees.isEmpty()) {
-                Log.d(TAG, "Controlee list is null or empty");
-                return null;
+            synchronized (mControlees) {
+                if (mControlees.isEmpty()) {
+                    Log.d(TAG, "Controlee list is null or empty");
+                    return null;
+                }
+                UwbControlee result = mControlees.get(address);
+                if (result == null) {
+                    Log.d(TAG, "Failure to find controlee " + address);
+                }
+                return result;
             }
-            UwbControlee result = mControlees.get(address);
-            if (result == null) {
-                Log.d(TAG, "Failure to find controlee " + address);
-            }
-            return result;
         }
 
         /**
@@ -3208,17 +3239,16 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
          * @param address The UWB address of the Controlee to remove.
          */
         public void removeControlee(UwbAddress address) {
-            if (!mControlees.containsKey(address)) {
-                Log.w(TAG, "Attempted to remove controlee with address " + address
-                        + " that is not in the session.");
-                return;
-            }
-            Log.d(TAG, "Removing controlee.");
-            stopRangingResultErrorStreakTimerIfSet(address);
-            mControlees.get(address).close();
+            synchronized (mControlees) {
+                if (!mControlees.containsKey(address)) {
+                    Log.w(TAG, "Attempted to remove controlee with address " + address
+                            + " that is not in the session.");
+                    return;
+                }
+                Log.d(TAG, "Removing controlee.");
+                stopRangingResultErrorStreakTimerIfSet(address);
 
-            synchronized (mControleeCountLock) {
-                mControlees.remove(address);
+                mControlees.remove(address).close();
                 mControleesPendingDisconnection.remove(address);
             }
         }
@@ -3682,6 +3712,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             }
         }
 
+        @GuardedBy("mControlees")
         private void removeControleeDueToErrorStreakTimeout(UwbAddress address) {
             reconfigureInternal(mSessionHandle,
                     new FiraRangingReconfigureParams.Builder()
@@ -3701,22 +3732,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
          * @param address : Address of the controlee to associate the timer with.
          */
         public void startRangingResultErrorStreakTimerIfNotSet(UwbAddress address) {
-            if (!mControlees.containsKey(address)) {
-                Log.w(TAG, "Attempted to start error timer for controlee " + address
-                        + " that is not in the session.");
-                return;
-            }
-            if (mMulticastRangingErrorStreakTimerListeners.containsKey(address)) {
-                return;
-            }
-            Log.v(TAG, "Starting error timer for controlee " + address + " for "
-                    + mRangingErrorStreakTimeoutMs + " ms.");
-
             AlarmManager.OnAlarmListener onAlarm = () -> {
-                Log.w(TAG, "Continuous errors or no ranging results detected from controlee "
-                        + address + " for " + mRangingErrorStreakTimeoutMs + " ms.");
+                synchronized (mControlees) {
+                    Log.w(TAG, "Continuous errors or no ranging results detected from controlee "
+                            + address + " for " + mRangingErrorStreakTimeoutMs + " ms.");
 
-                synchronized (mControleeCountLock) {
                     if (mControlees.size() - mControleesPendingDisconnection.size() == 1) {
                         Log.w(TAG, "Last controlee in session has disconnected, stopping session");
                         if (getSessionState() == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
@@ -3725,18 +3745,32 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                             Log.i(TAG, "Session is not in an active state");
                         }
                     } else {
-                        mControleesPendingDisconnection.add(address);
                         removeControleeDueToErrorStreakTimeout(address);
                     }
                 }
             };
 
-            mMulticastRangingErrorStreakTimerListeners.put(address, onAlarm);
-            mAlarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                    mUwbInjector.getElapsedSinceBootMillis() + mRangingErrorStreakTimeoutMs,
-                    RANGING_RESULT_ERROR_STREAK_TIMER_TAG,
-                    onAlarm,
-                    mEventTask);
+            synchronized (mControlees) {
+                if (!mControlees.containsKey(address)) {
+                    Log.w(TAG, "Attempted to start error timer for controlee " + address
+                            + " that is not in the session.");
+                    return;
+                }
+                if (mControleesPendingDisconnection.contains(address)
+                        || mMulticastRangingErrorStreakTimerListeners.containsKey(address)
+                ) {
+                    return;
+                }
+                Log.v(TAG, "Starting error timer for controlee " + address + " for "
+                        + mRangingErrorStreakTimeoutMs + " ms.");
+
+                mMulticastRangingErrorStreakTimerListeners.put(address, onAlarm);
+                mAlarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                        mUwbInjector.getElapsedSinceBootMillis() + mRangingErrorStreakTimeoutMs,
+                        RANGING_RESULT_ERROR_STREAK_TIMER_TAG,
+                        onAlarm,
+                        mEventTask);
+            }
         }
 
         /**
@@ -3746,16 +3780,18 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
          * @param address : Address of the controlee whose timer to stop.
          */
         public void stopRangingResultErrorStreakTimerIfSet(UwbAddress address) {
-            if (!mControlees.containsKey(address)) {
-                Log.w(TAG, "Attempted to stop error timer for controlee " + address
-                        + "that is not in the session");
-                return;
+            synchronized (mControlees) {
+                if (!mControlees.containsKey(address)) {
+                    Log.w(TAG, "Attempted to stop error timer for controlee " + address
+                            + "that is not in the session");
+                    return;
+                }
+                if (!mMulticastRangingErrorStreakTimerListeners.containsKey(address)) {
+                    return;
+                }
+                mAlarmManager.cancel(mMulticastRangingErrorStreakTimerListeners.get(address));
+                mMulticastRangingErrorStreakTimerListeners.remove(address);
             }
-            if (!mMulticastRangingErrorStreakTimerListeners.containsKey(address)) {
-                return;
-            }
-            mAlarmManager.cancel(mMulticastRangingErrorStreakTimerListeners.get(address));
-            mMulticastRangingErrorStreakTimerListeners.remove(address);
         }
 
         /**
@@ -3790,17 +3826,18 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             }
         }
 
-        private void stopTimers() {
+        @VisibleForTesting
+        public void stopTimers() {
             // Reset any stored error streak or non-privileged background app timestamps.
             stopRangingResultErrorStreakTimerIfSet();
-            for (UwbAddress address : getControleesWithOngoingRangingErrorStreak()) {
+            for (UwbAddress address : mMulticastRangingErrorStreakTimerListeners.keySet()) {
                 stopRangingResultErrorStreakTimerIfSet(address);
             }
             stopNonPrivilegedBgAppTimerIfSet();
         }
 
         public void reconfigureFiraSessionOnFgStateChange() {
-            // Reconfigure the session to change notification control when the app transitions
+            // Reconfigure the session to change notification control when tahe app transitions
             // from fg to bg and vice versa.
             FiraRangingReconfigureParams.Builder builder =
                     new FiraRangingReconfigureParams.Builder();
@@ -3904,10 +3941,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
          */
         public void close() {
             if (this.mAcquiredDefaultPose) {
-                for (UwbControlee controlee : mControlees.values()) {
-                    controlee.close();
-                }
-                synchronized (mControleeCountLock) {
+                synchronized (mControlees) {
+                    for (UwbControlee controlee : mControlees.values()) {
+                        controlee.close();
+                    }
+                    stopTimers();
                     mControlees.clear();
                     mControleesPendingDisconnection.clear();
                 }
