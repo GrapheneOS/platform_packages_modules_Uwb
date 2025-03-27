@@ -132,6 +132,9 @@ pub enum UciCommand {
     TestPerRx {
         psdu_data: Vec<u8>,
     },
+    TestLoopback {
+        psdu_data: Vec<u8>,
+    },
     StopRfTest,
 }
 
@@ -300,6 +303,9 @@ impl TryFrom<UciCommand> for uwb_uci_packets::UciControlPacket {
             }
             UciCommand::TestPerRx { psdu_data } => {
                 uwb_uci_packets::TestPerRxCmdBuilder { psdu_data }.build().into()
+            }
+            UciCommand::TestLoopback { psdu_data } => {
+                uwb_uci_packets::TestLoopbackCmdBuilder { psdu_data }.build().into()
             }
             UciCommand::StopRfTest {} => uwb_uci_packets::StopRfTestCmdBuilder {}.build().into(),
         };
@@ -623,6 +629,13 @@ mod tests {
         assert_eq!(
             packet,
             uwb_uci_packets::TestPerRxCmdBuilder { psdu_data: vec![0] }.build().into()
+        );
+
+        cmd = UciCommand::TestLoopback { psdu_data: vec![0] };
+        packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
+        assert_eq!(
+            packet,
+            uwb_uci_packets::TestLoopbackCmdBuilder { psdu_data: vec![0] }.build().into()
         );
     }
 }

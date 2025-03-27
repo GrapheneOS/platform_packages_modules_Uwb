@@ -129,6 +129,8 @@ pub enum RfTestNotification {
     },
     /// TestPerRxNtf equivalent
     TestPerRxNtf(RfTestPerRxData),
+    /// TestLoopbackNtf equivalent
+    TestLoopbackNtf(RfTestLoopbackData),
 }
 
 /// The session range data.
@@ -204,6 +206,41 @@ pub struct RfTestPerRxData {
 
     /// Number of times end of frame event was triggered.
     pub eof: u32,
+
+    /// The raw data of the notification message.
+    /// It's not at FiRa specification, only used by vendor's extension.
+    pub raw_notification_data: Vec<u8>,
+}
+
+/// Loopback NTF Data
+#[derive(Debug, Clone, PartialEq)]
+pub struct RfTestLoopbackData {
+    /// Status
+    pub status: StatusCode,
+
+    /// Integer part of timestamp in 1/124.8 μs resolution.
+    pub tx_ts_int: u32,
+
+    /// Fractional part of timestamp in 1/124.8/512 μs resolution.
+    pub tx_ts_frac: u16,
+
+    /// Integer part of timestamp in 1/124.8 μs resolution.
+    pub rx_ts_int: u32,
+
+    /// Fractional part of timestamp in 1/124.8/512 μs resolution.
+    pub rx_ts_frac: u16,
+
+    /// AoA Azimuth in degrees and it is a signed value in Q9.7 format.
+    pub aoa_azimuth: u16,
+
+    /// AoA Elevation in degrees and it is a signed value in Q9.7 format.
+    pub aoa_elevation: u16,
+
+    /// Received PHR
+    pub phr: u16,
+
+    /// Received PSDU Data bytes
+    pub psdu_data: Vec<u8>,
 
     /// The raw data of the notification message.
     /// It's not at FiRa specification, only used by vendor's extension.
@@ -719,6 +756,18 @@ impl TryFrom<uwb_uci_packets::TestNotification> for RfTestNotification {
                 psdu_bit_error: evt.get_psdu_bit_error(),
                 sts_found: evt.get_sts_found(),
                 eof: evt.get_eof(),
+                raw_notification_data: raw_ntf_data,
+            })),
+            TestNotificationChild::TestLoopbackNtf(evt) => Ok(Self::TestLoopbackNtf(RfTestLoopbackData {
+                status: evt.get_status(),
+                tx_ts_int: evt.get_tx_ts_int(),
+                tx_ts_frac: evt.get_tx_ts_frac(),
+                rx_ts_int: evt.get_rx_ts_int(),
+                rx_ts_frac: evt.get_rx_ts_frac(),
+                aoa_azimuth: evt.get_aoa_azimuth(),
+                aoa_elevation: evt.get_aoa_elevation(),
+                phr: evt.get_phr(),
+                psdu_data: evt.get_psdu_data().clone(),
                 raw_notification_data: raw_ntf_data,
             })),
             _ => {
@@ -1614,6 +1663,54 @@ mod tests {
                 psdu_bit_error,
                 sts_found,
                 eof,
+                raw_notification_data
+            }))
+        );
+    }
+
+    #[test]
+    fn test_rf_test_notification_casting_from_rf_loopback_ntf() {
+        let test_loopback_ntf_packet = uwb_uci_packets::TestLoopbackNtfBuilder {
+            status: uwb_uci_packets::StatusCode::UciStatusOk,
+            tx_ts_int: 1,
+            tx_ts_frac: 2,
+            rx_ts_int: 3,
+            rx_ts_frac: 4,
+            aoa_azimuth: 5,
+            aoa_elevation: 6,
+            phr: 7,
+            psdu_data: vec![10, 20, 30, 40],
+            vendor_data: vec![],
+        }
+            .build();
+        let raw_notification_data = test_loopback_ntf_packet.clone().encode_to_bytes().unwrap()
+            [UCI_PACKET_HEADER_LEN..]
+            .to_vec();
+        let rf_test_notification =
+            uwb_uci_packets::TestNotification::try_from(test_loopback_ntf_packet).unwrap();
+        let uci_notification = RfTestNotification::try_from(rf_test_notification).unwrap();
+        let uci_notification_from_loopback_ntf = UciNotification::RfTest(uci_notification);
+        let status = uwb_uci_packets::StatusCode::UciStatusOk;
+        let tx_ts_int = 1;
+        let tx_ts_frac = 2;
+        let rx_ts_int = 3;
+        let rx_ts_frac = 4;
+        let aoa_azimuth = 5;
+        let aoa_elevation = 6;
+        let phr = 7;
+        let psdu_data = vec![10, 20, 30, 40];
+        assert_eq!(
+            uci_notification_from_loopback_ntf,
+            UciNotification::RfTest(RfTestNotification::TestLoopbackNtf(RfTestLoopbackData {
+                status,
+                tx_ts_int,
+                tx_ts_frac,
+                rx_ts_int,
+                rx_ts_frac,
+                aoa_azimuth,
+                aoa_elevation,
+                phr,
+                psdu_data,
                 raw_notification_data
             }))
         );
