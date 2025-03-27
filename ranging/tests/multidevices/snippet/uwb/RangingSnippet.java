@@ -55,6 +55,9 @@ import java.util.function.Supplier;
 
 public class RangingSnippet implements Snippet {
     private static final String TAG = "GenericRangingSnippet";
+    private static final String LISTENER_CALLBACK_ID = "availabilityListenerCallbackId";
+    private static final String LISTENER_CALLBACK_KEY = "availabilityListenerIsRegistered";
+    private boolean isAvailabilityListenerRegistered = false;
 
     private final Context mContext;
     private final RangingManager mRangingManager;
@@ -158,11 +161,13 @@ public class RangingSnippet implements Snippet {
                     + " getRssi: " + (data.hasRssi() ? data.getRssi() : "null")
                     + " }");
             RangingMeasurement distance = data.getDistance();
+            SnippetEvent event = new SnippetEvent(mCallbackId, Event.DATA.toString());
             if (distance != null) {
                 Log.d(TAG, " Distance: " + distance.getMeasurement()
                         + "  Confidence: " + distance.getConfidence());
+                event.getData().putDouble("distance", distance.getMeasurement());
+                event.getData().putInt("confidence", distance.getConfidence());
             }
-            SnippetEvent event = new SnippetEvent(mCallbackId, Event.DATA.toString());
             event.getData().putString("peer_id", peer.getUuid().toString());
             event.getData().putInt("technology", data.getRangingTechnology());
             mEventCache.postEvent(event);
@@ -212,6 +217,7 @@ public class RangingSnippet implements Snippet {
             Map<Integer, Integer> availabilities = capabilities.getTechnologyAvailability();
             mTechnologyAvailability.putAll(availabilities);
             mRangingCapabilities.set(capabilities);
+            mEventCache.postEvent(new SnippetEvent(LISTENER_CALLBACK_ID, LISTENER_CALLBACK_KEY));
         }
     }
 
@@ -354,14 +360,22 @@ public class RangingSnippet implements Snippet {
     }
 
     @Rpc(description = "Check whether the provided ranging technology is enabled")
-    public boolean isTechnologyEnabled(int technology) {
+    public boolean isTechnologyEnabled(int technology) throws Throwable {
+        if (!isAvailabilityListenerRegistered) {
+            Utils.waitForSnippetEvent(LISTENER_CALLBACK_ID, LISTENER_CALLBACK_KEY, 5_000);
+            isAvailabilityListenerRegistered = true;
+        }
         Integer availability = mTechnologyAvailability.get(technology);
         return availability != null
                 && availability == RangingCapabilities.ENABLED;
     }
 
     @Rpc(description = "Check whether the provided ranging technology is supported")
-    public boolean isTechnologySupported(int technology) {
+    public boolean isTechnologySupported(int technology) throws Throwable {
+        if (!isAvailabilityListenerRegistered) {
+            Utils.waitForSnippetEvent(LISTENER_CALLBACK_ID, LISTENER_CALLBACK_KEY, 5_000);
+            isAvailabilityListenerRegistered = true;
+        }
         Integer availability = mTechnologyAvailability.get(technology);
         return availability != null
                 && availability != RangingCapabilities.NOT_SUPPORTED;

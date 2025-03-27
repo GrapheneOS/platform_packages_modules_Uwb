@@ -23,6 +23,7 @@ android_test {
     srcs: [
         "RangingSnippet.java",
         "RangingPreferenceConverter.java",
+        "Utils.java",
     ],
     manifest: "AndroidManifest.xml",
     static_libs: [
