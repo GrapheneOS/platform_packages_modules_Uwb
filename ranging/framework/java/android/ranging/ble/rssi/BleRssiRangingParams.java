@@ -120,6 +120,7 @@ public final class BleRssiRangingParams implements Parcelable {
          * conform to "00:11:22:33:AA:BB" format.
          */
         public Builder(@NonNull String peerBluetoothAddress) {
+            Objects.requireNonNull(peerBluetoothAddress);
             if (!android.bluetooth.BluetoothAdapter.checkBluetoothAddress(peerBluetoothAddress)) {
                 throw new IllegalArgumentException(
                         "Bluetooth address is not in 00:11:22:33:AA:BB format");

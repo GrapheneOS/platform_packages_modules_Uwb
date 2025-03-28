@@ -325,6 +325,9 @@ public final class OobInitiatorRangingConfig extends RangingConfig implements Pa
          */
         @NonNull
         public OobInitiatorRangingConfig build() {
+            if (mDeviceHandles.isEmpty()) {
+                throw new IllegalArgumentException("Device handle list cannot be empty");
+            }
             return new OobInitiatorRangingConfig(this);
         }
     }
