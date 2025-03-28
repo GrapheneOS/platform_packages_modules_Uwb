@@ -33,6 +33,7 @@ import com.android.server.uwb.data.UwbUciConstants;
 import com.android.server.uwb.data.UwbVendorUciResponse;
 import com.android.server.uwb.info.UwbPowerStats;
 import com.android.server.uwb.multchip.UwbMultichipData;
+import com.android.server.uwb.rftest.UwbTestLoopbackResult;
 import com.android.server.uwb.rftest.UwbTestPerRxResult;
 import com.android.server.uwb.rftest.UwbTestPeriodicTxResult;
 
@@ -138,9 +139,20 @@ public class NativeUwbManager {
         mSessionListener.onRfTestNotificationReceived(periodicTx);
     }
 
+    /**
+     * RfTestPerRx callback invoked via the JNI
+     */
     public void onPerRxDataNotificationReceived(UwbTestPerRxResult perRxResult) {
         Log.d(TAG, "onPerRxDataNotificationReceived : " + perRxResult);
         mSessionListener.onRfTestNotificationReceived(perRxResult);
+    }
+
+    /**
+     * RfTestLoopback callback invoked via the JNI
+     */
+    public void onLoopbackDataNotificationReceived(UwbTestLoopbackResult loopbackResult) {
+        Log.d(TAG, "onLoopbackDataNotificationReceived : " + loopbackResult);
+        mSessionListener.onRfTestNotificationReceived(loopbackResult);
     }
 
     /**
@@ -355,6 +367,19 @@ public class NativeUwbManager {
     public byte testPerRx(byte[] psduData, String chipId) {
         synchronized (mNativeLock) {
             return nativeTestPerRx(psduData, chipId);
+        }
+    }
+
+    /**
+     * Starts a Loopback test
+     *
+     * @param psduData : PSDU data
+     * @param chipId   : Identifier of UWB chip for multi-HAL devices
+     * @return : {@link UwbUciConstants}  Status code
+     */
+    public byte testLoopback(byte[] psduData, String chipId) {
+        synchronized (mNativeLock) {
+            return nativeTestLoopback(psduData, chipId);
         }
     }
 
@@ -700,6 +725,8 @@ public class NativeUwbManager {
     private native byte nativeTestPeriodicTx(byte[] psduData, String chipId);
 
     private native byte nativeTestPerRx(byte[] psduData, String chipId);
+
+    private native byte nativeTestLoopback(byte[] psduData, String chipId);
 
     private native byte nativeStopRfTest(String chipId);
 }
