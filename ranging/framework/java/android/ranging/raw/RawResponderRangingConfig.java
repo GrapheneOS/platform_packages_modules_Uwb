@@ -24,6 +24,8 @@ import android.ranging.RangingConfig;
 
 import com.android.ranging.flags.Flags;
 
+import java.util.Objects;
+
 /**
  * Represents the configuration for a raw ranging session initiated by a responder device.
  * This class holds a {@link android.ranging.raw.RawRangingDevice} object that participates in the
@@ -96,6 +98,7 @@ public final class RawResponderRangingConfig extends RangingConfig implements Pa
         @NonNull
         public Builder setRawRangingDevice(
                 @NonNull android.ranging.raw.RawRangingDevice rangingDevice) {
+            Objects.requireNonNull(rangingDevice);
             mRawRangingDevice = rangingDevice;
             return this;
         }
@@ -107,6 +110,7 @@ public final class RawResponderRangingConfig extends RangingConfig implements Pa
          */
         @NonNull
         public RawResponderRangingConfig build() {
+            Objects.requireNonNull(mRawRangingDevice);
             return new RawResponderRangingConfig(this);
         }
     }

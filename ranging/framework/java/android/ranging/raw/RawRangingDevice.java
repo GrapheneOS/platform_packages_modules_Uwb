@@ -36,6 +36,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * Represents a device participating in ranging operations.
@@ -226,6 +228,7 @@ public final class RawRangingDevice implements Parcelable {
          */
         @NonNull
         public Builder setRangingDevice(@NonNull RangingDevice rangingDevice) {
+            Objects.requireNonNull(rangingDevice);
             mRangingDevice = rangingDevice;
             return this;
         }
@@ -238,6 +241,7 @@ public final class RawRangingDevice implements Parcelable {
          */
         @NonNull
         public Builder setUwbRangingParams(@NonNull UwbRangingParams params) {
+            Objects.requireNonNull(params);
             mUwbRangingParams = params;
             return this;
         }
@@ -250,6 +254,7 @@ public final class RawRangingDevice implements Parcelable {
          */
         @NonNull
         public Builder setRttRangingParams(@NonNull RttRangingParams params) {
+            Objects.requireNonNull(params);
             mRttRangingParams = params;
             return this;
         }
@@ -262,6 +267,7 @@ public final class RawRangingDevice implements Parcelable {
          */
         @NonNull
         public Builder setCsRangingParams(@NonNull BleCsRangingParams params) {
+            Objects.requireNonNull(params);
             mBleCsRangingParams = params;
             return this;
         }
@@ -274,6 +280,7 @@ public final class RawRangingDevice implements Parcelable {
          */
         @NonNull
         public Builder setBleRssiRangingParams(@NonNull BleRssiRangingParams params) {
+            Objects.requireNonNull(params);
             mBleRssiRangingParams = params;
             return this;
         }
@@ -285,6 +292,13 @@ public final class RawRangingDevice implements Parcelable {
          */
         @NonNull
         public RawRangingDevice build() {
+            Objects.requireNonNull(this.mRangingDevice);
+            if (Stream.of(mUwbRangingParams, mBleCsRangingParams, mBleRssiRangingParams,
+                            mRttRangingParams)
+                    .allMatch(Objects::isNull)) {
+                throw new IllegalArgumentException(
+                        "At least one ranging params should be configured");
+            }
             return new RawRangingDevice(this);
         }
     }
