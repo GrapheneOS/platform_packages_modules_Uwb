@@ -39,11 +39,6 @@ public class UwbTestPerRxResult implements RfNotificationEvent {
     private long mEof;
     private byte[] mRawNotificationData;
 
-    public UwbTestPerRxResult(int status, byte[] rawNotificationData) {
-        this.mStatus = status;
-        this.mRawNotificationData = rawNotificationData;
-    }
-
     public UwbTestPerRxResult(int status, long attempts, long acqDetect, long acqReject,
                               long rxFail,  long syncCirReady, long sfdFail, long sfdFound,
                               long phrDecError, long phrBitError,
@@ -150,8 +145,8 @@ public class UwbTestPerRxResult implements RfNotificationEvent {
                 .setPsduDecError(mPsduDecError)
                 .setPsduBitError(mPsduBitError)
                 .setStsFound(mStsFound)
-                .setRawNtfData(mRawNotificationData)
-                .setEof(mEof);
+                .setEof(mEof)
+                .setRawNtfData(mRawNotificationData);
         return periodicRxResult.build().toBundle();
     }
 

@@ -15,9 +15,10 @@
 //! Implementation of NotificationManagerAndroid and its builder.
 
 use crate::jclass_name::{
-    MULTICAST_LIST_UPDATE_STATUS_CLASS, RFTEST_PERIODIC_TX_CLASS, RFTEST_PER_RX_CLASS,
-    UWB_DL_TDOA_MEASUREMENT_CLASS, UWB_OWR_AOA_MEASUREMENT_CLASS, UWB_RADAR_DATA_CLASS,
-    UWB_RADAR_SWEEP_DATA_CLASS, UWB_RANGING_DATA_CLASS, UWB_TWO_WAY_MEASUREMENT_CLASS,
+    MULTICAST_LIST_UPDATE_STATUS_CLASS, RFTEST_LOOPBACK_CLASS, RFTEST_PERIODIC_TX_CLASS,
+    RFTEST_PER_RX_CLASS, UWB_DL_TDOA_MEASUREMENT_CLASS, UWB_OWR_AOA_MEASUREMENT_CLASS,
+    UWB_RADAR_DATA_CLASS, UWB_RADAR_SWEEP_DATA_CLASS, UWB_RANGING_DATA_CLASS,
+    UWB_TWO_WAY_MEASUREMENT_CLASS,
 };
 
 use std::collections::HashMap;
@@ -34,7 +35,7 @@ use uwb_core::params::{ControleeStatusList, UwbAddress};
 use uwb_core::uci::uci_manager_sync::{NotificationManager, NotificationManagerBuilder};
 use uwb_core::uci::{
     CoreNotification, DataRcvNotification, RadarDataRcvNotification, RangingMeasurements,
-    RfTestNotification, RfTestPerRxData, SessionNotification, SessionRangeData,
+    RfTestLoopbackData, RfTestNotification, RfTestPerRxData, SessionNotification, SessionRangeData,
 };
 use uwb_uci_packets::{
     radar_bytes_per_sample_value, ExtendedAddressDlTdoaRangingMeasurement,
@@ -1085,6 +1086,51 @@ impl NotificationManagerAndroid {
             &[jvalue::from(JValue::Object(per_rx_jobject))],
         )
     }
+
+    fn on_rf_loopback_notification(
+        &mut self,
+        loopback_data: RfTestLoopbackData,
+    ) -> Result<JObject, JNIError> {
+        // Convert psdu_data to JNI byte array
+        let psdu_data_jbytearray = self.env.byte_array_from_slice(&loopback_data.psdu_data)?;
+        // Safety: psdu_data_jbytearray safely instantiated above.
+        let psdu_data_jobject = unsafe { JObject::from_raw(psdu_data_jbytearray) };
+
+        let raw_notification_jbytearray =
+            self.env.byte_array_from_slice(&loopback_data.raw_notification_data)?;
+        // Safety: raw_notification_jbytearray safely instantiated above.
+        let raw_notification_jobject = unsafe { JObject::from_raw(raw_notification_jbytearray) };
+
+        let loopback_jclass = NotificationManagerAndroid::find_local_class(
+            &mut self.jclass_map,
+            &self.class_loader_obj,
+            &self.env,
+            RFTEST_LOOPBACK_CLASS,
+        )?;
+        let method_sig = "(L".to_owned() + RFTEST_LOOPBACK_CLASS + ";)V";
+
+        let loopback_jobject = self.env.new_object(
+            loopback_jclass,
+            "(IJIJIIII[B[B)V",
+            &[
+                JValue::Int(i32::from(loopback_data.status)),
+                JValue::Long(loopback_data.tx_ts_int as i64),
+                JValue::Int(loopback_data.tx_ts_frac as i32),
+                JValue::Long(loopback_data.rx_ts_int as i64),
+                JValue::Int(loopback_data.rx_ts_frac as i32),
+                JValue::Int(loopback_data.aoa_azimuth as i32),
+                JValue::Int(loopback_data.aoa_elevation as i32),
+                JValue::Int(loopback_data.phr as i32),
+                JValue::Object(psdu_data_jobject),
+                JValue::Object(raw_notification_jobject),
+            ],
+        )?;
+        self.cached_jni_call(
+            "onLoopbackDataNotificationReceived",
+            &method_sig,
+            &[jvalue::from(JValue::Object(loopback_jobject))],
+        )
+    }
 }
 
 impl NotificationManager for NotificationManagerAndroid {
@@ -1452,6 +1498,9 @@ impl NotificationManager for NotificationManagerAndroid {
             }
             RfTestNotification::TestPerRxNtf(per_rx_data) => {
                 self.on_rf_per_rx_notification(per_rx_data)
+            }
+            RfTestNotification::TestLoopbackNtf(loopback_data) => {
+                self.on_rf_loopback_notification(loopback_data)
             }
         })
         .map_err(|e| {

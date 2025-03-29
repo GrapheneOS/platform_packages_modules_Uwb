@@ -35,3 +35,5 @@ pub(crate) const UWB_RADAR_SWEEP_DATA_CLASS: &str = "com/android/server/uwb/data
 pub(crate) const RFTEST_PERIODIC_TX_CLASS: &str =
     "com/android/server/uwb/rftest/UwbTestPeriodicTxResult";
 pub(crate) const RFTEST_PER_RX_CLASS: &str = "com/android/server/uwb/rftest/UwbTestPerRxResult";
+pub(crate) const RFTEST_LOOPBACK_CLASS: &str =
+    "com/android/server/uwb/rftest/UwbTestLoopbackResult";

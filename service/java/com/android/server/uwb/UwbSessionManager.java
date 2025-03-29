@@ -896,6 +896,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                         status = mNativeUwbManager.testPerRx(params.getPsduData(),
                                 uwbSession.getChipId());
                         break;
+                    case RfTestParams.TEST_LOOPBACK:
+                        status = mNativeUwbManager.testLoopback(params.getPsduData(),
+                                uwbSession.getChipId());
+                        break;
                     default:
                         Log.i(TAG, "Unknown RF command: " + rfTestOperationType);
                 }

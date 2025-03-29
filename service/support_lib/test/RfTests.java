@@ -16,6 +16,7 @@
 
 package com.google.uwb.support;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
@@ -25,7 +26,11 @@ import android.uwb.UwbAddress;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.rftest.RfTestLoopbackResult;
 import com.google.uwb.support.rftest.RfTestOpenSessionParams;
+import com.google.uwb.support.rftest.RfTestParams;
+import com.google.uwb.support.rftest.RfTestPerRxResult;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -173,5 +178,121 @@ public class RfTests {
         assertEquals(RMARKER_RX_START, params.getRmarkerRxStart());
         assertEquals(STS_INDEX_AUTO_INCR, params.getStsIndexAutoIncr());
         assertEquals(STS_DETECT_BITMAP, params.getStsDetectBitmap());
+    }
+
+    @Test
+    public void testRfTestPerRxResult() {
+        int status = FiraParams.STATUS_CODE_OK;
+        long attempts = 1;
+        long acqDetect = 2;
+        long acqReject = 3;
+        long rxFail = 3;
+        long syncCirReady = 4;
+        long sfdFail = 5;
+        long sfdFound = 6;
+        long phrDecError = 7;
+        long phrBitError = 8;
+        long psduDecError = 9;
+        long psduBitError = 10;
+        long stsFound = 11;
+        long eof = 12;
+
+        RfTestPerRxResult perRxResult = new RfTestPerRxResult.Builder()
+                .setOperationType(RfTestParams.TEST_PER_RX)
+                .setStatus(status)
+                .setAttempts(attempts)
+                .setAcqDetect(acqDetect)
+                .setAcqReject(acqReject)
+                .setRxFail(rxFail)
+                .setSyncCirReady(syncCirReady)
+                .setSfdFail(sfdFail)
+                .setSfdFound(sfdFound)
+                .setPhrDecError(phrDecError)
+                .setPhrBitError(phrBitError)
+                .setPsduDecError(psduDecError)
+                .setPsduBitError(psduBitError)
+                .setStsFound(stsFound)
+                .setEof(eof)
+                .build();
+
+        assertEquals(RfTestParams.TEST_PER_RX, perRxResult.getRfTestOperationType());
+        assertEquals(status, perRxResult.getStatus());
+        assertEquals(attempts, perRxResult.getAttempts());
+        assertEquals(acqDetect, perRxResult.getAcqDetect());
+        assertEquals(acqReject, perRxResult.getAcqReject());
+        assertEquals(rxFail, perRxResult.getRxFail());
+        assertEquals(syncCirReady, perRxResult.getSyncCirReady());
+        assertEquals(sfdFail, perRxResult.getSfdFail());
+        assertEquals(sfdFound, perRxResult.getSfdFound());
+        assertEquals(phrDecError, perRxResult.getPhrDecError());
+        assertEquals(phrBitError, perRxResult.getPhrBitError());
+        assertEquals(psduDecError, perRxResult.getPsduDecError());
+        assertEquals(psduBitError, perRxResult.getPsduBitError());
+        assertEquals(stsFound, perRxResult.getStsFound());
+        assertEquals(eof, perRxResult.getEof());
+
+        RfTestPerRxResult fromBundle = RfTestPerRxResult.fromBundle(perRxResult.toBundle());
+        assertEquals(status, fromBundle.getStatus());
+        assertEquals(attempts, fromBundle.getAttempts());
+        assertEquals(acqDetect, fromBundle.getAcqDetect());
+        assertEquals(acqReject, fromBundle.getAcqReject());
+        assertEquals(rxFail, fromBundle.getRxFail());
+        assertEquals(syncCirReady, fromBundle.getSyncCirReady());
+        assertEquals(sfdFail, fromBundle.getSfdFail());
+        assertEquals(sfdFound, fromBundle.getSfdFound());
+        assertEquals(phrDecError, fromBundle.getPhrDecError());
+        assertEquals(phrBitError, fromBundle.getPhrBitError());
+        assertEquals(psduDecError, fromBundle.getPsduDecError());
+        assertEquals(psduBitError, fromBundle.getPsduBitError());
+        assertEquals(stsFound, fromBundle.getStsFound());
+        assertEquals(eof, fromBundle.getEof());
+    }
+
+    @Test
+    public void testRfTestLoopbackResult() {
+        int status = FiraParams.STATUS_CODE_OK;
+        long txTsInt = 1;
+        int txTsFrac = 2;
+        long rxTsInt = 3;
+        int rxTsFrac = 4;
+        int aoaAzimuth = 5;
+        int aoaElevation = 6;
+        int phr = 7;
+        byte[] psduData = new byte[] {1, 2, 3, 4};
+
+        RfTestLoopbackResult loopbackResult = new RfTestLoopbackResult.Builder()
+                .setOperationType(RfTestParams.TEST_LOOPBACK)
+                .setStatus(status)
+                .setTxTsInt(txTsInt)
+                .setTxTsFrac(txTsFrac)
+                .setRxTsInt(rxTsInt)
+                .setRxTsFrac(rxTsFrac)
+                .setAoaAzimuth(aoaAzimuth)
+                .setAoaElevation(aoaElevation)
+                .setPhr(phr)
+                .setPsduData(psduData)
+                .build();
+
+        assertEquals(RfTestParams.TEST_LOOPBACK, loopbackResult.getRfTestOperationType());
+        assertEquals(status, loopbackResult.getStatus());
+        assertEquals(txTsInt, loopbackResult.getTxTsInt());
+        assertEquals(txTsFrac, loopbackResult.getTxTsFrac());
+        assertEquals(rxTsInt, loopbackResult.getRxTsInt());
+        assertEquals(rxTsFrac, loopbackResult.getRxTsFrac());
+        assertEquals(aoaAzimuth, loopbackResult.getAoaAzimuth());
+        assertEquals(aoaElevation, loopbackResult.getAoaElevation());
+        assertEquals(phr, loopbackResult.getPhr());
+        assertArrayEquals(psduData, loopbackResult.getPsduData());
+
+        RfTestLoopbackResult fromBundle = RfTestLoopbackResult.fromBundle(loopbackResult.toBundle());
+        assertEquals(status, fromBundle.getStatus());
+        assertEquals(txTsInt, fromBundle.getTxTsInt());
+        assertEquals(txTsFrac, fromBundle.getTxTsFrac());
+        assertEquals(rxTsInt, fromBundle.getRxTsInt());
+        assertEquals(rxTsFrac, fromBundle.getRxTsFrac());
+        assertEquals(aoaAzimuth, fromBundle.getAoaAzimuth());
+        assertEquals(aoaElevation, fromBundle.getAoaElevation());
+        assertEquals(phr, fromBundle.getPhr());
+        assertArrayEquals(psduData, fromBundle.getPsduData());
     }
 }
