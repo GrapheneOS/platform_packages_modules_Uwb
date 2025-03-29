@@ -24,6 +24,8 @@ import android.ranging.RangingConfig;
 
 import com.android.ranging.flags.Flags;
 
+import java.util.Objects;
+
 /**
  * Represents the configuration for an Out-of-Band (OOB) responder in a ranging session.
  * This class contains configuration and device handle information for establishing
@@ -93,6 +95,7 @@ public final class OobResponderRangingConfig extends RangingConfig implements Pa
          * @param deviceHandle The DeviceHandle to associate with this OOB responder.
          */
         public Builder(@NonNull DeviceHandle deviceHandle) {
+            Objects.requireNonNull(deviceHandle);
             mDeviceHandle = deviceHandle;
         }
 

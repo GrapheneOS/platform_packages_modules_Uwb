@@ -41,6 +41,7 @@ import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingCapabilities;
 import android.ranging.uwb.UwbRangingParams;
+import android.util.Log;
 import android.util.Pair;
 import android.util.Range;
 
@@ -146,6 +147,7 @@ public class UwbConfigSelector implements RangingEngine.ConfigSelector {
         mSessionHandle = sessionHandle;
         mPeerAddresses = HashBiMap.create();
         mConfigIds = new HashSet<>(capabilities.getSupportedConfigIds());
+        Log.v(TAG, "Locally supported channels: " + capabilities.getSupportedChannels());
         mChannels = new HashSet<>(capabilities.getSupportedChannels());
         mPreambleIndexes = new HashSet<>(capabilities.getSupportedPreambleIndexes());
         mMinSlotDurationMs = Collections.min(capabilities.getSupportedSlotDurations());
@@ -174,6 +176,8 @@ public class UwbConfigSelector implements RangingEngine.ConfigSelector {
         mPeerAddresses.put(peer, capabilities.getUwbAddress());
         mConfigIds.retainAll(capabilities.getSupportedConfigIds());
         mChannels.retainAll(capabilities.getSupportedChannels());
+        Log.v(TAG, "Add peer with supported channels " + capabilities.getSupportedChannels()
+                + " set of selectable channels updated to " + mChannels);
         mPreambleIndexes.retainAll(capabilities.getSupportedPreambleIndexes());
         mMinSlotDurationMs = Math.max(
                 mMinSlotDurationMs, capabilities.getMinimumSlotDurationMs());

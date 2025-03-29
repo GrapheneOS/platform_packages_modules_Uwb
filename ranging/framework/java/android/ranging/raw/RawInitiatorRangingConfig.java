@@ -121,9 +121,13 @@ public final class RawInitiatorRangingConfig extends RangingConfig implements Pa
          * Builds and returns a new {@link RawInitiatorRangingConfig} instance.
          *
          * @return a configured instance of {@link RawInitiatorRangingConfig}.
+         * @throws  IllegalArgumentException if no {@link RawRangingDevice} is configured.
          */
         @NonNull
         public RawInitiatorRangingConfig build() {
+            if (mRawRangingDeviceList.isEmpty()) {
+                throw new IllegalArgumentException("Ranging device list cannot be empty");
+            }
             return new RawInitiatorRangingConfig(this);
         }
     }

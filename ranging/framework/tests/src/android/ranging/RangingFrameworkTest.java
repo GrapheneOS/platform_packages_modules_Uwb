@@ -273,7 +273,12 @@ public class RangingFrameworkTest {
         mRangingSession.removeDeviceFromRangingSession(new RangingDevice.Builder().build());
         verify(mMockRangingAdapter, times(1)).removeDevice(any(), any());
 
-        mRangingSession.addDeviceToRangingSession(new RawResponderRangingConfig.Builder().build());
+        RawRangingDevice rawRangingDevice = new RawRangingDevice.Builder()
+                .setRangingDevice(new RangingDevice.Builder().build())
+                        .setUwbRangingParams(device.getUwbRangingParams())
+                                .build();
+        mRangingSession.addDeviceToRangingSession(new RawResponderRangingConfig.Builder()
+                .setRawRangingDevice(rawRangingDevice).build());
         verify(mMockRangingAdapter, times(1)).addRawDevice(any(), any());
 
         mRangingSession.stop();

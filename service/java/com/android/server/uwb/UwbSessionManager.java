@@ -896,6 +896,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                         status = mNativeUwbManager.testPerRx(params.getPsduData(),
                                 uwbSession.getChipId());
                         break;
+                    case RfTestParams.TEST_LOOPBACK:
+                        status = mNativeUwbManager.testLoopback(params.getPsduData(),
+                                uwbSession.getChipId());
+                        break;
                     default:
                         Log.i(TAG, "Unknown RF command: " + rfTestOperationType);
                 }
@@ -957,10 +961,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     return status;
                 });
 
-
-        int status = UwbUciConstants.STATUS_CODE_FAILED;
         try {
-            status = mUwbInjector.runTaskOnSingleThreadExecutor(stopRfSessionTask,
+            mUwbInjector.runTaskOnSingleThreadExecutor(stopRfSessionTask,
                     IUwbAdapter.RF_TEST_OPERATION_THRESHOLD_MS);
         } catch (TimeoutException e) {
             Log.i(TAG, "Failed to Stop RF test - status : TIMEOUT");
