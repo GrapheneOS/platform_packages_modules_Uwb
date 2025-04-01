@@ -42,16 +42,16 @@ import androidx.annotation.RequiresApi;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 /** Represents a UWB ranging controller */
 @RequiresApi(api = VERSION_CODES.S)
 public class RangingController extends RangingDevice {
 
-    private final List<UwbAddress> mDynamicallyAddedPeers = new ArrayList<>();
+    private final Set<UwbAddress> mActivePeers = new HashSet<>();
 
     @Nullable
     private RangingSessionCallback mRangingSessionCallback;
@@ -113,7 +113,7 @@ public class RangingController extends RangingDevice {
 
     @Override
     protected boolean isKnownPeer(UwbAddress address) {
-        return super.isKnownPeer(address) || mDynamicallyAddedPeers.contains(address);
+        return mActivePeers.contains(address);
     }
 
     @Override
@@ -136,6 +136,7 @@ public class RangingController extends RangingDevice {
 
         int status = super.startRanging(callback);
         if (isAlive()) {
+            mActivePeers.addAll(mRangingParameters.getPeerAddresses());
             mRangingSessionCallback = callback;
         }
         return status;
@@ -144,7 +145,7 @@ public class RangingController extends RangingDevice {
     @Override
     public synchronized int stopRanging() {
         int status = super.stopRanging();
-        mDynamicallyAddedPeers.clear();
+        mActivePeers.clear();
         mRangingSessionCallback = null;
         return status;
     }
@@ -166,7 +167,7 @@ public class RangingController extends RangingDevice {
         if (ConfigurationManager.isUnicast(mRangingParameters.getUwbConfigId())) {
             return INVALID_API_CALL;
         }
-        if (isKnownPeer(controleeAddress) || mDynamicallyAddedPeers.contains(controleeAddress)) {
+        if (mActivePeers.contains(controleeAddress)) {
             return STATUS_OK;
         }
         // Reconfigure the session.
@@ -190,7 +191,7 @@ public class RangingController extends RangingDevice {
                                 callback.onPeerConnected(
                                         UwbDevice.createForAddress(controleeAddress.toBytes())));
             }
-            mDynamicallyAddedPeers.add(controleeAddress);
+            mActivePeers.add(controleeAddress);
         } else {
             if (callback != null) {
                 runOnBackendCallbackThread(
@@ -222,7 +223,7 @@ public class RangingController extends RangingDevice {
         if (ConfigurationManager.isUnicast(mRangingParameters.getUwbConfigId())) {
             return INVALID_API_CALL;
         }
-        if (isKnownPeer(controleeAddress) || mDynamicallyAddedPeers.contains(controleeAddress)) {
+        if (mActivePeers.contains(controleeAddress)) {
             return STATUS_OK;
         }
         // Reconfigure the session.
@@ -246,7 +247,7 @@ public class RangingController extends RangingDevice {
                                 callback.onPeerConnected(
                                         UwbDevice.createForAddress(controleeAddress.toBytes())));
             }
-            mDynamicallyAddedPeers.add(controleeAddress);
+            mActivePeers.add(controleeAddress);
         } else {
             if (callback != null) {
                 runOnBackendCallbackThread(
@@ -326,7 +327,7 @@ public class RangingController extends RangingDevice {
                                     UwbDevice.createForAddress(controleeAddress.toBytes()),
                                     LOCAL_DEVICE_REQUEST));
         }
-        mDynamicallyAddedPeers.remove(controleeAddress);
+        mActivePeers.remove(controleeAddress);
         return STATUS_OK;
     }
 
@@ -360,7 +361,7 @@ public class RangingController extends RangingDevice {
 
     @Override
     public synchronized void handlePeerDisconnected(UwbDevice peer) {
-        mDynamicallyAddedPeers.remove(peer.getAddress());
+        mActivePeers.remove(peer.getAddress());
     }
 
     /**
