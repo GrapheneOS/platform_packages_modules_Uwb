@@ -650,7 +650,7 @@ public class UwbMetrics {
         int latencyMs = (int) (mUwbInjector.getElapsedSinceBootMillis()
                 - session.mStartTimeSinceBootMs);
         UwbStatsLog.write(UwbStatsLog.UWB_FIRST_RANGING_RECEIVED,
-                profileType, latencyMs, latencyMs / 200);
+                profileType, latencyMs, latencyMs / 200, session.mAttributionSource.getUid());
     }
 
     private int convertNlos(int nlos) {

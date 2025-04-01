@@ -286,7 +286,8 @@ public class UwbMetricsTest {
         ExtendedMockito.verify(() -> UwbStatsLog.write(UwbStatsLog.UWB_FIRST_RANGING_RECEIVED,
                 UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
                 DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS * 2,
-                DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS * 2 / 200));
+                DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS * 2 / 200,
+                UID));
 
         ExtendedMockito.verify(() -> UwbStatsLog.write(UwbStatsLog.UWB_SESSION_CLOSED,
                 UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
