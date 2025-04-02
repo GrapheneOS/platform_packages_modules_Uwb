@@ -25,6 +25,7 @@ class UwbBaseTest(base_test.BaseTestClass):
       ad.load_snippet("uwb", "com.google.snippet.uwb")
 
     for ad in self.android_devices:
+      uwb_test_utils.request_hw_enable_if_required(ad)
       uwb_test_utils.initialize_uwb_country_code_if_not_set(ad)
 
   def setup_test(self):
@@ -38,6 +39,9 @@ class UwbBaseTest(base_test.BaseTestClass):
       ad.uwb.logInfo("*** TEST END: " + self.current_test_info.name + " ***")
 
   def teardown_class(self):
+    for ad in self.android_devices:
+      if ad.uwb.isUwbHwIdleTurnOffEnabled():
+        ad.uwb.requestUwbHwEnabled(False)
     super().teardown_class()
     self._record_all()
 
