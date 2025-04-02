@@ -604,11 +604,11 @@ public class UwbCountryCode {
             return new Pair<>(STATUS_CODE_OK, mCountryCode);
         }
         Log.d(TAG, "setCountryCode to " + country);
+        mCountryCode = country;
         int status = mNativeUwbManager.setCountryCode(country.getBytes(StandardCharsets.UTF_8));
         if (status != STATUS_CODE_OK) {
             Log.i(TAG, "Failed to set country code, with status code: " + status);
         }
-        mCountryCode = country;
         mCountryCodeUpdatedTimestamp = LocalDateTime.now().format(FORMATTER);
         mCountryCodeStatus = Optional.of(status);
         // Cache the country code (if caching is enabled on the device)
