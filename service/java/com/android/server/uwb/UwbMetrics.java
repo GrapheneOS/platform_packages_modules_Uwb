@@ -459,7 +459,7 @@ public class UwbMetrics {
             UwbStatsLog.write(UwbStatsLog.UWB_RANGING_START, uwbSession.getProfileType(),
                     session.mStsType, session.mIsInitiator,
                     session.mIsController, session.mIsDiscoveredByFramework, session.mIsOutOfBand,
-                    session.mRangingStatus);
+                    session.mRangingStatus, uwbSession.getAttributionSource().getUid());
             if (status != UwbUciConstants.STATUS_CODE_OK) {
                 session.mStartFailureCount++;
                 session.mStartTimeSinceBootMs = 0;
@@ -532,7 +532,8 @@ public class UwbMetrics {
                     session.mStartFailureCount,
                     session.mStartNoValidReportCount,
                     session.mRxPacketCount, session.mTxPacketCount, session.mRxErrorCount,
-                    session.mTxErrorCount, session.mRxToUpperLayerCount, session.mRangingType);
+                    session.mTxErrorCount, session.mRxToUpperLayerCount, session.mRangingType,
+                    uwbSession.getAttributionSource().getUid());
             mOpenedSessionMap.delete(uwbSession.getSessionId());
         }
     }
@@ -582,7 +583,7 @@ public class UwbMetrics {
     /**
      * Log the ranging measurement result
      */
-    public void logRangingResult(int profileType, UwbRangingData rawRangingData,
+    public void logRangingResult(UwbSession uwbSession, UwbRangingData rawRangingData,
             RangingMeasurement filteredRangingMeasurement) {
         synchronized (mLock) {
             int rangingMeasuresType = rawRangingData.getRangingMeasuresType();
@@ -593,10 +594,13 @@ public class UwbMetrics {
 
             int sessionId = (int) rawRangingData.getSessionId();
             RangingSessionStats session = mOpenedSessionMap.get(sessionId);
+
             if (session == null) {
                 return;
             }
             session.mRangingCount++;
+
+            int profileType = uwbSession.getProfileType();
 
             RangingReportEvent report = getRangingReport(rangingMeasuresType, rawRangingData);
             if (report == null) {
@@ -641,7 +645,8 @@ public class UwbMetrics {
                     isElevationValid, report.mElevationDegree, elevation10Degree,
                     report.mElevationFom, session.mRangingType, report.mFilteredDistanceCm,
                     report.mFilteredAzimuthDegree, report.mFilteredAzimuthFom,
-                    report.mFilteredElevationDegree, report.mFilteredElevationFom);
+                    report.mFilteredElevationDegree, report.mFilteredElevationFom,
+                    uwbSession.getAttributionSource().getUid());
         }
     }
 

@@ -29,7 +29,6 @@ import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_FAILED;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.uwb.support.radar.RadarParams.RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES;
 
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
@@ -163,7 +162,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
 
         verify(mIUwbRangingCallbacks, never()).onRangingResult(any(), any());
-        verify(mUwbMetrics, never()).logRangingResult(anyInt(), any(), any());
+        verify(mUwbMetrics, never()).logRangingResult(
+                any(UwbSessionManager.UwbSession.class), any(), any());
     }
 
     @Test
@@ -177,7 +177,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+        verify(mUwbMetrics).logRangingResult(
+                any(UwbSessionManager.UwbSession.class), eq(testRangingDataAndRangingReport.first),
                 eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
@@ -194,7 +195,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+        verify(mUwbMetrics).logRangingResult(
+                any(UwbSessionManager.UwbSession.class), eq(testRangingDataAndRangingReport.first),
                 eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
@@ -211,7 +213,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+        verify(mUwbMetrics).logRangingResult(
+                any(UwbSessionManager.UwbSession.class), eq(testRangingDataAndRangingReport.first),
                 eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
@@ -228,7 +231,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+        verify(mUwbMetrics).logRangingResult(
+                any(UwbSessionManager.UwbSession.class), eq(testRangingDataAndRangingReport.first),
                 eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
@@ -250,7 +254,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+        verify(mUwbMetrics).logRangingResult(
+                any(UwbSessionManager.UwbSession.class), eq(testRangingDataAndRangingReport.first),
                 eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
@@ -272,7 +277,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+        verify(mUwbMetrics).logRangingResult(
+                any(UwbSessionManager.UwbSession.class), eq(testRangingDataAndRangingReport.first),
                 eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
@@ -294,7 +300,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+        verify(mUwbMetrics).logRangingResult(
+                any(UwbSessionManager.UwbSession.class), eq(testRangingDataAndRangingReport.first),
                 eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
@@ -316,7 +323,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+        verify(mUwbMetrics).logRangingResult(
+                any(UwbSessionManager.UwbSession.class), eq(testRangingDataAndRangingReport.first),
                 eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
@@ -338,7 +346,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+        verify(mUwbMetrics).logRangingResult(
+                any(UwbSessionManager.UwbSession.class), eq(testRangingDataAndRangingReport.first),
                 eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
@@ -360,7 +369,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+        verify(mUwbMetrics).logRangingResult(
+                any(UwbSessionManager.UwbSession.class), eq(testRangingDataAndRangingReport.first),
                 eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
@@ -375,7 +385,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+        verify(mUwbMetrics).logRangingResult(
+                any(UwbSessionManager.UwbSession.class), eq(testRangingDataAndRangingReport.first),
                 eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
@@ -390,7 +401,8 @@ public class UwbSessionNotificationManagerTest {
                 mUwbSession, testRangingDataAndRangingReport.first);
         verify(mIUwbRangingCallbacks).onRangingResult(
                 mSessionHandle, testRangingDataAndRangingReport.second);
-        verify(mUwbMetrics).logRangingResult(anyInt(), eq(testRangingDataAndRangingReport.first),
+        verify(mUwbMetrics).logRangingResult(
+                any(UwbSessionManager.UwbSession.class), eq(testRangingDataAndRangingReport.first),
                 eq(testRangingDataAndRangingReport.second.getMeasurements().get(0)));
     }
 
