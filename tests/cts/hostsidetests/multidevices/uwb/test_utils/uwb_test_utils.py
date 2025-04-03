@@ -183,3 +183,20 @@ def initialize_uwb_country_code_if_not_set(
       ),
       "Uwb is not enabled",
   )
+
+
+def request_hw_enable_if_required(
+    ad: android_device.AndroidDevice,
+):
+  """For wearable kind of devices, request UWB HW.
+
+  Without this UWB itself will not get enabled.  And the
+  tests waiting for UWB Status change would fail.
+
+  See isUwbHwIdleTurnOffEnabled and requestUwbHwEnabled.
+
+  Args:
+    ad: android device object.
+  """
+  if ad.uwb.isUwbHwIdleTurnOffEnabled():
+    ad.uwb.requestUwbHwEnabled(True)
