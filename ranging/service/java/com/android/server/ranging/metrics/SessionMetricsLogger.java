@@ -77,7 +77,8 @@ public class SessionMetricsLogger {
                         : 0,
                 coerceUnknownEnumValueToZero(mSessionType, 2),
                 coerceUnknownEnumValueToZero(mDeviceRole, 2),
-                numPeers);
+                numPeers,
+                mAttributionSource.getUid());
         mLastStateChangeTimestampMs = System.currentTimeMillis();
         mStateMachine.setState(State.STARTING);
     }
@@ -101,7 +102,8 @@ public class SessionMetricsLogger {
                 mSessionHandle.hashCode(),
                 coerceUnknownEnumValueToZero(
                         technology.getValue(), RangingTechnology.TECHNOLOGIES.size()),
-                numPeers);
+                numPeers,
+                mAttributionSource.getUid());
     }
 
     public synchronized void logTechnologyStopped(
@@ -115,7 +117,8 @@ public class SessionMetricsLogger {
                 coerceUnknownEnumValueToZero(
                         mStateMachine.getState().toInt(), State.values().length),
                 reason,
-                numPeers);
+                numPeers,
+                mAttributionSource.getUid());
     }
 
     public synchronized void logSessionClosed(@InternalReason int reason) {
@@ -125,7 +128,8 @@ public class SessionMetricsLogger {
                 coerceUnknownEnumValueToZero(
                         mStateMachine.getState().toInt(), State.values().length),
                 System.currentTimeMillis() - mLastStateChangeTimestampMs,
-                reason);
+                reason,
+                mAttributionSource.getUid());
         mLastStateChangeTimestampMs = System.currentTimeMillis();
     }
 
