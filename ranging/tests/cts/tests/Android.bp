@@ -47,7 +47,6 @@ custom_android_test {
         "cts",
         "general-tests",
         "mts-uwb",
-        "mcts-uwb",
     ],
     libs: ["android.test.runner.stubs.system"],
     static_libs: [
