@@ -245,6 +245,9 @@ public final class RangingData implements Parcelable {
         dest.writeParcelable(mElevation, flags);
         dest.writeInt(mRssi);
         dest.writeLong(mTimestamp);
+        dest.writeDouble(mDelaySpreadMeters);
+        dest.writeByte(mDetectedAttackLevel);
+        dest.writeDouble(mVelocityMetersPerSec);
     }
 
     /**

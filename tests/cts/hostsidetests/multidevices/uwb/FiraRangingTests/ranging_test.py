@@ -1654,6 +1654,7 @@ class RangingTest(uwb_base_test.UwbBaseTest):
     def reboot_responder():
       self.responder.ad.reboot()
       self.responder.clear_all_ranging_sessions()
+      uwb_test_utils.request_hw_enable_if_required(self.responder.ad)
       uwb_test_utils.initialize_uwb_country_code_if_not_set(self.responder.ad)
 
     # create a thread to reboot the responder and not block the main test.

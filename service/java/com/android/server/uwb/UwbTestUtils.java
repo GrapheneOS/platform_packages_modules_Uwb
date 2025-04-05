@@ -143,7 +143,8 @@ public class UwbTestUtils {
             int rangingStatus) {
         switch (rangingMeasurementType) {
             case RANGING_MEASUREMENT_TYPE_TWO_WAY:
-                return generateTwoWayMeasurementRangingData(rangingStatus);
+                return generateTwoWayMeasurementRangingData(
+                        rangingStatus, macAddressingMode, macAddress);
             case RANGING_MEASUREMENT_TYPE_OWR_AOA:
                 return generateOwrAoaMeasurementRangingData(
                         macAddressingMode, macAddress, rangingStatus);
@@ -154,11 +155,13 @@ public class UwbTestUtils {
         }
     }
 
-    private static UwbRangingData generateTwoWayMeasurementRangingData(int rangingStatus) {
+    private static UwbRangingData generateTwoWayMeasurementRangingData(
+            int rangingStatus, int macAddressingMode, byte[] macAddress) {
+
         final int noOfRangingMeasures = 1;
         final UwbTwoWayMeasurement[] uwbTwoWayMeasurements =
                 new UwbTwoWayMeasurement[noOfRangingMeasures];
-        uwbTwoWayMeasurements[0] = new UwbTwoWayMeasurement(PEER_SHORT_MAC_ADDRESS, rangingStatus,
+        uwbTwoWayMeasurements[0] = new UwbTwoWayMeasurement(macAddress, rangingStatus,
                 TEST_LOS, TEST_DISTANCE, convertFloatToQFormat(TEST_AOA_AZIMUTH, 9, 7),
                 TEST_AOA_AZIMUTH_FOM, convertFloatToQFormat(TEST_AOA_ELEVATION, 9, 7),
                 TEST_AOA_ELEVATION_FOM, convertFloatToQFormat(TEST_AOA_DEST_AZIMUTH, 9, 7),
@@ -166,7 +169,7 @@ public class UwbTestUtils {
                 TEST_AOA_DEST_ELEVATION_FOM, TEST_SLOT_IDX, TEST_RSSI);
         return new UwbRangingData(TEST_SEQ_COUNTER, TEST_SESSION_ID,
                 TEST_RCR_INDICATION, TEST_CURR_RANGING_INTERVAL, RANGING_MEASUREMENT_TYPE_TWO_WAY,
-                TEST_HUS_PRIMARY_SESSION_ID, TEST_MAC_ADDRESS_MODE, noOfRangingMeasures,
+                TEST_HUS_PRIMARY_SESSION_ID, macAddressingMode, noOfRangingMeasures,
                 uwbTwoWayMeasurements, TEST_RAW_NTF_DATA);
     }
 

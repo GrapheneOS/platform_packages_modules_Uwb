@@ -76,6 +76,7 @@ import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -1492,6 +1493,7 @@ public class UwbSessionManagerTest {
 
         doReturn(PROTOCOL_NAME).when(mockUwbSession).getProtocolName();
         doReturn(0).when(mockUwbSession).getCurrentFiraRangingIntervalMs();
+        doNothing().when(mockUwbSession).stopTimers();
 
         // Setup the UwbSession to have the peer device's MacAddress stored (which happens when
         // a valid RANGE_DATA_NTF with an OWR AoA Measurement is received).
@@ -1722,6 +1724,7 @@ public class UwbSessionManagerTest {
                 mUwbSessionManager.new UwbSession(attributionSource, mockSessionHandle,
                         TEST_SESSION_ID, sessionType, params.getProtocolName(), params,
                         mockRangingCallbacks, TEST_CHIP_ID));
+        uwbSession.mMulticastRangingErrorStreakTimerListeners = spy(new ConcurrentHashMap<>());
         doReturn(mockBinder).when(uwbSession).getBinder();
         doReturn(uwbSession).when(mUwbSessionManager).createUwbSession(any(), any(), anyInt(),
                 anyByte(), anyString(), any(), any(), anyString());
@@ -1736,7 +1739,6 @@ public class UwbSessionManagerTest {
                 ? PEER_SHORT_UWB_ADDRESS : PEER_EXTENDED_UWB_ADDRESS;
 
         session.mMulticastRangingErrorStreakTimerListeners = spy(new ConcurrentHashMap<>());
-        session.mControlees = spy(new ConcurrentHashMap<>());
         session.addControlee(uwbAddress);
         return uwbAddress;
     }
@@ -3222,7 +3224,6 @@ public class UwbSessionManagerTest {
     @Test
     public void execStartRanging_twoWay_onRangeDataNotificationContinuousErrors() throws Exception {
         UwbSession uwbSession = prepareExistingUwbSession();
-        UwbAddress controleeAddr = setUpControlee(uwbSession, MAC_ADDRESSING_MODE_SHORT);
         startRanging(uwbSession);
 
         verify(mUwbSessionNotificationManager).onRangingStarted(eq(uwbSession), any());
@@ -3232,7 +3233,7 @@ public class UwbSessionManagerTest {
         // Now send a range data notification with an error.
         UwbRangingData uwbRangingData = UwbTestUtils.generateRangingData(
                 RANGING_MEASUREMENT_TYPE_TWO_WAY, MAC_ADDRESSING_MODE_SHORT,
-                UwbUciConstants.STATUS_CODE_RANGING_RX_TIMEOUT);
+                UWB_DEST_ADDRESS.toBytes(), UwbUciConstants.STATUS_CODE_RANGING_RX_TIMEOUT);
         mUwbSessionManager.onRangeDataNotificationReceived(uwbRangingData);
         verify(mUwbSessionNotificationManager).onRangingResult(uwbSession, uwbRangingData);
 
@@ -3246,13 +3247,13 @@ public class UwbSessionManagerTest {
         );
         verify(mAlarmManager).setExact(
                 anyInt(), anyLong(), anyString(), eq(alarmListenerCaptor.getValue()), any());
-        assertThat(addressCaptor.getValue()).isEqualTo(controleeAddr);
+        assertThat(addressCaptor.getValue()).isEqualTo(UWB_DEST_ADDRESS);
         assertThat(alarmListenerCaptor.getValue()).isNotNull();
 
         // Send one more error
         uwbRangingData = UwbTestUtils.generateRangingData(
                 RANGING_MEASUREMENT_TYPE_TWO_WAY, MAC_ADDRESSING_MODE_SHORT,
-                UwbUciConstants.STATUS_CODE_RANGING_RX_TIMEOUT);
+                UWB_DEST_ADDRESS.toBytes(), UwbUciConstants.STATUS_CODE_RANGING_RX_TIMEOUT);
         mUwbSessionManager.onRangeDataNotificationReceived(uwbRangingData);
         verify(mUwbSessionNotificationManager).onRangingResult(uwbSession, uwbRangingData);
 
@@ -4190,16 +4191,20 @@ public class UwbSessionManagerTest {
         return buildReconfigureParams(FiraParams.MULTICAST_LIST_UPDATE_ACTION_ADD);
     }
 
-    private FiraRangingReconfigureParams buildReconfigureParams(int action) {
+    private FiraRangingReconfigureParams buildReconfigureParams(int action, UwbAddress address) {
         FiraRangingReconfigureParams reconfigureParams =
                 new FiraRangingReconfigureParams.Builder()
-                        .setAddressList(new UwbAddress[] {
-                                UwbAddress.fromBytes(new byte[] { (byte) 0x01, (byte) 0x02 }) })
+                        .setAddressList(new UwbAddress[] { address })
                         .setAction(action)
                         .setSubSessionIdList(new int[] { 2 })
                         .build();
 
         return spy(reconfigureParams);
+    }
+
+    private FiraRangingReconfigureParams buildReconfigureParams(int action) {
+        return buildReconfigureParams(
+                action, UwbAddress.fromBytes(new byte[] { (byte) 0x01, (byte) 0x02 }));
     }
 
     private FiraRangingReconfigureParams buildReconfigureParamsV2() {
@@ -4299,8 +4304,8 @@ public class UwbSessionManagerTest {
     @Test
     public void execReconfigureRemoveControleeV1_success() throws Exception {
         UwbSession uwbSession = prepareExistingUwbSession();
-        FiraRangingReconfigureParams reconfigureParams =
-                buildReconfigureParams(FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE);
+        FiraRangingReconfigureParams reconfigureParams = buildReconfigureParams(
+                FiraParams.MULTICAST_LIST_UPDATE_ACTION_DELETE, UWB_DEST_ADDRESS);
 
         UwbMulticastListUpdateStatus status = mock(UwbMulticastListUpdateStatus.class);
         when(mNativeUwbManager
