@@ -101,7 +101,7 @@ public class UwbSessionNotificationManager {
 
         try {
             RangingMeasurement filteredRangingMeasurement = rangingReport.getMeasurements().get(0);
-            mUwbInjector.getUwbMetrics().logRangingResult(uwbSession.getProfileType(), rangingData,
+            mUwbInjector.getUwbMetrics().logRangingResult(uwbSession, rangingData,
                     filteredRangingMeasurement);
         } catch (Exception e) {
             Log.e(TAG, "logRangingResult Failed.");
