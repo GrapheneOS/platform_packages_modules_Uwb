@@ -288,7 +288,7 @@ enum AppConfigTlvType : 8 {
     OWR_AOA_MEASUREMENT_NTF_PERIOD = 0x4D,
     RFU_APP_CFG_TLV_TYPE_RANGE = 0x4E..0x9F,
 
-    VENDOR_SPECIFIC_APP_CFG_TLV_TYPE_RANGE_1 = 0xA0..0xDF {
+    CCC_RESERVED_APP_CFG_TLV_TYPE_RANGE = 0xA0..0xBF {
         // CCC specific
         CCC_HOP_MODE_KEY = 0xA0,
         CCC_UWB_TIME0 = 0xA1,
@@ -299,6 +299,8 @@ enum AppConfigTlvType : 8 {
         CCC_LAST_INDEX_USED  = 0xA8,
         ALIRO_MAC_MODE = 0xA9,
     },
+
+    VENDOR_SPECIFIC_APP_CFG_TLV_TYPE_RANGE_1 = 0xC0..0xDF,
 
     // Reserved for extension IDs.
     RFU_APP_CFG_TLV_TYPE_RANGE_4 = 0xE0..0xE2,
@@ -353,7 +355,7 @@ enum CapTlvType : 8 {
     SUPPORTED_V2_PSDU_LENGTH_SUPPORT = 0x1A,
     RFU_CAP_TLV_TYPE_RANGE_1 = 0x1B..0x9F,
 
-    VENDOR_SPECIFIC_CAP_TLV_TYPE_RANGE_1 = 0xA0..0xBF {
+    CCC_RESERVED_CAP_TLV_TYPE_RANGE = 0xA0..0xAF {
         // CCC specific
         CCC_SUPPORTED_CHAPS_PER_SLOT = 0xA0,
         CCC_SUPPORTED_SYNC_CODES = 0xA1,
@@ -368,9 +370,11 @@ enum CapTlvType : 8 {
         CCC_PRIORITIZED_CHANNEL_LIST = 0xAA,
         CCC_SUPPORTED_UWBS_MAX_PPM = 0xAB,
         ALIRO_SUPPORTED_MAC_MODES = 0xAC,
+    },
 
+    VENDOR_SPECIFIC_CAP_TLV_TYPE_RANGE_1 = 0xB0..0xBF {
         // RADAR specific
-        RADAR_SUPPORT = 0xB0
+        RADAR_SUPPORT = 0xB0,
     },
 
     SUPPORTED_POWER_STATS = 0xC0,
