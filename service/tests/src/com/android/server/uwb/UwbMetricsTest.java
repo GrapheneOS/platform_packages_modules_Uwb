@@ -232,6 +232,9 @@ public class UwbMetricsTest {
 
     @Test
     public void testLogRangingSessionAllEvents() throws Exception {
+        when(mUwbSession.getProfileType())
+                .thenReturn(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA);
+
         mUwbMetrics.logRangingInitEvent(mUwbSession, UwbUciConstants.STATUS_CODE_OK);
         ExtendedMockito.verify(() -> UwbStatsLog.write(
                 UwbStatsLog.UWB_SESSION_INITED,
@@ -250,12 +253,10 @@ public class UwbMetricsTest {
 
         for (int i = 0; i < VALID_RANGING_COUNT; i++) {
             addElapsedTimeMs(DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
-            mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
-                    mRangingData, mFilteredRangingMeasurement);
+            mUwbMetrics.logRangingResult(mUwbSession, mRangingData, mFilteredRangingMeasurement);
         }
         when(mTwoWayMeasurement.isStatusCodeOk()).thenReturn(!IS_STATUS_CODE_OK_DEFAULT);
-        mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
-                mRangingData, mFilteredRangingMeasurement);
+        mUwbMetrics.logRangingResult(mUwbSession, mRangingData, mFilteredRangingMeasurement);
 
         for (int i = 0; i < RX_PACKET_COUNT; i++) {
             mUwbMetrics.logDataRx(mUwbSession, UwbUciConstants.STATUS_CODE_OK);
@@ -276,17 +277,18 @@ public class UwbMetricsTest {
         ExtendedMockito.verify(() -> UwbStatsLog.write(UwbStatsLog.UWB_RANGING_START,
                 UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
                 UwbStatsLog.UWB_SESSION_INITIATED__STS__STATIC, true, true, false, true,
-                UwbStatsLog.UWB_START_RANGING__STATUS__TX_FAILED));
+                UwbStatsLog.UWB_START_RANGING__STATUS__TX_FAILED, UID));
 
         ExtendedMockito.verify(() -> UwbStatsLog.write(UwbStatsLog.UWB_RANGING_START,
                 UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
                 UwbStatsLog.UWB_SESSION_INITIATED__STS__STATIC, true, true, false, true,
-                UwbStatsLog.UWB_START_RANGING__STATUS__RANGING_SUCCESS));
+                UwbStatsLog.UWB_START_RANGING__STATUS__RANGING_SUCCESS, UID));
 
         ExtendedMockito.verify(() -> UwbStatsLog.write(UwbStatsLog.UWB_FIRST_RANGING_RECEIVED,
                 UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
                 DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS * 2,
-                DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS * 2 / 200));
+                DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS * 2 / 200,
+                UID));
 
         ExtendedMockito.verify(() -> UwbStatsLog.write(UwbStatsLog.UWB_SESSION_CLOSED,
                 UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
@@ -299,7 +301,7 @@ public class UwbMetricsTest {
                 UwbStatsLog.UWB_SESSION_CLOSED__RANGING_COUNT_BUCKET__ONE_TO_FIVE,
                 2, 1, 0,
                 RX_PACKET_COUNT, TX_PACKET_COUNT, 1, 1, RX_TO_UPPER_LEVEL_COUNT,
-                UwbStatsLog.UWB_SESSION_CLOSED__RANGING_TYPE__TWO_WAY));
+                UwbStatsLog.UWB_SESSION_CLOSED__RANGING_TYPE__TWO_WAY, UID));
     }
 
     @Test
@@ -323,10 +325,11 @@ public class UwbMetricsTest {
 
     @Test
     public void testLoggingRangingResultValidDistanceAngle() throws Exception {
+        when(mUwbSession.getProfileType())
+                .thenReturn(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA);
         mUwbMetrics.logRangingInitEvent(mUwbSession, UwbUciConstants.STATUS_CODE_OK);
         addElapsedTimeMs(DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
-        mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
-                mRangingData, mFilteredRangingMeasurement);
+        mUwbMetrics.logRangingResult(mUwbSession, mRangingData, mFilteredRangingMeasurement);
 
         ExtendedMockito.verify(() -> UwbStatsLog.write(
                 UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED,
@@ -340,15 +343,17 @@ public class UwbMetricsTest {
                 ELEVATION_DEFAULT_DEGREE / 10, ELEVATION_FOM_DEFAULT,
                 UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__RANGING_TYPE__TWO_WAY,
                 DISTANCE_FILTERED_CM, AZIMUTH_FILTERED_DEGREE, AZIMUTH_FOM_FILTERED,
-                ELEVATION_FILTERED_DEGREE, ELEVATION_FOM_FILTERED
+                ELEVATION_FILTERED_DEGREE, ELEVATION_FOM_FILTERED, UID
         ));
     }
 
     @Test
     public void testLoggingRangingResultSmallLoggingInterval() throws Exception {
+        when(mUwbSession.getProfileType())
+                .thenReturn(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA);
+
         mUwbMetrics.logRangingInitEvent(mUwbSession, UwbUciConstants.STATUS_CODE_OK);
-        mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
-                mRangingData, mFilteredRangingMeasurement);
+        mUwbMetrics.logRangingResult(mUwbSession, mRangingData, mFilteredRangingMeasurement);
 
         ExtendedMockito.verify(() -> UwbStatsLog.write(
                 UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED,
@@ -362,12 +367,14 @@ public class UwbMetricsTest {
                 ELEVATION_DEFAULT_DEGREE / 10, ELEVATION_FOM_DEFAULT,
                 UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__RANGING_TYPE__TWO_WAY,
                 DISTANCE_FILTERED_CM, AZIMUTH_FILTERED_DEGREE, AZIMUTH_FOM_FILTERED,
-                ELEVATION_FILTERED_DEGREE, ELEVATION_FOM_FILTERED
+                ELEVATION_FILTERED_DEGREE, ELEVATION_FOM_FILTERED, UID
         ), times(0));
     }
 
     @Test
     public void testLoggingRangingResultInvalidDistance() throws Exception {
+        when(mUwbSession.getProfileType())
+                .thenReturn(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__CCC);
         mUwbMetrics.logRangingInitEvent(mUwbSession, UwbUciConstants.STATUS_CODE_OK);
         addElapsedTimeMs(DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
         when(mTwoWayMeasurement.getDistance()).thenReturn(UwbMetrics.INVALID_DISTANCE);
@@ -378,8 +385,7 @@ public class UwbMetricsTest {
         when(mTwoWayMeasurement.getNLoS()).thenReturn(0);
         when(mFilteredRangingMeasurement.getDistanceMeasurement()).thenReturn(null);
 
-        mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__CCC,
-                mRangingData, mFilteredRangingMeasurement);
+        mUwbMetrics.logRangingResult(mUwbSession, mRangingData, mFilteredRangingMeasurement);
 
         ExtendedMockito.verify(() -> UwbStatsLog.write(
                 UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED,
@@ -391,20 +397,21 @@ public class UwbMetricsTest {
                 false, -20, 0, 0,
                 UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__RANGING_TYPE__TWO_WAY,
                 UwbMetrics.INVALID_DISTANCE, AZIMUTH_FILTERED_DEGREE, AZIMUTH_FOM_FILTERED,
-                ELEVATION_FILTERED_DEGREE, ELEVATION_FOM_FILTERED
+                ELEVATION_FILTERED_DEGREE, ELEVATION_FOM_FILTERED, UID
         ));
     }
 
     @Test
     public void testLoggingRangingResultDlTDoAMeasurement() throws Exception {
+        when(mUwbSession.getProfileType())
+                .thenReturn(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA);
         when(mRangingData.getRangingMeasuresType()).thenReturn(
                 (int) UwbUciConstants.RANGING_MEASUREMENT_TYPE_DL_TDOA);
         when(mFilteredRangingMeasurement.getDistanceMeasurement()).thenReturn(null);
 
         mUwbMetrics.logRangingInitEvent(mUwbSession, UwbUciConstants.STATUS_CODE_OK);
         addElapsedTimeMs(DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
-        mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
-                mRangingData, mFilteredRangingMeasurement);
+        mUwbMetrics.logRangingResult(mUwbSession, mRangingData, mFilteredRangingMeasurement);
 
         ExtendedMockito.verify(() -> UwbStatsLog.write(
                 UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED,
@@ -418,20 +425,21 @@ public class UwbMetricsTest {
                 ELEVATION_DEFAULT_DEGREE / 10, ELEVATION_FOM_DEFAULT,
                 UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__RANGING_TYPE__DL_TDOA,
                 UwbMetrics.INVALID_DISTANCE, AZIMUTH_FILTERED_DEGREE, AZIMUTH_FOM_FILTERED,
-                ELEVATION_FILTERED_DEGREE, ELEVATION_FOM_FILTERED
+                ELEVATION_FILTERED_DEGREE, ELEVATION_FOM_FILTERED, UID
         ));
     }
 
     @Test
     public void testLoggingRangingResultOwrAoaMeasurement() throws Exception {
+        when(mUwbSession.getProfileType())
+                .thenReturn(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA);
         when(mRangingData.getRangingMeasuresType()).thenReturn(
                 (int) UwbUciConstants.RANGING_MEASUREMENT_TYPE_OWR_AOA);
         when(mFilteredRangingMeasurement.getDistanceMeasurement()).thenReturn(null);
 
         mUwbMetrics.logRangingInitEvent(mUwbSession, UwbUciConstants.STATUS_CODE_OK);
         addElapsedTimeMs(DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
-        mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
-                mRangingData, mFilteredRangingMeasurement);
+        mUwbMetrics.logRangingResult(mUwbSession, mRangingData, mFilteredRangingMeasurement);
 
         ExtendedMockito.verify(() -> UwbStatsLog.write(
                 UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED,
@@ -445,7 +453,7 @@ public class UwbMetricsTest {
                 ELEVATION_DEFAULT_DEGREE / 10, ELEVATION_FOM_DEFAULT,
                 UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__RANGING_TYPE__OWR_AOA,
                 UwbMetrics.INVALID_DISTANCE, AZIMUTH_FILTERED_DEGREE, AZIMUTH_FOM_FILTERED,
-                ELEVATION_FILTERED_DEGREE, ELEVATION_FOM_FILTERED
+                ELEVATION_FILTERED_DEGREE, ELEVATION_FOM_FILTERED, UID
         ));
     }
 
@@ -470,16 +478,16 @@ public class UwbMetricsTest {
 
     @Test
     public void testDumpStatsNoCrash() throws Exception {
+        when(mUwbSession.getProfileType())
+                .thenReturn(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__CCC);
         mUwbMetrics.logRangingInitEvent(mUwbSession, UwbUciConstants.STATUS_CODE_OK);
         mUwbMetrics.logRangingInitEvent(mUwbSession,
                 UwbUciConstants.STATUS_CODE_INVALID_PARAM);
 
         addElapsedTimeMs(DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
-        mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__CCC, mRangingData,
-                mFilteredRangingMeasurement);
+        mUwbMetrics.logRangingResult(mUwbSession, mRangingData, mFilteredRangingMeasurement);
         addElapsedTimeMs(DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
-        mUwbMetrics.logRangingResult(UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
-                mRangingData, mFilteredRangingMeasurement);
+        mUwbMetrics.logRangingResult(mUwbSession, mRangingData, mFilteredRangingMeasurement);
 
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         PrintWriter writer = new PrintWriter(stream);

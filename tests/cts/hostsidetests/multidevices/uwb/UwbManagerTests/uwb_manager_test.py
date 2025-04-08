@@ -66,6 +66,7 @@ class UwbManagerTest(uwb_base_test.UwbBaseTest):
     """
     uwb_test_utils.set_uwb_state_and_verify(dut, state)
     dut.reboot()
+    uwb_test_utils.request_hw_enable_if_required(dut)
     uwb_test_utils.initialize_uwb_country_code_if_not_set(dut)
     state_after_reboot = uwb_test_utils.get_uwb_state(dut)
     asserts.assert_equal(
