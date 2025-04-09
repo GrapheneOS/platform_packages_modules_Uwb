@@ -147,6 +147,24 @@ public class AliroEncoderTest {
     }
 
     @Test
+    public void testAliroOpenRangingParams_withNullSessionKey() throws Exception {
+        AliroOpenRangingParams.Builder builder =
+                new AliroOpenRangingParams.Builder(TEST_ALIRO_OPEN_RANGING_PARAMS);
+        AliroOpenRangingParams params = builder.setSessionKey(null).build();
+        TlvBuffer tlvs = mAliroEncoder.getTlvBuffer(params, AliroParams.PROTOCOL_VERSION_1_0);
+
+        byte[] testAliroOpenRangingAbsoluteInitiationTimeTlvData =
+                UwbUtil.getByteArray("00010102010104010905010109048001000011010103010"
+                        + "11B01062C0100A3020001A4020000A50100A602D0020802B004140101"
+                        + "A901002B080100000000000000"
+                + RANGE_DATA_NTF_CONFIG_DISABLED_TLV);
+
+        assertThat(tlvs.getNoOfParams()).isEqualTo(18);
+        assertThat(tlvs.getByteArray()).isEqualTo(
+                testAliroOpenRangingAbsoluteInitiationTimeTlvData);
+    }
+
+    @Test
     public void testAliroOpenRangingParams_withRangeDataNtfConfigSupportedAndDisabled()
             throws Exception {
         // Setup the DeviceConfigFacade flag to indicate that RANGE_DATA_NTF_CONFIG and related
