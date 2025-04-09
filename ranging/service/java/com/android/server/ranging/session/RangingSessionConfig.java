@@ -117,6 +117,8 @@ public class RangingSessionConfig {
         Set<UnicastTechnologyConfig> configs = new HashSet<>();
 
         for (RawRangingDevice peer : peerParams) {
+            if (peer.getRangingDevice() == null) continue;
+
             if (peer.getRttRangingParams() != null) {
                 configs.add(new RttConfig(
                         mDeviceRole,
@@ -193,7 +195,7 @@ public class RangingSessionConfig {
             Map<PeerIgnoringParamsHasher<UwbRangingParams>, BiMap<RangingDevice, UwbAddress>>
                     peersByParams = new HashMap<>();
             for (RawRangingDevice peer : peerParams) {
-                if (peer.getUwbRangingParams() == null) continue;
+                if (peer.getUwbRangingParams() == null || peer.getRangingDevice() == null) continue;
 
                 PeerIgnoringParamsHasher<UwbRangingParams> key =
                         new PeerIgnoringParamsHasher<>(peer.getUwbRangingParams());
