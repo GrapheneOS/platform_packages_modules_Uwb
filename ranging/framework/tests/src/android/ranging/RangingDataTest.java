@@ -21,6 +21,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import android.os.Parcel;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -185,5 +187,77 @@ public class RangingDataTest {
                 .setRangingTechnology(RangingManager.UWB)
                 .setDelaySpreadMeters(-1)
                 .build();
+    }
+
+    @Test
+    public void parcel_createsParcelWithCorrectFields() {
+        Parcel parcel = Parcel.obtain();
+
+        RangingData data = new RangingData.Builder()
+                .setRangingTechnology(RangingManager.UWB)
+                .setDistance(new RangingMeasurement.Builder()
+                        .setMeasurement(10.5)
+                        .setConfidence(RangingMeasurement.CONFIDENCE_HIGH)
+                        .setRawConfidence(0.8)
+                        .setError(0.1)
+                        .build())
+                .setAzimuth(new RangingMeasurement.Builder()
+                        .setMeasurement(45.0)
+                        .setConfidence(RangingMeasurement.CONFIDENCE_MEDIUM)
+                        .setRawConfidence(0.4)
+                        .setError(0.2)
+                        .build())
+                .setElevation(new RangingMeasurement.Builder()
+                        .setMeasurement(30.0)
+                        .setConfidence(RangingMeasurement.CONFIDENCE_LOW)
+                        .setRawConfidence(0.09)
+                        .setError(0.3)
+                        .build())
+                .setRssi(-2)
+                .setTimestampMillis(System.currentTimeMillis())
+                .setDelaySpreadMeters(2.0)
+                .setDetectedAttackLevel((byte) 0x01)
+                .setVelocityMetersPerSec(1.5)
+                .build();
+
+        data.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        RangingData dataFromParcel = RangingData.CREATOR.createFromParcel(parcel);
+
+        assertEquals(data.getRangingTechnology(), dataFromParcel.getRangingTechnology());
+
+        assertEquals(data.getDistance().getMeasurement(),
+                dataFromParcel.getDistance().getMeasurement(), 0.001);
+        assertEquals(data.getDistance().getConfidence(),
+                dataFromParcel.getDistance().getConfidence());
+        assertEquals(data.getDistance().getRawConfidence(),
+                dataFromParcel.getDistance().getRawConfidence(), 0.001);
+        assertEquals(data.getDistance().getError(),
+                dataFromParcel.getDistance().getError(), 0.001);
+
+        assertEquals(data.getAzimuth().getMeasurement(),
+                dataFromParcel.getAzimuth().getMeasurement(), 0.001);
+        assertEquals(data.getAzimuth().getConfidence(),
+                dataFromParcel.getAzimuth().getConfidence());
+        assertEquals(data.getAzimuth().getRawConfidence(),
+                dataFromParcel.getAzimuth().getRawConfidence(), 0.001);
+        assertEquals(data.getAzimuth().getError(),
+                dataFromParcel.getAzimuth().getError(), 0.001);
+
+        assertEquals(data.getElevation().getMeasurement(),
+                dataFromParcel.getElevation().getMeasurement(), 0.001);
+        assertEquals(data.getElevation().getConfidence(),
+                dataFromParcel.getElevation().getConfidence());
+        assertEquals(data.getElevation().getRawConfidence(),
+                dataFromParcel.getElevation().getRawConfidence(), 0.001);
+        assertEquals(data.getElevation().getError(),
+                dataFromParcel.getElevation().getError(), 0.001);
+
+        assertEquals(data.getRssi(), dataFromParcel.getRssi());
+        assertEquals(data.getTimestampMillis(), dataFromParcel.getTimestampMillis());
+        assertEquals(data.getDelaySpreadMeters(), dataFromParcel.getDelaySpreadMeters(), 0.001);
+        assertEquals(data.getDetectedAttackLevel(), dataFromParcel.getDetectedAttackLevel());
+        assertEquals(data.getVelocityMetersPerSec(),
+                dataFromParcel.getVelocityMetersPerSec(), 0.001);
     }
 }

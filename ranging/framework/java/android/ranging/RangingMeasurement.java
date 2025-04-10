@@ -168,6 +168,8 @@ public final class RangingMeasurement implements Parcelable {
     public void writeToParcel(@NonNull Parcel dest, int flags) {
         dest.writeDouble(mMeasurement);
         dest.writeInt(mConfidence);
+        dest.writeDouble(mRawConfidence);
+        dest.writeDouble(mError);
     }
 
     /**
