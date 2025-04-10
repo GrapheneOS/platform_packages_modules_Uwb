@@ -26,6 +26,7 @@ import android.uwb.UwbManager;
 import androidx.annotation.FloatRange;
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
 import com.google.uwb.support.base.RequiredParam;
@@ -102,7 +103,7 @@ public class AliroOpenRangingParams extends AliroParams {
     private double mRangeDataNtfAoaAzimuthUpper;
     private double mRangeDataNtfAoaElevationLower;
     private double mRangeDataNtfAoaElevationUpper;
-    private final byte[] mSessionKey;
+    @Nullable private final byte[] mSessionKey;
     private @MacModeRound int mMacModeRound = MAC_MODE_ROUND_DEFAULT;
     private final int mMacModeOffset;
 
@@ -131,7 +132,7 @@ public class AliroOpenRangingParams extends AliroParams {
             double rangeDataNtfAoaAzimuthUpper,
             double rangeDataNtfAoaElevationLower,
             double rangeDataNtfAoaElevationUpper,
-            byte[] sessionKey,
+            @Nullable byte[] sessionKey,
             @MacModeRound int macModeRound,
             int macModeOffset) {
         mProtocolVersion = protocolVersion;
