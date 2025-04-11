@@ -197,6 +197,7 @@ public class UwbServiceCoreTest {
                     .setHoppingSequence(AliroParams.HOPPING_SEQUENCE_DEFAULT)
                     .setMacModeRound(AliroParams.MAC_MODE_ROUND_1)
                     .setMacModeOffset(0)
+                    .setStsConfig(FiraParams.STS_CONFIG_PROVISIONED)
                     .setSessionKey(new byte[]{0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78, 0x5,
                             0x78, 0x5, 0x78, 0x5, 0x78, 0x5, 0x78});
     @VisibleForTesting

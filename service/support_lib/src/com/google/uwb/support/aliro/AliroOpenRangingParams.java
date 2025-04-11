@@ -18,6 +18,8 @@ package com.google.uwb.support.aliro;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_DYNAMIC;
+import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_PROVISIONED;
 
 import android.os.Build.VERSION_CODES;
 import android.os.PersistableBundle;
@@ -30,6 +32,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
 import com.google.uwb.support.base.RequiredParam;
+import com.google.uwb.support.fira.FiraParams.StsConfig;
 
 /**
  * Defines parameters for ALIRO open operation, it is copied from {@code CccOpenRangingParams}.
@@ -69,6 +72,7 @@ public class AliroOpenRangingParams extends AliroParams {
             "range_data_ntf_aoa_elevation_lower";
     private static final String KEY_RANGE_DATA_NTF_AOA_ELEVATION_UPPER =
             "range_data_ntf_aoa_elevation_upper";
+    private static final String KEY_STS_CONFIG = "sts_config";
     private static final String KEY_SESSION_KEY = "session_key";
     private static final String KEY_MAC_MODE_ROUND = "mac_mode_round";
     private static final String KEY_MAC_MODE_OFFSET = "mac_mode_offset";
@@ -103,6 +107,8 @@ public class AliroOpenRangingParams extends AliroParams {
     private double mRangeDataNtfAoaAzimuthUpper;
     private double mRangeDataNtfAoaElevationLower;
     private double mRangeDataNtfAoaElevationUpper;
+    @StsConfig
+    private final int mStsConfig;
     @Nullable private final byte[] mSessionKey;
     private @MacModeRound int mMacModeRound = MAC_MODE_ROUND_DEFAULT;
     private final int mMacModeOffset;
@@ -132,6 +138,7 @@ public class AliroOpenRangingParams extends AliroParams {
             double rangeDataNtfAoaAzimuthUpper,
             double rangeDataNtfAoaElevationLower,
             double rangeDataNtfAoaElevationUpper,
+            int stsConfig,
             @Nullable byte[] sessionKey,
             @MacModeRound int macModeRound,
             int macModeOffset) {
@@ -159,6 +166,7 @@ public class AliroOpenRangingParams extends AliroParams {
         mRangeDataNtfAoaAzimuthUpper = rangeDataNtfAoaAzimuthUpper;
         mRangeDataNtfAoaElevationLower = rangeDataNtfAoaElevationLower;
         mRangeDataNtfAoaElevationUpper = rangeDataNtfAoaElevationUpper;
+        mStsConfig = stsConfig;
         mSessionKey = sessionKey;
         mMacModeRound = macModeRound;
         mMacModeOffset = macModeOffset;
@@ -219,6 +227,7 @@ public class AliroOpenRangingParams extends AliroParams {
         bundle.putDouble(KEY_RANGE_DATA_NTF_AOA_AZIMUTH_UPPER, mRangeDataNtfAoaAzimuthUpper);
         bundle.putDouble(KEY_RANGE_DATA_NTF_AOA_ELEVATION_LOWER, mRangeDataNtfAoaElevationLower);
         bundle.putDouble(KEY_RANGE_DATA_NTF_AOA_ELEVATION_UPPER, mRangeDataNtfAoaElevationUpper);
+        bundle.putInt(KEY_STS_CONFIG, mStsConfig);
         bundle.putIntArray(KEY_SESSION_KEY, byteArrayToIntArray(mSessionKey));
         bundle.putInt(KEY_MAC_MODE_ROUND, mMacModeRound);
         bundle.putInt(KEY_MAC_MODE_OFFSET, mMacModeOffset);
@@ -281,6 +290,7 @@ public class AliroOpenRangingParams extends AliroParams {
                 .setRangeDataNtfAoaElevationUpper(
                         bundle.getDouble(KEY_RANGE_DATA_NTF_AOA_ELEVATION_UPPER,
                                 RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT))
+                .setStsConfig(bundle.getInt(KEY_STS_CONFIG))
                 .setSessionKey(intArrayToByteArray(bundle.getIntArray(KEY_SESSION_KEY)))
                 .setMacModeRound(bundle.getInt(KEY_MAC_MODE_ROUND, MAC_MODE_ROUND_DEFAULT))
                 .setMacModeOffset(bundle.getInt(KEY_MAC_MODE_OFFSET, MAC_MODE_OFFSET_DEFAULT))
@@ -396,6 +406,10 @@ public class AliroOpenRangingParams extends AliroParams {
         return new AliroOpenRangingParams.Builder(this);
     }
 
+    public int getStsConfig() {
+        return mStsConfig;
+    }
+
     public byte[] getSessionKey() {
         return mSessionKey;
     }
@@ -454,6 +468,9 @@ public class AliroOpenRangingParams extends AliroParams {
 
         /** UCI spec default: +90 (No upper-bound filtering) */
         private double mRangeDataNtfAoaElevationUpper = RANGE_DATA_NTF_AOA_ELEVATION_UPPER_DEFAULT;
+        /** Aliro default dynamic STS (SE based). */
+        @StsConfig
+        private int mStsConfig = STS_CONFIG_DYNAMIC;
         /** Similar to PROVISIONED STS only. 128-bit or 256-bit long */
         private byte[] mSessionKey = null;
         private @MacModeRound int mMacModeRound = MAC_MODE_ROUND_DEFAULT;
@@ -487,6 +504,7 @@ public class AliroOpenRangingParams extends AliroParams {
             mRangeDataNtfAoaAzimuthUpper = builder.mRangeDataNtfAoaAzimuthUpper;
             mRangeDataNtfAoaElevationLower = builder.mRangeDataNtfAoaElevationLower;
             mRangeDataNtfAoaElevationUpper = builder.mRangeDataNtfAoaElevationUpper;
+            mStsConfig = builder.mStsConfig;
             mSessionKey = builder.mSessionKey;
             mMacModeRound = builder.mMacModeRound;
             mMacModeOffset = builder.mMacModeOffset;
@@ -515,6 +533,7 @@ public class AliroOpenRangingParams extends AliroParams {
             mRangeDataNtfAoaAzimuthUpper = params.mRangeDataNtfAoaAzimuthUpper;
             mRangeDataNtfAoaElevationLower = params.mRangeDataNtfAoaElevationLower;
             mRangeDataNtfAoaElevationUpper = params.mRangeDataNtfAoaElevationUpper;
+            mStsConfig = params.mStsConfig;
             mSessionKey = params.mSessionKey;
             mMacModeRound = params.mMacModeRound;
             mMacModeOffset = params.mMacModeOffset;
@@ -662,6 +681,12 @@ public class AliroOpenRangingParams extends AliroParams {
             return this;
         }
 
+        /** sets the STS config. */
+        public Builder setStsConfig(@StsConfig int stsConfig) {
+            mStsConfig = stsConfig;
+            return this;
+        }
+
         /** set session key */
         public Builder setSessionKey(byte[] sessionKey) {
             mSessionKey = sessionKey;
@@ -740,6 +765,8 @@ public class AliroOpenRangingParams extends AliroParams {
 
         public AliroOpenRangingParams build() {
             checkRangeDataNtfConfig();
+            checkArgument((mStsConfig == STS_CONFIG_PROVISIONED && mSessionKey != null)
+                    || (mStsConfig == STS_CONFIG_DYNAMIC && mSessionKey == null));
             checkArgument(mSessionKey == null
                             || (mSessionKey.length == 16 || mSessionKey.length == 32));
             checkArgument(mMacModeRound == MAC_MODE_ROUND_1 || mMacModeRound == MAC_MODE_ROUND_2);
@@ -769,6 +796,7 @@ public class AliroOpenRangingParams extends AliroParams {
                     mRangeDataNtfAoaAzimuthUpper,
                     mRangeDataNtfAoaElevationLower,
                     mRangeDataNtfAoaElevationUpper,
+                    mStsConfig,
                     mSessionKey,
                     mMacModeRound,
                     mMacModeOffset);

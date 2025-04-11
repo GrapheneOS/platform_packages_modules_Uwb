@@ -56,6 +56,7 @@ java_library {
     ],
     static_libs: [
         "com.uwb.support.base",
+        "com.uwb.support.fira",
     ],
 }
 
