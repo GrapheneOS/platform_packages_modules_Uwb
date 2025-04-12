@@ -16,9 +16,13 @@
 
 package com.google.uwb.support;
 
+import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_DYNAMIC;
+import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_PROVISIONED;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import android.os.PersistableBundle;
 
@@ -81,8 +85,7 @@ public class AliroTests {
     private static final  Integer[] MAC_MODES =
             new Integer[] {AliroParams.MAC_MODE_ROUND_1, AliroParams.MAC_MODE_ROUND_2};
 
-    @Test
-    public void testOpenRangingParams() {
+    public void verifyOpenRangingParams(int stsConfig, byte[] sessionKey) {
         AliroProtocolVersion protocolVersion = AliroParams.PROTOCOL_VERSION_1_0;
         @AliroParams.UwbConfig int uwbConfig = AliroParams.UWB_CONFIG_1;
         AliroPulseShapeCombo pulseShapeCombo =
@@ -109,8 +112,6 @@ public class AliroTests {
         double rangeDataNtfAoaElevationUpper = +1.2;
         @AliroParams.MacModeRound int macModeRound = AliroParams.MAC_MODE_ROUND_1;
         int macModeOffset = 0;
-        byte[] sessionKey = new byte[] {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-                0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
 
         AliroOpenRangingParams params =
                 new AliroOpenRangingParams.Builder()
@@ -134,6 +135,7 @@ public class AliroTests {
                         .setRangeDataNtfAoaAzimuthUpper(rangeDataNtfAoaAzimuthUpper)
                         .setRangeDataNtfAoaElevationLower(rangeDataNtfAoaElevationLower)
                         .setRangeDataNtfAoaElevationUpper(rangeDataNtfAoaElevationUpper)
+                        .setStsConfig(stsConfig)
                         .setSessionKey(sessionKey)
                         .setMacModeRound(macModeRound)
                         .setMacModeOffset(macModeOffset)
@@ -158,6 +160,7 @@ public class AliroTests {
         assertEquals(params.getAbsoluteInitiationTimeUs(), absoluteInitiationTimeUs);
         assertEquals(params.getMacModeRound(), macModeRound);
         assertEquals(params.getMacModeOffset(), macModeOffset);
+        assertEquals(params.getStsConfig(), stsConfig);
         assertArrayEquals(params.getSessionKey(), sessionKey);
 
         AliroOpenRangingParams fromBundle = AliroOpenRangingParams.fromBundle(params.toBundle());
@@ -190,9 +193,33 @@ public class AliroTests {
                 fromBundle.getRangeDataNtfAoaElevationUpper(), rangeDataNtfAoaElevationUpper, 0.1d);
         assertEquals(fromBundle.getMacModeRound(), macModeRound);
         assertEquals(fromBundle.getMacModeOffset(), macModeOffset);
+        assertEquals(fromBundle.getStsConfig(), stsConfig);
         assertArrayEquals(fromBundle.getSessionKey(), sessionKey);
 
         verifyProtocolPresent(params);
+    }
+
+    @Test
+    public void testOpenRangingParams() {
+        byte[] sessionKey = new byte[] {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
+        verifyOpenRangingParams(STS_CONFIG_DYNAMIC, null);
+        verifyOpenRangingParams(STS_CONFIG_PROVISIONED, sessionKey);
+
+        try {
+            verifyOpenRangingParams(STS_CONFIG_DYNAMIC, sessionKey);
+            fail();
+        } catch (IllegalArgumentException e) {
+            // Pass
+        }
+
+        try {
+            verifyOpenRangingParams(STS_CONFIG_PROVISIONED, null);
+            fail();
+        } catch (IllegalArgumentException e) {
+            // Pass
+        }
+
     }
 
     @Test

@@ -4,6 +4,8 @@ make RangingTestApp
 adb install -r -g ${ANDROID_PRODUCT_OUT}/system/app/RangingTestApp.apk
 3. Launch APK and Run tests
 
+There is a prebuilt APK under "prebuit/" folder for you to use.
+
 Note:
 1. If you want to use channel sounding, pair devices from settings.
 2. One device works as 'Initiator', Another device works as 'Responder'.
