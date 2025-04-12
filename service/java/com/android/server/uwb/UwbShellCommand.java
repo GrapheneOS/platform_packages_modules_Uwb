@@ -461,308 +461,310 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         boolean shouldBlockCall = false;
         boolean interleavingEnabled = false;
         boolean aoaResultReqEnabled = false;
-        String option = getNextOption();
-        while (option != null) {
-            if (option.equals("-b") || option.equals("--blocking")) {
-                shouldBlockCall = true;
-            }
-            if (option.equals("-i") || option.equals("--session-id")) {
-                builder.setSessionId(Integer.parseInt(getNextArgRequired()));
-            }
-            if (option.equals("-c") || option.equals("--channel-number")) {
-                builder.setChannelNumber(Integer.parseInt(getNextArgRequired()));
-            }
-            if (option.equals("-t") || option.equals("--device-type")) {
-                String type = getNextArgRequired();
-                if (type.equals("controller")) {
-                    builder.setDeviceType(RANGING_DEVICE_TYPE_CONTROLLER);
-                } else if (type.equals("controlee")) {
-                    builder.setDeviceType(RANGING_DEVICE_TYPE_CONTROLEE);
-                } else {
-                    throw new IllegalArgumentException("Unknown device type: " + type);
-                }
-            }
-            if (option.equals("-r") || option.equals("--device-role")) {
-                String role = getNextArgRequired();
-                if (role.equals("initiator")) {
-                    builder.setDeviceRole(RANGING_DEVICE_ROLE_INITIATOR);
-                } else if (role.equals("responder")) {
-                    builder.setDeviceRole(RANGING_DEVICE_ROLE_RESPONDER);
-                } else {
-                    throw new IllegalArgumentException("Unknown device role: " + role);
-                }
-            }
-            if (option.equals("-a") || option.equals("--device-address")) {
-                builder.setDeviceAddress(
-                        UwbAddress.fromBytes(
-                                ByteBuffer.allocate(SHORT_ADDRESS_BYTE_LENGTH)
-                                        .putShort(Short.parseShort(getNextArgRequired()))
-                                        .array()));
-            }
-            if (option.equals("-d") || option.equals("--dest-addresses")) {
-                String[] destAddressesString = getNextArgRequired().split(",");
-                List<UwbAddress> destAddresses = new ArrayList<>();
-                for (String destAddressString : destAddressesString) {
-                    destAddresses.add(UwbAddress.fromBytes(
-                            ByteBuffer.allocate(SHORT_ADDRESS_BYTE_LENGTH)
-                                    .putShort(Short.parseShort(destAddressString))
-                                    .array()));
-                }
-                builder.setDestAddressList(destAddresses);
-                builder.setMultiNodeMode(destAddresses.size() > 1
-                        ? MULTI_NODE_MODE_ONE_TO_MANY
-                        : MULTI_NODE_MODE_UNICAST);
-            }
-            if (option.equals("-m") || option.equals("--multi-node-mode")) {
-                String mode = getNextArgRequired();
-                if (mode.equals("unicast")) {
-                    builder.setMultiNodeMode(MULTI_NODE_MODE_UNICAST);
-                } else if (mode.equals("one-to-many")) {
-                    builder.setMultiNodeMode(MULTI_NODE_MODE_ONE_TO_MANY);
-                } else if (mode.equals("many-to-many")) {
-                    builder.setMultiNodeMode(MULTI_NODE_MODE_MANY_TO_MANY);
-                } else {
-                    throw new IllegalArgumentException("Unknown multi-node-mode: " + mode);
-                }
-            }
-            if (option.equals("-u") || option.equals("--round-usage")) {
-                String usage = getNextArgRequired();
-                if (usage.equals("ds-twr")) {
-                    builder.setRangingRoundUsage(RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE);
-                } else if (usage.equals("ss-twr")) {
-                    builder.setRangingRoundUsage(RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE);
-                } else if (usage.equals("ds-twr-non-deferred")) {
-                    builder.setRangingRoundUsage(RANGING_ROUND_USAGE_DS_TWR_NON_DEFERRED_MODE);
-                } else if (usage.equals("ss-twr-non-deferred")) {
-                    builder.setRangingRoundUsage(RANGING_ROUND_USAGE_SS_TWR_NON_DEFERRED_MODE);
-                } else {
-                    throw new IllegalArgumentException("Unknown round usage: " + usage);
-                }
-            }
-            if (option.equals("-l") || option.equals("--ranging-interval-ms")) {
-                builder.setRangingIntervalMs(Integer.parseInt(getNextArgRequired()));
-            }
-            if (option.equals("-s") || option.equals("--slots-per-ranging-round")) {
-                builder.setSlotsPerRangingRound(Integer.parseInt(getNextArgRequired()));
-            }
-            if (option.equals("-x") || option.equals("--range-data-ntf-proximity")) {
-                String[] rangeDataNtfProximityString = getNextArgRequired().split(",");
-                if (rangeDataNtfProximityString.length != 2) {
-                    throw new IllegalArgumentException("Unexpected range data ntf proximity range:"
-                            + Arrays.toString(rangeDataNtfProximityString)
-                            + " expected to be <proximity-near-cm, proximity-far-cm>");
-                }
-                int rangeDataNtfProximityNearCm = Integer.parseInt(rangeDataNtfProximityString[0]);
-                int rangeDataNtfProximityFarCm = Integer.parseInt(rangeDataNtfProximityString[1]);
-                // Enable range data ntf while inside proximity range
-                builder.setRangeDataNtfConfig(RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG);
-                builder.setRangeDataNtfProximityNear(rangeDataNtfProximityNearCm);
-                builder.setRangeDataNtfProximityFar(rangeDataNtfProximityFarCm);
-            }
-            if (option.equals("-R") || option.equals("--range-data-notification")) {
-                // enable / disable range data NTFs
-                // range-data-notification
-                String range_data_ntf = getNextArgRequired();
-                if (range_data_ntf.equals("disabled")) {
-                    builder.setRangeDataNtfConfig(FiraParams.RANGE_DATA_NTF_CONFIG_DISABLE);
-                } else if (range_data_ntf.equals("enabled")) {
-                    builder.setRangeDataNtfConfig(FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE);
-                } else {
-                    throw new IllegalArgumentException("Unknown range data ntf setting: "
-                        + range_data_ntf);
-                }
-            }
-            if (option.equals("-z") || option.equals("--interleaving-ratio")) {
-                String[] interleaveRatioString = getNextArgRequired().split(",");
-                if (interleaveRatioString.length != 3) {
-                    throw new IllegalArgumentException("Unexpected interleaving ratio: "
-                            +  Arrays.toString(interleaveRatioString)
-                            + " expected to be <numRange, numAoaAzimuth, numAoaElevation>");
-                }
-                int numOfRangeMsrmts = Integer.parseInt(interleaveRatioString[0]);
-                int numOfAoaAzimuthMrmts = Integer.parseInt(interleaveRatioString[1]);
-                int numOfAoaElevationMrmts = Integer.parseInt(interleaveRatioString[2]);
-                // Set to interleaving mode
-                builder.setAoaResultRequest(AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_INTERLEAVED);
-                builder.setMeasurementFocusRatio(
-                        numOfRangeMsrmts,
-                        numOfAoaAzimuthMrmts,
-                        numOfAoaElevationMrmts);
-                interleavingEnabled = true;
-            }
-            if (option.equals("-e") || option.equals("--aoa-result-request")) {
-                String aoaType = getNextArgRequired();
-                if (aoaType.equals("none")) {
-                    builder.setAoaResultRequest(AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT);
-                } else if (aoaType.equals("enabled")) {
-                    builder.setAoaResultRequest(AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS);
-                } else if (aoaType.equals("azimuth-only")) {
-                    builder.setAoaResultRequest(
-                        AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_AZIMUTH_ONLY);
-                } else if (aoaType.equals("elevation-only")) {
-                    builder.setAoaResultRequest(
-                        AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_ELEVATION_ONLY);
-                } else {
-                    throw new IllegalArgumentException("Unknown aoa type: " + aoaType);
-                }
-                aoaResultReqEnabled = true;
-            }
-            if (option.equals("-f") || option.equals("--result-report-config")) {
-                String[] resultReportConfigs = getNextArgRequired().split(",");
-                for (String resultReportConfig : resultReportConfigs) {
-                    if (resultReportConfig.equals("tof")) {
-                        builder.setHasTimeOfFlightReport(true);
-                    } else if (resultReportConfig.equals("azimuth")) {
-                        builder.setHasAngleOfArrivalAzimuthReport(true);
-                    } else if (resultReportConfig.equals("elevation")) {
-                        builder.setHasAngleOfArrivalElevationReport(true);
-                    } else if (resultReportConfig.equals("aoa-fom")) {
-                        builder.setHasAngleOfArrivalFigureOfMeritReport(true);
-                    } else {
-                        throw new IllegalArgumentException("Unknown result report config: "
-                                + resultReportConfig);
+        for (String option = getNextOption(); option != null; option = getNextOption()) {
+            switch (option) {
+                case "-b", "--blocking" -> shouldBlockCall = true;
+                case "-i", "--session-id" ->
+                        builder.setSessionId(Integer.parseInt(getNextArgRequired()));
+                case "-c", "--channel-number" ->
+                        builder.setChannelNumber(Integer.parseInt(getNextArgRequired()));
+                case "-t", "--device-type" -> {
+                    String type = getNextArgRequired();
+                    switch (type) {
+                        case "controller" -> builder.setDeviceType(RANGING_DEVICE_TYPE_CONTROLLER);
+                        case "controlee" -> builder.setDeviceType(RANGING_DEVICE_TYPE_CONTROLEE);
+                        default ->
+                                throw new IllegalArgumentException("Unknown device type: " + type);
                     }
                 }
-            }
-            if (option.equals("-g") || option.equals("--sts-iv")) {
-                String staticSTSIV = getNextArgRequired();
-                if (staticSTSIV.length() == 12) {
-                    builder.setStaticStsIV(BaseEncoding.base16().decode(staticSTSIV.toUpperCase()));
-                } else {
-                    throw new IllegalArgumentException("staticSTSIV expecting 6 bytes");
+                case "-r", "--device-role" -> {
+                    String role = getNextArgRequired();
+                    switch (role) {
+                        case "initiator" -> builder.setDeviceRole(RANGING_DEVICE_ROLE_INITIATOR);
+                        case "responder" -> builder.setDeviceRole(RANGING_DEVICE_ROLE_RESPONDER);
+                        default ->
+                                throw new IllegalArgumentException("Unknown device role: " + role);
+                    }
                 }
-            }
-            if (option.equals("-v") || option.equals("--vendor-id")) {
-                String vendorId = getNextArgRequired();
-                if (vendorId.length() == 4) {
-                    builder.setVendorId(BaseEncoding.base16().decode(vendorId.toUpperCase()));
-                } else {
-                    throw new IllegalArgumentException("vendorId expecting 2 bytes");
+                case "-a", "--device-address" ->
+                        builder.setDeviceAddress(
+                                UwbAddress.fromBytes(
+                                        ByteBuffer.allocate(SHORT_ADDRESS_BYTE_LENGTH)
+                                                .putShort(Short.parseShort(getNextArgRequired()))
+                                                .array()));
+                case "-d", "--dest-addresses" -> {
+                    String[] destAddressesString = getNextArgRequired().split(",");
+                    List<UwbAddress> destAddresses = new ArrayList<>();
+                    for (String destAddressString : destAddressesString) {
+                        destAddresses.add(
+                                UwbAddress.fromBytes(
+                                        ByteBuffer.allocate(SHORT_ADDRESS_BYTE_LENGTH)
+                                                .putShort(Short.parseShort(destAddressString))
+                                                .array()));
+                    }
+                    builder.setDestAddressList(destAddresses);
+                    builder.setMultiNodeMode(
+                            destAddresses.size() > 1
+                                    ? MULTI_NODE_MODE_ONE_TO_MANY
+                                    : MULTI_NODE_MODE_UNICAST);
                 }
-            }
-            if (option.equals("-h") || option.equals("--slot-duration-rstu")) {
-                int slotDurationRstu = Integer.parseInt(getNextArgRequired());
-                builder.setSlotDurationRstu(slotDurationRstu);
-            }
-            if (option.equals("-w") || option.equals("--has-result-report-phase")) {
-                boolean hasRangingResultReportMessage =
-                        getNextArgRequiredTrueOrFalse("enabled", "disabled");
-                builder.setHasRangingResultReportMessage(hasRangingResultReportMessage);
-            }
-            if (option.equals("-y") || option.equals("--hopping-mode")) {
-                boolean hoppingEnabled = getNextArgRequiredTrueOrFalse("enabled", "disabled");
-                builder.setHoppingMode(hoppingEnabled ? 1 : 0);
-            }
-            if (option.equals("-p") || option.equals("--preamble-code-index")) {
-                int preambleCodeIndex = Integer.parseInt(getNextArgRequired());
-                builder.setPreambleCodeIndex(preambleCodeIndex);
-            }
-            if (option.equals("-o") || option.equals("--sts-config-type")) {
-                String stsConfigType = getNextArgRequired();
-                if (stsConfigType.equals("static")) {
-                    builder.setStsConfig(STS_CONFIG_STATIC);
-                } else if (stsConfigType.equals("provisioned")) {
-                    builder.setStsConfig(STS_CONFIG_PROVISIONED);
-                } else {
-                    throw new IllegalArgumentException("unknown sts config type");
+                case "-m", "--multi-node-mode" -> {
+                    String mode = getNextArgRequired();
+                    switch (mode) {
+                        case "unicast" -> builder.setMultiNodeMode(MULTI_NODE_MODE_UNICAST);
+                        case "one-to-many" -> builder.setMultiNodeMode(MULTI_NODE_MODE_ONE_TO_MANY);
+                        case "many-to-many" ->
+                                builder.setMultiNodeMode(MULTI_NODE_MODE_MANY_TO_MANY);
+                        default ->
+                                throw new IllegalArgumentException(
+                                        "Unknown multi-node-mode: " + mode);
+                    }
                 }
-            }
-            if (option.equals("-n") || option.equals("--session-key")) {
-                String sessionKey = getNextArgRequired();
-                if (sessionKey.length() == 32 || sessionKey.length() == 64) {
-                    builder.setSessionKey(BaseEncoding.base16().decode(sessionKey));
-                } else {
-                    throw new IllegalArgumentException("sessionKey expecting 16 or 32 bytes");
+                case "-u", "--round-usage" -> {
+                    String usage = getNextArgRequired();
+                    switch (usage) {
+                        case "ds-twr" ->
+                                builder.setRangingRoundUsage(
+                                        RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE);
+                        case "ss-twr" ->
+                                builder.setRangingRoundUsage(
+                                        RANGING_ROUND_USAGE_SS_TWR_DEFERRED_MODE);
+                        case "ds-twr-non-deferred" ->
+                                builder.setRangingRoundUsage(
+                                        RANGING_ROUND_USAGE_DS_TWR_NON_DEFERRED_MODE);
+                        case "ss-twr-non-deferred" ->
+                                builder.setRangingRoundUsage(
+                                        RANGING_ROUND_USAGE_SS_TWR_NON_DEFERRED_MODE);
+                        default ->
+                                throw new IllegalArgumentException("Unknown round usage: " + usage);
+                    }
                 }
-            }
-            if (option.equals("-k") || option.equals("--sub-session-key")) {
-                String subSessionKey = getNextArgRequired();
-                if (subSessionKey.length() == 32 || subSessionKey.length() == 64) {
-                    builder.setSubsessionKey(BaseEncoding.base16().decode(subSessionKey));
-                } else {
-                    throw new IllegalArgumentException(("subSessionKey expecting 16 or 32 bytes"));
+                case "-l", "--ranging-interval-ms" ->
+                        builder.setRangingIntervalMs(Integer.parseInt(getNextArgRequired()));
+                case "-s", "--slots-per-ranging-round" ->
+                        builder.setSlotsPerRangingRound(Integer.parseInt(getNextArgRequired()));
+                case "-x", "--range-data-ntf-proximity" -> {
+                    String[] rangeDataNtfProximityString = getNextArgRequired().split(",");
+                    if (rangeDataNtfProximityString.length != 2) {
+                        throw new IllegalArgumentException(
+                                "Unexpected range data ntf proximity range:"
+                                        + Arrays.toString(rangeDataNtfProximityString)
+                                        + " expected to be <proximity-near-cm, proximity-far-cm>");
+                    }
+                    int rangeDataNtfProximityNearCm =
+                            Integer.parseInt(rangeDataNtfProximityString[0]);
+                    int rangeDataNtfProximityFarCm =
+                            Integer.parseInt(rangeDataNtfProximityString[1]);
+                    // Enable range data ntf while inside proximity range
+                    builder.setRangeDataNtfConfig(
+                            RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG);
+                    builder.setRangeDataNtfProximityNear(rangeDataNtfProximityNearCm);
+                    builder.setRangeDataNtfProximityFar(rangeDataNtfProximityFarCm);
                 }
-            }
-            if (option.equals("-j") || option.equals("--error-streak-timeout-ms")) {
-                int errorStreakTimeoutMs = Integer.parseInt(getNextArgRequired());
-                builder.setRangingErrorStreakTimeoutMs(errorStreakTimeoutMs);
-            }
-            if (option.equals("-q") || option.equals("--session-priority")) {
-                int sessionPriority = Integer.parseInt(getNextArgRequired());
-                if (sessionPriority < 1 || sessionPriority > 100 || sessionPriority == 50) {
-                    throw new IllegalArgumentException(
-                            "sessionPriority expecting value between 1-49 or 51-100. 50 is "
-                                    + "reserved for default and has no effect.");
+                case "-R", "--range-data-notification" -> {
+                    // enable / disable range data NTFs
+                    // range-data-notification
+                    String range_data_ntf = getNextArgRequired();
+                    switch (range_data_ntf) {
+                        case "disabled" ->
+                                builder.setRangeDataNtfConfig(
+                                        FiraParams.RANGE_DATA_NTF_CONFIG_DISABLE);
+                        case "enabled" ->
+                                builder.setRangeDataNtfConfig(
+                                        FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE);
+                        default ->
+                                throw new IllegalArgumentException(
+                                        "Unknown range data ntf setting: " + range_data_ntf);
+                    }
                 }
-                builder.setSessionPriority(sessionPriority);
-            }
-            if (option.equals("-P") || option.equals("--prf-mode")) {
-                String prfMode = getNextArgRequired();
-                if (prfMode.equals("bprf")) {
-                    builder.setPrfMode(PRF_MODE_BPRF);
-                } else if (prfMode.equals("hprf")) {
-                    builder.setPrfMode(PRF_MODE_HPRF);
-                } else {
-                    throw new IllegalArgumentException("Wrong arguments for prmMode");
+                case "-z", "--interleaving-ratio" -> {
+                    String[] interleaveRatioString = getNextArgRequired().split(",");
+                    if (interleaveRatioString.length != 3) {
+                        throw new IllegalArgumentException(
+                                "Unexpected interleaving ratio: "
+                                        + Arrays.toString(interleaveRatioString)
+                                        + " expected to be <numRange, numAoaAzimuth,"
+                                        + " numAoaElevation>");
+                    }
+                    int numOfRangeMsrmts = Integer.parseInt(interleaveRatioString[0]);
+                    int numOfAoaAzimuthMrmts = Integer.parseInt(interleaveRatioString[1]);
+                    int numOfAoaElevationMrmts = Integer.parseInt(interleaveRatioString[2]);
+                    // Set to interleaving mode
+                    builder.setAoaResultRequest(
+                            AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_INTERLEAVED);
+                    builder.setMeasurementFocusRatio(
+                            numOfRangeMsrmts, numOfAoaAzimuthMrmts, numOfAoaElevationMrmts);
+                    interleavingEnabled = true;
                 }
-            }
-            if (option.equals("-D") || option.equals("--psdu-data-rate")) {
-                String psduDataRate = getNextArgRequired();
-                if (psduDataRate.equals("6m81")) {
-                    builder.setPsduDataRate(PSDU_DATA_RATE_6M81);
-                } else if (psduDataRate.equals("7m80")) {
-                    builder.setPsduDataRate(PSDU_DATA_RATE_7M80);
-                } else if (psduDataRate.equals("27m2")) {
-                    builder.setPsduDataRate(PSDU_DATA_RATE_27M2);
-                } else if (psduDataRate.equals("31m2")) {
-                    builder.setPsduDataRate(PSDU_DATA_RATE_31M2);
-                } else {
-                    throw new IllegalArgumentException("Wrong arguments for psduDataRate");
+                case "-e", "--aoa-result-request" -> {
+                    String aoaType = getNextArgRequired();
+                    switch (aoaType) {
+                        case "none" ->
+                                builder.setAoaResultRequest(AOA_RESULT_REQUEST_MODE_NO_AOA_REPORT);
+                        case "enabled" ->
+                                builder.setAoaResultRequest(
+                                        AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS);
+                        case "azimuth-only" ->
+                                builder.setAoaResultRequest(
+                                        AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_AZIMUTH_ONLY);
+                        case "elevation-only" ->
+                                builder.setAoaResultRequest(
+                                        AOA_RESULT_REQUEST_MODE_REQ_AOA_RESULTS_ELEVATION_ONLY);
+                        default ->
+                                throw new IllegalArgumentException("Unknown aoa type: " + aoaType);
+                    }
+                    aoaResultReqEnabled = true;
                 }
-            }
-            if (option.equals("-B") || option.equals("--bprf-phr-data-rate")) {
-                String bprfPhrDataRate = getNextArgRequired();
-                if (bprfPhrDataRate.equals("850k")) {
-                    builder.setBprfPhrDataRate(BPRF_PHR_DATA_RATE_850K);
-                } else if (bprfPhrDataRate.equals("6m81")) {
-                    builder.setBprfPhrDataRate(BPRF_PHR_DATA_RATE_6M81);
-                } else {
-                    throw new IllegalArgumentException("Wrong arguments for bprfPhrDataRate");
+                case "-f", "--result-report-config" -> {
+                    String[] resultReportConfigs = getNextArgRequired().split(",");
+                    for (String resultReportConfig : resultReportConfigs) {
+                        switch (resultReportConfig) {
+                            case "tof" -> builder.setHasTimeOfFlightReport(true);
+                            case "azimuth" -> builder.setHasAngleOfArrivalAzimuthReport(true);
+                            case "elevation" -> builder.setHasAngleOfArrivalElevationReport(true);
+                            case "aoa-fom" -> builder.setHasAngleOfArrivalFigureOfMeritReport(true);
+                            default ->
+                                    throw new IllegalArgumentException(
+                                            "Unknown result report config: " + resultReportConfig);
+                        }
+                    }
                 }
-            }
-            if (option.equals("-A") || option.equals("--tx-adaptive-power")) {
-                builder.setIsTxAdaptivePayloadPowerEnabled(
-                        getNextArgRequiredTrueOrFalse("enabled", "disabled"));
-            }
-            if (option.equals("-S") || option.equals("--sfd-id")) {
-                int sfd_id = Integer.parseInt(getNextArgRequired());
-                if (sfd_id < 0 || sfd_id > 4) {
-                    throw new IllegalArgumentException("SFD_ID should be in range 0-4");
+                case "-g", "--sts-iv" -> {
+                    String staticSTSIV = getNextArgRequired();
+                    if (staticSTSIV.length() == 12) {
+                        builder.setStaticStsIV(
+                                BaseEncoding.base16().decode(staticSTSIV.toUpperCase()));
+                    } else {
+                        throw new IllegalArgumentException("staticSTSIV expecting 6 bytes");
+                    }
                 }
-                builder.setSfdId(sfd_id);
+                case "-v", "--vendor-id" -> {
+                    String vendorId = getNextArgRequired();
+                    if (vendorId.length() == 4) {
+                        builder.setVendorId(BaseEncoding.base16().decode(vendorId.toUpperCase()));
+                    } else {
+                        throw new IllegalArgumentException("vendorId expecting 2 bytes");
+                    }
+                }
+                case "-h", "--slot-duration-rstu" -> {
+                    int slotDurationRstu = Integer.parseInt(getNextArgRequired());
+                    builder.setSlotDurationRstu(slotDurationRstu);
+                }
+                case "-w", "--has-result-report-phase" -> {
+                    boolean hasRangingResultReportMessage =
+                            getNextArgRequiredTrueOrFalse("enabled", "disabled");
+                    builder.setHasRangingResultReportMessage(hasRangingResultReportMessage);
+                }
+                case "-y", "--hopping-mode" -> {
+                    boolean hoppingEnabled = getNextArgRequiredTrueOrFalse("enabled", "disabled");
+                    builder.setHoppingMode(hoppingEnabled ? 1 : 0);
+                }
+                case "-p", "--preamble-code-index" -> {
+                    int preambleCodeIndex = Integer.parseInt(getNextArgRequired());
+                    builder.setPreambleCodeIndex(preambleCodeIndex);
+                }
+                case "-o", "--sts-config-type" -> {
+                    String stsConfigType = getNextArgRequired();
+                    switch (stsConfigType) {
+                        case "static" -> builder.setStsConfig(STS_CONFIG_STATIC);
+                        case "provisioned" -> builder.setStsConfig(STS_CONFIG_PROVISIONED);
+                        default -> throw new IllegalArgumentException("unknown sts config type");
+                    }
+                }
+                case "-n", "--session-key" -> {
+                    String sessionKey = getNextArgRequired();
+                    if (sessionKey.length() == 32 || sessionKey.length() == 64) {
+                        builder.setSessionKey(BaseEncoding.base16().decode(sessionKey));
+                    } else {
+                        throw new IllegalArgumentException("sessionKey expecting 16 or 32 bytes");
+                    }
+                }
+                case "-k", "--sub-session-key" -> {
+                    String subSessionKey = getNextArgRequired();
+                    if (subSessionKey.length() == 32 || subSessionKey.length() == 64) {
+                        builder.setSubsessionKey(BaseEncoding.base16().decode(subSessionKey));
+                    } else {
+                        throw new IllegalArgumentException(
+                                ("subSessionKey expecting 16 or 32 bytes"));
+                    }
+                }
+                case "-j", "--error-streak-timeout-ms" -> {
+                    int errorStreakTimeoutMs = Integer.parseInt(getNextArgRequired());
+                    builder.setRangingErrorStreakTimeoutMs(errorStreakTimeoutMs);
+                }
+                case "-q", "--session-priority" -> {
+                    int sessionPriority = Integer.parseInt(getNextArgRequired());
+                    if (sessionPriority < 1 || sessionPriority > 100 || sessionPriority == 50) {
+                        throw new IllegalArgumentException(
+                                "sessionPriority expecting value between 1-49 or 51-100. 50 is "
+                                        + "reserved for default and has no effect.");
+                    }
+                    builder.setSessionPriority(sessionPriority);
+                }
+                case "-P", "--prf-mode" -> {
+                    String prfMode = getNextArgRequired();
+                    switch (prfMode) {
+                        case "bprf" -> builder.setPrfMode(PRF_MODE_BPRF);
+                        case "hprf" -> builder.setPrfMode(PRF_MODE_HPRF);
+                        default ->
+                                throw new IllegalArgumentException("Wrong arguments for prmMode");
+                    }
+                }
+                case "-D", "--psdu-data-rate" -> {
+                    String psduDataRate = getNextArgRequired();
+                    switch (psduDataRate) {
+                        case "6m81" -> builder.setPsduDataRate(PSDU_DATA_RATE_6M81);
+                        case "7m80" -> builder.setPsduDataRate(PSDU_DATA_RATE_7M80);
+                        case "27m2" -> builder.setPsduDataRate(PSDU_DATA_RATE_27M2);
+                        case "31m2" -> builder.setPsduDataRate(PSDU_DATA_RATE_31M2);
+                        default ->
+                                throw new IllegalArgumentException(
+                                        "Wrong arguments for psduDataRate");
+                    }
+                }
+                case "-B", "--bprf-phr-data-rate" -> {
+                    String bprfPhrDataRate = getNextArgRequired();
+                    switch (bprfPhrDataRate) {
+                        case "850k" -> builder.setBprfPhrDataRate(BPRF_PHR_DATA_RATE_850K);
+                        case "6m81" -> builder.setBprfPhrDataRate(BPRF_PHR_DATA_RATE_6M81);
+                        default ->
+                                throw new IllegalArgumentException(
+                                        "Wrong arguments for bprfPhrDataRate");
+                    }
+                }
+                case "-A", "--tx-adaptive-power" ->
+                        builder.setIsTxAdaptivePayloadPowerEnabled(
+                                getNextArgRequiredTrueOrFalse("enabled", "disabled"));
+                case "-S", "--sfd-id" -> {
+                    int sfd_id = Integer.parseInt(getNextArgRequired());
+                    if (sfd_id < 0 || sfd_id > 4) {
+                        throw new IllegalArgumentException("SFD_ID should be in range 0-4");
+                    }
+                    builder.setSfdId(sfd_id);
+                }
+                case "--is-key-rotation-enabled" -> {
+                    boolean isKeyRotationEnabled =
+                            getNextArgRequiredTrueOrFalse("enabled", "disabled");
+                    builder.setIsKeyRotationEnabled(isKeyRotationEnabled);
+                }
+                case "--key-rotation-rate" -> {
+                    int keyRotationRate = Integer.parseInt(getNextArgRequired());
+                    builder.setKeyRotationRate(keyRotationRate);
+                }
+                case "--max-ranging-round-retries" -> {
+                    int maxRangingRoundRetries = Integer.parseInt(getNextArgRequired());
+                    builder.setMaxRangingRoundRetries(maxRangingRoundRetries);
+                }
+                case "--max-number-of-measurements" -> {
+                    int maxNumberOfMeasurements = Integer.parseInt(getNextArgRequired());
+                    builder.setMaxNumberOfMeasurements(maxNumberOfMeasurements);
+                }
+                case "--in-band-termination-attempt-count" -> {
+                    int inBandTerminationAttemptCount = Integer.parseInt(getNextArgRequired());
+                    builder.setInBandTerminationAttemptCount(inBandTerminationAttemptCount);
+                }
+                default -> throw new IllegalArgumentException("Unsupported option: " + option);
             }
-            if (option.equals("--is-key-rotation-enabled")) {
-                boolean isKeyRotationEnabled =
-                        getNextArgRequiredTrueOrFalse("enabled", "disabled");
-                builder.setIsKeyRotationEnabled(isKeyRotationEnabled);
-            }
-            if (option.equals("--key-rotation-rate")) {
-                int keyRotationRate = Integer.parseInt(getNextArgRequired());
-                builder.setKeyRotationRate(keyRotationRate);
-            }
-            if (option.equals("--max-ranging-round-retries")) {
-                int maxRangingRoundRetries = Integer.parseInt(getNextArgRequired());
-                builder.setMaxRangingRoundRetries(maxRangingRoundRetries);
-            }
-            if (option.equals("--max-number-of-measurements")) {
-                int maxNumberOfMeasurements = Integer.parseInt(getNextArgRequired());
-                builder.setMaxNumberOfMeasurements(maxNumberOfMeasurements);
-            }
-            if (option.equals("--in-band-termination-attempt-count")) {
-                int inBandTerminationAttemptCount = Integer.parseInt(getNextArgRequired());
-                builder.setInBandTerminationAttemptCount(inBandTerminationAttemptCount);
-            }
-            option = getNextOption();
         }
         if (aoaResultReqEnabled && interleavingEnabled) {
             throw new IllegalArgumentException(
@@ -801,12 +803,12 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 .setRframeConfig(RFRAME_CONFIG_SP1)
                 .setStaticStsIV(new byte[]{0x1, 0x2, 0x3, 0x4, 0x5, 0x6});
 
-        String option = getNextOption();
-        while (option != null) {
+        for (String option = getNextOption(); option != null; option = getNextOption()) {
             if (option.equals("-i")) {
                 builder.setSessionId(Integer.parseInt(getNextArgRequired()));
+            } else {
+                throw new IllegalArgumentException("Unsupported option: " + option);
             }
-            option = getNextOption();
         }
         FiraOpenSessionParams firaOpenSessionParams = builder.build();
         startRangingSession(
@@ -818,74 +820,65 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         CccOpenRangingParams.Builder builder =
                 new CccOpenRangingParams.Builder(DEFAULT_CCC_OPEN_RANGING_PARAMS);
         boolean shouldBlockCall = false;
-        String option = getNextOption();
-        while (option != null) {
-            if (option.equals("-b") || option.equals("--blocking")) {
-                shouldBlockCall = true;
-            }
-            if (option.equals("-u") || option.equals("--uwb-config")) {
-                builder.setUwbConfig(Integer.parseInt(getNextArgRequired()));
-            }
-            if (option.equals("-p") || option.equals("--pulse-shape-combo")) {
-                String[] pulseComboString = getNextArgRequired().split(",");
-                if (pulseComboString.length != 2) {
-                    throw new IllegalArgumentException("Erroneous pulse combo: "
-                            + Arrays.toString(pulseComboString));
+        for (String option = getNextOption(); option != null; option = getNextOption()) {
+            switch (option) {
+                case "-b", "--blocking" -> shouldBlockCall = true;
+                case "-u", "--uwb-config" ->
+                        builder.setUwbConfig(Integer.parseInt(getNextArgRequired()));
+                case "-p", "--pulse-shape-combo" -> {
+                    String[] pulseComboString = getNextArgRequired().split(",");
+                    if (pulseComboString.length != 2) {
+                        throw new IllegalArgumentException(
+                                "Erroneous pulse combo: " + Arrays.toString(pulseComboString));
+                    }
+                    builder.setPulseShapeCombo(
+                            new CccPulseShapeCombo(
+                                    Integer.parseInt(pulseComboString[0]),
+                                    Integer.parseInt(pulseComboString[1])));
                 }
-                builder.setPulseShapeCombo(new CccPulseShapeCombo(
-                        Integer.parseInt(pulseComboString[0]),
-                        Integer.parseInt(pulseComboString[1])));
-            }
-            if (option.equals("-i") || option.equals("--session-id")) {
-                builder.setSessionId(Integer.parseInt(getNextArgRequired()));
-            }
-            if (option.equals("-r") || option.equals("--ran-multiplier")) {
-                builder.setRanMultiplier(Integer.parseInt(getNextArgRequired()));
-            }
-            if (option.equals("-c") || option.equals("--channel")) {
-                builder.setChannel(Integer.parseInt(getNextArgRequired()));
-            }
-            if (option.equals("-m") || option.equals("--num-chaps-per-slot")) {
-                builder.setNumChapsPerSlot(Integer.parseInt(getNextArgRequired()));
-            }
-            if (option.equals("-n") || option.equals("--num-responder-nodes")) {
-                builder.setNumResponderNodes(Integer.parseInt(getNextArgRequired()));
-            }
-            if (option.equals("-o") || option.equals("--num-slots-per-round")) {
-                builder.setNumSlotsPerRound(Integer.parseInt(getNextArgRequired()));
-            }
-            if (option.equals("-s") || option.equals("--sync-code-index")) {
-                builder.setSyncCodeIndex(Integer.parseInt(getNextArgRequired()));
-            }
-            if (option.equals("-h") || option.equals("--hopping-config-mode")) {
-                String hoppingConfigMode = getNextArgRequired();
-                if (hoppingConfigMode.equals("none")) {
-                    builder.setHoppingConfigMode(HOPPING_MODE_DISABLE);
-                } else if (hoppingConfigMode.equals("continuous")) {
-                    builder.setHoppingConfigMode(HOPPING_CONFIG_MODE_CONTINUOUS);
-                } else if (hoppingConfigMode.equals("adaptive")) {
-                    builder.setHoppingConfigMode(HOPPING_CONFIG_MODE_ADAPTIVE);
-                } else {
-                    throw new IllegalArgumentException("Unknown hopping config mode: "
-                            + hoppingConfigMode);
+                case "-i", "--session-id" ->
+                        builder.setSessionId(Integer.parseInt(getNextArgRequired()));
+                case "-r", "--ran-multiplier" ->
+                        builder.setRanMultiplier(Integer.parseInt(getNextArgRequired()));
+                case "-c", "--channel" ->
+                        builder.setChannel(Integer.parseInt(getNextArgRequired()));
+                case "-m", "--num-chaps-per-slot" ->
+                        builder.setNumChapsPerSlot(Integer.parseInt(getNextArgRequired()));
+                case "-n", "--num-responder-nodes" ->
+                        builder.setNumResponderNodes(Integer.parseInt(getNextArgRequired()));
+                case "-o", "--num-slots-per-round" ->
+                        builder.setNumSlotsPerRound(Integer.parseInt(getNextArgRequired()));
+                case "-s", "--sync-code-index" ->
+                        builder.setSyncCodeIndex(Integer.parseInt(getNextArgRequired()));
+                case "-h", "--hopping-config-mode" -> {
+                    String hoppingConfigMode = getNextArgRequired();
+                    switch (hoppingConfigMode) {
+                        case "none" -> builder.setHoppingConfigMode(HOPPING_MODE_DISABLE);
+                        case "continuous" ->
+                                builder.setHoppingConfigMode(HOPPING_CONFIG_MODE_CONTINUOUS);
+                        case "adaptive" ->
+                                builder.setHoppingConfigMode(HOPPING_CONFIG_MODE_ADAPTIVE);
+                        default ->
+                                throw new IllegalArgumentException(
+                                        "Unknown hopping config mode: " + hoppingConfigMode);
+                    }
                 }
-            }
-            if (option.equals("-a") || option.equals("--hopping-sequence")) {
-                String hoppingSequence = getNextArgRequired();
-                if (hoppingSequence.equals("default")) {
-                    builder.setHoppingSequence(HOPPING_SEQUENCE_DEFAULT);
-                } else if (hoppingSequence.equals("aes")) {
-                    builder.setHoppingSequence(HOPPING_SEQUENCE_AES);
-                } else {
-                    throw new IllegalArgumentException("Unknown hopping sequence: "
-                            + hoppingSequence);
+                case "-a", "--hopping-sequence" -> {
+                    String hoppingSequence = getNextArgRequired();
+                    switch (hoppingSequence) {
+                        case "default" -> builder.setHoppingSequence(HOPPING_SEQUENCE_DEFAULT);
+                        case "aes" -> builder.setHoppingSequence(HOPPING_SEQUENCE_AES);
+                        default ->
+                                throw new IllegalArgumentException(
+                                        "Unknown hopping sequence: " + hoppingSequence);
+                    }
                 }
+                case "-S", "--sts-index" -> {
+                    Integer sts_index = Integer.parseInt(getNextArgRequired());
+                    builder.setStsIndex(sts_index);
+                }
+                default -> throw new IllegalArgumentException("Unsupported option: " + option);
             }
-            if (option.equals("-S") || option.equals("--sts-index")) {
-                Integer sts_index = Integer.parseInt(getNextArgRequired());
-                builder.setStsIndex(sts_index);
-            }
-            option = getNextOption();
         }
         // TODO: Add remaining params if needed.
         return Pair.create(builder.build(), shouldBlockCall);
@@ -1028,54 +1021,55 @@ public class UwbShellCommand extends BasicShellCommandHandler {
     private FiraRangingReconfigureParams buildFiraReconfigureParams() {
         FiraRangingReconfigureParams.Builder builder =
                 new FiraRangingReconfigureParams.Builder();
-        String option = getNextOption();
-        while (option != null) {
-            if (option.equals("-a") || option.equals("--action")) {
-                String action = getNextArgRequired();
-                if (action.equals("add")) {
-                    builder.setAction(MULTICAST_LIST_UPDATE_ACTION_ADD);
-                } else if (action.equals("delete")) {
-                    builder.setAction(MULTICAST_LIST_UPDATE_ACTION_DELETE);
-                } else {
-                    throw new IllegalArgumentException("Unexpected action " + action);
+        for (String option = getNextOption(); option != null; option = getNextOption()) {
+            switch (option) {
+                case "-a", "--action" -> {
+                    String action = getNextArgRequired();
+                    switch (action) {
+                        case "add" -> builder.setAction(MULTICAST_LIST_UPDATE_ACTION_ADD);
+                        case "delete" -> builder.setAction(MULTICAST_LIST_UPDATE_ACTION_DELETE);
+                        default ->
+                                throw new IllegalArgumentException("Unexpected action " + action);
+                    }
                 }
-            }
-            if (option.equals("-d") || option.equals("--dest-addresses")) {
-                String[] destAddressesString = getNextArgRequired().split(",");
-                List<UwbAddress> destAddresses = new ArrayList<>();
-                for (String destAddressString : destAddressesString) {
-                    destAddresses.add(UwbAddress.fromBytes(
-                            ByteBuffer.allocate(SHORT_ADDRESS_BYTE_LENGTH)
-                                    .putShort(Short.parseShort(destAddressString))
-                                    .array()));
+                case "-d", "--dest-addresses" -> {
+                    String[] destAddressesString = getNextArgRequired().split(",");
+                    List<UwbAddress> destAddresses = new ArrayList<>();
+                    for (String destAddressString : destAddressesString) {
+                        destAddresses.add(
+                                UwbAddress.fromBytes(
+                                        ByteBuffer.allocate(SHORT_ADDRESS_BYTE_LENGTH)
+                                                .putShort(Short.parseShort(destAddressString))
+                                                .array()));
+                    }
+                    builder.setAddressList(destAddresses.toArray(new UwbAddress[0]));
                 }
-                builder.setAddressList(destAddresses.toArray(new UwbAddress[0]));
-            }
-            if (option.equals("-s") || option.equals("--sub-session-ids")) {
-                String[] subSessionIdsString = getNextArgRequired().split(",");
-                List<Integer> subSessionIds = new ArrayList<>();
-                for (String subSessionIdString : subSessionIdsString) {
-                    subSessionIds.add(Integer.parseInt(subSessionIdString));
+                case "-s", "--sub-session-ids" -> {
+                    String[] subSessionIdsString = getNextArgRequired().split(",");
+                    List<Integer> subSessionIds = new ArrayList<>();
+                    for (String subSessionIdString : subSessionIdsString) {
+                        subSessionIds.add(Integer.parseInt(subSessionIdString));
+                    }
+                    builder.setSubSessionIdList(subSessionIds.stream().mapToInt(s -> s).toArray());
                 }
-                builder.setSubSessionIdList(subSessionIds.stream().mapToInt(s -> s).toArray());
+                case "-b", "--block-stride-length" -> {
+                    int blockStrideLength = Integer.parseInt(getNextArgRequired());
+                    builder.setBlockStrideLength(blockStrideLength);
+                }
+                case "-c", "--range-data-ntf-config" -> {
+                    int rangeDataNtfConfig = Integer.parseInt(getNextArgRequired());
+                    builder.setRangeDataNtfConfig(rangeDataNtfConfig);
+                }
+                case "-n", "--range-data-proximity-near" -> {
+                    int proximityNear = Integer.parseInt(getNextArgRequired());
+                    builder.setRangeDataProximityNear(proximityNear);
+                }
+                case "-f", "--range-data-proximity-far" -> {
+                    int proximityFar = Integer.parseInt(getNextArgRequired());
+                    builder.setRangeDataProximityFar(proximityFar);
+                }
+                default -> throw new IllegalArgumentException("Unsupported option: " + option);
             }
-            if (option.equals("-b") || option.equals("--block-stride-length")) {
-                int blockStrideLength = Integer.parseInt(getNextArgRequired());
-                builder.setBlockStrideLength(blockStrideLength);
-            }
-            if (option.equals("-c") || option.equals("--range-data-ntf-config")) {
-                int rangeDataNtfConfig = Integer.parseInt(getNextArgRequired());
-                builder.setRangeDataNtfConfig(rangeDataNtfConfig);
-            }
-            if (option.equals("-n") || option.equals("--range-data-proximity-near")) {
-                int proximityNear = Integer.parseInt(getNextArgRequired());
-                builder.setRangeDataProximityNear(proximityNear);
-            }
-            if (option.equals("-f") || option.equals("--range-data-proximity-far")) {
-                int proximityFar = Integer.parseInt(getNextArgRequired());
-                builder.setRangeDataProximityFar(proximityFar);
-            }
-            option = getNextOption();
         }
         // TODO: Add remaining params if needed.
         return builder.build();
@@ -1121,66 +1115,36 @@ public class UwbShellCommand extends BasicShellCommandHandler {
 
         for (String option = getNextOption(); option != null; option = getNextOption()) {
             switch (option) {
-                case "-b":
-                case "--block":
-                    shouldBlockCall = true;
-                    break;
-                case "-i":
-                case "--session-id":
-                    builder.setSessionId(Integer.parseInt(getNextArgRequired()));
-                    break;
-                case "-c":
-                case "--channel-number":
-                    builder.setChannelNumber(Integer.parseInt(getNextArgRequired()));
-                    break;
-                case "-f":
-                case "--burst-period":
-                    builder.setBurstPeriod(Integer.parseInt(getNextArgRequired()));
-                    break;
-                case "-s":
-                case "--sweep-period":
-                    builder.setSweepPeriod(Integer.parseInt(getNextArgRequired()));
-                    break;
-                case "-u":
-                case "--sweeps-per-burst":
-                    builder.setSweepsPerBurst(Integer.parseInt(getNextArgRequired()));
-                    break;
-                case "-e":
-                case "--samples-per-sweep":
-                    builder.setSamplesPerSweep(Integer.parseInt(getNextArgRequired()));
-                    break;
-                case "-o":
-                case "--sweep-offset":
-                    builder.setSweepOffset(Integer.parseInt(getNextArgRequired()));
-                    break;
-                case "-r":
-                case "--rframe-config":
-                    builder.setRframeConfig(Integer.parseInt(getNextArgRequired()));
-                    break;
-                case "-t":
-                case "--preamble-duration":
-                    builder.setPreambleDuration(Integer.parseInt(getNextArgRequired()));
-                    break;
-                case "-d":
-                case "--preamble-code-index":
-                    builder.setPreambleCodeIndex(Integer.parseInt(getNextArgRequired()));
-                    break;
-                case "-x":
-                case "--session-priority":
-                    builder.setSessionPriority(Integer.parseInt(getNextArgRequired()));
-                    break;
-                case "-p":
-                case "--bits-per-sample":
-                    builder.setBitsPerSample(Integer.parseInt(getNextArgRequired()));
-                    break;
-                case "-m":
-                case "--prf-mode":
-                    builder.setPrfMode(Integer.parseInt(getNextArgRequired()));
-                    break;
-                case "-n":
-                case "--number-of-bursts":
-                    builder.setNumberOfBursts(Integer.parseInt(getNextArgRequired()));
-                    break;
+                case "-b", "--block" -> shouldBlockCall = true;
+                case "-i", "--session-id" ->
+                        builder.setSessionId(Integer.parseInt(getNextArgRequired()));
+                case "-c", "--channel-number" ->
+                        builder.setChannelNumber(Integer.parseInt(getNextArgRequired()));
+                case "-f", "--burst-period" ->
+                        builder.setBurstPeriod(Integer.parseInt(getNextArgRequired()));
+                case "-s", "--sweep-period" ->
+                        builder.setSweepPeriod(Integer.parseInt(getNextArgRequired()));
+                case "-u", "--sweeps-per-burst" ->
+                        builder.setSweepsPerBurst(Integer.parseInt(getNextArgRequired()));
+                case "-e", "--samples-per-sweep" ->
+                        builder.setSamplesPerSweep(Integer.parseInt(getNextArgRequired()));
+                case "-o", "--sweep-offset" ->
+                        builder.setSweepOffset(Integer.parseInt(getNextArgRequired()));
+                case "-r", "--rframe-config" ->
+                        builder.setRframeConfig(Integer.parseInt(getNextArgRequired()));
+                case "-t", "--preamble-duration" ->
+                        builder.setPreambleDuration(Integer.parseInt(getNextArgRequired()));
+                case "-d", "--preamble-code-index" ->
+                        builder.setPreambleCodeIndex(Integer.parseInt(getNextArgRequired()));
+                case "-x", "--session-priority" ->
+                        builder.setSessionPriority(Integer.parseInt(getNextArgRequired()));
+                case "-p", "--bits-per-sample" ->
+                        builder.setBitsPerSample(Integer.parseInt(getNextArgRequired()));
+                case "-m", "--prf-mode" ->
+                        builder.setPrfMode(Integer.parseInt(getNextArgRequired()));
+                case "-n", "--number-of-bursts" ->
+                        builder.setNumberOfBursts(Integer.parseInt(getNextArgRequired()));
+                default -> throw new IllegalArgumentException("Unsupported option: " + option);
             }
         }
         return Pair.create(builder.build(), shouldBlockCall);
@@ -1392,6 +1356,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     return 0;
                 }
                 case "stop-ranging-session":
+                    // fall through
                 case "stop-radar-session":
                     stopRangingSession(pw);
                     return 0;
@@ -1433,25 +1398,23 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 }
                 case "enable-diagnostics-notification": {
                     byte diagramFrameReportsFlags = 0;
-                    String option = getNextOption();
-                    while (option != null) {
-                        if (option.equals("-r") || option.equals("--rssi")) {
-                            diagramFrameReportsFlags |= RSSI_FLAG;
+                    for (String option = getNextOption();
+                            option != null;
+                            option = getNextOption()) {
+                        switch (option) {
+                            case "-r", "--rssi" -> diagramFrameReportsFlags |= RSSI_FLAG;
+                            case "-a", "--aoa" -> diagramFrameReportsFlags |= AOA_FLAG;
+                            case "-c", "--cir" -> diagramFrameReportsFlags |= CIR_FLAG;
+                            case "-s", "--segment-metrics" ->
+                                    diagramFrameReportsFlags |= SEGMENT_METRICS_FLAG;
+                            default ->
+                                    throw new IllegalArgumentException(
+                                            "Unsupported option: " + option);
                         }
-                        if (option.equals("-a") || option.equals("--aoa")) {
-                            diagramFrameReportsFlags |= AOA_FLAG;
-                        }
-                        if (option.equals("-c") || option.equals("--cir")) {
-                            diagramFrameReportsFlags |= CIR_FLAG;
-                        }
-                        if (option.equals("-s") || option.equals("--segment-metrics")) {
-                            diagramFrameReportsFlags |= SEGMENT_METRICS_FLAG;
-                        }
-                        option = getNextOption();
                     }
                     mUwbServiceCore.enableDiagnostics(true, diagramFrameReportsFlags);
-                    return 0;
                 }
+                return 0;
                 case "disable-diagnostics-notification": {
                     mUwbServiceCore.enableDiagnostics(false, (byte) 0);
                     return 0;

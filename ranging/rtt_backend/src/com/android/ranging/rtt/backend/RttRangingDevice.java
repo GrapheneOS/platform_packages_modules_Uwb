@@ -267,11 +267,12 @@ public class RttRangingDevice {
 
                 int updateRateMs = RttRangingParameters.getIntervalMs(mRttRangingParameters);
                 mRttListener.onRangingInitialized(mRttDevice);
-                if (!mRttRangingParameters.isPeriodicRangingHwFeatureEnabled()
-                        && !mRttRangingParameters.isRangeDataNtfDisabled()) {
-                    mRttRanger.startRanging(peerHandle, mRttRangingListener, updateRateMs,
-                            mRangingRequestDelay);
-                }
+                // Only ranging from subscriber is supported.
+                // if (!mRttRangingParameters.isPeriodicRangingHwFeatureEnabled()
+                //         && !mRttRangingParameters.isRangeDataNtfDisabled()) {
+                //     mRttRanger.startRanging(peerHandle, mRttRangingListener, updateRateMs,
+                //             mRangingRequestDelay);
+                // }
             }
 
             @Override

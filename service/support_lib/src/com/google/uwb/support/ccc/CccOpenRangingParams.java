@@ -449,6 +449,7 @@ public class CccOpenRangingParams extends CccParams {
             mNumResponderNodes.set(params.mNumResponderNodes);
             mNumSlotsPerRound.set(params.mNumSlotsPerRound);
             mSyncCodeIndex.set(params.mSyncCodeIndex);
+            mStsIndex = params.mStsIndex;
             mHopModeKey = params.mHopModeKey;
             mHoppingConfigMode.set(params.mHoppingConfigMode);
             mHoppingSequence.set(params.mHoppingSequence);
