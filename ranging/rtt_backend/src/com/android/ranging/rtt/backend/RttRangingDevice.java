@@ -386,8 +386,9 @@ public class RttRangingDevice {
                         .setServiceName(rttRangingParameters.getServiceName())
                         .setRangingEnabled(true)
                         .setTerminateNotificationEnabled(true)
-                        .setPeriodicRangingResultsEnabled(
-                                rttRangingParameters.isPeriodicRangingHwFeatureEnabled())
+                        // Only ranging from subscriber is supported.
+                        //  .setPeriodicRangingResultsEnabled(
+                        //          rttRangingParameters.isPeriodicRangingHwFeatureEnabled())
                         .build();
                 mSubscribeConfig = null;
             } else if (deviceType == DeviceType.SUBSCRIBER) {
