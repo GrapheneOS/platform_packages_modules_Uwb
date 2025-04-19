@@ -78,5 +78,6 @@
         <!-- Timeout limit in milliseconds for all test cases of the python binary -->
         <option name="mobly-test-timeout" value="1800000" />
     </test>
+    <object type="module_controller" class="com.android.tradefed.testtype.suite.module.Sdk36ModuleController" />
 </configuration>
 
