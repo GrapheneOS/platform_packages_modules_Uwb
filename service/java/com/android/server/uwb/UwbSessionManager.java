@@ -28,6 +28,7 @@ import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_OK;
 import static com.android.server.uwb.data.UwbUciConstants.UWB_DEVICE_EXT_MAC_ADDRESS_LEN;
 import static com.android.server.uwb.data.UwbUciConstants.UWB_DEVICE_SHORT_MAC_ADDRESS_LEN;
 import static com.android.server.uwb.data.UwbUciConstants.UWB_SESSION_STATE_ACTIVE;
+import static com.android.server.uwb.data.UwbUciConstants.UWB_SESSION_STATE_DEINIT;
 import static com.android.server.uwb.util.DataTypeConversionUtil.macAddressByteArrayToLong;
 
 import static com.google.uwb.support.fira.FiraParams.FILTER_TYPE_APPLICATION;
@@ -604,13 +605,17 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     //      uwbSession, reasonCode);
                 }
                 break;
-            case UwbUciConstants.UWB_SESSION_STATE_DEINIT:
+            case UWB_SESSION_STATE_DEINIT:
                 mEventTask.execute(SESSION_ON_DEINIT, uwbSession);
                 break;
             default:
                 break;
         }
+        oemExtensionSessionStatusCb(uwbSession, sessionId, sessionToken, state, reasonCode);
+    }
 
+    private void oemExtensionSessionStatusCb(UwbSession uwbSession, long sessionId,
+                    int sessionToken, int state, int reasonCode) {
         if (mUwbInjector.getUwbServiceCore().isOemExtensionCbRegistered()) {
             String appPackageName = uwbSession.getAnyNonPrivilegedAppInAttributionSource() != null
                     ? uwbSession.getAnyNonPrivilegedAppInAttributionSource().getPackageName()
@@ -2999,7 +3004,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             this.mProtocolName = protocolName;
             this.mIUwbRangingCallbacks = iUwbRangingCallbacks;
             this.mIBinder = iUwbRangingCallbacks.asBinder();
-            this.mSessionState = UwbUciConstants.UWB_SESSION_STATE_DEINIT;
+            this.mSessionState = UWB_SESSION_STATE_DEINIT;
             this.mParams = params;
             this.mWaitObj = new WaitObj();
             this.mProfileType = convertProtolNameToProfileType(protocolName);
@@ -3924,6 +3929,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 int status = mNativeUwbManager.deInitSession(getSessionId(), getChipId());
                 mUwbMetrics.logRangingCloseEvent(this, status);
                 if (status == UwbUciConstants.STATUS_CODE_OK) {
+                    oemExtensionSessionStatusCb(this,
+                            getSessionId(),
+                            mSessionTokenMap.get(getSessionId()),
+                            UWB_SESSION_STATE_DEINIT,
+                            REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS);
                     removeSession(this);
                     Log.i(TAG,
                             "binderDied : Fira/CCC/ALIRO Session counts currently are "
