@@ -1069,6 +1069,7 @@ public class UwbSessionManagerTest {
         doReturn(0L).when(mUwbSessionManager).getCccSessionCount();
         doReturn(0L).when(mUwbSessionManager).getFiraSessionCount();
         doReturn(false).when(mUwbSessionManager).isExistedSession(anyInt());
+        mUwbSessionManager.mSessionTokenMap.put(10, 10);
         IUwbRangingCallbacks mockRangingCallbacks = mock(IUwbRangingCallbacks.class);
         SessionHandle mockSessionHandle = mock(SessionHandle.class);
         Params mockParams = mock(FiraParams.class);
@@ -1078,6 +1079,7 @@ public class UwbSessionManagerTest {
                         TEST_SESSION_ID, TEST_SESSION_TYPE, FiraParams.PROTOCOL_NAME, mockParams,
                         mockRangingCallbacks, TEST_CHIP_ID));
         doReturn(mockBinder).when(uwbSession).getBinder();
+        doReturn(10).when(uwbSession).getSessionId();
         doReturn(uwbSession).when(mUwbSessionManager).createUwbSession(any(), any(), anyInt(),
                 anyByte(), anyString(), any(), any(), anyString());
         doThrow(new RemoteException()).when(mockBinder).linkToDeath(any(), anyInt());
