@@ -57,9 +57,9 @@ public abstract class StatusResponseMessage {
         }
 
         int parseCursor = header.getSize();
-        ImmutableList<RangingTechnology> rangingTechnologiesStatus =
-                RangingTechnology.fromBitmap(
-                        Arrays.copyOfRange(payload, parseCursor, parseCursor + SIZE_IN_BYTES));
+        ImmutableList<RangingTechnology> rangingTechnologiesStatus = RangingTechnology.filterKnown(
+                RangingTechnology.parseBitmap(
+                        Arrays.copyOfRange(payload, parseCursor, parseCursor + SIZE_IN_BYTES)));
 
         return builder()
                 .setOobHeader(header)

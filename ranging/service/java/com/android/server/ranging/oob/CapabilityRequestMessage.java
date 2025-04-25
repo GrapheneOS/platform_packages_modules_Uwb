@@ -55,8 +55,8 @@ public abstract class CapabilityRequestMessage {
         int parseCursor = header.getSize();
         byte[] capabilityBytes =
                 Arrays.copyOfRange(payload, parseCursor, parseCursor + CAPABILITY_SIZE_BYTES);
-        ImmutableSet<RangingTechnology> rangingTechnologies =
-                ImmutableSet.copyOf(RangingTechnology.fromBitmap(capabilityBytes));
+        ImmutableSet<RangingTechnology> rangingTechnologies = ImmutableSet.copyOf(
+                RangingTechnology.filterKnown(RangingTechnology.parseBitmap(capabilityBytes)));
 
         return builder()
                 .setHeader(header)
