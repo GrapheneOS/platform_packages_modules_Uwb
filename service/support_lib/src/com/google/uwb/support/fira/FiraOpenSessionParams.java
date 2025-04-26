@@ -2137,13 +2137,14 @@ public class FiraOpenSessionParams extends FiraParams {
             }
 
             // Make sure address length matches the address mode
-            checkArgument(mDeviceAddress != null && mDeviceAddress.size() == addressByteLength);
+            checkArgument(mDeviceAddress != null);
+            checkArgument(mDeviceAddress.size() == addressByteLength);
             if (isTimeScheduledTwrSession()
                     && mStsConfig != STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY) {
                 checkNotNull(mDestAddressList);
                 for (UwbAddress destAddress : mDestAddressList) {
-                    checkArgument(destAddress != null
-                            && destAddress.size() == addressByteLength);
+                    checkArgument(destAddress != null);
+                    checkArgument(destAddress.size() == addressByteLength);
                 }
             }
 
@@ -2170,8 +2171,10 @@ public class FiraOpenSessionParams extends FiraParams {
         private void checkStsConfig() {
             if (mStsConfig == STS_CONFIG_STATIC) {
                 // These two fields are used by Static STS only.
-                checkArgument(mVendorId != null && mVendorId.length == 2);
-                checkArgument(mStaticStsIV != null && mStaticStsIV.length == 6);
+                checkArgument(mVendorId != null);
+                checkArgument(mVendorId.length == 2);
+                checkArgument(mStaticStsIV != null);
+                checkArgument(mStaticStsIV.length == 6);
             }
 
             if ((mStsConfig == STS_CONFIG_DYNAMIC_FOR_CONTROLEE_INDIVIDUAL_KEY ||
@@ -2190,8 +2193,8 @@ public class FiraOpenSessionParams extends FiraParams {
 
             if (mStsConfig == STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY
                 && mDeviceType.get() == RANGING_DEVICE_TYPE_CONTROLEE && mSubsessionKey != null) {
-                checkArgument(mSessionKey != null &&
-                        (mSessionKey.length == 16 || mSessionKey.length == 32));
+                checkArgument(mSessionKey != null);
+                checkArgument((mSessionKey.length == 16 || mSessionKey.length == 32));
                 checkArgument(mSubsessionKey.length == 16 || mSubsessionKey.length == 32);
             }
         }
@@ -2268,9 +2271,9 @@ public class FiraOpenSessionParams extends FiraParams {
         }
         private void checkDlTdoaParameters() {
             if (mDeviceRole.get() == RANGING_DEVICE_DT_TAG) {
-                checkArgument(mStsConfig == STS_CONFIG_STATIC
-                            && mMultiNodeMode.get() == MULTI_NODE_MODE_ONE_TO_MANY
-                            && mRframeConfig == RFRAME_CONFIG_SP1);
+                checkArgument(mStsConfig == STS_CONFIG_STATIC);
+                checkArgument(mMultiNodeMode.get() == MULTI_NODE_MODE_ONE_TO_MANY);
+                checkArgument(mRframeConfig == RFRAME_CONFIG_SP1);
             }
         }
 

@@ -196,7 +196,8 @@ public class FiraControleeParams extends FiraParams {
         }
 
         private void checkAddressList() {
-            checkArgument(mAddressList != null && mAddressList.length > 0);
+            checkArgument(mAddressList != null);
+            checkArgument(mAddressList.length > 0);
             for (UwbAddress uwbAddress : mAddressList) {
                 requireNonNull(uwbAddress);
                 checkArgument(uwbAddress.size() == UwbAddress.SHORT_ADDRESS_BYTE_LENGTH);
