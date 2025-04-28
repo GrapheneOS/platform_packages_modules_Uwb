@@ -18,6 +18,7 @@ package com.android.server.ranging;
 
 import static java.lang.Math.min;
 
+import android.annotation.Nullable;
 import android.content.Context;
 import android.ranging.RangingManager;
 
@@ -30,6 +31,7 @@ import com.google.common.collect.ImmutableList;
 
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.stream.Stream;
 
 /** Enum representing an individual ranging technology. */
 public enum RangingTechnology {
@@ -48,6 +50,14 @@ public enum RangingTechnology {
 
     RangingTechnology(int value) {
         this.value = value;
+    }
+
+    public static @Nullable RangingTechnology fromValue(int value) {
+        try {
+            return TECHNOLOGIES.get(value);
+        } catch (IndexOutOfBoundsException unused) {
+            return null;
+        }
     }
 
     public @RangingManager.RangingTechnology int getValue() {
@@ -103,19 +113,23 @@ public enum RangingTechnology {
         return bitmap;
     }
 
-    public static ImmutableList<RangingTechnology> fromBitmap(byte[] technologiesBitmap) {
-        ImmutableList.Builder<RangingTechnology> techs = ImmutableList.builder();
+    public static ImmutableList<Integer> parseBitmap(byte[] technologiesBitmap) {
+        ImmutableList.Builder<Integer> techs = ImmutableList.builder();
         BitSet bitSet = BitSet.valueOf(technologiesBitmap);
         for (int i = 0; i < BITMAP_SIZE_BYTES * 8; i++) {
             if (bitSet.get(i)) {
-                try {
-                    techs.add(RangingTechnology.TECHNOLOGIES.get(i));
-                } catch (IndexOutOfBoundsException e) {
-                    throw new IllegalArgumentException("Unknown technology " + i);
-                }
+                techs.add(i);
             }
         }
         return techs.build();
+    }
+
+    public static ImmutableList<RangingTechnology> filterKnown(
+            ImmutableList<Integer> technologies
+    ) {
+        return technologies.stream()
+                .flatMap(t -> Stream.ofNullable(RangingTechnology.fromValue(t)))
+                .collect(ImmutableList.toImmutableList());
     }
 
     @Override

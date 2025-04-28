@@ -94,6 +94,12 @@ public final class CapabilityResponseMessageTest {
                     (byte) 0x81, 0x00
             };
 
+    private static final byte[] rangingTechsBitmapUwbAndCs =
+            new byte[]{
+                    // Uwb and CS technology set
+                    (byte) 0x03, 0x00
+            };
+
     private static final byte[] uwbCapabilityBytes =
             new byte[]{
                     // Ranging technology Id (UWB)
@@ -127,12 +133,36 @@ public final class CapabilityResponseMessageTest {
                     0x03,
             };
 
+    private static final byte[] csCapabilityBytes =
+            new byte[]{
+                    // Ranging technology Id (UWB)
+                    0x01,
+                    // Size
+                    0x0C,
+                    // Security level bitmap
+                    0x02,
+                    // Device Address
+                    0x01,
+                    0x02,
+                    0x03,
+                    0x04,
+                    0x05,
+                    0x06,
+                    // LE Appearance
+                    0x00,
+                    0x00,
+                    // LE FLAGS
+                    0x00,
+            };
+
     private static final byte[] unknownTechnologyCapabilityBytes =
             new byte[]{
                     // Invalid ranging tech id
                     0x07,
                     // Size
-                    0x02
+                    0x03,
+                    // Payload
+                    0x01,
             };
 
     private static final byte[] capabilityResponseMessageUwbBytes =
@@ -199,17 +229,45 @@ public final class CapabilityResponseMessageTest {
     }
 
     @Test
-    public void parseBytes_unknownRangingTechnologyId_throwsException() throws Exception {
-        assertThrows(IllegalArgumentException.class,
-                () -> CapabilityResponseMessage
-                        .parseBytes(capabilityResponseMessageUnknownBytes));
+    public void parseBytes_unknownRangingTechnologyId_parsesCorrectly() throws Exception {
+        CapabilityResponseMessage response = CapabilityResponseMessage.parseBytes(
+                capabilityResponseMessageUnknownBytes);
+        assertThat(response.getSupportedRangingTechnologies()).isEmpty();
     }
 
     @Test
-    public void parseBytes_unknownAndUwbRangingTechnologyIds_throwsException() throws Exception {
-        assertThrows(IllegalArgumentException.class,
-                () -> CapabilityResponseMessage
-                        .parseBytes(capabilityResponseMessageUnknownAndUwbBytes));
+    public void parseBytes_extraBytesInTechnologyCapabilities_parsesCorrectly() throws Exception {
+        byte[] uwbCapabilityWithExtraBytes =
+                Bytes.concat(uwbCapabilityBytes, new byte[]{-10, 55, 120, -3, 88});
+        // Update length to include new bytes
+        uwbCapabilityWithExtraBytes[1] += 5;
+
+        byte[] csCapabilityWithExtraBytes =
+                Bytes.concat(csCapabilityBytes, new byte[]{4, -18, 9, 43});
+        // Update length to include new bytes
+        csCapabilityWithExtraBytes[1] += 4;
+
+        final byte[] responseBytes = Bytes.concat(
+                oobHeaderBytes,
+                rangingTechsBitmapUwbAndCs,
+                uwbCapabilityWithExtraBytes,
+                csCapabilityWithExtraBytes);
+        CapabilityResponseMessage response = CapabilityResponseMessage.parseBytes(responseBytes);
+        assertThat(response.getSupportedRangingTechnologies())
+                .containsExactly(RangingTechnology.UWB, RangingTechnology.CS);
+
+        assertThat(response.getCsCapabilities().getBluetoothAddress())
+                .isEqualTo("01:02:03:04:05:06");
+        assertThat(response.getUwbCapabilities().getUwbAddress())
+                .isEqualTo(UwbAddress.fromBytes(new byte[] {0x08, 0x09}));
+    }
+
+    @Test
+    public void parseBytes_unknownAndUwbRangingTechnologyIds_parsesCorrectly() throws Exception {
+        CapabilityResponseMessage response = CapabilityResponseMessage.parseBytes(
+                capabilityResponseMessageUnknownAndUwbBytes);
+        assertThat(response.getSupportedRangingTechnologies())
+                .containsExactly(RangingTechnology.UWB);
     }
 
 
