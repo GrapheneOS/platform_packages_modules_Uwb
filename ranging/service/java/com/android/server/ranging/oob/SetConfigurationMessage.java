@@ -16,6 +16,8 @@
 
 package com.android.server.ranging.oob;
 
+import android.util.Log;
+
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.blerssi.BleRssiOobConfig;
 import com.android.server.ranging.cs.CsOobConfig;
@@ -34,6 +36,7 @@ import javax.annotation.Nullable;
 /** The Set Configuration Message Additional Data for Finder OOB. */
 @AutoValue
 public abstract class SetConfigurationMessage {
+    private static final String TAG = SetConfigurationMessage.class.getSimpleName();
 
     public interface TechnologyOobConfig { }
 
@@ -65,15 +68,15 @@ public abstract class SetConfigurationMessage {
         int parseCursor = header.getSize();
 
         // Parse Ranging Technologies Set
-        var rangingTechnologiesSet =
-                RangingTechnology.fromBitmap(Arrays.copyOfRange(
+        ImmutableList<Integer> rangingTechnologiesSet =
+                RangingTechnology.parseBitmap(Arrays.copyOfRange(
                         payload, parseCursor, parseCursor + RANGING_TECHNOLOGIES_SET_SIZE));
         parseCursor += RANGING_TECHNOLOGIES_SET_SIZE;
 
         // Parse Start Ranging List
-        var startRangingList =
-                RangingTechnology.fromBitmap(Arrays.copyOfRange(
-                        payload, parseCursor, parseCursor + START_RANGING_LIST_SIZE));
+        ImmutableList<RangingTechnology> startRangingList =
+                RangingTechnology.filterKnown(RangingTechnology.parseBitmap(Arrays.copyOfRange(
+                        payload, parseCursor, parseCursor + START_RANGING_LIST_SIZE)));
         parseCursor += START_RANGING_LIST_SIZE;
 
         // Parse Configs for ranging technologies that are set
@@ -122,14 +125,18 @@ public abstract class SetConfigurationMessage {
                     bleRssiConfig = BleRssiOobConfig.parseBytes(remainingBytes);
                     parseCursor += bleRssiConfig.getSize();
                     break;
+                case null:
                 default:
+                    Log.i(TAG, "Skip parsing of configuration with size "
+                            + techHeader.getSize() + " from unknown technology");
                     parseCursor += techHeader.getSize();
+                    break;
             }
         }
 
         return builder()
                 .setHeader(header)
-                .setRangingTechnologiesSet(rangingTechnologiesSet)
+                .setRangingTechnologiesSet(RangingTechnology.filterKnown(rangingTechnologiesSet))
                 .setStartRangingList(startRangingList)
                 .setUwbConfig(uwbConfig)
                 .setCsConfig(csConfig)
