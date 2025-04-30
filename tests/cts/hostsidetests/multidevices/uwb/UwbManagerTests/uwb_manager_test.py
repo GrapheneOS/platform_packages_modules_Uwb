@@ -74,32 +74,45 @@ class UwbManagerTest(uwb_base_test.UwbBaseTest):
         "Uwb state before reboot: %s;  after reboot: %s" %
         (state, state_after_reboot))
 
-  def _verify_uwb_state_with_airplane_mode(
+  def _test_uwb_state_with_airplane_mode(
       self,
-      dut: android_device.AndroidDevice,
-      prev_uwb_state: bool,
       expected_uwb_state: bool,
-      event_str: str,
-      handler: callback_handler_v2.CallbackHandlerV2,
+      toggle_airplane_mode: bool = False,
+      toggle_uwb_state: bool = False,
   ):
-    """Verifies UWB state with airplane mode.
+    """Verifies UWB state with airplane mode togglgings.
 
     Args:
-      dut: android device object.
-      prev_uwb_state: previous UWB state.
       expected_uwb_state: expected UWB state.
-      event_str: callback event string.
-      handler: callback handler.
-
-    Returns:
-      True if test results in expected UWB state, False if not.
+      toggle_airplane_mode: toggle APM when it's True.
+      toggle_uwb_state: toggle UWB state when it's True.
     """
-    callback_received = uwb_test_utils.verify_uwb_state_callback(
-        dut, event_str, handler
-    )
-    if prev_uwb_state == expected_uwb_state:
-      return uwb_test_utils.get_uwb_state(dut) == expected_uwb_state
-    return callback_received
+    prev_uwb_state = uwb_test_utils.get_uwb_state(self.dut)
+
+    # Toggles the states.
+    if toggle_airplane_mode:
+      airplane_mode = not uwb_test_utils.get_airplane_mode(self.dut)
+      uwb_test_utils.set_airplane_mode(self.dut, airplane_mode)
+
+    if toggle_uwb_state:
+      self.dut.uwb.setUwbEnabled(not prev_uwb_state)
+
+    # Checks the uwb state transition.
+    if prev_uwb_state != expected_uwb_state:
+      event_str = "Inactive" if expected_uwb_state else "Disabled"
+      callback_received = uwb_test_utils.verify_uwb_state_callback(
+        self.dut, event_str, self.handler)
+
+      # Sets UWB country code when UWB state expected to be enabled.
+      # Cached country code lost when airplane mode turned on,
+      if not callback_received and expected_uwb_state:
+        uwb_test_utils.initialize_uwb_country_code_if_not_set(self.dut)
+
+    # Checks the current uwb state.
+    uwb_state = uwb_test_utils.get_uwb_state(self.dut)
+    asserts.assert_equal(uwb_state, expected_uwb_state,
+        "Unexpected UWB state %s after APM-Toggle=%s, UWB-Toggle=%s" %
+        (uwb_state, toggle_airplane_mode, toggle_uwb_state))
 
   ### Test Cases ###
 
@@ -123,64 +136,49 @@ class UwbManagerTest(uwb_base_test.UwbBaseTest):
   def test_uwb_state_with_airplane_mode_toggle(self):
     """Verifies UWB is disabled with airplane mode on."""
 
+    # Starts the test with UWB on + APM off.
+    uwb_test_utils.set_airplane_mode(self.dut, False)
+
     # Enable APM. Verify UWB is disabled.
-    uwb_state = uwb_test_utils.get_uwb_state(self.dut)
-    uwb_test_utils.set_airplane_mode(self.dut, True)
-    asserts.assert_true(
-        self._verify_uwb_state_with_airplane_mode(
-            self.dut, uwb_state, False, "Disabled", self.handler
-        ),
-        "UWB is not disabled with airplane mode On.",
-    )
+    self._test_uwb_state_with_airplane_mode(
+        expected_uwb_state = False,
+        toggle_airplane_mode = True)
 
     # Enable UWB with APM ON. Verify UWB is still disabled.
-    uwb_state = uwb_test_utils.get_uwb_state(self.dut)
-    self.dut.uwb.setUwbEnabled(True)
-    asserts.assert_true(
-        self._verify_uwb_state_with_airplane_mode(
-            self.dut, uwb_state, False, "Disabled", self.handler
-        ),
-        "Enabling UWB with airplane mode On should not work.",
-    )
+    self._test_uwb_state_with_airplane_mode(
+        expected_uwb_state = False,
+        toggle_uwb_state = True)
 
     # Disable APM. Verify UWB is enabled.
-    uwb_state = uwb_test_utils.get_uwb_state(self.dut)
-    uwb_test_utils.set_airplane_mode(self.dut, False)
-    asserts.assert_true(
-        self._verify_uwb_state_with_airplane_mode(
-            self.dut, uwb_state, True, "Inactive", self.handler
-        ),
-        "UWB is not enabled with airplane mode Off.",
-    )
+    self._test_uwb_state_with_airplane_mode(
+        expected_uwb_state = True,
+        toggle_airplane_mode = True)
 
   def test_uwb_state_off_with_airplane_mode_toggle(self):
     """Verifies UWB disabled state is persistent with airplane mode toggle."""
 
-    # disable UWB
-    uwb_test_utils.set_uwb_state_and_verify(self.dut, False, self.handler)
+    # Starts the test with UWB off + APM off.
+    uwb_test_utils.set_airplane_mode(self.dut, False)
+
+    # disable UWB.
+    self._test_uwb_state_with_airplane_mode(
+        expected_uwb_state = False,
+        toggle_uwb_state = True)
 
     # enable airplane mode and verify UWB is disabled.
-    uwb_state = uwb_test_utils.get_uwb_state(self.dut)
-    uwb_test_utils.set_airplane_mode(self.dut, True)
-    asserts.assert_true(
-        self._verify_uwb_state_with_airplane_mode(
-            self.dut, uwb_state, False, "Disabled", self.handler
-        ),
-        "UWB is not disabled with airplane mode On.",
-    )
+    self._test_uwb_state_with_airplane_mode(
+        expected_uwb_state = False,
+        toggle_airplane_mode = True)
 
     # disable airplane mode and verify UWB is disabled.
-    uwb_state = uwb_test_utils.get_uwb_state(self.dut)
-    uwb_test_utils.set_airplane_mode(self.dut, False)
-    asserts.assert_true(
-        self._verify_uwb_state_with_airplane_mode(
-            self.dut, uwb_state, False, "Disabled", self.handler
-        ),
-        "UWB state: On, Expected state: Off",
-    )
+    self._test_uwb_state_with_airplane_mode(
+        expected_uwb_state = False,
+        toggle_airplane_mode = True)
 
-    # enable UWB
-    uwb_test_utils.set_uwb_state_and_verify(self.dut, True)
+    # enable UWB.
+    self._test_uwb_state_with_airplane_mode(
+        expected_uwb_state = True,
+        toggle_uwb_state = True)
 
 if __name__ == "__main__":
   if "--" in sys.argv:
