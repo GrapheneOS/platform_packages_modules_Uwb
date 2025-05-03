@@ -52,8 +52,8 @@ public abstract class StopRangingMessage {
 
         int parseCursor = header.getSize();
         ImmutableList<RangingTechnology> rangingTechnologiesToStop =
-                RangingTechnology.fromBitmap(
-                        Arrays.copyOfRange(payload, parseCursor, parseCursor + SIZE_IN_BYTES));
+                RangingTechnology.filterKnown(RangingTechnology.parseBitmap(
+                        Arrays.copyOfRange(payload, parseCursor, parseCursor + SIZE_IN_BYTES)));
 
         return builder()
                 .setOobHeader(header)

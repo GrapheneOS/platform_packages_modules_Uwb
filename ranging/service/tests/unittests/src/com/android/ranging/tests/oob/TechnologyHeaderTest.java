@@ -67,9 +67,14 @@ public final class TechnologyHeaderTest {
     }
 
     @Test
-    public void parseBytes_unknownTechnology_throwsException() throws Exception {
-        byte[] header = new byte[]{0x0B, 0x5};
-        assertThrows(IllegalArgumentException.class, () -> TechnologyHeader.parseBytes(header));
+    public void parseBytes_unknownTechnology_parsesCorrectly() throws Exception {
+        byte[] header = new byte[] {0x0B, 0x5};
+        assertThat(TechnologyHeader.parseBytes(header))
+                .isEqualTo(
+                        TechnologyHeader.builder()
+                                .setRangingTechnology(null)
+                                .setSize(5)
+                                .build());
     }
 
     @Test

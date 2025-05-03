@@ -16,6 +16,9 @@
 
 package com.android.server.ranging.oob;
 
+import android.annotation.Nullable;
+import android.util.Log;
+
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.blerssi.BleRssiOobCapabilities;
 import com.android.server.ranging.cs.CsOobCapabilities;
@@ -30,11 +33,11 @@ import com.google.common.collect.Sets;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import javax.annotation.Nullable;
 
 /** The Capability Response Message Additional Data for Finder OOB. */
 @AutoValue
 public abstract class CapabilityResponseMessage {
+    private static final String TAG = CapabilityResponseMessage.class.getSimpleName();
 
     // Size of properties in bytes when serialized.
     private static final int MIN_SIZE_BYTES = 2;
@@ -66,8 +69,8 @@ public abstract class CapabilityResponseMessage {
         byte[] rangingTechnologiesBytes =
                 Arrays.copyOfRange(payload, parseCursor,
                         parseCursor + RANGING_TECHNOLOGIES_SIZE_BYTES);
-        ImmutableList<RangingTechnology> rangingTechnologies =
-                RangingTechnology.fromBitmap(rangingTechnologiesBytes);
+        ImmutableList<Integer> rangingTechnologies =
+                RangingTechnology.parseBitmap(rangingTechnologiesBytes);
         parseCursor += RANGING_TECHNOLOGIES_SIZE_BYTES;
 
         // Parse Capability data for different ranging technologies
@@ -102,8 +105,10 @@ public abstract class CapabilityResponseMessage {
                     parseCursor += techHeader.getSize();
                     rangingTechnologiesPriority.add(RangingTechnology.RSSI);
                     break;
+                case null:
                 default:
-                    rangingTechnologiesPriority.add(techHeader.getRangingTechnology());
+                    Log.i(TAG, "Skip parsing of capabilities with size "
+                            + techHeader.getSize() + " from unknown technology");
                     parseCursor += techHeader.getSize();
                     break;
             }
@@ -111,7 +116,7 @@ public abstract class CapabilityResponseMessage {
 
         return CapabilityResponseMessage.builder()
                 .setHeader(header)
-                .setSupportedRangingTechnologies(rangingTechnologies)
+                .setSupportedRangingTechnologies(RangingTechnology.filterKnown(rangingTechnologies))
                 .setUwbCapabilities(uwbCapabilities)
                 .setCsCapabilities(csCapabilities)
                 .setRttCapabilities(rttCapabilities)

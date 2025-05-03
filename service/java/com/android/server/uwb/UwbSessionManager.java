@@ -3719,7 +3719,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             }
         }
 
-        @GuardedBy("mControlees")
         private void removeControleeDueToErrorStreakTimeout(UwbAddress address) {
             reconfigureInternal(mSessionHandle,
                     new FiraRangingReconfigureParams.Builder()
@@ -3740,20 +3739,23 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
          */
         public void startRangingResultErrorStreakTimerIfNotSet(UwbAddress address) {
             AlarmManager.OnAlarmListener onAlarm = () -> {
-                synchronized (mControlees) {
-                    Log.w(TAG, "Continuous errors or no ranging results detected from controlee "
-                            + address + " for " + mRangingErrorStreakTimeoutMs + " ms.");
+                Log.w(TAG, "Continuous errors or no ranging results detected from controlee "
+                        + address + " for " + mRangingErrorStreakTimeoutMs + " ms.");
 
-                    if (mControlees.size() - mControleesPendingDisconnection.size() == 1) {
-                        Log.w(TAG, "Last controlee in session has disconnected, stopping session");
-                        if (getSessionState() == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
-                            stopRangingInternal(mSessionHandle, true /* triggeredBySystemPolicy */);
-                        } else {
-                            Log.i(TAG, "Session is not in an active state");
-                        }
+                boolean noControleesRemainAfterDisconnection;
+                synchronized (mControlees) {
+                    noControleesRemainAfterDisconnection =
+                            mControlees.size() - mControleesPendingDisconnection.size() == 1;
+                }
+                if (noControleesRemainAfterDisconnection) {
+                    Log.w(TAG, "Last controlee in session has disconnected, stopping session");
+                    if (getSessionState() == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
+                        stopRangingInternal(mSessionHandle, true /* triggeredBySystemPolicy */);
                     } else {
-                        removeControleeDueToErrorStreakTimeout(address);
+                        Log.i(TAG, "Session is not in an active state");
                     }
+                } else {
+                    removeControleeDueToErrorStreakTimeout(address);
                 }
             };
 

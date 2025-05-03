@@ -16,6 +16,10 @@
 
 package com.android.server.ranging.oob;
 
+import android.util.Log;
+
+import androidx.annotation.Nullable;
+
 import com.android.server.ranging.RangingTechnology;
 
 import com.google.auto.value.AutoValue;
@@ -23,6 +27,7 @@ import com.google.auto.value.AutoValue;
 /** Header for individual technology capability. */
 @AutoValue
 public abstract class TechnologyHeader {
+    private static final String TAG = TechnologyHeader.class.getSimpleName();
 
     public static final int SIZE_BYTES = 2;
 
@@ -36,12 +41,9 @@ public abstract class TechnologyHeader {
 
         int parseCursor = 0;
         byte technologyId = payload[parseCursor++];
-        RangingTechnology rangingTechnology;
-        try {
-            rangingTechnology = RangingTechnology.TECHNOLOGIES.get(technologyId);
-        } catch (IndexOutOfBoundsException e) {
-            throw new IllegalArgumentException(
-                    "Attempted to parse unknown technology with id" + technologyId);
+        RangingTechnology rangingTechnology = RangingTechnology.fromValue(technologyId);
+        if (rangingTechnology == null) {
+            Log.i(TAG, "Parsed unknown technology " + technologyId);
         }
         int size = payload[parseCursor++];
 
@@ -60,8 +62,8 @@ public abstract class TechnologyHeader {
         return SIZE_BYTES;
     }
 
-    /** Returns the version. */
-    public abstract RangingTechnology getRangingTechnology();
+    /** Returns the ranging technology, or null if the technology is unknown. */
+    public abstract @Nullable RangingTechnology getRangingTechnology();
 
     /** Returns the message type. */
     public abstract int getSize();
@@ -76,7 +78,7 @@ public abstract class TechnologyHeader {
     public abstract static class Builder {
         public abstract Builder setSize(int size);
 
-        public abstract Builder setRangingTechnology(RangingTechnology rangingTechnology);
+        public abstract Builder setRangingTechnology(@Nullable RangingTechnology rangingTechnology);
 
         public abstract TechnologyHeader build();
     }

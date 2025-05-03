@@ -200,9 +200,10 @@ public final class SetConfigurationMessageTest {
     }
 
     @Test
-    public void parseBytes_unknownRangingTechnologyId_throwsException() throws Exception {
-        assertThrows(IllegalArgumentException.class,
-                () -> SetConfigurationMessage.parseBytes(setConfigurationMessageUnknownSetBytes));
+    public void parseBytes_unknownRangingTechnologyId_parsesCorrectly() throws Exception {
+        SetConfigurationMessage message =
+                SetConfigurationMessage.parseBytes(setConfigurationMessageUnknownSetBytes);
+        assertThat(message.getRangingTechnologiesSet()).isEmpty();
     }
 
     @Test

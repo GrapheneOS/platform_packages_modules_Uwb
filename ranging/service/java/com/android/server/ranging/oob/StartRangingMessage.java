@@ -51,8 +51,8 @@ public abstract class StartRangingMessage {
 
         int parseCursor = header.getSize();
         ImmutableList<RangingTechnology> rangingTechnologiesToStart =
-                RangingTechnology.fromBitmap(
-                        Arrays.copyOfRange(payload, parseCursor, parseCursor + SIZE_IN_BYTES));
+                RangingTechnology.filterKnown(RangingTechnology.parseBitmap(
+                        Arrays.copyOfRange(payload, parseCursor, parseCursor + SIZE_IN_BYTES)));
 
         return builder()
                 .setOobHeader(header)
