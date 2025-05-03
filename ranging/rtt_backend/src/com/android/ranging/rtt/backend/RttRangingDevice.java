@@ -55,7 +55,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RttRangingDevice {
     private static final String TAG = RttRangingDevice.class.getName();
     private static final int GRAPI_RTT_MESSAGE_ID = 1;
-    private static final int MAX_RANGING_RESULT_ERROR_STREAK = 5;
+    private static final int MAX_RANGING_RESULT_ERROR_STREAK = 60_000;
+    private static final int RTT_RESULT_EXPECTED_DELAY = 500;
     private final Handler mHandler;
     private final WifiAwareManager mWifiAwareManager;
     private WifiAwareSession mWifiAwareSession;
@@ -109,6 +110,11 @@ public class RttRangingDevice {
             }
         }
 
+        private int getMaxRangingResultError() {
+            return MAX_RANGING_RESULT_ERROR_STREAK
+                    / (mRangingRequestDelay + RTT_RESULT_EXPECTED_DELAY);
+        }
+
         @Override
         public void onRangingResults(List<RangingResult> results) {
             if (results == null || results.isEmpty()) {
@@ -118,7 +124,7 @@ public class RttRangingDevice {
             RangingResult result = results.get(0);
             int status = result.getStatus();
             if (status != RangingResult.STATUS_SUCCESS) {
-                if (mResultErrorStreak.incrementAndGet() >= MAX_RANGING_RESULT_ERROR_STREAK) {
+                if (mResultErrorStreak.incrementAndGet() >= getMaxRangingResultError()) {
                     onRangingFailure(RttRangerListener.STATUS_CODE_ERROR_STREAK_TIMEOUT);
                 }
                 return;
