@@ -32,7 +32,9 @@ import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_DT_TAG;
 import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP1;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -93,7 +95,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -1956,6 +1960,31 @@ public class UwbManagerTest {
         }
     }
 
+    private class ChannelUsageCallback implements UwbManager.ChannelUsageCallback {
+
+        private CountDownLatch mCountDownLatch;
+        public boolean mChannelUsageUpdatedCalled = false;
+        public Map<Integer, Boolean> mChannelUsageMap = new HashMap<>();
+
+        ChannelUsageCallback(CountDownLatch countDownLatch) {
+            mCountDownLatch = countDownLatch;
+        }
+        public void replaceCountDownLatch(CountDownLatch countDownLatch) {
+            mCountDownLatch = countDownLatch;
+        }
+
+        public void reset() {
+            mChannelUsageUpdatedCalled = false;
+            mChannelUsageMap = new HashMap<>();
+        }
+        @Override
+        public void onChanged(@NonNull Map<Integer, Boolean> channelUsage) {
+            mCountDownLatch.countDown();
+            mChannelUsageUpdatedCalled = true;
+            mChannelUsageMap = channelUsage;
+        }
+    }
+
     private class UwbOemExtensionCallback implements UwbManager.UwbOemExtensionCallback {
         public PersistableBundle mSessionChangeNtf;
         public PersistableBundle mDeviceStatusNtf;
@@ -2144,6 +2173,107 @@ public class UwbManagerTest {
             }
             try {
                 mUwbManager.unregisterUwbOemExtensionCallback(uwbOemExtensionCallback);
+            } catch (SecurityException e) {
+                /* pass */
+                fail();
+            }
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2,C-1-5"})
+    @RequiresFlagsEnabled(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public void testChannelUsageCallback() throws Exception {
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        CancellationSignal cancellationSignal = null;
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        CountDownLatch resultCountDownLatch = new CountDownLatch(1);
+
+        CountDownLatch channelUsageCountDownLatch = new CountDownLatch(1);
+        ChannelUsageCallback channelUsageCallback = new ChannelUsageCallback(
+                channelUsageCountDownLatch);
+
+        int sessionId = 1;
+        int channel = 9;
+        RangingSessionCallback rangingSessionCallback =
+                new RangingSessionCallback(countDownLatch, resultCountDownLatch);
+        FiraOpenSessionParams firaOpenSessionParams = new FiraOpenSessionParams.Builder()
+                .setProtocolVersion(new FiraProtocolVersion(1, 1))
+                .setSessionId(sessionId)
+                .setChannelNumber(channel)
+                .setStsConfig(FiraParams.STS_CONFIG_STATIC)
+                .setVendorId(new byte[]{0x5, 0x6})
+                .setStaticStsIV(new byte[]{0x5, 0x6, 0x9, 0xa, 0x4, 0x6})
+                .setDeviceType(FiraParams.RANGING_DEVICE_TYPE_CONTROLLER)
+                .setDeviceRole(FiraParams.RANGING_DEVICE_ROLE_INITIATOR)
+                .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_UNICAST)
+                .setDeviceAddress(UwbAddress.fromBytes(new byte[]{0x5, 6}))
+                .setDestAddressList(List.of(UwbAddress.fromBytes(new byte[]{0x5, 6})))
+                .build();
+        try {
+            // Needs UWB_PRIVILEGED & UWB_RANGING permission which is held by shell.
+            uiAutomation.adoptShellPermissionIdentity();
+            mUwbManager.registerChannelUsageCallback(
+                    Executors.newCachedThreadPool(), channelUsageCallback);
+            assertThat(channelUsageCallback.mCountDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
+            assertThat(channelUsageCallback.mChannelUsageUpdatedCalled).isTrue();
+            // Start ranging session
+            cancellationSignal = mUwbManager.openRangingSession(
+                    firaOpenSessionParams.toBundle(),
+                    Executors.newSingleThreadExecutor(),
+                    rangingSessionCallback,
+                    mDefaultChipId);
+            // Wait for the on opened callback.
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            countDownLatch = new CountDownLatch(1);
+
+            rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+            channelUsageCallback.replaceCountDownLatch(new CountDownLatch(1));
+            channelUsageCallback.reset();
+            rangingSessionCallback.rangingSession.start(new PersistableBundle());
+            // Wait for the on started callback.
+            assertThat(countDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
+
+            // Wait for the on ranging report callback.
+            assertThat(resultCountDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.rangingReport).isNotNull();
+            assertThat(channelUsageCallback.mCountDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(channelUsageCallback.mChannelUsageUpdatedCalled).isTrue();
+            Map<Integer, Boolean> channelUsageMap = channelUsageCallback.mChannelUsageMap;
+            assertTrue(channelUsageMap.get(channel));
+            channelUsageCallback.reset();
+
+            // Check the UWB state.
+            assertThat(mUwbManager.getAdapterState()).isEqualTo(STATE_ENABLED_ACTIVE);
+
+            countDownLatch = new CountDownLatch(1);
+            rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+            // Stop ongoing session.
+            rangingSessionCallback.rangingSession.stop();
+            channelUsageCallback.replaceCountDownLatch(new CountDownLatch(1));
+            assertThat(channelUsageCallback.mCountDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
+            assertThat(channelUsageCallback.mChannelUsageUpdatedCalled).isTrue();
+            channelUsageMap = channelUsageCallback.mChannelUsageMap;
+            assertFalse(channelUsageMap.get(channel));
+            channelUsageCallback.reset();
+            // Wait for on stopped callback.
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.onStoppedCalled).isTrue();
+        } finally {
+            if (cancellationSignal != null) {
+                countDownLatch = new CountDownLatch(1);
+                rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+
+                // Close session.
+                cancellationSignal.cancel();
+
+                // Wait for the on closed callback.
+                assertThat(countDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
+                assertThat(rangingSessionCallback.onClosedCalled).isTrue();
+            }
+            try {
+                mUwbManager.unregisterChannelUsageCallback(channelUsageCallback);
             } catch (SecurityException e) {
                 /* pass */
                 fail();

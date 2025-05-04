@@ -17,6 +17,7 @@ package com.android.server.uwb;
 
 import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE;
 
+import static com.android.server.uwb.data.UwbUciConstants.CHANNEL_9;
 import static com.android.server.uwb.data.UwbUciConstants.DEVICE_TYPE_CONTROLLER;
 import static com.android.server.uwb.data.UwbUciConstants.FIRA_VERSION_MAJOR_2;
 import static com.android.server.uwb.data.UwbUciConstants.MAC_ADDRESSING_MODE_EXTENDED;
@@ -595,6 +596,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 if (prevState == UwbUciConstants.UWB_SESSION_STATE_ACTIVE) {
                     // If session was stopped explicitly, then the onStopped() is sent from
                     // stopRanging method.
+                    mUwbInjector.getUwbServiceCore().updateChannelUsageOnRangingStopped(
+                            uwbSession.mChannel);
                     if (reasonCode != REASON_STATE_CHANGE_WITH_SESSION_MANAGEMENT_COMMANDS) {
                         mSessionNotificationManager.onRangingStoppedWithUciReasonCode(
                                 uwbSession, reasonCode);
@@ -2277,6 +2280,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
                                 mSessionNotificationManager.onRangingStarted(
                                         uwbSession, rangingStartedParams);
+                                mUwbInjector.getUwbServiceCore().updateChannelUsageOnRangingStarted(
+                                        uwbSession.mChannel);
                                 if (uwbSession.hasNonPrivilegedApp()
                                         && !uwbSession.hasNonPrivilegedFgAppOrService()) {
                                     Log.i(TAG, "Session " + uwbSession.getSessionId()
@@ -2937,6 +2942,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         private boolean mNeedsQueryUwbsTimestamp = false;
         private UwbMulticastListUpdateStatus mMulticastListUpdateStatus;
         private final int mProfileType;
+        private final int mChannel;
 
         /**
          * Keeps track of per-controlee error streak timers for ranging sessions with multiple
@@ -3068,6 +3074,18 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             this.mDataSndSequenceNumber = 0;
             this.mSendDataInfoMap = new ConcurrentHashMap<>();
             this.mMulticastRangingErrorStreakTimerListeners = new ConcurrentHashMap<>();
+            this.mChannel = getChannelFromParams(params);
+        }
+
+        public int getChannelFromParams(Params params) {
+            if (params instanceof FiraOpenSessionParams) {
+                return ((FiraOpenSessionParams) params).getChannelNumber();
+            } else if (params instanceof CccOpenRangingParams) {
+                return ((CccOpenRangingParams) params).getChannel();
+            } else if (params instanceof AliroOpenRangingParams) {
+                return ((AliroOpenRangingParams) params).getChannel();
+            }
+            return CHANNEL_9;
         }
 
         /**
