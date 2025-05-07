@@ -453,7 +453,7 @@ public abstract class RangingDevice {
             @WorkerThread
             @Override
             public void onControleeRemoveFailed(int reason, PersistableBundle params) {
-                mOpAsyncCallbackRunner.complete(false);
+                mOpAsyncCallbackRunner.completeIfActive(false);
             }
         };
     }
