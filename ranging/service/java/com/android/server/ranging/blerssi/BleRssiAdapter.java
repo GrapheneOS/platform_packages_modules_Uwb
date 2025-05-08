@@ -172,8 +172,14 @@ public class BleRssiAdapter implements RangingAdapter {
                 bleRssiConfig.getSessionConfig().getDataNotificationConfig(),
                 bleRssiConfig.getSessionConfig().getDataNotificationConfig());
 
-        distanceMeasurementManager.startMeasurementSession(params,
-                Executors.newSingleThreadExecutor(), mDistanceMeasurementCallback);
+        try {
+            distanceMeasurementManager.startMeasurementSession(params,
+                    Executors.newSingleThreadExecutor(), mDistanceMeasurementCallback);
+        } catch (IllegalStateException e) {
+            Log.e(TAG, "Error starting BLE RSSI session", e);
+            closeForReason(InternalReason.INTERNAL_ERROR);
+            return;
+        }
         // Added callback here to be consistent with other ranging technology.
         mCallbacks.onStarted(ImmutableSet.of(bleRssiConfig.getPeerDevice()));
         if (mConfig.getSessionConfig().getRangingMeasurementsLimit() > 0) {
