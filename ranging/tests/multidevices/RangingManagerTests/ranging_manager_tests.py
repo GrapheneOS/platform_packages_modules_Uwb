@@ -1,5 +1,4 @@
-#  Copyright (C) 2024 The Android Open Source Project
-#
+# Copyright (C) 2024 The Android Open Source Project
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at
@@ -47,6 +46,7 @@ _TEST_CASES = [
     "test_one_to_one_ble_cs_ranging_with_oob",
     "test_uwb_ranging_measurement_limit",
     "test_ble_rssi_ranging_measurement_limit",
+    "test_ble_cs_ranging_measurement_limit",
     "test_one_to_one_wifi_rtt_ranging_with_oob",
     "test_one_to_one_ble_rssi_ranging_with_oob",
     "test_oob_responder_persists_until_explicitly_stopped",
@@ -887,6 +887,55 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     finally:
       session.stop_and_assert_closed(check_responders=False)
       self._ble_unbond()
+
+  def test_ble_cs_ranging_measurement_limit(self):
+      """Verifies ble cs ranging with measurement limit."""
+      asserts.skip_if(self._is_cuttlefish_device(self.initiator.ad),
+                      "Skipping BLE CS test on Cuttlefish")
+      SESSION_HANDLE = str(uuid4())
+      TECHNOLOGIES = {RangingTechnology.BLE_CS}
+
+      asserts.skip_if(
+          not self.responder.is_ranging_technology_supported(RangingTechnology.BLE_CS),
+          f"BLE CS not supported by responder",
+      )
+      asserts.skip_if(
+          not self.initiator.is_ranging_technology_supported(RangingTechnology.BLE_CS),
+          f"BLE CS not supported by initiator",
+      )
+      self._enable_bt()
+
+      try:
+          self._ble_bond()
+      except Exception as e:
+          asserts.skip("Failed to create ble bond", str(e))
+
+      try:
+        initiator_preference = RangingPreference(
+              device_role=DeviceRole.INITIATOR,
+              ranging_params=RawInitiatorRangingParams(
+                  peer_params=[
+                      DeviceParams(
+                          peer_id=self.responder.id,
+                          cs_params=cs.CsRangingParams(
+                              peer_address=self.responder.bt_addr,
+                          ),
+                      )
+                  ],
+              ),
+              measurement_limit=4,
+        )
+        self.initiator.start_ranging_and_assert_opened(
+            SESSION_HANDLE, initiator_preference
+        )
+        time.sleep(10)
+        self.initiator.assert_close_ranging_event_received(SESSION_HANDLE)
+
+      finally:
+        self._ble_unbond()
+
+
+
 
   def test_one_to_one_wifi_rtt_ranging_with_oob(self):
       asserts.skip_if(
