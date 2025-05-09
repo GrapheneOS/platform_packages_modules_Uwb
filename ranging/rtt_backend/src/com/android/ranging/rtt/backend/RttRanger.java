@@ -135,9 +135,11 @@ public class RttRanger {
 
         @Override
         public void onRangingResults(List<RangingResult> results) {
-            setPeriodicAlarm(Math.max(mRangingRequestDelay,
-                    mCurrentUpdateRateMs - (SystemClock.elapsedRealtime()
-                            - mLastRangingRequestTimestamp.get())));
+            if (mIsRunning) {
+                setPeriodicAlarm(Math.max(mRangingRequestDelay,
+                        mCurrentUpdateRateMs - (SystemClock.elapsedRealtime()
+                                - mLastRangingRequestTimestamp.get())));
+            }
             Log.i(TAG, "RTT ranging results: " + results);
             if (mRttRangerListener == null) {
                 Log.w(TAG, "Rtt Ranging Listener is null");
