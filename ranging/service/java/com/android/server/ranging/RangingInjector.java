@@ -142,11 +142,11 @@ public class RangingInjector {
                 return new UwbAdapter(
                         mContext, this, attributionSource, executor, config.getDeviceRole());
             case CS:
-                return new CsAdapter(mContext, this);
+                return new CsAdapter(mContext, attributionSource, this);
             case RTT:
                 return new RttAdapter(mContext, this, executor, config.getDeviceRole());
             case RSSI:
-                return new BleRssiAdapter(mContext, this);
+                return new BleRssiAdapter(mContext, attributionSource, this);
             default:
                 throw new IllegalArgumentException(
                         "Adapter does not exist for technology " + config.getTechnology());
