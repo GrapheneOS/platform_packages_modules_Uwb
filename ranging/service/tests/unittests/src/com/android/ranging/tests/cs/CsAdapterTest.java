@@ -112,6 +112,7 @@ public class CsAdapterTest {
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
+        when(mMockContext.createContext(any())).thenReturn(mMockContext);
         when(mMockContext.getSystemService(BluetoothManager.class)).thenReturn(
                 mMockBluetoothManager);
         when(mMockContext.getSystemService(BluetoothAdapter.class)).thenReturn(
@@ -138,7 +139,7 @@ public class CsAdapterTest {
         when(mMockRangingInjector.isForegroundAppOrService(anyInt(), anyString())).thenReturn(true);
         RangingInjector.setInstance(mMockRangingInjector);
         when(mMockRangingInjector.isRangingTechnologyEnabled(any())).thenReturn(true);
-        mCsAdapter = new CsAdapter(mMockContext, mMockRangingInjector);
+        mCsAdapter = new CsAdapter(mMockContext, mMockAttributionSource, mMockRangingInjector);
     }
 
     @Test
