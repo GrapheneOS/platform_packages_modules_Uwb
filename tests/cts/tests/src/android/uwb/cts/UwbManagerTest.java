@@ -33,6 +33,7 @@ import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP1;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -278,7 +279,19 @@ public class UwbManagerTest {
         UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            assertThat(mUwbManager.queryUwbsTimestampMicros() > 0L).isTrue();
+            long prev = mUwbManager.queryUwbsTimestampMicros();
+            assertTrue(prev > 0);
+            for (int i  = 0; i < 10; i++) {
+                Thread.sleep(1); // Sleep for 1ms.
+                long next = mUwbManager.queryUwbsTimestampMicros();
+                // Accounting for 1ms sleep.
+                assertTrue(next > prev + 1_000);
+                // Time between 2 successive timestamp is < 25 ms
+                assertTrue(next < prev + 25_000);
+                prev = next;
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
