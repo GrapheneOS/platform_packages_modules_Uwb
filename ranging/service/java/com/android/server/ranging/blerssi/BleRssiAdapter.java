@@ -34,6 +34,7 @@ import android.bluetooth.le.DistanceMeasurementResult;
 import android.bluetooth.le.DistanceMeasurementSession;
 import android.content.AttributionSource;
 import android.content.Context;
+import android.content.ContextParams;
 import android.os.SystemClock;
 import android.ranging.DataNotificationConfig;
 import android.ranging.RangingData;
@@ -79,13 +80,17 @@ public class BleRssiAdapter implements RangingAdapter {
 
     private final AlarmManager.OnAlarmListener mMeasurementLimitListener;
 
-    public BleRssiAdapter(@NonNull Context context, RangingInjector rangingInjector) {
+    public BleRssiAdapter(@NonNull Context context,
+            AttributionSource attributionSource,
+            RangingInjector rangingInjector) {
         if (!RangingTechnology.RSSI.isSupported(context)) {
             throw new IllegalArgumentException("BT_RSSI system feature not found.");
         }
-        mContext = context;
+        mContext = context.createContext(
+                new ContextParams.Builder().setNextAttributionSource(attributionSource).build()
+        );
         mRangingInjector = rangingInjector;
-        mBluetoothAdapter = context.getSystemService(BluetoothManager.class).getAdapter();
+        mBluetoothAdapter = mContext.getSystemService(BluetoothManager.class).getAdapter();
         mStateMachine = new StateMachine<>(State.STOPPED);
         mCallbacks = null;
         mSession = null;
@@ -94,7 +99,7 @@ public class BleRssiAdapter implements RangingAdapter {
                 new DataNotificationConfig.Builder().build(),
                 new DataNotificationConfig.Builder().build()
         );
-        mAlarmManager = mContext.getSystemService(AlarmManager.class);
+        mAlarmManager = context.getSystemService(AlarmManager.class);
         mMeasurementLimitListener = () -> {
             Log.i(TAG, "Measurements limit exceeded. Stopping the session");
             Executors.newCachedThreadPool().execute(this::stop);
@@ -172,8 +177,14 @@ public class BleRssiAdapter implements RangingAdapter {
                 bleRssiConfig.getSessionConfig().getDataNotificationConfig(),
                 bleRssiConfig.getSessionConfig().getDataNotificationConfig());
 
-        distanceMeasurementManager.startMeasurementSession(params,
-                Executors.newSingleThreadExecutor(), mDistanceMeasurementCallback);
+        try {
+            distanceMeasurementManager.startMeasurementSession(params,
+                    Executors.newSingleThreadExecutor(), mDistanceMeasurementCallback);
+        } catch (IllegalStateException e) {
+            Log.e(TAG, "Error starting BLE RSSI session", e);
+            closeForReason(InternalReason.INTERNAL_ERROR);
+            return;
+        }
         // Added callback here to be consistent with other ranging technology.
         mCallbacks.onStarted(ImmutableSet.of(bleRssiConfig.getPeerDevice()));
         if (mConfig.getSessionConfig().getRangingMeasurementsLimit() > 0) {

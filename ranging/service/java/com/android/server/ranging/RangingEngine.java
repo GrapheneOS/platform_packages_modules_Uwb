@@ -270,6 +270,10 @@ public class RangingEngine {
             selectable.remove(RangingTechnology.CS);
         }
 
+        if (selectable.contains(RangingTechnology.CS)) {
+            selectable.remove(RangingTechnology.RSSI);
+        }
+
         if (selectable.isEmpty()) {
             throw new ConfigSelectionException("Peer does not support any requested technologies",
                     InternalReason.PEER_CAPABILITIES_MISMATCH);
