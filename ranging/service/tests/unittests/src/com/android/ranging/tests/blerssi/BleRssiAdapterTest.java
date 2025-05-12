@@ -111,7 +111,6 @@ public class BleRssiAdapterTest {
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
-        when(mMockContext.createContext(any())).thenReturn(mMockContext);
         when(mMockContext.getSystemService(BluetoothManager.class)).thenReturn(
                 mMockBluetoothManager);
         when(mMockContext.getSystemService(BluetoothAdapter.class)).thenReturn(
@@ -135,8 +134,7 @@ public class BleRssiAdapterTest {
         when(mMockRangingInjector.isForegroundAppOrService(anyInt(), anyString())).thenReturn(true);
         RangingInjector.setInstance(mMockRangingInjector);
         when(mMockRangingInjector.isRangingTechnologyEnabled(any())).thenReturn(true);
-        mBleRssiAdapter = new BleRssiAdapter(mMockContext, mMockAttributionSource,
-                mMockRangingInjector);
+        mBleRssiAdapter = new BleRssiAdapter(mMockContext, mMockRangingInjector);
     }
 
     @Test

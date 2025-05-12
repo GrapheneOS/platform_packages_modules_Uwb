@@ -34,7 +34,6 @@ import android.bluetooth.le.DistanceMeasurementResult;
 import android.bluetooth.le.DistanceMeasurementSession;
 import android.content.AttributionSource;
 import android.content.Context;
-import android.content.ContextParams;
 import android.os.SystemClock;
 import android.ranging.DataNotificationConfig;
 import android.ranging.RangingData;
@@ -80,17 +79,13 @@ public class BleRssiAdapter implements RangingAdapter {
 
     private final AlarmManager.OnAlarmListener mMeasurementLimitListener;
 
-    public BleRssiAdapter(@NonNull Context context,
-            AttributionSource attributionSource,
-            RangingInjector rangingInjector) {
+    public BleRssiAdapter(@NonNull Context context, RangingInjector rangingInjector) {
         if (!RangingTechnology.RSSI.isSupported(context)) {
             throw new IllegalArgumentException("BT_RSSI system feature not found.");
         }
-        mContext = context.createContext(
-                new ContextParams.Builder().setNextAttributionSource(attributionSource).build()
-        );
+        mContext = context;
         mRangingInjector = rangingInjector;
-        mBluetoothAdapter = mContext.getSystemService(BluetoothManager.class).getAdapter();
+        mBluetoothAdapter = context.getSystemService(BluetoothManager.class).getAdapter();
         mStateMachine = new StateMachine<>(State.STOPPED);
         mCallbacks = null;
         mSession = null;
@@ -99,7 +94,7 @@ public class BleRssiAdapter implements RangingAdapter {
                 new DataNotificationConfig.Builder().build(),
                 new DataNotificationConfig.Builder().build()
         );
-        mAlarmManager = context.getSystemService(AlarmManager.class);
+        mAlarmManager = mContext.getSystemService(AlarmManager.class);
         mMeasurementLimitListener = () -> {
             Log.i(TAG, "Measurements limit exceeded. Stopping the session");
             Executors.newCachedThreadPool().execute(this::stop);
