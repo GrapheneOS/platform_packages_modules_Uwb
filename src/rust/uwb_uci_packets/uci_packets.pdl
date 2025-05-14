@@ -194,7 +194,8 @@ enum DataTransferNtfStatusCode : 8 {
 // The UCI spec defines these status codes for a SESSION_DATA_TRANSFER_PHASE_CONFIG_NTF packet.
 enum DataTransferPhaseConfigUpdateStatusCode : 8 {
     UCI_DTPCM_CONFIG_SUCCESS_STATUS_OK = 0x00,
-    UCI_DTPCM_STATUS_ERROR_DUPLICATE_SLOT_ASSIGMENT = 0x01,
+    UCI_DTPCM_STATUS_ERROR_DUPLICATE_SLOT_ASSIGNMENT = 0x01,
+    UCI_DTPCM_STATUS_ERROR_DTPML_OVERSIZE = 0x02,
 }
 
 enum ResetConfig : 8 {
