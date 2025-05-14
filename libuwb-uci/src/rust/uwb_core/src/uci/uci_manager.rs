@@ -1717,6 +1717,12 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                     credit_availability,
                 })
             }
+            SessionNotification::SessionRoleChangeNtf { session_token, device_role } => {
+                Ok(SessionNotification::SessionRoleChangeNtf {
+                    session_token: self.get_session_id(&session_token).await?,
+                    device_role,
+                })
+            }
             SessionNotification::DataTransferPhaseConfig { session_token, status } => {
                 Ok(SessionNotification::DataTransferPhaseConfig {
                     session_token: self.get_session_id(&session_token).await?,
