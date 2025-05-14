@@ -498,6 +498,34 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         }
     }
 
+    boolean updateDeviceRole(UwbSession uwbSession, int deviceRole) {
+        if (uwbSession.mParams instanceof FiraOpenSessionParams) {
+            FiraOpenSessionParams firaOpenSessionParams =
+                    (FiraOpenSessionParams) uwbSession.mParams;
+            if (firaOpenSessionParams.getDeviceType() == FiraParams.RANGING_DEVICE_TYPE_CONTROLEE) {
+                uwbSession.mParams = firaOpenSessionParams.toBuilder()
+                        .setDeviceRole(deviceRole)
+                        .build();
+                return true;
+            } else {
+                Log.e(TAG, "Device role update received for controller device type");
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public void onControleeRoleChanged(long sessionId, int deviceRole) {
+        UwbSession uwbSession = getUwbSession((int) sessionId);
+        if (uwbSession != null) {
+            if (updateDeviceRole(uwbSession, deviceRole)) {
+                mSessionNotificationManager.onControleeRoleChanged(uwbSession, deviceRole);
+            }
+        } else {
+            Log.i(TAG, "Session is not initialized or Null");
+        }
+    }
+
     @Override
     public void onRadarDataMessageReceived(UwbRadarData radarData) {
         Trace.beginSection("UWB#onRadarDataMessageReceived");

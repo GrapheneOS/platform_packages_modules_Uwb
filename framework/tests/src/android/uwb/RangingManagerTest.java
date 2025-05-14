@@ -307,6 +307,9 @@ public class RangingManagerTest {
 
             rangingManager.onRemoteLogicalLinkRequested(handle, any());
             verify(callback, times(1)).onRemoteLogicalLinkRequested(any());
+
+            rangingManager.onControleeRoleChanged(handle, anyInt());
+            verify(callback, times(1)).onControleeRoleChanged(anyInt());
         }
 
         rangingManager.onRangingClosed(handle, REASON, PARAMS);

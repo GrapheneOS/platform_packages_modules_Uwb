@@ -5873,6 +5873,48 @@ public class UwbSessionManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(com.android.uwb.flags.Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public void testOnControleeRoleChanged_success() throws Exception {
+        assumeTrue(com.android.uwb.flags.Flags.uwbFira3025q4());
+        Params params = setupFiraParams(FIRA_VERSION_2_0);
+        FiraOpenSessionParams firaParams = new
+                FiraOpenSessionParams.Builder((FiraOpenSessionParams) params)
+                        .setDeviceType(FiraParams.RANGING_DEVICE_TYPE_CONTROLEE)
+                        .build();
+        UwbSession uwbSession = prepareExistingUwbSession(firaParams);
+        SessionHandle mockSessionHandle = mock(SessionHandle.class);
+        mUwbSessionManager.mSessionTable.put(mockSessionHandle, uwbSession);
+
+        doReturn(uwbSession).when(mUwbSessionManager).getUwbSession(anyInt());
+
+        mUwbSessionManager.onControleeRoleChanged(SESSION_TOKEN,
+                FiraParams.RANGING_DEVICE_ROLE_INITIATOR);
+
+        verify(mUwbSessionNotificationManager).onControleeRoleChanged(any(), anyInt());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.uwb.flags.Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public void testOnControleeRoleChanged_failure() throws Exception {
+        assumeTrue(com.android.uwb.flags.Flags.uwbFira3025q4());
+        Params params = setupFiraParams(FIRA_VERSION_2_0);
+        FiraOpenSessionParams firaParams = new
+                FiraOpenSessionParams.Builder((FiraOpenSessionParams) params)
+                        .setDeviceType(FiraParams.RANGING_DEVICE_TYPE_CONTROLLER)
+                        .build();
+        UwbSession uwbSession = prepareExistingUwbSession(firaParams);
+        SessionHandle mockSessionHandle = mock(SessionHandle.class);
+        mUwbSessionManager.mSessionTable.put(mockSessionHandle, uwbSession);
+
+        doReturn(uwbSession).when(mUwbSessionManager).getUwbSession(anyInt());
+
+        mUwbSessionManager.onControleeRoleChanged(SESSION_TOKEN,
+                FiraParams.RANGING_DEVICE_ROLE_INITIATOR);
+
+        verify(mUwbSessionNotificationManager, never()).onControleeRoleChanged(any(), anyInt());
+    }
+
+    @Test
     public void testHandleClientDeath() throws Exception {
         UwbSession uwbSession = prepareExistingUwbSession();
         when(mNativeUwbManager.deInitSession(eq(TEST_SESSION_ID), anyString()))

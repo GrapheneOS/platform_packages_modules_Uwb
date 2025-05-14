@@ -48,6 +48,7 @@ android_test {
         "service-uwb-pre-jarjar",
         "com.uwb.fusion",
         "flag-junit",
+        "uwb_flags_lib",
         "platform-test-annotations",
         "uwb_flags_lib",
     ],
