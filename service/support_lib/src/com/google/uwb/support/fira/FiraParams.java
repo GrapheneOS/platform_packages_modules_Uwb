@@ -651,18 +651,23 @@ public abstract class FiraParams extends Params {
     public static final int STATUS_CODE_DATA_TRANSFER_NTF_STATUS_INVALID_FORMAT = 7;
 
     /**
-     * Table TBD: Status codes in the SESSION_DATA_TRANSFER_PHASE_CONFIGURATION_NTF.
+     * Status codes for Data Transfer configuration as per Table 56 of the FiRa specification.
+     *
+     * <p>These codes indicate the result of DTPCM (Data Transfer Protocol Control Message)
+     * configuration.
      */
     @IntDef(
             value = {
                     STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_DTPCM_CONFIG_SUCCESS,
-                    STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_ERROR_DUPLICATE_SLOT_ASSIGNMENT
+                    STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_ERROR_DUPLICATE_SLOT_ASSIGNMENT,
+                    STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_ERROR_DTPML_OVERSIZE,
             })
     public @interface DataTransferPhaseConfigNtfStatusCode {}
 
     public static final int STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_DTPCM_CONFIG_SUCCESS = 0;
     public static final int
             STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_ERROR_DUPLICATE_SLOT_ASSIGNMENT = 1;
+    public static final int STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_ERROR_DTPML_OVERSIZE = 2;
 
     /** State change reason codes defined in UCI table-15 */
     @IntDef(
