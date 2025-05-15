@@ -40,10 +40,14 @@ import android.util.Log;
 import androidx.annotation.RequiresApi;
 
 import com.android.internal.annotations.GuardedBy;
+import com.android.uwb.flags.Flags;
 
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
@@ -72,6 +76,7 @@ public final class UwbManager {
     private final RangingManager mRangingManager;
     private final UwbVendorUciCallbackListener mUwbVendorUciCallbackListener;
     private final UwbOemExtensionCallbackListener mUwbOemExtensionCallbackListener;
+    private final ChannelUsageCallbackListener mChannelUsageCallbackListener;
 
     /**
      * Interface for receiving UWB adapter state changes
@@ -407,6 +412,70 @@ public final class UwbManager {
     }
 
     /**
+     * UWB Channels.
+     *
+     * @hide
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @Target({ElementType.TYPE_USE})
+    @IntDef(
+            value = {
+                    UWB_CHANNEL_5,
+                    UWB_CHANNEL_6,
+                    UWB_CHANNEL_8,
+                    UWB_CHANNEL_9,
+                    UWB_CHANNEL_10,
+                    UWB_CHANNEL_12,
+                    UWB_CHANNEL_13,
+                    UWB_CHANNEL_14,
+            })
+
+    public @interface UwbChannel {
+    }
+
+    /** UWB channel 5 */
+    @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public static final int UWB_CHANNEL_5 = 5;
+    /** UWB channel 6 */
+    @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public static final int UWB_CHANNEL_6 = 6;
+    /** UWB channel 8 */
+    @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public static final int UWB_CHANNEL_8 = 8;
+    /** UWB channel 9 */
+    @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public static final int UWB_CHANNEL_9 = 9;
+    /** UWB channel 10 */
+    @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public static final int UWB_CHANNEL_10 = 10;
+    /** UWB channel 12 */
+    @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public static final int UWB_CHANNEL_12 = 12;
+    /** UWB channel 13 */
+    @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public static final int UWB_CHANNEL_13 = 13;
+    /** UWB channel 14 */
+    @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public static final int UWB_CHANNEL_14 = 14;
+
+    /**
+     * Interface for receiving channel usage status.
+     */
+    @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public interface ChannelUsageCallback {
+
+        /**
+         * Invoked when UWB channel usage has changed. This change occurs when UWB sessions are
+         * started/stopped by apps.
+         *
+         * @param channelUsage Map with {@link UwbChannel} as key and a boolean value indicating
+         *     whether the channel is currently in use. A value of {@code true} indicates that the
+         *     channel is in use, while {@code false} indicates that it is not.
+         */
+        void onChanged(@NonNull Map<@UwbChannel Integer, Boolean> channelUsage);
+    }
+
+    /**
      * Use <code>Context.getSystemService(UwbManager.class)</code> to get an instance.
      *
      * @param ctx Context of the client.
@@ -420,6 +489,7 @@ public final class UwbManager {
         mRangingManager = new RangingManager(adapter);
         mUwbVendorUciCallbackListener = new UwbVendorUciCallbackListener(adapter);
         mUwbOemExtensionCallbackListener = new UwbOemExtensionCallbackListener(adapter);
+        mChannelUsageCallbackListener = new ChannelUsageCallbackListener(adapter);
     }
 
     /**
@@ -513,6 +583,36 @@ public final class UwbManager {
     @RequiresPermission(permission.UWB_PRIVILEGED)
     public void unregisterUwbOemExtensionCallback(@NonNull UwbOemExtensionCallback callback) {
         mUwbOemExtensionCallbackListener.unregister(callback);
+    }
+
+    /**
+     * Register {@link ChannelUsageCallback} to listen for UWB channel usage.
+     * <p>The provided callback will be invoked by the given {@link Executor}.
+     *
+     * @param executor an {@link Executor} to execute given callback
+     * @param callback an implementation of {@link ChannelUsageCallback}
+     */
+    @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    @RequiresPermission(permission.UWB_PRIVILEGED)
+    public void registerChannelUsageCallback(@NonNull @CallbackExecutor Executor executor,
+            @NonNull ChannelUsageCallback callback) {
+        mChannelUsageCallbackListener.register(executor, callback);
+    }
+
+    /**
+     * Unregister the specified {@link ChannelUsageCallback}
+     *
+     * <p>The same {@link ChannelUsageCallback} object used when calling
+     * {@link #registerChannelUsageCallback(Executor, ChannelUsageCallback)} must be used.
+     *
+     * <p>Callbacks are automatically unregistered when an application process goes away
+     *
+     * @param callback an implementation of {@link ChannelUsageCallback}
+     */
+    @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    @RequiresPermission(permission.UWB_PRIVILEGED)
+    public void unregisterChannelUsageCallback(@NonNull ChannelUsageCallback callback) {
+        mChannelUsageCallbackListener.unregister(callback);
     }
 
     /**
