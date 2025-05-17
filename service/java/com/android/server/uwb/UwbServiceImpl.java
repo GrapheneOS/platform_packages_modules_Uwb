@@ -35,6 +35,7 @@ import android.os.RemoteException;
 import android.os.UserManager;
 import android.provider.Settings;
 import android.util.Log;
+import android.uwb.IChannelUsageCallback;
 import android.uwb.IOnUwbActivityEnergyInfoListener;
 import android.uwb.IUwbAdapter;
 import android.uwb.IUwbAdapterStateCallbacks;
@@ -230,6 +231,22 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
         Log.i(TAG, "Unregister the callback");
         enforceUwbPrivilegedPermission();
         mUwbServiceCore.unregisterVendorExtensionCallback(callbacks);
+    }
+
+    @Override
+    public void registerChannelUsageCallback(IChannelUsageCallback callback)
+            throws RemoteException {
+        Log.i(TAG, "Register channel usage callback");
+        enforceUwbPrivilegedPermission();
+        mUwbServiceCore.registerChannelUsageCallback(callback);
+    }
+
+    @Override
+    public void unregisterChannelUsageCallback(IChannelUsageCallback callback)
+            throws RemoteException {
+        Log.i(TAG, "Unregister channel usage callback");
+        enforceUwbPrivilegedPermission();
+        mUwbServiceCore.unregisterChannelUsageCallback(callback);
     }
 
 

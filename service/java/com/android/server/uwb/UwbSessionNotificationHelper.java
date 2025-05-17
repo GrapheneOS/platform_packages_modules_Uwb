@@ -114,6 +114,7 @@ public class UwbSessionNotificationHelper {
                 rangingChangeReason = RangingChangeReason.LOCAL_API;
                 break;
             case UwbUciConstants.STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_ERROR_DUPLICATE_SLOT_ASSIGNMENT:
+            case UwbUciConstants.STATUS_CODE_DATA_TRANSFER_PHASE_CONFIG_ERROR_DTPML_OVERSIZE:
                 rangingChangeReason = RangingChangeReason.PROTOCOL_SPECIFIC;
                 break;
         }

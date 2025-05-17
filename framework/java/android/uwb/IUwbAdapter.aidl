@@ -19,6 +19,7 @@ package android.uwb;
 import android.content.AttributionSource;
 import android.os.IBinder;
 import android.os.PersistableBundle;
+import android.uwb.IChannelUsageCallback;
 import android.uwb.IUwbAdapterStateCallbacks;
 import android.uwb.IUwbAdfProvisionStateCallbacks;
 import android.uwb.IUwbRangingCallbacks;
@@ -62,6 +63,16 @@ interface IUwbAdapter {
     * @param callbacks callback to unregister
     */
    void unregisterVendorExtensionCallback(in IUwbVendorUciCallback callbacks);
+
+   /*
+    * Register the callback to get notified the channel usage events.
+    */
+   void registerChannelUsageCallback(in IChannelUsageCallback callback);
+
+   /*
+    * Unregister the callback used for notification channel usage events.
+    */
+   void unregisterChannelUsageCallback(in IChannelUsageCallback callback);
 
    /*
    * Unregister the callbacks used to notify the framework of events and data

@@ -22,9 +22,10 @@ import androidx.annotation.NonNull;
 
 import com.android.uwb.fusion.math.Pose;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -36,12 +37,12 @@ import java.util.concurrent.locks.ReentrantLock;
 public abstract class PoseSourceBase implements IPoseSource {
     private final Lock mLockObject = new ReentrantLock();
     @GuardedBy("mLockObject")
-    private final List<PoseEventListener> mListeners;
+    private final Set<PoseEventListener> mListeners;
     private static final String TAG = "PoseSourceBase";
     private final AtomicReference<Pose> mPose = new AtomicReference<>();
 
     public PoseSourceBase() {
-        mListeners = new ArrayList<>();
+        mListeners = new HashSet<>();
     }
 
     /**
@@ -114,25 +115,19 @@ public abstract class PoseSourceBase implements IPoseSource {
      */
     protected void publish(@NonNull Pose pose) {
         Objects.requireNonNull(pose);
-        ArrayList<PoseEventListener> listeners;
+        this.mPose.set(pose);
         mLockObject.lock();
         try {
-            // Copy snapshot to minimize lock time and allow changes to listeners while
-            // we report pose changes.
-            listeners = new ArrayList<>(this.mListeners);
+            for (PoseEventListener listener : List.copyOf(mListeners)) {
+                try {
+                    listener.onPoseChanged(pose);
+                } catch (Exception e) {
+                    Log.e(TAG, "Removing listener due to exception:" + e);
+                    mListeners.remove(listener);
+                }
+            }
         } finally {
             mLockObject.unlock();
-        }
-        this.mPose.set(pose);
-        for (int i = 0; i < listeners.size(); i++) {
-            try {
-                listeners.get(i).onPoseChanged(pose);
-            } catch (Exception ex) {
-                Log.e(TAG, ex.toString());
-
-                // Remove the listener, so it doesn't become a persistent problem.
-                listeners.remove(i--);
-            }
         }
     }
 
