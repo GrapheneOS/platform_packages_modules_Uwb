@@ -478,6 +478,7 @@ fn is_uci_data_packet(message_type: MessageType) -> bool {
 fn is_data_rcv_or_radar_format(data_packet_format: DataPacketFormat) -> bool {
     data_packet_format == DataPacketFormat::DataRcv
         || data_packet_format == DataPacketFormat::RadarDataMessage
+        || data_packet_format == DataPacketFormat::LlDataRcv
 }
 
 fn try_into_data_payload(
@@ -590,14 +591,54 @@ impl From<UciControlPacket> for Vec<UciControlPacketHal> {
     }
 }
 
-// Helper to convert From<UciDataSnd> into Vec<UciDataPacketHal>. An
-// example usage is for fragmentation in the Data Packet Tx flow.
-pub fn fragment_data_msg_send(packet: UciDataSnd, max_payload_len: usize) -> Vec<UciDataPacketHal> {
-    let mut fragments = Vec::new();
-    let dpf = packet.get_data_packet_format().into();
+#[derive(Debug)]
+pub enum DataPacket {
+    Bypass(UciDataSnd),
+    LogicalLink(UciLogicalLinkDataSend),
+}
+
+impl DataPacket {
+    pub fn get_session_token(&self) -> u32 {
+        match self {
+            DataPacket::Bypass(p) => p.get_session_token(),
+            DataPacket::LogicalLink(p) => p.get_connect_id(),
+        }
+    }
+
+    pub fn get_uci_sequence_number(&self) -> u16 {
+        match self {
+            DataPacket::Bypass(p) => p.get_uci_sequence_number(),
+            DataPacket::LogicalLink(p) => p.get_uci_sequence_number(),
+        }
+    }
+
+    pub fn get_data_packet_format(&self) -> GroupIdOrDataPacketFormat {
+        match self {
+            DataPacket::Bypass(p) => p.get_data_packet_format().into(),
+            DataPacket::LogicalLink(p) => p.get_data_packet_format().into(),
+        }
+    }
 
     // get payload by stripping the header.
-    let payload = packet.encode_to_bytes().unwrap().slice(UCI_DATA_SND_PACKET_HEADER_LEN..);
+    pub fn encode_payload(&self) -> Bytes {
+        match self {
+            DataPacket::Bypass(p) => {
+                p.encode_to_bytes().unwrap().slice(UCI_DATA_SND_PACKET_HEADER_LEN..)
+            }
+            DataPacket::LogicalLink(p) => {
+                p.encode_to_bytes().unwrap().slice(UCI_DATA_SND_PACKET_HEADER_LEN..)
+            }
+        }
+    }
+}
+
+// Helper to convert From<DataPacket> into Vec<UciDataPacketHal>. An
+// example usage is for fragmentation in the Data Packet Tx flow.
+pub fn fragment_data_msg_send(packet: DataPacket, max_payload_len: usize) -> Vec<UciDataPacketHal> {
+    let mut fragments = Vec::new();
+    let dpf = packet.get_data_packet_format();
+    let payload = packet.encode_payload();
+
     if payload.is_empty() {
         fragments.push(
             UciDataPacketHalBuilder {

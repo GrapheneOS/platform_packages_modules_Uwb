@@ -19,9 +19,9 @@ use log::error;
 
 use crate::error::{Error, Result};
 use crate::params::uci_packets::{
-    AppConfigTlv, AppConfigTlvType, Controlees, CountryCode, DeviceConfigId, DeviceConfigTlv,
-    RadarConfigTlv, RadarConfigTlvType, ResetConfig, RfTestConfigTlv, SessionId, SessionToken,
-    SessionType, UpdateMulticastListAction,
+    AppConfigTlv, AppConfigTlvType, ConnectId, Controlees, CountryCode, DeviceConfigId,
+    DeviceConfigTlv, RadarConfigTlv, RadarConfigTlvType, ResetConfig, RfTestConfigTlv, SessionId,
+    SessionToken, SessionType, UpdateMulticastListAction,
 };
 use uwb_uci_packets::{
     build_data_transfer_phase_config_cmd, build_session_update_controller_multicast_list_cmd,
@@ -75,7 +75,7 @@ pub enum UciCommand {
         ranging_round_indexes: Vec<u8>,
     },
     SessionQueryMaxDataSize {
-        session_token: SessionToken,
+        connect_id: ConnectId,
     },
     SessionStart {
         session_token: SessionToken,
@@ -103,6 +103,18 @@ pub enum UciCommand {
         mac_address: Vec<u8>,
         slot_bitmap: Vec<u8>,
         stop_data_transfer: Vec<u8>,
+    },
+    CreateLogicalLink {
+        session_token: SessionToken,
+        link_layer_mode: u8,
+        dest_mac_address: u64,
+        logical_link_class_len: u8,
+    },
+    CloseLogicalLink {
+        connect_id: ConnectId,
+    },
+    GetLogicalLinkParams {
+        connect_id: ConnectId,
     },
     AndroidSetCountryCode {
         country_code: CountryCode,
@@ -249,8 +261,8 @@ impl TryFrom<UciCommand> for uwb_uci_packets::UciControlPacket {
             UciCommand::SessionGetRangingCount { session_token } => {
                 uwb_uci_packets::SessionGetRangingCountCmdBuilder { session_token }.build().into()
             }
-            UciCommand::SessionQueryMaxDataSize { session_token } => {
-                uwb_uci_packets::SessionQueryMaxDataSizeCmdBuilder { session_token }.build().into()
+            UciCommand::SessionQueryMaxDataSize { connect_id } => {
+                uwb_uci_packets::SessionQueryMaxDataSizeCmdBuilder { connect_id }.build().into()
             }
             UciCommand::SessionSetHybridControllerConfig {
                 session_token,
@@ -308,6 +320,25 @@ impl TryFrom<UciCommand> for uwb_uci_packets::UciControlPacket {
                 uwb_uci_packets::TestLoopbackCmdBuilder { psdu_data }.build().into()
             }
             UciCommand::StopRfTest {} => uwb_uci_packets::StopRfTestCmdBuilder {}.build().into(),
+            UciCommand::GetLogicalLinkParams { connect_id } => {
+                uwb_uci_packets::GetLogicalLinkParamsCmdBuilder { connect_id }.build().into()
+            }
+            UciCommand::CreateLogicalLink {
+                session_token,
+                link_layer_mode,
+                dest_mac_address,
+                logical_link_class_len,
+            } => uwb_uci_packets::CreateLogicalLinkCmdBuilder {
+                session_token,
+                link_layer_mode,
+                dest_mac_address,
+                logical_link_class_len,
+            }
+            .build()
+            .into(),
+            UciCommand::CloseLogicalLink { connect_id } => {
+                uwb_uci_packets::CloseLogicalLinkCmdBuilder { connect_id }.build().into()
+            }
         };
         Ok(packet)
     }
@@ -467,11 +498,18 @@ mod tests {
             .into()
         );
 
-        cmd = UciCommand::SessionQueryMaxDataSize { session_token: 1 };
+        cmd = UciCommand::SessionQueryMaxDataSize { connect_id: 1 };
         packet = uwb_uci_packets::UciControlPacket::try_from(cmd.clone()).unwrap();
         assert_eq!(
             packet,
-            uwb_uci_packets::SessionQueryMaxDataSizeCmdBuilder { session_token: 1 }.build().into()
+            uwb_uci_packets::SessionQueryMaxDataSizeCmdBuilder { connect_id: 1 }.build().into()
+        );
+
+        cmd = UciCommand::GetLogicalLinkParams { connect_id: 1 };
+        packet = uwb_uci_packets::UciControlPacket::try_from(cmd).unwrap();
+        assert_eq!(
+            packet,
+            uwb_uci_packets::GetLogicalLinkParamsCmdBuilder { connect_id: 1 }.build().into()
         );
 
         cmd = UciCommand::SessionStart { session_token: 1 };
@@ -636,6 +674,13 @@ mod tests {
         assert_eq!(
             packet,
             uwb_uci_packets::TestLoopbackCmdBuilder { psdu_data: vec![0] }.build().into()
+        );
+
+        cmd = UciCommand::CloseLogicalLink { connect_id: 1 };
+        packet = uwb_uci_packets::UciControlPacket::try_from(cmd).unwrap();
+        assert_eq!(
+            packet,
+            uwb_uci_packets::CloseLogicalLinkCmdBuilder { connect_id: 1 }.build().into()
         );
     }
 }

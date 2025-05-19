@@ -25,15 +25,17 @@ use uwb_uci_packets::{
 use crate::error::{Error, Result};
 use crate::params::fira_app_config_params::UwbAddress;
 use crate::params::uci_packets::{
-    BitsPerSample, ControleeStatusV1, ControleeStatusV2, CreditAvailability, DataRcvStatusCode,
-    DataTransferNtfStatusCode, DataTransferPhaseConfigUpdateStatusCode, DeviceState,
-    ExtendedAddressDlTdoaRangingMeasurement, ExtendedAddressOwrAoaRangingMeasurement,
-    ExtendedAddressTwoWayRangingMeasurement, RadarDataType, RangingMeasurementType, RawUciMessage,
-    SessionId, SessionState, SessionToken, SessionUpdateControllerMulticastListNtfV1Payload,
+    BitsPerSample, ControleeStatusV1, ControleeStatusV2, CreateLogicalLinkNtfStatusCode,
+    CreditAvailability, DataRcvStatusCode, DataTransferNtfStatusCode,
+    DataTransferPhaseConfigUpdateStatusCode, DeviceState, ExtendedAddressDlTdoaRangingMeasurement,
+    ExtendedAddressOwrAoaRangingMeasurement, ExtendedAddressTwoWayRangingMeasurement,
+    LogicalLinkCloseStatus, RadarDataType, RangingMeasurementType, RawUciMessage, SessionId,
+    SessionState, SessionToken, SessionUpdateControllerMulticastListNtfV1Payload,
     SessionUpdateControllerMulticastListNtfV2Payload, ShortAddressDlTdoaRangingMeasurement,
     ShortAddressOwrAoaRangingMeasurement, ShortAddressTwoWayRangingMeasurement, StatusCode,
     UCIMajorVersion,
 };
+use crate::params::ConnectId;
 
 /// enum of all UCI notifications with structured fields.
 #[derive(Debug, Clone, PartialEq)]
@@ -98,8 +100,8 @@ pub enum SessionNotification {
     },
     /// DataTransferStatusNtf equivalent.
     DataTransferStatus {
-        /// SessionToken : u32
-        session_token: SessionToken,
+        /// ConnectId : u32
+        connect_id: ConnectId,
         /// Sequence Number: u16
         uci_sequence_number: u16,
         /// Data Transfer Status Code
@@ -113,6 +115,31 @@ pub enum SessionNotification {
         session_token: SessionToken,
         /// status
         status: DataTransferPhaseConfigUpdateStatusCode,
+    },
+    /// CreateLogicalLinkNtf equivalent.
+    CreateLogicalLink {
+        /// Logical Link Connect Id
+        connect_id: u32,
+        /// Logical Link Status
+        status: CreateLogicalLinkNtfStatusCode,
+    },
+    /// LogicalLinkUwbsCloseNtf equivalent
+    LogicalLinkUwbsClose {
+        /// Logical Link Connect Id
+        connect_id: u32,
+        /// UWBS Logical Link Close Status
+        status: LogicalLinkCloseStatus,
+    },
+    /// LogicalLinkUwbsCreateNtf equivalent
+    LogicalLinkUwbsCreate {
+        /// SessionToken : u32
+        session_token: SessionToken,
+        /// Logical Link Connect Id
+        connect_id: u32,
+        /// link layer mode of the logical link connection
+        link_layer_mode: u8,
+        /// MacAddress of the sender of logical link connection
+        source_mac_address: UwbAddress,
     },
 }
 
@@ -270,8 +297,18 @@ pub enum RangingMeasurements {
 }
 
 /// The DATA_RCV packet
-#[derive(Debug, Clone, std::cmp::PartialEq)]
-pub struct DataRcvNotification {
+#[derive(Debug, Clone, PartialEq)]
+pub enum DataRcvNotification {
+    /// Bypass mode data received
+    BypassMode(BypassModeData),
+
+    /// Logical link mode data received
+    LogicalLinkMode(LogicalLinkModeData),
+}
+
+/// Bypass mode data packet
+#[derive(Debug, Clone, PartialEq)]
+pub struct BypassModeData {
     /// The identifier of the session on which data transfer is happening.
     pub session_token: SessionToken,
 
@@ -283,6 +320,19 @@ pub struct DataRcvNotification {
 
     /// MacAddress of the sender of the application data.
     pub source_address: UwbAddress,
+
+    /// Application Payload Data
+    pub payload: Vec<u8>,
+}
+
+/// Logical link mode data packet
+#[derive(Debug, Clone, PartialEq)]
+pub struct LogicalLinkModeData {
+    /// The identifier of the session on which data transfer is happening.
+    pub connect_id: ConnectId,
+
+    /// The sequence number of the data packet.
+    pub uci_sequence_num: u16,
 
     /// Application Payload Data
     pub payload: Vec<u8>,
@@ -428,13 +478,24 @@ impl TryFrom<uwb_uci_packets::UciDataPacket> for DataRcvNotification {
     type Error = Error;
     fn try_from(evt: uwb_uci_packets::UciDataPacket) -> std::result::Result<Self, Self::Error> {
         match evt.specialize() {
-            uwb_uci_packets::UciDataPacketChild::UciDataRcv(evt) => Ok(DataRcvNotification {
-                session_token: evt.get_session_token(),
-                status: evt.get_status(),
-                uci_sequence_num: evt.get_uci_sequence_number(),
-                source_address: UwbAddress::Extended(evt.get_source_mac_address().to_le_bytes()),
-                payload: evt.get_data().to_vec(),
-            }),
+            uwb_uci_packets::UciDataPacketChild::UciDataRcv(evt) => {
+                Ok(DataRcvNotification::BypassMode(BypassModeData {
+                    session_token: evt.get_session_token(),
+                    status: evt.get_status(),
+                    uci_sequence_num: evt.get_uci_sequence_number(),
+                    source_address: UwbAddress::Extended(
+                        evt.get_source_mac_address().to_le_bytes(),
+                    ),
+                    payload: evt.get_data().to_vec(),
+                }))
+            }
+            uwb_uci_packets::UciDataPacketChild::UciLogicalLinkDataReceive(evt) => {
+                Ok(DataRcvNotification::LogicalLinkMode(LogicalLinkModeData {
+                    connect_id: evt.get_connect_id(),
+                    uci_sequence_num: evt.get_uci_sequence_number(),
+                    payload: evt.get_data().to_vec(),
+                }))
+            }
             _ => Err(Error::Unknown),
         }
     }
@@ -588,10 +649,32 @@ impl TryFrom<uwb_uci_packets::SessionControlNotification> for SessionNotificatio
             }),
             SessionControlNotificationChild::DataTransferStatusNtf(evt) => {
                 Ok(Self::DataTransferStatus {
-                    session_token: evt.get_session_token(),
+                    connect_id: evt.get_connect_id(),
                     uci_sequence_number: evt.get_uci_sequence_number(),
                     status: evt.get_status(),
                     tx_count: evt.get_tx_count(),
+                })
+            }
+            SessionControlNotificationChild::CreateLogicalLinkNtf(evt) => {
+                Ok(Self::CreateLogicalLink {
+                    connect_id: evt.get_connect_id(),
+                    status: evt.get_status(),
+                })
+            }
+            SessionControlNotificationChild::LogicalLinkUwbsCloseNtf(evt) => {
+                Ok(Self::LogicalLinkUwbsClose {
+                    connect_id: evt.get_connect_id(),
+                    status: evt.get_status(),
+                })
+            }
+            SessionControlNotificationChild::LogicalLinkUwbsCreateNtf(evt) => {
+                Ok(Self::LogicalLinkUwbsCreate {
+                    session_token: evt.get_session_token(),
+                    connect_id: evt.get_connect_id(),
+                    link_layer_mode: evt.get_link_layer_mode(),
+                    source_mac_address: UwbAddress::Extended(
+                        evt.get_source_mac_address().to_le_bytes(),
+                    ),
                 })
             }
             _ => {
@@ -741,7 +824,7 @@ impl TryFrom<uwb_uci_packets::TestNotification> for RfTestNotification {
                 status: evt.get_status(),
                 raw_notification_data: raw_ntf_data,
             }),
-            TestNotificationChild::TestPerRxNtf(evt) => Ok(Self::TestPerRxNtf (RfTestPerRxData {
+            TestNotificationChild::TestPerRxNtf(evt) => Ok(Self::TestPerRxNtf(RfTestPerRxData {
                 status: evt.get_status(),
                 attempts: evt.get_attempts(),
                 acq_detect: evt.get_acq_detect(),
@@ -758,18 +841,20 @@ impl TryFrom<uwb_uci_packets::TestNotification> for RfTestNotification {
                 eof: evt.get_eof(),
                 raw_notification_data: raw_ntf_data,
             })),
-            TestNotificationChild::TestLoopbackNtf(evt) => Ok(Self::TestLoopbackNtf(RfTestLoopbackData {
-                status: evt.get_status(),
-                tx_ts_int: evt.get_tx_ts_int(),
-                tx_ts_frac: evt.get_tx_ts_frac(),
-                rx_ts_int: evt.get_rx_ts_int(),
-                rx_ts_frac: evt.get_rx_ts_frac(),
-                aoa_azimuth: evt.get_aoa_azimuth(),
-                aoa_elevation: evt.get_aoa_elevation(),
-                phr: evt.get_phr(),
-                psdu_data: evt.get_psdu_data().clone(),
-                raw_notification_data: raw_ntf_data,
-            })),
+            TestNotificationChild::TestLoopbackNtf(evt) => {
+                Ok(Self::TestLoopbackNtf(RfTestLoopbackData {
+                    status: evt.get_status(),
+                    tx_ts_int: evt.get_tx_ts_int(),
+                    tx_ts_frac: evt.get_tx_ts_frac(),
+                    rx_ts_int: evt.get_rx_ts_int(),
+                    rx_ts_frac: evt.get_rx_ts_frac(),
+                    aoa_azimuth: evt.get_aoa_azimuth(),
+                    aoa_elevation: evt.get_aoa_elevation(),
+                    phr: evt.get_phr(),
+                    psdu_data: evt.get_psdu_data().clone(),
+                    raw_notification_data: raw_ntf_data,
+                }))
+            }
             _ => {
                 error!("Unknown RfTestNotification: {:?}", evt);
                 Err(Error::Unknown)
@@ -1582,6 +1667,85 @@ mod tests {
     }
 
     #[test]
+    fn test_logical_link_uwbs_close_notification_casting_from_logical_link_uwbs_close_ntf() {
+        let status_code =
+            uwb_uci_packets::LogicalLinkCloseStatus::UciLogicalLinkCloseRemoteTerminated;
+        let logical_link_closed_ntf_packet =
+            uwb_uci_packets::LogicalLinkUwbsCloseNtfBuilder { connect_id: 0, status: status_code }
+                .build();
+        let session_control_notification =
+            uwb_uci_packets::SessionControlNotification::from(logical_link_closed_ntf_packet);
+
+        let session_notification =
+            SessionNotification::try_from(session_control_notification).unwrap();
+
+        let uci_notification = UciNotification::Session(session_notification);
+
+        assert_eq!(
+            uci_notification,
+            UciNotification::Session(SessionNotification::LogicalLinkUwbsClose {
+                connect_id: 0,
+                status: status_code,
+            })
+        );
+    }
+
+    #[test]
+    fn test_logical_link_uwbs_create_notification_casting_from_logical_link_uwbs_create_ntf() {
+        let logical_link_created_ntf_packet = uwb_uci_packets::LogicalLinkUwbsCreateNtfBuilder {
+            session_token: 0x11,
+            connect_id: 0,
+            link_layer_mode: 0x00,
+            source_mac_address: 0xa0b0,
+        }
+        .build();
+        let session_control_notification =
+            uwb_uci_packets::SessionControlNotification::from(logical_link_created_ntf_packet);
+
+        let session_notification =
+            SessionNotification::try_from(session_control_notification).unwrap();
+
+        let uci_notification = UciNotification::Session(session_notification);
+
+        assert_eq!(
+            uci_notification,
+            UciNotification::Session(SessionNotification::LogicalLinkUwbsCreate {
+                session_token: 0x11,
+                connect_id: 0,
+                link_layer_mode: 0x00,
+                source_mac_address: UwbAddress::Extended([
+                    0xb0, 0xa0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+                ]),
+            })
+        );
+    }
+
+    #[test]
+    fn test_create_logical_link_notification_casting_from_create_logical_link_ntf() {
+        let status_code =
+            uwb_uci_packets::CreateLogicalLinkNtfStatusCode::UciLogicalLinkStatusAccepted;
+        let create_logical_link_ntf_packet =
+            uwb_uci_packets::CreateLogicalLinkNtfBuilder { connect_id: 0, status: status_code }
+                .build();
+
+        let session_control_notification =
+            uwb_uci_packets::SessionControlNotification::from(create_logical_link_ntf_packet);
+
+        let session_notification =
+            SessionNotification::try_from(session_control_notification).unwrap();
+
+        let uci_notification = UciNotification::Session(session_notification);
+
+        assert_eq!(
+            uci_notification,
+            UciNotification::Session(SessionNotification::CreateLogicalLink {
+                connect_id: 0,
+                status: status_code,
+            })
+        );
+    }
+
+    #[test]
     fn test_rf_test_notification_casting_from_rf_periodic_tx_ntf() {
         let test_periodic_tx_ntf_packet = uwb_uci_packets::TestPeriodicTxNtfBuilder {
             status: uwb_uci_packets::StatusCode::UciStatusOk,
@@ -1624,7 +1788,7 @@ mod tests {
             eof: 13,
             vendor_data: vec![],
         }
-            .build();
+        .build();
         let raw_notification_data = test_per_rx_ntf_packet.clone().encode_to_bytes().unwrap()
             [UCI_PACKET_HEADER_LEN..]
             .to_vec();
@@ -1682,7 +1846,7 @@ mod tests {
             psdu_data: vec![10, 20, 30, 40],
             vendor_data: vec![],
         }
-            .build();
+        .build();
         let raw_notification_data = test_loopback_ntf_packet.clone().encode_to_bytes().unwrap()
             [UCI_PACKET_HEADER_LEN..]
             .to_vec();

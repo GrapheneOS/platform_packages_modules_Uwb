@@ -19,9 +19,16 @@ enum GroupId : 4 {
     VENDOR_RESERVED_F = 0x0f,
 }
 
+enum LinkLayerMode : 8 {
+    BYPASS_MODE = 0x00,
+    LOGICAL_LINK_MODE = 0x01,
+}
+
 enum DataPacketFormat: 4 {
     DATA_SND = 0x01,
     DATA_RCV = 0x02,
+    LL_DATA_SND = 0x03,
+    LL_DATA_RCV = 0x04,
     RADAR_DATA_MESSAGE = 0x0f,
 }
 
@@ -31,7 +38,8 @@ enum GroupIdOrDataPacketFormat : 4 {
     CORE = 0x00,
     SESSION_CONFIG_OR_DATA_SND = 0x01,
     SESSION_CONTROL_OR_DATA_RCV = 0x02,
-    DATA_CONTROL = 0x03,
+    DATA_CONTROL_OR_LL_DATA_SND = 0x03,
+    LL_DATA_RCV = 0x04,
     TEST = 0x0d,
     VENDOR_RESERVED_9 = 0x09,
     VENDOR_RESERVED_A = 0x0a,
@@ -78,6 +86,8 @@ enum SessionControlOpCode : 6 {
     SESSION_GET_RANGING_COUNT = 0x03,
     SESSION_DATA_CREDIT_NTF = 0x04,
     SESSION_DATA_TRANSFER_STATUS_NTF = 0x05,
+    SESSION_CLOSE_LOGICAL_LINK = 0x08,
+    SESSION_GET_LOGICAL_LINK_PARAMS = 0x0B,
 }
 
 enum AppDataOpCode : 6 {
@@ -196,6 +206,24 @@ enum DataTransferPhaseConfigUpdateStatusCode : 8 {
     UCI_DTPCM_CONFIG_SUCCESS_STATUS_OK = 0x00,
     UCI_DTPCM_STATUS_ERROR_DUPLICATE_SLOT_ASSIGNMENT = 0x01,
     UCI_DTPCM_STATUS_ERROR_DTPML_OVERSIZE = 0x02,
+}
+enum CreateLogicalLinkNtfStatusCode : 8 {
+    UCI_LOGICAL_LINK_STATUS_ACCEPTED = 0x00,
+    UCI_LOGICAL_LINK_STATUS_REJECT = 0x01,
+    UCI_LOGICAL_LINK_STATUS_CO_CONNECTED = 0x02,
+    UCI_LOGICAL_LINK_STATUS_ERROR = 0x03,
+}
+
+enum LogicalLinkCloseStatus : 8 {
+    UCI_LOGICAL_LINK_CLOSE_REMOTE_TERMINATED = 0x00,
+    UCI_LOGICAL_LINK_CLOSE_LINK_TIMEOUT = 0x01,
+    UCI_LOGICAL_LINK_CLOSE_TRANSMISSION_ERROR = 0x02,
+    UCI_LOGICAL_LINK_CLOSE_SECURE_COMPONENT = 0x03,
+    UCI_LOGICAL_LINK_CLOSE_UNKNOWN_REASON = 0x04,
+    UCI_LOGICAL_LINK_CLOSE_HOST_INITIATED = 0x05,
+    UCI_LOGICAL_LINK_CLOSE_RFU = 0x06..0x9F,
+    UCI_LOGICAL_LINK_CLOSE_VENDOR_PROPRIETARY = 0xA0..0xAF,
+    UCI_LOGICAL_LINK_CLOSE_RFU_2 = 0xB0..0xFF
 }
 
 enum ResetConfig : 8 {
@@ -608,6 +636,20 @@ packet UciDataRcv : UciDataPacket (data_packet_format = DATA_RCV, message_type =
     session_token: 32, // Session ID or Session Handle (based on UWBS version)
     status: StatusCode,
     source_mac_address: 64,
+    uci_sequence_number: 16,
+    _size_(data): 16,
+    data: 8[]
+}
+
+packet UciLogicalLinkDataSend : UciDataPacket (data_packet_format = LL_DATA_SND, message_type = DATA) {
+    connect_id: 32, // Session ID or Session Handle (based on UWBS version)  or logical link connection identifier
+    uci_sequence_number: 16,
+    _size_(data): 16,
+    data: 8[]
+}
+
+packet UciLogicalLinkDataReceive : UciDataPacket (data_packet_format = LL_DATA_RCV, message_type = DATA) {
+    connect_id: 32, // Session ID or Session Handle (based on UWBS version)  or logical link connection identifier
     uci_sequence_number: 16,
     _size_(data): 16,
     data: 8[]
@@ -1096,7 +1138,7 @@ test DataCreditNtf {
 }
 
 packet DataTransferStatusNtf : SessionControlNotification (opcode = 0x05) { // SESSION_DATA_TRANSFER_STATUS_NTF
-    session_token: 32, // Session ID or Session Handle (based on UWBS version)
+    connect_id: 32, // Session ID or Session Handle (based on UWBS version)  or logical link connection identifier
     uci_sequence_number: 16,
     status: DataTransferNtfStatusCode,
     tx_count: 8,
@@ -1107,15 +1149,15 @@ test DataTransferStatusNtf {
 }
 
 packet SessionQueryMaxDataSizeCmd : SessionConfigCommand (opcode = 0xB) { //QUERY_MAX_DATA_SIZE
-    session_token: 32, // Session ID or Session Handle (based on UWBS version)
+    connect_id: 32, // Session ID or Session Handle(based on UWBS version) or logical link connection identifier
 }
 
 test SessionQueryMaxDataSizeCmd {
  "\x21\x0B\x00\x04\x00\x00\x00\x00",
 }
 
-packet SessionQueryMaxDataSizeRsp : SessionConfigResponse (opcode = 0xB) { //QUER_MAX_DATA_SIZE
-    session_token: 32, // Session ID or Session Handle (based on UWBS version)
+packet SessionQueryMaxDataSizeRsp : SessionConfigResponse (opcode = 0xB) { //QUERY_MAX_DATA_SIZE
+    connect_id: 32, // Session ID or Session Handle(based on UWBS version) or logical link connection identifier
     status: StatusCode,
     max_data_size: 16,
 }
@@ -1384,6 +1426,61 @@ packet SessionGetRangingCountRsp : SessionControlResponse (opcode = 0x3) { // SE
 
 test SessionGetRangingCountRsp {
     "\x42\x03\x00\x05\x00\x00\x00\x00\x02\x03\x04\x05",
+}
+
+packet CreateLogicalLinkCmd : SessionControlCommand (opcode = 0x7) { // LOGICAL_LINK_CREATE_CMD
+    session_token: 32,
+    link_layer_mode: 8,
+    dest_mac_address: 64,
+    logical_link_class_len: 8
+}
+
+packet CreateLogicalLinkRsp : SessionControlResponse (opcode = 0x7) { // LOGICAL_LINK_CREATE_RSP
+    status: StatusCode,
+    connect_id: 32,
+}
+
+packet CreateLogicalLinkNtf : SessionControlNotification (opcode = 0x7) { // LOGICAL_LINK_CREATE_RSP
+    connect_id: 32,
+    status: CreateLogicalLinkNtfStatusCode,
+}
+
+packet CloseLogicalLinkCmd : SessionControlCommand (opcode = 0x8) { // SESSION_CLOSE_LOGICAL_LINK
+    connect_id: 32,
+}
+
+test CloseLogicalLinkCmd {
+    "\x22\x08\x00\x04\x00\x00\x00\x00",
+}
+
+packet CloseLogicalLinkRsp : SessionControlResponse (opcode = 0x8) { // SESSION_CLOSE_LOGICAL_LINK
+    status: StatusCode,
+}
+
+test CloseLogicalLinkRsp {
+    "\x42\x08\x00\x01\x00",
+}
+
+packet GetLogicalLinkParamsCmd : SessionControlCommand (opcode = 0x0B) { // SESSION_GET_LOGICAL_LINK_PARAMS
+    connect_id: 32,
+}
+
+packet GetLogicalLinkParamsRsp : SessionControlResponse (opcode = 0x0B) { // SESSION_GET_LOGICAL_LINK_PARAMS
+    status: StatusCode,
+    control_field: 16,
+    logical_link_params: 8[],
+}
+
+packet LogicalLinkUwbsCloseNtf : SessionControlNotification (opcode = 0x9) { //LOGICAL_LINK_UWBS_CLOSE_NTF
+    connect_id: 32,
+    status: LogicalLinkCloseStatus,
+}
+
+packet LogicalLinkUwbsCreateNtf : SessionControlNotification (opcode = 0xA) { //LOGICAL_LINK_UWBS_CREATE_NTF
+    session_token: 32, // Session ID or Session Handle (based on UWBS version)
+    connect_id: 32,
+    link_layer_mode: 8,
+    source_mac_address: 64,
 }
 
 packet AndroidGetPowerStatsCmd: AndroidCommand (opcode = 0x0) { //ANDROID_GET_POWER_STATS

@@ -23,21 +23,22 @@ use tokio::sync::{mpsc, oneshot, Mutex};
 
 use crate::error::{Error, Result};
 use crate::params::uci_packets::{
-    AndroidRadarConfigResponse, AppConfigTlv, AppConfigTlvType, CapTlv, CapTlvType, Controlees,
-    CoreSetConfigResponse, CountryCode, CreditAvailability, DeviceConfigId, DeviceConfigTlv,
-    DeviceState, GetDeviceInfoResponse, GroupId, MessageType, PowerStats, RadarConfigTlv,
-    RadarConfigTlvType, RawUciMessage, ResetConfig, RfTestConfigResponse, RfTestConfigTlv,
-    SessionId, SessionState, SessionToken, SessionType, SessionUpdateControllerMulticastResponse,
-    SessionUpdateDtTagRangingRoundsResponse, SetAppConfigResponse, UciDataPacket, UciDataPacketHal,
-    UpdateMulticastListAction,
+    AndroidRadarConfigResponse, AppConfigTlv, AppConfigTlvType, CapTlv, CapTlvType, ConnectId,
+    Controlees, CoreSetConfigResponse, CountryCode, CreateLogicalLinkNtfStatusCode,
+    CreateLogicalLinkResponse, CreditAvailability, DeviceConfigId, DeviceConfigTlv, DeviceState,
+    GetDeviceInfoResponse, GetLogicalLinkParamResponse, GroupId, MessageType, PowerStats,
+    RadarConfigTlv, RadarConfigTlvType, RawUciMessage, ResetConfig, RfTestConfigResponse,
+    RfTestConfigTlv, SessionId, SessionState, SessionToken, SessionType,
+    SessionUpdateControllerMulticastResponse, SessionUpdateDtTagRangingRoundsResponse,
+    SetAppConfigResponse, UciDataPacket, UciDataPacketHal, UpdateMulticastListAction,
 };
 use crate::params::utils::{bytes_to_u16, bytes_to_u64};
 use crate::params::UCIMajorVersion;
 use crate::uci::command::UciCommand;
 use crate::uci::message::UciMessage;
 use crate::uci::notification::{
-    CoreNotification, DataRcvNotification, RadarDataRcvNotification, RfTestNotification,
-    SessionNotification, SessionRangeData, UciNotification,
+    BypassModeData, CoreNotification, DataRcvNotification, RadarDataRcvNotification,
+    RfTestNotification, SessionNotification, SessionRangeData, UciNotification,
 };
 use crate::uci::response::UciResponse;
 use crate::uci::timeout_uci_hal::TimeoutUciHal;
@@ -47,8 +48,8 @@ use crate::utils::{clean_mpsc_receiver, PinSleep};
 use pdl_runtime::Packet;
 use std::collections::{HashMap, VecDeque};
 use uwb_uci_packets::{
-    fragment_data_msg_send, ControleePhaseList, ControllerPhaseList, RawUciControlPacket,
-    UciDataSnd, UciDefragPacket,
+    fragment_data_msg_send, ControleePhaseList, ControllerPhaseList, DataPacket, LinkLayerMode,
+    RawUciControlPacket, UciDefragPacket,
 };
 
 const UCI_TIMEOUT_MS: u64 = 2000;
@@ -94,6 +95,12 @@ pub trait UciManager: 'static + Send + Sync + Clone {
     // Close the UCI HAL.
     async fn close_hal(&self, force: bool) -> Result<()>;
 
+    /// Get Logical Link Params
+    async fn get_logical_link_params(
+        &self,
+        connect_id: ConnectId,
+    ) -> Result<GetLogicalLinkParamResponse>;
+
     // Send the standard UCI Commands.
     async fn device_reset(&self, reset_config: ResetConfig) -> Result<()>;
     async fn core_get_device_info(&self) -> Result<GetDeviceInfoResponse>;
@@ -137,7 +144,7 @@ pub trait UciManager: 'static + Send + Sync + Clone {
         ranging_round_indexes: Vec<u8>,
     ) -> Result<SessionUpdateDtTagRangingRoundsResponse>;
 
-    async fn session_query_max_data_size(&self, session_id: SessionId) -> Result<u16>;
+    async fn session_query_max_data_size(&self, connect_id: ConnectId) -> Result<u16>;
 
     async fn range_start(&self, session_id: SessionId) -> Result<()>;
     async fn range_stop(&self, session_id: SessionId) -> Result<()>;
@@ -169,7 +176,8 @@ pub trait UciManager: 'static + Send + Sync + Clone {
     // Send a Data packet.
     async fn send_data_packet(
         &self,
-        session_id: SessionId,
+        connect_id: ConnectId,
+        link_layer_mode: u8,
         address: Vec<u8>,
         uci_sequence_number: u16,
         app_payload_data: Vec<u8>,
@@ -208,6 +216,16 @@ pub trait UciManager: 'static + Send + Sync + Clone {
         session_id: SessionId,
         controlee_phase_list: Vec<ControleePhaseList>,
     ) -> Result<()>;
+    async fn create_logical_link_layer(
+        &self,
+        session_id: SessionId,
+        link_layer_mode: u8,
+        address: Vec<u8>,
+        logical_link_class_len: u8,
+    ) -> Result<CreateLogicalLinkResponse>;
+
+    async fn close_logical_link(&self, connect_id: ConnectId) -> Result<()>;
+
     async fn session_set_rf_test_config(
         &self,
         session_id: SessionId,
@@ -356,6 +374,18 @@ impl UciManager for UciManagerImpl {
     async fn close_hal(&self, force: bool) -> Result<()> {
         match self.send_cmd(UciManagerCmd::CloseHal { force }).await {
             Ok(UciResponse::CloseHal) => Ok(()),
+            Ok(_) => Err(Error::Unknown),
+            Err(e) => Err(e),
+        }
+    }
+
+    async fn get_logical_link_params(
+        &self,
+        connect_id: ConnectId,
+    ) -> Result<GetLogicalLinkParamResponse> {
+        let cmd = UciCommand::GetLogicalLinkParams { connect_id };
+        match self.send_cmd(UciManagerCmd::SendUciCommand { cmd }).await {
+            Ok(UciResponse::GetLogicalLinkParams(resp)) => resp,
             Ok(_) => Err(Error::Unknown),
             Err(e) => Err(e),
         }
@@ -536,9 +566,9 @@ impl UciManager for UciManagerImpl {
         }
     }
 
-    async fn session_query_max_data_size(&self, session_id: SessionId) -> Result<u16> {
+    async fn session_query_max_data_size(&self, connect_id: ConnectId) -> Result<u16> {
         let cmd = UciCommand::SessionQueryMaxDataSize {
-            session_token: self.get_session_token(&session_id).await?,
+            connect_id: self.get_session_token(&connect_id).await?,
         };
         match self.send_cmd(UciManagerCmd::SendUciCommand { cmd }).await {
             Ok(UciResponse::SessionQueryMaxDataSize(resp)) => resp,
@@ -646,25 +676,48 @@ impl UciManager for UciManagerImpl {
     // Send a data packet to the UWBS (use the UciManagerActor).
     async fn send_data_packet(
         &self,
-        session_id: SessionId,
+        connect_id: ConnectId,
+        link_layer_mode: u8,
         dest_mac_address_bytes: Vec<u8>,
         uci_sequence_number: u16,
         data: Vec<u8>,
     ) -> Result<()> {
         debug!(
-            "send_data_packet(): will Tx a data packet, session_id {}, sequence_number {}",
-            session_id, uci_sequence_number
-        );
-        let dest_mac_address = bytes_to_u64(dest_mac_address_bytes).ok_or(Error::BadParameters)?;
-        let data_snd_packet = uwb_uci_packets::UciDataSndBuilder {
-            session_token: self.get_session_token(&session_id).await?,
-            dest_mac_address,
+            "send_data_packet(): Tx packet [connect_id: {}, link_layer_mode: {}, seq_num: {}, data_len: {}]",
+            connect_id,
+            link_layer_mode,
             uci_sequence_number,
-            data,
-        }
-        .build();
+            data.len()
+        );
 
-        match self.send_cmd(UciManagerCmd::SendUciData { data_snd_packet }).await {
+        let link_mode =
+            LinkLayerMode::try_from(link_layer_mode).map_err(|_| Error::BadParameters)?;
+
+        let data_packet = match link_mode {
+            LinkLayerMode::BypassMode => {
+                let dest_mac_address =
+                    bytes_to_u64(dest_mac_address_bytes).ok_or(Error::BadParameters)?;
+                let data_snd_packet = uwb_uci_packets::UciDataSndBuilder {
+                    session_token: self.get_session_token(&connect_id).await?,
+                    dest_mac_address,
+                    uci_sequence_number,
+                    data,
+                }
+                .build();
+                DataPacket::Bypass(data_snd_packet)
+            }
+            LinkLayerMode::LogicalLinkMode => {
+                let data_snd_packet = uwb_uci_packets::UciLogicalLinkDataSendBuilder {
+                    connect_id,
+                    uci_sequence_number,
+                    data,
+                }
+                .build();
+                DataPacket::LogicalLink(data_snd_packet)
+            }
+        };
+
+        match self.send_cmd(UciManagerCmd::SendUciData { data_snd_packet: data_packet }).await {
             Ok(UciResponse::SendUciData(resp)) => resp,
             Ok(_) => Err(Error::Unknown),
             Err(e) => Err(e),
@@ -694,6 +747,40 @@ impl UciManager for UciManagerImpl {
 
         match self.send_cmd(UciManagerCmd::SendUciCommand { cmd }).await {
             Ok(UciResponse::SessionDataTransferPhaseConfig(resp)) => resp,
+            Ok(_) => Err(Error::Unknown),
+            Err(e) => Err(e),
+        }
+    }
+
+    async fn create_logical_link_layer(
+        &self,
+        session_id: SessionId,
+        link_layer_mode: u8,
+        dest_mac_address_bytes: Vec<u8>,
+        logical_link_class_len: u8,
+    ) -> Result<CreateLogicalLinkResponse> {
+        debug!(
+            "create_logical_link_layer(): session_id {}, address {:?}",
+            session_id, dest_mac_address_bytes
+        );
+        let dest_mac_address = bytes_to_u64(dest_mac_address_bytes).ok_or(Error::BadParameters)?;
+        let cmd = UciCommand::CreateLogicalLink {
+            session_token: self.get_session_token(&session_id).await?,
+            link_layer_mode,
+            dest_mac_address,
+            logical_link_class_len,
+        };
+        match self.send_cmd(UciManagerCmd::SendUciCommand { cmd }).await {
+            Ok(UciResponse::CreateLogicalLink(resp)) => resp,
+            Ok(_) => Err(Error::Unknown),
+            Err(e) => Err(e),
+        }
+    }
+
+    async fn close_logical_link(&self, connect_id: ConnectId) -> Result<()> {
+        let cmd = UciCommand::CloseLogicalLink { connect_id };
+        match self.send_cmd(UciManagerCmd::SendUciCommand { cmd }).await {
+            Ok(UciResponse::CloseLogicalLink(resp)) => resp,
             Ok(_) => Err(Error::Unknown),
             Err(e) => Err(e),
         }
@@ -1261,7 +1348,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
         result
     }
 
-    async fn handle_data_snd_packet(&mut self, data_snd_packet: UciDataSnd) -> Result<UciResponse> {
+    async fn handle_data_snd_packet(&mut self, data_snd_packet: DataPacket) -> Result<UciResponse> {
         // Verify that there's an entry for the Session in the CreditAvailability map.
         let data_packet_session_token = data_snd_packet.get_session_token();
         let data_packet_sequence_number = data_snd_packet.get_uci_sequence_number();
@@ -1521,13 +1608,37 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                         return; // We consume these here and don't need to send to upper layer.
                     }
                     SessionNotification::DataTransferStatus {
-                        session_token: _,
+                        connect_id: _,
                         uci_sequence_number: _,
                         status: _,
                         tx_count: _,
                     } => {
                         // Reset the UciDataSnd Retryer since we received a DataTransferStatusNtf.
                         let _ = self.uci_data_snd_retryer.take();
+                    }
+                    SessionNotification::CreateLogicalLink { connect_id, status } => {
+                        if status == CreateLogicalLinkNtfStatusCode::UciLogicalLinkStatusAccepted {
+                            self.data_credit_map
+                                .insert(connect_id, CreditAvailability::CreditAvailable);
+                            self.data_packet_fragments_map.insert(connect_id, VecDeque::new());
+                            self.insert_session_token(connect_id, connect_id).await;
+                        }
+                    }
+                    SessionNotification::LogicalLinkUwbsClose { connect_id, status: _ } => {
+                        self.data_credit_map.remove(&connect_id);
+                        self.data_packet_fragments_map.remove(&connect_id);
+                        self.remove_session_token(&connect_id).await;
+                    }
+                    SessionNotification::LogicalLinkUwbsCreate {
+                        session_token: _,
+                        connect_id,
+                        link_layer_mode: _,
+                        source_mac_address: _,
+                    } => {
+                        self.data_credit_map
+                            .insert(connect_id, CreditAvailability::CreditAvailable);
+                        self.data_packet_fragments_map.insert(connect_id, VecDeque::new());
+                        self.insert_session_token(connect_id, connect_id).await;
                     }
                     _ => {}
                 }
@@ -1590,12 +1701,12 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                 }))
             }
             SessionNotification::DataTransferStatus {
-                session_token,
+                connect_id,
                 uci_sequence_number,
                 status,
                 tx_count,
             } => Ok(SessionNotification::DataTransferStatus {
-                session_token: self.get_session_id(&session_token).await?,
+                connect_id: self.get_session_id(&connect_id).await?,
                 uci_sequence_number,
                 status,
                 tx_count,
@@ -1612,6 +1723,23 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                     status,
                 })
             }
+            SessionNotification::CreateLogicalLink { connect_id, status } => {
+                Ok(SessionNotification::CreateLogicalLink { connect_id, status })
+            }
+            SessionNotification::LogicalLinkUwbsClose { connect_id, status } => {
+                Ok(SessionNotification::LogicalLinkUwbsClose { connect_id, status })
+            }
+            SessionNotification::LogicalLinkUwbsCreate {
+                session_token,
+                connect_id,
+                link_layer_mode,
+                source_mac_address,
+            } => Ok(SessionNotification::LogicalLinkUwbsCreate {
+                session_token: self.get_session_id(&session_token).await?,
+                connect_id,
+                link_layer_mode,
+                source_mac_address,
+            }),
         }
     }
 
@@ -1642,18 +1770,29 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
 
     async fn handle_data_rcv(&mut self, packet: UciDataPacket) {
         if let Ok(data) = DataRcvNotification::try_from(packet.clone()) {
-            match self.get_session_id(&data.session_token).await {
-                Ok(session_id) => {
-                    let _ = self.data_rcv_notf_sender.send(DataRcvNotification {
-                        session_token: session_id,
-                        status: data.status,
-                        uci_sequence_num: data.uci_sequence_num,
-                        source_address: data.source_address,
-                        payload: data.payload,
-                    });
+            match data {
+                DataRcvNotification::BypassMode(bypass_data) => {
+                    match self.get_session_id(&bypass_data.session_token).await {
+                        Ok(session_id) => {
+                            let _ = self.data_rcv_notf_sender.send(
+                                DataRcvNotification::BypassMode(BypassModeData {
+                                    session_token: session_id,
+                                    status: bypass_data.status,
+                                    uci_sequence_num: bypass_data.uci_sequence_num,
+                                    source_address: bypass_data.source_address,
+                                    payload: bypass_data.payload,
+                                }),
+                            );
+                        }
+                        Err(e) => {
+                            error!("Unable to find session Id, error {:?}", e);
+                        }
+                    }
                 }
-                Err(e) => {
-                    error!("Unable to find session Id, error {:?}", e);
+                DataRcvNotification::LogicalLinkMode(logical_data) => {
+                    let _ = self
+                        .data_rcv_notf_sender
+                        .send(DataRcvNotification::LogicalLinkMode(logical_data));
                 }
             }
         } else if let Ok(data) = RadarDataRcvNotification::try_from(packet.clone()) {
@@ -1779,7 +1918,7 @@ enum UciManagerCmd {
         cmd: UciCommand,
     },
     SendUciData {
-        data_snd_packet: UciDataSnd,
+        data_snd_packet: DataPacket,
     },
 }
 
@@ -2708,6 +2847,48 @@ mod tests {
         assert!(mock_hal.wait_expected_calls_done().await);
     }
 
+    #[tokio::test]
+    async fn test_create_logical_link_layer_ok() {
+        let session_id = 0x123;
+        let session_token = 0x123;
+        let dest_mac_address_bytes = vec![0; 8];
+        let dest_mac_address = 0x00000000;
+        let link_layer_mode = 0;
+        let logical_link_class_len = 0;
+        let (uci_manager, mut mock_hal) = setup_uci_manager_with_session_active(
+            |mut hal| async move {
+                let cmd = UciCommand::CreateLogicalLink {
+                    session_token,
+                    link_layer_mode,
+                    dest_mac_address,
+                    logical_link_class_len,
+                };
+                let resp = into_uci_hal_packets(uwb_uci_packets::CreateLogicalLinkRspBuilder {
+                    connect_id: 0x123,
+                    status: uwb_uci_packets::StatusCode::UciStatusOk,
+                });
+
+                hal.expected_send_command(cmd, resp, Ok(()));
+            },
+            UciLoggerMode::Disabled,
+            mpsc::unbounded_channel::<UciLogEvent>().0,
+            session_id,
+            session_token,
+        )
+        .await;
+
+        let result = uci_manager
+            .create_logical_link_layer(
+                session_token,
+                link_layer_mode,
+                dest_mac_address_bytes,
+                logical_link_class_len,
+            )
+            .await;
+        assert!(result.is_ok());
+        assert!(mock_hal.wait_expected_calls_done().await);
+    }
+
     fn write_multicast_rsp_v1_payload(
         payload: &SessionUpdateControllerMulticastListRspV1Payload,
         buffer: &mut BytesMut,
@@ -2904,15 +3085,15 @@ mod tests {
     #[tokio::test]
     async fn test_session_query_max_data_size_ok() {
         let session_id = 0x123;
-        let session_token = 0x123;
+        let connect_id = 0x123;
         let max_data_size = 100;
         let (uci_manager, mut mock_hal) = setup_uci_manager_with_session_initialized(
             |mut hal| async move {
-                let cmd = UciCommand::SessionQueryMaxDataSize { session_token };
+                let cmd = UciCommand::SessionQueryMaxDataSize { connect_id };
                 let resp =
                     into_uci_hal_packets(uwb_uci_packets::SessionQueryMaxDataSizeRspBuilder {
                         max_data_size,
-                        session_token: 0x10,
+                        connect_id: 0x10,
                         status: StatusCode::UciStatusOk,
                     });
 
@@ -2921,7 +3102,7 @@ mod tests {
             UciLoggerMode::Disabled,
             mpsc::unbounded_channel::<UciLogEvent>().0,
             session_id,
-            session_token,
+            connect_id,
         )
         .await;
 
@@ -3673,13 +3854,13 @@ mod tests {
 
         // Setup the DataPacketRcv (Rx by HAL) and the expected DataRcvNotification.
         let data_packet_rcv = build_uci_packet(mt_data, pbf, dpf, oid, data_rcv_payload);
-        let expected_data_rcv_notification = DataRcvNotification {
+        let expected_data_rcv_notification = DataRcvNotification::BypassMode(BypassModeData {
             session_token: session_id,
             status: StatusCode::UciStatusOk,
             uci_sequence_num,
             source_address,
             payload: app_data,
-        };
+        });
 
         // Setup an active UWBS session over which the DataPacket will be received by the Host.
         let (mut uci_manager, mut mock_hal) = setup_uci_manager_with_session_active(
@@ -3744,13 +3925,13 @@ mod tests {
             build_uci_packet(mt_data, pbf_fragment_1, dpf, oid, data_rcv_payload_fragment_1);
         let data_packet_rcv_fragment_2 =
             build_uci_packet(mt_data, pbf_fragment_2, dpf, oid, data_rcv_payload_fragment_2);
-        let expected_data_rcv_notification = DataRcvNotification {
+        let expected_data_rcv_notification = DataRcvNotification::BypassMode(BypassModeData {
             session_token: session_id,
             status: StatusCode::UciStatusOk,
             uci_sequence_num,
             source_address,
             payload: app_data,
-        };
+        });
 
         // Setup an active UWBS session over which the DataPacket will be received by the Host.
         let (mut uci_manager, mut mock_hal) = setup_uci_manager_with_session_active_nop_logger(
@@ -3893,7 +4074,7 @@ mod tests {
         let pbf = 0x0;
         let dpf = 0x1;
         let oid = 0x0;
-        let session_id = 0x5;
+        let connect_id = 0x5;
         let session_token = 0x5;
         let dest_mac_address = vec![0xa0, 0xb0, 0xc0, 0xd0, 0xa1, 0xb1, 0xc1, 0xd1];
         let uci_sequence_number: u16 = 0xa;
@@ -3919,7 +4100,7 @@ mod tests {
                 });
                 ntfs.append(&mut into_uci_hal_packets(
                     uwb_uci_packets::DataTransferStatusNtfBuilder {
-                        session_token,
+                        connect_id,
                         uci_sequence_number,
                         status,
                         tx_count,
@@ -3928,13 +4109,19 @@ mod tests {
                 hal.expected_send_packet(data_packet_snd, ntfs, Ok(()));
             },
             UciLoggerMode::Disabled,
-            session_id,
+            connect_id,
             session_token,
         )
         .await;
 
         let result = uci_manager
-            .send_data_packet(session_id, dest_mac_address, uci_sequence_number, app_data)
+            .send_data_packet(
+                connect_id,
+                LinkLayerMode::BypassMode.into(),
+                dest_mac_address,
+                uci_sequence_number,
+                app_data,
+            )
             .await;
         assert!(result.is_ok());
         assert!(mock_hal.wait_expected_calls_done().await);
@@ -3956,7 +4143,7 @@ mod tests {
         let pbf_fragment_2 = 0x0;
         let dpf = 0x1;
         let oid = 0x0;
-        let session_id = 0x5;
+        let connect_id = 0x5;
         let session_token = 0x5;
         let dest_mac_address = vec![0xa0, 0xb0, 0xc0, 0xd0, 0xa1, 0xb1, 0xc1, 0xd1];
         let uci_sequence_number: u16 = 0xa;
@@ -4013,7 +4200,7 @@ mod tests {
                 });
                 ntfs.append(&mut into_uci_hal_packets(
                     uwb_uci_packets::DataTransferStatusNtfBuilder {
-                        session_token,
+                        connect_id,
                         uci_sequence_number,
                         status,
                         tx_count,
@@ -4023,13 +4210,19 @@ mod tests {
             },
             UciLoggerMode::Disabled,
             mpsc::unbounded_channel::<UciLogEvent>().0,
-            session_id,
+            connect_id,
             session_token,
         )
         .await;
 
         let result = uci_manager
-            .send_data_packet(session_id, dest_mac_address, uci_sequence_number, app_data)
+            .send_data_packet(
+                connect_id,
+                LinkLayerMode::BypassMode.into(),
+                dest_mac_address,
+                uci_sequence_number,
+                app_data,
+            )
             .await;
         assert!(result.is_ok());
         assert!(mock_hal.wait_expected_calls_done().await);
@@ -4061,7 +4254,7 @@ mod tests {
         let pbf_fragment_2 = 0x0;
         let dpf = 0x1;
         let oid = 0x0;
-        let session_id = 0x5;
+        let connect_id = 0x5;
         let session_token = 0x5;
         let dest_mac_address = vec![0xa0, 0xb0, 0xc0, 0xd0, 0xa1, 0xb1, 0xc1, 0xd1];
         let uci_sequence_number: u16 = 0xa;
@@ -4140,7 +4333,7 @@ mod tests {
                 });
                 ntfs.append(&mut into_uci_hal_packets(
                     uwb_uci_packets::DataTransferStatusNtfBuilder {
-                        session_token,
+                        connect_id,
                         uci_sequence_number,
                         status: data_status,
                         tx_count,
@@ -4149,7 +4342,7 @@ mod tests {
                 hal.expected_send_packet(data_packet_snd_fragment_2, ntfs, Ok(()));
             },
             UciLoggerMode::Disabled,
-            session_id,
+            connect_id,
             session_token,
         )
         .await;
@@ -4163,7 +4356,13 @@ mod tests {
         assert_eq!(result[0], uwbs_caps_info_tlv);
 
         let result = uci_manager
-            .send_data_packet(session_id, dest_mac_address, uci_sequence_number, app_data)
+            .send_data_packet(
+                connect_id,
+                LinkLayerMode::BypassMode.into(),
+                dest_mac_address,
+                uci_sequence_number,
+                app_data,
+            )
             .await;
         assert!(result.is_ok());
         assert!(mock_hal.wait_expected_calls_done().await);
@@ -4210,7 +4409,7 @@ mod tests {
         let pbf = 0x0;
         let dpf = 0x1;
         let oid = 0x0;
-        let session_id = 0x5;
+        let connect_id = 0x5;
         let session_token = 0x5;
         let tx_count = 0x01;
         let dest_mac_address = vec![0xa0, 0xb0, 0xc0, 0xd0, 0xa1, 0xb1, 0xc1, 0xd1];
@@ -4244,7 +4443,7 @@ mod tests {
                 });
                 ntfs.append(&mut into_uci_hal_packets(
                     uwb_uci_packets::DataTransferStatusNtfBuilder {
-                        session_token,
+                        connect_id,
                         uci_sequence_number,
                         status,
                         tx_count,
@@ -4254,13 +4453,19 @@ mod tests {
             },
             UciLoggerMode::Disabled,
             mpsc::unbounded_channel::<UciLogEvent>().0,
-            session_id,
+            connect_id,
             session_token,
         )
         .await;
 
         let result = uci_manager
-            .send_data_packet(session_id, dest_mac_address, uci_sequence_number, app_data)
+            .send_data_packet(
+                connect_id,
+                LinkLayerMode::BypassMode.into(),
+                dest_mac_address,
+                uci_sequence_number,
+                app_data,
+            )
             .await;
         assert!(result.is_ok());
         assert!(mock_hal.wait_expected_calls_done().await);
