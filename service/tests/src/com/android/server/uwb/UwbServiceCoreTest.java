@@ -16,7 +16,6 @@
 
 package com.android.server.uwb;
 
-
 import static com.android.server.uwb.UwbTestUtils.MAX_DATA_SIZE;
 import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_ANDROID_REGULATION_UWB_OFF;
 import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_FAILED;
@@ -42,6 +41,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -75,6 +75,8 @@ import android.uwb.IUwbAdapterStateCallbacks;
 import android.uwb.IUwbOemExtensionCallback;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.IUwbVendorUciCallback;
+import android.uwb.LogicalLinkConnectionParams;
+import android.uwb.LogicalLinkParams;
 import android.uwb.SessionHandle;
 import android.uwb.StateChangeReason;
 import android.uwb.UwbAddress;
@@ -92,6 +94,7 @@ import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.multchip.UwbMultichipData;
 import com.android.server.uwb.multichip.MultichipConfigFileCreator;
 import com.android.server.uwb.pm.ProfileManager;
+import com.android.uwb.flags.Flags;
 import com.android.uwb.resources.R;
 
 import com.google.uwb.support.aliro.AliroOpenRangingParams;
@@ -1725,6 +1728,21 @@ public class UwbServiceCoreTest {
     }
 
     @Test
+    public void testQueryLogicalLinkMaxDataSizeBytes() throws Exception {
+        assumeTrue(Flags.uwbFira3025q4());
+        enableUwbWithCountryCodeChangedCallback();
+
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+        final int connectId = UwbTestUtils.LOGICAL_LINK_CONNECT_ID;
+
+        when(mUwbSessionManager.queryLogicalLinkMaxDataSizeBytes(any(), anyInt()))
+                .thenReturn(MAX_DATA_SIZE);
+        mUwbServiceCore.queryLogicalLinkMaxDataSizeBytes(sessionHandle, connectId);
+        verify(mUwbSessionManager).queryLogicalLinkMaxDataSizeBytes(eq(sessionHandle),
+                eq(connectId));
+    }
+
+    @Test
     public void testDeviceStateCallback() throws Exception {
         IUwbAdapterStateCallbacks cb = mock(IUwbAdapterStateCallbacks.class);
         when(cb.asBinder()).thenReturn(mock(IBinder.class));
@@ -2191,6 +2209,49 @@ public class UwbServiceCoreTest {
         verifyNoMoreInteractions(cb);
         assertThat(mUwbServiceCore.getAdapterState())
                 .isEqualTo(AdapterState.STATE_ENABLED_INACTIVE);
+    }
+
+    @Test
+    public void testCreateLogicalLink() throws Exception {
+        assumeTrue(Flags.uwbFira3025q4());
+        enableUwbWithCountryCodeChangedCallback();
+
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+        LogicalLinkParams params = new LogicalLinkParams.Builder(0,
+                UwbAddress.fromBytes(new byte[] {0x11, 0x22})).build();
+
+        mUwbServiceCore.createLogicalLink(sessionHandle, params);
+        verify(mUwbSessionManager).createLogicalLink(eq(sessionHandle), eq(params));
+    }
+
+    @Test
+    public void testCloseLogicalLink() throws Exception {
+        assumeTrue(Flags.uwbFira3025q4());
+        enableUwbWithCountryCodeChangedCallback();
+
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+
+        mUwbServiceCore.closeLogicalLink(sessionHandle, UwbTestUtils.LOGICAL_LINK_CONNECT_ID);
+        verify(mUwbSessionManager).closeLogicalLink(eq(sessionHandle),
+                eq(UwbTestUtils.LOGICAL_LINK_CONNECT_ID));
+    }
+
+    @Test
+    public void testGetLogicalLinkParams() throws Exception {
+        assumeTrue(Flags.uwbFira3025q4());
+        enableUwbWithCountryCodeChangedCallback();
+
+        SessionHandle sessionHandle = mock(SessionHandle.class);
+        LogicalLinkConnectionParams mockResponse = new LogicalLinkConnectionParams.Builder(
+                STATUS_CODE_OK, 0x00).build();
+        when(mUwbSessionManager.getLogicalLinkParams(sessionHandle, 0x00))
+                .thenReturn(mockResponse);
+
+        LogicalLinkConnectionParams result =
+                mUwbServiceCore.getLogicalLinkParams(sessionHandle, 0x00);
+
+        assertThat(result).isNotNull();
+        assertThat(mockResponse).isEqualTo(result);
     }
 
     @Test

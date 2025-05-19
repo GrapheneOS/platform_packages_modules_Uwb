@@ -28,6 +28,8 @@ import android.uwb.UwbAddress;
 import android.uwb.IUwbVendorUciCallback;
 import android.uwb.IUwbOemExtensionCallback;
 import android.uwb.IOnUwbActivityEnergyInfoListener;
+import android.uwb.LogicalLinkParams;
+import android.uwb.LogicalLinkConnectionParams;
 
 /**
  * @hide
@@ -268,21 +270,45 @@ interface IUwbAdapter {
 
   /**
    * Send data to a remote device which is part of this ongoing session.
-   * The data is sent by piggybacking the provided data over RRM (initiator -> responder) or
-   * RIM (responder -> initiator).
-   * <p>This is only functional on a FIRA 2.0 compliant device.
+   * <p>
+   * This API supports two transmission modes, depending on the session's link layer mode
+   * configuration:
    *
-   * <p>On successfully sending the data,
-   * {@link RangingSession.Callback#onDataSent(UwbAddress, PersistableBundle)} is invoked.
+   * <ul>
+   *   <li><b>Bypass Logical Link Mode (FiRa 2.0+):</b><br>
+   *       In this mode, the data is piggybacked over RRM (initiator → responder) or RIM
+   *       (responder → initiator) messages. The target device is identified using the provided
+   *       {@link UwbAddress}.
+   *       <p><b>Note:</b> This mode is supported on FiRa 2.0-compliant devices and above.</p>
+   *   </li>
    *
-   * <p>On failure to send the data,
-   * {@link RangingSession.Callback#onDataSendFailed(UwbAddress, int, PersistableBundle)} is
-   * invoked.
+   *   <li><b>Logical Link Mode (FiRa 3.0+):</b><br>
+   *       <p>The remote endpoint is identified via the Logical Link Connect ID, which must be
+   *       provided in the {@code params} bundle.</p>
+   *       <p>The {@link UwbAddress} parameter is not used in this mode and should be set to the
+   *       default broadcast address {@code 0xFFFF}.</p>
+   *       <p><b>Note:</b> This mode is supported only on FiRa 3.0-compliant devices and above.
+   *   </li>
+   * </ul>
    *
-   * @param sessionHandle the session handle to close ranging for
-   * @param remoteDeviceAddress remote device's address.
-   * @param params protocol specific parameters the sending the data.
-   * @param data Raw data to be sent.
+   * <p>Regardless of the transmission mode, one of the following callbacks is triggered upon
+   * completion:
+   * <ul>
+   *   <li>{@link RangingSession.Callback#onDataSent(UwbAddress, PersistableBundle)} — invoked on
+   *      success</li>
+   *   <li>{@link RangingSession.Callback#onDataSendFailed(UwbAddress, int, PersistableBundle)} —
+   *      invoked on failure</li>
+   * </ul>
+   *
+   * @param sessionHandle Session Handle of the UWB session.
+   * @param remoteDeviceAddress The UWB address of the target device.
+   *                          <ul>
+   *                              <li>Required in Bypass Logical Link Mode.</li>
+   *                              <li>Must be set to {@code 0xFFFF} in Logical Link Mode.</li>
+   *                          </ul>
+   * @param params A {@link PersistableBundle} containing protocol-specific parameters.
+   *               Must include the Logical Link Connect ID when using Logical Link Mode.
+   * @param data The raw application data to transmit.
    */
   void sendData(in SessionHandle sessionHandle, in UwbAddress remoteDeviceAddress,
           in PersistableBundle params, in byte[] data);
@@ -418,11 +444,75 @@ interface IUwbAdapter {
   int queryMaxDataSizeBytes(in SessionHandle sessionHandle);
 
   /**
+   * Queries the maximum size of application data (in bytes) that the UWBS can send in a single
+   * ranging round for the specified logical link connection.
+   *
+   * <p>This feature is supported on FiRa 3.0+ compliant devices.</p>
+   *
+   * @param sessionHandle the session for which the logical link is established.
+   * @param connectId logical link connection identifier for which to query the maximum data size.
+   * @return the maximum size (in bytes) of application data that can be sent in one ranging round.
+   */
+  int queryLogicalLinkMaxDataSizeBytes(in SessionHandle sessionHandle, in int connectId);
+
+  /**
+   * Establishes a logical link with a remote device for an ongoing ranging session.
+   *
+   * <p>This feature is supported on Fira 3.0+ compliant devices.</p>
+   *
+   * <p>Once the logical link creation attempt completes, the system invokes either
+   * {@link RangingSession.Callback#onLogicalLinkCreated(SessionHandle, LogicalLinkParams, int)}
+   *      if the operation succeeds, or
+   * {@link RangingSession.Callback#onLogicalLinkCreateFailed(SessionHandle, LogicalLinkParams, int)
+   *      } if it fails.</p>
+   *
+   * @param sessionHandle The session handle associated with the ongoing session.
+   * @param params {@link LogicalLinkParams} containing the parameters for establishing the logical
+   *      link connection.
+   */
+  void createLogicalLink(in SessionHandle sessionHandle, in LogicalLinkParams params);
+
+  /**
+   * Sends a request to close an existing logical link in an ongoing ranging session.
+   *
+   * <p>On completion:</p>
+   * <ul>
+   *   <li>If the logical link is successfully closed,
+   *        {@link RangingSession.Callback#onLogicalLinkClosed(SessionHandle, int)} is invoked.</li>
+   *   <li>If closing the logical link fails,
+   *        {@link RangingSession.Callback#onLogicalLinkCloseFailed(SessionHandle, int, int)} is
+   *        invoked with the failure status.</li>
+   * </ul>
+   *
+   * @param sessionHandle The session handle associated with the logical link.
+   * @param connectId The unique identifier of the logical link to close.
+   */
+  void closeLogicalLink(in SessionHandle sessionHandle, in int connectId);
+
+  /**
    * @hide
    *
    * @return timestamp in microseconds
    */
    long queryUwbsTimestampMicros();
+
+  /**
+   * Retrieves the Logical Link parameters associated with the given Logical Link Connection ID
+   * or session handle.
+   * <p>
+   * The Host shall use this API to request the FiRa Controller to return parameters related to
+   * an established Logical Link. If {@code connectId} is set to
+   * {@link LogicalLinkParams#CONNECT_ID_UNSPECIFIED}, the parameters will be retrieved using the
+   * session handle instead of a specific Logical Link Connection ID.
+   *
+   * @param connectId The Logical Link Connection ID for which the parameters are to be retrieved.
+   *           If the value is {@link LogicalLinkParams#CONNECT_ID_UNSPECIFIED}, the request will
+   *           fall back to using the session handle.
+   *
+   * @return {@link LogicalLinkConnectionParams} containing the retrieved Logical Link parameters.
+   */
+  LogicalLinkConnectionParams getLogicalLinkParams(in SessionHandle sessionHandle,
+      in int connectId);
 
   /**
    * The maximum allowed time to open a ranging session.
@@ -454,6 +544,11 @@ interface IUwbAdapter {
    * The maximum allowed time to configure hybrid session
    */
   const int SESSION_CONFIGURATION_THRESHOLD_MS = 3000; // Value TBD
+
+  /**
+   * The maximum allowed time to close logical link layer command
+   */
+  const int CLOSE_LOGICAL_LINK_THRESHOLD_MS = 3000; // Value TBD
 
   /**
    * The maximum allowed time for RF test

@@ -36,6 +36,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import com.android.modules.utils.build.SdkLevel;
+import com.android.uwb.flags.Flags;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -289,6 +290,23 @@ public class RangingManagerTest {
             rangingManager.onHybridSessionControleeConfigurationFailed(handle, REASON, PARAMS);
             verify(callback, times(1))
                     .onHybridSessionControleeConfigurationFailed(eq(REASON), eq(PARAMS));
+        }
+
+        if (Flags.uwbFira3025q4()) {
+            rangingManager.onLogicalLinkCreated(handle, any(), anyInt());
+            verify(callback, times(1)).onLogicalLinkCreated(any(), anyInt());
+
+            rangingManager.onLogicalLinkCreateFailed(handle, any(), anyInt());
+            verify(callback, times(1)).onLogicalLinkCreateFailed(any(), anyInt());
+
+            rangingManager.onLogicalLinkClosed(handle, anyInt(), anyInt());
+            verify(callback, times(1)).onLogicalLinkClosed(anyInt(), anyInt());
+
+            rangingManager.onLogicalLinkCloseFailed(handle, anyInt(), anyInt());
+            verify(callback, times(1)).onLogicalLinkCloseFailed(anyInt(), anyInt());
+
+            rangingManager.onRemoteLogicalLinkRequested(handle, any());
+            verify(callback, times(1)).onRemoteLogicalLinkRequested(any());
         }
 
         rangingManager.onRangingClosed(handle, REASON, PARAMS);

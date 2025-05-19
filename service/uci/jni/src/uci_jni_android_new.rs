@@ -18,7 +18,8 @@ use crate::dispatcher::Dispatcher;
 use crate::helper::{boolean_result_helper, byte_result_helper, option_result_helper};
 use crate::jclass_name::{
     CONFIG_STATUS_DATA_CLASS, DT_RANGING_ROUNDS_STATUS_CLASS, MULTICAST_LIST_UPDATE_STATUS_CLASS,
-    POWER_STATS_CLASS, TLV_DATA_CLASS, UWB_DEVICE_INFO_RESPONSE_CLASS, UWB_RANGING_DATA_CLASS,
+    POWER_STATS_CLASS, TLV_DATA_CLASS, UWB_DEVICE_INFO_RESPONSE_CLASS,
+    UWB_LOGICAL_LINK_CREATE_RESPONSE, UWB_LOGICAL_LINK_GET_PARAMS_CLASS, UWB_RANGING_DATA_CLASS,
     VENDOR_RESPONSE_CLASS,
 };
 use crate::unique_jvm;
@@ -37,9 +38,10 @@ use log::{debug, error};
 use uwb_core::error::{Error, Result};
 use uwb_core::params::{
     AndroidRadarConfigResponse, AppConfigTlv, ControllerPhaseList, CountryCode,
-    GetDeviceInfoResponse, RadarConfigTlv, RawAppConfigTlv, RawUciMessage, RfTestConfigResponse,
-    RfTestConfigTlv, SessionUpdateControllerMulticastResponse,
-    SessionUpdateDtTagRangingRoundsResponse, SetAppConfigResponse,
+    CreateLogicalLinkResponse, GetDeviceInfoResponse, GetLogicalLinkParamResponse, RadarConfigTlv,
+    RawAppConfigTlv, RawUciMessage, RfTestConfigResponse, RfTestConfigTlv,
+    SessionUpdateControllerMulticastResponse, SessionUpdateDtTagRangingRoundsResponse,
+    SetAppConfigResponse,
 };
 use uwb_uci_packets::{
     AppConfigTlvType, CapTlv, Controlee, ControleePhaseList, Controlee_V2_0_16_Byte_Version,
@@ -1336,6 +1338,28 @@ unsafe fn create_ranging_round_status(
     }
 }
 
+/// # Safety
+/// - The `response` must be a valid and properly initialized `CreateLogicalLinkResponse`.
+/// - The returned `JObject` must be properly initialized and owned.
+unsafe fn create_logical_link_create_response(
+    response: CreateLogicalLinkResponse,
+    env: JNIEnv,
+) -> Result<jobject> {
+    let create_ll_response_class = env
+        .find_class(UWB_LOGICAL_LINK_CREATE_RESPONSE)
+        .map_err(|_| Error::ForeignFunctionInterface)?;
+
+    // Unsafe from_raw call
+    match env.new_object(
+        create_ll_response_class,
+        "(II)V",
+        &[JValue::Int(i32::from(response.status)), JValue::Int(response.connect_id as i32)],
+    ) {
+        Ok(o) => Ok(*o),
+        Err(_) => Err(Error::ForeignFunctionInterface),
+    }
+}
+
 /// Send Raw vendor command on a single UWB device. Returns an invalid response if failed.
 #[no_mangle]
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSendRawVendorCmd(
@@ -1476,7 +1500,8 @@ fn native_set_ranging_rounds_dt_tag(
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSendData(
     env: JNIEnv,
     obj: JObject,
-    session_id: jint,
+    connect_id: jint,
+    link_layer_mode: jbyte,
     address: jbyteArray,
     uci_sequence_number: jshort,
     app_payload_data: jbyteArray,
@@ -1487,7 +1512,8 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
         native_send_data(
             env,
             obj,
-            session_id,
+            connect_id,
+            link_layer_mode,
             address,
             uci_sequence_number,
             app_payload_data,
@@ -1501,7 +1527,8 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSe
 fn native_send_data(
     env: JNIEnv,
     obj: JObject,
-    session_id: jint,
+    connect_id: jint,
+    link_layer_mode: jbyte,
     address: jbyteArray,
     uci_sequence_number: jshort,
     app_payload_data: jbyteArray,
@@ -1514,7 +1541,8 @@ fn native_send_data(
     let app_payload_data_bytearray =
         env.convert_byte_array(app_payload_data).map_err(|_| Error::ForeignFunctionInterface)?;
     uci_manager.send_data_packet(
-        session_id as u32,
+        connect_id as u32,
+        link_layer_mode as u8,
         address_bytearray,
         uci_sequence_number as u16,
         app_payload_data_bytearray,
@@ -1526,12 +1554,12 @@ fn native_send_data(
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeQueryDataSize(
     env: JNIEnv,
     obj: JObject,
-    session_id: jint,
+    connect_id: jint,
     chip_id: JString,
 ) -> jshort {
     debug!("{}: enter", function_name!());
     match option_result_helper(
-        native_query_data_size(env, obj, session_id, chip_id),
+        native_query_data_size(env, obj, connect_id, chip_id),
         function_name!(),
     ) {
         Some(s) => s.try_into().unwrap(),
@@ -1542,12 +1570,12 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeQu
 fn native_query_data_size(
     env: JNIEnv,
     obj: JObject,
-    session_id: jint,
+    connect_id: jint,
     chip_id: JString,
 ) -> Result<u16> {
     let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)
         .map_err(|_| Error::ForeignFunctionInterface)?;
-    uci_manager.session_query_max_data_size(session_id as u32)
+    uci_manager.session_query_max_data_size(connect_id as u32)
 }
 
 /// Set data transfer phase configuration
@@ -1626,6 +1654,153 @@ fn native_query_time_stamp(env: JNIEnv, obj: JObject, chip_id: JString) -> Resul
     let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)
         .map_err(|_| Error::ForeignFunctionInterface)?;
     uci_manager.core_query_uwb_timestamp()
+}
+
+/// Sends a command to create a logical link layer with a remote device.
+/// Returns a `LogicalLinkCreateResponse` object on success, or `null` on failure.
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeCreateLogicalLayer(
+    env: JNIEnv,
+    obj: JObject,
+    session_id: jint,
+    link_layer_mode: jbyte,
+    address: jbyteArray,
+    logical_link_class_len: jbyte,
+    chip_id: JString,
+) -> jobject {
+    let func_name = function_name!();
+    debug!("{}: enter", func_name);
+    match option_result_helper(
+        native_create_logical_layer(
+            env,
+            obj,
+            session_id,
+            link_layer_mode,
+            address,
+            logical_link_class_len,
+            chip_id,
+        ),
+        func_name,
+    ) {
+        // Safety: native_create_logical_layer guarantees that if it returns Some(clls),
+        // then clls is a valid CreateLogicalLinkResponse that we own and can safely pass
+        // to create_logical_link_create_response.
+        Some(clls) => unsafe {
+            create_logical_link_create_response(clls, env)
+                .inspect_err(|e| {
+                    error!("{} failed with {:?}", func_name, &e);
+                })
+                .unwrap_or(*JObject::null())
+        },
+        None => *JObject::null(),
+    }
+}
+
+fn native_create_logical_layer(
+    env: JNIEnv,
+    obj: JObject,
+    session_id: jint,
+    link_layer_mode: jbyte,
+    address: jbyteArray,
+    logical_link_class_len: jbyte,
+    chip_id: JString,
+) -> Result<CreateLogicalLinkResponse> {
+    let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)
+        .map_err(|_| Error::ForeignFunctionInterface)?;
+    let address_bytearray =
+        env.convert_byte_array(address).map_err(|_| Error::ForeignFunctionInterface)?;
+    uci_manager.create_logical_link_layer(
+        session_id as u32,
+        link_layer_mode as u8,
+        address_bytearray,
+        logical_link_class_len as u8,
+    )
+}
+
+/// Close logical link with llConnectID
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeCloseLogicalLink(
+    env: JNIEnv,
+    obj: JObject,
+    connect_id: jint,
+    chip_id: JString,
+) -> jbyte {
+    debug!("{}: enter", function_name!());
+    byte_result_helper(native_close_logical_link(env, obj, connect_id, chip_id), function_name!())
+}
+
+fn native_close_logical_link(
+    env: JNIEnv,
+    obj: JObject,
+    connect_id: jint,
+    chip_id: JString,
+) -> Result<()> {
+    let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)
+        .map_err(|_| Error::ForeignFunctionInterface)?;
+    uci_manager.close_logical_link(connect_id as u32)
+}
+
+fn create_get_logical_link_param_response(
+    response: GetLogicalLinkParamResponse,
+    env: JNIEnv,
+) -> Result<jobject> {
+    let get_logical_link_param_class = env
+        .find_class(UWB_LOGICAL_LINK_GET_PARAMS_CLASS)
+        .map_err(|_| Error::ForeignFunctionInterface)?;
+
+    let logical_link_params = response.logical_link_params;
+
+    // Safety: logical_link_params is safely instantiated above.
+    let logical_link_params_jobject = unsafe {
+        JObject::from_raw(
+            env.byte_array_from_slice(logical_link_params.as_ref())
+                .map_err(|_| Error::ForeignFunctionInterface)?,
+        )
+    };
+    match env.new_object(
+        get_logical_link_param_class,
+        "(II[B)V",
+        &[
+            JValue::Int(i32::from(response.status)),
+            JValue::Int(i32::from(response.control_field)),
+            JValue::Object(logical_link_params_jobject),
+        ],
+    ) {
+        Ok(o) => Ok(*o),
+        Err(_) => Err(Error::ForeignFunctionInterface),
+    }
+}
+
+/// Get the logical link parameters associated with the logical link ID.
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeGetLogicalLinkParams(
+    env: JNIEnv,
+    obj: JObject,
+    connect_id: jint,
+    chip_id: JString,
+) -> jobject {
+    debug!("{}: enter", function_name!());
+    match option_result_helper(
+        native_get_logical_link_params(env, obj, connect_id, chip_id),
+        function_name!(),
+    ) {
+        Some(response) => create_get_logical_link_param_response(response, env)
+            .inspect_err(|e| {
+                error!("{} failed with {:?}", function_name!(), &e);
+            })
+            .unwrap_or(*JObject::null()),
+        None => *JObject::null(),
+    }
+}
+
+fn native_get_logical_link_params(
+    env: JNIEnv,
+    obj: JObject,
+    connect_id: jint,
+    chip_id: JString,
+) -> Result<GetLogicalLinkParamResponse> {
+    let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
+    uci_manager.get_logical_link_params(connect_id as u32)
 }
 
 /// Get session token for the UWB session.

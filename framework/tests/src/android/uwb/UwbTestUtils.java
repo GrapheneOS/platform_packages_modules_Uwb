@@ -21,6 +21,7 @@ import android.os.SystemClock;
 import java.util.concurrent.Executor;
 
 public class UwbTestUtils {
+    public static final int LOGICAL_LINK_CONNECT_ID = 0;
     private UwbTestUtils() {}
 
     public static AngleMeasurement getAngleMeasurement() {

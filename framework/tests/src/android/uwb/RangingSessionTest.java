@@ -39,11 +39,13 @@ import android.content.AttributionSource;
 import android.os.PersistableBundle;
 import android.os.Process;
 import android.os.RemoteException;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import com.android.modules.utils.build.SdkLevel;
+import com.android.uwb.flags.Flags;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -367,6 +369,23 @@ public class RangingSessionTest {
         verify(callback, times(1)).onHybridSessionControleeConfigurationFailed(
                 eq(REASON_BAD_PARAMETERS), eq(null));
 
+        if (Flags.uwbFira3025q4()) {
+            session.onLogicalLinkCreated(any(), anyInt());
+            verify(callback, times(1)).onLogicalLinkCreated(any(), anyInt());
+
+            session.onLogicalLinkCreateFailed(any(), anyInt());
+            verify(callback, times(1)).onLogicalLinkCreateFailed(any(), anyInt());
+
+            session.onLogicalLinkClosed(anyInt(), anyInt());
+            verify(callback, times(1)).onLogicalLinkClosed(anyInt(), anyInt());
+
+            session.onLogicalLinkCloseFailed(anyInt(), anyInt());
+            verify(callback, times(1)).onLogicalLinkCloseFailed(anyInt(), anyInt());
+
+            session.onRemoteLogicalLinkRequested(any());
+            verify(callback, times(1)).onRemoteLogicalLinkRequested(any());
+        }
+
         session.stop();
         verifyOpenState(session, true);
         verify(callback, times(1)).onStopped(REASON, PARAMS);
@@ -472,6 +491,22 @@ public class RangingSessionTest {
 
         session.onRangingStarted(PARAMS);
         assertThat(session.queryMaxDataSizeBytes()).isEqualTo(MAX_DATA_SIZE);
+    }
+
+    @Test
+    public void testQueryLogicalLinkMaxDataSizeBytes() throws RemoteException {
+        assumeTrue(Flags.uwbFira3025q4());
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
+
+        when(adapter.queryLogicalLinkMaxDataSizeBytes(handle, UwbTestUtils.LOGICAL_LINK_CONNECT_ID))
+                .thenReturn(MAX_DATA_SIZE);
+
+        session.onRangingStarted(PARAMS);
+        assertThat(session.queryLogicalLinkMaxDataSizeBytes(UwbTestUtils.LOGICAL_LINK_CONNECT_ID))
+                .isEqualTo(MAX_DATA_SIZE);
     }
 
     @Test
@@ -771,6 +806,64 @@ public class RangingSessionTest {
         // ranging session has now been closed.
         session.onRangingClosed(REASON, PARAMS);
         verifyThrowIllegalState(() -> session.setDataTransferPhaseConfig(PARAMS));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public void testCreateLogicalLink() throws RemoteException {
+        assumeTrue(Flags.uwbFira3025q4());
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
+        LogicalLinkParams params = new LogicalLinkParams.Builder(0,
+                UwbAddress.fromBytes(new byte[] {0x11, 0x22})).build();
+        assertFalse(session.isOpen());
+
+        session.onRangingOpened();
+        session.createLogicalLink(params);
+
+        verify(adapter, times(1)).createLogicalLink(handle, params);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public void testCloseLogicalLink() throws RemoteException {
+        assumeTrue(Flags.uwbFira3025q4());
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
+        assertFalse(session.isOpen());
+
+        session.onRangingOpened();
+        session.closeLogicalLink(UwbTestUtils.LOGICAL_LINK_CONNECT_ID);
+
+        verify(adapter, times(1)).closeLogicalLink(handle, UwbTestUtils.LOGICAL_LINK_CONNECT_ID);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public void testGetLogicalLinkParams() throws RemoteException {
+        assumeTrue(Flags.uwbFira3025q4());
+        SessionHandle handle = new SessionHandle(HANDLE_ID, ATTRIBUTION_SOURCE, PID);
+        RangingSession.Callback callback = mock(RangingSession.Callback.class);
+        IUwbAdapter adapter = mock(IUwbAdapter.class);
+        RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
+        int connectId = 0x00;
+        LogicalLinkConnectionParams mockResponse = new LogicalLinkConnectionParams.Builder(
+                STATUS_OK, 0x00).build();
+        when(adapter.getLogicalLinkParams(handle, connectId)).thenReturn(mockResponse);
+        assertFalse(session.isOpen());
+        verifyThrowIllegalState(() -> session.getLogicalLinkParams(connectId));
+
+        session.onRangingOpened();
+        session.getLogicalLinkParams(connectId);
+
+        LogicalLinkConnectionParams response = session.getLogicalLinkParams(connectId);
+
+        assertThat(response).isNotNull();
+        assertThat(mockResponse).isEqualTo(response);
     }
 
     @Test

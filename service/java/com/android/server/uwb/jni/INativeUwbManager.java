@@ -53,18 +53,21 @@ public interface INativeUwbManager {
                 UwbMulticastListUpdateStatus multicastListUpdateData);
 
         /**
-         * Interface for receiving data from remote device
+         * Interface for receiving data from the remote device in either Bypass or Logical Link
+         * mode.
          *
-         * @param sessionID   : Session ID
-         * @param status      : Status
-         * @param sequenceNum : Sequence Number
-         * @param address     : Address of remote address
-         * @param data        : Data received from remote address
+         * @param sessionID      Session ID or Connect ID, depending on the mode.
+         * @param linkLayerMode  Link layer mode (e.g., Bypass or Logical Link).
+         * @param status         Status (applicable only in Bypass Mode).
+         * @param sequenceNum    UCI sequence number.
+         * @param address        Remote device address (applicable in Bypass Mode,
+         *                          0xFFFF in Logical Link Mode).
+         * @param data           Payload data received.
          */
         // TODO(b/261762781): Change the type of sessionID & sequenceNum parameters to int (to match
         // their 4-octet size in the UCI spec).
-        void onDataReceived(
-                long sessionID, int status, long sequenceNum, byte[] address, byte[] data);
+        void onDataReceived(long sessionID, int linkLayerMode, int status, long sequenceNum,
+                byte[] address, byte[] data);
 
         /**
          * Interface for receiving the data transfer status, corresponding to a Data packet
@@ -100,6 +103,34 @@ public interface INativeUwbManager {
          * @param rfNotificationEvent  : Protocol specific notification params
          */
         void onRfTestNotificationReceived(RfNotificationEvent rfNotificationEvent);
+
+        /**
+         * Interface for receiving Logical Link Create Notification
+         *
+         * @param connectId : Identifier specific for the created link
+         * @param status : status of Logical Link Create Notification
+         */
+        void onLogicalLinkCreateNotification(long connectId, int status);
+
+        /**
+         * Called when a UWBS logical link is closed by the remote device, host or due to an
+         * internal condition.
+         *
+         * @param connectId The identifier of the logical link that was closed.
+         * @param reason The reason for closure.
+         */
+        void onLogicalLinkClosed(long connectId, int reason);
+
+        /**
+         * Called when a UWBS logical link creation request is received from a remote device.
+         *
+         * @param sessionId The session ID associated with the logical link request.
+         * @param connectId The identifier for the newly requested logical link.
+         * @param linkLayerMode The mode of the link layer.
+         * @param address The UWB address (MAC address) of the remote device initiating the request.
+         */
+        void onRemoteLogicalLinkRequested(
+                long sessionId, long connectId, int linkLayerMode, byte[] address);
     }
 
     interface DeviceNotification {

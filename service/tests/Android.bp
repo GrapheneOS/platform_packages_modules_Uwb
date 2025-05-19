@@ -49,6 +49,7 @@ android_test {
         "com.uwb.fusion",
         "flag-junit",
         "platform-test-annotations",
+        "uwb_flags_lib",
     ],
 
     jarjar_rules: ":uwb-jarjar-rules",

@@ -17,6 +17,8 @@
 package android.uwb;
 
 import android.os.PersistableBundle;
+import android.uwb.LogicalLinkParams;
+import android.uwb.LogicalLinkConnectionRequest;
 import android.uwb.RangingChangeReason;
 import android.uwb.RangingReport;
 import android.uwb.SessionHandle;
@@ -211,9 +213,13 @@ oneway interface IUwbRangingCallbacks {
    * Invoked when data is successfully sent via {@link RangingSession#sendData(UwbAddress,
    * PersistableBundle, byte[])}.
    *
-   * @param sessionHandle the session the callback is being invoked for
-   * @param remoteDeviceAddress remote device's address.
-   * @param parameters protocol specific parameters sent for suspension.
+   * <p>Note: In Logical Link Mode, {@code remoteDeviceAddress} is not applicable and should
+   * be ignored. The destination is identified using the Logical Link Connect ID in
+   * {@code parameters}.
+   *
+   * @param sessionHandle the session the callback is being invoked for.
+   * @param remoteDeviceAddress Address of the target device (not used in Logical Link Mode).
+   * @param parameters protocol specific parameters used during send data.
    */
   void onDataSent(in SessionHandle sessionHandle, in UwbAddress remoteDeviceAddress,
           in PersistableBundle parameters);
@@ -222,10 +228,14 @@ oneway interface IUwbRangingCallbacks {
    * Invoked when data send to a remote device via {@link RangingSession#sendData(UwbAddress,
    * PersistableBundle, byte[])} fails.
    *
-   * @param sessionHandle the session the callback is being invoked for
-   * @param remoteDeviceAddress remote device's address.
-   * @param reason reason for the resumption failure.
-   * @param parameters protocol specific parameters for resumption failure.
+   * <p>Note: In Logical Link Mode, {@code remoteDeviceAddress} is not applicable and should
+   * be ignored. The destination is identified using the Logical Link Connect ID in
+   * {@code parameters}.
+   *
+   * @param sessionHandle the session the callback is being invoked for.
+   * @param remoteDeviceAddress Address of the target device (not used in Logical Link Mode).
+   * @param reason reason for the send data failure.
+   * @param parameters protocol specific parameters used during send data.
    */
   void onDataSendFailed(in SessionHandle sessionHandle, in UwbAddress remoteDeviceAddress,
           RangingChangeReason reason, in PersistableBundle parameters);
@@ -252,15 +262,33 @@ oneway interface IUwbRangingCallbacks {
           RangingChangeReason reason, in PersistableBundle parameters);
 
   /**
-   * Invoked when data is received successfully from a remote device.
-   * The data is received piggybacked over RRM (initiator -> responder) or
-   * RIM (responder -> initiator).
-   * <p> This is only functional on a FIRA 2.0 compliant device.
+   * Callback triggered when data is received from a remote device.
    *
-   * @param sessionHandle the session the callback is being invoked for
-   * @param remoteDeviceAddress remote device's address.
-   * @param data Raw data received.
-   * @param parameters protocol specific parameters for the received data.
+   * <p>This supports two link layer modes:
+   *
+   * <ul>
+   *   <li><b>Bypass Mode (FiRa 2.0+):</b>
+   *      The data is received piggybacked over RRM (initiator -> responder) or
+   *      RIM (responder -> initiator).
+   *     <ul>
+   *       <li>`remoteDeviceAddress` is the actual address of the sender.</li>
+   *       <li>`parameters` may be empty or protocol-specific.</li>
+   *     </ul>
+   *   </li>
+   *
+   *   <li><b>Logical Link Mode (FiRa 3.0+):</b>
+   *     <ul>
+   *       <li>`remoteDeviceAddress` is always set to {@code 0xFFFF}.</li>
+   *       <li>`parameters` will include the Logical Link Connect ID (key: "connect_id").</li>
+   *     </ul>
+   *   </li>
+   * </ul>
+   *
+   * @param sessionHandle         the session for which the callback is invoked.
+   * @param remoteDeviceAddress   UWB address of the remote device (or {@code 0xFFFF} for
+   *                              Logical Link mode).
+   * @param parameters            protocol-specific data (e.g., connectId in Logical Link mode).
+   * @param data                  raw payload received.
    */
   void onDataReceived(in SessionHandle sessionHandle, in UwbAddress remoteDeviceAddress,
           in PersistableBundle parameters, in byte[] data);
@@ -323,6 +351,83 @@ oneway interface IUwbRangingCallbacks {
    */
   void onHybridSessionControleeConfigurationFailed(in SessionHandle sessionHandle,
           RangingChangeReason reason, in PersistableBundle parameters);
+
+  /**
+   * Callback invoked when a logical link is successfully created following a call to
+   * {@link RangingSession#createLogicalLink(LogicalLinkParams)}.
+   *
+   * <p>This method indicates that the logical link was successfully established. The assigned
+   * {@code connectId} can be used for subsequent communication over this link.</p>
+   *
+   * @param sessionHandle The session handle associated with the logical link.
+   * @param params {@link LogicalLinkParams} used during the link creation.
+   * @param connectId The connection ID assigned to the newly created logical link.
+   */
+  void onLogicalLinkCreated(in SessionHandle sessionHandle, in LogicalLinkParams params,
+        in int connectId);
+
+  /**
+   * Callback invoked when the logical link creation fails following a call to
+   * {@link RangingSession#createLogicalLink(LogicalLinkParams)}.
+   *
+   * <p>This method notifies the application that the attempt to establish a logical link was
+   * unsuccessful. Refer to the {@code status} for failure details.</p>
+   *
+   * @param sessionHandle The session handle associated with the logical link attempt.
+   * @param params {@link LogicalLinkParams} used during the link creation.
+   * @param status The status code indicating the reason for failure.
+   *                   See {@link LogicalLinkStatusCode} for possible values.
+   */
+  void onLogicalLinkCreateFailed(in SessionHandle sessionHandle, in LogicalLinkParams params,
+      in int status);
+
+  /**
+   * Callback invoked when a logical link is closed, either as a result of a
+   * {@link RangingSession#closeLogicalLink(int)} request or due to remote termination, link
+   * failure, timeout, or other UWBS-initiated conditions.
+   *
+   * <p>This method is called only for logical links that were previously open. The closure reason
+   * indicates whether the closure was initiated by the host or due to other conditions such as
+   * remote device actions, transmission errors, timeouts, or intervention by the secure
+   * component.</p>
+   *
+   * @param sessionHandle The handle of the session to which the closed logical link belonged.
+   * @param connectId Unique identifier of the logical link that was closed.
+   * @param reason Reason for link closure. See {@link LogicalLinkClosureReason} for valid values.
+   */
+  void onLogicalLinkClosed(in SessionHandle sessionHandle, in int connectId, in int reason);
+
+  /**
+   * Callback invoked when closing a logical link fails after calling
+   * {@link RangingSession#closeLogicalLink(int)}.
+   *
+   * @param connectId The connection ID associated with the logical link.
+   * @param status The failure status code indicating why the close failed.
+   *                   See {@link LogicalLinkStatusCode} for possible values.
+   */
+  void onLogicalLinkCloseFailed(in SessionHandle sessionHandle, in int connectId, in int status);
+
+  /**
+   * Callback invoked when a remote device requests to establish a logical link.
+   *
+   * <p>This notification occurs in the following cases:
+   * <ul>
+   *   <li>The Controlee UWBS receives a request from the Controller to establish a
+   *        connection-oriented (CO) logical link.</li>
+   *   <li>Initial connectionless (CL) data is received during a data-only or data-with-ranging
+   *        session.</li>
+   * </ul>
+   *
+   * <p>If the host application does not approve the link, it must call
+   * {@link #closeLogicalLink(int)} with the {@code connectId} provided in this callback.
+   * Otherwise, the host and UWBS will use the {@code connectId} for all subsequent
+   * application data exchanges on this logical link.
+   *
+   * @param sessionHandle Identifies the ongoing data transfer or ranging session.
+   * @param LogicalLinkConnectionRequest Information about the requested logical link.
+   */
+  void onRemoteLogicalLinkRequested(in SessionHandle sessionHandle,
+          in LogicalLinkConnectionRequest linkInfo);
 
   void onServiceDiscovered(in SessionHandle sessionHandle, in PersistableBundle parameters);
 

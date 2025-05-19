@@ -25,10 +25,12 @@ import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TY
 import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TYPE_OWR_AOA;
 import static com.android.server.uwb.data.UwbUciConstants.RANGING_MEASUREMENT_TYPE_TWO_WAY;
 import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_FAILED;
+import static com.android.server.uwb.data.UwbUciConstants.STATUS_CODE_OK;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.uwb.support.radar.RadarParams.RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES;
 
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
@@ -50,6 +52,8 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Pair;
 import android.uwb.IUwbOemExtensionCallback;
 import android.uwb.IUwbRangingCallbacks;
+import android.uwb.LogicalLinkConnectionRequest;
+import android.uwb.LogicalLinkParams;
 import android.uwb.RangingChangeReason;
 import android.uwb.RangingReport;
 import android.uwb.SessionHandle;
@@ -733,6 +737,58 @@ public class UwbSessionNotificationManagerTest {
                 eq(RangingChangeReason.PROTOCOL_SPECIFIC),
                 argThat(p -> (p.getInt("data_transfer_phase_config_status_code"))
                       == dataTransferPhaseConfigStatus));
+    }
+
+    @Test
+    public void testOnLogicalLinkCreated() throws Exception {
+        assumeTrue(Flags.uwbFira3025q4());
+        LogicalLinkParams params = new LogicalLinkParams.Builder(0,
+                UwbAddress.fromBytes(new byte[] {0x11, 0x22})).build();
+        mUwbSessionNotificationManager.onLogicalLinkCreated(mUwbSession, params,
+                UwbTestUtils.LOGICAL_LINK_CONNECT_ID);
+        verify(mIUwbRangingCallbacks).onLogicalLinkCreated(any(), eq(params),
+                eq(UwbTestUtils.LOGICAL_LINK_CONNECT_ID));
+    }
+
+    @Test
+    public void testOnLogicalLinkCreateFailed() throws Exception {
+        assumeTrue(Flags.uwbFira3025q4());
+        LogicalLinkParams params = new LogicalLinkParams.Builder(0,
+                UwbAddress.fromBytes(new byte[] {0x11, 0x22})).build();
+        mUwbSessionNotificationManager.onLogicalLinkCreateFailed(mUwbSession, params,
+                UwbUciConstants.LOGICAL_LINK_STATUS_FAILED);
+        verify(mIUwbRangingCallbacks).onLogicalLinkCreateFailed(any(), eq(params),
+                eq(UwbUciConstants.LOGICAL_LINK_STATUS_FAILED));
+    }
+
+    @Test
+    public void testOnLogicalLinkClosed() throws Exception {
+        assumeTrue(Flags.uwbFira3025q4());
+        int reason = 5;
+        mUwbSessionNotificationManager.onLogicalLinkClosed(mUwbSession,
+                UwbTestUtils.LOGICAL_LINK_CONNECT_ID, reason);
+        verify(mIUwbRangingCallbacks).onLogicalLinkClosed(any(),
+                eq(UwbTestUtils.LOGICAL_LINK_CONNECT_ID), eq(reason));
+    }
+
+    @Test
+    public void testOnLogicalLinkCloseFailed() throws Exception {
+        assumeTrue(Flags.uwbFira3025q4());
+        mUwbSessionNotificationManager.onLogicalLinkCloseFailed(mUwbSession,
+                UwbTestUtils.LOGICAL_LINK_CONNECT_ID, STATUS_CODE_OK);
+        verify(mIUwbRangingCallbacks).onLogicalLinkCloseFailed(any(),
+                eq(UwbTestUtils.LOGICAL_LINK_CONNECT_ID), eq(STATUS_CODE_OK));
+    }
+
+    @Test
+    public void testOnRemoteLogicalLinkRequested() throws Exception {
+        assumeTrue(Flags.uwbFira3025q4());
+        LogicalLinkConnectionRequest params = new LogicalLinkConnectionRequest.Builder(
+                UwbTestUtils.LOGICAL_LINK_CONNECT_ID, 0x01,
+                UwbAddress.fromBytes(new byte[] { 0x00, 0x00 })).build();
+
+        mUwbSessionNotificationManager.onRemoteLogicalLinkRequested(mUwbSession, params);
+        verify(mIUwbRangingCallbacks).onRemoteLogicalLinkRequested(any(), eq(params));
     }
 
     @Test
