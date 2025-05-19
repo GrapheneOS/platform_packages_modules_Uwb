@@ -42,6 +42,97 @@ package android.uwb {
     method @NonNull public android.uwb.DistanceMeasurement.Builder setMeters(double);
   }
 
+  @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public final class LogicalLinkConnectionParams implements android.os.Parcelable {
+    method public int describeContents();
+    method public int getDestinationPort();
+    method public int getLinkTimeout();
+    method public int getMaxLinkLayerPduSize();
+    method public int getMaxLinkLayerSduSize();
+    method public int getReceiveWindowSize();
+    method public int getRepeatCountMax();
+    method public int getSourcePort();
+    method public int getStatus();
+    method public int getTransmitWindowSize();
+    method public boolean hasDestinationPort();
+    method public boolean hasLinkTimeout();
+    method public boolean hasMaxLinkLayerPduSize();
+    method public boolean hasMaxLinkLayerSduSize();
+    method public boolean hasReceiveWindowSize();
+    method public boolean hasRepeatCountMax();
+    method public boolean hasSourcePort();
+    method public boolean hasTransmitWindowSize();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field public static final int CONTROL_FIELD_LINK_TIMEOUT = 32; // 0x20
+    field public static final int CONTROL_FIELD_MAX_LL_PDU_SIZE = 2; // 0x2
+    field public static final int CONTROL_FIELD_MAX_LL_SDU_SIZE = 1; // 0x1
+    field public static final int CONTROL_FIELD_PORT = 64; // 0x40
+    field public static final int CONTROL_FIELD_RECEIVE_WINDOW_SIZE = 8; // 0x8
+    field public static final int CONTROL_FIELD_REPEAT_COUNT_MAX = 16; // 0x10
+    field public static final int CONTROL_FIELD_TRANSMIT_WINDOW_SIZE = 4; // 0x4
+    field @NonNull public static final android.os.Parcelable.Creator<android.uwb.LogicalLinkConnectionParams> CREATOR;
+  }
+
+  public static final class LogicalLinkConnectionParams.Builder {
+    ctor public LogicalLinkConnectionParams.Builder(int, int);
+    method @NonNull public android.uwb.LogicalLinkConnectionParams build();
+    method @NonNull public android.uwb.LogicalLinkConnectionParams.Builder setDestinationPort(int);
+    method @NonNull public android.uwb.LogicalLinkConnectionParams.Builder setLinkTimeout(int);
+    method @NonNull public android.uwb.LogicalLinkConnectionParams.Builder setMaxLinkLayerPduSize(int);
+    method @NonNull public android.uwb.LogicalLinkConnectionParams.Builder setMaxLinkLayerSduSize(int);
+    method @NonNull public android.uwb.LogicalLinkConnectionParams.Builder setReceiveWindowSize(int);
+    method @NonNull public android.uwb.LogicalLinkConnectionParams.Builder setRepeatCountMax(int);
+    method @NonNull public android.uwb.LogicalLinkConnectionParams.Builder setSourcePort(int);
+    method @NonNull public android.uwb.LogicalLinkConnectionParams.Builder setTransmitWindowSize(int);
+  }
+
+  @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public final class LogicalLinkConnectionRequest implements android.os.Parcelable {
+    method public int describeContents();
+    method public int getConnectId();
+    method public int getLinkLayerModeSelector();
+    method @NonNull public android.uwb.UwbAddress getSourceAddress();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field @NonNull public static final android.os.Parcelable.Creator<android.uwb.LogicalLinkConnectionRequest> CREATOR;
+  }
+
+  public static final class LogicalLinkConnectionRequest.Builder {
+    ctor public LogicalLinkConnectionRequest.Builder(int, int, @NonNull android.uwb.UwbAddress);
+    method @NonNull public android.uwb.LogicalLinkConnectionRequest build();
+  }
+
+  @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public final class LogicalLinkParams implements android.os.Parcelable {
+    method public int describeContents();
+    method @NonNull public byte[] getDestinationAddress();
+    method @NonNull public int getLinkLayerModeSelector();
+    method @NonNull public int getLogicalLinkClassLength();
+    method public void writeToParcel(@NonNull android.os.Parcel, int);
+    field public static final int CONNECT_ID_UNSPECIFIED = -1; // 0xffffffff
+    field @NonNull public static final android.os.Parcelable.Creator<android.uwb.LogicalLinkParams> CREATOR;
+    field public static final int LINK_LAYER_MODE_CONNECTION_LESS_NON_SECURE = 0; // 0x0
+    field public static final int LINK_LAYER_MODE_CONNECTION_LESS_SECURE = 1; // 0x1
+    field public static final int LINK_LAYER_MODE_CONNECTION_LESS_UWBS_UWBS = 4; // 0x4
+    field public static final int LINK_LAYER_MODE_CONNECTION_ORIENTED_NON_SECURE = 2; // 0x2
+    field public static final int LINK_LAYER_MODE_CONNECTION_ORIENTED_SECURE = 3; // 0x3
+    field public static final int LINK_LAYER_MODE_CONNECTION_ORIENTED_UWBS_UWBS = 5; // 0x5
+    field public static final int LOGICAL_LINK_CLOSE_REASON_HOST_INITIATED = 5; // 0x5
+    field public static final int LOGICAL_LINK_CLOSE_REASON_REMOTE = 0; // 0x0
+    field public static final int LOGICAL_LINK_CLOSE_REASON_SECURE_COMPONENT = 3; // 0x3
+    field public static final int LOGICAL_LINK_CLOSE_REASON_TIMEOUT = 1; // 0x1
+    field public static final int LOGICAL_LINK_CLOSE_REASON_TRANSMISSION_ERROR = 2; // 0x2
+    field public static final int LOGICAL_LINK_CLOSE_REASON_UNKNOWN_REASON = 4; // 0x4
+    field public static final int LOGICAL_LINK_STATUS_ACCEPTED = 0; // 0x0
+    field public static final int LOGICAL_LINK_STATUS_CO_CONNECTED = 2; // 0x2
+    field public static final int LOGICAL_LINK_STATUS_ERROR = 3; // 0x3
+    field public static final int LOGICAL_LINK_STATUS_FAILED = 1; // 0x1
+    field public static final int LOGICAL_LINK_STATUS_OK = 0; // 0x0
+    field public static final int LOGICAL_LINK_STATUS_REJECTED = 1; // 0x1
+  }
+
+  public static final class LogicalLinkParams.Builder {
+    ctor public LogicalLinkParams.Builder(int, @NonNull android.uwb.UwbAddress);
+    method @NonNull public android.uwb.LogicalLinkParams build();
+    method @NonNull public android.uwb.LogicalLinkParams.Builder setLogicalLinkClassLength(int);
+  }
+
   public final class RangingMeasurement implements android.os.Parcelable {
     method public int describeContents();
     method @Nullable public android.uwb.AngleOfArrivalMeasurement getAngleOfArrivalMeasurement();
@@ -108,7 +199,11 @@ package android.uwb {
   public final class RangingSession implements java.lang.AutoCloseable {
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void addControlee(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void close();
+    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void closeLogicalLink(int);
+    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void createLogicalLink(@NonNull android.uwb.LogicalLinkParams);
+    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") @NonNull @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public android.uwb.LogicalLinkConnectionParams getLogicalLinkParams(int);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void pause(@NonNull android.os.PersistableBundle);
+    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public int queryLogicalLinkMaxDataSizeBytes(int);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public int queryMaxDataSizeBytes();
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void reconfigure(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void removeControlee(@NonNull android.os.PersistableBundle);
@@ -139,6 +234,10 @@ package android.uwb {
     method @FlaggedApi("com.android.uwb.flags.hybrid_session_support") public default void onHybridSessionControleeConfigured(@NonNull android.os.PersistableBundle);
     method @FlaggedApi("com.android.uwb.flags.hybrid_session_support") public default void onHybridSessionControllerConfigurationFailed(int, @NonNull android.os.PersistableBundle);
     method @FlaggedApi("com.android.uwb.flags.hybrid_session_support") public default void onHybridSessionControllerConfigured(@NonNull android.os.PersistableBundle);
+    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public default void onLogicalLinkCloseFailed(int, int);
+    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public default void onLogicalLinkClosed(int, int);
+    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public default void onLogicalLinkCreateFailed(@NonNull android.uwb.LogicalLinkParams, int);
+    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public default void onLogicalLinkCreated(@NonNull android.uwb.LogicalLinkParams, int);
     method public void onOpenFailed(int, @NonNull android.os.PersistableBundle);
     method public void onOpened(@NonNull android.uwb.RangingSession);
     method public default void onPauseFailed(int, @NonNull android.os.PersistableBundle);
@@ -146,6 +245,7 @@ package android.uwb {
     method public default void onRangingRoundsUpdateDtTagStatus(@NonNull android.os.PersistableBundle);
     method public void onReconfigureFailed(int, @NonNull android.os.PersistableBundle);
     method public void onReconfigured(@NonNull android.os.PersistableBundle);
+    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public default void onRemoteLogicalLinkRequested(@NonNull android.uwb.LogicalLinkConnectionRequest);
     method public void onReportReceived(@NonNull android.uwb.RangingReport);
     method public default void onResumeFailed(int, @NonNull android.os.PersistableBundle);
     method public default void onResumed(@NonNull android.os.PersistableBundle);

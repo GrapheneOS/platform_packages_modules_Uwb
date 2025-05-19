@@ -54,6 +54,8 @@ import com.google.uwb.support.radar.RadarSweepData;
 public class UwbTestUtils {
     public static final int TEST_SESSION_ID = 7;
     public static final int TEST_SESSION_ID_2 = 8;
+    public static final int LOGICAL_LINK_CONNECT_ID = 0;
+    public static final byte LINK_LAYER_MODE = 0;
     public static final byte TEST_SESSION_TYPE = FiraParams.SESSION_TYPE_RANGING;
     public static final byte[] PEER_SHORT_MAC_ADDRESS = {0x35, 0x37};
     public static final long PEER_SHORT_MAC_ADDRESS_LONG = 0x3735L;

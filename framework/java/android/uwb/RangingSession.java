@@ -27,10 +27,13 @@ import android.os.Build;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.util.Log;
+import android.uwb.LogicalLinkParams.LogicalLinkClosureReason;
+import android.uwb.LogicalLinkParams.LogicalLinkStatusCode;
 
 import androidx.annotation.RequiresApi;
 
 import com.android.modules.utils.build.SdkLevel;
+import com.android.uwb.flags.Flags;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -382,8 +385,12 @@ public final class RangingSession implements AutoCloseable {
          * Invoked when data is successfully sent via {@link RangingSession#sendData(UwbAddress,
          * PersistableBundle, byte[])}.
          *
-         * @param remoteDeviceAddress remote device's address
-         * @param parameters protocol specific parameters sent for suspension
+         * <p>Note: In Logical Link Mode, {@code remoteDeviceAddress} is not applicable and should
+         * be ignored. The destination is identified using the Logical Link Connect ID in
+         * {@code parameters}.
+         *
+         * @param remoteDeviceAddress Address of the target device (not used in Logical Link Mode).
+         * @param parameters protocol specific parameters used during send data.
          */
         default void onDataSent(@NonNull UwbAddress remoteDeviceAddress,
                 @NonNull PersistableBundle parameters) {}
@@ -392,22 +399,49 @@ public final class RangingSession implements AutoCloseable {
          * Invoked when data send to a remote device via {@link RangingSession#sendData(UwbAddress,
          * PersistableBundle, byte[])} fails.
          *
-         * @param remoteDeviceAddress remote device's address
-         * @param reason reason for the resumption failure
-         * @param parameters protocol specific parameters for resumption failure
+         * <p>Note: In Logical Link Mode, {@code remoteDeviceAddress} is not applicable and should
+         * be ignored. The destination is identified using the Logical Link Connect ID in
+         * {@code parameters}.
+         *
+         * @param remoteDeviceAddress Address of the target device (not used in Logical Link Mode).
+         * @param reason reason for the send data failure.
+         * @param parameters protocol specific parameters used during send data.
          */
         default void onDataSendFailed(@NonNull UwbAddress remoteDeviceAddress,
                 @DataFailureReason int reason, @NonNull PersistableBundle parameters) {}
 
         /**
-         * Invoked when data is received successfully from a remote device.
-         * The data is received piggybacked over RRM (initiator -> responder) or
-         * RIM (responder -> initiator).
-         * <p> This is only functional on a FIRA 2.0 compliant device.
+         * Callback triggered when data is received from a remote device.
          *
-         * @param remoteDeviceAddress remote device's address
-         * @param data Raw data received
-         * @param parameters protocol specific parameters for the received data
+         * <p>This supports two link layer modes:
+         *
+         * <ul>
+         *   <li><b>Bypass Mode (FiRa 2.0+):</b>
+         *      The data is received piggybacked over RRM (initiator -> responder) or
+         *      RIM (responder -> initiator).
+         *     <ul>
+         *       <li>remoteDeviceAddress is the actual address of the sender.</li>
+         *       <li>parameters may be empty or protocol-specific.</li>
+         *       <p><b>Note:</b> This mode is supported only on FiRa 2.0-compliant devices and
+         *          above.
+         *     </ul>
+         *   </li>
+         *
+         *   <li><b>Logical Link Mode (FiRa 3.0+):</b>
+         *     <ul>
+         *       <li>remoteDeviceAddress is always set to {@code 0xFFFF}.</li>
+         *       <li>parameters will include the Logical Link Connect ID (key: "connect_id").</li>
+         *       <p><b>Note:</b> This mode is supported only on FiRa 3.0-compliant devices and
+         *          above.
+         *     </ul>
+         *   </li>
+         * </ul>
+         *
+         * @param remoteDeviceAddress   UWB address of the remote device (or {@code 0xFFFF} for
+         *                              Logical Link mode).
+         * @param parameters            protocol-specific data (e.g., connectId in Logical Link
+         *                                  mode).
+         * @param data                  raw payload received.
          */
         default void onDataReceived(@NonNull UwbAddress remoteDeviceAddress,
                 @NonNull PersistableBundle parameters, @NonNull byte[] data) {}
@@ -505,6 +539,83 @@ public final class RangingSession implements AutoCloseable {
         @FlaggedApi("com.android.uwb.flags.hybrid_session_support")
         default void onHybridSessionControleeConfigurationFailed(
                 @RangingChangeReason int reason, @NonNull PersistableBundle parameters) {}
+
+        /**
+         * Callback invoked when a logical link is successfully created following a call to
+         * {@link RangingSession#createLogicalLink(LogicalLinkParams)}.
+         *
+         * <p>This method indicates that the logical link was successfully established. The assigned
+         * {@code connectId} can be used for subsequent communication over this link.</p>
+         *
+         * @param params {@link LogicalLinkParams} used during the link creation.
+         * @param connectId The connection ID assigned to the newly created logical link.
+         */
+        @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+        default void onLogicalLinkCreated(@NonNull LogicalLinkParams params, int connectId) {}
+
+        /**
+         * Callback invoked when the logical link creation fails following a call to
+         * {@link RangingSession#createLogicalLink(LogicalLinkParams)}.
+         *
+         * <p>This method notifies the application that the attempt to establish a logical link was
+         * unsuccessful. Refer to the {@code status} for failure details.</p>
+         *
+         * @param params {@link LogicalLinkParams} used during the link creation.
+         * @param status The status code indicating the reason for failure.
+         *                   See {@link LogicalLinkStatusCode} for possible values.
+         */
+        @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+        default void onLogicalLinkCreateFailed(@NonNull LogicalLinkParams params,
+                @LogicalLinkStatusCode int status) {}
+
+        /**
+         * Callback invoked when a logical link is closed, either as a result of a
+         * {@link RangingSession#closeLogicalLink(int)} request or due to remote termination, link
+         * failure, timeout, or other UWBS-initiated conditions.
+         *
+         * <p>This method is called only for logical links that were previously open. The closure
+         * reason indicates whether the closure was initiated by the host or due to other conditions
+         * such as remote device actions, transmission errors, timeouts, or intervention by the
+         * secure component.</p>
+         *
+         * @param connectId Unique identifier of the logical link that was closed.
+         * @param reason Reason for link closure. See {@link LogicalLinkClosureReason} for valid
+         *                  values.
+         */
+        @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+        default void onLogicalLinkClosed(int connectId, @LogicalLinkClosureReason int reason) {}
+
+        /**
+         * Callback invoked when closing a logical link fails after calling
+         * {@link RangingSession#closeLogicalLink(int)}.
+         *
+         * @param connectId The connection ID associated with the logical link.
+         * @param status The failure status code indicating why the close failed.
+         *                   See {@link LogicalLinkStatusCode} for possible values.
+         */
+        @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+        default void onLogicalLinkCloseFailed(int connectId, @LogicalLinkStatusCode int status) {}
+
+        /**
+         * Callback invoked when a remote device requests to establish a logical link.
+         *
+         * <p>This notification occurs in the following cases:
+         * <ul>
+         *   <li>The Controlee UWBS receives a request from the Controller to establish a
+         *        connection-oriented (CO) logical link.</li>
+         *   <li>Initial connectionless (CL) data is received during a data-only or
+         *          data-with-ranging session.</li>
+         * </ul>
+         *
+         * <p>If the host application does not approve the link, it must call
+         * {@link #closeLogicalLink(int)} with the {@code connectId} provided in this callback.
+         * Otherwise, the host and UWBS will use the {@code connectId} for all subsequent
+         * application data exchanges on this logical link.
+         *
+         * @param linkInfo Information about the requested logical link.
+         */
+        @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+        default void onRemoteLogicalLinkRequested(@NonNull LogicalLinkConnectionRequest linkInfo) {}
     }
 
     /**
@@ -785,20 +896,46 @@ public final class RangingSession implements AutoCloseable {
 
     /**
      * Send data to a remote device which is part of this ongoing session.
-     * The data is sent by piggybacking the provided data over RRM (initiator -> responder) or
-     * RIM (responder -> initiator).
-     * <p>This is only functional on a FIRA 2.0 compliant device.
+     * <p>
+     * This API supports two transmission modes, depending on the session's link layer mode
+     * configuration:
      *
-     * <p>On successfully sending the data,
-     * {@link RangingSession.Callback#onDataSent(UwbAddress, PersistableBundle)} is invoked.
+     * <ul>
+     *   <li><b>Bypass Logical Link Mode (FiRa 2.0+):</b><br>
+     *       In this mode, the data is piggybacked over RRM (initiator → responder) or RIM
+     *       (responder → initiator) messages. The target device is identified using the provided
+     *       {@link UwbAddress}.
+     *       <p><b>Note:</b> This mode is supported on FiRa 2.0-compliant devices and above.</p>
+     *   </li>
      *
-     * <p>On failure to send the data,
-     * {@link RangingSession.Callback#onDataSendFailed(UwbAddress, int, PersistableBundle)} is
-     * invoked.
+     *   <li><b>Logical Link Mode (FiRa 3.0+):</b><br>
+     *       <p>The remote endpoint is identified via the Logical Link Connect ID, which must be
+     *       provided in the {@code params} bundle.</p>
+     *       <p>The {@link UwbAddress} parameter is not used in this mode and should be set to the
+     *       default broadcast address {@code 0xFFFF}.</p>
+     *       <p><b>Note:</b> This mode is supported only on FiRa 3.0-compliant devices and above.
+     *   </li>
+     * </ul>
      *
-     * @param remoteDeviceAddress remote device's address
-     * @param params protocol specific parameters the sending the data
-     * @param data Raw data to be sent
+     * <p>Regardless of the transmission mode, one of the following callbacks is triggered upon
+     * completion:
+     * <ul>
+     *   <li>{@link RangingSession.Callback#onDataSent(UwbAddress, PersistableBundle)} — invoked on
+     *      success</li>
+     *   <li>{@link RangingSession.Callback#onDataSendFailed(UwbAddress, int, PersistableBundle)} —
+     *      invoked on failure</li>
+     * </ul>
+     *
+     * @param remoteDeviceAddress The UWB address of the target device.
+     *                          <ul>
+     *                              <li>Required in Bypass Logical Link Mode.</li>
+     *                              <li>Must be set to {@code 0xFFFF} in Logical Link Mode.</li>
+     *                          </ul>
+     * @param params A {@link PersistableBundle} containing protocol-specific parameters.
+     *               Must include the Logical Link Connect ID when using Logical Link Mode.
+     * @param data The raw application data to transmit.
+     *
+     * @throws IllegalStateException If the session is not currently active.
      */
     @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
     public void sendData(@NonNull UwbAddress remoteDeviceAddress,
@@ -890,6 +1027,30 @@ public final class RangingSession implements AutoCloseable {
     }
 
     /**
+     * Queries the maximum size of application data (in bytes) that the UWBS can send in a single
+     * ranging round for the specified logical link connection.
+     *
+     * <p>This feature is supported on Fira 3.0+ compliant devices.</p>
+     *
+     * @param connectId the logical link connection identifier for which to query the max data size.
+     * @return maximum size (in bytes) of application data that can be sent in one ranging round.
+     */
+    @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
+    @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public int queryLogicalLinkMaxDataSizeBytes(int connectId) {
+        if (!isOpen()) {
+            throw new IllegalStateException("Ranging session is not open");
+        }
+
+        Log.v(mTag, "QueryLogicalLinkMaxDataSizeBytes using connectId: " + connectId);
+        try {
+            return mAdapter.queryLogicalLinkMaxDataSizeBytes(mSessionHandle, connectId);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
      * Sets the Hybrid UWB Session Controller Configuration.
      *
      * <p>On successfully setting the hybrid controller configuration,
@@ -942,6 +1103,97 @@ public final class RangingSession implements AutoCloseable {
         Log.v(mTag, "setHybridSessionControleeConfiguration - sessionHandle: " + mSessionHandle);
         try {
             mAdapter.setHybridSessionControleeConfiguration(mSessionHandle, params);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Establishes a logical link with a remote device for an ongoing ranging session.
+     *
+     * <p>This feature is supported on Fira 3.0+ compliant devices.</p>
+     *
+     * <p>Once the logical link creation attempt completes, the system invokes either
+     * {@link RangingSession.Callback#onLogicalLinkCreated(LogicalLinkParams, int)} if the operation
+     * succeeds or {@link RangingSession.Callback#onLogicalLinkCreateFailed(LogicalLinkParams, int)}
+     * if it fails.</p>
+     *
+     * @param params {@link LogicalLinkParams} containing the parameters for establishing the
+     *           logical link connection.
+     */
+    @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
+    @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public void createLogicalLink(@NonNull LogicalLinkParams params) {
+        if (!isOpen()) {
+            throw new IllegalStateException("Ranging session is not open");
+        }
+
+        Log.v(mTag, "createLogicalLink - sessionHandle: " + mSessionHandle);
+        try {
+            mAdapter.createLogicalLink(mSessionHandle, params);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Sends a request to close an existing logical link in an ongoing ranging session.
+     *
+     * <ul>
+     *   <li>If the logical link is successfully closed,
+     *      {@link RangingSession.Callback#onLogicalLinkClosed(int, int)} is invoked.</li>
+     *   <li>If closing the logical link fails,
+     *        {@link RangingSession.Callback#onLogicalLinkCloseFailed(int, int)} is invoked with the
+     *        failure status.</li>
+     * </ul>
+     *
+     * @param connectId The unique identifier of the logical link to close.
+     * @throws IllegalStateException if the ranging session is not open.
+     */
+    @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
+    @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public void closeLogicalLink(int connectId) {
+        if (!isOpen()) {
+            throw new IllegalStateException("Ranging session is not open");
+        }
+
+        Log.v(mTag, "closeLogicalLink - sessionHandle: " + mSessionHandle);
+        try {
+            mAdapter.closeLogicalLink(mSessionHandle, connectId);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /**
+     * Retrieves the Logical Link parameters associated with the given Logical Link Connection ID
+     * or session handle.
+     * <p>
+     * The Host shall use this API to request the FiRa Controller to return parameters related to
+     * an established Logical Link. If {@code connectId} is set to
+     * {@link LogicalLinkParams#CONNECT_ID_UNSPECIFIED}, the parameters will be retrieved using the
+     * session handle instead of a specific Logical Link Connection ID.
+     *
+     * @param connectId The Logical Link Connection ID for which the parameters are to be retrieved.
+     *           If the value is {@link LogicalLinkParams#CONNECT_ID_UNSPECIFIED}, the request will
+     *           fall back to using the session handle.
+     *
+     * @return {@link LogicalLinkConnectionParams} containing the retrieved Logical Link parameters.
+     *
+     * @throws IllegalStateException if the ranging session is not currently open.
+     *
+     * @see LogicalLinkConnectionParams
+     */
+    @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
+    @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    @NonNull
+    public LogicalLinkConnectionParams getLogicalLinkParams(int connectId) {
+        if (!isOpen()) {
+            throw new IllegalStateException("Ranging session is not open");
+        }
+        Log.v(mTag, "getLogicalLinkParams - sessionHandle: " + mSessionHandle);
+        try {
+            return mAdapter.getLogicalLinkParams(mSessionHandle, connectId);
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();
         }
@@ -1272,6 +1524,71 @@ public final class RangingSession implements AutoCloseable {
 
         Log.v(mTag, "onDataTransferPhaseConfigFailed - sessionHandle: " + mSessionHandle);
         executeCallback(() -> mCallback.onDataTransferPhaseConfigFailed(reason, params));
+    }
+
+    /**
+     * @hide
+     */
+    public void onLogicalLinkCreated(LogicalLinkParams params, int connectId) {
+        if (!isOpen()) {
+            Log.w(mTag, "onLogicalLinkCreated invoked for non-open session");
+            return;
+        }
+
+        Log.v(mTag, "onLogicalLinkCreated - sessionHandle: " + mSessionHandle);
+        executeCallback(() -> mCallback.onLogicalLinkCreated(params, connectId));
+    }
+
+    /**
+     * @hide
+     */
+    public void onLogicalLinkCreateFailed(LogicalLinkParams params, int status) {
+        if (!isOpen()) {
+            Log.w(mTag, "onLogicalLinkCreateFailed invoked for non-open session");
+            return;
+        }
+
+        Log.v(mTag, "onLogicalLinkCreateFailed - sessionHandle: " + mSessionHandle);
+        executeCallback(() -> mCallback.onLogicalLinkCreateFailed(params, status));
+    }
+
+    /**
+     * @hide
+     */
+    public void onLogicalLinkClosed(int connectId, int reason) {
+        if (!isOpen()) {
+            Log.w(mTag, "onLogicalLinkClosed invoked for non-open session");
+            return;
+        }
+
+        Log.v(mTag, "onLogicalLinkClosed - sessionHandle: " + mSessionHandle);
+        executeCallback(() -> mCallback.onLogicalLinkClosed(connectId, reason));
+    }
+
+    /**
+     * @hide
+     */
+    public void onLogicalLinkCloseFailed(int connectId, int status) {
+        if (!isOpen()) {
+            Log.w(mTag, "onLogicalLinkCloseFailed invoked for non-open session");
+            return;
+        }
+
+        Log.v(mTag, "onLogicalLinkCloseFailed - sessionHandle: " + mSessionHandle);
+        executeCallback(() -> mCallback.onLogicalLinkCloseFailed(connectId, status));
+    }
+
+    /**
+     * @hide
+     */
+    public void onRemoteLogicalLinkRequested(LogicalLinkConnectionRequest linkInfo) {
+        if (!isOpen()) {
+            Log.w(mTag, "onRemoteLogicalLinkRequested invoked for non-open session");
+            return;
+        }
+
+        Log.v(mTag, "onRemoteLogicalLinkRequested - sessionHandle: " + mSessionHandle);
+        executeCallback(() -> mCallback.onRemoteLogicalLinkRequested(linkInfo));
     }
 
     /**

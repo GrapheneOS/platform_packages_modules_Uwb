@@ -34,13 +34,14 @@ use uwb_core::error::{Error as UwbError, Result as UwbResult};
 use uwb_core::params::{ControleeStatusList, UwbAddress};
 use uwb_core::uci::uci_manager_sync::{NotificationManager, NotificationManagerBuilder};
 use uwb_core::uci::{
-    CoreNotification, DataRcvNotification, RadarDataRcvNotification, RangingMeasurements,
-    RfTestLoopbackData, RfTestNotification, RfTestPerRxData, SessionNotification, SessionRangeData,
+    BypassModeData, CoreNotification, DataRcvNotification, LogicalLinkModeData,
+    RadarDataRcvNotification, RangingMeasurements, RfTestLoopbackData, RfTestNotification,
+    RfTestPerRxData, SessionNotification, SessionRangeData,
 };
 use uwb_uci_packets::{
     radar_bytes_per_sample_value, ExtendedAddressDlTdoaRangingMeasurement,
     ExtendedAddressOwrAoaRangingMeasurement, ExtendedAddressTwoWayRangingMeasurement,
-    MacAddressIndicator, RangingMeasurementType, SessionState,
+    LinkLayerMode, MacAddressIndicator, RangingMeasurementType, SessionState,
     ShortAddressDlTdoaRangingMeasurement, ShortAddressOwrAoaRangingMeasurement,
     ShortAddressTwoWayRangingMeasurement, StatusCode,
 };
@@ -981,7 +982,7 @@ impl NotificationManagerAndroid {
 
     fn on_data_transfer_status_notification(
         &mut self,
-        session_id: u32,
+        connect_id: u32,
         uci_sequence_number: u16,
         status_code: u8,
         tx_count: u8,
@@ -990,7 +991,7 @@ impl NotificationManagerAndroid {
             "onDataSendStatus",
             "(JIJI)V",
             &[
-                jvalue::from(JValue::Long(session_id as i64)),
+                jvalue::from(JValue::Long(connect_id as i64)),
                 jvalue::from(JValue::Int(status_code as i32)),
                 jvalue::from(JValue::Long(uci_sequence_number as i64)),
                 jvalue::from(JValue::Int(tx_count as i32)),
@@ -1131,6 +1132,60 @@ impl NotificationManagerAndroid {
             &[jvalue::from(JValue::Object(loopback_jobject))],
         )
     }
+    fn on_create_logical_link_notification(
+        &mut self,
+        ll_connect_id: u32,
+        status_code: u8,
+    ) -> Result<JObject, JNIError> {
+        self.cached_jni_call(
+            "onLogicalLinkCreateNotification",
+            "(JI)V",
+            &[
+                jvalue::from(JValue::Long(ll_connect_id as i64)),
+                jvalue::from(JValue::Int(status_code as i32)),
+            ],
+        )
+    }
+
+    fn on_logical_link_closed(
+        &mut self,
+        connect_id: u32,
+        status_code: u8,
+    ) -> Result<JObject, JNIError> {
+        self.cached_jni_call(
+            "onLogicalLinkClosed",
+            "(JI)V",
+            &[
+                jvalue::from(JValue::Long(connect_id as i64)),
+                jvalue::from(JValue::Int(status_code as i32)),
+            ],
+        )
+    }
+
+    fn on_remote_logical_link_requested(
+        &mut self,
+        session_token: u32,
+        connect_id: u32,
+        link_layer_mode: u8,
+        source_mac_address: UwbAddress,
+    ) -> Result<JObject, JNIError> {
+        let source_address_jbytearray = match source_mac_address {
+            UwbAddress::Short(a) => self.env.byte_array_from_slice(&a)?,
+            UwbAddress::Extended(a) => self.env.byte_array_from_slice(&a)?,
+        };
+        // Safety: source_address_jbytearray safely instantiated above.
+        let source_address_jobject = unsafe { JObject::from_raw(source_address_jbytearray) };
+        self.cached_jni_call(
+            "onRemoteLogicalLinkRequested",
+            "(JJI[B)V",
+            &[
+                jvalue::from(JValue::Long(session_token as i64)),
+                jvalue::from(JValue::Long(connect_id as i64)),
+                jvalue::from(JValue::Int(link_layer_mode as i32)),
+                jvalue::from(JValue::Object(source_address_jobject)),
+            ],
+        )
+    }
 }
 
 impl NotificationManager for NotificationManagerAndroid {
@@ -1230,12 +1285,12 @@ impl NotificationManager for NotificationManagerAndroid {
                     }
                 }
                 SessionNotification::DataTransferStatus {
-                    session_token,
+                    connect_id,
                     uci_sequence_number,
                     status,
                     tx_count,
                 } => self.on_data_transfer_status_notification(
-                    session_token,
+                    connect_id,
                     uci_sequence_number,
                     u8::from(status),
                     tx_count,
@@ -1253,6 +1308,23 @@ impl NotificationManager for NotificationManagerAndroid {
                 SessionNotification::DataTransferPhaseConfig { session_token, status } => {
                     self.on_data_transfer_phase_config_notification(session_token, u8::from(status))
                 }
+                SessionNotification::CreateLogicalLink { connect_id, status } => {
+                    self.on_create_logical_link_notification(connect_id, u8::from(status))
+                }
+                SessionNotification::LogicalLinkUwbsClose { connect_id, status } => {
+                    self.on_logical_link_closed(connect_id, u8::from(status))
+                }
+                SessionNotification::LogicalLinkUwbsCreate {
+                    session_token,
+                    connect_id,
+                    link_layer_mode,
+                    source_mac_address,
+                } => self.on_remote_logical_link_requested(
+                    session_token,
+                    connect_id,
+                    link_layer_mode,
+                    source_mac_address,
+                ),
             }
         })
         .map_err(|e| {
@@ -1308,34 +1380,85 @@ impl NotificationManager for NotificationManagerAndroid {
     ) -> UwbResult<()> {
         debug!("UCI JNI: Data Rcv notification callback.");
         let env = *self.env;
+
         env.with_local_frame(MAX_JAVA_OBJECTS_CAPACITY, || {
-            let source_address_jbytearray = match &data_rcv_notification.source_address {
-                UwbAddress::Short(a) => self.env.byte_array_from_slice(a)?,
-                UwbAddress::Extended(a) => self.env.byte_array_from_slice(a)?,
-            };
-            let payload_jbytearray =
-                self.env.byte_array_from_slice(&data_rcv_notification.payload)?;
-            // Safety: source_address_jbytearray safely instantiated above.
-            let source_address_jobject = unsafe { JObject::from_raw(source_address_jbytearray) };
-            // Safety: payload_jbytearray safely instantiated above.
-            let payload_jobject = unsafe { JObject::from_raw(payload_jbytearray) };
-            self.cached_jni_call(
-                "onDataReceived",
-                "(JIJ[B[B)V",
-                &[
-                    // session_token below has already been mapped to session_id by uci layer.
-                    jvalue::from(JValue::Long(data_rcv_notification.session_token as i64)),
-                    jvalue::from(JValue::Int(i32::from(data_rcv_notification.status))),
-                    jvalue::from(JValue::Long(data_rcv_notification.uci_sequence_num as i64)),
-                    jvalue::from(JValue::Object(source_address_jobject)),
-                    jvalue::from(JValue::Object(payload_jobject)),
-                ],
-            )
+            // Handle the notification based on the variant
+            match data_rcv_notification {
+                DataRcvNotification::BypassMode(BypassModeData {
+                    session_token,
+                    status,
+                    uci_sequence_num,
+                    source_address,
+                    payload,
+                }) => {
+                    // Convert source address to byte array (Short or Extended)
+                    let source_address_jbytearray = match source_address {
+                        UwbAddress::Short(a) => self.env.byte_array_from_slice(&a)?,
+                        UwbAddress::Extended(a) => self.env.byte_array_from_slice(&a)?,
+                    };
+
+                    // Safety: These objects are safely instantiated above
+                    let source_address_jobject =
+                        unsafe { JObject::from_raw(source_address_jbytearray) };
+
+                    let payload_jbytearray = self.env.byte_array_from_slice(&payload)?;
+                    // Safety: payload_jbytearray safely instantiated above.
+                    let payload_jobject = unsafe { JObject::from_raw(payload_jbytearray) };
+
+                    // Call JNI method for BypassMode
+                    self.cached_jni_call(
+                        "onDataReceived",
+                        "(JIIJ[B[B)V",
+                        &[
+                            jvalue::from(JValue::Long(session_token as i64)),
+                            jvalue::from(JValue::Int(LinkLayerMode::BypassMode.into())),
+                            jvalue::from(JValue::Int(i32::from(status))),
+                            jvalue::from(JValue::Long(uci_sequence_num as i64)),
+                            jvalue::from(JValue::Object(source_address_jobject)),
+                            jvalue::from(JValue::Object(payload_jobject)),
+                        ],
+                    )
+                }
+
+                // Handle the LogicalLinkModeData case
+                DataRcvNotification::LogicalLinkMode(LogicalLinkModeData {
+                    connect_id,
+                    uci_sequence_num,
+                    payload,
+                }) => {
+                    let payload_jbytearray = self.env.byte_array_from_slice(&payload)?;
+                    // Safety: payload_jbytearray safely instantiated above.
+                    let payload_jobject = unsafe { JObject::from_raw(payload_jbytearray) };
+
+                    // For LogicalLinkMode, use the default address (0xFFFF) as the source address
+                    let default_address = [0xFF, 0xFF]; // 0xFFFF as 2-byte array
+                    let source_address_jbytearray =
+                        self.env.byte_array_from_slice(&default_address)?;
+                    // Safety: payload_jbytearray safely instantiated above.
+                    let source_address_jobject =
+                        unsafe { JObject::from_raw(source_address_jbytearray) };
+
+                    // Call JNI method for LogicalLinkMode
+                    self.cached_jni_call(
+                        "onDataReceived",
+                        "(JIIJ[B[B)V",
+                        &[
+                            jvalue::from(JValue::Long(connect_id as i64)),
+                            jvalue::from(JValue::Int(LinkLayerMode::LogicalLinkMode.into())),
+                            jvalue::from(JValue::Int(StatusCode::UciStatusOk.into())),
+                            jvalue::from(JValue::Long(uci_sequence_num as i64)),
+                            jvalue::from(JValue::Object(source_address_jobject)),
+                            jvalue::from(JValue::Object(payload_jobject)),
+                        ],
+                    )
+                }
+            }
         })
         .map_err(|e| {
             error!("on_data_rcv_notification error: {:?}", e);
             UwbError::ForeignFunctionInterface
         })?;
+
         Ok(())
     }
 
