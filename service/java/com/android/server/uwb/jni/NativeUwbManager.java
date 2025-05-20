@@ -25,6 +25,8 @@ import com.android.server.uwb.UwbInjector;
 import com.android.server.uwb.data.DtTagUpdateRangingRoundsStatus;
 import com.android.server.uwb.data.UwbConfigStatusData;
 import com.android.server.uwb.data.UwbDeviceInfoResponse;
+import com.android.server.uwb.data.UwbLogicalLinkCreateResponse;
+import com.android.server.uwb.data.UwbLogicalLinkGetParamsResponse;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbRadarData;
 import com.android.server.uwb.data.UwbRangingData;
@@ -153,6 +155,31 @@ public class NativeUwbManager {
     public void onLoopbackDataNotificationReceived(UwbTestLoopbackResult loopbackResult) {
         Log.d(TAG, "onLoopbackDataNotificationReceived : " + loopbackResult);
         mSessionListener.onRfTestNotificationReceived(loopbackResult);
+    }
+
+    /**
+     * Notifies the creation status of a logical link command.
+     */
+    public void onLogicalLinkCreateNotification(long connectId, int status) {
+        Log.d(TAG, "onLogicalLinkCreateNotification connectId: " + connectId + " status: "
+                + status);
+        mSessionListener.onLogicalLinkCreateNotification(connectId, status);
+    }
+
+    /**
+     * Receive the close uwbs logical link notification.
+     */
+    public void onLogicalLinkClosed(long connectId, int reason) {
+        mSessionListener.onLogicalLinkClosed(connectId, reason);
+    }
+
+    /**
+     * Receive the create uwbs logical link notification.
+     */
+    public void onRemoteLogicalLinkRequested(long sessionId, long connectId,
+            int linkLayerMode, byte[] address) {
+        mSessionListener.onRemoteLogicalLinkRequested(sessionId, connectId,
+                linkLayerMode, address);
     }
 
     /**
@@ -510,29 +537,30 @@ public class NativeUwbManager {
     /**
      * Receive payload data from a remote device in a UWB ranging session.
      */
-    public void onDataReceived(
-            long sessionID, int status, long sequenceNum, byte[] address, byte[] data) {
+    public void onDataReceived(long connectId, int linkLayerMode, int status, long sequenceNum,
+            byte[] address, byte[] data) {
         Log.d(TAG, "onDataReceived ");
-        mSessionListener.onDataReceived(sessionID, status, sequenceNum, address, data);
+        mSessionListener.onDataReceived(connectId, linkLayerMode, status, sequenceNum, address,
+                data);
     }
 
     /**
      * Send payload data to a remote device in a UWB ranging session.
      */
-    public byte sendData(
-            int sessionId, byte[] address, short sequenceNum, byte[] appData, String chipId) {
+    public byte sendData(int connectId, byte linkLayerMode, byte[] address, short sequenceNum,
+            byte[] appData, String chipId) {
         synchronized (mNativeLock) {
-            return nativeSendData(sessionId, address, sequenceNum, appData, chipId);
+            return nativeSendData(connectId, linkLayerMode, address, sequenceNum, appData, chipId);
         }
     }
 
     /**
      * Receive the data transfer status for a UCI data packet earlier sent from Host to UWBS.
      */
-    public void onDataSendStatus(long sessionId, int dataTransferStatus, long sequenceNum,
+    public void onDataSendStatus(long connectId, int dataTransferStatus, long sequenceNum,
             int txCount) {
         Log.d(TAG, "onDataSendStatus ");
-        mSessionListener.onDataSendStatus(sessionId, dataTransferStatus, sequenceNum, txCount);
+        mSessionListener.onDataSendStatus(connectId, dataTransferStatus, sequenceNum, txCount);
     }
 
     /**
@@ -575,15 +603,34 @@ public class NativeUwbManager {
     }
 
     /**
-     * Queries the max Application data size for the UWB session.
+     * The Host shall use the get logical link param command to get the Logical Link parameters
+     * associated with the LL_CONNECT_ID
      *
-     * @param sessionId : Session of the UWB session for which current max data size to be queried
-     * @param chipId    : Identifier of UWB chip for multi-HAL devices
-     * @return : Max application data size that can be sent by UWBS.
+     * @param connectId logical link connection identifier
+     * @return refer to {@link UwbLogicalLinkGetParamsResponse}
      */
-    public int queryMaxDataSizeBytes(int sessionId, String chipId) {
+    public UwbLogicalLinkGetParamsResponse getLogicalLinkParams(int connectId, String chipId) {
         synchronized (mNativeLock) {
-            return nativeQueryDataSize(sessionId, chipId);
+            return nativeGetLogicalLinkParams(connectId, chipId);
+        }
+    }
+
+    /**
+     * Queries the maximum size of application data (in bytes) that the UWBS can transmit for the
+     * given connection identifier on the specified UWB chip.
+     *
+     * <p>This API supports both session-based and logical link-based data transfer.
+     * The {@code connectId} can represent either a session ID or a logical link connection ID,
+     * depending on the link layer mode.</p>
+     *
+     * @param connectId the session ID or logical link connection ID for which to query
+     *                             the maximum data size.
+     * @param chipId Identifier of UWB chip for multi-HAL devices.
+     * @return Maximum application data size that can be sent by UWBS.
+     */
+    public int queryMaxDataSizeBytes(int connectId, String chipId) {
+        synchronized (mNativeLock) {
+            return nativeQueryDataSize(connectId, chipId);
         }
     }
 
@@ -646,7 +693,39 @@ public class NativeUwbManager {
         }
     }
 
-    private native byte nativeSendData(int sessionId, byte[] address,
+    /**
+     * Creates a logical link to a remote device in an active UWB ranging session.
+     *
+     * @param sessionId The ID of the UWB ranging session.
+     * @param linkLayerMode The link layer mode (CL/CO).
+     * @param address The MAC address of the remote device.
+     * @param logicalLinkClassLength The logical link class length.
+     * @param chipId The UWB chip ID.
+     * @return UwbLogicalLinkCreateResponse Protocol specific params.
+     */
+    public UwbLogicalLinkCreateResponse createLogicalLink(int sessionId, byte linkLayerMode,
+            byte[] address, byte logicalLinkClassLength, String chipId) {
+        synchronized (mNativeLock) {
+            return nativeCreateLogicalLayer(sessionId, linkLayerMode, address,
+                    logicalLinkClassLength, chipId);
+        }
+    }
+
+    /**
+     * Sends a request to close an existing logical link identified by {@code connectId}.
+     *
+     * @param connectId The unique identifier of the logical link to be closed.
+     * @param chipId The identifier of the UWB chip handling the logical link.
+     *
+     * @return The status response of the logical link close command.
+     */
+    public int closeLogicalLink(int connectId, String chipId) {
+        synchronized (mNativeLock) {
+            return nativeCloseLogicalLink(connectId, chipId);
+        }
+    }
+
+    private native byte nativeSendData(int connectId, byte linkLayerMode, byte[] address,
             short sequenceNum, byte[] appData, String chipId);
 
     private native byte nativeSessionDataTransferPhaseConfig(int sessionId, byte dtpcmRepetition,
@@ -707,6 +786,9 @@ public class NativeUwbManager {
     private native DtTagUpdateRangingRoundsStatus nativeSessionUpdateDtTagRangingRounds(
             int sessionId, int noOfActiveRangingRounds, byte[] rangingRoundIndexes, String chipId);
 
+    private native UwbLogicalLinkGetParamsResponse nativeGetLogicalLinkParams(
+            int connectId, String chipId);
+
     private native short nativeQueryDataSize(int sessionId, String chipId);
 
     private native long nativeQueryUwbTimestamp(String chipId);
@@ -718,6 +800,11 @@ public class NativeUwbManager {
 
     private native byte nativeSetHybridSessionControleeConfigurations(int sessionId,
             int noOfPhases, byte[] phaseList, String chipId);
+
+    private native UwbLogicalLinkCreateResponse nativeCreateLogicalLayer(int sessionId,
+            byte linkLayerMode, byte[] address, byte logicalLinkClassLength, String chipId);
+
+    public native int nativeCloseLogicalLink(int connectId, String chipId);
 
     private native UwbConfigStatusData nativeSetRfTestAppConfigurations(int sessionId,
             int noOfParams, int appConfigParamLen, byte[] appConfigParams, String chipId);

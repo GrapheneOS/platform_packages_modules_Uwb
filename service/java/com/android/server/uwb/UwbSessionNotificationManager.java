@@ -23,6 +23,8 @@ import android.uwb.AngleMeasurement;
 import android.uwb.AngleOfArrivalMeasurement;
 import android.uwb.DistanceMeasurement;
 import android.uwb.IUwbRangingCallbacks;
+import android.uwb.LogicalLinkConnectionRequest;
+import android.uwb.LogicalLinkParams;
 import android.uwb.RangingChangeReason;
 import android.uwb.RangingMeasurement;
 import android.uwb.RangingReport;
@@ -706,6 +708,72 @@ public class UwbSessionNotificationManager {
             e.printStackTrace();
         }
     }
+
+    public void onLogicalLinkCreateFailed(UwbSession uwbSession, LogicalLinkParams params,
+            int status) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+
+        try {
+            uwbRangingCallbacks.onLogicalLinkCreateFailed(sessionHandle, params, status);
+            Log.i(TAG, "IUwbRangingCallbacks - onLogicalLinkCreateFailed");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onLogicalLinkCreateFailed : Failed");
+            e.printStackTrace();
+        }
+    }
+
+    public void onLogicalLinkCreated(UwbSession uwbSession, LogicalLinkParams params,
+            int connectId) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+
+        try {
+            uwbRangingCallbacks.onLogicalLinkCreated(sessionHandle, params, connectId);
+            Log.i(TAG, "IUwbRangingCallbacks - onLogicalLinkCreated");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onLogicalLinkCreated : Failed");
+            e.printStackTrace();
+        }
+    }
+
+    public void onLogicalLinkClosed(UwbSession uwbSession, int connectId, int reason) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            uwbRangingCallbacks.onLogicalLinkClosed(sessionHandle, connectId, reason);
+            Log.i(TAG, "IUwbRangingCallbacks - onLogicalLinkClosed");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onLogicalLinkClosed : Failed");
+            e.printStackTrace();
+        }
+    }
+
+    public void onLogicalLinkCloseFailed(UwbSession uwbSession, int connectId, int status) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            uwbRangingCallbacks.onLogicalLinkCloseFailed(sessionHandle, connectId, status);
+            Log.i(TAG, "IUwbRangingCallbacks - onLogicalLinkCloseFailed");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onLogicalLinkCloseFailed : Failed");
+            e.printStackTrace();
+        }
+    }
+
+    public void onRemoteLogicalLinkRequested(UwbSession uwbSession,
+            LogicalLinkConnectionRequest linkInfo) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            uwbRangingCallbacks.onRemoteLogicalLinkRequested(sessionHandle, linkInfo);
+            Log.i(TAG, "IUwbRangingCallbacks - onRemoteLogicalLinkRequested");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onRemoteLogicalLinkRequested : Failed");
+            e.printStackTrace();
+        }
+    }
+
 
     /** Helper function to convert UwbRadarData to RadarData. */
     private static RadarData getRadarData(@NonNull UwbRadarData radarData) {

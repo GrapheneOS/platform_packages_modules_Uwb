@@ -18,6 +18,13 @@ package com.android.server.uwb;
 import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE;
 
 import static com.android.server.uwb.data.UwbUciConstants.CHANNEL_9;
+import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_MAX_LL_SDU_SIZE;
+import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_MAX_LL_PDU_SIZE;
+import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_TRANSMIT_WINDOW_SIZE;
+import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_RECEIVE_WINDOW_SIZE;
+import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_REPEAT_COUNT_MAX;
+import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_LINK_TIMEOUT;
+import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_PORT;
 import static com.android.server.uwb.data.UwbUciConstants.DEVICE_TYPE_CONTROLLER;
 import static com.android.server.uwb.data.UwbUciConstants.FIRA_VERSION_MAJOR_2;
 import static com.android.server.uwb.data.UwbUciConstants.MAC_ADDRESSING_MODE_EXTENDED;
@@ -59,6 +66,9 @@ import android.util.Log;
 import android.util.Pair;
 import android.uwb.IUwbAdapter;
 import android.uwb.IUwbRangingCallbacks;
+import android.uwb.LogicalLinkConnectionParams;
+import android.uwb.LogicalLinkConnectionRequest;
+import android.uwb.LogicalLinkParams;
 import android.uwb.RangingChangeReason;
 import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
@@ -71,6 +81,8 @@ import com.android.server.uwb.advertisement.UwbAdvertiseManager;
 import com.android.server.uwb.data.DtTagUpdateRangingRoundsStatus;
 import com.android.server.uwb.data.UwbDeviceInfoResponse;
 import com.android.server.uwb.data.UwbDlTDoAMeasurement;
+import com.android.server.uwb.data.UwbLogicalLinkCreateResponse;
+import com.android.server.uwb.data.UwbLogicalLinkGetParamsResponse;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbOwrAoaMeasurement;
 import com.android.server.uwb.data.UwbRadarData;
@@ -111,6 +123,7 @@ import com.google.uwb.support.fira.FiraDataTransferPhaseConfig;
 import com.google.uwb.support.fira.FiraDataTransferPhaseConfig.FiraDataTransferPhaseManagementList;
 import com.google.uwb.support.fira.FiraHybridSessionControleeConfig;
 import com.google.uwb.support.fira.FiraHybridSessionControllerConfig;
+import com.google.uwb.support.fira.FiraLogicalLinkInfo;
 import com.google.uwb.support.fira.FiraOnControleeAddRemoveParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
@@ -186,6 +199,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     public static final int SESSION_RF_TEST_CMD = 12;
     @VisibleForTesting
     public static final int SESSION_STOP_RF_TEST_SESSION = 13;
+    @VisibleForTesting
+    public static final int SESSION_CREATE_LOGICAL_LINK = 14;
+    @VisibleForTesting
+    public static final int SESSION_CLOSE_LOGICAL_LINK = 15;
 
     // TODO: don't expose the internal field for testing.
     @VisibleForTesting
@@ -361,45 +378,71 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
     /* Notification of received data over UWB to Application*/
     @Override
-    public void onDataReceived(
-            long sessionId, int status, long sequenceNum, byte[] address, byte[] data) {
-        Log.d(TAG, "onDataReceived(): Received data packet - "
-                + "Address: " + UwbUtil.toHexString(address)
-                + ", Data: " + UwbUtil.toHexString(data)
-                + ", sessionId: " + sessionId
-                + ", status: " + status
-                + ", sequenceNum: " + sequenceNum);
-
-        UwbSession uwbSession = getUwbSession((int) sessionId);
-        if (uwbSession == null) {
-            Log.e(TAG, "onDataReceived(): Received data for unknown sessionId = " + sessionId);
-            return;
-        }
-
-        // Size of address in the UCI Packet for DATA_MESSAGE_RCV is always expected to be 8
-        // (EXTENDED_ADDRESS_BYTE_LENGTH). It can contain the MacAddress in short format however
-        // (2 LSB with MacAddress, 6 MSB zeroed out).
-        if (address.length != UWB_DEVICE_EXT_MAC_ADDRESS_LEN) {
-            Log.e(TAG, "onDataReceived(): Received data for sessionId = " + sessionId
-                    + ", with unexpected MacAddress length = " + address.length);
-            return;
-        }
-        mUwbMetrics.logDataRx(uwbSession, status);
-
+    public void onDataReceived(long connectId, int linkLayerMode, int status, long sequenceNum,
+            byte[] address, byte[] data) {
         Long longAddress = macAddressByteArrayToLong(address);
-        UwbAddress uwbAddress = UwbAddress.fromBytes(address);
+        UwbAddress uwbAddress = null;
+        UwbSession uwbSession = null;
+        PersistableBundle bundle = new PersistableBundle();
+
+        if (UwbUciConstants.LINK_LAYER_MODE_BYPASS == linkLayerMode) {
+            Log.d(TAG, "onDataReceived(): Received bypass mode data packet - "
+                    + " LinkLayerMode: " + linkLayerMode
+                    + ", Address: " + UwbUtil.toHexString(address)
+                    + ", Data: " + UwbUtil.toHexString(data)
+                    + ", sessionId: " + connectId
+                    + ", status: " + status
+                    + ", sequenceNum: " + sequenceNum);
+
+            uwbSession = getUwbSession((int) connectId);
+            if (uwbSession == null) {
+                Log.e(TAG, "onDataReceived(): Received data for unknown sessionId = " + connectId);
+                return;
+            }
+
+            // Size of address in the UCI Packet for DATA_MESSAGE_RCV is always expected to be 8
+            // (EXTENDED_ADDRESS_BYTE_LENGTH). It can contain the MacAddress in short format however
+            // (2 LSB with MacAddress, 6 MSB zeroed out).
+            if (address.length != UWB_DEVICE_EXT_MAC_ADDRESS_LEN) {
+                Log.e(TAG, "onDataReceived(): Received data for sessionId = " + connectId
+                        + ", with unexpected MacAddress length = " + address.length);
+                return;
+            }
+
+            uwbAddress = UwbAddress.fromBytes(address);
+            mUwbMetrics.logDataRx(uwbSession, status);
+        } else if (UwbUciConstants.LINK_LAYER_MODE_LOGICAL_LINK == linkLayerMode) {
+            Log.d(TAG, "onDataReceived(): Received logical link mode data packet - "
+                    + " LinkLayerMode: " + linkLayerMode
+                    + ", Data: " + UwbUtil.toHexString(data)
+                    + ", connectId: " + connectId
+                    + ", status: " + status
+                    + ", sequenceNum: " + sequenceNum);
+
+            uwbSession = getUwbSessionByConnectionIdentifier((int) connectId);
+            if (uwbSession == null) {
+                Log.e(TAG, "onDataReceived(): Received data for unknown connectId = " + connectId);
+                return;
+            }
+
+            uwbAddress = UwbAddress.fromBytes(address);
+            bundle = new FiraLogicalLinkInfo.Builder((int) connectId).build().toBundle();
+        } else {
+            Log.e(TAG, "Unknown link layer mode: " + linkLayerMode);
+            return;
+        }
 
         // When the data packet is received on a non OWR-for-AoA ranging session, send it to the
         // higher layer. For the OWR-for-AoA ranging session, the data packet is only sent when the
         // received SESSION_INFO_NTF indicate this Observer device is pointing to an Advertiser.
         if (uwbSession.getRangingRoundUsage() != ROUND_USAGE_OWR_AOA_MEASUREMENT) {
-            mSessionNotificationManager.onDataReceived(
-                    uwbSession, uwbAddress, new PersistableBundle(), data);
+            mSessionNotificationManager.onDataReceived(uwbSession, uwbAddress, bundle, data);
             return;
         }
 
         ReceivedDataInfo info = new ReceivedDataInfo();
-        info.sessionId = sessionId;
+        info.connectId = connectId;
+        info.linkLayerMode = linkLayerMode;
         info.status = status;
         info.sequenceNum = sequenceNum;
         info.address = longAddress;
@@ -411,24 +454,27 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     /* Notification of data send status */
     @Override
     public void onDataSendStatus(
-            long sessionId, int dataTransferStatus, long sequenceNum, int txCount) {
+            long connectId, int dataTransferStatus, long sequenceNum, int txCount) {
         Log.d(TAG, "onDataSendStatus(): Received data send status - "
-                + ", sessionId: " + sessionId
+                + ", connectId: " + connectId
                 + ", status: " + dataTransferStatus
                 + ", sequenceNum: " + sequenceNum
                 + ", txCount: " + txCount);
 
-        UwbSession uwbSession = getUwbSession((int) sessionId);
+        UwbSession uwbSession = getUwbSession((int) connectId) != null
+                ? getUwbSession((int) connectId)
+                : getUwbSessionByConnectionIdentifier((int) connectId);
+
         if (uwbSession == null) {
-            Log.e(TAG, "onDataSendStatus(): Received data send status for unknown sessionId = "
-                    + sessionId);
+            Log.e(TAG, "onDataSendStatus(): Received data send status for unknown connectId = "
+                    + connectId);
             return;
         }
 
         SendDataInfo sendDataInfo = uwbSession.getSendDataInfo(sequenceNum);
         if (sendDataInfo == null) {
-            Log.e(TAG, "onDataSendStatus(): No SendDataInfo found for data packet (sessionId = "
-                    + sessionId + ", sequenceNum = " + sequenceNum + ")");
+            Log.e(TAG, "onDataSendStatus(): No SendDataInfo found for data packet (connectId = "
+                    + connectId + ", sequenceNum = " + sequenceNum + ")");
             return;
         }
 
@@ -504,7 +550,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
     @VisibleForTesting
     static final class ReceivedDataInfo {
-        public long sessionId;
+        public long connectId;
+        public int linkLayerMode;
         public int status;
         public long sequenceNum;
         public long address;
@@ -639,6 +686,76 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 Log.e(TAG, "Failed to send vendor notification", e);
             }
         }
+    }
+
+    @Override
+    public void onLogicalLinkCreateNotification(long connectId, int status) {
+        int connectionId = (int) connectId;
+        UwbSession uwbSession = getUwbSessionByConnectionIdentifier(connectionId);
+
+        LogicalLinkInfo info = (uwbSession != null) ? uwbSession.getLogicalLinkInfo(connectionId)
+                : null;
+
+        if (uwbSession == null || info == null) {
+            Log.e(TAG, "onLogicalLinkCreateNotification: Missing UwbSession or LogicalLinkInfo for"
+                    + " connectId: " + connectionId);
+            return;
+        }
+
+        LogicalLinkParams params = info.params;
+
+        if (status == UwbUciConstants.LOGICAL_LINK_STATUS_ERROR
+                || status == UwbUciConstants.LOGICAL_LINK_STATUS_REJECTED) {
+            Log.e(TAG, "onLogicalLinkCreateNotification: Logical link creation failed with status: "
+                    + status);
+            uwbSession.removeLogicalLinkInfo(connectionId);
+            mSessionNotificationManager.onLogicalLinkCreateFailed(uwbSession, params,
+                    UwbUciConstants.LOGICAL_LINK_STATUS_FAILED);
+        } else {
+            mSessionNotificationManager.onLogicalLinkCreated(uwbSession, params, connectionId);
+        }
+    }
+
+    @Override
+    public void onLogicalLinkClosed(long connectId, int reason) {
+        int logicalLinkId = (int) connectId;
+        Log.d(TAG, "onLogicalLinkClosed(): connectId= " + logicalLinkId + ", reason= " + reason);
+
+        UwbSession uwbSession = getUwbSessionByConnectionIdentifier(logicalLinkId);
+
+        if (uwbSession == null) {
+            Log.e(TAG, "onLogicalLinkClosed(): received for unknown connectId: "
+                    + logicalLinkId);
+            return;
+        }
+        uwbSession.removeLogicalLinkInfo(logicalLinkId);
+        mSessionNotificationManager.onLogicalLinkClosed(uwbSession, logicalLinkId, reason);
+    }
+
+    @Override
+    public void onRemoteLogicalLinkRequested(long sessionId, long connectId, int linkLayerMode,
+            byte[] address) {
+        int logicalLinkId = (int) connectId;
+
+        UwbSession uwbSession = getUwbSession((int) sessionId);
+        if (uwbSession == null) {
+            Log.e(TAG, "onRemoteLogicalLinkRequested(): Unknown sessionId: " + sessionId);
+            return;
+        }
+
+        UwbAddress uwbAddress = UwbAddress.fromBytes(address);
+
+        LogicalLinkParams params = new LogicalLinkParams.Builder(linkLayerMode, uwbAddress).build();
+        LogicalLinkInfo logicalLinkInfo = new LogicalLinkInfo();
+        logicalLinkInfo.sessionHandle = uwbSession.getSessionHandle();
+        logicalLinkInfo.params = params;
+
+        uwbSession.addLogicalLinkInfo(logicalLinkId, logicalLinkInfo);
+
+        LogicalLinkConnectionRequest request = new LogicalLinkConnectionRequest.Builder(
+                logicalLinkId, linkLayerMode, uwbAddress).build();
+
+        mSessionNotificationManager.onRemoteLogicalLinkRequested(uwbSession, request);
     }
 
     private int setAppConfigurations(UwbSession uwbSession) {
@@ -1062,6 +1179,19 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         UwbSession session = mSessionTable.get(sessionHandle);
         if (session == null) return null;
         return session.getSessionId();
+    }
+
+    @Nullable
+    /**
+     * Get the UwbSession corresponding to the given Logical link Connect ID. This API returns
+     * {@code null} when the UWB session is not found.
+     */
+    public UwbSession getUwbSessionByConnectionIdentifier(int connectId) {
+        return mSessionTable.values()
+                .stream()
+                .filter(uwbSession -> uwbSession.mLogicalLinksInfoMap.containsKey(connectId))
+                .findAny()
+                .orElse(null);
     }
 
     private int getActiveSessionCount() {
@@ -1513,6 +1643,23 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         mEventTask.execute(SESSION_DATA_TRANSFER_PHASE_CONFIG, updateSessionInfo);
     }
 
+    public synchronized void createLogicalLink(SessionHandle sessionHandle,
+            LogicalLinkParams params) {
+        LogicalLinkInfo logicalLinkInfo = new LogicalLinkInfo();
+        logicalLinkInfo.sessionHandle = sessionHandle;
+        logicalLinkInfo.params = params;
+        logicalLinkInfo.sequenceNumber = 0;
+
+        mEventTask.execute(SESSION_CREATE_LOGICAL_LINK, logicalLinkInfo);
+    }
+
+    public synchronized void closeLogicalLink(SessionHandle sessionHandle, int connectId) {
+        CloseLogicalLink closeLogicalLink = new CloseLogicalLink();
+        closeLogicalLink.sessionHandle = sessionHandle;
+        closeLogicalLink.connectId = connectId;
+        mEventTask.execute(SESSION_CLOSE_LOGICAL_LINK, closeLogicalLink);
+    }
+
     private static final class SendDataInfo {
         public SessionHandle sessionHandle;
         public UwbAddress remoteDeviceAddress;
@@ -1533,6 +1680,17 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     private static final class HybridSessionConfig {
         public SessionHandle sessionHandle;
         public PersistableBundle params;
+    }
+
+    private static final class LogicalLinkInfo {
+        public SessionHandle sessionHandle;
+        public LogicalLinkParams params;
+        public short sequenceNumber;
+    }
+
+    private static final class CloseLogicalLink {
+        public SessionHandle sessionHandle;
+        public int connectId;
     }
 
     /** DT Tag ranging round update */
@@ -1560,6 +1718,27 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         synchronized (uwbSession.getWaitObj()) {
             return mNativeUwbManager.queryMaxDataSizeBytes(uwbSession.getSessionId(),
                     uwbSession.getChipId());
+        }
+    }
+
+    /**
+     * Query Max Application data size for the given UWB Session during logical link data exchange.
+     */
+    public synchronized int queryLogicalLinkMaxDataSizeBytes(SessionHandle sessionHandle,
+            int connectId) {
+        if (!isExistedSession(sessionHandle)) {
+            Log.e(TAG, "Session does not exist for SessionHandle: " + sessionHandle);
+            return 0;
+        }
+
+        UwbSession uwbSession = getUwbSessionByConnectionIdentifier(connectId);
+        if (uwbSession == null) {
+            Log.e(TAG, "No UWB session found for connectId: " + connectId);
+            return 0;
+        }
+
+        synchronized (uwbSession.getWaitObj()) {
+            return mNativeUwbManager.queryMaxDataSizeBytes(connectId, uwbSession.getChipId());
         }
     }
 
@@ -2113,6 +2292,20 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     Log.d(TAG, "SESSION_STOP_RF_TEST_SESSION");
                     UwbSession uwbSession = (UwbSession) msg.obj;
                     handleStopRfTest(uwbSession);
+                    break;
+                }
+
+                case SESSION_CREATE_LOGICAL_LINK: {
+                    Log.d(TAG, "SESSION_CREATE_LOGICAL_LINK");
+                    LogicalLinkInfo info = (LogicalLinkInfo) msg.obj;
+                    handleCreateLogicalLink(info);
+                    break;
+                }
+
+                case SESSION_CLOSE_LOGICAL_LINK: {
+                    Log.d(TAG, "SESSION_CLOSE_LOGICAL_LINK");
+                    CloseLogicalLink info = (CloseLogicalLink) msg.obj;
+                    handleCloseLogicalLink(info);
                     break;
                 }
 
@@ -2737,6 +2930,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         private void handleSendData(SendDataInfo sendDataInfo) {
             int status = UwbUciConstants.STATUS_CODE_ERROR_SESSION_NOT_EXIST;
             SessionHandle sessionHandle = sendDataInfo.sessionHandle;
+
             if (sessionHandle == null) {
                 Log.i(TAG, "Not present sessionHandle");
                 mSessionNotificationManager.onDataSendFailed(
@@ -2763,9 +2957,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 return;
             }
 
+            final int linkLayerMode = uwbSession.getLinkLayerMode();
+
             // TODO(b/211445008): Consolidate to a single uwb thread.
             FutureTask<Integer> sendDataTask = new FutureTask<>((Callable<Integer>) () -> {
                 int sendDataStatus = UwbUciConstants.STATUS_CODE_FAILED;
+                short sequenceNum = 0;
+                int connectId;
                 synchronized (uwbSession.getWaitObj()) {
                     if (!isValidUwbSessionForApplicationDataTransfer(uwbSession)) {
                         sendDataStatus = UwbUciConstants.STATUS_CODE_FAILED;
@@ -2775,7 +2973,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                 sendDataInfo.params);
                         return sendDataStatus;
                     }
-                    if (!isValidSendDataInfo(sendDataInfo, uwbSession.getChipId())) {
+                    if (!isValidSendDataInfo(linkLayerMode, sendDataInfo, uwbSession.getChipId())) {
                         sendDataStatus = UwbUciConstants.STATUS_CODE_INVALID_PARAM;
                         mSessionNotificationManager.onDataSendFailed(
                                 uwbSession, sendDataInfo.remoteDeviceAddress, sendDataStatus,
@@ -2784,14 +2982,34 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     }
 
                     // Get the UCI sequence number for this data packet, and store it.
-                    short sequenceNum = uwbSession.getAndIncrementDataSndSequenceNumber();
+                    if (UwbUciConstants.LINK_LAYER_MODE_BYPASS == linkLayerMode) {
+                        connectId = uwbSession.getSessionId();
+                        sequenceNum = uwbSession.getAndIncrementDataSndSequenceNumber();
+                    } else if (UwbUciConstants.LINK_LAYER_MODE_LOGICAL_LINK == linkLayerMode) {
+                        try {
+                            FiraLogicalLinkInfo linkInfo = FiraLogicalLinkInfo.fromBundle(
+                                    sendDataInfo.params);
+                            connectId = linkInfo.getLogicalLinkConnectId();
+                        } catch (IllegalArgumentException e) {
+                            Log.e(TAG, "Invalid FiraLogicalLinkInfo bundle received", e);
+                            return sendDataStatus;
+                        }
+
+                        LogicalLinkInfo logicalLinkInfo = uwbSession.getLogicalLinkInfo(connectId);
+                        sequenceNum = logicalLinkInfo.sequenceNumber;
+                        logicalLinkInfo.sequenceNumber++;
+                    } else {
+                        Log.e(TAG, "Unknown link layer mode: " + linkLayerMode);
+                        return sendDataStatus;
+                    }
+
+                    sendDataStatus = mNativeUwbManager.sendData(connectId, (byte) linkLayerMode,
+                            DataTypeConversionUtil.convertShortMacAddressBytesToExtended(
+                                sendDataInfo.remoteDeviceAddress.toBytes()),
+                            sequenceNum, sendDataInfo.data, uwbSession.getChipId());
+
                     uwbSession.addSendDataInfo(sequenceNum, sendDataInfo);
 
-                    sendDataStatus = mNativeUwbManager.sendData(
-                            uwbSession.getSessionId(),
-                            DataTypeConversionUtil.convertShortMacAddressBytesToExtended(
-                                    sendDataInfo.remoteDeviceAddress.toBytes()),
-                            sequenceNum, sendDataInfo.data, uwbSession.getChipId());
                     mUwbMetrics.logDataTx(uwbSession, sendDataStatus);
                     if (sendDataStatus != STATUS_CODE_OK) {
                         Log.e(TAG, "MSG_SESSION_SEND_DATA error status: " + sendDataStatus
@@ -2818,6 +3036,201 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 e.printStackTrace();
             }
         }
+    }
+
+    private void handleCreateLogicalLink(LogicalLinkInfo logicalLinkInfo) {
+        SessionHandle sessionHandle = logicalLinkInfo.sessionHandle;
+        LogicalLinkParams params = logicalLinkInfo.params;
+        int status = UwbUciConstants.LOGICAL_LINK_STATUS_FAILED;
+
+        UwbSession uwbSession = getUwbSession(sessionHandle);
+        if (uwbSession == null) {
+            throw new IllegalStateException("UwbSession not found");
+        }
+
+        if (UwbUciConstants.DEVICE_TYPE_CONTROLLER != uwbSession.getDeviceType()) {
+            Log.e(TAG, "Logical link creation rejected: UWBS is not in Controller role.");
+            mSessionNotificationManager.onLogicalLinkCreateFailed(uwbSession, params, status);
+            return;
+        }
+
+        byte linkLayerMode = (byte) (params.getLinkLayerModeSelector() & 0xFF);
+        int sessionType = uwbSession.getSessionType();
+
+        if ((sessionType == UwbUciConstants.SESSION_TYPE_RANGING_AND_IN_BAND_DATA
+                || sessionType == UwbUciConstants.SESSION_TYPE_RANGING_WITH_DATA_PHASE)
+                && !(linkLayerMode == UwbUciConstants.LINK_LAYER_MODE_CONNECTION_LESS_NON_SECURE
+                || linkLayerMode == UwbUciConstants.LINK_LAYER_MODE_CONNECTION_LESS_SECURE
+                || linkLayerMode == UwbUciConstants.LINK_LAYER_MODE_CONNECTION_LESS_UWBS_UWBS)) {
+            Log.e(TAG, "Invalid Link Layer Mode Selector for session type: " + sessionType);
+            mSessionNotificationManager.onLogicalLinkCreateFailed(uwbSession, params, status);
+            return;
+        }
+
+        UwbLogicalLinkCreateResponse response = mNativeUwbManager.createLogicalLink(
+                uwbSession.getSessionId(),
+                linkLayerMode,
+                params.getDestinationAddress(),
+                (byte) (params.getLogicalLinkClassLength() & 0xFF),
+                uwbSession.getChipId());
+
+        if (response == null) {
+            Log.e(TAG, "Logical link creation returned null response");
+            mSessionNotificationManager.onLogicalLinkCreateFailed(uwbSession, params, status);
+            return;
+        }
+
+        int uciStatus = response.getStatus();
+        int connectId = response.getLogicalLinkConnectId();
+
+        if (uciStatus != UwbUciConstants.STATUS_CODE_OK) {
+            Log.e(TAG, "Logical link creation failed with UCI status: " + uciStatus);
+            mSessionNotificationManager.onLogicalLinkCreateFailed(uwbSession,
+                    params, status);
+            return;
+        }
+
+        uwbSession.addLogicalLinkInfo(connectId, logicalLinkInfo);
+        Log.i(TAG, "handleCreateLogicalLink: Successfully initiated logical link creation,"
+                + " connectId = " + connectId);
+    }
+
+    private void handleCloseLogicalLink(CloseLogicalLink info) {
+        Trace.beginSection("UWB#handleCloseLogicalLink");
+
+        int status = UwbUciConstants.LOGICAL_LINK_STATUS_FAILED;
+        UwbSession uwbSession = getUwbSession(info.sessionHandle);
+        if (uwbSession == null) {
+            Log.e(TAG, "Uwb session not found for session handle: " + info.sessionHandle);
+            return;
+        }
+
+        int connectId = info.connectId;
+        if (!uwbSession.mLogicalLinksInfoMap.containsKey(connectId)) {
+            Log.e(TAG, "No logical link found with connectId: " + connectId);
+            mSessionNotificationManager.onLogicalLinkCloseFailed(uwbSession, connectId, status);
+            return;
+        }
+
+        FutureTask<Integer> closeLogicalLinkTask = new FutureTask<>((Callable<Integer>) () -> {
+            return mNativeUwbManager.closeLogicalLink(connectId, uwbSession.getChipId());
+        });
+
+        try {
+            status = mUwbInjector.runTaskOnSingleThreadExecutor(closeLogicalLinkTask,
+                    IUwbAdapter.CLOSE_LOGICAL_LINK_THRESHOLD_MS);
+        } catch (TimeoutException e) {
+            Log.w(TAG, "Closing logical link timed out for connectId: " + connectId, e);
+            status = UwbUciConstants.LOGICAL_LINK_STATUS_FAILED;
+        } catch (InterruptedException | ExecutionException e) {
+            Log.e(TAG, "Exception while closing logical link for connectId: " + connectId, e);
+            status = UwbUciConstants.LOGICAL_LINK_STATUS_FAILED;
+        }
+
+        if (status == UwbUciConstants.STATUS_CODE_OK) {
+            Log.i(TAG, "handleCloseLogicalLink: Successfully initiated logical link close,"
+                    + " connectId = " + connectId);
+        } else {
+            Log.e(TAG, "Failed to close logical link for connectId: " + connectId
+                    + " with UCI status: " + status);
+            mSessionNotificationManager.onLogicalLinkCloseFailed(uwbSession, connectId,
+                    UwbUciConstants.LOGICAL_LINK_STATUS_FAILED);
+        }
+    }
+
+    private LogicalLinkConnectionParams decodeLogicalLinkGetParams(
+            UwbLogicalLinkGetParamsResponse response) {
+        int shortLength = 2;
+        int byteLength = 1;
+        int controlField = response.getControlField();
+        byte[] linkLayerParams = response.getLogicalLinkParams();
+
+        LogicalLinkConnectionParams.Builder builder = new LogicalLinkConnectionParams.Builder(
+                response.getStatus(), controlField);
+
+        ByteBuffer buffer = ByteBuffer.wrap(linkLayerParams).order(ByteOrder.LITTLE_ENDIAN);
+
+        if (hasField(controlField, CONTROL_FIELD_MAX_LL_SDU_SIZE, buffer, shortLength)) {
+            builder.setMaxLinkLayerSduSize(Short.toUnsignedInt(buffer.getShort()));
+        }
+
+        if (hasField(controlField, CONTROL_FIELD_MAX_LL_PDU_SIZE, buffer, shortLength)) {
+            builder.setMaxLinkLayerPduSize(Short.toUnsignedInt(buffer.getShort()));
+        }
+
+        if (hasField(controlField, CONTROL_FIELD_TRANSMIT_WINDOW_SIZE, buffer, byteLength)) {
+            builder.setTransmitWindowSize(Byte.toUnsignedInt(buffer.get()));
+        }
+
+        if (hasField(controlField, CONTROL_FIELD_RECEIVE_WINDOW_SIZE, buffer, byteLength)) {
+            builder.setReceiveWindowSize(Byte.toUnsignedInt(buffer.get()));
+        }
+
+        if (hasField(controlField, CONTROL_FIELD_REPEAT_COUNT_MAX, buffer, byteLength)) {
+            builder.setRepeatCountMax(Byte.toUnsignedInt(buffer.get()));
+        }
+
+        if (hasField(controlField, CONTROL_FIELD_LINK_TIMEOUT, buffer, byteLength)) {
+            builder.setLinkTimeout(Byte.toUnsignedInt(buffer.get()));
+        }
+
+        if (hasField(controlField, CONTROL_FIELD_PORT, buffer, byteLength)) {
+            byte port = buffer.get();
+            builder.setDestinationPort(port & 0x07);
+            builder.setSourcePort((port >> 3) & 0x07);
+        }
+
+        return builder.build();
+    }
+
+    private boolean hasField(int controlField, int mask, ByteBuffer buffer, int requiredBytes) {
+        return (controlField & mask) != 0 && buffer.remaining() >= requiredBytes;
+    }
+
+    public LogicalLinkConnectionParams getLogicalLinkParams(SessionHandle sessionHandle,
+            int connectId) {
+        UwbSession uwbSession;
+        int logicalLinkId;
+        String chipId;
+
+        if (connectId != LogicalLinkParams.CONNECT_ID_UNSPECIFIED) {
+            Log.d(TAG, "Using ConnectId: " + connectId);
+
+            uwbSession = getUwbSessionByConnectionIdentifier(connectId);
+
+            if (uwbSession == null) {
+                Log.e(TAG, "No session found with connectId: " + connectId);
+                return null;
+            }
+
+            logicalLinkId = connectId;
+            chipId = uwbSession.getChipId();
+        } else {
+            Log.d(TAG, "Using SessionHandle: " + sessionHandle);
+
+            if (!isExistedSession(sessionHandle)) {
+                throw new IllegalStateException("SessionHandle not initialized: " + sessionHandle);
+            }
+            int sessionId = getSessionId(sessionHandle);
+            uwbSession = getUwbSession(sessionId);
+
+            if (uwbSession == null) {
+                throw new IllegalStateException("UwbSession not found for sessionId: " + sessionId);
+            }
+
+            logicalLinkId = sessionId;
+            chipId = uwbSession.getChipId();
+        }
+
+        UwbLogicalLinkGetParamsResponse response =
+                mNativeUwbManager.getLogicalLinkParams(logicalLinkId, chipId);
+
+        if (response == null) {
+            Log.i(TAG, "Logical Link Params retrieval failed: null result");
+            return null;
+        }
+
+        return decodeLogicalLinkGetParams(response);
     }
 
     private boolean isValidUwbSessionForOwrAoaRanging(UwbSession uwbSession) {
@@ -2855,24 +3268,37 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 : 0;
     }
 
-    private boolean isValidSendDataInfo(SendDataInfo sendDataInfo, String chipId) {
+    private boolean isValidSendDataInfo(int linkLayerMode, SendDataInfo sendDataInfo,
+            String chipId) {
+        int fixedLength = 0;
+
         if (sendDataInfo == null || sendDataInfo.data == null
                 || sendDataInfo.remoteDeviceAddress == null) {
             return false;
         }
 
-        if (sendDataInfo.remoteDeviceAddress.size()
-                > UwbUciConstants.UWB_DEVICE_EXT_MAC_ADDRESS_LEN) {
+        if (UwbUciConstants.LINK_LAYER_MODE_BYPASS == linkLayerMode) {
+            if (sendDataInfo.remoteDeviceAddress.size()
+                    > UwbUciConstants.UWB_DEVICE_EXT_MAC_ADDRESS_LEN) {
+                return false;
+            }
+
+            fixedLength = FiraParams.SESSION_HANDLE_LEN
+                    + UwbUciConstants.UWB_DEVICE_EXT_MAC_ADDRESS_LEN
+                    + FiraParams.SEQUENCE_NUMBER_LENGTH
+                    + FiraParams.DATA_MSG_LENGTH;
+        } else if (UwbUciConstants.LINK_LAYER_MODE_LOGICAL_LINK == linkLayerMode) {
+            fixedLength = FiraParams.CONNECTION_IDENTIFIER_LENGTH
+                    + FiraParams.SEQUENCE_NUMBER_LENGTH
+                    + FiraParams.DATA_MSG_LENGTH;
+        } else {
+            Log.e(TAG, "Unknown link layer mode: " + linkLayerMode);
             return false;
         }
 
-        final int fixedLength = FiraParams.SESSION_HANDLE_LEN
-                                + UwbUciConstants.UWB_DEVICE_EXT_MAC_ADDRESS_LEN
-                                + FiraParams.SEQUENCE_NUMBER_LENGTH
-                                + FiraParams.DATA_MSG_LENGTH;
-
         int sendDataInfoLength = fixedLength + sendDataInfo.data.length;
         int maxMessageSize = getMaxMessageSize(chipId);
+
         if (sendDataInfoLength > maxMessageSize) {
             Log.e(TAG, "SendDataInfo length:" + sendDataInfoLength
                     + " exceeds max supported message size:" + maxMessageSize + " for chipId: "
@@ -2975,6 +3401,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         // Hybrid session
         private int mDeviceType;
         private int mScheduleMode;
+        // Data transmission mode
+        private int mLinkLayerMode = UwbUciConstants.LINK_LAYER_MODE_BYPASS;
 
         // Store the UCI sequence number for the next Data packet (to be sent to UWBS).
         private short mDataSndSequenceNumber;
@@ -2999,6 +3427,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
         // Keep track of RF Test start session params
         private RfTestStartSessionParams mRfTestStartSessionParams = null;
+
+        // Store a Map<connectId, LogicalLinkInfo>, for every logical link created
+        private ConcurrentHashMap<Integer, LogicalLinkInfo> mLogicalLinksInfoMap;
 
         UwbSession(AttributionSource attributionSource, SessionHandle sessionHandle, int sessionId,
                 byte sessionType, String protocolName, Params params,
@@ -3063,6 +3494,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                 this.mDataRepetitionCount = firaParams.getDataRepetitionCount();
                 this.mDeviceType = firaParams.getDeviceType();
                 this.mScheduleMode = firaParams.getScheduledMode();
+                this.mLinkLayerMode = firaParams.getLinkLayerMode();
             } else {
                 this.mRangingRoundUsage = -1;
                 this.mDataRepetitionCount = 0;
@@ -3075,6 +3507,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             this.mSendDataInfoMap = new ConcurrentHashMap<>();
             this.mMulticastRangingErrorStreakTimerListeners = new ConcurrentHashMap<>();
             this.mChannel = getChannelFromParams(params);
+            this.mLogicalLinksInfoMap = new ConcurrentHashMap<>();
         }
 
         public int getChannelFromParams(Params params) {
@@ -3225,6 +3658,33 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         }
 
         /**
+         * Store a LogicalLinkInfo.
+         */
+        public void addLogicalLinkInfo(int connectId, LogicalLinkInfo logicalLinkInfo) {
+            mLogicalLinksInfoMap.put(connectId, logicalLinkInfo);
+        }
+
+        /**
+         * Remove a LogicalLinkInfo.
+         */
+        public void removeLogicalLinkInfo(int connectId) {
+            if (mLogicalLinksInfoMap.containsKey(connectId)) {
+                mLogicalLinksInfoMap.remove(connectId);
+                Log.d(TAG, "Removed LogicalLinkInfo for connectId: " + connectId);
+            } else {
+                Log.w(TAG, "Attempted to remove non-existent connectId: " + connectId);
+            }
+        }
+
+        /**
+         * Get LogiclaLinkInfo for a given connectId from the current UWB Session.
+         */
+        @Nullable
+        public LogicalLinkInfo getLogicalLinkInfo(int connectId) {
+            return mLogicalLinksInfoMap.get(connectId);
+        }
+
+        /**
          * Adds a Controlee to the session. This should only be called to reflect
          *  the state of the native UWB interface.
          * @param address The UWB address of the Controlee to add.
@@ -3316,6 +3776,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
         public int getScheduledMode() {
             return mScheduleMode;
+        }
+
+        public int getLinkLayerMode() {
+            return mLinkLayerMode;
         }
 
         public void updateAliroParamsOnStart(AliroStartRangingParams rangingStartParams) {
@@ -3653,6 +4117,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         public void setDataDeliveryPermissionCheckNeeded(boolean permissionCheckNeeded) {
             mDataDeliveryPermissionCheckNeeded = permissionCheckNeeded;
         }
+
         public void setMulticastListUpdateStatus(
                 UwbMulticastListUpdateStatus multicastListUpdateStatus) {
             mMulticastListUpdateStatus = multicastListUpdateStatus;
@@ -3987,6 +4452,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             }
 
             mSendDataInfoMap.clear();
+            mLogicalLinksInfoMap.clear();
             clearReceivedDataInfo();
         }
 

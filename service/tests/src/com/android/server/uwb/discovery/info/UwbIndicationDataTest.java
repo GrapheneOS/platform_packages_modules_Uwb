@@ -74,8 +74,8 @@ public class UwbIndicationDataTest {
 
         assertThat(info.firaUwbSupport).isEqualTo(false);
         assertThat(info.iso14443Support).isEqualTo(false);
-        assertThat(info.uwbRegulartoryInfoAvailableInAd).isEqualTo(false);
-        assertThat(info.uwbRegulartoryInfoAvailableInOob).isEqualTo(true);
+        assertThat(info.uwbRegulatoryInfoAvailableInAd).isEqualTo(false);
+        assertThat(info.uwbRegulatoryInfoAvailableInOob).isEqualTo(true);
         assertThat(info.firaProfileInfoAvailableInAd).isEqualTo(false);
         assertThat(info.firaProfileInfoAvailableInOob).isEqualTo(true);
         assertThat(info.dualGapRoleSupport).isEqualTo(false);
@@ -90,8 +90,8 @@ public class UwbIndicationDataTest {
 
         assertThat(info.firaUwbSupport).isEqualTo(FIRA_UWB_SUPPORT);
         assertThat(info.iso14443Support).isEqualTo(ISO_14443_SUPPORT);
-        assertThat(info.uwbRegulartoryInfoAvailableInAd).isEqualTo(UWB_REG_INFO_AVAILABLE_IN_AD);
-        assertThat(info.uwbRegulartoryInfoAvailableInOob).isEqualTo(UWB_REG_INFO_AVAILABLE_IN_OOB);
+        assertThat(info.uwbRegulatoryInfoAvailableInAd).isEqualTo(UWB_REG_INFO_AVAILABLE_IN_AD);
+        assertThat(info.uwbRegulatoryInfoAvailableInOob).isEqualTo(UWB_REG_INFO_AVAILABLE_IN_OOB);
         assertThat(info.firaProfileInfoAvailableInAd).isEqualTo(FIRA_PROFILE_INFO_AVAILABLE_IN_AD);
         assertThat(info.firaProfileInfoAvailableInOob)
                 .isEqualTo(FIRA_PROFILE_INFO_AVAILABLE_IN_OOB);

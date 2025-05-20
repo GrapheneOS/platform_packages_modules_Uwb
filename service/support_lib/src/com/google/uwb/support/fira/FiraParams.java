@@ -1159,6 +1159,7 @@ public abstract class FiraParams extends Params {
     public static final int SESSION_OFFSET_TIME_LEN = 4;
     public static final int SEQUENCE_NUMBER_LENGTH = 2;
     public static final int DATA_MSG_LENGTH = 2;
+    public static final int CONNECTION_IDENTIFIER_LENGTH = 4;
 
     // Default value (Host as the both secure & non-secure endpoint).
     public static final int APPLICATION_DATA_ENDPOINT_DEFAULT = 0;
@@ -1179,6 +1180,23 @@ public abstract class FiraParams extends Params {
     public static final int ANTENNA_MODE_OMNI = 0;
     /** The patch antenna is used for both Tx and Rx. **/
     public static final int ANTENNA_MODE_DIRECTIONAL = 1;
+
+    /**
+     * Link Layer Mode
+     */
+    @IntDef(
+        value = {
+                LINK_LAYER_MODE_BYPASS,
+                LINK_LAYER_MODE_LOGICAL_LINK,
+        })
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface LinkLayerMode {}
+
+    /** (Default) Bypass Logical Link Mode. */
+    public static final int LINK_LAYER_MODE_BYPASS = 0x00;
+
+    /** Logical Link Mode. */
+    public static final int LINK_LAYER_MODE_LOGICAL_LINK = 0x01;
 
     private static final byte[] sShortForbiddenUwbAddress = {(byte) 0xFF, (byte) 0xFF};
     private static final byte[] sExtendedForbiddenUwbAddress = {

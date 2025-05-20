@@ -53,8 +53,8 @@ public class UwbIndicationData {
 
     public final boolean firaUwbSupport;
     public final boolean iso14443Support;
-    public final boolean uwbRegulartoryInfoAvailableInAd;
-    public final boolean uwbRegulartoryInfoAvailableInOob;
+    public final boolean uwbRegulatoryInfoAvailableInAd;
+    public final boolean uwbRegulatoryInfoAvailableInOob;
     public final boolean firaProfileInfoAvailableInAd;
     public final boolean firaProfileInfoAvailableInOob;
     public final boolean dualGapRoleSupport;
@@ -85,9 +85,9 @@ public class UwbIndicationData {
         byte uwbCapabilities = byteBuffer.get();
         boolean firaUwbSupport = (uwbCapabilities & FIRA_UWB_SUPPORT_BITMASK) != 0;
         boolean iso14443Support = (uwbCapabilities & ISO14443_SUPPORT_BITMASK) != 0;
-        boolean uwbRegulartoryInfoAvailableInAd =
+        boolean uwbRegulatoryInfoAvailableInAd =
                 (uwbCapabilities & UWB_REGULATORY_INFO_AVAILABLE_IN_AD_BITMASK) != 0;
-        boolean uwbRegulartoryInfoAvailableInOob =
+        boolean uwbRegulatoryInfoAvailableInOob =
                 (uwbCapabilities & UWB_REGULATORY_INFO_AVAILABLE_IN_OOB_BITMASK) != 0;
         boolean firaProfileInfoAvailableInAd =
                 (uwbCapabilities & FIRA_PROFILE_INFO_AVAILABLE_IN_AD_BITMASK) != 0;
@@ -120,8 +120,8 @@ public class UwbIndicationData {
         return new UwbIndicationData(
                 firaUwbSupport,
                 iso14443Support,
-                uwbRegulartoryInfoAvailableInAd,
-                uwbRegulartoryInfoAvailableInOob,
+                uwbRegulatoryInfoAvailableInAd,
+                uwbRegulatoryInfoAvailableInOob,
                 firaProfileInfoAvailableInAd,
                 firaProfileInfoAvailableInOob,
                 dualGapRoleSupport,
@@ -151,9 +151,9 @@ public class UwbIndicationData {
         return (byte)
                 ((((info.firaUwbSupport ? 1 : 0) << 7) & FIRA_UWB_SUPPORT_BITMASK)
                         | (((info.iso14443Support ? 1 : 0) << 6) & ISO14443_SUPPORT_BITMASK)
-                        | (((info.uwbRegulartoryInfoAvailableInAd ? 1 : 0) << 5)
+                        | (((info.uwbRegulatoryInfoAvailableInAd ? 1 : 0) << 5)
                                 & UWB_REGULATORY_INFO_AVAILABLE_IN_AD_BITMASK)
-                        | (((info.uwbRegulartoryInfoAvailableInOob ? 1 : 0) << 4)
+                        | (((info.uwbRegulatoryInfoAvailableInOob ? 1 : 0) << 4)
                                 & UWB_REGULATORY_INFO_AVAILABLE_IN_OOB_BITMASK)
                         | (((info.firaProfileInfoAvailableInAd ? 1 : 0) << 3)
                                 & FIRA_PROFILE_INFO_AVAILABLE_IN_AD_BITMASK)
@@ -167,8 +167,8 @@ public class UwbIndicationData {
     public UwbIndicationData(
             boolean firaUwbSupport,
             boolean iso14443Support,
-            boolean uwbRegulartoryInfoAvailableInAd,
-            boolean uwbRegulartoryInfoAvailableInOob,
+            boolean uwbRegulatoryInfoAvailableInAd,
+            boolean uwbRegulatoryInfoAvailableInOob,
             boolean firaProfileInfoAvailableInAd,
             boolean firaProfileInfoAvailableInOob,
             boolean dualGapRoleSupport,
@@ -176,8 +176,8 @@ public class UwbIndicationData {
             SecureComponentInfo[] secureComponentInfos) {
         this.firaUwbSupport = firaUwbSupport;
         this.iso14443Support = iso14443Support;
-        this.uwbRegulartoryInfoAvailableInAd = uwbRegulartoryInfoAvailableInAd;
-        this.uwbRegulartoryInfoAvailableInOob = uwbRegulartoryInfoAvailableInOob;
+        this.uwbRegulatoryInfoAvailableInAd = uwbRegulatoryInfoAvailableInAd;
+        this.uwbRegulatoryInfoAvailableInOob = uwbRegulatoryInfoAvailableInOob;
         this.firaProfileInfoAvailableInAd = firaProfileInfoAvailableInAd;
         this.firaProfileInfoAvailableInOob = firaProfileInfoAvailableInOob;
         this.dualGapRoleSupport = dualGapRoleSupport;
@@ -192,10 +192,10 @@ public class UwbIndicationData {
                 .append(firaUwbSupport)
                 .append(" iso14443Support=")
                 .append(iso14443Support)
-                .append(" uwbRegulartoryInfoAvailableInAd=")
-                .append(uwbRegulartoryInfoAvailableInAd)
-                .append(" uwbRegulartoryInfoAvailableInOob=")
-                .append(uwbRegulartoryInfoAvailableInOob)
+                .append(" uwbRegulatoryInfoAvailableInAd=")
+                .append(uwbRegulatoryInfoAvailableInAd)
+                .append(" uwbRegulatoryInfoAvailableInOob=")
+                .append(uwbRegulatoryInfoAvailableInOob)
                 .append(" firaProfileInfoAvailableInAd=")
                 .append(firaProfileInfoAvailableInAd)
                 .append(" firaProfileInfoAvailableInOob=")

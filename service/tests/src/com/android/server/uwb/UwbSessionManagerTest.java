@@ -22,6 +22,7 @@ import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREG
 import static com.android.modules.utils.build.SdkLevel.isAtLeastV;
 import static com.android.server.uwb.UwbSessionManager.SESSION_OPEN_RANGING;
 import static com.android.server.uwb.UwbTestUtils.DATA_PAYLOAD;
+import static com.android.server.uwb.UwbTestUtils.LINK_LAYER_MODE;
 import static com.android.server.uwb.UwbTestUtils.MAX_DATA_SIZE;
 import static com.android.server.uwb.UwbTestUtils.PEER_BAD_MAC_ADDRESS;
 import static com.android.server.uwb.UwbTestUtils.PEER_EXTENDED_MAC_ADDRESS;
@@ -41,6 +42,7 @@ import static com.android.server.uwb.UwbTestUtils.RANGING_MEASUREMENT_TYPE_UNDEF
 import static com.android.server.uwb.UwbTestUtils.TEST_SESSION_ID;
 import static com.android.server.uwb.UwbTestUtils.TEST_SESSION_ID_2;
 import static com.android.server.uwb.UwbTestUtils.TEST_SESSION_TYPE;
+import static com.android.server.uwb.data.UwbUciConstants.CONTROL_FIELD_MAX_LL_SDU_SIZE;
 import static com.android.server.uwb.data.UwbUciConstants.MAC_ADDRESSING_MODE_EXTENDED;
 import static com.android.server.uwb.data.UwbUciConstants.MAC_ADDRESSING_MODE_SHORT;
 import static com.android.server.uwb.data.UwbUciConstants.RANGING_DEVICE_ROLE_ADVERTISER;
@@ -66,6 +68,7 @@ import static com.google.uwb.support.radar.RadarParams.RADAR_DATA_TYPE_RADAR_SWE
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyByte;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -99,9 +102,12 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.os.test.TestLooper;
 import android.permission.flags.Flags;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Pair;
 import android.uwb.IUwbAdapter;
 import android.uwb.IUwbRangingCallbacks;
+import android.uwb.LogicalLinkConnectionParams;
+import android.uwb.LogicalLinkParams;
 import android.uwb.RangingChangeReason;
 import android.uwb.SessionHandle;
 import android.uwb.StateChangeReason;
@@ -114,6 +120,8 @@ import com.android.server.uwb.UwbSessionManager.WaitObj;
 import com.android.server.uwb.advertisement.UwbAdvertiseManager;
 import com.android.server.uwb.data.DtTagUpdateRangingRoundsStatus;
 import com.android.server.uwb.data.UwbDeviceInfoResponse;
+import com.android.server.uwb.data.UwbLogicalLinkCreateResponse;
+import com.android.server.uwb.data.UwbLogicalLinkGetParamsResponse;
 import com.android.server.uwb.data.UwbMulticastListUpdateStatus;
 import com.android.server.uwb.data.UwbRadarData;
 import com.android.server.uwb.data.UwbRangingData;
@@ -402,7 +410,8 @@ public class UwbSessionManagerTest {
         doReturn(mockUwbSession)
                 .when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
 
-        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, LINK_LAYER_MODE,
+                UwbUciConstants.STATUS_CODE_OK,
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS, DATA_PAYLOAD);
         verify(mockUwbSession).addReceivedDataInfo(isA(UwbSessionManager.ReceivedDataInfo.class));
         verify(mUwbMetrics).logDataRx(eq(mockUwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
@@ -416,7 +425,8 @@ public class UwbSessionManagerTest {
         doReturn(mockUwbSession)
                 .when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
 
-        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, LINK_LAYER_MODE,
+                UwbUciConstants.STATUS_CODE_OK,
                 DATA_SEQUENCE_NUM, PEER_BAD_MAC_ADDRESS, DATA_PAYLOAD);
         verify(mockUwbSession, never()).addReceivedDataInfo(
                 isA(UwbSessionManager.ReceivedDataInfo.class));
@@ -432,7 +442,8 @@ public class UwbSessionManagerTest {
         doReturn(mockUwbSession)
                 .when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
 
-        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, LINK_LAYER_MODE,
+                UwbUciConstants.STATUS_CODE_OK,
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_SHORT_MAC_ADDRESS, DATA_PAYLOAD);
         verify(mockUwbSession).addReceivedDataInfo(isA(UwbSessionManager.ReceivedDataInfo.class));
         verify(mUwbMetrics).logDataRx(eq(mockUwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
@@ -447,7 +458,8 @@ public class UwbSessionManagerTest {
         doReturn(mockUwbSession)
                 .when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
 
-        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, LINK_LAYER_MODE,
+                UwbUciConstants.STATUS_CODE_OK,
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_SHORT_MAC_ADDRESS, DATA_PAYLOAD);
 
         verify(mUwbSessionNotificationManager).onDataReceived(
@@ -506,7 +518,8 @@ public class UwbSessionManagerTest {
         when(mUwbOemExtensionCallbackListener.onCheckPointedTarget(any())).thenReturn(true);
 
         // First call onDataReceived() to get the application payload data.
-        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, LINK_LAYER_MODE,
+                UwbUciConstants.STATUS_CODE_OK,
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS, DATA_PAYLOAD);
         verify(mockUwbSession).addReceivedDataInfo(isA(UwbSessionManager.ReceivedDataInfo.class));
         verify(mUwbMetrics).logDataRx(eq(mockUwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
@@ -552,7 +565,8 @@ public class UwbSessionManagerTest {
 
         // First call onDataReceived() to get the application payload data. This should always have
         // the MacAddress (in 8 Bytes), even for a Short MacAddress (MSB are zeroed out).
-        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, LINK_LAYER_MODE,
+                UwbUciConstants.STATUS_CODE_OK,
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_SHORT_MAC_ADDRESS, DATA_PAYLOAD);
         verify(mockUwbSession).addReceivedDataInfo(isA(UwbSessionManager.ReceivedDataInfo.class));
         verify(mUwbMetrics).logDataRx(eq(mockUwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
@@ -590,14 +604,18 @@ public class UwbSessionManagerTest {
                 .when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
 
         // First call onDataReceived() to get the application payload data.
-        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, LINK_LAYER_MODE,
+                UwbUciConstants.STATUS_CODE_OK,
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS, DATA_PAYLOAD);
-        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, LINK_LAYER_MODE,
+                UwbUciConstants.STATUS_CODE_OK,
                 DATA_SEQUENCE_NUM_1, PEER_EXTENDED_MAC_ADDRESS, DATA_PAYLOAD);
 
-        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, LINK_LAYER_MODE,
+                UwbUciConstants.STATUS_CODE_OK,
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS_2, DATA_PAYLOAD);
-        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, LINK_LAYER_MODE,
+                UwbUciConstants.STATUS_CODE_OK,
                 DATA_SEQUENCE_NUM_1, PEER_EXTENDED_MAC_ADDRESS_2, DATA_PAYLOAD);
 
         verify(mockUwbSession, times(4)).addReceivedDataInfo(
@@ -664,7 +682,8 @@ public class UwbSessionManagerTest {
 
         // First call onDataReceived() to get the application payload data. This should always have
         // the MacAddress (in 8 Bytes), even for a Short MacAddress (MSB are zeroed out).
-        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, LINK_LAYER_MODE,
+                UwbUciConstants.STATUS_CODE_OK,
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_SHORT_MAC_ADDRESS, DATA_PAYLOAD);
 
         // Next call onRangeDataNotificationReceived() to process the RANGE_DATA_NTF.
@@ -697,7 +716,8 @@ public class UwbSessionManagerTest {
                 .when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
 
         // First call onDataReceived() to get the application payload data.
-        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, LINK_LAYER_MODE,
+                UwbUciConstants.STATUS_CODE_OK,
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS, DATA_PAYLOAD);
 
         // Next call onRangeDataNotificationReceived() to process the RANGE_DATA_NTF.
@@ -718,7 +738,8 @@ public class UwbSessionManagerTest {
                 .when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
 
         // First call onDataReceived() to get the application payload data.
-        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, LINK_LAYER_MODE,
+                UwbUciConstants.STATUS_CODE_OK,
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS, DATA_PAYLOAD);
         verify(mockUwbSession).addReceivedDataInfo(isA(UwbSessionManager.ReceivedDataInfo.class));
         verify(mUwbMetrics).logDataRx(eq(mockUwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
@@ -743,7 +764,8 @@ public class UwbSessionManagerTest {
                 .when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
 
         // First call onDataReceived() to get the application payload data.
-        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, LINK_LAYER_MODE,
+                UwbUciConstants.STATUS_CODE_OK,
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS, DATA_PAYLOAD);
         verify(mockUwbSession).addReceivedDataInfo(isA(UwbSessionManager.ReceivedDataInfo.class));
         verify(mUwbMetrics).logDataRx(eq(mockUwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
@@ -772,7 +794,8 @@ public class UwbSessionManagerTest {
                 .when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
 
         // First call onDataReceived() to get the application payload data.
-        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, LINK_LAYER_MODE,
+                UwbUciConstants.STATUS_CODE_OK,
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS, DATA_PAYLOAD);
         verify(mockUwbSession).addReceivedDataInfo(isA(UwbSessionManager.ReceivedDataInfo.class));
         verify(mUwbMetrics).logDataRx(eq(mockUwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
@@ -829,7 +852,8 @@ public class UwbSessionManagerTest {
 
         // onDataReceived() called for a different MacAddress, which should be equivalent to it
         // not being called.
-        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, LINK_LAYER_MODE,
+                UwbUciConstants.STATUS_CODE_OK,
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS_2, DATA_PAYLOAD);
         verify(mockUwbSession).addReceivedDataInfo(isA(UwbSessionManager.ReceivedDataInfo.class));
         verify(mUwbMetrics).logDataRx(eq(mockUwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
@@ -868,7 +892,8 @@ public class UwbSessionManagerTest {
 
         // onDataReceived() called for a different UwbSessionID, which should be equivalent to it
         // not being called.
-        mUwbSessionManager.onDataReceived(TEST_SESSION_ID_2, UwbUciConstants.STATUS_CODE_OK,
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID_2, LINK_LAYER_MODE,
+                UwbUciConstants.STATUS_CODE_OK,
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS, DATA_PAYLOAD);
         verify(mockUwbSession2).addReceivedDataInfo(isA(UwbSessionManager.ReceivedDataInfo.class));
         verify(mUwbMetrics).logDataRx(eq(mockUwbSession2), eq(UwbUciConstants.STATUS_CODE_OK));
@@ -902,7 +927,8 @@ public class UwbSessionManagerTest {
         doReturn(mockUwbSession)
                 .when(mUwbSessionManager).getUwbSession(eq(TEST_SESSION_ID));
 
-        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, LINK_LAYER_MODE,
+                UwbUciConstants.STATUS_CODE_OK,
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS, DATA_PAYLOAD);
         verify(mockUwbSession).addReceivedDataInfo(isA(UwbSessionManager.ReceivedDataInfo.class));
         verify(mUwbMetrics).logDataRx(eq(mockUwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
@@ -3650,7 +3676,7 @@ public class UwbSessionManagerTest {
         doReturn(UwbUciConstants.UWB_SESSION_STATE_ACTIVE).when(uwbSession).getSessionState();
 
         // Send data on the UWB session.
-        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID), eq(macAddress),
+        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID), eq(LINK_LAYER_MODE), eq(macAddress),
                 eq(DATA_SEQUENCE_NUM), eq(DATA_PAYLOAD), eq(TEST_CHIP_ID)))
                 .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
 
@@ -3658,7 +3684,7 @@ public class UwbSessionManagerTest {
                 uwbSession.getSessionHandle(), uwbAddress, PERSISTABLE_BUNDLE, DATA_PAYLOAD);
         mTestLooper.dispatchNext();
 
-        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID), eq(macAddress),
+        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID), eq(LINK_LAYER_MODE), eq(macAddress),
                 eq(DATA_SEQUENCE_NUM), eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
 
         // A DataTransferStatusNtf is received indicating success.
@@ -3719,7 +3745,7 @@ public class UwbSessionManagerTest {
         mTestLooper.dispatchNext();
 
         verify(mNativeUwbManager, never()).sendData(
-                eq(TEST_SESSION_ID), eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
+                eq(TEST_SESSION_ID), eq(LINK_LAYER_MODE), eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(DATA_SEQUENCE_NUM), eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
         verify(mUwbSessionNotificationManager).onDataSendFailed(
                 eq(null), eq(PEER_EXTENDED_UWB_ADDRESS),
@@ -3739,7 +3765,7 @@ public class UwbSessionManagerTest {
         mTestLooper.dispatchNext();
 
         verify(mNativeUwbManager, never()).sendData(
-                eq(TEST_SESSION_ID), eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
+                eq(TEST_SESSION_ID), eq(LINK_LAYER_MODE), eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(DATA_SEQUENCE_NUM), eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
         verify(mUwbSessionNotificationManager).onDataSendFailed(
                 eq(null), eq(PEER_EXTENDED_UWB_ADDRESS),
@@ -3758,7 +3784,7 @@ public class UwbSessionManagerTest {
         mTestLooper.dispatchNext();
 
         verify(mNativeUwbManager, never()).sendData(
-                eq(TEST_SESSION_ID), eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
+                eq(TEST_SESSION_ID), eq(LINK_LAYER_MODE), eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(DATA_SEQUENCE_NUM), eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
         verify(mUwbSessionNotificationManager).onDataSendFailed(
                 eq(uwbSession), eq(PEER_EXTENDED_UWB_ADDRESS),
@@ -3776,7 +3802,7 @@ public class UwbSessionManagerTest {
         mTestLooper.dispatchNext();
 
         verify(mNativeUwbManager, never()).sendData(
-                eq(TEST_SESSION_ID), eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
+                eq(TEST_SESSION_ID), eq(LINK_LAYER_MODE), eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(DATA_SEQUENCE_NUM), eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
         verify(mUwbSessionNotificationManager).onDataSendFailed(
                 eq(uwbSession), eq(PEER_EXTENDED_UWB_ADDRESS),
@@ -3793,8 +3819,8 @@ public class UwbSessionManagerTest {
                 uwbSession.getSessionHandle(), null, PERSISTABLE_BUNDLE, DATA_PAYLOAD);
         mTestLooper.dispatchNext();
 
-        verify(mNativeUwbManager, never()).sendData(
-                eq(TEST_SESSION_ID), eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
+        verify(mNativeUwbManager, never()).sendData(eq(TEST_SESSION_ID), eq(LINK_LAYER_MODE),
+                eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(DATA_SEQUENCE_NUM), eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
         verify(mUwbSessionNotificationManager).onDataSendFailed(
                 eq(uwbSession), eq(null),
@@ -3807,7 +3833,7 @@ public class UwbSessionManagerTest {
         UwbSession uwbSession = prepareExistingUwbSessionActive();
 
         // Attempt to send data on the UWB session.
-        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID),
+        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID), eq(LINK_LAYER_MODE),
                 eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(DATA_SEQUENCE_NUM), eq(DATA_PAYLOAD), eq(TEST_CHIP_ID)))
                 .thenReturn((byte) UwbUciConstants.STATUS_CODE_FAILED);
@@ -3816,7 +3842,7 @@ public class UwbSessionManagerTest {
                 PERSISTABLE_BUNDLE, DATA_PAYLOAD);
         mTestLooper.dispatchNext();
 
-        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID),
+        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID), eq(LINK_LAYER_MODE),
                 eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(DATA_SEQUENCE_NUM), eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
         verify(mUwbSessionNotificationManager).onDataSendFailed(
@@ -3832,7 +3858,7 @@ public class UwbSessionManagerTest {
         clearInvocations(mUwbSessionNotificationManager);
 
         // Send data on the UWB session.
-        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID),
+        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID), eq(LINK_LAYER_MODE),
                 eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(DATA_SEQUENCE_NUM), eq(DATA_PAYLOAD), eq(TEST_CHIP_ID)))
                 .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
@@ -3841,7 +3867,7 @@ public class UwbSessionManagerTest {
                 PERSISTABLE_BUNDLE, DATA_PAYLOAD);
         mTestLooper.dispatchNext();
 
-        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID),
+        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID), eq(LINK_LAYER_MODE),
                 eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(DATA_SEQUENCE_NUM), eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
         verify(mUwbMetrics).logDataTx(eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
@@ -3860,7 +3886,7 @@ public class UwbSessionManagerTest {
         clearInvocations(mUwbSessionNotificationManager);
 
         // Send data on the UWB session.
-        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID),
+        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID), eq(LINK_LAYER_MODE),
                 eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(DATA_SEQUENCE_NUM), eq(DATA_PAYLOAD), eq(TEST_CHIP_ID)))
                 .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
@@ -3869,7 +3895,7 @@ public class UwbSessionManagerTest {
                 PERSISTABLE_BUNDLE, DATA_PAYLOAD);
         mTestLooper.dispatchNext();
 
-        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID),
+        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID), eq(LINK_LAYER_MODE),
                 eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(DATA_SEQUENCE_NUM), eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
         verify(mUwbMetrics).logDataTx(eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
@@ -3889,7 +3915,7 @@ public class UwbSessionManagerTest {
         clearInvocations(mUwbSessionNotificationManager);
 
         // Send data on the UWB session.
-        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID),
+        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID), eq(LINK_LAYER_MODE),
                 eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(DATA_SEQUENCE_NUM), eq(DATA_PAYLOAD), eq(TEST_CHIP_ID)))
                 .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
@@ -3898,7 +3924,7 @@ public class UwbSessionManagerTest {
                 PERSISTABLE_BUNDLE, DATA_PAYLOAD);
         mTestLooper.dispatchNext();
 
-        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID),
+        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID), eq(LINK_LAYER_MODE),
                 eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(DATA_SEQUENCE_NUM), eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
         verify(mUwbMetrics).logDataTx(eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
@@ -3919,7 +3945,7 @@ public class UwbSessionManagerTest {
         clearInvocations(mUwbSessionNotificationManager);
 
         // Send data on the UWB session.
-        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID),
+        when(mNativeUwbManager.sendData(eq(TEST_SESSION_ID), eq(LINK_LAYER_MODE),
                 eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(DATA_SEQUENCE_NUM), eq(DATA_PAYLOAD), eq(TEST_CHIP_ID)))
                 .thenReturn((byte) UwbUciConstants.STATUS_CODE_OK);
@@ -3928,7 +3954,7 @@ public class UwbSessionManagerTest {
                 PERSISTABLE_BUNDLE, DATA_PAYLOAD);
         mTestLooper.dispatchNext();
 
-        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID),
+        verify(mNativeUwbManager).sendData(eq(TEST_SESSION_ID), eq(LINK_LAYER_MODE),
                 eq(PEER_EXTENDED_UWB_ADDRESS.toBytes()),
                 eq(DATA_SEQUENCE_NUM), eq(DATA_PAYLOAD), eq(TEST_CHIP_ID));
         verify(mUwbMetrics).logDataTx(eq(uwbSession), eq(UwbUciConstants.STATUS_CODE_OK));
@@ -4917,6 +4943,218 @@ public class UwbSessionManagerTest {
                 slotBitmapBytes, stopDataTransferBytes, TEST_CHIP_ID);
     }
 
+    @Test
+    @RequiresFlagsEnabled(com.android.uwb.flags.Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public void testCreateLogicalLink_Success() throws Exception {
+        assumeTrue(com.android.uwb.flags.Flags.uwbFira3025q4());
+        UwbSession uwbSession = prepareExistingUwbSession();
+        LogicalLinkParams params = new LogicalLinkParams.Builder(0,
+                UwbAddress.fromBytes(new byte[] {0x11, 0x22})).build();
+        UwbLogicalLinkCreateResponse response = mock(UwbLogicalLinkCreateResponse.class);
+
+        when(uwbSession.getDeviceType()).thenReturn(UwbUciConstants.DEVICE_TYPE_CONTROLLER);
+        when(uwbSession.getSessionType()).thenReturn(
+                UwbUciConstants.SESSION_TYPE_RANGING_AND_IN_BAND_DATA);
+        when(mNativeUwbManager.createLogicalLink(anyInt(), anyByte(), any(), anyByte(),
+                anyString())).thenReturn(response);
+        when(response.getStatus()).thenReturn(UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.createLogicalLink(uwbSession.getSessionHandle(), params);
+        mTestLooper.dispatchNext();
+
+        verify(mUwbSessionNotificationManager, never()).onLogicalLinkCreateFailed(any(), any(),
+                anyInt());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.uwb.flags.Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public void testCreateLogicalLink_FailedResponse() throws Exception {
+        assumeTrue(com.android.uwb.flags.Flags.uwbFira3025q4());
+        UwbSession uwbSession = prepareExistingUwbSession();
+        LogicalLinkParams params = new LogicalLinkParams.Builder(0,
+                UwbAddress.fromBytes(new byte[] {0x11, 0x22})).build();
+
+        when(uwbSession.getDeviceType()).thenReturn(UwbUciConstants.DEVICE_TYPE_CONTROLLER);
+        when(mNativeUwbManager.createLogicalLink(anyInt(), anyByte(), any(), anyByte(),
+                anyString())).thenReturn(null);
+
+        mUwbSessionManager.createLogicalLink(uwbSession.getSessionHandle(), params);
+        mTestLooper.dispatchNext();
+
+        verify(mUwbSessionNotificationManager).onLogicalLinkCreateFailed(eq(uwbSession),
+                eq(params), eq(UwbUciConstants.LOGICAL_LINK_STATUS_FAILED));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.uwb.flags.Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public void testOnLogicalLinkCreateNotification_Success() throws Exception {
+        assumeTrue(com.android.uwb.flags.Flags.uwbFira3025q4());
+
+        UwbSession uwbSession = prepareExistingUwbSession();
+        LogicalLinkParams params = new LogicalLinkParams.Builder(0,
+                UwbAddress.fromBytes(new byte[] {0x11, 0x22})).build();
+        UwbLogicalLinkCreateResponse response = mock(UwbLogicalLinkCreateResponse.class);
+
+        when(uwbSession.getDeviceType()).thenReturn(UwbUciConstants.DEVICE_TYPE_CONTROLLER);
+        when(uwbSession.getSessionType()).thenReturn(
+                UwbUciConstants.SESSION_TYPE_RANGING_AND_IN_BAND_DATA);
+        when(mNativeUwbManager.createLogicalLink(anyInt(), anyByte(), any(), anyByte(),
+                anyString())).thenReturn(response);
+        when(response.getStatus()).thenReturn(UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.createLogicalLink(uwbSession.getSessionHandle(), params);
+        mTestLooper.dispatchNext();
+
+        int connectId = UwbTestUtils.LOGICAL_LINK_CONNECT_ID;
+        when(mUwbSessionManager.getUwbSessionByConnectionIdentifier(connectId)).thenReturn(
+                uwbSession);
+
+        mUwbSessionManager.onLogicalLinkCreateNotification(connectId,
+                UwbUciConstants.LOGICAL_LINK_STATUS_ACCEPTED);
+
+        verify(mUwbSessionNotificationManager).onLogicalLinkCreated(eq(uwbSession), eq(params),
+                eq(connectId));
+        verify(uwbSession, never()).removeLogicalLinkInfo(connectId);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.uwb.flags.Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public void testOnLogicalLinkCreateNotification_SessionNotFound() {
+        assumeTrue(com.android.uwb.flags.Flags.uwbFira3025q4());
+        long connectId = UwbTestUtils.LOGICAL_LINK_CONNECT_ID;
+        int status = UwbUciConstants.LOGICAL_LINK_STATUS_ACCEPTED;
+        when(mUwbSessionManager.getUwbSessionByConnectionIdentifier((int) connectId))
+                .thenReturn(null);
+
+        mUwbSessionManager.onLogicalLinkCreateNotification(connectId, status);
+
+        verify(mUwbSessionNotificationManager, never()).onLogicalLinkCreated(any(), any(),
+                anyInt());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.uwb.flags.Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public void testCloseLogicalLink() throws Exception {
+        assumeTrue(com.android.uwb.flags.Flags.uwbFira3025q4());
+        //create logical link
+        UwbSession uwbSession = prepareExistingUwbSession();
+        int connectId = UwbTestUtils.LOGICAL_LINK_CONNECT_ID;
+        LogicalLinkParams params = new LogicalLinkParams.Builder(0,
+                UwbAddress.fromBytes(new byte[] {0x11, 0x22})).build();
+        UwbLogicalLinkCreateResponse response = mock(UwbLogicalLinkCreateResponse.class);
+
+        when(uwbSession.getDeviceType()).thenReturn(UwbUciConstants.DEVICE_TYPE_CONTROLLER);
+        when(uwbSession.getSessionType()).thenReturn(
+                UwbUciConstants.SESSION_TYPE_RANGING_AND_IN_BAND_DATA);
+        when(mNativeUwbManager.createLogicalLink(anyInt(), anyByte(), any(), anyByte(),
+                anyString())).thenReturn(response);
+        when(response.getStatus()).thenReturn(UwbUciConstants.STATUS_CODE_OK);
+        when(response.getLogicalLinkConnectId()).thenReturn(connectId);
+
+        mUwbSessionManager.createLogicalLink(uwbSession.getSessionHandle(), params);
+        mTestLooper.dispatchNext();
+
+        // close logical link success
+        when(mNativeUwbManager.closeLogicalLink(anyInt(), anyString()))
+                .thenReturn(UwbUciConstants.STATUS_CODE_OK);
+
+        mUwbSessionManager.closeLogicalLink(uwbSession.getSessionHandle(), connectId);
+        mTestLooper.dispatchNext();
+
+        verify(mUwbSessionNotificationManager, never()).onLogicalLinkCloseFailed(any(), anyInt(),
+                anyInt());
+
+        // close logical link failure
+        when(mNativeUwbManager.closeLogicalLink(anyInt(), anyString()))
+                .thenReturn(UwbUciConstants.STATUS_CODE_FAILED);
+
+        mUwbSessionManager.closeLogicalLink(uwbSession.getSessionHandle(), connectId);
+        mTestLooper.dispatchNext();
+
+        verify(mUwbSessionNotificationManager).onLogicalLinkCloseFailed(eq(uwbSession),
+                eq(connectId), eq(UwbUciConstants.LOGICAL_LINK_STATUS_FAILED));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.uwb.flags.Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public void testGetLogicalLinkParams_withConnectId_returnsDecodedResponse() throws Exception {
+        assumeTrue(com.android.uwb.flags.Flags.uwbFira3025q4());
+        UwbSession uwbSession = prepareExistingUwbSession();
+        when(mUwbSessionManager.getUwbSessionByConnectionIdentifier(
+                UwbTestUtils.LOGICAL_LINK_CONNECT_ID)).thenReturn(uwbSession);
+
+        byte[] linkParams = ByteBuffer.allocate(2)
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .putShort((short) 512)
+                .array();
+
+        UwbLogicalLinkGetParamsResponse nativeResponse = new UwbLogicalLinkGetParamsResponse(
+                0, CONTROL_FIELD_MAX_LL_SDU_SIZE, linkParams);
+
+        when(mNativeUwbManager.getLogicalLinkParams(UwbTestUtils.LOGICAL_LINK_CONNECT_ID,
+                uwbSession.getChipId())).thenReturn(nativeResponse);
+
+        LogicalLinkConnectionParams response =
+                mUwbSessionManager.getLogicalLinkParams(uwbSession.getSessionHandle(), 0x00);
+
+        assertThat(response).isNotNull();
+        assertThat(512).isEqualTo(response.getMaxLinkLayerSduSize());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.uwb.flags.Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public void testGetLogicalLinkParams_withSessionHandle_returnsDecodedResponse()
+            throws Exception {
+        assumeTrue(com.android.uwb.flags.Flags.uwbFira3025q4());
+        UwbSession uwbSession = prepareExistingUwbSession();
+        int connectId = LogicalLinkParams.CONNECT_ID_UNSPECIFIED;
+
+        byte[] linkParams = ByteBuffer.allocate(2)
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .putShort((short) 512)
+                .array();
+
+        UwbLogicalLinkGetParamsResponse nativeResponse = new UwbLogicalLinkGetParamsResponse(
+                0, CONTROL_FIELD_MAX_LL_SDU_SIZE, linkParams);
+
+        when(mNativeUwbManager.getLogicalLinkParams(uwbSession.getSessionId(),
+                uwbSession.getChipId())).thenReturn(nativeResponse);
+
+        LogicalLinkConnectionParams response =
+                mUwbSessionManager.getLogicalLinkParams(uwbSession.getSessionHandle(), connectId);
+
+        assertThat(response).isNotNull();
+        assertThat(512).isEqualTo(response.getMaxLinkLayerSduSize());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.uwb.flags.Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public void testOnRemoteLogicalLinkRequested_Success() {
+        assumeTrue(com.android.uwb.flags.Flags.uwbFira3025q4());
+        int sessionId = UwbTestUtils.TEST_SESSION_ID;
+        UwbSession mockUwbSession = mock(UwbSession.class);
+        when(mUwbSessionManager.getUwbSession(sessionId)).thenReturn(mockUwbSession);
+
+        mUwbSessionManager.onRemoteLogicalLinkRequested(sessionId,
+                UwbTestUtils.LOGICAL_LINK_CONNECT_ID, 0x01, new byte[] { 0x11, 0x22 });
+
+        verify(mUwbSessionNotificationManager).onRemoteLogicalLinkRequested(any(), any());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.uwb.flags.Flags.FLAG_UWB_FIRA_3_0_25Q4)
+    public void testOnRemoteLogicalLinkRequested_SessionNotFound() {
+        assumeTrue(com.android.uwb.flags.Flags.uwbFira3025q4());
+        byte[] sourceAddress = new byte[] { 0x00, 0x00 };
+        int sessionId = UwbTestUtils.TEST_SESSION_ID;
+        UwbSession mockUwbSession = mock(UwbSession.class);
+        when(mUwbSessionManager.getUwbSession(sessionId)).thenReturn(null);
+
+        mUwbSessionManager.onRemoteLogicalLinkRequested(sessionId,
+                UwbTestUtils.LOGICAL_LINK_CONNECT_ID, 0x01, sourceAddress);
+
+        verify(mUwbSessionNotificationManager, never()).onRemoteLogicalLinkRequested(any(), any());
+    }
 
     @Test
     public void testQueryDataSize() throws Exception {
@@ -4934,6 +5172,20 @@ public class UwbSessionManagerTest {
         SessionHandle mockSessionHandle = mock(SessionHandle.class);
         assertThrows(IllegalStateException.class,
                 () -> mUwbSessionManager.queryMaxDataSizeBytes(mockSessionHandle));
+    }
+
+    @Test
+    public void testQueryLogicalLinkMaxDataSizeBytes() throws Exception {
+        assumeTrue(com.android.uwb.flags.Flags.uwbFira3025q4());
+        UwbSession uwbSession = prepareExistingUwbSession();
+        final int connectId = UwbTestUtils.LOGICAL_LINK_CONNECT_ID;
+
+        when(mNativeUwbManager.queryMaxDataSizeBytes(eq(connectId), eq(TEST_CHIP_ID)))
+                .thenReturn(MAX_DATA_SIZE);
+        when(mUwbSessionManager.getUwbSessionByConnectionIdentifier(connectId)).thenReturn(
+                uwbSession);
+        assertThat(mUwbSessionManager.queryLogicalLinkMaxDataSizeBytes(
+                uwbSession.getSessionHandle(), connectId)).isEqualTo(MAX_DATA_SIZE);
     }
 
     @Test
@@ -5584,7 +5836,8 @@ public class UwbSessionManagerTest {
         // First call onDataReceived() to get the application payload data.
         when(mDeviceConfigFacade.getRxDataMaxPacketsToStore())
                 .thenReturn(MAX_RX_DATA_PACKETS_TO_STORE);
-        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, UwbUciConstants.STATUS_CODE_OK,
+        mUwbSessionManager.onDataReceived(TEST_SESSION_ID, LINK_LAYER_MODE,
+                UwbUciConstants.STATUS_CODE_OK,
                 DATA_SEQUENCE_NUM, PEER_EXTENDED_MAC_ADDRESS, DATA_PAYLOAD);
 
         // Next call onRangeDataNotificationReceived() to process the RANGE_DATA_NTF. Setup
@@ -5747,7 +6000,7 @@ public class UwbSessionManagerTest {
     private UwbSessionManager.ReceivedDataInfo buildReceivedDataInfo(
             long macAddress, long sequenceNum) {
         UwbSessionManager.ReceivedDataInfo info = new UwbSessionManager.ReceivedDataInfo();
-        info.sessionId = TEST_SESSION_ID;
+        info.connectId = TEST_SESSION_ID;
         info.status = STATUS_CODE_OK;
         info.sequenceNum = sequenceNum;
         info.address = macAddress;
