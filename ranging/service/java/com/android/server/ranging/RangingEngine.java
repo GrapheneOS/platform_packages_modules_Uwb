@@ -128,11 +128,15 @@ public class RangingEngine {
         mInjector = injector;
 
         ImmutableSet.Builder<RangingTechnology> toRequest = ImmutableSet.builder();
-        if (shouldRequest(RangingTechnology.UWB)) toRequest.add(RangingTechnology.UWB);
+        if (shouldRequest(RangingTechnology.UWB, oobConfig.getRangingTechnologyFilterList())) {
+            toRequest.add(RangingTechnology.UWB);
+        }
         if (oobConfig.getRangingMode() != RANGING_MODE_HIGH_ACCURACY) {
             for (RangingTechnology technology :
                     Set.of(RangingTechnology.CS, RangingTechnology.RTT, RangingTechnology.RSSI)) {
-                if (shouldRequest(technology)) toRequest.add(technology);
+                if (shouldRequest(technology, oobConfig.getRangingTechnologyFilterList())) {
+                    toRequest.add(technology);
+                }
             }
         }
         mRequestedTechnologies = toRequest.build();
@@ -203,7 +207,12 @@ public class RangingEngine {
                                 (peer) -> peerConfigs.get(peer).build())));
     }
 
-    private boolean shouldRequest(RangingTechnology technology) {
+    private boolean shouldRequest(RangingTechnology technology, List<Integer> techFilterList) {
+        if (techFilterList != null && !techFilterList.isEmpty()
+                && !techFilterList.contains(technology.getValue())) {
+            return false;
+        }
+
         @RangingCapabilities.RangingTechnologyAvailability int availability = mInjector
                 .getCapabilitiesProvider()
                 .getCapabilities()

@@ -177,10 +177,10 @@ public final class RangingPreference implements Parcelable {
          *                         <li>{@link OobResponderRangingConfig}</li>
          *                         <li>{@link OobInitiatorRangingConfig}</li>
          *                      </ul>
-         * @throws NullPointerException if {@code rangingParams} is null.
+         * @throws NullPointerException if {@code rangingConfig} is null.
          */
         public Builder(@DeviceRole int role, @NonNull RangingConfig rangingConfig) {
-            Objects.requireNonNull(rangingConfig);
+            Objects.requireNonNull(rangingConfig, "rangingConfig cannot be null");
             mDeviceRole = role;
             mRangingConfig = rangingConfig;
         }
@@ -193,11 +193,11 @@ public final class RangingPreference implements Parcelable {
          *
          * @param config the {@link SessionConfig}.
          * @return this {@link Builder} instance.
-         * @throws NullPointerException if {@code params} is null.
+         * @throws NullPointerException if {@code config} is null.
          */
         @NonNull
         public Builder setSessionConfig(@NonNull SessionConfig config) {
-            Objects.requireNonNull(config);
+            Objects.requireNonNull(config, "config cannot be null");
             mSessionConfig = config;
             return this;
         }

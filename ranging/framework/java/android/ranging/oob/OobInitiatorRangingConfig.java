@@ -22,6 +22,8 @@ import android.annotation.NonNull;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.ranging.RangingConfig;
+import android.ranging.RangingManager;
+import android.ranging.RangingManager.RangingTechnology;
 import android.util.Range;
 
 import com.android.ranging.flags.Flags;
@@ -31,6 +33,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Represents the configuration for an Out-of-Band (OOB) initiator in a ranging session.
@@ -107,6 +110,7 @@ public final class OobInitiatorRangingConfig extends RangingConfig implements Pa
 
     @RangingMode
     private final int mRangingMode;
+    private final List<@RangingTechnology Integer> mRangingTechnologyFilterList;
 
     private OobInitiatorRangingConfig(Builder builder) {
         setRangingSessionType(RangingConfig.RANGING_SESSION_OOB);
@@ -115,6 +119,7 @@ public final class OobInitiatorRangingConfig extends RangingConfig implements Pa
         mRangingMode = builder.mRangingMode;
         mRangingIntervalRange = new Range<>(builder.mFastestRangingInterval,
                 builder.mSlowestRangingInterval);
+        mRangingTechnologyFilterList = new ArrayList<>(builder.mRangingTechnologyFilterList);
     }
 
     private OobInitiatorRangingConfig(Parcel in) {
@@ -125,7 +130,8 @@ public final class OobInitiatorRangingConfig extends RangingConfig implements Pa
         Duration lower = Duration.ofMillis(in.readLong());
         Duration upper = Duration.ofMillis(in.readLong());
         mRangingIntervalRange = new Range<>(lower, upper);
-
+        mRangingTechnologyFilterList = new ArrayList<>();
+        in.readList(mRangingTechnologyFilterList, Integer.class.getClassLoader(), Integer.class);
     }
 
     @Override
@@ -136,6 +142,7 @@ public final class OobInitiatorRangingConfig extends RangingConfig implements Pa
         dest.writeInt(mRangingMode);
         dest.writeLong(mRangingIntervalRange.getLower().toMillis());
         dest.writeLong(mRangingIntervalRange.getUpper().toMillis());
+        dest.writeList(mRangingTechnologyFilterList);
     }
 
     @Override
@@ -220,10 +227,22 @@ public final class OobInitiatorRangingConfig extends RangingConfig implements Pa
      * {@link #RANGING_MODE_HIGH_ACCURACY_PREFERRED}
      * {@link #RANGING_MODE_FUSED}
      */
-
     @RangingMode
     public int getRangingMode() {
         return mRangingMode;
+    }
+
+    /**
+     * Returns the list of ranging technologies that can be used for the session.
+     * If empty, the system may use any available technology.
+     *
+     * @return A non-null, possibly empty, {@link List} of
+     *         {@link RangingManager.RangingTechnology} integers.
+     */
+    @NonNull
+    @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_25Q4)
+    public List<@RangingTechnology Integer> getRangingTechnologyFilterList() {
+        return List.copyOf(mRangingTechnologyFilterList);
     }
 
     /**
@@ -238,6 +257,8 @@ public final class OobInitiatorRangingConfig extends RangingConfig implements Pa
 
         private Duration mFastestRangingInterval = Duration.ofMillis(100);
         private Duration mSlowestRangingInterval = Duration.ofMillis(5000);
+        private List<@RangingTechnology Integer> mRangingTechnologyFilterList =
+                new ArrayList<>();
 
         /**
          * Sets the fastest ranging interval in milliseconds.
@@ -319,6 +340,30 @@ public final class OobInitiatorRangingConfig extends RangingConfig implements Pa
         }
 
         /**
+         * Sets a filter for the ranging technologies that can be used for the session.
+         *
+         * <p>If this list is empty (the default), the system will attempt to use any available
+         * and suitable ranging technology. If the list is non-empty, the system will restrict
+         * its choice of technology to those specified in this list.</p>
+         *
+         * <p>The order of technologies in the list does not imply preference or priority.</p>
+         *
+         * @param rangingTechnologies A {@link List} of
+         *        {@link RangingManager.RangingTechnology} integers.
+         *        Must not be null. To indicate no preference (allow any technology),
+         *        pass an empty list.
+         * @return this {@link Builder} instance.
+         */
+        @NonNull
+        @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_25Q4)
+        public Builder setRangingTechnologyFilterList(
+                @NonNull List<@RangingManager.RangingTechnology Integer> rangingTechnologies) {
+            Objects.requireNonNull(rangingTechnologies, "rangingTechnologies cannot be null");
+            this.mRangingTechnologyFilterList = rangingTechnologies;
+            return this;
+        }
+
+        /**
          * Builds an instance of {@link OobInitiatorRangingConfig} with the provided parameters.
          *
          * @return A new OobInitiatorRangingConfig instance.
@@ -343,6 +388,8 @@ public final class OobInitiatorRangingConfig extends RangingConfig implements Pa
                 + mSecurityLevel
                 + ", mRangingMode="
                 + mRangingMode
+                + ", mRangingTechnologyFilterList="
+                + mRangingTechnologyFilterList
                 + ", "
                 + super.toString()
                 + ", "
