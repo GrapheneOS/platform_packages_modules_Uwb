@@ -34,6 +34,7 @@ import com.android.server.ranging.blerssi.BleRssiConfig;
 import com.android.server.ranging.cs.CsConfig;
 import com.android.server.ranging.rtt.RttConfig;
 import com.android.server.ranging.uwb.UwbConfig;
+import com.android.ranging.flags.Flags;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -137,6 +138,13 @@ public class RangingSessionConfig {
             if (peer.getCsRangingParams() != null && mDeviceRole == DEVICE_ROLE_INITIATOR) {
                 configs.add(new CsConfig(
                         peer.getCsRangingParams(),
+                        mSessionConfig,
+                        peer.getRangingDevice()));
+            }
+            if (Flags.rangingStackUpdates25q4() && peer.getRttStationRangingParams() != null) {
+                configs.add(new RttConfig(
+                        mDeviceRole,
+                        peer.getRttStationRangingParams(),
                         mSessionConfig,
                         peer.getRangingDevice()));
             }

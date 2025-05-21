@@ -40,6 +40,7 @@ import com.android.server.ranging.oob.OobHeader;
 import com.android.server.ranging.oob.SetConfigurationMessage;
 import com.android.server.ranging.oob.SetConfigurationMessage.TechnologyOobConfig;
 import com.android.server.ranging.rtt.RttConfigSelector;
+import com.android.server.ranging.rtt.RttStationConfigSelector;
 import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
 import com.android.server.ranging.uwb.UwbConfigSelector;
 
@@ -133,7 +134,8 @@ public class RangingEngine {
         }
         if (oobConfig.getRangingMode() != RANGING_MODE_HIGH_ACCURACY) {
             for (RangingTechnology technology :
-                    Set.of(RangingTechnology.CS, RangingTechnology.RTT, RangingTechnology.RSSI)) {
+                    Set.of(RangingTechnology.CS, RangingTechnology.RTT, RangingTechnology.RSSI,
+                        RangingTechnology.RTT_STATION)) {
                 if (shouldRequest(technology, oobConfig.getRangingTechnologyFilter())) {
                     toRequest.add(technology);
                 }
@@ -250,6 +252,8 @@ public class RangingEngine {
                     mSessionConfig, mOobConfig, capabilities.getRttRangingCapabilities());
             case RSSI -> new BleRssiConfigSelector(
                     mSessionConfig, mOobConfig, capabilities.getBleRssiCapabilities());
+            case RTT_STATION -> new RttStationConfigSelector(
+                    mSessionConfig, mOobConfig, capabilities.getRttStationRangingCapabilities());
         };
     }
 

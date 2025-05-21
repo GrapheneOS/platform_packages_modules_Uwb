@@ -23,12 +23,20 @@ public interface RttService {
 
     RttRangingDevice getSubscriber(Context context);
 
+    RttRangingDevice getStation(Context context);
+
     boolean isAvailable();
+
+    boolean isWifiAvailable();
 
     boolean hasPeriodicRangingSupport();
 
     int getMaxSupportedBandwidth();
 
     int getMaxSupportedRxChains();
+
+    int getNumSupportedBands();
+
+    int getSupportedSecurity();
 
 }

@@ -40,6 +40,7 @@ import org.mockito.MockitoAnnotations;
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 public class RttServiceImplTest {
+    private final int NAN_RTT = 2;
 
     @Mock
     private Context mMockContext;
@@ -63,7 +64,7 @@ public class RttServiceImplTest {
                 true);
         when(mMockContext.getSystemService(WifiAwareManager.class)).thenReturn(mMockAwareManager);
         when(mMockContext.getSystemService(AlarmManager.class)).thenReturn(mMockAlarmManager);
-        mRttService = new RttServiceImpl(mMockContext);
+        mRttService = new RttServiceImpl(mMockContext, NAN_RTT);
     }
 
     @Test

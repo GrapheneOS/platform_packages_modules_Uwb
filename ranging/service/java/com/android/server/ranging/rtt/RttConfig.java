@@ -16,14 +16,17 @@
 
 package com.android.server.ranging.rtt;
 
+import android.annotation.FlaggedApi;
 import android.ranging.DataNotificationConfig;
 import android.ranging.RangingDevice;
 import android.ranging.RangingPreference;
 import android.ranging.SessionConfig;
 import android.ranging.wifi.rtt.RttRangingParams;
+import android.ranging.wifi.rtt.RttStationRangingParams;
 
 import androidx.annotation.NonNull;
 
+import com.android.ranging.flags.Flags;
 import com.android.ranging.rtt.backend.RttRangingParameters;
 import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.session.RangingSessionConfig;
@@ -34,9 +37,11 @@ public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
 
     private final SessionConfig mSessionConfig;
     private final RttRangingParams mRangingParams;
+    private final RttStationRangingParams mStationRangingParams;
     private final RangingDevice mPeerDevice;
 
     private final @RangingPreference.DeviceRole int mDeviceRole;
+    private final RangingTechnology mTech;
 
     public RttConfig(
             int deviceRole,
@@ -48,12 +53,30 @@ public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
         mRangingParams = rttRangingParams;
         mSessionConfig = sessionConfig;
         mPeerDevice = peerDevice;
+        mTech = RangingTechnology.RTT;
+        mStationRangingParams = null;
+    }
+
+    @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_25Q4)
+    public RttConfig(
+            int deviceRole,
+            @NonNull RttStationRangingParams rttStationRangingParams,
+            @NonNull SessionConfig sessionConfig,
+            @NonNull RangingDevice peerDevice
+    ) {
+        mDeviceRole = deviceRole;
+        mStationRangingParams = rttStationRangingParams;
+        mSessionConfig = sessionConfig;
+        mPeerDevice = peerDevice;
+        mTech = RangingTechnology.RTT_STATION;
+        mRangingParams = null;
     }
 
     @Override
     @NonNull
     public RangingTechnology getTechnology() {
-        return RangingTechnology.RTT;
+        //return RangingTechnology.RTT;
+        return mTech;
     }
 
     public SessionConfig getSessionConfig() {
@@ -62,6 +85,11 @@ public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
 
     public RttRangingParams getRangingParams() {
         return mRangingParams;
+    }
+
+    @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_25Q4)
+    public RttStationRangingParams getStationRangingParams() {
+        return mStationRangingParams;
     }
 
     @Override
@@ -75,19 +103,24 @@ public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
     }
 
     public RttRangingParameters asBackendParameters() {
-        RttRangingParameters.Builder builder = new RttRangingParameters.Builder()
-                .setDeviceRole(mDeviceRole)
-                .setServiceName(mRangingParams.getServiceName())
-                .setMatchFilter(mRangingParams.getMatchFilter())
-                .setUpdateRate(mRangingParams.getRangingUpdateRate())
-                .setPeriodicRangingHwFeatureEnabled(
-                        mRangingParams.isPeriodicRangingHwFeatureEnabled());
-
+        RttRangingParameters.Builder builder = new RttRangingParameters.Builder();
+        builder.setDeviceRole(mDeviceRole);
+        if (mTech == RangingTechnology.RTT_STATION) {
+            builder.setBssid(mStationRangingParams.getBssid());
+            builder.setChannelWidth(mStationRangingParams.getChannelWidth());
+            builder.setUpdateRate(mStationRangingParams.getRangingUpdateRate());
+        } else {
+            builder.setServiceName(mRangingParams.getServiceName());
+            builder.setMatchFilter(mRangingParams.getMatchFilter());
+            builder.setUpdateRate(mRangingParams.getRangingUpdateRate());
+            builder.setPeriodicRangingHwFeatureEnabled(
+                    mRangingParams.isPeriodicRangingHwFeatureEnabled());
+        }
         DataNotificationConfig ntfConfig = mSessionConfig.getDataNotificationConfig();
         switch (ntfConfig.getNotificationConfigType()) {
             case DataNotificationConfig.NOTIFICATION_CONFIG_ENABLE,
-                    // Handled in adapter.
-                    DataNotificationConfig.NOTIFICATION_CONFIG_PROXIMITY_EDGE -> builder
+                 // Handled in adapter.
+                 DataNotificationConfig.NOTIFICATION_CONFIG_PROXIMITY_EDGE -> builder
                     .setMinDistanceMm(0)
                     .setMaxDistanceMm(50 * 100 * 100); // 50 meters.
             case DataNotificationConfig.NOTIFICATION_CONFIG_DISABLE ->
@@ -107,6 +140,8 @@ public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
                 + mSessionConfig
                 + ", mRangingParams="
                 + mRangingParams
+                + ", mStationRangingParams="
+                + mStationRangingParams
                 + ", mPeerDevice="
                 + mPeerDevice
                 + ", mDeviceRole="
@@ -121,11 +156,13 @@ public class RttConfig implements RangingSessionConfig.UnicastTechnologyConfig {
         return mDeviceRole == rttConfig.mDeviceRole && Objects.equals(mSessionConfig,
                 rttConfig.mSessionConfig) && Objects.equals(mRangingParams,
                 rttConfig.mRangingParams) && Objects.equals(mPeerDevice,
-                rttConfig.mPeerDevice);
+                rttConfig.mPeerDevice) && Objects.equals(mStationRangingParams,
+                rttConfig.mStationRangingParams);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(mSessionConfig, mRangingParams, mPeerDevice, mDeviceRole);
+        return Objects.hash(mSessionConfig, mRangingParams,
+                mPeerDevice, mDeviceRole, mStationRangingParams);
     }
 }

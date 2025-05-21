@@ -47,6 +47,7 @@ import com.android.server.ranging.cs.CsCapabilitiesAdapter;
 import com.android.server.ranging.oob.OobController;
 import com.android.server.ranging.rtt.RttAdapter;
 import com.android.server.ranging.rtt.RttCapabilitiesAdapter;
+import com.android.server.ranging.rtt.RttStationCapabilitiesAdapter;
 import com.android.server.ranging.session.RangingSessionConfig;
 import com.android.server.ranging.uwb.UwbAdapter;
 import com.android.server.ranging.uwb.UwbCapabilitiesAdapter;
@@ -144,7 +145,9 @@ public class RangingInjector {
             case CS:
                 return new CsAdapter(mContext, this);
             case RTT:
-                return new RttAdapter(mContext, this, executor, config.getDeviceRole());
+            case RTT_STATION:
+                return new RttAdapter(
+                   mContext, this, executor, config.getDeviceRole(), config.getTechnology());
             case RSSI:
                 return new BleRssiAdapter(mContext, this);
             default:
@@ -166,6 +169,8 @@ public class RangingInjector {
                 return new RttCapabilitiesAdapter(mContext, listener);
             case RSSI:
                 return new BleRssiCapabilitiesAdapter(mContext, listener);
+            case RTT_STATION:
+                return new RttStationCapabilitiesAdapter(mContext, listener);
             default:
                 throw new IllegalArgumentException(
                         "CapabilitiesAdapter does not exist for technology " + technology);

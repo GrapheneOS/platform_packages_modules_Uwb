@@ -260,6 +260,7 @@
         <item>CS</item>
         <item>RTT</item>
         <item>RSSI</item>
+        <item>RTT_STATION</item>
     </string-array>
 
     <!-- The minimum guaranteed delay in milliseconds between a received Rtt ranging result and the

@@ -33,6 +33,7 @@ import android.ranging.uwb.UwbRangingCapabilities;
 import android.ranging.uwb.UwbRangingParams;
 import android.ranging.wifi.rtt.RttRangingCapabilities;
 import android.ranging.wifi.rtt.RttRangingParams;
+import android.ranging.wifi.rtt.RttStationRangingParams;
 import android.ranging.wifi.rtt.WifiRttConstants;
 import android.util.ArrayMap;
 
@@ -116,7 +117,7 @@ public final class RawRangingDevice implements Parcelable {
     private final BleCsRangingParams mBleCsRangingParams;
     private final RttRangingParams mRttRangingParams;
     private final BleRssiRangingParams mBleRssiRangingParams;
-
+    private final RttStationRangingParams mRttStationRangingParams;
 
     private RawRangingDevice(Builder builder) {
         mRangingDevice = builder.mRangingDevice;
@@ -124,6 +125,7 @@ public final class RawRangingDevice implements Parcelable {
         mBleCsRangingParams = builder.mBleCsRangingParams;
         mRttRangingParams = builder.mRttRangingParams;
         mBleRssiRangingParams = builder.mBleRssiRangingParams;
+        mRttStationRangingParams = builder.mRttStationRangingParams;
     }
 
 
@@ -139,6 +141,8 @@ public final class RawRangingDevice implements Parcelable {
                 RttRangingParams.class);
         mBleRssiRangingParams = in.readParcelable(BleRssiRangingParams.class.getClassLoader(),
                 BleRssiRangingParams.class);
+        mRttStationRangingParams = in.readParcelable(RttStationRangingParams.class.getClassLoader(),
+                RttStationRangingParams.class);
     }
 
     @Override
@@ -148,6 +152,7 @@ public final class RawRangingDevice implements Parcelable {
         dest.writeParcelable(mBleCsRangingParams, flags);
         dest.writeParcelable(mRttRangingParams, flags);
         dest.writeParcelable(mBleRssiRangingParams, flags);
+        dest.writeParcelable(mRttStationRangingParams, flags);
     }
 
     @NonNull
@@ -214,6 +219,17 @@ public final class RawRangingDevice implements Parcelable {
     }
 
     /**
+     * Returns the  Wi-Fi STA-AP ranging parameters, if applicable.
+     *
+     * @return the {@link RttStationRangingParams}, or {@code null} if not set.
+     */
+    @Nullable
+    @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_25Q4)
+    public RttStationRangingParams getRttStationRangingParams() {
+        return mRttStationRangingParams;
+    }
+
+    /**
      * Returns a map of ranging technologies to their corresponding ranging interval durations for
      * available ranging technologies parameters.
      *
@@ -256,6 +272,11 @@ public final class RawRangingDevice implements Parcelable {
                     Duration.ofMillis(BleRssiConstants.getIntervalInMs((int) bleRssiUpdateRate)));
         }
 
+        if (mRttStationRangingParams != null) {
+            int wifiStaRttUpdateRateMs = WifiRttConstants.getIntervalMs(
+                    (int) mRttStationRangingParams.getRangingUpdateRate(), true);
+            map.put(RangingManager.WIFI_STA_RTT, Duration.ofMillis(wifiStaRttUpdateRateMs));
+        }
         return map;
     }
 
@@ -273,6 +294,7 @@ public final class RawRangingDevice implements Parcelable {
         private BleCsRangingParams mBleCsRangingParams;
         private RttRangingParams mRttRangingParams;
         private BleRssiRangingParams mBleRssiRangingParams;
+        private RttStationRangingParams mRttStationRangingParams;
 
         /**
          * Sets the ranging device.
@@ -340,6 +362,19 @@ public final class RawRangingDevice implements Parcelable {
         }
 
         /**
+         * Sets the WiFi STA-AP RTT ranging parameters.
+         *
+         * @param params the {@link RttStationRangingParams} to be set.
+         * @return this {@link Builder} instance for chaining calls.
+         */
+        @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_25Q4)
+        @NonNull
+        public Builder setRttStationRangingParams(@NonNull RttStationRangingParams params) {
+            Objects.requireNonNull(params);
+            mRttStationRangingParams = params;
+            return this;
+        }
+        /**
          * Builds and returns a new {@link RawRangingDevice} instance.
          *
          * @return a new {@link RawRangingDevice} configured with the specified parameters.
@@ -348,7 +383,7 @@ public final class RawRangingDevice implements Parcelable {
         public RawRangingDevice build() {
             Objects.requireNonNull(this.mRangingDevice);
             if (Stream.of(mUwbRangingParams, mBleCsRangingParams, mBleRssiRangingParams,
-                            mRttRangingParams)
+                            mRttRangingParams, mRttStationRangingParams)
                     .allMatch(Objects::isNull)) {
                 throw new IllegalArgumentException(
                         "At least one ranging params should be configured");
@@ -370,6 +405,8 @@ public final class RawRangingDevice implements Parcelable {
                 + mRttRangingParams
                 + ", mBleRssiRangingParams="
                 + mBleRssiRangingParams
+                + ", mRttStationRangingParams="
+                + mRttStationRangingParams
                 + " }";
     }
 }
