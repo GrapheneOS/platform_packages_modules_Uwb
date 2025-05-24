@@ -74,8 +74,8 @@ public class BleDiscoveryAdvertiseProviderTest {
                     new UwbIndicationData(
                             /*firaUwbSupport=*/ true,
                             /*iso14443Support=*/ true,
-                            /*uwbRegulartoryInfoAvailableInAd=*/ true,
-                            /*uwbRegulartoryInfoAvailableInOob=*/ false,
+                            /*uwbRegulatoryInfoAvailableInAd=*/ true,
+                            /*uwbRegulatoryInfoAvailableInOob=*/ false,
                             /*firaProfileInfoAvailableInAd=*/ true,
                             /*firaProfileInfoAvailableInOob=*/ false,
                             /*dualGapRoleSupport=*/ true,

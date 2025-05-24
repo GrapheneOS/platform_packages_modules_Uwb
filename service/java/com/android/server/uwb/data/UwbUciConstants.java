@@ -20,6 +20,8 @@ import static android.hardware.uwb.fira_android.UwbVendorStatusCodes.STATUS_ERRO
 import static android.hardware.uwb.fira_android.UwbVendorStatusCodes.STATUS_REGULATION_UWB_OFF;
 
 import android.hardware.uwb.fira_android.UwbVendorReasonCodes;
+import android.uwb.LogicalLinkConnectionParams;
+import android.uwb.LogicalLinkParams;
 
 import com.google.uwb.support.aliro.AliroParams;
 import com.google.uwb.support.ccc.CccParams;
@@ -53,6 +55,10 @@ public class UwbUciConstants {
             (byte) FiraParams.SESSION_TYPE_HUS_PRIMARY_SESSION;
     public static final byte SESSION_TYPE_DEVICE_TEST_MODE =
             (byte) FiraParams.SESSION_TYPE_DEVICE_TEST_MODE;
+    public static final byte SESSION_TYPE_RANGING_WITH_DATA_PHASE =
+            (byte) FiraParams.SESSION_TYPE_RANGING_WITH_DATA_PHASE;
+    public static final byte SESSION_TYPE_RANGING_AND_IN_BAND_DATA =
+            (byte) FiraParams.SESSION_TYPE_RANGING_AND_IN_BAND_DATA;
 
     /**
      * Table 14: Control Messages to De-Initialize UWB session - SESSION_STATUS_NTF
@@ -167,6 +173,9 @@ public class UwbUciConstants {
     public static final int RANGE_DATA_NTF_CONFIG_ENABLE = FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE;
     public static final int RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY =
             FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_LEVEL_TRIG;
+
+    public static final int LINK_LAYER_MODE_BYPASS = FiraParams.LINK_LAYER_MODE_BYPASS;
+    public static final int LINK_LAYER_MODE_LOGICAL_LINK = FiraParams.LINK_LAYER_MODE_LOGICAL_LINK;
 
     /**
      * Table 54: APP Configuration Parameter IDs
@@ -297,6 +306,53 @@ public class UwbUciConstants {
      */
     public static final int FIRA_VERSION_MAJOR_1 = 1;
     public static final int FIRA_VERSION_MAJOR_2 = 2;
+
+    /**
+     * Link layer mode
+     */
+    public static final byte LINK_LAYER_MODE_CONNECTION_LESS_NON_SECURE =
+            (byte) LogicalLinkParams.LINK_LAYER_MODE_CONNECTION_LESS_NON_SECURE;
+    public static final byte LINK_LAYER_MODE_CONNECTION_LESS_SECURE =
+            (byte) LogicalLinkParams.LINK_LAYER_MODE_CONNECTION_LESS_SECURE;
+    public static final byte LINK_LAYER_MODE_CONNECTION_LESS_UWBS_UWBS =
+            (byte) LogicalLinkParams.LINK_LAYER_MODE_CONNECTION_LESS_UWBS_UWBS;
+
+    /**
+     * Logical link status
+     */
+    public static final int LOGICAL_LINK_STATUS_ACCEPTED =
+            LogicalLinkParams.LOGICAL_LINK_STATUS_ACCEPTED;
+    public static final int LOGICAL_LINK_STATUS_REJECTED =
+            LogicalLinkParams.LOGICAL_LINK_STATUS_REJECTED;
+    public static final int LOGICAL_LINK_STATUS_CO_CONNECTED =
+            LogicalLinkParams.LOGICAL_LINK_STATUS_CO_CONNECTED;
+    public static final int LOGICAL_LINK_STATUS_ERROR =
+            LogicalLinkParams.LOGICAL_LINK_STATUS_ERROR;
+
+    /**
+     * Logical link status code
+     */
+    public static final int LOGICAL_LINK_STATUS_OK = LogicalLinkParams.LOGICAL_LINK_STATUS_OK;
+    public static final int LOGICAL_LINK_STATUS_FAILED =
+            LogicalLinkParams.LOGICAL_LINK_STATUS_FAILED;
+
+    /**
+     * Control fields for the logical link
+     */
+    public static final int CONTROL_FIELD_MAX_LL_SDU_SIZE =
+            LogicalLinkConnectionParams.CONTROL_FIELD_MAX_LL_SDU_SIZE;
+    public static final int CONTROL_FIELD_MAX_LL_PDU_SIZE =
+            LogicalLinkConnectionParams.CONTROL_FIELD_MAX_LL_PDU_SIZE;
+    public static final int CONTROL_FIELD_TRANSMIT_WINDOW_SIZE =
+            LogicalLinkConnectionParams.CONTROL_FIELD_TRANSMIT_WINDOW_SIZE;
+    public static final int CONTROL_FIELD_RECEIVE_WINDOW_SIZE =
+            LogicalLinkConnectionParams.CONTROL_FIELD_RECEIVE_WINDOW_SIZE;
+    public static final int CONTROL_FIELD_REPEAT_COUNT_MAX =
+            LogicalLinkConnectionParams.CONTROL_FIELD_REPEAT_COUNT_MAX;
+    public static final int CONTROL_FIELD_LINK_TIMEOUT =
+            LogicalLinkConnectionParams.CONTROL_FIELD_LINK_TIMEOUT;
+    public static final int CONTROL_FIELD_PORT =
+            LogicalLinkConnectionParams.CONTROL_FIELD_PORT;
 
     /* Used by DATA_TRANSFER_PHASE_CONFIG and Hybrid config updates */
     public static final int SHORT_MAC_ADDRESS = 0;

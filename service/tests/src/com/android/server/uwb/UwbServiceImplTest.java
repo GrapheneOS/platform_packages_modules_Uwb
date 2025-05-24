@@ -69,6 +69,7 @@ import android.uwb.IUwbAdapterStateCallbacks;
 import android.uwb.IUwbAdfProvisionStateCallbacks;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.IUwbVendorUciCallback;
+import android.uwb.LogicalLinkParams;
 import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
 
@@ -854,6 +855,36 @@ public class UwbServiceImplTest {
     }
 
     @Test
+    public void testCreateLogicalLink() throws Exception {
+        assumeTrue(Flags.uwbFira3025q4());
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
+        LogicalLinkParams params = new LogicalLinkParams.Builder(0,
+                UwbAddress.fromBytes(new byte[] {0x11, 0x22})).build();
+
+        mUwbServiceImpl.createLogicalLink(sessionHandle, params);
+        verify(mUwbServiceCore).createLogicalLink(sessionHandle, params);
+    }
+
+    @Test
+    public void testCloseLogicalLink() throws Exception {
+        assumeTrue(Flags.uwbFira3025q4());
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
+
+        mUwbServiceImpl.closeLogicalLink(sessionHandle, UwbTestUtils.LOGICAL_LINK_CONNECT_ID);
+        verify(mUwbServiceCore).closeLogicalLink(sessionHandle,
+                UwbTestUtils.LOGICAL_LINK_CONNECT_ID);
+    }
+
+    @Test
+    public void testGetLogicalLinkParams() throws Exception {
+        assumeTrue(Flags.uwbFira3025q4());
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
+
+        mUwbServiceImpl.getLogicalLinkParams(sessionHandle, 0x00);
+        verify(mUwbServiceCore).getLogicalLinkParams(eq(sessionHandle), eq(0x00));
+    }
+
+    @Test
     public void testSendVendorUciMessage() throws Exception {
         final int mt = 1;
         final int gid = 0;
@@ -884,6 +915,21 @@ public class UwbServiceImplTest {
         assertThat(mUwbServiceImpl.queryMaxDataSizeBytes(sessionHandle)).isEqualTo(MAX_DATA_SIZE);
 
         verify(mUwbServiceCore).queryMaxDataSizeBytes(sessionHandle);
+    }
+
+    @Test
+    public void testQueryLogicalLinkMaxDataSizeBytes() throws Exception {
+        assumeTrue(Flags.uwbFira3025q4());
+        final SessionHandle sessionHandle = mock(SessionHandle.class);
+        final PersistableBundle parameters = new PersistableBundle();
+        final int connectId = UwbTestUtils.LOGICAL_LINK_CONNECT_ID;
+
+        when(mUwbServiceCore.queryLogicalLinkMaxDataSizeBytes(sessionHandle, connectId))
+                .thenReturn(MAX_DATA_SIZE);
+        assertThat(mUwbServiceImpl.queryLogicalLinkMaxDataSizeBytes(sessionHandle, connectId))
+                .isEqualTo(MAX_DATA_SIZE);
+
+        verify(mUwbServiceCore).queryLogicalLinkMaxDataSizeBytes(sessionHandle, connectId);
     }
 
     @Test

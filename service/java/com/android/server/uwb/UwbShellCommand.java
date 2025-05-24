@@ -88,6 +88,8 @@ import android.util.ArrayMap;
 import android.util.Log;
 import android.util.Pair;
 import android.uwb.IUwbRangingCallbacks;
+import android.uwb.LogicalLinkConnectionRequest;
+import android.uwb.LogicalLinkParams;
 import android.uwb.RangingReport;
 import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
@@ -411,11 +413,23 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         public void onHybridSessionControleeConfigurationFailed(SessionHandle sessionHandle,
                 int reason, PersistableBundle parameters) {}
 
-
         public void onRfTestNotificationReceived(SessionHandle sessionHandle,
                 PersistableBundle parameters) {}
-    }
 
+        public void onLogicalLinkCreated(SessionHandle sessionHandle, LogicalLinkParams params,
+                int connectId) {}
+
+        public void onLogicalLinkCreateFailed(SessionHandle sessionHandle, LogicalLinkParams params,
+                int status) {}
+
+        public void onLogicalLinkClosed(SessionHandle sessionHandle, int connectId, int reason) {}
+
+        public void onLogicalLinkCloseFailed(SessionHandle sessionHandle, int connectId,
+                int status) {}
+
+        public void onRemoteLogicalLinkRequested(SessionHandle sessionHandle,
+                LogicalLinkConnectionRequest linkInfo) {}
+    }
 
     private class SessionInfo {
         private static final int LAST_NUM_RANGING_REPORTS = 20;

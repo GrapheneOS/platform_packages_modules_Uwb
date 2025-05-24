@@ -32,6 +32,10 @@ pub(crate) const UWB_DL_TDOA_MEASUREMENT_CLASS: &str =
     "com/android/server/uwb/data/UwbDlTDoAMeasurement";
 pub(crate) const UWB_RADAR_DATA_CLASS: &str = "com/android/server/uwb/data/UwbRadarData";
 pub(crate) const UWB_RADAR_SWEEP_DATA_CLASS: &str = "com/android/server/uwb/data/UwbRadarSweepData";
+pub(crate) const UWB_LOGICAL_LINK_CREATE_RESPONSE: &str =
+    "com/android/server/uwb/data/UwbLogicalLinkCreateResponse";
+pub(crate) const UWB_LOGICAL_LINK_GET_PARAMS_CLASS: &str =
+    "com/android/server/uwb/data/UwbLogicalLinkGetParamsResponse";
 pub(crate) const RFTEST_PERIODIC_TX_CLASS: &str =
     "com/android/server/uwb/rftest/UwbTestPeriodicTxResult";
 pub(crate) const RFTEST_PER_RX_CLASS: &str = "com/android/server/uwb/rftest/UwbTestPerRxResult";

@@ -46,6 +46,8 @@ android_test {
         "mockito-target-minus-junit4",
         "truth",
         "modules-utils-build",
+        "uwb_flags_lib",
+        "platform-test-annotations",
     ],
 
     libs: [

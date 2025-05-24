@@ -248,6 +248,7 @@ package android.ranging.oob {
     method @NonNull public java.time.Duration getFastestRangingInterval();
     method @NonNull public android.util.Range<java.time.Duration> getRangingIntervalRange();
     method public int getRangingMode();
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_25q4") @NonNull public java.util.List<java.lang.Integer> getRangingTechnologyFilterList();
     method public int getSecurityLevel();
     method @NonNull public java.time.Duration getSlowestRangingInterval();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
@@ -267,6 +268,7 @@ package android.ranging.oob {
     method @NonNull public android.ranging.oob.OobInitiatorRangingConfig build();
     method @NonNull public android.ranging.oob.OobInitiatorRangingConfig.Builder setFastestRangingInterval(@NonNull java.time.Duration);
     method @NonNull public android.ranging.oob.OobInitiatorRangingConfig.Builder setRangingMode(int);
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_25q4") @NonNull public android.ranging.oob.OobInitiatorRangingConfig.Builder setRangingTechnologyFilterList(@NonNull java.util.List<java.lang.Integer>);
     method @NonNull public android.ranging.oob.OobInitiatorRangingConfig.Builder setSecurityLevel(int);
     method @NonNull public android.ranging.oob.OobInitiatorRangingConfig.Builder setSlowestRangingInterval(@NonNull java.time.Duration);
   }

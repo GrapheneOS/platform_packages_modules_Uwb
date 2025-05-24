@@ -139,7 +139,7 @@ public class FiraOpenSessionParams extends FiraParams {
     private final int mNumOfMsrmtFocusOnAoaAzimuth;
     private final int mNumOfMsrmtFocusOnAoaElevation;
     private final Long mRangingErrorStreakTimeoutMs;
-    private final int mLinkLayerMode;
+    @LinkLayerMode private final int mLinkLayerMode;
     private final int mDataRepetitionCount;
     @RangingTimeStruct
     private final int mRangingTimeStruct;
@@ -341,7 +341,7 @@ public class FiraOpenSessionParams extends FiraParams {
             int numOfMsrmtFocusOnAoaAzimuth,
             int numOfMsrmtFocusOnAoaElevation,
             Long rangingErrorStreakTimeoutMs,
-            int linkLayerMode,
+            @LinkLayerMode int linkLayerMode,
             int dataRepetitionCount,
             @RangingTimeStruct int rangingTimeStruct,
             int minFramePerRr,
@@ -752,6 +752,7 @@ public class FiraOpenSessionParams extends FiraParams {
         return mRangingErrorStreakTimeoutMs;
     }
 
+    @LinkLayerMode
     public int getLinkLayerMode() {
         return mLinkLayerMode;
     }
@@ -1337,7 +1338,7 @@ public class FiraOpenSessionParams extends FiraParams {
         private long mRangingErrorStreakTimeoutMs = 10_000L;
 
         /** UCI spec default: 0 */
-        private int mLinkLayerMode = 0;
+        @LinkLayerMode private int mLinkLayerMode = 0;
 
         /** UCI spec default: 0x00(No repetition) */
         private int mDataRepetitionCount = 0;
@@ -2001,7 +2002,7 @@ public class FiraOpenSessionParams extends FiraParams {
             return this;
         }
 
-        public FiraOpenSessionParams.Builder setLinkLayerMode(int linkLayerMode) {
+        public FiraOpenSessionParams.Builder setLinkLayerMode(@LinkLayerMode int linkLayerMode) {
             mLinkLayerMode = linkLayerMode;
             return this;
         }

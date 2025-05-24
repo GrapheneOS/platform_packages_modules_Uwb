@@ -563,6 +563,80 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks.Stub {
         }
     }
 
+    @Override
+    public void onLogicalLinkCreated(SessionHandle sessionHandle, LogicalLinkParams params,
+            int connectId) {
+        synchronized (this) {
+            if (!hasSession(sessionHandle)) {
+                Log.w(mTag, "onLogicalLinkCreated - received unexpected SessionHandle: "
+                        + sessionHandle);
+                return;
+            }
+
+            RangingSession session = mRangingSessionTable.get(sessionHandle);
+            session.onLogicalLinkCreated(params, connectId);
+        }
+    }
+
+    @Override
+    public void onLogicalLinkCreateFailed(SessionHandle sessionHandle, LogicalLinkParams params,
+            int status) {
+        synchronized (this) {
+            if (!hasSession(sessionHandle)) {
+                Log.w(mTag, "onLogicalLinkCreateFailed - received unexpected SessionHandle: "
+                        + sessionHandle);
+                return;
+            }
+
+            RangingSession session = mRangingSessionTable.get(sessionHandle);
+            session.onLogicalLinkCreateFailed(params, status);
+        }
+    }
+
+    @Override
+    public void onLogicalLinkClosed(SessionHandle sessionHandle, int connectId, int reason) {
+        synchronized (this) {
+            if (!hasSession(sessionHandle)) {
+                Log.w(mTag, "onLogicalLinkClosed - received unexpected SessionHandle: "
+                        + sessionHandle);
+                return;
+            }
+
+            RangingSession session = mRangingSessionTable.get(sessionHandle);
+            session.onLogicalLinkClosed(connectId, reason);
+        }
+    }
+
+    @Override
+    public void onLogicalLinkCloseFailed(SessionHandle sessionHandle, int connectId, int status) {
+        synchronized (this) {
+            if (!hasSession(sessionHandle)) {
+                Log.w(mTag, "onLogicalLinkCloseFailed - received unexpected SessionHandle: "
+                        + sessionHandle);
+                return;
+            }
+
+            RangingSession session = mRangingSessionTable.get(sessionHandle);
+            session.onLogicalLinkCloseFailed(connectId, status);
+        }
+    }
+
+    @Override
+    public void onRemoteLogicalLinkRequested(SessionHandle sessionHandle,
+            LogicalLinkConnectionRequest linkInfo) {
+        synchronized (this) {
+            if (!hasSession(sessionHandle)) {
+                Log.w(mTag, "onRemoteLogicalLinkRequested - received unexpected SessionHandle: "
+                        + sessionHandle);
+                return;
+            }
+
+            RangingSession session = mRangingSessionTable.get(sessionHandle);
+            session.onRemoteLogicalLinkRequested(linkInfo);
+        }
+    }
+
+
     // TODO(b/211025367): Remove this conversion and use direct API values.
     @RangingSession.Callback.Reason
     private static int convertToReason(@RangingChangeReason int reason) {

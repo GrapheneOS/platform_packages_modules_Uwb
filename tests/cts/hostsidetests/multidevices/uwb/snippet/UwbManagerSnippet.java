@@ -465,6 +465,13 @@ public class UwbManagerSnippet implements Snippet {
         return runWithShellPermission(() -> mUwbManager.isUwbHwIdleTurnOffEnabled());
     }
 
+    /** Get UWB HW Time Stamp. */
+    @Rpc(description = "Query UWBS Time Stamp")
+    public long queryUwbsTimestampMicros() throws Throwable {
+        return runWithShellPermission(() -> mUwbManager.queryUwbsTimestampMicros());
+    }
+
+
     private byte[] convertJSONArrayToByteArray(JSONArray jArray) throws JSONException {
         if (jArray == null) {
             return null;
