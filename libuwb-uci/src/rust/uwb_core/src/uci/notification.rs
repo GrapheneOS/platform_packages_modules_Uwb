@@ -25,12 +25,13 @@ use uwb_uci_packets::{
 use crate::error::{Error, Result};
 use crate::params::fira_app_config_params::UwbAddress;
 use crate::params::uci_packets::{
-    BitsPerSample, ControleeStatusV1, ControleeStatusV2, CreateLogicalLinkNtfStatusCode,
-    CreditAvailability, DataRcvStatusCode, DataTransferNtfStatusCode,
-    DataTransferPhaseConfigUpdateStatusCode, DeviceState, ExtendedAddressDlTdoaRangingMeasurement,
-    ExtendedAddressOwrAoaRangingMeasurement, ExtendedAddressTwoWayRangingMeasurement,
-    LogicalLinkCloseStatus, RadarDataType, RangingMeasurementType, RawUciMessage, SessionId,
-    SessionState, SessionToken, SessionUpdateControllerMulticastListNtfV1Payload,
+    BitsPerSample, ControleeDeviceRole, ControleeStatusV1, ControleeStatusV2,
+    CreateLogicalLinkNtfStatusCode, CreditAvailability, DataRcvStatusCode,
+    DataTransferNtfStatusCode, DataTransferPhaseConfigUpdateStatusCode, DeviceState,
+    ExtendedAddressDlTdoaRangingMeasurement, ExtendedAddressOwrAoaRangingMeasurement,
+    ExtendedAddressTwoWayRangingMeasurement, LogicalLinkCloseStatus, RadarDataType,
+    RangingMeasurementType, RawUciMessage, SessionId, SessionState, SessionToken,
+    SessionUpdateControllerMulticastListNtfV1Payload,
     SessionUpdateControllerMulticastListNtfV2Payload, ShortAddressDlTdoaRangingMeasurement,
     ShortAddressOwrAoaRangingMeasurement, ShortAddressTwoWayRangingMeasurement, StatusCode,
     UCIMajorVersion,
@@ -108,6 +109,13 @@ pub enum SessionNotification {
         status: DataTransferNtfStatusCode,
         /// Transmission count
         tx_count: u8,
+    },
+    /// SessionRoleChangeNtf equivalent.
+    SessionRoleChangeNtf {
+        /// SessionToken : u32
+        session_token: SessionToken,
+        /// New device role : u8
+        device_role: ControleeDeviceRole,
     },
     /// SessionDataTransferPhaseConfigNtf equivalent.
     DataTransferPhaseConfig {
@@ -675,6 +683,12 @@ impl TryFrom<uwb_uci_packets::SessionControlNotification> for SessionNotificatio
                     source_mac_address: UwbAddress::Extended(
                         evt.get_source_mac_address().to_le_bytes(),
                     ),
+                })
+            }
+            SessionControlNotificationChild::SessionRoleChangeNtf(evt) => {
+                Ok(Self::SessionRoleChangeNtf {
+                    session_token: evt.get_session_token(),
+                    device_role: evt.get_device_role(),
                 })
             }
             _ => {
@@ -1741,6 +1755,28 @@ mod tests {
             UciNotification::Session(SessionNotification::CreateLogicalLink {
                 connect_id: 0,
                 status: status_code,
+            })
+        );
+    }
+
+    #[test]
+    fn test_session_notification_casting_from_session_role_change_ntf_packet() {
+        let session_role_change_ntf = uwb_uci_packets::SessionRoleChangeNtfBuilder {
+            session_token: 0x00,
+            device_role: ControleeDeviceRole::Initiator,
+        }
+        .build();
+        let session_notification_packet =
+            uwb_uci_packets::SessionControlNotification::try_from(session_role_change_ntf).unwrap();
+        let session_notification =
+            SessionNotification::try_from(session_notification_packet).unwrap();
+        let uci_notification_from_session_role_change_ntf =
+            UciNotification::Session(session_notification);
+        assert_eq!(
+            uci_notification_from_session_role_change_ntf,
+            UciNotification::Session(SessionNotification::SessionRoleChangeNtf {
+                session_token: 0x00,
+                device_role: uwb_uci_packets::ControleeDeviceRole::Initiator,
             })
         );
     }

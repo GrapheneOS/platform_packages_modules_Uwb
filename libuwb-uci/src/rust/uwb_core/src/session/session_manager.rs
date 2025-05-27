@@ -413,6 +413,21 @@ impl<T: UciManager> SessionManagerActor<T> {
                     }
                 }
             }
+            UciSessionNotification::SessionRoleChangeNtf { session_token, device_role: _ } => {
+                match self.active_sessions.get(&session_token) {
+                    Some(_) => {
+                        /*
+                         * TODO
+                         */
+                    }
+                    None => {
+                        warn!(
+                            "Received the Role Change Notification for an unknown Session {}",
+                            session_token
+                        );
+                    }
+                }
+            }
             UciSessionNotification::DataTransferPhaseConfig { session_token, status } => {
                 match self.active_sessions.get_mut(&session_token) {
                     Some(_) => {
