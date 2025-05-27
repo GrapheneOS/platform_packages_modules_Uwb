@@ -113,6 +113,20 @@ public class FiraSpecificationParams extends FiraParams {
 
     private final boolean mHasPsduLengthSupport;
 
+    private final boolean mHasLogicalLinkSupport;
+
+    private final boolean mHasLogicalLinkAggregatedFrameSupport;
+
+    private final boolean mHasLogicalLinkSecureEndpointSupport;
+
+    private final boolean mHasLogicalLinkNonSecureEndpointSupport;
+
+    private final int mMaxLogicalLinkSupported;
+
+    private final int mMaxLogicalLinkSupportPerSession;
+
+    private final boolean mHasLogicalLinkBypassModeSupport;
+
     private final String mCountryCode;
 
     private final int mUciVersion;
@@ -169,6 +183,26 @@ public class FiraSpecificationParams extends FiraParams {
 
     public static final String KEY_PSDU_LENGTH_SUPPORT = "psdu_length_support";
 
+    public static final String KEY_LOGICAL_LINK_SUPPORT = "logical_link_support";
+
+    public static final String KEY_LOGICAL_LINK_AGGREGATED_FRAME_SUPPORT =
+            "logical_link_aggregated_frame_support";
+
+    public static final String KEY_LOGICAL_LINK_SECURE_ENDPOINT_SUPPORT =
+            "logical_link_secure_endpoint_support";
+
+    public static final String KEY_LOGICAL_LINK_NON_SECURE_ENDPOINT_SUPPORT =
+            "logical_link_non_secure_endpoint_support";
+
+    public static final String KEY_LOGICAL_LINK_MAX_SUPPORTED =
+            "logical_link_max_supported";
+
+    public static final String KEY_LOGICAL_LINK_MAX_SUPPORTED_PER_SESSION =
+            "logical_link_max_supported_per_session";
+
+    public static final String KEY_LOGICAL_LINK_BYPASS_MODE_SUPPORT =
+            "logical_link_bypass_mode_support";
+
     public static final String KEY_COUNTRY_CODE = "country_code";
 
     public static final String KEY_UCI_VERSION = "uci_version";
@@ -210,6 +244,11 @@ public class FiraSpecificationParams extends FiraParams {
             int deviceType, boolean suspendRangingSupport, int sessionKeyLength,
             int dtTagMaxActiveRr, boolean hasBackgroundRangingSupport,
             boolean hasDtTagBlockSkippingSupport, boolean hasPsduLengthSupport,
+            boolean hasLogicalLinkSupport, boolean hasLogicalLinkAggregatedFrameSupport,
+            boolean hasLogicalLinkSecureEndpointSupport,
+            boolean hasLogicalLinkNonSecureEndpointSupport,
+            int maxLogicalLinkSupported, int maxLogicalLinkSupportPerSession,
+            boolean hasLogicalLinkBypassModeSupport,
             String countryCode,
             int uciVersion) {
         mMinPhyVersionSupported = minPhyVersionSupported;
@@ -250,6 +289,13 @@ public class FiraSpecificationParams extends FiraParams {
         mHasBackgroundRangingSupport = hasBackgroundRangingSupport;
         mHasDtTagBlockSkippingSupport = hasDtTagBlockSkippingSupport;
         mHasPsduLengthSupport = hasPsduLengthSupport;
+        mHasLogicalLinkSupport = hasLogicalLinkSupport;
+        mHasLogicalLinkAggregatedFrameSupport = hasLogicalLinkAggregatedFrameSupport;
+        mHasLogicalLinkSecureEndpointSupport = hasLogicalLinkSecureEndpointSupport;
+        mHasLogicalLinkNonSecureEndpointSupport = hasLogicalLinkNonSecureEndpointSupport;
+        mMaxLogicalLinkSupported = maxLogicalLinkSupported;
+        mMaxLogicalLinkSupportPerSession = maxLogicalLinkSupportPerSession;
+        mHasLogicalLinkBypassModeSupport = hasLogicalLinkBypassModeSupport;
         mCountryCode = countryCode;
         mUciVersion = uciVersion;
     }
@@ -413,6 +459,34 @@ public class FiraSpecificationParams extends FiraParams {
         return mHasPsduLengthSupport;
     }
 
+    public boolean hasLogicalLinkSupport() {
+        return mHasLogicalLinkSupport;
+    }
+
+    public boolean hasLogicalLinkAggregatedFrameSupport() {
+        return mHasLogicalLinkAggregatedFrameSupport;
+    }
+
+    public boolean hasLogicalLinkSecureEndpointSupport() {
+        return mHasLogicalLinkSecureEndpointSupport;
+    }
+
+    public boolean hasLogicalLinkNonSecureEndpointSupport() {
+        return mHasLogicalLinkNonSecureEndpointSupport;
+    }
+
+    public int getMaxLogicalLinkSupported() {
+        return mMaxLogicalLinkSupported;
+    }
+
+    public int getMaxLogicalLinkSupportPerSession() {
+        return mMaxLogicalLinkSupportPerSession;
+    }
+
+    public boolean hasLogicalLinkBypassModeSupport() {
+        return mHasLogicalLinkBypassModeSupport;
+    }
+
     public String getCountryCode() {
         return mCountryCode;
     }
@@ -476,6 +550,16 @@ public class FiraSpecificationParams extends FiraParams {
         bundle.putBoolean(KEY_BACKGROUND_RANGING_SUPPORT, mHasBackgroundRangingSupport);
         bundle.putBoolean(KEY_DT_TAG_BLOCK_SKIPPING_SUPPORT, mHasDtTagBlockSkippingSupport);
         bundle.putBoolean(KEY_PSDU_LENGTH_SUPPORT, mHasPsduLengthSupport);
+        bundle.putBoolean(KEY_LOGICAL_LINK_SUPPORT, mHasLogicalLinkSupport);
+        bundle.putBoolean(KEY_LOGICAL_LINK_AGGREGATED_FRAME_SUPPORT,
+                mHasLogicalLinkAggregatedFrameSupport);
+        bundle.putBoolean(KEY_LOGICAL_LINK_SECURE_ENDPOINT_SUPPORT,
+                mHasLogicalLinkSecureEndpointSupport);
+        bundle.putBoolean(KEY_LOGICAL_LINK_NON_SECURE_ENDPOINT_SUPPORT,
+                mHasLogicalLinkNonSecureEndpointSupport);
+        bundle.putInt(KEY_LOGICAL_LINK_MAX_SUPPORTED, mMaxLogicalLinkSupported);
+        bundle.putInt(KEY_LOGICAL_LINK_MAX_SUPPORTED_PER_SESSION, mMaxLogicalLinkSupportPerSession);
+        bundle.putBoolean(KEY_LOGICAL_LINK_BYPASS_MODE_SUPPORT, mHasLogicalLinkBypassModeSupport);
         bundle.putString(KEY_COUNTRY_CODE, mCountryCode);
         bundle.putInt(KEY_UCI_VERSION, mUciVersion);
         return bundle;
@@ -513,6 +597,18 @@ public class FiraSpecificationParams extends FiraParams {
         builder.setBackgroundRangingSupport(bundle.getBoolean(KEY_BACKGROUND_RANGING_SUPPORT));
         builder.setDtTagBlockSkippingSupport(bundle.getBoolean(KEY_DT_TAG_BLOCK_SKIPPING_SUPPORT));
         builder.setPsduLengthSupport(bundle.getBoolean(KEY_PSDU_LENGTH_SUPPORT));
+        builder.setLogicalLinkSupport(bundle.getBoolean(KEY_LOGICAL_LINK_SUPPORT));
+        builder.setLogicalLinkAggregatedFrameSupport(
+                bundle.getBoolean(KEY_LOGICAL_LINK_AGGREGATED_FRAME_SUPPORT));
+        builder.setLogicalLinkSecureEndpointSupport(
+                bundle.getBoolean(KEY_LOGICAL_LINK_SECURE_ENDPOINT_SUPPORT));
+        builder.setLogicalLinkNonSecureEndpointSupport(
+                bundle.getBoolean(KEY_LOGICAL_LINK_NON_SECURE_ENDPOINT_SUPPORT));
+        builder.setMaxLogicalLinkSupported(bundle.getInt(KEY_LOGICAL_LINK_MAX_SUPPORTED));
+        builder.setMaxLogicalLinkSupportPerSession(
+                bundle.getInt(KEY_LOGICAL_LINK_MAX_SUPPORTED_PER_SESSION));
+        builder.setLogicalLinkBypassModeSupport(
+                bundle.getBoolean(KEY_LOGICAL_LINK_BYPASS_MODE_SUPPORT));
         builder.setUciVersionSupported(bundle.getInt(KEY_UCI_VERSION, 1));
         builder.setCountryCode(bundle.getString(KEY_COUNTRY_CODE));
         return builder;
@@ -726,6 +822,22 @@ public class FiraSpecificationParams extends FiraParams {
 
         // PSDU_LENGTH_SUPPORT.
         private boolean mHasPsduLengthSupport = false;
+
+        // LOGICAL_LINK_CAPABILITY_PARAM
+        private boolean mHasLogicalLinkSupport = false;
+
+        private boolean mHasLogicalLinkAggregatedFrameSupport = false;
+
+        private boolean mHasLogicalLinkSecureEndpointSupport = false;
+
+        private boolean mHasLogicalLinkNonSecureEndpointSupport = false;
+
+        private int mMaxLogicalLinkSupported = 0;
+
+        private int mMaxLogicalLinkSupportPerSession = 0;
+
+        // LOGICAL_LINK_BYPASS_MODE_SUPPORT
+        private boolean mHasLogicalLinkBypassModeSupport = false;
 
         public FiraSpecificationParams.Builder setMinPhyVersionSupported(
                 FiraProtocolVersion version) {
@@ -954,6 +1066,42 @@ public class FiraSpecificationParams extends FiraParams {
             return this;
         }
 
+        public FiraSpecificationParams.Builder setLogicalLinkSupport(boolean value) {
+            mHasLogicalLinkSupport = value;
+            return this;
+        }
+
+        public FiraSpecificationParams.Builder setLogicalLinkAggregatedFrameSupport(boolean value) {
+            mHasLogicalLinkAggregatedFrameSupport = value;
+            return this;
+        }
+
+        public FiraSpecificationParams.Builder setLogicalLinkSecureEndpointSupport(boolean value) {
+            mHasLogicalLinkSecureEndpointSupport = value;
+            return this;
+        }
+
+        public FiraSpecificationParams.Builder setLogicalLinkNonSecureEndpointSupport(boolean
+                value) {
+            mHasLogicalLinkNonSecureEndpointSupport = value;
+            return this;
+        }
+
+        public FiraSpecificationParams.Builder setMaxLogicalLinkSupported(int value) {
+            mMaxLogicalLinkSupported = value;
+            return this;
+        }
+
+        public FiraSpecificationParams.Builder setMaxLogicalLinkSupportPerSession(int value) {
+            mMaxLogicalLinkSupportPerSession = value;
+            return this;
+        }
+
+        public FiraSpecificationParams.Builder setLogicalLinkBypassModeSupport(boolean value) {
+            mHasLogicalLinkBypassModeSupport = value;
+            return this;
+        }
+
         public FiraSpecificationParams.Builder setCountryCode(String value) {
             mCountryCode = value;
             return this;
@@ -1006,6 +1154,14 @@ public class FiraSpecificationParams extends FiraParams {
             mHasBackgroundRangingSupport = params.mHasBackgroundRangingSupport;
             mHasDtTagBlockSkippingSupport = params.mHasDtTagBlockSkippingSupport;
             mHasPsduLengthSupport = params.mHasPsduLengthSupport;
+            mHasLogicalLinkSupport = params.mHasLogicalLinkSupport;
+            mHasLogicalLinkAggregatedFrameSupport = params.mHasLogicalLinkAggregatedFrameSupport;
+            mHasLogicalLinkSecureEndpointSupport = params.mHasLogicalLinkSecureEndpointSupport;
+            mHasLogicalLinkNonSecureEndpointSupport =
+                    params.mHasLogicalLinkNonSecureEndpointSupport;
+            mMaxLogicalLinkSupported = params.mMaxLogicalLinkSupported;
+            mMaxLogicalLinkSupportPerSession = params.mMaxLogicalLinkSupportPerSession;
+            mHasLogicalLinkBypassModeSupport = params.mHasLogicalLinkBypassModeSupport;
             mCountryCode = params.mCountryCode;
         }
 
@@ -1049,6 +1205,13 @@ public class FiraSpecificationParams extends FiraParams {
                     mHasBackgroundRangingSupport,
                     mHasDtTagBlockSkippingSupport,
                     mHasPsduLengthSupport,
+                    mHasLogicalLinkSupport,
+                    mHasLogicalLinkAggregatedFrameSupport,
+                    mHasLogicalLinkSecureEndpointSupport,
+                    mHasLogicalLinkNonSecureEndpointSupport,
+                    mMaxLogicalLinkSupported,
+                    mMaxLogicalLinkSupportPerSession,
+                    mHasLogicalLinkBypassModeSupport,
                     mCountryCode,
                     mUciVersion);
         }

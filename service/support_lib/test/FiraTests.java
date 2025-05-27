@@ -639,6 +639,15 @@ public class FiraTests {
         boolean suspendRangingSupport = true;
         int sessionKeyLength = 1;
         boolean hasBackgroundSupport = true;
+        // LOGICAL_LINK_CAPABILITY_PARAM
+        boolean hasLogicalLinkSupport = true;
+        boolean hasLogicalLinkAggregatedFrameSupport = true;
+        boolean hasLogicalLinkSecureEndpointSupport = false;
+        boolean hasLogicalLinkNonSecureEndpointSupport = false;
+        int maxLogicalLinkSupported = 2;
+        int maxLogicalLinkSupportPerSession = 0;
+        // LOGICAL_LINK_BYPASS_MODE_SUPPORT
+        boolean hasLogicalLinkBypassModeSupport = true;
 
         FiraSpecificationParams params =
                 new FiraSpecificationParams.Builder()
@@ -667,6 +676,14 @@ public class FiraTests {
                         .setSuspendRangingSupport(suspendRangingSupport)
                         .setSessionKeyLength(sessionKeyLength)
                         .setBackgroundRangingSupport(false)
+                        .setLogicalLinkSupport(hasLogicalLinkSupport)
+                        .setLogicalLinkAggregatedFrameSupport(hasLogicalLinkAggregatedFrameSupport)
+                        .setLogicalLinkSecureEndpointSupport(hasLogicalLinkSecureEndpointSupport)
+                        .setLogicalLinkNonSecureEndpointSupport(
+                                hasLogicalLinkNonSecureEndpointSupport)
+                        .setMaxLogicalLinkSupported(maxLogicalLinkSupported)
+                        .setMaxLogicalLinkSupportPerSession(maxLogicalLinkSupportPerSession)
+                        .setLogicalLinkBypassModeSupport(hasLogicalLinkBypassModeSupport)
                         .build();
         assertEquals(minPhyVersionSupported, params.getMinPhyVersionSupported());
         assertEquals(maxPhyVersionSupported, params.getMaxPhyVersionSupported());
@@ -693,6 +710,18 @@ public class FiraTests {
         assertEquals(suspendRangingSupport, params.hasSuspendRangingSupport());
         assertEquals(sessionKeyLength, params.getSessionKeyLength());
         assertEquals(false, params.hasBackgroundRangingSupport());
+        assertEquals(hasLogicalLinkSupport, params.hasLogicalLinkSupport());
+        assertEquals(hasLogicalLinkAggregatedFrameSupport,
+                params.hasLogicalLinkAggregatedFrameSupport());
+        assertEquals(hasLogicalLinkSecureEndpointSupport,
+                params.hasLogicalLinkSecureEndpointSupport());
+        assertEquals(hasLogicalLinkNonSecureEndpointSupport,
+                params.hasLogicalLinkNonSecureEndpointSupport());
+        assertEquals(maxLogicalLinkSupported, params.getMaxLogicalLinkSupported());
+        assertEquals(maxLogicalLinkSupportPerSession,
+                params.getMaxLogicalLinkSupportPerSession());
+        assertEquals(hasLogicalLinkBypassModeSupport,
+                params.hasLogicalLinkBypassModeSupport());
 
         FiraSpecificationParams fromBundle = FiraSpecificationParams.fromBundle(params.toBundle());
         assertEquals(minPhyVersionSupported, fromBundle.getMinPhyVersionSupported());
@@ -719,6 +748,17 @@ public class FiraTests {
         assertEquals(suspendRangingSupport, fromBundle.hasSuspendRangingSupport());
         assertEquals(sessionKeyLength, fromBundle.getSessionKeyLength());
         assertEquals(false, fromBundle.hasBackgroundRangingSupport());
+        assertEquals(hasLogicalLinkSupport, fromBundle.hasLogicalLinkSupport());
+        assertEquals(hasLogicalLinkAggregatedFrameSupport,
+                fromBundle.hasLogicalLinkAggregatedFrameSupport());
+        assertEquals(hasLogicalLinkSecureEndpointSupport,
+                fromBundle.hasLogicalLinkSecureEndpointSupport());
+        assertEquals(hasLogicalLinkNonSecureEndpointSupport,
+                fromBundle.hasLogicalLinkNonSecureEndpointSupport());
+        assertEquals(maxLogicalLinkSupported, fromBundle.getMaxLogicalLinkSupported());
+        assertEquals(maxLogicalLinkSupportPerSession,
+                fromBundle.getMaxLogicalLinkSupportPerSession());
+        assertEquals(hasLogicalLinkBypassModeSupport, fromBundle.hasLogicalLinkBypassModeSupport());
         verifyProtocolPresent(params);
         verifyBundlesEqual(params, fromBundle);
 
@@ -750,6 +790,17 @@ public class FiraTests {
         assertEquals(suspendRangingSupport, fromCopy.hasSuspendRangingSupport());
         assertEquals(sessionKeyLength, fromCopy.getSessionKeyLength());
         assertEquals(hasBackgroundSupport, fromCopy.hasBackgroundRangingSupport());
+        assertEquals(hasLogicalLinkSupport, fromCopy.hasLogicalLinkSupport());
+        assertEquals(hasLogicalLinkAggregatedFrameSupport,
+                fromCopy.hasLogicalLinkAggregatedFrameSupport());
+        assertEquals(hasLogicalLinkSecureEndpointSupport,
+                fromCopy.hasLogicalLinkSecureEndpointSupport());
+        assertEquals(hasLogicalLinkNonSecureEndpointSupport,
+                fromCopy.hasLogicalLinkNonSecureEndpointSupport());
+        assertEquals(maxLogicalLinkSupported, fromCopy.getMaxLogicalLinkSupported());
+        assertEquals(maxLogicalLinkSupportPerSession,
+                fromCopy.getMaxLogicalLinkSupportPerSession());
+        assertEquals(hasLogicalLinkBypassModeSupport, fromCopy.hasLogicalLinkBypassModeSupport());
         verifyProtocolPresent(params);
         verifyBundlesEqual(params, fromCopy);
     }
