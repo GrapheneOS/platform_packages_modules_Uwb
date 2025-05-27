@@ -82,6 +82,14 @@ public interface INativeUwbManager {
                 int txCount);
 
         /**
+         * Interface for receiving controlee device role change notification
+         *
+         * @param sessionId          : Session ID
+         * @param deviceRole         : Device Role
+         */
+        void onControleeRoleChanged(long sessionId, int deviceRole);
+
+        /**
          * Interface for receiving Radar Data Message
          *
          * @param radarData : refer to Android UWB Radar UCI Specification: radar Data Message

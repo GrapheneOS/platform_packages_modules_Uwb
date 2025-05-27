@@ -341,6 +341,15 @@ oneway interface IUwbRangingCallbacks {
           in PersistableBundle parameters);
 
   /**
+   * Called when the controller dynamically updates the device role of a controlee during a
+   * time-scheduled Two-Way Ranging (TWR) session.
+   *
+   * @param sessionHandle the session for which the callback is being invoked for.
+   * @param deviceRole The new device role assigned to the controlee.
+   */
+  void onControleeRoleChanged(in SessionHandle sessionHandle, in int deviceRole);
+
+  /**
    * Invoked when set hybrid session Controlee configuration via {@link RangingSession#
    * setHybridSessionControleeConfiguration(
    * in SessionHandle sessionHandle, in PersistableBundle params)} fails.

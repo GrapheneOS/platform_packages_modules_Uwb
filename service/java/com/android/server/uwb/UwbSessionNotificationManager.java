@@ -678,6 +678,18 @@ public class UwbSessionNotificationManager {
         }
     }
 
+    /** Notify about controlee's device role change during time scheduled TWR */
+    public void onControleeRoleChanged(UwbSession uwbSession, int deviceRole) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            uwbRangingCallbacks.onControleeRoleChanged(sessionHandle, deviceRole);
+            Log.i(TAG, "IUwbRangingCallbacks - onControleeRoleChanged");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onControleeRoleChanged : Failed");
+        }
+    }
+
     /** Notify about new radar data message. */
     public void onRadarDataMessageReceived(UwbSession uwbSession, UwbRadarData radarData) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();

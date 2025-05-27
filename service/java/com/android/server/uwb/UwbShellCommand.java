@@ -394,6 +394,8 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         public void onDataReceiveFailed(SessionHandle sessionHandle, UwbAddress uwbAddress,
                 int reason, PersistableBundle params) {}
 
+        public void onControleeRoleChanged(SessionHandle sessionHandle, int deviceRole) {}
+
         public void onServiceDiscovered(SessionHandle sessionHandle, PersistableBundle params) {}
 
         public void onServiceConnected(SessionHandle sessionHandle, PersistableBundle params) {}
