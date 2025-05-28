@@ -2403,6 +2403,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
         private void handleStartRanging(UwbSession uwbSession) {
             Trace.beginSection("UWB#handleStartRanging");
+            mUwbInjector.getUwbServiceCore().updateChannelUsageOnRangingStartCalled(
+                    uwbSession.mChannel);
             // TODO(b/211445008): Consolidate to a single uwb thread.
             FutureTask<Integer> startRangingTask = new FutureTask<>(
                     () -> {
@@ -2473,8 +2475,6 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
                                 mSessionNotificationManager.onRangingStarted(
                                         uwbSession, rangingStartedParams);
-                                mUwbInjector.getUwbServiceCore().updateChannelUsageOnRangingStarted(
-                                        uwbSession.mChannel);
                                 if (uwbSession.hasNonPrivilegedApp()
                                         && !uwbSession.hasNonPrivilegedFgAppOrService()) {
                                     Log.i(TAG, "Session " + uwbSession.getSessionId()
@@ -3368,7 +3368,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         private boolean mNeedsQueryUwbsTimestamp = false;
         private UwbMulticastListUpdateStatus mMulticastListUpdateStatus;
         private final int mProfileType;
-        private final int mChannel;
+        public final int mChannel;
 
         /**
          * Keeps track of per-controlee error streak timers for ranging sessions with multiple

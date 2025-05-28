@@ -192,6 +192,8 @@ public class UwbSessionNotificationManager {
             Log.e(TAG, "IUwbRangingCallbacks - onRangingStartFailed : Failed");
             e.printStackTrace();
         }
+        mUwbInjector.getUwbServiceCore().updateChannelUsageOnRangingStopped(
+                uwbSession.mChannel);
     }
 
     public void onRangingStartFailedWithUciReasonCode(UwbSession uwbSession, int reasonCode)  {
