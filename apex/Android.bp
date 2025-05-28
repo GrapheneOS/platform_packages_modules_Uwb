@@ -44,6 +44,10 @@ apex {
     defaults: ["com.android.uwb-defaults"],
     manifest: "apex_manifest.json",
     visibility: ["//packages/modules/common/build"],
+    licenses: [
+        "Android-Apache-2.0",
+        "opensourcerequest",
+    ],
 }
 
 apex_key {
