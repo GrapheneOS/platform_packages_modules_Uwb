@@ -192,6 +192,8 @@ public class UwbSessionNotificationManager {
             Log.e(TAG, "IUwbRangingCallbacks - onRangingStartFailed : Failed");
             e.printStackTrace();
         }
+        mUwbInjector.getUwbServiceCore().updateChannelUsageOnRangingStopped(
+                uwbSession.mChannel);
     }
 
     public void onRangingStartFailedWithUciReasonCode(UwbSession uwbSession, int reasonCode)  {
@@ -675,6 +677,18 @@ public class UwbSessionNotificationManager {
             Log.i(TAG, "Notification received for " + callbackMethodName);
         } catch (Exception e) {
             Log.e(TAG, "Failed to notify IUwbRangingCallbacks for " + callbackMethodName, e);
+        }
+    }
+
+    /** Notify about controlee's device role change during time scheduled TWR */
+    public void onControleeRoleChanged(UwbSession uwbSession, int deviceRole) {
+        SessionHandle sessionHandle = uwbSession.getSessionHandle();
+        IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
+        try {
+            uwbRangingCallbacks.onControleeRoleChanged(sessionHandle, deviceRole);
+            Log.i(TAG, "IUwbRangingCallbacks - onControleeRoleChanged");
+        } catch (Exception e) {
+            Log.e(TAG, "IUwbRangingCallbacks - onControleeRoleChanged : Failed");
         }
     }
 

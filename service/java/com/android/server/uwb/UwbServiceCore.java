@@ -632,7 +632,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         }
     }
 
-    public void updateChannelUsageOnRangingStarted(int channel) {
+    public void updateChannelUsageOnRangingStartCalled(int channel) {
         mChannelSessionCounter.put(channel, mChannelSessionCounter.getOrDefault(channel, 0) + 1);
         updateChannelStateIfNeeded();
     }

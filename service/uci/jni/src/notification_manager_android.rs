@@ -39,7 +39,7 @@ use uwb_core::uci::{
     RfTestPerRxData, SessionNotification, SessionRangeData,
 };
 use uwb_uci_packets::{
-    radar_bytes_per_sample_value, ExtendedAddressDlTdoaRangingMeasurement,
+    radar_bytes_per_sample_value, ControleeDeviceRole, ExtendedAddressDlTdoaRangingMeasurement,
     ExtendedAddressOwrAoaRangingMeasurement, ExtendedAddressTwoWayRangingMeasurement,
     LinkLayerMode, MacAddressIndicator, RangingMeasurementType, SessionState,
     ShortAddressDlTdoaRangingMeasurement, ShortAddressOwrAoaRangingMeasurement,
@@ -1014,6 +1014,21 @@ impl NotificationManagerAndroid {
         )
     }
 
+    fn on_session_role_change_notification(
+        &mut self,
+        session_id: u32,
+        device_role: ControleeDeviceRole,
+    ) -> Result<JObject, JNIError> {
+        self.cached_jni_call(
+            "onControleeRoleChanged",
+            "(JI)V",
+            &[
+                jvalue::from(JValue::Long(session_id as i64)),
+                jvalue::from(JValue::Int(device_role as i32)),
+            ],
+        )
+    }
+
     fn on_rf_periodic_tx_notification(
         &mut self,
         status: u8,
@@ -1304,6 +1319,9 @@ impl NotificationManager for NotificationManagerAndroid {
                         session_token, credit_availability
                     );
                     Err(JNIError::InvalidCtorReturn)
+                }
+                SessionNotification::SessionRoleChangeNtf { session_token, device_role } => {
+                    self.on_session_role_change_notification(session_token, device_role)
                 }
                 SessionNotification::DataTransferPhaseConfig { session_token, status } => {
                     self.on_data_transfer_phase_config_notification(session_token, u8::from(status))

@@ -384,6 +384,9 @@ public class RangingSessionTest {
 
             session.onRemoteLogicalLinkRequested(any());
             verify(callback, times(1)).onRemoteLogicalLinkRequested(any());
+
+            session.onControleeRoleChanged(anyInt());
+            verify(callback, times(1)).onControleeRoleChanged(anyInt());
         }
 
         session.stop();

@@ -586,6 +586,13 @@ public class NativeUwbManager {
     }
 
     /**
+     * Receives controlee device role change notification from UWBS
+     */
+    public void onControleeRoleChanged(long sessionId, int deviceRole) {
+        mSessionListener.onControleeRoleChanged(sessionId, deviceRole);
+    }
+
+    /**
      * Update Ranging Rounds for DT Tag
      *
      * @param sessionId Session ID to which ranging round to be updated

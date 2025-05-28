@@ -86,6 +86,7 @@ enum SessionControlOpCode : 6 {
     SESSION_GET_RANGING_COUNT = 0x03,
     SESSION_DATA_CREDIT_NTF = 0x04,
     SESSION_DATA_TRANSFER_STATUS_NTF = 0x05,
+    SESSION_ROLE_CHANGE_NTF = 0x06,
     SESSION_CLOSE_LOGICAL_LINK = 0x08,
     SESSION_GET_LOGICAL_LINK_PARAMS = 0x0B,
 }
@@ -541,6 +542,11 @@ enum MessageType: 3 {
     NOTIFICATION = 0x03,
     RESERVED_FOR_TESTING_1 = 0x04,
     RESERVED_FOR_TESTING_2 = 0x05,
+}
+
+enum ControleeDeviceRole : 8 {
+    INITIATOR = 0x00,
+    RESPONDER = 0x01,
 }
 
 enum RfTestConfigTlvType : 8 {
@@ -1146,6 +1152,11 @@ packet DataTransferStatusNtf : SessionControlNotification (opcode = 0x05) { // S
 
 test DataTransferStatusNtf {
     "\x62\x05\x00\x06\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00",
+}
+
+packet SessionRoleChangeNtf : SessionControlNotification (opcode = 0x06) { // SESSION_ROLE_CHANGE_NTF
+    session_token: 32, // Session ID or Session Handle (based on UWBS version)
+    device_role: ControleeDeviceRole,
 }
 
 packet SessionQueryMaxDataSizeCmd : SessionConfigCommand (opcode = 0xB) { //QUERY_MAX_DATA_SIZE
