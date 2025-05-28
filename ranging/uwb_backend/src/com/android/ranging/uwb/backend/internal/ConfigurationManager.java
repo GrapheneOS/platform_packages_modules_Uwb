@@ -356,8 +356,7 @@ public final class ConfigurationManager {
                                 rangingParameters.getUwbRangeDataNtfConfig().getNtfProximityFar())
                         .setInBandTerminationAttemptCount(3)
                         .setStsConfig(configuration.getStsConfig())
-                        // Defaults to 60 seconds.
-                        .setRangingErrorStreakTimeoutMs(60_000L)
+                        .setRangingErrorStreakTimeoutMs(10_000L)
                         .setFilterType(FILTER_TYPE_NONE)
                         .setMaxNumberOfMeasurements(rangingParameters
                                 .getUwbRangeLimitsConfig().getRangeMaxNumberOfMeasurements())
