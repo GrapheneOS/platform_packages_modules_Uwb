@@ -827,6 +827,8 @@ public class UwbManagerTest {
         }
 
         public void onRemoteLogicalLinkRequested(@NonNull LogicalLinkConnectionRequest linkInfo) {}
+
+        public void onControleeRoleChanged(int deviceRole) {}
     }
 
     @Test
