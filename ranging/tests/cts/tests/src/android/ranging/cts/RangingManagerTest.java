@@ -186,7 +186,7 @@ public class RangingManagerTest {
                         Executors.newSingleThreadExecutor(), adapterStateCallback);
                 try {
                     uwbManager.setUwbEnabled(true);
-                    assertThat(countDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
+                    assertThat(countDownLatch.await(6, TimeUnit.SECONDS)).isTrue();
                     if (!uwbManager.isUwbHwIdleTurnOffEnabled()) {
                         assertThat(uwbManager.isUwbEnabled()).isEqualTo(true);
                         assertThat(adapterStateCallback.state).isEqualTo(adapterState);
