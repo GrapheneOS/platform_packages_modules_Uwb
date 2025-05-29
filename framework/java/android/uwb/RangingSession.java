@@ -1571,7 +1571,9 @@ public final class RangingSession implements AutoCloseable {
         }
 
         Log.v(mTag, "onLogicalLinkCreated - sessionHandle: " + mSessionHandle);
-        executeCallback(() -> mCallback.onLogicalLinkCreated(params, connectId));
+        if (Flags.uwbFira3025q4()) {
+            executeCallback(() -> mCallback.onLogicalLinkCreated(params, connectId));
+        }
     }
 
     /**
@@ -1584,7 +1586,9 @@ public final class RangingSession implements AutoCloseable {
         }
 
         Log.v(mTag, "onLogicalLinkCreateFailed - sessionHandle: " + mSessionHandle);
-        executeCallback(() -> mCallback.onLogicalLinkCreateFailed(params, status));
+        if (Flags.uwbFira3025q4()) {
+            executeCallback(() -> mCallback.onLogicalLinkCreateFailed(params, status));
+        }
     }
 
     /**
@@ -1597,7 +1601,9 @@ public final class RangingSession implements AutoCloseable {
         }
 
         Log.v(mTag, "onLogicalLinkClosed - sessionHandle: " + mSessionHandle);
-        executeCallback(() -> mCallback.onLogicalLinkClosed(connectId, reason));
+        if (Flags.uwbFira3025q4()) {
+            executeCallback(() -> mCallback.onLogicalLinkClosed(connectId, reason));
+        }
     }
 
     /**
@@ -1610,7 +1616,9 @@ public final class RangingSession implements AutoCloseable {
         }
 
         Log.v(mTag, "onLogicalLinkCloseFailed - sessionHandle: " + mSessionHandle);
-        executeCallback(() -> mCallback.onLogicalLinkCloseFailed(connectId, status));
+        if (Flags.uwbFira3025q4()) {
+            executeCallback(() -> mCallback.onLogicalLinkCloseFailed(connectId, status));
+        }
     }
 
     /**
@@ -1623,7 +1631,9 @@ public final class RangingSession implements AutoCloseable {
         }
 
         Log.v(mTag, "onRemoteLogicalLinkRequested - sessionHandle: " + mSessionHandle);
-        executeCallback(() -> mCallback.onRemoteLogicalLinkRequested(linkInfo));
+        if (Flags.uwbFira3025q4()) {
+            executeCallback(() -> mCallback.onRemoteLogicalLinkRequested(linkInfo));
+        }
     }
     /**
      * @hide
@@ -1635,7 +1645,9 @@ public final class RangingSession implements AutoCloseable {
         }
 
         Log.v(mTag, "onControleeRoleChanged - sessionHandle: " + mSessionHandle);
-        executeCallback(() -> mCallback.onControleeRoleChanged(deviceRole));
+        if (Flags.uwbFira3025q4()) {
+            executeCallback(() -> mCallback.onControleeRoleChanged(deviceRole));
+        }
     }
 
     /**

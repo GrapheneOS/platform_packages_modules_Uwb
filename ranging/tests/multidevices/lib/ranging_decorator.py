@@ -4,6 +4,7 @@ from enum import IntEnum, StrEnum
 from typing import Set, Dict
 from uuid import uuid4
 from lib.params import RangingPreference
+from lib.params import RawResponderRangingParams
 from mobly.controllers.android_device import AndroidDevice
 from mobly.controllers.android_device_lib.callback_handler_v2 import (
     CallbackHandlerV2,
@@ -35,7 +36,6 @@ class Event(StrEnum):
   OOB_SEND_UNKNOWN = "OOB_SEND_UNKNOWN",
   OOB_CLOSED = "OOB_CLOSED"
 
-
 class RangingDecorator:
 
   def __init__(self, ad: AndroidDevice):
@@ -59,6 +59,14 @@ class RangingDecorator:
         session_handle, dataclasses.asdict(preference)
     )
     self._callback_events[session_handle] = handler
+
+  def add_device_to_session(
+          self, session_handle: str, config: RawResponderRangingParams
+  ):
+    """Adding device to session with specified responding params"""
+    payload = {"peer_params": dataclasses.asdict(config.peer_params)}
+    self.ad.ranging.addDeviceToRangingSession(session_handle, payload)
+
 
   def start_ranging_and_assert_opened(
       self, session_handle: str, preference: RangingPreference
