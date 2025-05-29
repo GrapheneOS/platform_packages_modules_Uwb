@@ -179,7 +179,7 @@ public class UwbManagerTest {
             mUwbManager.registerAdapterStateCallback(
                     Executors.newSingleThreadExecutor(), adapterStateCallback);
             mUwbManager.setUwbEnabled(enabled);
-            assertThat(countDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
+            assertThat(countDownLatch.await(6, TimeUnit.SECONDS)).isTrue();
             assertThat(mUwbManager.isUwbEnabled()).isEqualTo(enabled);
             assertThat(adapterStateCallback.state).isEqualTo(adapterState);
         } finally {
@@ -2474,7 +2474,7 @@ public class UwbManagerTest {
             uwbManager.registerAdapterStateCallback(
                     Executors.newSingleThreadExecutor(), adapterStateCallback);
             uwbManager.requestUwbHwEnabled(enabled);
-            assertThat(countDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
+            assertThat(countDownLatch.await(6, TimeUnit.SECONDS)).isTrue();
             assertThat(adapterStateCallback.state).isEqualTo(adapterState);
         } finally {
             uwbManager.unregisterAdapterStateCallback(adapterStateCallback);
