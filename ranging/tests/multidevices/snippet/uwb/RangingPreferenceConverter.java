@@ -153,7 +153,7 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
         return builder.build();
     }
 
-    private RawResponderRangingConfig getRawResponderRangingConfig(
+    public RawResponderRangingConfig getRawResponderRangingConfig(
             JSONObject j
     ) throws JSONException {
         return new RawResponderRangingConfig.Builder()

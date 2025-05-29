@@ -39,6 +39,7 @@ import com.google.android.mobly.snippet.event.EventCache;
 import com.google.android.mobly.snippet.event.SnippetEvent;
 import com.google.android.mobly.snippet.rpc.AsyncRpc;
 import com.google.android.mobly.snippet.rpc.Rpc;
+import android.ranging.raw.RawResponderRangingConfig;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -329,6 +330,19 @@ public class RangingSnippet implements Snippet {
             sessionInfo.getSession().stop();
         }
         mSessions.clear();
+    }
+
+    @AsyncRpc (description = " Add a responder device to ranging session")
+    public void addDeviceToRangingSession(
+            String callbackId, String sessionHandle, JSONObject j
+    ) throws JSONException {
+
+        RangingSessionInfo sessionInfo = mSessions.get(sessionHandle);
+        OobTransportFactory transportFactory =new OobTransportFactory(callbackId, sessionInfo);
+        RangingPreferenceConverter converter = new RangingPreferenceConverter(transportFactory);
+        RawResponderRangingConfig config = converter.getRawResponderRangingConfig(j);
+        Log.d(TAG, "adding new device");
+        sessionInfo.getSession().addDeviceToRangingSession(config);
     }
 
     @Rpc(description = "Handle data received from a peer via OOB")
