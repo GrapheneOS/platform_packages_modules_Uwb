@@ -1,5 +1,4 @@
-#  Copyright (C) 2024 The Android Open Source Project
-#
+# Copyright (C) 2024 The Android Open Source Project
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at
@@ -47,9 +46,11 @@ _TEST_CASES = [
     "test_one_to_one_ble_cs_ranging_with_oob",
     "test_uwb_ranging_measurement_limit",
     "test_ble_rssi_ranging_measurement_limit",
+    "test_ble_cs_ranging_measurement_limit",
     "test_one_to_one_wifi_rtt_ranging_with_oob",
     "test_one_to_one_ble_rssi_ranging_with_oob",
     "test_oob_responder_persists_until_explicitly_stopped",
+    "test_dynamic_peer_uwb_ranging",
 ]
 
 
@@ -213,7 +214,6 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
         logging.error("Client not unbonded %s", self.initiator.bt_addr)
 
   ### Test Cases ###
-
   def _test_one_to_one_uwb_ranging(self, config_id: int):
       """Verifies uwb ranging with peer device, devices range for 10 seconds."""
       SESSION_HANDLE = str(uuid4())
@@ -389,6 +389,93 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
     self.initiator.stop_ranging_and_assert_closed(SESSION_HANDLE)
     self.responder.stop_ranging_and_assert_closed(SESSION_HANDLE)
+
+  def test_dynamic_peer_uwb_ranging(self):
+      """verifies dynamic peer with UWB"""
+
+      SESSION_HANDLE = str(uuid4())
+      UWB_SESSION_ID = 5
+      TECHNOLOGIES = {RangingTechnology.UWB}
+      asserts.skip_if(
+          not self.responder.is_ranging_technology_supported(RangingTechnology.UWB),
+          f"UWB not supported by responder",
+      )
+      asserts.skip_if(
+          not self.initiator.is_ranging_technology_supported(RangingTechnology.UWB),
+          f"UWB not supported by initiator",
+      )
+      initiator_preference = RangingPreference(
+          device_role=DeviceRole.INITIATOR,
+          ranging_params=RawInitiatorRangingParams(
+              peer_params=[
+                  DeviceParams(
+                      peer_id=str(uuid4()),
+                      uwb_params=uwb.UwbRangingParams(
+                          session_id=UWB_SESSION_ID,
+                          config_id=uwb.ConfigId.MULTICAST_DS_TWR,
+                          device_address=self.initiator.uwb_address,
+                          peer_address=[7,8],
+                      ),
+                  )
+              ],
+          ),
+      )
+      self.initiator.start_ranging_and_assert_opened(
+          SESSION_HANDLE, initiator_preference
+      )
+      ranging_params_responder=RawResponderRangingParams(
+          peer_params=DeviceParams(
+              peer_id=self.responder.id,
+              uwb_params=uwb.UwbRangingParams(
+                  session_id=UWB_SESSION_ID,
+                  config_id=uwb.ConfigId.MULTICAST_DS_TWR,
+                  device_address=self.initiator.uwb_address,
+                  peer_address=self.responder.uwb_address,
+              )
+          ),
+      )
+
+      responder_preference = RangingPreference(
+          device_role=DeviceRole.RESPONDER,
+          ranging_params=RawResponderRangingParams(
+              peer_params=DeviceParams(
+                  peer_id=self.initiator.id,
+                  uwb_params=uwb.UwbRangingParams(
+                      session_id=UWB_SESSION_ID,
+                      config_id=uwb.ConfigId.MULTICAST_DS_TWR,
+                      device_address=self.responder.uwb_address,
+                      peer_address=self.initiator.uwb_address,
+                  )
+              ),
+          )
+      )
+      self.responder.start_ranging_and_assert_opened(
+          SESSION_HANDLE, responder_preference
+      )
+
+      self.initiator.add_device_to_session(SESSION_HANDLE, ranging_params_responder)
+      logging.info("add a device %s", self.initiator.uwb_address)
+      time.sleep(5)
+      #verify at least one responder replied
+      asserts.assert_true(
+          self.initiator.verify_received_data_from_peer_using_technologies(
+              SESSION_HANDLE, self.responder.id, TECHNOLOGIES
+          ),
+          "Initiator did not find responder",
+      )
+      asserts.assert_true(
+          self.responder.verify_received_data_from_peer_using_technologies(
+              SESSION_HANDLE,
+              self.initiator.id,
+              TECHNOLOGIES,
+          ),
+          "Responder did not find initiator",
+      )
+
+
+      self.initiator.stop_ranging_and_assert_closed(SESSION_HANDLE)
+      self.responder.stop_ranging_and_assert_closed(SESSION_HANDLE)
+
 
   def test_uwb_ranging_measurement_limit(self):
       """Verifies device does not receive range data after measurement limit"""
@@ -887,6 +974,55 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     finally:
       session.stop_and_assert_closed(check_responders=False)
       self._ble_unbond()
+
+  def test_ble_cs_ranging_measurement_limit(self):
+      """Verifies ble cs ranging with measurement limit."""
+      asserts.skip_if(self._is_cuttlefish_device(self.initiator.ad),
+                      "Skipping BLE CS test on Cuttlefish")
+      SESSION_HANDLE = str(uuid4())
+      TECHNOLOGIES = {RangingTechnology.BLE_CS}
+
+      asserts.skip_if(
+          not self.responder.is_ranging_technology_supported(RangingTechnology.BLE_CS),
+          f"BLE CS not supported by responder",
+      )
+      asserts.skip_if(
+          not self.initiator.is_ranging_technology_supported(RangingTechnology.BLE_CS),
+          f"BLE CS not supported by initiator",
+      )
+      self._enable_bt()
+
+      try:
+          self._ble_bond()
+      except Exception as e:
+          asserts.skip("Failed to create ble bond", str(e))
+
+      try:
+        initiator_preference = RangingPreference(
+              device_role=DeviceRole.INITIATOR,
+              ranging_params=RawInitiatorRangingParams(
+                  peer_params=[
+                      DeviceParams(
+                          peer_id=self.responder.id,
+                          cs_params=cs.CsRangingParams(
+                              peer_address=self.responder.bt_addr,
+                          ),
+                      )
+                  ],
+              ),
+              measurement_limit=4,
+        )
+        self.initiator.start_ranging_and_assert_opened(
+            SESSION_HANDLE, initiator_preference
+        )
+        time.sleep(10)
+        self.initiator.assert_close_ranging_event_received(SESSION_HANDLE)
+
+      finally:
+        self._ble_unbond()
+
+
+
 
   def test_one_to_one_wifi_rtt_ranging_with_oob(self):
       asserts.skip_if(

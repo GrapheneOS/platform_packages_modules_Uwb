@@ -42,6 +42,7 @@ import com.google.uwb.support.ccc.CccRangingStartedParams;
 import com.google.uwb.support.fira.FiraControleeParams;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
+import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
 
 import org.json.JSONArray;
@@ -636,9 +637,21 @@ public class UwbManagerSnippet implements Snippet {
             return null;
         }
         FiraOpenSessionParams.Builder builder = new FiraOpenSessionParams.Builder();
-        builder.setProtocolVersion(FiraParams.PROTOCOL_VERSION_1_1);
+
+        if (j.has("protocolVersion")) {
+            JSONObject protocolVersion = j.getJSONObject("protocolVersion");
+            builder.setProtocolVersion(new FiraProtocolVersion(
+                    protocolVersion.getInt("major"),
+                    protocolVersion.getInt("minor")));
+        } else {
+            // Default to 1.1
+            builder.setProtocolVersion(FiraParams.PROTOCOL_VERSION_1_1);
+        }
 
         // keep-sorted start block=yes
+        if (j.has("absoluteInitiationTime")) {
+            builder.setAbsoluteInitiationTime(j.getLong("absoluteInitiationTime"));
+        }
         if (j.has("aoaResultRequest")) {
             builder.setAoaResultRequest(j.getInt("aoaResultRequest"));
         }

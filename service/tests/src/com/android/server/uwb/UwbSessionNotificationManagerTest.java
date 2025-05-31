@@ -832,6 +832,15 @@ public class UwbSessionNotificationManagerTest {
     }
 
     @Test
+    public void testOnControleeRoleChanged() throws Exception {
+        assumeTrue(Flags.uwbFira3025q4());
+        int deviceRole = 0;
+        mUwbSessionNotificationManager.onControleeRoleChanged(mUwbSession, deviceRole);
+
+        verify(mIUwbRangingCallbacks).onControleeRoleChanged(eq(mSessionHandle), eq(deviceRole));
+    }
+
+    @Test
     public void testOnRangingRoundsUpdateStatus() throws RemoteException {
         PersistableBundle bundle = new PersistableBundle();
         mUwbSessionNotificationManager.onRangingRoundsUpdateStatus(mUwbSession, bundle);

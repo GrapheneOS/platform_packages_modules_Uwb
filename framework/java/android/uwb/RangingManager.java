@@ -459,6 +459,19 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks.Stub {
     }
 
     @Override
+    public void onControleeRoleChanged(SessionHandle sessionHandle, int deviceRole) {
+        synchronized (this) {
+            if (!hasSession(sessionHandle)) {
+                Log.w(mTag, "onControleeRoleChanged - received unexpected SessionHandle: "
+                        + sessionHandle);
+                return;
+            }
+
+            mRangingSessionTable.get(sessionHandle).onControleeRoleChanged(deviceRole);
+        }
+    }
+
+    @Override
     public void onServiceDiscovered(SessionHandle sessionHandle,
             @NonNull PersistableBundle parameters) {
         synchronized (this) {

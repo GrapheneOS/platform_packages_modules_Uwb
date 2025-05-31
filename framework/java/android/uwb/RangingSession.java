@@ -234,6 +234,30 @@ public final class RangingSession implements AutoCloseable {
         int DATA_FAILURE_REASON_DATA_SIZE_TOO_LARGE = 10;
 
         /**
+         * Indicates Controlee device role values.
+         * @hide
+         */
+        @Retention(RetentionPolicy.SOURCE)
+        @IntDef(value = {
+                CONTROLEE_DEVICE_ROLE_INITIATOR,
+                CONTROLEE_DEVICE_ROLE_RESPONDER,
+        })
+        @interface ControleeDeviceRole {
+        }
+
+        /**
+         * The device that initiates the session.
+         */
+        @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+        int CONTROLEE_DEVICE_ROLE_INITIATOR = 0;
+
+        /**
+         * The device that responds to a session.
+         */
+        @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+        int CONTROLEE_DEVICE_ROLE_RESPONDER = 1;
+
+        /**
          * Invoked when {@link UwbManager#openRangingSession(PersistableBundle, Executor, Callback)}
          * is successful
          *
@@ -472,6 +496,17 @@ public final class RangingSession implements AutoCloseable {
         @FlaggedApi("com.android.uwb.flags.data_transfer_phase_config")
         default void onDataTransferPhaseConfigFailed(@Reason int reason,
                 @NonNull PersistableBundle parameters) {}
+
+        /**
+         * Called when the controller dynamically updates the device role of a controlee during a
+         * time-scheduled Two-Way Ranging (TWR) session.
+         *
+         * @param deviceRole The new device role assigned to the controlee.
+         *          Must be one of {@link #CONTROLEE_DEVICE_ROLE_INITIATOR} or
+         *          {@link #CONTROLEE_DEVICE_ROLE_RESPONDER}.
+         */
+        @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
+        default void onControleeRoleChanged(@ControleeDeviceRole int deviceRole) {}
 
         /**
          * Invoked when service is discovered via OOB.
@@ -1536,7 +1571,9 @@ public final class RangingSession implements AutoCloseable {
         }
 
         Log.v(mTag, "onLogicalLinkCreated - sessionHandle: " + mSessionHandle);
-        executeCallback(() -> mCallback.onLogicalLinkCreated(params, connectId));
+        if (Flags.uwbFira3025q4()) {
+            executeCallback(() -> mCallback.onLogicalLinkCreated(params, connectId));
+        }
     }
 
     /**
@@ -1549,7 +1586,9 @@ public final class RangingSession implements AutoCloseable {
         }
 
         Log.v(mTag, "onLogicalLinkCreateFailed - sessionHandle: " + mSessionHandle);
-        executeCallback(() -> mCallback.onLogicalLinkCreateFailed(params, status));
+        if (Flags.uwbFira3025q4()) {
+            executeCallback(() -> mCallback.onLogicalLinkCreateFailed(params, status));
+        }
     }
 
     /**
@@ -1562,7 +1601,9 @@ public final class RangingSession implements AutoCloseable {
         }
 
         Log.v(mTag, "onLogicalLinkClosed - sessionHandle: " + mSessionHandle);
-        executeCallback(() -> mCallback.onLogicalLinkClosed(connectId, reason));
+        if (Flags.uwbFira3025q4()) {
+            executeCallback(() -> mCallback.onLogicalLinkClosed(connectId, reason));
+        }
     }
 
     /**
@@ -1575,7 +1616,9 @@ public final class RangingSession implements AutoCloseable {
         }
 
         Log.v(mTag, "onLogicalLinkCloseFailed - sessionHandle: " + mSessionHandle);
-        executeCallback(() -> mCallback.onLogicalLinkCloseFailed(connectId, status));
+        if (Flags.uwbFira3025q4()) {
+            executeCallback(() -> mCallback.onLogicalLinkCloseFailed(connectId, status));
+        }
     }
 
     /**
@@ -1588,7 +1631,23 @@ public final class RangingSession implements AutoCloseable {
         }
 
         Log.v(mTag, "onRemoteLogicalLinkRequested - sessionHandle: " + mSessionHandle);
-        executeCallback(() -> mCallback.onRemoteLogicalLinkRequested(linkInfo));
+        if (Flags.uwbFira3025q4()) {
+            executeCallback(() -> mCallback.onRemoteLogicalLinkRequested(linkInfo));
+        }
+    }
+    /**
+     * @hide
+     */
+    public void onControleeRoleChanged(@Callback.ControleeDeviceRole int deviceRole) {
+        if (!isOpen()) {
+            Log.w(mTag, "onControleeRoleChanged invoked for non-open session");
+            return;
+        }
+
+        Log.v(mTag, "onControleeRoleChanged - sessionHandle: " + mSessionHandle);
+        if (Flags.uwbFira3025q4()) {
+            executeCallback(() -> mCallback.onControleeRoleChanged(deviceRole));
+        }
     }
 
     /**

@@ -73,6 +73,8 @@ public class CapabilityParam {
     public static final int SUPPORTED_DT_TAG_MAX_ACTIVE_RR_2_0 = 0x18;
     public static final int SUPPORTED_DT_TAG_BLOCK_SKIPPING_2_0 = 0x19;
     public static final int SUPPORTED_PSDU_LENGTH_2_0 = 0x1A;
+    public static final int SUPPORTED_LL_CAPABILITY_2_0 = 0x1B;
+    public static final int SUPPORTED_BYPASS_MODE_2_0 = 0x1C;
 
     /**
      * CR 287 params common across versions
@@ -209,6 +211,16 @@ public class CapabilityParam {
 
     public static final int NO_PSDU_LENGTH_SUPPORT = 0x0;
     public static final int PSDU_LENGTH_SUPPORT = 0x1;
+
+    //Logical Link
+    public static final int LOGICAL_LINK_SUPPORT = 0x1;
+    public static final int LOGICAL_LINK_AGGREGATED_FRAME_SUPPORT = 0x2;
+    public static final int SECURE_ENDPOINT_SUPPORT = 0x4;
+    public static final int NON_SECURE_ENDPOINT_SUPPORT = 0x8;
+
+    public static final int MAX_LOGICAL_LINK_UWBS_SHIFT = 8;
+    public static final int MAX_LOGICAL_LINK_PER_SESSION_SHIFT = 12;
+    public static final int MAX_LOGICAL_LINK_MASK = 0x0F;
 
     public static final int CCC_CHANNEL_5 = (int) UwbVendorCapabilityTlvValues.CCC_CHANNEL_5;
     public static final int CCC_CHANNEL_9 = (int) UwbVendorCapabilityTlvValues.CCC_CHANNEL_9;

@@ -224,6 +224,7 @@ package android.uwb {
     method public default void onControleeAdded(@NonNull android.os.PersistableBundle);
     method public default void onControleeRemoveFailed(int, @NonNull android.os.PersistableBundle);
     method public default void onControleeRemoved(@NonNull android.os.PersistableBundle);
+    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public default void onControleeRoleChanged(int);
     method public default void onDataReceiveFailed(@NonNull android.uwb.UwbAddress, int, @NonNull android.os.PersistableBundle);
     method public default void onDataReceived(@NonNull android.uwb.UwbAddress, @NonNull android.os.PersistableBundle, @NonNull byte[]);
     method public default void onDataSendFailed(@NonNull android.uwb.UwbAddress, int, @NonNull android.os.PersistableBundle);
@@ -255,6 +256,8 @@ package android.uwb {
     method public void onStarted(@NonNull android.os.PersistableBundle);
     method public void onStopFailed(int, @NonNull android.os.PersistableBundle);
     method public void onStopped(int, @NonNull android.os.PersistableBundle);
+    field @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public static final int CONTROLEE_DEVICE_ROLE_INITIATOR = 0; // 0x0
+    field @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public static final int CONTROLEE_DEVICE_ROLE_RESPONDER = 1; // 0x1
     field public static final int CONTROLEE_FAILURE_REASON_MAX_CONTROLEE_REACHED = 0; // 0x0
     field public static final int DATA_FAILURE_REASON_DATA_SIZE_TOO_LARGE = 10; // 0xa
     field public static final int REASON_BAD_PARAMETERS = 3; // 0x3

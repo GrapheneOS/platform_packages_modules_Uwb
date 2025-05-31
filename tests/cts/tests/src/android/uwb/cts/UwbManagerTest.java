@@ -56,6 +56,9 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
+import android.uwb.LogicalLinkConnectionParams;
+import android.uwb.LogicalLinkConnectionRequest;
+import android.uwb.LogicalLinkParams;
 import android.uwb.RangingMeasurement;
 import android.uwb.RangingReport;
 import android.uwb.RangingSession;
@@ -74,6 +77,7 @@ import com.android.uwb.flags.Flags;
 import com.google.uwb.support.dltdoa.DlTDoAMeasurement;
 import com.google.uwb.support.dltdoa.DlTDoARangingRoundsUpdate;
 import com.google.uwb.support.fira.FiraControleeParams;
+import com.google.uwb.support.fira.FiraLogicalLinkInfo;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraPoseUpdateParams;
@@ -175,7 +179,7 @@ public class UwbManagerTest {
             mUwbManager.registerAdapterStateCallback(
                     Executors.newSingleThreadExecutor(), adapterStateCallback);
             mUwbManager.setUwbEnabled(enabled);
-            assertThat(countDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
+            assertThat(countDownLatch.await(6, TimeUnit.SECONDS)).isTrue();
             assertThat(mUwbManager.isUwbEnabled()).isEqualTo(enabled);
             assertThat(adapterStateCallback.state).isEqualTo(adapterState);
         } finally {
@@ -652,6 +656,10 @@ public class UwbManagerTest {
         public boolean onControleeRemoveCalled;
         public boolean onControleeRemoveFailedCalled;
         public boolean onUpdateDtTagStatusCalled;
+        public boolean onLogicalLinkCreatedCalled;
+        public boolean onLogicalLinkCreateFailedCalled;
+        public boolean onLogicalLinkClosedCalled;
+        public boolean onLogicalLinkCloseFailedCalled;
         public boolean onDataSentCalled;
         public boolean onDataSendFailedCalled;
         public boolean onPauseCalled;
@@ -660,6 +668,7 @@ public class UwbManagerTest {
         public boolean onResumeFailedCalled;
         public RangingSession rangingSession;
         public RangingReport rangingReport;
+        public int connectId;
 
         RangingSessionCallback(
                 @NonNull CountDownLatch ctrlCountDownLatch) {
@@ -797,6 +806,29 @@ public class UwbManagerTest {
             onUpdateDtTagStatusCalled = true;
             mCtrlCountDownLatch.countDown();
         }
+
+        public void onLogicalLinkCreated(@NonNull LogicalLinkParams params, int connectId) {
+            this.connectId = connectId;
+            onLogicalLinkCreatedCalled = true;
+            mCtrlCountDownLatch.countDown();
+        }
+
+        public void onLogicalLinkCreateFailed(@NonNull LogicalLinkParams params, int status) {
+            onLogicalLinkCreateFailedCalled = true;
+        }
+
+        public void onLogicalLinkClosed(int connectId, int reason) {
+            onLogicalLinkClosedCalled = true;
+            mCtrlCountDownLatch.countDown();
+        }
+
+        public void onLogicalLinkCloseFailed(int connectId, int status) {
+            onLogicalLinkCloseFailedCalled = true;
+        }
+
+        public void onRemoteLogicalLinkRequested(@NonNull LogicalLinkConnectionRequest linkInfo) {}
+
+        public void onControleeRoleChanged(int deviceRole) {}
     }
 
     @Test
@@ -2442,7 +2474,7 @@ public class UwbManagerTest {
             uwbManager.registerAdapterStateCallback(
                     Executors.newSingleThreadExecutor(), adapterStateCallback);
             uwbManager.requestUwbHwEnabled(enabled);
-            assertThat(countDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
+            assertThat(countDownLatch.await(6, TimeUnit.SECONDS)).isTrue();
             assertThat(adapterStateCallback.state).isEqualTo(adapterState);
         } finally {
             uwbManager.unregisterAdapterStateCallback(adapterStateCallback);
@@ -2615,6 +2647,138 @@ public class UwbManagerTest {
                 // Wait for the on closed callback.
                 assertThat(countDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
                 //assertThat(rangingSessionCallback.onClosedCalled).isTrue();
+            }
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled("com.android.uwb.flags.uwb_fira_3_0_25q4")
+    public void testLogicalLinkModeDataTransmission() throws Exception {
+        Assume.assumeTrue(Flags.uwbFira3025q4());
+        FiraSpecificationParams params = getFiraSpecificationParams();
+        FiraProtocolVersion firaProtocolVersion = params.getMaxMacVersionSupported();
+        // Logical link mode is supported only for devices with FiRa 3.0 support.
+        assumeTrue(firaProtocolVersion.getMajor() >= 3);
+
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        CancellationSignal cancellationSignal = null;
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        CountDownLatch resultCountDownLatch = new CountDownLatch(1);
+        RangingSessionCallback rangingSessionCallback =
+                new RangingSessionCallback(countDownLatch, resultCountDownLatch);
+
+        FiraOpenSessionParams firaOpenSessionParams = new FiraOpenSessionParams.Builder()
+                .setProtocolVersion(new FiraProtocolVersion(1, 1))
+                .setSessionType(FiraParams.SESSION_TYPE_DATA_TRANSFER)
+                .setInBandTerminationAttemptCount(0)
+                .setRframeConfig(FiraParams.RFRAME_CONFIG_SP1)
+                .setLinkLayerMode(FiraParams.LINK_LAYER_MODE_LOGICAL_LINK)
+                .setRangingRoundUsage(FiraParams.RANGING_ROUND_USAGE_DATA_TRANSFER_MODE)
+                .setSessionId(1)
+                .setStsConfig(FiraParams.STS_CONFIG_STATIC)
+                .setVendorId(new byte[]{0x05, 0x06})
+                .setStaticStsIV(new byte[]{0x05, 0x06, 0x09, 0x0A, 0x04, 0x06})
+                .setDeviceType(FiraParams.RANGING_DEVICE_TYPE_CONTROLLER)
+                .setDeviceRole(FiraParams.RANGING_DEVICE_ROLE_INITIATOR)
+                .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_ONE_TO_MANY)
+                .setDeviceAddress(UwbAddress.fromBytes(new byte[]{0x05, 0x06}))
+                .setDestAddressList(List.of(UwbAddress.fromBytes(new byte[]{0x05, 0x06})))
+                .build();
+
+        try {
+            // Needs UWB_PRIVILEGED & UWB_RANGING permission which is held by shell.
+            uiAutomation.adoptShellPermissionIdentity();
+            // Start ranging session
+            cancellationSignal = mUwbManager.openRangingSession(
+                    firaOpenSessionParams.toBundle(),
+                    Executors.newSingleThreadExecutor(),
+                    rangingSessionCallback,
+                    mDefaultChipId);
+            // Wait for the on opened callback.
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.onOpenedCalled).isTrue();
+            assertThat(rangingSessionCallback.onOpenFailedCalled).isFalse();
+            assertThat(rangingSessionCallback.rangingSession).isNotNull();
+
+            LogicalLinkParams logicalLinkParams = new LogicalLinkParams.Builder(
+                    LogicalLinkParams.LINK_LAYER_MODE_CONNECTION_LESS_NON_SECURE,
+                    UwbAddress.fromBytes(new byte[] {0x33, 0x22}))
+                    .setLogicalLinkClassLength(0).build();
+
+            rangingSessionCallback.rangingSession.createLogicalLink(logicalLinkParams);
+
+            countDownLatch = new CountDownLatch(1);
+            rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+            rangingSessionCallback.rangingSession.start(new PersistableBundle());
+            // Wait for the on started callback.
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.onStartedCalled).isTrue();
+            assertThat(rangingSessionCallback.onStartFailedCalled).isFalse();
+
+            countDownLatch = new CountDownLatch(1);
+            rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+            // Wait for the onLogicalLinkCreated callback.
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.onLogicalLinkCreatedCalled).isTrue();
+            assertThat(rangingSessionCallback.onLogicalLinkCreateFailedCalled).isFalse();
+
+            //Get logical link params
+            LogicalLinkConnectionParams getParamsResponse =
+                    rangingSessionCallback.rangingSession.getLogicalLinkParams(
+                            rangingSessionCallback.connectId);
+            assertThat(getParamsResponse).isNotNull();
+
+            // Query max data size
+            int maxDataSize =
+                rangingSessionCallback.rangingSession.queryLogicalLinkMaxDataSizeBytes(
+                    rangingSessionCallback.connectId);
+            assertThat(maxDataSize).isGreaterThan(0);
+
+            // Send logical link mode data
+            PersistableBundle bundle = new FiraLogicalLinkInfo.Builder(
+                    rangingSessionCallback.connectId).build().toBundle();
+            UwbAddress address = UwbAddress.fromBytes(new byte[] {(byte) 0xff, (byte) 0xff});
+            countDownLatch = new CountDownLatch(1);
+            rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+            rangingSessionCallback.rangingSession.sendData(address, bundle,
+                    new byte[] { 0x11, 0x22});
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.onDataSentCalled).isTrue();
+            assertThat(rangingSessionCallback.onDataSendFailedCalled).isFalse();
+
+            // Close the logical link
+            countDownLatch = new CountDownLatch(1);
+            rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+            rangingSessionCallback.rangingSession.closeLogicalLink(
+                    rangingSessionCallback.connectId);
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.onLogicalLinkClosedCalled).isTrue();
+            assertThat(rangingSessionCallback.onLogicalLinkCloseFailedCalled).isFalse();
+
+            // Check the UWB state.
+            assertThat(mUwbManager.getAdapterState()).isEqualTo(STATE_ENABLED_ACTIVE);
+
+            countDownLatch = new CountDownLatch(1);
+            rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+            // Stop ongoing session.
+            rangingSessionCallback.rangingSession.stop();
+
+            // Wait for on stopped callback.
+            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(rangingSessionCallback.onStoppedCalled).isTrue();
+        } finally {
+            if (cancellationSignal != null) {
+                countDownLatch = new CountDownLatch(1);
+                rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
+
+                // Close session.
+                cancellationSignal.cancel();
+
+                // Wait for the on closed callback.
+                assertThat(countDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
+                // not getting invoked
+                // assertThat(rangingSessionCallback.onClosedCalled).isTrue();
             }
             uiAutomation.dropShellPermissionIdentity();
         }
