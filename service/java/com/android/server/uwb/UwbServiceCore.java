@@ -666,6 +666,12 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         return mChipIdToDeviceInfoResponseMap.get(chipId);
     }
 
+    public int getUciVersion(String chipId) {
+        int uciVersion = Objects.requireNonNull(getCachedDeviceInfoResponse(chipId)).mUciVersion;
+        // Default to 1 for junk values
+       return uciVersion > 100 ? 1 : uciVersion;
+    }
+
     /**
      * Get specification info
      */
@@ -686,14 +692,14 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             return new PersistableBundle();
         }
         if (specificationParams.second.getFiraSpecificationParams() != null) {
-            int uciVersion = Objects.requireNonNull(getCachedDeviceInfoResponse(
-                    mUwbInjector.getMultichipData().getDefaultChipId())).mUciVersion;
+            int uciVersion = getUciVersion(chipId);
             FiraSpecificationParams firaSpecificationParams =
                     new FiraSpecificationParams.Builder(
                             specificationParams.second.getFiraSpecificationParams())
-                            .setBackgroundRangingSupport(mUwbInjector.getDeviceConfigFacade()
+                            .setBackgroundRangingSupport(
+                                    uciVersion >= 2 || mUwbInjector.getDeviceConfigFacade()
                                     .isBackgroundRangingEnabled())
-                            .setUciVersionSupported(uciVersion > 100 ? 1 : uciVersion)
+                            .setUciVersionSupported(uciVersion)
                             .setCountryCode(mUwbCountryCode.getCountryCode())
                             .build();
             specificationParams.second.setFiraSpecificationParams(firaSpecificationParams);

@@ -485,16 +485,6 @@ public class UwbInjector {
         }
     }
 
-    public boolean isMulticastListNtfV2Supported() {
-        return mContext.getResources().getBoolean(
-                        com.android.uwb.resources.R.bool.is_multicast_list_update_ntf_v2_supported);
-    }
-
-    public boolean isMulticastListRspV2Supported() {
-        return mContext.getResources().getBoolean(
-                        com.android.uwb.resources.R.bool.is_multicast_list_update_rsp_v2_supported);
-    }
-
     public boolean isCccSupportedTwoByteConfigIdLittleEndian() {
         return mContext.getResources().getBoolean(
                 com.android.uwb.resources.R.bool.ccc_two_byte_config_id_little_endian_supported
