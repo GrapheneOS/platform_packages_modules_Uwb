@@ -158,6 +158,8 @@ public class FiraOpenSessionParams extends FiraParams {
     @Nullable private final int mReferenceTimeBase;
     @Nullable private final int mReferenceSessionHandle;
     @Nullable private final int mSessionOffsetInMicroSeconds;
+    @SecureRangingNefaLevel private final int mSecureRangingNefaLevel;
+    private final int mSecureRangingCswLength;
     private final int mApplicationDataEndpoint;
 
     private static final int BUNDLE_VERSION_1 = 1;
@@ -269,6 +271,8 @@ public class FiraOpenSessionParams extends FiraParams {
     private static final String KEY_REFERENCE_SESSION_HANDLE = "reference_session_handle";
     private static final String KEY_SESSION_OFFSET_IN_MICRO_SECONDS =
                 "session_offset_in_micro_seconds";
+    private static final String KEY_SECURE_RANGING_NEFA_LEVEL = "secure_ranging_nefa_level";
+    private static final String KEY_SECURE_RANGING_CSW_LENGTH = "secure_ranging_csw_length";
     private static final String KEY_APPLICATION_DATA_ENDPOINT = "application_data_endpoint";
     private static final String KEY_ANTENNA_MODE = "antenna_mode";
 
@@ -359,6 +363,8 @@ public class FiraOpenSessionParams extends FiraParams {
             int referenceTimeBase,
             int referenceSessionHandle,
             int sessionOffsetInMicroSecond,
+            @SecureRangingNefaLevel int secureRangingNefaLevel,
+            int secureRangingCswLength,
             int applicationDataEndpoint) {
         mProtocolVersion = protocolVersion;
         mSessionId = sessionId;
@@ -446,6 +452,8 @@ public class FiraOpenSessionParams extends FiraParams {
         mReferenceTimeBase = referenceTimeBase;
         mReferenceSessionHandle = referenceSessionHandle;
         mSessionOffsetInMicroSeconds = sessionOffsetInMicroSecond;
+        mSecureRangingNefaLevel = secureRangingNefaLevel;
+        mSecureRangingCswLength = secureRangingCswLength;
         mApplicationDataEndpoint = applicationDataEndpoint;
     }
 
@@ -826,6 +834,15 @@ public class FiraOpenSessionParams extends FiraParams {
         return mSessionOffsetInMicroSeconds;
     }
 
+    @SecureRangingNefaLevel
+    public int getSecureRangingNefaLevel() {
+        return mSecureRangingNefaLevel;
+    }
+
+    public int getSecureRangingCswLength() {
+        return mSecureRangingCswLength;
+    }
+
     public int getApplicationDataEndpoint() {
         return mApplicationDataEndpoint;
     }
@@ -976,6 +993,8 @@ public class FiraOpenSessionParams extends FiraParams {
             bundle.putInt(KEY_REFERENCE_SESSION_HANDLE, mReferenceSessionHandle);
             bundle.putInt(KEY_SESSION_OFFSET_IN_MICRO_SECONDS, mSessionOffsetInMicroSeconds);
         }
+        bundle.putInt(KEY_SECURE_RANGING_NEFA_LEVEL, mSecureRangingNefaLevel);
+        bundle.putInt(KEY_SECURE_RANGING_CSW_LENGTH, mSecureRangingCswLength);
         bundle.putInt(KEY_APPLICATION_DATA_ENDPOINT, mApplicationDataEndpoint);
         return bundle;
     }
@@ -1115,6 +1134,8 @@ public class FiraOpenSessionParams extends FiraParams {
                 .setSessionTimeBase(bundle.getInt(KEY_REFERENCE_TIME_BASE),
                         bundle.getInt(KEY_REFERENCE_SESSION_HANDLE),
                         bundle.getInt(KEY_SESSION_OFFSET_IN_MICRO_SECONDS))
+                .setSecureRangingNefaLevel(bundle.getInt(KEY_SECURE_RANGING_NEFA_LEVEL))
+                .setSecureRangingCswLength(bundle.getInt(KEY_SECURE_RANGING_CSW_LENGTH))
                 .setApplicationDataEndpoint(bundle.getInt(
                         KEY_APPLICATION_DATA_ENDPOINT, APPLICATION_DATA_ENDPOINT_DEFAULT));
 
@@ -1388,6 +1409,11 @@ public class FiraOpenSessionParams extends FiraParams {
 
         private int mSessionOffsetInMicroSeconds = 0;
 
+        @SecureRangingNefaLevel
+        private int mSecureRangingNefaLevel = SECURE_RANGING_NEFA_LEVEL_DEFAULT;
+
+        private int mSecureRangingCswLength = SECURE_RANGING_CSW_LENGTH_DEFAULT;
+
         private int mApplicationDataEndpoint = APPLICATION_DATA_ENDPOINT_DEFAULT;
 
         public Builder() {}
@@ -1480,6 +1506,8 @@ public class FiraOpenSessionParams extends FiraParams {
             mReferenceTimeBase = builder.mReferenceTimeBase;
             mReferenceSessionHandle = builder.mReferenceSessionHandle;
             mSessionOffsetInMicroSeconds = builder.mSessionOffsetInMicroSeconds;
+            mSecureRangingNefaLevel = builder.mSecureRangingNefaLevel;
+            mSecureRangingCswLength = builder.mSecureRangingCswLength;
             mApplicationDataEndpoint = builder.mApplicationDataEndpoint;
         }
 
@@ -1572,6 +1600,8 @@ public class FiraOpenSessionParams extends FiraParams {
             mReferenceTimeBase = params.mReferenceTimeBase;
             mReferenceSessionHandle = params.mReferenceSessionHandle;
             mSessionOffsetInMicroSeconds = params.mSessionOffsetInMicroSeconds;
+            mSecureRangingNefaLevel = params.mSecureRangingNefaLevel;
+            mSecureRangingCswLength = params.mSecureRangingCswLength;
             mApplicationDataEndpoint = params.mApplicationDataEndpoint;
         }
 
@@ -2121,6 +2151,38 @@ public class FiraOpenSessionParams extends FiraParams {
                     sessionOffsetInMicroSecond);
         }
 
+        /**
+         * Sets the NEFA level for secure ranging.
+         * <p>
+         * Defines the PHY-layer security level. Applicable only when STS config is set to
+         * {@link FiraParams#STS_CONFIG_PROVISIONED} or
+         * {@link FiraParams#STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY}.
+         *
+         * @param secureRangingNefaLevel NEFA level (0x00–0x03)
+         * @return this builder
+         */
+        public FiraOpenSessionParams.Builder setSecureRangingNefaLevel(
+                @SecureRangingNefaLevel int secureRangingNefaLevel) {
+            mSecureRangingNefaLevel = secureRangingNefaLevel;
+            return this;
+        }
+
+        /**
+         * Sets the Critical Search Window (CSW) length for secure ranging.
+         * <p>
+         * Value unit is 0.25 meters (e.g., 4 = 1 meter). Applicable only when STS config is set to
+         * {@link FiraParams#STS_CONFIG_PROVISIONED} or
+         * {@link FiraParams#STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY}.
+         *
+         * @param secureRangingCswLength CSW length value
+         * @return this builder
+         */
+        public FiraOpenSessionParams.Builder setSecureRangingCswLength(
+                int secureRangingCswLength) {
+            mSecureRangingCswLength = secureRangingCswLength;
+            return this;
+        }
+
         public FiraOpenSessionParams.Builder setApplicationDataEndpoint(
                 int applicationDataEndpoint) {
             mApplicationDataEndpoint = applicationDataEndpoint;
@@ -2408,6 +2470,8 @@ public class FiraOpenSessionParams extends FiraParams {
                     mReferenceTimeBase,
                     mReferenceSessionHandle,
                     mSessionOffsetInMicroSeconds,
+                    mSecureRangingNefaLevel,
+                    mSecureRangingCswLength,
                     mApplicationDataEndpoint);
         }
     }

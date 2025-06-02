@@ -114,6 +114,8 @@ public class ConfigParam {
     public static final int SUBSESSION_KEY = 0x46;
     public static final int SESSION_DATA_TRANSFER_STATUS_NTF_CONFIG = 0x47;
     public static final int SESSION_TIME_BASE = 0x48;
+    public static final int SECURE_RANGING_NEFA_LEVEL = 0x4A;
+    public static final int SECURE_RANGING_CSW_LENGTH = 0x4B;
     public static final int APPLICATION_DATA_ENDPOINT = 0x4C;
 
     // Android specific params.

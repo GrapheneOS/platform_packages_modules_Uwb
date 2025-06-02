@@ -222,7 +222,9 @@ public class FiraEncoderTest {
     private static final String SESSION_DATA_TRANSFER_STATUS_NTF_CONFIG_TLV = "470100";
     private static final String SUB_SESSION_ID_TLV = "300401000000";
     private static final String SESSION_KEY_TLV  = "451005780578057805780578057805780578";
-    private static final String SESSION_TIME_BASE_TLV  = "48090101000000C8000000";
+    private static final String SESSION_TIME_BASE_TLV = "48090101000000C8000000";
+    private static final String SECURE_RANGING_NEFA_LEVEL = "4A0102";
+    private static final String SECURE_RANGING_CSW_LENGTH = "4B0104";
 
     @Mock private UwbInjector mUwbInjector;
     @Mock private FeatureFlags mFeatureFlags;
@@ -231,6 +233,7 @@ public class FiraEncoderTest {
     private byte[] mFiraOpenSessionTlvUtTag;
     private byte[] mFiraSessionv11TlvData;
     private byte[] mFiraSessionv20TlvData;
+    private byte[] mFiraSessionv20SecureRanging;
     private byte[] mFiraSessionv20AbsoluteInitiationTimeTlvData;
 
     @Before
@@ -307,6 +310,29 @@ public class FiraEncoderTest {
                     + VENDOR_ID_TLV + STATIC_STS_IV_TLV
                     + RANGE_DATA_NTF_AOA_BOUND_TLV + ANTENNA_MODE_TLV);
 
+            mFiraSessionv20SecureRanging = UwbUtil.getByteArray(
+                    RANGING_ROUND_USAGE_SS_TWR_TLV
+                    + STS_CONFIG_PROVISIONED_TLV + MULTI_NODE_MODE_UNICAST_TLV + CHANNEL_NUMBER_TLV
+                    + DEVICE_MAC_ADDRESS_TLV + SLOT_DURATION_TLV + MAC_FCS_TYPE_TLV
+                    + RANGING_ROUND_CONTROL_TLV + AOA_RESULT_REQ_TLV
+                    + RANGE_DATA_NTF_CONFIG_AOA_LEVEL_TLV + RANGE_DATA_NTF_PROXIMITY_NEAR_TLV
+                    + RANGE_DATA_NTF_PROXIMITY_FAR_TLV + DEVICE_ROLE_RESPONDER_TLV
+                    + RFRAME_CONFIG_TLV + RSSI_REPORTING_TLV + PREAMBLE_CODE_INDEX_TLV + SFD_ID_TLV
+                    + PSDU_DATA_RATE_TLV + PREAMBLE_DURATION_TLV + RANGING_TIME_STRUCT_TLV
+                    + SLOTS_PER_RR_TLV + PRF_MODE_TLV + SCHEDULED_MODE_TIME_SCHEDULED_TLV
+                    + KEY_ROTATION_TLV + KEY_ROTATION_RATE_TLV + SESSION_PRIORITY_TLV
+                    + MAC_ADDRESS_MODE_TLV + NUMBER_OF_STS_SEGMENTS_TLV
+                    + MAX_RR_RETRY_TLV + HOPPING_MODE_TLV + BLOCK_STRIDE_LENGTH_TLV
+                    + RESULT_REPORT_CONFIG_TLV + IN_BAND_TERMINATION_ATTEMPT_COUNT_TLV
+                    + MAX_NUMBER_OF_MEASUREMENTS_TLV + STS_LENGTH_TLV + BPRF_PHR_DATA_RATE_TLV
+                    + RANGING_INTERVAL_TLV + DEVICE_TYPE_CONTROLLER_TLV + NUMBER_OF_CONTROLEES_TLV
+                    + DST_MAC_ADDRESS_TLV + UWB_INITIATION_TIME_2_0_TLV
+                    + LINK_LAYER_MODE_CONNECTIONLESS_DATA_TLV
+                    + DATA_REPETITION_COUNT_TLV
+                    + SESSION_DATA_TRANSFER_STATUS_NTF_CONFIG_TLV
+                    + APPLICATION_DATA_ENDPOINT_SECURE_COMPONENT_TLV + SECURE_RANGING_NEFA_LEVEL
+                    + SECURE_RANGING_CSW_LENGTH + RANGE_DATA_NTF_AOA_BOUND_TLV + ANTENNA_MODE_TLV);
+
             mFiraSessionv20AbsoluteInitiationTimeTlvData = UwbUtil.getByteArray(
                     RANGING_ROUND_USAGE_SS_TWR_TLV
                     + STS_CONFIG_STATIC_TLV + MULTI_NODE_MODE_UNICAST_TLV + CHANNEL_NUMBER_TLV
@@ -381,7 +407,6 @@ public class FiraEncoderTest {
 
             assertThat(tlvs.getNoOfParams()).isEqualTo(49);
             assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionv20AbsoluteInitiationTimeTlvData);
-
         }
     }
 
@@ -486,7 +511,7 @@ public class FiraEncoderTest {
         assertThat(tlvs.getByteArray()).isEqualTo(expected_data);
     }
 
-   @Test
+    @Test
     public void testFiraOpenSessionParamsProvisionedStsWithoutSessionKey() throws Exception {
         FiraOpenSessionParams params =
                 new FiraOpenSessionParams.Builder()
@@ -541,6 +566,19 @@ public class FiraEncoderTest {
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(44);
         assertThat(tlvs.getByteArray()).isEqualTo(expected_data);
+    }
+
+    @Test
+    public void testFiraOpenSessionParams_addsSecureRangingParams_whenProvisionedSts()
+            throws Exception {
+        FiraOpenSessionParams params = TEST_FIRA_OPEN_SESSION_PARAMS_V_2_0
+                .setStsConfig(STS_CONFIG_PROVISIONED)
+                .setSecureRangingNefaLevel(FiraParams.SECURE_RANGING_NEFA_LEVEL_MEDIUM)
+                .build();
+        TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_2_0);
+
+        assertThat(tlvs.getNoOfParams()).isEqualTo(49);
+        assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionv20SecureRanging);
     }
 
    @Test
