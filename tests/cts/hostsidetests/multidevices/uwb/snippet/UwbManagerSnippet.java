@@ -21,6 +21,9 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.os.Build;
 import android.os.PersistableBundle;
+import android.uwb.LogicalLinkConnectionParams;
+import android.uwb.LogicalLinkConnectionRequest;
+import android.uwb.LogicalLinkParams;
 import android.uwb.RangingMeasurement;
 import android.uwb.RangingReport;
 import android.uwb.RangingSession;
@@ -40,6 +43,7 @@ import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccPulseShapeCombo;
 import com.google.uwb.support.ccc.CccRangingStartedParams;
 import com.google.uwb.support.fira.FiraControleeParams;
+import com.google.uwb.support.fira.FiraLogicalLinkInfo;
 import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraProtocolVersion;
@@ -116,6 +120,9 @@ public class UwbManagerSnippet implements Snippet {
         ServiceDiscovered(1 << 23),
         ServiceConnected(1 << 24),
         RangingRoundsUpdateDtTagStatus(1 << 25),
+        LogicalLinkCreated(1 << 26),
+        LogicalLinkClosed(1 << 27),
+        RemoteLogicalLinkRequested(1 << 28),
         EventAll(
                 1 << 0
                 | 1 << 1
@@ -143,6 +150,9 @@ public class UwbManagerSnippet implements Snippet {
                 | 1 << 23
                 | 1 << 24
                 | 1 << 25
+                | 1 << 26
+                | 1 << 27
+                | 1 << 28
         );
 
         private final int mType;
@@ -191,6 +201,7 @@ public class UwbManagerSnippet implements Snippet {
         public String mId;
         public UwbAddress uwbAddress;
         public byte[] dataReceived;
+        public int mConnectId;
 
         RangingSessionCallback(String id, int events) {
             mId = id;
@@ -377,6 +388,8 @@ public class UwbManagerSnippet implements Snippet {
             uwbAddress = getComputedMacAddress(remoteDeviceAddress);
             dataReceived = data;
             persistableBundle = params;
+            mConnectId = FiraLogicalLinkInfo.fromBundle(persistableBundle)
+                    .getLogicalLinkConnectId();
             handleEvent(Event.DataReceived);
         }
 
@@ -402,6 +415,25 @@ public class UwbManagerSnippet implements Snippet {
             Log.d(TAG + "RangingSessionCallback#onServiceConnected() called");
             persistableBundle = params;
             handleEvent(Event.ServiceConnected);
+        }
+
+        @Override
+        public void onLogicalLinkCreated(LogicalLinkParams params, int connectId) {
+            Log.d(TAG + "RangingSessionCallback#onLogicalLinkCreated() called");
+            mConnectId = connectId;
+            handleEvent(Event.LogicalLinkCreated);
+        }
+
+        @Override
+        public void onLogicalLinkClosed(int connectId, int reason) {
+            Log.d(TAG + "RangingSessionCallback#onLogicalLinkClosed() called");
+            handleEvent(Event.LogicalLinkClosed);
+        }
+
+        @Override
+        public void onRemoteLogicalLinkRequested(LogicalLinkConnectionRequest linkInfo) {
+            Log.d(TAG + "RangingSessionCallback#onRemoteLogicalLinkRequested() called");
+            handleEvent(Event.RemoteLogicalLinkRequested);
         }
 
         // TODO: This is only available in Android U SDK. So, expose it there only.
@@ -703,6 +735,9 @@ public class UwbManagerSnippet implements Snippet {
         if (j.has("keyRotationRate")) {
             builder.setKeyRotationRate(j.getInt("keyRotationRate"));
         }
+        if (j.has("linkLayerMode")) {
+            builder.setLinkLayerMode(j.getInt("linkLayerMode"));
+        }
         if (j.has("macAddressMode")) {
             builder.setMacAddressMode(j.getInt("macAddressMode"));
         }
@@ -744,6 +779,9 @@ public class UwbManagerSnippet implements Snippet {
         }
         if (j.has("sessionPriority")) {
             builder.setSessionPriority(j.getInt("sessionPriority"));
+        }
+        if (j.has("sessionType")) {
+            builder.setSessionType(j.getInt("sessionType"));
         }
         if (j.has("slotDurationRstu")) {
             builder.setSlotDurationRstu(j.getInt("slotDurationRstu"));
@@ -941,6 +979,78 @@ public class UwbManagerSnippet implements Snippet {
             runWithShellPermission(() ->
                     rangingSessionCallback.rangingSession.close());
         }
+    }
+
+    private LogicalLinkParams generateLogicalLinkParams(JSONObject json) throws JSONException {
+        int linkLayerMode = json.getInt("linkLayerMode");
+        byte[] destinationAddress = convertJSONArrayToByteArray(
+                json.getJSONArray("destinationAddress"));
+
+        LogicalLinkParams.Builder builder = new LogicalLinkParams.Builder(
+            linkLayerMode, UwbAddress.fromBytes(destinationAddress)
+        );
+
+        if (json.has("logicalLinkClassLength")) {
+            builder.setLogicalLinkClassLength(json.getInt("logicalLinkClassLength"));
+        }
+
+        return builder.build();
+    }
+
+    @Rpc(description = "Create a UWB logical link")
+    public void firaCreateLogicalLink(String key, JSONObject config)
+            throws Throwable {
+        RangingSessionCallback rangingSessionCallback = sRangingSessionCallbackMap.get(key);
+        LogicalLinkParams params = generateLogicalLinkParams(config);
+
+        // Hold on to the shell permission until the session is stopped.
+        runWithShellPermission(() ->
+                rangingSessionCallback.rangingSession.createLogicalLink(params));
+    }
+
+    @Rpc(description = "Get parameters of a UWB logical link")
+    public boolean getLogicalLinkParams(String key) throws Throwable {
+        RangingSessionCallback rangingSessionCallback = sRangingSessionCallbackMap.get(key);
+
+        LogicalLinkConnectionParams getParamsResponse = runWithShellPermission(() ->
+            rangingSessionCallback.rangingSession.getLogicalLinkParams(
+                    rangingSessionCallback.mConnectId));
+
+        return true;
+    }
+
+    @Rpc(description = "Query max data size of a UWB logical link")
+    public int queryLogicalLinkMaxDataSizeBytes(String key) throws Throwable {
+        RangingSessionCallback rangingSessionCallback = sRangingSessionCallbackMap.get(key);
+
+        int maxDataSize = runWithShellPermission(() ->
+            rangingSessionCallback.rangingSession.queryLogicalLinkMaxDataSizeBytes(
+                rangingSessionCallback.mConnectId));
+
+        return maxDataSize;
+    }
+
+    @Rpc(description = "Send data over a UWB logical link")
+    public void sendLogicalLinkData(String key, byte[] data) throws Throwable {
+        RangingSessionCallback rangingSessionCallback = sRangingSessionCallbackMap.get(key);
+        PersistableBundle bundle = new FiraLogicalLinkInfo.Builder(
+                rangingSessionCallback.mConnectId).build().toBundle();
+        UwbAddress address = UwbAddress.fromBytes(new byte[] {(byte) 0xff, (byte) 0xff});
+
+        runWithShellPermission(() ->
+            rangingSessionCallback.rangingSession.sendData(address, bundle, data));
+    }
+
+    @Rpc(description = "Verify received logical link data")
+    public boolean verifyData(String key, byte[] expectedData) {
+        RangingSessionCallback rangingSessionCallback = sRangingSessionCallbackMap.get(key);
+
+        if (rangingSessionCallback.dataReceived == null) {
+            Log.e("No data received on logical link");
+            return false;
+        }
+
+        return Arrays.equals(expectedData, rangingSessionCallback.dataReceived);
     }
 
     private JSONObject convertPersistableBundleToJson(PersistableBundle bundle)
