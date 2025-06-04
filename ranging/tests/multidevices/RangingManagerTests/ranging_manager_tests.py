@@ -33,6 +33,7 @@ from mobly.controllers import android_device
 from android.platform.test.annotations import ApiTest
 
 
+
 _TEST_CASES = [
     "test_one_to_one_uwb_ranging_unicast_static_sts",
     "test_one_to_one_uwb_ranging_multicast_provisioned_sts",
@@ -455,7 +456,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
       self.initiator.add_device_to_session(SESSION_HANDLE, ranging_params_responder)
       logging.info("add a device %s", self.initiator.uwb_address)
-      time.sleep(5)
+
       #verify at least one responder replied
       asserts.assert_true(
           self.initiator.verify_received_data_from_peer_using_technologies(
@@ -471,14 +472,28 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
           ),
           "Responder did not find initiator",
       )
+      peer_params=DeviceParams(
+          peer_id=self.responder.id,
+      )
 
+      self.initiator.remove_device_from_session(SESSION_HANDLE, peer_params)
+      # Responder will stop ranging due to inband signal from controlee
+      self.responder.assert_close_ranging_event_received(SESSION_HANDLE)
+      logging.info("remove a device %s", self.initiator.uwb_address)
+
+      self.initiator.clear_event_cache()
+
+      asserts.assert_false(
+          self.initiator.verify_received_data_from_peer_using_technologies(
+              SESSION_HANDLE, self.responder.id, TECHNOLOGIES,
+          ),
+          "Initiator found responder",
+      )
 
       self.initiator.stop_ranging_and_assert_closed(SESSION_HANDLE)
-      self.responder.stop_ranging_and_assert_closed(SESSION_HANDLE)
-
 
   def test_uwb_ranging_measurement_limit(self):
-      """Verifies device does not receive range data after measurement limit"""
+      """Verifies device does not receive range data after measurement limit."""
       SESSION_HANDLE = str(uuid4())
       UWB_SESSION_ID = 5
       asserts.skip_if(
@@ -544,7 +559,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       self.responder.assert_close_ranging_event_received(SESSION_HANDLE)
 
   def test_ble_rssi_ranging_measurement_limit(self):
-      """Verifies ble rssi ranging with measurement limit."""
+      """Verifies ble rssi ranging with measurement limit.
+      """
       asserts.skip_if(self._is_cuttlefish_device(self.initiator.ad),
                       "Skipping BLE RSSI test on Cuttlefish")
       SESSION_HANDLE = str(uuid4())
@@ -750,7 +766,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       'java.util#copyOfRange(byte[], int, int)',
   ])
   def test_one_to_one_ble_rssi_ranging(self):
-    """Verifies cs ranging with peer device, devices range for 10 seconds."""
+    """Verifies rssi ranging with peer device, devices range for 10 seconds."""
     asserts.skip_if(self._is_cuttlefish_device(self.initiator.ad),
                     "Skipping BLE RSSI test on Cuttlefish")
     SESSION_HANDLE = str(uuid4())
@@ -1025,6 +1041,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
 
   def test_one_to_one_wifi_rtt_ranging_with_oob(self):
+      """Verifies wifi rtt ranging with oob.
+      """
       asserts.skip_if(
           not self.responder.is_ranging_technology_supported(RangingTechnology.WIFI_RTT),
           f"WIFI_RTT not supported by responder",
@@ -1069,8 +1087,10 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       session.assert_received_data(technologies=[RangingTechnology.WIFI_RTT], check_responders=False)
 
   def test_one_to_one_ble_rssi_ranging_with_oob(self):
+    """Verifies ble rssi ranging with oob.
 
-    """ Skip if BLE CS is supported by both devices. """
+    Skip if BLE CS is supported by both devices.
+    """
     asserts.skip_if(
         self.initiator.is_ranging_technology_supported(RangingTechnology.BLE_CS) and
         self.responder.is_ranging_technology_supported(RangingTechnology.BLE_CS),
@@ -1078,8 +1098,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     )
 
     asserts.skip_if(
-        self.initiator.is_ranging_technology_supported(RangingTechnology.BLE_RSSI) or
-        self.responder.is_ranging_technology_supported(RangingTechnology.BLE_RSSI),
+        not self.initiator.is_ranging_technology_supported(RangingTechnology.BLE_RSSI) and
+        not self.responder.is_ranging_technology_supported(RangingTechnology.BLE_RSSI),
         f"BLE_RSSI is not supported",
         )
 
@@ -1123,8 +1143,9 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     finally:
         self._ble_disconnect()
 
-
   def test_oob_responder_persists_until_explicitly_stopped(self):
+    """Verifies oob responder persists until explicitly stopped.
+    """
     asserts.skip_if(
         not self.responder.is_ranging_technology_supported(RangingTechnology.UWB),
         f"UWB not supported by responder",

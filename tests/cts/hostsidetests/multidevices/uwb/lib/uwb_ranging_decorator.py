@@ -101,6 +101,68 @@ class UwbRangingDecorator():
     self.ad.uwb.startFiraRangingSession(self._callback_keys[session])
     self.verify_callback_received("Started", session)
 
+  def fira_create_logical_link(self, session: int, params: dict):
+    """Creates a logical link in an existing FIRA ranging session.
+
+    Args:
+        session: The ranging session ID.
+        params: A dictionary representing LogicalLinkParams.
+    """
+    self.ad.uwb.firaCreateLogicalLink(self._callback_keys[session], params)
+
+  def fira_get_logical_link_params(self, session: int) -> bool:
+    """Retrieves logical link parameters for a given FIRA ranging session based on connect ID.
+
+    Args:
+        session: The ranging session ID whose logical link parameters are to be retrieved.
+    """
+    return self.ad.uwb.getLogicalLinkParams(self._callback_keys[session])
+
+  def fira_query_logical_link_max_data_size(self, session: int) -> int:
+    """Queries the maximum data size allowed for logical link in a FIRA session.
+
+    Args:
+        session: The ranging session ID.
+
+    Returns:
+        Maximum data size in bytes if successful, else -1.
+    """
+    return self.ad.uwb.queryLogicalLinkMaxDataSizeBytes(self._callback_keys[session])
+
+  def fira_send_logical_link_data(self, session: int, data: bytes) -> bool:
+    """Sends data over a UWB logical link in a FIRA ranging session.
+
+    Args:
+        session: The ranging session ID.
+        data: Byte array of data to send.
+
+    Returns:
+        True if data was sent successfully, False otherwise.
+    """
+    try:
+        self.ad.uwb.sendLogicalLinkData(self._callback_keys[session], data)
+        return True
+    except Exception as e:
+        self.log.error("Failed to send logical link data for session %s: %s", session, str(e))
+        return False
+
+  def fira_verify_logical_link_data(self, session: int, expected_data: bytes) -> bool:
+    """Verifies if the received data on a UWB logical link matches the expected data.
+
+    Args:
+        session: The ranging session ID.
+        expected_data: Byte array of data expected to be received.
+
+    Returns:
+        True if the received data matches the expected data, False otherwise.
+    """
+    try:
+        return self.ad.uwb.verifyData(self._callback_keys[session], expected_data)
+    except Exception as e:
+        self.log.error("Failed to verify logical link data for session %s: %s", session, str(e))
+        return False
+
+
   def reconfigure_fira_ranging(
       self,
       params: uwb_ranging_params.UwbRangingReconfigureParams,

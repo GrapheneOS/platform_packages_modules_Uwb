@@ -106,6 +106,15 @@ public class RangingPreferenceConverter implements SnippetObjectConverter {
         return params;
     }
 
+    public RangingDevice getRangingDevice(
+            JSONObject j
+    ) throws JSONException {
+        return new RangingDevice.Builder()
+                .setUuid(UUID.fromString(j.getString("peer_id")))
+                .build();
+
+    }
+
     private OobInitiatorRangingConfig getOobInitiatorRangingConfig(
             JSONObject j
     ) throws JSONException {

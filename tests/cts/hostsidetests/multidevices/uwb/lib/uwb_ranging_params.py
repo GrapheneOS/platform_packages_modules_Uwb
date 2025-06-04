@@ -21,6 +21,16 @@ class FiraParamEnums:
   DEVICE_TYPE_CONTROLEE = 0
   DEVICE_TYPE_CONTROLLER = 1
 
+  # session type
+  SESSION_TYPE_RANGING = 0
+  SESSION_TYPE_RANGING_AND_IN_BAND_DATA = 1
+  SESSION_TYPE_DATA_TRANSFER = 2
+  SESSION_TYPE_RANGING_ONLY_PHASE = 3
+  SESSION_TYPE_IN_BAND_DATA_PHASE = 4
+  SESSION_TYPE_RANGING_WITH_DATA_PHASE = 5
+  SESSION_TYPE_HUS_PRIMARY_SESSION = 0x9F
+  SESSION_TYPE_DEVICE_TEST_MODE = 0xD0
+
   # ranging device roles
   DEVICE_ROLE_RESPONDER = 0
   DEVICE_ROLE_INITIATOR = 1
@@ -38,6 +48,7 @@ class FiraParamEnums:
   RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE = 2
   RANGING_ROUND_USAGE_SS_TWR_NON_DEFERRED_MODE = 3
   RANGING_ROUND_USAGE_DS_TWR_NON_DEFERRED_MODE = 4
+  RANGING_ROUND_USAGE_DATA_TRANSFER_MODE = 9
 
   # mac address mode
   MAC_ADDRESS_MODE_2_BYTES = 0
@@ -79,14 +90,26 @@ class FiraParamEnums:
   STS_CONFIG_PROVISIONED = 3
   STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY = 4
 
-  # rfrmae config
+  # rframe config
   RFRAME_CONFIG_SP0 = 0
   RFRAME_CONFIG_SP1 = 1
   RFRAME_CONFIG_SP3 = 3
 
+  # Link layer mode
+  LINK_LAYER_MODE_CONNECTION_LESS_NON_SECURE = 0
+  LINK_LAYER_MODE_CONNECTION_LESS_SECURE = 1
+  LINK_LAYER_MODE_CONNECTION_ORIENTED_NON_SECURE = 2
+  LINK_LAYER_MODE_CONNECTION_ORIENTED_SECURE = 3
+  LINK_LAYER_MODE_CONNECTION_LESS_UWBS_UWBS = 4
+  LINK_LAYER_MODE_CONNECTION_ORIENTED_UWBS_UWBS = 5
+
   # ranging ntf config
   RANGE_DATA_NTF_CONFIG_DISABLE = 0
   RANGE_DATA_NTF_CONFIG_ENABLE = 1
+
+  # Data transmission mode
+  LINK_LAYER_MODE_BYPASS = 0x00
+  LINK_LAYER_MODE_LOGICAL_LINK = 0x01
 
 @dataclasses.dataclass
 class UwbRangingReconfigureParams():
@@ -188,6 +211,9 @@ class UwbRangingParams():
     sub_session_id: Ranging sub session ID.
     sub_session_key: Ranging sub session key.
     range_data_ntf_config: Range data ntf config.
+    rframe_config: Ranging frame config.
+    link_layer_mode: Data transmission mode
+    session_type: Ranging session type
 
   Example:
       An example of UWB ranging parameters passed to sl4a is below.
@@ -250,6 +276,8 @@ class UwbRangingParams():
   sub_session_id: Optional[int] = None
   sub_session_key: Optional[List[int]] = None
   rframe_config: int = FiraParamEnums.RFRAME_CONFIG_SP3
+  session_type: int = FiraParamEnums.SESSION_TYPE_RANGING
+  link_layer_mode: int = FiraParamEnums.LINK_LAYER_MODE_BYPASS
   range_data_ntf_config: int = FiraParamEnums.RANGE_DATA_NTF_CONFIG_ENABLE
 
   def to_dict(self) -> Dict[str, Any]:
@@ -284,6 +312,8 @@ class UwbRangingParams():
         "stsConfig": self.sts_config,
         "sessionKey": self.session_key,
         "rangeDataNtfConfig": self.range_data_ntf_config,
+        "linkLayerMode": self.link_layer_mode,
+        "sessionType": self.session_type,
     }
     if self.sub_session_id is not None:
       dict["subSessionId"] = self.sub_session_id

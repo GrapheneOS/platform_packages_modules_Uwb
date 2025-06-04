@@ -46,8 +46,8 @@ _TEST_CASES = (
     "test_ranging_nearby_share_profile_bg_fails",
     "test_ranging_nearby_share_profile_no_valid_reports_stops_session",
     "test_ranging_device_tracker_profile_max_sessions_reject",
+    "test_logical_link_mode_data_transfer_session",
 )
-
 
 class RangingTest(uwb_base_test.UwbBaseTest):
   """Tests for UWB Ranging APIs.
@@ -1679,6 +1679,134 @@ class RangingTest(uwb_base_test.UwbBaseTest):
 
     # Ensure the responder is back after reboot.
     thread.join()
+
+  def test_logical_link_mode_data_transfer_session(self):
+    """Verifies data transmission over logical link mode in a FiRa 3.0+ session.
+
+    Test Steps:
+    1. Skip test if either device does not support UCI version 3.0 or above.
+    2. Configure initiator and responder with:
+       - Device roles: Controller (Initiator), Controlee (Responder)
+       - Ranging round usage: DATA_TRANSFER_MODE
+       - Link layer mode: LOGICAL_LINK
+       - Session type: DATA_TRANSFER
+       - STS Packet Configuration: SP1 (RFRAME_CONFIG = 0x01)
+    3. Open ranging sessions on both initiator and responder.
+    4. Create a logical link from the initiator to the responder.
+    5. Start ranging on both devices.
+    6. Verify the logical link creation callback is received on the initiator.
+    7. Retrieve and verify logical link parameters from both devices.
+    8. Query and assert that the maximum logical link data size is greater than 0.
+    9. Send a sample data packet from the initiator over the logical link.
+    10. Verify data transmission callbacks:
+        - "DataSent" on initiator
+        - "DataReceived" on responder
+    11. Validate received data on the responder matches the sent payload.
+    12. Stop and close ranging sessions on both devices.
+    13. Log success of the logical link data transfer test.
+    """
+
+    asserts.skip_if(
+        self._get_uci_version(self.initiator) & 0xFF < 3
+        or self._get_uci_version(self.responder) & 0xFF < 3,
+        "Logical link mode data transfer is not supported on one or both devices."
+    )
+
+    self.initiator.log.info("Starting logical link data transfer test")
+    self.responder.log.info("Starting logical link data transfer test")
+
+    # Configure ranging parameters for initiator and responder
+    initiator_params = uwb_ranging_params.UwbRangingParams(
+        device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
+        device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
+        ranging_round_usage=uwb_ranging_params.FiraParamEnums
+        .RANGING_ROUND_USAGE_DATA_TRANSFER_MODE,
+        device_address=self.initiator_addr,
+        destination_addresses=[self.responder_addr],
+        ranging_interval_ms=200,
+        slots_per_ranging_round=6,
+        rframe_config=uwb_ranging_params.FiraParamEnums.RFRAME_CONFIG_SP1,
+        link_layer_mode=uwb_ranging_params.FiraParamEnums.LINK_LAYER_MODE_LOGICAL_LINK,
+        session_type=uwb_ranging_params.FiraParamEnums.SESSION_TYPE_DATA_TRANSFER,
+        in_band_termination_attempt_count=0,
+    )
+    responder_params = uwb_ranging_params.UwbRangingParams(
+        device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_RESPONDER,
+        device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLEE,
+        ranging_round_usage=uwb_ranging_params.FiraParamEnums
+        .RANGING_ROUND_USAGE_DATA_TRANSFER_MODE,
+        device_address=self.responder_addr,
+        destination_addresses=[self.initiator_addr],
+        ranging_interval_ms=200,
+        slots_per_ranging_round=6,
+        rframe_config=uwb_ranging_params.FiraParamEnums.RFRAME_CONFIG_SP1,
+        link_layer_mode=uwb_ranging_params.FiraParamEnums.LINK_LAYER_MODE_LOGICAL_LINK,
+        session_type=uwb_ranging_params.FiraParamEnums.SESSION_TYPE_DATA_TRANSFER,
+        in_band_termination_attempt_count=0,
+    )
+
+    session = 0
+    self.initiator.open_fira_ranging(initiator_params, session, expect_to_succeed=True)
+    self.responder.open_fira_ranging(responder_params, session, expect_to_succeed=True)
+
+    # Logical link creation
+    params = {
+      "linkLayerMode": uwb_ranging_params.FiraParamEnums.LINK_LAYER_MODE_CONNECTION_LESS_NON_SECURE,
+      "destinationAddress": self.responder_addr,
+      "logicalLinkClassLength": 0
+    }
+    self.initiator.fira_create_logical_link(session, params)
+
+    # Start ranging
+    self.initiator.start_fira_ranging(session)
+    self.responder.start_fira_ranging(session)
+
+    # Verify logical link creation
+    # Temporarily disabled due to race conditions where the "LogicalLinkCreated"
+    # callback event may be received during the handling of the "Started" callback.
+    # This causes the event to be consumed prematurely and missed in the
+    # subsequent verify_callback_received("LogicalLinkCreated") call.
+    # self.initiator.verify_callback_received("LogicalLinkCreated", session)
+
+    # Logical link param checks
+    if not self.initiator.fira_get_logical_link_params(session):
+        asserts.fail("Initiator: Failed to get logical link parameters for session %s", session)
+
+    # Query max data size
+    max_data_size = self.initiator.fira_query_logical_link_max_data_size(session)
+    if max_data_size <= 0:
+        asserts.fail("Initiator: Failed to query logical link max data size for session %s",
+                     session)
+
+    data = [0x11, 0x22]
+    if not self.initiator.fira_send_logical_link_data(session, data):
+        asserts.fail("Initiator: Failed to send logical link data for session %s: %s",
+                     session, data)
+
+    self.initiator.verify_callback_received("DataSent", session)
+    self.responder.verify_callback_received("DataReceived", session)
+
+    if not self.responder.fira_verify_logical_link_data(session, data):
+        asserts.fail("Responder: Received data doesn't match expected data for session %s\n"
+                     ":expected %s", session, data)
+
+    if not self.responder.fira_get_logical_link_params(session):
+        asserts.fail("Responder: Failed to get logical link parameters for session %s", session)
+
+    max_data_size = self.responder.fira_query_logical_link_max_data_size(session)
+    if max_data_size <= 0:
+        asserts.fail("Responder: Failed to query logical link max data size for session %s",
+                     session)
+
+    # Stop and close sessions
+    self.initiator.stop_ranging(session)
+    self.responder.stop_ranging(session)
+
+    self.initiator.close_ranging(session)
+    self.responder.close_ranging(session)
+
+    self.initiator.log.info("Logical link data transfer test completed successfully")
+    self.responder.log.info("Logical link data transfer test completed successfully")
 
   def test_ranging_device_tracker_profile_max_sessions_reject(self):
     """Verifies opening session fails after max sessions opened.

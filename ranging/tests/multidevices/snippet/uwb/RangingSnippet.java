@@ -345,6 +345,28 @@ public class RangingSnippet implements Snippet {
         sessionInfo.getSession().addDeviceToRangingSession(config);
     }
 
+    @AsyncRpc (description = " Remove a responder device to ranging session")
+    public void removeDeviceFromRangingSession(
+            String callbackId, String sessionHandle, JSONObject j
+    ) throws JSONException {
+        RangingSessionInfo sessionInfo = mSessions.get(sessionHandle);
+        OobTransportFactory transportFactory =new OobTransportFactory(callbackId, sessionInfo);
+        RangingPreferenceConverter converter = new RangingPreferenceConverter(transportFactory);
+        RangingDevice device = converter.getRangingDevice(j);
+        Log.d(TAG, "remove device from session");
+        sessionInfo.getSession().removeDeviceFromRangingSession(device);
+
+    }
+
+    @Rpc(description = "clears all cached events")
+    public void clearEventCache(){
+        if (mEventCache != null) {
+            mEventCache.clearAll();
+        } else {
+            throw new IllegalStateException("Event cache is not initialized");
+        }
+    }
+
     @Rpc(description = "Handle data received from a peer via OOB")
     public void handleOobDataReceived(String sessionHandle, String peerId, byte[] data) {
         mSessions.get(sessionHandle)
