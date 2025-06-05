@@ -22,7 +22,6 @@ import android.annotation.NonNull;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.ranging.RangingConfig;
-import android.ranging.RangingManager;
 import android.ranging.RangingManager.RangingTechnology;
 import android.util.Range;
 
@@ -32,8 +31,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Represents the configuration for an Out-of-Band (OOB) initiator in a ranging session.
@@ -233,16 +234,16 @@ public final class OobInitiatorRangingConfig extends RangingConfig implements Pa
     }
 
     /**
-     * Returns the list of ranging technologies that can be used for the session.
+     * Returns the set of ranging technologies that can be used for the session.
      * If empty, the system may use any available technology.
      *
-     * @return A non-null, possibly empty, {@link List} of
-     *         {@link RangingManager.RangingTechnology} integers.
+     * @return A non-null, possibly empty, {@link Set} of
+     *         Ranging Technology integers.
      */
     @NonNull
     @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_25Q4)
-    public List<@RangingTechnology Integer> getRangingTechnologyFilterList() {
-        return List.copyOf(mRangingTechnologyFilterList);
+    public Set<@RangingTechnology Integer> getRangingTechnologyFilter() {
+        return new HashSet<>(mRangingTechnologyFilterList);
     }
 
     /**
@@ -342,24 +343,22 @@ public final class OobInitiatorRangingConfig extends RangingConfig implements Pa
         /**
          * Sets a filter for the ranging technologies that can be used for the session.
          *
-         * <p>If this list is empty (the default), the system will attempt to use any available
-         * and suitable ranging technology. If the list is non-empty, the system will restrict
-         * its choice of technology to those specified in this list.</p>
+         * <p>If this set is empty (the default), the system will attempt to use any available
+         * and suitable ranging technology. If the set is non-empty, the system will restrict
+         * its choice of technology to those specified in this set.</p>
          *
-         * <p>The order of technologies in the list does not imply preference or priority.</p>
-         *
-         * @param rangingTechnologies A {@link List} of
-         *        {@link RangingManager.RangingTechnology} integers.
+         * @param rangingTechnologies A {@link Set} of
+         *        Ranging Technology integers.
          *        Must not be null. To indicate no preference (allow any technology),
-         *        pass an empty list.
+         *        pass an empty set.
          * @return this {@link Builder} instance.
          */
         @NonNull
         @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_25Q4)
-        public Builder setRangingTechnologyFilterList(
-                @NonNull List<@RangingManager.RangingTechnology Integer> rangingTechnologies) {
+        public Builder setRangingTechnologyFilter(
+                @NonNull Set<@RangingTechnology Integer> rangingTechnologies) {
             Objects.requireNonNull(rangingTechnologies, "rangingTechnologies cannot be null");
-            this.mRangingTechnologyFilterList = rangingTechnologies;
+            this.mRangingTechnologyFilterList = rangingTechnologies.stream().toList();
             return this;
         }
 
@@ -388,7 +387,7 @@ public final class OobInitiatorRangingConfig extends RangingConfig implements Pa
                 + mSecurityLevel
                 + ", mRangingMode="
                 + mRangingMode
-                + ", mRangingTechnologyFilterList="
+                + ", mRangingTechnologyFilter="
                 + mRangingTechnologyFilterList
                 + ", "
                 + super.toString()
