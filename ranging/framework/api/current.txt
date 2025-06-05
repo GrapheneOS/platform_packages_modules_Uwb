@@ -48,10 +48,12 @@ package android.ranging {
     method public int describeContents();
     method @Nullable public android.ranging.RangingMeasurement getAzimuth();
     method @Nullable public android.ranging.RangingMeasurement getDistance();
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_25q4") public double getDistanceStdDevMeters();
     method @Nullable public android.ranging.RangingMeasurement getElevation();
     method public int getRangingTechnology();
     method public int getRssi();
     method public long getTimestampMillis();
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_25q4") public boolean hasDistanceStdDev();
     method public boolean hasRssi();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field @NonNull public static final android.os.Parcelable.Creator<android.ranging.RangingData> CREATOR;
