@@ -23,12 +23,18 @@ import android.annotation.Nullable;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.ranging.RangingDevice;
+import android.ranging.RangingManager;
+import android.ranging.ble.cs.BleCsConstants;
 import android.ranging.ble.cs.BleCsRangingParams;
+import android.ranging.ble.rssi.BleRssiConstants;
 import android.ranging.ble.rssi.BleRssiRangingParams;
+import android.ranging.uwb.UwbConstants;
 import android.ranging.uwb.UwbRangingCapabilities;
 import android.ranging.uwb.UwbRangingParams;
 import android.ranging.wifi.rtt.RttRangingCapabilities;
 import android.ranging.wifi.rtt.RttRangingParams;
+import android.ranging.wifi.rtt.WifiRttConstants;
+import android.util.ArrayMap;
 
 import com.android.ranging.flags.Flags;
 
@@ -36,6 +42,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.time.Duration;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -203,6 +211,52 @@ public final class RawRangingDevice implements Parcelable {
     @Nullable
     public BleRssiRangingParams getBleRssiRangingParams() {
         return mBleRssiRangingParams;
+    }
+
+    /**
+     * Returns a map of ranging technologies to their corresponding ranging interval durations for
+     * available ranging technologies parameters.
+     *
+     * <p>The duration for each technology is determined by its configured
+     * {@link RangingUpdateRate} and, in some cases, technology-specific parameters like
+     * {@link UwbRangingParams#getConfigId()} for UWB.
+     *
+     * @return A non-null, possibly empty, map where keys are
+     * {@link RangingManager.RangingTechnology} integers and values are the
+     * calculated {@link Duration} for that technology's ranging interval.
+     */
+    @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_25Q4)
+    @NonNull
+    public Map<@RangingManager.RangingTechnology Integer, Duration> getRangingIntervalValues() {
+        ArrayMap<@RangingManager.RangingTechnology Integer, Duration> map = new ArrayMap<>();
+
+        if (mUwbRangingParams != null) {
+            int uwbUpdateRate = mUwbRangingParams.getRangingUpdateRate();
+            int uwbConfigId = mUwbRangingParams.getConfigId();
+            map.put(RangingManager.UWB, Duration.ofMillis(
+                    UwbConstants.getIntervalMs((int) uwbConfigId, (int) uwbUpdateRate)));
+        }
+
+        if (mBleCsRangingParams != null) {
+            int bleCsUpdateRate = mBleCsRangingParams.getRangingUpdateRate();
+            map.put(RangingManager.BLE_CS,
+                    Duration.ofMillis(BleCsConstants.getIntervalInMs(bleCsUpdateRate)));
+        }
+
+        if (mRttRangingParams != null) {
+            int wifiNanRttUpdateRateMs = WifiRttConstants.getIntervalMs(
+                    (int) mRttRangingParams.getRangingUpdateRate(),
+                    mRttRangingParams.isPeriodicRangingHwFeatureEnabled());
+            map.put(RangingManager.WIFI_NAN_RTT, Duration.ofMillis(wifiNanRttUpdateRateMs));
+        }
+
+        if (mBleRssiRangingParams != null) {
+            int bleRssiUpdateRate = mBleRssiRangingParams.getRangingUpdateRate();
+            map.put(RangingManager.BLE_RSSI,
+                    Duration.ofMillis(BleRssiConstants.getIntervalInMs((int) bleRssiUpdateRate)));
+        }
+
+        return map;
     }
 
     @Override

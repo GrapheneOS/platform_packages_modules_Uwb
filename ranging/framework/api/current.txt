@@ -321,6 +321,7 @@ package android.ranging.raw {
     method @Nullable public android.ranging.ble.rssi.BleRssiRangingParams getBleRssiRangingParams();
     method @Nullable public android.ranging.ble.cs.BleCsRangingParams getCsRangingParams();
     method @NonNull public android.ranging.RangingDevice getRangingDevice();
+    method @FlaggedApi("com.android.ranging.flags.ranging_stack_updates_25q4") @NonNull public java.util.Map<java.lang.Integer,java.time.Duration> getRangingIntervalValues();
     method @Nullable public android.ranging.wifi.rtt.RttRangingParams getRttRangingParams();
     method @Nullable public android.ranging.uwb.UwbRangingParams getUwbRangingParams();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
