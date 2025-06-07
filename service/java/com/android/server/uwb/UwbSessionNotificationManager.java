@@ -44,6 +44,7 @@ import com.android.server.uwb.params.TlvUtil;
 import com.android.server.uwb.rftest.RfNotificationEvent;
 import com.android.server.uwb.util.UwbUtil;
 
+import com.google.uwb.support.aliro.AliroOpenRangingParams;
 import com.google.uwb.support.aliro.AliroParams;
 import com.google.uwb.support.aliro.AliroRangingReconfiguredParams;
 import com.google.uwb.support.base.Params;
@@ -863,6 +864,9 @@ public class UwbSessionNotificationManager {
             }
         } else if (protocolName.equals(CccParams.PROTOCOL_NAME)) {
             CccOpenRangingParams openSessionParams = (CccOpenRangingParams) sessionParams;
+            sessionId = openSessionParams.getSessionId();
+        } else if (protocolName.equals(AliroParams.PROTOCOL_NAME)) {
+            AliroOpenRangingParams openSessionParams = (AliroOpenRangingParams) sessionParams;
             sessionId = openSessionParams.getSessionId();
         }
 

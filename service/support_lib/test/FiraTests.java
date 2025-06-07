@@ -150,6 +150,8 @@ public class FiraTests {
         byte[] ulTdoaDeviceId = new byte[] {(byte) 0x0C, (byte) 0x0B};
         int ulTdoaTxTimestampType = TX_TIMESTAMP_40_BIT;
         int maxNumberOfMeasurements = 1;
+        int secureRangingNefaLevel = 0;
+        int secureRangingCswLength = 4;
 
         FiraOpenSessionParams params =
                 new FiraOpenSessionParams.Builder()
@@ -218,6 +220,8 @@ public class FiraTests {
                         .setUlTdoaDeviceIdType(ulTdoaDeviceIdType)
                         .setUlTdoaDeviceId(ulTdoaDeviceId)
                         .setUlTdoaTxTimestampType(ulTdoaTxTimestampType)
+                        .setSecureRangingCswLength(secureRangingCswLength)
+                        .setSecureRangingNefaLevel(secureRangingNefaLevel)
                         .setMaxNumberOfMeasurements(maxNumberOfMeasurements)
                         .build();
 
@@ -366,6 +370,8 @@ public class FiraTests {
         assertEquals(fromBundle.getUlTdoaDeviceIdType(), ulTdoaDeviceIdType);
         assertArrayEquals(fromBundle.getUlTdoaDeviceId(), ulTdoaDeviceId);
         assertEquals(fromBundle.getUlTdoaTxTimestampType(), ulTdoaTxTimestampType);
+        assertEquals(fromBundle.getSecureRangingCswLength(), secureRangingCswLength);
+        assertEquals(fromBundle.getSecureRangingNefaLevel(), secureRangingNefaLevel);
         assertEquals(fromBundle.getMaxNumberOfMeasurements(), maxNumberOfMeasurements);
 
         verifyProtocolPresent(fromBundle);
@@ -443,6 +449,8 @@ public class FiraTests {
         assertEquals(fromCopy.getUlTdoaDeviceIdType(), ulTdoaDeviceIdType);
         assertArrayEquals(fromCopy.getUlTdoaDeviceId(), ulTdoaDeviceId);
         assertEquals(fromCopy.getUlTdoaTxTimestampType(), ulTdoaTxTimestampType);
+        assertEquals(fromCopy.getSecureRangingCswLength(), secureRangingCswLength);
+        assertEquals(fromCopy.getSecureRangingNefaLevel(), secureRangingNefaLevel);
         assertEquals(fromCopy.getMaxNumberOfMeasurements(), maxNumberOfMeasurements);
 
         verifyProtocolPresent(fromCopy);

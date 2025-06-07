@@ -20,6 +20,8 @@ import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABL
 import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_AOA_LEVEL_TRIG;
 import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_EDGE_TRIG;
 import static com.google.uwb.support.fira.FiraParams.RANGE_DATA_NTF_CONFIG_ENABLE_PROXIMITY_AOA_LEVEL_TRIG;
+import static com.google.uwb.support.fira.FiraParams.SECURE_RANGING_CSW_LENGTH_DEFAULT;
+import static com.google.uwb.support.fira.FiraParams.SECURE_RANGING_NEFA_LEVEL_DEFAULT;
 
 import android.uwb.UwbAddress;
 
@@ -76,10 +78,11 @@ public class FiraEncoder extends TlvEncoder {
         int resultReportConfig = getResultReportConfig(params);
         int rangingRoundControl = getRangingRoundControl(params);
         int deviceRole = params.getDeviceRole();
+        int stsConfig = params.getStsConfig();
 
         TlvBuffer.Builder tlvBufferBuilder = new TlvBuffer.Builder()
                 .putByte(ConfigParam.RANGING_ROUND_USAGE, (byte) params.getRangingRoundUsage())
-                .putByte(ConfigParam.STS_CONFIG, (byte) params.getStsConfig())
+                .putByte(ConfigParam.STS_CONFIG, (byte) stsConfig)
                 .putByte(ConfigParam.MULTI_NODE_MODE, (byte) params.getMultiNodeMode())
                 .putByte(ConfigParam.CHANNEL_NUMBER, (byte) params.getChannelNumber())
                 .putByteArray(ConfigParam.DEVICE_MAC_ADDRESS, params.getDeviceAddress().size(),
@@ -177,6 +180,16 @@ public class FiraEncoder extends TlvEncoder {
                              FiraParams.SESSION_TIME_BASE_REFERENCE_FEATURE_ENABLED)) {
                 tlvBufferBuilder.putByteArray(ConfigParam.SESSION_TIME_BASE,
                             getSessionTimeBase(params));
+            }
+            if ((stsConfig == FiraParams.STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY
+                    || stsConfig == FiraParams.STS_CONFIG_PROVISIONED)
+                    && (params.getSecureRangingNefaLevel() != SECURE_RANGING_NEFA_LEVEL_DEFAULT
+                    || params.getSecureRangingCswLength() != SECURE_RANGING_CSW_LENGTH_DEFAULT)) {
+                tlvBufferBuilder
+                        .putByte(ConfigParam.SECURE_RANGING_NEFA_LEVEL,
+                                (byte) params.getSecureRangingNefaLevel())
+                        .putByte(ConfigParam.SECURE_RANGING_CSW_LENGTH,
+                                (byte) params.getSecureRangingCswLength());
             }
         } else {
             if (deviceRole != FiraParams.RANGING_DEVICE_DT_TAG) {

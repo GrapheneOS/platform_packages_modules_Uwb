@@ -410,6 +410,37 @@ public abstract class FiraParams extends Params {
 
     public static final int STS_CONFIG_PROVISIONED_FOR_CONTROLEE_INDIVIDUAL_KEY = 4;
 
+    /** NEFA Level for Secure Ranging */
+    @IntDef(
+            value = {
+                SECURE_RANGING_NEFA_LEVEL_DEFAULT,
+                SECURE_RANGING_NEFA_LEVEL_LOW,
+                SECURE_RANGING_NEFA_LEVEL_MEDIUM,
+                SECURE_RANGING_NEFA_LEVEL_HIGH,
+            })
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface SecureRangingNefaLevel {}
+
+    /**
+     * Default NEFA level (0x00): NEFA ≤ 1.0.
+     */
+    public static final int SECURE_RANGING_NEFA_LEVEL_DEFAULT = 0x00;
+
+    /**
+     * Low NEFA level (0x01): NEFA ≤ 2^-10.
+     */
+    public static final int SECURE_RANGING_NEFA_LEVEL_LOW = 0x01;
+
+    /**
+     * Medium NEFA level (0x02): NEFA ≤ 2^-20.
+     */
+    public static final int SECURE_RANGING_NEFA_LEVEL_MEDIUM = 0x02;
+
+    /**
+     * High NEFA level (0x03): NEFA ≤ 2^-48.
+     */
+    public static final int SECURE_RANGING_NEFA_LEVEL_HIGH = 0x03;
+
     /** AoA request */
     @IntDef(
             value = {
@@ -1163,6 +1194,9 @@ public abstract class FiraParams extends Params {
 
     // Default value (Host as the both secure & non-secure endpoint).
     public static final int APPLICATION_DATA_ENDPOINT_DEFAULT = 0;
+
+    // Default value for secure ranging params
+    public static final int SECURE_RANGING_CSW_LENGTH_DEFAULT = 0x04;
 
     //Reference time base feature mask.
     public static final int SESSION_TIME_BASE_REFERENCE_FEATURE_ENABLED = 1;

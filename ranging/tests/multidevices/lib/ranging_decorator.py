@@ -5,6 +5,7 @@ from typing import Set, Dict
 from uuid import uuid4
 from lib.params import RangingPreference
 from lib.params import RawResponderRangingParams
+from lib.params import DeviceParams
 from mobly.controllers.android_device import AndroidDevice
 from mobly.controllers.android_device_lib.callback_handler_v2 import (
     CallbackHandlerV2,
@@ -67,6 +68,12 @@ class RangingDecorator:
     payload = {"peer_params": dataclasses.asdict(config.peer_params)}
     self.ad.ranging.addDeviceToRangingSession(session_handle, payload)
 
+  def remove_device_from_session(
+          self, session_handle: str, preference: DeviceParams
+  ):
+    """Remove device from active raging session"""
+    payload = {"peer_id": preference.peer_id}
+    self.ad.ranging.removeDeviceFromRangingSession(session_handle, payload)
 
   def start_ranging_and_assert_opened(
       self, session_handle: str, preference: RangingPreference
@@ -201,4 +208,8 @@ class RangingDecorator:
   def get_callback_handler(self, session_handle: str) -> CallbackHandlerV2:
     """Get the mobly CallbackHandler associated with the provided session"""
     return self._callback_events.get(session_handle, None)
+
+  def clear_event_cache(self):
+    """Clears all the cached events """
+    self.ad.ranging.clearEventCache()
 
