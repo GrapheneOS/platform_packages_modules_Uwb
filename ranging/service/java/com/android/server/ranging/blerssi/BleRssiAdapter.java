@@ -40,6 +40,7 @@ import android.ranging.RangingData;
 import android.ranging.RangingDevice;
 import android.ranging.RangingManager;
 import android.ranging.RangingMeasurement;
+import android.ranging.ble.rssi.BleRssiConstants;
 import android.ranging.ble.rssi.BleRssiRangingParams;
 import android.util.Log;
 
@@ -187,7 +188,8 @@ public class BleRssiAdapter implements RangingAdapter {
                     mAlarmManager,
                     mMeasurementLimitListener,
                     mConfig.getSessionConfig().getRangingMeasurementsLimit(),
-                    getIntervalInMs(mConfig.getRangingParams().getRangingUpdateRate()));
+                    BleRssiConstants.getIntervalInMs(
+                            mConfig.getRangingParams().getRangingUpdateRate()));
         }
     }
 
@@ -204,20 +206,6 @@ public class BleRssiAdapter implements RangingAdapter {
                 return DistanceMeasurementParams.REPORT_FREQUENCY_HIGH;
             default:
                 return DistanceMeasurementParams.REPORT_FREQUENCY_MEDIUM;
-        }
-    }
-
-    public static int getIntervalInMs(int updateRate) {
-        switch (updateRate) {
-            case UPDATE_RATE_FREQUENT -> {
-                return 500;
-            }
-            case UPDATE_RATE_INFREQUENT -> {
-                return 3000;
-            }
-            default -> {
-                return 1000;
-            }
         }
     }
 

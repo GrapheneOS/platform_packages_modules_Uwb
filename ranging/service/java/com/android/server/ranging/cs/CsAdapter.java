@@ -41,6 +41,7 @@ import android.ranging.DataNotificationConfig;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
 import android.ranging.RangingMeasurement;
+import android.ranging.ble.cs.BleCsConstants;
 import android.ranging.ble.cs.BleCsRangingParams;
 import android.util.Log;
 
@@ -203,7 +204,8 @@ public class CsAdapter implements RangingAdapter {
                     mAlarmManager,
                     mMeasurementLimitListener,
                     mConfig.getSessionConfig().getRangingMeasurementsLimit(),
-                    getIntervalInMs(mConfig.getRangingParams().getRangingUpdateRate()));
+                    BleCsConstants.getIntervalInMs(
+                            mConfig.getRangingParams().getRangingUpdateRate()));
         }
     }
 
@@ -255,20 +257,6 @@ public class CsAdapter implements RangingAdapter {
             return DistanceMeasurementParams.REPORT_FREQUENCY_HIGH;
         }
         return DistanceMeasurementParams.REPORT_FREQUENCY_LOW;
-    }
-
-    public static int getIntervalInMs(int updateRate) {
-        switch (updateRate) {
-            case UPDATE_RATE_FREQUENT -> {
-                return 200;
-            }
-            case UPDATE_RATE_INFREQUENT -> {
-                return 5000;
-            }
-            default -> {
-                return 3000;
-            }
-        }
     }
 
     private void closeForReason(@InternalReason int reason) {

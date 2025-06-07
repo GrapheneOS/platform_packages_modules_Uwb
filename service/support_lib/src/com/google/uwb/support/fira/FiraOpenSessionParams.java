@@ -1135,7 +1135,9 @@ public class FiraOpenSessionParams extends FiraParams {
                         bundle.getInt(KEY_REFERENCE_SESSION_HANDLE),
                         bundle.getInt(KEY_SESSION_OFFSET_IN_MICRO_SECONDS))
                 .setSecureRangingNefaLevel(bundle.getInt(KEY_SECURE_RANGING_NEFA_LEVEL))
-                .setSecureRangingCswLength(bundle.getInt(KEY_SECURE_RANGING_CSW_LENGTH))
+                .setSecureRangingCswLength(bundle.getInt(KEY_SECURE_RANGING_CSW_LENGTH) == 0
+                        ? SECURE_RANGING_CSW_LENGTH_DEFAULT
+                        : bundle.getInt(KEY_SECURE_RANGING_CSW_LENGTH))
                 .setApplicationDataEndpoint(bundle.getInt(
                         KEY_APPLICATION_DATA_ENDPOINT, APPLICATION_DATA_ENDPOINT_DEFAULT));
 
