@@ -103,6 +103,10 @@ import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.util.ArrayUtils;
 
 import com.google.common.io.BaseEncoding;
+import com.google.uwb.support.aliro.AliroOpenRangingParams;
+import com.google.uwb.support.aliro.AliroParams;
+import com.google.uwb.support.aliro.AliroPulseShapeCombo;
+import com.google.uwb.support.aliro.AliroStartRangingParams;
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
@@ -163,6 +167,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             "simulate-app-state-change",
             "start-fira-ranging-session",
             "start-ccc-ranging-session",
+            "start-aliro-ranging-session",
             "start-radar-session",
             "reconfigure-fira-ranging-session",
             "get-ranging-session-reports",
@@ -211,6 +216,29 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     .setSyncCodeIndex(1)
                     .setHoppingConfigMode(HOPPING_MODE_DISABLE)
                     .setHoppingSequence(HOPPING_SEQUENCE_DEFAULT);
+
+    @VisibleForTesting
+    public static final AliroOpenRangingParams.Builder DEFAULT_ALIRO_OPEN_RANGING_PARAMS =
+            new AliroOpenRangingParams.Builder()
+                    .setProtocolVersion(AliroParams.PROTOCOL_VERSION_1_0)
+                    .setUwbConfig(AliroParams.UWB_CONFIG_0)
+                    .setPulseShapeCombo(
+                            new AliroPulseShapeCombo(
+                                    AliroParams.PULSE_SHAPE_PRECURSOR_FREE,
+                                    AliroParams.PULSE_SHAPE_PRECURSOR_FREE))
+                    .setSessionId(1)
+                    .setRanMultiplier(4)
+                    .setChannel(AliroParams.UWB_CHANNEL_9)
+                    .setNumChapsPerSlot(AliroParams.CHAPS_PER_SLOT_3)
+                    .setNumResponderNodes(1)
+                    .setHoppingConfigMode(HOPPING_MODE_DISABLE)
+                    .setHoppingSequence(AliroParams.HOPPING_SEQUENCE_DEFAULT)
+                    .setStsConfig(STS_CONFIG_PROVISIONED)
+                    .setNumSlotsPerRound(AliroParams.SLOTS_PER_ROUND_6)
+                    .setSyncCodeIndex(9)
+                    .setSessionKey(new byte[] {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                        0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10});
+
     @VisibleForTesting
     public static final RadarOpenSessionParams.Builder DEFAULT_RADAR_OPEN_SESSION_PARAMS =
             new RadarOpenSessionParams.Builder()
@@ -900,6 +928,83 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         return Pair.create(builder.build(), shouldBlockCall);
     }
 
+    private Pair<AliroOpenRangingParams, Boolean> buildAliroOpenRangingParams() {
+        AliroOpenRangingParams.Builder builder =
+                new AliroOpenRangingParams.Builder(DEFAULT_ALIRO_OPEN_RANGING_PARAMS);
+        boolean shouldBlockCall = false;
+        for (String option = getNextOption(); option != null; option = getNextOption()) {
+            switch (option) {
+                case "-b", "--blocking" -> shouldBlockCall = true;
+                case "-u", "--uwb-config" ->
+                        builder.setUwbConfig(Integer.parseInt(getNextArgRequired()));
+                case "-p", "--pulse-shape-combo" -> {
+                    String[] pulseComboString = getNextArgRequired().split(",");
+                    if (pulseComboString.length != 2) {
+                        throw new IllegalArgumentException(
+                                "Erroneous pulse combo: " + Arrays.toString(pulseComboString));
+                    }
+                    builder.setPulseShapeCombo(
+                            new AliroPulseShapeCombo(
+                                    Integer.parseInt(pulseComboString[0]),
+                                    Integer.parseInt(pulseComboString[1])));
+                }
+                case "-i", "--session-id" ->
+                        builder.setSessionId(Integer.parseInt(getNextArgRequired()));
+                case "-r", "--ran-multiplier" ->
+                        builder.setRanMultiplier(Integer.parseInt(getNextArgRequired()));
+                case "-c", "--channel" ->
+                        builder.setChannel(Integer.parseInt(getNextArgRequired()));
+                case "-m", "--num-chaps-per-slot" ->
+                        builder.setNumChapsPerSlot(Integer.parseInt(getNextArgRequired()));
+                case "-n", "--num-responder-nodes" ->
+                        builder.setNumResponderNodes(Integer.parseInt(getNextArgRequired()));
+                case "-o", "--num-slots-per-round" ->
+                        builder.setNumSlotsPerRound(Integer.parseInt(getNextArgRequired()));
+                case "-s", "--sync-code-index" ->
+                        builder.setSyncCodeIndex(Integer.parseInt(getNextArgRequired()));
+                case "-h", "--hopping-config-mode" -> {
+                    String hoppingConfigMode = getNextArgRequired();
+                    switch (hoppingConfigMode) {
+                        case "none" -> builder.setHoppingConfigMode(HOPPING_MODE_DISABLE);
+                        case "continuous" ->
+                                builder.setHoppingConfigMode(HOPPING_CONFIG_MODE_CONTINUOUS);
+                        case "adaptive" ->
+                                builder.setHoppingConfigMode(HOPPING_CONFIG_MODE_ADAPTIVE);
+                        default ->
+                                throw new IllegalArgumentException(
+                                        "Unknown hopping config mode: " + hoppingConfigMode);
+                    }
+                }
+                case "-a", "--hopping-sequence" -> {
+                    String hoppingSequence = getNextArgRequired();
+                    switch (hoppingSequence) {
+                        case "default" -> builder.setHoppingSequence(HOPPING_SEQUENCE_DEFAULT);
+                        case "aes" -> builder.setHoppingSequence(HOPPING_SEQUENCE_AES);
+                        default ->
+                                throw new IllegalArgumentException(
+                                        "Unknown hopping sequence: " + hoppingSequence);
+                    }
+                }
+                case "-S", "--sts-index" -> {
+                    Integer sts_index = Integer.parseInt(getNextArgRequired());
+                    builder.setStsIndex(sts_index);
+                }
+                case "-k", "--session-key" -> {
+                    String sessionKey = getNextArgRequired();
+                    if (sessionKey.length() == 32 || sessionKey.length() == 64) {
+                        builder.setSessionKey(BaseEncoding.base16().decode(sessionKey));
+                    } else {
+                        throw new IllegalArgumentException("sessionKey expecting 16 or 32 bytes");
+                    }
+                }
+
+                default -> throw new IllegalArgumentException("Unsupported option: " + option);
+            }
+        }
+        // TODO: Add remaining params if needed.
+        return Pair.create(builder.build(), shouldBlockCall);
+    }
+
     private void startCccRangingSession(PrintWriter pw) throws Exception {
         Pair<CccOpenRangingParams, Boolean> cccOpenRangingParamsAndBlocking =
                 buildCccOpenRangingParams();
@@ -912,6 +1017,22 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         startRangingSession(
                 cccOpenRangingParams, cccStartRangingParams, cccOpenRangingParams.getSessionId(),
                 cccOpenRangingParamsAndBlocking.second, pw);
+    }
+
+    private void startAliroRangingSession(PrintWriter pw) throws Exception {
+        Pair<AliroOpenRangingParams, Boolean> aliroOpenRangingParamsAndBlocking =
+                buildAliroOpenRangingParams();
+        AliroOpenRangingParams aliroOpenRangingParams = aliroOpenRangingParamsAndBlocking.first;
+        AliroStartRangingParams aliroStartRangingParams = new AliroStartRangingParams.Builder()
+                .setSessionId(aliroOpenRangingParams.getSessionId())
+                .setRanMultiplier(aliroOpenRangingParams.getRanMultiplier())
+                .setInitiationTimeMs(aliroOpenRangingParams.getInitiationTimeMs())
+                .build();
+        startRangingSession(
+                aliroOpenRangingParams,
+                aliroStartRangingParams,
+                aliroOpenRangingParams.getSessionId(),
+                aliroOpenRangingParamsAndBlocking.second, pw);
     }
 
     private void startRangingSession(@NonNull Params openRangingSessionParams,
@@ -1342,6 +1463,9 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 case "start-ccc-ranging-session":
                     startCccRangingSession(pw);
                     return 0;
+                case "start-aliro-ranging-session":
+                    startAliroRangingSession(pw);
+                    return 0;
                 case "start-radar-session":
                     startRadarSession(pw);
                     return 0;
@@ -1568,6 +1692,25 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + "    [-a default|aes](hopping-sequence)\n"
                 + "    [-S <stsIndex>](sts-index)");
         pw.println("    Starts a CCC ranging session with the provided params."
+                + " Note: default behavior is to cache the latest ranging reports which can be"
+                + " retrieved using |get-ranging-session-reports|");
+        pw.println("  start-aliro-ranging-session\n"
+                + "    [-b](blocking call)"
+                + " Ranging reports will be displayed on screen)\n"
+                + "    [-u 0|1](uwb-config)\n"
+                + "    [-p <tx>,<rx>](pulse-shape-combo)\n"
+                + "    [-i <sessionId>](session-id)\n"
+                + "    [-r <ran_multiplier>](ran-multiplier)\n"
+                + "    [-c <channel>](channel)\n"
+                + "    [-m <num-chaps-per-slot>](num-chaps-per-slot)\n"
+                + "    [-n <num-responder-nodes>](num-responder-nodes)\n"
+                + "    [-o <num-slots-per-round>](num-slots-per-round)\n"
+                + "    [-s <sync-code-index>](sync-code-index)\n"
+                + "    [-h none|continuous|adaptive](hopping-config-mode)\n"
+                + "    [-a default|aes](hopping-sequence)\n"
+                + "    [-S <stsIndex>](sts-index)\n"
+                + "    [-k <session-key>](URSK)");
+        pw.println("    Starts a Aliro ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
                 + " retrieved using |get-ranging-session-reports|");
         pw.println("  start-radar-session\n"

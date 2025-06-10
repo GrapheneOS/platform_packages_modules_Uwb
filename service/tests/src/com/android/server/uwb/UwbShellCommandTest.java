@@ -18,6 +18,7 @@ package com.android.server.uwb;
 
 import static android.uwb.RangingSession.Callback.REASON_LOCAL_REQUEST;
 
+import static com.android.server.uwb.UwbShellCommand.DEFAULT_ALIRO_OPEN_RANGING_PARAMS;
 import static com.android.server.uwb.UwbShellCommand.DEFAULT_CCC_OPEN_RANGING_PARAMS;
 import static com.android.server.uwb.UwbShellCommand.DEFAULT_FIRA_OPEN_SESSION_PARAMS;
 import static com.android.server.uwb.UwbShellCommand.DEFAULT_RADAR_OPEN_SESSION_PARAMS;
@@ -55,6 +56,9 @@ import android.uwb.UwbTestUtils;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.google.uwb.support.aliro.AliroOpenRangingParams;
+import com.google.uwb.support.aliro.AliroSpecificationParams;
+import com.google.uwb.support.aliro.AliroStartRangingParams;
 import com.google.uwb.support.base.Params;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccSpecificationParams;
@@ -106,6 +110,7 @@ public class UwbShellCommandTest {
         }).when(mUwbInjector).runTaskOnSingleThreadExecutor(any(FutureTask.class), anyInt());
         GenericSpecificationParams params = new GenericSpecificationParams.Builder()
                 .setCccSpecificationParams(mock(CccSpecificationParams.class))
+                .setAliroSpecificationParams(mock(AliroSpecificationParams.class))
                 .setFiraSpecificationParams(
                         new FiraSpecificationParams.Builder()
                                 .setSupportedChannels(List.of(9))
@@ -283,6 +288,14 @@ public class UwbShellCommandTest {
                 .build();
     }
 
+    private AliroStartRangingParams getAliroStartRangingParamsFromOpenRangingParams(
+            @NonNull AliroOpenRangingParams openSessionParams) {
+        return new AliroStartRangingParams.Builder()
+                .setSessionId(openSessionParams.getSessionId())
+                .setRanMultiplier(openSessionParams.getRanMultiplier())
+                .build();
+    }
+
     @Test
     public void testStartFiraRanging() throws Exception {
         triggerAndVerifySessionStart(
@@ -409,6 +422,41 @@ public class UwbShellCommandTest {
                         new String[]{"start-ccc-ranging-session"},
                         openSessionParams,
                         getCccStartRangingParamsFromOpenRangingParams(openSessionParams));
+        int sessionId = openSessionParams.getSessionId();
+        triggerAndVerifySessionStop(
+                new String[]{"stop-ranging-session", String.valueOf(sessionId)},
+                cbAndSessionHandle.first, cbAndSessionHandle.second);
+    }
+
+    @Test
+    public void testStartAliroRanging() throws Exception {
+        AliroOpenRangingParams openSessionParams = DEFAULT_ALIRO_OPEN_RANGING_PARAMS.build();
+        triggerAndVerifySessionStart(
+                new String[]{"start-aliro-ranging-session"},
+                openSessionParams,
+                getAliroStartRangingParamsFromOpenRangingParams(openSessionParams));
+    }
+
+    @Test
+    public void testStartAliroRangingWithNonDefaultParams() throws Exception {
+        AliroOpenRangingParams.Builder openSessionParamsBuilder =
+                new AliroOpenRangingParams.Builder(DEFAULT_ALIRO_OPEN_RANGING_PARAMS);
+        openSessionParamsBuilder.setSessionId(5);
+        AliroOpenRangingParams openSessionParams = openSessionParamsBuilder.build();
+        triggerAndVerifySessionStart(
+                new String[]{"start-aliro-ranging-session", "-i", "5"},
+                openSessionParams,
+                getAliroStartRangingParamsFromOpenRangingParams(openSessionParams));
+    }
+
+    @Test
+    public void testStopAliroRanging() throws Exception {
+        AliroOpenRangingParams openSessionParams = DEFAULT_ALIRO_OPEN_RANGING_PARAMS.build();
+        Pair<IUwbRangingCallbacks, SessionHandle> cbAndSessionHandle =
+                triggerAndVerifySessionStart(
+                        new String[]{"start-aliro-ranging-session"},
+                        openSessionParams,
+                        getAliroStartRangingParamsFromOpenRangingParams(openSessionParams));
         int sessionId = openSessionParams.getSessionId();
         triggerAndVerifySessionStop(
                 new String[]{"stop-ranging-session", String.valueOf(sessionId)},
