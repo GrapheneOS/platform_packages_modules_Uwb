@@ -22,6 +22,7 @@ import android.annotation.NonNull;
 import android.content.AttributionSource;
 import android.content.Context;
 import android.os.Binder;
+import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
 import android.ranging.IRangingAdapter;
 import android.ranging.IRangingCallbacks;
@@ -46,6 +47,16 @@ public class RangingServiceImpl extends IRangingAdapter.Stub {
     RangingServiceImpl(@NonNull Context context, @NonNull RangingInjector rangingInjector) {
         mContext = context;
         mRangingInjector = rangingInjector;
+    }
+
+    @Override
+    public int handleShellCommand(@NonNull ParcelFileDescriptor in,
+            @NonNull ParcelFileDescriptor out, @NonNull ParcelFileDescriptor err,
+            @NonNull String[] args) {
+
+        RangingShellCommand shellCommand = mRangingInjector.makeRangingShellCommand(this);
+        return shellCommand.exec(this, in.getFileDescriptor(), out.getFileDescriptor(),
+                err.getFileDescriptor(), args);
     }
 
 
