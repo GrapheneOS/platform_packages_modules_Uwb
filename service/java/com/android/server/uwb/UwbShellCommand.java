@@ -450,12 +450,12 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         public void onLogicalLinkCreated(SessionHandle sessionHandle, LogicalLinkParams params,
                 int connectId) {}
 
-        public void onLogicalLinkCreateFailed(SessionHandle sessionHandle, LogicalLinkParams params,
-                int status) {}
+        public void onLogicalLinkCreationFailed(SessionHandle sessionHandle,
+                LogicalLinkParams params, int status) {}
 
         public void onLogicalLinkClosed(SessionHandle sessionHandle, int connectId, int reason) {}
 
-        public void onLogicalLinkCloseFailed(SessionHandle sessionHandle, int connectId,
+        public void onLogicalLinkClosureFailed(SessionHandle sessionHandle, int connectId,
                 int status) {}
 
         public void onRemoteLogicalLinkRequested(SessionHandle sessionHandle,

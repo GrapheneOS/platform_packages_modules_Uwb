@@ -600,7 +600,7 @@ public final class RangingSession implements AutoCloseable {
          *                   See {@link LogicalLinkStatusCode} for possible values.
          */
         @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
-        default void onLogicalLinkCreateFailed(@NonNull LogicalLinkParams params,
+        default void onLogicalLinkCreationFailed(@NonNull LogicalLinkParams params,
                 @LogicalLinkStatusCode int status) {}
 
         /**
@@ -629,7 +629,7 @@ public final class RangingSession implements AutoCloseable {
          *                   See {@link LogicalLinkStatusCode} for possible values.
          */
         @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
-        default void onLogicalLinkCloseFailed(int connectId, @LogicalLinkStatusCode int status) {}
+        default void onLogicalLinkClosureFailed(int connectId, @LogicalLinkStatusCode int status) {}
 
         /**
          * Callback invoked when a remote device requests to establish a logical link.
@@ -1150,8 +1150,9 @@ public final class RangingSession implements AutoCloseable {
      *
      * <p>Once the logical link creation attempt completes, the system invokes either
      * {@link RangingSession.Callback#onLogicalLinkCreated(LogicalLinkParams, int)} if the operation
-     * succeeds or {@link RangingSession.Callback#onLogicalLinkCreateFailed(LogicalLinkParams, int)}
-     * if it fails.</p>
+     * succeeds or
+     * {@link RangingSession.Callback#onLogicalLinkCreationFailed(LogicalLinkParams, int)} if it
+     * fails.</p>
      *
      * @param params {@link LogicalLinkParams} containing the parameters for establishing the
      *           logical link connection.
@@ -1178,8 +1179,8 @@ public final class RangingSession implements AutoCloseable {
      *   <li>If the logical link is successfully closed,
      *      {@link RangingSession.Callback#onLogicalLinkClosed(int, int)} is invoked.</li>
      *   <li>If closing the logical link fails,
-     *        {@link RangingSession.Callback#onLogicalLinkCloseFailed(int, int)} is invoked with the
-     *        failure status.</li>
+     *        {@link RangingSession.Callback#onLogicalLinkClosureFailed(int, int)} is invoked with
+     *          the failure status.</li>
      * </ul>
      *
      * @param connectId The unique identifier of the logical link to close.
@@ -1579,15 +1580,15 @@ public final class RangingSession implements AutoCloseable {
     /**
      * @hide
      */
-    public void onLogicalLinkCreateFailed(LogicalLinkParams params, int status) {
+    public void onLogicalLinkCreationFailed(LogicalLinkParams params, int status) {
         if (!isOpen()) {
-            Log.w(mTag, "onLogicalLinkCreateFailed invoked for non-open session");
+            Log.w(mTag, "onLogicalLinkCreationFailed invoked for non-open session");
             return;
         }
 
-        Log.v(mTag, "onLogicalLinkCreateFailed - sessionHandle: " + mSessionHandle);
+        Log.v(mTag, "onLogicalLinkCreationFailed - sessionHandle: " + mSessionHandle);
         if (Flags.uwbFira3025q4()) {
-            executeCallback(() -> mCallback.onLogicalLinkCreateFailed(params, status));
+            executeCallback(() -> mCallback.onLogicalLinkCreationFailed(params, status));
         }
     }
 
@@ -1609,15 +1610,15 @@ public final class RangingSession implements AutoCloseable {
     /**
      * @hide
      */
-    public void onLogicalLinkCloseFailed(int connectId, int status) {
+    public void onLogicalLinkClosureFailed(int connectId, int status) {
         if (!isOpen()) {
-            Log.w(mTag, "onLogicalLinkCloseFailed invoked for non-open session");
+            Log.w(mTag, "onLogicalLinkClosureFailed invoked for non-open session");
             return;
         }
 
-        Log.v(mTag, "onLogicalLinkCloseFailed - sessionHandle: " + mSessionHandle);
+        Log.v(mTag, "onLogicalLinkClosureFailed - sessionHandle: " + mSessionHandle);
         if (Flags.uwbFira3025q4()) {
-            executeCallback(() -> mCallback.onLogicalLinkCloseFailed(connectId, status));
+            executeCallback(() -> mCallback.onLogicalLinkClosureFailed(connectId, status));
         }
     }
 

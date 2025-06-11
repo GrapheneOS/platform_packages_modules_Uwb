@@ -296,14 +296,14 @@ public class RangingManagerTest {
             rangingManager.onLogicalLinkCreated(handle, any(), anyInt());
             verify(callback, times(1)).onLogicalLinkCreated(any(), anyInt());
 
-            rangingManager.onLogicalLinkCreateFailed(handle, any(), anyInt());
-            verify(callback, times(1)).onLogicalLinkCreateFailed(any(), anyInt());
+            rangingManager.onLogicalLinkCreationFailed(handle, any(), anyInt());
+            verify(callback, times(1)).onLogicalLinkCreationFailed(any(), anyInt());
 
             rangingManager.onLogicalLinkClosed(handle, anyInt(), anyInt());
             verify(callback, times(1)).onLogicalLinkClosed(anyInt(), anyInt());
 
-            rangingManager.onLogicalLinkCloseFailed(handle, anyInt(), anyInt());
-            verify(callback, times(1)).onLogicalLinkCloseFailed(anyInt(), anyInt());
+            rangingManager.onLogicalLinkClosureFailed(handle, anyInt(), anyInt());
+            verify(callback, times(1)).onLogicalLinkClosureFailed(anyInt(), anyInt());
 
             rangingManager.onRemoteLogicalLinkRequested(handle, any());
             verify(callback, times(1)).onRemoteLogicalLinkRequested(any());

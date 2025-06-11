@@ -310,24 +310,20 @@ public class UwbUciConstants {
     /**
      * Link layer mode
      */
-    public static final byte LINK_LAYER_MODE_CONNECTION_LESS_NON_SECURE =
-            (byte) LogicalLinkParams.LINK_LAYER_MODE_CONNECTION_LESS_NON_SECURE;
-    public static final byte LINK_LAYER_MODE_CONNECTION_LESS_SECURE =
-            (byte) LogicalLinkParams.LINK_LAYER_MODE_CONNECTION_LESS_SECURE;
-    public static final byte LINK_LAYER_MODE_CONNECTION_LESS_UWBS_UWBS =
-            (byte) LogicalLinkParams.LINK_LAYER_MODE_CONNECTION_LESS_UWBS_UWBS;
+    public static final byte LINK_LAYER_MODE_CONNECTIONLESS_NON_SECURE =
+            (byte) LogicalLinkParams.LINK_LAYER_MODE_CONNECTIONLESS_NON_SECURE;
+    public static final byte LINK_LAYER_MODE_CONNECTIONLESS_SECURE =
+            (byte) LogicalLinkParams.LINK_LAYER_MODE_CONNECTIONLESS_SECURE;
+    public static final byte LINK_LAYER_MODE_CONNECTIONLESS_UWBS_TO_UWBS =
+            (byte) LogicalLinkParams.LINK_LAYER_MODE_CONNECTIONLESS_UWBS_TO_UWBS;
 
     /**
-     * Logical link status
+     * Table 42: Status code of LOGICAL_LINK_CREATE_NTF
      */
-    public static final int LOGICAL_LINK_STATUS_ACCEPTED =
-            LogicalLinkParams.LOGICAL_LINK_STATUS_ACCEPTED;
-    public static final int LOGICAL_LINK_STATUS_REJECTED =
-            LogicalLinkParams.LOGICAL_LINK_STATUS_REJECTED;
-    public static final int LOGICAL_LINK_STATUS_CO_CONNECTED =
-            LogicalLinkParams.LOGICAL_LINK_STATUS_CO_CONNECTED;
-    public static final int LOGICAL_LINK_STATUS_ERROR =
-            LogicalLinkParams.LOGICAL_LINK_STATUS_ERROR;
+    public static final int LOGICAL_LINK_STATUS_ACCEPTED = 0x00;
+    public static final int LOGICAL_LINK_STATUS_REJECTED = 0x01;
+    public static final int LOGICAL_LINK_STATUS_CONNECTION_ORIENTED_CONNECTED = 0x02;
+    public static final int LOGICAL_LINK_STATUS_ERROR = 0x03;
 
     /**
      * Logical link status code

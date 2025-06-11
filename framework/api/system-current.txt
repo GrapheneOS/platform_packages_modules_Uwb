@@ -102,29 +102,25 @@ package android.uwb {
   @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public final class LogicalLinkParams implements android.os.Parcelable {
     method public int describeContents();
     method @NonNull public byte[] getDestinationAddress();
-    method @NonNull public int getLinkLayerModeSelector();
-    method @NonNull public int getLogicalLinkClassLength();
+    method public int getLinkLayerModeSelector();
+    method public int getLogicalLinkClassLength();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field public static final int CONNECT_ID_UNSPECIFIED = -1; // 0xffffffff
     field @NonNull public static final android.os.Parcelable.Creator<android.uwb.LogicalLinkParams> CREATOR;
-    field public static final int LINK_LAYER_MODE_CONNECTION_LESS_NON_SECURE = 0; // 0x0
-    field public static final int LINK_LAYER_MODE_CONNECTION_LESS_SECURE = 1; // 0x1
-    field public static final int LINK_LAYER_MODE_CONNECTION_LESS_UWBS_UWBS = 4; // 0x4
+    field public static final int LINK_LAYER_MODE_CONNECTIONLESS_NON_SECURE = 0; // 0x0
+    field public static final int LINK_LAYER_MODE_CONNECTIONLESS_SECURE = 1; // 0x1
+    field public static final int LINK_LAYER_MODE_CONNECTIONLESS_UWBS_TO_UWBS = 4; // 0x4
     field public static final int LINK_LAYER_MODE_CONNECTION_ORIENTED_NON_SECURE = 2; // 0x2
     field public static final int LINK_LAYER_MODE_CONNECTION_ORIENTED_SECURE = 3; // 0x3
     field public static final int LINK_LAYER_MODE_CONNECTION_ORIENTED_UWBS_UWBS = 5; // 0x5
-    field public static final int LOGICAL_LINK_CLOSE_REASON_HOST_INITIATED = 5; // 0x5
+    field public static final int LOGICAL_LINK_CLOSE_REASON_HOST = 5; // 0x5
     field public static final int LOGICAL_LINK_CLOSE_REASON_REMOTE = 0; // 0x0
     field public static final int LOGICAL_LINK_CLOSE_REASON_SECURE_COMPONENT = 3; // 0x3
     field public static final int LOGICAL_LINK_CLOSE_REASON_TIMEOUT = 1; // 0x1
     field public static final int LOGICAL_LINK_CLOSE_REASON_TRANSMISSION_ERROR = 2; // 0x2
-    field public static final int LOGICAL_LINK_CLOSE_REASON_UNKNOWN_REASON = 4; // 0x4
-    field public static final int LOGICAL_LINK_STATUS_ACCEPTED = 0; // 0x0
-    field public static final int LOGICAL_LINK_STATUS_CO_CONNECTED = 2; // 0x2
-    field public static final int LOGICAL_LINK_STATUS_ERROR = 3; // 0x3
+    field public static final int LOGICAL_LINK_CLOSE_REASON_UNKNOWN = 4; // 0x4
     field public static final int LOGICAL_LINK_STATUS_FAILED = 1; // 0x1
     field public static final int LOGICAL_LINK_STATUS_OK = 0; // 0x0
-    field public static final int LOGICAL_LINK_STATUS_REJECTED = 1; // 0x1
   }
 
   public static final class LogicalLinkParams.Builder {
@@ -235,10 +231,10 @@ package android.uwb {
     method @FlaggedApi("com.android.uwb.flags.hybrid_session_support") public default void onHybridSessionControleeConfigured(@NonNull android.os.PersistableBundle);
     method @FlaggedApi("com.android.uwb.flags.hybrid_session_support") public default void onHybridSessionControllerConfigurationFailed(int, @NonNull android.os.PersistableBundle);
     method @FlaggedApi("com.android.uwb.flags.hybrid_session_support") public default void onHybridSessionControllerConfigured(@NonNull android.os.PersistableBundle);
-    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public default void onLogicalLinkCloseFailed(int, int);
     method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public default void onLogicalLinkClosed(int, int);
-    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public default void onLogicalLinkCreateFailed(@NonNull android.uwb.LogicalLinkParams, int);
+    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public default void onLogicalLinkClosureFailed(int, int);
     method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public default void onLogicalLinkCreated(@NonNull android.uwb.LogicalLinkParams, int);
+    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public default void onLogicalLinkCreationFailed(@NonNull android.uwb.LogicalLinkParams, int);
     method public void onOpenFailed(int, @NonNull android.os.PersistableBundle);
     method public void onOpened(@NonNull android.uwb.RangingSession);
     method public default void onPauseFailed(int, @NonNull android.os.PersistableBundle);

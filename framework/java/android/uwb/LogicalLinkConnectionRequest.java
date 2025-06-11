@@ -67,7 +67,7 @@ public final class LogicalLinkConnectionRequest implements Parcelable {
     /**
      * Returns the Link Layer Mode Selector value for this connection request.
      * <p>
-     * The value corresponds to a mode such as connection-oriented or connection-less,
+     * The value corresponds to a mode such as connection-oriented or connectionless,
      * secure or non-secure.
      *
      * @return Link Layer Mode Selector value.

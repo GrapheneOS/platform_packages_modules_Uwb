@@ -724,16 +724,16 @@ public class UwbSessionNotificationManager {
         }
     }
 
-    public void onLogicalLinkCreateFailed(UwbSession uwbSession, LogicalLinkParams params,
+    public void onLogicalLinkCreationFailed(UwbSession uwbSession, LogicalLinkParams params,
             int status) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
 
         try {
-            uwbRangingCallbacks.onLogicalLinkCreateFailed(sessionHandle, params, status);
-            Log.i(TAG, "IUwbRangingCallbacks - onLogicalLinkCreateFailed");
+            uwbRangingCallbacks.onLogicalLinkCreationFailed(sessionHandle, params, status);
+            Log.i(TAG, "IUwbRangingCallbacks - onLogicalLinkCreationFailed");
         } catch (Exception e) {
-            Log.e(TAG, "IUwbRangingCallbacks - onLogicalLinkCreateFailed : Failed");
+            Log.e(TAG, "IUwbRangingCallbacks - onLogicalLinkCreationFailed : Failed");
             e.printStackTrace();
         }
     }
@@ -764,14 +764,14 @@ public class UwbSessionNotificationManager {
         }
     }
 
-    public void onLogicalLinkCloseFailed(UwbSession uwbSession, int connectId, int status) {
+    public void onLogicalLinkClosureFailed(UwbSession uwbSession, int connectId, int status) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
         try {
-            uwbRangingCallbacks.onLogicalLinkCloseFailed(sessionHandle, connectId, status);
-            Log.i(TAG, "IUwbRangingCallbacks - onLogicalLinkCloseFailed");
+            uwbRangingCallbacks.onLogicalLinkClosureFailed(sessionHandle, connectId, status);
+            Log.i(TAG, "IUwbRangingCallbacks - onLogicalLinkClosureFailed");
         } catch (Exception e) {
-            Log.e(TAG, "IUwbRangingCallbacks - onLogicalLinkCloseFailed : Failed");
+            Log.e(TAG, "IUwbRangingCallbacks - onLogicalLinkClosureFailed : Failed");
             e.printStackTrace();
         }
     }

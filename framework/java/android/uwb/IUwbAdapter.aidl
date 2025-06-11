@@ -463,7 +463,7 @@ interface IUwbAdapter {
    * <p>Once the logical link creation attempt completes, the system invokes either
    * {@link RangingSession.Callback#onLogicalLinkCreated(SessionHandle, LogicalLinkParams, int)}
    *      if the operation succeeds, or
-   * {@link RangingSession.Callback#onLogicalLinkCreateFailed(SessionHandle, LogicalLinkParams, int)
+   * {@link RangingSession.Callback#onLogicalLinkCreationFailed(SessionHandle, LogicalLinkParams, int)
    *      } if it fails.</p>
    *
    * @param sessionHandle The session handle associated with the ongoing session.
@@ -480,7 +480,7 @@ interface IUwbAdapter {
    *   <li>If the logical link is successfully closed,
    *        {@link RangingSession.Callback#onLogicalLinkClosed(SessionHandle, int)} is invoked.</li>
    *   <li>If closing the logical link fails,
-   *        {@link RangingSession.Callback#onLogicalLinkCloseFailed(SessionHandle, int, int)} is
+   *        {@link RangingSession.Callback#onLogicalLinkClosureFailed(SessionHandle, int, int)} is
    *        invoked with the failure status.</li>
    * </ul>
    *

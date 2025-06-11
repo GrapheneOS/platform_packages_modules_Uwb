@@ -4962,7 +4962,7 @@ public class UwbSessionManagerTest {
         mUwbSessionManager.createLogicalLink(uwbSession.getSessionHandle(), params);
         mTestLooper.dispatchNext();
 
-        verify(mUwbSessionNotificationManager, never()).onLogicalLinkCreateFailed(any(), any(),
+        verify(mUwbSessionNotificationManager, never()).onLogicalLinkCreationFailed(any(), any(),
                 anyInt());
     }
 
@@ -4981,7 +4981,7 @@ public class UwbSessionManagerTest {
         mUwbSessionManager.createLogicalLink(uwbSession.getSessionHandle(), params);
         mTestLooper.dispatchNext();
 
-        verify(mUwbSessionNotificationManager).onLogicalLinkCreateFailed(eq(uwbSession),
+        verify(mUwbSessionNotificationManager).onLogicalLinkCreationFailed(eq(uwbSession),
                 eq(params), eq(UwbUciConstants.LOGICAL_LINK_STATUS_FAILED));
     }
 
@@ -5061,7 +5061,7 @@ public class UwbSessionManagerTest {
         mUwbSessionManager.closeLogicalLink(uwbSession.getSessionHandle(), connectId);
         mTestLooper.dispatchNext();
 
-        verify(mUwbSessionNotificationManager, never()).onLogicalLinkCloseFailed(any(), anyInt(),
+        verify(mUwbSessionNotificationManager, never()).onLogicalLinkClosureFailed(any(), anyInt(),
                 anyInt());
 
         // close logical link failure
@@ -5071,7 +5071,7 @@ public class UwbSessionManagerTest {
         mUwbSessionManager.closeLogicalLink(uwbSession.getSessionHandle(), connectId);
         mTestLooper.dispatchNext();
 
-        verify(mUwbSessionNotificationManager).onLogicalLinkCloseFailed(eq(uwbSession),
+        verify(mUwbSessionNotificationManager).onLogicalLinkClosureFailed(eq(uwbSession),
                 eq(connectId), eq(UwbUciConstants.LOGICAL_LINK_STATUS_FAILED));
     }
 

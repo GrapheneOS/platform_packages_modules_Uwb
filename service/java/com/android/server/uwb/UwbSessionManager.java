@@ -737,7 +737,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             Log.e(TAG, "onLogicalLinkCreateNotification: Logical link creation failed with status: "
                     + status);
             uwbSession.removeLogicalLinkInfo(connectionId);
-            mSessionNotificationManager.onLogicalLinkCreateFailed(uwbSession, params,
+            mSessionNotificationManager.onLogicalLinkCreationFailed(uwbSession, params,
                     UwbUciConstants.LOGICAL_LINK_STATUS_FAILED);
         } else {
             mSessionNotificationManager.onLogicalLinkCreated(uwbSession, params, connectionId);
@@ -3078,7 +3078,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
         if (UwbUciConstants.DEVICE_TYPE_CONTROLLER != uwbSession.getDeviceType()) {
             Log.e(TAG, "Logical link creation rejected: UWBS is not in Controller role.");
-            mSessionNotificationManager.onLogicalLinkCreateFailed(uwbSession, params, status);
+            mSessionNotificationManager.onLogicalLinkCreationFailed(uwbSession, params, status);
             return;
         }
 
@@ -3087,11 +3087,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
         if ((sessionType == UwbUciConstants.SESSION_TYPE_RANGING_AND_IN_BAND_DATA
                 || sessionType == UwbUciConstants.SESSION_TYPE_RANGING_WITH_DATA_PHASE)
-                && !(linkLayerMode == UwbUciConstants.LINK_LAYER_MODE_CONNECTION_LESS_NON_SECURE
-                || linkLayerMode == UwbUciConstants.LINK_LAYER_MODE_CONNECTION_LESS_SECURE
-                || linkLayerMode == UwbUciConstants.LINK_LAYER_MODE_CONNECTION_LESS_UWBS_UWBS)) {
+                && !(linkLayerMode == UwbUciConstants.LINK_LAYER_MODE_CONNECTIONLESS_NON_SECURE
+                || linkLayerMode == UwbUciConstants.LINK_LAYER_MODE_CONNECTIONLESS_SECURE
+                || linkLayerMode == UwbUciConstants.LINK_LAYER_MODE_CONNECTIONLESS_UWBS_TO_UWBS)) {
             Log.e(TAG, "Invalid Link Layer Mode Selector for session type: " + sessionType);
-            mSessionNotificationManager.onLogicalLinkCreateFailed(uwbSession, params, status);
+            mSessionNotificationManager.onLogicalLinkCreationFailed(uwbSession, params, status);
             return;
         }
 
@@ -3104,7 +3104,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
         if (response == null) {
             Log.e(TAG, "Logical link creation returned null response");
-            mSessionNotificationManager.onLogicalLinkCreateFailed(uwbSession, params, status);
+            mSessionNotificationManager.onLogicalLinkCreationFailed(uwbSession, params, status);
             return;
         }
 
@@ -3113,7 +3113,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
         if (uciStatus != UwbUciConstants.STATUS_CODE_OK) {
             Log.e(TAG, "Logical link creation failed with UCI status: " + uciStatus);
-            mSessionNotificationManager.onLogicalLinkCreateFailed(uwbSession,
+            mSessionNotificationManager.onLogicalLinkCreationFailed(uwbSession,
                     params, status);
             return;
         }
@@ -3136,7 +3136,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         int connectId = info.connectId;
         if (!uwbSession.mLogicalLinksInfoMap.containsKey(connectId)) {
             Log.e(TAG, "No logical link found with connectId: " + connectId);
-            mSessionNotificationManager.onLogicalLinkCloseFailed(uwbSession, connectId, status);
+            mSessionNotificationManager.onLogicalLinkClosureFailed(uwbSession, connectId, status);
             return;
         }
 
@@ -3161,7 +3161,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         } else {
             Log.e(TAG, "Failed to close logical link for connectId: " + connectId
                     + " with UCI status: " + status);
-            mSessionNotificationManager.onLogicalLinkCloseFailed(uwbSession, connectId,
+            mSessionNotificationManager.onLogicalLinkClosureFailed(uwbSession, connectId,
                     UwbUciConstants.LOGICAL_LINK_STATUS_FAILED);
         }
     }
