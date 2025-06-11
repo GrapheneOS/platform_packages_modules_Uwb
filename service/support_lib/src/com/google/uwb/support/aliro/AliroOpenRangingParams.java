@@ -19,7 +19,6 @@ package com.google.uwb.support.aliro;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_DYNAMIC;
-import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_PROVISIONED;
 
 import android.os.Build.VERSION_CODES;
 import android.os.PersistableBundle;
@@ -765,8 +764,6 @@ public class AliroOpenRangingParams extends AliroParams {
 
         public AliroOpenRangingParams build() {
             checkRangeDataNtfConfig();
-            checkArgument((mStsConfig == STS_CONFIG_PROVISIONED && mSessionKey != null)
-                    || (mStsConfig == STS_CONFIG_DYNAMIC && mSessionKey == null));
             checkArgument(mSessionKey == null
                             || (mSessionKey.length == 16 || mSessionKey.length == 32));
             checkArgument(mMacModeRound == MAC_MODE_ROUND_1 || mMacModeRound == MAC_MODE_ROUND_2);
