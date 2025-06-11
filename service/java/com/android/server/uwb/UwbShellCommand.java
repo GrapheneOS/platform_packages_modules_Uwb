@@ -233,7 +233,6 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     .setNumResponderNodes(1)
                     .setHoppingConfigMode(HOPPING_MODE_DISABLE)
                     .setHoppingSequence(AliroParams.HOPPING_SEQUENCE_DEFAULT)
-                    .setStsConfig(STS_CONFIG_PROVISIONED)
                     .setNumSlotsPerRound(AliroParams.SLOTS_PER_ROUND_6)
                     .setSyncCodeIndex(9)
                     .setSessionKey(new byte[] {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
