@@ -264,6 +264,13 @@ public class FiraEncoderTest {
                             + "1F01002201012301002401002501322601002901012A0200002C01002D01002E"
                             + "01012F0101320200003501013101000001012B04000000001C0100270278"
                             + "0528061A5577477E7D3304B004000034041E0000003803010B0A390101EA0100");
+
+            mFiraSessionv20SecureRanging = UwbUtil.getByteArray("010101020103030100040109"
+                    + "06020604080260090B01000C01030D01010E01040F0200001002204E11010012010313010014"
+                    + "010A1501021601001701011A01011B01191F0100220101230100240100250132260100290101"
+                    + "2A0200002C01002D01002E01012F0101320200003501013101000904C8000000000101050101"
+                    + "070206042B08E8030000000000001801011901004701004C01014A01024B01041D0807D59E47"
+                    + "07D56022EA0100");
         } else {
             mFiraSessionv11TlvData = UwbUtil.getByteArray(RANGING_ROUND_USAGE_SS_TWR_TLV
                     + STS_CONFIG_STATIC_TLV + MULTI_NODE_MODE_UNICAST_TLV + CHANNEL_NUMBER_TLV
@@ -578,6 +585,7 @@ public class FiraEncoderTest {
         TlvBuffer tlvs = mFiraEncoder.getTlvBuffer(params, PROTOCOL_VERSION_2_0);
 
         assertThat(tlvs.getNoOfParams()).isEqualTo(49);
+        assertThat(mFiraSessionv20SecureRanging).isNotNull();
         assertThat(tlvs.getByteArray()).isEqualTo(mFiraSessionv20SecureRanging);
     }
 

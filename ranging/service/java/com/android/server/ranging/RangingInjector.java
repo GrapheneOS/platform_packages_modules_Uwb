@@ -192,6 +192,13 @@ public class RangingInjector {
         return permissionCheckResult == PERMISSION_GRANTED;
     }
 
+    /**
+     * Create a RangingShellCommand instance.
+     */
+    public RangingShellCommand makeRangingShellCommand(RangingServiceImpl rangingService) {
+        return new RangingShellCommand(this, rangingService, mContext);
+    }
+
     /** Helper method to check if the app is a system app. */
     public boolean isSystemApp(int uid, @NonNull String packageName) {
         try {
