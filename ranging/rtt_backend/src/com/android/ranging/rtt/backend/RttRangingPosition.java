@@ -28,6 +28,8 @@ public class RttRangingPosition {
     private static final String TAG = RttRangingPosition.class.getName();
 
     private double mDistanceMeters;
+    private double mDistanceStdDevMeters;
+    private int mNumSuccessfulMeasurements;
     private long mRangingTimestampMillis;
     private int mRssi;
     Azimuth mAzimuth;
@@ -38,6 +40,8 @@ public class RttRangingPosition {
      */
     public RttRangingPosition(@NonNull RangingResult rangingResult) {
         mDistanceMeters = rangingResult.getDistanceMm() / 1000.0;
+        mDistanceStdDevMeters = rangingResult.getDistanceStdDevMm() / 1000.0;
+        mNumSuccessfulMeasurements = rangingResult.getNumSuccessfulMeasurements();
         mRssi = rangingResult.getRssi();
         mAzimuth = null;
         mElevation = null;
@@ -49,6 +53,20 @@ public class RttRangingPosition {
      */
     public double getDistanceMeters() {
         return mDistanceMeters;
+    }
+
+    /**
+     * Gets distance standard deviation in meters.
+     */
+    public double getDistanceStdDevMeters() {
+        return mDistanceStdDevMeters;
+    }
+
+    /**
+     * Gets number of successful measurements. Must be at least 2 for distance std dev to be valid.
+     */
+    public int getNumSuccessfulMeasurements() {
+        return mNumSuccessfulMeasurements;
     }
 
     /**
