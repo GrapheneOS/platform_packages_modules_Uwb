@@ -373,14 +373,14 @@ public class RangingSessionTest {
             session.onLogicalLinkCreated(any(), anyInt());
             verify(callback, times(1)).onLogicalLinkCreated(any(), anyInt());
 
-            session.onLogicalLinkCreateFailed(any(), anyInt());
-            verify(callback, times(1)).onLogicalLinkCreateFailed(any(), anyInt());
+            session.onLogicalLinkCreationFailed(any(), anyInt());
+            verify(callback, times(1)).onLogicalLinkCreationFailed(any(), anyInt());
 
             session.onLogicalLinkClosed(anyInt(), anyInt());
             verify(callback, times(1)).onLogicalLinkClosed(anyInt(), anyInt());
 
-            session.onLogicalLinkCloseFailed(anyInt(), anyInt());
-            verify(callback, times(1)).onLogicalLinkCloseFailed(anyInt(), anyInt());
+            session.onLogicalLinkClosureFailed(anyInt(), anyInt());
+            verify(callback, times(1)).onLogicalLinkClosureFailed(anyInt(), anyInt());
 
             session.onRemoteLogicalLinkRequested(any());
             verify(callback, times(1)).onRemoteLogicalLinkRequested(any());

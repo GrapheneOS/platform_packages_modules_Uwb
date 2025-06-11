@@ -657,9 +657,9 @@ public class UwbManagerTest {
         public boolean onControleeRemoveFailedCalled;
         public boolean onUpdateDtTagStatusCalled;
         public boolean onLogicalLinkCreatedCalled;
-        public boolean onLogicalLinkCreateFailedCalled;
+        public boolean onLogicalLinkCreationFailedCalled;
         public boolean onLogicalLinkClosedCalled;
-        public boolean onLogicalLinkCloseFailedCalled;
+        public boolean onLogicalLinkClosureFailedCalled;
         public boolean onDataSentCalled;
         public boolean onDataSendFailedCalled;
         public boolean onPauseCalled;
@@ -813,8 +813,8 @@ public class UwbManagerTest {
             mCtrlCountDownLatch.countDown();
         }
 
-        public void onLogicalLinkCreateFailed(@NonNull LogicalLinkParams params, int status) {
-            onLogicalLinkCreateFailedCalled = true;
+        public void onLogicalLinkCreationFailed(@NonNull LogicalLinkParams params, int status) {
+            onLogicalLinkCreationFailedCalled = true;
         }
 
         public void onLogicalLinkClosed(int connectId, int reason) {
@@ -822,8 +822,8 @@ public class UwbManagerTest {
             mCtrlCountDownLatch.countDown();
         }
 
-        public void onLogicalLinkCloseFailed(int connectId, int status) {
-            onLogicalLinkCloseFailedCalled = true;
+        public void onLogicalLinkClosureFailed(int connectId, int status) {
+            onLogicalLinkClosureFailedCalled = true;
         }
 
         public void onRemoteLogicalLinkRequested(@NonNull LogicalLinkConnectionRequest linkInfo) {}
@@ -2702,7 +2702,7 @@ public class UwbManagerTest {
             assertThat(rangingSessionCallback.rangingSession).isNotNull();
 
             LogicalLinkParams logicalLinkParams = new LogicalLinkParams.Builder(
-                    LogicalLinkParams.LINK_LAYER_MODE_CONNECTION_LESS_NON_SECURE,
+                    LogicalLinkParams.LINK_LAYER_MODE_CONNECTIONLESS_NON_SECURE,
                     UwbAddress.fromBytes(new byte[] {0x33, 0x22}))
                     .setLogicalLinkClassLength(0).build();
 
@@ -2721,7 +2721,7 @@ public class UwbManagerTest {
             // Wait for the onLogicalLinkCreated callback.
             assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
             assertThat(rangingSessionCallback.onLogicalLinkCreatedCalled).isTrue();
-            assertThat(rangingSessionCallback.onLogicalLinkCreateFailedCalled).isFalse();
+            assertThat(rangingSessionCallback.onLogicalLinkCreationFailedCalled).isFalse();
 
             //Get logical link params
             LogicalLinkConnectionParams getParamsResponse =
@@ -2754,7 +2754,7 @@ public class UwbManagerTest {
                     rangingSessionCallback.connectId);
             assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
             assertThat(rangingSessionCallback.onLogicalLinkClosedCalled).isTrue();
-            assertThat(rangingSessionCallback.onLogicalLinkCloseFailedCalled).isFalse();
+            assertThat(rangingSessionCallback.onLogicalLinkClosureFailedCalled).isFalse();
 
             // Check the UWB state.
             assertThat(mUwbManager.getAdapterState()).isEqualTo(STATE_ENABLED_ACTIVE);

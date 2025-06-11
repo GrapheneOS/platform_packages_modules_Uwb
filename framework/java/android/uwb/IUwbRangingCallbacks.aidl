@@ -387,7 +387,7 @@ oneway interface IUwbRangingCallbacks {
    * @param status The status code indicating the reason for failure.
    *                   See {@link LogicalLinkStatusCode} for possible values.
    */
-  void onLogicalLinkCreateFailed(in SessionHandle sessionHandle, in LogicalLinkParams params,
+  void onLogicalLinkCreationFailed(in SessionHandle sessionHandle, in LogicalLinkParams params,
       in int status);
 
   /**
@@ -414,7 +414,7 @@ oneway interface IUwbRangingCallbacks {
    * @param status The failure status code indicating why the close failed.
    *                   See {@link LogicalLinkStatusCode} for possible values.
    */
-  void onLogicalLinkCloseFailed(in SessionHandle sessionHandle, in int connectId, in int status);
+  void onLogicalLinkClosureFailed(in SessionHandle sessionHandle, in int connectId, in int status);
 
   /**
    * Callback invoked when a remote device requests to establish a logical link.
