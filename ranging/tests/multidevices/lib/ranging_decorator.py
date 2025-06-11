@@ -14,7 +14,7 @@ from mobly.snippet.callback_event import CallbackEvent
 
 
 CALLBACK_WAIT_TIME_SEC = 5.0
-
+PACKAGE = "com.google.snippet.ranging"
 
 class RangingTechnology(IntEnum):
   UWB = 0
@@ -74,6 +74,28 @@ class RangingDecorator:
     """Remove device from active raging session"""
     payload = {"peer_id": preference.peer_id}
     self.ad.ranging.removeDeviceFromRangingSession(session_handle, payload)
+
+  def move_snippet_to_bg(self):
+    """Simulates moving snippet app to background."""
+    self.ad.adb.shell([
+      "cmd",
+      "ranging",
+      "simulate-app-state-change",
+      PACKAGE,
+      "background",
+    ])
+
+
+  def move_snippet_to_fg(self):
+    """Simulates moving snippet app to foreground."""
+    self.ad.adb.shell([
+      "cmd",
+      "ranging",
+      "simulate-app-state-change",
+      PACKAGE,
+      "foreground",
+    ])
+
 
   def start_ranging_and_assert_opened(
       self, session_handle: str, preference: RangingPreference
