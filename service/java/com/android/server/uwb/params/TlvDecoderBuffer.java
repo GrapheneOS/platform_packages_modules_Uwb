@@ -73,8 +73,8 @@ public class TlvDecoderBuffer {
 
         @Override
         public String toString() {
-            return "Tlv[tagType: " + tagType + ", length: " + length + ", value: "
-                    + UwbUtil.toHexString(value) + "]";
+            return "Tlv[tagType: " + tagType + "(" + UwbUtil.toHexString(tagType) + ") , length: "
+                    + length + ", value: " + UwbUtil.toHexString(value) + "]";
         }
     }
 
