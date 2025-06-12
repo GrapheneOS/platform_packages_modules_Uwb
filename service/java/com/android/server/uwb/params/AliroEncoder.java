@@ -104,7 +104,8 @@ public class AliroEncoder extends TlvEncoder {
                         mUwbInjector.getDeviceConfigFacade().isFiraSupportedExtensionForCCC()
                         ? (byte) UwbUciConstants.CCC_DEVICE_TYPE_CONTROLLER :
                         (byte) UwbUciConstants.DEVICE_TYPE_CONTROLLER) // DEVICE_TYPE
-                .putByte(ConfigParam.STS_CONFIG, (byte) params.getStsConfig()) // STS_CONFIG
+                // Need not configure sts config for aliro at the moment.
+                //.putByte(ConfigParam.STS_CONFIG, (byte) params.getStsConfig()) // STS_CONFIG
                 .putByte(ConfigParam.CHANNEL_NUMBER, (byte) params.getChannel()) // CHANNEL_ID
                 .putByte(ConfigParam.NUMBER_OF_CONTROLEES,
                         (byte) params.getNumResponderNodes()) // NUMBER_OF_ANCHORS

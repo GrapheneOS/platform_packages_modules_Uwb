@@ -52,25 +52,25 @@ public final class LogicalLinkParams implements Parcelable {
      */
     @IntDef(
         value = {
-            LINK_LAYER_MODE_CONNECTION_LESS_NON_SECURE,
-            LINK_LAYER_MODE_CONNECTION_LESS_SECURE,
+            LINK_LAYER_MODE_CONNECTIONLESS_NON_SECURE,
+            LINK_LAYER_MODE_CONNECTIONLESS_SECURE,
             LINK_LAYER_MODE_CONNECTION_ORIENTED_NON_SECURE,
             LINK_LAYER_MODE_CONNECTION_ORIENTED_SECURE,
-            LINK_LAYER_MODE_CONNECTION_LESS_UWBS_UWBS,
+            LINK_LAYER_MODE_CONNECTIONLESS_UWBS_TO_UWBS,
             LINK_LAYER_MODE_CONNECTION_ORIENTED_UWBS_UWBS,
         })
     @Retention(RetentionPolicy.SOURCE)
     public @interface LinkLayerMode {}
 
     /**
-     * Connection-less mode with no security.
+     * Connectionless mode with no security.
      */
-    public static final int LINK_LAYER_MODE_CONNECTION_LESS_NON_SECURE = 0x00;
+    public static final int LINK_LAYER_MODE_CONNECTIONLESS_NON_SECURE = 0x00;
 
     /**
-     * Connection-less mode with security enabled.
+     * Connectionless mode with security enabled.
      */
-    public static final int LINK_LAYER_MODE_CONNECTION_LESS_SECURE = 0x01;
+    public static final int LINK_LAYER_MODE_CONNECTIONLESS_SECURE = 0x01;
 
     /**
      * Connection-oriented mode with no security.
@@ -83,9 +83,9 @@ public final class LogicalLinkParams implements Parcelable {
     public static final int LINK_LAYER_MODE_CONNECTION_ORIENTED_SECURE = 0x03;
 
     /**
-     * Connection-less mode for UWBS-to-UWBS communication.
+     * Connectionless mode for UWBS-to-UWBS communication.
      */
-    public static final int LINK_LAYER_MODE_CONNECTION_LESS_UWBS_UWBS = 0x04;
+    public static final int LINK_LAYER_MODE_CONNECTIONLESS_UWBS_TO_UWBS = 0x04;
 
     /**
      * Connection-oriented mode for UWBS-to-UWBS communication.
@@ -125,8 +125,8 @@ public final class LogicalLinkParams implements Parcelable {
         LOGICAL_LINK_CLOSE_REASON_TIMEOUT,
         LOGICAL_LINK_CLOSE_REASON_TRANSMISSION_ERROR,
         LOGICAL_LINK_CLOSE_REASON_SECURE_COMPONENT,
-        LOGICAL_LINK_CLOSE_REASON_UNKNOWN_REASON,
-        LOGICAL_LINK_CLOSE_REASON_HOST_INITIATED,
+        LOGICAL_LINK_CLOSE_REASON_UNKNOWN,
+        LOGICAL_LINK_CLOSE_REASON_HOST,
     })
     @interface LogicalLinkClosureReason {}
 
@@ -153,44 +153,12 @@ public final class LogicalLinkParams implements Parcelable {
     /**
      * The logical link was terminated due to an unknown reason.
      */
-    public static final int LOGICAL_LINK_CLOSE_REASON_UNKNOWN_REASON = 0x04;
+    public static final int LOGICAL_LINK_CLOSE_REASON_UNKNOWN = 0x04;
 
     /**
      * The logical link was explicitly terminated by the host.
      */
-    public static final int LOGICAL_LINK_CLOSE_REASON_HOST_INITIATED = 0x05;
-
-    /**
-     * @hide
-     */
-    @Retention(RetentionPolicy.SOURCE)
-    @IntDef(value = {
-            LOGICAL_LINK_STATUS_ACCEPTED,
-            LOGICAL_LINK_STATUS_REJECTED,
-            LOGICAL_LINK_STATUS_CO_CONNECTED,
-            LOGICAL_LINK_STATUS_ERROR,
-    })
-    @interface LogicalLinkStatus {}
-
-    /**
-     * Parameters accepted, link ready (Connection less) or scheduled (Connection oriented).
-     */
-    public static final int LOGICAL_LINK_STATUS_ACCEPTED = 0x00;
-
-    /**
-     * Link creation failed.
-     */
-    public static final int LOGICAL_LINK_STATUS_REJECTED = 0x01;
-
-    /**
-     * Connection oriented link established, ready for data.
-     */
-    public static final int LOGICAL_LINK_STATUS_CO_CONNECTED = 0x02;
-
-    /**
-     * Link creation unsuccessful.
-     */
-    public static final int LOGICAL_LINK_STATUS_ERROR = 0x03;
+    public static final int LOGICAL_LINK_CLOSE_REASON_HOST = 0x05;
 
     /** Indicates that no specific Logical Link Connection ID is provided. */
     public static final int CONNECT_ID_UNSPECIFIED = -1;
@@ -206,7 +174,6 @@ public final class LogicalLinkParams implements Parcelable {
      *
      * @return The link layer mode selector {@link LinkLayerMode}
      */
-    @NonNull
     @LinkLayerMode
     public int getLinkLayerModeSelector() {
         return mLinkLayerModeSelector;
@@ -231,7 +198,6 @@ public final class LogicalLinkParams implements Parcelable {
      *
      * @return The class length of the logical link.
      */
-    @NonNull
     public int getLogicalLinkClassLength() {
         return mLogicalLinkClassLength;
     }

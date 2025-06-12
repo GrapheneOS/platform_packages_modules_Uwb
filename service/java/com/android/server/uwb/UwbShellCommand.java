@@ -233,7 +233,6 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     .setNumResponderNodes(1)
                     .setHoppingConfigMode(HOPPING_MODE_DISABLE)
                     .setHoppingSequence(AliroParams.HOPPING_SEQUENCE_DEFAULT)
-                    .setStsConfig(STS_CONFIG_PROVISIONED)
                     .setNumSlotsPerRound(AliroParams.SLOTS_PER_ROUND_6)
                     .setSyncCodeIndex(9)
                     .setSessionKey(new byte[] {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
@@ -450,12 +449,12 @@ public class UwbShellCommand extends BasicShellCommandHandler {
         public void onLogicalLinkCreated(SessionHandle sessionHandle, LogicalLinkParams params,
                 int connectId) {}
 
-        public void onLogicalLinkCreateFailed(SessionHandle sessionHandle, LogicalLinkParams params,
-                int status) {}
+        public void onLogicalLinkCreationFailed(SessionHandle sessionHandle,
+                LogicalLinkParams params, int status) {}
 
         public void onLogicalLinkClosed(SessionHandle sessionHandle, int connectId, int reason) {}
 
-        public void onLogicalLinkCloseFailed(SessionHandle sessionHandle, int connectId,
+        public void onLogicalLinkClosureFailed(SessionHandle sessionHandle, int connectId,
                 int status) {}
 
         public void onRemoteLogicalLinkRequested(SessionHandle sessionHandle,

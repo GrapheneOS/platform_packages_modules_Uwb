@@ -39,6 +39,7 @@ public final class RangingData implements Parcelable {
     @RangingManager.RangingTechnology
     private final int mRangingTechnology;
     private final RangingMeasurement mDistance;
+    private final double mDistanceStdDevMeters;
     @Nullable private final RangingMeasurement mAzimuth;
     @Nullable private final RangingMeasurement mElevation;
     private final int mRssi;
@@ -46,6 +47,7 @@ public final class RangingData implements Parcelable {
     private final double mDelaySpreadMeters;
     private final /* @android.bluetooth.le.Nadm */ byte mDetectedAttackLevel;
     private final double mVelocityMetersPerSec;
+
 
     private RangingData(Builder builder) {
         if (builder.mDistance == null) {
@@ -59,6 +61,7 @@ public final class RangingData implements Parcelable {
         }
         mRangingTechnology = (int) builder.mRangingTechnology;
         mDistance = builder.mDistance;
+        mDistanceStdDevMeters = builder.mDistanceStdDevMeters;
         mAzimuth = builder.mAzimuth;
         mElevation = builder.mElevation;
         mRssi = builder.mRssi;
@@ -73,6 +76,7 @@ public final class RangingData implements Parcelable {
         mDistance = Objects.requireNonNull(
                 in.readParcelable(RangingMeasurement.class.getClassLoader(),
                         RangingMeasurement.class));
+        mDistanceStdDevMeters = in.readDouble();
         mAzimuth = in.readParcelable(
                 RangingMeasurement.class.getClassLoader(), RangingMeasurement.class);
         mElevation = in.readParcelable(
@@ -155,6 +159,28 @@ public final class RangingData implements Parcelable {
             throw new IllegalStateException("rssi is not set");
         }
         return mRssi;
+    }
+
+    /**
+     * Check if the standard deviation of distance is set.
+     *
+     * @return True if a standard deviation value is set, false if it isn't.
+     */
+    @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_25Q4)
+    public boolean hasDistanceStdDev() {
+        return !Double.isNaN(mDistanceStdDevMeters);
+    }
+
+    /**
+     * Get the standard deviation of distance in meters .
+     *
+     * <p>Returned value will be positive if it exists</p>
+     *
+     * @return The standard deviation of distance in meters, or NaN if it was not set.
+     */
+    @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_25Q4)
+    public double getDistanceStdDevMeters() {
+        return mDistanceStdDevMeters;
     }
 
     /**
@@ -241,6 +267,7 @@ public final class RangingData implements Parcelable {
     public void writeToParcel(@NonNull Parcel dest, int flags) {
         dest.writeInt(mRangingTechnology);
         dest.writeParcelable(mDistance, flags);
+        dest.writeDouble(mDistanceStdDevMeters);
         dest.writeParcelable(mAzimuth, flags);
         dest.writeParcelable(mElevation, flags);
         dest.writeInt(mRssi);
@@ -258,6 +285,7 @@ public final class RangingData implements Parcelable {
     public static final class Builder {
         private int mRangingTechnology = Integer.MIN_VALUE;
         private RangingMeasurement mDistance = null;
+        private double mDistanceStdDevMeters = Double.NaN;
         private RangingMeasurement mAzimuth = null;
         private RangingMeasurement mElevation = null;
         private int mRssi = Integer.MIN_VALUE;
@@ -341,6 +369,24 @@ public final class RangingData implements Parcelable {
         @NonNull
         public Builder setTimestampMillis(long timestamp) {
             mTimestamp = timestamp;
+            return this;
+        }
+
+        /**
+         * Sets the standard deviation of distance in meters.
+         *
+         * <p>Must be positive.</p>
+         *
+         * @param stdDevMeters The standard deviation of distance in meters.
+         * @return This {@link Builder} instance.
+         * @throws IllegalArgumentException if the provided value is < 0.
+         */
+        @NonNull
+        public Builder setDistanceStdDev(double stdDevMeters) {
+            if (stdDevMeters < 0) {
+                throw new IllegalArgumentException("Std Dev meters must be >= 0");
+            }
+            mDistanceStdDevMeters = stdDevMeters;
             return this;
         }
 

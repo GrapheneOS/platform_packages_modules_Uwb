@@ -751,13 +751,13 @@ public class UwbSessionNotificationManagerTest {
     }
 
     @Test
-    public void testOnLogicalLinkCreateFailed() throws Exception {
+    public void testOnLogicalLinkCreationFailed() throws Exception {
         assumeTrue(Flags.uwbFira3025q4());
         LogicalLinkParams params = new LogicalLinkParams.Builder(0,
                 UwbAddress.fromBytes(new byte[] {0x11, 0x22})).build();
-        mUwbSessionNotificationManager.onLogicalLinkCreateFailed(mUwbSession, params,
+        mUwbSessionNotificationManager.onLogicalLinkCreationFailed(mUwbSession, params,
                 UwbUciConstants.LOGICAL_LINK_STATUS_FAILED);
-        verify(mIUwbRangingCallbacks).onLogicalLinkCreateFailed(any(), eq(params),
+        verify(mIUwbRangingCallbacks).onLogicalLinkCreationFailed(any(), eq(params),
                 eq(UwbUciConstants.LOGICAL_LINK_STATUS_FAILED));
     }
 
@@ -772,11 +772,11 @@ public class UwbSessionNotificationManagerTest {
     }
 
     @Test
-    public void testOnLogicalLinkCloseFailed() throws Exception {
+    public void testOnLogicalLinkClosureFailed() throws Exception {
         assumeTrue(Flags.uwbFira3025q4());
-        mUwbSessionNotificationManager.onLogicalLinkCloseFailed(mUwbSession,
+        mUwbSessionNotificationManager.onLogicalLinkClosureFailed(mUwbSession,
                 UwbTestUtils.LOGICAL_LINK_CONNECT_ID, STATUS_CODE_OK);
-        verify(mIUwbRangingCallbacks).onLogicalLinkCloseFailed(any(),
+        verify(mIUwbRangingCallbacks).onLogicalLinkClosureFailed(any(),
                 eq(UwbTestUtils.LOGICAL_LINK_CONNECT_ID), eq(STATUS_CODE_OK));
     }
 

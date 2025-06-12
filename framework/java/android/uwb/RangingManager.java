@@ -592,17 +592,17 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks.Stub {
     }
 
     @Override
-    public void onLogicalLinkCreateFailed(SessionHandle sessionHandle, LogicalLinkParams params,
+    public void onLogicalLinkCreationFailed(SessionHandle sessionHandle, LogicalLinkParams params,
             int status) {
         synchronized (this) {
             if (!hasSession(sessionHandle)) {
-                Log.w(mTag, "onLogicalLinkCreateFailed - received unexpected SessionHandle: "
+                Log.w(mTag, "onLogicalLinkCreationFailed - received unexpected SessionHandle: "
                         + sessionHandle);
                 return;
             }
 
             RangingSession session = mRangingSessionTable.get(sessionHandle);
-            session.onLogicalLinkCreateFailed(params, status);
+            session.onLogicalLinkCreationFailed(params, status);
         }
     }
 
@@ -621,16 +621,16 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks.Stub {
     }
 
     @Override
-    public void onLogicalLinkCloseFailed(SessionHandle sessionHandle, int connectId, int status) {
+    public void onLogicalLinkClosureFailed(SessionHandle sessionHandle, int connectId, int status) {
         synchronized (this) {
             if (!hasSession(sessionHandle)) {
-                Log.w(mTag, "onLogicalLinkCloseFailed - received unexpected SessionHandle: "
+                Log.w(mTag, "onLogicalLinkClosureFailed - received unexpected SessionHandle: "
                         + sessionHandle);
                 return;
             }
 
             RangingSession session = mRangingSessionTable.get(sessionHandle);
-            session.onLogicalLinkCloseFailed(connectId, status);
+            session.onLogicalLinkClosureFailed(connectId, status);
         }
     }
 

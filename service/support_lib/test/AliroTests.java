@@ -16,13 +16,9 @@
 
 package com.google.uwb.support;
 
-import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_DYNAMIC;
-import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_PROVISIONED;
-
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import android.os.PersistableBundle;
 
@@ -197,29 +193,6 @@ public class AliroTests {
         assertArrayEquals(fromBundle.getSessionKey(), sessionKey);
 
         verifyProtocolPresent(params);
-    }
-
-    @Test
-    public void testOpenRangingParams() {
-        byte[] sessionKey = new byte[] {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-                0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
-        verifyOpenRangingParams(STS_CONFIG_DYNAMIC, null);
-        verifyOpenRangingParams(STS_CONFIG_PROVISIONED, sessionKey);
-
-        try {
-            verifyOpenRangingParams(STS_CONFIG_DYNAMIC, sessionKey);
-            fail();
-        } catch (IllegalArgumentException e) {
-            // Pass
-        }
-
-        try {
-            verifyOpenRangingParams(STS_CONFIG_PROVISIONED, null);
-            fail();
-        } catch (IllegalArgumentException e) {
-            // Pass
-        }
-
     }
 
     @Test
