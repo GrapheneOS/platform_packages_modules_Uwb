@@ -81,7 +81,7 @@ public class CccEncoderTest {
     private static final String RANGE_DATA_NTF_PROXIMITY_FAR_DEFAULT_TLV = "1002204E";
     private static final String RANGE_DATA_NTF_PROXIMITY_FAR_TLV = "1002C800";
     private static final String TEST_CCC_OPEN_RANGING_TLV =
-            "00010102010104010905010109048001000011010103010"
+            "00010104010905010109048001000011010103010"
                     + "11B01062C0100A3020001A4020000A50100A602D0020802B004140101"
                     + "2B080100000000000000";
     private static final String TEST_CCC_OPEN_RANGING_TLV_DEFAULT =
@@ -109,7 +109,7 @@ public class CccEncoderTest {
         CccOpenRangingParams params = TEST_CCC_OPEN_RANGING_PARAMS.build();
         TlvBuffer tlvs = mCccEncoder.getTlvBuffer(params, CccParams.PROTOCOL_VERSION_1_0);
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(17);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(16);
         assertThat(tlvs.getByteArray()).isEqualTo(TEST_CCC_OPEN_RANGING_TLV_DATA);
     }
 
@@ -119,7 +119,7 @@ public class CccEncoderTest {
         TlvBuffer tlvs = TlvEncoder.getEncoder(CccParams.PROTOCOL_NAME, mUwbInjector)
                 .getTlvBuffer(params, CccParams.PROTOCOL_VERSION_1_0);
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(17);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(16);
         assertThat(tlvs.getByteArray()).isEqualTo(TEST_CCC_OPEN_RANGING_TLV_DATA);
     }
 
@@ -133,11 +133,11 @@ public class CccEncoderTest {
         TlvBuffer tlvs = mCccEncoder.getTlvBuffer(params, CccParams.PROTOCOL_VERSION_1_0);
 
         byte[] testCccOpenRangingAbsoluteInitiationTimeTlvData =
-                UwbUtil.getByteArray("00010102010104010905010109048001000011010103010"
+                UwbUtil.getByteArray("00010104010905010109048001000011010103010"
                         + "11B01062C0100A3020001A4020000A50100A602D0020802B004140101"
                         + "2B0810270000000000000E0100");
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(17);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(16);
         assertThat(tlvs.getByteArray()).isEqualTo(
                 testCccOpenRangingAbsoluteInitiationTimeTlvData);
     }
@@ -159,7 +159,7 @@ public class CccEncoderTest {
                 + RANGE_DATA_NTF_PROXIMITY_NEAR_DEFAULT_TLV
                 + RANGE_DATA_NTF_PROXIMITY_FAR_DEFAULT_TLV;
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(19);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(18);
         assertThat(tlvs.getByteArray()).isEqualTo(UwbUtil.getByteArray(expectedTlvStr));
     }
 
@@ -183,7 +183,7 @@ public class CccEncoderTest {
                 + RANGE_DATA_NTF_PROXIMITY_NEAR_DEFAULT_TLV
                 + RANGE_DATA_NTF_PROXIMITY_FAR_DEFAULT_TLV;
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(19);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(18);
         assertThat(tlvs.getByteArray()).isEqualTo(UwbUtil.getByteArray(expectedTlvStr));
     }
 
@@ -209,7 +209,7 @@ public class CccEncoderTest {
                 + RANGE_DATA_NTF_PROXIMITY_NEAR_TLV
                 + RANGE_DATA_NTF_PROXIMITY_FAR_TLV;
 
-        assertThat(tlvs.getNoOfParams()).isEqualTo(19);
+        assertThat(tlvs.getNoOfParams()).isEqualTo(18);
         assertThat(tlvs.getByteArray()).isEqualTo(UwbUtil.getByteArray(expectedTlvStr));
     }
 }
