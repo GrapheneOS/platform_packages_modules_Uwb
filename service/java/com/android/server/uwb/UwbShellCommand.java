@@ -1050,6 +1050,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 new SessionHandle(sSessionHandleIdNext++, attributionSource, Process.myPid());
         SessionInfo sessionInfo =
                 new SessionInfo(sessionId, sessionHandle, openRangingSessionParams, pw, false);
+        pw.println("UWBS timestamp : " + mUwbService.queryUwbsTimestampMicros());
         mUwbService.openRanging(
                 attributionSource,
                 sessionInfo.sessionHandle,
