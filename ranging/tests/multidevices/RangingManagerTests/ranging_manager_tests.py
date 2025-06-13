@@ -77,9 +77,10 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     super().__init__(configs)
     self.tests = _TEST_CASES
 
-  def _is_cuttlefish_device(self, ad: android_device.AndroidDevice) -> bool:
+  def _is_emulator_device(self, ad: android_device.AndroidDevice) -> bool:
     product_name = ad.adb.getprop("ro.product.name")
-    return "cf_x86" in product_name
+    product_board = ad.adb.getprop("ro.product.board")
+    return ("cf_x86" in product_name) or ("goldfish" in product_board)
 
   def setup_class(self):
     super().setup_class()
@@ -490,8 +491,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       """ verifies ble rssi ranging with foreground and background"""
       SESSION_HANDLE = str(uuid4())
       TECHNOLOGIES = {RangingTechnology.BLE_RSSI}
-      asserts.skip_if(self._is_cuttlefish_device(self.initiator.ad),
-                      "Skipping BLE RSSI test on Cuttlefish")
+      asserts.skip_if(self._is_emulator_device(self.initiator.ad),
+                      "Skipping BLE RSSI test on emulator")
 
       asserts.skip_if(
           not self.responder.is_ranging_technology_supported(RangingTechnology.BLE_RSSI),
@@ -553,7 +554,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       """ verifies ble cs ranging with foreground and background"""
       SESSION_HANDLE = str(uuid4())
       TECHNOLOGIES = {RangingTechnology.BLE_CS}
-
+      asserts.skip_if(self._is_emulator_device(self.initiator.ad),
+                      "Skipping BLE RSSI test on emulator")
 
       asserts.skip_if(
           not self.responder.is_ranging_technology_supported(RangingTechnology.BLE_CS),
@@ -715,6 +717,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       """Verifies device does not receive range data after measurement limit."""
       SESSION_HANDLE = str(uuid4())
       UWB_SESSION_ID = 5
+      asserts.skip_if(self._is_emulator_device(self.initiator.ad),
+                      "Skipping ranging measurement limit test on emulator")
       asserts.skip_if(
           not self.responder.is_ranging_technology_supported(RangingTechnology.UWB),
           f"UWB not supported by responder",
@@ -780,8 +784,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
   def test_ble_rssi_ranging_measurement_limit(self):
       """Verifies ble rssi ranging with measurement limit.
       """
-      asserts.skip_if(self._is_cuttlefish_device(self.initiator.ad),
-                      "Skipping BLE RSSI test on Cuttlefish")
+      asserts.skip_if(self._is_emulator_device(self.initiator.ad),
+                      "Skipping BLE RSSI test on emulator")
       SESSION_HANDLE = str(uuid4())
 
       asserts.skip_if(
@@ -824,8 +828,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
   def test_one_to_one_wifi_rtt_ranging(self):
     """Verifies wifi rtt ranging with peer device, devices range for 10 seconds."""
-    asserts.skip_if(self._is_cuttlefish_device(self.initiator.ad),
-                    "Skipping WiFi RTT test on Cuttlefish")
+    asserts.skip_if(self._is_emulator_device(self.initiator.ad),
+                    "Skipping WiFi RTT test on emulator")
     SESSION_HANDLE = str(uuid4())
     TECHNOLOGIES = {RangingTechnology.WIFI_RTT}
 
@@ -897,8 +901,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
   def test_one_to_one_wifi_periodic_rtt_ranging(self):
     """Verifies wifi periodic rtt ranging with peer device, devices range for 10 seconds."""
-    asserts.skip_if(self._is_cuttlefish_device(self.initiator.ad),
-                    "Skipping WiFi periodic RTT test on Cuttlefish")
+    asserts.skip_if(self._is_emulator_device(self.initiator.ad),
+                    "Skipping WiFi periodic RTT test on emulator")
     SESSION_HANDLE = str(uuid4())
     TECHNOLOGIES = {RangingTechnology.WIFI_RTT}
 
@@ -986,8 +990,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
   ])
   def test_one_to_one_ble_rssi_ranging(self):
     """Verifies rssi ranging with peer device, devices range for 10 seconds."""
-    asserts.skip_if(self._is_cuttlefish_device(self.initiator.ad),
-                    "Skipping BLE RSSI test on Cuttlefish")
+    asserts.skip_if(self._is_emulator_device(self.initiator.ad),
+                    "Skipping BLE RSSI test on emulator")
     SESSION_HANDLE = str(uuid4())
     TECHNOLOGIES = {RangingTechnology.BLE_RSSI}
 
@@ -1073,8 +1077,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     Verifies cs ranging with peer device, devices range for 10 seconds.
     This test is only one way since we don't test if responder also can simultaneously get the data.
     """
-    asserts.skip_if(self._is_cuttlefish_device(self.initiator.ad),
-                    "Skipping BLE CS test on Cuttlefish")
+    asserts.skip_if(self._is_emulator_device(self.initiator.ad),
+                    "Skipping BLE CS test on emulator")
     SESSION_HANDLE = str(uuid4())
     TECHNOLOGIES = {RangingTechnology.BLE_CS}
 
@@ -1164,6 +1168,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     session.stop_and_assert_closed()
 
   def test_one_to_one_ble_cs_ranging_with_oob(self):
+    asserts.skip_if(self._is_emulator_device(self.initiator.ad),
+                      "Skipping BLE CS test on emulator")
     asserts.skip_if(
         not self.responder.is_ranging_technology_supported(RangingTechnology.BLE_CS),
         f"BLE_CS not supported by responder",
@@ -1212,8 +1218,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
   def test_ble_cs_ranging_measurement_limit(self):
       """Verifies ble cs ranging with measurement limit."""
-      asserts.skip_if(self._is_cuttlefish_device(self.initiator.ad),
-                      "Skipping BLE CS test on Cuttlefish")
+      asserts.skip_if(self._is_emulator_device(self.initiator.ad),
+                      "Skipping BLE CS test on emulator")
       SESSION_HANDLE = str(uuid4())
       TECHNOLOGIES = {RangingTechnology.BLE_CS}
 
