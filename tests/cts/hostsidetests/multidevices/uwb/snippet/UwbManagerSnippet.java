@@ -38,6 +38,10 @@ import com.google.android.mobly.snippet.event.SnippetEvent;
 import com.google.android.mobly.snippet.rpc.AsyncRpc;
 import com.google.android.mobly.snippet.rpc.Rpc;
 import com.google.android.mobly.snippet.util.Log;
+import com.google.uwb.support.aliro.AliroOpenRangingParams;
+import com.google.uwb.support.aliro.AliroParams;
+import com.google.uwb.support.aliro.AliroProtocolVersion;
+import com.google.uwb.support.aliro.AliroPulseShapeCombo;
 import com.google.uwb.support.ccc.CccOpenRangingParams;
 import com.google.uwb.support.ccc.CccParams;
 import com.google.uwb.support.ccc.CccPulseShapeCombo;
@@ -48,6 +52,7 @@ import com.google.uwb.support.fira.FiraOpenSessionParams;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.fira.FiraProtocolVersion;
 import com.google.uwb.support.fira.FiraRangingReconfigureParams;
+
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -629,7 +634,10 @@ public class UwbManagerSnippet implements Snippet {
         if (j.has("chapsPerSlot")) {
             builder.setNumChapsPerSlot(j.getInt("chapsPerSlot"));
         }
-        if (j.has("hoppingMode")) {
+        if (j.has("hoppingConfigMode")) {
+            builder.setHoppingConfigMode(j.getInt("hoppingConfigMode"));
+        }
+        if (j.has("hoppingMode")) { // Legacy name for hoppingConfigMode
             builder.setHoppingConfigMode(j.getInt("hoppingMode"));
         }
         if (j.has("hoppingSequence")) {
@@ -649,6 +657,9 @@ public class UwbManagerSnippet implements Snippet {
         }
         if (j.has("sessionId")) {
             builder.setSessionId(j.getInt("sessionId"));
+        }
+        if (j.has("slotsPerRangingRound")) { // to be consistent with FiRa
+            builder.setNumSlotsPerRound(j.getInt("slotsPerRangingRound"));
         }
         if (j.has("slotsPerRound")) {
             builder.setNumSlotsPerRound(j.getInt("slotsPerRound"));
@@ -817,6 +828,117 @@ public class UwbManagerSnippet implements Snippet {
         return builder.build();
     }
 
+    private AliroOpenRangingParams generateAliroOpenRangingParams(JSONObject j)
+            throws JSONException {
+        if (j == null) {
+            return null;
+        }
+        AliroOpenRangingParams.Builder builder = new AliroOpenRangingParams.Builder();
+
+        if (j.has("protocolVersion")) {
+            JSONObject protocolVersion = j.getJSONObject("protocolVersion");
+            builder.setProtocolVersion(new AliroProtocolVersion(
+                    protocolVersion.getInt("major"),
+                    protocolVersion.getInt("minor")));
+        } else {
+            // Default to 1.0
+            builder.setProtocolVersion(AliroParams.PROTOCOL_VERSION_1_0);
+        }
+
+        // keep-sorted start block=yes
+        if (j.has("absoluteInitiationTimeUs")) {
+            builder.setAbsoluteInitiationTimeUs(j.getLong("absoluteInitiationTimeUs"));
+        }
+        if (j.has("channel")) {
+            builder.setChannel(j.getInt("channel"));
+        }
+        if (j.has("chapsPerSlot")) {
+            builder.setNumChapsPerSlot(j.getInt("chapsPerSlot"));
+        }
+        if (j.has("hopModeKey")) {
+            builder.setHopModeKey(j.getInt("hopModeKey"));
+        }
+        if (j.has("hoppingConfigMode")) {
+            builder.setHoppingConfigMode(j.getInt("hoppingConfigMode"));
+        }
+        if (j.has("hoppingMode")) { // To be consistent with FiRa
+            builder.setHoppingConfigMode(j.getInt("hoppingMode"));
+        }
+        if (j.has("hoppingSequence")) {
+            builder.setHoppingSequence(j.getInt("hoppingSequence"));
+        }
+        if (j.has("initiationTimeMs")) {
+            builder.setInitiationTimeMs(j.getLong("initiationTimeMs"));
+        }
+        if (j.has("macModeOffset")) {
+            builder.setMacModeOffset(j.getInt("macModeOffset"));
+        }
+        if (j.has("macModeRound")) {
+            builder.setMacModeRound(j.getInt("macModeRound"));
+        }
+        if (j.has("pulseShapeCombo")) {
+            JSONObject pulseShapeCombo = j.getJSONObject("pulseShapeCombo");
+            builder.setPulseShapeCombo(new AliroPulseShapeCombo(
+                    pulseShapeCombo.getInt("pulseShapeComboTx"),
+                    pulseShapeCombo.getInt("pulseShapeComboRx")));
+        }
+        if (j.has("ranMultiplier")) {
+            builder.setRanMultiplier(j.getInt("ranMultiplier"));
+        }
+        if (j.has("rangeDataNtfAoaAzimuthLower")) {
+            builder.setRangeDataNtfAoaAzimuthLower(j.getDouble("rangeDataNtfAoaAzimuthLower"));
+        }
+        if (j.has("rangeDataNtfAoaAzimuthUpper")) {
+            builder.setRangeDataNtfAoaAzimuthUpper(j.getDouble("rangeDataNtfAoaAzimuthUpper"));
+        }
+        if (j.has("rangeDataNtfAoaElevationLower")) {
+            builder.setRangeDataNtfAoaElevationLower(j.getDouble("rangeDataNtfAoaElevationLower"));
+        }
+        if (j.has("rangeDataNtfAoaElevationUpper")) {
+            builder.setRangeDataNtfAoaElevationUpper(j.getDouble("rangeDataNtfAoaElevationUpper"));
+        }
+        if (j.has("rangeDataNtfConfig")) {
+            builder.setRangeDataNtfConfig(j.getInt("rangeDataNtfConfig"));
+        }
+        if (j.has("rangeDataNtfProximityFar")) {
+            builder.setRangeDataNtfProximityFar(j.getInt("rangeDataNtfProximityFar"));
+        }
+        if (j.has("rangeDataNtfProximityNear")) {
+            builder.setRangeDataNtfProximityNear(j.getInt("rangeDataNtfProximityNear"));
+        }
+        if (j.has("responderNodes")) {
+            builder.setNumResponderNodes(j.getInt("responderNodes"));
+        }
+        if (j.has("sessionId")) {
+            builder.setSessionId(j.getInt("sessionId"));
+        }
+        if (j.has("sessionKey")) {
+            JSONArray jSessionKeyArray = j.getJSONArray("sessionKey");
+            builder.setSessionKey(convertJSONArrayToByteArray(jSessionKeyArray));
+        }
+        if (j.has("slotsPerRangingRound")) { // to be consistent with FiRa
+            builder.setNumSlotsPerRound(j.getInt("slotsPerRangingRound"));
+        }
+        if (j.has("slotsPerRound")) {
+            builder.setNumSlotsPerRound(j.getInt("slotsPerRound"));
+        }
+        if (j.has("stsConfig")) {
+            builder.setStsConfig(j.getInt("stsConfig"));
+        }
+        if (j.has("stsIndex")) {
+            builder.setStsIndex(j.getInt("stsIndex"));
+        }
+        if (j.has("syncCodeIndex")) {
+            builder.setSyncCodeIndex(j.getInt("syncCodeIndex"));
+        }
+        if (j.has("uwbConfig")) {
+            builder.setUwbConfig(j.getInt("uwbConfig"));
+        }
+        // keep-sorted end
+
+        return builder.build();
+    }
+
     private RangingMeasurement getRangingMeasurement(String key, JSONArray jArray)
             throws JSONException {
         byte[] bArray = convertJSONArrayToByteArray(jArray);
@@ -855,6 +977,19 @@ public class UwbManagerSnippet implements Snippet {
         RangingSessionCallback rangingSessionCallback = new RangingSessionCallback(
                 callbackId, Event.EventAll.getType());
         CccOpenRangingParams params = generateCccOpenRangingParams(config);
+        runWithShellPermission(() ->
+                mUwbManager.openRangingSession(
+                        params.toBundle(), mExecutor, rangingSessionCallback));
+        sRangingSessionCallbackMap.put(key, rangingSessionCallback);
+    }
+
+    /** Open ALIRO UWB ranging session. */
+    @AsyncRpc(description = "Open ALIRO UWB ranging session")
+    public void openAliroRangingSession(String callbackId, String key, JSONObject config)
+            throws Throwable {
+        RangingSessionCallback rangingSessionCallback = new RangingSessionCallback(
+                callbackId, Event.EventAll.getType());
+        AliroOpenRangingParams params = generateAliroOpenRangingParams(config);
         runWithShellPermission(() ->
                 mUwbManager.openRangingSession(
                         params.toBundle(), mExecutor, rangingSessionCallback));
