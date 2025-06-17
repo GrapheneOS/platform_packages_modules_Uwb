@@ -245,7 +245,7 @@ public class RttAdapter implements RangingAdapter {
 
             // Need at least 2 successful measurements for std dev to be valid.
             if (position.getNumSuccessfulMeasurements() >= 2) {
-                dataBuilder.setDistanceStdDev(position.getDistanceStdDevMeters());
+                dataBuilder.setDistanceStandardDeviation(position.getDistanceStdDevMeters());
             }
 
             if (position.getAzimuth() != null) {

@@ -62,7 +62,7 @@ public class RangingDataTest {
         RangingData rangingData = new RangingData.Builder()
                 .setRangingTechnology(rangingTechnology)
                 .setDistance(distance)
-                .setDistanceStdDev(distanceStdDevMeters)
+                .setDistanceStandardDeviation(distanceStdDevMeters)
                 .setAzimuth(azimuth)
                 .setElevation(elevation)
                 .setRssi(rssi)
@@ -74,7 +74,7 @@ public class RangingDataTest {
 
         assertEquals(rangingTechnology, rangingData.getRangingTechnology());
         assertEquals(distance, rangingData.getDistance());
-        assertEquals(distanceStdDevMeters, rangingData.getDistanceStdDevMeters(), 0.001);
+        assertEquals(distanceStdDevMeters, rangingData.getDistanceStandardDeviationMeters(), 0.001);
         assertEquals(azimuth, rangingData.getAzimuth());
         assertEquals(elevation, rangingData.getElevation());
         assertEquals(rssi, rangingData.getRssi());
@@ -87,7 +87,7 @@ public class RangingDataTest {
         assertTrue(rangingData.hasDelaySpread());
         assertTrue(rangingData.hasDetectedAttackLevel());
         assertTrue(rangingData.hasVelocity());
-        assertTrue(rangingData.hasDistanceStdDev());
+        assertTrue(rangingData.hasDistanceStandardDeviation());
 
         assertEquals(distance.getMeasurement(), rangingData.getDistance().getMeasurement(), 0.001);
         assertEquals(distance.getConfidence(), rangingData.getDistance().getConfidence());
@@ -135,7 +135,7 @@ public class RangingDataTest {
         assertFalse(rangingData.hasDelaySpread());
         assertFalse(rangingData.hasDetectedAttackLevel());
         assertFalse(rangingData.hasVelocity());
-        assertFalse(rangingData.hasDistanceStdDev());
+        assertFalse(rangingData.hasDistanceStandardDeviation());
 
         assertEquals(distance.getConfidence(), rangingData.getDistance().getConfidence());
     }
@@ -200,7 +200,7 @@ public class RangingDataTest {
                 .setDistance(new RangingMeasurement.Builder().setMeasurement(10).build())
                 .setTimestampMillis(1)
                 .setRangingTechnology(RangingManager.UWB)
-                .setDistanceStdDev(-1.2)
+                .setDistanceStandardDeviation(-1.2)
                 .build();
     }
 
@@ -233,7 +233,7 @@ public class RangingDataTest {
                 .setDelaySpreadMeters(2.0)
                 .setDetectedAttackLevel((byte) 0x01)
                 .setVelocityMetersPerSec(1.5)
-                .setDistanceStdDev(1.2)
+                .setDistanceStandardDeviation(1.2)
                 .build();
 
         data.writeToParcel(parcel, 0);
@@ -272,7 +272,8 @@ public class RangingDataTest {
         assertEquals(data.getRssi(), dataFromParcel.getRssi());
         assertEquals(data.getTimestampMillis(), dataFromParcel.getTimestampMillis());
         assertEquals(data.getDelaySpreadMeters(), dataFromParcel.getDelaySpreadMeters(), 0.001);
-        assertEquals(data.getDistanceStdDevMeters(), dataFromParcel.getDistanceStdDevMeters(),
+        assertEquals(data.getDistanceStandardDeviationMeters(),
+                dataFromParcel.getDistanceStandardDeviationMeters(),
                 0.001);
         assertEquals(data.getDetectedAttackLevel(), dataFromParcel.getDetectedAttackLevel());
         assertEquals(data.getVelocityMetersPerSec(),
