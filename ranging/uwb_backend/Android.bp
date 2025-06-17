@@ -44,5 +44,6 @@ java_library {
         ":__subpackages__",
         "//packages/modules/Uwb/ranging:__subpackages__",
         "//packages/modules/Connectivity/remoteauth:__subpackages__",
+        "//vendor:__subpackages__",
     ],
 }
