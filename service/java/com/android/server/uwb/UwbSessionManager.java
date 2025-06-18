@@ -993,21 +993,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         int currentSessionState = getCurrentSessionState(sessionId);
         if (currentSessionState == UwbUciConstants.UWB_SESSION_STATE_IDLE) {
             if (uwbSession.getProtocolName().equals(AliroParams.PROTOCOL_NAME)
-                    && params instanceof AliroStartRangingParams) {
+                    && (params == null || params instanceof AliroStartRangingParams)) {
                 AliroStartRangingParams aliroStartRangingParams = (AliroStartRangingParams) params;
-                Log.i(TAG, "startRanging() - update RAN multiplier: "
-                        + aliroStartRangingParams.getRanMultiplier()
-                        + ", stsIndex: " + aliroStartRangingParams.getStsIndex());
-                // Need to update the RAN multiplier from the AliroStartRangingParams for an
-                // ALIRO session.
                 uwbSession.updateAliroParamsOnStart(aliroStartRangingParams);
             } else if (uwbSession.getProtocolName().equals(CccParams.PROTOCOL_NAME)
-                    && params instanceof CccStartRangingParams) {
+                    && (params == null || params instanceof CccStartRangingParams)) {
                 CccStartRangingParams cccStartRangingParams = (CccStartRangingParams) params;
-                Log.i(TAG, "startRanging() - update RAN multiplier: "
-                        + cccStartRangingParams.getRanMultiplier()
-                        + ", stsIndex: " + cccStartRangingParams.getStsIndex());
-                // Need to update the RAN multiplier from the CccStartRangingParams for CCC session.
                 uwbSession.updateCccParamsOnStart(cccStartRangingParams);
             } else if (uwbSession.getProtocolName().equals(FiraParams.PROTOCOL_NAME)) {
                 // Need to update session priority if it changed.
@@ -3811,37 +3802,55 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         }
 
         public void updateAliroParamsOnStart(AliroStartRangingParams rangingStartParams) {
-            setNeedsQueryUwbsTimestamp(rangingStartParams);
+            if (rangingStartParams != null) {
+                Log.i(TAG, "startRanging() - update RAN multiplier: "
+                        + rangingStartParams.getRanMultiplier()
+                        + ", stsIndex: " + rangingStartParams.getStsIndex());
 
-            // Need to update the RAN multiplier and initiation time
-            // from the AliroStartRangingParams for CCC session.
-            AliroOpenRangingParams newParams =
-                    new AliroOpenRangingParams.Builder((AliroOpenRangingParams) mParams)
-                            .setRanMultiplier(rangingStartParams.getRanMultiplier())
-                            .setInitiationTimeMs(rangingStartParams.getInitiationTimeMs())
-                            .setAbsoluteInitiationTimeUs(rangingStartParams
-                                    .getAbsoluteInitiationTimeUs())
-                            .setStsIndex(rangingStartParams.getStsIndex())
-                            .build();
-            this.mParams = newParams;
-            this.mNeedsAppConfigUpdate = true;
+                // Need to update the RAN multiplier and initiation time
+                // from the AliroStartRangingParams for CCC session.
+                AliroOpenRangingParams newParams =
+                        new AliroOpenRangingParams.Builder((AliroOpenRangingParams) mParams)
+                                .setRanMultiplier(rangingStartParams.getRanMultiplier())
+                                .setInitiationTimeMs(rangingStartParams.getInitiationTimeMs())
+                                .setAbsoluteInitiationTimeUs(rangingStartParams
+                                        .getAbsoluteInitiationTimeUs())
+                                .setStsIndex(rangingStartParams.getStsIndex())
+                                .build();
+                this.mParams = newParams;
+                this.mNeedsAppConfigUpdate = true;
+            }
+
+            setNeedsQueryUwbsTimestamp(null /* rangingStartParams */);
+            if (this.mNeedsQueryUwbsTimestamp) {
+                this.mNeedsAppConfigUpdate = true;
+            }
         }
 
         public void updateCccParamsOnStart(CccStartRangingParams rangingStartParams) {
-            setNeedsQueryUwbsTimestamp(rangingStartParams);
+            if (rangingStartParams != null) {
+                Log.i(TAG, "startRanging() - update RAN multiplier: "
+                        + rangingStartParams.getRanMultiplier()
+                        + ", stsIndex: " + rangingStartParams.getStsIndex());
 
-            // Need to update the RAN multiplier and initiation time
-            // from the CccStartRangingParams for CCC session.
-            CccOpenRangingParams newParams =
-                    new CccOpenRangingParams.Builder((CccOpenRangingParams) mParams)
-                            .setRanMultiplier(rangingStartParams.getRanMultiplier())
-                            .setInitiationTimeMs(rangingStartParams.getInitiationTimeMs())
-                            .setAbsoluteInitiationTimeUs(rangingStartParams
-                                    .getAbsoluteInitiationTimeUs())
-                            .setStsIndex(rangingStartParams.getStsIndex())
-                            .build();
-            this.mParams = newParams;
-            this.mNeedsAppConfigUpdate = true;
+                // Need to update the RAN multiplier and initiation time
+                // from the CccStartRangingParams for CCC session.
+                CccOpenRangingParams newParams =
+                        new CccOpenRangingParams.Builder((CccOpenRangingParams) mParams)
+                                .setRanMultiplier(rangingStartParams.getRanMultiplier())
+                                .setInitiationTimeMs(rangingStartParams.getInitiationTimeMs())
+                                .setAbsoluteInitiationTimeUs(rangingStartParams
+                                        .getAbsoluteInitiationTimeUs())
+                                .setStsIndex(rangingStartParams.getStsIndex())
+                                .build();
+                this.mParams = newParams;
+                this.mNeedsAppConfigUpdate = true;
+            }
+
+            setNeedsQueryUwbsTimestamp(null /* rangingStartParams */);
+            if (this.mNeedsQueryUwbsTimestamp) {
+                this.mNeedsAppConfigUpdate = true;
+            }
         }
 
         /**
@@ -3858,6 +3867,9 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             }
 
             setNeedsQueryUwbsTimestamp(null /* rangingStartParams */);
+            if (this.mNeedsQueryUwbsTimestamp) {
+                this.mNeedsAppConfigUpdate = true;
+            }
         }
 
         /**
