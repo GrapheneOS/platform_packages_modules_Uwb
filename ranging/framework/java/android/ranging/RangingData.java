@@ -167,7 +167,7 @@ public final class RangingData implements Parcelable {
      * @return True if a standard deviation value is set, false if it isn't.
      */
     @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_25Q4)
-    public boolean hasDistanceStdDev() {
+    public boolean hasDistanceStandardDeviation() {
         return !Double.isNaN(mDistanceStdDevMeters);
     }
 
@@ -176,10 +176,14 @@ public final class RangingData implements Parcelable {
      *
      * <p>Returned value will be positive if it exists</p>
      *
-     * @return The standard deviation of distance in meters, or NaN if it was not set.
+     * @return The standard deviation of distance in meters.
+     * @throws IllegalStateException if distance standard deviation is not set.
      */
     @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_25Q4)
-    public double getDistanceStdDevMeters() {
+    public double getDistanceStandardDeviationMeters() {
+        if (!hasDistanceStandardDeviation()) {
+            throw new IllegalStateException("Distance Standard Deviation is not set.");
+        }
         return mDistanceStdDevMeters;
     }
 
@@ -382,7 +386,7 @@ public final class RangingData implements Parcelable {
          * @throws IllegalArgumentException if the provided value is < 0.
          */
         @NonNull
-        public Builder setDistanceStdDev(double stdDevMeters) {
+        public Builder setDistanceStandardDeviation(double stdDevMeters) {
             if (stdDevMeters < 0) {
                 throw new IllegalArgumentException("Std Dev meters must be >= 0");
             }
