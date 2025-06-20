@@ -3809,15 +3809,21 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
                 // Need to update the RAN multiplier and initiation time
                 // from the AliroStartRangingParams for CCC session.
-                AliroOpenRangingParams newParams =
+                AliroOpenRangingParams.Builder builder =
                         new AliroOpenRangingParams.Builder((AliroOpenRangingParams) mParams)
                                 .setRanMultiplier(rangingStartParams.getRanMultiplier())
-                                .setInitiationTimeMs(rangingStartParams.getInitiationTimeMs())
-                                .setAbsoluteInitiationTimeUs(rangingStartParams
-                                        .getAbsoluteInitiationTimeUs())
-                                .setStsIndex(rangingStartParams.getStsIndex())
-                                .build();
-                this.mParams = newParams;
+                                .setStsIndex(rangingStartParams.getStsIndex());
+
+                long initiationTimeMs = rangingStartParams.getInitiationTimeMs();
+                if (initiationTimeMs != 0) {
+                    builder.setInitiationTimeMs(initiationTimeMs);
+                }
+                long absoluteInitiationTimeUs = rangingStartParams.getAbsoluteInitiationTimeUs();
+                if (absoluteInitiationTimeUs != 0) {
+                    builder.setAbsoluteInitiationTimeUs(absoluteInitiationTimeUs);
+                }
+
+                this.mParams = builder.build();
                 this.mNeedsAppConfigUpdate = true;
             }
 
@@ -3835,15 +3841,21 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
                 // Need to update the RAN multiplier and initiation time
                 // from the CccStartRangingParams for CCC session.
-                CccOpenRangingParams newParams =
+                CccOpenRangingParams.Builder builder =
                         new CccOpenRangingParams.Builder((CccOpenRangingParams) mParams)
                                 .setRanMultiplier(rangingStartParams.getRanMultiplier())
-                                .setInitiationTimeMs(rangingStartParams.getInitiationTimeMs())
-                                .setAbsoluteInitiationTimeUs(rangingStartParams
-                                        .getAbsoluteInitiationTimeUs())
-                                .setStsIndex(rangingStartParams.getStsIndex())
-                                .build();
-                this.mParams = newParams;
+                                .setStsIndex(rangingStartParams.getStsIndex());
+
+                long initiationTimeMs = rangingStartParams.getInitiationTimeMs();
+                if (initiationTimeMs != 0) {
+                    builder.setInitiationTimeMs(initiationTimeMs);
+                }
+                long absoluteInitiationTimeUs = rangingStartParams.getAbsoluteInitiationTimeUs();
+                if (absoluteInitiationTimeUs != 0) {
+                    builder.setAbsoluteInitiationTimeUs(absoluteInitiationTimeUs);
+                }
+
+                this.mParams = builder.build();
                 this.mNeedsAppConfigUpdate = true;
             }
 
