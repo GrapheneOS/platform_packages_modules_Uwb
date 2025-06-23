@@ -522,10 +522,12 @@ public class AliroOpenRangingParams extends AliroParams {
             mNumResponderNodes.set(params.mNumResponderNodes);
             mNumSlotsPerRound.set(params.mNumSlotsPerRound);
             mSyncCodeIndex.set(params.mSyncCodeIndex);
-            mStsIndex = params.mStsIndex;
             mHopModeKey = params.mHopModeKey;
             mHoppingConfigMode.set(params.mHoppingConfigMode);
             mHoppingSequence.set(params.mHoppingSequence);
+            mStsIndex = params.mStsIndex;
+            mInitiationTimeMs = params.mInitiationTimeMs;
+            mAbsoluteInitiationTimeUs = params.mAbsoluteInitiationTimeUs;
             mRangeDataNtfConfig = params.mRangeDataNtfConfig;
             mRangeDataNtfProximityNear = params.mRangeDataNtfProximityNear;
             mRangeDataNtfProximityFar = params.mRangeDataNtfProximityFar;
