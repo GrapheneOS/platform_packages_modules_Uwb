@@ -769,15 +769,15 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
                     firaOpenSessionParams, rangingCallbacks, chipId);
         } else if (CccParams.isCorrectProtocol(params)) {
             CccOpenRangingParams cccOpenRangingParams = CccOpenRangingParams.fromBundle(params);
-            CccOpenRangingParams.Builder builder =
-                    new CccOpenRangingParams.Builder(CccOpenRangingParams.fromBundle(params));
             if (mUwbInjector.getDeviceConfigFacade().isRandomHopmodekeySupported()
                     && cccOpenRangingParams.getHoppingConfigMode()
                             != CccParams.HOPPING_CONFIG_MODE_NONE
                     && cccOpenRangingParams.getHopModeKey() == CccParams.HOP_MODE_KEY_UNSET) {
+                CccOpenRangingParams.Builder builder =
+                        new CccOpenRangingParams.Builder(cccOpenRangingParams);
                 builder.setHopModeKey(new Random().nextInt());
+                cccOpenRangingParams = builder.build();
             }
-            cccOpenRangingParams = builder.build();
             sessionId = cccOpenRangingParams.getSessionId();
             sessionType = cccOpenRangingParams.getSessionType();
             mSessionManager.initSession(attributionSource, sessionHandle, sessionId,
@@ -786,15 +786,15 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         } else if (AliroParams.isCorrectProtocol(params)) {
             AliroOpenRangingParams aliroOpenRangingParams =
                     AliroOpenRangingParams.fromBundle(params);
-            AliroOpenRangingParams.Builder builder =
-                    new AliroOpenRangingParams.Builder(AliroOpenRangingParams.fromBundle(params));
             if (mUwbInjector.getDeviceConfigFacade().isRandomHopmodekeySupported()
                     && aliroOpenRangingParams.getHoppingConfigMode()
                             != CccParams.HOPPING_CONFIG_MODE_NONE
                     && aliroOpenRangingParams.getHopModeKey() == CccParams.HOP_MODE_KEY_UNSET) {
+                AliroOpenRangingParams.Builder builder =
+                        new AliroOpenRangingParams.Builder(aliroOpenRangingParams);
                 builder.setHopModeKey(new Random().nextInt());
+                aliroOpenRangingParams = builder.build();
             }
-            aliroOpenRangingParams = builder.build();
             sessionId = aliroOpenRangingParams.getSessionId();
             sessionType = aliroOpenRangingParams.getSessionType();
             mSessionManager.initSession(attributionSource, sessionHandle, sessionId,
