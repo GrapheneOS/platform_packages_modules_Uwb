@@ -1791,14 +1791,22 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                             );
                         }
                         Err(e) => {
-                            error!("Unable to find session Id, error {:?}", e);
+                            error!("BypassMode: Unable to find session Id, error {:?}", e);
                         }
                     }
                 }
                 DataRcvNotification::LogicalLinkMode(logical_data) => {
-                    let _ = self
-                        .data_rcv_notf_sender
-                        .send(DataRcvNotification::LogicalLinkMode(logical_data));
+                    match self.get_session_id(&logical_data.connect_id).await {
+                        Ok(_connect_id) => {
+                            tokio::time::sleep(Duration::from_millis(1)).await;
+                            let _ = self
+                                .data_rcv_notf_sender
+                                .send(DataRcvNotification::LogicalLinkMode(logical_data));
+                        }
+                        Err(e) => {
+                            error!("LogicalLinkMode: Unable to find connect ID, error {:?}", e);
+                        }
+                    }
                 }
             }
         } else if let Ok(data) = RadarDataRcvNotification::try_from(packet.clone()) {
