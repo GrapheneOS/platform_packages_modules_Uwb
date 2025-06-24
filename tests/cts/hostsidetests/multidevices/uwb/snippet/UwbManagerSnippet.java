@@ -1151,7 +1151,7 @@ public class UwbManagerSnippet implements Snippet {
             rangingSessionCallback.rangingSession.getLogicalLinkParams(
                     rangingSessionCallback.mConnectId));
 
-        return true;
+        return getParamsResponse != null;
     }
 
     @Rpc(description = "Query max data size of a UWB logical link")
