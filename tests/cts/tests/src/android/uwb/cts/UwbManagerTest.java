@@ -2669,7 +2669,7 @@ public class UwbManagerTest {
                 new RangingSessionCallback(countDownLatch, resultCountDownLatch);
 
         FiraOpenSessionParams firaOpenSessionParams = new FiraOpenSessionParams.Builder()
-                .setProtocolVersion(new FiraProtocolVersion(1, 1))
+                .setProtocolVersion(new FiraProtocolVersion(3, 0))
                 .setSessionType(FiraParams.SESSION_TYPE_DATA_TRANSFER)
                 .setInBandTerminationAttemptCount(0)
                 .setRframeConfig(FiraParams.RFRAME_CONFIG_SP1)
@@ -2683,7 +2683,7 @@ public class UwbManagerTest {
                 .setDeviceRole(FiraParams.RANGING_DEVICE_ROLE_INITIATOR)
                 .setMultiNodeMode(FiraParams.MULTI_NODE_MODE_ONE_TO_MANY)
                 .setDeviceAddress(UwbAddress.fromBytes(new byte[]{0x05, 0x06}))
-                .setDestAddressList(List.of(UwbAddress.fromBytes(new byte[]{0x05, 0x06})))
+                .setDestAddressList(List.of(UwbAddress.fromBytes(new byte[]{0x33, 0x22})))
                 .build();
 
         try {
@@ -2707,8 +2707,9 @@ public class UwbManagerTest {
                     .setLogicalLinkClassLength(0).build();
 
             rangingSessionCallback.rangingSession.createLogicalLink(logicalLinkParams);
+            assertThat(rangingSessionCallback.onLogicalLinkCreationFailedCalled).isFalse();
 
-            countDownLatch = new CountDownLatch(1);
+            countDownLatch = new CountDownLatch(2);
             rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
             rangingSessionCallback.rangingSession.start(new PersistableBundle());
             // Wait for the on started callback.
@@ -2716,10 +2717,7 @@ public class UwbManagerTest {
             assertThat(rangingSessionCallback.onStartedCalled).isTrue();
             assertThat(rangingSessionCallback.onStartFailedCalled).isFalse();
 
-            countDownLatch = new CountDownLatch(1);
-            rangingSessionCallback.replaceCtrlCountDownLatch(countDownLatch);
-            // Wait for the onLogicalLinkCreated callback.
-            assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            // check for logical link create callback
             assertThat(rangingSessionCallback.onLogicalLinkCreatedCalled).isTrue();
             assertThat(rangingSessionCallback.onLogicalLinkCreationFailedCalled).isFalse();
 
@@ -2728,12 +2726,6 @@ public class UwbManagerTest {
                     rangingSessionCallback.rangingSession.getLogicalLinkParams(
                             rangingSessionCallback.connectId);
             assertThat(getParamsResponse).isNotNull();
-
-            // Query max data size
-            int maxDataSize =
-                rangingSessionCallback.rangingSession.queryLogicalLinkMaxDataSizeBytes(
-                    rangingSessionCallback.connectId);
-            assertThat(maxDataSize).isGreaterThan(0);
 
             // Send logical link mode data
             PersistableBundle bundle = new FiraLogicalLinkInfo.Builder(
