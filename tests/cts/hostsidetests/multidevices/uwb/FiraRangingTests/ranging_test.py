@@ -1720,29 +1720,29 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_INITIATOR,
         device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLLER,
         ranging_round_usage=uwb_ranging_params.FiraParamEnums
-        .RANGING_ROUND_USAGE_DATA_TRANSFER_MODE,
+        .RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE,
         device_address=self.initiator_addr,
         destination_addresses=[self.responder_addr],
         ranging_interval_ms=200,
-        slots_per_ranging_round=6,
+        slots_per_ranging_round=25,
         rframe_config=uwb_ranging_params.FiraParamEnums.RFRAME_CONFIG_SP1,
         link_layer_mode=uwb_ranging_params.FiraParamEnums.LINK_LAYER_MODE_LOGICAL_LINK,
-        session_type=uwb_ranging_params.FiraParamEnums.SESSION_TYPE_DATA_TRANSFER,
-        in_band_termination_attempt_count=0,
+        session_type=uwb_ranging_params.FiraParamEnums.SESSION_TYPE_RANGING_AND_IN_BAND_DATA,
+        in_band_termination_attempt_count=1,
     )
     responder_params = uwb_ranging_params.UwbRangingParams(
         device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_RESPONDER,
         device_type=uwb_ranging_params.FiraParamEnums.DEVICE_TYPE_CONTROLEE,
         ranging_round_usage=uwb_ranging_params.FiraParamEnums
-        .RANGING_ROUND_USAGE_DATA_TRANSFER_MODE,
+        .RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE,
         device_address=self.responder_addr,
         destination_addresses=[self.initiator_addr],
         ranging_interval_ms=200,
-        slots_per_ranging_round=6,
+        slots_per_ranging_round=25,
         rframe_config=uwb_ranging_params.FiraParamEnums.RFRAME_CONFIG_SP1,
         link_layer_mode=uwb_ranging_params.FiraParamEnums.LINK_LAYER_MODE_LOGICAL_LINK,
-        session_type=uwb_ranging_params.FiraParamEnums.SESSION_TYPE_DATA_TRANSFER,
-        in_band_termination_attempt_count=0,
+        session_type=uwb_ranging_params.FiraParamEnums.SESSION_TYPE_RANGING_AND_IN_BAND_DATA,
+        in_band_termination_attempt_count=1,
     )
 
     session = 0
@@ -1800,7 +1800,6 @@ class RangingTest(uwb_base_test.UwbBaseTest):
 
     # Stop and close sessions
     self.initiator.stop_ranging(session)
-    self.responder.stop_ranging(session)
 
     self.initiator.close_ranging(session)
     self.responder.close_ranging(session)
