@@ -38,6 +38,7 @@ import static com.android.server.uwb.config.CapabilityParam.CHANNEL_9;
 import static com.android.server.uwb.config.CapabilityParam.CONSTRAINT_LENGTH_3;
 import static com.android.server.uwb.config.CapabilityParam.CONSTRAINT_LENGTH_7;
 import static com.android.server.uwb.config.CapabilityParam.CONTENTION_BASED_RANGING;
+import static com.android.server.uwb.config.CapabilityParam.DATA_TRANSFER;
 import static com.android.server.uwb.config.CapabilityParam.DIAGNOSTICS;
 import static com.android.server.uwb.config.CapabilityParam.DS_TWR_DEFERRED;
 import static com.android.server.uwb.config.CapabilityParam.DS_TWR_NON_DEFERRED;
@@ -529,6 +530,9 @@ public class FiraDecoder extends TlvDecoder {
             }
             if (isBitSet(rangingMethodUci[1], ADS_TWR)) {
                 rangingRoundFlag.add(RangingRoundCapabilityFlag.HAS_ADS_TWR_SUPPORT);
+            }
+            if (isBitSet(rangingMethodUci[1], DATA_TRANSFER)) {
+                rangingRoundFlag.add(RangingRoundCapabilityFlag.HAS_DATA_TRANSFER_SUPPORT);
             }
             builder.setRangingRoundCapabilities(rangingRoundFlag);
 

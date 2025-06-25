@@ -129,6 +129,7 @@ public class CapabilityParam {
     public static final int OBSERVER = 0X40;
     public static final int DT_ANCHOR = 0X80;
     public static final int DT_TAG = 0X01; // First bit of 2nd byte of Device Role
+    public static final int DATA_TRANSFER = 0x02;
 
     public static final int OWR_UL_TDOA = 0x01;
     public static final int SS_TWR_DEFERRED = 0x02;
