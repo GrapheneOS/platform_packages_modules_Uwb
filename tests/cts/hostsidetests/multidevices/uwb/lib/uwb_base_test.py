@@ -37,6 +37,7 @@ class UwbBaseTest(base_test.BaseTestClass):
     super().teardown_test()
     for ad in self.android_devices:
       ad.uwb.logInfo("*** TEST END: " + self.current_test_info.name + " ***")
+      ad.services.create_output_excerpts_all(self.current_test_info)
 
   def teardown_class(self):
     for ad in self.android_devices:
