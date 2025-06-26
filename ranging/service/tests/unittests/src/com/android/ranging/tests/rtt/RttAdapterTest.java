@@ -48,6 +48,7 @@ import com.android.ranging.rtt.backend.RttRangingParameters;
 import com.android.ranging.rtt.backend.RttService;
 import com.android.server.ranging.DeviceConfigFacade;
 import com.android.server.ranging.RangingInjector;
+import com.android.server.ranging.RangingTechnology;
 import com.android.server.ranging.rtt.RttAdapter;
 import com.android.server.ranging.rtt.RttConfig;
 
@@ -131,7 +132,7 @@ public class RttAdapterTest {
         when(mMockRangingInjector.isRangingTechnologyEnabled(any())).thenReturn(true);
         mRttAdapter = new RttAdapter(mMockContext, mMockRangingInjector,
                 MoreExecutors.newDirectExecutorService(),
-                mMockRttService, DEVICE_ROLE_INITIATOR);
+                mMockRttService, DEVICE_ROLE_INITIATOR, RangingTechnology.RTT);
     }
 
     @Test

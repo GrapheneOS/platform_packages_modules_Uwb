@@ -264,6 +264,7 @@ public class RangingFrameworkTest {
         assertFalse(rttRangingParams.isPeriodicRangingHwFeatureEnabled());
         assertEquals(rttRangingParams.getRangingUpdateRate(), UPDATE_RATE_NORMAL);
 
+
         mRangingSession.start(rangingPreference);
         verify(mMockRangingAdapter, times(1)).startRanging(any(), any(), any(), any());
 

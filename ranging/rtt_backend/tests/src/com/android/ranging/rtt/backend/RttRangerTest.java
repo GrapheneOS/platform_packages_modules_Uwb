@@ -16,6 +16,8 @@
 
 package com.android.ranging.tests.rtt.backend;
 
+import static com.android.ranging.rtt.backend.RttRangingDevice.DeviceType.PUBLISHER;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -68,7 +70,7 @@ public class RttRangerTest {
         when(mMockRttManager.isAvailable()).thenReturn(true);
 
         mRttRanger = new RttRanger(mMockRttManager, MoreExecutors.newDirectExecutorService(),
-                mMockContext);
+                mMockContext, PUBLISHER);
     }
 
     @Test

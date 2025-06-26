@@ -25,6 +25,7 @@ import android.ranging.RangingManager;
 import com.android.server.ranging.blerssi.BleRssiCapabilitiesAdapter;
 import com.android.server.ranging.cs.CsCapabilitiesAdapter;
 import com.android.server.ranging.rtt.RttCapabilitiesAdapter;
+import com.android.server.ranging.rtt.RttStationCapabilitiesAdapter;
 import com.android.server.ranging.uwb.UwbCapabilitiesAdapter;
 
 import com.google.common.collect.ImmutableList;
@@ -39,7 +40,8 @@ public enum RangingTechnology {
     CS(1), // Channel Sounding, formerly known as HADM
 
     RTT(2), // Wifi RTT.
-    RSSI(3); // BLE RSSI.
+    RSSI(3), // BLE RSSI.
+    RTT_STATION(4); //Wifi RTT 8011MC
 
     public static final ImmutableList<RangingTechnology> TECHNOLOGIES =
             ImmutableList.copyOf(RangingTechnology.values());
@@ -82,6 +84,8 @@ public enum RangingTechnology {
                 return RttCapabilitiesAdapter.isSupported(context);
             case RSSI:
                 return BleRssiCapabilitiesAdapter.isSupported(context);
+            case RTT_STATION:
+                return RttStationCapabilitiesAdapter.isSupported(context);
             default:
                 return false;
         }

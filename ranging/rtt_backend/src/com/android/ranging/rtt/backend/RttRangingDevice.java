@@ -23,7 +23,11 @@ import static com.android.ranging.rtt.backend.RttRangingSessionCallback.REASON_U
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.net.wifi.ScanResult;
+import android.net.wifi.WifiManager;
 import android.net.wifi.aware.AttachCallback;
 import android.net.wifi.aware.DiscoverySessionCallback;
 import android.net.wifi.aware.PeerHandle;
@@ -34,10 +38,12 @@ import android.net.wifi.aware.SubscribeDiscoverySession;
 import android.net.wifi.aware.WifiAwareManager;
 import android.net.wifi.aware.WifiAwareSession;
 import android.net.wifi.rtt.RangingResult;
+import android.net.wifi.rtt.ResponderConfig;
 import android.net.wifi.rtt.WifiRttManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.ranging.wifi.rtt.RttStationRangingParams;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -48,6 +54,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 
 /**
  * Class for interacting with nearby RTT devices to perform ranging.
@@ -58,6 +65,7 @@ public class RttRangingDevice {
     private static final int MAX_RANGING_RESULT_ERROR_STREAK = 60_000;
     private static final int RTT_RESULT_EXPECTED_DELAY = 500;
     private final Handler mHandler;
+    private final WifiManager mWifiManager;
     private final WifiAwareManager mWifiAwareManager;
     private WifiAwareSession mWifiAwareSession;
     private RttRangingSessionCallback mRttListener = null;
@@ -75,6 +83,8 @@ public class RttRangingDevice {
     private final WifiRttManager mWifiRttManager;
     private int mRangingRequestDelay = 500;
     private AtomicInteger mResultErrorStreak;
+    private WifiScanReceiver mWifiScanReceiver;
+    private ExecutorService mExecutorService;
 
     public RttRangingParameters getRttRangingParameters() {
         return mRttRangingParameters;
@@ -148,18 +158,32 @@ public class RttRangingDevice {
             }
 
             mResultErrorStreak.set(0);
-            PeerHandle peerHandle = result.getPeerHandle();
-            if (mPeerHandle.equals(peerHandle)) {
-                synchronized (mLock) {
-                    if (mRttListener != null) {
-                        mRttListener.onRangingResult(mRttDevice,
-                                new RttRangingPosition(result));
+            if (mDeviceType == DeviceType.STATION) {
+                if (result.getMacAddress().toString().equals(mRttRangingParameters.getBssid())) {
+                    synchronized (mLock) {
+                        if (mRttListener != null) {
+                            mRttListener.onRangingResult(mRttDevice,
+                                    new RttRangingPosition(result));
+                        }
                     }
+                    Log.i(TAG, "callback onRangingResult");
+                } else {
+                    Log.i(TAG, "Received from unknown remote");
                 }
-                Log.i(TAG, "callback onRangingResult");
             } else {
-                Log.i(TAG, "Received PeerHandle is unknown. lastPeerHandle = " + mPeerHandle
-                        + ", gotPeerHandle = " + peerHandle);
+                PeerHandle peerHandle = result.getPeerHandle();
+                if (mPeerHandle.equals(peerHandle)) {
+                    synchronized (mLock) {
+                        if (mRttListener != null) {
+                            mRttListener.onRangingResult(mRttDevice,
+                                    new RttRangingPosition(result));
+                        }
+                    }
+                    Log.i(TAG, "callback onRangingResult");
+                } else {
+                    Log.i(TAG, "Received PeerHandle is unknown. lastPeerHandle = " + mPeerHandle
+                            + ", gotPeerHandle = " + peerHandle);
+                }
             }
         }
     };
@@ -171,7 +195,8 @@ public class RttRangingDevice {
         mHandler = new Handler(Looper.getMainLooper());
         mWifiAwareManager = context.getSystemService(WifiAwareManager.class);
         mWifiRttManager = context.getSystemService(WifiRttManager.class);
-        mRttRanger = new RttRanger(mWifiRttManager, mHandler::post, context);
+        mWifiManager = context.getSystemService(WifiManager.class);
+        mRttRanger = new RttRanger(mWifiRttManager, mHandler::post, context, mDeviceType);
         mRttDevice = new RttDevice(this);
         mIsRunning = false;
         mResultErrorStreak = new AtomicInteger(0);
@@ -193,11 +218,14 @@ public class RttRangingDevice {
             Log.w(TAG, "Tried to start ranging but no ranging parameters have been provided");
             return;
         }
-        if (!mWifiAwareManager.isAvailable()) {
+        if (!mWifiAwareManager.isAvailable() && mDeviceType != DeviceType.STATION) {
             Log.w(TAG, "Wifi Aware Manager is not available");
             return;
         }
-
+        if (!mWifiRttManager.isAvailable() && mDeviceType == DeviceType.STATION) {
+            Log.w(TAG, "Wifi RTT m<anager is not available");
+            return;
+        }
         synchronized (mLock) {
             if (mIsRunning) {
                 Log.w(TAG, "This client is already running.");
@@ -205,8 +233,13 @@ public class RttRangingDevice {
             }
             mIsRunning = true;
             mRttListener = rttListener;
-            executorService.execute(() -> mWifiAwareManager.attach(
-                    new AwareAttachCallback(mDeviceType, mRttRangingParameters), mHandler));
+            mExecutorService = executorService;
+            if (mDeviceType == DeviceType.STATION) {
+                buildResponderConfigAndStartRange(executorService);
+            } else {
+                executorService.execute(() -> mWifiAwareManager.attach(
+                        new AwareAttachCallback(mDeviceType, mRttRangingParameters), mHandler));
+            }
         }
     }
 
@@ -237,6 +270,48 @@ public class RttRangingDevice {
             }
             mCurrentPublishDiscoverySession = null;
             mCurrentSubscribeDiscoverySession = null;
+        }
+    }
+
+    private void buildResponderConfigAndStartRange(ExecutorService executorService) {
+        List<ScanResult> results = mWifiManager.getScanResults();
+        ResponderConfig responderConfig = null;
+        boolean found = false;
+        if (results != null) {
+            String bssid = mRttRangingParameters.getBssid();
+            int idx = IntStream.range(0, results.size())
+                    .filter(i -> results.get(i).BSSID.equals(bssid))
+                    .findFirst()
+                    .orElse(-1);
+            if (idx != -1) {
+                ScanResult scanResult = results.get(idx);
+                if (mRttRangingParameters.getChannelWidth()
+                        != RttStationRangingParams.CHANNEL_WIDTH_DEFAULT) {
+                    scanResult.channelWidth = mRttRangingParameters.getChannelWidth();
+                }
+                responderConfig = ResponderConfig.fromScanResult(scanResult);
+                found = true;
+            }
+        }
+        if (found) {
+            int updateRateMs = RttRangingParameters.getIntervalMs(mRttRangingParameters);
+            mRttRanger.startRangingToAp(responderConfig,
+                    mRttRangingListener,
+                    updateRateMs,
+                    mRangingRequestDelay);
+            if (mRttListener != null) {
+                mRttListener.onRangingInitialized(mRttDevice);
+            }
+        } else {
+            if (mWifiScanReceiver == null) {
+                Log.d(TAG, "scan result not found, initiate scanning");
+                mWifiScanReceiver = new WifiScanReceiver();
+                executorService.execute(() -> mWifiManager.startScan());
+            } else {
+                mWifiScanReceiver = null;
+                mRttListener.onRangingSuspended(mRttDevice,
+                        RttRangingSessionCallback.REASON_FAILED_TO_START);
+            }
         }
     }
 
@@ -445,8 +520,18 @@ public class RttRangingDevice {
         }
     }
 
+    /** Broadcast Receiver for Wi-Fi scan results */
+    private class WifiScanReceiver extends BroadcastReceiver {
+        @SuppressLint("MissingPermission")
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "WifiScanReceiver: onReceive");
+            buildResponderConfigAndStartRange(mExecutorService);
+        }
+    }
+
     public enum DeviceType {
         PUBLISHER,
         SUBSCRIBER,
+        STATION,
     }
 }

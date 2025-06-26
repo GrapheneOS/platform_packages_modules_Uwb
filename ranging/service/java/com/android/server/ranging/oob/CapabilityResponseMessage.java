@@ -140,6 +140,7 @@ public abstract class CapabilityResponseMessage {
         if (getBleRssiCapabilities() != null) {
             size += BleRssiOobCapabilities.getSize();
         }
+
         ByteBuffer byteBuffer = ByteBuffer.allocate(size);
         byteBuffer
                 .put(getHeader().toBytes())

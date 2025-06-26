@@ -28,6 +28,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.ranging.RangingCapabilities.RangingTechnologyAvailability;
+import android.ranging.RangingManager;
 import android.ranging.wifi.rtt.RttRangingCapabilities;
 
 import androidx.annotation.Nullable;
@@ -58,7 +59,7 @@ public class RttCapabilitiesAdapter extends CapabilitiesAdapter {
         super(listener);
         mContext = context;
         if (isSupported(mContext)) {
-            mRttService = new RttServiceImpl(context);
+            mRttService = new RttServiceImpl(context, RangingManager.WIFI_NAN_RTT);
             WifiAwareStateChangeReceiver receiver = new WifiAwareStateChangeReceiver();
             IntentFilter filter = new IntentFilter(ACTION_WIFI_AWARE_STATE_CHANGED);
             mContext.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED);
