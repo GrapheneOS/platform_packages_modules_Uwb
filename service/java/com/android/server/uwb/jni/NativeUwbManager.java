@@ -42,7 +42,6 @@ import com.android.server.uwb.rftest.UwbTestPeriodicTxResult;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 @Keep
 public class NativeUwbManager {
@@ -618,7 +617,8 @@ public class NativeUwbManager {
      * @param connectId logical link connection identifier
      * @return refer to {@link UwbLogicalLinkGetParamsResponse}
      */
-    public UwbLogicalLinkGetParamsResponse getLogicalLinkParams(int connectId, String chipId) {
+    public UwbLogicalLinkGetParamsResponse getLogicalLinkCreationParams(int connectId,
+            String chipId) {
         synchronized (mNativeLock) {
             return nativeGetLogicalLinkParams(connectId, chipId);
         }

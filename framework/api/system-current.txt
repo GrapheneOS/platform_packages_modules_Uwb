@@ -99,14 +99,14 @@ package android.uwb {
     method @NonNull public android.uwb.LogicalLinkConnectionRequest build();
   }
 
-  @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public final class LogicalLinkParams implements android.os.Parcelable {
+  @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public final class LogicalLinkCreationParams implements android.os.Parcelable {
     method public int describeContents();
     method @NonNull public byte[] getDestinationAddress();
     method public int getLinkLayerModeSelector();
     method public int getLogicalLinkClassLength();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
     field public static final int CONNECT_ID_UNSPECIFIED = -1; // 0xffffffff
-    field @NonNull public static final android.os.Parcelable.Creator<android.uwb.LogicalLinkParams> CREATOR;
+    field @NonNull public static final android.os.Parcelable.Creator<android.uwb.LogicalLinkCreationParams> CREATOR;
     field public static final int LINK_LAYER_MODE_CONNECTIONLESS_NON_SECURE = 0; // 0x0
     field public static final int LINK_LAYER_MODE_CONNECTIONLESS_SECURE = 1; // 0x1
     field public static final int LINK_LAYER_MODE_CONNECTIONLESS_UWBS_TO_UWBS = 4; // 0x4
@@ -123,10 +123,10 @@ package android.uwb {
     field public static final int LOGICAL_LINK_STATUS_OK = 0; // 0x0
   }
 
-  public static final class LogicalLinkParams.Builder {
-    ctor public LogicalLinkParams.Builder(int, @NonNull android.uwb.UwbAddress);
-    method @NonNull public android.uwb.LogicalLinkParams build();
-    method @NonNull public android.uwb.LogicalLinkParams.Builder setLogicalLinkClassLength(int);
+  public static final class LogicalLinkCreationParams.Builder {
+    ctor public LogicalLinkCreationParams.Builder(int, @NonNull android.uwb.UwbAddress);
+    method @NonNull public android.uwb.LogicalLinkCreationParams build();
+    method @NonNull public android.uwb.LogicalLinkCreationParams.Builder setLogicalLinkClassLength(int);
   }
 
   public final class RangingMeasurement implements android.os.Parcelable {
@@ -196,8 +196,8 @@ package android.uwb {
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void addControlee(@NonNull android.os.PersistableBundle);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void close();
     method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void closeLogicalLink(int);
-    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void createLogicalLink(@NonNull android.uwb.LogicalLinkParams);
-    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") @NonNull @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public android.uwb.LogicalLinkConnectionParams getLogicalLinkParams(int);
+    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void createLogicalLink(@NonNull android.uwb.LogicalLinkCreationParams);
+    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") @NonNull @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public android.uwb.LogicalLinkConnectionParams getLogicalLinkCreationParams(int);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public void pause(@NonNull android.os.PersistableBundle);
     method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public int queryLogicalLinkMaxDataSizeBytes(int);
     method @RequiresPermission(android.Manifest.permission.UWB_PRIVILEGED) public int queryMaxDataSizeBytes();
@@ -233,8 +233,8 @@ package android.uwb {
     method @FlaggedApi("com.android.uwb.flags.hybrid_session_support") public default void onHybridSessionControllerConfigured(@NonNull android.os.PersistableBundle);
     method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public default void onLogicalLinkClosed(int, int);
     method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public default void onLogicalLinkClosureFailed(int, int);
-    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public default void onLogicalLinkCreated(@NonNull android.uwb.LogicalLinkParams, int);
-    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public default void onLogicalLinkCreationFailed(@NonNull android.uwb.LogicalLinkParams, int);
+    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public default void onLogicalLinkCreated(@NonNull android.uwb.LogicalLinkCreationParams, int);
+    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public default void onLogicalLinkCreationFailed(@NonNull android.uwb.LogicalLinkCreationParams, int);
     method public void onOpenFailed(int, @NonNull android.os.PersistableBundle);
     method public void onOpened(@NonNull android.uwb.RangingSession);
     method public default void onPauseFailed(int, @NonNull android.os.PersistableBundle);

@@ -44,7 +44,7 @@ import android.uwb.IUwbOemExtensionCallback;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.IUwbVendorUciCallback;
 import android.uwb.LogicalLinkConnectionParams;
-import android.uwb.LogicalLinkParams;
+import android.uwb.LogicalLinkCreationParams;
 import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
 
@@ -455,7 +455,7 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
 
     @Override
     public void createLogicalLink(SessionHandle sessionHandle,
-            LogicalLinkParams params) throws RemoteException {
+            LogicalLinkCreationParams params) throws RemoteException {
         if (!Flags.uwbFira3025q4()) {
             throw new UnsupportedOperationException();
         }
@@ -473,13 +473,13 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
     }
 
     @Override
-    public LogicalLinkConnectionParams getLogicalLinkParams(SessionHandle sessionHandle,
+    public LogicalLinkConnectionParams getLogicalLinkCreationParams(SessionHandle sessionHandle,
             int connectId) {
         if (!Flags.uwbFira3025q4()) {
             throw new UnsupportedOperationException();
         }
         enforceUwbPrivilegedPermission();
-        return mUwbServiceCore.getLogicalLinkParams(sessionHandle, connectId);
+        return mUwbServiceCore.getLogicalLinkCreationParams(sessionHandle, connectId);
     }
 
     public synchronized void setEnabled(boolean enabled) throws RemoteException {

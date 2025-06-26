@@ -22,7 +22,7 @@ import android.annotation.Nullable;
 import android.annotation.SystemApi;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.uwb.LogicalLinkParams.LinkLayerMode;
+import android.uwb.LogicalLinkCreationParams.LinkLayerMode;
 
 import com.android.uwb.flags.Flags;
 
@@ -45,7 +45,7 @@ import java.util.Objects;
 @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
 public final class LogicalLinkConnectionRequest implements Parcelable {
     private final int mConnectId;
-    @LogicalLinkParams.LinkLayerMode
+    @LogicalLinkCreationParams.LinkLayerMode
     private final int mLinkLayerModeSelector;
     private final byte[] mSourceAddress;
 
