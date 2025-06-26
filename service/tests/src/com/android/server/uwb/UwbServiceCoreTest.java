@@ -76,7 +76,7 @@ import android.uwb.IUwbOemExtensionCallback;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.IUwbVendorUciCallback;
 import android.uwb.LogicalLinkConnectionParams;
-import android.uwb.LogicalLinkParams;
+import android.uwb.LogicalLinkCreationParams;
 import android.uwb.SessionHandle;
 import android.uwb.StateChangeReason;
 import android.uwb.UwbAddress;
@@ -2217,7 +2217,7 @@ public class UwbServiceCoreTest {
         enableUwbWithCountryCodeChangedCallback();
 
         SessionHandle sessionHandle = mock(SessionHandle.class);
-        LogicalLinkParams params = new LogicalLinkParams.Builder(0,
+        LogicalLinkCreationParams params = new LogicalLinkCreationParams.Builder(0,
                 UwbAddress.fromBytes(new byte[] {0x11, 0x22})).build();
 
         mUwbServiceCore.createLogicalLink(sessionHandle, params);
@@ -2244,11 +2244,11 @@ public class UwbServiceCoreTest {
         SessionHandle sessionHandle = mock(SessionHandle.class);
         LogicalLinkConnectionParams mockResponse = new LogicalLinkConnectionParams.Builder(
                 STATUS_CODE_OK, 0x00).build();
-        when(mUwbSessionManager.getLogicalLinkParams(sessionHandle, 0x00))
+        when(mUwbSessionManager.getLogicalLinkCreationParams(sessionHandle, 0x00))
                 .thenReturn(mockResponse);
 
         LogicalLinkConnectionParams result =
-                mUwbServiceCore.getLogicalLinkParams(sessionHandle, 0x00);
+                mUwbServiceCore.getLogicalLinkCreationParams(sessionHandle, 0x00);
 
         assertThat(result).isNotNull();
         assertThat(mockResponse).isEqualTo(result);

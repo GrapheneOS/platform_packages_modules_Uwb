@@ -577,7 +577,7 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks.Stub {
     }
 
     @Override
-    public void onLogicalLinkCreated(SessionHandle sessionHandle, LogicalLinkParams params,
+    public void onLogicalLinkCreated(SessionHandle sessionHandle, LogicalLinkCreationParams params,
             int connectId) {
         synchronized (this) {
             if (!hasSession(sessionHandle)) {
@@ -592,8 +592,8 @@ public class RangingManager extends android.uwb.IUwbRangingCallbacks.Stub {
     }
 
     @Override
-    public void onLogicalLinkCreationFailed(SessionHandle sessionHandle, LogicalLinkParams params,
-            int status) {
+    public void onLogicalLinkCreationFailed(SessionHandle sessionHandle,
+            LogicalLinkCreationParams params, int status) {
         synchronized (this) {
             if (!hasSession(sessionHandle)) {
                 Log.w(mTag, "onLogicalLinkCreationFailed - received unexpected SessionHandle: "

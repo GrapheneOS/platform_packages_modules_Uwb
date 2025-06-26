@@ -53,7 +53,7 @@ import android.util.Pair;
 import android.uwb.IUwbOemExtensionCallback;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.LogicalLinkConnectionRequest;
-import android.uwb.LogicalLinkParams;
+import android.uwb.LogicalLinkCreationParams;
 import android.uwb.RangingChangeReason;
 import android.uwb.RangingReport;
 import android.uwb.SessionHandle;
@@ -742,7 +742,7 @@ public class UwbSessionNotificationManagerTest {
     @Test
     public void testOnLogicalLinkCreated() throws Exception {
         assumeTrue(Flags.uwbFira3025q4());
-        LogicalLinkParams params = new LogicalLinkParams.Builder(0,
+        LogicalLinkCreationParams params = new LogicalLinkCreationParams.Builder(0,
                 UwbAddress.fromBytes(new byte[] {0x11, 0x22})).build();
         mUwbSessionNotificationManager.onLogicalLinkCreated(mUwbSession, params,
                 UwbTestUtils.LOGICAL_LINK_CONNECT_ID);
@@ -753,7 +753,7 @@ public class UwbSessionNotificationManagerTest {
     @Test
     public void testOnLogicalLinkCreationFailed() throws Exception {
         assumeTrue(Flags.uwbFira3025q4());
-        LogicalLinkParams params = new LogicalLinkParams.Builder(0,
+        LogicalLinkCreationParams params = new LogicalLinkCreationParams.Builder(0,
                 UwbAddress.fromBytes(new byte[] {0x11, 0x22})).build();
         mUwbSessionNotificationManager.onLogicalLinkCreationFailed(mUwbSession, params,
                 UwbUciConstants.LOGICAL_LINK_STATUS_FAILED);

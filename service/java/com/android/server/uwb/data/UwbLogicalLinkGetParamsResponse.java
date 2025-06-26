@@ -33,7 +33,7 @@ public class UwbLogicalLinkGetParamsResponse {
         return mStatus;
     }
 
-    public byte[] getLogicalLinkParams() {
+    public byte[] getLogicalLinkCreationParams() {
         return mLogicalLinkParams;
     }
 

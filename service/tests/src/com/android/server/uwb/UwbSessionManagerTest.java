@@ -107,7 +107,7 @@ import android.util.Pair;
 import android.uwb.IUwbAdapter;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.LogicalLinkConnectionParams;
-import android.uwb.LogicalLinkParams;
+import android.uwb.LogicalLinkCreationParams;
 import android.uwb.RangingChangeReason;
 import android.uwb.SessionHandle;
 import android.uwb.StateChangeReason;
@@ -4948,7 +4948,7 @@ public class UwbSessionManagerTest {
     public void testCreateLogicalLink_Success() throws Exception {
         assumeTrue(com.android.uwb.flags.Flags.uwbFira3025q4());
         UwbSession uwbSession = prepareExistingUwbSession();
-        LogicalLinkParams params = new LogicalLinkParams.Builder(0,
+        LogicalLinkCreationParams params = new LogicalLinkCreationParams.Builder(0,
                 UwbAddress.fromBytes(new byte[] {0x11, 0x22})).build();
         UwbLogicalLinkCreateResponse response = mock(UwbLogicalLinkCreateResponse.class);
 
@@ -4971,7 +4971,7 @@ public class UwbSessionManagerTest {
     public void testCreateLogicalLink_FailedResponse() throws Exception {
         assumeTrue(com.android.uwb.flags.Flags.uwbFira3025q4());
         UwbSession uwbSession = prepareExistingUwbSession();
-        LogicalLinkParams params = new LogicalLinkParams.Builder(0,
+        LogicalLinkCreationParams params = new LogicalLinkCreationParams.Builder(0,
                 UwbAddress.fromBytes(new byte[] {0x11, 0x22})).build();
 
         when(uwbSession.getDeviceType()).thenReturn(UwbUciConstants.DEVICE_TYPE_CONTROLLER);
@@ -4991,7 +4991,7 @@ public class UwbSessionManagerTest {
         assumeTrue(com.android.uwb.flags.Flags.uwbFira3025q4());
 
         UwbSession uwbSession = prepareExistingUwbSession();
-        LogicalLinkParams params = new LogicalLinkParams.Builder(0,
+        LogicalLinkCreationParams params = new LogicalLinkCreationParams.Builder(0,
                 UwbAddress.fromBytes(new byte[] {0x11, 0x22})).build();
         UwbLogicalLinkCreateResponse response = mock(UwbLogicalLinkCreateResponse.class);
 
@@ -5039,7 +5039,7 @@ public class UwbSessionManagerTest {
         //create logical link
         UwbSession uwbSession = prepareExistingUwbSession();
         int connectId = UwbTestUtils.LOGICAL_LINK_CONNECT_ID;
-        LogicalLinkParams params = new LogicalLinkParams.Builder(0,
+        LogicalLinkCreationParams params = new LogicalLinkCreationParams.Builder(0,
                 UwbAddress.fromBytes(new byte[] {0x11, 0x22})).build();
         UwbLogicalLinkCreateResponse response = mock(UwbLogicalLinkCreateResponse.class);
 
@@ -5091,11 +5091,12 @@ public class UwbSessionManagerTest {
         UwbLogicalLinkGetParamsResponse nativeResponse = new UwbLogicalLinkGetParamsResponse(
                 0, CONTROL_FIELD_MAX_LL_SDU_SIZE, linkParams);
 
-        when(mNativeUwbManager.getLogicalLinkParams(UwbTestUtils.LOGICAL_LINK_CONNECT_ID,
+        when(mNativeUwbManager.getLogicalLinkCreationParams(UwbTestUtils.LOGICAL_LINK_CONNECT_ID,
                 uwbSession.getChipId())).thenReturn(nativeResponse);
 
         LogicalLinkConnectionParams response =
-                mUwbSessionManager.getLogicalLinkParams(uwbSession.getSessionHandle(), 0x00);
+                mUwbSessionManager.getLogicalLinkCreationParams(
+                        uwbSession.getSessionHandle(), 0x00);
 
         assertThat(response).isNotNull();
         assertThat(512).isEqualTo(response.getMaxLinkLayerSduSize());
@@ -5107,7 +5108,7 @@ public class UwbSessionManagerTest {
             throws Exception {
         assumeTrue(com.android.uwb.flags.Flags.uwbFira3025q4());
         UwbSession uwbSession = prepareExistingUwbSession();
-        int connectId = LogicalLinkParams.CONNECT_ID_UNSPECIFIED;
+        int connectId = LogicalLinkCreationParams.CONNECT_ID_UNSPECIFIED;
 
         byte[] linkParams = ByteBuffer.allocate(2)
                 .order(ByteOrder.LITTLE_ENDIAN)
@@ -5117,11 +5118,12 @@ public class UwbSessionManagerTest {
         UwbLogicalLinkGetParamsResponse nativeResponse = new UwbLogicalLinkGetParamsResponse(
                 0, CONTROL_FIELD_MAX_LL_SDU_SIZE, linkParams);
 
-        when(mNativeUwbManager.getLogicalLinkParams(uwbSession.getSessionId(),
+        when(mNativeUwbManager.getLogicalLinkCreationParams(uwbSession.getSessionId(),
                 uwbSession.getChipId())).thenReturn(nativeResponse);
 
         LogicalLinkConnectionParams response =
-                mUwbSessionManager.getLogicalLinkParams(uwbSession.getSessionHandle(), connectId);
+                mUwbSessionManager.getLogicalLinkCreationParams(uwbSession.getSessionHandle(),
+                        connectId);
 
         assertThat(response).isNotNull();
         assertThat(512).isEqualTo(response.getMaxLinkLayerSduSize());
