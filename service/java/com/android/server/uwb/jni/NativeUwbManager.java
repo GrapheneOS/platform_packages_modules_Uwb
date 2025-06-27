@@ -42,7 +42,6 @@ import com.android.server.uwb.rftest.UwbTestPeriodicTxResult;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 @Keep
 public class NativeUwbManager {
@@ -489,11 +488,10 @@ public class NativeUwbManager {
             int noOfControlee, byte[] addresses, int[] subSessionIds, byte[] subSessionKeyList,
             String chipId) {
         synchronized (mNativeLock) {
-            int uciVersion = mUwbInjector.getUwbServiceCore().getUciVersion(chipId);
             return nativeControllerMulticastListUpdate(sessionId, (byte) action,
                     (byte) noOfControlee, addresses, subSessionIds, subSessionKeyList, chipId,
-                    uciVersion >= 2,
-                    uciVersion >= 2);
+                    mUwbInjector.isMulticastListNtfV2Supported(),
+                    mUwbInjector.isMulticastListRspV2Supported());
         }
     }
 
