@@ -80,7 +80,6 @@ java_library {
         ":__subpackages__",
         "//packages/modules/Uwb/generic_ranging:__subpackages__",
         "//packages/modules/Connectivity/remoteauth:__subpackages__",
-        "//vendor:__subpackages__",
     ],
     lint: {
         baseline_filename: "lint-baseline.xml",
