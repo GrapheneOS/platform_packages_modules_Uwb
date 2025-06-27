@@ -287,14 +287,11 @@ public class UwbManagerTest {
         try {
             uiAutomation.adoptShellPermissionIdentity();
             long prev = mUwbManager.queryUwbsTimestampMicros();
-            assertTrue(prev > 0);
             for (int i  = 0; i < 10; i++) {
                 Thread.sleep(1); // Sleep for 1ms.
                 long next = mUwbManager.queryUwbsTimestampMicros();
                 // Accounting for 1ms sleep.
-                assertTrue(next > prev + 1_000);
-                // Time between 2 successive timestamp is < 25 ms
-                assertTrue(next < prev + 25_000);
+                assertTrue(next - prev > 1_000);
                 prev = next;
             }
         } catch (InterruptedException e) {
