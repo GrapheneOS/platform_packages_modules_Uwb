@@ -279,6 +279,7 @@ class UwbRangingParams():
   session_type: int = FiraParamEnums.SESSION_TYPE_RANGING
   link_layer_mode: int = FiraParamEnums.LINK_LAYER_MODE_BYPASS
   range_data_ntf_config: int = FiraParamEnums.RANGE_DATA_NTF_CONFIG_ENABLE
+  rangingErrorStreakTimeoutMs: int = 10000
 
   def to_dict(self) -> Dict[str, Any]:
     """Returns UWB ranging parameters in dictionary for sl4a.
@@ -314,6 +315,7 @@ class UwbRangingParams():
         "rangeDataNtfConfig": self.range_data_ntf_config,
         "linkLayerMode": self.link_layer_mode,
         "sessionType": self.session_type,
+        "rangingErrorStreakTimeoutMs": self.rangingErrorStreakTimeoutMs
     }
     if self.sub_session_id is not None:
       dict["subSessionId"] = self.sub_session_id
