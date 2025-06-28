@@ -27,8 +27,8 @@ import android.os.Build;
 import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.util.Log;
-import android.uwb.LogicalLinkParams.LogicalLinkClosureReason;
-import android.uwb.LogicalLinkParams.LogicalLinkStatusCode;
+import android.uwb.LogicalLinkCreationParams.LogicalLinkClosureReason;
+import android.uwb.LogicalLinkCreationParams.LogicalLinkStatusCode;
 
 import androidx.annotation.RequiresApi;
 
@@ -577,30 +577,31 @@ public final class RangingSession implements AutoCloseable {
 
         /**
          * Callback invoked when a logical link is successfully created following a call to
-         * {@link RangingSession#createLogicalLink(LogicalLinkParams)}.
+         * {@link RangingSession#createLogicalLink(LogicalLinkCreationParams)}.
          *
          * <p>This method indicates that the logical link was successfully established. The assigned
          * {@code connectId} can be used for subsequent communication over this link.</p>
          *
-         * @param params {@link LogicalLinkParams} used during the link creation.
+         * @param params {@link LogicalLinkCreationParams} used during the link creation.
          * @param connectId The connection ID assigned to the newly created logical link.
          */
         @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
-        default void onLogicalLinkCreated(@NonNull LogicalLinkParams params, int connectId) {}
+        default void onLogicalLinkCreated(@NonNull LogicalLinkCreationParams params,
+                int connectId) {}
 
         /**
          * Callback invoked when the logical link creation fails following a call to
-         * {@link RangingSession#createLogicalLink(LogicalLinkParams)}.
+         * {@link RangingSession#createLogicalLink(LogicalLinkCreationParams)}.
          *
          * <p>This method notifies the application that the attempt to establish a logical link was
          * unsuccessful. Refer to the {@code status} for failure details.</p>
          *
-         * @param params {@link LogicalLinkParams} used during the link creation.
+         * @param params {@link LogicalLinkCreationParams} used during the link creation.
          * @param status The status code indicating the reason for failure.
          *                   See {@link LogicalLinkStatusCode} for possible values.
          */
         @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
-        default void onLogicalLinkCreationFailed(@NonNull LogicalLinkParams params,
+        default void onLogicalLinkCreationFailed(@NonNull LogicalLinkCreationParams params,
                 @LogicalLinkStatusCode int status) {}
 
         /**
@@ -1149,17 +1150,17 @@ public final class RangingSession implements AutoCloseable {
      * <p>This feature is supported on Fira 3.0+ compliant devices.</p>
      *
      * <p>Once the logical link creation attempt completes, the system invokes either
-     * {@link RangingSession.Callback#onLogicalLinkCreated(LogicalLinkParams, int)} if the operation
-     * succeeds or
-     * {@link RangingSession.Callback#onLogicalLinkCreationFailed(LogicalLinkParams, int)} if it
-     * fails.</p>
+     * {@link RangingSession.Callback#onLogicalLinkCreated(LogicalLinkCreationParams, int)}
+     * if the operation succeeds or
+     * {@link RangingSession.Callback#onLogicalLinkCreationFailed(LogicalLinkCreationParams, int)}
+     * if it fails.</p>
      *
-     * @param params {@link LogicalLinkParams} containing the parameters for establishing the
-     *           logical link connection.
+     * @param params {@link LogicalLinkCreationParams} containing the parameters for
+     *            establishing the logical link connection.
      */
     @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
     @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
-    public void createLogicalLink(@NonNull LogicalLinkParams params) {
+    public void createLogicalLink(@NonNull LogicalLinkCreationParams params) {
         if (!isOpen()) {
             throw new IllegalStateException("Ranging session is not open");
         }
@@ -1207,12 +1208,12 @@ public final class RangingSession implements AutoCloseable {
      * <p>
      * The Host shall use this API to request the FiRa Controller to return parameters related to
      * an established Logical Link. If {@code connectId} is set to
-     * {@link LogicalLinkParams#CONNECT_ID_UNSPECIFIED}, the parameters will be retrieved using the
-     * session handle instead of a specific Logical Link Connection ID.
+     * {@link LogicalLinkCreationParams#CONNECT_ID_UNSPECIFIED}, the parameters will be retrieved
+     * using the session handle instead of a specific Logical Link Connection ID.
      *
      * @param connectId The Logical Link Connection ID for which the parameters are to be retrieved.
-     *           If the value is {@link LogicalLinkParams#CONNECT_ID_UNSPECIFIED}, the request will
-     *           fall back to using the session handle.
+     *           If the value is {@link LogicalLinkCreationParams#CONNECT_ID_UNSPECIFIED},
+     *                 the request will fall back to using the session handle.
      *
      * @return {@link LogicalLinkConnectionParams} containing the retrieved Logical Link parameters.
      *
@@ -1223,13 +1224,13 @@ public final class RangingSession implements AutoCloseable {
     @RequiresPermission(Manifest.permission.UWB_PRIVILEGED)
     @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
     @NonNull
-    public LogicalLinkConnectionParams getLogicalLinkParams(int connectId) {
+    public LogicalLinkConnectionParams getLogicalLinkCreationParams(int connectId) {
         if (!isOpen()) {
             throw new IllegalStateException("Ranging session is not open");
         }
-        Log.v(mTag, "getLogicalLinkParams - sessionHandle: " + mSessionHandle);
+        Log.v(mTag, "getLogicalLinkCreationParams - sessionHandle: " + mSessionHandle);
         try {
-            return mAdapter.getLogicalLinkParams(mSessionHandle, connectId);
+            return mAdapter.getLogicalLinkCreationParams(mSessionHandle, connectId);
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();
         }
@@ -1565,7 +1566,7 @@ public final class RangingSession implements AutoCloseable {
     /**
      * @hide
      */
-    public void onLogicalLinkCreated(LogicalLinkParams params, int connectId) {
+    public void onLogicalLinkCreated(LogicalLinkCreationParams params, int connectId) {
         if (!isOpen()) {
             Log.w(mTag, "onLogicalLinkCreated invoked for non-open session");
             return;
@@ -1580,7 +1581,7 @@ public final class RangingSession implements AutoCloseable {
     /**
      * @hide
      */
-    public void onLogicalLinkCreationFailed(LogicalLinkParams params, int status) {
+    public void onLogicalLinkCreationFailed(LogicalLinkCreationParams params, int status) {
         if (!isOpen()) {
             Log.w(mTag, "onLogicalLinkCreationFailed invoked for non-open session");
             return;

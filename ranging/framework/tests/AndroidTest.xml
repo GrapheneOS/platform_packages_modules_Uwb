@@ -21,6 +21,9 @@
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="RangingFrameworkTests.apk" />
     </target_preparer>
+    <target_preparer class="com.android.tradefed.targetprep.FeatureFlagTargetPreparer" >
+        <option name="flag-value" value="uwb/com.android.ranging.flags.ranging_stack_updates_25q4=true" />
+    </target_preparer>
 
     <option name="test-suite-tag" value="apct"/>
     <option name="test-tag" value="RangingFrameworkTests"/>

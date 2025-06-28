@@ -28,7 +28,7 @@ import android.uwb.UwbAddress;
 import android.uwb.IUwbVendorUciCallback;
 import android.uwb.IUwbOemExtensionCallback;
 import android.uwb.IOnUwbActivityEnergyInfoListener;
-import android.uwb.LogicalLinkParams;
+import android.uwb.LogicalLinkCreationParams;
 import android.uwb.LogicalLinkConnectionParams;
 
 /**
@@ -461,16 +461,16 @@ interface IUwbAdapter {
    * <p>This feature is supported on Fira 3.0+ compliant devices.</p>
    *
    * <p>Once the logical link creation attempt completes, the system invokes either
-   * {@link RangingSession.Callback#onLogicalLinkCreated(SessionHandle, LogicalLinkParams, int)}
+   * {@link RangingSession.Callback#onLogicalLinkCreated(SessionHandle, LogicalLinkCreationParams, int)}
    *      if the operation succeeds, or
-   * {@link RangingSession.Callback#onLogicalLinkCreationFailed(SessionHandle, LogicalLinkParams, int)
+   * {@link RangingSession.Callback#onLogicalLinkCreationFailed(SessionHandle, LogicalLinkCreationParams, int)
    *      } if it fails.</p>
    *
    * @param sessionHandle The session handle associated with the ongoing session.
-   * @param params {@link LogicalLinkParams} containing the parameters for establishing the logical
+   * @param params {@link LogicalLinkCreationParams} containing the parameters for establishing the logical
    *      link connection.
    */
-  void createLogicalLink(in SessionHandle sessionHandle, in LogicalLinkParams params);
+  void createLogicalLink(in SessionHandle sessionHandle, in LogicalLinkCreationParams params);
 
   /**
    * Sends a request to close an existing logical link in an ongoing ranging session.
@@ -502,16 +502,16 @@ interface IUwbAdapter {
    * <p>
    * The Host shall use this API to request the FiRa Controller to return parameters related to
    * an established Logical Link. If {@code connectId} is set to
-   * {@link LogicalLinkParams#CONNECT_ID_UNSPECIFIED}, the parameters will be retrieved using the
+   * {@link LogicalLinkCreationParams#CONNECT_ID_UNSPECIFIED}, the parameters will be retrieved using the
    * session handle instead of a specific Logical Link Connection ID.
    *
    * @param connectId The Logical Link Connection ID for which the parameters are to be retrieved.
-   *           If the value is {@link LogicalLinkParams#CONNECT_ID_UNSPECIFIED}, the request will
+   *           If the value is {@link LogicalLinkCreationParams#CONNECT_ID_UNSPECIFIED}, the request will
    *           fall back to using the session handle.
    *
    * @return {@link LogicalLinkConnectionParams} containing the retrieved Logical Link parameters.
    */
-  LogicalLinkConnectionParams getLogicalLinkParams(in SessionHandle sessionHandle,
+  LogicalLinkConnectionParams getLogicalLinkCreationParams(in SessionHandle sessionHandle,
       in int connectId);
 
   /**

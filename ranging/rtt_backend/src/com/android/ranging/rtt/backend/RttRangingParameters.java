@@ -16,6 +16,8 @@
 
 package com.android.ranging.rtt.backend;
 
+import android.ranging.wifi.rtt.RttStationRangingParams;
+
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 
@@ -29,10 +31,12 @@ public class RttRangingParameters {
     @IntDef({
             DeviceRole.PUBLISHER,
             DeviceRole.SUBSCRIBER,
+            DeviceRole.STATION,
     })
     public @interface DeviceRole {
         int PUBLISHER = 0;
         int SUBSCRIBER = 1;
+        int STATION = 2;
     }
 
     @IntDef({
@@ -40,7 +44,8 @@ public class RttRangingParameters {
             NORMAL,
             FAST,
     })
-    public @interface RangingUpdateRate {}
+    public @interface RangingUpdateRate {
+    }
 
     /**
      * Requests for ranging data in 512 milliseconds
@@ -73,6 +78,9 @@ public class RttRangingParameters {
     private final boolean mEnablePeriodicRangingHwFeature;
 
     private final boolean mRangeDataNtfDisabled;
+
+    protected final String mBssid;
+    protected final int mChannelWidth;
 
     public int getDeviceRole() {
         return mDeviceRole;
@@ -135,6 +143,14 @@ public class RttRangingParameters {
         return mRangeDataNtfDisabled;
     }
 
+    public String getBssid() {
+        return mBssid;
+    }
+
+    public int getChannelWidth() {
+        return mChannelWidth;
+    }
+
     public RttRangingParameters(Builder builder) {
         mDeviceRole = builder.mDeviceRole;
         mServiceId = builder.mServiceId;
@@ -145,6 +161,8 @@ public class RttRangingParameters {
         mUpdateRate = builder.mRangingUpdateRate;
         mEnablePeriodicRangingHwFeature = builder.mEnablePeriodicRangingHwFeature;
         mRangeDataNtfDisabled = builder.mRangeDataNtfDisabled;
+        mBssid = builder.mBssid;
+        mChannelWidth = builder.mChannelWidth;
     }
 
 
@@ -161,6 +179,8 @@ public class RttRangingParameters {
         private int mRangingUpdateRate = NORMAL;
         private boolean mEnablePeriodicRangingHwFeature = false;
         private boolean mRangeDataNtfDisabled = false;
+        protected String mBssid = "";
+        protected int mChannelWidth = RttStationRangingParams.CHANNEL_WIDTH_DEFAULT;
 
         public Builder setDeviceRole(int deviceRole) {
             mDeviceRole = deviceRole;
@@ -208,21 +228,47 @@ public class RttRangingParameters {
             return this;
         }
 
+        public Builder setBssid(String bssid) {
+            mBssid = bssid;
+            mDeviceRole = DeviceRole.STATION;
+            return this;
+        }
+
+        public Builder setChannelWidth(int channelWidth) {
+            mChannelWidth = channelWidth;
+            return this;
+        }
+
         public RttRangingParameters build() {
             return new RttRangingParameters(this);
         }
     }
 
     public static int getIntervalMs(@NonNull RttRangingParameters rttRangingParameters) {
-        switch (rttRangingParameters.getUpdateRate()) {
-            case FAST -> {
-                return rttRangingParameters.isPeriodicRangingHwFeatureEnabled() ? 128 : 256;
+        if (rttRangingParameters.getDeviceRole() == RttRangingParameters.DeviceRole.STATION) {
+            switch (rttRangingParameters.getUpdateRate()) {
+                case FAST -> {
+                    return 128;
+                }
+                case INFREQUENT -> {
+                    return 512;
+                }
+                default -> {
+                    return 256;
+                }
             }
-            case INFREQUENT -> {
-                return 8192;
-            }
-            default -> {
-                return rttRangingParameters.isPeriodicRangingHwFeatureEnabled() ? 256 : 512;
+
+        } else {
+            switch (rttRangingParameters.getUpdateRate()) {
+                case FAST -> {
+                    return rttRangingParameters.isPeriodicRangingHwFeatureEnabled() ? 128 : 256;
+                }
+                case INFREQUENT -> {
+                    return 8192;
+                }
+                default -> {
+                    return rttRangingParameters.isPeriodicRangingHwFeatureEnabled() ? 256 : 512;
+                }
             }
         }
     }

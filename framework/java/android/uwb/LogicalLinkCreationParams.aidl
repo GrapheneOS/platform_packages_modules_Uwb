@@ -16,4 +16,4 @@
 
 package android.uwb;
 
-parcelable LogicalLinkParams;
+parcelable LogicalLinkCreationParams;

@@ -68,7 +68,7 @@ import android.uwb.IUwbAdapter;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.LogicalLinkConnectionParams;
 import android.uwb.LogicalLinkConnectionRequest;
-import android.uwb.LogicalLinkParams;
+import android.uwb.LogicalLinkCreationParams;
 import android.uwb.RangingChangeReason;
 import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
@@ -730,7 +730,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             return;
         }
 
-        LogicalLinkParams params = info.params;
+        LogicalLinkCreationParams params = info.params;
 
         if (status == UwbUciConstants.LOGICAL_LINK_STATUS_ERROR
                 || status == UwbUciConstants.LOGICAL_LINK_STATUS_REJECTED) {
@@ -773,7 +773,8 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
         UwbAddress uwbAddress = UwbAddress.fromBytes(address);
 
-        LogicalLinkParams params = new LogicalLinkParams.Builder(linkLayerMode, uwbAddress).build();
+        LogicalLinkCreationParams params = new LogicalLinkCreationParams
+                .Builder(linkLayerMode, uwbAddress).build();
         LogicalLinkInfo logicalLinkInfo = new LogicalLinkInfo();
         logicalLinkInfo.sessionHandle = uwbSession.getSessionHandle();
         logicalLinkInfo.params = params;
@@ -1672,7 +1673,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     }
 
     public synchronized void createLogicalLink(SessionHandle sessionHandle,
-            LogicalLinkParams params) {
+            LogicalLinkCreationParams params) {
         LogicalLinkInfo logicalLinkInfo = new LogicalLinkInfo();
         logicalLinkInfo.sessionHandle = sessionHandle;
         logicalLinkInfo.params = params;
@@ -1712,7 +1713,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
     private static final class LogicalLinkInfo {
         public SessionHandle sessionHandle;
-        public LogicalLinkParams params;
+        public LogicalLinkCreationParams params;
         public short sequenceNumber;
     }
 
@@ -3068,7 +3069,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
 
     private void handleCreateLogicalLink(LogicalLinkInfo logicalLinkInfo) {
         SessionHandle sessionHandle = logicalLinkInfo.sessionHandle;
-        LogicalLinkParams params = logicalLinkInfo.params;
+        LogicalLinkCreationParams params = logicalLinkInfo.params;
         int status = UwbUciConstants.LOGICAL_LINK_STATUS_FAILED;
 
         UwbSession uwbSession = getUwbSession(sessionHandle);
@@ -3171,7 +3172,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         int shortLength = 2;
         int byteLength = 1;
         int controlField = response.getControlField();
-        byte[] linkLayerParams = response.getLogicalLinkParams();
+        byte[] linkLayerParams = response.getLogicalLinkCreationParams();
 
         LogicalLinkConnectionParams.Builder builder = new LogicalLinkConnectionParams.Builder(
                 response.getStatus(), controlField);
@@ -3215,13 +3216,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         return (controlField & mask) != 0 && buffer.remaining() >= requiredBytes;
     }
 
-    public LogicalLinkConnectionParams getLogicalLinkParams(SessionHandle sessionHandle,
+    public LogicalLinkConnectionParams getLogicalLinkCreationParams(SessionHandle sessionHandle,
             int connectId) {
         UwbSession uwbSession;
         int logicalLinkId;
         String chipId;
 
-        if (connectId != LogicalLinkParams.CONNECT_ID_UNSPECIFIED) {
+        if (connectId != LogicalLinkCreationParams.CONNECT_ID_UNSPECIFIED) {
             Log.d(TAG, "Using ConnectId: " + connectId);
 
             uwbSession = getUwbSessionByConnectionIdentifier(connectId);
@@ -3251,7 +3252,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         }
 
         UwbLogicalLinkGetParamsResponse response =
-                mNativeUwbManager.getLogicalLinkParams(logicalLinkId, chipId);
+                mNativeUwbManager.getLogicalLinkCreationParams(logicalLinkId, chipId);
 
         if (response == null) {
             Log.i(TAG, "Logical Link Params retrieval failed: null result");

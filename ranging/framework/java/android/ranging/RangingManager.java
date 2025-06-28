@@ -69,6 +69,7 @@ public final class RangingManager {
             BLE_CS,
             WIFI_NAN_RTT,
             BLE_RSSI,
+            WIFI_STA_RTT,
     })
     public @interface RangingTechnology {}
     /**
@@ -90,6 +91,12 @@ public final class RangingManager {
      * Bluetooth Low Energy (BLE) RSSI-based ranging technology.
      */
     public static final int BLE_RSSI = 3;
+
+    /**
+     * WiFi Round Trip Time (WiFi-RTT 8011MC) technology.
+     */
+    @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_25Q4)
+    public static final int WIFI_STA_RTT = 4;
 
     /**
      * @hide

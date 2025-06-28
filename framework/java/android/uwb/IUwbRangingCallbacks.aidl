@@ -17,7 +17,7 @@
 package android.uwb;
 
 import android.os.PersistableBundle;
-import android.uwb.LogicalLinkParams;
+import android.uwb.LogicalLinkCreationParams;
 import android.uwb.LogicalLinkConnectionRequest;
 import android.uwb.RangingChangeReason;
 import android.uwb.RangingReport;
@@ -363,32 +363,32 @@ oneway interface IUwbRangingCallbacks {
 
   /**
    * Callback invoked when a logical link is successfully created following a call to
-   * {@link RangingSession#createLogicalLink(LogicalLinkParams)}.
+   * {@link RangingSession#createLogicalLink(LogicalLinkCreationParams)}.
    *
    * <p>This method indicates that the logical link was successfully established. The assigned
    * {@code connectId} can be used for subsequent communication over this link.</p>
    *
    * @param sessionHandle The session handle associated with the logical link.
-   * @param params {@link LogicalLinkParams} used during the link creation.
+   * @param params {@link LogicalLinkCreationParams} used during the link creation.
    * @param connectId The connection ID assigned to the newly created logical link.
    */
-  void onLogicalLinkCreated(in SessionHandle sessionHandle, in LogicalLinkParams params,
+  void onLogicalLinkCreated(in SessionHandle sessionHandle, in LogicalLinkCreationParams params,
         in int connectId);
 
   /**
    * Callback invoked when the logical link creation fails following a call to
-   * {@link RangingSession#createLogicalLink(LogicalLinkParams)}.
+   * {@link RangingSession#createLogicalLink(LogicalLinkCreationParams)}.
    *
    * <p>This method notifies the application that the attempt to establish a logical link was
    * unsuccessful. Refer to the {@code status} for failure details.</p>
    *
    * @param sessionHandle The session handle associated with the logical link attempt.
-   * @param params {@link LogicalLinkParams} used during the link creation.
+   * @param params {@link LogicalLinkCreationParams} used during the link creation.
    * @param status The status code indicating the reason for failure.
    *                   See {@link LogicalLinkStatusCode} for possible values.
    */
-  void onLogicalLinkCreationFailed(in SessionHandle sessionHandle, in LogicalLinkParams params,
-      in int status);
+  void onLogicalLinkCreationFailed(in SessionHandle sessionHandle, in LogicalLinkCreationParams
+      params, in int status);
 
   /**
    * Callback invoked when a logical link is closed, either as a result of a

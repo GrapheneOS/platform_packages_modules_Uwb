@@ -46,7 +46,7 @@ import android.uwb.IUwbOemExtensionCallback;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.IUwbVendorUciCallback;
 import android.uwb.LogicalLinkConnectionParams;
-import android.uwb.LogicalLinkParams;
+import android.uwb.LogicalLinkCreationParams;
 import android.uwb.RangingChangeReason;
 import android.uwb.SessionHandle;
 import android.uwb.StateChangeReason;
@@ -666,12 +666,6 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         return mChipIdToDeviceInfoResponseMap.get(chipId);
     }
 
-    public int getUciVersion(String chipId) {
-        int uciVersion = Objects.requireNonNull(getCachedDeviceInfoResponse(chipId)).mUciVersion;
-        // Default to 1 for junk values
-       return uciVersion > 100 ? 1 : uciVersion;
-    }
-
     /**
      * Get specification info
      */
@@ -692,14 +686,14 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
             return new PersistableBundle();
         }
         if (specificationParams.second.getFiraSpecificationParams() != null) {
-            int uciVersion = getUciVersion(chipId);
+            int uciVersion = Objects.requireNonNull(getCachedDeviceInfoResponse(
+                    mUwbInjector.getMultichipData().getDefaultChipId())).mUciVersion;
             FiraSpecificationParams firaSpecificationParams =
                     new FiraSpecificationParams.Builder(
                             specificationParams.second.getFiraSpecificationParams())
-                            .setBackgroundRangingSupport(
-                                    uciVersion >= 2 || mUwbInjector.getDeviceConfigFacade()
+                            .setBackgroundRangingSupport(mUwbInjector.getDeviceConfigFacade()
                                     .isBackgroundRangingEnabled())
-                            .setUciVersionSupported(uciVersion)
+                            .setUciVersionSupported(uciVersion > 100 ? 1 : uciVersion)
                             .setCountryCode(mUwbCountryCode.getCountryCode())
                             .build();
             specificationParams.second.setFiraSpecificationParams(firaSpecificationParams);
@@ -1182,7 +1176,7 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
     /**
      * Create a linker layer with remote device which is part of this ongoing session
      */
-    public void createLogicalLink(SessionHandle sessionHandle, LogicalLinkParams params)
+    public void createLogicalLink(SessionHandle sessionHandle, LogicalLinkCreationParams params)
             throws RemoteException {
         if (!isUwbEnabled()) {
             throw new IllegalStateException("Uwb is not enabled");
@@ -1205,13 +1199,13 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
      * The Host shall use the get logical link param command to get the Logical Link parameters
      * associated with the LL_CONNECT_ID or SessionHandle.
      */
-    public LogicalLinkConnectionParams getLogicalLinkParams(SessionHandle sessionHandle,
+    public LogicalLinkConnectionParams getLogicalLinkCreationParams(SessionHandle sessionHandle,
             int connectId) {
         if (!isUwbEnabled()) {
             throw new IllegalStateException("Uwb is not enabled");
         }
         try {
-            return mSessionManager.getLogicalLinkParams(sessionHandle, connectId);
+            return mSessionManager.getLogicalLinkCreationParams(sessionHandle, connectId);
         } catch (Exception e) {
             Log.e(TAG, "Failed to get logical link parameters", e);
             return null;

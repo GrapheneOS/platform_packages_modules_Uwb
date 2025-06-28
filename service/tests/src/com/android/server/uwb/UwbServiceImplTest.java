@@ -69,7 +69,7 @@ import android.uwb.IUwbAdapterStateCallbacks;
 import android.uwb.IUwbAdfProvisionStateCallbacks;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.IUwbVendorUciCallback;
-import android.uwb.LogicalLinkParams;
+import android.uwb.LogicalLinkCreationParams;
 import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
 
@@ -858,7 +858,7 @@ public class UwbServiceImplTest {
     public void testCreateLogicalLink() throws Exception {
         assumeTrue(Flags.uwbFira3025q4());
         final SessionHandle sessionHandle = mock(SessionHandle.class);
-        LogicalLinkParams params = new LogicalLinkParams.Builder(0,
+        LogicalLinkCreationParams params = new LogicalLinkCreationParams.Builder(0,
                 UwbAddress.fromBytes(new byte[] {0x11, 0x22})).build();
 
         mUwbServiceImpl.createLogicalLink(sessionHandle, params);
@@ -880,8 +880,8 @@ public class UwbServiceImplTest {
         assumeTrue(Flags.uwbFira3025q4());
         final SessionHandle sessionHandle = mock(SessionHandle.class);
 
-        mUwbServiceImpl.getLogicalLinkParams(sessionHandle, 0x00);
-        verify(mUwbServiceCore).getLogicalLinkParams(eq(sessionHandle), eq(0x00));
+        mUwbServiceImpl.getLogicalLinkCreationParams(sessionHandle, 0x00);
+        verify(mUwbServiceCore).getLogicalLinkCreationParams(eq(sessionHandle), eq(0x00));
     }
 
     @Test

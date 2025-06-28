@@ -23,7 +23,7 @@ import android.os.Build;
 import android.os.PersistableBundle;
 import android.uwb.LogicalLinkConnectionParams;
 import android.uwb.LogicalLinkConnectionRequest;
-import android.uwb.LogicalLinkParams;
+import android.uwb.LogicalLinkCreationParams;
 import android.uwb.RangingMeasurement;
 import android.uwb.RangingReport;
 import android.uwb.RangingSession;
@@ -423,7 +423,7 @@ public class UwbManagerSnippet implements Snippet {
         }
 
         @Override
-        public void onLogicalLinkCreated(LogicalLinkParams params, int connectId) {
+        public void onLogicalLinkCreated(LogicalLinkCreationParams params, int connectId) {
             Log.d(TAG + "RangingSessionCallback#onLogicalLinkCreated() called");
             mConnectId = connectId;
             handleEvent(Event.LogicalLinkCreated);
@@ -1116,12 +1116,13 @@ public class UwbManagerSnippet implements Snippet {
         }
     }
 
-    private LogicalLinkParams generateLogicalLinkParams(JSONObject json) throws JSONException {
+    private LogicalLinkCreationParams generateLogicalLinkParams(JSONObject json)
+            throws JSONException {
         int linkLayerMode = json.getInt("linkLayerMode");
         byte[] destinationAddress = convertJSONArrayToByteArray(
                 json.getJSONArray("destinationAddress"));
 
-        LogicalLinkParams.Builder builder = new LogicalLinkParams.Builder(
+        LogicalLinkCreationParams.Builder builder = new LogicalLinkCreationParams.Builder(
             linkLayerMode, UwbAddress.fromBytes(destinationAddress)
         );
 
@@ -1136,7 +1137,7 @@ public class UwbManagerSnippet implements Snippet {
     public void firaCreateLogicalLink(String key, JSONObject config)
             throws Throwable {
         RangingSessionCallback rangingSessionCallback = sRangingSessionCallbackMap.get(key);
-        LogicalLinkParams params = generateLogicalLinkParams(config);
+        LogicalLinkCreationParams params = generateLogicalLinkParams(config);
 
         // Hold on to the shell permission until the session is stopped.
         runWithShellPermission(() ->
@@ -1148,7 +1149,7 @@ public class UwbManagerSnippet implements Snippet {
         RangingSessionCallback rangingSessionCallback = sRangingSessionCallbackMap.get(key);
 
         LogicalLinkConnectionParams getParamsResponse = runWithShellPermission(() ->
-            rangingSessionCallback.rangingSession.getLogicalLinkParams(
+                rangingSessionCallback.rangingSession.getLogicalLinkCreationParams(
                     rangingSessionCallback.mConnectId));
 
         return getParamsResponse != null;

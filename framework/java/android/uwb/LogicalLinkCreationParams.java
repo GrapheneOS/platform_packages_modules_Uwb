@@ -42,7 +42,7 @@ import java.util.Objects;
  */
 @SystemApi
 @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
-public final class LogicalLinkParams implements Parcelable {
+public final class LogicalLinkCreationParams implements Parcelable {
     private final byte[] mDestinationAddress;
     private final int mLogicalLinkClassLength;
 
@@ -163,7 +163,7 @@ public final class LogicalLinkParams implements Parcelable {
     /** Indicates that no specific Logical Link Connection ID is provided. */
     public static final int CONNECT_ID_UNSPECIFIED = -1;
 
-    private LogicalLinkParams(Builder builder) {
+    private LogicalLinkCreationParams(Builder builder) {
         mLinkLayerModeSelector = builder.mLinkLayerModeSelector;
         mDestinationAddress = builder.mDestinationAddress;
         mLogicalLinkClassLength = builder.mLogicalLinkClassLength;
@@ -210,8 +210,8 @@ public final class LogicalLinkParams implements Parcelable {
         if (this == obj) {
             return true;
         }
-        if (obj instanceof LogicalLinkParams) {
-            LogicalLinkParams other = (LogicalLinkParams) obj;
+        if (obj instanceof LogicalLinkCreationParams) {
+            LogicalLinkCreationParams other = (LogicalLinkCreationParams) obj;
             return mLinkLayerModeSelector == other.mLinkLayerModeSelector
                     && Arrays.equals(mDestinationAddress, other.mDestinationAddress)
                     && mLogicalLinkClassLength == other.mLogicalLinkClassLength;
@@ -238,7 +238,7 @@ public final class LogicalLinkParams implements Parcelable {
      */
     @Override
     public String toString() {
-        return "LogicalLinkParams{"
+        return "LogicalLinkCreationParams{"
                 + "linkLayerModeSelector=" + mLinkLayerModeSelector
                 + ", destinationAddress=" + UwbAddress.fromBytes(mDestinationAddress)
                 + ", logicalLinkClassLength=" + mLogicalLinkClassLength
@@ -252,23 +252,23 @@ public final class LogicalLinkParams implements Parcelable {
         dest.writeInt(mLogicalLinkClassLength);
     }
 
-    public static final @NonNull Creator<LogicalLinkParams> CREATOR =
-            new Creator<LogicalLinkParams>() {
+    public static final @NonNull Creator<LogicalLinkCreationParams> CREATOR =
+            new Creator<LogicalLinkCreationParams>() {
                 @Override
-                public LogicalLinkParams createFromParcel(Parcel in) {
+                public LogicalLinkCreationParams createFromParcel(Parcel in) {
                     return new Builder(in.readInt(), UwbAddress.fromBytes(in.createByteArray()))
                             .setLogicalLinkClassLength(in.readInt())
                             .build();
                 }
 
                 @Override
-                public LogicalLinkParams[] newArray(int size) {
-                    return new LogicalLinkParams[size];
+                public LogicalLinkCreationParams[] newArray(int size) {
+                    return new LogicalLinkCreationParams[size];
                 }
             };
 
     /**
-     * Builder for {@link LogicalLinkParams} object
+     * Builder for {@link LogicalLinkCreationParams} object
     */
     public static final class Builder {
         @LinkLayerMode
@@ -312,8 +312,8 @@ public final class LogicalLinkParams implements Parcelable {
         }
 
         @NonNull
-        public LogicalLinkParams build() {
-            return new LogicalLinkParams(this);
+        public LogicalLinkCreationParams build() {
+            return new LogicalLinkCreationParams(this);
         }
     }
 }

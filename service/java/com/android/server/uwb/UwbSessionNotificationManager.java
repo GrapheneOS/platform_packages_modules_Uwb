@@ -24,7 +24,7 @@ import android.uwb.AngleOfArrivalMeasurement;
 import android.uwb.DistanceMeasurement;
 import android.uwb.IUwbRangingCallbacks;
 import android.uwb.LogicalLinkConnectionRequest;
-import android.uwb.LogicalLinkParams;
+import android.uwb.LogicalLinkCreationParams;
 import android.uwb.RangingChangeReason;
 import android.uwb.RangingMeasurement;
 import android.uwb.RangingReport;
@@ -724,7 +724,7 @@ public class UwbSessionNotificationManager {
         }
     }
 
-    public void onLogicalLinkCreationFailed(UwbSession uwbSession, LogicalLinkParams params,
+    public void onLogicalLinkCreationFailed(UwbSession uwbSession, LogicalLinkCreationParams params,
             int status) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();
@@ -738,7 +738,7 @@ public class UwbSessionNotificationManager {
         }
     }
 
-    public void onLogicalLinkCreated(UwbSession uwbSession, LogicalLinkParams params,
+    public void onLogicalLinkCreated(UwbSession uwbSession, LogicalLinkCreationParams params,
             int connectId) {
         SessionHandle sessionHandle = uwbSession.getSessionHandle();
         IUwbRangingCallbacks uwbRangingCallbacks = uwbSession.getIUwbRangingCallbacks();

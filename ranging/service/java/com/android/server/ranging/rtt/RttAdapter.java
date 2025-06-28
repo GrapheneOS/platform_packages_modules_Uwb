@@ -64,7 +64,7 @@ public class RttAdapter implements RangingAdapter {
     private final Context mContext;
     private final RangingInjector mRangingInjector;
     private final RttService mRttService;
-    private final RttRangingDevice mRttClient;
+    private RttRangingDevice mRttClient;
     private final ListeningExecutorService mExecutorService;
     private final ExecutorResultHandlers mRttClientResultHandlers = new ExecutorResultHandlers();
     private final RttRangingSessionCallback mRttListener = new RttListener();
@@ -82,13 +82,22 @@ public class RttAdapter implements RangingAdapter {
     private final AlarmManager mAlarmManager;
     private final AlarmManager.OnAlarmListener mMeasurementLimitListener;
 
+    @RangingPreference.DeviceRole
+    RangingTechnology mTech = RangingTechnology.RTT;
+
     public RttAdapter(
             @NonNull Context context,
             @NonNull RangingInjector rangingInjector,
             @NonNull ListeningExecutorService executorService,
-            @RangingPreference.DeviceRole int role
+            @RangingPreference.DeviceRole int role,
+            RangingTechnology tech
     ) {
-        this(context, rangingInjector, executorService, new RttServiceImpl(context), role);
+        this(context, rangingInjector, executorService,
+                new RttServiceImpl(context,
+                        tech == RangingTechnology.RTT
+                                ? RangingManager.WIFI_NAN_RTT : RangingManager.WIFI_STA_RTT),
+                role,
+                tech);
     }
 
     @VisibleForTesting
@@ -96,17 +105,29 @@ public class RttAdapter implements RangingAdapter {
             @NonNull RangingInjector rangingInjector,
             @NonNull ListeningExecutorService executorService,
             @NonNull RttService rttService,
-            @RangingPreference.DeviceRole int role) {
-        if (!RttCapabilitiesAdapter.isSupported(context)) {
-            throw new IllegalArgumentException("WiFi RTT system feature not found.");
+            @RangingPreference.DeviceRole int role,
+            RangingTechnology tech) {
+        mTech = tech;
+        if (mTech == RangingTechnology.RTT) {
+            if (!RttCapabilitiesAdapter.isSupported(context)) {
+                throw new IllegalArgumentException("WiFi RTT system feature not found.");
+            }
+        } else {
+            if (!RttStationCapabilitiesAdapter.isSupported(context)) {
+                throw new IllegalArgumentException("WiFi 8011mc system feature not found");
+            }
         }
         mContext = context;
         mRangingInjector = rangingInjector;
         mStateMachine = new StateMachine<>(State.STOPPED);
         mRttService = rttService;
-        mRttClient = role == DEVICE_ROLE_INITIATOR
-                ? mRttService.getSubscriber(context)
-                : mRttService.getPublisher(context);
+        if (mTech == RangingTechnology.RTT) {
+            mRttClient = role == DEVICE_ROLE_INITIATOR
+                    ? mRttService.getSubscriber(context)
+                    : mRttService.getPublisher(context);
+        } else {
+            mRttClient = mRttService.getStation(context);
+        }
 
         mExecutorService = executorService;
         mCallbacks = null;
@@ -124,7 +145,8 @@ public class RttAdapter implements RangingAdapter {
 
     @Override
     public @NonNull RangingTechnology getTechnology() {
-        return RangingTechnology.RTT;
+        //return RangingTechnology.RTT;
+        return mTech;
     }
 
     public DataNotificationManager getDataNotificationManager() {
@@ -236,7 +258,9 @@ public class RttAdapter implements RangingAdapter {
                 return;
             }
             RangingData.Builder dataBuilder = new RangingData.Builder()
-                    .setRangingTechnology(RangingManager.WIFI_NAN_RTT)
+                    .setRangingTechnology(mTech == RangingTechnology.RTT_STATION
+                            ? RangingManager.WIFI_NAN_RTT
+                            : RangingManager.WIFI_STA_RTT)
                     .setDistance(new RangingMeasurement.Builder()
                             .setMeasurement(position.getDistanceMeters())
                             .build())
@@ -269,8 +293,8 @@ public class RttAdapter implements RangingAdapter {
             return switch (reason) {
                 case REASON_UNKNOWN -> InternalReason.UNKNOWN;
                 case REASON_WRONG_PARAMETERS,
-                        REASON_FAILED_TO_START,
-                        REASON_RTT_NOT_AVAILABLE -> InternalReason.UNSUPPORTED;
+                     REASON_FAILED_TO_START,
+                     REASON_RTT_NOT_AVAILABLE -> InternalReason.UNSUPPORTED;
                 case REASON_STOPPED_BY_PEER -> InternalReason.REMOTE_REQUEST;
                 case REASON_STOP_RANGING_CALLED -> InternalReason.LOCAL_REQUEST;
                 case REASON_MAX_RANGING_ROUND_RETRY_REACHED -> InternalReason.NO_PEERS_FOUND;

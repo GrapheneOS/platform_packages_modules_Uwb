@@ -27,6 +27,7 @@ import android.ranging.ble.cs.BleCsRangingCapabilities;
 import android.ranging.ble.rssi.BleRssiRangingCapabilities;
 import android.ranging.uwb.UwbRangingCapabilities;
 import android.ranging.wifi.rtt.RttRangingCapabilities;
+import android.ranging.wifi.rtt.RttStationRangingCapabilities;
 
 import com.android.ranging.flags.Flags;
 
@@ -69,6 +70,9 @@ public final class RangingCapabilities implements Parcelable {
 
     @Nullable
     private final BleRssiRangingCapabilities mBleRssiCapabilities;
+
+    @Nullable
+    private final RttStationRangingCapabilities mRttStationRangingCapabilities;
 
     /**
      * @hide
@@ -127,6 +131,9 @@ public final class RangingCapabilities implements Parcelable {
                 RangingManager.BLE_CS);
         mBleRssiCapabilities = (BleRssiRangingCapabilities) builder.mCapabilities.get(
                 RangingManager.BLE_RSSI);
+        mRttStationRangingCapabilities =
+                (RttStationRangingCapabilities) builder.mCapabilities.get(
+                RangingManager.WIFI_STA_RTT);
         mAvailabilities = builder.mAvailabilities;
     }
 
@@ -141,6 +148,10 @@ public final class RangingCapabilities implements Parcelable {
         mBleRssiCapabilities = in.readParcelable(
                 BleRssiRangingCapabilities.class.getClassLoader(),
                 BleRssiRangingCapabilities.class);
+        mRttStationRangingCapabilities = in.readParcelable(
+                RttStationRangingCapabilities.class.getClassLoader(),
+                RttStationRangingCapabilities.class);
+
         int size = in.readInt();
         mAvailabilities = new HashMap<>(size);
         for (int i = 0; i < size; i++) {
@@ -219,6 +230,17 @@ public final class RangingCapabilities implements Parcelable {
     public BleRssiRangingCapabilities getBleRssiCapabilities() {
         return mBleRssiCapabilities;
     }
+    /**
+     * Gets the WiFi STA-RTT ranging capabilities.
+     *
+     * @return a {@link RttStationRangingCapabilities} object or {@code null} if not available.
+     * @hide
+     */
+    @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_25Q4)
+    @Nullable
+    public RttStationRangingCapabilities getRttStationRangingCapabilities() {
+        return mRttStationRangingCapabilities;
+    }
 
     @Override
     public int describeContents() {
@@ -231,6 +253,7 @@ public final class RangingCapabilities implements Parcelable {
         dest.writeParcelable(mRttRangingCapabilities, flags);
         dest.writeParcelable(mCsCapabilities, flags);
         dest.writeParcelable(mBleRssiCapabilities, flags);
+        dest.writeParcelable(mRttStationRangingCapabilities, flags);
         dest.writeInt(mAvailabilities.size()); // Write map size
         for (Map.Entry<Integer, Integer> entry : mAvailabilities.entrySet()) {
             dest.writeInt(entry.getKey()); // Write the key

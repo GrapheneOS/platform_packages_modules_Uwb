@@ -819,7 +819,7 @@ public class RangingSessionTest {
         RangingSession.Callback callback = mock(RangingSession.Callback.class);
         IUwbAdapter adapter = mock(IUwbAdapter.class);
         RangingSession session = new RangingSession(EXECUTOR, callback, adapter, handle);
-        LogicalLinkParams params = new LogicalLinkParams.Builder(0,
+        LogicalLinkCreationParams params = new LogicalLinkCreationParams.Builder(0,
                 UwbAddress.fromBytes(new byte[] {0x11, 0x22})).build();
         assertFalse(session.isOpen());
 
@@ -856,14 +856,14 @@ public class RangingSessionTest {
         int connectId = 0x00;
         LogicalLinkConnectionParams mockResponse = new LogicalLinkConnectionParams.Builder(
                 STATUS_OK, 0x00).build();
-        when(adapter.getLogicalLinkParams(handle, connectId)).thenReturn(mockResponse);
+        when(adapter.getLogicalLinkCreationParams(handle, connectId)).thenReturn(mockResponse);
         assertFalse(session.isOpen());
-        verifyThrowIllegalState(() -> session.getLogicalLinkParams(connectId));
+        verifyThrowIllegalState(() -> session.getLogicalLinkCreationParams(connectId));
 
         session.onRangingOpened();
-        session.getLogicalLinkParams(connectId);
+        session.getLogicalLinkCreationParams(connectId);
 
-        LogicalLinkConnectionParams response = session.getLogicalLinkParams(connectId);
+        LogicalLinkConnectionParams response = session.getLogicalLinkCreationParams(connectId);
 
         assertThat(response).isNotNull();
         assertThat(mockResponse).isEqualTo(response);

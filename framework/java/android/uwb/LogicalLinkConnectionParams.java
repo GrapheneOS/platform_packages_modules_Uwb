@@ -22,7 +22,7 @@ import android.annotation.NonNull;
 import android.annotation.SystemApi;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.uwb.LogicalLinkParams.LogicalLinkStatusCode;
+import android.uwb.LogicalLinkCreationParams.LogicalLinkStatusCode;
 
 import com.android.uwb.flags.Flags;
 

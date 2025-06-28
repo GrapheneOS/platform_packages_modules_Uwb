@@ -21,6 +21,7 @@ import android.net.wifi.aware.PeerHandle;
 import android.net.wifi.rtt.RangingRequest;
 import android.net.wifi.rtt.RangingResult;
 import android.net.wifi.rtt.RangingResultCallback;
+import android.net.wifi.rtt.ResponderConfig;
 import android.net.wifi.rtt.WifiRttManager;
 import android.os.SystemClock;
 import android.util.Log;
@@ -45,7 +46,8 @@ public class RttRanger {
 
     private RttRangerListener mRttRangerListener;
     private PeerHandle mPeerHandle;
-
+    private ResponderConfig mResponder;
+    private final RttRangingDevice.DeviceType mDeviceType;
     private boolean mIsRunning;
 
     private final AlarmManager mAlarmManager;
@@ -55,9 +57,11 @@ public class RttRanger {
     private int mRangingRequestDelay = 500;
     private AtomicLong mLastRangingRequestTimestamp;
 
-    public RttRanger(WifiRttManager wiFiRttManager, Executor executor, Context context) {
+    public RttRanger(WifiRttManager wiFiRttManager, Executor executor, Context context,
+            RttRangingDevice.DeviceType deviceType) {
         this.mExecutor = executor;
         this.mWifiRttManager = wiFiRttManager;
+        this.mDeviceType = deviceType;
         mAlarmManager = context.getSystemService(AlarmManager.class);
         mLastRangingRequestTimestamp = new AtomicLong(SystemClock.elapsedRealtime());
         Objects.requireNonNull(mAlarmManager);
@@ -79,6 +83,22 @@ public class RttRanger {
         setPeriodicAlarm(rangingRequestDelay);
     }
 
+    public void startRangingToAp(ResponderConfig responder,
+            @NonNull RttRangerListener rttRangerListener, int updateRateMs,
+            int rangingRequestDelay) {
+        if (mIsRunning) {
+            Log.w(TAG, "startRanging - already running");
+            return;
+        }
+        mIsRunning = true;
+        this.mResponder = responder;
+        this.mRttRangerListener = rttRangerListener;
+        mBaseUpdateRateMs = updateRateMs;
+        mCurrentUpdateRateMs = mBaseUpdateRateMs;
+        mRangingRequestDelay = rangingRequestDelay;
+        setPeriodicAlarm(rangingRequestDelay);
+    }
+
     public void reconfigureInterval(int intervalSkipCount) {
         mCurrentUpdateRateMs = (mBaseUpdateRateMs * intervalSkipCount) + mBaseUpdateRateMs;
     }
@@ -92,8 +112,13 @@ public class RttRanger {
             return;
         }
         mLastRangingRequestTimestamp = new AtomicLong(SystemClock.elapsedRealtime());
+        RangingRequest request = (mDeviceType == RttRangingDevice.DeviceType.STATION)
+                ? new RangingRequest.Builder()
+                .addResponder(mResponder).build()
+                : new RangingRequest.Builder()
+                        .addWifiAwarePeer(mPeerHandle).build();
         mWifiRttManager.startRanging(
-                new RangingRequest.Builder().addWifiAwarePeer(mPeerHandle).build(),
+                request,
                 mExecutor,
                 mRangingResultCallback);
     }

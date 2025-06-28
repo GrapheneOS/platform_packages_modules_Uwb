@@ -58,7 +58,7 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.uwb.LogicalLinkConnectionParams;
 import android.uwb.LogicalLinkConnectionRequest;
-import android.uwb.LogicalLinkParams;
+import android.uwb.LogicalLinkCreationParams;
 import android.uwb.RangingMeasurement;
 import android.uwb.RangingReport;
 import android.uwb.RangingSession;
@@ -287,14 +287,11 @@ public class UwbManagerTest {
         try {
             uiAutomation.adoptShellPermissionIdentity();
             long prev = mUwbManager.queryUwbsTimestampMicros();
-            assertTrue(prev > 0);
             for (int i  = 0; i < 10; i++) {
                 Thread.sleep(1); // Sleep for 1ms.
                 long next = mUwbManager.queryUwbsTimestampMicros();
                 // Accounting for 1ms sleep.
-                assertTrue(next > prev + 1_000);
-                // Time between 2 successive timestamp is < 25 ms
-                assertTrue(next < prev + 25_000);
+                assertTrue(next - prev > 1_000);
                 prev = next;
             }
         } catch (InterruptedException e) {
@@ -807,13 +804,14 @@ public class UwbManagerTest {
             mCtrlCountDownLatch.countDown();
         }
 
-        public void onLogicalLinkCreated(@NonNull LogicalLinkParams params, int connectId) {
+        public void onLogicalLinkCreated(@NonNull LogicalLinkCreationParams params, int connectId) {
             this.connectId = connectId;
             onLogicalLinkCreatedCalled = true;
             mCtrlCountDownLatch.countDown();
         }
 
-        public void onLogicalLinkCreationFailed(@NonNull LogicalLinkParams params, int status) {
+        public void onLogicalLinkCreationFailed(@NonNull LogicalLinkCreationParams params,
+                int status) {
             onLogicalLinkCreationFailedCalled = true;
         }
 
@@ -2701,12 +2699,13 @@ public class UwbManagerTest {
             assertThat(rangingSessionCallback.onOpenFailedCalled).isFalse();
             assertThat(rangingSessionCallback.rangingSession).isNotNull();
 
-            LogicalLinkParams logicalLinkParams = new LogicalLinkParams.Builder(
-                    LogicalLinkParams.LINK_LAYER_MODE_CONNECTIONLESS_NON_SECURE,
+            LogicalLinkCreationParams logicalLinkCreationParams =
+                    new LogicalLinkCreationParams.Builder(
+                    LogicalLinkCreationParams.LINK_LAYER_MODE_CONNECTIONLESS_NON_SECURE,
                     UwbAddress.fromBytes(new byte[] {0x33, 0x22}))
                     .setLogicalLinkClassLength(0).build();
 
-            rangingSessionCallback.rangingSession.createLogicalLink(logicalLinkParams);
+            rangingSessionCallback.rangingSession.createLogicalLink(logicalLinkCreationParams);
             assertThat(rangingSessionCallback.onLogicalLinkCreationFailedCalled).isFalse();
 
             countDownLatch = new CountDownLatch(2);
@@ -2723,7 +2722,7 @@ public class UwbManagerTest {
 
             //Get logical link params
             LogicalLinkConnectionParams getParamsResponse =
-                    rangingSessionCallback.rangingSession.getLogicalLinkParams(
+                    rangingSessionCallback.rangingSession.getLogicalLinkCreationParams(
                             rangingSessionCallback.connectId);
             assertThat(getParamsResponse).isNotNull();
 

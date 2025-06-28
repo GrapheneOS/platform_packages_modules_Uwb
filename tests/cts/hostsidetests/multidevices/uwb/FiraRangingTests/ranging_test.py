@@ -497,6 +497,7 @@ class RangingTest(uwb_base_test.UwbBaseTest):
       'android.app.AlarmManager#setInexactRepeating(int, long, long, android.app.PendingIntent)',
       'java.util#copyOf(byte[], int)',
       'java.util#copyOfRange(byte[], int, int)',
+      'android.uwb.RangingSession.Callback#onControleeRoleChanged(int)',
   ])
   def test_ranging_device_tracker_profile_default(self):
     """Verifies ranging with device tracker profile default values."""

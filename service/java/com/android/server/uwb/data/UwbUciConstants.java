@@ -21,7 +21,7 @@ import static android.hardware.uwb.fira_android.UwbVendorStatusCodes.STATUS_REGU
 
 import android.hardware.uwb.fira_android.UwbVendorReasonCodes;
 import android.uwb.LogicalLinkConnectionParams;
-import android.uwb.LogicalLinkParams;
+import android.uwb.LogicalLinkCreationParams;
 
 import com.google.uwb.support.aliro.AliroParams;
 import com.google.uwb.support.ccc.CccParams;
@@ -311,11 +311,11 @@ public class UwbUciConstants {
      * Link layer mode
      */
     public static final byte LINK_LAYER_MODE_CONNECTIONLESS_NON_SECURE =
-            (byte) LogicalLinkParams.LINK_LAYER_MODE_CONNECTIONLESS_NON_SECURE;
+            (byte) LogicalLinkCreationParams.LINK_LAYER_MODE_CONNECTIONLESS_NON_SECURE;
     public static final byte LINK_LAYER_MODE_CONNECTIONLESS_SECURE =
-            (byte) LogicalLinkParams.LINK_LAYER_MODE_CONNECTIONLESS_SECURE;
+            (byte) LogicalLinkCreationParams.LINK_LAYER_MODE_CONNECTIONLESS_SECURE;
     public static final byte LINK_LAYER_MODE_CONNECTIONLESS_UWBS_TO_UWBS =
-            (byte) LogicalLinkParams.LINK_LAYER_MODE_CONNECTIONLESS_UWBS_TO_UWBS;
+            (byte) LogicalLinkCreationParams.LINK_LAYER_MODE_CONNECTIONLESS_UWBS_TO_UWBS;
 
     /**
      * Table 42: Status code of LOGICAL_LINK_CREATE_NTF
@@ -328,9 +328,10 @@ public class UwbUciConstants {
     /**
      * Logical link status code
      */
-    public static final int LOGICAL_LINK_STATUS_OK = LogicalLinkParams.LOGICAL_LINK_STATUS_OK;
+    public static final int LOGICAL_LINK_STATUS_OK =
+            LogicalLinkCreationParams.LOGICAL_LINK_STATUS_OK;
     public static final int LOGICAL_LINK_STATUS_FAILED =
-            LogicalLinkParams.LOGICAL_LINK_STATUS_FAILED;
+            LogicalLinkCreationParams.LOGICAL_LINK_STATUS_FAILED;
 
     /**
      * Control fields for the logical link
