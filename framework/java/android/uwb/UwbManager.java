@@ -47,8 +47,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
@@ -459,23 +459,6 @@ public final class UwbManager {
     public static final int UWB_CHANNEL_14 = 14;
 
     /**
-     * Interface for receiving channel usage status.
-     */
-    @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
-    public interface ChannelUsageCallback {
-
-        /**
-         * Invoked when UWB channel usage has changed. This change occurs when UWB sessions are
-         * started/stopped by apps.
-         *
-         * @param channelUsage Map with {@link UwbChannel} as key and a boolean value indicating
-         *     whether the channel is currently in use. A value of {@code true} indicates that the
-         *     channel is in use, while {@code false} indicates that it is not.
-         */
-        void onChanged(@NonNull Map<@UwbChannel Integer, Boolean> channelUsage);
-    }
-
-    /**
      * Use <code>Context.getSystemService(UwbManager.class)</code> to get an instance.
      *
      * @param ctx Context of the client.
@@ -586,32 +569,36 @@ public final class UwbManager {
     }
 
     /**
-     * Register {@link ChannelUsageCallback} to listen for UWB channel usage.
+     * Register {@link Consumer} of {@link Set<UwbChannel>} to listen for UWB channel usage.
+     * The callback is invoked when there is a change in UWB channel usage. The set will contains
+     * {@link UwbChannel} currently in use.
+     *
      * <p>The provided callback will be invoked by the given {@link Executor}.
      *
      * @param executor an {@link Executor} to execute given callback
-     * @param callback an implementation of {@link ChannelUsageCallback}
+     * @param callback an implementation of {@link Consumer} of {@link Set<UwbChannel>}
      */
     @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
     @RequiresPermission(permission.UWB_PRIVILEGED)
     public void registerChannelUsageCallback(@NonNull @CallbackExecutor Executor executor,
-            @NonNull ChannelUsageCallback callback) {
+            @NonNull Consumer<Set<@UwbChannel Integer>> callback) {
         mChannelUsageCallbackListener.register(executor, callback);
     }
 
     /**
-     * Unregister the specified {@link ChannelUsageCallback}
+     * Unregister the specified {@link Consumer} of {@link Set<UwbChannel>}
      *
-     * <p>The same {@link ChannelUsageCallback} object used when calling
-     * {@link #registerChannelUsageCallback(Executor, ChannelUsageCallback)} must be used.
+     * <p>The same {@link Consumer} of {@link Set<UwbChannel>} object used when calling
+     * {@link #registerChannelUsageCallback(Executor, Consumer)} must be used.
      *
      * <p>Callbacks are automatically unregistered when an application process goes away
      *
-     * @param callback an implementation of {@link ChannelUsageCallback}
+     * @param callback an implementation of {@link Consumer} of {@link Set<UwbChannel>}
      */
     @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
     @RequiresPermission(permission.UWB_PRIVILEGED)
-    public void unregisterChannelUsageCallback(@NonNull ChannelUsageCallback callback) {
+    public void unregisterChannelUsageCallback(@NonNull Consumer<Set<@UwbChannel Integer>>
+            callback) {
         mChannelUsageCallbackListener.unregister(callback);
     }
 
