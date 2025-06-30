@@ -130,6 +130,8 @@ public class CsConfigSelector implements RangingEngine.ConfigSelector {
                             new BleCsRangingParams.Builder(entry.getValue())
                                     .setRangingUpdateRate(mRangingUpdateRate)
                                     .setSecurityLevel(mSecurityLevel)
+                                    .setLocationType(BleCsRangingParams.LOCATION_TYPE_UNKNOWN)
+                                    .setSightType(BleCsRangingParams.SIGHT_TYPE_NON_LINE_OF_SIGHT)
                                     .build(),
                             mSessionConfig,
                             entry.getKey()))
