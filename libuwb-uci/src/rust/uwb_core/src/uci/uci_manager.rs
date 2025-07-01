@@ -383,7 +383,9 @@ impl UciManager for UciManagerImpl {
         &self,
         connect_id: ConnectId,
     ) -> Result<GetLogicalLinkParamResponse> {
-        let cmd = UciCommand::GetLogicalLinkParams { connect_id };
+        let cmd = UciCommand::GetLogicalLinkParams {
+            connect_id: self.get_session_token(&connect_id).await?,
+        };
         match self.send_cmd(UciManagerCmd::SendUciCommand { cmd }).await {
             Ok(UciResponse::GetLogicalLinkParams(resp)) => resp,
             Ok(_) => Err(Error::Unknown),
