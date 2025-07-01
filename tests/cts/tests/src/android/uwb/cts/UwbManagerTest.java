@@ -99,9 +99,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -2002,11 +2000,16 @@ public class UwbManagerTest {
         }
     }
 
-    private class ChannelUsageCallback implements UwbManager.ChannelUsageCallback {
+    private class ChannelUsageCallback {
 
         private CountDownLatch mCountDownLatch;
         public boolean mChannelUsageUpdatedCalled = false;
-        public Map<Integer, Boolean> mChannelUsageMap = new HashMap<>();
+        public Set<Integer> mUwbChannelUsageInfo;
+        public Consumer<Set<Integer>> mChannelUsageInfoConsumer = info -> {
+            mUwbChannelUsageInfo = info;
+            mChannelUsageUpdatedCalled = true;
+            mCountDownLatch.countDown();
+        };
 
         ChannelUsageCallback(CountDownLatch countDownLatch) {
             mCountDownLatch = countDownLatch;
@@ -2017,13 +2020,6 @@ public class UwbManagerTest {
 
         public void reset() {
             mChannelUsageUpdatedCalled = false;
-            mChannelUsageMap = new HashMap<>();
-        }
-        @Override
-        public void onChanged(@NonNull Map<Integer, Boolean> channelUsage) {
-            mCountDownLatch.countDown();
-            mChannelUsageUpdatedCalled = true;
-            mChannelUsageMap = channelUsage;
         }
     }
 
@@ -2257,7 +2253,8 @@ public class UwbManagerTest {
             // Needs UWB_PRIVILEGED & UWB_RANGING permission which is held by shell.
             uiAutomation.adoptShellPermissionIdentity();
             mUwbManager.registerChannelUsageCallback(
-                    Executors.newCachedThreadPool(), channelUsageCallback);
+                    Executors.newCachedThreadPool(),
+                    channelUsageCallback.mChannelUsageInfoConsumer);
             assertThat(channelUsageCallback.mCountDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
             assertThat(channelUsageCallback.mChannelUsageUpdatedCalled).isTrue();
             // Start ranging session
@@ -2282,8 +2279,7 @@ public class UwbManagerTest {
             assertThat(rangingSessionCallback.rangingReport).isNotNull();
             assertThat(channelUsageCallback.mCountDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
             assertThat(channelUsageCallback.mChannelUsageUpdatedCalled).isTrue();
-            Map<Integer, Boolean> channelUsageMap = channelUsageCallback.mChannelUsageMap;
-            assertTrue(channelUsageMap.get(channel));
+            assertTrue(channelUsageCallback.mUwbChannelUsageInfo.contains(channel));
             channelUsageCallback.reset();
 
             // Check the UWB state.
@@ -2296,8 +2292,7 @@ public class UwbManagerTest {
             channelUsageCallback.replaceCountDownLatch(new CountDownLatch(1));
             assertThat(channelUsageCallback.mCountDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
             assertThat(channelUsageCallback.mChannelUsageUpdatedCalled).isTrue();
-            channelUsageMap = channelUsageCallback.mChannelUsageMap;
-            assertFalse(channelUsageMap.get(channel));
+            assertFalse(channelUsageCallback.mUwbChannelUsageInfo.contains(channel));
             channelUsageCallback.reset();
             // Wait for on stopped callback.
             assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
@@ -2315,7 +2310,8 @@ public class UwbManagerTest {
                 assertThat(rangingSessionCallback.onClosedCalled).isTrue();
             }
             try {
-                mUwbManager.unregisterChannelUsageCallback(channelUsageCallback);
+                mUwbManager.unregisterChannelUsageCallback(
+                        channelUsageCallback.mChannelUsageInfoConsumer);
             } catch (SecurityException e) {
                 /* pass */
                 fail();

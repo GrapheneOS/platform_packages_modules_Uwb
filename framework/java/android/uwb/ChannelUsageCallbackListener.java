@@ -20,12 +20,14 @@ import android.annotation.NonNull;
 import android.os.Binder;
 import android.os.RemoteException;
 import android.util.Log;
-import android.uwb.UwbManager.ChannelUsageCallback;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * @hide
@@ -35,7 +37,7 @@ public class ChannelUsageCallbackListener extends IChannelUsageCallback.Stub {
     private final IUwbAdapter mAdapter;
     private boolean mIsRegistered = false;
     private final Map<Integer, Boolean> mChannelUsageMap = new ConcurrentHashMap<>();
-    private final Map<ChannelUsageCallback, Executor> mCallbackMap =
+    private final Map<Consumer<Set<@UwbManager.UwbChannel Integer>>, Executor> mCallbackMap =
             new ConcurrentHashMap<>();
 
     public ChannelUsageCallbackListener(@NonNull IUwbAdapter adapter) {
@@ -43,7 +45,7 @@ public class ChannelUsageCallbackListener extends IChannelUsageCallback.Stub {
     }
 
     public void register(@NonNull Executor executor,
-            @NonNull ChannelUsageCallback callback) {
+            @NonNull Consumer<Set<@UwbManager.UwbChannel Integer>> callback) {
         synchronized (this) {
             if (mCallbackMap.containsKey(callback)) {
                 return;
@@ -64,7 +66,7 @@ public class ChannelUsageCallbackListener extends IChannelUsageCallback.Stub {
         }
     }
 
-    public void unregister(@NonNull ChannelUsageCallback callback) {
+    public void unregister(@NonNull Consumer<Set<@UwbManager.UwbChannel Integer>> callback) {
         synchronized (this) {
             if (!mCallbackMap.containsKey(callback)) {
                 return;
@@ -83,12 +85,17 @@ public class ChannelUsageCallbackListener extends IChannelUsageCallback.Stub {
         }
     }
 
-    private void sendCurrentUsage(@NonNull ChannelUsageCallback callback) {
+    private void sendCurrentUsage(@NonNull Consumer<Set<@UwbManager.UwbChannel Integer>> callback) {
         synchronized (this) {
             Executor executor = mCallbackMap.get(callback);
             final long identity = Binder.clearCallingIdentity();
             try {
-                executor.execute(() -> callback.onChanged(mChannelUsageMap));
+                executor.execute(
+                        () -> callback.accept(mChannelUsageMap.entrySet()
+                                .stream()
+                                .filter(Map.Entry::getValue)
+                                .map(Map.Entry::getKey)
+                                .collect(Collectors.toUnmodifiableSet())));
             } finally {
                 Binder.restoreCallingIdentity(identity);
             }
@@ -96,11 +103,11 @@ public class ChannelUsageCallbackListener extends IChannelUsageCallback.Stub {
     }
 
     @Override
-    public void onChannelUsageUpdated(List<ChannelUsage> channelUsageList) throws RemoteException {
+    public void onChannelUsageUpdated(List<ChannelUsage> channelUsageList) {
         for (ChannelUsage c : channelUsageList) {
             mChannelUsageMap.put(c.mChannel, c.mUsage);
         }
-        for (ChannelUsageCallback callback : mCallbackMap.keySet()) {
+        for (Consumer callback : mCallbackMap.keySet()) {
             sendCurrentUsage(callback);
         }
     }

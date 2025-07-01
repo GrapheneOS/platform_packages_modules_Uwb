@@ -1188,6 +1188,137 @@ public class RangingManagerTest {
         uiAutomation.dropShellPermissionIdentity();
     }
 
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_updates_25q4")
+    public void testStartOobInitiatorRangingSession_withFilterSet() throws InterruptedException {
+        assumeTrue(mSupportedTechnologies.contains(RangingManager.UWB)
+                || mSupportedTechnologies.contains(RangingManager.BLE_CS));
+        assumeTrue(mSupportedTechnologies.contains(RangingManager.BLE_RSSI));
+
+        enableBluetooth();
+
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        uiAutomation.adoptShellPermissionIdentity();
+
+        RangingSession session = mRangingManager.createRangingSession(
+                MoreExecutors.directExecutor(), new RangingSessionCallback());
+        assertThat(session).isNotNull();
+
+        OobTransport oobTransport = new OobTransport();
+
+        DeviceHandle device =
+                new DeviceHandle.Builder(
+                        new RangingDevice.Builder().build(), oobTransport).build();
+
+        OobInitiatorRangingConfig config = new OobInitiatorRangingConfig.Builder()
+                .setFastestRangingInterval(Duration.ofMillis(100))
+                .setSlowestRangingInterval(Duration.ofMillis(5000))
+                .setRangingMode(RANGING_MODE_FUSED)
+                .setSecurityLevel(SECURITY_LEVEL_BASIC)
+                .addDeviceHandle(device)
+                .setRangingTechnologyFilter(Set.of(RangingManager.BLE_RSSI))
+                .build();
+
+        assertEquals(Set.of(RangingManager.BLE_RSSI), config.getRangingTechnologyFilter());
+
+        RangingPreference preference =
+                new RangingPreference.Builder(DEVICE_ROLE_INITIATOR, config).build();
+        session.start(preference);
+        assertThat(oobTransport.mSendDataCalled.await(2, TimeUnit.SECONDS)).isTrue();
+
+        session.stop();
+        uiAutomation.dropShellPermissionIdentity();
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @RequiresFlagsEnabled("com.android.ranging.flags.ranging_cs_enabled")
+    public void testRangingIntervalValues() throws Exception {
+        assumeTrue(mSupportedTechnologies.contains(RangingManager.BLE_CS)
+                && mSupportedTechnologies.contains(RangingManager.UWB));
+        enableBluetooth();
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        uiAutomation.adoptShellPermissionIdentity();
+
+        RangingSessionCallback callback = new RangingSessionCallback();
+
+        RangingSession rangingSession = mRangingManager.createRangingSession(
+                MoreExecutors.directExecutor(), callback);
+        assertThat(rangingSession).isNotNull();
+
+        RangingPreference csPreference = new RangingPreference.Builder(DEVICE_ROLE_INITIATOR,
+                new RawInitiatorRangingConfig.Builder()
+                        .addRawRangingDevice(new RawRangingDevice.Builder()
+                                .setRangingDevice(new RangingDevice.Builder().build())
+                                .setCsRangingParams(new
+                                        BleCsRangingParams.Builder("00:11:22:33:AA:BB")
+                                        .setRangingUpdateRate(UPDATE_RATE_NORMAL)
+                                        .setLocationType(LOCATION_TYPE_INDOOR)
+                                        .setSecurityLevel(CS_SECURITY_LEVEL_ONE)
+                                        .setSightType(SIGHT_TYPE_LINE_OF_SIGHT)
+                                        .build())
+                                .build())
+                        .build())
+                .setSessionConfig(new SessionConfig.Builder()
+                        .setRangingMeasurementsLimit(1000)
+                        .setAngleOfArrivalNeeded(true)
+                        .setSensorFusionParams(
+                                new SensorFusionParams.Builder()
+                                        .setSensorFusionEnabled(false)
+                                        .build())
+                        .build())
+                .build();
+
+
+        RawInitiatorRangingConfig csConfig = (RawInitiatorRangingConfig)
+                csPreference.getRangingParams();
+        RawRangingDevice rawRangingDeviceCs = csConfig.getRawRangingDevices().getFirst();
+
+        assertEquals(1, rawRangingDeviceCs.getRangingIntervalValues().size());
+        assertThat(rawRangingDeviceCs.getRangingIntervalValues().containsKey(
+                RangingManager.BLE_CS)).isTrue();
+
+        RangingPreference csAndUwbPreference = new RangingPreference.Builder(DEVICE_ROLE_INITIATOR,
+                new RawInitiatorRangingConfig.Builder()
+                        .addRawRangingDevice(new RawRangingDevice.Builder()
+                                .setRangingDevice(new RangingDevice.Builder().build())
+                                .setCsRangingParams(new
+                                        BleCsRangingParams.Builder("00:11:22:33:AA:BB")
+                                        .setRangingUpdateRate(UPDATE_RATE_NORMAL)
+                                        .setLocationType(LOCATION_TYPE_INDOOR)
+                                        .setSecurityLevel(CS_SECURITY_LEVEL_ONE)
+                                        .setSightType(SIGHT_TYPE_LINE_OF_SIGHT)
+                                        .build())
+                                .setUwbRangingParams(getUwbRangingParams(11, DEVICE_ROLE_INITIATOR,
+                                        new byte[]{0x2, 0x2}))
+                                .build())
+                        .build())
+                .setSessionConfig(new SessionConfig.Builder()
+                        .setRangingMeasurementsLimit(1000)
+                        .setAngleOfArrivalNeeded(true)
+                        .setSensorFusionParams(
+                                new SensorFusionParams.Builder()
+                                        .setSensorFusionEnabled(false)
+                                        .build())
+                        .build())
+                .build();
+
+
+        RawInitiatorRangingConfig csAndUwbConfig = (RawInitiatorRangingConfig)
+                csAndUwbPreference.getRangingParams();
+        RawRangingDevice rawRangingDeviceCsAndUwb =
+                csAndUwbConfig.getRawRangingDevices().getFirst();
+
+        assertEquals(2, rawRangingDeviceCsAndUwb.getRangingIntervalValues().size());
+        assertThat(rawRangingDeviceCsAndUwb.getRangingIntervalValues().containsKey(
+                RangingManager.BLE_CS)).isTrue();
+        assertThat(rawRangingDeviceCsAndUwb.getRangingIntervalValues().containsKey(
+                RangingManager.UWB)).isTrue();
+
+        uiAutomation.dropShellPermissionIdentity();
+    }
+
     private static class CapabilitiesCallback implements RangingCapabilitiesCallback {
 
         private CountDownLatch mCountDownLatch;

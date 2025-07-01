@@ -95,9 +95,9 @@ public final class LogicalLinkConnectionRequest implements Parcelable {
 
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
+        dest.writeByteArray(mSourceAddress);
         dest.writeInt(mConnectId);
         dest.writeInt(mLinkLayerModeSelector);
-        dest.writeByteArray(mSourceAddress);
     }
 
     public static final @NonNull Creator<LogicalLinkConnectionRequest> CREATOR =
