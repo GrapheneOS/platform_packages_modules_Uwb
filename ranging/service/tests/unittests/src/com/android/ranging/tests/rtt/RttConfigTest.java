@@ -25,6 +25,7 @@ import static junit.framework.Assert.assertEquals;
 import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
 import android.ranging.wifi.rtt.RttRangingParams;
+import android.ranging.wifi.rtt.RttStationRangingParams;
 
 import androidx.test.filters.SmallTest;
 
@@ -64,5 +65,31 @@ public class RttConfigTest {
         assertThat(params).isNotNull();
         assertThat(params.toString()).isNotNull();
     }
+    @Test
+    public void testRttStationConfig() {
+        int deviceRole = DEVICE_ROLE_INITIATOR;
+        RttStationRangingParams rttStationRangingParams = new
+                                    RttStationRangingParams.Builder("AA:BB:CC:AA:BB:CC")
+                                   .build();
+
+        SessionConfig sessionConfig = new SessionConfig.Builder().build();
+        RangingDevice peerDevice = new RangingDevice.Builder().build();
+
+        RttConfig config = new RttConfig(deviceRole,
+                rttStationRangingParams,
+                sessionConfig,
+                peerDevice);
+
+        assertEquals(config.getTechnology(), RangingTechnology.RTT_STATION);
+        assertEquals(config.getStationRangingParams(), rttStationRangingParams);
+        assertEquals(config.getDeviceRole(), deviceRole);
+        assertEquals(config.getSessionConfig(), sessionConfig);
+        assertEquals(config.getPeerDevice(), peerDevice);
+
+        RttRangingParameters params = config.asBackendParameters();
+        assertThat(params).isNotNull();
+        assertThat(params.toString()).isNotNull();
+    }
+
 }
 

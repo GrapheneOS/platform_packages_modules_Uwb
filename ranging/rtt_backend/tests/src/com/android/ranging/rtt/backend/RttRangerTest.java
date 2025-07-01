@@ -17,7 +17,7 @@
 package com.android.ranging.tests.rtt.backend;
 
 import static com.android.ranging.rtt.backend.RttRangingDevice.DeviceType.PUBLISHER;
-
+import static com.android.ranging.rtt.backend.RttRangingDevice.DeviceType.STATION;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -29,11 +29,13 @@ import android.app.AlarmManager;
 import android.content.Context;
 import android.net.wifi.aware.PeerHandle;
 import android.net.wifi.rtt.WifiRttManager;
+import android.net.wifi.rtt.ResponderConfig;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.ranging.rtt.backend.RttRanger;
+import com.android.ranging.rtt.backend.RttRangingDevice.DeviceType;
 
 import com.google.common.util.concurrent.MoreExecutors;
 
@@ -59,9 +61,13 @@ public class RttRangerTest {
     private PeerHandle mMockPeerHandle;
 
     @Mock
+    private ResponderConfig mMockResponderConfig;
+    @Mock
     private RttRanger.RttRangerListener mMockListener;
 
     private RttRanger mRttRanger;
+
+    private RttRanger mRttStationRanger;
 
     @Before
     public void setUp() {
@@ -71,6 +77,8 @@ public class RttRangerTest {
 
         mRttRanger = new RttRanger(mMockRttManager, MoreExecutors.newDirectExecutorService(),
                 mMockContext, PUBLISHER);
+        mRttStationRanger = new RttRanger(mMockRttManager, MoreExecutors.newDirectExecutorService(),
+                mMockContext, STATION);
     }
 
     @Test
@@ -84,8 +92,29 @@ public class RttRangerTest {
     }
 
     @Test
+    public void testStartStopStationRanging() {
+        mRttStationRanger.startRangingToAp(mMockResponderConfig, mMockListener, 200, 0);
+
+        verify(mMockRttManager, times(1)).startRanging(any(), any(), any());
+
+        mRttStationRanger.stopRanging();
+        verify(mMockAlarmManager, times(0)).cancel(any(AlarmManager.OnAlarmListener.class));
+    }
+
+    @Test
     public void testStartStopRanging_withDelay() {
         mRttRanger.startRanging(mMockPeerHandle, mMockListener, 200, 100);
+
+        verify(mMockRttManager, times(0)).startRanging(any(), any(), any());
+        verify(mMockAlarmManager, times(1)).setExact(anyInt(), anyLong(), any(), any(), any());
+
+        mRttRanger.stopRanging();
+        verify(mMockAlarmManager, times(1)).cancel(any(AlarmManager.OnAlarmListener.class));
+    }
+
+    @Test
+    public void testStartStopStationRanging_withDelay() {
+        mRttRanger.startRangingToAp(mMockResponderConfig, mMockListener, 200, 100);
 
         verify(mMockRttManager, times(0)).startRanging(any(), any(), any());
         verify(mMockAlarmManager, times(1)).setExact(anyInt(), anyLong(), any(), any(), any());
@@ -106,4 +135,18 @@ public class RttRangerTest {
         mRttRanger.stopRanging();
         verify(mMockAlarmManager, times(0)).cancel(any(AlarmManager.OnAlarmListener.class));
     }
+
+    @Test
+    public void testStartStationRanging_whenDisabled() {
+        when(mMockRttManager.isAvailable()).thenReturn(false);
+        mRttStationRanger.startRangingToAp(mMockResponderConfig, mMockListener, 200, 0);
+
+        verify(mMockRttManager, times(0)).startRanging(any(), any(), any());
+        verify(mMockListener).onRangingFailure(
+                RttRanger.RttRangerListener.STATUS_CODE_FAIL_WIFI_NOT_AVAILABLE);
+
+        mRttStationRanger.stopRanging();
+        verify(mMockAlarmManager, times(0)).cancel(any(AlarmManager.OnAlarmListener.class));
+    }
+
 }
