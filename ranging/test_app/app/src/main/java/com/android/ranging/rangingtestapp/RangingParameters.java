@@ -16,9 +16,6 @@
 
 package com.android.ranging.rangingtestapp;
 
-import static android.ranging.uwb.UwbComplexChannel.UWB_CHANNEL_9;
-import static android.ranging.uwb.UwbComplexChannel.UWB_PREAMBLE_CODE_INDEX_11;
-
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.ranging.RangingConfig;
@@ -35,7 +32,6 @@ import android.ranging.oob.OobResponderRangingConfig;
 import android.ranging.raw.RawInitiatorRangingConfig;
 import android.ranging.raw.RawRangingDevice;
 import android.ranging.raw.RawResponderRangingConfig;
-import android.ranging.uwb.UwbAddress;
 import android.ranging.uwb.UwbComplexChannel;
 import android.ranging.uwb.UwbRangingParams;
 import android.ranging.wifi.rtt.RttRangingParams;
@@ -101,6 +97,7 @@ public class RangingParameters {
         BLE_RSSI(RangingManager.BLE_RSSI),
         BLE_CS(RangingManager.BLE_CS),
         WIFI_NAN_RTT(RangingManager.WIFI_NAN_RTT),
+        WIFI_STA_RTT(RangingManager.WIFI_STA_RTT),
         OOB(1000);
         public final int technology;
         Technology(int technology) {
