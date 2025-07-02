@@ -687,6 +687,7 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         ranging_interval_ms=200,
         slots_per_ranging_round=20,
         in_band_termination_attempt_count=3,
+        rangingErrorStreakTimeoutMs=20000,
     )
     responder_params = uwb_ranging_params.UwbRangingParams(
         device_role=uwb_ranging_params.FiraParamEnums.DEVICE_ROLE_RESPONDER,
@@ -696,6 +697,7 @@ class RangingTest(uwb_base_test.UwbBaseTest):
         ranging_interval_ms=200,
         slots_per_ranging_round=20,
         in_band_termination_attempt_count=3,
+        rangingErrorStreakTimeoutMs=20000,
     )
     self._verify_one_to_one_ranging_add_remove_controlee(
         self.initiator, self.responder, initiator_params, responder_params,

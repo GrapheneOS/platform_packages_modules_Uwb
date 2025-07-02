@@ -33,6 +33,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 
 import com.android.ranging.rangingtestapp.RangingParameters.Technology;
+
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
@@ -100,7 +101,7 @@ class DistanceMeasurementManager {
                 return tech.toString();
             }
         }
-        throw new IllegalArgumentException("unknown technology " + technology);
+        return "Unknown";
     }
 
     @SuppressLint("MissingPermission") // permissions are checked upfront
