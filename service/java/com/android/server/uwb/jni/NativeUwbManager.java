@@ -39,6 +39,7 @@ import com.android.server.uwb.rftest.UwbTestLoopbackResult;
 import com.android.server.uwb.rftest.UwbTestPerRxResult;
 import com.android.server.uwb.rftest.UwbTestPeriodicTxResult;
 import com.android.server.uwb.rftest.UwbTestRxResult;
+import com.android.server.uwb.rftest.UwbTestSrRxResult;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -158,9 +159,20 @@ public class NativeUwbManager {
         mSessionListener.onRfTestNotificationReceived(loopbackResult);
     }
 
+    /**
+     * RfTestRx callback invoked via the JNI
+     */
     public void onRxDataNotificationReceived(UwbTestRxResult rxTestResult) {
         Log.d(TAG, "onRxDataNotificationReceived : " + rxTestResult);
         mSessionListener.onRfTestNotificationReceived(rxTestResult);
+    }
+
+    /**
+     * RfTestSrRx callback invoked via the JNI
+     */
+    public void onSrRxDataNotificationReceived(UwbTestSrRxResult srRxResult) {
+        Log.d(TAG, "onSrRxDataNotificationReceived : " + srRxResult);
+        mSessionListener.onRfTestNotificationReceived(srRxResult);
     }
 
     /**
@@ -428,7 +440,19 @@ public class NativeUwbManager {
         }
     }
 
-    /*
+    /**
+     * Starts a Sr Rx test
+     *
+     * @param chipId   : Identifier of UWB chip for multi-HAL devices
+     * @return : {@link UwbUciConstants}  Status code
+     */
+    public byte testSrRx(String chipId) {
+        synchronized (mNativeLock) {
+            return nativeTestSrRx(chipId);
+        }
+    }
+
+    /**
      * Stops the ongoing Rf test session.
      *
      * @param chipId    : Identifier of UWB chip for multi-HAL devices
@@ -842,6 +866,8 @@ public class NativeUwbManager {
     private native byte nativeTestLoopback(byte[] psduData, String chipId);
 
     private native byte nativeTestRx(String chipId);
+
+    private native byte nativeTestSrRx(String chipId);
 
     private native byte nativeStopRfTest(String chipId);
 }

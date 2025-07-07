@@ -113,6 +113,7 @@ enum TestOpCode : 6 {
     RF_TEST_PER_RX = 0x3,
     RF_TEST_RX = 0x5,
     RF_TEST_LOOPBACK = 0x6,
+    RF_TEST_SR_RX = 0x9,
     RF_TEST_STOP_SESSION = 0x07,
 }
 
@@ -1930,6 +1931,40 @@ packet TestLoopbackNtf : TestNotification (opcode = 0x06) { // RF_TEST_LOOPBACK
 
 test TestLoopbackNtf {
     "\x6D\x06\x00\x19\x00\x00\x00\x00\x00\x00\x00\x52\x21\x05\x00\x25\x00\x00\x00\x00\x00\x12\x0A\x04\x00\xAB\xCD\xAB\xCD"
+}
+
+packet TestSrRxCmd : TestCommand (opcode = 0x09) {} // RF_TEST_SR_RX
+
+test TestSrRxCmd { "\x2D\x09\x00\x00", }
+
+packet TestSrRxRsp : TestResponse (opcode = 0x09) { // RF_TEST_SR_RX
+    status: StatusCode,
+}
+
+test TestSrRxRsp { "\x4D\x09\x00\x01\x00", }
+
+struct SrRxData {
+    status: StatusCode,
+    attempts : 32,
+    acq_detect : 32,
+    acq_reject : 32,
+    rx_fail : 32,
+    sync_cir_ready : 32,
+    sfd_fail : 32,
+    sfd_found : 32,
+    sts_found : 32,
+    eof : 32,
+    sts_detect_bitmap : 8[],
+}
+
+packet TestSrRxNtf : TestNotification (opcode = 0x09) { // RF_TEST_SR_RX
+    sr_rx_data: SrRxData,
+    vendor_data: 8[],
+}
+
+test TestSrRxNtf {
+    "\x6D\x09\x00\x29\x00\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00\x04\x00\x00\x00\x05\x00\x00\x00\x06\x00\x00\x00
+    \x07\x00\x00\x00\x08\x00\x00\x00\x09\x00\x00\x00\x0A\x00\x00\x00",
 }
 
 packet StopRfTestCmd : TestCommand (opcode = 0x07) { // RF_TEST_STOP_SESSION
