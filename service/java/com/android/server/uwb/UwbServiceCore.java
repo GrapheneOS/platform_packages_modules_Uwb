@@ -1430,8 +1430,13 @@ public class UwbServiceCore implements INativeUwbManager.DeviceNotification,
         private void handleDisable() {
             mSetEnabled = false;
             if (!isUwbEnabledInternal()) {
-                Log.i(TAG, "UWB chip is already disabled, notify adapter state = "
+                Log.i(TAG, "UWB chip is already disabled, adapter state = "
                         + getAdapterState());
+                if (mLastAdapterStateNotification != getAdapterState()) {
+                    notifyAdapterState(
+                            getAdapterState(),
+                            StateChangeReason.SYSTEM_POLICY);
+                }
                 return;
             }
             deInitializeHw();
