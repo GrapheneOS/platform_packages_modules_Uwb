@@ -17,6 +17,7 @@
 package com.android.server.uwb;
 
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
+import static android.uwb.UwbManager.AdapterStateCallback.STATE_ENABLED_HW_IDLE;
 
 import android.annotation.NonNull;
 import android.content.AttributionSource;
@@ -47,6 +48,7 @@ import android.uwb.LogicalLinkConnectionParams;
 import android.uwb.LogicalLinkCreationParams;
 import android.uwb.SessionHandle;
 import android.uwb.UwbAddress;
+import android.uwb.UwbManager;
 
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.modules.utils.build.SdkLevel;
@@ -166,7 +168,9 @@ public class UwbServiceImpl extends IUwbAdapter.Stub {
         pw.println();
         mUwbInjector.getUwbConfigStore().dump(fd, pw, args);
         pw.println();
-        if (isUwbEnabled()) {
+        if (isUwbEnabled() && (mUwbServiceCore.getAdapterState()
+                != UwbManager.AdapterStateCallback.STATE_DISABLED
+                    && mUwbServiceCore.getAdapterState() != STATE_ENABLED_HW_IDLE)) {
             dumpPowerStats(fd, pw, args);
         }
     }
