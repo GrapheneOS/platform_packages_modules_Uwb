@@ -188,7 +188,7 @@ impl TryFrom<UciCommand> for uwb_uci_packets::UciControlPacket {
             }
             .build()
             .into(),
-            UciCommand::CoreQueryTimeStamp {} => {
+            UciCommand::CoreQueryTimeStamp => {
                 uwb_uci_packets::CoreQueryTimeStampCmdBuilder {}.build().into()
             }
             UciCommand::SessionSetAppConfig { session_token, config_tlvs } => {
@@ -319,7 +319,7 @@ impl TryFrom<UciCommand> for uwb_uci_packets::UciControlPacket {
             UciCommand::TestLoopback { psdu_data } => {
                 uwb_uci_packets::TestLoopbackCmdBuilder { psdu_data }.build().into()
             }
-            UciCommand::StopRfTest {} => uwb_uci_packets::StopRfTestCmdBuilder {}.build().into(),
+            UciCommand::StopRfTest => uwb_uci_packets::StopRfTestCmdBuilder {}.build().into(),
             UciCommand::GetLogicalLinkParams { connect_id } => {
                 uwb_uci_packets::GetLogicalLinkParamsCmdBuilder { connect_id }.build().into()
             }
