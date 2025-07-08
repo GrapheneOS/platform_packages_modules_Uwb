@@ -113,8 +113,9 @@ enum TestOpCode : 6 {
     RF_TEST_PER_RX = 0x3,
     RF_TEST_RX = 0x5,
     RF_TEST_LOOPBACK = 0x6,
-    RF_TEST_SR_RX = 0x9,
     RF_TEST_STOP_SESSION = 0x07,
+    RF_TEST_SS_TWR = 0x08,
+    RF_TEST_SR_RX = 0x9,
 }
 
 enum StatusCode : 8 {
@@ -1965,6 +1966,30 @@ packet TestSrRxNtf : TestNotification (opcode = 0x09) { // RF_TEST_SR_RX
 test TestSrRxNtf {
     "\x6D\x09\x00\x29\x00\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00\x04\x00\x00\x00\x05\x00\x00\x00\x06\x00\x00\x00
     \x07\x00\x00\x00\x08\x00\x00\x00\x09\x00\x00\x00\x0A\x00\x00\x00",
+}
+
+packet TestSsTwrCmd : TestCommand (opcode = 0x08) {} // RF_TEST_SS_TWR
+
+test TestSsTwrCmd { "\x2D\x08\x00\x00", }
+
+packet TestSsTwrRsp : TestResponse (opcode = 0x08) { // RF_TEST_SS_TWR
+    status: StatusCode,
+}
+
+test TestSsTwrRsp { "\x4D\x08\x00\x01\x00", }
+
+struct SsTwrData {
+    status: StatusCode,
+    measurement : 32,
+}
+
+packet TestSsTwrNtf : TestNotification (opcode = 0x08) { //RF_TEST_SS_TWR
+    ss_twr_data: SsTwrData,
+    vendor_data: 8[],
+}
+
+test TestSsTwrNtf {
+    "\x6D\x08\x00\x05\x00\x00\x00\x00\x00",
 }
 
 packet StopRfTestCmd : TestCommand (opcode = 0x07) { // RF_TEST_STOP_SESSION

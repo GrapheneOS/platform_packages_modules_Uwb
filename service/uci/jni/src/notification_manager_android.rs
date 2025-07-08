@@ -16,9 +16,9 @@
 
 use crate::jclass_name::{
     MULTICAST_LIST_UPDATE_STATUS_CLASS, RFTEST_LOOPBACK_CLASS, RFTEST_PERIODIC_TX_CLASS,
-    RFTEST_PER_RX_CLASS, RFTEST_RX_CLASS, RFTEST_SR_RX_CLASS, UWB_DL_TDOA_MEASUREMENT_CLASS,
-    UWB_OWR_AOA_MEASUREMENT_CLASS, UWB_RADAR_DATA_CLASS, UWB_RADAR_SWEEP_DATA_CLASS,
-    UWB_RANGING_DATA_CLASS, UWB_TWO_WAY_MEASUREMENT_CLASS,
+    RFTEST_PER_RX_CLASS, RFTEST_RX_CLASS, RFTEST_SR_RX_CLASS, RFTEST_SS_TWR_CLASS,
+    UWB_DL_TDOA_MEASUREMENT_CLASS, UWB_OWR_AOA_MEASUREMENT_CLASS, UWB_RADAR_DATA_CLASS,
+    UWB_RADAR_SWEEP_DATA_CLASS, UWB_RANGING_DATA_CLASS, UWB_TWO_WAY_MEASUREMENT_CLASS,
 };
 
 use std::collections::HashMap;
@@ -36,7 +36,8 @@ use uwb_core::uci::uci_manager_sync::{NotificationManager, NotificationManagerBu
 use uwb_core::uci::{
     BypassModeData, CoreNotification, DataRcvNotification, LogicalLinkModeData,
     RadarDataRcvNotification, RangingMeasurements, RfTestLoopbackData, RfTestNotification,
-    RfTestPerRxData, RfTestRxData, RfTestSrRxData, SessionNotification, SessionRangeData,
+    RfTestPerRxData, RfTestRxData, RfTestSrRxData, RfTestSsTwrData, SessionNotification,
+    SessionRangeData,
 };
 use uwb_uci_packets::{
     radar_bytes_per_sample_value, ControleeDeviceRole, ExtendedAddressDlTdoaRangingMeasurement,
@@ -1233,6 +1234,36 @@ impl NotificationManagerAndroid {
         )
     }
 
+    fn on_ss_twr_notification(&mut self, data: RfTestSsTwrData) -> Result<JObject, JNIError> {
+        let raw_notification_jbytearray =
+            self.env.byte_array_from_slice(&data.raw_notification_data)?;
+        // Safety: raw_notification_jbytearray safely instantiated above.
+        let raw_notification_jobject = unsafe { JObject::from_raw(raw_notification_jbytearray) };
+
+        let ss_twr_jclass = NotificationManagerAndroid::find_local_class(
+            &mut self.jclass_map,
+            &self.class_loader_obj,
+            &self.env,
+            RFTEST_SS_TWR_CLASS,
+        )?;
+        let method_sig = "(L".to_owned() + RFTEST_SS_TWR_CLASS + ";)V";
+
+        let ss_twr_jobject = self.env.new_object(
+            ss_twr_jclass,
+            "(IJ[B)V",
+            &[
+                JValue::Int(i32::from(data.ss_twr_data.status)),
+                JValue::Long(data.ss_twr_data.measurement as i64),
+                JValue::Object(raw_notification_jobject),
+            ],
+        )?;
+        self.cached_jni_call(
+            "onSsTwrDataNotificationReceived",
+            &method_sig,
+            &[jvalue::from(JValue::Object(ss_twr_jobject))],
+        )
+    }
+
     fn on_create_logical_link_notification(
         &mut self,
         ll_connect_id: u32,
@@ -1731,6 +1762,7 @@ impl NotificationManager for NotificationManagerAndroid {
             }
             RfTestNotification::TestRxNtf(rf_rx_data) => self.on_rf_rx_notification(rf_rx_data),
             RfTestNotification::TestSrRxNtf(data) => self.on_sr_rx_notification(data),
+            RfTestNotification::TestSsTwrNtf(data) => self.on_ss_twr_notification(data),
         })
         .map_err(|e| {
             error!("on_rf_test_notification error: {:?}", e);

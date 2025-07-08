@@ -43,8 +43,8 @@ pub use command::UciCommand;
 pub use notification::{
     BypassModeData, CoreNotification, DataRcvNotification, LogicalLinkModeData,
     RadarDataRcvNotification, RadarSweepData, RangingMeasurements, RfTestLoopbackData,
-    RfTestNotification, RfTestPerRxData, RfTestRxData, RfTestSrRxData, SessionNotification,
-    SessionRangeData, UciNotification,
+    RfTestNotification, RfTestPerRxData, RfTestRxData, RfTestSrRxData, RfTestSsTwrData,
+    SessionNotification, SessionRangeData, UciNotification,
 };
 pub use uci_hal::{NopUciHal, UciHal, UciHalPacket};
 pub use uci_logger_factory::{NopUciLoggerFactory, UciLoggerFactory};

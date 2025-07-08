@@ -28,7 +28,9 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.server.uwb.rftest.UwbTestRxResult;
 import com.android.server.uwb.rftest.UwbTestSrRxResult;
+import com.android.server.uwb.rftest.UwbTestSsTwrResult;
 import com.android.server.uwb.util.UwbUtil;
+
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.rftest.RfTestLoopbackResult;
 import com.google.uwb.support.rftest.RfTestOpenSessionParams;
@@ -36,6 +38,7 @@ import com.google.uwb.support.rftest.RfTestParams;
 import com.google.uwb.support.rftest.RfTestPerRxResult;
 import com.google.uwb.support.rftest.RfTestRxResult;
 import com.google.uwb.support.rftest.RfTestSrRxResult;
+import com.google.uwb.support.rftest.RfTestSsTwrResult;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -377,6 +380,27 @@ public class RfTests {
         assertEquals(stsFound, fromBundle.getStsFound());
         assertEquals(eof, fromBundle.getEof());
         assertArrayEquals(stsDetectBitmap, fromBundle.getStsDetectBitmap());
+        assertArrayEquals(rawNotificationData, fromBundle.getRawNotificationData());
+    }
+
+    @Test
+    public void testRfTestSsTwrResult() {
+        int status = FiraParams.STATUS_CODE_OK;
+        long measurement = 1;
+        byte[] rawNotificationData = new byte[] { 0x01, 0x03 };
+
+        UwbTestSsTwrResult result = new UwbTestSsTwrResult(status, measurement,
+                rawNotificationData);
+
+        assertEquals(RfTestParams.TEST_SS_TWR, result.getOperationType());
+        assertEquals(status, result.getStatus());
+        assertArrayEquals(rawNotificationData, result.getRawNotificationData());
+
+        RfTestSsTwrResult fromBundle = RfTestSsTwrResult.fromBundle(result.toBundle());
+
+        assertEquals(RfTestParams.TEST_SS_TWR, fromBundle.getRfTestOperationType());
+        assertEquals(status, fromBundle.getStatus());
+        assertEquals(measurement, fromBundle.getMeasurement());
         assertArrayEquals(rawNotificationData, fromBundle.getRawNotificationData());
     }
 }

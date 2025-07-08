@@ -149,6 +149,7 @@ pub enum UciCommand {
     },
     TestRx,
     TestSrRx,
+    TestSsTwr,
     StopRfTest,
 }
 
@@ -323,6 +324,7 @@ impl TryFrom<UciCommand> for uwb_uci_packets::UciControlPacket {
             }
             UciCommand::TestRx => uwb_uci_packets::TestRxCmdBuilder {}.build().into(),
             UciCommand::TestSrRx => uwb_uci_packets::TestSrRxCmdBuilder {}.build().into(),
+            UciCommand::TestSsTwr => uwb_uci_packets::TestSsTwrCmdBuilder {}.build().into(),
             UciCommand::StopRfTest => uwb_uci_packets::StopRfTestCmdBuilder {}.build().into(),
             UciCommand::GetLogicalLinkParams { connect_id } => {
                 uwb_uci_packets::GetLogicalLinkParamsCmdBuilder { connect_id }.build().into()

@@ -40,6 +40,7 @@ import com.android.server.uwb.rftest.UwbTestPerRxResult;
 import com.android.server.uwb.rftest.UwbTestPeriodicTxResult;
 import com.android.server.uwb.rftest.UwbTestRxResult;
 import com.android.server.uwb.rftest.UwbTestSrRxResult;
+import com.android.server.uwb.rftest.UwbTestSsTwrResult;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -173,6 +174,14 @@ public class NativeUwbManager {
     public void onSrRxDataNotificationReceived(UwbTestSrRxResult srRxResult) {
         Log.d(TAG, "onSrRxDataNotificationReceived : " + srRxResult);
         mSessionListener.onRfTestNotificationReceived(srRxResult);
+    }
+
+    /**
+     * RfTestSsTwr callback invoked via the JNI
+     */
+    public void onSsTwrDataNotificationReceived(UwbTestSsTwrResult result) {
+        Log.d(TAG, "onSsTwrDataNotificationReceived : " + result);
+        mSessionListener.onRfTestNotificationReceived(result);
     }
 
     /**
@@ -449,6 +458,18 @@ public class NativeUwbManager {
     public byte testSrRx(String chipId) {
         synchronized (mNativeLock) {
             return nativeTestSrRx(chipId);
+        }
+    }
+
+    /**
+     * Starts a SS TWR test
+     *
+     * @param chipId   : Identifier of UWB chip for multi-HAL devices
+     * @return : {@link UwbUciConstants}  Status code
+     */
+    public byte testSsTwr(String chipId) {
+        synchronized (mNativeLock) {
+            return nativeTestSsTwr(chipId);
         }
     }
 
@@ -868,6 +889,8 @@ public class NativeUwbManager {
     private native byte nativeTestRx(String chipId);
 
     private native byte nativeTestSrRx(String chipId);
+
+    private native byte nativeTestSsTwr(String chipId);
 
     private native byte nativeStopRfTest(String chipId);
 }
