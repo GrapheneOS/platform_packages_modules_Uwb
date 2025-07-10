@@ -675,7 +675,7 @@ public class UwbSessionNotificationManager {
                     .addRangingReportMetadata(rfNotificationEvent.toBundle());
 
             uwbRangingCallbacks.onRangingResult(sessionHandle, rangingReportBuilder.build());
-            Log.i(TAG, "Notification received for " + callbackMethodName);
+            Log.i(TAG, "RF Notification received for " + callbackMethodName);
         } catch (Exception e) {
             Log.e(TAG, "Failed to notify IUwbRangingCallbacks for " + callbackMethodName, e);
         }

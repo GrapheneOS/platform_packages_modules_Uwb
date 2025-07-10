@@ -17,7 +17,7 @@ use std::convert::{TryFrom, TryInto};
 use log::{debug, error};
 use pdl_runtime::Packet;
 use uwb_uci_packets::{
-    parse_diagnostics_ntf, radar_bytes_per_sample_value, RadarDataRcv, RadarSweepDataRaw,
+    parse_diagnostics_ntf, radar_bytes_per_sample_value, RadarDataRcv, RadarSweepDataRaw, RxData,
     UCI_PACKET_HEADER_LEN, UCI_RADAR_SEQUENCE_NUMBER_LEN, UCI_RADAR_TIMESTAMP_LEN,
     UCI_RADAR_VENDOR_DATA_LEN_LEN,
 };
@@ -166,6 +166,8 @@ pub enum RfTestNotification {
     TestPerRxNtf(RfTestPerRxData),
     /// TestLoopbackNtf equivalent
     TestLoopbackNtf(RfTestLoopbackData),
+    /// RxNtf equivalent.
+    TestRxNtf(RfTestRxData),
 }
 
 /// The session range data.
@@ -212,7 +214,7 @@ pub struct RfTestPerRxData {
     /// Number of times signal was rejected.
     pub acq_reject: u32,
 
-    /// Number of times RX did not go beyound ACQ stage.
+    /// Number of times RX did not go beyond ACQ stage.
     pub rx_fail: u32,
 
     /// Number of times sync CIR ready event was received.
@@ -276,6 +278,17 @@ pub struct RfTestLoopbackData {
 
     /// Received PSDU Data bytes
     pub psdu_data: Vec<u8>,
+
+    /// The raw data of the notification message.
+    /// It's not at FiRa specification, only used by vendor's extension.
+    pub raw_notification_data: Vec<u8>,
+}
+
+/// RF RX NTF Data
+#[derive(Debug, Clone, PartialEq)]
+pub struct RfTestRxData {
+    /// Rx ntf data
+    pub rx_data: RxData,
 
     /// The raw data of the notification message.
     /// It's not at FiRa specification, only used by vendor's extension.
@@ -869,6 +882,10 @@ impl TryFrom<uwb_uci_packets::TestNotification> for RfTestNotification {
                     raw_notification_data: raw_ntf_data,
                 }))
             }
+            TestNotificationChild::TestRxNtf(evt) => Ok(Self::TestRxNtf(RfTestRxData {
+                rx_data: evt.get_rx_data().clone(),
+                raw_notification_data: raw_ntf_data,
+            })),
             _ => {
                 error!("Unknown RfTestNotification: {:?}", evt);
                 Err(Error::Unknown)
@@ -1912,6 +1929,37 @@ mod tests {
                 phr,
                 psdu_data,
                 raw_notification_data
+            }))
+        );
+    }
+
+    #[test]
+    fn test_rf_test_notification_casting_from_rf_rx_ntf() {
+        let data = RxData {
+            status: uwb_uci_packets::StatusCode::UciStatusOk,
+            rx_done_ts_int: 0x00,
+            rx_done_ts_frac: 0x01,
+            aoa_azimuth: 0x02,
+            aoa_elevation: 0x03,
+            toa_gap: 0x04,
+            phr: 0x05,
+            psdu_data: vec![0x00],
+        };
+        let test_rf_rx_ntf_packet =
+            uwb_uci_packets::TestRxNtfBuilder { rx_data: data.clone(), vendor_data: vec![] }
+                .build();
+        let raw_notification_data = test_rf_rx_ntf_packet.clone().encode_to_bytes().unwrap()
+            [UCI_PACKET_HEADER_LEN..]
+            .to_vec();
+        let rf_test_notification =
+            uwb_uci_packets::TestNotification::try_from(test_rf_rx_ntf_packet).unwrap();
+        let uci_notification = RfTestNotification::try_from(rf_test_notification).unwrap();
+        let uci_notification_from_rx_ntf = UciNotification::RfTest(uci_notification);
+        assert_eq!(
+            uci_notification_from_rx_ntf,
+            UciNotification::RfTest(RfTestNotification::TestRxNtf(RfTestRxData {
+                rx_data: data,
+                raw_notification_data,
             }))
         );
     }

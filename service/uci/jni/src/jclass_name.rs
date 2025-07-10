@@ -41,3 +41,4 @@ pub(crate) const RFTEST_PERIODIC_TX_CLASS: &str =
 pub(crate) const RFTEST_PER_RX_CLASS: &str = "com/android/server/uwb/rftest/UwbTestPerRxResult";
 pub(crate) const RFTEST_LOOPBACK_CLASS: &str =
     "com/android/server/uwb/rftest/UwbTestLoopbackResult";
+pub(crate) const RFTEST_RX_CLASS: &str = "com/android/server/uwb/rftest/UwbTestRxResult";

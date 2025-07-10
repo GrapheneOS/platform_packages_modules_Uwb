@@ -38,6 +38,7 @@ import com.android.server.uwb.multchip.UwbMultichipData;
 import com.android.server.uwb.rftest.UwbTestLoopbackResult;
 import com.android.server.uwb.rftest.UwbTestPerRxResult;
 import com.android.server.uwb.rftest.UwbTestPeriodicTxResult;
+import com.android.server.uwb.rftest.UwbTestRxResult;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -155,6 +156,11 @@ public class NativeUwbManager {
     public void onLoopbackDataNotificationReceived(UwbTestLoopbackResult loopbackResult) {
         Log.d(TAG, "onLoopbackDataNotificationReceived : " + loopbackResult);
         mSessionListener.onRfTestNotificationReceived(loopbackResult);
+    }
+
+    public void onRxDataNotificationReceived(UwbTestRxResult rxTestResult) {
+        Log.d(TAG, "onRxDataNotificationReceived : " + rxTestResult);
+        mSessionListener.onRfTestNotificationReceived(rxTestResult);
     }
 
     /**
@@ -407,6 +413,18 @@ public class NativeUwbManager {
     public byte testLoopback(byte[] psduData, String chipId) {
         synchronized (mNativeLock) {
             return nativeTestLoopback(psduData, chipId);
+        }
+    }
+
+    /**
+     * Starts a Rx test
+     *
+     * @param chipId   : Identifier of UWB chip for multi-HAL devices
+     * @return : {@link UwbUciConstants}  Status code
+     */
+    public byte testRx(String chipId) {
+        synchronized (mNativeLock) {
+            return nativeTestRx(chipId);
         }
     }
 
@@ -822,6 +840,8 @@ public class NativeUwbManager {
     private native byte nativeTestPerRx(byte[] psduData, String chipId);
 
     private native byte nativeTestLoopback(byte[] psduData, String chipId);
+
+    private native byte nativeTestRx(String chipId);
 
     private native byte nativeStopRfTest(String chipId);
 }

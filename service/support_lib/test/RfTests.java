@@ -26,11 +26,14 @@ import android.uwb.UwbAddress;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.server.uwb.rftest.UwbTestRxResult;
+import com.android.server.uwb.util.UwbUtil;
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.rftest.RfTestLoopbackResult;
 import com.google.uwb.support.rftest.RfTestOpenSessionParams;
 import com.google.uwb.support.rftest.RfTestParams;
 import com.google.uwb.support.rftest.RfTestPerRxResult;
+import com.google.uwb.support.rftest.RfTestRxResult;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -294,5 +297,44 @@ public class RfTests {
         assertEquals(aoaElevation, fromBundle.getAoaElevation());
         assertEquals(phr, fromBundle.getPhr());
         assertArrayEquals(psduData, fromBundle.getPsduData());
+    }
+
+    @Test
+    public void testRfTestRxResult() {
+        int status = FiraParams.STATUS_CODE_OK;
+        long rxDoneTsInt = 1;
+        int rxDoneTsFrac = 2;
+        int aoaAzimuth = 3;
+        int aoaElevation = 4;
+        int toaGap = 5;
+        int phr = 6;
+        byte[] psduData = new byte[] {0x01, 0x02 };
+        byte[] rawNotificationData = new byte[] { 0x01, 0x03 };
+        double delta = 0.0001;
+        double aoaAzimuthAngle = UwbUtil.convertQFormatToFloat(
+                UwbUtil.twos_compliment(aoaAzimuth, 16), 9, 7);
+        double aoaElevationAngle = UwbUtil.convertQFormatToFloat(
+                UwbUtil.twos_compliment(aoaElevation, 16), 9, 7);
+
+        UwbTestRxResult rxResult = new UwbTestRxResult(status,
+                rxDoneTsInt, rxDoneTsFrac, aoaAzimuth, aoaElevation, toaGap, phr, psduData,
+                rawNotificationData);
+
+        assertEquals(RfTestParams.TEST_RX, rxResult.getOperationType());
+        assertEquals(status, rxResult.getStatus());
+        assertArrayEquals(rawNotificationData, rxResult.getRawNotificationData());
+
+        RfTestRxResult fromBundle = RfTestRxResult.fromBundle(rxResult.toBundle());
+
+        assertEquals(RfTestParams.TEST_RX, fromBundle.getRfTestOperationType());
+        assertEquals(status, fromBundle.getStatus());
+        assertEquals(rxDoneTsInt, fromBundle.getRxDoneTimestampInteger());
+        assertEquals(rxDoneTsFrac, fromBundle.getRxDoneTimestampFractional());
+        assertEquals(aoaAzimuthAngle, fromBundle.getAoaAzimuth(), delta);
+        assertEquals(aoaElevationAngle, fromBundle.getAoaElevation(), delta);
+        assertEquals(toaGap, fromBundle.getToaGap());
+        assertEquals(phr, fromBundle.getPhr());
+        assertArrayEquals(psduData, fromBundle.getPsduData());
+        assertArrayEquals(rawNotificationData, fromBundle.getRawNotificationData());
     }
 }

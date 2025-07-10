@@ -667,6 +667,22 @@ fn native_rf_test_loopback(
     uci_manager.rf_test_loopback(psdu_data_bytearray)
 }
 
+/// Test RF rx test. Return value defined by uci_packets.pdl
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeTestRx(
+    env: JNIEnv,
+    obj: JObject,
+    chip_id: JString,
+) -> jbyte {
+    debug!("{}: enter", function_name!());
+    byte_result_helper(native_test_rx(env, obj, chip_id), function_name!())
+}
+
+fn native_test_rx(env: JNIEnv, obj: JObject, chip_id: JString) -> Result<()> {
+    let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
+    uci_manager.rf_test_rx()
+}
+
 /// Set radar app configurations on a single UWB device. Return null JObject if failed.
 #[no_mangle]
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSetRadarAppConfigurations(
