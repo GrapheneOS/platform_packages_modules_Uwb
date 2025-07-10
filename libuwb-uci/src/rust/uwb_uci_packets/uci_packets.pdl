@@ -1863,9 +1863,7 @@ test TestPerRxNtf {
     "\x6D\x03\x00\x35\x00\xE8\x03\x00\x00\x0C\x04\x00\x00\x24\x00\x00\x00\x00\x00\x00\x00\xE8\x03\x00\x00\x00\x00\xE8\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xE8\x03\x00\x00"
 }
 
-packet TestRxCmd : TestCommand (opcode = 0x05) { // RF_TEST_RX
-    psdu_data : 8[],
-}
+packet TestRxCmd : TestCommand (opcode = 0x05) {} // RF_TEST_RX
 
 test TestRxCmd {
     "\x2D\x05\x00\x0a\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09",
@@ -1879,7 +1877,7 @@ test TestRxRsp {
     "\x4D\x05\x00\x01\x00",
 }
 
-packet TestRxNtf : TestNotification (opcode = 0x05) { // RF_TEST_RX
+struct RxData {
     status: StatusCode,
     rx_done_ts_int: 32,
     rx_done_ts_frac: 16,
@@ -1887,8 +1885,12 @@ packet TestRxNtf : TestNotification (opcode = 0x05) { // RF_TEST_RX
     aoa_elevation: 16,
     toa_gap: 8,
     phr: 16,
-    _count_(psdu_data): 16,
+    _size_(psdu_data): 16,
     psdu_data: 8[],
+}
+
+packet TestRxNtf : TestNotification (opcode = 0x05) { // RF_TEST_RX
+    rx_data: RxData,
     vendor_data: 8[],
 }
 

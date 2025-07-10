@@ -400,6 +400,9 @@ impl TryFrom<uwb_uci_packets::TestResponse> for UciResponse {
             TestResponseChild::TestLoopbackRsp(evt) => {
                 Ok(UciResponse::RfTest(status_code_to_result(evt.get_status())))
             }
+            TestResponseChild::TestRxRsp(evt) => {
+                Ok(UciResponse::RfTest(status_code_to_result(evt.get_status())))
+            }
             TestResponseChild::StopRfTestRsp(evt) => {
                 Ok(UciResponse::RfTest(status_code_to_result(evt.get_status())))
             }

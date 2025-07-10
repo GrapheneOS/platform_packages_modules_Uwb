@@ -18,6 +18,7 @@ android_test {
         "com.uwb.support.multichip",
         "com.uwb.support.oemextension",
         "com.uwb.support.dltdoa",
+        "service-uwb-pre-jarjar",
     ],
     platform_apis: true,
     certificate: "platform",

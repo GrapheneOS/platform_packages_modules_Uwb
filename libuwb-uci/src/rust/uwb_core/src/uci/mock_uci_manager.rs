@@ -609,6 +609,14 @@ impl MockUciManager {
         });
     }
 
+    /// Prepare Mock to expect test_rx.
+    ///
+    /// MockUciManager expects call with parameters, returns out as response, followed by notfs
+    /// sent.
+    pub fn expect_test_rx(&mut self, notfs: Vec<UciNotification>, out: Result<()>) {
+        self.expected_calls.lock().unwrap().push_back(ExpectedCall::TestRx { notfs, out });
+    }
+
     /// Prepare Mock to expect StopRfTest.
     ///
     /// MockUciManager expects call with parameters, returns out as response
@@ -1477,6 +1485,22 @@ impl UciManager for MockUciManager {
         }
     }
 
+    async fn rf_test_rx(&self) -> Result<()> {
+        let mut expected_calls = self.expected_calls.lock().unwrap();
+        match expected_calls.pop_front() {
+            Some(ExpectedCall::TestRx { notfs, out }) => {
+                self.expect_call_consumed.notify_one();
+                self.send_notifications(notfs);
+                out
+            }
+            Some(call) => {
+                expected_calls.push_front(call);
+                Err(Error::MockUndefined)
+            }
+            None => Err(Error::MockUndefined),
+        }
+    }
+
     async fn stop_rf_test(&self) -> Result<()> {
         let mut expected_calls = self.expected_calls.lock().unwrap();
         match expected_calls.pop_front() {
@@ -1672,6 +1696,10 @@ enum ExpectedCall {
     },
     TestLoopback {
         expected_psdu_data: Vec<u8>,
+        notfs: Vec<UciNotification>,
+        out: Result<()>,
+    },
+    TestRx {
         notfs: Vec<UciNotification>,
         out: Result<()>,
     },
