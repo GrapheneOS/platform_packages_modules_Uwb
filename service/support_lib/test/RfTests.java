@@ -27,13 +27,18 @@ import android.uwb.UwbAddress;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.server.uwb.rftest.UwbTestRxResult;
+import com.android.server.uwb.rftest.UwbTestSrRxResult;
+import com.android.server.uwb.rftest.UwbTestSsTwrResult;
 import com.android.server.uwb.util.UwbUtil;
+
 import com.google.uwb.support.fira.FiraParams;
 import com.google.uwb.support.rftest.RfTestLoopbackResult;
 import com.google.uwb.support.rftest.RfTestOpenSessionParams;
 import com.google.uwb.support.rftest.RfTestParams;
 import com.google.uwb.support.rftest.RfTestPerRxResult;
 import com.google.uwb.support.rftest.RfTestRxResult;
+import com.google.uwb.support.rftest.RfTestSrRxResult;
+import com.google.uwb.support.rftest.RfTestSsTwrResult;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -335,6 +340,67 @@ public class RfTests {
         assertEquals(toaGap, fromBundle.getToaGap());
         assertEquals(phr, fromBundle.getPhr());
         assertArrayEquals(psduData, fromBundle.getPsduData());
+        assertArrayEquals(rawNotificationData, fromBundle.getRawNotificationData());
+    }
+
+    @Test
+    public void testRfTestSrRxResult() {
+        int status = FiraParams.STATUS_CODE_OK;
+        long attempts = 1;
+        long acqDetect = 2;
+        long acqReject = 3;
+        long rxFail = 4;
+        long syncCirReady = 5;
+        long sfdFail = 6;
+        long sfdFound = 7;
+        long stsFound = 8;
+        long eof = 9;
+        byte[] stsDetectBitmap = new byte[] {0x01, 0x02 };
+        byte[] rawNotificationData = new byte[] { 0x01, 0x03 };
+
+        UwbTestSrRxResult result = new UwbTestSrRxResult(status, attempts, acqDetect, acqReject,
+                rxFail, syncCirReady, sfdFail, sfdFound, stsFound, eof, stsDetectBitmap,
+                rawNotificationData);
+
+        assertEquals(RfTestParams.TEST_SR_RX, result.getOperationType());
+        assertEquals(status, result.getStatus());
+        assertArrayEquals(rawNotificationData, result.getRawNotificationData());
+
+        RfTestSrRxResult fromBundle = RfTestSrRxResult.fromBundle(result.toBundle());
+
+        assertEquals(RfTestParams.TEST_SR_RX, fromBundle.getRfTestOperationType());
+        assertEquals(status, fromBundle.getStatus());
+        assertEquals(attempts, fromBundle.getAttempts());
+        assertEquals(acqDetect, fromBundle.getAcqDetect());
+        assertEquals(acqReject, fromBundle.getAcqReject());
+        assertEquals(rxFail, fromBundle.getRxFail());
+        assertEquals(syncCirReady, fromBundle.getSyncCirReady());
+        assertEquals(sfdFail, fromBundle.getSfdFail());
+        assertEquals(sfdFound, fromBundle.getSfdFound());
+        assertEquals(stsFound, fromBundle.getStsFound());
+        assertEquals(eof, fromBundle.getEof());
+        assertArrayEquals(stsDetectBitmap, fromBundle.getStsDetectBitmap());
+        assertArrayEquals(rawNotificationData, fromBundle.getRawNotificationData());
+    }
+
+    @Test
+    public void testRfTestSsTwrResult() {
+        int status = FiraParams.STATUS_CODE_OK;
+        long measurement = 1;
+        byte[] rawNotificationData = new byte[] { 0x01, 0x03 };
+
+        UwbTestSsTwrResult result = new UwbTestSsTwrResult(status, measurement,
+                rawNotificationData);
+
+        assertEquals(RfTestParams.TEST_SS_TWR, result.getOperationType());
+        assertEquals(status, result.getStatus());
+        assertArrayEquals(rawNotificationData, result.getRawNotificationData());
+
+        RfTestSsTwrResult fromBundle = RfTestSsTwrResult.fromBundle(result.toBundle());
+
+        assertEquals(RfTestParams.TEST_SS_TWR, fromBundle.getRfTestOperationType());
+        assertEquals(status, fromBundle.getStatus());
+        assertEquals(measurement, fromBundle.getMeasurement());
         assertArrayEquals(rawNotificationData, fromBundle.getRawNotificationData());
     }
 }

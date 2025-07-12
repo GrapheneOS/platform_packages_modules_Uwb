@@ -1315,6 +1315,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
     Skip if BLE CS is supported by both devices.
     """
+    asserts.skip_if(self._is_emulator_device(self.initiator.ad),
+                      "Skipping BLE RSSI test on emulator")
     asserts.skip_if(
         self.initiator.is_ranging_technology_supported(RangingTechnology.BLE_CS) and
         self.responder.is_ranging_technology_supported(RangingTechnology.BLE_CS),

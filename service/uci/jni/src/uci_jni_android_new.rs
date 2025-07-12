@@ -683,6 +683,38 @@ fn native_test_rx(env: JNIEnv, obj: JObject, chip_id: JString) -> Result<()> {
     uci_manager.rf_test_rx()
 }
 
+/// Test RF SR rx test. Return value defined by uci_packets.pdl
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeTestSrRx(
+    env: JNIEnv,
+    obj: JObject,
+    chip_id: JString,
+) -> jbyte {
+    debug!("{}: enter", function_name!());
+    byte_result_helper(native_test_sr_rx(env, obj, chip_id), function_name!())
+}
+
+fn native_test_sr_rx(env: JNIEnv, obj: JObject, chip_id: JString) -> Result<()> {
+    let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
+    uci_manager.rf_test_sr_rx()
+}
+
+/// Test RF SS TWR test. Return value defined by uci_packets.pdl
+#[no_mangle]
+pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeTestSsTwr(
+    env: JNIEnv,
+    obj: JObject,
+    chip_id: JString,
+) -> jbyte {
+    debug!("{}: enter", function_name!());
+    byte_result_helper(native_test_ss_twr(env, obj, chip_id), function_name!())
+}
+
+fn native_test_ss_twr(env: JNIEnv, obj: JObject, chip_id: JString) -> Result<()> {
+    let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
+    uci_manager.rf_test_ss_twr()
+}
+
 /// Set radar app configurations on a single UWB device. Return null JObject if failed.
 #[no_mangle]
 pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeSetRadarAppConfigurations(

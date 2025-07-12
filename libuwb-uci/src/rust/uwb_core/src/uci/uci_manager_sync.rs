@@ -549,6 +549,16 @@ impl<U: UciManager> UciManagerSync<U> {
         self.runtime_handle.block_on(self.uci_manager.rf_test_rx())
     }
 
+    /// Test Sr Rx command
+    pub fn rf_test_sr_rx(&self) -> Result<()> {
+        self.runtime_handle.block_on(self.uci_manager.rf_test_sr_rx())
+    }
+
+    /// Test SS two way ranging command
+    pub fn rf_test_ss_twr(&self) -> Result<()> {
+        self.runtime_handle.block_on(self.uci_manager.rf_test_ss_twr())
+    }
+
     /// Test stop rf test command
     pub fn stop_rf_test(&self) -> Result<()> {
         self.runtime_handle.block_on(self.uci_manager.stop_rf_test())

@@ -18,8 +18,8 @@ use log::{debug, error};
 use pdl_runtime::Packet;
 use uwb_uci_packets::{
     parse_diagnostics_ntf, radar_bytes_per_sample_value, RadarDataRcv, RadarSweepDataRaw, RxData,
-    UCI_PACKET_HEADER_LEN, UCI_RADAR_SEQUENCE_NUMBER_LEN, UCI_RADAR_TIMESTAMP_LEN,
-    UCI_RADAR_VENDOR_DATA_LEN_LEN,
+    SrRxData, SsTwrData, UCI_PACKET_HEADER_LEN, UCI_RADAR_SEQUENCE_NUMBER_LEN,
+    UCI_RADAR_TIMESTAMP_LEN, UCI_RADAR_VENDOR_DATA_LEN_LEN,
 };
 
 use crate::error::{Error, Result};
@@ -168,6 +168,10 @@ pub enum RfTestNotification {
     TestLoopbackNtf(RfTestLoopbackData),
     /// RxNtf equivalent.
     TestRxNtf(RfTestRxData),
+    /// SrRxNtf equivalent.
+    TestSrRxNtf(RfTestSrRxData),
+    /// SsTwrNtf equivalent.
+    TestSsTwrNtf(RfTestSsTwrData),
 }
 
 /// The session range data.
@@ -289,6 +293,28 @@ pub struct RfTestLoopbackData {
 pub struct RfTestRxData {
     /// Rx ntf data
     pub rx_data: RxData,
+
+    /// The raw data of the notification message.
+    /// It's not at FiRa specification, only used by vendor's extension.
+    pub raw_notification_data: Vec<u8>,
+}
+
+/// RF SR RX NTF Data
+#[derive(Debug, Clone, PartialEq)]
+pub struct RfTestSrRxData {
+    /// Sr Rx ntf data
+    pub sr_rx_data: SrRxData,
+
+    /// The raw data of the notification message.
+    /// It's not at FiRa specification, only used by vendor's extension.
+    pub raw_notification_data: Vec<u8>,
+}
+
+/// RF SS TWR NTF Data
+#[derive(Debug, Clone, PartialEq)]
+pub struct RfTestSsTwrData {
+    /// SS TWR ntf data
+    pub ss_twr_data: SsTwrData,
 
     /// The raw data of the notification message.
     /// It's not at FiRa specification, only used by vendor's extension.
@@ -884,6 +910,14 @@ impl TryFrom<uwb_uci_packets::TestNotification> for RfTestNotification {
             }
             TestNotificationChild::TestRxNtf(evt) => Ok(Self::TestRxNtf(RfTestRxData {
                 rx_data: evt.get_rx_data().clone(),
+                raw_notification_data: raw_ntf_data,
+            })),
+            TestNotificationChild::TestSrRxNtf(evt) => Ok(Self::TestSrRxNtf(RfTestSrRxData {
+                sr_rx_data: evt.get_sr_rx_data().clone(),
+                raw_notification_data: raw_ntf_data,
+            })),
+            TestNotificationChild::TestSsTwrNtf(evt) => Ok(Self::TestSsTwrNtf(RfTestSsTwrData {
+                ss_twr_data: evt.get_ss_twr_data().clone(),
                 raw_notification_data: raw_ntf_data,
             })),
             _ => {
@@ -1960,6 +1994,66 @@ mod tests {
             UciNotification::RfTest(RfTestNotification::TestRxNtf(RfTestRxData {
                 rx_data: data,
                 raw_notification_data,
+            }))
+        );
+    }
+
+    #[test]
+    fn test_rf_test_notification_casting_from_rf_sr_rx_ntf() {
+        let data = SrRxData {
+            status: uwb_uci_packets::StatusCode::UciStatusOk,
+            attempts: 0x00,
+            acq_detect: 0x01,
+            acq_reject: 0x02,
+            rx_fail: 0x03,
+            sync_cir_ready: 0x04,
+            sfd_fail: 0x05,
+            sfd_found: 0x06,
+            sts_found: 0x07,
+            eof: 0x08,
+            sts_detect_bitmap: vec![0x01, 0x02],
+        };
+        let test_rf_sr_rx_ntf_packet =
+            uwb_uci_packets::TestSrRxNtfBuilder { sr_rx_data: data.clone(), vendor_data: vec![] }
+                .build();
+        let raw_notification_data = test_rf_sr_rx_ntf_packet.clone().encode_to_bytes().unwrap()
+            [UCI_PACKET_HEADER_LEN..]
+            .to_vec();
+        let rf_test_notification =
+            uwb_uci_packets::TestNotification::try_from(test_rf_sr_rx_ntf_packet).unwrap();
+        let uci_notification = RfTestNotification::try_from(rf_test_notification).unwrap();
+        let uci_notification_from_sr_rx_ntf = UciNotification::RfTest(uci_notification);
+        assert_eq!(
+            uci_notification_from_sr_rx_ntf,
+            UciNotification::RfTest(RfTestNotification::TestSrRxNtf(RfTestSrRxData {
+                sr_rx_data: data,
+                raw_notification_data
+            }))
+        );
+    }
+
+    #[test]
+    fn test_rf_test_notification_casting_from_rf_ss_twr_ntf() {
+        let measurement_value = 0x01;
+        let data = SsTwrData {
+            status: uwb_uci_packets::StatusCode::UciStatusOk,
+            measurement: measurement_value,
+        };
+        let test_rf_ss_twr_ntf_packet =
+            uwb_uci_packets::TestSsTwrNtfBuilder { ss_twr_data: data.clone(), vendor_data: vec![] }
+                .build();
+        let raw_notification_data = test_rf_ss_twr_ntf_packet.clone().encode_to_bytes().unwrap()
+            [UCI_PACKET_HEADER_LEN..]
+            .to_vec();
+        let rf_test_notification =
+            uwb_uci_packets::TestNotification::try_from(test_rf_ss_twr_ntf_packet).unwrap();
+        let uci_notification = RfTestNotification::try_from(rf_test_notification).unwrap();
+        let uci_notification_from_ss_twr_ntf = UciNotification::RfTest(uci_notification);
+        assert_eq!(
+            uci_notification_from_ss_twr_ntf,
+            UciNotification::RfTest(RfTestNotification::TestSsTwrNtf(RfTestSsTwrData {
+                ss_twr_data: data,
+                raw_notification_data
             }))
         );
     }

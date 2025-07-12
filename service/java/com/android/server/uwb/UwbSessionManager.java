@@ -1058,6 +1058,14 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                         status = mNativeUwbManager.testRx(uwbSession.getChipId());
                         break;
                     }
+                    case RfTestParams.TEST_SR_RX: {
+                        status = mNativeUwbManager.testSrRx(uwbSession.getChipId());
+                        break;
+                    }
+                    case RfTestParams.TEST_SS_TWR: {
+                        status = mNativeUwbManager.testSsTwr(uwbSession.getChipId());
+                        break;
+                    }
                     default:
                         Log.i(TAG, "Unknown RF command: " + rfTestOperationType);
                 }

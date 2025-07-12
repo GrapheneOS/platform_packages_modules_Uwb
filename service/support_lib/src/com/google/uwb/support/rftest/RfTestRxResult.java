@@ -21,6 +21,8 @@ import android.os.PersistableBundle;
 import androidx.annotation.Nullable;
 
 import com.google.uwb.support.base.RequiredParam;
+import com.google.uwb.support.fira.FiraParams.StatusCode;
+import com.google.uwb.support.rftest.RfTestParams.RfTestOperationType;
 
 /**
  * Represents the notification of RF RX test in the UWB testing framework.
@@ -118,14 +120,15 @@ public final class RfTestRxResult  extends RfTestParams{
     /**
      * Returns the RF Test Operation Type.
      * <p>This integer indicates the specific type of RF test operation being performed.
-     * @return RF test operation type.
+     * @return {@link RfTestOperationType} RF test operation type.
      */
+    @RfTestOperationType
     public int getRfTestOperationType() {
         return mRfTestOperationType;
     }
 
     /**
-     * Returns the status code of the received frame.
+     * Returns the {@link StatusCode} status code of the received frame.
      */
     public int getStatus() {
         return mStatus;

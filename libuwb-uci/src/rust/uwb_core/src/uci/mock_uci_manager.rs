@@ -617,6 +617,22 @@ impl MockUciManager {
         self.expected_calls.lock().unwrap().push_back(ExpectedCall::TestRx { notfs, out });
     }
 
+    /// Prepare Mock to expect test_sr_rx.
+    ///
+    /// MockUciManager expects call with parameters, returns out as response, followed by notfs
+    /// sent.
+    pub fn expect_test_sr_rx(&mut self, notfs: Vec<UciNotification>, out: Result<()>) {
+        self.expected_calls.lock().unwrap().push_back(ExpectedCall::TestSrRx { notfs, out });
+    }
+
+    /// Prepare Mock to expect test_ss_twr.
+    ///
+    /// MockUciManager expects call with parameters, returns out as response, followed by notfs
+    /// sent.
+    pub fn expect_test_ss_twr(&mut self, notfs: Vec<UciNotification>, out: Result<()>) {
+        self.expected_calls.lock().unwrap().push_back(ExpectedCall::TestSsTwr { notfs, out });
+    }
+
     /// Prepare Mock to expect StopRfTest.
     ///
     /// MockUciManager expects call with parameters, returns out as response
@@ -1501,6 +1517,38 @@ impl UciManager for MockUciManager {
         }
     }
 
+    async fn rf_test_sr_rx(&self) -> Result<()> {
+        let mut expected_calls = self.expected_calls.lock().unwrap();
+        match expected_calls.pop_front() {
+            Some(ExpectedCall::TestSrRx { notfs, out }) => {
+                self.expect_call_consumed.notify_one();
+                self.send_notifications(notfs);
+                out
+            }
+            Some(call) => {
+                expected_calls.push_front(call);
+                Err(Error::MockUndefined)
+            }
+            None => Err(Error::MockUndefined),
+        }
+    }
+
+    async fn rf_test_ss_twr(&self) -> Result<()> {
+        let mut expected_calls = self.expected_calls.lock().unwrap();
+        match expected_calls.pop_front() {
+            Some(ExpectedCall::TestSsTwr { notfs, out }) => {
+                self.expect_call_consumed.notify_one();
+                self.send_notifications(notfs);
+                out
+            }
+            Some(call) => {
+                expected_calls.push_front(call);
+                Err(Error::MockUndefined)
+            }
+            None => Err(Error::MockUndefined),
+        }
+    }
+
     async fn stop_rf_test(&self) -> Result<()> {
         let mut expected_calls = self.expected_calls.lock().unwrap();
         match expected_calls.pop_front() {
@@ -1700,6 +1748,14 @@ enum ExpectedCall {
         out: Result<()>,
     },
     TestRx {
+        notfs: Vec<UciNotification>,
+        out: Result<()>,
+    },
+    TestSrRx {
+        notfs: Vec<UciNotification>,
+        out: Result<()>,
+    },
+    TestSsTwr {
         notfs: Vec<UciNotification>,
         out: Result<()>,
     },

@@ -235,6 +235,8 @@ pub trait UciManager: 'static + Send + Sync + Clone {
     async fn rf_test_per_rx(&self, psdu_data: Vec<u8>) -> Result<()>;
     async fn rf_test_loopback(&self, psdu_data: Vec<u8>) -> Result<()>;
     async fn rf_test_rx(&self) -> Result<()>;
+    async fn rf_test_sr_rx(&self) -> Result<()>;
+    async fn rf_test_ss_twr(&self) -> Result<()>;
     async fn stop_rf_test(&self) -> Result<()>;
 }
 
@@ -878,6 +880,24 @@ impl UciManager for UciManagerImpl {
 
     async fn rf_test_rx(&self) -> Result<()> {
         let cmd = UciCommand::TestRx {};
+        match self.send_cmd(UciManagerCmd::SendUciCommand { cmd }).await {
+            Ok(UciResponse::RfTest(resp)) => resp,
+            Ok(_) => Err(Error::Unknown),
+            Err(e) => Err(e),
+        }
+    }
+
+    async fn rf_test_sr_rx(&self) -> Result<()> {
+        let cmd = UciCommand::TestSrRx {};
+        match self.send_cmd(UciManagerCmd::SendUciCommand { cmd }).await {
+            Ok(UciResponse::RfTest(resp)) => resp,
+            Ok(_) => Err(Error::Unknown),
+            Err(e) => Err(e),
+        }
+    }
+
+    async fn rf_test_ss_twr(&self) -> Result<()> {
+        let cmd = UciCommand::TestSsTwr {};
         match self.send_cmd(UciManagerCmd::SendUciCommand { cmd }).await {
             Ok(UciResponse::RfTest(resp)) => resp,
             Ok(_) => Err(Error::Unknown),
