@@ -16,6 +16,7 @@
 
 package com.android.server.ranging.cs;
 
+import android.os.Build;
 import android.ranging.ble.cs.BleCsRangingCapabilities;
 
 import com.android.server.ranging.RangingTechnology;
@@ -123,11 +124,17 @@ public abstract class CsOobCapabilities {
         return byteBuffer.array();
     }
 
+    private static final String FAKE_BLE_ADDRESS = "00:00:00:00:00:00";
+
     public static CsOobCapabilities fromRangingCapabilities(
             BleCsRangingCapabilities capabilities
     ) {
+        String bleAddress = capabilities.getBluetoothAddress();
+        if ("user".equals(Build.TYPE)) {
+            bleAddress = FAKE_BLE_ADDRESS;
+        }
         return CsOobCapabilities.builder()
-                .setBluetoothAddress(capabilities.getBluetoothAddress())
+                .setBluetoothAddress(bleAddress)
                 .setSupportedSecurityTypes(capabilities.getSupportedSecurityLevels().stream()
                         .map(CsSecurityType.SECURITY_TYPES::get)
                         .collect(ImmutableList.toImmutableList()))

@@ -16,6 +16,7 @@
 
 package com.android.server.ranging.blerssi;
 
+import android.os.Build;
 import android.ranging.ble.rssi.BleRssiRangingCapabilities;
 
 import com.android.server.ranging.RangingTechnology;
@@ -29,6 +30,7 @@ import java.util.Arrays;
 
 @AutoValue
 public abstract class BleRssiOobCapabilities {
+    private static final String FAKE_BLE_ADDRESS = "00:00:00:00:00:00";
     /** Size in bytes of all properties when serialized. */
     private static final int EXPECTED_SIZE_BYTES = 8;
 
@@ -86,8 +88,12 @@ public abstract class BleRssiOobCapabilities {
 
     public static BleRssiOobCapabilities fromRangingCapabilities(
             BleRssiRangingCapabilities capabilities) {
+        String bleAddress = capabilities.getBluetoothAddress();
+        if ("user".equals(Build.TYPE)) {
+            bleAddress = FAKE_BLE_ADDRESS;
+        }
         return BleRssiOobCapabilities.builder()
-                .setBluetoothAddress(capabilities.getBluetoothAddress())
+                .setBluetoothAddress(bleAddress)
                 .build();
     }
 

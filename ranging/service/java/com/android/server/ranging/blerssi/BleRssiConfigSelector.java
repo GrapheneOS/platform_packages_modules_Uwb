@@ -21,6 +21,7 @@ import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
 import static com.android.server.ranging.RangingUtils.getUpdateRateFromDurationRange;
 import static com.android.server.ranging.blerssi.BleRssiConfig.BLE_RSSI_UPDATE_RATE_DURATIONS;
 
+import android.os.Build;
 import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
 import android.ranging.ble.rssi.BleRssiRangingCapabilities;
@@ -47,6 +48,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.function.Function;
 
 public class BleRssiConfigSelector implements RangingEngine.ConfigSelector {
+    private static final String FAKE_BLE_ADDRESS = "00:00:00:00:00:00";
     private final SessionConfig mSessionConfig;
     private final OobInitiatorRangingConfig mOobConfig;
     private final String mLocalAddress;
@@ -111,13 +113,19 @@ public class BleRssiConfigSelector implements RangingEngine.ConfigSelector {
 
         public @NonNull ImmutableSet<TechnologyConfig> getLocalConfigs() {
             return mPeerAddresses.entrySet().stream()
-                    .map((entry) -> new BleRssiConfig(
-                            DEVICE_ROLE_INITIATOR,
-                            new BleRssiRangingParams.Builder(entry.getValue())
-                                    .setRangingUpdateRate(mRangingUpdateRate)
-                                    .build(),
-                            mSessionConfig,
-                            entry.getKey()))
+                    .map((entry) -> {
+                        String address = entry.getValue();
+                        if ("user".equals(Build.TYPE)) {
+                            address = FAKE_BLE_ADDRESS;
+                        }
+                        return new BleRssiConfig(
+                                DEVICE_ROLE_INITIATOR,
+                                new BleRssiRangingParams.Builder(address)
+                                        .setRangingUpdateRate(mRangingUpdateRate)
+                                        .build(),
+                                mSessionConfig,
+                                entry.getKey());
+                    })
                     .collect(ImmutableSet.toImmutableSet());
         }
 

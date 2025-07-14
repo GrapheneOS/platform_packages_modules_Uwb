@@ -22,6 +22,7 @@ import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_
 import static com.android.server.ranging.RangingUtils.getUpdateRateFromDurationRange;
 import static com.android.server.ranging.cs.CsConfig.CS_UPDATE_RATE_DURATIONS;
 
+import android.os.Build;
 import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
 import android.ranging.ble.cs.BleCsRangingCapabilities;
@@ -49,6 +50,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 public class CsConfigSelector implements RangingEngine.ConfigSelector {
+    private static final String FAKE_BLE_ADDRESS = "00:00:00:00:00:00";
     private final SessionConfig mSessionConfig;
     private final OobInitiatorRangingConfig mOobConfig;
     private final BiMap<RangingDevice, String> mPeerAddresses;
@@ -126,15 +128,22 @@ public class CsConfigSelector implements RangingEngine.ConfigSelector {
 
         public @NonNull ImmutableSet<TechnologyConfig> getLocalConfigs() {
             return mPeerAddresses.entrySet().stream()
-                    .map((entry) -> new CsConfig(
-                            new BleCsRangingParams.Builder(entry.getValue())
-                                    .setRangingUpdateRate(mRangingUpdateRate)
-                                    .setSecurityLevel(mSecurityLevel)
-                                    .setLocationType(BleCsRangingParams.LOCATION_TYPE_UNKNOWN)
-                                    .setSightType(BleCsRangingParams.SIGHT_TYPE_NON_LINE_OF_SIGHT)
-                                    .build(),
-                            mSessionConfig,
-                            entry.getKey()))
+                    .map((entry) -> {
+                        String bleAddress = entry.getValue();
+                        if ("user".equals(Build.TYPE)) {
+                            bleAddress = FAKE_BLE_ADDRESS;
+                        }
+                        return new CsConfig(
+                                new BleCsRangingParams.Builder(bleAddress)
+                                        .setRangingUpdateRate(mRangingUpdateRate)
+                                        .setSecurityLevel(mSecurityLevel)
+                                        .setLocationType(BleCsRangingParams.LOCATION_TYPE_UNKNOWN)
+                                        .setSightType(
+                                                BleCsRangingParams.SIGHT_TYPE_NON_LINE_OF_SIGHT)
+                                        .build(),
+                                mSessionConfig,
+                                entry.getKey());
+                    })
                     .collect(ImmutableSet.toImmutableSet());
         }
 

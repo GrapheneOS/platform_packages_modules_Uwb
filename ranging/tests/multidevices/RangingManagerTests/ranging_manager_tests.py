@@ -1168,6 +1168,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     session.stop_and_assert_closed()
 
   def test_one_to_one_ble_cs_ranging_with_oob(self):
+    asserts.skip_if(self.initiator.ad.adb.getprop("ro.build.type") == "user",
+                    "Skipping OOB CS test on user build because BLE address is masked")
     asserts.skip_if(self._is_emulator_device(self.initiator.ad),
                       "Skipping BLE CS test on emulator")
     asserts.skip_if(
@@ -1315,6 +1317,8 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
     Skip if BLE CS is supported by both devices.
     """
+    asserts.skip_if(self.initiator.ad.adb.getprop("ro.build.type") == "user",
+                    "Skipping OOB BLE RSSI test on user build because BLE address is masked")
     asserts.skip_if(self._is_emulator_device(self.initiator.ad),
                       "Skipping BLE RSSI test on emulator")
     asserts.skip_if(
