@@ -237,9 +237,8 @@ public final class RawRangingDevice implements Parcelable {
      * {@link RangingUpdateRate} and, in some cases, technology-specific parameters like
      * {@link UwbRangingParams#getConfigId()} for UWB.
      *
-     * @return A non-null, possibly empty, map where keys are
-     * {@link RangingManager.RangingTechnology} integers and values are the
-     * calculated {@link Duration} for that technology's ranging interval.
+     * @return A non-null, possibly empty, map where keys are RangingTechnology integers and
+     * values are the calculated {@link Duration} for that technology's ranging interval.
      */
     @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_25Q4)
     @NonNull
