@@ -504,8 +504,9 @@ public final class RangingSession implements AutoCloseable {
          * @param deviceRole The new device role assigned to the controlee.
          *          Must be one of {@link #CONTROLEE_DEVICE_ROLE_INITIATOR} or
          *          {@link #CONTROLEE_DEVICE_ROLE_RESPONDER}.
+         *
+         * @hide
          */
-        @FlaggedApi(Flags.FLAG_UWB_FIRA_3_0_25Q4)
         default void onControleeRoleChanged(@ControleeDeviceRole int deviceRole) {}
 
         /**
@@ -1647,9 +1648,7 @@ public final class RangingSession implements AutoCloseable {
         }
 
         Log.v(mTag, "onControleeRoleChanged - sessionHandle: " + mSessionHandle);
-        if (Flags.uwbFira3025q4()) {
             executeCallback(() -> mCallback.onControleeRoleChanged(deviceRole));
-        }
     }
 
     /**

@@ -220,7 +220,6 @@ package android.uwb {
     method public default void onControleeAdded(@NonNull android.os.PersistableBundle);
     method public default void onControleeRemoveFailed(int, @NonNull android.os.PersistableBundle);
     method public default void onControleeRemoved(@NonNull android.os.PersistableBundle);
-    method @FlaggedApi("com.android.uwb.flags.uwb_fira_3_0_25q4") public default void onControleeRoleChanged(int);
     method public default void onDataReceiveFailed(@NonNull android.uwb.UwbAddress, int, @NonNull android.os.PersistableBundle);
     method public default void onDataReceived(@NonNull android.uwb.UwbAddress, @NonNull android.os.PersistableBundle, @NonNull byte[]);
     method public default void onDataSendFailed(@NonNull android.uwb.UwbAddress, int, @NonNull android.os.PersistableBundle);
