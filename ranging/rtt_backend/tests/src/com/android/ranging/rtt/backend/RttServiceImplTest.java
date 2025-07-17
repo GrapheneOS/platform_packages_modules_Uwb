@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 import android.app.AlarmManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.net.wifi.WifiManager;
 import android.net.wifi.aware.WifiAwareManager;
 
 import androidx.test.filters.SmallTest;
@@ -41,7 +42,7 @@ import org.mockito.MockitoAnnotations;
 @SmallTest
 public class RttServiceImplTest {
     private final int NAN_RTT = 2;
-
+    private final int STA_RTT = 4;
     @Mock
     private Context mMockContext;
 
@@ -54,7 +55,12 @@ public class RttServiceImplTest {
     @Mock
     private AlarmManager mMockAlarmManager;
 
+    @Mock
+    private WifiManager mMockWifiManager;
+
     private RttServiceImpl mRttService;
+
+    private RttServiceImpl mStaRttService;
 
     @Before
     public void setUp() {
@@ -62,9 +68,13 @@ public class RttServiceImplTest {
         when(mMockContext.getPackageManager()).thenReturn(mMockPackageManager);
         when(mMockPackageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_AWARE)).thenReturn(
                 true);
+        when(mMockPackageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_RTT)).thenReturn(
+                true);
         when(mMockContext.getSystemService(WifiAwareManager.class)).thenReturn(mMockAwareManager);
         when(mMockContext.getSystemService(AlarmManager.class)).thenReturn(mMockAlarmManager);
+        when(mMockContext.getSystemService(WifiManager.class)).thenReturn(mMockWifiManager);
         mRttService = new RttServiceImpl(mMockContext, NAN_RTT);
+        mStaRttService = new RttServiceImpl(mMockContext, STA_RTT);
     }
 
     @Test
@@ -73,5 +83,11 @@ public class RttServiceImplTest {
         assertThat(mRttService.getPublisher(mMockContext)).isNotNull();
         assertThat(mRttService.getSubscriber(mMockContext)).isNotNull();
         assertTrue(mRttService.isAvailable());
+    }
+
+    @Test
+    public void testStationRttServiceImpl() {
+        when(mMockWifiManager.isWifiEnabled()).thenReturn(true);
+        assertTrue(mStaRttService.isWifiAvailable());
     }
 }

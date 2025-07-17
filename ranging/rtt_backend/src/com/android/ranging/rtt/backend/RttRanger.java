@@ -107,8 +107,13 @@ public class RttRanger {
         if (!mWifiRttManager.isAvailable()) {
             Log.w(TAG, "WifiRttManager is not available");
             stopRanging();
+            if (mDeviceType != RttRangingDevice.DeviceType.STATION) {
+                mRttRangerListener.onRangingFailure(
+                        RttRangerListener.STATUS_CODE_FAIL_RTT_NOT_AVAILABLE);
+                return;
+            }
             mRttRangerListener.onRangingFailure(
-                    RttRangerListener.STATUS_CODE_FAIL_RTT_NOT_AVAILABLE);
+                    RttRangerListener.STATUS_CODE_FAIL_WIFI_NOT_AVAILABLE);
             return;
         }
         mLastRangingRequestTimestamp = new AtomicLong(SystemClock.elapsedRealtime());
@@ -181,6 +186,7 @@ public class RttRanger {
         int STATUS_CODE_FAIL_RESULT_EMPTY = 3;
         int STATUS_CODE_FAIL_RESULT_FAIL = 4;
         int STATUS_CODE_ERROR_STREAK_TIMEOUT = 5;
+        int STATUS_CODE_FAIL_WIFI_NOT_AVAILABLE = 6;
 
         void onRangingFailure(int code);
 

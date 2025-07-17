@@ -40,6 +40,7 @@ import android.ranging.DataNotificationConfig;
 import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
 import android.ranging.wifi.rtt.RttRangingParams;
+import android.ranging.wifi.rtt.RttStationRangingParams;
 
 import androidx.test.filters.SmallTest;
 
@@ -89,6 +90,10 @@ public class RttAdapterTest {
 
     private RttRangingParams mRttRangingParams = new RttRangingParams.Builder("unit_test_rtt")
             .setMatchFilter(new byte[]{0, 1})
+            .build();
+
+    private RttStationRangingParams mRttStationRangingParams = new
+            RttStationRangingParams.Builder("AA:BB:CC:AA:BB:CC")
             .build();
 
     @Mock
@@ -153,6 +158,23 @@ public class RttAdapterTest {
     }
 
     @Test
+    public void testStartWithValidStationConfig() {
+        RttConfig config = new RttConfig(
+                DEVICE_ROLE_INITIATOR,
+                mRttStationRangingParams,
+                mMockSessionConfig,
+                mMockRangingDevice
+        );
+        mRttAdapter.start(config, null, mMockCallback);
+
+        verify(mMockRttRangingDevice, times(1)).startRanging(any(), any());
+        verify(mMockSessionConfig).getRangingMeasurementsLimit();
+
+        mRttAdapter.stop();
+        verify(mMockRttRangingDevice, times(1)).stopRanging();
+    }
+
+    @Test
     public void testStartWithMeasurementsLimits() {
         RttConfig config = new RttConfig(
                 DEVICE_ROLE_INITIATOR,
@@ -203,6 +225,32 @@ public class RttAdapterTest {
     }
 
     @Test
+    public void testAppStationMovingBackgroundForeground() {
+        RttConfig config = new RttConfig(
+                DEVICE_ROLE_INITIATOR,
+                mRttStationRangingParams,
+                mMockSessionConfig,
+                mMockRangingDevice
+        );
+        mRttAdapter.start(config, mMockAttributionSource, mMockCallback);
+
+        verify(mMockRttRangingDevice, times(1)).startRanging(any(), any());
+
+        mRttAdapter.appMovedToBackground();
+
+        assertEquals(mRttAdapter.getDataNotificationManager().getCurrentConfig()
+                .getNotificationConfigType(), NOTIFICATION_CONFIG_DISABLE);
+
+        mRttAdapter.appMovedToForeground();
+
+        assertEquals(mRttAdapter.getDataNotificationManager().getCurrentConfig()
+                .getNotificationConfigType(), NOTIFICATION_CONFIG_ENABLE);
+
+        mRttAdapter.stop();
+        verify(mMockRttRangingDevice, times(1)).stopRanging();
+    }
+
+    @Test
     public void testAppInBackgroundTimeout() {
         RttConfig config = new RttConfig(
                 DEVICE_ROLE_RESPONDER,
@@ -215,4 +263,20 @@ public class RttAdapterTest {
         mRttAdapter.appInBackgroundTimeout();
         verify(mMockRttRangingDevice, times(1)).stopRanging();
     }
+
+    @Test
+    public void testAppStationInBackgroundTimeout() {
+        RttConfig config = new RttConfig(
+                DEVICE_ROLE_RESPONDER,
+                mRttStationRangingParams,
+                mMockSessionConfig,
+                mMockRangingDevice
+        );
+        mRttAdapter.start(config, mMockAttributionSource, mMockCallback);
+
+        mRttAdapter.appInBackgroundTimeout();
+        verify(mMockRttRangingDevice, times(1)).stopRanging();
+        verify(mMockRttRangingDevice, times(1)).stopRanging();
+    }
+
 }

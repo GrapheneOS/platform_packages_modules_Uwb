@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 
 import android.app.AlarmManager;
 import android.content.Context;
+import android.net.wifi.WifiManager;
 import android.net.wifi.aware.WifiAwareManager;
 import android.net.wifi.rtt.WifiRttManager;
 
@@ -61,8 +62,13 @@ public class RttRangingDeviceTest {
     @Mock
     private RttRangingSessionCallback mMockRttListener;
 
+    @Mock
+    private WifiManager mMockWifiManager;
+
 
     private RttRangingDevice mRangingDevice;
+
+    private RttRangingDevice mStationRangingDevice;
 
     @Before
     public void setUp() {
@@ -70,10 +76,13 @@ public class RttRangingDeviceTest {
         when(mMockContext.getSystemService(AlarmManager.class)).thenReturn(mMockAlarmManager);
         when(mMockContext.getSystemService(WifiAwareManager.class)).thenReturn(mMockAwareManager);
         when(mMockContext.getSystemService(WifiRttManager.class)).thenReturn(mMockRttManager);
+        when(mMockContext.getSystemService(WifiManager.class)).thenReturn(mMockWifiManager);
         when(mMockAwareManager.isAvailable()).thenReturn(true);
         when(mMockRttManager.isAvailable()).thenReturn(true);
 
         mRangingDevice = new RttRangingDevice(mMockContext, RttRangingDevice.DeviceType.SUBSCRIBER);
+        mStationRangingDevice = new RttRangingDevice(mMockContext,
+                                      RttRangingDevice.DeviceType.STATION);
     }
 
     @Test
@@ -84,4 +93,14 @@ public class RttRangingDeviceTest {
 
         verify(mMockAwareManager, times(1)).attach(any(), any());
     }
+
+    @Test
+    public void testWifiStaStartStopRanging() throws Exception {
+        ExecutorService executor = MoreExecutors.newDirectExecutorService();
+        mStationRangingDevice.setRangingParameters(new RttRangingParameters.Builder().build());
+        mStationRangingDevice.startRanging(mMockRttListener, executor);
+
+        mStationRangingDevice.stopRanging();
+    }
+
 }

@@ -27,6 +27,7 @@ import static android.ranging.oob.OobInitiatorRangingConfig.SECURITY_LEVEL_BASIC
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 import static android.ranging.uwb.UwbRangingParams.CONFIG_MULTICAST_DS_TWR;
 import static android.ranging.uwb.UwbRangingParams.DURATION_2_MS;
+import static android.ranging.wifi.rtt.RttStationRangingParams.CHANNEL_WIDTH_DEFAULT;
 
 import static com.android.dx.mockito.inline.extended.ExtendedMockito.verify;
 
@@ -62,6 +63,7 @@ import android.ranging.uwb.UwbRangingCapabilities;
 import android.ranging.uwb.UwbRangingParams;
 import android.ranging.wifi.rtt.RttRangingCapabilities;
 import android.ranging.wifi.rtt.RttRangingParams;
+import android.ranging.wifi.rtt.RttStationRangingParams;
 
 import androidx.test.filters.SmallTest;
 
@@ -123,6 +125,11 @@ public class RangingFrameworkTest {
                                         .setRangingUpdateRate(UPDATE_RATE_NORMAL)
                                         .setMatchFilter(new byte[]{})
                                         .setPeriodicRangingHwFeatureEnabled(false)
+                                        .build())
+                                 .setRttStationRangingParams(new RttStationRangingParams.Builder(
+                                         "AA:BB:CC:AA:BB:CC")
+                                        .setChannelWidth(CHANNEL_WIDTH_DEFAULT)
+                                        .setRangingUpdateRate(UPDATE_RATE_NORMAL)
                                         .build())
                                 .build())
                         .build())
@@ -264,6 +271,11 @@ public class RangingFrameworkTest {
         assertFalse(rttRangingParams.isPeriodicRangingHwFeatureEnabled());
         assertEquals(rttRangingParams.getRangingUpdateRate(), UPDATE_RATE_NORMAL);
 
+        RttStationRangingParams rttStationRangingParams = device.getRttStationRangingParams();
+        assertThat(rttStationRangingParams).isNotNull();
+        assertThat(rttStationRangingParams.getBssid()).isNotNull();
+        assertEquals(rttStationRangingParams.getChannelWidth(), CHANNEL_WIDTH_DEFAULT);
+        assertEquals(rttStationRangingParams.getRangingUpdateRate(), UPDATE_RATE_NORMAL);
 
         mRangingSession.start(rangingPreference);
         verify(mMockRangingAdapter, times(1)).startRanging(any(), any(), any(), any());

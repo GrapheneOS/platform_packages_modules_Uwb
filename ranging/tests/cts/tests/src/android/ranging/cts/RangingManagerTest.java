@@ -58,6 +58,7 @@ import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
+import android.net.wifi.rtt.WifiRttManager;
 import android.net.wifi.aware.WifiAwareManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -87,6 +88,8 @@ import android.ranging.uwb.UwbRangingCapabilities;
 import android.ranging.uwb.UwbRangingParams;
 import android.ranging.wifi.rtt.RttRangingCapabilities;
 import android.ranging.wifi.rtt.RttRangingParams;
+import android.ranging.wifi.rtt.RttStationRangingParams;
+import android.ranging.wifi.rtt.RttStationRangingCapabilities;
 import android.util.Log;
 import android.util.Range;
 import android.uwb.UwbManager;
@@ -157,6 +160,10 @@ public class RangingManagerTest {
         if (callback.mRangingCapabilities.getTechnologyAvailability().get(RangingManager.BLE_RSSI)
                 != NOT_SUPPORTED) {
             mSupportedTechnologies.add(RangingManager.BLE_RSSI);
+        }
+        if (callback.mRangingCapabilities.getTechnologyAvailability().get(
+                RangingManager.WIFI_STA_RTT) != NOT_SUPPORTED) {
+            mSupportedTechnologies.add(RangingManager.WIFI_STA_RTT);
         }
         assumeTrue(!mSupportedTechnologies.isEmpty());
     }
@@ -232,6 +239,24 @@ public class RangingManagerTest {
                         receiver.waitForStateChange());
                 assertTrue("Wi-Fi Aware is not available (should be)",
                         wifiAwareManager.isAvailable());
+            }
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    private void enableWifi() throws InterruptedException {
+        assertTrue("Wi-Fi Ranging requires Location to be Enabled",
+                (mContext.getSystemService(LocationManager.class).isLocationEnabled()));
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        uiAutomation.adoptShellPermissionIdentity();
+        try {
+            WifiManager wifiManager = mContext.getSystemService(WifiManager.class);
+            assertNotNull("Wi-Fi Manager", wifiManager);
+
+            // Turn on Wi-Fi
+            if (!wifiManager.isWifiEnabled()) {
+                wifiManager.setWifiEnabled(true);
             }
         } finally {
             uiAutomation.dropShellPermissionIdentity();
@@ -682,6 +707,9 @@ public class RangingManagerTest {
         if (mSupportedTechnologies.contains(RangingManager.WIFI_NAN_RTT)) {
             enableWifiNanRtt();
         }
+        if (mSupportedTechnologies.contains(RangingManager.WIFI_STA_RTT)) {
+            enableWifi();
+        }
 
         CapabilitiesCallback callback = new CapabilitiesCallback(new CountDownLatch(1));
         mRangingManager.registerCapabilitiesCallback(Executors.newSingleThreadExecutor(),
@@ -725,6 +753,11 @@ public class RangingManagerTest {
             boolean unused = rttRangingCapabilities.hasPeriodicRangingHardwareFeature();
         }
 
+        if (callback.mRangingCapabilities.getTechnologyAvailability().get(
+                RangingManager.WIFI_STA_RTT) == ENABLED) {
+            RttStationRangingCapabilities rttStationRangingCapabilities =
+                    callback.mRangingCapabilities.getRttStationRangingCapabilities();
+        }
         mRangingManager.unregisterCapabilitiesCallback(callback);
 
         uiAutomation.dropShellPermissionIdentity();
@@ -1185,6 +1218,68 @@ public class RangingManagerTest {
 
         assertEquals(handle.getRangingDevice(), config.getDeviceHandle().getRangingDevice());
 
+        uiAutomation.dropShellPermissionIdentity();
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_updates_25q4")
+    public void testRttStationRanging() throws InterruptedException {
+        assumeTrue(mSupportedTechnologies.contains(RangingManager.WIFI_STA_RTT));
+        enableWifi();
+        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
+        uiAutomation.adoptShellPermissionIdentity();
+
+        CapabilitiesCallback capabilitiesCallback = new CapabilitiesCallback(new CountDownLatch(1));
+        mRangingManager.registerCapabilitiesCallback(Executors.newSingleThreadExecutor(),
+                capabilitiesCallback);
+
+        assertThat(capabilitiesCallback.mCountDownLatch.await(2, TimeUnit.SECONDS)).isTrue();
+        assertThat(capabilitiesCallback.mOnCapabilitiesReceived).isTrue();
+        assertThat(capabilitiesCallback.mRangingCapabilities).isNotNull();
+        assertThat(
+                capabilitiesCallback.mRangingCapabilities.getTechnologyAvailability())
+                .isNotNull();
+
+        WifiRttManager mWifiRttManager = mContext.getSystemService(WifiRttManager.class);
+        assertThat(mWifiRttManager).isNotNull();
+        RawRangingDevice rawRangingDevice = new RawRangingDevice.Builder()
+                .setRangingDevice(new RangingDevice.Builder().build())
+                .setRttStationRangingParams(
+                        new RttStationRangingParams.Builder("AA:BB:CC:AA:BB:CC").build())
+                .build();
+
+        RangingPreference preference = new RangingPreference.Builder(DEVICE_ROLE_INITIATOR,
+                new RawInitiatorRangingConfig.Builder()
+                        .addRawRangingDevice(rawRangingDevice)
+                        .build())
+                .build();
+
+        RawInitiatorRangingConfig config = (RawInitiatorRangingConfig)
+                preference.getRangingParams();
+        assertThat(rawRangingDevice).isNotNull();
+        assertThat(rawRangingDevice.getRangingDevice()).isNotNull();
+
+        RttStationRangingParams params = rawRangingDevice.getRttStationRangingParams();
+        assertThat(params).isNotNull();
+        assertThat(params.getBssid()).isNotNull();
+        assertEquals(params.getRangingUpdateRate(), UPDATE_RATE_NORMAL);
+
+        RangingSessionCallback callback = new RangingSessionCallback();
+        RangingSession rangingSession = mRangingManager.createRangingSession(
+                MoreExecutors.directExecutor(), callback);
+        assertThat(rangingSession).isNotNull();
+
+        rangingSession.start(preference);
+        //assertThat(callback.mOnOpenedCalled.await(2, TimeUnit.SECONDS)).isTrue();
+
+        Thread.sleep(1000);
+        rangingSession.stop();
+        //assertThat(callback.mOnClosedCalled.await(2, TimeUnit.SECONDS)).isTrue();
+
+        Thread.sleep(1000);
+
+        mRangingManager.unregisterCapabilitiesCallback(capabilitiesCallback);
         uiAutomation.dropShellPermissionIdentity();
     }
 
