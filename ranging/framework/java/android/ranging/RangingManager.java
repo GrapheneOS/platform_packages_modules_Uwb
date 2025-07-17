@@ -16,15 +16,19 @@
 
 package android.ranging;
 
+import static android.annotation.RestrictedForEnvironment.ENVIRONMENT_SDK_RUNTIME;
+
 import android.annotation.CallbackExecutor;
 import android.annotation.FlaggedApi;
 import android.annotation.IntDef;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.RequiresNoPermission;
+import android.annotation.RestrictedForEnvironment;
 import android.annotation.SystemService;
 import android.content.AttributionSource;
 import android.content.Context;
+import android.os.Build;
 
 import com.android.ranging.flags.Flags;
 
@@ -46,6 +50,8 @@ import java.util.concurrent.Executor;
  *
  */
 
+@RestrictedForEnvironment(
+        environments = ENVIRONMENT_SDK_RUNTIME, from = Build.VERSION_CODES.BAKLAVA)
 @SystemService(Context.RANGING_SERVICE)
 @FlaggedApi(Flags.FLAG_RANGING_STACK_ENABLED)
 public final class RangingManager {

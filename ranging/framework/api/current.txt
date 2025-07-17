@@ -72,7 +72,7 @@ package android.ranging {
     method @NonNull public android.ranging.RangingDevice.Builder setUuid(@NonNull java.util.UUID);
   }
 
-  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") public final class RangingManager {
+  @FlaggedApi("com.android.ranging.flags.ranging_stack_enabled") @RestrictedForEnvironment(environments=android.annotation.RestrictedForEnvironment.ENVIRONMENT_SDK_RUNTIME, from=android.os.Build.VERSION_CODES.BAKLAVA) public final class RangingManager {
     method @Nullable public android.ranging.RangingSession createRangingSession(@NonNull java.util.concurrent.Executor, @NonNull android.ranging.RangingSession.Callback);
     method @NonNull public void registerCapabilitiesCallback(@NonNull java.util.concurrent.Executor, @NonNull android.ranging.RangingManager.RangingCapabilitiesCallback);
     method @NonNull public void unregisterCapabilitiesCallback(@NonNull android.ranging.RangingManager.RangingCapabilitiesCallback);
