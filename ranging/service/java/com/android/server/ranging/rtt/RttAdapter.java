@@ -259,8 +259,8 @@ public class RttAdapter implements RangingAdapter {
             }
             RangingData.Builder dataBuilder = new RangingData.Builder()
                     .setRangingTechnology(mTech == RangingTechnology.RTT_STATION
-                            ? RangingManager.WIFI_NAN_RTT
-                            : RangingManager.WIFI_STA_RTT)
+                            ? RangingManager.WIFI_STA_RTT
+                            : RangingManager.WIFI_NAN_RTT)
                     .setDistance(new RangingMeasurement.Builder()
                             .setMeasurement(position.getDistanceMeters())
                             .build())
