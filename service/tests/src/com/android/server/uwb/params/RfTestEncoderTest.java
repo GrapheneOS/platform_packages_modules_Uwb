@@ -76,7 +76,7 @@ public class RfTestEncoderTest {
                     .setStsIndexAutoIncr(0)
                     .setStsDetectBitmap(0);
 
-    private static final int TEST_RFTEST_OPEN_SESSION_PARAMS_TLV_NUMBER = 14;
+    private static final int TEST_RFTEST_OPEN_SESSION_PARAMS_TLV_NUMBER = 15;
     private static final int TEST_RFTEST_PARAMS_TLV_NUMBER = 10;
 
     private static final String CHANNEL_NUMBER_TLV = "040105";
@@ -93,6 +93,7 @@ public class RfTestEncoderTest {
     private static final String PREAMBLE_DURATION_TLV = "170100";
     private static final String PRF_MODE_TLV = "1F0101";
     private static final String NUMBER_OF_STS_SEGMENTS_TLV = "290101";
+    private static final String DEST_MAC_ADDRESS_TLV = "07020406";
 
     private static final byte[] TEST_RFTEST_OPEN_SESSION_PARAMS_TLV_DATA =
             UwbUtil.getByteArray(CHANNEL_NUMBER_TLV
@@ -108,7 +109,8 @@ public class RfTestEncoderTest {
                     + PSDU_DATA_RATE_TLV
                     + PREAMBLE_DURATION_TLV
                     + PRF_MODE_TLV
-                    + NUMBER_OF_STS_SEGMENTS_TLV);
+                    + NUMBER_OF_STS_SEGMENTS_TLV
+                    + DEST_MAC_ADDRESS_TLV);
 
     private static final String NUM_PACKETS = "000764000000280010";
     private static final String T_GAP = "010180";
