@@ -27,7 +27,7 @@ import com.google.uwb.support.base.RequiredParam;
  * RF test notification for oem extension callback
 *
 * <p> This is passed as a bundle to oem extension API
-* {@link UwbManager.UwbOemExtensionCallback#onRfTestNotificationReceived(PersistableBundle)}.
+* {@link UwbManager.UwbOemExtensionCallback#onRangingReportReceived(RangingReport bundle)}.
 */
 public class RfTestNotification {
     private static final int BUNDLE_VERSION_1 = 1;
