@@ -117,32 +117,32 @@ impl<U: NotificationManager> NotificationDriver<U> {
             tokio::select! {
                 Some(ntf) = self.core_notification_receiver.recv() =>{
                     self.notification_manager.on_core_notification(ntf).unwrap_or_else(|e|{
-                        error!("NotificationDriver: CoreNotification callback error: {:?}",e);
+                        error!("NotificationDriver: CoreNotification callback error: {e:?}");
                     });
                 }
                 Some(ntf) = self.session_notification_receiver.recv() =>{
                     self.notification_manager.on_session_notification(ntf).unwrap_or_else(|e|{
-                        error!("NotificationDriver: SessionNotification callback error: {:?}",e);
+                        error!("NotificationDriver: SessionNotification callback error: {e:?}");
                     });
                 }
                 Some(ntf) = self.vendor_notification_receiver.recv() =>{
                     self.notification_manager.on_vendor_notification(ntf).unwrap_or_else(|e|{
-                        error!("NotificationDriver: RawUciMessage callback error: {:?}",e);
+                        error!("NotificationDriver: RawUciMessage callback error: {e:?}");
                 });
                 }
                 Some(data) = self.data_rcv_notification_receiver.recv() =>{
                     self.notification_manager.on_data_rcv_notification(data).unwrap_or_else(|e|{
-                        error!("NotificationDriver: OnDataRcv callback error: {:?}",e);
+                        error!("NotificationDriver: OnDataRcv callback error: {e:?}");
                 });
                 }
                 Some(data) = self.radar_data_rcv_notification_receiver.recv() =>{
                     self.notification_manager.on_radar_data_rcv_notification(data).unwrap_or_else(|e|{
-                        error!("NotificationDriver: OnRadarDataRcv callback error: {:?}",e);
+                        error!("NotificationDriver: OnRadarDataRcv callback error: {e:?}");
                 });
                 }
                 Some(ntf) = self.rf_test_notification_receiver.recv() =>{
                     self.notification_manager.on_rf_test_notification(ntf).unwrap_or_else(|e|{
-                        error!("NotificationDriver: RF notification callback error: {:?}",e);
+                        error!("NotificationDriver: RF notification callback error: {e:?}");
                 });
                 }
                 else =>{

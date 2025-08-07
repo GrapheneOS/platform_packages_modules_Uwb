@@ -110,7 +110,7 @@ impl UwbService {
             let actor_runtime = match Builder::new_current_thread().enable_all().build() {
                 Ok(ar) => ar,
                 Err(err) => {
-                    error!("Failed to build Tokio Runtime! {:?}", err);
+                    error!("Failed to build Tokio Runtime! {err:?}");
                     // unwrap safe since receiver is in scope
                     service_status_sender.send(false).unwrap();
                     return;
@@ -260,7 +260,7 @@ impl UwbService {
 
         self.runtime_handle.block_on(async move {
             result_receiver.await.unwrap_or_else(|e| {
-                error!("Failed to receive the result for cmd: {:?}", e);
+                error!("Failed to receive the result for cmd: {e:?}");
                 Err(Error::Unknown)
             })
         })
@@ -432,7 +432,7 @@ impl<C: UwbServiceCallback, U: UciManager> UwbServiceActor<C, U> {
     }
 
     async fn handle_core_notification(&mut self, notf: CoreNotification) {
-        debug!("Receive core notification: {:?}", notf);
+        debug!("Receive core notification: {notf:?}");
         match notf {
             CoreNotification::DeviceStatus(state) => {
                 if state == DeviceState::DeviceStateError {

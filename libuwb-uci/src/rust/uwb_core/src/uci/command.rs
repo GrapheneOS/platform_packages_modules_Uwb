@@ -357,17 +357,17 @@ fn build_raw_uci_cmd_packet(
     payload: Vec<u8>,
 ) -> Result<uwb_uci_packets::UciControlPacket> {
     let group_id = u8::try_from(gid).or(Err(0)).and_then(GroupId::try_from).map_err(|_| {
-        error!("Invalid GroupId: {}", gid);
+        error!("Invalid GroupId: {gid}");
         Error::BadParameters
     })?;
     let payload = if payload.is_empty() { None } else { Some(Bytes::from(payload)) };
     let opcode = u8::try_from(oid).map_err(|_| {
-        error!("Invalid opcod: {}", oid);
+        error!("Invalid opcod: {oid}");
         Error::BadParameters
     })?;
     let message_type =
         u8::try_from(mt).or(Err(0)).and_then(MessageType::try_from).map_err(|_| {
-            error!("Invalid MessageType: {}", mt);
+            error!("Invalid MessageType: {mt}");
             Error::BadParameters
         })?;
     match uwb_uci_packets::build_uci_control_packet(message_type, group_id, opcode, payload) {

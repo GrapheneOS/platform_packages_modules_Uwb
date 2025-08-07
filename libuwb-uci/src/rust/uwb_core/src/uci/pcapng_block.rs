@@ -203,7 +203,7 @@ impl Default for EnhancedPacketBlockBuilder {
             // as_micros return u128. However, u64 will not overflow until year 586524.
             Ok(duration) => duration.as_micros() as u64,
             Err(e) => {
-                debug!("UCI log: system time is before Unix Epoch: {:?}", e);
+                debug!("UCI log: system time is before Unix Epoch: {e:?}");
                 0u64
             }
         };

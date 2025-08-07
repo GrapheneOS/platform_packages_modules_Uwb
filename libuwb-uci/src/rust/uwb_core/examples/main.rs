@@ -57,7 +57,7 @@ fn main() {
 
             // UwbError is non_exhaustive so we need to add a wild branch here.
             // With this wild branch, adding a new enum field doesn't break the build.
-            _ => debug!("Received unknown error: {:?}", err),
+            _ => debug!("Received unknown error: {err:?}"),
         }
     }
 }

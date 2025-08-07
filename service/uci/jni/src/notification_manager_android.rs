@@ -298,13 +298,13 @@ impl NotificationManagerAndroid {
                     &[JValue::Object(env_class_name)],
                 )
                 .map_err(|e| {
-                    error!("UCI JNI: failed to find java class {}: {:?}", class_name, e);
+                    error!("UCI JNI: failed to find java class {class_name}: {e:?}");
                     e
                 })?;
             let jclass = match class_value.l() {
                 Ok(obj) => Ok(JClass::from(obj)),
                 Err(e) => {
-                    error!("UCI JNI: failed to find java class {}: {:?}", class_name, e);
+                    error!("UCI JNI: failed to find java class {class_name}: {e:?}");
                     Err(e)
                 }
             }?;
@@ -312,7 +312,7 @@ impl NotificationManagerAndroid {
             jclass_map.insert(
                 class_name.to_owned(),
                 env.new_global_ref(jclass).map_err(|e| {
-                    error!("UCI JNI: global reference conversion failed: {:?}", e);
+                    error!("UCI JNI: global reference conversion failed: {e:?}");
                     e
                 })?,
             );
@@ -327,9 +327,9 @@ impl NotificationManagerAndroid {
         sig: &str,
         args: &[jvalue],
     ) -> Result<JObject, JNIError> {
-        debug!("UCI JNI: callback {}", name);
+        debug!("UCI JNI: callback {name}");
         let type_signature = TypeSignature::from_str(sig).map_err(|e| {
-            error!("UCI JNI: Invalid type signature: {:?}", e);
+            error!("UCI JNI: Invalid type signature: {e:?}");
             e
         })?;
         if type_signature.args.len() != args.len() {
@@ -345,7 +345,7 @@ impl NotificationManagerAndroid {
             self.jmethod_id_map.insert(
                 name_signature.clone(),
                 self.env.get_method_id(self.callback_obj.as_obj(), name, sig).map_err(|e| {
-                    error!("UCI JNI: failed to get method: {:?}", e);
+                    error!("UCI JNI: failed to get method: {e:?}");
                     e
                 })?,
             );
@@ -358,7 +358,7 @@ impl NotificationManagerAndroid {
         ) {
             Ok(_) => Ok(JObject::null()),
             Err(e) => {
-                error!("UCI JNI: callback {} failed!", name);
+                error!("UCI JNI: callback {name} failed!");
                 Err(e)
             }
         }
@@ -526,7 +526,7 @@ impl NotificationManagerAndroid {
                 ],
             )
             .map_err(|e| {
-                error!("UCI JNI: measurement object creation failed: {:?}", e);
+                error!("UCI JNI: measurement object creation failed: {e:?}");
                 e
             })?;
         let measurement_count: i32 = match &range_data.ranging_measurements {
@@ -622,13 +622,13 @@ impl NotificationManagerAndroid {
                     ],
                 )
                 .map_err(|e| {
-                    error!("UCI JNI: measurement object creation failed: {:?}", e);
+                    error!("UCI JNI: measurement object creation failed: {e:?}");
                     e
                 })?;
             self.env
                 .set_object_array_element(measurements_jobjectarray, i as i32, measurement_jobject)
                 .map_err(|e| {
-                    error!("UCI JNI: measurement object copy failed: {:?}", e);
+                    error!("UCI JNI: measurement object copy failed: {e:?}");
                     e
                 })?;
         }
@@ -667,7 +667,7 @@ impl NotificationManagerAndroid {
                 ],
             )
             .map_err(|e| {
-                error!("UCI JNI: Ranging Data object creation failed: {:?}", e);
+                error!("UCI JNI: Ranging Data object creation failed: {e:?}");
                 e
             })?;
 
@@ -719,7 +719,7 @@ impl NotificationManagerAndroid {
                 ],
             )
             .map_err(|e| {
-                error!("UCI JNI: measurement object creation failed: {:?}", e);
+                error!("UCI JNI: measurement object creation failed: {e:?}");
                 e
             })?;
 
@@ -765,13 +765,13 @@ impl NotificationManagerAndroid {
                     ],
                 )
                 .map_err(|e| {
-                    error!("UCI JNI: measurement object creation failed: {:?}", e);
+                    error!("UCI JNI: measurement object creation failed: {e:?}");
                     e
                 })?;
             self.env
                 .set_object_array_element(measurements_jobjectarray, i as i32, measurement_jobject)
                 .map_err(|e| {
-                    error!("UCI JNI: measurement object copy failed: {:?}", e);
+                    error!("UCI JNI: measurement object copy failed: {e:?}");
                     e
                 })?;
         }
@@ -840,7 +840,7 @@ impl NotificationManagerAndroid {
                 ],
             )
             .map_err(|e| {
-                error!("UCI JNI: OwrAoA measurement jobject creation failed: {:?}", e);
+                error!("UCI JNI: OwrAoA measurement jobject creation failed: {e:?}");
                 e
             })?;
 
@@ -876,7 +876,7 @@ impl NotificationManagerAndroid {
                 ],
             )
             .map_err(|e| {
-                error!("UCI JNI: Ranging Data object creation failed: {:?}", e);
+                error!("UCI JNI: Ranging Data object creation failed: {e:?}");
                 e
             })?;
         let method_sig = "(L".to_owned() + UWB_RANGING_DATA_CLASS + ";)V";
@@ -970,7 +970,7 @@ impl NotificationManagerAndroid {
                 ],
             )
             .map_err(|e| {
-                error!("UCI JNI: Ranging Data object creation failed: {:?}", e);
+                error!("UCI JNI: Ranging Data object creation failed: {e:?}");
                 e
             })?;
         let method_sig = "(L".to_owned() + UWB_RANGING_DATA_CLASS + ";)V";
@@ -1350,7 +1350,7 @@ impl NotificationManager for NotificationManagerAndroid {
             }
         })
         .map_err(|e| {
-            error!("on_core_notification error: {:?}", e);
+            error!("on_core_notification error: {e:?}");
             UwbError::ForeignFunctionInterface
         })?;
 
@@ -1432,8 +1432,7 @@ impl NotificationManager for NotificationManagerAndroid {
                 SessionNotification::DataCredit { session_token, credit_availability } => {
                     error!(
                         "UCI JNI: Received unexpected DataCredit notification for \
-                            session_token {}, credit_availability {:?}",
-                        session_token, credit_availability
+                            session_token {session_token}, credit_availability {credit_availability:?}"
                     );
                     Err(JNIError::InvalidCtorReturn)
                 }
@@ -1463,7 +1462,7 @@ impl NotificationManager for NotificationManagerAndroid {
             }
         })
         .map_err(|e| {
-            error!("on_session_notification error {:?}", e);
+            error!("on_session_notification error {e:?}");
             UwbError::ForeignFunctionInterface
         })?;
         Ok(())
@@ -1503,7 +1502,7 @@ impl NotificationManager for NotificationManagerAndroid {
             )
         })
         .map_err(|e| {
-            error!("on_vendor_notification error: {:?}", e);
+            error!("on_vendor_notification error: {e:?}");
             UwbError::ForeignFunctionInterface
         })?;
         Ok(())
@@ -1590,7 +1589,7 @@ impl NotificationManager for NotificationManagerAndroid {
             }
         })
         .map_err(|e| {
-            error!("on_data_rcv_notification error: {:?}", e);
+            error!("on_data_rcv_notification error: {e:?}");
             UwbError::ForeignFunctionInterface
         })?;
 
@@ -1637,10 +1636,7 @@ impl NotificationManager for NotificationManagerAndroid {
                     ],
                 )
                 .map_err(|e| {
-                    error!(
-                        "UCI JNI: zero initiated RadarSweepData object creation failed: {:?}",
-                        e
-                    );
+                    error!("UCI JNI: zero initiated RadarSweepData object creation failed: {e:?}");
                     e
                 })?;
 
@@ -1652,7 +1648,7 @@ impl NotificationManager for NotificationManagerAndroid {
                     zero_initiated_sweep_data,
                 )
                 .map_err(|e| {
-                    error!("UCI JNI: RadarSweepData object array creation failed: {:?}", e);
+                    error!("UCI JNI: RadarSweepData object array creation failed: {e:?}");
                     e
                 })?;
 
@@ -1678,7 +1674,7 @@ impl NotificationManager for NotificationManagerAndroid {
                         ],
                     )
                     .map_err(|e| {
-                        error!("UCI JNI: RadarSweepData object creation failed: {:?}", e);
+                        error!("UCI JNI: RadarSweepData object creation failed: {e:?}");
                         e
                     })?;
 
@@ -1689,10 +1685,7 @@ impl NotificationManager for NotificationManagerAndroid {
                         sweep_data_jobject,
                     )
                     .map_err(|e| {
-                        error!(
-                            "UCI JNI: sweep_data_jobject copy into jobjectarray failed: {:?}",
-                            e
-                        );
+                        error!("UCI JNI: sweep_data_jobject copy into jobjectarray failed: {e:?}");
                         e
                     })?;
             }
@@ -1725,7 +1718,7 @@ impl NotificationManager for NotificationManagerAndroid {
                     ],
                 )
                 .map_err(|e| {
-                    error!("UCI JNI: UwbRadarData object creation failed: {:?}", e);
+                    error!("UCI JNI: UwbRadarData object creation failed: {e:?}");
                     e
                 })?;
 
@@ -1738,7 +1731,7 @@ impl NotificationManager for NotificationManagerAndroid {
             )
         })
         .map_err(|e| {
-            error!("on_radar_data_rcv_notification error: {:?}", e);
+            error!("on_radar_data_rcv_notification error: {e:?}");
             UwbError::ForeignFunctionInterface
         })?;
         Ok(())
@@ -1765,7 +1758,7 @@ impl NotificationManager for NotificationManagerAndroid {
             RfTestNotification::TestSsTwrNtf(data) => self.on_ss_twr_notification(data),
         })
         .map_err(|e| {
-            error!("on_rf_test_notification error: {:?}", e);
+            error!("on_rf_test_notification error: {e:?}");
             UwbError::ForeignFunctionInterface
         })?;
         Ok(())

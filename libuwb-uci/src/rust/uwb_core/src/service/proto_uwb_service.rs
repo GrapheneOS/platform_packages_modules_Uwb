@@ -96,7 +96,7 @@ impl ProtoUwbService {
             })?
             .try_into()
             .map_err(|e| {
-                error!("Failed to convert to AppConfigParams: {}", e);
+                error!("Failed to convert to AppConfigParams: {e}");
                 Error::BadParameters
             })?;
 
@@ -109,7 +109,7 @@ impl ProtoUwbService {
                         .session_type
                         .enum_value()
                         .map_err(|e| {
-                            error!("Failed to convert session_type: {:?}", e);
+                            error!("Failed to convert session_type: {e:?}");
                             Error::BadParameters
                         })?
                         .into(),
@@ -159,7 +159,7 @@ impl ProtoUwbService {
             })?
             .try_into()
             .map_err(|e| {
-                error!("Failed to convert to AppConfigParams: {}", e);
+                error!("Failed to convert to AppConfigParams: {e}");
                 Error::BadParameters
             })?;
 
@@ -175,7 +175,7 @@ impl ProtoUwbService {
         let mut controlees = vec![];
         for controlee in request.controlees.into_iter() {
             let controlee = controlee.try_into().map_err(|e| {
-                error!("Failed to convert Controlee: {:?}", e);
+                error!("Failed to convert Controlee: {e:?}");
                 Error::BadParameters
             })?;
             controlees.push(controlee);
@@ -190,7 +190,7 @@ impl ProtoUwbService {
                         .action
                         .enum_value()
                         .map_err(|e| {
-                            error!("Failed to convert action: {:?}", e);
+                            error!("Failed to convert action: {e:?}");
                             Error::BadParameters
                         })?
                         .into(),
@@ -258,7 +258,7 @@ impl ProtoUwbService {
                 resp.params = Some(params.into()).into();
             }
             Ok(params) => {
-                error!("Received non-Fira session parameters: {:?}", params);
+                error!("Received non-Fira session parameters: {params:?}");
                 resp.status = ProtoStatus::UNKNOWN.into();
             }
             Err(e) => {
@@ -291,7 +291,7 @@ pub trait ProtoUwbServiceCallback: 'static {
 
 impl<C: ProtoUwbServiceCallback> UwbServiceCallback for C {
     fn on_service_reset(&mut self, success: bool) {
-        debug!("UwbService is reset, success: {}", success);
+        debug!("UwbService is reset, success: {success}");
         let mut msg = ServiceResetSignal::new();
         msg.success = success;
         if let Ok(payload) = write_to_bytes(&msg) {
@@ -302,7 +302,7 @@ impl<C: ProtoUwbServiceCallback> UwbServiceCallback for C {
     }
 
     fn on_uci_device_status_changed(&mut self, state: DeviceState) {
-        debug!("UCI device status is changed: {:?}", state);
+        debug!("UCI device status is changed: {state:?}");
         let mut msg = UciDeviceStatusChangedSignal::new();
         msg.state = EnumOrUnknown::new(state.into());
         if let Ok(payload) = write_to_bytes(&msg) {
@@ -319,8 +319,7 @@ impl<C: ProtoUwbServiceCallback> UwbServiceCallback for C {
         reason_code: ReasonCode,
     ) {
         debug!(
-            "Session {:?}'s state is changed to {:?}, reason: {:?}",
-            session_id, session_state, reason_code
+            "Session {session_id:?}'s state is changed to {session_state:?}, reason: {reason_code:?}"
         );
         let mut msg = SessionStateChangedSignal::new();
         msg.session_id = session_id;
@@ -334,7 +333,7 @@ impl<C: ProtoUwbServiceCallback> UwbServiceCallback for C {
     }
 
     fn on_range_data_received(&mut self, session_id: SessionId, range_data: SessionRangeData) {
-        debug!("Received range data {:?} from Session {:?}", range_data, session_id);
+        debug!("Received range data {range_data:?} from Session {session_id:?}");
         let mut msg = RangeDataReceivedSignal::new();
         msg.session_id = session_id;
         msg.range_data = Some(range_data.into()).into();
@@ -346,7 +345,7 @@ impl<C: ProtoUwbServiceCallback> UwbServiceCallback for C {
     }
 
     fn on_vendor_notification_received(&mut self, gid: u32, oid: u32, payload: Vec<u8>) {
-        debug!("Received vendor notification: gid={}, oid={}, payload={:?}", gid, oid, payload);
+        debug!("Received vendor notification: gid={gid}, oid={oid}, payload={payload:?}");
         let mut msg = VendorNotificationReceivedSignal::new();
         msg.gid = gid;
         msg.oid = oid;

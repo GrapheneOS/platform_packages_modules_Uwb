@@ -53,7 +53,7 @@ pub fn validate(value: bool, err_msg: &str) -> Option<()> {
     match value {
         true => Some(()),
         false => {
-            error!("{}", err_msg);
+            error!("{err_msg}");
             None
         }
     }

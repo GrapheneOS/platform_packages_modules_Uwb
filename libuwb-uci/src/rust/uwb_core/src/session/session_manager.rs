@@ -135,7 +135,7 @@ impl SessionManager {
             Error::Unknown
         })?;
         result_receiver.await.unwrap_or_else(|e| {
-            error!("Failed to receive the result for cmd: {:?}", e);
+            error!("Failed to receive the result for cmd: {e:?}");
             Err(Error::Unknown)
         })
     }
@@ -197,21 +197,18 @@ impl<T: UciManager> SessionManagerActor<T> {
         match cmd {
             SessionCommand::InitSession { session_id, session_type, params } => {
                 if self.active_sessions.contains_key(&session_id) {
-                    warn!("Session {} already exists", session_id);
+                    warn!("Session {session_id} already exists");
                     let _ = result_sender.send(Err(Error::DuplicatedSessionId));
                     return;
                 }
                 if self.active_sessions.len() == MAX_SESSION_COUNT {
-                    warn!("The amount of active sessions already reached {}", MAX_SESSION_COUNT);
+                    warn!("The amount of active sessions already reached {MAX_SESSION_COUNT}");
                     let _ = result_sender.send(Err(Error::MaxSessionsExceeded));
                     return;
                 }
 
                 if !params.is_type_matched(session_type) {
-                    warn!(
-                        "session_type {:?} doesn't match with the params {:?}",
-                        session_type, params
-                    );
+                    warn!("session_type {session_type:?} doesn't match with the params {params:?}");
                     let _ = result_sender.send(Err(Error::BadParameters));
                     return;
                 }
@@ -227,7 +224,7 @@ impl<T: UciManager> SessionManagerActor<T> {
             SessionCommand::DeinitSession { session_id } => {
                 match self.active_sessions.remove(&session_id) {
                     None => {
-                        warn!("Session {} doesn't exist", session_id);
+                        warn!("Session {session_id} doesn't exist");
                         let _ = result_sender.send(Err(Error::BadParameters));
                     }
                     Some(mut session) => {
@@ -238,7 +235,7 @@ impl<T: UciManager> SessionManagerActor<T> {
             SessionCommand::StartRanging { session_id } => {
                 match self.active_sessions.get_mut(&session_id) {
                     None => {
-                        warn!("Session {} doesn't exist", session_id);
+                        warn!("Session {session_id} doesn't exist");
                         let _ = result_sender.send(Err(Error::BadParameters));
                     }
                     Some(session) => {
@@ -249,7 +246,7 @@ impl<T: UciManager> SessionManagerActor<T> {
             SessionCommand::StopRanging { session_id } => {
                 match self.active_sessions.get_mut(&session_id) {
                     None => {
-                        warn!("Session {} doesn't exist", session_id);
+                        warn!("Session {session_id} doesn't exist");
                         let _ = result_sender.send(Err(Error::BadParameters));
                     }
                     Some(session) => {
@@ -260,7 +257,7 @@ impl<T: UciManager> SessionManagerActor<T> {
             SessionCommand::Reconfigure { session_id, params } => {
                 match self.active_sessions.get_mut(&session_id) {
                     None => {
-                        warn!("Session {} doesn't exist", session_id);
+                        warn!("Session {session_id} doesn't exist");
                         let _ = result_sender.send(Err(Error::BadParameters));
                     }
                     Some(session) => {
@@ -271,7 +268,7 @@ impl<T: UciManager> SessionManagerActor<T> {
             SessionCommand::UpdateControllerMulticastList { session_id, action, controlees } => {
                 match self.active_sessions.get_mut(&session_id) {
                     None => {
-                        warn!("Session {} doesn't exist", session_id);
+                        warn!("Session {session_id} doesn't exist");
                         let _ = result_sender.send(Err(Error::BadParameters));
                     }
                     Some(session) => {
@@ -282,7 +279,7 @@ impl<T: UciManager> SessionManagerActor<T> {
             SessionCommand::GetParams { session_id } => {
                 match self.active_sessions.get_mut(&session_id) {
                     None => {
-                        warn!("Session {} doesn't exist", session_id);
+                        warn!("Session {session_id} doesn't exist");
                         let _ = result_sender.send(Err(Error::BadParameters));
                     }
                     Some(session) => {
@@ -305,14 +302,13 @@ impl<T: UciManager> SessionManagerActor<T> {
                     Ok(r) => r,
                     Err(_) => {
                         error!(
-                            "Received unknown reason_code {:?} in UciSessionNotification",
-                            reason_code
+                            "Received unknown reason_code {reason_code:?} in UciSessionNotification"
                         );
                         return;
                     }
                 };
                 if session_state == SessionState::SessionStateDeinit {
-                    debug!("Session {} is deinitialized", session_token);
+                    debug!("Session {session_token} is deinitialized");
                     let _ = self.active_sessions.remove(&session_token);
                     let _ = self.session_notf_sender.send(SessionNotification::SessionState {
                         session_id: session_token,
@@ -333,8 +329,7 @@ impl<T: UciManager> SessionManagerActor<T> {
                     }
                     None => {
                         warn!(
-                            "Received notification of the unknown Session {}: {:?}, {:?}",
-                            session_token, session_state, reason_code
+                            "Received notification of the unknown Session {session_token}: {session_state:?}, {reason_code:?}"
                         );
                     }
                 }
@@ -348,8 +343,7 @@ impl<T: UciManager> SessionManagerActor<T> {
                     .on_controller_multicast_list_updated(ControleeStatusList::V1(status_list)),
                 None => {
                     warn!(
-                        "Received the notification of the unknown Session {}: {:?}",
-                        session_token, status_list
+                        "Received the notification of the unknown Session {session_token}: {status_list:?}"
                     );
                 }
             },
@@ -361,8 +355,7 @@ impl<T: UciManager> SessionManagerActor<T> {
                     .on_controller_multicast_list_updated(ControleeStatusList::V2(status_list)),
                 None => {
                     warn!(
-                        "Received the notification of the unknown Session {}: {:?}",
-                        session_token, status_list
+                        "Received the notification of the unknown Session {session_token}: {status_list:?}"
                     );
                 }
             },
@@ -373,7 +366,7 @@ impl<T: UciManager> SessionManagerActor<T> {
                         range_data,
                     });
                 } else {
-                    warn!("Received range data of the unknown Session: {:?}", range_data);
+                    warn!("Received range data of the unknown Session: {range_data:?}");
                 }
             }
             UciSessionNotification::DataCredit { session_token, credit_availability: _ } => {
@@ -386,8 +379,7 @@ impl<T: UciManager> SessionManagerActor<T> {
                     }
                     None => {
                         warn!(
-                            "Received the Data Credit notification for an unknown Session {}",
-                            session_token
+                            "Received the Data Credit notification for an unknown Session {session_token}"
                         );
                     }
                 }
@@ -407,8 +399,7 @@ impl<T: UciManager> SessionManagerActor<T> {
                     }
                     None => {
                         warn!(
-                            "Received a Data Transfer Status notification for unknown Session {}",
-                            connect_id
+                            "Received a Data Transfer Status notification for unknown Session {connect_id}"
                         );
                     }
                 }
@@ -422,8 +413,7 @@ impl<T: UciManager> SessionManagerActor<T> {
                     }
                     None => {
                         warn!(
-                            "Received the Role Change Notification for an unknown Session {}",
-                            session_token
+                            "Received the Role Change Notification for an unknown Session {session_token}"
                         );
                     }
                 }
@@ -438,8 +428,7 @@ impl<T: UciManager> SessionManagerActor<T> {
                     None => {
                         warn!(
                             "Received data transfer phase configuration notification of the unknown
-                            Session {:?}",
-                            status
+                            Session {status:?}"
                         );
                     }
                 }
@@ -454,8 +443,7 @@ impl<T: UciManager> SessionManagerActor<T> {
                     }
                     None => {
                         warn!(
-                            "Received a Create Logical Link Status notification for unknown Session {}",
-                            connect_id
+                            "Received a Create Logical Link Status notification for unknown Session {connect_id}"
                         );
                     }
                 }
@@ -470,8 +458,7 @@ impl<T: UciManager> SessionManagerActor<T> {
                     }
                     None => {
                         warn!(
-                            "Received a Controlle Logical Link Closed Status notification for unknown Session {}",
-                            connect_id
+                            "Received a Controlle Logical Link Closed Status notification for unknown Session {connect_id}"
                         );
                     }
                 }
@@ -491,8 +478,7 @@ impl<T: UciManager> SessionManagerActor<T> {
                     }
                     None => {
                         warn!(
-                            "Received a Controlee Logical Link Created notification for unknown Session {}",
-                            session_token
+                            "Received a Controlee Logical Link Created notification for unknown Session {session_token}"
                         );
                     }
                 }

@@ -274,7 +274,7 @@ impl LogWriter {
         match log_sender.send(PcapngLoggerMessage::ByteStream(bytes)) {
             Ok(_) => Some(()),
             Err(e) => {
-                error!("UCI log: LogWriterActor dead unexpectedly, sender error: {:?}", e);
+                error!("UCI log: LogWriterActor dead unexpectedly, sender error: {e:?}");
                 self.log_sender = None;
                 None
             }
@@ -287,7 +287,7 @@ impl LogWriter {
         match log_sender.send(PcapngLoggerMessage::Flush(flush_sender)) {
             Ok(_) => Some(flush_receiver),
             Err(e) => {
-                error!("UCI log: LogWriterActor dead unexpectedly, sender error: {:?}", e);
+                error!("UCI log: LogWriterActor dead unexpectedly, sender error: {e:?}");
                 self.log_sender = None;
                 None
             }
@@ -299,7 +299,7 @@ impl LogWriter {
         match log_sender.send(PcapngLoggerMessage::NewChip((chip_id, interface_id))) {
             Ok(_) => Some(()),
             Err(e) => {
-                error!("UCI log: LogWriterActor dead unexpectedly, sender error: {:?}", e);
+                error!("UCI log: LogWriterActor dead unexpectedly, sender error: {e:?}");
                 self.log_sender = None;
                 None
             }
