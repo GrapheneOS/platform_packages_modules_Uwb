@@ -1275,7 +1275,7 @@ fn native_set_country_code(
     let uci_manager = Dispatcher::get_uci_manager(env, obj, chip_id)?;
     let country_code =
         env.convert_byte_array(country_code).map_err(|_| Error::ForeignFunctionInterface)?;
-    debug!("Country code: {:?}", country_code);
+    debug!("Country code: {country_code:?}");
     if country_code.len() != 2 {
         return Err(Error::BadParameters);
     }
@@ -1717,7 +1717,7 @@ pub extern "system" fn Java_com_android_server_uwb_jni_NativeUwbManager_nativeCr
     chip_id: JString,
 ) -> jobject {
     let func_name = function_name!();
-    debug!("{}: enter", func_name);
+    debug!("{func_name}: enter");
     match option_result_helper(
         native_create_logical_layer(
             env,

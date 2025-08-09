@@ -47,7 +47,7 @@ impl TryFrom<(uwb_uci_packets::UciControlPacket, UCIMajorVersion, bool, bool)> f
                 ))
             }
             _ => {
-                error!("Unknown packet for converting to UciMessage: {:?}", packet);
+                error!("Unknown packet for converting to UciMessage: {packet:?}");
                 Err(Error::Unknown)
             }
         }

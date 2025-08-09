@@ -215,7 +215,7 @@ impl<T: UciManager> UwbSessionActor<T> {
                         .session_get_app_config(self.session_id, vec![])
                         .await
                         .map_err(|e| {
-                            error!("Failed to get CCC app config after start ranging: {:?}", e);
+                            error!("Failed to get CCC app config after start ranging: {e:?}");
                             e
                         })?;
                     let config_map = HashMap::from_iter(tlvs.into_iter().map(|tlv| {
@@ -267,7 +267,7 @@ impl<T: UciManager> UwbSessionActor<T> {
                 if let Some(tlvs) = params.generate_updated_tlvs(prev_params, state) {
                     tlvs
                 } else {
-                    error!("Cannot update the app config at state {:?}: {:?}", state, params);
+                    error!("Cannot update the app config at state {state:?}: {params:?}");
                     return Err(Error::BadParameters);
                 }
             }
@@ -303,7 +303,7 @@ impl<T: UciManager> UwbSessionActor<T> {
 
         let state = *self.state_receiver.borrow();
         if !matches!(state, SessionState::SessionStateIdle | SessionState::SessionStateActive) {
-            error!("Cannot update multicast list at state {:?}", state);
+            error!("Cannot update multicast list at state {state:?}");
             return Err(Error::BadParameters);
         }
 
@@ -335,7 +335,7 @@ impl<T: UciManager> UwbSessionActor<T> {
                 ControleeStatusList::V1(res) => {
                     for result in res.iter() {
                         if result.status != MulticastUpdateStatusCode::StatusOkMulticastListUpdate {
-                            error!("Failed to update multicast list: {:?}", result);
+                            error!("Failed to update multicast list: {result:?}");
                             return Err(Error::Unknown);
                         }
                     }
@@ -343,7 +343,7 @@ impl<T: UciManager> UwbSessionActor<T> {
                 ControleeStatusList::V2(res) => {
                     for result in res.iter() {
                         if result.status != MulticastUpdateStatusCode::StatusOkMulticastListUpdate {
-                            error!("Failed to update multicast list: {:?}", result);
+                            error!("Failed to update multicast list: {result:?}");
                             return Err(Error::Unknown);
                         }
                     }
@@ -371,8 +371,7 @@ impl<T: UciManager> UwbSessionActor<T> {
         let state = *self.state_receiver.borrow();
         if state != expected_state {
             error!(
-                "Transit to wrong Session state {:?}. The expected state is {:?}",
-                state, expected_state
+                "Transit to wrong Session state {state:?}. The expected state is {expected_state:?}"
             );
             return Err(Error::BadParameters);
         }

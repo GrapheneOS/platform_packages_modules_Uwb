@@ -58,8 +58,8 @@ import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
-import android.net.wifi.rtt.WifiRttManager;
 import android.net.wifi.aware.WifiAwareManager;
+import android.net.wifi.rtt.WifiRttManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.ranging.DataNotificationConfig;
@@ -88,8 +88,8 @@ import android.ranging.uwb.UwbRangingCapabilities;
 import android.ranging.uwb.UwbRangingParams;
 import android.ranging.wifi.rtt.RttRangingCapabilities;
 import android.ranging.wifi.rtt.RttRangingParams;
-import android.ranging.wifi.rtt.RttStationRangingParams;
 import android.ranging.wifi.rtt.RttStationRangingCapabilities;
+import android.ranging.wifi.rtt.RttStationRangingParams;
 import android.util.Log;
 import android.util.Range;
 import android.uwb.UwbManager;
@@ -1246,7 +1246,9 @@ public class RangingManagerTest {
         RawRangingDevice rawRangingDevice = new RawRangingDevice.Builder()
                 .setRangingDevice(new RangingDevice.Builder().build())
                 .setRttStationRangingParams(
-                        new RttStationRangingParams.Builder("AA:BB:CC:AA:BB:CC").build())
+                        new RttStationRangingParams.Builder("AA:BB:CC:AA:BB:CC")
+                                .setRangingUpdateRate(UPDATE_RATE_NORMAL)
+                                .build())
                 .build();
 
         RangingPreference preference = new RangingPreference.Builder(DEVICE_ROLE_INITIATOR,
@@ -1281,6 +1283,38 @@ public class RangingManagerTest {
 
         mRangingManager.unregisterCapabilitiesCallback(capabilitiesCallback);
         uiAutomation.dropShellPermissionIdentity();
+    }
+
+    @Test
+    @CddTest(requirements = {"7.3.13/C-1-1,C-1-2"})
+    @RequiresFlagsEnabled("com.android.ranging.flags.ranging_stack_updates_25q4")
+    public void testRttStationRangingParams() throws InterruptedException {
+        RawRangingDevice rawRangingDevice = new RawRangingDevice.Builder()
+                .setRangingDevice(new RangingDevice.Builder().build())
+                .setRttStationRangingParams(
+                        new RttStationRangingParams.Builder("AA:BB:CC:AA:BB:CC")
+                                .setRangingUpdateRate(UPDATE_RATE_NORMAL)
+                                .setChannelWidth(0)
+                                .build())
+                .build();
+
+        RangingPreference preference = new RangingPreference.Builder(DEVICE_ROLE_INITIATOR,
+                new RawInitiatorRangingConfig.Builder()
+                        .addRawRangingDevice(rawRangingDevice)
+                        .build())
+                .build();
+
+        RawInitiatorRangingConfig config = (RawInitiatorRangingConfig)
+                preference.getRangingParams();
+        assertThat(rawRangingDevice).isNotNull();
+        assertThat(rawRangingDevice.getRangingDevice()).isNotNull();
+        assertThat(rawRangingDevice.getRttStationRangingParams()).isNotNull();
+
+        RttStationRangingParams params = rawRangingDevice.getRttStationRangingParams();
+        assertThat(params).isNotNull();
+        assertThat(params.getBssid()).isNotNull();
+        assertEquals(params.getRangingUpdateRate(), UPDATE_RATE_NORMAL);
+        assertEquals(params.getChannelWidth(), 0);
     }
 
     @Test

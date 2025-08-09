@@ -365,7 +365,7 @@ impl UciManager for UciManagerImpl {
                         return Err(e);
                     }
                 };
-                debug!("UCI device info: {:?}", device_info);
+                debug!("UCI device info: {device_info:?}");
 
                 Ok(device_info)
             }
@@ -1120,8 +1120,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                     // Session Handle provided by UWBS, use as token for further commands.
                     Some(session_handle) => {
                         info!(
-                            "session handle: {:?} provided for session id: {:?}",
-                            session_handle, session_id
+                            "session handle: {session_handle:?} provided for session id: {session_id:?}"
                         );
                         *session_handle
                     }
@@ -1182,7 +1181,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
         cmd: UciManagerCmd,
         result_sender: oneshot::Sender<Result<UciResponse>>,
     ) {
-        debug!("Received cmd: {:?}", cmd);
+        debug!("Received cmd: {cmd:?}");
 
         match cmd {
             UciManagerCmd::SetLoggerMode { logger_mode } => {
@@ -1231,7 +1230,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                         self.open_hal_result_sender.replace(result_sender);
                     }
                     Err(e) => {
-                        error!("Failed to open hal: {:?}", e);
+                        error!("Failed to open hal: {e:?}");
                         let _ = result_sender.send(Err(e));
                     }
                 }
@@ -1270,14 +1269,14 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                 if let UciCommand::RawUciCmd { mt: _, gid, oid, payload: _ } = cmd.clone() {
                     let gid_u8 = u8::try_from(gid);
                     if gid_u8.is_err() || GroupId::try_from(gid_u8.unwrap()).is_err() {
-                        error!("Received an invalid GID={} for RawUciCmd", gid);
+                        error!("Received an invalid GID={gid} for RawUciCmd");
                         let _ = result_sender.send(Err(Error::BadParameters));
                         return;
                     }
 
                     let oid_u8 = u8::try_from(oid);
                     if oid_u8.is_err() {
-                        error!("Received an invalid OID={} for RawUciCmd", oid);
+                        error!("Received an invalid OID={oid} for RawUciCmd");
                         let _ = result_sender.send(Err(Error::BadParameters));
                         return;
                     }
@@ -1332,7 +1331,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                     self.uci_cmd_retryer = Some(uci_cmd_retryer);
                 }
                 Err(e) => {
-                    error!("Uci Cmd send resulted in error:{}", e);
+                    error!("Uci Cmd send resulted in error:{e}");
                     uci_cmd_retryer.send_result(Err(e));
                 }
             }
@@ -1344,8 +1343,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
             let data_packet_session_token = uci_data_snd_retryer.data_packet_session_token;
             if !uci_data_snd_retryer.could_retry() {
                 error!(
-                    "Out of retries for Uci DataSnd packet, last DataSnd packet session_id:{}",
-                    data_packet_session_token
+                    "Out of retries for Uci DataSnd packet, last DataSnd packet session_id:{data_packet_session_token}"
                 );
                 return;
             }
@@ -1360,8 +1358,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                 }
                 Err(e) => {
                     error!(
-                        "DataSnd packet fragment session_id:{} retry failed with error:{}",
-                        data_packet_session_token, e
+                        "DataSnd packet fragment session_id:{data_packet_session_token} retry failed with error:{e}"
                     );
                 }
             }
@@ -1387,9 +1384,8 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
 
         if !self.data_credit_map.contains_key(&data_packet_session_token) {
             error!(
-                "DataSnd packet session_token:{}, sequence_number:{} cannot be sent as unknown \
-                credit availability for the session",
-                data_packet_session_token, data_packet_sequence_number
+                "DataSnd packet session_token:{data_packet_session_token}, sequence_number:{data_packet_sequence_number} cannot be sent as unknown \
+                credit availability for the session"
             );
             return Err(Error::PacketTxError);
         }
@@ -1399,8 +1395,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
             fragment_data_msg_send(data_snd_packet, self.max_data_packet_payload_size);
         if packet_fragments.is_empty() {
             error!(
-                "DataSnd packet session_token:{}, sequence number:{} could not be split into fragments",
-                data_packet_session_token, data_packet_sequence_number
+                "DataSnd packet session_token:{data_packet_session_token}, sequence number:{data_packet_sequence_number} could not be split into fragments"
             );
             return Err(Error::PacketTxError);
         }
@@ -1413,8 +1408,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
             }
             None => {
                 error!(
-                    "DataSnd packet fragments map not found for session_token:{}",
-                    data_packet_session_token
+                    "DataSnd packet fragments map not found for session_token:{data_packet_session_token}"
                 );
                 return Err(Error::PacketTxError);
             }
@@ -1433,9 +1427,8 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
         let credit = self.data_credit_map.get(&data_packet_session_token);
         if credit.is_none() {
             error!(
-                "DataSnd packet fragment cannot be sent for session_token:{} as unknown \
-                credit availability for the session",
-                data_packet_session_token
+                "DataSnd packet fragment cannot be sent for session_token:{data_packet_session_token} as unknown \
+                credit availability for the session"
             );
             return Err(Error::PacketTxError);
         }
@@ -1470,8 +1463,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
         let result = self.hal.send_packet(hal_data_packet_fragment.encode_to_vec().unwrap()).await;
         if result.is_err() {
             error!(
-                "Result {:?} of sending data packet fragment SessionToken: {} to HAL",
-                result, data_packet_session_token
+                "Result {result:?} of sending data packet fragment SessionToken: {data_packet_session_token} to HAL"
             );
             return Err(Error::PacketTxError);
         }
@@ -1520,7 +1512,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                         self.handle_notification(notf).await;
                     }
                     Err(e) => {
-                        error!("Failed to parse received message: {:?}", e);
+                        error!("Failed to parse received message: {e:?}");
                     }
                 }
             }
@@ -1557,7 +1549,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
         }
 
         if let Err(_e) = self.store_session_token_if_init_resp(&resp).await {
-            error!("Session init response received without a sesson id stored! Something has gone badly wrong: {:?}", resp);
+            error!("Session init response received without a sesson id stored! Something has gone badly wrong: {resp:?}");
             return;
         }
         self.store_if_uwbs_device_info(&resp);
@@ -1566,7 +1558,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
         if let Some(uci_cmd_retryer) = self.uci_cmd_retryer.take() {
             uci_cmd_retryer.send_result(Ok(resp));
         } else {
-            warn!("Received an UCI response unexpectedly: {:?}", resp);
+            warn!("Received an UCI response unexpectedly: {resp:?}");
         }
     }
 
@@ -1600,7 +1592,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                     {
                         Ok(session_notf) => session_notf,
                         Err(e) => {
-                            error!("Failed to find corresponding session id, discarding session notification {:?}: {:?}", orig_session_notf, e);
+                            error!("Failed to find corresponding session id, discarding session notification {orig_session_notf:?}: {e:?}");
                             return;
                         }
                     }
@@ -1617,24 +1609,21 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                             // Currently just log, as this is unexpected (the entry should exist once
                             // the ranging session is Active and be removed once it is Idle).
                             debug!(
-                                "Received a DataCreditNtf for non-existent session_token: {}",
-                                session_token
+                                "Received a DataCreditNtf for non-existent session_token: {session_token}"
                             );
                         }
                         self.data_credit_map.insert(session_token, credit_availability);
                         if credit_availability == CreditAvailability::CreditAvailable {
                             if let Err(e) = self.send_data_packet_fragment(session_token).await {
                                 error!(
-                                    "Sending data packet fragment failed with Err:{}, after a\
-                                   DataCreditNtf is received, for session_token:{}",
-                                    e, session_token
+                                    "Sending data packet fragment failed with Err:{e}, after a\
+                                   DataCreditNtf is received, for session_token:{session_token}"
                                 );
                             }
                         } else {
                             // Log as this should usually not happen (it's not an error).
                             debug!(
-                            "Received a DataCreditNtf with no credit available for session_token:{}",
-                            session_token
+                            "Received a DataCreditNtf with no credit available for session_token:{session_token}"
                         );
                         }
                         return; // We consume these here and don't need to send to upper layer.
@@ -1789,7 +1778,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
         match session_state {
             SessionState::SessionStateInit => {
                 if let Err(e) = self.hal.notify_session_initialized(session_token).await {
-                    warn!("notify_session_initialized() failed: {:?}", e);
+                    warn!("notify_session_initialized() failed: {e:?}");
                 }
             }
             SessionState::SessionStateActive => {
@@ -1823,7 +1812,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                             );
                         }
                         Err(e) => {
-                            error!("BypassMode: Unable to find session Id, error {:?}", e);
+                            error!("BypassMode: Unable to find session Id, error {e:?}");
                         }
                     }
                 }
@@ -1836,7 +1825,7 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                                 .send(DataRcvNotification::LogicalLinkMode(logical_data));
                         }
                         Err(e) => {
-                            error!("LogicalLinkMode: Unable to find connect ID, error {:?}", e);
+                            error!("LogicalLinkMode: Unable to find connect ID, error {e:?}");
                         }
                     }
                 }
@@ -1856,11 +1845,11 @@ impl<T: UciHal, U: UciLogger> UciManagerActor<T, U> {
                     });
                 }
                 Err(e) => {
-                    error!("Unable to find session Id, error {:?}", e);
+                    error!("Unable to find session Id, error {e:?}");
                 }
             }
         } else {
-            error!("Unable to parse incoming Data packet, packet {:?}", packet);
+            error!("Unable to parse incoming Data packet, packet {packet:?}");
         }
     }
 

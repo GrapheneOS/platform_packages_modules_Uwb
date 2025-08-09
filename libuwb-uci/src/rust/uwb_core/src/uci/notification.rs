@@ -583,7 +583,7 @@ impl TryFrom<(uwb_uci_packets::UciNotification, UCIMajorVersion, bool)> for UciN
             UciNotificationChild::UciVendor_F_Notification(evt) => vendor_notification(evt.into()),
             UciNotificationChild::TestNotification(evt) => Ok(Self::RfTest(evt.try_into()?)),
             _ => {
-                error!("Unknown UciNotification: {:?}", evt);
+                error!("Unknown UciNotification: {evt:?}");
                 Err(Error::Unknown)
             }
         }
@@ -600,7 +600,7 @@ impl TryFrom<uwb_uci_packets::CoreNotification> for CoreNotification {
             }
             CoreNotificationChild::GenericError(evt) => Ok(Self::GenericError(evt.get_status())),
             _ => {
-                error!("Unknown CoreNotification: {:?}", evt);
+                error!("Unknown CoreNotification: {evt:?}");
                 Err(Error::Unknown)
             }
         }
@@ -675,7 +675,7 @@ impl TryFrom<(uwb_uci_packets::SessionConfigNotification, UCIMajorVersion, bool)
                 })
             }
             _ => {
-                error!("Unknown SessionConfigNotification: {:?}", evt);
+                error!("Unknown SessionConfigNotification: {evt:?}");
                 Err(Error::Unknown)
             }
         }
@@ -731,7 +731,7 @@ impl TryFrom<uwb_uci_packets::SessionControlNotification> for SessionNotificatio
                 })
             }
             _ => {
-                error!("Unknown SessionControlNotification: {:?}", evt);
+                error!("Unknown SessionControlNotification: {evt:?}");
                 Err(Error::Unknown)
             }
         }
@@ -760,16 +760,13 @@ impl TryFrom<uwb_uci_packets::SessionInfoNtf> for SessionNotification {
                         match evt.get_owr_aoa_ranging_measurements().clone().pop() {
                             Some(r) => r,
                             None => {
-                                error!(
-                                    "Unable to parse ShortAddress OwrAoA measurement: {:?}",
-                                    evt
-                                );
+                                error!("Unable to parse ShortAddress OwrAoA measurement: {evt:?}");
                                 return Err(Error::BadParameters);
                             }
                         },
                     )
                 } else {
-                    error!("Wrong count of OwrAoA ranging measurements {:?}", evt);
+                    error!("Wrong count of OwrAoA ranging measurements {evt:?}");
                     return Err(Error::BadParameters);
                 }
             }
@@ -780,15 +777,14 @@ impl TryFrom<uwb_uci_packets::SessionInfoNtf> for SessionNotification {
                             Some(r) => r,
                             None => {
                                 error!(
-                                    "Unable to parse ExtendedAddress OwrAoA measurement: {:?}",
-                                    evt
+                                    "Unable to parse ExtendedAddress OwrAoA measurement: {evt:?}"
                                 );
                                 return Err(Error::BadParameters);
                             }
                         },
                     )
                 } else {
-                    error!("Wrong count of OwrAoA ranging measurements {:?}", evt);
+                    error!("Wrong count of OwrAoA ranging measurements {evt:?}");
                     return Err(Error::BadParameters);
                 }
             }
@@ -801,7 +797,7 @@ impl TryFrom<uwb_uci_packets::SessionInfoNtf> for SessionNotification {
                         if v.len() == evt.get_no_of_ranging_measurements().into() {
                             RangingMeasurements::ShortAddressDltdoa(v)
                         } else {
-                            error!("Wrong count of ranging measurements {:?}", evt);
+                            error!("Wrong count of ranging measurements {evt:?}");
                             return Err(Error::BadParameters);
                         }
                     }
@@ -817,7 +813,7 @@ impl TryFrom<uwb_uci_packets::SessionInfoNtf> for SessionNotification {
                         if v.len() == evt.get_no_of_ranging_measurements().into() {
                             RangingMeasurements::ExtendedAddressDltdoa(v)
                         } else {
-                            error!("Wrong count of ranging measurements {:?}", evt);
+                            error!("Wrong count of ranging measurements {evt:?}");
                             return Err(Error::BadParameters);
                         }
                     }
@@ -825,7 +821,7 @@ impl TryFrom<uwb_uci_packets::SessionInfoNtf> for SessionNotification {
                 }
             }
             _ => {
-                error!("Unknown SessionInfoNtf: {:?}", evt);
+                error!("Unknown SessionInfoNtf: {evt:?}");
                 return Err(Error::Unknown);
             }
         };
@@ -853,7 +849,7 @@ impl TryFrom<uwb_uci_packets::AndroidNotification> for UciNotification {
         if let AndroidNotificationChild::AndroidRangeDiagnosticsNtf(ntf) = evt.specialize() {
             debug!("Received diagnostic packet: {:?}", parse_diagnostics_ntf(ntf));
         } else {
-            error!("Received unknown AndroidNotification: {:?}", evt);
+            error!("Received unknown AndroidNotification: {evt:?}");
         }
         Err(Error::Unknown)
     }
@@ -921,7 +917,7 @@ impl TryFrom<uwb_uci_packets::TestNotification> for RfTestNotification {
                 raw_notification_data: raw_ntf_data,
             })),
             _ => {
-                error!("Unknown RfTestNotification: {:?}", evt);
+                error!("Unknown RfTestNotification: {evt:?}");
                 Err(Error::Unknown)
             }
         }
@@ -971,7 +967,7 @@ fn get_vendor_uci_payload(evt: uwb_uci_packets::UciNotification) -> Result<Vec<u
             }
         }
         _ => {
-            error!("Unknown UciVendor packet: {:?}", evt);
+            error!("Unknown UciVendor packet: {evt:?}");
             Err(Error::Unknown)
         }
     }

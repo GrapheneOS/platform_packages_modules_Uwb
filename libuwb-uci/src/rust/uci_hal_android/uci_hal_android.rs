@@ -56,7 +56,7 @@ fn send_device_state_error_notification(
     });
     for raw_message_packet in raw_message_packets {
         if let Err(e) = uci_sender.send(raw_message_packet) {
-            error!("Error sending device state error notification: {:?}", e);
+            error!("Error sending device state error notification: {e:?}");
             return Err(UwbCoreError::BadParameters);
         }
     }
@@ -111,11 +111,11 @@ impl IUwbClientCallbackAsyncServer for RawUciCallback {
                     .map_err(|e| BinderStatus::from(Error::from(e)))
             }
             UwbEvent::POST_INIT_CPLT => self.hal_open_result_sender.try_send(Ok(())).map_err(|e| {
-                error!("Failed sending POST_INIT_CPLT: {:?}", e);
+                error!("Failed sending POST_INIT_CPLT: {e:?}");
                 BinderStatus::new_exception(ExceptionCode::TRANSACTION_FAILED, None)
             }),
             UwbEvent::CLOSE_CPLT => self.hal_close_result_sender.try_send(Ok(())).map_err(|e| {
-                error!("Failed sending CLOSE_CPLT: {:?}", e);
+                error!("Failed sending CLOSE_CPLT: {e:?}");
                 BinderStatus::new_exception(ExceptionCode::TRANSACTION_FAILED, None)
             }),
             _ => Ok(()),
@@ -124,7 +124,7 @@ impl IUwbClientCallbackAsyncServer for RawUciCallback {
 
     async fn onUciMessage(&self, data: &[u8]) -> BinderResult<()> {
         self.uci_sender.send(data.to_owned()).map_err(|e| {
-            error!("Failed sending UCI response or notification: {:?}", e);
+            error!("Failed sending UCI response or notification: {e:?}");
             BinderStatus::new_exception(ExceptionCode::TRANSACTION_FAILED, None)
         })
     }
@@ -192,7 +192,7 @@ impl UciHal for UciHalAndroid {
         let packet_sender_clone = packet_sender.clone();
         let mut bare_death_recipient = DeathRecipient::new(move || {
             send_device_state_error_notification(&packet_sender_clone).unwrap_or_else(|e| {
-                error!("Error sending device state error notification: {:?}", e);
+                error!("Error sending device state error notification: {e:?}");
             });
         });
         i_uwb_chip
@@ -224,7 +224,7 @@ impl UciHal for UciHalAndroid {
                 );
                 for device_ready_ntf in device_ready_ntfs {
                     packet_sender.send(device_ready_ntf).unwrap_or_else(|e| {
-                        error!("UCI HAL: failed to send device ready notification: {:?}", e);
+                        error!("UCI HAL: failed to send device ready notification: {e:?}");
                     });
                 }
                 // End of workaround.
