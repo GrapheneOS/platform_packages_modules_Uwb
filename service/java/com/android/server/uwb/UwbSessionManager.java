@@ -456,7 +456,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
     public void onDataSendStatus(
             long connectId, int dataTransferStatus, long sequenceNum, int txCount) {
         Log.d(TAG, "onDataSendStatus(): Received data send status - "
-                + ", connectId: " + connectId
+                + "connectId: " + connectId
                 + ", status: " + dataTransferStatus
                 + ", sequenceNum: " + sequenceNum
                 + ", txCount: " + txCount);
@@ -3000,16 +3000,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     if (!isValidUwbSessionForApplicationDataTransfer(uwbSession)) {
                         sendDataStatus = UwbUciConstants.STATUS_CODE_FAILED;
                         Log.i(TAG, "UwbSession not in active state");
-                        mSessionNotificationManager.onDataSendFailed(
-                                uwbSession, sendDataInfo.remoteDeviceAddress, sendDataStatus,
-                                sendDataInfo.params);
                         return sendDataStatus;
                     }
                     if (!isValidSendDataInfo(linkLayerMode, sendDataInfo, uwbSession.getChipId())) {
                         sendDataStatus = UwbUciConstants.STATUS_CODE_INVALID_PARAM;
-                        mSessionNotificationManager.onDataSendFailed(
-                                uwbSession, sendDataInfo.remoteDeviceAddress, sendDataStatus,
-                                sendDataInfo.params);
                         return sendDataStatus;
                     }
 
@@ -3028,8 +3022,12 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                         }
 
                         LogicalLinkInfo logicalLinkInfo = uwbSession.getLogicalLinkInfo(connectId);
-                        sequenceNum = logicalLinkInfo.sequenceNumber;
-                        logicalLinkInfo.sequenceNumber++;
+                        if (logicalLinkInfo == null) {
+                            Log.e(TAG, "No logical link found for connectId = " + connectId);
+                            return sendDataStatus;
+                        }
+
+                        sequenceNum = logicalLinkInfo.sequenceNumber++;
                     } else {
                         Log.e(TAG, "Unknown link layer mode: " + linkLayerMode);
                         return sendDataStatus;
@@ -3040,18 +3038,15 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                 sendDataInfo.remoteDeviceAddress.toBytes()),
                             sequenceNum, sendDataInfo.data, uwbSession.getChipId());
 
-                    uwbSession.addSendDataInfo(sequenceNum, sendDataInfo);
-
-                    mUwbMetrics.logDataTx(uwbSession, sendDataStatus);
-                    if (sendDataStatus != STATUS_CODE_OK) {
+                    if (sendDataStatus == STATUS_CODE_OK) {
+                        uwbSession.addSendDataInfo(sequenceNum, sendDataInfo);
+                    } else {
                         Log.e(TAG, "MSG_SESSION_SEND_DATA error status: " + sendDataStatus
                                 + " for data packet sessionId: " + sessionId
                                 + ", sequence number: " + sequenceNum);
-                        mSessionNotificationManager.onDataSendFailed(
-                                uwbSession, sendDataInfo.remoteDeviceAddress, sendDataStatus,
-                                sendDataInfo.params);
-                        uwbSession.removeSendDataInfo(sequenceNum);
                     }
+                    mUwbMetrics.logDataTx(uwbSession, sendDataStatus);
+
                     return sendDataStatus;
                 }
             });
@@ -3060,6 +3055,11 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             try {
                 status = mUwbInjector.runTaskOnSingleThreadExecutor(sendDataTask,
                         IUwbAdapter.RANGING_SESSION_OPEN_THRESHOLD_MS);
+
+                if (status != UwbUciConstants.STATUS_CODE_OK) {
+                    mSessionNotificationManager.onDataSendFailed(uwbSession,
+                            sendDataInfo.remoteDeviceAddress, status, sendDataInfo.params);
+                }
             } catch (TimeoutException e) {
                 Log.i(TAG, "Failed to Send data - status : TIMEOUT");
                 mSessionNotificationManager.onDataSendFailed(uwbSession,
