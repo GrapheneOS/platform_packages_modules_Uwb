@@ -22,6 +22,8 @@ import static com.google.uwb.support.fira.FiraParams.PREAMBLE_DURATION_T64_SYMBO
 import static com.google.uwb.support.fira.FiraParams.PRF_MODE_BPRF;
 import static com.google.uwb.support.fira.FiraParams.PSDU_DATA_RATE_6M81;
 import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP3;
+import static com.google.uwb.support.fira.FiraParams.SECURE_RANGING_CSW_LENGTH_DEFAULT;
+import static com.google.uwb.support.fira.FiraParams.SECURE_RANGING_NEFA_LEVEL_DEFAULT;
 import static com.google.uwb.support.fira.FiraParams.SFD_ID_VALUE_2;
 import static com.google.uwb.support.fira.FiraParams.STS_SEGMENT_COUNT_VALUE_1;
 import static com.google.uwb.support.fira.FiraParams.UWB_CHANNEL_9;
@@ -41,6 +43,7 @@ import com.google.uwb.support.fira.FiraParams.PrfMode;
 import com.google.uwb.support.fira.FiraParams.PsduDataRate;
 import com.google.uwb.support.fira.FiraParams.RangingDeviceRole;
 import com.google.uwb.support.fira.FiraParams.RframeConfig;
+import com.google.uwb.support.fira.FiraParams.SecureRangingNefaLevel;
 import com.google.uwb.support.fira.FiraParams.SfdIdValue;
 import com.google.uwb.support.fira.FiraParams.StsSegmentCountValue;
 import com.google.uwb.support.fira.FiraParams.UwbChannel;
@@ -75,6 +78,8 @@ public class RfTestOpenSessionParams extends RfTestParams {
     private static final String KEY_PREAMBLE_DURATION = "preamble_duration";
     private static final String KEY_PRF_MODE = "prf_mode";
     private static final String KEY_STS_SEGMENT_COUNT = "sts_segment_count";
+    private static final String KEY_SECURE_RANGING_NEFA_LEVEL = "secure_ranging_nefa_level";
+    private static final String KEY_SECURE_RANGING_CSW_LENGTH = "secure_ranging_csw_length";
 
     // RF test specific params
     private static final String KEY_NUMBER_OF_PACKETS = "number_of_packets";
@@ -116,6 +121,8 @@ public class RfTestOpenSessionParams extends RfTestParams {
     private final int mPrfMode;
     @StsSegmentCountValue
     private final int mStsSegmentCount;
+    @SecureRangingNefaLevel private final int mSecureRangingNefaLevel;
+    private final int mSecureRangingCswLength;
 
     private final int mNoOfPackets;
     private final int mTgap;
@@ -150,6 +157,8 @@ public class RfTestOpenSessionParams extends RfTestParams {
             @PreambleDuration int preambleDuration,
             @PrfMode int prfMode,
             @StsSegmentCountValue int stsSegmentCount,
+            @SecureRangingNefaLevel int secureRangingNefaLevel,
+            int secureRangingCswLength,
             int noOfPackets,
             int tGap,
             int tStart,
@@ -177,6 +186,8 @@ public class RfTestOpenSessionParams extends RfTestParams {
         mPreambleDuration = preambleDuration;
         mPrfMode = prfMode;
         mStsSegmentCount = stsSegmentCount;
+        mSecureRangingNefaLevel = secureRangingNefaLevel;
+        mSecureRangingCswLength = secureRangingCswLength;
         mNoOfPackets = noOfPackets;
         mTgap = tGap;
         mTstart = tStart;
@@ -221,6 +232,8 @@ public class RfTestOpenSessionParams extends RfTestParams {
         bundle.putInt(KEY_PREAMBLE_DURATION, mPreambleDuration);
         bundle.putInt(KEY_PRF_MODE, mPrfMode);
         bundle.putInt(KEY_STS_SEGMENT_COUNT, mStsSegmentCount);
+        bundle.putInt(KEY_SECURE_RANGING_NEFA_LEVEL, mSecureRangingNefaLevel);
+        bundle.putInt(KEY_SECURE_RANGING_CSW_LENGTH, mSecureRangingCswLength);
         bundle.putInt(KEY_NUMBER_OF_PACKETS, mNoOfPackets);
         bundle.putInt(KEY_T_GAP, mTgap);
         bundle.putInt(KEY_T_START, mTstart);
@@ -276,6 +289,10 @@ public class RfTestOpenSessionParams extends RfTestParams {
                 .setPreambleDuration(bundle.getInt(KEY_PREAMBLE_DURATION))
                 .setPrfMode(bundle.getInt(KEY_PRF_MODE))
                 .setStsSegmentCount(bundle.getInt(KEY_STS_SEGMENT_COUNT))
+                .setSecureRangingNefaLevel(bundle.getInt(KEY_SECURE_RANGING_NEFA_LEVEL))
+                .setSecureRangingCswLength(bundle.getInt(KEY_SECURE_RANGING_CSW_LENGTH) == 0
+                        ? SECURE_RANGING_CSW_LENGTH_DEFAULT
+                        : bundle.getInt(KEY_SECURE_RANGING_CSW_LENGTH))
                 .setNumberOfPackets(bundle.getInt(KEY_NUMBER_OF_PACKETS))
                 .setTgap(bundle.getInt(KEY_T_GAP))
                 .setTstart(bundle.getInt(KEY_T_START))
@@ -366,6 +383,15 @@ public class RfTestOpenSessionParams extends RfTestParams {
     @StsSegmentCountValue
     public int getStsSegmentCount() {
         return mStsSegmentCount;
+    }
+
+    @SecureRangingNefaLevel
+    public int getSecureRangingNefaLevel() {
+        return mSecureRangingNefaLevel;
+    }
+
+    public int getSecureRangingCswLength() {
+        return mSecureRangingCswLength;
     }
 
     public int getNumberOfPackets() {
@@ -459,6 +485,11 @@ public class RfTestOpenSessionParams extends RfTestParams {
         /** UCI spec default 1 STS segment */
         private @StsSegmentCountValue int mStsSegmentCount = STS_SEGMENT_COUNT_VALUE_1;
 
+        @SecureRangingNefaLevel
+        private int mSecureRangingNefaLevel = SECURE_RANGING_NEFA_LEVEL_DEFAULT;
+
+        private int mSecureRangingCswLength = SECURE_RANGING_CSW_LENGTH_DEFAULT;
+
         /** UCI spec default 1000 */
         private int mNoOfPackets = 1000;
 
@@ -508,6 +539,8 @@ public class RfTestOpenSessionParams extends RfTestParams {
             mPreambleDuration = builder.mPreambleDuration;
             mPrfMode = builder.mPrfMode;
             mStsSegmentCount = builder.mStsSegmentCount;
+            mSecureRangingNefaLevel = builder.mSecureRangingNefaLevel;
+            mSecureRangingCswLength = builder.mSecureRangingCswLength;
             mNoOfPackets = builder.mNoOfPackets;
             mTgap = builder.mTgap;
             mTstart = builder.mTstart;
@@ -538,6 +571,8 @@ public class RfTestOpenSessionParams extends RfTestParams {
             mPreambleDuration = params.mPreambleDuration;
             mPrfMode = params.mPrfMode;
             mStsSegmentCount = params.mStsSegmentCount;
+            mSecureRangingNefaLevel = params.mSecureRangingNefaLevel;
+            mSecureRangingCswLength = params.mSecureRangingCswLength;
             mNoOfPackets = params.mNoOfPackets;
             mTgap = params.mTgap;
             mTstart = params.mTstart;
@@ -626,6 +661,28 @@ public class RfTestOpenSessionParams extends RfTestParams {
             return this;
         }
 
+        /**
+         * Sets the NEFA level for secure ranging.
+         * @param secureRangingNefaLevel NEFA level (0x00–0x03)
+         * @return this builder
+         */
+        public Builder setSecureRangingNefaLevel(
+                @SecureRangingNefaLevel int secureRangingNefaLevel) {
+            mSecureRangingNefaLevel = secureRangingNefaLevel;
+            return this;
+        }
+
+        /**
+         * Sets the Critical Search Window (CSW) length for secure ranging.
+         * @param secureRangingCswLength CSW length value
+         * @return this builder
+         */
+        public Builder setSecureRangingCswLength(
+                int secureRangingCswLength) {
+            mSecureRangingCswLength = secureRangingCswLength;
+            return this;
+        }
+
         public Builder setNumberOfPackets(int noOfPackets) {
             mNoOfPackets = noOfPackets;
             return this;
@@ -696,6 +753,8 @@ public class RfTestOpenSessionParams extends RfTestParams {
                     mPreambleDuration,
                     mPrfMode,
                     mStsSegmentCount,
+                    mSecureRangingNefaLevel,
+                    mSecureRangingCswLength,
                     mNoOfPackets,
                     mTgap,
                     mTstart,

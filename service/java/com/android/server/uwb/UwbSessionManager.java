@@ -3898,6 +3898,61 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
         }
 
         /**
+         * Get the effective minimum between the "minUwbInitiationTimeMs"
+         * (which can be specified by hardware in their "capabilities" using
+         * a custom Android cap) and the "initiationTimeMs" which can be
+         * specified by an application using UWB.
+         *
+         * If there was a superclass for some of these classes this would
+         * be trivial, but instead we've got cascading if-then-else statements.
+         */
+        private long getEffectiveInitiationTimeMs(@Nullable Params params) {
+            long minUwbInitiationTimeMs = 0;
+            long initiationTimeMs = 0;
+
+            if (params instanceof FiraOpenSessionParams) {
+                initiationTimeMs = ((FiraOpenSessionParams) params).getInitiationTime();
+            } else if (params instanceof CccOpenRangingParams) {
+                initiationTimeMs = ((CccOpenRangingParams) params).getInitiationTimeMs();
+            } else if (params instanceof CccStartRangingParams) {
+                initiationTimeMs = ((CccStartRangingParams) params).getInitiationTimeMs();
+            } else if (params instanceof AliroOpenRangingParams) {
+                initiationTimeMs = ((AliroOpenRangingParams) params).getInitiationTimeMs();
+            } else if (params instanceof AliroStartRangingParams) {
+                initiationTimeMs = ((AliroStartRangingParams) params).getInitiationTimeMs();
+            }
+
+            GenericSpecificationParams specParams =
+                    mUwbInjector.getUwbServiceCore().getCachedSpecificationParams(mChipId);
+            if (specParams != null) {
+                if ((params instanceof CccOpenRangingParams)
+                        || (params instanceof CccStartRangingParams)) {
+                    CccSpecificationParams cccSpecParams = specParams.getCccSpecificationParams();
+                    if (cccSpecParams != null) {
+                        minUwbInitiationTimeMs = cccSpecParams.getMinUwbInitiationTimeMs();
+                    }
+                } else if ((params instanceof AliroOpenRangingParams)
+                        || (params instanceof AliroStartRangingParams)) {
+                    AliroSpecificationParams aliroSpecParams =
+                            specParams.getAliroSpecificationParams();
+                    // For Aliro, TimeSync is optional so we only apply the
+                    // minimum if `initiationTimeMs` was non-zero.
+                    if (aliroSpecParams != null && initiationTimeMs != 0) {
+                        minUwbInitiationTimeMs = aliroSpecParams.getMinUwbInitiationTimeMs();
+                    }
+                }
+            }
+
+            if (initiationTimeMs < minUwbInitiationTimeMs) {
+                Log.d(TAG, String.format("Initiation time increased from %d to %d",
+                                         initiationTimeMs, minUwbInitiationTimeMs));
+                return minUwbInitiationTimeMs;
+            }
+
+            return initiationTimeMs;
+        }
+
+        /**
          * Sets {@code mNeedsQueryUwbsTimestamp} to {@code true}, if the UWBS Timestamp needs to be
          * fetched from the UWBS controller (for computing an absolute UWB initiation time).
          */
@@ -3908,7 +3963,7 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             if (getUwbsFiraProtocolVersion(mChipId).getMajor() >= 2) {
                 if (mParams instanceof FiraOpenSessionParams) {
                     FiraOpenSessionParams firaOpenSessionParams = (FiraOpenSessionParams) mParams;
-                    if (firaOpenSessionParams.getInitiationTime() != 0
+                    if (getEffectiveInitiationTimeMs(firaOpenSessionParams) != 0
                             && firaOpenSessionParams.getAbsoluteInitiationTime() == 0) {
                         this.mNeedsQueryUwbsTimestamp = true;
                     }
@@ -3921,13 +3976,13 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                 && startRangingParams instanceof CccStartRangingParams) {
                         CccStartRangingParams cccStartRangingParams =
                                 (CccStartRangingParams) startRangingParams;
-                        if (cccStartRangingParams.getInitiationTimeMs() != 0
+                        if (getEffectiveInitiationTimeMs(cccStartRangingParams) != 0
                                 && cccStartRangingParams.getAbsoluteInitiationTimeUs() == 0) {
                             this.mNeedsQueryUwbsTimestamp = true;
                         }
                     } else {
                         CccOpenRangingParams cccOpenRangingParams = (CccOpenRangingParams) mParams;
-                        if (cccOpenRangingParams.getInitiationTimeMs() != 0
+                        if (getEffectiveInitiationTimeMs(cccOpenRangingParams) != 0
                                 && cccOpenRangingParams.getAbsoluteInitiationTimeUs() == 0) {
                             this.mNeedsQueryUwbsTimestamp = true;
                         }
@@ -3941,14 +3996,14 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                                 && startRangingParams instanceof AliroStartRangingParams) {
                         AliroStartRangingParams aliroStartRangingParams =
                                 (AliroStartRangingParams) startRangingParams;
-                        if (aliroStartRangingParams.getInitiationTimeMs() != 0
+                        if (getEffectiveInitiationTimeMs(aliroStartRangingParams) != 0
                                 && aliroStartRangingParams.getAbsoluteInitiationTimeUs() == 0) {
                             this.mNeedsQueryUwbsTimestamp = true;
                         }
                     } else {
                         AliroOpenRangingParams aliroOpenRangingParams =
                                 (AliroOpenRangingParams) mParams;
-                        if (aliroOpenRangingParams.getInitiationTimeMs() != 0
+                        if (getEffectiveInitiationTimeMs(aliroOpenRangingParams) != 0
                                 && aliroOpenRangingParams.getAbsoluteInitiationTimeUs() == 0) {
                             this.mNeedsQueryUwbsTimestamp = true;
                         }
@@ -4001,20 +4056,20 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
                     FiraOpenSessionParams firaOpenSessionParams = (FiraOpenSessionParams) mParams;
                     this.mParams = ((FiraOpenSessionParams) mParams).toBuilder()
                             .setAbsoluteInitiationTime(uwbsTimestamp
-                                    + (firaOpenSessionParams.getInitiationTime() * 1000))
+                                    + (getEffectiveInitiationTimeMs(firaOpenSessionParams) * 1000))
                             .build();
                 } else if (mParams instanceof CccOpenRangingParams) {
                     CccOpenRangingParams cccOpenRangingParams = (CccOpenRangingParams) mParams;
                     this.mParams = ((CccOpenRangingParams) mParams).toBuilder()
                             .setAbsoluteInitiationTimeUs(uwbsTimestamp
-                                    + (cccOpenRangingParams.getInitiationTimeMs() * 1000))
+                                    + (getEffectiveInitiationTimeMs(cccOpenRangingParams) * 1000))
                             .build();
                 } else if (mParams instanceof AliroOpenRangingParams) {
                     AliroOpenRangingParams aliroOpenRangingParams =
                             (AliroOpenRangingParams) mParams;
                     this.mParams = ((AliroOpenRangingParams) mParams).toBuilder()
                             .setAbsoluteInitiationTimeUs(uwbsTimestamp
-                                    + (aliroOpenRangingParams.getInitiationTimeMs() * 1000))
+                                    + (getEffectiveInitiationTimeMs(aliroOpenRangingParams) * 1000))
                             .build();
                 }
                 this.mNeedsAppConfigUpdate = true;
