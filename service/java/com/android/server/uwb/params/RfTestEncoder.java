@@ -16,6 +16,9 @@
 
 package com.android.server.uwb.params;
 
+import static com.google.uwb.support.fira.FiraParams.SECURE_RANGING_CSW_LENGTH_DEFAULT;
+import static com.google.uwb.support.fira.FiraParams.SECURE_RANGING_NEFA_LEVEL_DEFAULT;
+
 import android.uwb.UwbAddress;
 
 import com.android.modules.utils.build.SdkLevel;
@@ -83,6 +86,15 @@ public class RfTestEncoder extends TlvEncoder {
                 .putByte(ConfigParam.PREAMBLE_DURATION, (byte) params.getPreambleDuration())
                 .putByte(ConfigParam.PRF_MODE, (byte) params.getPrfMode())
                 .putByte(ConfigParam.NUMBER_OF_STS_SEGMENTS, (byte) params.getStsSegmentCount());
+
+        if ((params.getSecureRangingNefaLevel() != SECURE_RANGING_NEFA_LEVEL_DEFAULT
+                || params.getSecureRangingCswLength() != SECURE_RANGING_CSW_LENGTH_DEFAULT)) {
+            tlvBufferBuilder
+                    .putByte(ConfigParam.SECURE_RANGING_NEFA_LEVEL,
+                            (byte) params.getSecureRangingNefaLevel())
+                    .putByte(ConfigParam.SECURE_RANGING_CSW_LENGTH,
+                            (byte) params.getSecureRangingCswLength());
+        }
 
         if (params.getDestAddressList().size() > 0) {
             // Allocate a ByteBuffer to hold all addresses
