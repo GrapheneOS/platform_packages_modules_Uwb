@@ -22,10 +22,13 @@ import androidx.annotation.NonNull;
 
 import com.android.uwb.fusion.math.Pose;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -38,11 +41,15 @@ public abstract class PoseSourceBase implements IPoseSource {
     private final Lock mLockObject = new ReentrantLock();
     @GuardedBy("mLockObject")
     private final Set<PoseEventListener> mListeners;
+    private final Set<PoseEventListener> mPendingRemovalListeners;
+    private final ExecutorService mListenerExecutor;
     private static final String TAG = "PoseSourceBase";
     private final AtomicReference<Pose> mPose = new AtomicReference<>();
 
     public PoseSourceBase() {
         mListeners = new HashSet<>();
+        mPendingRemovalListeners = new HashSet<>();
+        mListenerExecutor = Executors.newSingleThreadExecutor();
     }
 
     /**
@@ -116,18 +123,24 @@ public abstract class PoseSourceBase implements IPoseSource {
     protected void publish(@NonNull Pose pose) {
         Objects.requireNonNull(pose);
         this.mPose.set(pose);
+        List<PoseEventListener> listenersSnapshot;
         mLockObject.lock();
         try {
-            for (PoseEventListener listener : List.copyOf(mListeners)) {
+            mListeners.removeAll(mPendingRemovalListeners);
+            mPendingRemovalListeners.clear();
+            listenersSnapshot = new ArrayList<>(mListeners);
+        } finally {
+            mLockObject.unlock();
+        }
+        for (PoseEventListener listener : listenersSnapshot) {
+            mListenerExecutor.execute(() -> {
                 try {
                     listener.onPoseChanged(pose);
                 } catch (Exception e) {
                     Log.e(TAG, "Removing listener due to exception:" + e);
-                    mListeners.remove(listener);
+                    mPendingRemovalListeners.add(listener);
                 }
-            }
-        } finally {
-            mLockObject.unlock();
+            });
         }
     }
 
