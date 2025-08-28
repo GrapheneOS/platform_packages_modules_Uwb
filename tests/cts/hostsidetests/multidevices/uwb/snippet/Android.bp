@@ -30,6 +30,7 @@ android_test {
         "mobly-snippet-lib",
         "com.uwb.support.ccc",
         "com.uwb.support.fira",
+        "com.uwb.support.dltdoa",
         "com.uwb.support.generic",
         "com.uwb.support.multichip",
     ],
