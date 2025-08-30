@@ -178,19 +178,6 @@ public class UwbServiceImplTest {
         createUwbServiceImpl();
         verify(mUwbServiceCore).addInitializationFailureListener(
                 mInitializationFailureListener.capture());
-        verify(mContext).registerReceiver(
-                mApmModeBroadcastReceiver.capture(),
-                argThat(i -> i.getAction(0).equals(Intent.ACTION_AIRPLANE_MODE_CHANGED)),
-                any(), any());
-        if (SdkLevel.isAtLeastU()) {
-            verify(mUwbInjector).registerContentObserver(
-                    eq(Settings.Global.getUriFor(SETTINGS_SATELLITE_MODE_ENABLED)), anyBoolean(),
-                    mSatelliteModeContentObserver.capture());
-        }
-        verify(mContext).registerReceiver(
-                mUserRestrictionReceiver.capture(),
-                argThat(i -> i.getAction(0).equals(UserManager.ACTION_USER_RESTRICTIONS_CHANGED)),
-                any(), any());
     }
 
     @Test
@@ -362,10 +349,27 @@ public class UwbServiceImplTest {
         } catch (SecurityException e) { /* pass */ }
     }
 
+    void initializeAndVerify() {
+        mUwbServiceImpl.initialize();
+        verify(mContext).registerReceiver(
+                mApmModeBroadcastReceiver.capture(),
+                argThat(i -> i.getAction(0).equals(Intent.ACTION_AIRPLANE_MODE_CHANGED)),
+                any(), any());
+        if (SdkLevel.isAtLeastU()) {
+            verify(mUwbInjector).registerContentObserver(
+                    eq(Settings.Global.getUriFor(SETTINGS_SATELLITE_MODE_ENABLED)), anyBoolean(),
+                    mSatelliteModeContentObserver.capture());
+        }
+        verify(mContext).registerReceiver(
+                mUserRestrictionReceiver.capture(),
+                argThat(i -> i.getAction(0).equals(UserManager.ACTION_USER_RESTRICTIONS_CHANGED)),
+                any(), any());
+    }
+
     @Test
     public void testInitialize() throws Exception {
         when(mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).thenReturn(true);
-        mUwbServiceImpl.initialize();
+        initializeAndVerify();
         verify(mUwbServiceCore).setEnabled(true);
 
         when(mUwbSettingsStore.get(SETTINGS_TOGGLE_STATE)).thenReturn(false);
@@ -443,6 +447,8 @@ public class UwbServiceImplTest {
 
     @Test
     public void testApmModeToggle() throws Exception {
+        initializeAndVerify();
+        clearInvocations(mUwbServiceCore, mUwbSettingsStore);
         mUwbServiceImpl.setEnabled(true);
         verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, true);
         verify(mUwbServiceCore).setEnabled(true);
@@ -469,6 +475,8 @@ public class UwbServiceImplTest {
         // Recreate UwbServiceImpl to ensure we don't register APM broadcast receiver.
         clearInvocations(mContext);
         createUwbServiceImpl();
+        mUwbServiceImpl.initialize();
+        clearInvocations(mUwbServiceCore, mUwbSettingsStore);
         // apm radio setting should be honored on android U+ devices.
 
         // Verify that we did not re-register the APM broadcast listener.
@@ -505,6 +513,7 @@ public class UwbServiceImplTest {
         // Recreate UwbServiceImpl to ensure we do register APM broadcast receiver.
         clearInvocations(mContext);
         createUwbServiceImpl();
+        mUwbServiceImpl.initialize();
         // apm radio setting should be ignored on android T devices.
 
         // Verify that we did re-register the APM broadcast listener.
@@ -534,6 +543,8 @@ public class UwbServiceImplTest {
     @Test
     public void testSatelliteModeToggle() throws Exception {
         assumeTrue(SdkLevel.isAtLeastU()); // Test should only run on U+ devices.
+        initializeAndVerify();
+        clearInvocations(mUwbServiceCore, mUwbSettingsStore);
         mUwbServiceImpl.setEnabled(true);
         verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, true);
         verify(mUwbServiceCore).setEnabled(true);
@@ -555,6 +566,8 @@ public class UwbServiceImplTest {
         when(mUwbInjector.getGlobalSettingsString(SETTINGS_SATELLITE_MODE_RADIOS))
                 .thenReturn("cell,bluetooth,nfc,wifi");
 
+        mUwbServiceImpl.initialize();
+        clearInvocations(mUwbServiceCore, mUwbSettingsStore);
         mUwbServiceImpl.setEnabled(true);
         verify(mUwbSettingsStore).put(SETTINGS_TOGGLE_STATE, true);
         verify(mUwbServiceCore).setEnabled(true);
@@ -577,7 +590,8 @@ public class UwbServiceImplTest {
     @Test
     public void testUserRestrictionChanged() throws Exception {
         assumeTrue(SdkLevel.isAtLeastU()); // Test should only run on U+ devices.
-
+        initializeAndVerify();
+        clearInvocations(mUwbServiceCore, mUwbSettingsStore);
         mUwbServiceImpl.setEnabled(true);
 
         // User restriction changes to disallow UWB
