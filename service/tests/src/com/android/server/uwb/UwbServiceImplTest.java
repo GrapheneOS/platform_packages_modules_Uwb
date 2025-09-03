@@ -514,6 +514,7 @@ public class UwbServiceImplTest {
         clearInvocations(mContext);
         createUwbServiceImpl();
         mUwbServiceImpl.initialize();
+        clearInvocations(mUwbServiceCore, mUwbSettingsStore);
         // apm radio setting should be ignored on android T devices.
 
         // Verify that we did re-register the APM broadcast listener.
