@@ -415,6 +415,13 @@ public class UwbMetrics {
         }
     }
 
+    // Used to log the package name of the 3p app that is using UWB.
+    private AttributionSource getAttributionSourceForMetrics(UwbSession uwbSession) {
+        return uwbSession.hasNonPrivilegedApp()
+                ? uwbSession.getAnyNonPrivilegedAppInAttributionSource()
+                : uwbSession.getAttributionSource();
+    }
+
     /**
      * Log the ranging session initialization event
      */
@@ -425,7 +432,8 @@ public class UwbMetrics {
                 mRangingSessionList.removeFirst();
             }
             RangingSessionStats session = new RangingSessionStats(uwbSession.getSessionId(),
-                    uwbSession.getAttributionSource(), uwbSession.getParallelSessionCount());
+                    getAttributionSourceForMetrics(uwbSession),
+                    uwbSession.getParallelSessionCount());
             session.parseParams(uwbSession.getParams());
             session.convertInitStatus(status);
             mRangingSessionList.add(session);
@@ -439,7 +447,7 @@ public class UwbMetrics {
                     session.mIsController, session.mIsDiscoveredByFramework, session.mIsOutOfBand,
                     session.mChannel, session.mInitStatus,
                     session.mInitLatencyMs, session.mInitLatencyMs / 20,
-                    uwbSession.getAttributionSource().getUid(), session.mRangingIntervalMs,
+                    getAttributionSourceForMetrics(uwbSession).getUid(), session.mRangingIntervalMs,
                     session.mParallelSessionCount, session.mFilterConfigValue
             );
         }
@@ -459,7 +467,7 @@ public class UwbMetrics {
             UwbStatsLog.write(UwbStatsLog.UWB_RANGING_START, uwbSession.getProfileType(),
                     session.mStsType, session.mIsInitiator,
                     session.mIsController, session.mIsDiscoveredByFramework, session.mIsOutOfBand,
-                    session.mRangingStatus, uwbSession.getAttributionSource().getUid());
+                    session.mRangingStatus, getAttributionSourceForMetrics(uwbSession).getUid());
             if (status != UwbUciConstants.STATUS_CODE_OK) {
                 session.mStartFailureCount++;
                 session.mStartTimeSinceBootMs = 0;
@@ -533,7 +541,7 @@ public class UwbMetrics {
                     session.mStartNoValidReportCount,
                     session.mRxPacketCount, session.mTxPacketCount, session.mRxErrorCount,
                     session.mTxErrorCount, session.mRxToUpperLayerCount, session.mRangingType,
-                    uwbSession.getAttributionSource().getUid());
+                    getAttributionSourceForMetrics(uwbSession).getUid());
             mOpenedSessionMap.delete(uwbSession.getSessionId());
         }
     }
@@ -646,7 +654,7 @@ public class UwbMetrics {
                     report.mElevationFom, session.mRangingType, report.mFilteredDistanceCm,
                     report.mFilteredAzimuthDegree, report.mFilteredAzimuthFom,
                     report.mFilteredElevationDegree, report.mFilteredElevationFom,
-                    uwbSession.getAttributionSource().getUid());
+                    getAttributionSourceForMetrics(uwbSession).getUid());
         }
     }
 
