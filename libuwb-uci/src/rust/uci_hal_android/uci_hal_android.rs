@@ -136,7 +136,8 @@ pub struct UciHalAndroid {
     chip_id: String,
     hal_close_result_receiver: Option<mpsc::Receiver<Result<()>>>,
     hal_death_recipient: Option<Arc<Mutex<DeathRecipient>>>,
-    hal_uci_recipient: Option<Strong<dyn IUwbChipAsync<Tokio>>>,
+    hal_uci_iuwb: Option<Strong<dyn IUwbAsync<Tokio>>>,
+    hal_uci_iuwb_chip: Option<Strong<dyn IUwbChipAsync<Tokio>>>,
 }
 
 #[allow(dead_code)]
@@ -147,7 +148,8 @@ impl UciHalAndroid {
             chip_id: chip_id.to_owned(),
             hal_close_result_receiver: None,
             hal_death_recipient: None,
-            hal_uci_recipient: None,
+            hal_uci_iuwb: None,
+            hal_uci_iuwb_chip: None,
         }
     }
 }
@@ -160,7 +162,7 @@ impl UciHal for UciHalAndroid {
         packet_sender: mpsc::UnboundedSender<UciHalPacket>,
     ) -> UwbCoreResult<()> {
         // Returns error if UciHalAndroid is already open.
-        if self.hal_uci_recipient.is_some() {
+        if self.hal_uci_iuwb_chip.is_some() {
             return Err(UwbCoreError::BadParameters);
         }
 
@@ -228,7 +230,8 @@ impl UciHal for UciHalAndroid {
                     });
                 }
                 // End of workaround.
-                self.hal_uci_recipient.replace(i_uwb_chip);
+                self.hal_uci_iuwb.replace(i_uwb);
+                self.hal_uci_iuwb_chip.replace(i_uwb_chip);
                 self.hal_death_recipient.replace(Arc::new(Mutex::new(bare_death_recipient)));
                 self.hal_close_result_receiver.replace(hal_close_result_receiver);
                 Ok(())
@@ -242,10 +245,13 @@ impl UciHal for UciHalAndroid {
 
     async fn close(&mut self) -> UwbCoreResult<()> {
         // Reset UciHalAndroid regardless of whether hal_close is successful or not.
-        let hal_uci_recipient = self.hal_uci_recipient.take();
+        // Release the reference to the top-level binder object i_uwb to allow the lazy HAL
+        // mechanism to stop the HAL implementation.
+        let _ = self.hal_uci_iuwb.take();
+        let hal_uci_iuwb_chip = self.hal_uci_iuwb_chip.take();
         let _hal_death_recipient = self.hal_death_recipient.take();
         let hal_close_result_receiver = self.hal_close_result_receiver.take();
-        match hal_uci_recipient {
+        match hal_uci_iuwb_chip {
             Some(i_uwb_chip) => {
                 i_uwb_chip.close().await.map_err(|e| UwbCoreError::from(Error::from(e)))
             }
@@ -261,7 +267,7 @@ impl UciHal for UciHalAndroid {
     }
 
     async fn send_packet(&mut self, packet: UciHalPacket) -> UwbCoreResult<()> {
-        match &self.hal_uci_recipient {
+        match &self.hal_uci_iuwb_chip {
             Some(i_uwb_chip) => {
                 let bytes_written = i_uwb_chip
                     .sendUciMessage(&packet)
@@ -283,7 +289,7 @@ impl UciHal for UciHalAndroid {
     }
 
     async fn notify_session_initialized(&mut self, session_id: SessionId) -> UwbCoreResult<()> {
-        match &self.hal_uci_recipient {
+        match &self.hal_uci_iuwb_chip {
             Some(i_uwb_chip) => {
                 i_uwb_chip
                     // HAL API accepts signed int, so cast received session_id as i32.
@@ -315,7 +321,7 @@ mod tests {
         assert_eq!(hal.chip_id, chip_id);
         assert!(hal.hal_close_result_receiver.is_none());
         assert!(hal.hal_death_recipient.is_none());
-        assert!(hal.hal_uci_recipient.is_none());
+        assert!(hal.hal_uci_iuwb_chip.is_none());
     }
 
     #[tokio::test]
@@ -339,6 +345,6 @@ mod tests {
         assert_eq!(res, Err(UwbCoreError::BadParameters));
         assert!(hal.hal_close_result_receiver.is_none());
         assert!(hal.hal_death_recipient.is_none());
-        assert!(hal.hal_uci_recipient.is_none());
+        assert!(hal.hal_uci_iuwb_chip.is_none());
     }
 }
