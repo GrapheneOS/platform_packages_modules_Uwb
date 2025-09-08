@@ -84,6 +84,12 @@ public class UwbMetricsTest {
     private static final String PACKAGE_NAME = "com.android.uwb.test";
     private static final AttributionSource ATTRIBUTION_SOURCE =
             new AttributionSource.Builder(UID).setPackageName(PACKAGE_NAME).build();
+    private static final int NON_PRIVILEGED_UID = 12345;
+    private static final String NON_PRIVILEGED_PACKAGE_NAME = "com.thirdparty.app";
+    private static final AttributionSource NON_PRIVILEGED_ATTRIBUTION_SOURCE =
+            new AttributionSource.Builder(NON_PRIVILEGED_UID)
+                    .setPackageName(NON_PRIVILEGED_PACKAGE_NAME)
+                    .build();
     private static final int RANGING_INTERVAL_MS = 200;
     private static final int PARALLEL_SESSION_COUNT = 0;
     private static final int RX_PACKET_COUNT = 10;
@@ -302,6 +308,90 @@ public class UwbMetricsTest {
                 2, 1, 0,
                 RX_PACKET_COUNT, TX_PACKET_COUNT, 1, 1, RX_TO_UPPER_LEVEL_COUNT,
                 UwbStatsLog.UWB_SESSION_CLOSED__RANGING_TYPE__TWO_WAY, UID));
+    }
+
+    @Test
+    public void testMetricsLogging_withNonPrivilegedApp() {
+        // Setup: A session with a non-privileged app.
+        when(mUwbSession.hasNonPrivilegedApp()).thenReturn(true);
+        when(mUwbSession.getAnyNonPrivilegedAppInAttributionSource())
+                .thenReturn(NON_PRIVILEGED_ATTRIBUTION_SOURCE);
+
+        // 1. Test logRangingInitEvent
+        mUwbMetrics.logRangingInitEvent(mUwbSession, UwbUciConstants.STATUS_CODE_OK);
+        ExtendedMockito.verify(() -> UwbStatsLog.write(
+                UwbStatsLog.UWB_SESSION_INITED,
+                UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
+                UwbStatsLog.UWB_SESSION_INITIATED__STS__STATIC, true,
+                true, false, true,
+                CHANNEL_DEFAULT, UwbStatsLog.UWB_SESSION_INITIATED__STATUS__SUCCESS,
+                0, 0, NON_PRIVILEGED_UID, // Verify non-privileged UID
+                RANGING_INTERVAL_MS, PARALLEL_SESSION_COUNT, FILTER_CONFIG_VALUE
+        ));
+
+        // 2. Test longRangingStartEvent
+        mUwbMetrics.longRangingStartEvent(mUwbSession, UwbUciConstants.STATUS_CODE_OK);
+        ExtendedMockito.verify(() -> UwbStatsLog.write(UwbStatsLog.UWB_RANGING_START,
+                UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
+                UwbStatsLog.UWB_SESSION_INITIATED__STS__STATIC, true, true, false, true,
+                UwbStatsLog.UWB_START_RANGING__STATUS__RANGING_SUCCESS, NON_PRIVILEGED_UID
+        ));
+
+        // 3. Test logRangingResult
+        addElapsedTimeMs(DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS);
+        mUwbMetrics.logRangingResult(mUwbSession, mRangingData, mFilteredRangingMeasurement);
+        ExtendedMockito.verify(() -> UwbStatsLog.write(
+                UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED,
+                UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
+                UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__NLOS__NLOS,
+                true, DISTANCE_DEFAULT_CM, DISTANCE_DEFAULT_CM / 50,
+                RSSI_DEFAULT_DBM,
+                true, AZIMUTH_DEFAULT_DEGREE,
+                AZIMUTH_DEFAULT_DEGREE / 10, AZIMUTH_FOM_DEFAULT,
+                true, ELEVATION_DEFAULT_DEGREE,
+                ELEVATION_DEFAULT_DEGREE / 10, ELEVATION_FOM_DEFAULT,
+                UwbStatsLog.UWB_RANGING_MEASUREMENT_RECEIVED__RANGING_TYPE__TWO_WAY,
+                DISTANCE_FILTERED_CM, AZIMUTH_FILTERED_DEGREE, AZIMUTH_FOM_FILTERED,
+                ELEVATION_FILTERED_DEGREE, ELEVATION_FOM_FILTERED, NON_PRIVILEGED_UID
+        ));
+
+        // 4. Test logRangingCloseEvent
+        mUwbMetrics.logRangingCloseEvent(mUwbSession, UwbUciConstants.STATUS_CODE_OK);
+        ExtendedMockito.verify(() -> UwbStatsLog.write(
+                UwbStatsLog.UWB_SESSION_CLOSED,
+                UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
+                UwbStatsLog.UWB_SESSION_INITIATED__STS__STATIC, true,
+                true, false, true,
+                DEFAULT_RANGING_RESULT_LOG_INTERVAL_MS, // Active duration
+                UwbStatsLog.UWB_SESSION_CLOSED__DURATION_BUCKET__ONE_TO_TEN_SEC,
+                1, 1, // rangingCount, validRangingCount
+                UwbStatsLog.UWB_SESSION_CLOSED__RANGING_COUNT_BUCKET__ONE_TO_FIVE,
+                UwbStatsLog.UWB_SESSION_CLOSED__RANGING_COUNT_BUCKET__ONE_TO_FIVE,
+                1, 0, 0, // startCount, startFailureCount, startNoValidReportCount
+                0, 0, 0, 0, 0, // packet counts
+                UwbStatsLog.UWB_SESSION_CLOSED__RANGING_TYPE__TWO_WAY,
+                NON_PRIVILEGED_UID
+        ));
+    }
+
+    @Test
+    public void testMetricsLogging_withoutNonPrivilegedApp() {
+        // Setup: A session without a non-privileged app.
+        when(mUwbSession.hasNonPrivilegedApp()).thenReturn(false);
+
+        // Action: Log a session init event.
+        mUwbMetrics.logRangingInitEvent(mUwbSession, UwbUciConstants.STATUS_CODE_OK);
+
+        // Verification: Check that the metrics are logged with the original app's UID.
+        ExtendedMockito.verify(() -> UwbStatsLog.write(
+                UwbStatsLog.UWB_SESSION_INITED,
+                UwbStatsLog.UWB_SESSION_INITIATED__PROFILE__FIRA,
+                UwbStatsLog.UWB_SESSION_INITIATED__STS__STATIC, true,
+                true, false, true,
+                CHANNEL_DEFAULT, UwbStatsLog.UWB_SESSION_INITIATED__STATUS__SUCCESS,
+                0, 0, UID, // Verify original UID
+                RANGING_INTERVAL_MS, PARALLEL_SESSION_COUNT, FILTER_CONFIG_VALUE
+        ));
     }
 
     @Test
