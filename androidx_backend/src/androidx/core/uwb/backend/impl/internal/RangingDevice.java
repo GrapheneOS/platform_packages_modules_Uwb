@@ -358,6 +358,9 @@ public abstract class RangingDevice {
                             mIsRanging.set(false);
                             callback.onRangingSuspended(device, suspendedReason);
                         });
+                if (mRangingSession != null) {
+                    mRangingSession.close();
+                }
                 if (suspendedReason == REASON_STOP_RANGING_CALLED
                         && mOpAsyncCallbackRunner.isActive()) {
                     mOpAsyncCallbackRunner.complete(true);
