@@ -154,6 +154,11 @@ public class RttRanger {
             mAlarmManager.cancel(mAlarmListener);
             mAlarmListener = null;
         }
+
+        // Cancel any outstanding ranging request, no-op if there wasn't.
+        if (mWifiRttManager != null) {
+            mWifiRttManager.cancelRanging(/* WorkSource */ null);
+        }
     }
 
     private final RangingResultCallback mRangingResultCallback = new RangingResultCallback() {
