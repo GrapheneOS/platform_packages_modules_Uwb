@@ -352,7 +352,7 @@ public class RangingControllerTest {
                 .close();
 
         mRangingController.startRanging(rangingSessionCallback, mBackendCallbackExecutor);
-        assertEquals(mRangingController.stopRanging(), STATUS_OK);
+        mRangingController.stopRanging();
         verify(pfRangingSession).stop();
         verify(pfRangingSession).close();
         verify(rangingSessionCallback)

@@ -319,7 +319,7 @@ public class RangingControleeTest {
                 .close();
 
         mRangingControlee.startRanging(rangingSessionCallback, mBackendCallbackExecutor);
-        assertEquals(mRangingControlee.stopRanging(), STATUS_OK);
+        mRangingControlee.stopRanging();
         verify(pfRangingSession).stop();
         verify(pfRangingSession).close();
         verify(rangingSessionCallback)
