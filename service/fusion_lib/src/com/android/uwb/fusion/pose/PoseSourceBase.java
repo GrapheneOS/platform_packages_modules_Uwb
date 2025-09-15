@@ -17,38 +17,31 @@ package com.android.uwb.fusion.pose;
 
 import android.util.Log;
 
-import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
 
 import com.android.uwb.fusion.math.Pose;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Optional base implementation for a PoseSource. Provides help to register listeners and
  * publishing.
  */
 public abstract class PoseSourceBase implements IPoseSource {
-    private final Lock mLockObject = new ReentrantLock();
-    @GuardedBy("mLockObject")
     private final Set<PoseEventListener> mListeners;
-    private final Set<PoseEventListener> mPendingRemovalListeners;
     private final ExecutorService mListenerExecutor;
     private static final String TAG = "PoseSourceBase";
-    private final AtomicReference<Pose> mPose = new AtomicReference<>();
+    private Pose mPose;
 
     public PoseSourceBase() {
-        mListeners = new HashSet<>();
-        mPendingRemovalListeners = new HashSet<>();
+        mListeners = Collections.synchronizedSet(new HashSet<>());
         mListenerExecutor = Executors.newSingleThreadExecutor();
     }
 
@@ -68,15 +61,10 @@ public abstract class PoseSourceBase implements IPoseSource {
      * {@inheritDoc}
      */
     @Override
-    public void close() {
-        mLockObject.lock();
-        try {
-            if (mListeners.size() > 0) {
-                mListeners.clear();
-                stop(); // Run inside the lock to make sure stops and starts are sequential.
-            }
-        } finally {
-            mLockObject.unlock();
+    public synchronized void close() {
+        if (mListeners.size() > 0) {
+            mListeners.clear();
+            stop(); // Run inside the lock to make sure stops and starts are sequential.
         }
     }
 
@@ -84,16 +72,11 @@ public abstract class PoseSourceBase implements IPoseSource {
      * {@inheritDoc}
      */
     @Override
-    public void registerListener(@NonNull PoseEventListener listener) {
+    public synchronized void registerListener(@NonNull PoseEventListener listener) {
         Objects.requireNonNull(listener);
-        mLockObject.lock();
-        try {
-            mListeners.add(listener);
-            if (mListeners.size() == 1) {
-                start(); // Run inside the lock to make sure starts and stops are sequential.
-            }
-        } finally {
-            mLockObject.unlock();
+        mListeners.add(listener);
+        if (mListeners.size() == 1) {
+            start();
         }
     }
 
@@ -101,18 +84,13 @@ public abstract class PoseSourceBase implements IPoseSource {
      * {@inheritDoc}
      */
     @Override
-    public boolean unregisterListener(@NonNull PoseEventListener listener) {
+    public synchronized boolean unregisterListener(@NonNull PoseEventListener listener) {
         Objects.requireNonNull(listener);
-        mLockObject.lock();
-        try {
-            boolean removed = mListeners.remove(listener);
-            if (removed && mListeners.size() == 0) {
-                stop(); // Run inside the lock to make sure starts and stops are sequential.
-            }
-            return removed;
-        } finally {
-            mLockObject.unlock();
+        boolean removed = mListeners.remove(listener);
+        if (removed && mListeners.size() == 0) {
+            stop();
         }
+        return removed;
     }
 
     /**
@@ -120,32 +98,26 @@ public abstract class PoseSourceBase implements IPoseSource {
      *
      * @param pose The updated device pose.
      */
-    protected void publish(@NonNull Pose pose) {
+    protected synchronized void publish(@NonNull Pose pose) {
         Objects.requireNonNull(pose);
-        this.mPose.set(pose);
+        mPose = pose;
         List<PoseEventListener> listenersSnapshot;
-        mLockObject.lock();
-        try {
-            mListeners.removeAll(mPendingRemovalListeners);
-            mPendingRemovalListeners.clear();
-            listenersSnapshot = new ArrayList<>(mListeners);
-        } finally {
-            mLockObject.unlock();
-        }
+
+        listenersSnapshot = new ArrayList<>(mListeners);
         for (PoseEventListener listener : listenersSnapshot) {
             mListenerExecutor.execute(() -> {
                 try {
                     listener.onPoseChanged(pose);
                 } catch (Exception e) {
                     Log.e(TAG, "Removing listener due to exception:" + e);
-                    mPendingRemovalListeners.add(listener);
+                    mListeners.remove(listener);
                 }
             });
         }
     }
 
     @Override
-    public Pose getPose() {
-        return mPose.get();
+    public synchronized Pose getPose() {
+        return mPose;
     }
 }
