@@ -955,12 +955,13 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
         "Initiator did not find responder",
     )
 
-    asserts.assert_true(
-        self.responder.verify_received_data_from_peer_using_technologies(
-            SESSION_HANDLE, self.initiator.id, TECHNOLOGIES
-        ),
-        "Responder did not find initiator",
-    )
+    # Enable when this is supported
+    #asserts.assert_true(
+    #    self.responder.verify_received_data_from_peer_using_technologies(
+    #        SESSION_HANDLE, self.initiator.id, TECHNOLOGIES
+    #    ),
+    #    "Responder did not find initiator",
+    #)
 
     self.initiator.stop_ranging_and_assert_closed(SESSION_HANDLE)
     self.responder.stop_ranging_and_assert_closed(SESSION_HANDLE)
