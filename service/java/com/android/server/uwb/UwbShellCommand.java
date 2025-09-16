@@ -41,6 +41,7 @@ import static com.google.uwb.support.fira.FiraParams.MULTICAST_LIST_UPDATE_ACTIO
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_MANY_TO_MANY;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_ONE_TO_MANY;
 import static com.google.uwb.support.fira.FiraParams.MULTI_NODE_MODE_UNICAST;
+import static com.google.uwb.support.fira.FiraParams.PREAMBLE_DURATION_T64_SYMBOLS;
 import static com.google.uwb.support.fira.FiraParams.PRF_MODE_BPRF;
 import static com.google.uwb.support.fira.FiraParams.PRF_MODE_HPRF;
 import static com.google.uwb.support.fira.FiraParams.PSDU_DATA_RATE_27M2;
@@ -61,6 +62,7 @@ import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_
 import static com.google.uwb.support.fira.FiraParams.RANGING_ROUND_USAGE_SS_TWR_NON_DEFERRED_MODE;
 import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP0;
 import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP1;
+import static com.google.uwb.support.fira.FiraParams.RFRAME_CONFIG_SP3;
 import static com.google.uwb.support.fira.FiraParams.SFD_ID_VALUE_2;
 import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_PROVISIONED;
 import static com.google.uwb.support.fira.FiraParams.STS_CONFIG_STATIC;
@@ -242,19 +244,19 @@ public class UwbShellCommand extends BasicShellCommandHandler {
     @VisibleForTesting
     public static final RadarOpenSessionParams.Builder DEFAULT_RADAR_OPEN_SESSION_PARAMS =
             new RadarOpenSessionParams.Builder()
-                    .setSessionId(1)
-                        .setBurstPeriod(100)
-                        .setSweepPeriod(3000)
+                    .setSessionId(3)
+                        .setBurstPeriod(64)
+                        .setSweepPeriod(4800)
                         .setSweepsPerBurst(16)
                         .setSamplesPerSweep(SAMPLES_PER_SWEEP_DEFAULT)
                         .setChannelNumber(FiraParams.UWB_CHANNEL_9)
                         .setSweepOffset(SWEEP_OFFSET_DEFAULT)
-                        .setRframeConfig(RFRAME_CONFIG_SP0)
-                        .setPreambleDuration(PREAMBLE_DURATION_T128_SYMBOLS)
-                        .setPreambleCodeIndex(25)
+                        .setRframeConfig(RFRAME_CONFIG_SP3)
+                        .setPreambleDuration(PREAMBLE_DURATION_T64_SYMBOLS)
+                        .setPreambleCodeIndex(11)
                         .setSessionPriority(SESSION_PRIORITY_DEFAULT)
                         .setBitsPerSample(BITS_PER_SAMPLES_32)
-                        .setPrfMode(PRF_MODE_HPRF)
+                        .setPrfMode(PRF_MODE_BPRF)
                         .setNumberOfBursts(NUMBER_OF_BURSTS_DEFAULT)
                         .setRadarDataType(RADAR_DATA_TYPE_RADAR_SWEEP_SAMPLES);
 
