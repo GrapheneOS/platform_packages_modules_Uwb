@@ -809,6 +809,9 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       finally:
           self._ble_disconnect()
 
+  @ApiTest(apis=[
+          'android.net.wifi.rtt.WifiRttManager#cancelRanging(android.os.WorkSource)',
+  ])
   def test_one_to_one_wifi_rtt_ranging(self):
     """Verifies wifi rtt ranging with peer device, devices range for 10 seconds."""
     asserts.skip_if(self._is_emulator_device(self.initiator.ad),
@@ -1237,8 +1240,6 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
       finally:
         self._ble_unbond()
-
-
 
   def test_one_to_one_wifi_rtt_ranging_with_oob(self):
       """Verifies wifi rtt ranging with oob.
