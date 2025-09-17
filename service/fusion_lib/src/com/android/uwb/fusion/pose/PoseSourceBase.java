@@ -15,20 +15,14 @@
  */
 package com.android.uwb.fusion.pose;
 
-import android.util.Log;
-
 import androidx.annotation.NonNull;
 
 import com.android.uwb.fusion.math.Pose;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * Optional base implementation for a PoseSource. Provides help to register listeners and
@@ -36,13 +30,11 @@ import java.util.concurrent.Executors;
  */
 public abstract class PoseSourceBase implements IPoseSource {
     private final Set<PoseEventListener> mListeners;
-    private final ExecutorService mListenerExecutor;
     private static final String TAG = "PoseSourceBase";
     private Pose mPose;
 
     public PoseSourceBase() {
         mListeners = Collections.synchronizedSet(new HashSet<>());
-        mListenerExecutor = Executors.newSingleThreadExecutor();
     }
 
     /**
@@ -101,19 +93,7 @@ public abstract class PoseSourceBase implements IPoseSource {
     protected synchronized void publish(@NonNull Pose pose) {
         Objects.requireNonNull(pose);
         mPose = pose;
-        List<PoseEventListener> listenersSnapshot;
-
-        listenersSnapshot = new ArrayList<>(mListeners);
-        for (PoseEventListener listener : listenersSnapshot) {
-            mListenerExecutor.execute(() -> {
-                try {
-                    listener.onPoseChanged(pose);
-                } catch (Exception e) {
-                    Log.e(TAG, "Removing listener due to exception:" + e);
-                    mListeners.remove(listener);
-                }
-            });
-        }
+        mListeners.forEach(listener -> listener.onPoseChanged(pose));
     }
 
     @Override
