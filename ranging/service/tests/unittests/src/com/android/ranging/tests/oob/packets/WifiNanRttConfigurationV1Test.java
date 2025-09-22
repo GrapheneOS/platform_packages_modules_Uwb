@@ -14,26 +14,30 @@
  * limitations under the License.
  */
 
-package com.android.server.ranging.tests.oob;
+package com.android.server.ranging.tests.oob.packets;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
-import com.android.server.ranging.rtt.RttOobConfig;
+import com.android.server.ranging.oob.packets.WifiDeviceRole;
+import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV1;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-@RunWith(JUnit4.class)
-public class RttOobConfigTest {
+import java.nio.charset.StandardCharsets;
 
-    private static final RttOobConfig RTT_OOB_CONFIG = RttOobConfig.builder()
-            .setUsePeriodicRanging(false)
-            .setServiceName("rttConfigTest")
-            .setDeviceRole(1)
-            .build();
+@RunWith(JUnit4.class)
+public class WifiNanRttConfigurationV1Test {
+
+    private static final WifiNanRttConfigurationV1 RTT_OOB_CONFIG =
+            new WifiNanRttConfigurationV1.Builder()
+                    .setPeriodic(false)
+                    .setServiceName("rttConfigTest".getBytes(StandardCharsets.UTF_8))
+                    .setDeviceRole(WifiDeviceRole.Initiator)
+                    .build();
 
     private final byte[] mRttConfigBytes =
             new byte[]{
@@ -56,15 +60,16 @@ public class RttOobConfigTest {
     public void rttOobConfigValidate_tests() throws Exception {
         assertThat(RTT_OOB_CONFIG.toBytes()).isEqualTo(mRttConfigBytes);
 
-        assertThat(RttOobConfig.parseBytes(mRttConfigBytes)).isEqualTo(RTT_OOB_CONFIG);
+        assertThat(WifiNanRttConfigurationV1.fromBytes(mRttConfigBytes)).isEqualTo(RTT_OOB_CONFIG);
 
         byte[] shortMessage = new byte[]{0x0A};
-        assertThrows(IllegalArgumentException.class, () -> RttOobConfig.parseBytes(shortMessage));
+        assertThrows(Exception.class,
+                () -> WifiNanRttConfigurationV1.fromBytes(shortMessage));
 
         byte[] unknownConfigBytes = new byte[]{0x09, 0x02};
 
-        assertThrows(IllegalArgumentException.class,
-                () -> RttOobConfig.parseBytes(unknownConfigBytes));
+        assertThrows(Exception.class,
+                () -> WifiNanRttConfigurationV1.fromBytes(unknownConfigBytes));
     }
 
 }

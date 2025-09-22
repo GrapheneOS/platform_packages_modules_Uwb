@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package com.android.server.ranging.tests.oob;
+package com.android.server.ranging.tests.oob.packets;
+
+import static com.android.server.ranging.RangingUtils.bitset;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
-import android.ranging.uwb.UwbAddress;
-
-import com.android.server.ranging.uwb.UwbOobCapabilities;
-import com.android.server.ranging.uwb.UwbOobConfig;
+import com.android.server.ranging.oob.packets.UwbCapabilities;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Bytes;
@@ -35,19 +34,15 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class UwbOobCapabilitiesTest {
 
-    private static final UwbOobCapabilities UWB_CAPABILITIES =
-            UwbOobCapabilities.builder()
-                    .setUwbAddress(UwbAddress.fromBytes(new byte[]{8, 9}))
-                    .setSupportedChannels(ImmutableList.of(5, 9))
-                    .setSupportedPreambleIndexes(ImmutableList.of(1, 32))
-                    .setSupportedConfigIds(ImmutableList.of(7, 15))
-                    .setMinimumRangingIntervalMs(1000)
-                    .setMinimumSlotDurationMs(20)
-                    .setSupportedDeviceRole(
-                            ImmutableList.of(
-                                    UwbOobConfig.OobDeviceRole.INITIATOR,
-                                    UwbOobConfig.OobDeviceRole.RESPONDER))
-                    .build();
+    private static final UwbCapabilities UWB_CAPABILITIES = new UwbCapabilities.Builder()
+            .setAddress(new byte[]{8, 9})
+            .setChannels(bitset(ImmutableList.of(5, 9)))
+            .setPreambleIndexes(bitset(ImmutableList.of(0, 31)))
+            .setConfigIds(bitset(ImmutableList.of(7, 15)))
+            .setMinInterval((short) 1000)
+            .setMinSlotDuration((byte) 20)
+            .setRoles((byte) bitset(ImmutableList.of(0, 1)))
+            .build();
 
     private static final byte[] uwbTechHeaderBytes =
             new byte[]{
@@ -107,29 +102,29 @@ public final class UwbOobCapabilitiesTest {
 
     @Test
     public void parseBytes_parsesCorrectly() throws Exception {
-        assertThat(UwbOobCapabilities.parseBytes(uwbCapabilityWithHeaderBytes))
+        assertThat(UwbCapabilities.fromBytes(uwbCapabilityWithHeaderBytes))
                 .isEqualTo(UWB_CAPABILITIES);
     }
 
     @Test
     public void parseBytes_invalidSize_throws() throws Exception {
         byte[] shortMessage = new byte[]{0x0A};
-        assertThrows(IllegalArgumentException.class,
-                () -> UwbOobCapabilities.parseBytes(shortMessage));
+        assertThrows(Exception.class,
+                () -> UwbCapabilities.fromBytes(shortMessage));
     }
 
     @Test
     public void parseBytes_mismatchedHeaderSize_throws() throws Exception {
         byte[] mismatchedHeaderSizeBytes = Bytes.concat(uwbTechHeaderBytes, new byte[]{0x00, 0x01});
         assertThrows(
-                IllegalArgumentException.class,
-                () -> UwbOobCapabilities.parseBytes(mismatchedHeaderSizeBytes));
+                Exception.class,
+                () -> UwbCapabilities.fromBytes(mismatchedHeaderSizeBytes));
     }
 
     @Test
     public void parseBytes_invalidTechnologyId_throws() throws Exception {
         assertThrows(
-                IllegalArgumentException.class,
-                () -> UwbOobCapabilities.parseBytes(uwbCapabilityWithUnknownHeaderBytes));
+                Exception.class,
+                () -> UwbCapabilities.fromBytes(uwbCapabilityWithUnknownHeaderBytes));
     }
 }

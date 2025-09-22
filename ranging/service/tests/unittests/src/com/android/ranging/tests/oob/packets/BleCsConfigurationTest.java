@@ -14,29 +14,36 @@
  * limitations under the License.
  */
 
-package com.android.server.ranging.tests.oob;
+package com.android.server.ranging.tests.oob.packets;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
-import com.android.server.ranging.cs.CsOobConfig;
+import com.android.server.ranging.oob.packets.BleCsConfiguration;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
-public final class CsOobConfigTest {
+public final class BleCsConfigurationTest {
 
-    private static final CsOobConfig CS_CONFIG = CsOobConfig.builder().build();
+    private static final BleCsConfiguration CS_CONFIG = new BleCsConfiguration.Builder()
+            .setSecurityLevel((byte) 0x1)
+            .setAddress(new byte[] {0x1, 0x2, 0x3, 0x4, 0x5, 0x6})
+            .build();
 
     private static final byte[] csConfigBytes =
             new byte[]{
                     // CS Technology Id
                     0x01,
                     // Size
-                    0x02,
+                    0x09,
+                    // Security level
+                    0x01,
+                    // Address
+                    0x01, 0x02, 0x03, 0x04, 0x05, 0x06
             };
 
     @Test
@@ -46,20 +53,21 @@ public final class CsOobConfigTest {
 
     @Test
     public void parseBytes_parsesCorrectly() throws Exception {
-        assertThat(CsOobConfig.parseBytes(csConfigBytes)).isEqualTo(CS_CONFIG);
+        assertThat(BleCsConfiguration.fromBytes(csConfigBytes)).isEqualTo(CS_CONFIG);
     }
 
     @Test
     public void parseBytes_invalidSize_throws() throws Exception {
         byte[] shortMessage = new byte[]{0x0A};
-        assertThrows(IllegalArgumentException.class, () -> CsOobConfig.parseBytes(shortMessage));
+        assertThrows(Exception.class,
+                () -> BleCsConfiguration.fromBytes(shortMessage));
     }
 
     @Test
     public void parseBytes_invalidTechnologyId_throws() throws Exception {
         byte[] unknownConfigBytes = new byte[]{0x09, 0x02};
 
-        assertThrows(IllegalArgumentException.class,
-                () -> CsOobConfig.parseBytes(unknownConfigBytes));
+        assertThrows(Exception.class,
+                () -> BleCsConfiguration.fromBytes(unknownConfigBytes));
     }
 }

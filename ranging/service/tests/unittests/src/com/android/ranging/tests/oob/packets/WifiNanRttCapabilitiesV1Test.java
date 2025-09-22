@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.server.ranging.tests.oob;
+package com.android.server.ranging.tests.oob.packets;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
-import android.ranging.wifi.rtt.RttRangingCapabilities;
-
-import com.android.server.ranging.rtt.RttOobCapabilities;
+import com.android.server.ranging.oob.packets.WifiBandwidth;
+import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV1;
 
 import com.google.common.primitives.Bytes;
 
@@ -33,13 +32,14 @@ import org.junit.runners.JUnit4;
 import java.util.Arrays;
 
 @RunWith(JUnit4.class)
-public class RttOobCapabilitiesTest {
+public class WifiNanRttCapabilitiesV1Test {
 
-    private static final RttOobCapabilities RTT_OOB_CAPABILITIES =
-            RttOobCapabilities.builder()
-                    .setHasPeriodicRangingSupport(false)
-                    .setMaxSupportedBandwidth(20)
-                    .setMaxSupportedRxChain(3)
+    private static final WifiNanRttCapabilitiesV1 RTT_OOB_CAPABILITIES =
+            new WifiNanRttCapabilitiesV1.Builder()
+                    .setFeatures((byte) 1)
+                    .setPeriodic(false)
+                    .setBandwidth(WifiBandwidth.Mhz320)
+                    .setNumRxChains((byte) 3)
                     .build();
 
 
@@ -58,7 +58,7 @@ public class RttOobCapabilitiesTest {
                     // Has periodic ranging support
                     0x00,
                     // Max bandwidth,
-                    0x14,
+                    0x05,
                     // Max supported Rx chain,
                     0x03
             };
@@ -67,25 +67,13 @@ public class RttOobCapabilitiesTest {
             Bytes.concat(mRttTechHeaderBytes, mRttCapabilityBytes);
 
     @Test
-    public void testGetRttOobCapabilities() {
-        RttRangingCapabilities rangingCapabilities = new RttRangingCapabilities.Builder()
-                .setMaxSupportedBandwidth(20)
-                .setMaxSupportedRxChain(3)
-                .setPeriodicRangingHardwareFeature(false)
-                .build();
-
-        assertThat(RttOobCapabilities.fromRangingCapabilities(rangingCapabilities)).isEqualTo(
-                RTT_OOB_CAPABILITIES);
-    }
-
-    @Test
     public void toBytes_convertsCorrectly() throws Exception {
         assertThat(RTT_OOB_CAPABILITIES.toBytes()).isEqualTo(mRttCapabilityWithHeaderBytes);
     }
 
     @Test
     public void parseBytes_parsesCorrectly() throws Exception {
-        assertThat(RttOobCapabilities.parseBytes(mRttCapabilityWithHeaderBytes))
+        assertThat(WifiNanRttCapabilitiesV1.fromBytes(mRttCapabilityWithHeaderBytes))
                 .isEqualTo(RTT_OOB_CAPABILITIES);
     }
 
@@ -94,8 +82,8 @@ public class RttOobCapabilitiesTest {
         byte[] invalidCapabilities = new byte[]{0};
 
         assertThrows(
-                IllegalArgumentException.class,
-                () -> RttOobCapabilities.parseBytes(invalidCapabilities)
+                Exception.class,
+                () -> WifiNanRttCapabilitiesV1.fromBytes(invalidCapabilities)
         );
 
         byte[] invalidTechnology = Arrays.copyOf(mRttCapabilityWithHeaderBytes,
@@ -103,8 +91,8 @@ public class RttOobCapabilitiesTest {
         invalidTechnology[0] = 0x00;
 
         assertThrows(
-                IllegalArgumentException.class,
-                () -> RttOobCapabilities.parseBytes(invalidTechnology)
+                Exception.class,
+                () -> WifiNanRttCapabilitiesV1.fromBytes(invalidTechnology)
         );
     }
 
