@@ -18,6 +18,7 @@ package com.google.snippet.bluetooth;
 
 import static android.bluetooth.BluetoothDevice.TRANSPORT_LE;
 import static android.bluetooth.BluetoothGattService.SERVICE_TYPE_PRIMARY;
+import static android.bluetooth.le.AdvertisingSetParameters.INTERVAL_MEDIUM;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -91,6 +92,7 @@ public final class BluetoothGattMultiDevicesServer {
         var params =
                 new AdvertisingSetParameters.Builder()
                         .setConnectable(true)
+                        .setInterval(INTERVAL_MEDIUM)
                         .setOwnAddressType(
                                 AdvertisingSetParameters.ADDRESS_TYPE_RANDOM_NON_RESOLVABLE)
                         .build();
