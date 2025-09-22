@@ -62,6 +62,10 @@ public enum RangingTechnology {
         }
     }
 
+    public static RangingTechnology fromByte(byte value) {
+        return RangingTechnology.fromValue(Byte.toUnsignedInt(value));
+    }
+
     public @RangingManager.RangingTechnology int getValue() {
         return value;
     }

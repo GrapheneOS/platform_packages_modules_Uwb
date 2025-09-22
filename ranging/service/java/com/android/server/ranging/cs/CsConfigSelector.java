@@ -20,6 +20,8 @@ import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_
 import static android.ranging.ble.cs.BleCsRangingCapabilities.CS_SECURITY_LEVEL_ONE;
 
 import static com.android.server.ranging.RangingUtils.getUpdateRateFromDurationRange;
+import static com.android.server.ranging.RangingUtils.Conversions.macAddressToString;
+import static com.android.server.ranging.RangingUtils.Conversions.macAddressToBytes;
 import static com.android.server.ranging.cs.CsConfig.CS_UPDATE_RATE_DURATIONS;
 
 import android.os.Build;
@@ -37,8 +39,10 @@ import androidx.annotation.Nullable;
 import com.android.server.ranging.RangingEngine;
 import com.android.server.ranging.RangingEngine.ConfigSelectionException;
 import com.android.server.ranging.RangingUtils.InternalReason;
-import com.android.server.ranging.oob.CapabilityResponseMessage;
-import com.android.server.ranging.oob.SetConfigurationMessage.TechnologyOobConfig;
+import com.android.server.ranging.oob.packets.BleCsCapabilities;
+import com.android.server.ranging.oob.packets.BleCsConfiguration;
+import com.android.server.ranging.oob.packets.Capabilities;
+import com.android.server.ranging.oob.packets.Configuration;
 import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
 
 import com.google.common.collect.BiMap;
@@ -49,7 +53,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Set;
 import java.util.function.Function;
 
-public class CsConfigSelector implements RangingEngine.ConfigSelector {
+public class CsConfigSelector extends RangingEngine.ConfigSelector {
     private static final String FAKE_BLE_ADDRESS = "00:00:00:00:00:00";
     private final SessionConfig mSessionConfig;
     private final OobInitiatorRangingConfig mOobConfig;
@@ -92,15 +96,15 @@ public class CsConfigSelector implements RangingEngine.ConfigSelector {
 
     @Override
     public void addPeerCapabilities(
-            @NonNull RangingDevice peer, @NonNull CapabilityResponseMessage response
+            @NonNull RangingDevice peer, @NonNull Capabilities baseCapabilities
     ) throws ConfigSelectionException {
-        CsOobCapabilities capabilities = response.getCsCapabilities();
-        if (capabilities == null) {
-            throw new ConfigSelectionException("Peer " + peer + " does not support CS",
+        if (!(baseCapabilities instanceof BleCsCapabilities capabilities)) {
+            throw new ConfigSelectionException(
+                    "Peer " + peer + " expected CS capabilities but got " + baseCapabilities,
                     InternalReason.PEER_CAPABILITIES_MISMATCH);
         }
 
-        mPeerAddresses.put(peer, capabilities.getBluetoothAddress());
+        mPeerAddresses.put(peer, macAddressToString(capabilities.getAddress()));
     }
 
     @Override
@@ -111,7 +115,7 @@ public class CsConfigSelector implements RangingEngine.ConfigSelector {
     @Override
     public @NonNull Pair<
             ImmutableSet<TechnologyConfig>,
-            ImmutableMap<RangingDevice, TechnologyOobConfig>
+            ImmutableMap<RangingDevice, Configuration>
     > selectConfigs() throws ConfigSelectionException {
         SelectedCsConfig configs = new SelectedCsConfig();
         return Pair.create(configs.getLocalConfigs(), configs.getPeerConfigs());
@@ -147,8 +151,12 @@ public class CsConfigSelector implements RangingEngine.ConfigSelector {
                     .collect(ImmutableSet.toImmutableSet());
         }
 
-        public @NonNull ImmutableMap<RangingDevice, TechnologyOobConfig> getPeerConfigs() {
-            CsOobConfig config = CsOobConfig.builder().build();
+        public @NonNull ImmutableMap<RangingDevice, Configuration> getPeerConfigs() {
+            BleCsConfiguration config = new BleCsConfiguration.Builder()
+                    .setSecurityLevel((byte) mSecurityLevel)
+                    .setAddress(macAddressToBytes(FAKE_BLE_ADDRESS))
+                    .build();
+
             return mPeerAddresses.keySet().stream()
                     .collect(ImmutableMap.toImmutableMap(Function.identity(), (unused) -> config));
         }
