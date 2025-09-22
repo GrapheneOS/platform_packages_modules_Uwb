@@ -1,0 +1,255 @@
+// Adapted from https://source.android.com/docs/core/connect/ranging-oob-spec
+
+little_endian_packets
+
+// Common definitions.
+
+enum Version: 8 {
+    CURRENT = 1,
+    FUTURE = ..,
+}
+
+enum MessageId: 8 {
+    CAPABILITIES_REQUEST = 0x0,
+    CAPABILITIES_RESPONSE = 0x1,
+    CONFIGURATION_REQUEST = 0x2,
+    CONFIGURATION_RESPONSE = 0x3,
+    STOP_REQUEST = 0x6,
+    STOP_RESPONSE = 0x7,
+    RESERVED = ..,
+}
+
+enum Technology: 8 {
+    UWB = 0x0,
+    BLE_CS = 0x1,
+    WIFI_NAN_RTT = 0x2,
+    BLE_RSSI = 0x3,
+    // Version 2
+    WIFI_STA_RTT = 0x4,
+    // Version 3
+    WIFI_AP_RTT = 0x5,
+    RESERVED = ..,
+}
+
+struct TechnologySet {
+    uwb: 1,
+    ble_cs: 1,
+    wifi_nan_rtt: 1,
+    ble_rssi: 1,
+    // Version 2
+    wifi_sta_rtt: 1,
+    // Version 3
+    wifi_ap_rtt: 1,
+    _reserved_: 10,
+}
+
+packet OobMessage {
+    version: Version,
+    id: MessageId,
+    _payload_,
+}
+
+// Technology-specific capabilities.
+
+struct Capabilities {
+    technology: Technology,
+    _size_(_payload_): 8,
+    _payload_: [+2],
+}
+
+struct UwbCapabilities: Capabilities(technology = UWB) {
+    address: 8[2],
+    channels: 32,
+    preamble_indexes: 32,
+    config_ids: 32,
+    min_interval: 16,
+    min_slot_duration: 8,
+    roles: 8,
+}
+
+struct BleCsCapabilities: Capabilities(technology = BLE_CS) {
+    security_levels: 8,
+    address: 8[6],
+}
+
+enum WifiBand: 8 {
+    UNDEFINED = 0x0,
+    GHZ_2 = 0x1,
+    GHZ_5 = 0x2,
+    GHZ_6 = 0x4,
+}
+
+enum WifiBandwidth: 8 {
+    MHZ_20 = 0x0,
+    MHZ_40 = 0x1,
+    MHZ_80 = 0x2,
+    MHZ_160 = 0x3,
+    MHZ_80_PLUS_80 = 0x4,
+    MHZ_320 = 0x5,
+    RESERVED = ..,
+}
+
+enum WiFiSecurityMethod: 8 {
+    NONE = 0x0,
+    MAC = 0x1,
+    PHY = 0x2,
+}
+
+struct WifiBandInfo {
+    band: WifiBand,
+    bandwidth: WifiBandwidth,
+    num_rx_chains: 8,
+}
+
+struct WifiNanRttCapabilitiesV1: Capabilities(technology = WIFI_NAN_RTT) {
+    features: 8,
+    periodic: 1,
+    _reserved_: 7,
+    bandwidth: WifiBandwidth,
+    num_rx_chains: 8,
+}
+
+// Version 2
+struct WifiNanRttCapabilitiesV2: Capabilities(technology = WIFI_NAN_RTT) {
+    features: 8,
+    periodic: 1,
+    _reserved_: 23,
+    _count_(band_info): 8,
+    security_method: WiFiSecurityMethod,
+    band_info: WifiBandInfo[]
+}
+
+struct BleRssiCapabilities: Capabilities(technology = BLE_RSSI) {
+    address: 8[6],
+}
+
+// Version 2
+struct WifiStaRttCapabilities: Capabilities(technology = WIFI_STA_RTT) {
+    features: 8,
+    _count_(band_info): 8,
+    security_method: WiFiSecurityMethod,
+    band_info: WifiBandInfo[]
+}
+
+// Version 3
+struct WifiApRttCapabilities: Capabilities(technology = WIFI_AP_RTT) {
+    features: 8,
+    _count_(band_info): 8,
+    security_method: WiFiSecurityMethod,
+    band_info: WifiBandInfo[]
+}
+
+// Technology-specific configuration.
+
+struct Configuration {
+    technology: Technology,
+    _size_(_payload_): 8,
+    _payload_: [+2],
+}
+
+enum UwbDeviceRole: 8 {
+    INITIATOR = 0x1,
+    RESPONDER = 0x2,
+}
+
+enum UwbDeviceMode: 8 {
+    CONTROLLER = 0x1,
+    CONTROLEE = 0x2,
+}
+
+struct UwbConfiguration: Configuration(technology = UWB) {
+    address: 8[2],
+    session_id: 32,
+    config_id: 8,
+    channel: 8,
+    preamble_index: 8,
+    interval: 16,
+    slot_duration: 8,
+    _size_(session_key): 8,
+    session_key: 8[],
+    country_code: 8[2],
+    device_role: UwbDeviceRole,
+    device_mode: UwbDeviceMode,
+}
+
+struct BleCsConfiguration: Configuration(technology = BLE_CS) {
+    security_level: 8,
+    address: 8[6],
+}
+
+enum WifiDeviceRole: 8 {
+    RESPONDER = 0x0,
+    INITIATOR = 0x1,
+}
+
+struct WifiNanRttConfigurationV1: Configuration(technology = WIFI_NAN_RTT) {
+    _size_(service_name): 8,
+    service_name: 8[],
+    device_role: WifiDeviceRole,
+    periodic: 1,
+    _reserved_: 7,
+}
+
+// Version 2
+struct WifiNanRttConfigurationV2: Configuration(technology = WIFI_NAN_RTT) {
+    _size_(service_name): 8,
+    service_name: 8[],
+    device_role: WifiDeviceRole,
+    periodic: 1,
+    _reserved_: 7,
+    format_and_bandwidth: 8,
+    cfreq0: 8,
+    cfreq1: 8,
+}
+
+struct BleRssiConfiguration: Configuration(technology = BLE_RSSI) {
+    address: 8[6],
+}
+
+// Version 2
+struct WifiStaRttConfiguration: Configuration(technology = WIFI_STA_RTT) {
+    frequency: 16,
+    format_and_bandwidth: 8,
+    cfreq0: 8,
+    cfreq1: 8,
+    security_method: WiFiSecurityMethod,
+}
+
+// Version 3
+struct WifiApRttConfiguration: Configuration(technology = WIFI_AP_RTT) {
+    frequency: 16,
+    bssid: 8[6],
+    format_and_bandwidth: 8,
+    cfreq0: 8,
+    cfreq1: 8,
+    security_method: WiFiSecurityMethod,
+}
+
+// Protocol-level packets.
+
+packet CapabilitiesRequest: OobMessage(id = CAPABILITIES_REQUEST) {
+    requested_technologies: TechnologySet,
+}
+
+packet CapabilitiesResponse: OobMessage(id = CAPABILITIES_RESPONSE) {
+    supported_technologies: TechnologySet,
+    capabilities: Capabilities[],
+}
+
+packet ConfigurationRequest: OobMessage(id = CONFIGURATION_REQUEST) {
+    technologies_to_configure: TechnologySet,
+    technologies_to_start: TechnologySet,
+    configs: Configuration[],
+}
+
+packet ConfigurationResponse: OobMessage(id = CONFIGURATION_RESPONSE) {
+    configured_technologies: TechnologySet,
+}
+
+packet StopRequest: OobMessage(id = STOP_REQUEST) {
+    technologies_to_stop: TechnologySet,
+}
+
+packet StopResponse: OobMessage(id = STOP_RESPONSE) {
+    stopped_technologies: TechnologySet,
+}

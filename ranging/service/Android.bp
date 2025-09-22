@@ -33,6 +33,7 @@ filegroup {
         "java/**/*.java",
         ":service-uwb-shared-with-ranging-srcs",
         ":statslog-ranging-java-gen",
+        ":ranging-oob-packets",
     ],
 }
 
@@ -45,9 +46,6 @@ java_library {
     srcs: [":service-ranging-srcs"],
     sdk_version: "system_server_current",
 
-    plugins: [
-        "auto_value_plugin",
-    ],
     libs: [
         "androidx.annotation_annotation",
         "error_prone_annotations",
@@ -64,8 +62,6 @@ java_library {
         "guava",
         "modules-utils-shell-command-handler",
         "modules-utils-handlerexecutor",
-        // TODO: migrate away from auto value if possible.
-        "auto_value_annotations",
         "framework-ranging-pre-jarjar",
         "com.uwb.fusion",
         "ranging_rtt_backend",
@@ -118,6 +114,29 @@ java_library {
     apex_available: [
         "com.android.uwb",
     ],
+}
+
+// Oob packet generation
+//// ============================================================
+gensrcs {
+    name: "ranging-oob-packets",
+    tools: [
+        "pdlc",
+        "google-java-format",
+        "soong_zip",
+    ],
+    srcs: ["oob/oob_packets.pdl"],
+    cmd: "$(location pdlc) " +
+        "--output-format java $(in) " +
+        "--output-dir $(genDir)/pdl " +
+        "--java-package com.android.server.ranging.oob.packets " +
+
+        "&& $(location google-java-format) --aosp --replace " +
+        "$(genDir)/pdl/com/android/server/ranging/oob/packets/* " +
+
+        "&& $(location soong_zip) -jar " +
+        "-o $(out) -C $(genDir)/pdl -D $(genDir)/pdl",
+    output_extension: "srcjar",
 }
 
 // Metrics logging
