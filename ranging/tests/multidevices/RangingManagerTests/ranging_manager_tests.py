@@ -27,6 +27,7 @@ from lib.params import *
 from lib.ranging_decorator import *
 from mobly import asserts
 from mobly import config_parser
+from mobly import signals
 from mobly import suite_runner
 from mobly.controllers import android_device
 from mobly.base_test import retry
@@ -491,6 +492,10 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
       try:
           self._ble_connect()
+      except Exception as e:
+          asserts.skip("Failed to create ble connection", str(e))
+
+      try:
           initiator_preference = RangingPreference(
               device_role=DeviceRole.INITIATOR,
               ranging_params=RawInitiatorRangingParams(
@@ -551,10 +556,6 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
 
       try:
           self._ble_bond()
-      except Exception as e:
-          asserts.skip("Failed to create ble bond", str(e))
-
-      try:
           initiator_preference = RangingPreference(
               device_role=DeviceRole.INITIATOR,
               ranging_params=RawInitiatorRangingParams(
@@ -805,7 +806,6 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
               SESSION_HANDLE, initiator_preference
           )
           self.initiator.assert_close_ranging_event_received(SESSION_HANDLE)
-
       finally:
           self._ble_disconnect()
 
@@ -993,7 +993,11 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     self._enable_bt()
 
     try:
-      self._ble_connect()
+        self._ble_connect()
+    except Exception as e:
+        asserts.skip("Failed to create ble connection", str(e))
+
+    try:
       initiator_preference = RangingPreference(
           device_role=DeviceRole.INITIATOR,
           ranging_params=RawInitiatorRangingParams(
@@ -1214,11 +1218,7 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
       self._enable_bt()
 
       try:
-          self._ble_bond()
-      except Exception as e:
-          asserts.skip("Failed to create ble bond", str(e))
-
-      try:
+        self._ble_bond()
         initiator_preference = RangingPreference(
               device_role=DeviceRole.INITIATOR,
               ranging_params=RawInitiatorRangingParams(
@@ -1321,7 +1321,11 @@ class RangingManagerTest(ranging_base_test.RangingBaseTest):
     self._enable_bt()
 
     try:
-      self._ble_connect()
+        self._ble_connect()
+    except Exception as e:
+        asserts.skip("Failed to create ble connection", str(e))
+
+    try:
       initiator_preference = RangingPreference(
           device_role=DeviceRole.INITIATOR,
           ranging_params=OobInitiatorRangingParams(
