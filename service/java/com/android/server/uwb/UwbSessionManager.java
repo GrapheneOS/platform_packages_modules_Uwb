@@ -135,6 +135,7 @@ import com.google.uwb.support.generic.GenericSpecificationParams;
 import com.google.uwb.support.oemextension.AdvertisePointedTarget;
 import com.google.uwb.support.oemextension.SessionConfigParams;
 import com.google.uwb.support.oemextension.SessionStatus;
+import com.google.uwb.support.radar.RadarParams;
 import com.google.uwb.support.rftest.RfTestParams;
 import com.google.uwb.support.rftest.RfTestSessionStatus;
 import com.google.uwb.support.rftest.RfTestStartSessionParams;
@@ -886,6 +887,10 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             Log.i(TAG, "Max Fira Sessions Exceeded");
             maxSessionsExceeded = !tryMakeSpaceForFiraSession(
                     uwbSession.getStackSessionPriority());
+        } else if (protocolName.equals(RadarParams.PROTOCOL_NAME)
+                && getSessionCount() != 0) {
+            Log.i(TAG, "Radar session is not allow when other sessions are in progress");
+            maxSessionsExceeded = true;
         }
 
         if (!maxSessionsExceeded && getSessionCount() >= getMaxSupportedSessionCount(chipId)) {
@@ -917,10 +922,22 @@ public class UwbSessionManager implements INativeUwbManager.SessionNotification,
             return;
         }
 
+        if (!protocolName.equals(RadarParams.PROTOCOL_NAME)) {
+            deInitRadarSessions();
+        }
+
         mSessionTable.put(sessionHandle, uwbSession);
         addToNonPrivilegedUidToFiraSessionTableIfNecessary(uwbSession);
         mEventTask.execute(SESSION_OPEN_RANGING, uwbSession);
         return;
+    }
+
+    private void deInitRadarSessions() {
+        for (SessionHandle sessionHandle : mSessionTable.keySet()) {
+            if (mSessionTable.get(sessionHandle).mProtocolName.equals(RadarParams.PROTOCOL_NAME)) {
+                deInitSession(sessionHandle);
+            }
+        }
     }
 
     private boolean tryMakeSpaceForFiraSession(int priorityThreshold) {
