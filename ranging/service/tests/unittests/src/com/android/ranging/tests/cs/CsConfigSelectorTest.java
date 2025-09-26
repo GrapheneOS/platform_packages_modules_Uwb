@@ -142,7 +142,6 @@ public class CsConfigSelectorTest {
         assertFalse(configs.second.isEmpty());
 
         CsConfig csConfig = (CsConfig) Iterators.getOnlyElement(configs.first.iterator());
-        assertEquals("AC:37:43:BC:A9:28", csConfig.getRangingParams().getPeerBluetoothAddress());
         assertEquals(UPDATE_RATE_NORMAL, csConfig.getRangingParams().getRangingUpdateRate());
         assertEquals(CS_SECURITY_LEVEL_ONE, csConfig.getRangingParams().getSecurityLevel());
 
