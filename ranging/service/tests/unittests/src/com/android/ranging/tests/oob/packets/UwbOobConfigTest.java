@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.server.ranging.tests.oob;
+package com.android.server.ranging.tests.oob.packets;
 
 
 import static com.android.server.ranging.RangingUtils.Conversions.hexStringToByteArray;
@@ -23,9 +23,9 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
-import android.ranging.uwb.UwbAddress;
-
-import com.android.server.ranging.uwb.UwbOobConfig;
+import com.android.server.ranging.oob.packets.UwbConfiguration;
+import com.android.server.ranging.oob.packets.UwbDeviceMode;
+import com.android.server.ranging.oob.packets.UwbDeviceRole;
 
 import com.google.common.primitives.Bytes;
 
@@ -33,23 +33,24 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import java.nio.charset.StandardCharsets;
+
 @RunWith(JUnit4.class)
 public final class UwbOobConfigTest {
 
-    private static final UwbOobConfig UWB_CONFIG =
-            UwbOobConfig.builder()
-                    .setUwbAddress(UwbAddress.fromBytes(new byte[]{0x2, 0x4}))
-                    .setSessionId(672)
-                    .setSelectedConfigId(12)
-                    .setSelectedChannel(3)
-                    .setSelectedPreambleIndex(4)
-                    .setSelectedRangingIntervalMs(500)
-                    .setSelectedSlotDurationMs(15)
-                    .setSessionKey(hexStringToByteArray("0102030405060708"))
-                    .setCountryCode("US")
-                    .setDeviceRole(UwbOobConfig.OobDeviceRole.INITIATOR)
-                    .setDeviceMode(UwbOobConfig.OobDeviceMode.CONTROLLER)
-                    .build();
+    private static final UwbConfiguration UWB_CONFIG = new UwbConfiguration.Builder()
+            .setAddress(new byte[]{0x2, 0x4})
+            .setSessionId(672)
+            .setConfigId((byte) 12)
+            .setChannel((byte) 3)
+            .setPreambleIndex((byte) 4)
+            .setInterval((short) 500)
+            .setSlotDuration((byte) 15)
+            .setSessionKey(hexStringToByteArray("0102030405060708"))
+            .setCountryCode("US".getBytes(StandardCharsets.UTF_8))
+            .setDeviceRole(UwbDeviceRole.Initiator)
+            .setDeviceMode(UwbDeviceMode.Controller)
+            .build();
 
     private static final byte[] uwbTechHeaderBytes =
             new byte[]{
@@ -121,27 +122,27 @@ public final class UwbOobConfigTest {
 
     @Test
     public void parseBytes_parsesCorrectly() throws Exception {
-        assertThat(UwbOobConfig.parseBytes(uwbConfigWithHeaderBytes)).isEqualTo(UWB_CONFIG);
+        assertThat(UwbConfiguration.fromBytes(uwbConfigWithHeaderBytes)).isEqualTo(UWB_CONFIG);
     }
 
     @Test
     public void parseBytes_invalidSize_throws() throws Exception {
         byte[] shortMessage = new byte[]{0x0A};
-        assertThrows(IllegalArgumentException.class, () -> UwbOobConfig.parseBytes(shortMessage));
+        assertThrows(Exception.class, () -> UwbConfiguration.fromBytes(shortMessage));
     }
 
     @Test
     public void parseBytes_mismatchedHeaderSize_throws() throws Exception {
         byte[] mismatchedHeaderSizeBytes = Bytes.concat(uwbTechHeaderBytes, new byte[]{0x00, 0x01});
         assertThrows(
-                IllegalArgumentException.class,
-                () -> UwbOobConfig.parseBytes(mismatchedHeaderSizeBytes));
+                Exception.class,
+                () -> UwbConfiguration.fromBytes(mismatchedHeaderSizeBytes));
     }
 
     @Test
     public void parseBytes_invalidTechnologyId_throws() throws Exception {
         assertThrows(
-                IllegalArgumentException.class,
-                () -> UwbOobConfig.parseBytes(uwbConfigWithUnknownHeaderBytes));
+                Exception.class,
+                () -> UwbConfiguration.fromBytes(uwbConfigWithUnknownHeaderBytes));
     }
 }

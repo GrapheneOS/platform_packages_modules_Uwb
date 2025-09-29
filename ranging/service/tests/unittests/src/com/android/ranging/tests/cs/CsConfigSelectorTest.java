@@ -22,6 +22,7 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 
+import static com.android.server.ranging.RangingUtils.Conversions.macAddressToBytes;
 import static com.android.server.ranging.cs.CsConfig.CS_UPDATE_RATE_DURATIONS;
 
 import static org.junit.Assert.assertEquals;
@@ -40,10 +41,10 @@ import android.util.Range;
 import com.android.server.ranging.RangingEngine.ConfigSelectionException;
 import com.android.server.ranging.cs.CsConfig;
 import com.android.server.ranging.cs.CsConfigSelector;
-import com.android.server.ranging.cs.CsOobCapabilities;
-import com.android.server.ranging.cs.CsOobConfig;
-import com.android.server.ranging.oob.CapabilityResponseMessage;
-import com.android.server.ranging.oob.SetConfigurationMessage.TechnologyOobConfig;
+import com.android.server.ranging.oob.packets.BleCsCapabilities;
+import com.android.server.ranging.oob.packets.Configuration;
+import com.android.server.ranging.oob.packets.Technology;
+import com.android.server.ranging.oob.packets.UnknownCapabilities;
 import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
 
 import com.google.common.collect.ImmutableMap;
@@ -63,12 +64,14 @@ public class CsConfigSelectorTest {
 
     private CsConfigSelector mSelector;
 
+    private final String mPeerAddress = "AC:37:43:BC:A9:28";
+
     private @Mock SessionConfig mMockSessionConfig;
     private @Mock OobInitiatorRangingConfig mMockOobConfig;
     private @Mock BleCsRangingCapabilities mMockCapabilities;
-    private @Mock CsOobCapabilities mMockOobCapabilities;
-    private @Mock CapabilityResponseMessage mMockCapabilityResponse;
     private @Mock RangingDevice mMockPeerDevice;
+
+    private BleCsCapabilities mPeerCapabilities;
 
     @Before
     public void setup() {
@@ -79,8 +82,9 @@ public class CsConfigSelectorTest {
                         CS_UPDATE_RATE_DURATIONS.get(UPDATE_RATE_NORMAL),
                         CS_UPDATE_RATE_DURATIONS.get(UPDATE_RATE_NORMAL)));
 
-        when(mMockCapabilityResponse.getCsCapabilities()).thenReturn(mMockOobCapabilities);
-        when(mMockOobCapabilities.getBluetoothAddress()).thenReturn("AC:37:43:BC:A9:28");
+        mPeerCapabilities = new BleCsCapabilities.Builder()
+                .setAddress(macAddressToBytes(mPeerAddress))
+                .build();
     }
 
     @Test
@@ -111,18 +115,25 @@ public class CsConfigSelectorTest {
                 mMockSessionConfig, mMockOobConfig, mMockCapabilities);
 
 
-        mSelector.addPeerCapabilities(mMockPeerDevice, mMockCapabilityResponse);
+        mSelector.addPeerCapabilities(
+                mMockPeerDevice,
+                new BleCsCapabilities.Builder().setAddress(macAddressToBytes(mPeerAddress)).build()
+        );
 
         assertTrue(mSelector.hasPeersToConfigure());
     }
 
     @Test(expected = ConfigSelectionException.class)
-    public void addPeerCapabilities_failsWhenCsCapabilitiesNull() throws ConfigSelectionException {
+    public void addPeerCapabilities_failsWhenCapabilitiesInvalid() throws ConfigSelectionException {
         mSelector = new CsConfigSelector(
                 mMockSessionConfig, mMockOobConfig, mMockCapabilities);
-        when(mMockCapabilityResponse.getCsCapabilities()).thenReturn(null);
 
-        mSelector.addPeerCapabilities(mMockPeerDevice, mMockCapabilityResponse);
+        mSelector.addPeerCapabilities(
+                mMockPeerDevice,
+                new UnknownCapabilities.Builder()
+                        .setTechnology(Technology.BleCs)
+                        .setPayload(new byte[] {})
+                        .build());
     }
 
     @Test
@@ -130,9 +141,9 @@ public class CsConfigSelectorTest {
         mSelector = new CsConfigSelector(
                 mMockSessionConfig, mMockOobConfig, mMockCapabilities);
 
-        mSelector.addPeerCapabilities(mMockPeerDevice, mMockCapabilityResponse);
+        mSelector.addPeerCapabilities(mMockPeerDevice, mPeerCapabilities);
 
-        Pair<ImmutableSet<TechnologyConfig>, ImmutableMap<RangingDevice, TechnologyOobConfig>>
+        Pair<ImmutableSet<TechnologyConfig>, ImmutableMap<RangingDevice, Configuration>>
                 configs = mSelector.selectConfigs();
 
         assertNotNull(configs);
@@ -145,8 +156,7 @@ public class CsConfigSelectorTest {
         assertEquals(UPDATE_RATE_NORMAL, csConfig.getRangingParams().getRangingUpdateRate());
         assertEquals(CS_SECURITY_LEVEL_ONE, csConfig.getRangingParams().getSecurityLevel());
 
-        CsOobConfig peerConfig = (CsOobConfig) configs.second.get(mMockPeerDevice);
-        assertNotNull(peerConfig);
+        assertNotNull(configs.second.get(mMockPeerDevice));
     }
 
     @Test
@@ -157,9 +167,9 @@ public class CsConfigSelectorTest {
                 .thenReturn(OobInitiatorRangingConfig.SECURITY_LEVEL_SECURE);
 
         mSelector = new CsConfigSelector(mMockSessionConfig, mMockOobConfig, mMockCapabilities);
-        mSelector.addPeerCapabilities(mMockPeerDevice, mMockCapabilityResponse);
+        mSelector.addPeerCapabilities(mMockPeerDevice, mPeerCapabilities);
 
-        Pair<ImmutableSet<TechnologyConfig>, ImmutableMap<RangingDevice, TechnologyOobConfig>>
+        Pair<ImmutableSet<TechnologyConfig>, ImmutableMap<RangingDevice, Configuration>>
                 configs = mSelector.selectConfigs();
 
         CsConfig csConfig = (CsConfig) Iterators.getOnlyElement(configs.first.iterator());
@@ -177,9 +187,9 @@ public class CsConfigSelectorTest {
 
         mSelector = new CsConfigSelector(
                 mMockSessionConfig, mMockOobConfig, mMockCapabilities);
-        mSelector.addPeerCapabilities(mMockPeerDevice, mMockCapabilityResponse);
+        mSelector.addPeerCapabilities(mMockPeerDevice, mPeerCapabilities);
 
-        Pair<ImmutableSet<TechnologyConfig>, ImmutableMap<RangingDevice, TechnologyOobConfig>>
+        Pair<ImmutableSet<TechnologyConfig>, ImmutableMap<RangingDevice, Configuration>>
                 configs = mSelector.selectConfigs();
         CsConfig csConfig = (CsConfig) Iterators.getOnlyElement(configs.first.iterator());
 
@@ -197,9 +207,9 @@ public class CsConfigSelectorTest {
 
         mSelector = new CsConfigSelector(
                 mMockSessionConfig, mMockOobConfig, mMockCapabilities);
-        mSelector.addPeerCapabilities(mMockPeerDevice, mMockCapabilityResponse);
+        mSelector.addPeerCapabilities(mMockPeerDevice, mPeerCapabilities);
 
-        Pair<ImmutableSet<TechnologyConfig>, ImmutableMap<RangingDevice, TechnologyOobConfig>>
+        Pair<ImmutableSet<TechnologyConfig>, ImmutableMap<RangingDevice, Configuration>>
                 configs = mSelector.selectConfigs();
         CsConfig csConfig = (CsConfig) configs.first.iterator().next();
 
