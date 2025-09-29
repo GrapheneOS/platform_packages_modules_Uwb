@@ -17,7 +17,6 @@
 package com.android.server.ranging.rtt;
 
 import static android.ranging.RangingPreference.DEVICE_ROLE_INITIATOR;
-import static android.ranging.RangingPreference.DEVICE_ROLE_RESPONDER;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
@@ -37,18 +36,26 @@ import android.util.Pair;
 import com.android.server.ranging.RangingEngine;
 import com.android.server.ranging.RangingEngine.ConfigSelectionException;
 import com.android.server.ranging.RangingUtils.InternalReason;
-import com.android.server.ranging.oob.CapabilityResponseMessage;
-import com.android.server.ranging.oob.SetConfigurationMessage.TechnologyOobConfig;
+import com.android.server.ranging.oob.packets.Capabilities;
+import com.android.server.ranging.oob.packets.Configuration;
+import com.android.server.ranging.oob.packets.Version;
+import com.android.server.ranging.oob.packets.WifiDeviceRole;
+import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV1;
+import com.android.server.ranging.oob.packets.WifiNanRttCapabilitiesV2;
+import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV1;
+import com.android.server.ranging.oob.packets.WifiNanRttConfigurationV2;
 import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
-public class RttConfigSelector implements RangingEngine.ConfigSelector {
+public class RttConfigSelector extends RangingEngine.ConfigSelector {
 
     public static int RTT_SUFFIX_SIZE = 6;
     private static boolean sLocalPeriodicRangingSupport = false;
@@ -57,6 +64,7 @@ public class RttConfigSelector implements RangingEngine.ConfigSelector {
     private final SessionConfig mSessionConfig;
 
     private final OobInitiatorRangingConfig mOobConfig;
+    private final Version mOobVersion;
 
     private final Map<RangingDevice, RttDeviceConfig> mRangingDevices = new ConcurrentHashMap<>();
     public static ImmutableMap<@RawRangingDevice.RangingUpdateRate Integer, Duration>
@@ -83,6 +91,7 @@ public class RttConfigSelector implements RangingEngine.ConfigSelector {
     public RttConfigSelector(
             @NonNull SessionConfig sessionConfig,
             @NonNull OobInitiatorRangingConfig oobConfig,
+            @NonNull Version oobVersion,
             @Nullable RttRangingCapabilities capabilities
     ) throws ConfigSelectionException {
         if (!isCapableOfConfig(oobConfig, capabilities)) {
@@ -92,6 +101,7 @@ public class RttConfigSelector implements RangingEngine.ConfigSelector {
         }
 
         mSessionConfig = sessionConfig;
+        mOobVersion = oobVersion;
         mOobConfig = oobConfig;
     }
 
@@ -100,26 +110,31 @@ public class RttConfigSelector implements RangingEngine.ConfigSelector {
         return !mRangingDevices.isEmpty();
     }
 
-
     @Override
     public void addPeerCapabilities(
-            @NonNull RangingDevice peer, @NonNull CapabilityResponseMessage response
+            @NonNull RangingDevice peer, @NonNull Capabilities baseCapabilities
     ) throws ConfigSelectionException {
-        RttOobCapabilities capabilities = response.getRttCapabilities();
-        if (capabilities == null) {
-            throw new ConfigSelectionException(
-                    "Peer " + peer + " does not support Wifi RTT",
+        switch (baseCapabilities) {
+            case WifiNanRttCapabilitiesV1 capabilities -> mRangingDevices.put(
+                    peer,
+                    new RttDeviceConfig(getServiceName(peer),
+                            sLocalPeriodicRangingSupport && capabilities.getPeriodic()));
+            // TODO: Correctly handle V2
+            case WifiNanRttCapabilitiesV2 capabilities -> mRangingDevices.put(
+                    peer,
+                    new RttDeviceConfig(getServiceName(peer),
+                            sLocalPeriodicRangingSupport && capabilities.getPeriodic()));
+            default -> throw new ConfigSelectionException(
+                    "Peer " + peer + " expected Wifi RTT capabilities but got " + baseCapabilities,
                     InternalReason.PEER_CAPABILITIES_MISMATCH);
-        }
 
-        mRangingDevices.put(peer, new RttDeviceConfig(getServiceName(peer),
-                capabilities.hasPeriodicRangingSupport() && sLocalPeriodicRangingSupport));
+        };
     }
 
     @Override
     public @NonNull Pair<
             ImmutableSet<TechnologyConfig>,
-            ImmutableMap<RangingDevice, TechnologyOobConfig>
+            ImmutableMap<RangingDevice, Configuration>
     > selectConfigs() throws ConfigSelectionException {
         SelectedRttConfig configs = new SelectedRttConfig();
         return Pair.create(configs.getLocalConfigs(), configs.getPeerConfigs());
@@ -129,10 +144,10 @@ public class RttConfigSelector implements RangingEngine.ConfigSelector {
         // TODO: Check whether this needs to be added to OOB.
         private final @RawRangingDevice.RangingUpdateRate int mRangingUpdateRate;
 
-        SelectedRttConfig() throws RangingEngine.ConfigSelectionException {
+        SelectedRttConfig() throws ConfigSelectionException {
             mRangingUpdateRate = getUpdateRateFromDurationRange(
                     mOobConfig.getRangingIntervalRange(), RTT_UPDATE_RATE_DURATIONS)
-                    .orElseThrow(() -> new RangingEngine.ConfigSelectionException(
+                    .orElseThrow(() -> new ConfigSelectionException(
                             "Configured ranging interval range is incompatible with Wifi RTT",
                             InternalReason.UNSUPPORTED));
         }
@@ -151,16 +166,28 @@ public class RttConfigSelector implements RangingEngine.ConfigSelector {
         }
 
         @NonNull
-        public ImmutableMap<RangingDevice, TechnologyOobConfig> getPeerConfigs() {
-            return mRangingDevices.entrySet().stream()
-                    .collect(ImmutableMap.toImmutableMap(
-                            Map.Entry::getKey,
-                            entry -> RttOobConfig.builder()
-                                    .setDeviceRole(DEVICE_ROLE_RESPONDER)
-                                    .setServiceName(entry.getValue().mServiceName)
-                                    .setUsePeriodicRanging(
-                                            entry.getValue().mUsePeriodicRangingFeature)
-                                    .build()));
+        public ImmutableMap<RangingDevice, Configuration> getPeerConfigs() {
+            return mRangingDevices.keySet().stream().collect(ImmutableMap.toImmutableMap(
+                    Function.identity(),
+                    peer -> {
+                        RttDeviceConfig config = mRangingDevices.get(peer);
+                        if (mOobVersion.toByte() == 1) {
+                            return new WifiNanRttConfigurationV1.Builder()
+                                    .setDeviceRole(WifiDeviceRole.Responder)
+                                    .setServiceName(
+                                            config.mServiceName.getBytes(StandardCharsets.UTF_8))
+                                    .setPeriodic(config.mUsePeriodicRangingFeature)
+                                    .build();
+                        } else {
+                            // TODO: Correctly handle V2
+                            return new WifiNanRttConfigurationV2.Builder()
+                                    .setDeviceRole(WifiDeviceRole.Responder)
+                                    .setServiceName(
+                                            config.mServiceName.getBytes(StandardCharsets.UTF_8))
+                                    .setPeriodic(config.mUsePeriodicRangingFeature)
+                                    .build();
+                        }
+                    }));
         }
     }
 

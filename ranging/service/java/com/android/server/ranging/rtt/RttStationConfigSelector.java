@@ -38,8 +38,10 @@ import com.android.ranging.flags.Flags;
 import com.android.server.ranging.RangingEngine;
 import com.android.server.ranging.RangingEngine.ConfigSelectionException;
 import com.android.server.ranging.RangingUtils.InternalReason;
-import com.android.server.ranging.oob.CapabilityResponseMessage;
-import com.android.server.ranging.oob.SetConfigurationMessage.TechnologyOobConfig;
+import com.android.server.ranging.oob.packets.Capabilities;
+import com.android.server.ranging.oob.packets.Configuration;
+import com.android.server.ranging.oob.packets.Technology;
+import com.android.server.ranging.oob.packets.UnknownConfiguration;
 import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
 
 import com.google.common.collect.ImmutableMap;
@@ -48,9 +50,10 @@ import com.google.common.collect.ImmutableSet;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 @FlaggedApi(Flags.FLAG_RANGING_STACK_UPDATES_25Q4)
-public class RttStationConfigSelector implements RangingEngine.ConfigSelector {
+public class RttStationConfigSelector extends RangingEngine.ConfigSelector {
 
     public static int RTT_SUFFIX_SIZE = 6;
     private static int sSupportedBands = 0;
@@ -107,23 +110,16 @@ public class RttStationConfigSelector implements RangingEngine.ConfigSelector {
 
     @Override
     public void addPeerCapabilities(
-            @NonNull RangingDevice peer, @NonNull CapabilityResponseMessage response
+            @NonNull RangingDevice peer, @NonNull Capabilities baseCapabilities
     ) throws ConfigSelectionException {
-        /*RttStationOobCapabilities capabilities = response.getRttStationCapabilities();
-        if (capabilities == null) {
-            throw new ConfigSelectionException(
-                    "Peer " + peer + " does not support Wifi RTT AP mode",
-                    InternalReason.PEER_CAPABILITIES_MISMATCH);
-        }
-        mRangingDevices.put(peer, new RttStationDeviceConfig(BSSID, BANDWIDTH));*/
         //do nothing
     }
 
     @Override
     public @NonNull Pair<
             ImmutableSet<TechnologyConfig>,
-            ImmutableMap<RangingDevice, TechnologyOobConfig>
-            > selectConfigs() throws ConfigSelectionException {
+            ImmutableMap<RangingDevice, Configuration>
+    > selectConfigs() throws ConfigSelectionException {
         SelectedRttStationConfig configs = new SelectedRttStationConfig();
         return Pair.create(configs.getLocalConfigs(), configs.getPeerConfigs());
     }
@@ -132,10 +128,10 @@ public class RttStationConfigSelector implements RangingEngine.ConfigSelector {
         // TODO: Check whether this needs to be added to OOB.
         private final @RawRangingDevice.RangingUpdateRate int mRangingUpdateRate;
 
-        SelectedRttStationConfig() throws RangingEngine.ConfigSelectionException {
+        SelectedRttStationConfig() throws ConfigSelectionException {
             mRangingUpdateRate = getUpdateRateFromDurationRange(
                     mOobConfig.getRangingIntervalRange(), RTT_UPDATE_RATE_DURATIONS)
-                    .orElseThrow(() -> new RangingEngine.ConfigSelectionException(
+                    .orElseThrow(() -> new ConfigSelectionException(
                             "Configured ranging interval range is incompatible with Wifi RTT",
                             InternalReason.UNSUPPORTED));
         }
@@ -152,13 +148,18 @@ public class RttStationConfigSelector implements RangingEngine.ConfigSelector {
         }
 
         @NonNull
-        public ImmutableMap<RangingDevice, TechnologyOobConfig> getPeerConfigs() {
-            return mRangingDevices.entrySet().stream()
-                    .collect(ImmutableMap.toImmutableMap(
-                            Map.Entry::getKey,
-                            entry -> RttStationOobConfig.builder()
-                                    .setBandWidth(entry.getValue().mBandWidth)
-                                    .build()));
+        public ImmutableMap<RangingDevice, Configuration> getPeerConfigs() {
+            return mRangingDevices.keySet().stream().collect(ImmutableMap.toImmutableMap(
+                    Function.identity(),
+                    peer -> {
+                        return new UnknownConfiguration.Builder()
+                                .setTechnology(Technology.Reserved((byte) 4))
+                                .setPayload(new byte[]{})
+                                .build();
+//                        return RttStationOobConfig.builder()
+//                                .setBandWidth(entry.getValue().mBandWidth)
+//                                .build());
+                    }));
         }
     }
 

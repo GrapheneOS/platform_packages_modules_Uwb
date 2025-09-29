@@ -20,28 +20,32 @@ import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_FREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_INFREQUENT;
 import static android.ranging.raw.RawRangingDevice.UPDATE_RATE_NORMAL;
 
-import static java.lang.Math.min;
-
 import android.annotation.IntDef;
 import android.app.AlarmManager;
 import android.bluetooth.BluetoothStatusCodes;
+import android.os.Build;
 import android.os.SystemClock;
+import android.ranging.raw.RawRangingDevice;
 import android.ranging.raw.RawRangingDevice.RangingUpdateRate;
 import android.util.Range;
 
+import com.android.ranging.uwb.backend.internal.RangingTimingParams;
+import com.android.ranging.uwb.backend.internal.Utils;
+import com.android.server.ranging.oob.packets.TechnologySet;
+
 import com.google.common.base.Ascii;
 import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.time.Duration;
-import java.util.BitSet;
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.IntUnaryOperator;
 
 /**
  * Utilities for {@link com.android.ranging}.
@@ -119,55 +123,6 @@ public class RangingUtils {
     }
 
     public static class Conversions {
-        /**
-         * Converts a list of integers to a byte array representing a bitmap of the integers. Given
-         * integers are first shifted by the shift param amount before being placed into the bitmap
-         * (e.g int x results in bit at pos "x - shift" being set).
-         */
-        public static byte[] intListToByteArrayBitmap(
-                List<Integer> list, int expectedSizeBytes, int shift) {
-            BitSet bitSet = new BitSet(expectedSizeBytes * 8);
-            for (int i : list) {
-                bitSet.set(i - shift);
-            }
-            byte[] byteArray = new byte[expectedSizeBytes];
-            System.arraycopy(bitSet.toByteArray(), 0, byteArray, 0,
-                    min(expectedSizeBytes, bitSet.toByteArray().length));
-            return byteArray;
-        }
-
-        /**
-         * Converts a byte array representing a bitmap of integers to a list of integers. The
-         * resulting integers are shifted by the shift param amount (e.g bit set at pos x results
-         * to "x + shift" int in the final list).
-         */
-        public static ImmutableList<Integer> byteArrayToIntList(byte[] byteArray, int shift) {
-            ImmutableList.Builder<Integer> list = ImmutableList.builder();
-            BitSet bitSet = BitSet.valueOf(byteArray);
-            for (int i = 0; i < bitSet.length(); i++) {
-                if (bitSet.get(i)) {
-                    list.add(i + shift);
-                }
-            }
-            return list.build();
-        }
-
-        /** Converts an int to a byte array of a given size, using little endianness. */
-        public static byte[] intToByteArray(int value, int expectedSizeBytes) {
-            ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
-            buffer.putInt(value).rewind();
-            byte[] byteArray = new byte[expectedSizeBytes];
-            buffer.get(byteArray, 0, min(expectedSizeBytes, 4));
-            return byteArray;
-        }
-
-        /** Converts the given byte array to an integer using little endianness. */
-        public static int byteArrayToInt(byte[] byteArray) {
-            ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
-            buffer.put(byteArray).rewind();
-            return buffer.getInt();
-        }
-
         /**
          * Converts a Bluetooth MAC address from byte array to string format. Throws if input byte
          * array is not of correct format.
@@ -318,6 +273,26 @@ public class RangingUtils {
         }
     }
 
+    /**
+     * Throws {@link IllegalArgumentException} if the ranging interval does not correspond to an
+     * update rate.
+     */
+    public static @RawRangingDevice.RangingUpdateRate int getUpdateRateFromIntervalMs(
+            int intervalMs, @Utils.UwbConfigId int configId
+    ) {
+        RangingTimingParams timings = Utils.getRangingTimingParams(configId);
+
+        if (intervalMs == timings.getRangingIntervalFast()) {
+            return UPDATE_RATE_FREQUENT;
+        } else if (intervalMs == timings.getRangingIntervalNormal()) {
+            return UPDATE_RATE_NORMAL;
+        } else if (intervalMs == timings.getRangingIntervalInfrequent()) {
+            return UPDATE_RATE_INFREQUENT;
+        } else {
+            throw new IllegalArgumentException("Unsupported ranging interval ms " + intervalMs);
+        }
+    }
+
     @IntDef(value = {
             InternalReason.UNKNOWN,
             InternalReason.LOCAL_REQUEST,
@@ -340,5 +315,66 @@ public class RangingUtils {
         int INTERNAL_ERROR = 6;
         int BACKGROUND_RANGING_POLICY = 7;
         int PEER_CAPABILITIES_MISMATCH = 8;
+    }
+
+    public static String privateAddressIfUserBuild(String address) {
+        return "user".equals(Build.TYPE) ? "00:00:00:00:00:00" : address;
+    }
+
+    public static TechnologySet technologyBitset(Collection<RangingTechnology> technologies) {
+        TechnologySet.Builder bitset = new TechnologySet.Builder();
+        for (RangingTechnology technology : technologies) {
+            switch (technology) {
+                case UWB -> bitset.setUwb(true);
+                case CS -> bitset.setBleCs(true);
+                case RTT -> bitset.setWifiNanRtt(true);
+                case RSSI -> bitset.setBleRssi(true);
+                case RTT_STATION -> {
+                    continue;
+                }
+            }
+        }
+        return bitset.build();
+    }
+
+    public static EnumSet<RangingTechnology> technologyBitset(TechnologySet bitset) {
+        EnumSet<RangingTechnology> technologies = EnumSet.noneOf(RangingTechnology.class);
+        if (bitset.getUwb()) technologies.add(RangingTechnology.UWB);
+        if (bitset.getBleCs()) technologies.add(RangingTechnology.CS);
+        if (bitset.getWifiNanRtt()) technologies.add(RangingTechnology.RTT);
+        if (bitset.getBleRssi()) technologies.add(RangingTechnology.RSSI);
+        if (bitset.getWifiStaRtt()) technologies.add(RangingTechnology.RTT_STATION);
+        return technologies;
+    }
+
+    public static ImmutableSet<Integer> bitset(int bitfield) {
+        return bitset(bitfield, IntUnaryOperator.identity());
+    }
+
+    /**
+     * @param op function to apply to the offsets in the bitfield before collecting them into a set.
+     */
+    public static ImmutableSet<Integer> bitset(int bitfield, IntUnaryOperator op) {
+        ImmutableSet.Builder<Integer> set = ImmutableSet.builder();
+        for (int index = 0; bitfield != 0; bitfield >>>= 1) {
+            if ((bitfield & 1) == 1) set.add(op.applyAsInt(index));
+            index++;
+        }
+        return set.build();
+    }
+
+    public static int bitset(Collection<Integer> offsets) {
+        return bitset(offsets, IntUnaryOperator.identity());
+    }
+
+    /**
+     * @param op function to apply to each values before inserting them into the bitfield.
+     */
+    public static int bitset(Collection<Integer> offsets, IntUnaryOperator op) {
+        int result = 0;
+        for (int offset : offsets) {
+            result |= 1 << op.applyAsInt(offset);
+        }
+        return result;
     }
 }

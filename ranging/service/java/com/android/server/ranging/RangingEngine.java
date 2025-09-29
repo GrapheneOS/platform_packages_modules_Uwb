@@ -21,6 +21,8 @@ import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_FUSED;
 import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_HIGH_ACCURACY;
 import static android.ranging.oob.OobInitiatorRangingConfig.RANGING_MODE_HIGH_ACCURACY_PREFERRED;
 
+import static com.android.server.ranging.RangingUtils.Conversions.macAddressToString;
+
 import android.ranging.RangingCapabilities;
 import android.ranging.RangingDevice;
 import android.ranging.SessionConfig;
@@ -34,25 +36,29 @@ import androidx.annotation.NonNull;
 import com.android.server.ranging.RangingUtils.InternalReason;
 import com.android.server.ranging.blerssi.BleRssiConfigSelector;
 import com.android.server.ranging.cs.CsConfigSelector;
-import com.android.server.ranging.oob.CapabilityResponseMessage;
-import com.android.server.ranging.oob.MessageType;
-import com.android.server.ranging.oob.OobHeader;
-import com.android.server.ranging.oob.SetConfigurationMessage;
-import com.android.server.ranging.oob.SetConfigurationMessage.TechnologyOobConfig;
+import com.android.server.ranging.oob.packets.BleCsCapabilities;
+import com.android.server.ranging.oob.packets.BleRssiCapabilities;
+import com.android.server.ranging.oob.packets.Capabilities;
+import com.android.server.ranging.oob.packets.CapabilitiesResponse;
+import com.android.server.ranging.oob.packets.Configuration;
+import com.android.server.ranging.oob.packets.ConfigurationRequest;
+import com.android.server.ranging.oob.packets.Technology;
+import com.android.server.ranging.oob.packets.TechnologySet;
+import com.android.server.ranging.oob.packets.UnknownCapabilities;
+import com.android.server.ranging.oob.packets.Version;
 import com.android.server.ranging.rtt.RttConfigSelector;
 import com.android.server.ranging.rtt.RttStationConfigSelector;
 import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
 import com.android.server.ranging.uwb.UwbConfigSelector;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -62,14 +68,41 @@ import java.util.stream.Collectors;
 public class RangingEngine {
     private static final String TAG = RangingEngine.class.getSimpleName();
 
-    private final SessionConfig mSessionConfig;
-    private final OobInitiatorRangingConfig mOobConfig;
-    private final SessionHandle mSessionHandle;
-    private final ImmutableSet<RangingTechnology> mRequestedTechnologies;
-    private final Map<RangingDevice, EnumSet<RangingTechnology>> mPeerTechnologies;
-    private final RangingInjector mInjector;
+    public abstract static class ConfigSelector {
+        public abstract void addPeerCapabilities(
+                @NonNull RangingDevice peer,
+                @NonNull Capabilities capabilities
+        ) throws ConfigSelectionException;
 
-    private final EnumMap<RangingTechnology, ConfigSelector> mConfigSelectors;
+        public abstract boolean hasPeersToConfigure();
+
+        @NonNull
+        public abstract Pair<
+                ImmutableSet<TechnologyConfig>,
+                ImmutableMap<RangingDevice, Configuration>
+        > selectConfigs() throws ConfigSelectionException;
+    }
+
+    public static class SelectedConfig {
+        private final ImmutableSet<TechnologyConfig> mLocalConfigs;
+        private final ImmutableMap<RangingDevice, ConfigurationRequest> mRemoteConfigs;
+
+        public SelectedConfig(
+                ImmutableSet<TechnologyConfig> localConfigs,
+                ImmutableMap<RangingDevice, ConfigurationRequest> remoteConfigs
+        ) {
+            mLocalConfigs = localConfigs;
+            mRemoteConfigs = remoteConfigs;
+        }
+
+        public ImmutableSet<TechnologyConfig> getLocalConfigs() {
+            return mLocalConfigs;
+        }
+
+        public ImmutableMap<RangingDevice, ConfigurationRequest> getRemoteConfigs() {
+            return mRemoteConfigs;
+        }
+    }
 
     public static class ConfigSelectionException extends Exception {
         private final @InternalReason int mReason;
@@ -84,59 +117,38 @@ public class RangingEngine {
         }
     }
 
-    public interface ConfigSelector {
-        void addPeerCapabilities(@NonNull RangingDevice peer,
-                @NonNull CapabilityResponseMessage response) throws ConfigSelectionException;
+    private final SessionConfig mSessionConfig;
+    private final OobInitiatorRangingConfig mOobConfig;
+    private final SessionHandle mSessionHandle;
+    private final ImmutableSet<RangingTechnology> mRequestedTechnologies;
+    private final Map<RangingDevice, EnumSet<RangingTechnology>> mPeerTechnologies;
+    private final Map<RangingDevice, Version> mPeerVersions;
+    private final RangingInjector mInjector;
 
-        boolean hasPeersToConfigure();
-
-        @NonNull Pair<
-                ImmutableSet<TechnologyConfig>,
-                ImmutableMap<RangingDevice, TechnologyOobConfig>
-        > selectConfigs() throws ConfigSelectionException;
-    }
-
-    public static class SelectedConfig {
-        private final ImmutableSet<TechnologyConfig> mLocalConfigs;
-        private final ImmutableMap<RangingDevice, SetConfigurationMessage> mPeerConfigMessages;
-
-        private SelectedConfig(
-                ImmutableSet<TechnologyConfig> localConfigs,
-                ImmutableMap<RangingDevice, SetConfigurationMessage> peerConfigMessages
-        ) {
-            mLocalConfigs = localConfigs;
-            mPeerConfigMessages = peerConfigMessages;
-        }
-
-        public ImmutableSet<TechnologyConfig> getLocalConfigs() {
-            return mLocalConfigs;
-        }
-
-        public ImmutableMap<RangingDevice, SetConfigurationMessage> getPeerConfigMessages() {
-            return mPeerConfigMessages;
-        }
-    }
+    private final Map<Technology, ConfigSelector> mConfigSelectors;
 
     public RangingEngine(
             SessionConfig sessionConfig, OobInitiatorRangingConfig oobConfig,
-            SessionHandle sessionHandle, RangingInjector injector
+            SessionHandle sessionHandle, RangingInjector injector,
+            Map<RangingDevice, Version> peerOobVersions
     ) throws ConfigSelectionException {
         mSessionConfig = sessionConfig;
         mOobConfig = oobConfig;
         mSessionHandle = sessionHandle;
         mPeerTechnologies = new HashMap<>();
-        mConfigSelectors = Maps.newEnumMap(RangingTechnology.class);
+        mPeerVersions = peerOobVersions;
+        mConfigSelectors = new HashMap<>();
         mInjector = injector;
 
         ImmutableSet.Builder<RangingTechnology> toRequest = ImmutableSet.builder();
-        if (shouldRequest(RangingTechnology.UWB, oobConfig.getRangingTechnologyFilter())) {
+        if (shouldRequest(RangingTechnology.UWB)) {
             toRequest.add(RangingTechnology.UWB);
         }
         if (oobConfig.getRangingMode() != RANGING_MODE_HIGH_ACCURACY) {
             for (RangingTechnology technology :
                     Set.of(RangingTechnology.CS, RangingTechnology.RTT, RangingTechnology.RSSI,
                         RangingTechnology.RTT_STATION)) {
-                if (shouldRequest(technology, oobConfig.getRangingTechnologyFilter())) {
+                if (shouldRequest(technology)) {
                     toRequest.add(technology);
                 }
             }
@@ -154,72 +166,75 @@ public class RangingEngine {
     }
 
     public void addPeerCapabilities(
-            RangingDevice device, CapabilityResponseMessage capabilities
+            RangingDevice device, CapabilitiesResponse response
     ) throws ConfigSelectionException {
-        EnumSet<RangingTechnology> selectedTechnologies =
-                selectTechnologiesToUseWithPeer(capabilities);
-        Log.v(TAG, "Selected technologies " + selectedTechnologies + " for peer " + device);
+        Set<Capabilities> capabilities = selectMutualCapabilities(response);
 
-        for (RangingTechnology technology : selectedTechnologies) {
+        mPeerTechnologies.put(device, EnumSet.noneOf(RangingTechnology.class));
+        for (Capabilities techCapabilities : capabilities) {
+            Technology technology = techCapabilities.getTechnology();
+            mPeerTechnologies.get(device).add(RangingTechnology.fromByte(technology.toByte()));
+
             ConfigSelector selector = mConfigSelectors.get(technology);
             if (selector == null) {
                 throw new IllegalStateException(
                         "Expected config selector to exist for mutually supported technology "
                                 + technology);
             }
-            selector.addPeerCapabilities(device, capabilities);
+            selector.addPeerCapabilities(device, techCapabilities);
         }
-        mPeerTechnologies.put(device, selectedTechnologies);
+        Log.v(TAG, "Selected technologies " + mPeerTechnologies);
     }
 
     public SelectedConfig selectConfigs() throws ConfigSelectionException {
         ImmutableSet.Builder<TechnologyConfig> localConfigs = ImmutableSet.builder();
-        Map<RangingDevice, SetConfigurationMessage.Builder> peerConfigs = new HashMap<>();
+        Map<RangingDevice, List<Configuration>> peerConfigs = new HashMap<>();
 
-        for (RangingTechnology technology : mConfigSelectors.keySet()) {
+        for (Technology technology : mConfigSelectors.keySet()) {
             ConfigSelector selector = mConfigSelectors.get(technology);
             if (!selector.hasPeersToConfigure()) continue;
 
-            Pair<ImmutableSet<TechnologyConfig>, ImmutableMap<RangingDevice, TechnologyOobConfig>>
+            Pair<ImmutableSet<TechnologyConfig>, ImmutableMap<RangingDevice, Configuration>>
                     configs = selector.selectConfigs();
 
             localConfigs.addAll(configs.first);
             configs.second.forEach((peer, config) ->
-                    peerConfigs.computeIfAbsent(peer,
-                            (unused) -> {
-                                ImmutableList<RangingTechnology> peerTechnologies =
-                                        ImmutableList.copyOf(mPeerTechnologies.get(peer));
-                                return SetConfigurationMessage.builder()
-                                        .setHeader(OobHeader.builder()
-                                                .setMessageType(MessageType.SET_CONFIGURATION)
-                                                .setVersion(OobHeader.OobVersion.CURRENT)
-                                                .build())
-                                        .setRangingTechnologiesSet(peerTechnologies)
-                                        .setStartRangingList(peerTechnologies);
-                            }
-                    )
-                    .setTechnologyConfig(configs.second.get(peer)));
+                    peerConfigs
+                            .computeIfAbsent(peer, (unused) -> new ArrayList<>())
+                            .add(config)
+            );
         }
 
         return new SelectedConfig(
                 localConfigs.build(),
-                peerConfigs.keySet().stream().collect(
-                        ImmutableMap.toImmutableMap(
-                                Function.identity(),
-                                (peer) -> peerConfigs.get(peer).build())));
+                peerConfigs.keySet().stream().collect(ImmutableMap.toImmutableMap(
+                        Function.identity(),
+                        (peer) -> {
+                            TechnologySet technologies =
+                                    RangingUtils.technologyBitset(mPeerTechnologies.get(peer));
+
+                            return new ConfigurationRequest.Builder()
+                                    .setVersion(mPeerVersions.get(peer))
+                                    .setTechnologiesToConfigure(technologies)
+                                    .setTechnologiesToStart(technologies)
+                                    .setConfigs(peerConfigs.get(peer).toArray(new Configuration[0]))
+                                    .build();
+                        })
+                )
+        );
     }
 
-    private boolean shouldRequest(RangingTechnology technology, Set<Integer> techFilter) {
-        if (techFilter != null && !techFilter.isEmpty()
-                && !techFilter.contains(technology.getValue())) {
+    private boolean shouldRequest(RangingTechnology technology) {
+        Set<Integer> techFilter = mOobConfig.getRangingTechnologyFilter();
+        if (!techFilter.isEmpty() && !techFilter.contains(technology.getValue())) {
             return false;
         }
 
         @RangingCapabilities.RangingTechnologyAvailability int availability = mInjector
                 .getCapabilitiesProvider()
                 .getCapabilities()
-                .getTechnologyAvailability().get(technology.getValue());
-
+                .getTechnologyAvailability()
+                .get(technology.getValue());
         return availability == RangingCapabilities.ENABLED
                 || availability == RangingCapabilities.DISABLED_USER;
     }
@@ -229,10 +244,13 @@ public class RangingEngine {
      * {@code mConfigSelectors}
      * @return true if the {@param technology} is enabled and supported, false otherwise.
      */
-    private boolean createConfigSelectorIfEnabledAndSupported(RangingTechnology technology) {
+    private boolean createConfigSelectorIfEnabledAndSupported(
+            Capabilities capabilities, Version oobVersion
+    ) {
+        Technology technology = capabilities.getTechnology();
         if (mConfigSelectors.containsKey(technology)) return true;
         try {
-            mConfigSelectors.put(technology, createConfigSelector(technology));
+            mConfigSelectors.put(technology, createConfigSelector(technology, oobVersion));
             return true;
         } catch (ConfigSelectionException ignored) {
             return false;
@@ -240,20 +258,25 @@ public class RangingEngine {
     }
 
     private ConfigSelector createConfigSelector(
-            RangingTechnology technology
+            Technology technology, Version oobVersion
     ) throws ConfigSelectionException {
         RangingCapabilities capabilities = mInjector.getCapabilitiesProvider().getCapabilities();
         return switch (technology) {
-            case UWB -> new UwbConfigSelector(
+            case Technology.Uwb unused -> new UwbConfigSelector(
                     mSessionConfig, mOobConfig, mSessionHandle, capabilities.getUwbCapabilities());
-            case CS -> new CsConfigSelector(
+            case Technology.BleCs unused -> new CsConfigSelector(
                     mSessionConfig, mOobConfig, capabilities.getCsCapabilities());
-            case RTT -> new RttConfigSelector(
-                    mSessionConfig, mOobConfig, capabilities.getRttRangingCapabilities());
-            case RSSI -> new BleRssiConfigSelector(
+            case Technology.WifiNanRtt unused -> new RttConfigSelector(
+                    mSessionConfig, mOobConfig, oobVersion,
+                    capabilities.getRttRangingCapabilities());
+            case Technology.BleRssi unused -> new BleRssiConfigSelector(
                     mSessionConfig, mOobConfig, capabilities.getBleRssiCapabilities());
-            case RTT_STATION -> new RttStationConfigSelector(
+            case Technology.WifiStaRtt unused -> new RttStationConfigSelector(
                     mSessionConfig, mOobConfig, capabilities.getRttStationRangingCapabilities());
+            default ->
+                    throw new ConfigSelectionException(
+                            "Cannot create config selector for unknown technology",
+                            InternalReason.PEER_CAPABILITIES_MISMATCH);
         };
     }
 
@@ -262,29 +285,37 @@ public class RangingEngine {
                 .getDeviceConfigFacade()
                 .getTechnologyPreferenceList();
         return Arrays.stream(prefTechnologiesStringArray)
-                .map(str -> RangingTechnology.fromName(str))
-                .collect(Collectors.toUnmodifiableList());
+                .map(RangingTechnology::fromName)
+                .toList();
     }
 
-    private EnumSet<RangingTechnology> selectTechnologiesToUseWithPeer(
-            CapabilityResponseMessage peerCapabilities
+    private Set<Capabilities> selectMutualCapabilities(
+            CapabilitiesResponse response
     ) throws ConfigSelectionException {
-        EnumSet<RangingTechnology> selectable = EnumSet.noneOf(RangingTechnology.class);
-        selectable.addAll(peerCapabilities.getSupportedRangingTechnologies());
+        Version oobVersion = response.getVersion();
+        Map<Technology, Capabilities> selectable = new HashMap<>();
 
-        // Skip CS if supported by the remote device but no Bluetooth bond is established.
-        if (selectable.contains(RangingTechnology.CS)
-                && peerCapabilities.getCsCapabilities() != null
-                && !mInjector.isRemoteDeviceBluetoothBonded(
-                peerCapabilities.getCsCapabilities().getBluetoothAddress())
-        ) {
-            Log.v(TAG, RangingTechnology.CS + " is mutually supported, but skipping it because no "
-                    + "Bluetooth bond exists with peer");
-            selectable.remove(RangingTechnology.CS);
-        }
-
-        if (selectable.contains(RangingTechnology.CS)) {
-            selectable.remove(RangingTechnology.RSSI);
+        for (Capabilities capabilities : response.getCapabilities()) {
+            switch (capabilities) {
+                case BleCsCapabilities csCaps -> {
+                    selectable.remove(Technology.BleRssi);
+                    if (mInjector.isRemoteDeviceBluetoothBonded(
+                            macAddressToString(csCaps.getAddress()))) {
+                        selectable.put(Technology.BleCs, csCaps);
+                    } else {
+                        Log.v(TAG, Technology.BleCs + " is mutually supported, but skipping it "
+                                + "because no Bluetooth bond exists with peer");
+                    }
+                }
+                case BleRssiCapabilities bleRssiCaps -> {
+                    if (!selectable.containsKey(Technology.BleCs)) {
+                        selectable.put(Technology.BleRssi, bleRssiCaps);
+                    }
+                }
+                case UnknownCapabilities unknown ->
+                        Log.w(TAG, "Capabilities response with unknown capabilities " + unknown);
+                default -> selectable.put(capabilities.getTechnology(), capabilities);
+            }
         }
 
         if (selectable.isEmpty()) {
@@ -293,25 +324,28 @@ public class RangingEngine {
         }
 
         selectable = selectable
+                .values()
                 .stream()
-                .filter((technology -> mInjector
+                .filter(capabilities -> mInjector
                         .getCapabilitiesProvider()
                         .getCapabilities()
                         .getTechnologyAvailability()
-                        .get(technology.getValue()) == RangingCapabilities.ENABLED))
-                .collect(Collectors.toCollection(() -> EnumSet.noneOf(RangingTechnology.class)));
+                        .get((int) capabilities.getTechnology().toByte())
+                            == RangingCapabilities.ENABLED)
+                .collect(Collectors.toMap(Capabilities::getTechnology, Function.identity()));
 
         if (selectable.isEmpty()) {
-            throw new ConfigSelectionException(peerCapabilities.getSupportedRangingTechnologies()
-                    + " are mutually supported, but they are all disabled by the user so we cannot "
-                    + "proceed with ranging",
+            throw new ConfigSelectionException("Technologies are mutually supported, but they are "
+                    + "all disabled by the user so we cannot proceed with ranging",
                     InternalReason.SYSTEM_POLICY);
         }
 
         selectable = selectable
+                .values()
                 .stream()
-                .filter(this::createConfigSelectorIfEnabledAndSupported)
-                .collect(Collectors.toCollection(() -> EnumSet.noneOf(RangingTechnology.class)));
+                .filter(capabilities ->
+                        createConfigSelectorIfEnabledAndSupported(capabilities, oobVersion))
+                .collect(Collectors.toMap(Capabilities::getTechnology, Function.identity()));
 
         if (selectable.isEmpty()) {
             throw new ConfigSelectionException(
@@ -319,25 +353,29 @@ public class RangingEngine {
                     InternalReason.UNSUPPORTED);
         }
 
-        EnumSet<RangingTechnology> selected = EnumSet.noneOf(RangingTechnology.class);
+        Set<Capabilities> selected = new HashSet<>();
         switch (mOobConfig.getRangingMode()) {
             case RANGING_MODE_AUTO:
             case RANGING_MODE_HIGH_ACCURACY_PREFERRED: {
-                getPreferredTechnologyList()
-                        .stream()
-                        .filter(selectable::contains)
-                        .findFirst()
-                        .ifPresent(selected::add);
+                for (RangingTechnology technology : getPreferredTechnologyList()) {
+                    Capabilities capabilities = selectable.get(
+                            Technology.fromByte((byte) technology.getValue()));
+                    if (capabilities != null) {
+                        selected.add(capabilities);
+                        break;
+                    }
+                }
                 break;
             }
             case RANGING_MODE_HIGH_ACCURACY: {
-                if (selectable.contains(RangingTechnology.UWB)) {
-                    selected.add(RangingTechnology.UWB);
+                Capabilities capabilities = selectable.get(Technology.Uwb);
+                if (capabilities != null) {
+                    selected.add(capabilities);
                 }
                 break;
             }
             case RANGING_MODE_FUSED: {
-                selected.addAll(selectable);
+                selected.addAll(selectable.values());
                 break;
             }
         }
