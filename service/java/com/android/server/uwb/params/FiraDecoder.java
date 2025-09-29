@@ -18,6 +18,7 @@ package com.android.server.uwb.params;
 
 import static com.android.server.uwb.config.CapabilityParam.ADS_TWR;
 import static com.android.server.uwb.config.CapabilityParam.ADVERTISER;
+import static com.android.server.uwb.config.CapabilityParam.ALIRO_DS_TWR_DEFERRED;
 import static com.android.server.uwb.config.CapabilityParam.AOA_AZIMUTH_180;
 import static com.android.server.uwb.config.CapabilityParam.AOA_AZIMUTH_90;
 import static com.android.server.uwb.config.CapabilityParam.AOA_ELEVATION;
@@ -533,6 +534,9 @@ public class FiraDecoder extends TlvDecoder {
             }
             if (isBitSet(rangingMethodUci[1], DATA_TRANSFER)) {
                 rangingRoundFlag.add(RangingRoundCapabilityFlag.HAS_DATA_TRANSFER_SUPPORT);
+            }
+            if (isBitSet(rangingMethodUci[1], ALIRO_DS_TWR_DEFERRED)) {
+                rangingRoundFlag.add(RangingRoundCapabilityFlag.HAS_ALIRO_DS_TWR_DEFERRED_SUPPORT);
             }
             builder.setRangingRoundCapabilities(rangingRoundFlag);
 
