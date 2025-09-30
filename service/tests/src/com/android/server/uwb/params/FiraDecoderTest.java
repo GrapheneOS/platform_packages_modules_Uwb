@@ -39,6 +39,7 @@ import static com.google.uwb.support.fira.FiraParams.PsduDataRateCapabilityFlag.
 import static com.google.uwb.support.fira.FiraParams.PsduDataRateCapabilityFlag.HAS_6M81_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.PsduDataRateCapabilityFlag.HAS_7M80_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.RANGING_DEVICE_TYPE_CONTROLLER;
+import static com.google.uwb.support.fira.FiraParams.RangingRoundCapabilityFlag.HAS_ALIRO_DS_TWR_DEFERRED_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.RangingRoundCapabilityFlag.HAS_DATA_TRANSFER_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.RangingRoundCapabilityFlag.HAS_DS_TWR_SUPPORT;
 import static com.google.uwb.support.fira.FiraParams.RangingRoundCapabilityFlag.HAS_ESS_TWR_SUPPORT;
@@ -125,7 +126,7 @@ public class FiraDecoderTest {
                     + "030401050103" // Mac version
                     + "040101" // Device type
                     + "05020301" // Device roles
-                    + "0602FF02" // Ranging method
+                    + "0602FF0A" // Ranging method
                     + "070103" // STS config
                     + "080103" // Multi node modes
                     + "090100" // Ranging time struct
@@ -194,7 +195,7 @@ public class FiraDecoderTest {
         assertThat(firaSpecificationParams.getRangingRoundCapabilities()).isEqualTo(
                 EnumSet.of(HAS_DS_TWR_SUPPORT, HAS_SS_TWR_SUPPORT, HAS_OWR_UL_TDOA_SUPPORT,
                         HAS_OWR_DL_TDOA_SUPPORT, HAS_OWR_AOA_SUPPORT, HAS_ESS_TWR_SUPPORT,
-                        HAS_DATA_TRANSFER_SUPPORT));
+                        HAS_DATA_TRANSFER_SUPPORT, HAS_ALIRO_DS_TWR_DEFERRED_SUPPORT));
         assertThat(firaSpecificationParams.hasNonDeferredModeSupport()).isTrue();
 
         assertThat(firaSpecificationParams.getStsCapabilities()).isEqualTo(

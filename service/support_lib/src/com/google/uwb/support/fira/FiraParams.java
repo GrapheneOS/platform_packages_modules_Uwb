@@ -953,7 +953,8 @@ public abstract class FiraParams extends Params {
         HAS_OWR_AOA_SUPPORT(1 << 4),
         HAS_ESS_TWR_SUPPORT(1 << 5),
         HAS_ADS_TWR_SUPPORT(1 << 6),
-        HAS_DATA_TRANSFER_SUPPORT(1 << 7);
+        HAS_DATA_TRANSFER_SUPPORT(1 << 7),
+        HAS_ALIRO_DS_TWR_DEFERRED_SUPPORT(1 << 8);
 
         private final long mValue;
 
