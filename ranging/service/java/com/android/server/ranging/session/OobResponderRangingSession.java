@@ -21,6 +21,7 @@ import static com.android.server.ranging.RangingUtils.technologyBitset;
 import android.content.AttributionSource;
 import android.ranging.RangingConfig;
 import android.ranging.RangingDevice;
+import android.ranging.RangingPreference;
 import android.ranging.SessionHandle;
 import android.ranging.oob.OobHandle;
 import android.ranging.oob.OobResponderRangingConfig;
@@ -76,6 +77,7 @@ public class OobResponderRangingSession extends BaseRangingSession implements Ra
 
     public OobResponderRangingSession(
             @NonNull AttributionSource attributionSource,
+            @NonNull RangingPreference rangingPreference,
             @NonNull SessionHandle sessionHandle,
             @NonNull RangingInjector injector,
             @NonNull RangingSessionConfig config,
@@ -83,7 +85,8 @@ public class OobResponderRangingSession extends BaseRangingSession implements Ra
             @NonNull ListeningExecutorService adapterExecutor,
             @NonNull ScheduledExecutorService oobExecutor
     ) {
-        super(attributionSource, sessionHandle, injector, config, listener, adapterExecutor);
+        super(attributionSource, rangingPreference, sessionHandle, injector, config, listener,
+                adapterExecutor);
         mOobExecutor = oobExecutor;
         mOobConnectionListener = new OobConnectionListener();
     }

@@ -19,6 +19,7 @@ package com.android.server.ranging.session;
 import android.content.AttributionSource;
 import android.ranging.RangingConfig;
 import android.ranging.RangingDevice;
+import android.ranging.RangingPreference;
 import android.ranging.SessionHandle;
 import android.ranging.oob.DeviceHandle;
 import android.ranging.oob.OobHandle;
@@ -64,6 +65,7 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
 
     public OobInitiatorRangingSession(
             @NonNull AttributionSource attributionSource,
+            @NonNull RangingPreference rangingPreference,
             @NonNull SessionHandle sessionHandle,
             @NonNull RangingInjector injector,
             @NonNull RangingSessionConfig config,
@@ -71,7 +73,8 @@ public class OobInitiatorRangingSession extends BaseRangingSession implements Ra
             @NonNull ListeningExecutorService adapterExecutor,
             @NonNull ScheduledExecutorService oobExecutor
     ) {
-        super(attributionSource, sessionHandle, injector, config, listener, adapterExecutor);
+        super(attributionSource, rangingPreference, sessionHandle, injector, config, listener,
+                adapterExecutor);
         mOobExecutor = oobExecutor;
         mOobConnections = new ConcurrentHashMap<>();
         mPendingResponses = new ConcurrentHashMap<>();
