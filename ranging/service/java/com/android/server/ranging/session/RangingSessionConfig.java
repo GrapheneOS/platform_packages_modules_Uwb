@@ -272,6 +272,8 @@ public class RangingSessionConfig {
         return "RangingSessionConfig{"
                 + "mDeviceRole="
                 + mDeviceRole
+                + ", mSessionType="
+                + mSessionType
                 + ", mSessionConfig="
                 + mSessionConfig
                 + '}';

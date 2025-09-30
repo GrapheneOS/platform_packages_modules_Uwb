@@ -18,6 +18,7 @@ package com.android.server.ranging.session;
 
 import android.content.AttributionSource;
 import android.ranging.RangingConfig;
+import android.ranging.RangingPreference;
 import android.ranging.SessionHandle;
 import android.ranging.raw.RawResponderRangingConfig;
 import android.util.Log;
@@ -37,13 +38,15 @@ public class RawResponderRangingSession extends BaseRangingSession implements Ra
 
     public RawResponderRangingSession(
             @NonNull AttributionSource attributionSource,
+            @NonNull RangingPreference rangingPreference,
             @NonNull SessionHandle sessionHandle,
             @NonNull RangingInjector injector,
             @NonNull RangingSessionConfig config,
             @NonNull RangingServiceManager.SessionListener listener,
             @NonNull ListeningExecutorService adapterExecutor
     ) {
-        super(attributionSource, sessionHandle, injector, config, listener, adapterExecutor);
+        super(attributionSource, rangingPreference, sessionHandle, injector, config, listener,
+                adapterExecutor);
     }
 
     @Override

@@ -22,6 +22,7 @@ import android.os.Binder;
 import android.os.SystemClock;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
+import android.ranging.RangingPreference;
 import android.ranging.SessionHandle;
 import android.ranging.raw.RawResponderRangingConfig;
 import android.util.Log;
@@ -63,6 +64,7 @@ public class BaseRangingSession {
     public static final String NON_PRIVILEGED_RANGING_BG_APP_TIMER_TAG =
             "RangingSessionNonPrivilegedBgAppTimeout";
     private final AttributionSource mAttributionSource;
+    private final RangingPreference mRangingPreference;
     private final ListeningExecutorService mAdapterExecutor;
 
     protected final RangingInjector mInjector;
@@ -135,6 +137,7 @@ public class BaseRangingSession {
 
     public BaseRangingSession(
             @NonNull AttributionSource attributionSource,
+            @NonNull RangingPreference rangingPreference,
             @NonNull SessionHandle sessionHandle,
             @NonNull RangingInjector injector,
             @NonNull RangingSessionConfig config,
@@ -143,6 +146,7 @@ public class BaseRangingSession {
     ) {
         mInjector = injector;
         mAttributionSource = attributionSource;
+        mRangingPreference = rangingPreference;
         mSessionHandle = sessionHandle;
         mSessionConfig = config;
         mSessionListener = listener;
@@ -516,6 +520,7 @@ public class BaseRangingSession {
         pw.println("---- Dump of RangingSession ----");
         pw.println("Session handle: " + mSessionHandle);
         pw.println("Attribution source: " + mAttributionSource);
+        pw.println("Ranging Preference: " + mRangingPreference);
         pw.println("Config: " + mSessionConfig);
         pw.println("Adapters:");
         for (RangingAdapter adapter : mAdapters.values()) {

@@ -53,6 +53,7 @@ import com.android.server.ranging.session.RangingSessionConfig;
 import com.android.server.ranging.session.RangingSessionConfig.TechnologyConfig;
 import com.android.server.ranging.session.RawInitiatorRangingSession;
 import com.android.server.ranging.session.RawResponderRangingSession;
+import com.android.server.uwb.util.LruList;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -105,6 +106,7 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
     private final Map<SessionHandle, RangingSession> mSessions = new ConcurrentHashMap<>();
     final ConcurrentHashMap<Integer, List<RangingSession>> mNonPrivilegedUidToSessionsTable =
             new ConcurrentHashMap<>();
+    final LruList<RangingSession> mDbgRecentlyClosedSessions = new LruList<>(5);
 
     private final ActivityManager mActivityManager;
 
@@ -344,7 +346,9 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
 
         public synchronized void onSessionClosed(@InternalReason int reason) {
             Log.v(TAG, "onSessionClosed reason " + reason);
-            mSessions.remove(mSessionHandle).close();
+            RangingSession rangingSession = mSessions.remove(mSessionHandle);
+            rangingSession.close();
+            mDbgRecentlyClosedSessions.add(rangingSession);
             mMetricsLogger.logSessionClosed(reason);
             if (mStateMachine.getAndSet(State.CLOSED) == State.ACTIVE) {
                 try {
@@ -447,18 +451,18 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
 
             switch (baseParams) {
                 case RawInitiatorRangingConfig params -> startSession(params, args,
-                        new RawInitiatorRangingSession(args.attributionSource, args.handle,
-                                mRangingInjector, config, listener, mAdapterExecutor));
+                        new RawInitiatorRangingSession(args.attributionSource, args.preference,
+                                args.handle, mRangingInjector, config, listener, mAdapterExecutor));
                 case RawResponderRangingConfig params -> startSession(params, args,
-                        new RawResponderRangingSession(args.attributionSource, args.handle,
-                                mRangingInjector, config, listener, mAdapterExecutor));
+                        new RawResponderRangingSession(args.attributionSource, args.preference,
+                                args.handle, mRangingInjector, config, listener, mAdapterExecutor));
                 case OobInitiatorRangingConfig params -> startSession(params, args,
-                        new OobInitiatorRangingSession(args.attributionSource, args.handle,
-                                mRangingInjector, config, listener, mAdapterExecutor,
+                        new OobInitiatorRangingSession(args.attributionSource, args.preference,
+                                args.handle, mRangingInjector, config, listener, mAdapterExecutor,
                                 mOobExecutor));
                 case OobResponderRangingConfig params -> startSession(params, args,
-                        new OobResponderRangingSession(args.attributionSource, args.handle,
-                                mRangingInjector, config, listener, mAdapterExecutor,
+                        new OobResponderRangingSession(args.attributionSource, args.preference,
+                                args.handle, mRangingInjector, config, listener, mAdapterExecutor,
                                 mOobExecutor));
                 default -> {
                     Log.e(TAG, "Unknown configuration object " + baseParams.getClass());
@@ -501,7 +505,12 @@ public final class RangingServiceManager implements ActivityManager.OnUidImporta
 
     public void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
         pw.println("---- Dump of RangingServiceManager ----");
+        pw.println("Active sessions: ");
         for (RangingSession session : mSessions.values()) {
+            session.dump(fd, pw, args);
+        }
+        pw.println("Recently closed sessions: ");
+        for (RangingSession session : mDbgRecentlyClosedSessions.getEntries()) {
             session.dump(fd, pw, args);
         }
         pw.println("---- Dump of RangingServiceManager ----");

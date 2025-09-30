@@ -34,6 +34,7 @@ import android.content.AttributionSource;
 import android.content.Context;
 import android.ranging.RangingData;
 import android.ranging.RangingDevice;
+import android.ranging.RangingPreference;
 import android.ranging.RangingMeasurement;
 import android.ranging.SensorFusionParams;
 import android.ranging.SessionHandle;
@@ -190,8 +191,9 @@ public class BaseRangingSessionTest {
         when(mMockContext.getSystemService(AlarmManager.class)).thenReturn(mMockAlarmManager);
 
         mSession = new RawInitiatorRangingSession(
-                mMockAttributionSource, mMockSessionHandle, mMockInjector, mMockConfig,
-                mMockSessionListener, MoreExecutors.newDirectExecutorService());
+                mMockAttributionSource, mock(RangingPreference.class), mMockSessionHandle,
+                mMockInjector, mMockConfig, mMockSessionListener,
+                MoreExecutors.newDirectExecutorService());
 
         mMockAdapters = Maps.newHashMap();
     }
