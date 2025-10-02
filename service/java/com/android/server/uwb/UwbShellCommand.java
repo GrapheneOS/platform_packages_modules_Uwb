@@ -104,6 +104,7 @@ import com.android.modules.utils.BasicShellCommandHandler;
 import com.android.server.uwb.jni.NativeUwbManager;
 import com.android.server.uwb.util.ArrayUtils;
 
+import com.google.common.base.Ascii;
 import com.google.common.io.BaseEncoding;
 import com.google.uwb.support.aliro.AliroOpenRangingParams;
 import com.google.uwb.support.aliro.AliroParams;
@@ -168,10 +169,12 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             "disable-uwb-hw",
             "simulate-app-state-change",
             "start-fira-ranging-session",
+            "start-dl-tdoa-ranging-session",
             "start-ccc-ranging-session",
             "start-aliro-ranging-session",
             "start-radar-session",
             "reconfigure-fira-ranging-session",
+            "update-dl-tdoa-ranging-rounds",
             "get-ranging-session-reports",
             "get-all-ranging-session-reports",
             "stop-ranging-session",
@@ -199,6 +202,31 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     .setRangingRoundUsage(RANGING_ROUND_USAGE_DS_TWR_DEFERRED_MODE)
                     .setVendorId(new byte[]{0x8, 0x7})
                     .setStaticStsIV(new byte[]{0x1, 0x2, 0x3, 0x4, 0x5, 0x6});
+
+    @VisibleForTesting
+    public static final FiraOpenSessionParams.Builder DEFAULT_DL_TDOA_OPEN_SESSION_PARAMS =
+            new FiraOpenSessionParams.Builder()
+                    // Static parameters for DT Tag
+                    .setProtocolVersion(FiraParams.PROTOCOL_VERSION_2_0)
+                    .setSessionType(FiraParams.SESSION_TYPE_RANGING)
+                    .setDeviceType(RANGING_DEVICE_TYPE_DT_TAG)
+                    .setDeviceRole(RANGING_DEVICE_DT_TAG)
+                    .setMultiNodeMode(MULTI_NODE_MODE_ONE_TO_MANY)
+                    .setRangingRoundUsage(RANGING_ROUND_USAGE_DL_TDOA)
+                    .setRframeConfig(RFRAME_CONFIG_SP1)
+                    // Dynamic parameters for DT Tag
+                    .setSessionId(1)
+                    .setSfdId(SFD_ID_VALUE_2)
+                    .setDeviceAddress(UwbAddress.fromBytes(new byte[] {0x4, 0x6}))
+                    .setVendorId(new byte[]{0x08, 0x07})
+                    .setStaticStsIV(new byte[]{0x1, 0x2, 0x3, 0x4, 0x5, 0x6});
+
+    @VisibleForTesting
+    public static final DlTDoARangingRoundsUpdate.Builder DEFAULT_DL_TDOA_RANGING_ROUNDS_UPDATE =
+            new DlTDoARangingRoundsUpdate.Builder()
+                    .setSessionId(1)
+                    .setNoOfRangingRounds(1)
+                    .setRangingRoundIndexes(new byte[]{0});
 
     @VisibleForTesting
     public static final CccOpenRangingParams.Builder DEFAULT_CCC_OPEN_RANGING_PARAMS =
@@ -834,32 +862,111 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 firaOpenSessionParams.second, pw);
     }
 
-    private void startDlTDoaRangingSession(PrintWriter pw) throws Exception {
-        FiraOpenSessionParams.Builder builder = new FiraOpenSessionParams.Builder()
-                .setProtocolVersion(FiraParams.PROTOCOL_VERSION_1_1)
-                .setSessionId(1)
-                .setSessionType(FiraParams.SESSION_TYPE_RANGING)
-                .setSfdId(SFD_ID_VALUE_2)
-                .setDeviceType(RANGING_DEVICE_TYPE_DT_TAG)
-                .setDeviceRole(RANGING_DEVICE_DT_TAG)
-                .setDeviceAddress(UwbAddress.fromBytes(new byte[] { 0x4, 0x6}))
-                .setMultiNodeMode(MULTI_NODE_MODE_ONE_TO_MANY)
-                .setRangingRoundUsage(RANGING_ROUND_USAGE_DL_TDOA)
-                .setVendorId(new byte[]{0x8, 0x7})
-                .setRframeConfig(RFRAME_CONFIG_SP1)
-                .setStaticStsIV(new byte[]{0x1, 0x2, 0x3, 0x4, 0x5, 0x6});
+    private static class ShellDlTdoaOpenSessionParams {
+        private boolean shouldBlockCall;
+        private FiraOpenSessionParams openSessionParams;
+        private DlTDoARangingRoundsUpdate updateRangingParams;
+    }
 
+    private ShellDlTdoaOpenSessionParams buildDlTdoaOpenSessionParams() {
+        boolean shouldBlockCall = false;
+        FiraOpenSessionParams.Builder openSessionBuilder = DEFAULT_DL_TDOA_OPEN_SESSION_PARAMS;
+        DlTDoARangingRoundsUpdate.Builder updateRangingBuilder =
+                DEFAULT_DL_TDOA_RANGING_ROUNDS_UPDATE;
         for (String option = getNextOption(); option != null; option = getNextOption()) {
-            if (option.equals("-i")) {
-                builder.setSessionId(Integer.parseInt(getNextArgRequired()));
-            } else {
-                throw new IllegalArgumentException("Unsupported option: " + option);
+            switch (option) {
+                case "-b", "--blocking" -> shouldBlockCall = true;
+                // Common parameters for FiraOpenSessionParams and DlTDoARangingRoundsUpdate
+                case "-i", "--session-id" -> {
+                    int sessionId = Integer.parseInt(getNextArgRequired());
+                    openSessionBuilder.setSessionId(sessionId);
+                    updateRangingBuilder.setSessionId(sessionId);
+                }
+                // FiraOpenSessionParams specific parameters
+                case "-c", "--channel-number" ->
+                        openSessionBuilder.setChannelNumber(Integer.parseInt(getNextArgRequired()));
+                case "-s", "--slots-per-ranging-round" ->
+                        openSessionBuilder.setSlotsPerRangingRound(
+                                Integer.parseInt(getNextArgRequired()));
+                case "-h", "--slot-duration-rstu" -> {
+                    int slotDurationRstu = Integer.parseInt(getNextArgRequired());
+                    openSessionBuilder.setSlotDurationRstu(slotDurationRstu);
+                }
+                case "-l", "--ranging-interval-ms" ->
+                        openSessionBuilder.setRangingIntervalMs(
+                                Integer.parseInt(getNextArgRequired()));
+                case "-d", "--preamble-code-index" ->
+                        openSessionBuilder.setPreambleCodeIndex(
+                            Integer.parseInt(getNextArgRequired()));
+                case "-g", "--sts-iv" -> {
+                    String staticSTSIV = getNextArgRequired();
+                    if (staticSTSIV.length() == 12) {
+                        openSessionBuilder.setStaticStsIV(
+                                BaseEncoding.base16().decode(Ascii.toUpperCase(staticSTSIV)));
+                    } else {
+                        throw new IllegalArgumentException("staticSTSIV expecting 6 bytes");
+                    }
+                }
+                case "-v", "--vendor-id" -> {
+                    String vendorId = getNextArgRequired();
+                    if (vendorId.length() == 4) {
+                        openSessionBuilder.setVendorId(
+                                BaseEncoding.base16().decode(Ascii.toUpperCase(vendorId)));
+                    } else {
+                        throw new IllegalArgumentException("vendorId expecting 2 bytes");
+                    }
+                }
+                case "-a", "--device-address" ->
+                        openSessionBuilder.setDeviceAddress(
+                                UwbAddress.fromBytes(
+                                        ByteBuffer.allocate(SHORT_ADDRESS_BYTE_LENGTH)
+                                                .putShort(Short.parseShort(getNextArgRequired()))
+                                                .array()));
+                case "--max-number-of-measurements" -> {
+                    int maxNumberOfMeasurements = Integer.parseInt(getNextArgRequired());
+                    openSessionBuilder.setMaxNumberOfMeasurements(maxNumberOfMeasurements);
+                }
+                case "--max-ranging-round-retries" -> {
+                    int maxRangingRoundRetries = Integer.parseInt(getNextArgRequired());
+                    openSessionBuilder.setMaxRangingRoundRetries(maxRangingRoundRetries);
+                }
+                case "-j", "--error-streak-timeout-ms" -> {
+                    int errorStreakTimeoutMs = Integer.parseInt(getNextArgRequired());
+                    openSessionBuilder.setRangingErrorStreakTimeoutMs(errorStreakTimeoutMs);
+                }
+                // DlTDoARangingRoundsUpdate specific parameters
+                case "--number-of-ranging-rounds" -> {
+                    int noOfRangingRounds = Integer.parseInt(getNextArgRequired());
+                    updateRangingBuilder.setNoOfRangingRounds(noOfRangingRounds);
+                }
+                case "--ranging-round-indexes" -> {
+                    int[] rangingRoundIndexesInts = Arrays.stream(getNextArgRequired().split(","))
+                            .mapToInt(Integer::parseInt).toArray();
+                    byte[] rangingRoundIndexes = new byte[rangingRoundIndexesInts.length];
+                    for (int i = 0; i < rangingRoundIndexesInts.length; i++) {
+                        rangingRoundIndexes[i] = (byte) rangingRoundIndexesInts[i];
+                    }
+                    updateRangingBuilder.setRangingRoundIndexes(rangingRoundIndexes);
+                }
+                default -> throw new IllegalArgumentException("Unsupported option: " + option);
             }
         }
-        FiraOpenSessionParams firaOpenSessionParams = builder.build();
+        // TODO: Add remaining params if needed.
+
+        ShellDlTdoaOpenSessionParams shellDlTdoaParams = new ShellDlTdoaOpenSessionParams();
+        shellDlTdoaParams.shouldBlockCall = shouldBlockCall;
+        shellDlTdoaParams.openSessionParams = openSessionBuilder.build();
+        shellDlTdoaParams.updateRangingParams = updateRangingBuilder.build();
+        return shellDlTdoaParams;
+    }
+
+    private void startDlTdoaRangingSession(PrintWriter pw) throws Exception {
+        ShellDlTdoaOpenSessionParams shellDlTdoaParams = buildDlTdoaOpenSessionParams();
         startRangingSession(
-                firaOpenSessionParams, null, firaOpenSessionParams.getSessionId(),
-                true, pw);
+                shellDlTdoaParams.openSessionParams, null,
+                shellDlTdoaParams.openSessionParams.getSessionId(),
+                shellDlTdoaParams.shouldBlockCall, pw);
+        updateDlTdoaRangingRounds(shellDlTdoaParams.updateRangingParams, pw);
     }
 
     private Pair<CccOpenRangingParams, Boolean> buildCccOpenRangingParams() {
@@ -1074,22 +1181,17 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + bundleToString(openRangingSessionParams.toBundle()));
         sSessionIdToInfo.put(sessionId, sessionInfo);
 
-        if (openRangingSessionParams instanceof  FiraOpenSessionParams
+        if (openRangingSessionParams instanceof FiraOpenSessionParams
                 && ((FiraOpenSessionParams) openRangingSessionParams).getDeviceRole()
                 == RANGING_DEVICE_DT_TAG) {
-            DlTDoARangingRoundsUpdate rangingRounds = new DlTDoARangingRoundsUpdate.Builder()
+            DlTDoARangingRoundsUpdate rangingRounds = DEFAULT_DL_TDOA_RANGING_ROUNDS_UPDATE
                     .setSessionId(sessionId)
-                    .setNoOfRangingRounds(1)
-                    .setRangingRoundIndexes(new byte[]{0})
                     .build();
-            mUwbService.updateRangingRoundsDtTag(sessionInfo.sessionHandle,
-                    rangingRounds.toBundle());
             boolean setRangingRounds = false;
             try {
-                setRangingRounds = sessionInfo.rangingOpenedFuture.get(
-                        RANGE_CTL_TIMEOUT_MILLIS, MILLISECONDS);
-            } catch (InterruptedException | CancellationException | TimeoutException
-                     | ExecutionException e) {
+                setRangingRounds = updateDlTdoaRangingRounds(rangingRounds, pw);
+            } catch (CancellationException e) {
+                Log.e(TAG, "Failed to set ranging rounds for DT tag", e);
             }
             if (!setRangingRounds) {
                 pw.println("Failed to set ranging rounds for DT tag");
@@ -1237,6 +1339,72 @@ public class UwbShellCommand extends BasicShellCommandHandler {
             return;
         }
         pw.println("Ranging session reconfigured");
+    }
+
+    private DlTDoARangingRoundsUpdate buildDlTdoaRangingRoundsUpdate(int sessionId) {
+        DlTDoARangingRoundsUpdate.Builder builder = DEFAULT_DL_TDOA_RANGING_ROUNDS_UPDATE;
+        builder.setSessionId(sessionId);
+
+        for (String option = getNextOption(); option != null; option = getNextOption()) {
+            switch (option) {
+                case "--number-of-ranging-rounds" -> {
+                    int noOfRangingRounds = Integer.parseInt(getNextArgRequired());
+                    builder.setNoOfRangingRounds(noOfRangingRounds);
+                }
+                case "--ranging-round-indexes" -> {
+                    int[] rangingRoundIndexesInts = Arrays.stream(getNextArgRequired().split(","))
+                            .mapToInt(Integer::parseInt).toArray();
+                    byte[] rangingRoundIndexes = new byte[rangingRoundIndexesInts.length];
+                    for (int i = 0; i < rangingRoundIndexesInts.length; i++) {
+                        rangingRoundIndexes[i] = (byte) rangingRoundIndexesInts[i];
+                    }
+                    builder.setRangingRoundIndexes(rangingRoundIndexes);
+                }
+                default -> throw new IllegalArgumentException("Unsupported option: " + option);
+            }
+        }
+        // TODO: Add remaining params if needed.
+
+        return builder.build();
+    }
+
+    private boolean updateDlTdoaRangingRounds(DlTDoARangingRoundsUpdate rangingRounds,
+            PrintWriter pw) throws RemoteException {
+        int sessionId = (int) rangingRounds.getSessionId();
+        SessionInfo sessionInfo = sSessionIdToInfo.get(sessionId);
+        if (sessionInfo == null) {
+            pw.println("No active session with session ID: " + sessionId + " found");
+            return false;
+        }
+
+        mUwbService.updateRangingRoundsDtTag(sessionInfo.sessionHandle,
+                rangingRounds.toBundle());
+        boolean setRangingRounds = false;
+        try {
+            setRangingRounds = sessionInfo.rangingOpenedFuture.get(
+                    RANGE_CTL_TIMEOUT_MILLIS, MILLISECONDS);
+        } catch (InterruptedException | CancellationException | TimeoutException
+                | ExecutionException e) {
+            Log.e(TAG, "Failed to set ranging rounds for DT tag", e);
+        }
+        if (!setRangingRounds) {
+            pw.println("Failed to set ranging rounds for DT tag");
+            return false;
+        }
+        pw.println("Ranging rounds updated with params: "
+                + bundleToString(rangingRounds.toBundle()));
+        return true;
+    }
+
+    private void onCmdUpdateDlTdoaRangingRounds(PrintWriter pw) throws RemoteException {
+        int sessionId = Integer.parseInt(getNextArgRequired());
+        SessionInfo sessionInfo = sSessionIdToInfo.get(sessionId);
+        if (sessionInfo == null) {
+            pw.println("No active session with session ID: " + sessionId + " found");
+            return;
+        }
+        DlTDoARangingRoundsUpdate rangingRounds = buildDlTdoaRangingRoundsUpdate(sessionId);
+        updateDlTdoaRangingRounds(rangingRounds, pw);
     }
 
     private int runTaskOnSingleThreadExecutor(FutureTask<Integer> task) {
@@ -1458,7 +1626,7 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     return 0;
                 }
                 case "start-dl-tdoa-ranging-session":
-                    startDlTDoaRangingSession(pw);
+                    startDlTdoaRangingSession(pw);
                     return 0;
                 case "start-fira-ranging-session":
                     startFiraRangingSession(pw);
@@ -1474,6 +1642,9 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                     return 0;
                 case "reconfigure-fira-ranging-session":
                     reconfigureFiraRangingSession(pw);
+                    return 0;
+                case "update-dl-tdoa-ranging-rounds":
+                    onCmdUpdateDlTdoaRangingRounds(pw);
                     return 0;
                 case "get-ranging-session-reports": {
                     int sessionId = Integer.parseInt(getNextArgRequired());
@@ -1673,12 +1844,28 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + "    [--max-number-of-measurements <int>]\n"
                 + "    [--in-band-termination-attempt-count <int>]\n"
                 + ""
-                + "    Starts a FIRA ranging session with the provided params."
+                + "    Starts a FiRa ranging session with the provided params."
                 + " Note: default behavior is to cache the latest ranging reports which can be"
                 + " retrieved using |get-ranging-session-reports|");
-        pw.println("  start-dl-tdoa-ranging-session\n"
-                        + "    [-i <sessionId>](session-id)");
-        pw.println("    Starts a FIRA Dl-TDoA ranging session for DT-Tag");
+        pw.print("""
+                  start-dl-tdoa-ranging-session
+                    [-b blocking call](block)
+                    [-i <sessionId>](session-id)
+                    [-c <channel>](channel-number)
+                    [-s <slots-per-ranging-round>](slots-per-ranging-round)
+                    [-h <slot-duration-rstu>(slot-duration-rstu, default=2400)
+                    [-l <ranging-interval-ms>](ranging-interval-ms)
+                    [-d <preambleCodeIndex>](preamble-code-index)
+                    [-g <staticStsIV>(sts-iv: staticStsIV 6-bytes)
+                    [-v <staticStsVendorId>(vendor-id: staticStsVendorId 2-bytes)
+                    [-a <deviceAddress>](device-address)
+                    [--max-number-of-measurements <int>]
+                    [--max-ranging-round-retries <int>]
+                    [-j <errorStreakTimeoutMs>](error-streak-timeout-ms in millis, default=30000)
+                    [--number-of-ranging-rounds <int>](number-of-ranging-rounds)
+                    [--ranging-round-indexes <int>,<int>,...,<int>]
+                    Starts a FiRa DL-TDoA ranging session for DT-Tag.
+                """);
         pw.println("  start-ccc-ranging-session\n"
                 + "    [-b](blocking call)"
                 + " Ranging reports will be displayed on screen)\n"
@@ -1744,6 +1931,13 @@ public class UwbShellCommand extends BasicShellCommandHandler {
                 + "    [-c <range-data-ntf-cfg>](range-data-ntf-cfg)\n"
                 + "    [-n <proximity-near>(range-data-proximity-near)\n"
                 + "    [-f <proximity-far>](range-data-proximity-far)");
+        pw.print("""
+                  update-dl-tdoa-ranging-rounds <sessionId>
+                    [--number-of-ranging-rounds <int>](number-of-ranging-rounds)
+                    [--ranging-round-indexes <int>,<int>,...,<int>]
+                    Updates the number of ranging rounds and the ranging round indexes for a \
+                FiRa DL-TDoA ranging session.
+                """);
         pw.println("  get-ranging-session-reports <sessionId>");
         pw.println("    Displays latest cached ranging reports for an ongoing ranging session");
         pw.println("  get-all-ranging-session-reports");

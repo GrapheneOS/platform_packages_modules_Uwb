@@ -19,6 +19,7 @@ package com.android.server.uwb;
 import static android.uwb.RangingSession.Callback.REASON_LOCAL_REQUEST;
 
 import static com.android.server.uwb.UwbShellCommand.DEFAULT_ALIRO_OPEN_RANGING_PARAMS;
+import static com.android.server.uwb.UwbShellCommand.DEFAULT_DL_TDOA_OPEN_SESSION_PARAMS;
 import static com.android.server.uwb.UwbShellCommand.DEFAULT_CCC_OPEN_RANGING_PARAMS;
 import static com.android.server.uwb.UwbShellCommand.DEFAULT_FIRA_OPEN_SESSION_PARAMS;
 import static com.android.server.uwb.UwbShellCommand.DEFAULT_RADAR_OPEN_SESSION_PARAMS;
@@ -280,6 +281,16 @@ public class UwbShellCommandTest {
         verify(mUwbService).closeRanging(sessionHandle);
     }
 
+    private void updateAndVerifyRangingRounds(
+            String[] sessionUpdateCmd, SessionHandle sessionHandle)
+            throws Exception {
+        clearInvocations(mUwbService);
+        mUwbShellCommand.exec(
+                new Binder(), new FileDescriptor(), new FileDescriptor(), new FileDescriptor(),
+                sessionUpdateCmd);
+        verify(mUwbService).updateRangingRoundsDtTag(eq(sessionHandle), any());
+    }
+
     private CccStartRangingParams getCccStartRangingParamsFromOpenRangingParams(
             @NonNull CccOpenRangingParams openSessionParams) {
         return new CccStartRangingParams.Builder()
@@ -388,6 +399,63 @@ public class UwbShellCommandTest {
                         new String[]{"start-fira-ranging-session"},
                         DEFAULT_FIRA_OPEN_SESSION_PARAMS.build());
         int sessionId = DEFAULT_FIRA_OPEN_SESSION_PARAMS.build().getSessionId();
+        triggerAndVerifySessionStop(
+                new String[]{"stop-ranging-session", String.valueOf(sessionId)},
+                cbAndSessionHandle.first, cbAndSessionHandle.second);
+    }
+
+    @Test
+    public void testStartDlTdoaRanging() throws Exception {
+        FiraOpenSessionParams openSessionParams = DEFAULT_DL_TDOA_OPEN_SESSION_PARAMS.build();
+        triggerAndVerifySessionStart(
+                new String[]{"start-dl-tdoa-ranging-session"},
+                openSessionParams,
+                null);
+    }
+
+    @Test
+    public void testStartDlTdoaRangingWithNonDefaultParams() throws Exception {
+        FiraOpenSessionParams.Builder openSessionParamsBuilder =
+                new FiraOpenSessionParams.Builder(DEFAULT_DL_TDOA_OPEN_SESSION_PARAMS);
+        openSessionParamsBuilder.setSessionId(5);
+        FiraOpenSessionParams openSessionParams = openSessionParamsBuilder.build();
+        triggerAndVerifySessionStart(
+                new String[]{
+                    "start-dl-tdoa-ranging-session", "-i", "5",
+                    "--number-of-ranging-rounds", "3",
+                    "--ranging-round-indexes", "0,2,4"},
+                openSessionParams,
+                null);
+    }
+
+    @Test
+    public void testUpdateDlTdoaRanging() throws Exception {
+        FiraOpenSessionParams.Builder openSessionParamsBuilder =
+                new FiraOpenSessionParams.Builder(DEFAULT_DL_TDOA_OPEN_SESSION_PARAMS);
+        openSessionParamsBuilder.setSessionId(5);
+        FiraOpenSessionParams openSessionParams = openSessionParamsBuilder.build();
+        Pair<IUwbRangingCallbacks, SessionHandle> cbAndSessionHandle =
+                triggerAndVerifySessionStart(
+                        new String[]{"start-dl-tdoa-ranging-session", "-i", "5"},
+                        openSessionParams,
+                        null);
+        updateAndVerifyRangingRounds(
+                new String[]{
+                        "update-dl-tdoa-ranging-rounds", "5",
+                        "--number-of-ranging-rounds", "3",
+                        "--ranging-round-indexes", "0,2,4"},
+                cbAndSessionHandle.second);
+    }
+
+    @Test
+    public void testStopDlTdoaRanging() throws Exception {
+        FiraOpenSessionParams openSessionParams = DEFAULT_DL_TDOA_OPEN_SESSION_PARAMS.build();
+        Pair<IUwbRangingCallbacks, SessionHandle> cbAndSessionHandle =
+                triggerAndVerifySessionStart(
+                        new String[]{"start-dl-tdoa-ranging-session"},
+                        openSessionParams,
+                        null);
+        int sessionId = openSessionParams.getSessionId();
         triggerAndVerifySessionStop(
                 new String[]{"stop-ranging-session", String.valueOf(sessionId)},
                 cbAndSessionHandle.first, cbAndSessionHandle.second);
